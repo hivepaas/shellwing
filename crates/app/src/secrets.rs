@@ -43,6 +43,11 @@ impl VaultSlot {
         self.0.wait().as_ref().ok().cloned()
     }
 
+    /// The vault if it is open already; never waits.
+    pub fn ready(&self) -> Option<Arc<Vault>> {
+        self.0.get()?.as_ref().ok().cloned()
+    }
+
     /// Why the vault could not open, once it tried.
     pub fn problem(&self) -> Option<String> {
         self.0.get()?.as_ref().err().cloned()

@@ -168,5 +168,7 @@ XChaCha20-Poly1305. The key that opens the vault is in the system keychain
 (Keychain on macOS, Credential Manager on Windows, GNOME Keyring or KWallet on
 Linux), so the file alone is useless. Passwords are saved per `user@host:port`,
 passphrases per key fingerprint, so a key keeps its passphrase wherever it
-lives. Design and threats: `docs/design/vault.md`.
+lives. To see or forget them, open the palette and choose *Saved passwords and
+passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
+Design and threats: `docs/design/vault.md`.
 

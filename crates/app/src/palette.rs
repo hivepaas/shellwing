@@ -19,6 +19,8 @@ pub enum PaletteEvent {
     /// A theme is highlighted: show it, without saving.
     Preview(String),
     Pick(String),
+    /// Forget a saved secret (confirmed by a second Enter).
+    Forget(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,6 +33,7 @@ pub enum Action {
     CloseTab,
     EditSettings,
     EditHosts,
+    ManageSecrets,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -40,6 +43,8 @@ pub enum Kind {
     Connect(String),
     Action(Action),
     Theme(String),
+    /// A vault item, by id.
+    Secret(String),
 }
 
 #[derive(Clone, Debug)]
@@ -105,6 +110,7 @@ fn score(e: &Entry, query: &str) -> Option<u8> {
 enum Mode {
     Connect,
     Themes,
+    Secrets,
 }
 
 pub struct Palette {
@@ -115,6 +121,8 @@ pub struct Palette {
     selected: usize,
     /// Nothing is typed, so the list keeps its groups.
     unfiltered: bool,
+    /// The entry one Enter away from being forgotten.
+    armed: Option<usize>,
     scroll: ScrollHandle,
     _changed: Subscription,
 }
@@ -129,6 +137,17 @@ impl Palette {
             entries,
             0,
             "Find a host, or type user@host",
+            cx,
+        )
+    }
+
+    /// Saved passwords and passphrases, to forget.
+    pub fn secrets(entries: Vec<Entry>, cx: &mut Context<Self>) -> Self {
+        Self::build(
+            Mode::Secrets,
+            entries,
+            0,
+            "Find a saved password or passphrase",
             cx,
         )
     }
@@ -158,6 +177,7 @@ impl Palette {
             entries,
             selected,
             unfiltered: true,
+            armed: None,
             scroll: ScrollHandle::new(),
             _changed: changed,
         };
@@ -205,6 +225,7 @@ impl Palette {
     }
 
     fn highlighted(&mut self, cx: &mut Context<Self>) {
+        self.armed = None;
         self.scroll.scroll_to_item(self.row_index(self.selected));
         if self.mode == Mode::Themes
             && let Some(Kind::Theme(id)) = self.shown.get(self.selected).map(|e| e.kind.clone())
@@ -245,6 +266,14 @@ impl Palette {
             }
             Kind::Action(a) => PaletteEvent::Act(a.clone()),
             Kind::Theme(id) => PaletteEvent::Pick(id.clone()),
+            // Forgetting cannot be undone, so it takes a second Enter.
+            Kind::Secret(_) if self.armed != Some(ix) => {
+                self.armed = Some(ix);
+                self.selected = ix;
+                cx.notify();
+                return;
+            }
+            Kind::Secret(id) => PaletteEvent::Forget(id.clone()),
         });
     }
 
@@ -306,6 +335,7 @@ impl Render for Palette {
                 );
             }
             let selected = i == self.selected;
+            let armed = self.armed == Some(i);
             let has_dot = matches!(e.kind, Kind::Host(_));
             list = list.child(
                 div()
@@ -347,7 +377,15 @@ impl Render for Palette {
                                 )
                             }),
                     )
-                    .when(selected && !e.hint.is_empty(), |d| {
+                    .when(armed, |d| {
+                        d.child(
+                            div()
+                                .text_xs()
+                                .text_color(rgb(0xf87171))
+                                .child("Enter again to forget"),
+                        )
+                    })
+                    .when(!armed && selected && !e.hint.is_empty(), |d| {
                         d.child(div().text_xs().text_color(rgb(MUTED)).child(e.hint.clone()))
                     }),
             );
@@ -364,6 +402,7 @@ impl Render for Palette {
         let footer = match self.mode {
             Mode::Connect => "↑↓ move   Enter open   Esc close   type > for actions only",
             Mode::Themes => "↑↓ preview   Enter keep   Esc go back",
+            Mode::Secrets => "↑↓ move   Enter twice forget   Esc close   secrets are never shown",
         };
         div()
             .w(px(640.))

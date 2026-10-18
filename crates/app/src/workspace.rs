@@ -531,6 +531,11 @@ impl Workspace {
             },
             format!("{chord}+B"),
         );
+        action(
+            Action::ManageSecrets,
+            "Saved passwords and passphrases…".into(),
+            String::new(),
+        );
         action(Action::EditHosts, "Edit hosts.toml".into(), String::new());
         action(
             Action::EditSettings,
@@ -573,6 +578,53 @@ impl Workspace {
             .collect();
         let palette = cx.new(|cx| Palette::themes(entries, &current, cx));
         self.show_palette(palette, true, window, cx);
+    }
+
+    fn open_secrets(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(vault) = self.vault.ready() else {
+            let why = self
+                .vault
+                .problem()
+                .unwrap_or_else(|| "the vault is still opening".into());
+            self.say(format!("No saved passwords: {why}."), CONFIG_NOTICE, cx);
+            return;
+        };
+        let entries: Vec<Entry> = match vault.items() {
+            Ok(items) => items
+                .into_iter()
+                .map(|item| match item {
+                    shellwing_vault::Item::Password { id, target } => {
+                        Entry::new(Kind::Secret(id), "Saved", format!("Password for {target}"))
+                            .hint("Enter to forget")
+                    }
+                    shellwing_vault::Item::Passphrase {
+                        id,
+                        fingerprint,
+                        key_path,
+                    } => Entry::new(
+                        Kind::Secret(id),
+                        "Saved",
+                        format!("Passphrase of {key_path}"),
+                    )
+                    .detail(fingerprint)
+                    .hint("Enter to forget"),
+                })
+                .collect(),
+            Err(e) => {
+                self.say(format!("Cannot read the vault: {e}"), CONFIG_NOTICE, cx);
+                return;
+            }
+        };
+        if entries.is_empty() {
+            self.say(
+                "Nothing saved yet: after a password works, the pane offers to save it.".into(),
+                CONFIG_NOTICE,
+                cx,
+            );
+            return;
+        }
+        let palette = cx.new(|cx| Palette::secrets(entries, cx));
+        self.show_palette(palette, false, window, cx);
     }
 
     fn show_palette(
@@ -628,6 +680,26 @@ impl Workspace {
                     });
                 }
             }
+            PaletteEvent::Forget(id) => {
+                let forgotten = self.vault.ready().map(|v| v.delete(id));
+                self.close_palette(window, cx);
+                match forgotten {
+                    Some(Ok(())) => {
+                        self.say("Forgotten.".into(), THEME_NOTICE, cx);
+                        // Back to the list for the next one, if any is left.
+                        let left = self
+                            .vault
+                            .ready()
+                            .and_then(|v| v.items().ok())
+                            .is_some_and(|i| !i.is_empty());
+                        if left {
+                            self.open_secrets(window, cx);
+                        }
+                    }
+                    Some(Err(e)) => self.say(format!("Not forgotten: {e}"), CONFIG_NOTICE, cx),
+                    None => {}
+                }
+            }
             PaletteEvent::Pick(id) => {
                 let picked = self.live.set_theme(id);
                 self.close_palette(window, cx);
@@ -649,6 +721,7 @@ impl Workspace {
             Action::SplitDown => self.split(Axis::Vertical, window, cx),
             Action::CloseTab => self.close(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
+            Action::ManageSecrets => self.open_secrets(window, cx),
             Action::ToggleHosts => {
                 self.show_sidebar = !self.show_sidebar;
                 cx.notify();
