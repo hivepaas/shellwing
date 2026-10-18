@@ -43,6 +43,7 @@ pub use writer::Writer;
 struct Assets;
 
 const ICONS: &[(&str, &[u8])] = &[
+    ("icons/logo.svg", include_bytes!("../assets/icons/logo.svg")),
     (
         "icons/settings.svg",
         include_bytes!("../assets/icons/settings.svg"),

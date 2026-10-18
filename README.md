@@ -23,6 +23,10 @@ setup, Windows VMs, Vietnamese input and a manual test checklist are in
 [docs/platforms.md](docs/platforms.md). CI builds Linux on every push and macOS
 and Windows when started by hand, and uploads the binaries as artifacts.
 
+On Linux, `scripts/install-desktop.sh` adds the app's icon and a launcher for
+the built binary to your desktop (the dock, Alt+Tab and the app grid then show
+it); `--remove` takes them away. The icon itself is `packaging/icons/shellwing.svg`.
+
 ## Run
 
 ```sh

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- shellwing's app icon: the logo from the UI sketch on a dark tile. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18243d"/>
+      <stop offset="1" stop-color="#0b0f17"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#tile)" stroke="#2b3648" stroke-width="4"/>
+  <g transform="translate(20 11) scale(9)">
+    <path d="M3 15c4-1 7-4 9-9 1 4 4 7 9 8-5 1-8 3-9 6-2-3-5-5-9-5z" fill="#38bdf8" fill-opacity="0.18" stroke="#38bdf8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
