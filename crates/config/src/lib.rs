@@ -1,0 +1,76 @@
+//! shellwing's configuration: the TOML files in the config directory.
+//!
+//! - `config.toml`: [`Settings`], edited by people and by the app.
+//! - `hosts.toml`: [`Hosts`] and their groups.
+//! - `themes/*.toml`: user [`Theme`]s, next to the built-in ones.
+//! - `state/*.json`: what the app remembers, such as the [`WindowState`]; never
+//!   edited by people and never synced.
+//!
+//! Missing files mean defaults. A file that fails to parse is reported as a
+//! [`LoadError`] with its line, and the caller keeps what it had before. The app
+//! writes `config.toml` back through `toml_edit`, so comments and order survive
+//! (see [`Store::set_theme`]). Layout and rationale: `docs/design/config.md`.
+
+mod color;
+mod hosts;
+mod settings;
+mod state;
+mod store;
+mod theme;
+
+pub use color::Color;
+pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
+pub use settings::{Appearance, Cursor, CursorStyle, Font, Settings, Terminal};
+pub use state::{WindowMode, WindowState};
+pub use store::{LoadError, Stamp, Store, WriteError};
+pub use theme::{DEFAULT_THEME, Gradient, Theme, Themes};
+
+/// The theme in effect, from lowest to highest precedence: `config.toml`, the
+/// host's group, the host.
+pub fn theme_for<'a>(settings: &'a Settings, hosts: &'a Hosts, host: Option<&'a Host>) -> &'a str {
+    host.and_then(|h| {
+        h.theme
+            .as_deref()
+            .or_else(|| hosts.group_of(h).and_then(|g| g.theme.as_deref()))
+    })
+    .unwrap_or(&settings.appearance.theme)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn host_beats_group_beats_settings() {
+        let hosts: Hosts = toml::from_str(
+            r#"
+            [[group]]
+            name = "Production"
+            theme = "dracula"
+
+            [[host]]
+            name = "a"
+            address = "10.0.0.1"
+            group = "Production"
+
+            [[host]]
+            name = "b"
+            address = "10.0.0.2"
+            group = "Production"
+            theme = "nord"
+
+            [[host]]
+            name = "c"
+            address = "10.0.0.3"
+            "#,
+        )
+        .expect("hosts");
+        let settings: Settings =
+            toml::from_str("[appearance]\ntheme = \"tokyo-night\"\n").expect("settings");
+        let theme = |name| theme_for(&settings, &hosts, hosts.find(name));
+        assert_eq!(theme("a"), "dracula");
+        assert_eq!(theme("b"), "nord");
+        assert_eq!(theme("c"), "tokyo-night");
+        assert_eq!(theme_for(&settings, &hosts, None), "tokyo-night");
+    }
+}

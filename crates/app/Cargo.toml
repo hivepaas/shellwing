@@ -20,11 +20,17 @@ x11 = ["gpui_platform/x11"]
 [dependencies]
 shellwing-term.workspace = true
 shellwing-ssh.workspace = true
+shellwing-config.workspace = true
 gpui.workspace = true
+# Only to hand GPUI a rendered gradient; the same version GPUI uses.
+image = { version = "0.25", default-features = false }
 gpui_platform.workspace = true
 tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
+
+[dev-dependencies]
+toml = "1"
 
 [lints]
 workspace = true

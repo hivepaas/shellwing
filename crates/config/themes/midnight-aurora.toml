@@ -1,0 +1,16 @@
+# Deep boreal emerald night.
+name = "Midnight Aurora"
+accent = "#2dd4bf"
+background = "#02121a"
+gradient = { angle = 135, stops = ["#042e3b 0%", "#055952 35%", "#073d36 70%", "#02121a 100%"] }
+foreground = "#e6fffa"
+cursor = "#2dd4bf"
+cursor_text = "#02121a"
+selection_background = "#0f766e"
+selection_foreground = "#ffffff"
+palette = [
+  "#02121a", "#fbadad", "#48d7a3", "#fbbf24",
+  "#64ccfa", "#c8b7fc", "#35d6c2", "#f0fdfa",
+  "#adb8b6", "#fcacac", "#6ee7b7", "#fde047",
+  "#7dd3fc", "#c6b8fd", "#5eead4", "#ffffff",
+]

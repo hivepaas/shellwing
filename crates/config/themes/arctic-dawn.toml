@@ -1,0 +1,16 @@
+# Glacier blue meeting a violet dawn.
+name = "Arctic Dawn"
+accent = "#7dd3fc"
+background = "#0a1220"
+gradient = { angle = 135, stops = ["#0c2a3f 0%", "#1b4a63 35%", "#3a3f6b 70%", "#0a1220 100%"] }
+foreground = "#f0f9ff"
+cursor = "#7dd3fc"
+cursor_text = "#0a1220"
+selection_background = "#0369a1"
+selection_foreground = "#ffffff"
+palette = [
+  "#0a1220", "#fca5a5", "#86efac", "#fde047",
+  "#93c5fd", "#d8b4fe", "#67e8f9", "#f0f9ff",
+  "#9fb6cc", "#fecaca", "#bbf7d0", "#fef08a",
+  "#bfdbfe", "#e9d5ff", "#a5f3fc", "#ffffff",
+]

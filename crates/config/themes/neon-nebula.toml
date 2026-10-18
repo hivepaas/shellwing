@@ -1,0 +1,16 @@
+# Glowing cosmic nebula.
+name = "Neon Nebula"
+accent = "#f472b6"
+background = "#0b0e17"
+gradient = { angle = 135, stops = ["#0b3a4f 0%", "#1e1e3b 25%", "#761a60 50%", "#3e103e 75%", "#0b0e17 100%"] }
+foreground = "#f1f5f9"
+cursor = "#34d399"
+cursor_text = "#0b0e17"
+selection_background = "#f472b6"
+selection_foreground = "#ffffff"
+palette = [
+  "#0b0e17", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

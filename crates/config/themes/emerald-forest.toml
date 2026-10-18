@@ -1,0 +1,16 @@
+# Deep forest green under the canopy.
+name = "Emerald Forest"
+accent = "#4ade80"
+background = "#020f0a"
+gradient = { angle = 135, stops = ["#06281a 0%", "#0f4a2c 35%", "#0a3a22 70%", "#020f0a 100%"] }
+foreground = "#f0fdf4"
+cursor = "#4ade80"
+cursor_text = "#020f0a"
+selection_background = "#15803d"
+selection_foreground = "#ffffff"
+palette = [
+  "#020f0a", "#fca5a5", "#4ade80", "#fde047",
+  "#7dd3fc", "#f0abfc", "#5eead4", "#f0fdf4",
+  "#86b89b", "#fecaca", "#86efac", "#fef08a",
+  "#bae6fd", "#f5d0fe", "#99f6e4", "#ffffff",
+]

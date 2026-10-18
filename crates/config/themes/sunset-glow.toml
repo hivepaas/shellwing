@@ -1,0 +1,16 @@
+# Warm dusk embers and twilight.
+name = "Sunset Glow"
+accent = "#fb923c"
+background = "#16071c"
+gradient = { angle = 135, stops = ["#300c3b 0%", "#681842 35%", "#882b19 70%", "#16071c 100%"] }
+foreground = "#fff7ed"
+cursor = "#fb923c"
+cursor_text = "#16071c"
+selection_background = "#ea580c"
+selection_foreground = "#ffffff"
+palette = [
+  "#16071c", "#f7a5a5", "#4ade80", "#facc15",
+  "#8dbefb", "#ee9ffb", "#58c8f9", "#ffedd5",
+  "#bfb0ae", "#fba4a4", "#86efac", "#fde047",
+  "#93c5fd", "#f0abfc", "#7dd3fc", "#ffffff",
+]

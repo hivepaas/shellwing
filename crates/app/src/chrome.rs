@@ -2,18 +2,47 @@
 //!
 //! GNOME's Wayland compositor draws no frame for clients, so the window provides
 //! its own title bar (drag to move, double-click to maximise, right-click for the
-//! window menu, buttons) and a thin border that resizes the window.
+//! window menu, buttons), a thin border and a shadow.
+//!
+//! Resizing works as in GTK apps: an invisible margin (the client inset) runs
+//! around the visible window, and pressing there resizes. Near a corner a longer
+//! stretch of each edge resizes diagonally, so corners are easy to grab. Tiled
+//! or maximised sides have neither margin nor border.
 
 use gpui::{
-    App, Bounds, CursorStyle, Div, HitboxBehavior, Hsla, MouseButton, Pixels, Point, ResizeEdge,
-    Size, Window, canvas, div, point, prelude::*, px, rgb,
+    App, BoxShadow, CursorStyle, Decorations, Div, HitboxBehavior, Hsla, MouseButton, Pixels,
+    Point, ResizeEdge, Size, Tiling, Window, canvas, div, hsla, point, prelude::*, px, rgb,
+    transparent_black,
 };
 
-pub const RESIZE_EDGE: f32 = 6.0;
 pub const TITLEBAR_H: f32 = 32.0;
+/// The invisible margin outside the visible window that resizes it; the shadow
+/// is drawn into it.
+const INSET: f32 = 12.0;
+const BORDER: f32 = 1.0;
+/// Along each edge, this far from the window's corner resizes diagonally.
+const CORNER: f32 = 28.0;
 
-pub fn window_chrome(title: String, content: Div, bg: Hsla) -> Div {
-    let edge = px(RESIZE_EDGE);
+fn tiling(window: &Window) -> Tiling {
+    match window.window_decorations() {
+        Decorations::Client { tiling } => tiling,
+        Decorations::Server => Tiling::tiled(),
+    }
+}
+
+/// The room left for the content: inside the margin and border, below the title bar.
+pub fn content_size(window: &Window) -> Size<Pixels> {
+    let t = tiling(window);
+    let side = |tiled: bool| if tiled { px(0.) } else { px(INSET + BORDER) };
+    let mut s = window.viewport_size();
+    s.width -= side(t.left) + side(t.right);
+    s.height -= side(t.top) + side(t.bottom) + px(TITLEBAR_H);
+    s
+}
+
+pub fn window_chrome(title: String, content: Div, bg: Hsla, window: &mut Window) -> Div {
+    let t = tiling(window);
+    window.set_client_inset(px(INSET));
     let button = |id: &'static str, label: &'static str, f: fn(&mut Window, &mut App)| {
         div()
             .id(id)
@@ -57,24 +86,20 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla) -> Div {
                 .child(button("max", "□", |w, _| w.zoom_window()))
                 .child(button("close", "✕", |w, _| w.remove_window())),
         );
+    let (inset, border) = (px(INSET), px(BORDER));
+    let floating = !(t.top && t.bottom && t.left && t.right);
     div()
         .size_full()
-        .p(edge)
-        .bg(rgb(0x3f3f46))
+        .bg(transparent_black())
+        .when(!t.top, |d| d.pt(inset))
+        .when(!t.bottom, |d| d.pb(inset))
+        .when(!t.left, |d| d.pl(inset))
+        .when(!t.right, |d| d.pr(inset))
         .child(
             canvas(
-                |_bounds, window, _| {
-                    window.insert_hitbox(
-                        Bounds::new(
-                            point(px(0.), px(0.)),
-                            window.window_bounds().get_bounds().size,
-                        ),
-                        HitboxBehavior::Normal,
-                    )
-                },
-                move |_bounds, hitbox, window, _| {
-                    let size = window.window_bounds().get_bounds().size;
-                    if let Some(e) = resize_edge(window.mouse_position(), edge, size) {
+                |bounds, window, _| window.insert_hitbox(bounds, HitboxBehavior::Normal),
+                move |bounds, hitbox, window, _| {
+                    if let Some(e) = resize_edge(window.mouse_position(), bounds.size, t) {
                         use ResizeEdge::*;
                         let style = match e {
                             Top | Bottom => CursorStyle::ResizeUpDown,
@@ -87,12 +112,13 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla) -> Div {
                 },
             )
             .size_full()
-            .absolute(),
+            .absolute()
+            .top_0()
+            .left_0(),
         )
         .on_mouse_move(|_, window, _| window.refresh())
         .on_mouse_down(MouseButton::Left, move |e, window, _| {
-            let size = window.window_bounds().get_bounds().size;
-            if let Some(edge) = resize_edge(e.position, edge, size) {
+            if let Some(edge) = resize_edge(e.position, window.viewport_size(), t) {
                 window.start_window_resize(edge);
             }
         })
@@ -102,28 +128,117 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla) -> Div {
                 .flex()
                 .flex_col()
                 .bg(bg)
+                .border_color(rgb(0x3f3f46))
+                .when(!t.top, |d| d.border_t(border))
+                .when(!t.bottom, |d| d.border_b(border))
+                .when(!t.left, |d| d.border_l(border))
+                .when(!t.right, |d| d.border_r(border))
+                .when(floating, |d| {
+                    d.shadow(vec![BoxShadow {
+                        color: hsla(0., 0., 0., 0.45),
+                        offset: point(px(0.), px(2.)),
+                        blur_radius: px(INSET - 2.),
+                        spread_radius: px(0.),
+                        inset: false,
+                    }])
+                })
                 .child(titlebar)
                 .child(content),
         )
 }
 
-fn resize_edge(pos: Point<Pixels>, e: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
+/// Which way a press at `pos` resizes a window of `size`, if at all: anywhere in
+/// the margin and border of an untiled side, diagonally near a corner.
+fn resize_edge(pos: Point<Pixels>, size: Size<Pixels>, t: Tiling) -> Option<ResizeEdge> {
     use ResizeEdge::*;
-    let (l, r, t, b) = (
-        pos.x < e,
-        pos.x > size.width - e,
-        pos.y < e,
-        pos.y > size.height - e,
+    let grab = px(INSET + BORDER);
+    let corner = px(INSET + CORNER);
+    let (l, r) = (
+        !t.left && pos.x < grab,
+        !t.right && pos.x > size.width - grab,
     );
-    Some(match (t, b, l, r) {
-        (true, _, true, _) => TopLeft,
-        (true, _, _, true) => TopRight,
-        (_, true, true, _) => BottomLeft,
-        (_, true, _, true) => BottomRight,
-        (true, ..) => Top,
-        (_, true, ..) => Bottom,
-        (_, _, true, _) => Left,
-        (_, _, _, true) => Right,
-        _ => return None,
+    let (top, b) = (
+        !t.top && pos.y < grab,
+        !t.bottom && pos.y > size.height - grab,
+    );
+    let (near_l, near_r) = (
+        !t.left && pos.x < corner,
+        !t.right && pos.x > size.width - corner,
+    );
+    let (near_t, near_b) = (
+        !t.top && pos.y < corner,
+        !t.bottom && pos.y > size.height - corner,
+    );
+    Some(if (top && near_l) || (l && near_t) {
+        TopLeft
+    } else if (top && near_r) || (r && near_t) {
+        TopRight
+    } else if (b && near_l) || (l && near_b) {
+        BottomLeft
+    } else if (b && near_r) || (r && near_b) {
+        BottomRight
+    } else if top {
+        Top
+    } else if b {
+        Bottom
+    } else if l {
+        Left
+    } else if r {
+        Right
+    } else {
+        return None;
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::size;
+
+    const W: f32 = 800.;
+    const H: f32 = 600.;
+
+    fn edge(x: f32, y: f32, t: Tiling) -> Option<ResizeEdge> {
+        resize_edge(point(px(x), px(y)), size(px(W), px(H)), t)
+    }
+
+    fn floating() -> Tiling {
+        Tiling::default()
+    }
+
+    #[test]
+    fn corners_take_a_long_stretch_of_each_edge() {
+        let t = floating();
+        // In the margin below the bottom edge, 30 px left of the corner.
+        assert_eq!(edge(W - 30., H - 4., t), Some(ResizeEdge::BottomRight));
+        // In the margin right of the right edge, 30 px above the corner.
+        assert_eq!(edge(W - 4., H - 30., t), Some(ResizeEdge::BottomRight));
+        assert_eq!(edge(5., 5., t), Some(ResizeEdge::TopLeft));
+        assert_eq!(edge(W - 30., 3., t), Some(ResizeEdge::TopRight));
+        // Further along, a plain edge.
+        assert_eq!(edge(W / 2., H - 4., t), Some(ResizeEdge::Bottom));
+        assert_eq!(edge(4., H / 2., t), Some(ResizeEdge::Left));
+    }
+
+    #[test]
+    fn content_never_resizes() {
+        let t = floating();
+        assert_eq!(
+            edge(W - INSET - BORDER - 1., H - INSET - BORDER - 1., t),
+            None
+        );
+        assert_eq!(edge(W / 2., H / 2., t), None);
+    }
+
+    #[test]
+    fn tiled_sides_do_not_resize() {
+        let t = Tiling {
+            right: true,
+            bottom: true,
+            ..Tiling::default()
+        };
+        assert_eq!(edge(W - 2., H - 2., t), None);
+        assert_eq!(edge(2., H - 2., t), Some(ResizeEdge::Left));
+        assert_eq!(edge(W - 2., H / 2., Tiling::tiled()), None);
+    }
 }

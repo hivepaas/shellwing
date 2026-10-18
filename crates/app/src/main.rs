@@ -1,7 +1,9 @@
 //! shellwing: a native SSH client.
 //!
-//! Usage: `shellwing [user@]host[:port]`, where `host` may be an alias from
-//! `~/.ssh/config` (`$SHELLWING_SSH_CONFIG` overrides the file). Authentication
+//! Usage: `shellwing [user@]host[:port]`, where `host` may be a host from
+//! `hosts.toml` in the config directory or an alias from `~/.ssh/config`
+//! (`$SHELLWING_SSH_CONFIG` overrides the file). Settings and themes come from
+//! the config directory too (see `docs/configuration.md`). Authentication
 //! follows OpenSSH: agent keys, key files, keyboard-interactive, password; any
 //! passphrase, code or password is asked for in the terminal. A new host key is
 //! shown with its fingerprint and must be accepted; a changed one is refused.
@@ -10,15 +12,17 @@
 
 mod bench;
 mod chrome;
+mod look;
+mod placement;
+mod target;
 mod view;
 mod writer;
 
 use std::sync::Arc;
+use std::time::Duration;
 
-use gpui::{
-    App, AppContext as _, Bounds, Entity, Focusable as _, WindowBounds, WindowDecorations,
-    WindowOptions, px, size,
-};
+use gpui::{App, AppContext as _, Entity, Focusable as _, WindowDecorations, WindowOptions};
+use shellwing_config::Store;
 use shellwing_ssh::{Auth, Ended, HostKeyPolicy, Options, Prompter, config};
 use shellwing_term::TermHandle;
 
@@ -29,6 +33,9 @@ fn status(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[2m[{msg}]\x1b[0m\r\n").into_bytes());
 }
 
+/// How often the config files are checked for edits.
+const CONFIG_POLL: Duration = Duration::from_millis(500);
+
 /// An error line, in red.
 fn failure(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[31m{msg}\x1b[0m\r\n").into_bytes());
@@ -37,11 +44,15 @@ fn failure(term: &TermHandle, msg: &str) {
 fn main() -> anyhow::Result<()> {
     let Some(arg) = std::env::args().nth(1) else {
         eprintln!(
-            "usage: shellwing [user@]host[:port]   (host may be an alias from ~/.ssh/config)"
+            "usage: shellwing [user@]host[:port]   (host may be a name from hosts.toml or an alias from ~/.ssh/config)"
         );
         std::process::exit(2);
     };
-    let resolved = config::resolve(&arg, config::default_config_path().as_deref())?;
+    let (mut live, problems) = look::Live::open(Store::default_dir().map(Store::new));
+    let (resolved, entry) =
+        target::resolve(&arg, live.hosts(), config::default_config_path().as_deref())?;
+    live.set_host(entry.map(|h| h.name));
+    let scrollback = live.look().0.scrollback;
     let title = if resolved.alias == resolved.target.host {
         resolved.target.to_string()
     } else {
@@ -60,7 +71,7 @@ fn main() -> anyhow::Result<()> {
         TermHandle::spawn(
             80,
             24,
-            5000,
+            scrollback,
             Box::new(move |bytes| w.write(bytes)),
             Box::new(move || {
                 let _ = wake_tx.try_send(());
@@ -169,12 +180,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     gpui_platform::application().run(move |cx: &mut App| {
-        let bounds = Bounds::centered(None, size(px(1100.), px(720.)), cx);
+        let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
         // GNOME's Wayland compositor draws no window frame, so Linux gets
         // client-side decorations; macOS and Windows keep their native title bar.
         let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
         let options = WindowOptions {
-            window_bounds: Some(WindowBounds::Windowed(bounds)),
+            window_bounds: Some(window_bounds),
             window_decorations: client_side.then_some(WindowDecorations::Client),
             titlebar: (!client_side).then(|| gpui::TitlebarOptions {
                 title: Some(title.clone().into()),
@@ -183,13 +194,17 @@ fn main() -> anyhow::Result<()> {
             app_id: Some("shellwing".into()),
             ..Default::default()
         };
+        let mut setup = Some((live, problems));
         let Ok(window) = cx.open_window(options, |_, cx| {
             cx.new(|cx| {
+                let (live, problems) = setup.take().unwrap_or_else(|| look::Live::open(None));
                 view::TermView::new(
                     term.clone(),
                     writer.clone(),
                     title.clone(),
                     probe.clone(),
+                    live,
+                    problems,
                     cx,
                 )
             })
@@ -205,7 +220,19 @@ fn main() -> anyhow::Result<()> {
         let _ = window.update(cx, |v, window, cx| {
             window.focus(&v.focus_handle(cx), cx);
             cx.activate(true);
+            v.track_bounds(window, cx);
         });
+        // Edits to the config files apply while running.
+        {
+            let view = view.clone();
+            cx.spawn(async move |cx| {
+                loop {
+                    cx.background_executor().timer(CONFIG_POLL).await;
+                    view.update(cx, |v, cx| v.poll_config(cx));
+                }
+            })
+            .detach();
+        }
         // Repaint whenever the terminal thread has a new frame.
         {
             let view = view.clone();

@@ -1,0 +1,15 @@
+# GitHub's official dark theme.
+name = "GitHub Dark"
+accent = "#58a6ff"
+background = "#0d1117"
+foreground = "#c9d1d9"
+cursor = "#58a6ff"
+cursor_text = "#0d1117"
+selection_background = "#1f6feb"
+selection_foreground = "#ffffff"
+palette = [
+  "#010409", "#ff7b72", "#3fb950", "#d29922",
+  "#58a6ff", "#bc8cff", "#39c5cf", "#b1bac4",
+  "#6e7681", "#ffa198", "#56d364", "#e3b341",
+  "#79c0ff", "#d2a8ff", "#56d4dd", "#f0f6fc",
+]

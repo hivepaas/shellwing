@@ -1,0 +1,16 @@
+# Classic green phosphor on black.
+name = "Matrix Rain"
+accent = "#22c55e"
+background = "#000000"
+gradient = { angle = 135, stops = ["#020a05 0%", "#06210f 35%", "#041a0c 70%", "#000000 100%"] }
+foreground = "#bbf7d0"
+cursor = "#22c55e"
+cursor_text = "#000000"
+selection_background = "#166534"
+selection_foreground = "#ffffff"
+palette = [
+  "#000000", "#f87171", "#22c55e", "#d9f99d",
+  "#5eead4", "#86efac", "#34d399", "#dcfce7",
+  "#4d8a63", "#fca5a5", "#4ade80", "#ecfccb",
+  "#99f6e4", "#bbf7d0", "#6ee7b7", "#ffffff",
+]

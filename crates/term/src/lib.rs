@@ -57,6 +57,27 @@ impl From<RgbColor> for Rgb {
     }
 }
 
+impl From<Rgb> for RgbColor {
+    fn from(c: Rgb) -> Self {
+        RgbColor {
+            r: c.r,
+            g: c.g,
+            b: c.b,
+        }
+    }
+}
+
+/// The theme's colors, the defaults programs see. A program can still override
+/// them (OSC 4/10/11/12); its overrides stay in place when the theme changes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Colors {
+    pub foreground: Rgb,
+    pub background: Rgb,
+    pub cursor: Rgb,
+    /// ANSI colors 0–15.
+    pub palette: [Rgb; 16],
+}
+
 /// A stretch of one row whose cells share a style. `len` is in bytes of `Row::text`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Run {
@@ -91,6 +112,8 @@ pub struct Frame {
     pub foreground: Rgb,
     /// Cursor position in the viewport, when visible (hidden while scrolled back).
     pub cursor: Option<(u16, u16)>,
+    /// The cursor color: a program's override, else the default from [`Colors`].
+    pub cursor_color: Option<Rgb>,
     /// True while the viewport shows scrollback instead of the live screen.
     pub scrolled_back: bool,
     /// The link under the pointer while the link modifier is held.
@@ -223,6 +246,8 @@ enum Cmd {
     ScrollToBottom,
     /// Show the link under the pointer, or none.
     Hover(Option<(f32, f32)>),
+    Colors(Box<Colors>),
+    Scrollback(usize),
     /// Wakes the thread after the UI took a frame (see [`Shared::taken`]).
     Wake,
 }
@@ -332,6 +357,16 @@ impl TermHandle {
         let _ = self.tx.send(Cmd::Hover(at));
     }
 
+    /// Sets the default colors, for example when the theme changes.
+    pub fn set_colors(&self, colors: Colors) {
+        let _ = self.tx.send(Cmd::Colors(Box::new(colors)));
+    }
+
+    /// Changes how many lines of history are kept.
+    pub fn set_scrollback(&self, lines: usize) {
+        let _ = self.tx.send(Cmd::Scrollback(lines));
+    }
+
     /// Takes the newest frame, if one was built since the last call.
     pub fn take_frame(&self) -> Option<Arc<Frame>> {
         let frame = self.shared.latest.lock().ok()?.take();
@@ -375,6 +410,8 @@ struct Engine {
     hover: Option<LinkSpan>,
     events: EventFn,
     seq: u64,
+    /// Rebuild every row: default colors changed, and rows carry resolved colors.
+    repaint_all: bool,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -424,6 +461,7 @@ fn run(
         hover: None,
         events,
         seq: 0,
+        repaint_all: false,
     };
     let mut changed = true;
     while let Ok(first) = rx.recv() {
@@ -512,6 +550,21 @@ fn run(
                         continue;
                     }
                     e.hover = span;
+                }
+                Cmd::Colors(c) => {
+                    let mut palette = e.term.default_color_palette()?;
+                    for (slot, c) in palette.0.iter_mut().zip(c.palette) {
+                        *slot = c.into();
+                    }
+                    e.term
+                        .set_default_fg_color(Some(c.foreground.into()))?
+                        .set_default_bg_color(Some(c.background.into()))?
+                        .set_default_cursor_color(Some(c.cursor.into()))?
+                        .set_default_color_palette(Some(palette))?;
+                    e.repaint_all = true;
+                }
+                Cmd::Scrollback(lines) => {
+                    e.term.set_scrollback_max_lines(Some(lines))?;
                 }
                 Cmd::Wake => continue,
             }
@@ -806,7 +859,7 @@ impl Engine {
     /// sharing the unchanged rows with the previous one.
     fn build_frame(&mut self) -> libghostty_vt::error::Result<Frame> {
         let snap = self.rs.update(&self.term)?;
-        let full = matches!(snap.dirty()?, Dirty::Full);
+        let full = std::mem::take(&mut self.repaint_all) || matches!(snap.dirty()?, Dirty::Full);
         let colors = snap.colors()?;
         let (bg, fg): (Rgb, Rgb) = (colors.background.into(), colors.foreground.into());
         let cursor = snap
@@ -814,6 +867,7 @@ impl Engine {
             .ok()
             .filter(|c| c.visible)
             .and_then(|c| c.viewport.map(|v| (v.x, v.y)));
+        let cursor_color = snap.cursor_color()?.map(Rgb::from);
         let rows = snap.rows()? as usize;
         if self.rows.len() != rows {
             self.rows.resize_with(rows, Default::default);
@@ -900,6 +954,7 @@ impl Engine {
             background: bg,
             foreground: fg,
             cursor: if scrolled_back { None } else { cursor },
+            cursor_color,
             scrolled_back,
             hover_link: self.hover,
             seq: self.seq,

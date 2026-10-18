@@ -1,0 +1,17 @@
+[package]
+name = "shellwing-config"
+description = "Settings, hosts and themes: the TOML files in shellwing's config directory"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+toml_edit = "0.25"
+serde_json = "1"
+thiserror.workspace = true
+
+[lints]
+workspace = true
