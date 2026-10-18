@@ -593,8 +593,9 @@ impl FilesPanel {
         .detach();
     }
 
+    /// Downloads an entry into the Downloads folder, under a free name.
     fn download(&mut self, ix: usize, cx: &mut Context<Self>) {
-        let (Some(dir), Some(e)) = (self.dir.clone(), self.entries.get(ix).cloned()) else {
+        let Some(e) = self.entries.get(ix).cloned() else {
             return;
         };
         let taken: Vec<&Path> = self
@@ -603,13 +604,37 @@ impl FilesPanel {
             .filter_map(|t| t.target.as_deref())
             .collect();
         let local = unique(&self.downloads, &e.name, &taken);
-        let remote = sftp::join(&dir, &e.name);
-        let (id, progress) = self.add_transfer(false, e.name, None, Some(local.clone()));
-        let downloads = self.downloads.clone();
+        self.download_to(&e.name, local, cx);
+    }
+
+    /// Asks where (and under what name) to download an entry, then does.
+    fn download_as(&mut self, ix: usize, cx: &mut Context<Self>) {
+        let Some(e) = self.entries.get(ix).cloned() else {
+            return;
+        };
+        let picked = cx.prompt_for_new_path(&self.downloads, Some(&e.name));
+        cx.spawn(async move |this, cx| {
+            if let Ok(Ok(Some(local))) = picked.await {
+                let _ = this.update(cx, |p, cx| p.download_to(&e.name, local, cx));
+            }
+        })
+        .detach();
+    }
+
+    /// Downloads the entry `name` of the folder shown to `local`.
+    fn download_to(&mut self, name: &str, local: PathBuf, cx: &mut Context<Self>) {
+        let Some(dir) = self.dir.clone() else {
+            return;
+        };
+        let remote = sftp::join(&dir, name);
+        let (id, progress) = self.add_transfer(false, name.to_string(), None, Some(local.clone()));
+        let into = local.parent().map(Path::to_path_buf);
         self.start(id, cx, move |sftp| async move {
-            tokio::fs::create_dir_all(&downloads)
-                .await
-                .map_err(|e| Error::Sftp(format!("{}: {e}", downloads.display())))?;
+            if let Some(into) = &into {
+                tokio::fs::create_dir_all(into)
+                    .await
+                    .map_err(|e| Error::Sftp(format!("{}: {e}", into.display())))?;
+            }
             sftp.download(&remote, &local, &progress).await?;
             Ok(Outcome::Done(Some(local)))
         });
@@ -1081,6 +1106,17 @@ impl FilesPanel {
                 )
         };
         let line = || div().my_1().h(px(1.)).bg(rgb(LINE));
+        // Named for the editor it opens: the chosen one, else the system's.
+        let edit_label = cx
+            .try_global::<EditorCommand>()
+            .and_then(|c| c.0.clone())
+            .filter(|c| !c.trim().is_empty())
+            .map(|c| editors::name_of(&c))
+            .or_else(editors::system_name)
+            .map_or_else(
+                || "Edit in text editor".to_string(),
+                |n| format!("Edit in {n}"),
+            );
         let mut menu = div()
             .id("files-menu")
             .w(px(230.))
@@ -1122,7 +1158,7 @@ impl FilesPanel {
                     )
                 } else {
                     menu.child(
-                        item("menu-edit", "Edit in text editor", "", false).on_click(cx.listener(
+                        item("menu-edit", &edit_label, "", false).on_click(cx.listener(
                             |p, _, _, cx| {
                                 p.menu = None;
                                 p.edit_chosen(true, cx);
@@ -1144,6 +1180,14 @@ impl FilesPanel {
                             move |p, _, _, cx| {
                                 p.menu = None;
                                 p.download(i, cx);
+                            },
+                        )),
+                    )
+                    .child(
+                        item("menu-download-as", "Download As…", "", false).on_click(cx.listener(
+                            move |p, _, _, cx| {
+                                p.menu = None;
+                                p.download_as(i, cx);
                             },
                         )),
                     )

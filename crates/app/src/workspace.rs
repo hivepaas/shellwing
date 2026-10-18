@@ -225,7 +225,9 @@ impl Workspace {
                 ));
             }
         }
-        cx.set_global(EditorCommand(ws.live.settings().files.editor.clone()));
+        ws.share_settings(cx);
+        // The system editor's name is read from the desktop: once, off the UI thread.
+        std::thread::spawn(crate::editors::system_name);
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
@@ -975,6 +977,13 @@ impl Workspace {
 
     /// From the settings page: writes a setting, applies it to the open tabs,
     /// and returns what the page shows now.
+    /// Hands the settings other views read on their own (the Files panel's
+    /// editor) the values just loaded. Run after every load: a change made
+    /// here reloads at once, so the periodic look finds nothing new after it.
+    fn share_settings(&self, cx: &mut Context<Self>) {
+        cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
+    }
+
     pub fn change_setting(
         &mut self,
         path: &[&str],
@@ -984,6 +993,7 @@ impl Workspace {
         if let Err(e) = self.live.set_setting(path, value) {
             self.say(e, CONFIG_NOTICE, cx);
         }
+        self.share_settings(cx);
         let problems = self.restyle(cx);
         self.report(problems, cx);
         Some(self.settings_snap())
@@ -1535,7 +1545,7 @@ impl Workspace {
         }
         if let Some(mut problems) = self.live.reload_if_changed() {
             self.ssh_aliases = ssh_config::aliases(ssh_config::default_config_path().as_deref());
-            cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
+            self.share_settings(cx);
             problems.extend(self.restyle(cx));
             self.report(problems, cx);
             self.refresh_settings(cx);
