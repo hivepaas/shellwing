@@ -53,6 +53,10 @@ ui_font = { family = "Inter", size = 14 }
 [terminal]
 scrollback = 10000           # lines of history
 on_disconnect = "reconnect"  # "reconnect", "ask" or "close"
+
+[ssh]                        # defaults for every host; a host can set its own
+host_key = "ask"             # unknown host keys: "ask", "accept-new" or "strict"
+keepalive = 30               # seconds between keepalives; 0: none
 ```
 
 When a connection ends, the pane shows a bar saying why and offers to connect
@@ -147,7 +151,19 @@ jump = ["bastion"]          # outermost first: hosts here or ~/.ssh/config alias
 forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
 auth = { method = "key", key = "~/.ssh/deploy_ed25519" }
 theme = "nord"              # beats the group's and config.toml's theme
+forward_agent = false       # let the host use your ssh-agent (see below)
+keepalive = 15              # seconds; beats [ssh] keepalive
+host_key = "accept-new"     # beats [ssh] host_key
 ```
+
+**Agent forwarding** (`forward_agent = true`, or *Forward my agent* in the host
+editor) lets the host use your local ssh-agent while you are connected: `git`
+or a further `ssh` there signs in with your keys, which never leave this
+machine. Whoever is root on that host can do the same while you are connected,
+so turn it on only for hosts you trust. It is off by default, as in `ssh`;
+`ForwardAgent yes` in `~/.ssh/config` also turns it on. Only the host connected
+to gets the agent, never the jump hosts on the way, and a server that opens an
+agent channel without it being asked for is refused.
 
 **How `shellwing <name>` finds a host:**
 

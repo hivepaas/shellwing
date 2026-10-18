@@ -27,6 +27,45 @@ struct Policy {
     forward: bool,
     /// Serve the sftp subsystem from this directory.
     sftp: Option<PathBuf>,
+    /// What came back from the client's agent when this server asked it
+    /// something: on a forwarding request, or (`rogue`) unasked at shell start.
+    agent_reply: Option<AgentReply>,
+    rogue: bool,
+}
+
+/// The agent's answer as the server got it, or why it got none.
+type AgentReply = Arc<Mutex<Option<Result<Vec<u8>, String>>>>;
+
+/// Opens an agent channel to the client, asks the agent for its identities,
+/// and records the answer (or the refusal).
+fn ask_agent(handle: server::Handle, record: AgentReply) {
+    tokio::spawn(async move {
+        let answer = async {
+            let channel = handle
+                .channel_open_agent()
+                .await
+                .map_err(|e| e.to_string())?;
+            let mut stream = channel.into_stream();
+            // SSH_AGENTC_REQUEST_IDENTITIES
+            stream
+                .write_all(&[0, 0, 0, 1, 11])
+                .await
+                .map_err(|e| e.to_string())?;
+            let mut len = [0u8; 4];
+            stream
+                .read_exact(&mut len)
+                .await
+                .map_err(|e| e.to_string())?;
+            let mut body = vec![0u8; u32::from_be_bytes(len) as usize];
+            stream
+                .read_exact(&mut body)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok::<_, String>(body)
+        }
+        .await;
+        *record.lock().expect("record") = Some(answer);
+    });
 }
 
 struct TestServer {
@@ -147,8 +186,24 @@ impl server::Handler for TestServer {
         session: &mut ServerSession,
     ) -> Result<(), Self::Error> {
         self.opened.remove(&channel);
+        if self.policy.rogue
+            && let Some(record) = self.policy.agent_reply.clone()
+        {
+            ask_agent(session.handle(), record);
+        }
         session.channel_success(channel)?;
         session.data(channel, "welcome\r\n")
+    }
+
+    async fn agent_request(
+        &mut self,
+        _channel: ChannelId,
+        session: &mut ServerSession,
+    ) -> Result<bool, Self::Error> {
+        if let Some(record) = self.policy.agent_reply.clone() {
+            ask_agent(session.handle(), record);
+        }
+        Ok(true)
     }
 
     /// `sftp`: OpenSSH's sftp-server, talking over the channel.
@@ -368,6 +423,7 @@ impl Fixture {
             prompter: Some(prompter),
             secrets: None,
             forwarded: None,
+            keepalive: None,
             cols: 80,
             rows: 24,
             term: "xterm-256color".into(),
@@ -1225,4 +1281,114 @@ async fn a_server_without_sftp_says_so() {
     let (_session, sftp) = sftp_session(&fx, None).await;
     let e = sftp.err().expect("refused");
     assert!(e.to_string().contains("does not offer SFTP"), "{e}");
+}
+
+/// A stand-in ssh-agent on a Unix socket: answers every request with "no
+/// identities" and counts the connections it served.
+#[cfg(unix)]
+fn fake_agent(path: &std::path::Path) -> Arc<std::sync::atomic::AtomicUsize> {
+    let served = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let count = served.clone();
+    let listener = tokio::net::UnixListener::bind(path).expect("agent socket");
+    tokio::spawn(async move {
+        while let Ok((mut sock, _)) = listener.accept().await {
+            count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            tokio::spawn(async move {
+                let mut len = [0u8; 4];
+                while sock.read_exact(&mut len).await.is_ok() {
+                    let mut body = vec![0u8; u32::from_be_bytes(len) as usize];
+                    if sock.read_exact(&mut body).await.is_err() {
+                        return;
+                    }
+                    // SSH_AGENT_IDENTITIES_ANSWER, no keys.
+                    let _ = sock.write_all(&[0, 0, 0, 5, 12, 0, 0, 0, 0]).await;
+                }
+            });
+        }
+    });
+    served
+}
+
+/// Connects with agent forwarding on or off and returns what the server's
+/// question to the agent got.
+#[cfg(unix)]
+async fn agent_answer(name: &str, forward: bool, rogue: bool) -> (Result<Vec<u8>, String>, usize) {
+    let fx = Fixture::new(name);
+    let socket = fx.dir.join("agent.sock");
+    let served = fake_agent(&socket);
+    let record = Arc::new(Mutex::new(None));
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            agent_reply: Some(record.clone()),
+            rogue,
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, _) = scripted(vec![Some("yes"), Some("pw")]);
+    let mut target = local(port, "me");
+    target.forward_agent = forward;
+    let mut opts = fx.options(target, p);
+    opts.auth.agent_socket = Some(socket);
+    let session = shellwing_ssh::connect(opts, Box::new(|_| {}), Box::new(|_| {}))
+        .await
+        .expect("connect");
+    for _ in 0..300 {
+        if let Some(answer) = record.lock().expect("record").take() {
+            drop(session);
+            return (answer, served.load(std::sync::atomic::Ordering::SeqCst));
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("the server never heard back about the agent");
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_forwarded_agent_answers_the_server() {
+    let (answer, served) = agent_answer("agent-fwd", true, false).await;
+    assert_eq!(
+        answer,
+        Ok(vec![12, 0, 0, 0, 0]),
+        "the local agent's own reply"
+    );
+    assert_eq!(served, 1);
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_server_cannot_reach_the_agent_unless_forwarding_is_on() {
+    let (answer, served) = agent_answer("agent-rogue", false, true).await;
+    assert!(
+        answer.is_err(),
+        "the agent channel must be refused: {answer:?}"
+    );
+    assert_eq!(served, 0, "the local agent was never contacted");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_host_can_take_new_keys_without_asking() {
+    let fx = Fixture::new("host-key-policy");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    // The app asks; this host is set to accept new keys, so only the password is asked.
+    let (p, asked) = scripted(vec![Some("pw")]);
+    let mut target = local(port, "me");
+    target.host_key = Some(HostKeyPolicy::AcceptNew);
+    connect(fx.options(target, p)).await.expect("connect");
+    assert_eq!(kinds(&asked), ["password"]);
+    assert!(
+        std::fs::read_to_string(fx.known_hosts())
+            .expect("known_hosts")
+            .contains(&format!("[127.0.0.1]:{port}")),
+        "the key was recorded"
+    );
 }

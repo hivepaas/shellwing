@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_config::Host;
 use shellwing_ssh::{
-    Active, Auth, Ended, Error, Forward, HostKeyPolicy, Input, Options, Prompter, Resolved, Sftp,
+    Active, Auth, Ended, Error, Forward, Input, Options, Prompter, Resolved, Sftp,
 };
 use shellwing_term::{Event, TermHandle};
 use tokio::runtime::Handle;
@@ -76,6 +76,8 @@ pub struct Session {
     vault: VaultSlot,
     /// The forwards the current connection runs.
     held: Weak<Held>,
+    /// The app's defaults for hosts that set none.
+    ssh: shellwing_config::Ssh,
 }
 
 /// What a Files panel needs from its pane's connection.
@@ -163,6 +165,7 @@ impl Session {
         spec: &str,
         target: anyhow::Result<(Resolved, Option<Host>)>,
         scrollback: usize,
+        ssh: shellwing_config::Ssh,
         rt: &Handle,
         bench: Option<(String, Arc<Probe>)>,
         vault: VaultSlot,
@@ -220,6 +223,7 @@ impl Session {
             }),
             vault,
             held: Weak::new(),
+            ssh,
         };
         match target {
             Ok((resolved, entry)) => {
@@ -327,6 +331,8 @@ impl Session {
             self.wake_tx.clone(),
         );
         let secrets = Some(self.secrets.clone());
+        let policy = crate::target::policy(self.ssh.host_key);
+        let keepalive = std::time::Duration::from_secs(self.ssh.keepalive);
         // Lives as long as the connection: the forwarded callback and the ended
         // one hold it.
         let held = Arc::new(Held::default());
@@ -356,8 +362,10 @@ impl Session {
                 auth: Auth {
                     agent: true,
                     password: std::env::var("SHELLWING_PASSWORD").ok(),
+                    agent_socket: None,
                 },
-                policy: HostKeyPolicy::Ask,
+                policy,
+                keepalive: Some(keepalive),
                 known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
                 prompter: Some(prompter),
                 secrets: secrets.clone(),

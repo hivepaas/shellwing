@@ -11,7 +11,7 @@ use gpui::{
     WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
-    Color, CursorStyle, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
+    Color, CursorStyle, HostKey, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
 };
 
 use crate::look::ui;
@@ -990,11 +990,42 @@ impl SettingsView {
                     }),
             )
         };
+        let ssh = &self.snap.settings.ssh;
+        let keys = vec![
+            (HostKey::Ask, "Ask".to_string()),
+            (HostKey::AcceptNew, "Accept new".to_string()),
+            (HostKey::Strict, "Refuse".to_string()),
+        ];
+        let alive: Vec<(u64, String)> = [0, 15, 30, 60]
+            .into_iter()
+            .map(|s| {
+                (
+                    s,
+                    if s == 0 {
+                        "Off".into()
+                    } else {
+                        format!("{s} s")
+                    },
+                )
+            })
+            .collect();
         page("SSH and security")
             .child(setting(
                 "Unknown host keys",
-                "A new host's key is shown with its fingerprint, and nothing is sent until you accept it. A changed key is always refused.",
-                div().text_size(ui(12.5)).child("Ask"),
+                "Ask shows the fingerprint and sends nothing until you accept it. Accept new records it and goes on; Refuse turns it away. A changed key is always refused. A host can have its own in its editor.",
+                self.pills("host-key", keys, ssh.host_key, |v, k, cx| {
+                    v.change(&["ssh", "host_key"], Some(SettingValue::Str(k.name().into())), cx)
+                }, cx),
+            ))
+            .child(setting(
+                "Keepalive",
+                &format!(
+                    "A check every so often, so idle connections are not dropped and dead ones are noticed after 3 misses. Now {}. A host's own (or its ServerAliveInterval) wins.",
+                    if ssh.keepalive == 0 { "off".to_string() } else { format!("{} s", ssh.keepalive) }
+                ),
+                self.pills("keepalive", alive, ssh.keepalive, |v, s, cx| {
+                    v.change(&["ssh", "keepalive"], Some(SettingValue::Int(s as i64)), cx)
+                }, cx),
             ))
             .child(file_row(
                 "known-hosts",

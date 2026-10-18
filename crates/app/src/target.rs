@@ -4,8 +4,18 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::bail;
-use shellwing_config::{AuthMethod, Host, Hosts};
+use shellwing_config::{AuthMethod, Host, HostKey, Hosts};
+use shellwing_ssh::HostKeyPolicy;
 use shellwing_ssh::config::{self, Resolved};
+
+/// The connection's policy for a host key setting.
+pub fn policy(k: HostKey) -> HostKeyPolicy {
+    match k {
+        HostKey::Ask => HostKeyPolicy::Ask,
+        HostKey::AcceptNew => HostKeyPolicy::AcceptNew,
+        HostKey::Strict => HostKeyPolicy::Strict,
+    }
+}
 
 /// Jump chains longer than this are refused, so a loop cannot recurse forever.
 const MAX_JUMPS: usize = 8;
@@ -60,6 +70,12 @@ fn from_host(
         r.target.port = p;
     }
     r.forwards = h.forward.clone();
+    // On here, or `ForwardAgent yes` for the address in ~/.ssh/config.
+    r.forward_agent |= h.forward_agent;
+    if let Some(k) = h.keepalive {
+        r.keepalive = Some(std::time::Duration::from_secs(k));
+    }
+    r.host_key = h.host_key.map(policy);
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
@@ -104,6 +120,9 @@ mod tests {
         port = 2222
         jump = ["bastion", "edge.example.com"]
         forward = ["-L 8080:localhost:80"]
+        forward_agent = true
+        keepalive = 10
+        host_key = "strict"
         auth = { method = "key", key = "/keys/deploy" }
 
         [[host]]
@@ -126,6 +145,13 @@ mod tests {
         assert_eq!(r.target.to_string(), "deploy@10.0.1.11:2222");
         assert_eq!(r.identity_files, [PathBuf::from("/keys/deploy")]);
         assert_eq!(r.forwards, ["-L 8080:localhost:80"]);
+        assert!(r.forward_agent);
+        assert_eq!(r.keepalive, Some(std::time::Duration::from_secs(10)));
+        assert_eq!(r.host_key, Some(HostKeyPolicy::Strict));
+        assert!(
+            r.jumps.iter().all(|j| !j.forward_agent),
+            "jump hosts get no agent"
+        );
         let hops: Vec<String> = r.jumps.iter().map(|j| j.target.to_string()).collect();
         let me = config::resolve("x", None).expect("x").target.user;
         assert_eq!(

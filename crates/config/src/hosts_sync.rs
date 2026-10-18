@@ -51,6 +51,15 @@ impl Host {
             f.insert("auth_method".into(), method_name(self.auth.method).into());
         }
         put(&mut f, "auth_key", self.auth.key.as_deref());
+        if self.forward_agent {
+            f.insert("forward_agent".into(), "true".into());
+        }
+        put(
+            &mut f,
+            "keepalive",
+            self.keepalive.map(|k| k.to_string()).as_deref(),
+        );
+        put(&mut f, "host_key", self.host_key.map(|k| k.name()));
         f
     }
 }
@@ -122,17 +131,21 @@ fn set_keeping_decor(t: &mut Table, key: &str, new: toml_edit::Value) {
     }
 }
 
-fn set_port(t: &mut Table, want: Option<&str>) -> bool {
+fn set_int(t: &mut Table, key: &str, want: Option<&str>) -> bool {
     let want = want.and_then(|p| p.parse::<i64>().ok());
-    let have = t.get("port").and_then(Item::as_integer);
+    let have = t.get(key).and_then(Item::as_integer);
     match (have, want) {
         (h, w) if h == w => false,
         (_, Some(w)) => {
-            set_keeping_decor(t, "port", w.into());
+            set_keeping_decor(t, key, w.into());
             true
         }
-        (_, None) => t.remove("port").is_some(),
+        (_, None) => t.remove(key).is_some(),
     }
+}
+
+fn set_port(t: &mut Table, want: Option<&str>) -> bool {
+    set_int(t, "port", want)
 }
 
 fn set_list(t: &mut Table, key: &str, want: Option<&str>) -> bool {
@@ -208,6 +221,9 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_list(t, "forward", g("forward"));
     changed |= set_auth(t, g("auth_method"), g("auth_key"));
     changed |= set_str(t, "theme", g("theme"));
+    changed |= set_flag(t, "forward_agent", g("forward_agent") == Some("true"));
+    changed |= set_int(t, "keepalive", g("keepalive"));
+    changed |= set_str(t, "host_key", g("host_key"));
     changed
 }
 
@@ -420,6 +436,9 @@ local_only = true
             auth: Default::default(),
             theme: None,
             local_only: false,
+            forward_agent: true,
+            keepalive: Some(15),
+            host_key: Some(crate::hosts::HostKey::AcceptNew),
         };
         assert!(save_host(&mut doc, "h9", &new));
         let text = doc.to_string();
@@ -437,7 +456,11 @@ local_only = true
             (saved.address.as_str(), saved.local_only),
             ("10.0.1.99", true)
         );
-        assert_eq!(hosts.find("cache").map(|h| h.port), Some(Some(2222)));
+        let cache = hosts.find("cache").expect("cache");
+        assert_eq!(cache.port, Some(2222));
+        assert!(cache.forward_agent);
+        assert_eq!(cache.keepalive, Some(15));
+        assert_eq!(cache.host_key, Some(crate::hosts::HostKey::AcceptNew));
 
         assert!(delete_host(&mut doc, "h9"));
         assert!(!delete_host(&mut doc, "h9"));

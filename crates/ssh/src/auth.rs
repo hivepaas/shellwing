@@ -19,14 +19,22 @@ const TRIES: usize = 3;
 
 type Agent = AgentClient<Box<dyn AgentStream + Send + Unpin + 'static>>;
 
-/// The ssh-agents this platform offers: `$SSH_AUTH_SOCK` on Unix; on Windows the
-/// OpenSSH agent's named pipe, then Pageant.
-async fn agents() -> Vec<Agent> {
+/// The ssh-agents this platform offers: `socket`, else `$SSH_AUTH_SOCK` on
+/// Unix; on Windows the OpenSSH agent's named pipe, then Pageant.
+pub(crate) async fn agents(socket: Option<&std::path::Path>) -> Vec<Agent> {
     let mut found = Vec::new();
     #[cfg(unix)]
-    if let Ok(a) = AgentClient::connect_env().await {
-        found.push(a.dynamic());
+    {
+        let agent = match socket {
+            Some(path) => AgentClient::connect_uds(path).await,
+            None => AgentClient::connect_env().await,
+        };
+        if let Ok(a) = agent {
+            found.push(a.dynamic());
+        }
     }
+    #[cfg(not(unix))]
+    let _ = socket;
     #[cfg(windows)]
     {
         if let Ok(a) = AgentClient::connect_named_pipe(r"\\.\pipe\openssh-ssh-agent").await {
@@ -125,7 +133,7 @@ pub(crate) async fn authenticate(
     let mut methods = Methods(None);
 
     if auth.agent && methods.allows(MethodKind::PublicKey) {
-        for mut agent in agents().await {
+        for mut agent in agents(auth.agent_socket.as_deref()).await {
             for id in agent.request_identities().await.unwrap_or_default() {
                 let key = id.public_key().into_owned();
                 let hash = if key.algorithm().is_rsa() {
