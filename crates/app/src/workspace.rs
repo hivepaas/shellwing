@@ -336,10 +336,20 @@ impl Workspace {
                 String::new(),
             );
             action(
-                Action::CloseTab,
-                "Close the tab".into(),
-                format!("{chord}+W"),
+                Action::SplitRight,
+                format!("Split right, to {title}"),
+                format!("{chord}+D"),
             );
+            action(
+                Action::SplitDown,
+                format!("Split down, to {title}"),
+                if cfg!(target_os = "macos") {
+                    "Cmd+Shift+D".into()
+                } else {
+                    "Ctrl+Shift+E".into()
+                },
+            );
+            action(Action::CloseTab, "Close the tab".into(), String::new());
         }
         action(
             Action::ChangeTheme,
@@ -469,6 +479,8 @@ impl Workspace {
     fn run(&mut self, a: Action, window: &mut Window, cx: &mut Context<Self>) {
         match a {
             Action::Duplicate => self.duplicate(window, cx),
+            Action::SplitRight => self.split(Axis::Horizontal, window, cx),
+            Action::SplitDown => self.split(Axis::Vertical, window, cx),
             Action::CloseTab => self.close(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::ToggleHosts => {

@@ -45,7 +45,10 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Keys | Does |
 | --- | --- |
 | Ctrl+Shift+K (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
-| Ctrl+Shift+T / W | A new tab (opens the palette) / close the tab |
+| Ctrl+Shift+T | A new tab (opens the palette) |
+| Ctrl+Shift+D / E (Cmd+D / Cmd+Shift+D) | Split right / down, to the same host |
+| Alt+arrows (Cmd+Alt+arrows) | Move between panes (with one pane they go to the shell) |
+| Ctrl+Shift+W | Close the pane; the last one closes the tab |
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
 | Alt+1…9 (Cmd+1…9) | Go to a tab |
 | Ctrl+Shift+B | Show or hide the host list |
