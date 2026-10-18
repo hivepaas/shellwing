@@ -388,3 +388,38 @@ fn close_ends_the_thread_and_drops_its_callbacks() {
     }
     panic!("the write callback was not dropped");
 }
+
+fn cursor(f: &Frame) -> (u16, u16) {
+    f.cursor.expect("cursor shown")
+}
+
+#[test]
+fn resetting_modes_keeps_the_text_and_the_cursor() {
+    let h = harness();
+    h.term.feed(b"one\r\ntwo\r\n$ ".to_vec());
+    let before = h.frame_where(|f| Harness::row_text(f, 2) == "$");
+    assert_eq!(cursor(&before), (2, 2));
+    h.term.reset_modes();
+    h.term.feed(b"x".to_vec());
+    let f = h.frame_where(|f| Harness::row_text(f, 2) == "$ x");
+    assert_eq!(Harness::row_text(&f, 0), "one", "nothing is overwritten");
+    assert_eq!(cursor(&f), (3, 2));
+}
+
+#[test]
+fn resetting_modes_leaves_a_forgotten_alternate_screen() {
+    let h = harness();
+    h.term.feed(b"$ vim\r\n".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0) == "$ vim");
+    // vim takes the alternate screen, then its connection dies.
+    h.term.feed(b"\x1b[?1049h\x1b[2J\x1b[Hvim screen".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0) == "vim screen");
+    h.term.reset_modes();
+    h.term.feed(b"back".to_vec());
+    let f = h.frame_where(|f| Harness::row_text(f, 1) == "back");
+    assert_eq!(
+        Harness::row_text(&f, 0),
+        "$ vim",
+        "the shell's screen is back"
+    );
+}

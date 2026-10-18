@@ -78,11 +78,6 @@ fn failure(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[31m{msg}\x1b[0m\r\n").into_bytes());
 }
 
-/// Undoes modes a program may have left on when its connection died: the
-/// alternate screen, mouse reporting, bracketed paste, a hidden cursor.
-const RESET_MODES: &[u8] =
-    b"\x1b[!p\x1b[?1049l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?2004l\x1b[?25h\x1b[0m";
-
 impl Session {
     /// Starts connecting to `target` (resolved from `spec`) on `rt`. A target that
     /// failed to resolve still gets a session, which shows the error.
@@ -195,7 +190,7 @@ impl Session {
             t.abort();
         }
         self.writer.stop();
-        self.term.feed(RESET_MODES.to_vec());
+        self.term.reset_modes();
         self.connect(None);
     }
 
