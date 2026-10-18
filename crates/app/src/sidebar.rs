@@ -292,20 +292,6 @@ impl Sidebar {
                         .relative()
                         .flex_shrink_0()
                         .size(px(36.))
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .rounded(px(10.))
-                        .border_2()
-                        .border_color(if row.active {
-                            rgba(0x38bdf8ff)
-                        } else {
-                            rgba(0x00000000)
-                        })
-                        .bg(bg)
-                        .text_color(fg)
-                        .text_xs()
-                        .font_weight(FontWeight::SEMIBOLD)
                         .cursor_pointer()
                         .hover(|s| s.opacity(0.85))
                         .tooltip(move |_, cx| {
@@ -315,7 +301,27 @@ impl Sidebar {
                         .on_click(move |_, window, cx| {
                             let _ = ws.update(cx, |ws, cx| ws.open(&spec, window, cx));
                         })
-                        .child(initials(&row.name))
+                        // The tile with its ring, then the status dot as a sibling
+                        // after it: a border is drawn over an element's own children.
+                        .child(
+                            div()
+                                .size_full()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .rounded(px(10.))
+                                .border_2()
+                                .border_color(if row.active {
+                                    rgba(0x38bdf8ff)
+                                } else {
+                                    rgba(0x00000000)
+                                })
+                                .bg(bg)
+                                .text_color(fg)
+                                .text_xs()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(initials(&row.name)),
+                        )
                         .child(
                             div().absolute().right(px(-3.)).bottom(px(-3.)).child(
                                 div()
