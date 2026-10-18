@@ -4,7 +4,9 @@
 //! (after asking). Dropping files or folders on the panel uploads them into the
 //! folder shown. Downloads go to the Downloads folder, under a new name when one
 //! is taken. Edit opens a file in an editor and writes it back each time it is
-//! saved there, unless someone else changed it on the server meanwhile.
+//! saved there, unless someone else changed it on the server meanwhile;
+//! stopping it removes the copy, after asking when it holds changes the
+//! server lacks (see `copies`).
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -19,6 +21,7 @@ use gpui::{
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
 
+use crate::copies::{self, EditCopy};
 use crate::editors;
 use crate::input::TextInput;
 use crate::session::Remote;
@@ -115,67 +118,53 @@ const WATCH: Duration = Duration::from_secs(1);
 enum EditStep {
     /// Being downloaded.
     Opening,
+    /// Not downloaded, so there is nothing to write back.
+    NotOpened(String),
     /// In the editor; each save is written back. When the last one was.
     Watching(Option<String>),
     Saving,
     /// Changed on the server since it was opened: overwrite or stop.
     Conflict,
-    Failed(String),
+    /// The last write-back failed: tried again on the next save, on Retry,
+    /// and once connected again.
+    Unsent(String),
+    /// Stopped, its changes moved to the Downloads folder.
+    Kept(PathBuf),
 }
 
-/// A remote file being edited: a copy in a private folder, written back to
-/// `remote` each time the editor saves it.
+/// A remote file being edited: a copy of its own, written back to `remote`
+/// each time the editor saves it.
 struct RemoteEdit {
     id: u64,
     name: String,
     remote: String,
-    local: PathBuf,
+    copy: EditCopy,
     /// The server's file as last read or written (size, mtime): anything else
     /// there means someone else wrote it.
     server: (u64, Option<SystemTime>),
-    /// The copy's mtime when last written back (or downloaded).
-    written: Option<SystemTime>,
+    /// The copy when last written back (or tried, or downloaded).
+    written: Option<copies::Stamp>,
     step: EditStep,
     /// Opened in a text editor, else in the system's app for the file.
     text: bool,
+    /// Why the editor did not start.
+    problem: Option<String>,
+    /// Stop was asked for while the copy holds changes the server lacks:
+    /// what to do with them.
+    stopping: bool,
+}
+
+impl RemoteEdit {
+    /// Still being edited: not failed to open, nor stopped.
+    fn live(&self) -> bool {
+        !matches!(self.step, EditStep::NotOpened(_) | EditStep::Kept(_))
+    }
 }
 
 /// How a write-back went.
 enum Wrote {
     Saved((u64, Option<SystemTime>)),
     Changed,
-}
-
-fn mtime(p: &Path) -> Option<SystemTime> {
-    std::fs::metadata(p).and_then(|m| m.modified()).ok()
-}
-
-/// A folder of its own for one edited file, so its name (and the editor's
-/// syntax colors) stay as on the server. Under the user's cache folder
-/// (`~/.cache` and the like), which others cannot write to, unlike /tmp.
-fn edit_dir() -> std::io::Result<PathBuf> {
-    use std::sync::atomic::{AtomicU32, Ordering};
-    static NEXT: AtomicU32 = AtomicU32::new(0);
-    let base = dirs::cache_dir()
-        .unwrap_or_else(std::env::temp_dir)
-        .join("shellwing")
-        .join("edit");
-    let stamp = SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or_default();
-    let dir = base.join(format!(
-        "{stamp:x}-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
-    std::fs::create_dir_all(&dir)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))?;
-    }
-    Ok(dir)
 }
 
 struct Transfer {
@@ -224,14 +213,14 @@ pub struct FilesPanel {
 impl EventEmitter<FilesEvent> for FilesPanel {}
 
 /// The user's Downloads folder, else their home.
-fn downloads_dir() -> PathBuf {
+pub(crate) fn downloads_dir() -> PathBuf {
     dirs::download_dir()
         .or_else(std::env::home_dir)
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
 /// `name` in `dir`, or `name (1).ext`, `name (2).ext`… when taken.
-fn unique(dir: &Path, name: &str, taken: &[&Path]) -> PathBuf {
+pub(crate) fn unique(dir: &Path, name: &str, taken: &[&Path]) -> PathBuf {
     let free = |p: &Path| !p.exists() && !taken.contains(&p);
     let first = dir.join(name);
     if free(&first) {
@@ -326,6 +315,14 @@ impl FilesPanel {
             watching: false,
             menu: None,
         };
+        // Copies the server has as they are go with the panel or the app;
+        // the others stay, for the next start to move to Downloads.
+        cx.on_release(|p, _| p.end_edits()).detach();
+        cx.on_app_quit(|p, _| {
+            p.end_edits();
+            async {}
+        })
+        .detach();
         panel.connect(cx);
         panel
     }
@@ -340,6 +337,19 @@ impl FilesPanel {
         self.era += 1;
         let era = self.era;
         self.sftp = None;
+        // Answers to the old session are dropped: nothing more comes for these.
+        for ed in &mut self.edits {
+            match ed.step {
+                EditStep::Opening => {
+                    ed.copy.remove();
+                    ed.step = EditStep::NotOpened("The connection ended.".into());
+                }
+                EditStep::Saving => {
+                    ed.step = EditStep::Unsent("The connection ended while writing back.".into());
+                }
+                _ => {}
+            }
+        }
         let Some(answer) = self.remote.sftp() else {
             return self.fail("Not connected.".into(), cx);
         };
@@ -354,6 +364,15 @@ impl FilesPanel {
                 match opened {
                     Ok(Ok(sftp)) => {
                         p.sftp = Some(sftp);
+                        let unsent: Vec<u64> = p
+                            .edits
+                            .iter()
+                            .filter(|e| matches!(e.step, EditStep::Unsent(_)))
+                            .map(|e| e.id)
+                            .collect();
+                        for id in unsent {
+                            p.write_back(id, false, cx);
+                        }
                         let dir = p.dir.clone();
                         let chosen = p.chosen_name();
                         p.open_dir(dir, chosen, cx);
@@ -654,28 +673,33 @@ impl FilesPanel {
         }
         let remote = sftp::join(&dir, &e.name);
         // Already open: just to the editor again.
-        if let Some(open) = self.edits.iter().find(|x| x.remote == remote) {
-            let local = open.local.clone();
+        if let Some(open) = self.edits.iter().find(|x| x.remote == remote && x.live()) {
+            let local = open.copy.path.clone();
             return self.open_editor(&local, text, cx);
         }
-        let local = match edit_dir() {
-            Ok(d) => d.join(&e.name),
+        if self.sftp.is_none() {
+            return self.fail("Not connected.".into(), cx);
+        }
+        let copy = match EditCopy::new(&remote) {
+            Ok(c) => c,
             Err(err) => return self.fail(format!("Cannot make a folder to edit in: {err}"), cx),
         };
+        let into = copy.path.clone();
         self.next_id += 1;
         let id = self.next_id;
         self.edits.push(RemoteEdit {
             id,
             name: e.name.clone(),
             remote: remote.clone(),
-            local: local.clone(),
+            copy,
             server: (e.size, e.modified),
             written: None,
             step: EditStep::Opening,
             text,
+            problem: None,
+            stopping: false,
         });
         cx.notify();
-        let into = local.clone();
         self.with_sftp(
             cx,
             move |sftp| async move { sftp.download(&remote, &into, &Progress::default()).await },
@@ -685,13 +709,18 @@ impl FilesPanel {
                 };
                 match result {
                     Ok(()) => {
-                        ed.written = mtime(&ed.local);
+                        let now = copies::stamp(&ed.copy.path);
+                        ed.written = now;
+                        ed.copy.sent(now);
                         ed.step = EditStep::Watching(None);
-                        let (local, text) = (ed.local.clone(), ed.text);
+                        let (local, text) = (ed.copy.path.clone(), ed.text);
                         p.open_editor(&local, text, cx);
                         p.watch(cx);
                     }
-                    Err(e) => ed.step = EditStep::Failed(e.to_string()),
+                    Err(e) => {
+                        ed.copy.remove();
+                        ed.step = EditStep::NotOpened(e.to_string());
+                    }
                 }
                 cx.notify();
             },
@@ -712,16 +741,16 @@ impl FilesPanel {
             Some(cmd) => editors::open_with(cmd, path),
             None => editors::open_text(path),
         };
-        if let Err(e) = started {
+        let problem = started.err().map(|e| {
             let who = cmd
                 .as_deref()
                 .map_or("the text editor".to_string(), editors::name_of);
-            let msg = format!("Cannot start {who}: {e}");
-            if let Some(ed) = self.edits.iter_mut().find(|x| x.local == path) {
-                ed.step = EditStep::Failed(msg);
-            }
-            cx.notify();
+            format!("Cannot start {who}: {e}")
+        });
+        if let Some(ed) = self.edits.iter_mut().find(|x| x.copy.path == path) {
+            ed.problem = problem;
         }
+        cx.notify();
     }
 
     /// Looks at the edited copies every second while any is open.
@@ -738,14 +767,16 @@ impl FilesPanel {
                         let saved: Vec<u64> = p
                             .edits
                             .iter()
-                            .filter(|e| matches!(e.step, EditStep::Watching(_)))
-                            .filter(|e| mtime(&e.local) != e.written)
+                            .filter(|e| {
+                                matches!(e.step, EditStep::Watching(_) | EditStep::Unsent(_))
+                            })
+                            .filter(|e| copies::stamp(&e.copy.path) != e.written)
                             .map(|e| e.id)
                             .collect();
                         for id in saved {
                             p.write_back(id, false, cx);
                         }
-                        p.watching = !p.edits.is_empty();
+                        p.watching = p.edits.iter().any(RemoteEdit::live);
                         p.watching
                     })
                     .unwrap_or(false);
@@ -760,13 +791,19 @@ impl FilesPanel {
     /// Writes an edited copy back, unless the server's file changed since it
     /// was read (`force`: write anyway).
     fn write_back(&mut self, id: u64, force: bool, cx: &mut Context<Self>) {
+        let connected = self.sftp.is_some();
         let Some(ed) = self.edits.iter_mut().find(|x| x.id == id) else {
             return;
         };
-        ed.step = EditStep::Saving;
-        let (remote, local, server) = (ed.remote.clone(), ed.local.clone(), ed.server);
+        let (remote, local, server) = (ed.remote.clone(), ed.copy.path.clone(), ed.server);
         // The copy as it is now; a save while writing comes round again.
-        let written = mtime(&local);
+        let written = copies::stamp(&local);
+        if !connected {
+            ed.written = written;
+            ed.step = EditStep::Unsent("Not connected: written back once it is.".into());
+            return cx.notify();
+        }
+        ed.step = EditStep::Saving;
         cx.notify();
         self.with_sftp(
             cx,
@@ -787,15 +824,17 @@ impl FilesPanel {
                     Ok(Wrote::Saved(stamp)) => {
                         ed.server = stamp;
                         ed.written = written;
+                        ed.copy.sent(written);
+                        ed.problem = None;
                         ed.step = EditStep::Watching(Some(
                             chrono::Local::now().format("%H:%M:%S").to_string(),
                         ));
                     }
                     Ok(Wrote::Changed) => ed.step = EditStep::Conflict,
                     Err(e) => {
-                        // Tried again on the next save.
+                        // Tried again on the next save, or on Retry.
                         ed.written = written;
-                        ed.step = EditStep::Failed(format!("Not written back: {e}"));
+                        ed.step = EditStep::Unsent(format!("Not written back: {e}"));
                     }
                 }
                 let refresh = p.dir.as_deref() == Some(&*sftp::parent(&ed.remote));
@@ -807,44 +846,138 @@ impl FilesPanel {
         );
     }
 
-    /// Stops watching an edited file and removes the copy.
+    /// Stops watching an edited file and removes the copy; asks first when
+    /// the copy holds changes the server lacks.
     fn stop_edit(&mut self, id: u64, cx: &mut Context<Self>) {
+        let Some(ed) = self.edits.iter_mut().find(|x| x.id == id) else {
+            return;
+        };
+        if ed.live() && ed.copy.unsent() {
+            ed.stopping = true;
+            return cx.notify();
+        }
+        self.drop_edit(id, cx);
+    }
+
+    /// Forgets an edit, and removes its copy whatever it holds.
+    fn drop_edit(&mut self, id: u64, cx: &mut Context<Self>) {
         if let Some(i) = self.edits.iter().position(|x| x.id == id) {
-            let ed = self.edits.remove(i);
-            if let Some(dir) = ed.local.parent() {
-                let _ = std::fs::remove_dir_all(dir);
-            }
+            self.edits.remove(i).copy.remove();
         }
         cx.notify();
+    }
+
+    /// Stops an edit, moving the copy to the Downloads folder.
+    fn keep_edit(&mut self, id: u64, cx: &mut Context<Self>) {
+        let Some(ed) = self.edits.iter_mut().find(|x| x.id == id) else {
+            return;
+        };
+        match ed.copy.keep(&self.downloads) {
+            Ok(path) => {
+                ed.step = EditStep::Kept(path);
+                ed.stopping = false;
+                ed.problem = None;
+            }
+            Err(e) => ed.problem = Some(format!("Cannot move it to Downloads: {e}")),
+        }
+        cx.notify();
+    }
+
+    /// Ends the edits as the panel goes: copies as the server has them are
+    /// removed, the others left for the next start to move to Downloads.
+    fn end_edits(&mut self) {
+        for ed in self.edits.drain(..) {
+            ed.copy.end();
+        }
     }
 
     fn edit_row(&self, ed: &RemoteEdit, cx: &mut Context<Self>) -> gpui::AnyElement {
         let id = ed.id;
         let (status, bad) = match &ed.step {
+            _ if ed.stopping => (
+                "not written back to the server: discard your changes?".to_string(),
+                true,
+            ),
+            _ if ed.problem.is_some() => (ed.problem.clone().unwrap_or_default(), true),
             EditStep::Opening => ("opening…".to_string(), false),
+            EditStep::NotOpened(why) => (why.clone(), true),
             EditStep::Watching(None) => ("in the editor; each save is written back".into(), false),
             EditStep::Watching(Some(t)) => (format!("written back at {t}"), false),
             EditStep::Saving => ("writing back…".into(), false),
             EditStep::Conflict => ("changed on the server since you opened it".into(), true),
-            EditStep::Failed(why) => (why.clone(), true),
+            EditStep::Unsent(why) => (why.clone(), true),
+            EditStep::Kept(path) => (
+                format!(
+                    "not on the server; moved to Downloads as {}",
+                    path.file_name().unwrap_or_default().to_string_lossy()
+                ),
+                false,
+            ),
         };
         let mut actions = div().flex().gap_1().flex_shrink_0();
-        if ed.step == EditStep::Conflict {
-            actions = actions.child(
-                button(("edit-overwrite", id), "Overwrite")
-                    .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, true, cx))),
-            );
-        } else if !matches!(ed.step, EditStep::Opening) {
-            let (local, text) = (ed.local.clone(), ed.text);
-            actions = actions.child(
+        let open = |actions: gpui::Div, cx: &mut Context<Self>| {
+            let (local, text) = (ed.copy.path.clone(), ed.text);
+            actions.child(
                 button(("edit-open", id), "Open")
                     .on_click(cx.listener(move |p, _, _, cx| p.open_editor(&local, text, cx))),
-            );
-        }
-        actions = actions.child(
-            button(("edit-stop", id), "Stop")
-                .on_click(cx.listener(move |p, _, _, cx| p.stop_edit(id, cx))),
-        );
+            )
+        };
+        let stop = |actions: gpui::Div, cx: &mut Context<Self>| {
+            actions.child(
+                button(("edit-stop", id), "Stop")
+                    .on_click(cx.listener(move |p, _, _, cx| p.stop_edit(id, cx))),
+            )
+        };
+        let dismiss = |actions: gpui::Div, cx: &mut Context<Self>| {
+            actions.child(
+                button(("edit-dismiss", id), "×")
+                    .on_click(cx.listener(move |p, _, _, cx| p.drop_edit(id, cx))),
+            )
+        };
+        actions = match &ed.step {
+            _ if ed.stopping => actions
+                .child(
+                    button(("edit-discard", id), "Discard")
+                        .on_click(cx.listener(move |p, _, _, cx| p.drop_edit(id, cx))),
+                )
+                .child(
+                    button(("edit-keep", id), "Keep in Downloads")
+                        .on_click(cx.listener(move |p, _, _, cx| p.keep_edit(id, cx))),
+                )
+                .child(button(("edit-cancel", id), "Cancel").on_click(cx.listener(
+                    move |p, _, _, cx| {
+                        if let Some(ed) = p.edits.iter_mut().find(|x| x.id == id) {
+                            ed.stopping = false;
+                        }
+                        cx.notify();
+                    },
+                ))),
+            EditStep::Opening => stop(actions, cx),
+            EditStep::NotOpened(_) => dismiss(actions, cx),
+            EditStep::Kept(path) => {
+                let path = path.clone();
+                let actions = actions.child(
+                    button(("edit-show", id), "Show")
+                        .on_click(cx.listener(move |_, _, _, cx| cx.reveal_path(&path))),
+                );
+                dismiss(actions, cx)
+            }
+            EditStep::Conflict => {
+                let actions = actions.child(
+                    button(("edit-overwrite", id), "Overwrite")
+                        .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, true, cx))),
+                );
+                stop(actions, cx)
+            }
+            EditStep::Unsent(_) => {
+                let actions = actions.child(
+                    button(("edit-retry", id), "Retry")
+                        .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, false, cx))),
+                );
+                stop(open(actions, cx), cx)
+            }
+            EditStep::Watching(_) | EditStep::Saving => stop(open(actions, cx), cx),
+        };
         div()
             .px_3()
             .py_1()

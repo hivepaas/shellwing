@@ -14,6 +14,7 @@
 
 mod bench;
 mod chrome;
+mod copies;
 mod editors;
 mod files;
 mod group_editor;
