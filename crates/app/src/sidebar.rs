@@ -37,6 +37,7 @@ fn status_color(s: Status) -> u32 {
         Status::Connecting => 0xf59e0b,
         Status::Connected => 0x22c55e,
         Status::Closed => 0x6b7588,
+        Status::Lost => 0xf97316,
         Status::Failed => 0xef4444,
     }
 }

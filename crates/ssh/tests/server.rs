@@ -145,8 +145,19 @@ impl server::Handler for TestServer {
         data: &[u8],
         session: &mut ServerSession,
     ) -> Result<(), Self::Error> {
-        if self.sessions.contains(&channel) {
-            session.data(channel, data.to_vec())?;
+        if !self.sessions.contains(&channel) {
+            return Ok(());
+        }
+        match data {
+            // The shell exits in order.
+            b"exit\r" => {
+                session.exit_status_request(channel, 0)?;
+                session.eof(channel)?;
+                session.close(channel)?;
+            }
+            // The server dies: the connection drops with nothing said.
+            b"die\r" => return Err(russh::Error::Disconnect),
+            _ => session.data(channel, data.to_vec())?,
         }
         Ok(())
     }
@@ -286,6 +297,30 @@ async fn connect(opts: Options) -> Result<(), Error> {
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     panic!("no greeting from the shell");
+}
+
+/// Connects, types `line` and returns how the session ended.
+async fn end_with(opts: Options, line: &[u8]) -> shellwing_ssh::Ended {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let tx = Mutex::new(Some(tx));
+    let session = shellwing_ssh::connect(
+        opts,
+        Box::new(|_| {}),
+        Box::new(move |ended| {
+            if let Some(tx) = tx.lock().expect("tx").take() {
+                let _ = tx.send(ended);
+            }
+        }),
+    )
+    .await
+    .expect("connect");
+    session.write(line.to_vec());
+    let ended = tokio::time::timeout(Duration::from_secs(5), rx)
+        .await
+        .expect("ended in time")
+        .expect("ended");
+    drop(session);
+    ended
 }
 
 fn kinds(asked: &Arc<Mutex<Vec<Prompt>>>) -> Vec<&'static str> {
@@ -543,4 +578,31 @@ async fn methods_the_server_does_not_offer_are_not_asked_for() {
         .expect_err("no usable method");
     assert!(matches!(err, Error::AuthFailed), "got {err}");
     assert_eq!(kinds(&asked), ["hostkey"]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_exit_closes_but_a_dying_server_disconnects() {
+    let fx = Fixture::new("ending");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let opts = || {
+        let (prompter, _) = scripted(vec![Some("yes"), Some("pw"), Some("pw")]);
+        fx.options(local(port, "me"), prompter)
+    };
+    assert!(matches!(
+        end_with(opts(), b"exit\r").await,
+        shellwing_ssh::Ended::Closed {
+            exit_status: Some(0)
+        }
+    ));
+    assert!(matches!(
+        end_with(opts(), b"die\r").await,
+        shellwing_ssh::Ended::Error(Error::Disconnected)
+    ));
 }

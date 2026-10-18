@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use shellwing_config::{
-    CursorStyle, Hosts, LoadError, Settings, Stamp, Store, Theme, Themes, theme_for,
+    CursorStyle, Hosts, LoadError, OnDisconnect, Settings, Stamp, Store, Theme, Themes, theme_for,
 };
 use shellwing_term::{Colors, Rgb};
 
@@ -18,6 +18,7 @@ pub struct Look {
     pub line_height: f32,
     pub cursor: CursorStyle,
     pub scrollback: usize,
+    pub on_disconnect: OnDisconnect,
 }
 
 impl Look {
@@ -116,6 +117,7 @@ impl Live {
             line_height: a.line_height,
             cursor: a.cursor.style,
             scrollback: self.settings.terminal.scrollback,
+            on_disconnect: self.settings.terminal.on_disconnect,
         };
         (look, problem)
     }
