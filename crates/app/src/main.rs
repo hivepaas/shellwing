@@ -1,67 +1,55 @@
 //! shellwing: a native SSH client.
 //!
-//! Usage: `shellwing [user@]host[:port]`. Authentication tries the keys of the
-//! ssh-agent at `$SSH_AUTH_SOCK`, then the password in `$SHELLWING_PASSWORD`.
-//! Host keys are checked against `~/.ssh/known_hosts` (or `$SHELLWING_KNOWN_HOSTS`);
-//! a new host is recorded on first use and a changed key refuses the connection.
+//! Usage: `shellwing [user@]host[:port]`, where `host` may be an alias from
+//! `~/.ssh/config` (`$SHELLWING_SSH_CONFIG` overrides the file). Authentication
+//! follows OpenSSH: agent keys, key files, keyboard-interactive, password; any
+//! passphrase, code or password is asked for in the terminal. A new host key is
+//! shown with its fingerprint and must be accepted; a changed one is refused.
+//! `$SHELLWING_PASSWORD` is tried once before asking, and `$SHELLWING_KNOWN_HOSTS`
+//! replaces `~/.ssh/known_hosts` (both meant for scripts and benchmarks).
 
 mod bench;
 mod chrome;
 mod view;
+mod writer;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use gpui::{
     App, AppContext as _, Bounds, Entity, Focusable as _, WindowBounds, WindowDecorations,
     WindowOptions, px, size,
 };
-use shellwing_ssh::{Auth, Ended, HostKeyPolicy, Input, Options, Target};
+use shellwing_ssh::{Auth, Ended, HostKeyPolicy, Options, Prompter, config};
 use shellwing_term::TermHandle;
-use tokio::sync::mpsc::UnboundedSender;
 
-/// Sends input to the SSH session once it is connected; dropped before that.
-#[derive(Clone, Default)]
-pub struct Writer(Arc<Mutex<Option<UnboundedSender<Input>>>>);
-
-impl Writer {
-    pub fn write(&self, bytes: Vec<u8>) {
-        if let Ok(slot) = self.0.lock()
-            && let Some(tx) = slot.as_ref()
-        {
-            let _ = tx.send(Input::Data(bytes));
-        }
-    }
-
-    pub fn resize(&self, cols: u32, rows: u32) {
-        if let Ok(slot) = self.0.lock()
-            && let Some(tx) = slot.as_ref()
-        {
-            let _ = tx.send(Input::Resize { cols, rows });
-        }
-    }
-
-    fn set(&self, tx: UnboundedSender<Input>) {
-        if let Ok(mut slot) = self.0.lock() {
-            *slot = Some(tx);
-        }
-    }
-}
+pub use writer::Writer;
 
 /// A dimmed status line written into the terminal itself.
 fn status(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[2m[{msg}]\x1b[0m\r\n").into_bytes());
 }
 
+/// An error line, in red.
+fn failure(term: &TermHandle, msg: &str) {
+    term.feed(format!("\r\n\x1b[31m{msg}\x1b[0m\r\n").into_bytes());
+}
+
 fn main() -> anyhow::Result<()> {
     let Some(arg) = std::env::args().nth(1) else {
-        eprintln!("usage: shellwing [user@]host[:port]");
+        eprintln!(
+            "usage: shellwing [user@]host[:port]   (host may be an alias from ~/.ssh/config)"
+        );
         std::process::exit(2);
     };
-    let target = Target::parse(&arg)?;
-    let title = target.to_string();
+    let resolved = config::resolve(&arg, config::default_config_path().as_deref())?;
+    let title = if resolved.alias == resolved.target.host {
+        resolved.target.to_string()
+    } else {
+        format!("{} ({})", resolved.alias, resolved.target)
+    };
     let bench_mode = std::env::var("SHELLWING_BENCH").unwrap_or_default();
     let probe = Arc::new(bench::Probe::new());
-    let writer = Writer::default();
+    let (writer, shown) = Writer::new();
 
     // The terminal thread wakes the UI through this; one pending wake is enough.
     let (wake_tx, wake_rx) = async_channel::bounded::<()>(1);
@@ -82,10 +70,20 @@ fn main() -> anyhow::Result<()> {
             }),
         )?
     };
+    // Prompt text and echo, shown from their own thread (see Writer).
+    {
+        let term = term.clone();
+        std::thread::Builder::new()
+            .name("shellwing-echo".into())
+            .spawn(move || {
+                for bytes in shown {
+                    term.feed(bytes);
+                }
+            })?;
+    }
 
     {
         let (term, writer, probe) = (term.clone(), writer.clone(), probe.clone());
-        let target = target.clone();
         std::thread::Builder::new()
             .name("shellwing-net".into())
             .spawn(move || {
@@ -94,25 +92,43 @@ fn main() -> anyhow::Result<()> {
                     .build()
                 {
                     Ok(rt) => rt,
-                    Err(e) => return status(&term, &format!("cannot start network runtime: {e}")),
+                    Err(e) => return failure(&term, &format!("cannot start network runtime: {e}")),
                 };
                 rt.block_on(async move {
-                    status(&term, &format!("connecting to {target}…"));
+                    let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
+                    let via = if via.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" via {}", via.join(", "))
+                    };
+                    status(&term, &format!("connecting to {}{via}…", resolved.target));
+
+                    // Questions from the connection are asked in the terminal.
+                    let (prompter, mut questions) = Prompter::new();
+                    {
+                        let writer = writer.clone();
+                        tokio::spawn(async move {
+                            while let Some(req) = questions.recv().await {
+                                writer.ask(req);
+                            }
+                        });
+                    }
                     let opts = Options {
-                        target,
+                        target: resolved,
                         auth: Auth {
                             agent: true,
                             password: std::env::var("SHELLWING_PASSWORD").ok(),
                         },
-                        policy: HostKeyPolicy::AcceptNew,
+                        policy: HostKeyPolicy::Ask,
                         known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
+                        prompter: Some(prompter),
                         cols: 80,
                         rows: 24,
                         term: "xterm-256color".into(),
                     };
                     let out_term = term.clone();
                     let out_probe = probe.clone();
-                    let end_term = term.clone();
+                    let (end_term, end_writer) = (term.clone(), writer.clone());
                     let (done_tx, done_rx) = tokio::sync::oneshot::channel();
                     let session = shellwing_ssh::connect(
                         opts,
@@ -121,6 +137,7 @@ fn main() -> anyhow::Result<()> {
                             out_term.feed(bytes.to_vec());
                         }),
                         Box::new(move |ended| {
+                            end_writer.stop();
                             match ended {
                                 Ended::Closed {
                                     exit_status: Some(s),
@@ -129,7 +146,7 @@ fn main() -> anyhow::Result<()> {
                                     status(&end_term, "session closed")
                                 }
                                 Ended::Error(e) => {
-                                    status(&end_term, &format!("session error: {e}"))
+                                    failure(&end_term, &format!("session error: {e}"))
                                 }
                             }
                             let _ = done_tx.send(());
@@ -138,11 +155,14 @@ fn main() -> anyhow::Result<()> {
                     .await;
                     match session {
                         Ok(s) => {
-                            writer.set(s.sender());
+                            writer.start_session(s.sender());
                             tokio::spawn(bench::run(bench_mode, writer.clone(), probe));
                             let _ = done_rx.await;
                         }
-                        Err(e) => status(&term, &e.to_string()),
+                        Err(e) => {
+                            writer.stop();
+                            failure(&term, &e.to_string());
+                        }
                     }
                 });
             })?;
