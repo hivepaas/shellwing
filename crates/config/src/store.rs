@@ -7,11 +7,15 @@ use serde::de::DeserializeOwned;
 
 use crate::hosts::Hosts;
 use crate::settings::Settings;
+use crate::state::WindowState;
 use crate::theme::{Theme, Themes};
 
 const SETTINGS: &str = "config.toml";
 const HOSTS: &str = "hosts.toml";
 const THEMES: &str = "themes";
+/// Machine-written files that never sync.
+const STATE: &str = "state";
+const WINDOW: &str = "window.json";
 
 /// A file that could not be read or parsed.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -183,16 +187,33 @@ impl Store {
                 message: m.into(),
             })
         })?;
-        fs::create_dir_all(&self.dir).map_err(io_err)?;
-        // Written next to the file, then renamed over it: a crash leaves either the
-        // old file or the new one, never half of one.
-        let tmp = self.dir.join(format!(".{file}.{}.tmp", std::process::id()));
-        fs::write(&tmp, doc.to_string()).map_err(io_err)?;
-        fs::rename(&tmp, &path).map_err(|e| {
-            let _ = fs::remove_file(&tmp);
-            io_err(e)
-        })
+        write_atomic(&path, &doc.to_string()).map_err(io_err)
     }
+
+    /// The window's last size and place (`state/window.json`). A missing or
+    /// unreadable file is simply no saved state: the app writes it, not people.
+    pub fn window_state(&self) -> Option<WindowState> {
+        let text = fs::read_to_string(self.dir.join(STATE).join(WINDOW)).ok()?;
+        serde_json::from_str(&text).ok()
+    }
+
+    pub fn save_window_state(&self, state: &WindowState) -> io::Result<()> {
+        let json = serde_json::to_string_pretty(state).map_err(io::Error::other)?;
+        write_atomic(&self.dir.join(STATE).join(WINDOW), &(json + "\n"))
+    }
+}
+
+/// Writes next to `path`, then renames over it: a crash leaves either the old
+/// file or the new one, never half of one.
+fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
+    let dir = path.parent().unwrap_or(Path::new("."));
+    fs::create_dir_all(dir)?;
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
+    let tmp = dir.join(format!(".{name}.{}.tmp", std::process::id()));
+    fs::write(&tmp, contents)?;
+    fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = fs::remove_file(&tmp);
+    })
 }
 
 fn load<T: DeserializeOwned + Default>(dir: &Path, file: &str) -> Result<T, LoadError> {
@@ -305,6 +326,23 @@ mod tests {
         assert_eq!(themes.find("mine").map(|t| t.name.as_str()), Some("Mine"));
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].file, "themes/broken.toml");
+    }
+
+    #[test]
+    fn window_state_round_trips_and_ignores_a_broken_file() {
+        let s = temp("window");
+        assert_eq!(s.window_state(), None);
+        let w = WindowState {
+            x: 10.0,
+            y: 20.0,
+            width: 1200.0,
+            height: 800.0,
+            mode: crate::WindowMode::Maximized,
+        };
+        s.save_window_state(&w).expect("save");
+        assert_eq!(s.window_state(), Some(w));
+        fs::write(s.dir().join(STATE).join(WINDOW), "{ not json").expect("write");
+        assert_eq!(s.window_state(), None);
     }
 
     #[test]

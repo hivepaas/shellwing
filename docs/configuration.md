@@ -19,6 +19,11 @@ How the files behave:
   keeps the last good values.
 - **Unknown keys are ignored**, so a file written by a newer version still loads.
 
+The `state/` folder holds what shellwing remembers by itself, such as the window's
+size, place and maximised state (`state/window.json`). It is not meant for
+editing, and deleting it only forgets those things. On Wayland only the size and
+the maximised state come back; the compositor chooses the position.
+
 ## config.toml
 
 ```toml

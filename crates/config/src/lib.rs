@@ -3,6 +3,8 @@
 //! - `config.toml`: [`Settings`], edited by people and by the app.
 //! - `hosts.toml`: [`Hosts`] and their groups.
 //! - `themes/*.toml`: user [`Theme`]s, next to the built-in ones.
+//! - `state/*.json`: what the app remembers, such as the [`WindowState`]; never
+//!   edited by people and never synced.
 //!
 //! Missing files mean defaults. A file that fails to parse is reported as a
 //! [`LoadError`] with its line, and the caller keeps what it had before. The app
@@ -12,12 +14,14 @@
 mod color;
 mod hosts;
 mod settings;
+mod state;
 mod store;
 mod theme;
 
 pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
 pub use settings::{Appearance, Cursor, CursorStyle, Font, Settings, Terminal};
+pub use state::{WindowMode, WindowState};
 pub use store::{LoadError, Stamp, Store, WriteError};
 pub use theme::{DEFAULT_THEME, Gradient, Theme, Themes};
 

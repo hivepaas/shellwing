@@ -13,6 +13,7 @@
 mod bench;
 mod chrome;
 mod look;
+mod placement;
 mod target;
 mod view;
 mod writer;
@@ -20,10 +21,7 @@ mod writer;
 use std::sync::Arc;
 use std::time::Duration;
 
-use gpui::{
-    App, AppContext as _, Bounds, Entity, Focusable as _, WindowBounds, WindowDecorations,
-    WindowOptions, px, size,
-};
+use gpui::{App, AppContext as _, Entity, Focusable as _, WindowDecorations, WindowOptions};
 use shellwing_config::Store;
 use shellwing_ssh::{Auth, Ended, HostKeyPolicy, Options, Prompter, config};
 use shellwing_term::TermHandle;
@@ -182,12 +180,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     gpui_platform::application().run(move |cx: &mut App| {
-        let bounds = Bounds::centered(None, size(px(1100.), px(720.)), cx);
+        let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
         // GNOME's Wayland compositor draws no window frame, so Linux gets
         // client-side decorations; macOS and Windows keep their native title bar.
         let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
         let options = WindowOptions {
-            window_bounds: Some(WindowBounds::Windowed(bounds)),
+            window_bounds: Some(window_bounds),
             window_decorations: client_side.then_some(WindowDecorations::Client),
             titlebar: (!client_side).then(|| gpui::TitlebarOptions {
                 title: Some(title.clone().into()),
@@ -222,6 +220,7 @@ fn main() -> anyhow::Result<()> {
         let _ = window.update(cx, |v, window, cx| {
             window.focus(&v.focus_handle(cx), cx);
             cx.activate(true);
+            v.track_bounds(window, cx);
         });
         // Edits to the config files apply while running.
         {

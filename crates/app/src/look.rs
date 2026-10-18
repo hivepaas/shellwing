@@ -65,6 +65,10 @@ impl Live {
         (live, problems)
     }
 
+    pub fn store(&self) -> Option<&Store> {
+        self.store.as_ref()
+    }
+
     pub fn hosts(&self) -> &Hosts {
         &self.hosts
     }

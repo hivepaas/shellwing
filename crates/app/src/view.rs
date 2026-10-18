@@ -16,6 +16,7 @@ use gpui::{
     ScrollDelta, ScrollWheelEvent, SharedString, Size, TextAlign, TextRun, UTF16Selection,
     UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb, size,
 };
+use shellwing_config::WindowState;
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
     Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
@@ -72,6 +73,8 @@ const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 const ZOOM_NOTICE: Duration = Duration::from_secs(2);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
+/// The window's size and place are saved this long after they stop changing.
+const SAVE_BOUNDS: Duration = Duration::from_millis(400);
 /// How long a problem with the config files stays on screen.
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// Longest side of the gradient image. The GPU stretches it with linear
@@ -191,6 +194,9 @@ pub struct TermView {
     zoom: f32,
     live: Live,
     gradient: Rc<RefCell<Option<GradientImage>>>,
+    /// The window's size and place, waiting to be saved, and which change it is.
+    unsaved_bounds: Option<WindowState>,
+    bounds_change: u64,
     probe: Arc<Probe>,
 }
 
@@ -225,6 +231,8 @@ impl TermView {
             zoom: 0.,
             live,
             gradient: Rc::new(RefCell::new(None)),
+            unsaved_bounds: None,
+            bounds_change: 0,
             probe,
         };
         view.report(problems.into_iter().chain(problem).collect(), cx);
@@ -235,6 +243,38 @@ impl TermView {
     fn report(&mut self, problems: Vec<String>, cx: &mut Context<Self>) {
         if !problems.is_empty() {
             self.show_notice(problems.join("\n"), CONFIG_NOTICE, cx);
+        }
+    }
+
+    /// Remembers the window's size and place for the next start: saved shortly
+    /// after they change, and when the window closes.
+    pub fn track_bounds(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.bounds_changed(window, cx);
+        cx.observe_window_bounds(window, Self::bounds_changed)
+            .detach();
+        cx.on_release(|v, _| v.save_bounds()).detach();
+    }
+
+    fn bounds_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.unsaved_bounds = Some(crate::placement::state(window.window_bounds()));
+        self.bounds_change += 1;
+        let change = self.bounds_change;
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(SAVE_BOUNDS).await;
+            let _ = this.update(cx, |v, _| {
+                if v.bounds_change == change {
+                    v.save_bounds();
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn save_bounds(&mut self) {
+        if let (Some(state), Some(store)) = (self.unsaved_bounds.take(), self.live.store())
+            && let Err(e) = store.save_window_state(&state)
+        {
+            eprintln!("cannot save the window size: {e}");
         }
     }
 
