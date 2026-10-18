@@ -1,0 +1,13 @@
+[package]
+name = "shellwing-term"
+description = "Terminal core: libghostty-vt on its own thread, producing paintable frames"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+libghostty-vt.workspace = true
+
+[lints]
+workspace = true
