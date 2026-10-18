@@ -16,6 +16,9 @@ pub struct WindowState {
     /// The host list folded to a rail of host tiles.
     #[serde(default)]
     pub sidebar_collapsed: bool,
+    /// The Files panel's width as dragged; None: the default.
+    #[serde(default)]
+    pub files_width: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

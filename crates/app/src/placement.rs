@@ -60,6 +60,7 @@ pub fn state(bounds: WindowBounds) -> WindowState {
         mode,
         sidebar_width: None,
         sidebar_collapsed: false,
+        files_width: None,
     }
 }
 
