@@ -266,7 +266,9 @@ on a channel of its own, so the terminal keeps working while files move.
   skipped so a loop cannot run forever.
 
 The panel keeps its folder and transfers while hidden, and opens SFTP again
-after a reconnect.
+after a reconnect. Its left edge can be dragged (280 to 960 px, 480 by
+default; a double-click goes back to 480); the width is the same in every pane
+and is remembered with the window's layout.
 
 ## Saved passwords
 

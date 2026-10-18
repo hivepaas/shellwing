@@ -29,7 +29,7 @@ use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
-use crate::view::{CloseRequested, StatusChanged, TermView, VaultChanged, hsla};
+use crate::view::{CloseRequested, FilesResized, StatusChanged, TermView, VaultChanged, hsla};
 use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
@@ -216,6 +216,11 @@ impl Workspace {
                 .unwrap_or(sidebar::WIDTH)
                 .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
             ws.sidebar_collapsed = s.sidebar_collapsed;
+            if let Some(w) = s.files_width {
+                cx.set_global(crate::files::PanelWidth(
+                    w.clamp(crate::files::MIN_WIDTH, crate::files::MAX_WIDTH),
+                ));
+            }
         }
         cx.set_global(EditorCommand(ws.live.settings().files.editor.clone()));
         ws.report(problems, cx);
@@ -238,14 +243,15 @@ impl Workspace {
         self.sidebar_collapsed = collapsed;
         self.show_sidebar = true;
         self.refresh_sidebar(cx);
-        self.save_sidebar(window);
+        self.save_sidebar(window, cx);
     }
 
     /// Remembers the host list's width and fold with the window's place.
-    fn save_sidebar(&mut self, window: &Window) {
+    fn save_sidebar(&mut self, window: &Window, cx: &gpui::App) {
         let mut state = crate::placement::state(window.window_bounds());
         state.sidebar_width = Some(self.sidebar_width);
         state.sidebar_collapsed = self.sidebar_collapsed;
+        state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
         if let Some(store) = self.live.store()
             && let Err(e) = store.save_window_state(&state)
         {
@@ -434,6 +440,15 @@ impl Workspace {
             .detach();
         cx.subscribe(&view, |ws, _, _: &VaultChanged, _| ws.sync.now())
             .detach();
+        cx.subscribe_in(&view, window, |ws, _, _: &FilesResized, window, cx| {
+            ws.save_sidebar(window, cx);
+            // Every pane's panel takes the new width.
+            for v in ws.all_views() {
+                v.update(cx, |v, cx| v.refresh_panels(cx));
+            }
+            cx.notify();
+        })
+        .detach();
         cx.subscribe_in(&view, window, |ws, view, _: &CloseRequested, window, cx| {
             ws.close_view(view, window, cx)
         })
@@ -1543,7 +1558,7 @@ impl Workspace {
         self.bounds_changed(window, cx);
         cx.observe_window_bounds(window, Self::bounds_changed)
             .detach();
-        cx.on_release(|ws, _| ws.save_bounds()).detach();
+        cx.on_release(|ws, cx| ws.save_bounds(cx)).detach();
     }
 
     fn bounds_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -1552,19 +1567,20 @@ impl Workspace {
         let change = self.bounds_change;
         cx.spawn(async move |this, cx| {
             cx.background_executor().timer(SAVE_BOUNDS).await;
-            let _ = this.update(cx, |ws, _| {
+            let _ = this.update(cx, |ws, cx| {
                 if ws.bounds_change == change {
-                    ws.save_bounds();
+                    ws.save_bounds(cx);
                 }
             });
         })
         .detach();
     }
 
-    fn save_bounds(&mut self) {
+    fn save_bounds(&mut self, cx: &gpui::App) {
         if let (Some(mut state), Some(store)) = (self.unsaved_bounds.take(), self.live.store()) {
             state.sidebar_width = Some(self.sidebar_width);
             state.sidebar_collapsed = self.sidebar_collapsed;
+            state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
             if let Err(e) = store.save_window_state(&state) {
                 eprintln!("cannot save the window size: {e}");
             }
@@ -2202,7 +2218,7 @@ impl Render for Workspace {
                                 if e.click_count >= 2 {
                                     ws.sidebar_drag = None;
                                     ws.sidebar_width = sidebar::WIDTH;
-                                    ws.save_sidebar(window);
+                                    ws.save_sidebar(window, cx);
                                 } else {
                                     ws.sidebar_drag =
                                         Some((f32::from(e.position.x), ws.sidebar_width));
@@ -2371,7 +2387,7 @@ impl Render for Workspace {
                     MouseButton::Left,
                     cx.listener(|ws, _, window, cx| {
                         ws.sidebar_drag = None;
-                        ws.save_sidebar(window);
+                        ws.save_sidebar(window, cx);
                         cx.notify();
                     }),
                 )

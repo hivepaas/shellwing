@@ -23,7 +23,22 @@ use crate::input::TextInput;
 use crate::session::Remote;
 use crate::sidebar::{LINE, MUTED, TEXT};
 
-pub const WIDTH: f32 = 340.;
+/// The panel's width by default, and how far its edge can be dragged.
+pub const WIDTH: f32 = 480.;
+pub const MIN_WIDTH: f32 = 280.;
+pub const MAX_WIDTH: f32 = 960.;
+
+/// The panel's width, the same in every pane; set from the saved layout and
+/// by dragging any panel's edge.
+pub struct PanelWidth(pub f32);
+
+impl gpui::Global for PanelWidth {}
+
+impl Default for PanelWidth {
+    fn default() -> Self {
+        PanelWidth(WIDTH)
+    }
+}
 const ROW_H: f32 = 26.;
 const PANEL: u32 = 0x0d121c;
 const HOVER: u32 = 0x141c2b;

@@ -202,6 +202,9 @@ pub struct CloseRequested;
 /// A secret was saved in the vault.
 pub struct VaultChanged;
 
+/// The Files panel's edge was dragged to a new width, to be remembered.
+pub struct FilesResized;
+
 /// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
 const BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
 
@@ -259,11 +262,14 @@ pub struct TermView {
     /// The Files panel, kept while hidden so its folder and transfers stay.
     files: Option<Entity<FilesPanel>>,
     files_shown: bool,
+    /// Dragging the panel's edge: where the drag began, and the width then.
+    files_drag: Option<(f32, f32)>,
 }
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
+impl gpui::EventEmitter<FilesResized> for TermView {}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -341,6 +347,7 @@ impl TermView {
             probe,
             files: None,
             files_shown: false,
+            files_drag: None,
         }
     }
 
@@ -1400,7 +1407,12 @@ impl Render for TermView {
 
         // The panel is its own cached view: terminal frames do not lay it out again.
         let files = self.files.clone().filter(|_| self.files_shown);
+        let width = cx
+            .try_global::<files::PanelWidth>()
+            .map_or(files::WIDTH, |w| w.0);
+        let dragging = self.files_drag.is_some();
         div()
+            .relative()
             .flex()
             .flex_row()
             .flex_1()
@@ -1411,10 +1423,90 @@ impl Render for TermView {
                 d.child(
                     f.cached(
                         gpui::StyleRefinement::default()
-                            .w(px(files::WIDTH))
+                            .w(px(width))
                             .h_full()
                             .flex_shrink_0(),
                     ),
+                )
+                // Its left edge: drag to resize, double-click for the default.
+                .child(
+                    div()
+                        .id("files-edge")
+                        .group("files-edge")
+                        .absolute()
+                        .top_0()
+                        .h_full()
+                        .right(px(width - 3.))
+                        .w(px(6.))
+                        .flex()
+                        .justify_center()
+                        .cursor(gpui::CursorStyle::ResizeLeftRight)
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |v, e: &MouseDownEvent, _, cx| {
+                                cx.stop_propagation();
+                                if e.click_count >= 2 {
+                                    v.files_drag = None;
+                                    cx.set_global(files::PanelWidth(files::WIDTH));
+                                    cx.emit(FilesResized);
+                                } else {
+                                    v.files_drag = Some((f32::from(e.position.x), width));
+                                }
+                                v.refresh_panels(cx);
+                                cx.notify();
+                            }),
+                        )
+                        .child(
+                            div()
+                                .h_full()
+                                .w(px(if dragging { 3. } else { 1. }))
+                                .bg(rgb(if dragging { 0x38bdf8 } else { 0x1e2736 }))
+                                .group_hover("files-edge", |s| s.w(px(2.)).bg(rgb(0x38bdf8))),
+                        ),
+                )
+                .when(dragging, |d| {
+                    d.child(
+                        div()
+                            .absolute()
+                            .top(gpui::relative(0.45))
+                            .right(px(width + 12.))
+                            .px(px(9.))
+                            .py(px(3.))
+                            .rounded_md()
+                            .bg(rgb(0x38bdf8))
+                            .text_color(rgb(0x04121c))
+                            .text_xs()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child(format!("{} px", width.round())),
+                    )
+                })
+            })
+            .when(dragging, |d| {
+                d.on_mouse_move(cx.listener(|v, e: &MouseMoveEvent, _, cx| {
+                    if let Some((x0, w0)) = v.files_drag {
+                        // Dragging left widens it.
+                        let w = (w0 - (f32::from(e.position.x) - x0))
+                            .clamp(files::MIN_WIDTH, files::MAX_WIDTH);
+                        cx.set_global(files::PanelWidth(w));
+                        v.refresh_panels(cx);
+                        cx.notify();
+                    }
+                }))
+                .on_mouse_up(
+                    MouseButton::Left,
+                    cx.listener(|v, _, _, cx| {
+                        v.files_drag = None;
+                        cx.emit(FilesResized);
+                        cx.notify();
+                    }),
+                )
+                .on_mouse_up_out(
+                    MouseButton::Left,
+                    cx.listener(|v, _, _, cx| {
+                        v.files_drag = None;
+                        cx.emit(FilesResized);
+                        cx.notify();
+                    }),
                 )
             })
     }
