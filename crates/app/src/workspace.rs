@@ -33,6 +33,8 @@ use shellwing_vault::{Folder, FolderState};
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
 /// How long a problem with the config files stays on screen.
+/// The logo's sky blue, as in the sketch and the app icon.
+const LOGO: u32 = 0x38bdf8;
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// How long the name of a newly chosen theme stays on screen.
 const THEME_NOTICE: Duration = Duration::from_secs(3);
@@ -1679,6 +1681,15 @@ impl Workspace {
             .h_full()
             .w_full()
             .min_w_0()
+            // The logo, as the sketch puts it before the tabs.
+            .child(
+                div().flex_shrink_0().pl(px(12.)).pr(px(8.)).child(
+                    svg()
+                        .path("icons/logo.svg")
+                        .size(px(18.))
+                        .text_color(rgb(LOGO)),
+                ),
+            )
             .child(strip)
             .child(div().flex_1().h_full())
             .child(
@@ -1936,6 +1947,12 @@ impl Workspace {
             .gap_4()
             .bg(bg)
             .text_sm()
+            .child(
+                svg()
+                    .path("icons/logo.svg")
+                    .size(px(56.))
+                    .text_color(rgb(LOGO)),
+            )
             .child(
                 div()
                     .text_color(rgb(TEXT))

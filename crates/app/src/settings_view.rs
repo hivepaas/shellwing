@@ -1265,7 +1265,12 @@ impl Render for SettingsView {
                 .bg(rgb(BAR))
                 .border_b_1()
                 .border_color(rgb(LINE))
-                .child(div().size(px(8.)).rounded_full().bg(rgb(ACCENT)))
+                .child(
+                    gpui::svg()
+                        .path("icons/logo.svg")
+                        .size(px(16.))
+                        .text_color(rgb(ACCENT)),
+                )
                 .child(div().font_weight(FontWeight::SEMIBOLD).child("Settings"))
                 .child(div().flex_1())
                 .when_some(self.snap.config_dir.clone(), |d, dir| {
