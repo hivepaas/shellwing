@@ -194,5 +194,17 @@ readable without the key.
   each other's changes; a forgotten secret is forgotten everywhere.
 - *Stop syncing* leaves the folder and this device's secrets as they are.
 
-Hosts and settings do not sync yet; that comes next.
+Hosts and groups in `hosts.toml` sync the same way, encrypted like the secrets:
+
+- Each host and group gets an `id` the first time (added to the file, first in
+  its table); keep it when editing.
+- Edits merge field by field: change a port on one device and a user on another,
+  and both changes arrive. A host added elsewhere is appended to the file; one
+  deleted elsewhere is removed. Comments and the lines nobody changed stay as
+  written.
+- `local_only = true` keeps a host on this device.
+- A missing `hosts.toml` is written again from the synced hosts, never taken as
+  "delete them all".
+
+Settings (`config.toml`) do not sync yet.
 

@@ -17,7 +17,7 @@ use sha2::{Digest, Sha256};
 use zeroize::Zeroizing;
 
 use crate::recovery::RecoveryKey;
-use crate::{Error, Field, KEY_LEN, KEY_VERSION, KIND, Record, Result, SPACE, Vault, cipher};
+use crate::{Error, Field, KEY_LEN, KEY_VERSION, Record, Result, SPACE, Vault, cipher, clear_kind};
 
 const FORMAT: &str = "format.json";
 const RECORDS: &str = "records";
@@ -292,14 +292,19 @@ impl Vault {
         let mut db = self.db.lock().map_err(|_| Error::Decrypt)?;
         let tx = db.transaction()?;
         for crate::RawRow {
-            id, data, deleted, ..
+            id,
+            data,
+            deleted,
+            kind,
+            ..
         } in rows
         {
             if deleted {
                 continue;
             }
-            let (plain, _) = cipher::open(&self.sk(), &data, &crate::record_aad(&id))?;
-            let resealed = cipher::seal(self.cipher, &new_key, &plain, &crate::record_aad(&id))?;
+            let aad = crate::record_aad(&id, &kind);
+            let (plain, _) = cipher::open(&self.sk(), &data, &aad)?;
+            let resealed = cipher::seal(self.cipher, &new_key, &plain, &aad)?;
             tx.execute(
                 "UPDATE records SET data = ?2 WHERE id = ?1",
                 rusqlite::params![id, resealed],
@@ -327,6 +332,8 @@ impl Vault {
             FolderState::Empty => return Err(Error::NotSynced),
             FolderState::Other => return Err(Error::OtherVault),
         }
+        // Each record's clear kind, from either side.
+        let mut kinds: BTreeMap<String, String> = BTreeMap::new();
         // Remote versions of each record, with the files they came from.
         let mut remote: BTreeMap<String, Vec<(String, Version)>> = BTreeMap::new();
         for name in b.list()? {
@@ -337,13 +344,16 @@ impl Vault {
                 continue;
             };
             let env: Envelope = serde_json::from_slice(&bytes)?;
-            if env.id != id || env.space != SPACE {
+            if env.id != id || env.space != SPACE || !matches!(env.kind.as_str(), "host" | "other")
+            {
                 continue;
             }
+            kinds.entry(id.clone()).or_insert_with(|| env.kind.clone());
             let version = match env.data {
                 Some(d) => {
                     let sealed = B64.decode(d).map_err(|_| Error::Decrypt)?;
-                    let (plain, _) = cipher::open(&self.sk(), &sealed, &crate::record_aad(&id))?;
+                    let (plain, _) =
+                        cipher::open(&self.sk(), &sealed, &crate::record_aad(&id, &env.kind))?;
                     Version::Live(serde_json::from_slice(&plain)?)
                 }
                 None => Version::Gone(env.hlc.clone()),
@@ -357,14 +367,16 @@ impl Vault {
             data,
             hlc,
             deleted,
+            kind,
         } in self.raw_rows()?
         {
             let v = if deleted {
                 Version::Gone(hlc)
             } else {
-                let (plain, _) = cipher::open(&self.sk(), &data, &crate::record_aad(&id))?;
+                let (plain, _) = cipher::open(&self.sk(), &data, &crate::record_aad(&id, &kind))?;
                 Version::Live(serde_json::from_slice(&plain)?)
             };
+            kinds.insert(id.clone(), kind);
             local.insert(id, v);
         }
         let ids: BTreeSet<String> = remote.keys().chain(local.keys()).cloned().collect();
@@ -380,8 +392,12 @@ impl Vault {
                 });
             }
             let Some(merged) = merged else { continue };
+            let kind = match &merged {
+                Version::Live(r) => clear_kind(&r.kind).to_string(),
+                Version::Gone(_) => kinds.get(&id).cloned().unwrap_or_else(|| "other".into()),
+            };
             if !here.as_ref().is_some_and(|h| h.same(&merged)) {
-                self.store_version(&id, &merged)?;
+                self.store_version(&id, &kind, &merged)?;
                 report.pulled += 1;
             }
             let canonical = format!("{id}.sw");
@@ -390,7 +406,7 @@ impl Vault {
             if !up_to_date {
                 b.write(
                     &format!("{RECORDS}/{canonical}"),
-                    &self.envelope(&id, &merged)?,
+                    &self.envelope(&id, &kind, &merged)?,
                 )?;
                 for (name, _) in &there {
                     if *name != canonical {
@@ -403,7 +419,7 @@ impl Vault {
         Ok(report)
     }
 
-    fn envelope(&self, id: &str, v: &Version) -> Result<Vec<u8>> {
+    fn envelope(&self, id: &str, kind: &str, v: &Version) -> Result<Vec<u8>> {
         let data = match v {
             Version::Live(r) => {
                 let plain = Zeroizing::new(serde_json::to_vec(r)?);
@@ -411,14 +427,14 @@ impl Vault {
                     self.cipher,
                     &self.sk(),
                     &plain,
-                    &crate::record_aad(id),
+                    &crate::record_aad(id, kind),
                 )?))
             }
             Version::Gone(_) => None,
         };
         Ok(serde_json::to_vec(&Envelope {
             id: id.into(),
-            kind: KIND.into(),
+            kind: kind.into(),
             space: SPACE.into(),
             key: KEY_VERSION,
             hlc: v.newest().into(),

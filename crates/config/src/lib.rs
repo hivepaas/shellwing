@@ -13,6 +13,7 @@
 
 mod color;
 mod hosts;
+mod hosts_sync;
 mod settings;
 mod state;
 mod store;
@@ -20,6 +21,7 @@ mod theme;
 
 pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
+pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, Cursor, CursorStyle, Font, General, OnDisconnect, Padding, Scrollbar, Settings,
     Sync, Terminal,

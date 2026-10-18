@@ -14,6 +14,7 @@
 //! Lookups decrypt every record of the kind asked for; a vault holds dozens,
 //! not millions.
 
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -36,8 +37,15 @@ pub use sync::{Backend, Folder, FolderState, SyncReport};
 const KEY_LEN: usize = 32;
 const SPACE: &str = "personal";
 const KEY_VERSION: i64 = 1;
-/// The design keeps only "host" or "other" in the clear; secrets are "other".
-const KIND: &str = "other";
+/// The design keeps only "host" or "other" in the clear: hosts are counted for
+/// plans, everything else (secrets, groups) looks alike.
+pub(crate) fn clear_kind(record_type: &str) -> &'static str {
+    if record_type == "host" {
+        "host"
+    } else {
+        "other"
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -129,8 +137,8 @@ fn new_id() -> Result<String> {
     Ok(format!("{:012x}{hex}", now_ms()))
 }
 
-fn record_aad(id: &str) -> Vec<u8> {
-    format!("{id}\0{KIND}\0{SPACE}\0{KEY_VERSION}").into_bytes()
+fn record_aad(id: &str, kind: &str) -> Vec<u8> {
+    format!("{id}\0{kind}\0{SPACE}\0{KEY_VERSION}").into_bytes()
 }
 
 const SPACE_AAD: &[u8] = b"shellwing space key: personal v1";
@@ -152,6 +160,8 @@ pub(crate) struct RawRow {
     pub data: Vec<u8>,
     pub hlc: String,
     pub deleted: bool,
+    /// "host" or "other", part of the additional data.
+    pub kind: String,
 }
 
 const RECOVERY_KEY_AAD: &[u8] = b"shellwing recovery key wrapped by the account key v1";
@@ -269,16 +279,18 @@ impl Vault {
 
     /// Rewrites records sealed before values carried a cipher id.
     fn upgrade_untagged(&self) -> Result<()> {
-        let rows: Vec<(String, Vec<u8>)> = {
+        let rows: Vec<(String, Vec<u8>, String)> = {
             let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-            let mut q = db.prepare("SELECT id, data FROM records WHERE deleted = 0")?;
-            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+            let mut q = db.prepare("SELECT id, data, kind FROM records WHERE deleted = 0")?;
+            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
                 .collect::<std::result::Result<_, _>>()?
         };
-        for (id, data) in rows {
-            let (plain, legacy) = cipher::open(&self.sk(), &data, &record_aad(&id))?;
+        for (id, data, kind) in rows {
+            let kind: String = kind;
+            let (plain, legacy) = cipher::open(&self.sk(), &data, &record_aad(&id, &kind))?;
             if legacy {
-                let sealed = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(&id))?;
+                let sealed =
+                    cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(&id, &kind))?;
                 let db = self.db.lock().map_err(|_| Error::Decrypt)?;
                 db.execute(
                     "UPDATE records SET data = ?2 WHERE id = ?1",
@@ -290,18 +302,15 @@ impl Vault {
     }
 
     fn records(&self) -> Result<Vec<(String, Record)>> {
-        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-        let mut q = db
-            .prepare("SELECT id, data FROM records WHERE deleted = 0 AND space = ?1 ORDER BY id")?;
-        let rows = q.query_map(params![SPACE], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, Vec<u8>>(1)?))
-        })?;
         let mut out = vec![];
-        for row in rows {
-            let (id, data) = row?;
-            let (plain, _) = cipher::open(&self.sk(), &data, &record_aad(&id))?;
-            out.push((id, serde_json::from_slice(&plain)?));
+        for row in self.raw_rows()? {
+            if row.deleted {
+                continue;
+            }
+            let (plain, _) = cipher::open(&self.sk(), &row.data, &record_aad(&row.id, &row.kind))?;
+            out.push((row.id, serde_json::from_slice(&plain)?));
         }
+        out.sort_by(|a, b| a.0.cmp(&b.0));
         Ok(out)
     }
 
@@ -314,13 +323,15 @@ impl Vault {
 
     fn write(&self, id: &str, record: &Record) -> Result<()> {
         let plain = Zeroizing::new(serde_json::to_vec(record)?);
-        let data = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(id))?;
+        let kind = clear_kind(&record.kind);
+        let data = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(id, kind))?;
         let newest = record.f.values().map(|f| f.t.as_str()).max().unwrap_or("");
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
             "INSERT INTO records (id, kind, space, key_ver, data, hlc) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-             ON CONFLICT(id) DO UPDATE SET data = excluded.data, hlc = excluded.hlc, deleted = 0",
-            params![id, KIND, SPACE, KEY_VERSION, data, newest],
+             ON CONFLICT(id) DO UPDATE SET data = excluded.data, hlc = excluded.hlc,
+               kind = excluded.kind, deleted = 0",
+            params![id, kind, SPACE, KEY_VERSION, data, newest],
         )?;
         Ok(())
     }
@@ -328,7 +339,8 @@ impl Vault {
     /// Every row, deleted ones too.
     pub(crate) fn raw_rows(&self) -> Result<Vec<RawRow>> {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-        let mut q = db.prepare("SELECT id, data, hlc, deleted FROM records WHERE space = ?1")?;
+        let mut q =
+            db.prepare("SELECT id, data, hlc, deleted, kind FROM records WHERE space = ?1")?;
         let rows = q
             .query_map(params![SPACE], |r| {
                 Ok(RawRow {
@@ -336,6 +348,7 @@ impl Vault {
                     data: r.get(1)?,
                     hlc: r.get(2)?,
                     deleted: r.get::<_, i64>(3)? != 0,
+                    kind: r.get(4)?,
                 })
             })?
             .collect::<std::result::Result<_, _>>()?;
@@ -343,7 +356,7 @@ impl Vault {
     }
 
     /// Stores a merged version from sync.
-    pub(crate) fn store_version(&self, id: &str, v: &sync::Version) -> Result<()> {
+    pub(crate) fn store_version(&self, id: &str, kind: &str, v: &sync::Version) -> Result<()> {
         match v {
             sync::Version::Live(r) => self.write(id, r),
             sync::Version::Gone(t) => {
@@ -352,7 +365,7 @@ impl Vault {
                     "INSERT INTO records (id, kind, space, key_ver, data, hlc, deleted)
                      VALUES (?1, ?2, ?3, ?4, X'', ?5, 1)
                      ON CONFLICT(id) DO UPDATE SET data = X'', hlc = excluded.hlc, deleted = 1",
-                    params![id, KIND, SPACE, KEY_VERSION, t],
+                    params![id, kind, SPACE, KEY_VERSION, t],
                 )?;
                 Ok(())
             }
@@ -501,6 +514,83 @@ impl Vault {
                 _ => None,
             })
             .collect())
+    }
+
+    /// Records of one type (`"host"`, `"group"`) as plain values, without
+    /// stamps: what a file like hosts.toml holds.
+    pub fn entries(&self, record_type: &str) -> Result<Vec<(String, BTreeMap<String, String>)>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == record_type)
+            .map(|(id, r)| {
+                let values =
+                    r.f.iter()
+                        .filter(|(_, f)| !f.val.is_empty())
+                        .map(|(k, f)| (k.clone(), f.val.clone()))
+                        .collect();
+                (id, values)
+            })
+            .collect())
+    }
+
+    /// Whether `id` was deleted, here or on another device.
+    pub fn is_deleted(&self, id: &str) -> Result<bool> {
+        Ok(self.raw_rows()?.iter().any(|r| r.id == id && r.deleted))
+    }
+
+    /// Sets a record's values, stamping only the fields that changed (a field no
+    /// longer present becomes empty), so a merge keeps another device's edits to
+    /// the other fields. Creates the record if it is new. Returns whether
+    /// anything changed.
+    pub fn update(
+        &self,
+        id: &str,
+        record_type: &str,
+        name: &str,
+        values: &BTreeMap<String, String>,
+    ) -> Result<bool> {
+        let old = self
+            .records()?
+            .into_iter()
+            .find(|(i, _)| i == id)
+            .map(|(_, r)| r);
+        let mut f = old.as_ref().map(|r| r.f.clone()).unwrap_or_default();
+        let mut changed = old.is_none();
+        let t = self.clock.tick();
+        for (k, v) in values {
+            if f.get(k).is_none_or(|old| &old.val != v) {
+                f.insert(
+                    k.clone(),
+                    Field {
+                        val: v.clone(),
+                        t: t.clone(),
+                    },
+                );
+                changed = true;
+            }
+        }
+        for (k, old) in f.iter_mut() {
+            if !values.contains_key(k) && !old.val.is_empty() {
+                *old = Field {
+                    val: String::new(),
+                    t: t.clone(),
+                };
+                changed = true;
+            }
+        }
+        if changed {
+            self.write(
+                id,
+                &Record {
+                    v: 1,
+                    kind: record_type.into(),
+                    name: name.into(),
+                    f,
+                },
+            )?;
+        }
+        Ok(changed)
     }
 
     /// Forgets an item. The row stays as a tombstone, as sync will need.
@@ -674,10 +764,10 @@ mod tests {
                     Ok((r.get(0)?, r.get(1)?))
                 })
                 .expect("row");
-            let (plain, _) = cipher::open(&v.sk(), &data, &record_aad(&id)).expect("open");
+            let (plain, _) = cipher::open(&v.sk(), &data, &record_aad(&id, "other")).expect("open");
             db.execute(
                 "UPDATE records SET data = ?2 WHERE id = ?1",
-                params![id, untagged(&v.sk(), &plain, &record_aad(&id))],
+                params![id, untagged(&v.sk(), &plain, &record_aad(&id, "other"))],
             )
             .expect("record");
             db.execute(
@@ -710,6 +800,48 @@ mod tests {
             Cipher::default().id(),
             "rewritten"
         );
+    }
+
+    #[test]
+    fn updates_stamp_only_changed_fields() {
+        let path = temp("update");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("open");
+        let vals = |pairs: &[(&str, &str)]| -> BTreeMap<String, String> {
+            pairs
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect()
+        };
+        let stamps = |v: &Vault| -> BTreeMap<String, String> {
+            v.records().expect("records")[0]
+                .1
+                .f
+                .iter()
+                .map(|(k, f)| (k.clone(), f.t.clone()))
+                .collect()
+        };
+        let host = vals(&[("name", "web"), ("address", "10.0.0.5"), ("port", "22")]);
+        assert!(v.update("h1", "host", "web", &host).expect("create"));
+        let first = stamps(&v);
+        assert!(
+            !v.update("h1", "host", "web", &host).expect("same"),
+            "nothing changed"
+        );
+        let edited = vals(&[("name", "web"), ("address", "10.0.0.6")]);
+        assert!(v.update("h1", "host", "web", &edited).expect("edit"));
+        let second = stamps(&v);
+        assert_eq!(
+            first["name"], second["name"],
+            "untouched field keeps its stamp"
+        );
+        assert_ne!(first["address"], second["address"]);
+        assert_ne!(
+            first["port"], second["port"],
+            "a removed field is stamped empty"
+        );
+        assert_eq!(v.entries("host").expect("entries")[0].1, edited);
+        assert!(v.entries("group").expect("entries").is_empty());
     }
 
     #[test]

@@ -125,7 +125,7 @@ impl Workspace {
             None => VaultSlot::none(),
         };
         let (sync_tx, sync_rx) = async_channel::unbounded();
-        let sync = SyncWorker::start(vault.clone(), sync_tx);
+        let sync = SyncWorker::start(vault.clone(), live.store().cloned(), sync_tx);
         sync.set_folder(live.sync_folder());
         cx.spawn(async move |this, cx| {
             while let Ok(ev) = sync_rx.recv().await {

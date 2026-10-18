@@ -138,6 +138,26 @@ impl Store {
         )
     }
 
+    /// Gives every host and group in `hosts.toml` an `id`, which sync needs.
+    pub fn assign_host_ids(&self) -> Result<(), WriteError> {
+        if !self.dir.join(HOSTS).exists() {
+            return Ok(());
+        }
+        self.edit_if(HOSTS, |doc| Ok(crate::hosts_sync::assign_ids(doc)))
+    }
+
+    /// Writes merged hosts and groups (id → fields) into `hosts.toml`, changing
+    /// only what differs.
+    pub fn apply_synced_hosts(
+        &self,
+        hosts: &[(String, crate::Fields)],
+        groups: &[(String, crate::Fields)],
+    ) -> Result<(), WriteError> {
+        self.edit_if(HOSTS, |doc| {
+            Ok(crate::hosts_sync::apply_all(doc, hosts, groups))
+        })
+    }
+
     /// Sets (or with None, removes) `[sync] folder` in `config.toml`.
     pub fn set_sync_folder(&self, folder: Option<&str>) -> Result<(), WriteError> {
         self.edit(SETTINGS, |doc| {
@@ -187,6 +207,15 @@ impl Store {
         file: &str,
         change: impl FnOnce(&mut toml_edit::DocumentMut) -> Result<(), &'static str>,
     ) -> Result<(), WriteError> {
+        self.edit_if(file, |doc| change(doc).map(|()| true))
+    }
+
+    /// Like `edit`, but writes only if `change` says it changed something.
+    fn edit_if(
+        &self,
+        file: &str,
+        change: impl FnOnce(&mut toml_edit::DocumentMut) -> Result<bool, &'static str>,
+    ) -> Result<(), WriteError> {
         let path = self.dir.join(file);
         let io_err = |e| WriteError::Io(path.display().to_string(), e);
         let text = match fs::read_to_string(&path) {
@@ -203,13 +232,16 @@ impl Store {
                 message: e.message().trim().to_string(),
             })
         })?;
-        change(&mut doc).map_err(|m| {
+        let changed = change(&mut doc).map_err(|m| {
             WriteError::Invalid(LoadError {
                 file: file.into(),
                 line: None,
                 message: m.into(),
             })
         })?;
+        if !changed {
+            return Ok(());
+        }
         write_atomic(&path, &doc.to_string()).map_err(io_err)
     }
 
