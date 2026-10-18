@@ -35,6 +35,21 @@ pub struct Appearance {
     pub line_height: f32,
     pub cursor: Cursor,
     pub scrollbar: Scrollbar,
+    /// Space between the text and the pane's edges, in pixels.
+    pub padding: Padding,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Padding {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Default for Padding {
+    fn default() -> Self {
+        Padding { x: 4.0, y: 4.0 }
+    }
 }
 
 impl Default for Appearance {
@@ -45,6 +60,7 @@ impl Default for Appearance {
             line_height: 1.3,
             cursor: Cursor::default(),
             scrollbar: Scrollbar::default(),
+            padding: Padding::default(),
         }
     }
 }
@@ -128,6 +144,8 @@ impl Settings {
         let a = &mut self.appearance;
         a.font.size = a.font.size.clamp(6.0, 72.0);
         a.line_height = a.line_height.clamp(1.0, 3.0);
+        a.padding.x = a.padding.x.clamp(0.0, 64.0);
+        a.padding.y = a.padding.y.clamp(0.0, 64.0);
         if a.font
             .family
             .as_deref()
@@ -163,6 +181,7 @@ mod tests {
             line_height = 1.5
             cursor = { style = "bar" }
             scrollbar = "always"
+            padding = { x = 100 }
             something_new = true
 
             [terminal]
@@ -178,6 +197,7 @@ mod tests {
         assert_eq!(s.appearance.line_height, 1.5);
         assert_eq!(s.appearance.cursor.style, CursorStyle::Bar);
         assert_eq!(s.appearance.scrollbar, Scrollbar::Always);
+        assert_eq!(s.appearance.padding, Padding { x: 64.0, y: 4.0 });
         assert_eq!(s.terminal.scrollback, 50_000);
         assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
     }

@@ -1,6 +1,7 @@
 # Building and testing on macOS, Windows and Linux
 
-CI builds and tests every push and pull request on Linux (x86_64). macOS
+CI builds and tests every push to main and every pull request into main on Linux
+(x86_64); pull requests stacked on other branches run once retargeted to main. macOS
 (arm64) and Windows (x86_64) runs cost more Actions minutes, so they start only
 by hand: Actions → CI → Run workflow, pick the branch and the platforms, or
 `gh workflow run ci.yml --ref <branch> -f platforms=all`. Each run uploads the
