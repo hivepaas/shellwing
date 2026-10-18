@@ -55,6 +55,9 @@ ui_font = { family = "Inter", size = 14 }
 scrollback = 10000           # lines of history
 on_disconnect = "reconnect"  # "reconnect", "ask" or "close"
 
+[files]
+editor = "code"              # what Edit in the Files panel opens a file with; none: the system's app
+
 [ssh]                        # defaults for every host; a host can set its own
 host_key = "ask"             # unknown host keys: "ask", "accept-new" or "strict"
 keepalive = 30               # seconds between keepalives; 0: none
@@ -252,6 +255,12 @@ on a channel of its own, so the terminal keeps working while files move.
 - **Upload…**, or dropping files and folders on the panel, uploads into the
   folder shown. Something already there with that name is not touched until you
   pick *Replace* (or *Merge* for a folder).
+- **Edit** opens the chosen file in your editor (`[files] editor`, else the
+  system's app for that kind of file). Each time you save it there, it is
+  written back to the server; before that, shellwing checks that nobody else
+  changed it on the server since, and asks before writing over their change.
+  The copy lives in a folder of its own under your cache folder (only you can
+  read it) until you press *Stop*.
 - Transfers show their progress and speed and can be cancelled. Links to folders
   open as folders; when downloading a folder, links to folders inside it are
   skipped so a loop cannot run forever.

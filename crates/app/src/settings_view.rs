@@ -423,7 +423,21 @@ impl SettingsView {
 
     fn general(&self, cx: &mut Context<Self>) -> gpui::Div {
         let restore = self.snap.settings.general.restore_tabs;
-        let mut page = page("General").child(toggle(
+        let editor = self
+            .snap
+            .settings
+            .files
+            .editor
+            .clone()
+            .filter(|e| !e.trim().is_empty())
+            .unwrap_or_else(|| "the system's app for each file".into());
+        let mut page = page("General")
+            .child(setting(
+                "Editor for remote files",
+                "Edit in the Files panel opens a copy with it and writes the file back each time you save. Set [files] editor in config.toml, e.g. \"code\" or \"gnome-text-editor\".",
+                div().text_size(ui(12.5)).child(editor),
+            ))
+            .child(toggle(
             "restore-tabs",
             restore,
             "Open the last tabs at start",

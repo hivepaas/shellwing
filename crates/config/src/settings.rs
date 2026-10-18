@@ -12,6 +12,16 @@ pub struct Settings {
     pub appearance: Appearance,
     pub terminal: Terminal,
     pub ssh: Ssh,
+    pub files: Files,
+}
+
+/// The Files panel.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Files {
+    /// The command a remote file is edited with, its path added at the end
+    /// (`code`, `gnome-text-editor`, `subl -n`). None: the system's app for it.
+    pub editor: Option<String>,
 }
 
 /// Defaults for every host; a host in hosts.toml can set its own.
@@ -259,6 +269,9 @@ mod tests {
             [ssh]
             host_key = "accept-new"
             keepalive = 0
+
+            [files]
+            editor = "code -n"
             "#,
         )
         .expect("parse");
@@ -276,5 +289,6 @@ mod tests {
         assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
         assert_eq!(s.ssh.host_key, crate::hosts::HostKey::AcceptNew);
         assert_eq!(s.ssh.keepalive, 0);
+        assert_eq!(s.files.editor.as_deref(), Some("code -n"));
     }
 }
