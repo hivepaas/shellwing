@@ -1,8 +1,9 @@
 //! The Files panel: the remote side of a pane's connection, over SFTP, beside
 //! the terminal. Click or the arrow keys choose; a double click or Enter opens a
-//! folder or downloads a file; Backspace goes up. Dropping files or folders on
-//! the panel uploads them into the folder shown. Downloads go to the Downloads
-//! folder, under a new name when one is taken.
+//! folder or downloads a file; Backspace goes up; F2 renames and Delete deletes
+//! (after asking). Dropping files or folders on the panel uploads them into the
+//! folder shown. Downloads go to the Downloads folder, under a new name when one
+//! is taken.
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -10,13 +11,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
 use gpui::{
-    ClickEvent, Context, ElementId, EventEmitter, ExternalPaths, FocusHandle, FontWeight,
-    KeyDownEvent, MouseButton, Render, ScrollStrategy, SharedString, UniformListScrollHandle,
-    Window, div, prelude::*, px, relative, rgb, uniform_list,
+    ClickEvent, Context, ElementId, Entity, EventEmitter, ExternalPaths, FocusHandle, Focusable,
+    FontWeight, KeyDownEvent, MouseButton, Render, ScrollStrategy, SharedString,
+    UniformListScrollHandle, Window, div, prelude::*, px, relative, rgb, uniform_list,
 };
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
 
+use crate::input::TextInput;
 use crate::session::Remote;
 use crate::sidebar::{LINE, MUTED, TEXT};
 
@@ -56,6 +58,13 @@ enum Step {
     /// Downloads say where they went.
     Done(Option<PathBuf>),
     Failed(String),
+}
+
+/// A name being typed: for a new folder, or a new name for an entry.
+#[derive(Clone, PartialEq)]
+enum Edit {
+    NewFolder,
+    Rename(String),
 }
 
 /// How a transfer job ended.
@@ -98,6 +107,12 @@ pub struct FilesPanel {
     ticking: bool,
     scroll: UniformListScrollHandle,
     downloads: PathBuf,
+    input: Entity<TextInput>,
+    editing: Option<Edit>,
+    /// Why the name typed was not taken.
+    edit_problem: Option<String>,
+    /// An entry waiting for its deletion to be confirmed.
+    deleting: Option<Entry>,
 }
 
 impl EventEmitter<FilesEvent> for FilesPanel {}
@@ -197,6 +212,10 @@ impl FilesPanel {
             ticking: false,
             scroll: UniformListScrollHandle::new(),
             downloads: downloads_dir(),
+            input: cx.new(|cx| TextInput::new("Name", cx)),
+            editing: None,
+            edit_problem: None,
+            deleting: None,
         };
         panel.connect(cx);
         panel
@@ -569,12 +588,161 @@ impl FilesPanel {
         cx.notify();
     }
 
-    fn on_key(&mut self, ev: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
+    fn start_edit(&mut self, edit: Edit, window: &mut Window, cx: &mut Context<Self>) {
+        if self.dir.is_none() || self.sftp.is_none() {
+            return;
+        }
+        self.deleting = None;
+        self.edit_problem = None;
+        let (text, chosen) = match &edit {
+            Edit::NewFolder => (String::new(), 0..0),
+            Edit::Rename(name) => {
+                // The name without its extension is chosen, as file managers do.
+                let is_dir = self.entries.iter().any(|e| e.name == *name && e.is_dir());
+                let stem = match name.rfind('.') {
+                    Some(i) if i > 0 && !is_dir => i,
+                    _ => name.len(),
+                };
+                (name.clone(), 0..stem)
+            }
+        };
+        self.input.update(cx, |i, cx| i.set_text(&text, chosen, cx));
+        self.editing = Some(edit);
+        window.focus(&self.input.focus_handle(cx), cx);
+        cx.notify();
+    }
+
+    fn start_rename(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(name) = self.chosen_name() {
+            self.start_edit(Edit::Rename(name), window, cx);
+        }
+    }
+
+    fn cancel_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.editing = None;
+        self.edit_problem = None;
+        window.focus(&self.focus, cx);
+        cx.notify();
+    }
+
+    /// Makes the folder or renames the entry, then shows it chosen.
+    fn commit_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (Some(edit), Some(dir)) = (self.editing.clone(), self.dir.clone()) else {
+            return;
+        };
+        let name = self.input.read(cx).text().trim().to_string();
+        if let Some(why) = sftp::bad_name(&name) {
+            self.edit_problem = Some(why.into());
+            return cx.notify();
+        }
+        if edit == Edit::Rename(name.clone()) {
+            return self.cancel_edit(window, cx);
+        }
+        let Some(sftp) = self.sftp.clone() else {
+            return;
+        };
+        let to = sftp::join(&dir, &name);
+        let task = self.remote.rt.spawn(async move {
+            match edit {
+                Edit::NewFolder => sftp.mkdir(&to).await,
+                Edit::Rename(old) => sftp.rename(&sftp::join(&dir, &old), &to).await,
+            }
+        });
+        let era = self.era;
+        // In the window: the keyboard goes back to the list once it worked.
+        cx.spawn_in(window, async move |this, cx| {
+            let result = task
+                .await
+                .unwrap_or_else(|e| Err(Error::Sftp(e.to_string())));
+            let _ = this.update_in(cx, |p, window, cx| {
+                if p.era != era {
+                    return;
+                }
+                match result {
+                    Ok(()) => {
+                        p.cancel_edit(window, cx);
+                        let dir = p.dir.clone();
+                        p.open_dir(dir, Some(name), cx);
+                    }
+                    Err(e) => {
+                        p.edit_problem = Some(e.to_string());
+                        cx.notify();
+                    }
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn ask_delete(&mut self, cx: &mut Context<Self>) {
+        if let Some(e) = self.selected.and_then(|i| self.entries.get(i)).cloned() {
+            self.editing = None;
+            self.deleting = Some(e);
+            cx.notify();
+        }
+    }
+
+    /// Deletes the entry asked about, then chooses its neighbour.
+    fn confirm_delete(&mut self, cx: &mut Context<Self>) {
+        let (Some(e), Some(dir)) = (self.deleting.take(), self.dir.clone()) else {
+            return;
+        };
+        let at = self.entries.iter().position(|x| x.name == e.name);
+        let neighbour = at.and_then(|i| {
+            self.entries
+                .get(i + 1)
+                .or_else(|| i.checked_sub(1).and_then(|j| self.entries.get(j)))
+                .map(|n| n.name.clone())
+        });
+        self.state = State::Loading;
+        cx.notify();
+        let path = sftp::join(&dir, &e.name);
+        self.with_sftp(
+            cx,
+            move |sftp| async move { sftp.remove(&path).await },
+            move |p, result, cx| match result {
+                Ok(()) => {
+                    let dir = p.dir.clone();
+                    p.open_dir(dir, neighbour, cx);
+                }
+                Err(err) => p.fail(format!("Not deleted: {err}"), cx),
+            },
+        );
+    }
+
+    fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
+        // Typing a name: the field has the other keys.
+        if self.editing.is_some() {
+            match k.key.as_str() {
+                "enter" => self.commit_edit(window, cx),
+                "escape" => self.cancel_edit(window, cx),
+                _ => return,
+            }
+            return cx.stop_propagation();
+        }
+        if self.deleting.is_some() {
+            match k.key.as_str() {
+                "enter" => self.confirm_delete(cx),
+                "escape" => {
+                    self.deleting = None;
+                    cx.notify();
+                }
+                _ => return,
+            }
+            return cx.stop_propagation();
+        }
+        // Cmd+Backspace deletes on macOS, as in Finder.
+        if cfg!(target_os = "macos") && k.modifiers.platform && k.key == "backspace" {
+            self.ask_delete(cx);
+            return cx.stop_propagation();
+        }
         if k.modifiers.control || k.modifiers.platform || k.modifiers.alt {
             return;
         }
         match k.key.as_str() {
+            "f2" => self.start_rename(window, cx),
+            "delete" => self.ask_delete(cx),
             "up" => self.select(-1, cx),
             "down" => self.select(1, cx),
             "pageup" => self.select(-10, cx),
@@ -827,15 +995,106 @@ impl Render for FilesPanel {
                         button("files-refresh", "Refresh")
                             .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
                     )
-                    .child(
-                        button("files-download", "Download")
-                            .on_click(cx.listener(|p, _, _, cx| p.download_chosen(cx))),
-                    )
+                    .child(button("files-mkdir", "New folder").on_click(
+                        cx.listener(|p, _, window, cx| p.start_edit(Edit::NewFolder, window, cx)),
+                    ))
                     .child(
                         button("files-upload", "Upload…")
                             .on_click(cx.listener(|p, _, _, cx| p.pick_uploads(cx))),
                     ),
+            )
+            .when(self.selected.is_some() && self.editing.is_none(), |d| {
+                d.child(
+                    div()
+                        .flex()
+                        .gap_1()
+                        .child(
+                            button("files-download", "Download")
+                                .on_click(cx.listener(|p, _, _, cx| p.download_chosen(cx))),
+                        )
+                        .child(
+                            button("files-rename", "Rename").on_click(
+                                cx.listener(|p, _, window, cx| p.start_rename(window, cx)),
+                            ),
+                        )
+                        .child(
+                            button("files-delete", "Delete")
+                                .on_click(cx.listener(|p, _, _, cx| p.ask_delete(cx))),
+                        ),
+                )
+            });
+
+        // Typing a name, or confirming a deletion, above the list.
+        let mut asking = div().flex().flex_col();
+        if let Some(edit) = &self.editing {
+            let label = match edit {
+                Edit::NewFolder => "New folder".to_string(),
+                Edit::Rename(old) => format!("Rename {old}"),
+            };
+            asking = asking.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .px_3()
+                    .py_2()
+                    .border_b_1()
+                    .border_color(rgb(LINE))
+                    .child(div().text_xs().text_color(rgb(MUTED)).child(label))
+                    .child(
+                        div()
+                            .px_2()
+                            .py_1()
+                            .rounded_md()
+                            .border_1()
+                            .border_color(rgb(0x2b3a55))
+                            .bg(rgb(0x0a0f18))
+                            .child(self.input.clone()),
+                    )
+                    .child(match &self.edit_problem {
+                        Some(p) => div().text_xs().text_color(rgb(BAD)).child(p.clone()),
+                        None => div()
+                            .text_xs()
+                            .text_color(rgb(MUTED))
+                            .child("Enter to save · Esc to cancel"),
+                    }),
             );
+        }
+        if let Some(e) = &self.deleting {
+            let question = if e.kind == sftp::Kind::Dir {
+                format!("Delete the folder {} and everything in it?", e.name)
+            } else {
+                format!("Delete {}?", e.name)
+            };
+            asking = asking.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .px_3()
+                    .py_2()
+                    .border_b_1()
+                    .border_color(rgb(LINE))
+                    .child(div().text_xs().child(question))
+                    .child(
+                        div()
+                            .flex()
+                            .gap_1()
+                            .child(
+                                button("files-delete-yes", "Delete")
+                                    .bg(rgb(0x7f1d1d))
+                                    .hover(|s| s.bg(rgb(0x991b1b)))
+                                    .on_click(cx.listener(|p, _, _, cx| p.confirm_delete(cx))),
+                            )
+                            .child(button("files-delete-no", "Cancel").on_click(cx.listener(
+                                |p, _, _, cx| {
+                                    p.deleting = None;
+                                    cx.notify();
+                                },
+                            ))),
+                    ),
+            );
+        }
 
         let note = |text: String, color: u32| {
             div()
@@ -905,10 +1164,13 @@ impl Render for FilesPanel {
             .id("files")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
+            // A click anywhere takes the keyboard, unless the name field just did.
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|p, _, window, cx| {
-                    window.focus(&p.focus, cx);
+                    if !p.focus.contains_focused(window, cx) {
+                        window.focus(&p.focus, cx);
+                    }
                 }),
             )
             .on_drop(cx.listener(|p, paths: &ExternalPaths, _, cx| {
@@ -925,6 +1187,7 @@ impl Render for FilesPanel {
             .text_color(rgb(TEXT))
             .child(header)
             .child(tools)
+            .child(asking)
             .child(body)
             .child(transfers)
     }

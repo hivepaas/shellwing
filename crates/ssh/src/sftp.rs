@@ -91,6 +91,25 @@ pub fn join(dir: &str, name: &str) -> String {
     }
 }
 
+/// The last part of `path`.
+pub fn name_of(path: &str) -> &str {
+    path.trim_end_matches('/')
+        .rsplit('/')
+        .next()
+        .unwrap_or(path)
+}
+
+/// Why `name` cannot name a file, if it cannot.
+pub fn bad_name(name: &str) -> Option<&'static str> {
+    match name {
+        "" => Some("A name is needed."),
+        "." | ".." => Some("That name is taken by the folder itself."),
+        n if n.contains('/') => Some("A name cannot contain /."),
+        n if n.contains('\0') => Some("A name cannot contain NUL."),
+        _ => None,
+    }
+}
+
 /// The directory holding `path`; `/` is its own.
 pub fn parent(path: &str) -> String {
     let trimmed = path.trim_end_matches('/');
@@ -204,12 +223,68 @@ impl Sftp {
         use russh_sftp::protocol::StatusCode;
         match self.0.metadata(path).await {
             Ok(m) => Ok(Some(Entry {
-                name: path.rsplit('/').next().unwrap_or(path).to_string(),
+                name: name_of(path).to_string(),
                 kind: kind(m.file_type()),
                 dir_link: false,
                 size: m.len(),
                 modified: m.modified().ok(),
             })),
+            Err(E::Status(s)) if s.status_code == StatusCode::NoSuchFile => Ok(None),
+            Err(e) => Err(err(e)),
+        }
+    }
+
+    /// Makes a directory.
+    pub async fn mkdir(&self, path: &str) -> Result<(), Error> {
+        if self.stat(path).await?.is_some() {
+            return Err(Error::Sftp(format!("{} is already there", name_of(path))));
+        }
+        self.0.create_dir(path).await.map_err(err)
+    }
+
+    /// Renames or moves `from` to `to`, which must not exist.
+    pub async fn rename(&self, from: &str, to: &str) -> Result<(), Error> {
+        if self.lstat(to).await?.is_some() {
+            return Err(Error::Sftp(format!("{} is already there", name_of(to))));
+        }
+        self.0.rename(from, to).await.map_err(err)
+    }
+
+    /// Removes a file, a link (not what it points at), or a directory with
+    /// everything in it.
+    pub async fn remove(&self, path: &str) -> Result<(), Error> {
+        let Some(top) = self.lstat(path).await? else {
+            return Ok(());
+        };
+        if top != Kind::Dir {
+            return self.0.remove_file(path).await.map_err(err);
+        }
+        // Depth first: a directory goes once it is empty.
+        let mut todo = vec![(path.to_string(), false)];
+        while let Some((dir, emptied)) = todo.pop() {
+            if emptied {
+                self.0.remove_dir(dir.as_str()).await.map_err(err)?;
+                continue;
+            }
+            todo.push((dir.clone(), true));
+            for e in self.list(&dir).await? {
+                let p = join(&dir, &e.name);
+                if e.kind == Kind::Dir {
+                    todo.push((p, false));
+                } else {
+                    self.0.remove_file(p.as_str()).await.map_err(err)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// The kind of what is at `path` itself (a link is a link); None when nothing is.
+    async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
+        use russh_sftp::client::error::Error as E;
+        use russh_sftp::protocol::StatusCode;
+        match self.0.symlink_metadata(path).await {
+            Ok(m) => Ok(Some(kind(m.file_type()))),
             Err(E::Status(s)) if s.status_code == StatusCode::NoSuchFile => Ok(None),
             Err(e) => Err(err(e)),
         }
@@ -352,5 +427,16 @@ mod tests {
         assert_eq!(parent("/home/me/"), "/home");
         assert_eq!(parent("/home"), "/");
         assert_eq!(parent("/"), "/");
+        assert_eq!(name_of("/home/me/a.txt"), "a.txt");
+        assert_eq!(name_of("/home/me/"), "me");
+    }
+
+    #[test]
+    fn names_are_checked() {
+        assert!(bad_name("notes.txt").is_none());
+        assert!(bad_name(".bashrc").is_none());
+        for n in ["", ".", "..", "a/b", "a\0b"] {
+            assert!(bad_name(n).is_some(), "{n:?}");
+        }
     }
 }

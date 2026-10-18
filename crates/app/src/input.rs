@@ -51,6 +51,18 @@ impl TextInput {
         &self.content
     }
 
+    /// Replaces the text, with `selected` (a byte range) chosen, as a rename
+    /// field picks the name without its extension.
+    pub fn set_text(&mut self, text: &str, selected: Range<usize>, cx: &mut Context<Self>) {
+        self.content = text.to_string().into();
+        let end = selected.end.min(text.len());
+        self.selected = selected.start.min(end)..end;
+        self.reversed = false;
+        self.marked = None;
+        cx.emit(Changed);
+        cx.notify();
+    }
+
     fn cursor(&self) -> usize {
         if self.reversed {
             self.selected.start
