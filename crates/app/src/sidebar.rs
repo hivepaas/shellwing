@@ -117,10 +117,11 @@ pub fn initials(name: &str) -> String {
     out
 }
 
-/// The tooltip of a tile on the rail.
-struct Tip {
-    title: SharedString,
-    detail: SharedString,
+/// A tooltip: a title, and a line under it when there is one. Shared by the
+/// host rail and the Files panel's buttons.
+pub(crate) struct Tip {
+    pub title: SharedString,
+    pub detail: SharedString,
 }
 
 impl Render for Tip {

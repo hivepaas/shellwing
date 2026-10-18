@@ -21,6 +21,7 @@ use shellwing_ssh::{Error, Sftp};
 
 use crate::input::TextInput;
 use crate::session::Remote;
+use crate::sidebar::Tip;
 use crate::sidebar::{LINE, MUTED, TEXT};
 
 /// The panel's width by default, and how far its edge can be dragged.
@@ -98,6 +99,13 @@ enum Outcome {
 pub struct EditorCommand(pub Option<String>);
 
 impl gpui::Global for EditorCommand {}
+
+/// What a context menu is for: an entry of the list, or the folder shown.
+#[derive(Clone, Copy, PartialEq)]
+enum MenuFor {
+    Entry(usize),
+    Folder,
+}
 
 /// How often edited files are looked at for a save.
 const WATCH: Duration = Duration::from_secs(1);
@@ -233,6 +241,8 @@ pub struct FilesPanel {
     /// Remote files open in an editor.
     edits: Vec<RemoteEdit>,
     watching: bool,
+    /// The context menu, where it was asked for.
+    menu: Option<(gpui::Point<gpui::Pixels>, MenuFor)>,
 }
 
 impl EventEmitter<FilesEvent> for FilesPanel {}
@@ -338,6 +348,7 @@ impl FilesPanel {
             deleting: None,
             edits: vec![],
             watching: false,
+            menu: None,
         };
         panel.connect(cx);
         panel
@@ -863,12 +874,6 @@ impl FilesPanel {
             .into_any_element()
     }
 
-    fn download_chosen(&mut self, cx: &mut Context<Self>) {
-        if let Some(i) = self.selected {
-            self.download(i, cx);
-        }
-    }
-
     /// Uploads `paths` into the folder shown, asking before writing over
     /// anything already there.
     pub fn upload(&mut self, paths: Vec<PathBuf>, cx: &mut Context<Self>) {
@@ -1067,8 +1072,170 @@ impl FilesPanel {
         );
     }
 
+    /// The context menu for an entry (its actions) or the folder (new, upload).
+    fn context_menu(
+        &self,
+        at: gpui::Point<gpui::Pixels>,
+        target: MenuFor,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        let item = |id: &'static str, label: &str, hint: &str, danger: bool| {
+            div()
+                .id(id)
+                .flex()
+                .items_center()
+                .justify_between()
+                .gap_4()
+                .px_3()
+                .py(px(5.))
+                .rounded(px(4.))
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(SELECTED)))
+                .text_color(rgb(if danger { BAD } else { TEXT }))
+                .child(label.to_string())
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(rgb(MUTED))
+                        .child(hint.to_string()),
+                )
+        };
+        let line = || div().my_1().h(px(1.)).bg(rgb(LINE));
+        let mut menu = div()
+            .id("files-menu")
+            .w(px(230.))
+            .p_1()
+            .flex()
+            .flex_col()
+            .rounded(px(8.))
+            .bg(rgb(0x111826))
+            .border_1()
+            .border_color(rgb(0x2b3648))
+            .shadow_lg()
+            .text_sm()
+            // Another click anywhere closes it (a right click opens the next one).
+            .on_mouse_down_out(cx.listener(|p, e: &gpui::MouseDownEvent, _, cx| {
+                if e.button != MouseButton::Right {
+                    p.menu = None;
+                    cx.notify();
+                }
+            }));
+        let path = match target {
+            MenuFor::Entry(i) => self
+                .dir
+                .as_ref()
+                .zip(self.entries.get(i))
+                .map(|(d, e)| sftp::join(d, &e.name)),
+            MenuFor::Folder => self.dir.clone(),
+        };
+        match target {
+            MenuFor::Entry(i) => {
+                let is_dir = self.entries.get(i).is_some_and(|e| e.is_dir());
+                menu = if is_dir {
+                    menu.child(
+                        item("menu-open", "Open", "Enter", false).on_click(cx.listener(
+                            move |p, _, _, cx| {
+                                p.menu = None;
+                                p.enter(i, cx);
+                            },
+                        )),
+                    )
+                } else {
+                    menu.child(item("menu-edit", "Edit", "", false).on_click(cx.listener(
+                        |p, _, _, cx| {
+                            p.menu = None;
+                            p.edit_chosen(cx);
+                        },
+                    )))
+                };
+                menu = menu
+                    .child(
+                        item("menu-download", "Download", "", false).on_click(cx.listener(
+                            move |p, _, _, cx| {
+                                p.menu = None;
+                                p.download(i, cx);
+                            },
+                        )),
+                    )
+                    .child(line());
+            }
+            MenuFor::Folder => {
+                menu = menu
+                    .child(
+                        item("menu-mkdir", "New folder…", "", false).on_click(cx.listener(
+                            |p, _, window, cx| {
+                                p.menu = None;
+                                p.start_edit(Edit::NewFolder, window, cx);
+                            },
+                        )),
+                    )
+                    .child(
+                        item("menu-upload", "Upload…", "", false).on_click(cx.listener(
+                            |p, _, _, cx| {
+                                p.menu = None;
+                                p.pick_uploads(cx);
+                            },
+                        )),
+                    )
+                    .child(
+                        item("menu-refresh", "Refresh", "", false).on_click(cx.listener(
+                            |p, _, _, cx| {
+                                p.menu = None;
+                                p.refresh(cx);
+                            },
+                        )),
+                    )
+                    .child(line());
+            }
+        }
+        if let Some(path) = path {
+            menu = menu.child(
+                item("menu-copy", "Copy path", "", false).on_click(cx.listener(
+                    move |p, _, _, cx| {
+                        p.menu = None;
+                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(path.clone()));
+                        cx.notify();
+                    },
+                )),
+            );
+        }
+        if let MenuFor::Entry(_) = target {
+            menu = menu
+                .child(
+                    item("menu-rename", "Rename…", "F2", false).on_click(cx.listener(
+                        |p, _, window, cx| {
+                            p.menu = None;
+                            p.start_rename(window, cx);
+                        },
+                    )),
+                )
+                .child(line())
+                .child(
+                    item("menu-delete", "Delete…", "Del", true).on_click(cx.listener(
+                        |p, _, _, cx| {
+                            p.menu = None;
+                            p.ask_delete(cx);
+                        },
+                    )),
+                );
+        }
+        gpui::deferred(
+            gpui::anchored()
+                .position(at)
+                .snap_to_window_with_margin(px(8.))
+                .child(menu),
+        )
+        .with_priority(1)
+        .into_any_element()
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
+        if self.menu.is_some() && k.key == "escape" {
+            self.menu = None;
+            cx.notify();
+            return cx.stop_propagation();
+        }
         // Typing a name: the field has the other keys.
         if self.editing.is_some() {
             match k.key.as_str() {
@@ -1154,6 +1321,17 @@ impl FilesPanel {
             .cursor_pointer()
             .when(selected, |d| d.bg(rgb(SELECTED)))
             .when(!selected, |d| d.hover(|s| s.bg(rgb(HOVER))))
+            // Right click: chosen, with its context menu.
+            .on_mouse_down(
+                MouseButton::Right,
+                cx.listener(move |p, e: &gpui::MouseDownEvent, window, cx| {
+                    cx.stop_propagation();
+                    window.focus(&p.focus, cx);
+                    p.selected = Some(i);
+                    p.menu = Some((e.position, MenuFor::Entry(i)));
+                    cx.notify();
+                }),
+            )
             .on_click(cx.listener(move |p, ev: &ClickEvent, window, cx| {
                 window.focus(&p.focus, cx);
                 p.selected = Some(i);
@@ -1323,29 +1501,71 @@ impl FilesPanel {
 
 impl Render for FilesPanel {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // The title and the folder's tools as icons; the rest is in the
+        // context menu (right click) and on the keys.
+        let tool = |id: &'static str, icon: &'static str, tip: &'static str| {
+            div()
+                .id(id)
+                .size(px(28.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded_md()
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(0x1a2333)))
+                .tooltip(move |_, cx| {
+                    cx.new(|_| Tip {
+                        title: tip.into(),
+                        detail: SharedString::default(),
+                    })
+                    .into()
+                })
+                .child(svg().path(icon).size(px(16.)).text_color(rgb(TEXT)))
+        };
         let header = div()
             .flex()
             .items_center()
-            .justify_between()
-            .h(px(34.))
-            .px_3()
+            .gap(px(2.))
+            .h(px(40.))
+            .pl_3()
+            .pr_1()
             .border_b_1()
             .border_color(rgb(LINE))
-            .child(div().font_weight(FontWeight::SEMIBOLD).child("Files"))
+            .child(
+                div()
+                    .flex_1()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child("Files"),
+            )
+            .child(
+                tool("files-up", "icons/arrow-up.svg", "Up (Backspace)")
+                    .on_click(cx.listener(|p, _, _, cx| p.up(cx))),
+            )
+            .child(
+                tool("files-home", "icons/home.svg", "Home")
+                    .on_click(cx.listener(|p, _, _, cx| p.go_home(cx))),
+            )
+            .child(
+                tool("files-refresh", "icons/refresh.svg", "Refresh")
+                    .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
+            )
+            .child(
+                tool("files-mkdir", "icons/folder-plus.svg", "New folder").on_click(
+                    cx.listener(|p, _, window, cx| p.start_edit(Edit::NewFolder, window, cx)),
+                ),
+            )
+            .child(
+                tool("files-upload", "icons/upload.svg", "Upload…")
+                    .on_click(cx.listener(|p, _, _, cx| p.pick_uploads(cx))),
+            )
+            .child(div().w(px(6.)))
             .child(
                 button("files-close", "×")
                     .on_click(cx.listener(|_, _, _, cx| cx.emit(FilesEvent::Close))),
             );
-        let chosen_is_file = self
-            .selected
-            .and_then(|i| self.entries.get(i))
-            .is_some_and(|e| !e.is_dir());
         let tools = div()
-            .flex()
-            .flex_col()
-            .gap_1()
             .px_3()
-            .py_2()
+            .py(px(6.))
             .border_b_1()
             .border_color(rgb(LINE))
             .child(
@@ -1355,54 +1575,7 @@ impl Render for FilesPanel {
                     .whitespace_nowrap()
                     .overflow_hidden()
                     .child(self.shown_path()),
-            )
-            .child(
-                div()
-                    .flex()
-                    .gap_1()
-                    .child(button("files-up", "Up").on_click(cx.listener(|p, _, _, cx| p.up(cx))))
-                    .child(
-                        button("files-home", "Home")
-                            .on_click(cx.listener(|p, _, _, cx| p.go_home(cx))),
-                    )
-                    .child(
-                        button("files-refresh", "Refresh")
-                            .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
-                    )
-                    .child(button("files-mkdir", "New folder").on_click(
-                        cx.listener(|p, _, window, cx| p.start_edit(Edit::NewFolder, window, cx)),
-                    ))
-                    .child(
-                        button("files-upload", "Upload…")
-                            .on_click(cx.listener(|p, _, _, cx| p.pick_uploads(cx))),
-                    ),
-            )
-            .when(self.selected.is_some() && self.editing.is_none(), |d| {
-                d.child(
-                    div()
-                        .flex()
-                        .gap_1()
-                        .child(
-                            button("files-download", "Download")
-                                .on_click(cx.listener(|p, _, _, cx| p.download_chosen(cx))),
-                        )
-                        .when(chosen_is_file, |d| {
-                            d.child(
-                                button("files-edit", "Edit")
-                                    .on_click(cx.listener(|p, _, _, cx| p.edit_chosen(cx))),
-                            )
-                        })
-                        .child(
-                            button("files-rename", "Rename").on_click(
-                                cx.listener(|p, _, window, cx| p.start_rename(window, cx)),
-                            ),
-                        )
-                        .child(
-                            button("files-delete", "Delete")
-                                .on_click(cx.listener(|p, _, _, cx| p.ask_delete(cx))),
-                        ),
-                )
-            });
+            );
 
         // Typing a name, or confirming a deletion, above the list.
         let mut asking = div().flex().flex_col();
@@ -1484,7 +1657,22 @@ impl Render for FilesPanel {
                 .text_color(rgb(color))
                 .child(text)
         };
-        let mut body = div().flex_1().min_h_0().flex().flex_col();
+        // A right click beside the entries: the folder's own menu.
+        let mut body = div()
+            .id("files-body")
+            .flex_1()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .on_mouse_down(
+                MouseButton::Right,
+                cx.listener(|p, e: &gpui::MouseDownEvent, _, cx| {
+                    if p.dir.is_some() {
+                        p.menu = Some((e.position, MenuFor::Folder));
+                        cx.notify();
+                    }
+                }),
+            );
         match &self.state {
             State::Opening => body = body.child(note("Opening SFTP…".into(), MUTED)),
             State::Loading if self.entries.is_empty() => {
@@ -1535,7 +1723,8 @@ impl Render for FilesPanel {
         }
         if self.transfers.is_empty() && self.edits.is_empty() {
             transfers = transfers.child(note(
-                "Drop files or folders here to upload them.".into(),
+                "Right-click a file or folder for its actions; drop files here to upload them."
+                    .into(),
                 MUTED,
             ));
         }
@@ -1568,6 +1757,9 @@ impl Render for FilesPanel {
             .border_color(rgb(LINE))
             .text_sm()
             .text_color(rgb(TEXT))
+            .when_some(self.menu, |d, (at, target)| {
+                d.child(self.context_menu(at, target, cx))
+            })
             .child(header)
             .child(tools)
             .child(asking)
