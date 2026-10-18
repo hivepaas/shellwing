@@ -599,16 +599,22 @@ impl TermView {
         } else {
             m.control && m.shift
         };
+        // Next and previous theme, until the theme picker exists. GPUI reports
+        // Shift+] as "}" and drops the Shift flag for symbols, so on Linux and
+        // Windows a brace with Ctrl is Ctrl+Shift+].
+        let braced = !cfg!(target_os = "macos") && m.control && !m.alt;
+        let theme_step = match key {
+            "]" if app_chord => Some(1),
+            "}" if app_chord || braced => Some(1),
+            "[" if app_chord => Some(-1),
+            "{" if app_chord || braced => Some(-1),
+            _ => None,
+        };
+        if let Some(step) = theme_step {
+            self.step_theme(step, cx);
+            return cx.stop_propagation();
+        }
         match key {
-            // Next and previous theme, until the theme picker exists.
-            "]" | "}" if app_chord => {
-                self.step_theme(1, cx);
-                return cx.stop_propagation();
-            }
-            "[" | "{" if app_chord => {
-                self.step_theme(-1, cx);
-                return cx.stop_propagation();
-            }
             "c" | "C" if app_chord => {
                 self.term.copy();
                 return cx.stop_propagation();
