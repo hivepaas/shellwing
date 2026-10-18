@@ -79,9 +79,7 @@ fn main() -> anyhow::Result<()> {
                     .unwrap_or_else(|| (look::Live::open(None).0, vec![], None));
                 let mut ws =
                     workspace::Workspace::new(live, problems, rt_handle.clone(), bench, cx);
-                if let Some(spec) = &arg {
-                    ws.open(spec, window, cx);
-                }
+                ws.start(arg.as_deref(), window, cx);
                 ws
             })
         }) else {

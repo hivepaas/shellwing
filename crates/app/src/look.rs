@@ -67,6 +67,11 @@ impl Live {
         self.store.as_ref()
     }
 
+    /// Whether a start without a host opens the last run's tabs.
+    pub fn restore_tabs(&self) -> bool {
+        self.settings.general.restore_tabs
+    }
+
     pub fn hosts(&self) -> &Hosts {
         &self.hosts
     }

@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use crate::hosts::Hosts;
 use crate::settings::Settings;
-use crate::state::WindowState;
+use crate::state::{SessionState, WindowState};
 use crate::theme::{Theme, Themes};
 
 const SETTINGS: &str = "config.toml";
@@ -17,6 +17,7 @@ const THEMES: &str = "themes";
 const STATE: &str = "state";
 const WINDOW: &str = "window.json";
 const RECENT: &str = "recent.json";
+const SESSION: &str = "session.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -200,6 +201,15 @@ impl Store {
 
     pub fn save_window_state(&self, state: &WindowState) -> io::Result<()> {
         self.save_state(WINDOW, state)
+    }
+
+    /// The tabs open when the app last ran (`state/session.json`).
+    pub fn session_state(&self) -> Option<SessionState> {
+        self.load_state(SESSION)
+    }
+
+    pub fn save_session_state(&self, state: &SessionState) -> io::Result<()> {
+        self.save_state(SESSION, state)
     }
 
     /// Hosts opened lately, most recent first (`state/recent.json`).
@@ -413,6 +423,33 @@ mod tests {
         assert_eq!(s.window_state(), Some(w));
         fs::write(s.dir().join(STATE).join(WINDOW), "{ not json").expect("write");
         assert_eq!(s.window_state(), None);
+    }
+
+    #[test]
+    fn session_state_round_trips() {
+        use crate::state::{PaneState, TabState};
+        let s = temp("session");
+        let leaf = |spec: &str| PaneState::Leaf { spec: spec.into() };
+        let state = SessionState {
+            tabs: vec![
+                TabState {
+                    root: leaf("web"),
+                    focused: 0,
+                },
+                TabState {
+                    root: PaneState::Split {
+                        horizontal: true,
+                        ratio: 0.3,
+                        first: Box::new(leaf("db")),
+                        second: Box::new(leaf("me@x:2022")),
+                    },
+                    focused: 1,
+                },
+            ],
+            active: 1,
+        };
+        s.save_session_state(&state).expect("save");
+        assert_eq!(s.session_state(), Some(state));
     }
 
     #[test]

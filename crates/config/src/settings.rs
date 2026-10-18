@@ -7,8 +7,22 @@ use crate::theme::DEFAULT_THEME;
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Settings {
+    pub general: General,
     pub appearance: Appearance,
     pub terminal: Terminal,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct General {
+    /// Open the tabs of the last run when started without a host.
+    pub restore_tabs: bool,
+}
+
+impl Default for General {
+    fn default() -> Self {
+        General { restore_tabs: true }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
