@@ -70,12 +70,29 @@ pub enum CursorStyle {
 pub struct Terminal {
     /// Lines of history kept per terminal.
     pub scrollback: usize,
+    pub on_disconnect: OnDisconnect,
 }
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { scrollback: 10_000 }
+        Terminal {
+            scrollback: 10_000,
+            on_disconnect: OnDisconnect::default(),
+        }
     }
+}
+
+/// What a pane does when its connection ends.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OnDisconnect {
+    /// A lost connection is retried by itself; after `exit`, Enter reconnects.
+    #[default]
+    Reconnect,
+    /// Nothing happens by itself; Enter reconnects.
+    Ask,
+    /// After `exit` the pane closes; a lost connection waits for Enter.
+    Close,
 }
 
 impl Settings {
@@ -122,6 +139,7 @@ mod tests {
 
             [terminal]
             scrollback = 50000
+            on_disconnect = "close"
             "#,
         )
         .expect("parse");
@@ -132,5 +150,6 @@ mod tests {
         assert_eq!(s.appearance.line_height, 1.5);
         assert_eq!(s.appearance.cursor.style, CursorStyle::Bar);
         assert_eq!(s.terminal.scrollback, 50_000);
+        assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
     }
 }

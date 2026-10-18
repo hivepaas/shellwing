@@ -25,7 +25,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use libghostty_vt::render::{CellIterator, Dirty, RenderState, RowIterator};
-use libghostty_vt::screen::CellWide;
+use libghostty_vt::screen::{CellWide, Screen};
 use libghostty_vt::selection::FormatOptions;
 use libghostty_vt::selection::gesture::{DragEvent, Geometry, Gesture, PressEvent, ReleaseEvent};
 use libghostty_vt::style::RgbColor;
@@ -37,6 +37,10 @@ use libghostty_vt::{Terminal, key, mouse, paste};
 const FEED_QUEUE: usize = 64;
 /// Clicks closer together than this count as a double or triple click.
 const MULTI_CLICK: Duration = Duration::from_millis(500);
+/// Mouse reporting, bracketed paste, application cursor keys and keypad, the
+/// kitty keyboard flags, cursor shape and visibility, and colors back to normal.
+/// No soft reset (DECSTR): it moves the saved cursor to the top.
+const RESET_MODES: &[u8] = b"\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?2004l\x1b[?1l\x1b>\x1b[=0;1u\x1b[0 q\x1b[?25h\x1b[0m";
 /// Longest stretch of parsing before a frame may be built (about one 120 Hz frame).
 const BATCH_BUDGET: Duration = Duration::from_millis(8);
 
@@ -250,6 +254,7 @@ enum Cmd {
     Scrollback(usize),
     /// Stop the thread, dropping the terminal and the write callback.
     Close,
+    ResetModes,
     /// Wakes the thread after the UI took a frame (see [`Shared::taken`]).
     Wake,
 }
@@ -367,6 +372,14 @@ impl TermHandle {
     /// Changes how many lines of history are kept.
     pub fn set_scrollback(&self, lines: usize) {
         let _ = self.tx.send(Cmd::Scrollback(lines));
+    }
+
+    /// Undoes modes a program may have left on when its connection died, before
+    /// a new connection writes below: the alternate screen, mouse reporting,
+    /// bracketed paste, application keys, a hidden cursor. Text and the cursor
+    /// position stay.
+    pub fn reset_modes(&self) {
+        let _ = self.tx.send(Cmd::ResetModes);
     }
 
     /// Ends the terminal thread, for example when its tab closes. The callbacks
@@ -576,6 +589,15 @@ fn run(
                     e.term.set_scrollback_max_lines(Some(lines))?;
                 }
                 Cmd::Close => return Ok(()),
+                Cmd::ResetModes => {
+                    // Only leave the alternate screen if a program left it on:
+                    // 1049 also restores the cursor saved on entry, which outside
+                    // the alternate screen would be wherever (often the top).
+                    if matches!(e.term.active_screen(), Ok(Screen::Alternate)) {
+                        e.term.vt_write(b"\x1b[?1049l");
+                    }
+                    e.term.vt_write(RESET_MODES);
+                }
                 Cmd::Wake => continue,
             }
             changed = true;

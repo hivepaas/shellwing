@@ -1,10 +1,12 @@
-//! One connection, shown in one tab: its terminal, where typed input goes, and
-//! the network task. Dropping a `Session` disconnects and frees all of it.
+//! One connection, shown in one pane: its terminal, where typed input goes, and
+//! the network task. The terminal outlives connections: reconnecting starts a
+//! new network task that writes below what the old one left. Dropping a
+//! `Session` disconnects and frees all of it.
 
 use std::sync::{Arc, Mutex};
 
 use shellwing_config::Host;
-use shellwing_ssh::{Auth, Ended, HostKeyPolicy, Options, Prompter, Resolved};
+use shellwing_ssh::{Auth, Ended, Error, HostKeyPolicy, Options, Prompter, Resolved};
 use shellwing_term::{Event, TermHandle};
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
@@ -16,10 +18,35 @@ use crate::bench::{self, Probe};
 pub enum Status {
     Connecting,
     Connected,
-    /// The server closed the session, or it was closed from here.
+    /// The shell ended (`exit`), or the server closed the session.
     Closed,
-    /// It never connected, or broke.
+    /// The network broke; trying again may work.
+    Lost,
+    /// It could not connect for a reason retrying will not fix: refused
+    /// sign-in, a host key, a bad address, a cancelled prompt.
     Failed,
+}
+
+/// Errors worth retrying on their own: the network, not the person.
+fn retryable(e: &Error) -> bool {
+    match e {
+        Error::Ssh(_) | Error::Disconnected => true,
+        Error::Jump { source, .. } => retryable(source),
+        _ => false,
+    }
+}
+
+/// Status and history, shared with the network task.
+#[derive(Default)]
+struct State {
+    status: Option<Status>,
+    /// Counts status changes, so a watcher that wakes late still sees that one
+    /// happened (Connecting then Lost again looks like no change by value).
+    changes: u64,
+    /// Some connection succeeded at least once.
+    ever_connected: bool,
+    /// How the last connection ended, for the banner.
+    ended: Option<String>,
 }
 
 pub struct Session {
@@ -31,8 +58,11 @@ pub struct Session {
     pub spec: String,
     /// The hosts.toml entry, whose theme wins over the app's.
     pub entry: Option<String>,
-    status: Arc<Mutex<Status>>,
+    target: Option<Resolved>,
+    rt: Handle,
+    state: Arc<Mutex<State>>,
     task: Option<AbortHandle>,
+    wake_tx: async_channel::Sender<()>,
     /// A new frame (or a status change) is ready.
     pub wake: async_channel::Receiver<()>,
     pub events: async_channel::Receiver<Event>,
@@ -90,38 +120,92 @@ impl Session {
                     }
                 })?;
         }
-        let status = Arc::new(Mutex::new(Status::Connecting));
-        let set_status = {
-            let (status, wake_tx) = (status.clone(), wake_tx);
-            move |s: Status| {
-                if let Ok(mut st) = status.lock() {
-                    *st = s;
-                }
-                let _ = wake_tx.try_send(());
-            }
-        };
         let mut session = Session {
-            term: term.clone(),
-            writer: writer.clone(),
+            term,
+            writer,
             title: spec.to_string(),
             spec: spec.to_string(),
             entry: None,
-            status,
+            target: None,
+            rt: rt.clone(),
+            state: Arc::default(),
             task: None,
+            wake_tx,
             wake,
             events,
         };
-        let (resolved, entry) = match target {
-            Ok(t) => t,
-            Err(e) => {
-                failure(&term, &e.to_string());
-                set_status(Status::Failed);
-                return Ok(session);
+        match target {
+            Ok((resolved, entry)) => {
+                session.title = resolved.alias.clone();
+                session.entry = entry.map(|h| h.name);
+                session.target = Some(resolved);
+                session.connect(bench);
             }
+            Err(e) => {
+                failure(&session.term, &e.to_string());
+                session.set_status(Status::Failed, Some(e.to_string()));
+            }
+        }
+        Ok(session)
+    }
+
+    fn set_status(&self, status: Status, ended: Option<String>) {
+        set_status(&self.state, &self.wake_tx, status, ended);
+    }
+
+    pub fn status(&self) -> Status {
+        self.state
+            .lock()
+            .ok()
+            .and_then(|s| s.status)
+            .unwrap_or(Status::Failed)
+    }
+
+    /// The status and how many changes led to it.
+    pub fn status_change(&self) -> (u64, Status) {
+        self.state
+            .lock()
+            .map(|s| (s.changes, s.status.unwrap_or(Status::Failed)))
+            .unwrap_or((0, Status::Failed))
+    }
+
+    /// Whether a connection ever succeeded: only then is a lost one retried
+    /// without asking.
+    pub fn ever_connected(&self) -> bool {
+        self.state.lock().is_ok_and(|s| s.ever_connected)
+    }
+
+    /// How the last connection ended or failed.
+    pub fn ended(&self) -> Option<String> {
+        self.state.lock().ok().and_then(|s| s.ended.clone())
+    }
+
+    /// Connects again to the same target, below what the terminal shows.
+    pub fn reconnect(&mut self) {
+        if self.target.is_none() || matches!(self.status(), Status::Connecting | Status::Connected)
+        {
+            return;
+        }
+        if let Some(t) = self.task.take() {
+            t.abort();
+        }
+        self.writer.stop();
+        self.term.reset_modes();
+        self.connect(None);
+    }
+
+    fn connect(&mut self, bench: Option<(String, Arc<Probe>)>) {
+        let Some(resolved) = self.target.clone() else {
+            return;
         };
-        session.title = resolved.alias.clone();
-        session.entry = entry.map(|h| h.name);
-        let task = rt.spawn(async move {
+        self.set_status(Status::Connecting, None);
+        let (term, writer, state, wake_tx) = (
+            self.term.clone(),
+            self.writer.clone(),
+            self.state.clone(),
+            self.wake_tx.clone(),
+        );
+        let task = self.rt.spawn(async move {
             let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
             let via = if via.is_empty() {
                 String::new()
@@ -155,8 +239,8 @@ impl Session {
             };
             let probe = bench.as_ref().map(|(_, p)| p.clone());
             let out_term = term.clone();
-            let (end_term, end_writer, end_status) =
-                (term.clone(), writer.clone(), set_status.clone());
+            let (end_term, end_writer, end_state, end_wake) =
+                (term.clone(), writer.clone(), state.clone(), wake_tx.clone());
             let (done_tx, done_rx) = tokio::sync::oneshot::channel();
             let session = shellwing_ssh::connect(
                 opts,
@@ -168,21 +252,21 @@ impl Session {
                 }),
                 Box::new(move |ended| {
                     end_writer.stop();
-                    let broke = matches!(ended, Ended::Error(_));
-                    match ended {
+                    let (status, why) = match ended {
                         Ended::Closed {
                             exit_status: Some(s),
-                        } => status_line(&end_term, &format!("session closed (exit {s})")),
+                        } => (Status::Closed, format!("session closed (exit {s})")),
                         Ended::Closed { exit_status: None } => {
-                            status_line(&end_term, "session closed")
+                            (Status::Closed, "session closed".to_string())
                         }
-                        Ended::Error(e) => failure(&end_term, &format!("session error: {e}")),
-                    }
-                    end_status(if broke {
-                        Status::Failed
+                        Ended::Error(e) => (Status::Lost, format!("connection lost: {e}")),
+                    };
+                    if status == Status::Lost {
+                        failure(&end_term, &why);
                     } else {
-                        Status::Closed
-                    });
+                        status_line(&end_term, &why);
+                    }
+                    set_status(&end_state, &end_wake, status, Some(why));
                     let _ = done_tx.send(());
                 }),
             )
@@ -190,7 +274,10 @@ impl Session {
             match session {
                 Ok(s) => {
                     writer.start_session(s.sender());
-                    set_status(Status::Connected);
+                    if let Ok(mut st) = state.lock() {
+                        st.ever_connected = true;
+                    }
+                    set_status(&state, &wake_tx, Status::Connected, None);
                     if let Some((mode, probe)) = bench {
                         tokio::spawn(bench::run(mode, writer.clone(), probe));
                     }
@@ -199,17 +286,33 @@ impl Session {
                 Err(e) => {
                     writer.stop();
                     failure(&term, &e.to_string());
-                    set_status(Status::Failed);
+                    let status = if retryable(&e) {
+                        Status::Lost
+                    } else {
+                        Status::Failed
+                    };
+                    set_status(&state, &wake_tx, status, Some(e.to_string()));
                 }
             }
         });
-        session.task = Some(task.abort_handle());
-        Ok(session)
+        self.task = Some(task.abort_handle());
     }
+}
 
-    pub fn status(&self) -> Status {
-        self.status.lock().map_or(Status::Failed, |s| *s)
+fn set_status(
+    state: &Mutex<State>,
+    wake: &async_channel::Sender<()>,
+    status: Status,
+    ended: Option<String>,
+) {
+    if let Ok(mut st) = state.lock() {
+        st.status = Some(status);
+        st.changes += 1;
+        if ended.is_some() {
+            st.ended = ended;
+        }
     }
+    let _ = wake.try_send(());
 }
 
 impl Drop for Session {
@@ -221,5 +324,26 @@ impl Drop for Session {
         // terminal thread; the echo thread follows once the last Writer is gone.
         self.writer.stop();
         self.term.close();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_network_errors_are_retried() {
+        assert!(!retryable(&Error::AuthFailed));
+        assert!(retryable(&Error::Disconnected));
+        assert!(!retryable(&Error::Cancelled));
+        assert!(!retryable(&Error::HostKeyRejected { host: "h".into() }));
+        let io = Error::Ssh(russh::Error::IO(std::io::Error::from(
+            std::io::ErrorKind::ConnectionRefused,
+        )));
+        assert!(retryable(&io));
+        assert!(retryable(&Error::Jump {
+            host: "bastion".into(),
+            source: Box::new(io),
+        }));
     }
 }

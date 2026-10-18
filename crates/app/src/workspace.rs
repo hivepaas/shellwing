@@ -23,7 +23,7 @@ use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::session::{Session, Status};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::target;
-use crate::view::{StatusChanged, TermView, hsla};
+use crate::view::{CloseRequested, StatusChanged, TermView, hsla};
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
@@ -133,7 +133,7 @@ impl Workspace {
     /// Opens a tab connected to `spec`: a hosts.toml name, an ssh config alias or
     /// `[user@]host[:port]`.
     pub fn open(&mut self, spec: &str, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(view) = self.make_view(spec, cx) {
+        if let Some(view) = self.make_view(spec, window, cx) {
             self.tabs.push(Tab {
                 root: Some(Pane::Leaf(view.clone())),
                 focused: view,
@@ -149,7 +149,7 @@ impl Workspace {
             return;
         };
         let spec = focused.read(cx).session().spec.clone();
-        let Some(view) = self.make_view(&spec, cx) else {
+        let Some(view) = self.make_view(&spec, window, cx) else {
             return;
         };
         if let Some(tab) = self.tabs.get_mut(self.active) {
@@ -165,18 +165,30 @@ impl Workspace {
 
     /// Closes the focused pane; the last one closes its tab.
     fn close_pane(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(tab) = self.tabs.get_mut(self.active) else {
+        if let Some(view) = self.active_tab().cloned() {
+            self.close_view(&view, window, cx);
+        }
+    }
+
+    /// Closes the pane showing `view`, wherever it is; the last pane of a tab
+    /// closes the tab.
+    fn close_view(&mut self, view: &Entity<TermView>, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(ix) = self.tabs.iter().position(|t| t.views().contains(view)) else {
             return;
         };
+        let tab = &mut self.tabs[ix];
         if tab.views().len() < 2 {
-            return self.close(self.active, window, cx);
+            return self.close(ix, window, cx);
         }
-        let gone = tab.focused.clone();
-        tab.root = tab.root.take().and_then(|r| r.without(&gone));
-        if let Some(r) = &tab.root {
+        tab.root = tab.root.take().and_then(|r| r.without(view));
+        if &tab.focused == view
+            && let Some(r) = &tab.root
+        {
             tab.focused = r.first();
         }
-        self.activate(self.active, window, cx);
+        if ix == self.active {
+            self.activate(ix, window, cx);
+        }
         self.refresh_sidebar(cx);
     }
 
@@ -213,7 +225,12 @@ impl Workspace {
     }
 
     /// A terminal connected to `spec`, ready for a tab or a split.
-    fn make_view(&mut self, spec: &str, cx: &mut Context<Self>) -> Option<Entity<TermView>> {
+    fn make_view(
+        &mut self,
+        spec: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Entity<TermView>> {
         let target = target::resolve(
             spec,
             self.live.hosts(),
@@ -245,6 +262,10 @@ impl Workspace {
         // Tab and host list dots follow the session's status.
         cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| ws.refresh_sidebar(cx))
             .detach();
+        cx.subscribe_in(&view, window, |ws, view, _: &CloseRequested, window, cx| {
+            ws.close_view(view, window, cx)
+        })
+        .detach();
         if let Some(p) = problem {
             view.update(cx, |v, cx| v.show_notice(p, CONFIG_NOTICE, cx));
         }
@@ -703,8 +724,9 @@ impl Workspace {
             .min_by_key(|s| match s {
                 Status::Connected => 0,
                 Status::Connecting => 1,
-                Status::Failed => 2,
-                Status::Closed => 3,
+                Status::Lost => 2,
+                Status::Failed => 3,
+                Status::Closed => 4,
             })
     }
 

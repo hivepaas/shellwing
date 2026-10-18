@@ -36,7 +36,22 @@ cursor = { style = "block" } # "block", "bar" or "underline"
 
 [terminal]
 scrollback = 10000           # lines of history
+on_disconnect = "reconnect"  # "reconnect", "ask" or "close"
 ```
+
+When a connection ends, the pane shows a bar saying why and offers to connect
+again (<kbd>Enter</kbd>):
+
+- **`reconnect`** (the default): a lost connection (the network dropped, the
+  server restarted) is retried by itself after 1, 2, 4, 8, 16 and 30 seconds, then
+  given up; <kbd>Esc</kbd> stops the countdown. After `exit`, or when signing in
+  failed, nothing happens until <kbd>Enter</kbd>.
+- **`ask`**: never retries by itself.
+- **`close`**: the pane closes after `exit`; a lost connection waits for
+  <kbd>Enter</kbd>.
+
+Reconnecting keeps the scrollback and resets modes a program left on (the
+alternate screen, mouse reporting).
 
 Fonts:
 

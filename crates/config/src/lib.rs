@@ -20,7 +20,7 @@ mod theme;
 
 pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
-pub use settings::{Appearance, Cursor, CursorStyle, Font, Settings, Terminal};
+pub use settings::{Appearance, Cursor, CursorStyle, Font, OnDisconnect, Settings, Terminal};
 pub use state::{WindowMode, WindowState};
 pub use store::{EditFile, LoadError, Stamp, Store, WriteError};
 pub use theme::{DEFAULT_THEME, Gradient, Theme, Themes};

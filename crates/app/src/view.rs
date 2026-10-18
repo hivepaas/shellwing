@@ -26,6 +26,14 @@ use crate::Writer;
 use crate::bench::Probe;
 use crate::look::{Look, rgb as theme_rgb};
 use crate::session::{Session, Status};
+use shellwing_config::OnDisconnect;
+
+fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    c.next()
+        .map(|f| f.to_uppercase().chain(c).collect())
+        .unwrap_or_default()
+}
 
 /// Terminal font candidates; the first one installed is used ($SHELLWING_FONT wins).
 #[cfg(target_os = "macos")]
@@ -159,6 +167,12 @@ fn gradient_image(
 /// The session's status changed (connected, closed, failed).
 pub struct StatusChanged;
 
+/// The session ended and the settings say to close the pane.
+pub struct CloseRequested;
+
+/// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
+const BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
+
 /// The modifier that turns a click into "open link": Cmd on macOS, Ctrl elsewhere.
 fn link_mod(m: &Modifiers) -> bool {
     if cfg!(target_os = "macos") {
@@ -193,12 +207,19 @@ pub struct TermView {
     /// Points added to the configured font size by zooming; not saved.
     zoom: f32,
     gradient: Rc<RefCell<Option<GradientImage>>>,
-    /// The status last announced with [`StatusChanged`].
-    last_status: Status,
+    /// The session's status change last handled.
+    last_change: u64,
+    /// When the next automatic reconnect happens, if one is planned.
+    retry_at: Option<Instant>,
+    /// Automatic reconnects since the last successful connection.
+    retries: usize,
+    /// Bumped to cancel a planned reconnect.
+    retry_plan: u64,
     probe: Arc<Probe>,
 }
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
+impl gpui::EventEmitter<CloseRequested> for TermView {}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -208,9 +229,10 @@ impl TermView {
         cx.spawn(async move |this, cx| {
             while wake.recv().await.is_ok() {
                 let alive = this.update(cx, |v, cx| {
-                    let status = v.session.status();
-                    if status != v.last_status {
-                        v.last_status = status;
+                    let (change, status) = v.session.status_change();
+                    if change != v.last_change {
+                        v.last_change = change;
+                        v.status_changed(status, cx);
                         cx.emit(StatusChanged);
                     }
                     cx.notify();
@@ -249,9 +271,156 @@ impl TermView {
             look,
             zoom: 0.,
             gradient: Rc::new(RefCell::new(None)),
-            last_status: Status::Connecting,
+            last_change: 0,
+            retry_at: None,
+            retries: 0,
+            retry_plan: 0,
             probe,
         }
+    }
+
+    fn status_changed(&mut self, status: Status, cx: &mut Context<Self>) {
+        match status {
+            Status::Connected => {
+                self.retries = 0;
+                self.retry_at = None;
+            }
+            // Only a connection that once worked is retried without asking.
+            Status::Lost
+                if self.look.on_disconnect != OnDisconnect::Ask
+                    && self.session.ever_connected() =>
+            {
+                self.plan_retry(cx)
+            }
+            Status::Closed if self.look.on_disconnect == OnDisconnect::Close => {
+                cx.emit(CloseRequested)
+            }
+            _ => {}
+        }
+    }
+
+    /// Reconnects after the next back-off delay, counting down on screen.
+    fn plan_retry(&mut self, cx: &mut Context<Self>) {
+        let Some(&secs) = BACKOFF_SECS.get(self.retries) else {
+            // Given up; Enter still tries.
+            self.retry_at = None;
+            return;
+        };
+        self.retries += 1;
+        self.retry_plan += 1;
+        let plan = self.retry_plan;
+        let due = Instant::now() + Duration::from_secs(secs);
+        self.retry_at = Some(due);
+        cx.spawn(async move |this, cx| {
+            loop {
+                let wait = due
+                    .saturating_duration_since(Instant::now())
+                    .min(Duration::from_secs(1));
+                cx.background_executor().timer(wait).await;
+                let done = this.update(cx, |v, cx| {
+                    if v.retry_plan != plan {
+                        return true;
+                    }
+                    if Instant::now() >= due {
+                        v.retry_at = None;
+                        v.session.reconnect();
+                        return true;
+                    }
+                    cx.notify();
+                    false
+                });
+                if done.unwrap_or(true) {
+                    break;
+                }
+            }
+        })
+        .detach();
+    }
+
+    fn reconnect_now(&mut self, cx: &mut Context<Self>) {
+        self.retry_plan += 1;
+        self.retry_at = None;
+        self.retries = 0;
+        self.session.reconnect();
+        cx.notify();
+    }
+
+    fn stop_retrying(&mut self, cx: &mut Context<Self>) {
+        self.retry_plan += 1;
+        self.retry_at = None;
+        cx.notify();
+    }
+
+    /// The bar shown while the pane has no connection.
+    fn banner(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let status = self.session.status();
+        let why = self.session.ended().unwrap_or_default();
+        let text = match (status, self.retry_at) {
+            (Status::Lost, Some(due)) => format!(
+                "Connection lost. Trying again in {} s (attempt {} of {}).",
+                due.saturating_duration_since(Instant::now()).as_secs() + 1,
+                self.retries,
+                BACKOFF_SECS.len()
+            ),
+            (Status::Lost, None) if self.retries >= BACKOFF_SECS.len() => {
+                format!(
+                    "Gave up after {} attempts. Enter tries again.",
+                    self.retries
+                )
+            }
+            (Status::Lost, None) => "Connection lost. Enter tries again.".to_string(),
+            (Status::Closed, _) => format!("{}. Enter reconnects.", capitalize(&why)),
+            (Status::Failed, _) if self.session.ever_connected() || !why.is_empty() => {
+                "Could not connect. Enter tries again.".to_string()
+            }
+            _ => return None,
+        };
+        let button = |id: &'static str, label: &'static str, primary: bool| {
+            div()
+                .id(id)
+                .px_3()
+                .py_1()
+                .rounded_md()
+                .cursor_pointer()
+                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(!primary, |d| {
+                    d.border_1()
+                        .border_color(rgb(0x3f4a5c))
+                        .hover(|s| s.bg(rgb(0x1e2736)))
+                })
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        Some(
+            div()
+                .absolute()
+                .left_3()
+                .right_3()
+                .bottom_3()
+                .flex()
+                .items_center()
+                .gap_3()
+                .px_3()
+                .py_2()
+                .rounded_lg()
+                .border_1()
+                .border_color(rgb(0x2b3648))
+                .bg(gpui::rgba(0x080a12e6))
+                .text_sm()
+                .text_color(rgb(0xe2e8f0))
+                .child(div().flex_1().min_w_0().child(text))
+                .when(self.retry_at.is_some(), |d| {
+                    d.child(
+                        button("stop-retry", "Stop (Esc)", false)
+                            .on_click(cx.listener(|v, _, _, cx| v.stop_retrying(cx))),
+                    )
+                })
+                .child(
+                    button("reconnect", "Reconnect (Enter)", true)
+                        .on_click(cx.listener(|v, _, _, cx| v.reconnect_now(cx))),
+                )
+                .into_any_element(),
+        )
     }
 
     /// Where the terminal was last painted, in window coordinates.
@@ -627,6 +796,24 @@ impl TermView {
             self.term.text(text.clone());
             return cx.stop_propagation();
         }
+        // Without a connection, Enter reconnects and Escape stops the countdown.
+        if matches!(
+            self.session.status(),
+            Status::Closed | Status::Lost | Status::Failed
+        ) && !(m.control || m.alt || m.platform)
+        {
+            match key {
+                "enter" => {
+                    self.reconnect_now(cx);
+                    return cx.stop_propagation();
+                }
+                "escape" if self.retry_at.is_some() => {
+                    self.stop_retrying(cx);
+                    return cx.stop_propagation();
+                }
+                _ => {}
+            }
+        }
         // Clipboard and scrollback shortcuts: Ctrl+Shift on Linux/Windows, Cmd on macOS.
         let app_chord = if cfg!(target_os = "macos") {
             m.platform && !m.control
@@ -891,7 +1078,9 @@ impl Render for TermView {
         if let Some(n) = &self.notice {
             terminal = terminal.child(badge().top_3().child(n.clone()));
         }
-        if self.frame.scrolled_back {
+        if let Some(b) = self.banner(cx) {
+            terminal = terminal.child(b);
+        } else if self.frame.scrolled_back {
             terminal = terminal.child(
                 badge()
                     .id("to-bottom")

@@ -102,6 +102,10 @@ pub enum Error {
     AuthFailed,
     #[error("cancelled")]
     Cancelled,
+    /// The connection went away without the server closing the session, as when
+    /// the server restarts or the network drops.
+    #[error("the connection was closed")]
+    Disconnected,
     #[error("via {host}: {source}")]
     Jump {
         host: String,
@@ -250,6 +254,8 @@ pub async fn connect(
         let _jumps = jumps;
         let mut exit_status = None;
         let result: Result<(), Error> = async {
+            // A session that is closed in order says so (Eof, Close); the channel
+            // just vanishing means the connection died.
             loop {
                 tokio::select! {
                     msg = channel.wait() => match msg {
@@ -257,7 +263,8 @@ pub async fn connect(
                             tokio::task::block_in_place(|| output(&data));
                         }
                         Some(ChannelMsg::ExitStatus { exit_status: s }) => exit_status = Some(s),
-                        Some(ChannelMsg::Eof) | Some(ChannelMsg::Close) | None => break,
+                        Some(ChannelMsg::Eof) | Some(ChannelMsg::Close) => break,
+                        None => return Err(Error::Disconnected),
                         _ => {}
                     },
                     input = rx.recv() => match input {

@@ -5992,6 +5992,7 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "russh",
  "shellwing-config",
  "shellwing-ssh",
  "shellwing-term",
