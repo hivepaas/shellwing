@@ -33,6 +33,7 @@ pub enum Action {
     SplitRight,
     SplitDown,
     ChangeTheme,
+    Forward,
     ToggleHosts,
     CloseTab,
     EditSettings,

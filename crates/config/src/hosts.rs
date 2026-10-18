@@ -45,6 +45,10 @@ pub struct Host {
     /// aliases from `~/.ssh/config`.
     #[serde(default)]
     pub jump: Vec<String>,
+    /// Ports to forward while connected, written as ssh's options:
+    /// `-L 8080:localhost:80`, `-R 9000:localhost:3000`, `-D 1080`.
+    #[serde(default)]
+    pub forward: Vec<String>,
     #[serde(default)]
     pub auth: Auth,
     #[serde(default)]

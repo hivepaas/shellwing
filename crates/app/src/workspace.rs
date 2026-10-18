@@ -93,8 +93,16 @@ pub struct Workspace {
     sync: SyncWorker,
     /// The last sync error shown, so it is not repeated every minute.
     sync_error: Option<String>,
+    /// What the palette's question is for, while one is asked.
+    asking: Option<Asking>,
+}
+
+#[derive(Clone)]
+enum Asking {
     /// A folder holding another vault, waiting for its recovery key.
-    joining: Option<std::path::PathBuf>,
+    RecoveryKey(std::path::PathBuf),
+    /// A port to forward on the active tab's connection.
+    Forward,
 }
 
 /// What `state/session.json` keeps of a pane tree: hosts and splits.
@@ -158,7 +166,7 @@ impl Workspace {
             vault_reported: false,
             sync,
             sync_error: None,
-            joining: None,
+            asking: None,
         };
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
@@ -182,7 +190,17 @@ impl Workspace {
     /// Opens a tab connected to `spec`: a hosts.toml name, an ssh config alias or
     /// `[user@]host[:port]`.
     pub fn open(&mut self, spec: &str, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(view) = self.make_view(spec, window, cx) {
+        self.open_forwarding(spec, &[], window, cx);
+    }
+
+    fn open_forwarding(
+        &mut self,
+        spec: &str,
+        forwards: &[String],
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(view) = self.make_view_forwarding(spec, forwards, window, cx) {
             self.tabs.push(Tab {
                 root: Some(Pane::Leaf(view.clone())),
                 focused: view,
@@ -280,11 +298,26 @@ impl Workspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Entity<TermView>> {
+        self.make_view_forwarding(spec, &[], window, cx)
+    }
+
+    /// As [`Self::make_view`], also forwarding `forwards` (from the command line).
+    fn make_view_forwarding(
+        &mut self,
+        spec: &str,
+        forwards: &[String],
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Entity<TermView>> {
         let target = target::resolve(
             spec,
             self.live.hosts(),
             ssh_config::default_config_path().as_deref(),
-        );
+        )
+        .map(|(mut r, h)| {
+            r.forwards.extend_from_slice(forwards);
+            (r, h)
+        });
         let entry = target
             .as_ref()
             .ok()
@@ -330,10 +363,17 @@ impl Workspace {
         Some(view)
     }
 
-    /// Opens `spec` if given; otherwise the last run's tabs, if the settings say so.
-    pub fn start(&mut self, spec: Option<&str>, window: &mut Window, cx: &mut Context<Self>) {
+    /// Opens `spec` if given, with `forwards` from the command line; otherwise
+    /// the last run's tabs, if the settings say so.
+    pub fn start(
+        &mut self,
+        spec: Option<&str>,
+        forwards: &[String],
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         match spec {
-            Some(spec) => self.open(spec, window, cx),
+            Some(spec) => self.open_forwarding(spec, forwards, window, cx),
             None if self.live.restore_tabs() => self.restore(window, cx),
             None => {}
         }
@@ -540,6 +580,13 @@ impl Workspace {
                 },
             );
             action(Action::CloseTab, "Close the tab".into(), String::new());
+            if t.read(cx).session().status() == Status::Connected {
+                action(
+                    Action::Forward,
+                    format!("Forward a port through {title}…"),
+                    "-L / -R / -D".into(),
+                );
+            }
         }
         action(
             Action::ChangeTheme,
@@ -688,7 +735,7 @@ impl Workspace {
                 Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
             },
             Ok(FolderState::Other) => {
-                self.joining = Some(folder);
+                self.asking = Some(Asking::RecoveryKey(folder));
                 self.ask_recovery_key(false, window, cx);
             }
             Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
@@ -708,11 +755,10 @@ impl Workspace {
     }
 
     fn ask_recovery_key(&mut self, again: bool, window: &mut Window, cx: &mut Context<Self>) {
-        let folder = self
-            .joining
-            .as_ref()
-            .map(|f| f.display().to_string())
-            .unwrap_or_default();
+        let folder = match &self.asking {
+            Some(Asking::RecoveryKey(f)) => f.display().to_string(),
+            _ => String::new(),
+        };
         let mut notes = vec![
             Entry::new(
                 Kind::Note,
@@ -730,6 +776,78 @@ impl Workspace {
         }
         let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    fn ask_forward(
+        &mut self,
+        problem: Option<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.asking = Some(Asking::Forward);
+        let note = |title: &str, detail: &str| {
+            Entry::new(Kind::Note, "", title.to_string()).detail(detail.to_string())
+        };
+        let mut notes = vec![
+            note(
+                "-L 8080:localhost:80",
+                "Port 8080 here reaches localhost:80 as the server sees it.",
+            ),
+            note(
+                "-R 9000:localhost:3000",
+                "Port 9000 on the server reaches localhost:3000 here.",
+            ),
+            note(
+                "-D 1080",
+                "A SOCKS proxy on port 1080 here; connections go out from the server.",
+            ),
+            note(
+                "For this tab, until it is closed",
+                "To forward on every connection, add it to the host's forward list in hosts.toml.",
+            ),
+        ];
+        if let Some(p) = problem {
+            notes.insert(0, Entry::new(Kind::Note, "", p));
+        }
+        let palette = cx.new(|cx| Palette::ask("-L 8080:localhost:80", notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Starts the forward typed into the palette on the active tab's connection.
+    fn answer_forward(&mut self, text: &str, window: &mut Window, cx: &mut Context<Self>) {
+        self.close_palette(window, cx);
+        let forward = match text.parse::<shellwing_ssh::Forward>() {
+            Ok(f) => f,
+            // Asked again, with what was wrong.
+            Err(e) => return self.ask_forward(Some(e.to_string()), window, cx),
+        };
+        self.asking = None;
+        let Some(tab) = self.active_tab().cloned() else {
+            return;
+        };
+        let Some(answer) = tab.read(cx).session().forward(forward) else {
+            return self.say("Not connected.".into(), CONFIG_NOTICE, cx);
+        };
+        cx.spawn(async move |_, cx| {
+            let result = answer.await;
+            tab.update(cx, |v, cx| {
+                let msg = match result {
+                    Ok(Ok(active)) => {
+                        v.session_mut().keep_forward(&active);
+                        let text = active.to_string();
+                        let mut chars = text.chars();
+                        chars
+                            .next()
+                            .map(|c| c.to_uppercase().chain(chars).collect())
+                            .unwrap_or(text)
+                    }
+                    Ok(Err(e)) => e.to_string(),
+                    Err(_) => "The connection ended.".into(),
+                };
+                v.show_notice(msg, CONFIG_NOTICE, cx);
+            });
+        })
+        .detach();
     }
 
     fn show_recovery_key(
@@ -864,12 +982,17 @@ impl Workspace {
                 self.say("Copied.".into(), THEME_NOTICE, cx);
             }
             PaletteEvent::Answer(text) => {
-                let (Some(folder), Some(vault)) = (self.joining.clone(), self.vault.ready()) else {
+                let folder = match self.asking.clone() {
+                    Some(Asking::Forward) => return self.answer_forward(text, window, cx),
+                    Some(Asking::RecoveryKey(folder)) => folder,
+                    None => return self.close_palette(window, cx),
+                };
+                let Some(vault) = self.vault.ready() else {
                     return self.close_palette(window, cx);
                 };
                 match vault.join(&Folder::new(&folder), text) {
                     Ok(()) => {
-                        self.joining = None;
+                        self.asking = None;
                         self.close_palette(window, cx);
                         self.keep_sync_folder(Some(&folder), cx);
                         self.say(
@@ -930,6 +1053,7 @@ impl Workspace {
             Action::SplitDown => self.split(Axis::Vertical, window, cx),
             Action::CloseTab => self.close(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
+            Action::Forward => self.ask_forward(None, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
             Action::SyncFolder => self.choose_sync_folder(window, cx),
             Action::SyncNow => {

@@ -134,6 +134,7 @@ port = 2222                 # default 22
 user = "deploy"             # default: from ~/.ssh/config, else your login name
 group = "Production"
 jump = ["bastion"]          # outermost first: hosts here or ~/.ssh/config aliases
+forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
 auth = { method = "key", key = "~/.ssh/deploy_ed25519" }
 theme = "nord"              # beats the group's and config.toml's theme
 ```
@@ -146,8 +147,8 @@ theme = "nord"              # beats the group's and config.toml's theme
 
 A user or port typed on the command line (`root@api1:22`) wins over the file.
 
-**Fields not used yet.** `id`, `tags` and `local_only` are read but have no
-effect yet; they are for sync. The `password` and `agent` methods of `auth`
+**Fields not used yet.** `tags` is read but has no effect yet (`id` and
+`local_only` are for sync, below). The `password` and `agent` methods of `auth`
 behave like the default for now: agent, then key files, then a password prompt,
 as `ssh` does.
 
@@ -156,6 +157,37 @@ as `ssh` does.
 1. The host's `theme`.
 2. Its group's `theme`.
 3. `config.toml`.
+
+## Port forwarding
+
+Forwards are written as `ssh`'s options, and run while the connection does:
+
+| Spec | What it does |
+| --- | --- |
+| `-L [bind:]port:host:hostport` | Port `port` here reaches `host:hostport` as the server sees it. |
+| `-R [bind:]port:host:hostport` | Port `port` on the server reaches `host:hostport` from here. |
+| `-D [bind:]port` | A SOCKS 4/5 proxy on `port` here; each connection goes out from the server. |
+
+Ports listen on loopback unless `bind` says otherwise; `*` means every
+interface (for `-R`, the server's `GatewayPorts` decides). Port `0` takes any
+free one; the one taken is shown. IPv6 addresses go in brackets: `[::1]:8080:…`.
+
+There are three ways to forward:
+
+- **For a host,** in hosts.toml: `forward = ["-L 8080:localhost:80"]`. Set up
+  on every connection, again after a reconnect. Synced with the host.
+- **From the command line,** for the tab it opens:
+  `shellwing -L 8080:localhost:80 -D 1080 api1`.
+- **In a running tab:** *Forward a port through …* in the palette. It lasts for
+  that tab, reconnects included.
+
+What happens is shown under the connecting line: `[forwarding localhost:8080 →
+localhost:80]`, or in red why a forward could not start (a port in use, a
+server that refuses). The session goes on either way, as with `ssh`. A second
+tab to the same host finds the first tab's ports taken and says so quietly.
+
+`LocalForward`, `RemoteForward` and `DynamicForward` in `~/.ssh/config` are not
+applied yet; put them in hosts.toml instead.
 
 ## Saved passwords
 

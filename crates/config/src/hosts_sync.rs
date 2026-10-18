@@ -42,11 +42,10 @@ impl Host {
                 serde_json::to_string(&self.tags).unwrap_or_default(),
             );
         }
-        if !self.jump.is_empty() {
-            f.insert(
-                "jump".into(),
-                serde_json::to_string(&self.jump).unwrap_or_default(),
-            );
+        for (key, list) in [("jump", &self.jump), ("forward", &self.forward)] {
+            if !list.is_empty() {
+                f.insert(key.into(), serde_json::to_string(list).unwrap_or_default());
+            }
         }
         if self.auth.method != AuthMethod::Auto {
             f.insert("auth_method".into(), method_name(self.auth.method).into());
@@ -202,6 +201,7 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_port(t, g("port"));
     changed |= set_list(t, "tags", g("tags"));
     changed |= set_list(t, "jump", g("jump"));
+    changed |= set_list(t, "forward", g("forward"));
     changed |= set_auth(t, g("auth_method"), g("auth_key"));
     changed
 }
@@ -351,6 +351,7 @@ local_only = true
             ("name".into(), "db".into()),
             ("address".into(), "10.0.2.8".into()),
             ("jump".into(), r#"["bastion"]"#.into()),
+            ("forward".into(), r#"["-L 5432:localhost:5432"]"#.into()),
         ]);
         // h1 edited elsewhere, h2 (the one without an id) unknown to sync, h4
         // new from another device; h3 is local only.
@@ -374,6 +375,7 @@ local_only = true
         let hosts = parse(&text);
         let db = hosts.find("db").expect("added");
         assert_eq!(db.jump, ["bastion"]);
+        assert_eq!(db.forward, ["-L 5432:localhost:5432"]);
         // Applying the same again changes nothing.
         assert!(!apply(&mut doc, "host", &wanted));
         // A host deleted elsewhere goes.

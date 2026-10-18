@@ -59,6 +59,7 @@ fn from_host(
     if let Some(p) = port.or(h.port) {
         r.target.port = p;
     }
+    r.forwards = h.forward.clone();
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
@@ -102,6 +103,7 @@ mod tests {
         user = "deploy"
         port = 2222
         jump = ["bastion", "edge.example.com"]
+        forward = ["-L 8080:localhost:80"]
         auth = { method = "key", key = "/keys/deploy" }
 
         [[host]]
@@ -123,6 +125,7 @@ mod tests {
         assert_eq!(r.alias, "api-1");
         assert_eq!(r.target.to_string(), "deploy@10.0.1.11:2222");
         assert_eq!(r.identity_files, [PathBuf::from("/keys/deploy")]);
+        assert_eq!(r.forwards, ["-L 8080:localhost:80"]);
         let hops: Vec<String> = r.jumps.iter().map(|j| j.target.to_string()).collect();
         let me = config::resolve("x", None).expect("x").target.user;
         assert_eq!(
