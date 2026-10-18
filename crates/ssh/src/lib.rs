@@ -6,9 +6,12 @@
 //! - Authentication follows OpenSSH's order: agent, key files (passphrases are
 //!   asked for), keyboard-interactive, password.
 //! - Every question goes through a [`Prompter`], so the app decides how to ask.
+//! - [`forward`] forwards ports as `-L`, `-R` and `-D` do, for as long as the
+//!   session runs.
 
 mod auth;
 pub mod config;
+pub mod forward;
 pub mod hostkey;
 pub mod prompt;
 pub mod secrets;
@@ -22,6 +25,8 @@ use russh::{ChannelMsg, Disconnect};
 use tokio::sync::mpsc;
 
 pub use config::Resolved;
+pub use forward::{Active, Forward};
+use forward::{Forwarder, Routes};
 use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
@@ -108,6 +113,10 @@ pub enum Error {
     /// the server restarts or the network drops.
     #[error("the connection was closed")]
     Disconnected,
+    #[error("bad forward {spec:?}: {why}")]
+    BadForward { spec: String, why: String },
+    #[error("cannot forward {spec}: {why}")]
+    Forward { spec: String, why: String },
     #[error("via {host}: {source}")]
     Jump {
         host: String,
@@ -123,7 +132,15 @@ pub enum Error {
 /// Input for a running session.
 pub enum Input {
     Data(Vec<u8>),
-    Resize { cols: u32, rows: u32 },
+    Resize {
+        cols: u32,
+        rows: u32,
+    },
+    /// Starts forwarding a port while the session runs.
+    Forward {
+        forward: Forward,
+        reply: tokio::sync::oneshot::Sender<Result<Active, Error>>,
+    },
 }
 
 /// A connected interactive shell. Dropping every sender closes the session.
@@ -157,6 +174,8 @@ pub enum Ended {
 /// a slow consumer slows the server down.
 pub type OutputFn = Box<dyn FnMut(&[u8]) + Send>;
 pub type EndedFn = Box<dyn FnOnce(Ended) + Send>;
+/// How each of the target's forwards went: running, or why not.
+pub type ForwardedFn = Box<dyn FnMut(Result<Active, Error>) + Send + Sync>;
 
 pub struct Options {
     pub target: Resolved,
@@ -169,6 +188,9 @@ pub struct Options {
     pub prompter: Option<Prompter>,
     /// Saved passwords and passphrases, tried before asking.
     pub secrets: Option<std::sync::Arc<dyn Secrets>>,
+    /// Told about each of `target.forwards` once it is set up, before the shell
+    /// starts, so reports come before any output.
+    pub forwarded: Option<ForwardedFn>,
     pub cols: u32,
     pub rows: u32,
     pub term: String,
@@ -179,6 +201,7 @@ async fn open_hop(
     hop: &Resolved,
     via: Option<&Handle<Checker>>,
     opts: &Options,
+    routes: Routes,
 ) -> Result<Handle<Checker>, Error> {
     let problem = Arc::new(Mutex::new(None));
     let checker = Checker {
@@ -188,6 +211,7 @@ async fn open_hop(
         known_hosts: opts.known_hosts.clone(),
         prompter: opts.prompter.clone(),
         problem: problem.clone(),
+        routes,
     };
     let config = Arc::new(client::Config {
         keepalive_interval: Some(hop.keepalive.unwrap_or(DEFAULT_KEEPALIVE)),
@@ -227,16 +251,17 @@ async fn open_hop(
     Ok(handle)
 }
 
-/// Connects (through any ProxyJump hosts), authenticates, opens a PTY shell and
-/// starts pumping output into `output`. `ended` is called once when the session finishes.
+/// Connects (through any ProxyJump hosts), authenticates, forwards the target's
+/// ports, opens a PTY shell and starts pumping output into `output`. `ended` is
+/// called once when the session finishes.
 pub async fn connect(
-    opts: Options,
+    mut opts: Options,
     mut output: OutputFn,
     ended: EndedFn,
 ) -> Result<Session, Error> {
     let mut jumps: Vec<Handle<Checker>> = Vec::new();
     for hop in &opts.target.jumps {
-        let h = open_hop(hop, jumps.last(), &opts)
+        let h = open_hop(hop, jumps.last(), &opts, Routes::default())
             .await
             .map_err(|e| Error::Jump {
                 host: hop.alias.clone(),
@@ -244,7 +269,20 @@ pub async fn connect(
             })?;
         jumps.push(h);
     }
-    let handle = open_hop(&opts.target, jumps.last(), &opts).await?;
+    let routes = Routes::default();
+    let handle = Arc::new(open_hop(&opts.target, jumps.last(), &opts, routes.clone()).await?);
+
+    // As OpenSSH, a forward that cannot be set up is reported, and the session goes on.
+    let mut forwarder = Forwarder::new(handle.clone(), routes);
+    for spec in &opts.target.forwards {
+        let result = match spec.parse::<Forward>() {
+            Ok(f) => forwarder.start(&f).await,
+            Err(e) => Err(e),
+        };
+        if let Some(report) = opts.forwarded.as_mut() {
+            report(result);
+        }
+    }
 
     let mut channel = handle.channel_open_session().await?;
     channel
@@ -274,6 +312,9 @@ pub async fn connect(
                     input = rx.recv() => match input {
                         Some(Input::Data(b)) => channel.data(&b[..]).await?,
                         Some(Input::Resize { cols, rows }) => channel.window_change(cols, rows, 0, 0).await?,
+                        Some(Input::Forward { forward, reply }) => {
+                            let _ = reply.send(forwarder.start(&forward).await);
+                        }
                         None => break,
                     },
                 }
@@ -282,6 +323,8 @@ pub async fn connect(
         }
         .await;
         let _ = handle.disconnect(Disconnect::ByApplication, "", "en").await;
+        // Closes the forwarded ports.
+        drop(forwarder);
         ended(match result {
             Ok(()) => Ended::Closed { exit_status },
             Err(e) => Ended::Error(e),

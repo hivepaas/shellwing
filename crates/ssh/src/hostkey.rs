@@ -9,10 +9,12 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use russh::client;
+use russh::Channel;
+use russh::client::{self, ChannelOpenHandle, Msg};
 use russh::keys::{HashAlg, PublicKey, PublicKeyOrCertificate, known_hosts};
 
 use crate::Error;
+use crate::forward::Routes;
 use crate::prompt::{Prompt, Prompter};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,6 +42,8 @@ pub(crate) struct Checker {
     pub prompter: Option<Prompter>,
     /// Why the key was refused, for a clearer error than russh's.
     pub problem: Arc<Mutex<Option<Error>>>,
+    /// Where connections the server forwards to us (`-R`) go.
+    pub routes: Routes,
 }
 
 fn default_known_hosts() -> Option<PathBuf> {
@@ -155,6 +159,21 @@ impl client::Handler for Checker {
             }
         }
     }
+
+    async fn server_channel_open_forwarded_tcpip(
+        &mut self,
+        channel: Channel<Msg>,
+        connected_address: &str,
+        connected_port: u32,
+        _originator_address: &str,
+        _originator_port: u32,
+        reply: ChannelOpenHandle,
+        _session: &mut client::Session,
+    ) -> Result<(), Self::Error> {
+        self.routes
+            .open(channel, connected_address, connected_port, reply);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -178,6 +197,7 @@ mod tests {
             known_hosts: Some(file.into()),
             prompter: None,
             problem: Default::default(),
+            routes: Default::default(),
         }
     }
 

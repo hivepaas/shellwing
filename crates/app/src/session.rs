@@ -3,10 +3,12 @@
 //! new network task that writes below what the old one left. Dropping a
 //! `Session` disconnects and frees all of it.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_config::Host;
-use shellwing_ssh::{Auth, Ended, Error, HostKeyPolicy, Options, Prompter, Resolved};
+use shellwing_ssh::{
+    Active, Auth, Ended, Error, Forward, HostKeyPolicy, Input, Options, Prompter, Resolved,
+};
 use shellwing_term::{Event, TermHandle};
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
@@ -72,6 +74,60 @@ pub struct Session {
     pub learned: async_channel::Receiver<Learned>,
     secrets: Arc<dyn Secrets>,
     vault: VaultSlot,
+    /// The forwards the current connection runs.
+    held: Weak<Held>,
+}
+
+/// Forwards running in this app, as specs. A second tab to a host finds the
+/// ports the first one forwards taken; that is said quietly, not as an error.
+static RUNNING: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+/// The forwards of one connection, in [`RUNNING`] until it is dropped with the
+/// connection.
+#[derive(Default)]
+struct Held(Mutex<Vec<String>>);
+
+impl Held {
+    fn add(&self, active: &Active) {
+        let spec = active.running().to_string();
+        if let Ok(mut r) = RUNNING.lock() {
+            r.push(spec.clone());
+        }
+        if let Ok(mut h) = self.0.lock() {
+            h.push(spec);
+        }
+    }
+}
+
+impl Drop for Held {
+    fn drop(&mut self) {
+        let mine = self.0.get_mut().map(std::mem::take).unwrap_or_default();
+        if let Ok(mut r) = RUNNING.lock() {
+            for spec in mine {
+                if let Some(i) = r.iter().position(|s| *s == spec) {
+                    r.remove(i);
+                }
+            }
+        }
+    }
+}
+
+fn running_elsewhere(spec: &str) -> bool {
+    RUNNING.lock().is_ok_and(|r| r.iter().any(|s| s == spec))
+}
+
+/// How a forward went, on a line of its own below the connecting line.
+fn forwarded(term: &TermHandle, held: &Held, result: Result<Active, Error>) {
+    match result {
+        Ok(active) => {
+            term.feed(format!("\x1b[2m[{active}]\x1b[0m\r\n").into_bytes());
+            held.add(&active);
+        }
+        Err(Error::Forward { spec, .. }) if running_elsewhere(&spec) => {
+            term.feed(format!("\x1b[2m[{spec}: forwarded by another tab]\x1b[0m\r\n").into_bytes())
+        }
+        Err(e) => term.feed(format!("\x1b[31m{e}\x1b[0m\r\n").into_bytes()),
+    }
 }
 
 /// A dimmed status line written into the terminal itself.
@@ -147,6 +203,7 @@ impl Session {
                 learned: learned_tx,
             }),
             vault,
+            held: Weak::new(),
         };
         match target {
             Ok((resolved, entry)) => {
@@ -199,6 +256,28 @@ impl Session {
         self.state.lock().ok().and_then(|s| s.ended.clone())
     }
 
+    /// Starts forwarding on the running connection; the answer comes on the
+    /// receiver. None when nothing is connected.
+    pub fn forward(
+        &self,
+        forward: Forward,
+    ) -> Option<tokio::sync::oneshot::Receiver<Result<Active, Error>>> {
+        let (reply, answer) = tokio::sync::oneshot::channel();
+        self.writer
+            .send(Input::Forward { forward, reply })
+            .then_some(answer)
+    }
+
+    /// Keeps a forward started by hand: it is set up again on reconnecting.
+    pub fn keep_forward(&mut self, active: &Active) {
+        if let Some(t) = &mut self.target {
+            t.forwards.push(active.running().to_string());
+        }
+        if let Some(held) = self.held.upgrade() {
+            held.add(active);
+        }
+    }
+
     /// Connects again to the same target, below what the terminal shows.
     pub fn reconnect(&mut self) {
         if self.target.is_none() || matches!(self.status(), Status::Connecting | Status::Connected)
@@ -225,6 +304,10 @@ impl Session {
             self.wake_tx.clone(),
         );
         let secrets = Some(self.secrets.clone());
+        // Lives as long as the connection: the forwarded callback and the ended
+        // one hold it.
+        let held = Arc::new(Held::default());
+        self.held = Arc::downgrade(&held);
         let task = self.rt.spawn(async move {
             let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
             let via = if via.is_empty() {
@@ -244,6 +327,7 @@ impl Session {
                     }
                 });
             }
+            let (fwd_term, fwd_held) = (term.clone(), held.clone());
             let opts = Options {
                 target: resolved,
                 auth: Auth {
@@ -254,6 +338,7 @@ impl Session {
                 known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
                 prompter: Some(prompter),
                 secrets: secrets.clone(),
+                forwarded: Some(Box::new(move |r| forwarded(&fwd_term, &fwd_held, r))),
                 cols: 80,
                 rows: 24,
                 term: "xterm-256color".into(),
@@ -272,6 +357,8 @@ impl Session {
                     out_term.feed(bytes.to_vec());
                 }),
                 Box::new(move |ended| {
+                    // The ports are closed now.
+                    drop(held);
                     end_writer.stop();
                     let (status, why) = match ended {
                         Ended::Closed {

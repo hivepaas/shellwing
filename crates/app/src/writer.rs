@@ -97,6 +97,14 @@ impl Writer {
         st.mode = Mode::Session(tx);
     }
 
+    /// Sends `input` to the running session; false if none runs.
+    pub fn send(&self, input: Input) -> bool {
+        self.state.lock().is_ok_and(|st| match &st.mode {
+            Mode::Session(tx) => tx.send(input).is_ok(),
+            _ => false,
+        })
+    }
+
     /// The session ended or failed: drop input until the next connection.
     pub fn stop(&self) {
         if let Ok(mut st) = self.state.lock() {

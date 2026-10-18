@@ -30,6 +30,9 @@ pub struct Resolved {
     /// Hosts to go through first, outermost first; each has no jumps of its own.
     pub jumps: Vec<Resolved>,
     pub keepalive: Option<Duration>,
+    /// Ports to forward, as `-L`, `-R` and `-D` options are written. Read when
+    /// connecting, so one that is wrong is reported without stopping the rest.
+    pub forwards: Vec<String>,
 }
 
 impl Resolved {
@@ -41,6 +44,7 @@ impl Resolved {
             identity_files: vec![],
             jumps: vec![],
             keepalive: None,
+            forwards: vec![],
         }
     }
 
@@ -203,6 +207,7 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         identity_files,
         jumps,
         keepalive: p.server_alive_interval,
+        forwards: vec![],
     })
 }
 

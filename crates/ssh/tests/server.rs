@@ -1,5 +1,6 @@
 //! End-to-end tests against an in-process russh server: host key questions,
-//! password retries, one-time codes, encrypted keys, cancelling, and ProxyJump.
+//! password retries, one-time codes, encrypted keys, cancelling, ProxyJump and
+//! port forwarding.
 //! Keys are generated at run time; nothing secret lives in the repository.
 
 use std::path::PathBuf;
@@ -10,7 +11,10 @@ use russh::keys::ssh_key::{Algorithm, LineEnding};
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth as ServerAuth, ChannelOpenHandle, Msg, Session as ServerSession};
 use russh::{Channel, ChannelId, MethodKind, MethodSet};
-use shellwing_ssh::{Auth, Error, HostKeyPolicy, Options, Prompt, Prompter, Resolved, Target};
+use shellwing_ssh::{
+    Active, Auth, Error, Forward, HostKeyPolicy, Input, Options, Prompt, Prompter, Resolved, Target,
+};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 #[derive(Clone, Default)]
@@ -18,7 +22,7 @@ struct Policy {
     password: Option<&'static str>,
     otp: Option<&'static str>,
     key: Option<PublicKey>,
-    /// Allow direct-tcpip, i.e. act as a jump host.
+    /// Allow direct-tcpip (act as a jump host, carry -L and -D) and tcpip-forward (-R).
     forward: bool,
 }
 
@@ -185,6 +189,43 @@ impl server::Handler for TestServer {
         });
         Ok(())
     }
+
+    /// Listens on 127.0.0.1 and sends each connection back to the client.
+    async fn tcpip_forward(
+        &mut self,
+        address: &str,
+        port: &mut u32,
+        session: &mut ServerSession,
+    ) -> Result<bool, Self::Error> {
+        if !self.policy.forward {
+            return Ok(false);
+        }
+        let Ok(listener) = TcpListener::bind(("127.0.0.1", *port as u16)).await else {
+            return Ok(false);
+        };
+        *port = listener.local_addr().map_or(0, |a| a.port() as u32);
+        let (handle, address, bound) = (session.handle(), address.to_string(), *port);
+        tokio::spawn(async move {
+            while let Ok((mut tcp, peer)) = listener.accept().await {
+                let (handle, address) = (handle.clone(), address.clone());
+                tokio::spawn(async move {
+                    let opened = handle
+                        .channel_open_forwarded_tcpip(
+                            address,
+                            bound,
+                            peer.ip().to_string(),
+                            peer.port() as u32,
+                        )
+                        .await;
+                    if let Ok(channel) = opened {
+                        let mut stream = channel.into_stream();
+                        let _ = tokio::io::copy_bidirectional(&mut stream, &mut tcp).await;
+                    }
+                });
+            }
+        });
+        Ok(true)
+    }
 }
 
 /// Starts a server on 127.0.0.1 and returns its port and host public key.
@@ -259,6 +300,7 @@ impl Fixture {
             known_hosts: Some(self.known_hosts()),
             prompter: Some(prompter),
             secrets: None,
+            forwarded: None,
             cols: 80,
             rows: 24,
             term: "xterm-256color".into(),
@@ -714,4 +756,217 @@ async fn a_saved_passphrase_unlocks_the_key_without_asking() {
     opts.secrets = Some(saved);
     connect(opts).await.expect("connect");
     assert_eq!(kinds(&asked), ["hostkey"]);
+}
+
+/// A TCP server that sends back what it gets.
+async fn echo() -> u16 {
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let port = listener.local_addr().expect("addr").port();
+    tokio::spawn(async move {
+        while let Ok((mut sock, _)) = listener.accept().await {
+            tokio::spawn(async move {
+                let (mut r, mut w) = sock.split();
+                let _ = tokio::io::copy(&mut r, &mut w).await;
+            });
+        }
+    });
+    port
+}
+
+/// Sends `msg` and expects it back.
+async fn echoes(sock: &mut TcpStream, msg: &[u8]) {
+    sock.write_all(msg).await.expect("write");
+    let mut back = vec![0; msg.len()];
+    tokio::time::timeout(Duration::from_secs(5), sock.read_exact(&mut back))
+        .await
+        .expect("echo in time")
+        .expect("read");
+    assert_eq!(back, msg);
+}
+
+struct Forwarding {
+    session: shellwing_ssh::Session,
+    reports: Vec<Result<Active, Error>>,
+    ended: tokio::sync::oneshot::Receiver<()>,
+    _fx: Fixture,
+}
+
+/// Connects to a server that allows forwarding, with `forwards` set up.
+async fn forwarding(name: &str, allow: bool, forwards: &[String]) -> Forwarding {
+    let fx = Fixture::new(name);
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            forward: allow,
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, _) = scripted(vec![Some("yes"), Some("pw")]);
+    let mut target = local(port, "me");
+    target.forwards = forwards.to_vec();
+    let mut opts = fx.options(target, p);
+    let reports = Arc::new(Mutex::new(vec![]));
+    let log = reports.clone();
+    opts.forwarded = Some(Box::new(move |r| log.lock().expect("log").push(r)));
+    let (tx, ended) = tokio::sync::oneshot::channel();
+    let session = shellwing_ssh::connect(
+        opts,
+        Box::new(|_| {}),
+        Box::new(move |_| {
+            let _ = tx.send(());
+        }),
+    )
+    .await
+    .expect("connect");
+    let reports = std::mem::take(&mut *reports.lock().expect("log"));
+    Forwarding {
+        session,
+        reports,
+        ended,
+        _fx: fx,
+    }
+}
+
+fn port_of(r: &Result<Active, Error>) -> u16 {
+    match r {
+        Ok(a) => a.port,
+        Err(e) => panic!("forward failed: {e}"),
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn local_forwards_carry_connections_and_close_with_the_session() {
+    let to = echo().await;
+    let f = forwarding("fwd-local", true, &[format!("-L 0:127.0.0.1:{to}")]).await;
+    assert_eq!(f.reports.len(), 1);
+    let port = port_of(&f.reports[0]);
+    assert_ne!(port, 0, "the port it got, not the 0 asked for");
+    // Two connections at once, each its own channel.
+    let mut a = TcpStream::connect(("127.0.0.1", port)).await.expect("a");
+    let mut b = TcpStream::connect(("127.0.0.1", port)).await.expect("b");
+    echoes(&mut a, b"first").await;
+    echoes(&mut b, b"second").await;
+    echoes(&mut a, b"again").await;
+
+    drop(f.session);
+    f.ended.await.expect("ended");
+    let mut closed = false;
+    for _ in 0..100 {
+        if TcpStream::connect(("127.0.0.1", port)).await.is_err() {
+            closed = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    assert!(closed, "the port stays open after the session ended");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn socks_connections_go_where_they_ask() {
+    let to = echo().await;
+    let f = forwarding("fwd-socks", true, &["-D 0".to_string()]).await;
+    let port = port_of(&f.reports[0]);
+
+    // SOCKS 5, with the destination as a name.
+    let mut s = TcpStream::connect(("127.0.0.1", port))
+        .await
+        .expect("socks5");
+    s.write_all(&[5, 1, 0]).await.expect("hello");
+    let mut choice = [0u8; 2];
+    s.read_exact(&mut choice).await.expect("method");
+    assert_eq!(choice, [5, 0], "no authentication");
+    let name = b"127.0.0.1";
+    let mut req = vec![5, 1, 0, 3, name.len() as u8];
+    req.extend_from_slice(name);
+    req.extend_from_slice(&to.to_be_bytes());
+    s.write_all(&req).await.expect("connect");
+    let mut reply = [0u8; 10];
+    s.read_exact(&mut reply).await.expect("reply");
+    assert_eq!(reply[1], 0, "succeeded");
+    echoes(&mut s, b"through socks5").await;
+
+    // SOCKS 4, by address.
+    let mut s = TcpStream::connect(("127.0.0.1", port))
+        .await
+        .expect("socks4");
+    let mut req = vec![4, 1];
+    req.extend_from_slice(&to.to_be_bytes());
+    req.extend_from_slice(&[127, 0, 0, 1]);
+    req.extend_from_slice(b"me\0");
+    s.write_all(&req).await.expect("connect");
+    let mut reply = [0u8; 8];
+    s.read_exact(&mut reply).await.expect("reply");
+    assert_eq!(reply[1], 0x5a, "granted");
+    echoes(&mut s, b"through socks4").await;
+
+    // Somewhere nothing listens: refused, as SOCKS says it.
+    let closed = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let nowhere = closed.local_addr().expect("addr").port();
+    drop(closed);
+    let mut s = TcpStream::connect(("127.0.0.1", port))
+        .await
+        .expect("socks5");
+    s.write_all(&[5, 1, 0]).await.expect("hello");
+    s.read_exact(&mut choice).await.expect("method");
+    let mut req = vec![5, 1, 0, 1, 127, 0, 0, 1];
+    req.extend_from_slice(&nowhere.to_be_bytes());
+    s.write_all(&req).await.expect("connect");
+    s.read_exact(&mut reply[..2]).await.expect("reply");
+    assert_ne!(reply[1], 0, "not reported as connected");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn remote_forwards_bring_the_servers_connections_here() {
+    let to = echo().await;
+    let f = forwarding("fwd-remote", true, &[format!("-R 0:127.0.0.1:{to}")]).await;
+    let port = port_of(&f.reports[0]);
+    assert_ne!(port, 0, "the port the server took");
+    let mut s = TcpStream::connect(("127.0.0.1", port))
+        .await
+        .expect("server port");
+    echoes(&mut s, b"from the server side").await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn forwards_that_fail_are_reported_and_the_session_goes_on() {
+    let taken = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let taken_port = taken.local_addr().expect("addr").port();
+    let to = echo().await;
+    let f = forwarding(
+        "fwd-fail",
+        false,
+        &[
+            format!("-L {taken_port}:127.0.0.1:{to}"),
+            "-L nonsense".to_string(),
+            format!("-R 0:127.0.0.1:{to}"),
+        ],
+    )
+    .await;
+    let errors: Vec<String> = f
+        .reports
+        .iter()
+        .map(|r| r.as_ref().expect_err("should fail").to_string())
+        .collect();
+    assert!(errors[0].starts_with("cannot forward -L"), "{}", errors[0]);
+    assert!(errors[1].starts_with("bad forward"), "{}", errors[1]);
+    assert!(errors[2].contains("server refused"), "{}", errors[2]);
+
+    // Asking for one later works the same way, here refused by the server too.
+    let (reply, answer) = tokio::sync::oneshot::channel();
+    let forward: Forward = format!("-L 0:127.0.0.1:{to}").parse().expect("spec");
+    let _ = f.session.sender().send(Input::Forward { forward, reply });
+    let active = answer.await.expect("answer").expect("a local port opens");
+    // The server allows no direct-tcpip, so the connection is closed at once.
+    let mut s = TcpStream::connect(("127.0.0.1", active.port))
+        .await
+        .expect("connect");
+    let mut buf = [0u8; 1];
+    let n = tokio::time::timeout(Duration::from_secs(5), s.read(&mut buf))
+        .await
+        .expect("closed in time")
+        .unwrap_or(0);
+    assert_eq!(n, 0);
+    drop(taken);
 }

@@ -563,6 +563,10 @@ impl TermView {
         &self.session
     }
 
+    pub fn session_mut(&mut self) -> &mut Session {
+        &mut self.session
+    }
+
     pub fn status(&self) -> Status {
         self.session.status()
     }
