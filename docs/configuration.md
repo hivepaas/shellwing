@@ -38,6 +38,7 @@ font = { family = "JetBrains Mono", size = 14 }
 line_height = 1.3            # row height as a multiple of the font size
 cursor = { style = "block" } # "block", "bar" or "underline"
 scrollbar = "auto"           # "auto", "always" or "never"
+padding = { x = 8, y = 4 }   # pixels between the text and the pane's edges
 
 [terminal]
 scrollback = 10000           # lines of history

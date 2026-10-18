@@ -19,6 +19,7 @@ pub struct Look {
     pub line_height: f32,
     pub cursor: CursorStyle,
     pub scrollbar: Scrollbar,
+    pub padding: (f32, f32),
     pub scrollback: usize,
     pub on_disconnect: OnDisconnect,
 }
@@ -124,6 +125,7 @@ impl Live {
             line_height: a.line_height,
             cursor: a.cursor.style,
             scrollbar: a.scrollbar,
+            padding: (a.padding.x, a.padding.y),
             scrollback: self.settings.terminal.scrollback,
             on_disconnect: self.settings.terminal.on_disconnect,
         };

@@ -492,6 +492,7 @@ impl TermView {
                 self.look.font_size,
                 self.look.line_height,
             )
+            || look.padding != self.look.padding
         {
             // Measured again on the next render, which also resizes the grid.
             self.cell = (px(0.), px(0.));
@@ -880,7 +881,7 @@ impl TermView {
                 .child(
                     div()
                         .absolute()
-                        .top(px(top))
+                        .top(px(top + self.look.padding.1))
                         .right(px(3.))
                         .h(px(h))
                         .w(px(if active { 8. } else { 5. }))
@@ -1060,6 +1061,7 @@ impl Render for TermView {
         let probe = self.probe.clone();
         let grid_origin = self.grid_origin.clone();
         let area = self.area.clone();
+        let (pad_x, pad_y) = (px(self.look.padding.0), px(self.look.padding.1));
 
         let mut terminal = div()
             .id("terminal")
@@ -1092,7 +1094,15 @@ impl Render for TermView {
             .child(
                 canvas(
                     |_, _, _| {},
-                    move |bounds, _, window, cx| {
+                    move |full, _, window, cx| {
+                        // The grid sits inside the padding; the background fills it all.
+                        let bounds = Bounds::new(
+                            point(full.origin.x + pad_x, full.origin.y + pad_y),
+                            size(
+                                (full.size.width - pad_x * 2.).max(px(0.)),
+                                (full.size.height - pad_y * 2.).max(px(0.)),
+                            ),
+                        );
                         grid_origin.set(bounds.origin);
                         if area.get() != bounds.size {
                             // The grid follows on the next frame.
@@ -1101,16 +1111,10 @@ impl Render for TermView {
                         }
                         if let Some(g) = &gradient
                             && let Some(image) =
-                                gradient_image(&gradient_cache, &theme, g, bounds.size, window)
+                                gradient_image(&gradient_cache, &theme, g, full.size, window)
                         {
-                            let _ = window.paint_image(
-                                bounds,
-                                bounds,
-                                Corners::default(),
-                                image,
-                                0,
-                                false,
-                            );
+                            let _ =
+                                window.paint_image(full, full, Corners::default(), image, 0, false);
                         }
                         window.handle_input(
                             &focus,
