@@ -10,11 +10,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use gpui::{
-    App, Bounds, ClipboardItem, Context, Corners, EntityInputHandler, FocusHandle, Focusable, Font,
-    FontFallbacks, FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers, ModifiersChangedEvent,
-    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, RenderImage,
-    ScrollDelta, ScrollWheelEvent, SharedString, Size, TextAlign, TextRun, UTF16Selection,
-    UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb, size,
+    App, Bounds, ClipboardItem, Context, Corners, Entity, EntityInputHandler, FocusHandle,
+    Focusable, Font, FontFallbacks, FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers,
+    ModifiersChangedEvent, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels,
+    Point, Render, RenderImage, ScrollDelta, ScrollWheelEvent, SharedString, Size, TextAlign,
+    TextRun, UTF16Selection, UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb,
+    size,
 };
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
@@ -24,6 +25,7 @@ use shellwing_term::{
 
 use crate::Writer;
 use crate::bench::Probe;
+use crate::files::{self, FilesEvent, FilesPanel};
 use crate::look::{Look, rgb as theme_rgb};
 use crate::session::{Session, Status};
 use shellwing_config::{OnDisconnect, Scrollbar};
@@ -254,6 +256,9 @@ pub struct TermView {
     /// Bumped to cancel a planned reconnect.
     retry_plan: u64,
     probe: Arc<Probe>,
+    /// The Files panel, kept while hidden so its folder and transfers stay.
+    files: Option<Entity<FilesPanel>>,
+    files_shown: bool,
 }
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
@@ -334,7 +339,45 @@ impl TermView {
             retries: 0,
             retry_plan: 0,
             probe,
+            files: None,
+            files_shown: false,
         }
+    }
+
+    /// Shows the Files panel (opening SFTP the first time) and gives it the
+    /// keyboard, or hides it and gives the keyboard back to the terminal.
+    pub fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.files_shown {
+            self.hide_files(window, cx);
+            return;
+        }
+        let panel = match &self.files {
+            Some(p) => p.clone(),
+            None => {
+                let remote = self.session.remote();
+                let p = cx.new(|cx| FilesPanel::new(remote, cx));
+                cx.subscribe_in(&p, window, |v, _, ev: &FilesEvent, window, cx| match ev {
+                    FilesEvent::Close => v.hide_files(window, cx),
+                })
+                .detach();
+                self.files = Some(p.clone());
+                p
+            }
+        };
+        self.files_shown = true;
+        let focus = panel.read(cx).focus_handle().clone();
+        window.focus(&focus, cx);
+        cx.notify();
+    }
+
+    fn hide_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.files_shown = false;
+        window.focus(&self.focus, cx);
+        cx.notify();
+    }
+
+    pub fn files_shown(&self) -> bool {
+        self.files_shown
     }
 
     fn status_changed(&mut self, status: Status, cx: &mut Context<Self>) {
@@ -342,6 +385,10 @@ impl TermView {
             Status::Connected => {
                 self.retries = 0;
                 self.retry_at = None;
+                // A new connection needs a new SFTP session.
+                if let Some(f) = &self.files {
+                    f.update(cx, |f, cx| f.connect(cx));
+                }
             }
             // Only a connection that once worked is retried without asking.
             Status::Lost
@@ -1166,7 +1213,7 @@ impl Render for TermView {
             .id("terminal")
             .relative()
             .flex_1()
-            .w_full()
+            .min_w_0()
             .overflow_hidden()
             // Leaving at the right edge must not leave the scrollbar shown.
             .on_hover(cx.listener(|v, hovered: &bool, _, cx| {
@@ -1339,7 +1386,25 @@ impl Render for TermView {
             );
         }
 
-        terminal
+        // The panel is its own cached view: terminal frames do not lay it out again.
+        let files = self.files.clone().filter(|_| self.files_shown);
+        div()
+            .flex()
+            .flex_row()
+            .flex_1()
+            .w_full()
+            .min_h_0()
+            .child(terminal)
+            .when_some(files, |d, f| {
+                d.child(
+                    f.cached(
+                        gpui::StyleRefinement::default()
+                            .w(px(files::WIDTH))
+                            .h_full()
+                            .flex_shrink_0(),
+                    ),
+                )
+            })
     }
 }
 

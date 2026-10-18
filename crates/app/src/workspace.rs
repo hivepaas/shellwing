@@ -48,6 +48,8 @@ enum Shortcut {
     Step(isize),
     Goto(usize),
     Sidebar,
+    /// The focused pane's Files panel.
+    Files,
     Theme(isize),
 }
 
@@ -580,6 +582,15 @@ impl Workspace {
                 },
             );
             action(Action::CloseTab, "Close the tab".into(), String::new());
+            action(
+                Action::Files,
+                if t.read(cx).files_shown() {
+                    "Hide the files".into()
+                } else {
+                    format!("Files on {title}")
+                },
+                format!("{chord}+O"),
+            );
             if t.read(cx).session().status() == Status::Connected {
                 action(
                     Action::Forward,
@@ -776,6 +787,12 @@ impl Workspace {
         }
         let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.active_tab().cloned() {
+            tab.update(cx, |v, cx| v.toggle_files(window, cx));
+        }
     }
 
     fn ask_forward(
@@ -1054,6 +1071,7 @@ impl Workspace {
             Action::CloseTab => self.close(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
+            Action::Files => self.toggle_files(window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
             Action::SyncFolder => self.choose_sync_folder(window, cx),
             Action::SyncNow => {
@@ -1234,6 +1252,7 @@ impl Workspace {
                 _ => Dir::Down,
             }),
             "b" if chord => Shortcut::Sidebar,
+            "o" if chord => Shortcut::Files,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
             "pagedown" if m.control && !m.shift => Shortcut::Step(1),
             "pageup" if m.control && !m.shift => Shortcut::Step(-1),
@@ -1288,6 +1307,7 @@ impl Workspace {
                 self.show_sidebar = !self.show_sidebar;
                 cx.notify();
             }
+            Shortcut::Files => self.toggle_files(window, cx),
             Shortcut::Theme(step) => self.step_theme(step, cx),
         }
     }
