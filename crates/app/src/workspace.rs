@@ -17,6 +17,7 @@ use tokio::runtime::Handle;
 
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
+use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{self, Live, rgb as theme_rgb};
@@ -216,6 +217,7 @@ impl Workspace {
                 .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
             ws.sidebar_collapsed = s.sidebar_collapsed;
         }
+        cx.set_global(EditorCommand(ws.live.settings().files.editor.clone()));
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
@@ -1513,6 +1515,7 @@ impl Workspace {
         }
         if let Some(mut problems) = self.live.reload_if_changed() {
             self.ssh_aliases = ssh_config::aliases(ssh_config::default_config_path().as_deref());
+            cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
             problems.extend(self.restyle(cx));
             self.report(problems, cx);
             self.refresh_settings(cx);

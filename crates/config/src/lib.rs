@@ -23,8 +23,8 @@ pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, color_rgb};
 pub use hosts_sync::Fields;
 pub use settings::{
-    Appearance, Cursor, CursorStyle, Font, General, OnDisconnect, Padding, Scrollbar, Settings,
-    Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont,
+    Appearance, Cursor, CursorStyle, Files, Font, General, OnDisconnect, Padding, Scrollbar,
+    Settings, Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};
