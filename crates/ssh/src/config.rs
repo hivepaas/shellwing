@@ -80,6 +80,24 @@ fn load(path: Option<&Path>) -> Result<SshConfig, Error> {
         .map_err(|e| Error::Config(format!("{}: {e}", path.display())))
 }
 
+/// The names `Host` lines give, in file order, leaving out patterns (`*`, `?`)
+/// and negations: the hosts a person can connect to by name.
+pub fn aliases(config: Option<&Path>) -> Vec<String> {
+    let Ok(cfg) = load(config) else {
+        return vec![];
+    };
+    let mut out: Vec<String> = vec![];
+    for clause in cfg.get_hosts().iter().flat_map(|h| &h.pattern) {
+        if !clause.negated
+            && !clause.pattern.contains(['*', '?', '!'])
+            && !out.contains(&clause.pattern)
+        {
+            out.push(clause.pattern.clone());
+        }
+    }
+    out
+}
+
 fn local_user() -> String {
     std::env::var("USER")
         .or_else(|_| std::env::var("USERNAME"))
@@ -238,6 +256,13 @@ mod tests {
         assert_eq!(hops, ["edge.example.com", "bastion.example.com"]);
         assert_eq!(r.jumps[1].target.user, "jump");
         assert!(r.jumps.iter().all(|j| j.jumps.is_empty()));
+    }
+
+    #[test]
+    fn lists_plain_aliases_only() {
+        let cfg = config("Host web db\n  User x\nHost *.internal !bad\nHost web nas\n");
+        assert_eq!(aliases(Some(&cfg)), ["web", "db", "nas"]);
+        assert!(aliases(None).is_empty());
     }
 
     #[test]

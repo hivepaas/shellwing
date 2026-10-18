@@ -26,16 +26,33 @@ and Windows when started by hand, and uploads the binaries as artifacts.
 ## Run
 
 ```sh
-shellwing [user@]host[:port]
+shellwing                     # the window with the host list
+shellwing [user@]host[:port]  # and a tab connected to host
 ```
 
 `host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
-(`HostName`, `User`, `Port`, `IdentityFile`, `ProxyJump` are honoured). Sign-in
-follows OpenSSH: agent keys, key files, keyboard-interactive (one-time codes),
-then a password; questions are asked in the terminal. Host keys are checked
-against `~/.ssh/known_hosts` (override with `$SHELLWING_KNOWN_HOSTS`): a new key
-is shown with its fingerprint for you to accept, a changed key refuses the
-connection.
+(`HostName`, `User`, `Port`, `IdentityFile` and `ProxyJump` are honoured). The host
+list on the left shows both; clicking one opens a tab. Sign-in follows OpenSSH:
+agent keys, key files, keyboard-interactive (one-time codes), then a password;
+questions are asked in the terminal. Host keys are checked against
+`~/.ssh/known_hosts` (override with `$SHELLWING_KNOWN_HOSTS`): a new key is shown
+with its fingerprint for you to accept, a changed key refuses the connection.
+
+## Shortcuts
+
+Ctrl+Shift on Linux and Windows is Cmd on macOS.
+
+| Keys | Does |
+| --- | --- |
+| Ctrl+Shift+T / W | Another tab to the same host / close the tab |
+| Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
+| Alt+1…9 (Cmd+1…9) | Go to a tab |
+| Ctrl+Shift+B | Show or hide the host list |
+| Ctrl+Shift+C / V, Shift+Insert | Copy / paste |
+| Shift+PageUp / PageDown / End | Scroll the history / back to the bottom |
+| Ctrl+= / Ctrl+- / Ctrl+0 | Zoom the font in this tab (Cmd on macOS) |
+| Ctrl+Shift+] / [ (Cmd+] / [) | Next / previous theme, saved to `config.toml` |
+| Ctrl+click (Cmd+click) | Open a link |
 
 ## Configuration
 
@@ -52,6 +69,6 @@ Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
 | `crates/term` | libghostty-vt on its own thread; produces immutable frames |
 | `crates/ssh` | russh sessions as OpenSSH does them: ssh config, host keys, sign-in, ProxyJump |
 | `crates/config` | `config.toml`, `hosts.toml` and themes: loading, precedence, comment-preserving writes |
-| `crates/app` | GPUI window: rendering, keys, IME (preedit), window chrome |
+| `crates/app` | GPUI window: tabs, host list, terminal rendering, keys, IME (preedit), window chrome |
 
 `SHELLWING_BENCH=latency` or `flood` runs a measurement and prints a `REPORT` line.

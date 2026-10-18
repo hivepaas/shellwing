@@ -46,8 +46,6 @@ pub struct Live {
     settings: Settings,
     hosts: Hosts,
     themes: Themes,
-    /// The `hosts.toml` entry this window connected to, whose theme wins.
-    host: Option<String>,
 }
 
 impl Live {
@@ -59,7 +57,6 @@ impl Live {
             settings: Settings::default(),
             hosts: Hosts::default(),
             themes: Themes::builtin(),
-            host: None,
         };
         let problems = live.load();
         (live, problems)
@@ -71,10 +68,6 @@ impl Live {
 
     pub fn hosts(&self) -> &Hosts {
         &self.hosts
-    }
-
-    pub fn set_host(&mut self, name: Option<String>) {
-        self.host = name;
     }
 
     fn load(&mut self) -> Vec<String> {
@@ -103,9 +96,10 @@ impl Live {
         (store.stamp() != self.stamp).then(|| self.load())
     }
 
-    /// The look in effect, and a problem to report (an unknown theme).
-    pub fn look(&self) -> (Look, Option<String>) {
-        let host = self.host.as_deref().and_then(|h| self.hosts.find(h));
+    /// The look for a tab connected to the `hosts.toml` entry `host` (whose
+    /// theme wins), and a problem to report (an unknown theme).
+    pub fn look_for(&self, host: Option<&str>) -> (Look, Option<String>) {
+        let host = host.and_then(|h| self.hosts.find(h));
         let want = theme_for(&self.settings, &self.hosts, host);
         let (theme, problem) = match self.themes.find(want) {
             Some(t) => (t.clone(), None),
@@ -126,10 +120,11 @@ impl Live {
         (look, problem)
     }
 
-    /// Moves `config.toml`'s theme `step` places along the theme list and saves it.
-    /// Returns the new theme, or why the change could not be made.
-    pub fn step_theme(&mut self, step: isize) -> Result<Arc<Theme>, String> {
-        let host = self.host.as_deref().and_then(|h| self.hosts.find(h));
+    /// Moves `config.toml`'s theme `step` places along the theme list and saves it,
+    /// unless `host` (the tab's hosts.toml entry) sets its own. Returns the new
+    /// theme, or why the change could not be made.
+    pub fn step_theme(&mut self, step: isize, host: Option<&str>) -> Result<Arc<Theme>, String> {
+        let host = host.and_then(|h| self.hosts.find(h));
         if let Some(h) = host
             && theme_for(&self.settings, &self.hosts, Some(h)) != self.settings.appearance.theme
         {
@@ -181,10 +176,10 @@ mod tests {
                 ),
             ],
         );
-        assert_eq!(l.look().0.theme.id, "nord");
-        l.set_host(Some("db".into()));
-        assert_eq!(l.look().0.theme.id, "dracula");
-        assert!(l.step_theme(1).is_err());
+        assert_eq!(l.look_for(None).0.theme.id, "nord");
+        assert_eq!(l.look_for(Some("db")).0.theme.id, "dracula");
+        assert!(l.step_theme(1, Some("db")).is_err());
+        assert!(l.step_theme(1, None).is_ok(), "other tabs may still step");
     }
 
     #[test]
@@ -196,8 +191,8 @@ mod tests {
                 "# mine\n[appearance]\ntheme = \"default-slate\"\n",
             )],
         );
-        assert_eq!(l.step_theme(1).expect("step").id, "neon-nebula");
-        assert_eq!(l.look().0.theme.id, "neon-nebula");
+        assert_eq!(l.step_theme(1, None).expect("step").id, "neon-nebula");
+        assert_eq!(l.look_for(None).0.theme.id, "neon-nebula");
         assert_eq!(
             l.reload_if_changed(),
             None,
@@ -220,7 +215,7 @@ mod tests {
             "{}",
             problems[0]
         );
-        assert_eq!(l.look().0.theme.id, "nord");
+        assert_eq!(l.look_for(None).0.theme.id, "nord");
     }
 
     #[test]
@@ -229,7 +224,7 @@ mod tests {
             "unknown",
             &[("config.toml", "[appearance]\ntheme = \"nope\"\n")],
         );
-        let (look, problem) = l.look();
+        let (look, problem) = l.look_for(None);
         assert_eq!(look.theme.id, shellwing_config::DEFAULT_THEME);
         assert!(problem.is_some());
     }
