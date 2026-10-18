@@ -11,10 +11,10 @@ use std::time::{Duration, Instant};
 
 use gpui::{
     App, Bounds, ClipboardItem, Context, EntityInputHandler, FocusHandle, Focusable, Font,
-    FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers, MouseButton, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent,
-    SharedString, TextAlign, TextRun, UTF16Selection, UnderlineStyle, Window, canvas, div, font,
-    point, prelude::*, px, rgb, size,
+    FontFallbacks, FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers, ModifiersChangedEvent,
+    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, ScrollDelta,
+    ScrollWheelEvent, SharedString, TextAlign, TextRun, UTF16Selection, UnderlineStyle, Window,
+    canvas, div, font, point, prelude::*, px, rgb, size,
 };
 use shellwing_term::{
     Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
@@ -26,6 +26,13 @@ use crate::bench::Probe;
 use crate::chrome::{self, RESIZE_EDGE, TITLEBAR_H};
 
 const FONT_FAMILY: &str = "JetBrains Mono";
+/// Tried in order for characters the main font does not have.
+const FONT_FALLBACKS: &[&str] = &[
+    "Noto Sans Mono CJK SC",
+    "Noto Color Emoji",
+    "Noto Sans CJK SC",
+    "DejaVu Sans Mono",
+];
 const FONT_SIZE: f32 = 14.0;
 const LINE_HEIGHT: f32 = 1.3;
 /// Lines per wheel notch.
@@ -56,11 +63,29 @@ fn term_button(b: MouseButton) -> Option<TermButton> {
     }
 }
 
+/// A piece of a row painted with one shaped line: a stretch of narrow cells, or a
+/// single wide glyph given two cells of advance.
+#[derive(Clone)]
+struct Segment {
+    col: u16,
+    wide: bool,
+    text: SharedString,
+    runs: Vec<TextRun>,
+}
+
 /// A row converted to GPUI text runs, kept while the frame keeps sharing the row.
 struct PaintRow {
     source: Arc<Row>,
-    text: SharedString,
-    runs: Vec<TextRun>,
+    segments: Vec<Segment>,
+}
+
+/// The modifier that turns a click into "open link": Cmd on macOS, Ctrl elsewhere.
+fn link_mod(m: &Modifiers) -> bool {
+    if cfg!(target_os = "macos") {
+        m.platform
+    } else {
+        m.control
+    }
 }
 
 pub struct TermView {
@@ -79,6 +104,8 @@ pub struct TermView {
     /// A paste the terminal refused as unsafe, waiting for confirmation.
     pending_paste: Option<(String, Instant)>,
     notice: Option<SharedString>,
+    /// Last pointer position over the grid, to show links when the modifier goes down.
+    last_mouse: Option<(f32, f32)>,
     probe: Arc<Probe>,
 }
 
@@ -103,18 +130,27 @@ impl TermView {
             marked: None,
             pending_paste: None,
             notice: None,
+            last_mouse: None,
             probe,
         }
     }
 
+    /// The terminal font, with fallbacks for glyphs it lacks (CJK, emoji). Missing
+    /// fallback families are skipped by the text system.
     fn base_font() -> Font {
-        font(FONT_FAMILY)
+        Font {
+            fallbacks: Some(FontFallbacks::from_fonts(
+                FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
+            )),
+            ..font(FONT_FAMILY)
+        }
     }
 
     /// Events from the terminal thread (copied text, refused pastes).
     pub fn on_term_event(&mut self, ev: TermEvent, cx: &mut Context<Self>) {
         match ev {
             TermEvent::Copied(text) => cx.write_to_clipboard(ClipboardItem::new_string(text)),
+            TermEvent::OpenLink(url) => cx.open_url(&url),
             TermEvent::PasteRefused(text) => {
                 self.pending_paste = Some((text, Instant::now()));
                 self.show_notice(
@@ -211,10 +247,13 @@ impl TermView {
                 continue;
             }
             let base = Self::base_font();
-            let runs = row
-                .runs
-                .iter()
-                .map(|r| TextRun {
+            let mut segments: Vec<Segment> = Vec::new();
+            let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
+            let mut offset = 0;
+            for r in &row.runs {
+                let text = &row.text[offset..offset + r.len];
+                offset += r.len;
+                let run = TextRun {
                     len: r.len,
                     font: Font {
                         weight: if r.bold {
@@ -241,12 +280,39 @@ impl TermView {
                         wavy: false,
                     }),
                     strikethrough: None,
-                })
-                .collect();
+                };
+                if r.wide {
+                    if let Some((col, t, runs)) = narrow.take() {
+                        segments.push(Segment {
+                            col,
+                            wide: false,
+                            text: t.into(),
+                            runs,
+                        });
+                    }
+                    segments.push(Segment {
+                        col: r.col,
+                        wide: true,
+                        text: text.to_string().into(),
+                        runs: vec![run],
+                    });
+                } else {
+                    let seg = narrow.get_or_insert_with(|| (r.col, String::new(), Vec::new()));
+                    seg.1.push_str(text);
+                    seg.2.push(run);
+                }
+            }
+            if let Some((col, t, runs)) = narrow.take() {
+                segments.push(Segment {
+                    col,
+                    wide: false,
+                    text: t.into(),
+                    runs,
+                });
+            }
             let p = PaintRow {
                 source: row.clone(),
-                text: row.text.clone().into(),
-                runs,
+                segments,
             };
             if i < self.paint_rows.len() {
                 self.paint_rows[i] = p;
@@ -272,6 +338,7 @@ impl TermView {
             x,
             y,
             mods: mods(&e.modifiers),
+            link: link_mod(&e.modifiers),
         });
     }
 
@@ -284,11 +351,18 @@ impl TermView {
             x,
             y,
             mods: mods(&e.modifiers),
+            link: link_mod(&e.modifiers),
         });
     }
 
     fn mouse_move(&mut self, e: &MouseMoveEvent, _: &mut Window, _: &mut Context<Self>) {
         let (x, y) = self.grid_pos(e.position);
+        self.last_mouse = Some((x, y));
+        if link_mod(&e.modifiers) {
+            self.term.hover(Some((x, y)));
+        } else if self.frame.hover_link.is_some() {
+            self.term.hover(None);
+        }
         let button = e.pressed_button.and_then(term_button);
         self.term.mouse(MouseInput {
             action: MouseAction::Motion,
@@ -296,7 +370,23 @@ impl TermView {
             x,
             y,
             mods: mods(&e.modifiers),
+            link: link_mod(&e.modifiers),
         });
+    }
+
+    fn modifiers_changed(
+        &mut self,
+        e: &ModifiersChangedEvent,
+        _: &mut Window,
+        _: &mut Context<Self>,
+    ) {
+        if link_mod(&e.modifiers) {
+            if let Some(at) = self.last_mouse {
+                self.term.hover(Some(at));
+            }
+        } else if self.frame.hover_link.is_some() {
+            self.term.hover(None);
+        }
     }
 
     fn scroll_wheel(&mut self, e: &ScrollWheelEvent, _: &mut Window, _: &mut Context<Self>) {
@@ -385,11 +475,8 @@ impl Render for TermView {
         self.fit_grid(window);
         self.refresh_rows();
 
-        let rows: Vec<(SharedString, Vec<TextRun>)> = self
-            .paint_rows
-            .iter()
-            .map(|r| (r.text.clone(), r.runs.clone()))
-            .collect();
+        let rows: Vec<Vec<Segment>> = self.paint_rows.iter().map(|r| r.segments.clone()).collect();
+        let hover = self.frame.hover_link;
         let (cw, ch) = self.cell;
         let cursor = self.frame.cursor;
         let fg = hsla(self.frame.foreground);
@@ -418,6 +505,8 @@ impl Render for TermView {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_move(cx.listener(Self::mouse_move))
             .on_scroll_wheel(cx.listener(Self::scroll_wheel))
+            .on_modifiers_changed(cx.listener(Self::modifiers_changed))
+            .when(hover.is_some(), |d| d.cursor_pointer())
             .child(
                 canvas(
                     |_, _, _| {},
@@ -428,27 +517,39 @@ impl Render for TermView {
                             gpui::ElementInputHandler::new(bounds, entity),
                             cx,
                         );
-                        for (y, (text, runs)) in rows.iter().enumerate() {
-                            if text.is_empty() {
-                                continue;
+                        for (y, segments) in rows.iter().enumerate() {
+                            for seg in segments {
+                                let origin = point(
+                                    bounds.origin.x + cw * seg.col as f32,
+                                    bounds.origin.y + ch * y as f32,
+                                );
+                                // force_width keeps every glyph on the cell grid; a wide
+                                // glyph advances two cells.
+                                let advance = if seg.wide { cw * 2. } else { cw };
+                                let line = window.text_system().shape_line(
+                                    seg.text.clone(),
+                                    px(FONT_SIZE),
+                                    &seg.runs,
+                                    Some(advance),
+                                );
+                                let _ = line.paint_background(
+                                    origin,
+                                    ch,
+                                    TextAlign::Left,
+                                    None,
+                                    window,
+                                    cx,
+                                );
+                                let _ = line.paint(origin, ch, TextAlign::Left, None, window, cx);
                             }
-                            let origin = point(bounds.origin.x, bounds.origin.y + ch * y as f32);
-                            // force_width keeps every glyph on the cell grid.
-                            let line = window.text_system().shape_line(
-                                text.clone(),
-                                px(FONT_SIZE),
-                                runs,
-                                Some(cw),
+                        }
+                        if let Some(link) = hover {
+                            let o = point(
+                                bounds.origin.x + cw * link.start as f32,
+                                bounds.origin.y + ch * (link.row as f32 + 1.) - px(2.),
                             );
-                            let _ = line.paint_background(
-                                origin,
-                                ch,
-                                TextAlign::Left,
-                                None,
-                                window,
-                                cx,
-                            );
-                            let _ = line.paint(origin, ch, TextAlign::Left, None, window, cx);
+                            let w = cw * (link.end - link.start) as f32;
+                            window.paint_quad(gpui::fill(Bounds::new(o, size(w, px(1.))), fg));
                         }
                         if let Some((x, y)) = cursor {
                             let o = point(
