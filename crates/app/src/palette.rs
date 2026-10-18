@@ -24,6 +24,8 @@ pub enum PaletteEvent {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {
     Duplicate,
+    SplitRight,
+    SplitDown,
     ChangeTheme,
     ToggleHosts,
     CloseTab,

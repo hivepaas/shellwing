@@ -254,6 +254,11 @@ impl TermView {
         }
     }
 
+    /// Where the terminal was last painted, in window coordinates.
+    pub fn bounds(&self) -> Bounds<Pixels> {
+        Bounds::new(self.grid_origin.get(), self.area.get())
+    }
+
     pub fn session(&self) -> &Session {
         &self.session
     }
