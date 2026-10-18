@@ -1,9 +1,11 @@
 # Building and testing on macOS, Windows and Linux
 
-CI builds and tests every pull request on Linux (x86_64), macOS (arm64) and
-Windows (x86_64), and uploads the binaries as workflow artifacts
-(`shellwing-<platform>`), so a test machine does not need a toolchain: download
-the artifact from the run's summary page.
+CI builds and tests every push and pull request on Linux (x86_64). macOS
+(arm64) and Windows (x86_64) runs cost more Actions minutes, so they start only
+by hand: Actions → CI → Run workflow, pick the branch and the platforms, or
+`gh workflow run ci.yml --ref <branch> -f platforms=all`. Each run uploads the
+binaries as workflow artifacts (`shellwing-<platform>`), so a test machine does
+not need a toolchain: download the artifact from the run's summary page.
 
 Rendering and input (IME, keyboard layouts, HiDPI) still need a real desktop;
 CI only proves that the code builds and the tests pass.

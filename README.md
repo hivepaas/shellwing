@@ -20,8 +20,8 @@ cargo build --release
 On Linux both Wayland and X11 are enabled; without the X11 development
 libraries, build with `--no-default-features --features wayland`. Per-platform
 setup, Windows VMs, Vietnamese input and a manual test checklist are in
-[docs/platforms.md](docs/platforms.md). CI builds Linux, macOS and Windows and
-uploads the binaries as artifacts.
+[docs/platforms.md](docs/platforms.md). CI builds Linux on every push and macOS
+and Windows when started by hand, and uploads the binaries as artifacts.
 
 ## Run
 
