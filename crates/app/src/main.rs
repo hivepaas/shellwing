@@ -65,6 +65,8 @@ fn main() -> anyhow::Result<()> {
 
     // The terminal thread wakes the UI through this; one pending wake is enough.
     let (wake_tx, wake_rx) = async_channel::bounded::<()>(1);
+    // Events the UI has to act on, such as copied text.
+    let (event_tx, event_rx) = async_channel::unbounded::<shellwing_term::Event>();
     let term = {
         let w = writer.clone();
         TermHandle::spawn(
@@ -74,6 +76,9 @@ fn main() -> anyhow::Result<()> {
             Box::new(move |bytes| w.write(bytes)),
             Box::new(move || {
                 let _ = wake_tx.try_send(());
+            }),
+            Box::new(move |ev| {
+                let _ = event_tx.try_send(ev);
             }),
         )?
     };
@@ -176,9 +181,18 @@ fn main() -> anyhow::Result<()> {
             cx.activate(true);
         });
         // Repaint whenever the terminal thread has a new frame.
+        {
+            let view = view.clone();
+            cx.spawn(async move |cx| {
+                while wake_rx.recv().await.is_ok() {
+                    view.update(cx, |_, cx| cx.notify());
+                }
+            })
+            .detach();
+        }
         cx.spawn(async move |cx| {
-            while wake_rx.recv().await.is_ok() {
-                view.update(cx, |_, cx| cx.notify());
+            while let Ok(ev) = event_rx.recv().await {
+                view.update(cx, |v, cx| v.on_term_event(ev, cx));
             }
         })
         .detach();

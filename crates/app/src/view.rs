@@ -1,16 +1,25 @@
-//! The terminal view: paints frames from the terminal thread, turns key presses
-//! into terminal input, and implements GPUI's input handler so input methods
-//! (ibus, fcitx, the macOS and Windows IMEs) can compose text with preedit.
+//! The terminal view: paints frames from the terminal thread, turns key presses,
+//! mouse and wheel into terminal input, and implements GPUI's input handler so
+//! input methods (ibus, fcitx, the macOS and Windows IMEs) can compose text with
+//! preedit.
 
+use std::cell::Cell;
 use std::ops::Range;
+use std::rc::Rc;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use gpui::{
-    App, Bounds, Context, EntityInputHandler, FocusHandle, Focusable, Font, FontStyle, FontWeight,
-    Hsla, KeyDownEvent, Pixels, Render, SharedString, TextAlign, TextRun, UTF16Selection,
-    UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb, size,
+    App, Bounds, ClipboardItem, Context, EntityInputHandler, FocusHandle, Focusable, Font,
+    FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent,
+    SharedString, TextAlign, TextRun, UTF16Selection, UnderlineStyle, Window, canvas, div, font,
+    point, prelude::*, px, rgb, size,
 };
-use shellwing_term::{Frame, Mods, NamedKey, Rgb, Row, TermHandle};
+use shellwing_term::{
+    Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
+    Rgb, Row, TermHandle,
+};
 
 use crate::Writer;
 use crate::bench::Probe;
@@ -19,9 +28,32 @@ use crate::chrome::{self, RESIZE_EDGE, TITLEBAR_H};
 const FONT_FAMILY: &str = "JetBrains Mono";
 const FONT_SIZE: f32 = 14.0;
 const LINE_HEIGHT: f32 = 1.3;
+/// Lines per wheel notch.
+const WHEEL_LINES: f32 = 3.0;
+/// How long a refused paste waits for the user to paste again to confirm.
+const CONFIRM_PASTE: Duration = Duration::from_secs(5);
+const SELECTION_BG: u32 = 0x264f78;
 
 fn hsla(c: Rgb) -> Hsla {
     rgb(((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32).into()
+}
+
+fn mods(m: &Modifiers) -> Mods {
+    Mods {
+        shift: m.shift,
+        ctrl: m.control,
+        alt: m.alt,
+        logo: m.platform,
+    }
+}
+
+fn term_button(b: MouseButton) -> Option<TermButton> {
+    match b {
+        MouseButton::Left => Some(TermButton::Left),
+        MouseButton::Middle => Some(TermButton::Middle),
+        MouseButton::Right => Some(TermButton::Right),
+        _ => None,
+    }
 }
 
 /// A row converted to GPUI text runs, kept while the frame keeps sharing the row.
@@ -40,8 +72,13 @@ pub struct TermView {
     paint_rows: Vec<PaintRow>,
     grid: (u16, u16),
     cell: (Pixels, Pixels),
+    /// Window position of the grid's top-left corner, recorded at paint time.
+    grid_origin: Rc<Cell<Point<Pixels>>>,
     /// Text the input method is composing (preedit), shown at the cursor.
     marked: Option<String>,
+    /// A paste the terminal refused as unsafe, waiting for confirmation.
+    pending_paste: Option<(String, Instant)>,
+    notice: Option<SharedString>,
     probe: Arc<Probe>,
 }
 
@@ -62,13 +99,61 @@ impl TermView {
             paint_rows: vec![],
             grid: (0, 0),
             cell: (px(0.), px(0.)),
+            grid_origin: Rc::new(Cell::new(point(px(0.), px(0.)))),
             marked: None,
+            pending_paste: None,
+            notice: None,
             probe,
         }
     }
 
     fn base_font() -> Font {
         font(FONT_FAMILY)
+    }
+
+    /// Events from the terminal thread (copied text, refused pastes).
+    pub fn on_term_event(&mut self, ev: TermEvent, cx: &mut Context<Self>) {
+        match ev {
+            TermEvent::Copied(text) => cx.write_to_clipboard(ClipboardItem::new_string(text)),
+            TermEvent::PasteRefused(text) => {
+                self.pending_paste = Some((text, Instant::now()));
+                self.show_notice(
+                    "The pasted text could run commands. Paste again within 5 s to send it anyway.",
+                    cx,
+                );
+            }
+        }
+    }
+
+    fn show_notice(&mut self, msg: &'static str, cx: &mut Context<Self>) {
+        self.notice = Some(msg.into());
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(CONFIRM_PASTE).await;
+            let _ = this.update(cx, |v, cx| {
+                if v.notice.as_ref().is_some_and(|n| n == msg) {
+                    v.notice = None;
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn paste_clipboard(&mut self, cx: &mut Context<Self>) {
+        let Some(text) = cx.read_from_clipboard().and_then(|c| c.text()) else {
+            return;
+        };
+        // Pasting the same refused text again within the window confirms it.
+        let confirmed = self
+            .pending_paste
+            .take()
+            .is_some_and(|(pending, at)| pending == text && at.elapsed() < CONFIRM_PASTE);
+        if confirmed {
+            self.notice = None;
+        }
+        self.term.paste(text, confirmed);
+        cx.notify();
     }
 
     fn measure_cell(&mut self, window: &mut Window) {
@@ -145,7 +230,11 @@ impl TermView {
                         ..base.clone()
                     },
                     color: hsla(r.fg),
-                    background_color: r.bg.map(hsla),
+                    background_color: if r.selected {
+                        Some(rgb(SELECTION_BG).into())
+                    } else {
+                        r.bg.map(hsla)
+                    },
                     underline: r.underline.then(|| UnderlineStyle {
                         thickness: px(1.),
                         color: None,
@@ -167,14 +256,94 @@ impl TermView {
         }
     }
 
+    /// A window position relative to the grid's top-left corner.
+    fn grid_pos(&self, p: Point<Pixels>) -> (f32, f32) {
+        let o = self.grid_origin.get();
+        (f32::from(p.x - o.x), f32::from(p.y - o.y))
+    }
+
+    fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus(&self.focus, cx);
+        let (x, y) = self.grid_pos(e.position);
+        let button = term_button(e.button);
+        self.term.mouse(MouseInput {
+            action: MouseAction::Press,
+            button,
+            x,
+            y,
+            mods: mods(&e.modifiers),
+        });
+    }
+
+    fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, _: &mut Context<Self>) {
+        let (x, y) = self.grid_pos(e.position);
+        let button = term_button(e.button);
+        self.term.mouse(MouseInput {
+            action: MouseAction::Release,
+            button,
+            x,
+            y,
+            mods: mods(&e.modifiers),
+        });
+    }
+
+    fn mouse_move(&mut self, e: &MouseMoveEvent, _: &mut Window, _: &mut Context<Self>) {
+        let (x, y) = self.grid_pos(e.position);
+        let button = e.pressed_button.and_then(term_button);
+        self.term.mouse(MouseInput {
+            action: MouseAction::Motion,
+            button,
+            x,
+            y,
+            mods: mods(&e.modifiers),
+        });
+    }
+
+    fn scroll_wheel(&mut self, e: &ScrollWheelEvent, _: &mut Window, _: &mut Context<Self>) {
+        // GPUI reports positive y when scrolling up; the terminal wants negative for up.
+        let lines = match e.delta {
+            ScrollDelta::Lines(p) => -p.y * WHEEL_LINES,
+            ScrollDelta::Pixels(p) => -f32::from(p.y) / f32::from(self.cell.1),
+        };
+        let (x, y) = self.grid_pos(e.position);
+        self.term.wheel(lines, x, y, mods(&e.modifiers));
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
-        let mods = Mods {
-            shift: k.modifiers.shift,
-            ctrl: k.modifiers.control,
-            alt: k.modifiers.alt,
+        let m = &k.modifiers;
+        let key = k.key.as_str();
+        // Clipboard and scrollback shortcuts: Ctrl+Shift on Linux/Windows, Cmd on macOS.
+        let app_chord = if cfg!(target_os = "macos") {
+            m.platform && !m.control
+        } else {
+            m.control && m.shift
         };
-        let named = match k.key.as_str() {
+        match key {
+            "c" | "C" if app_chord => {
+                self.term.copy();
+                return cx.stop_propagation();
+            }
+            "v" | "V" if app_chord => {
+                self.paste_clipboard(cx);
+                return cx.stop_propagation();
+            }
+            "insert" if m.shift => {
+                self.paste_clipboard(cx);
+                return cx.stop_propagation();
+            }
+            "pageup" | "pagedown" if m.shift => {
+                self.term.scroll_pages(if key == "pageup" { -1 } else { 1 });
+                return cx.stop_propagation();
+            }
+            "end" if m.shift => {
+                self.term.scroll_to_bottom();
+                return cx.stop_propagation();
+            }
+            _ => {}
+        }
+        let mods = mods(m);
+        let named = match key {
             "enter" => NamedKey::Enter,
             "backspace" => NamedKey::Backspace,
             "tab" => NamedKey::Tab,
@@ -229,22 +398,31 @@ impl Render for TermView {
         let entity = cx.entity();
         let focus = self.focus.clone();
         let probe = self.probe.clone();
-        let focus_click = self.focus.clone();
+        let grid_origin = self.grid_origin.clone();
 
-        let terminal = div()
+        let mut terminal = div()
+            .relative()
             .flex_1()
             .w_full()
             .overflow_hidden()
             .bg(bg)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
-            .on_mouse_down(gpui::MouseButton::Left, move |_, window, cx| {
-                window.focus(&focus_click, cx)
-            })
+            .on_mouse_down(MouseButton::Left, cx.listener(Self::mouse_down))
+            .on_mouse_down(MouseButton::Middle, cx.listener(Self::mouse_down))
+            .on_mouse_down(MouseButton::Right, cx.listener(Self::mouse_down))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
+            .on_mouse_up(MouseButton::Middle, cx.listener(Self::mouse_up))
+            .on_mouse_up(MouseButton::Right, cx.listener(Self::mouse_up))
+            // A drag that ends outside the grid still has to finish the selection.
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
+            .on_mouse_move(cx.listener(Self::mouse_move))
+            .on_scroll_wheel(cx.listener(Self::scroll_wheel))
             .child(
                 canvas(
                     |_, _, _| {},
                     move |bounds, _, window, cx| {
+                        grid_origin.set(bounds.origin);
                         window.handle_input(
                             &focus,
                             gpui::ElementInputHandler::new(bounds, entity),
@@ -309,6 +487,38 @@ impl Render for TermView {
                 )
                 .size_full(),
             );
+
+        // Overlays: a notice (e.g. refused paste) and a way back from the scrollback.
+        let badge = || {
+            div()
+                .absolute()
+                .right_3()
+                .px_2()
+                .py_1()
+                .rounded_md()
+                .text_sm()
+                .bg(rgb(0x3f3f46))
+                .text_color(rgb(0xe4e4e7))
+        };
+        if let Some(n) = &self.notice {
+            terminal = terminal.child(badge().top_3().child(n.clone()));
+        }
+        if self.frame.scrolled_back {
+            terminal = terminal.child(
+                badge()
+                    .id("to-bottom")
+                    .bottom_3()
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(0x52525b)))
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(|v, _, _, cx| {
+                        v.term.scroll_to_bottom();
+                        cx.notify();
+                    }))
+                    .child("↓ Back to bottom (Shift+End)"),
+            );
+        }
+
         if matches!(
             window.window_decorations(),
             gpui::Decorations::Client { .. }
@@ -365,7 +575,7 @@ impl EntityInputHandler for TermView {
         cx: &mut Context<Self>,
     ) {
         self.marked = None;
-        self.writer.write(text.as_bytes().to_vec());
+        self.term.text(text.to_string());
         cx.notify();
     }
 
@@ -401,7 +611,7 @@ impl EntityInputHandler for TermView {
 
     fn character_index_for_point(
         &mut self,
-        _: gpui::Point<Pixels>,
+        _: Point<Pixels>,
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<usize> {
