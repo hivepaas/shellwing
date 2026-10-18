@@ -5,9 +5,11 @@
 //! - The Account Key (AK), 32 random bytes, lives in the OS keychain (macOS
 //!   Keychain, Windows Credential Manager, Secret Service on Linux).
 //! - The Personal space key is wrapped by the AK and stored in `vault.db`.
-//! - Each record is a JSON payload sealed with XChaCha20-Poly1305 under the
-//!   space key. Its id, kind, space and key version are the additional data,
-//!   so a ciphertext cannot be moved to another record.
+//! - Each record is a JSON payload sealed under the space key, with its id,
+//!   kind, space and key version as the additional data, so a ciphertext
+//!   cannot be moved to another record. Sealed values start with the id of the
+//!   [`Cipher`] used: XChaCha20-Poly1305 by default, AES-256-GCM where FIPS
+//!   algorithms are required.
 //!
 //! Lookups decrypt every record of the kind asked for; a vault holds dozens,
 //! not millions.
@@ -16,18 +18,17 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use chacha20poly1305::aead::{Aead, KeyInit, Payload};
-use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
+mod cipher;
 mod keychain;
 
+pub use cipher::Cipher;
 pub use keychain::{KeyStore, MemoryKeys, OsKeychain};
 
 const KEY_LEN: usize = 32;
-const NONCE_LEN: usize = 24;
 const SPACE: &str = "personal";
 const KEY_VERSION: i64 = 1;
 /// The design keeps only "host" or "other" in the clear; secrets are "other".
@@ -47,6 +48,9 @@ pub enum Error {
     KeyMissing,
     #[error("a vault record failed to decrypt (wrong key or damaged data)")]
     Decrypt,
+    /// Sealed by a newer version with an algorithm this one does not know.
+    #[error("a vault record uses an unknown cipher ({0}); update shellwing")]
+    UnknownCipher(u8),
     #[error("a vault record is malformed: {0}")]
     Format(#[from] serde_json::Error),
 }
@@ -117,29 +121,6 @@ fn new_id() -> Result<String> {
     Ok(format!("{:012x}{hex}", now_ms()))
 }
 
-fn seal(key: &[u8; KEY_LEN], plain: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
-    let nonce: [u8; NONCE_LEN] = random()?;
-    let cipher = XChaCha20Poly1305::new(key.into());
-    let mut out = nonce.to_vec();
-    out.extend(
-        cipher
-            .encrypt(XNonce::from_slice(&nonce), Payload { msg: plain, aad })
-            .map_err(|_| Error::Decrypt)?,
-    );
-    Ok(out)
-}
-
-fn open_sealed(key: &[u8; KEY_LEN], sealed: &[u8], aad: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
-    if sealed.len() < NONCE_LEN {
-        return Err(Error::Decrypt);
-    }
-    let (nonce, data) = sealed.split_at(NONCE_LEN);
-    XChaCha20Poly1305::new(key.into())
-        .decrypt(XNonce::from_slice(nonce), Payload { msg: data, aad })
-        .map(Zeroizing::new)
-        .map_err(|_| Error::Decrypt)
-}
-
 fn record_aad(id: &str) -> Vec<u8> {
     format!("{id}\0{KIND}\0{SPACE}\0{KEY_VERSION}").into_bytes()
 }
@@ -149,6 +130,8 @@ const SPACE_AAD: &[u8] = b"shellwing space key: personal v1";
 pub struct Vault {
     db: Mutex<Connection>,
     space_key: Zeroizing<[u8; KEY_LEN]>,
+    /// What new values are sealed with; old ones open whatever they used.
+    cipher: Cipher,
 }
 
 impl Vault {
@@ -191,29 +174,66 @@ impl Vault {
                 |r| r.get(0),
             )
             .optional()?;
+        let cipher = Cipher::default();
         let space_key = match wrapped {
             Some(w) => {
-                let k = open_sealed(&account, &w, SPACE_AAD)?;
+                let (k, legacy) = cipher::open(&account, &w, SPACE_AAD)?;
                 let mut s = Zeroizing::new([0u8; KEY_LEN]);
                 if k.len() != KEY_LEN {
                     return Err(Error::Decrypt);
                 }
                 s.copy_from_slice(&k);
+                if legacy {
+                    db.execute(
+                        "UPDATE keys SET wrapped = ?3 WHERE id = ?1 AND ver = ?2 AND wrapped_by = 'account'",
+                        params![SPACE, KEY_VERSION, cipher::seal(cipher, &account, &s[..], SPACE_AAD)?],
+                    )?;
+                }
                 s
             }
             None => {
                 let s = Zeroizing::new(random::<KEY_LEN>()?);
                 db.execute(
                     "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES (?1, ?2, ?3, 'account')",
-                    params![SPACE, KEY_VERSION, seal(&account, &s[..], SPACE_AAD)?],
+                    params![SPACE, KEY_VERSION, cipher::seal(cipher, &account, &s[..], SPACE_AAD)?],
                 )?;
                 s
             }
         };
-        Ok(Vault {
+        let vault = Vault {
             db: Mutex::new(db),
             space_key,
-        })
+            cipher,
+        };
+        vault.upgrade_untagged()?;
+        Ok(vault)
+    }
+
+    /// Seals new values with `cipher` from now on (old ones keep theirs).
+    pub fn set_cipher(&mut self, cipher: Cipher) {
+        self.cipher = cipher;
+    }
+
+    /// Rewrites records sealed before values carried a cipher id.
+    fn upgrade_untagged(&self) -> Result<()> {
+        let rows: Vec<(String, Vec<u8>)> = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            let mut q = db.prepare("SELECT id, data FROM records WHERE deleted = 0")?;
+            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+                .collect::<std::result::Result<_, _>>()?
+        };
+        for (id, data) in rows {
+            let (plain, legacy) = cipher::open(&self.space_key, &data, &record_aad(&id))?;
+            if legacy {
+                let sealed = cipher::seal(self.cipher, &self.space_key, &plain, &record_aad(&id))?;
+                let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+                db.execute(
+                    "UPDATE records SET data = ?2 WHERE id = ?1",
+                    params![id, sealed],
+                )?;
+            }
+        }
+        Ok(())
     }
 
     fn records(&self) -> Result<Vec<(String, Record)>> {
@@ -226,7 +246,7 @@ impl Vault {
         let mut out = vec![];
         for row in rows {
             let (id, data) = row?;
-            let plain = open_sealed(&self.space_key, &data, &record_aad(&id))?;
+            let (plain, _) = cipher::open(&self.space_key, &data, &record_aad(&id))?;
             out.push((id, serde_json::from_slice(&plain)?));
         }
         Ok(out)
@@ -241,7 +261,7 @@ impl Vault {
 
     fn write(&self, id: &str, record: &Record) -> Result<()> {
         let plain = Zeroizing::new(serde_json::to_vec(record)?);
-        let data = seal(&self.space_key, &plain, &record_aad(id))?;
+        let data = cipher::seal(self.cipher, &self.space_key, &plain, &record_aad(id))?;
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
             "INSERT INTO records (id, kind, space, key_ver, data, hlc) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
@@ -446,6 +466,107 @@ mod tests {
             .expect("swap");
         }
         assert!(matches!(v.password("a@x"), Err(Error::Decrypt)));
+    }
+
+    #[test]
+    fn records_sealed_with_different_ciphers_live_side_by_side() {
+        let path = temp("ciphers");
+        let keys = MemoryKeys::default();
+        let mut v = Vault::open(&path, &keys).expect("open");
+        v.set_password("a@x", "one").expect("save");
+        v.set_cipher(Cipher::Aes256Gcm);
+        v.set_password("b@x", "two").expect("save");
+        drop(v);
+        let v = Vault::open(&path, &keys).expect("reopen");
+        let get = |t: &str| v.password(t).expect("read").map(|p| p.to_string());
+        assert_eq!(
+            (get("a@x"), get("b@x")),
+            (Some("one".into()), Some("two".into()))
+        );
+        let ids: Vec<u8> = {
+            let db = v.db.lock().expect("db");
+            db.prepare("SELECT data FROM records ORDER BY id")
+                .expect("prepare")
+                .query_map([], |r| r.get::<_, Vec<u8>>(0))
+                .expect("query")
+                .map(|d| d.expect("row")[0])
+                .collect()
+        };
+        assert_eq!(
+            ids,
+            [Cipher::XChaCha20Poly1305.id(), Cipher::Aes256Gcm.id()]
+        );
+    }
+
+    /// A vault saved before values carried a cipher id (`nonce || ciphertext`).
+    #[test]
+    fn an_untagged_vault_opens_and_is_rewritten() {
+        use chacha20poly1305::XChaCha20Poly1305;
+        use chacha20poly1305::aead::{Aead, KeyInit, Payload};
+        let untagged = |key: &[u8; KEY_LEN], plain: &[u8], aad: &[u8]| {
+            let nonce = [3u8; 24];
+            let mut out = nonce.to_vec();
+            out.extend(
+                XChaCha20Poly1305::new(key.into())
+                    .encrypt((&nonce).into(), Payload { msg: plain, aad })
+                    .expect("encrypt"),
+            );
+            out
+        };
+        let path = temp("untagged");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("open");
+        v.set_password("old@host", "kept").expect("save");
+        let account: [u8; KEY_LEN] = keys
+            .load()
+            .expect("load")
+            .expect("key")
+            .try_into()
+            .expect("size");
+        {
+            // Turn everything back into the first format.
+            let db = v.db.lock().expect("db");
+            let (id, data): (String, Vec<u8>) = db
+                .query_row("SELECT id, data FROM records", [], |r| {
+                    Ok((r.get(0)?, r.get(1)?))
+                })
+                .expect("row");
+            let (plain, _) = cipher::open(&v.space_key, &data, &record_aad(&id)).expect("open");
+            db.execute(
+                "UPDATE records SET data = ?2 WHERE id = ?1",
+                params![id, untagged(&v.space_key, &plain, &record_aad(&id))],
+            )
+            .expect("record");
+            db.execute(
+                "UPDATE keys SET wrapped = ?1",
+                params![untagged(&account, &v.space_key[..], SPACE_AAD)],
+            )
+            .expect("key");
+        }
+        drop(v);
+        let v = Vault::open(&path, &keys).expect("reopen");
+        assert_eq!(
+            v.password("old@host")
+                .expect("read")
+                .as_deref()
+                .map(String::as_str),
+            Some("kept")
+        );
+        let db = v.db.lock().expect("db");
+        let first = |sql: &str| {
+            db.query_row(sql, [], |r| r.get::<_, Vec<u8>>(0))
+                .expect("row")[0]
+        };
+        assert_eq!(
+            first("SELECT data FROM records"),
+            Cipher::default().id(),
+            "rewritten"
+        );
+        assert_eq!(
+            first("SELECT wrapped FROM keys"),
+            Cipher::default().id(),
+            "rewritten"
+        );
     }
 
     #[test]
