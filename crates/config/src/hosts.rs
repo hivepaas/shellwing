@@ -65,6 +65,16 @@ pub struct Host {
     /// How an unknown host key is handled; None: the app's setting.
     #[serde(default)]
     pub host_key: Option<HostKey>,
+    /// Marks its tab and pane: a color name (`pink`, `sky`, `green`, `amber`,
+    /// `red`) or `#rrggbb`.
+    #[serde(default)]
+    pub color: Option<String>,
+    /// Listed first in the host list.
+    #[serde(default)]
+    pub favorite: bool,
+    /// Typed into the shell once it is ready, after every connect.
+    #[serde(default)]
+    pub run: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
@@ -177,5 +187,30 @@ impl HostKey {
             HostKey::AcceptNew => "accept-new",
             HostKey::Strict => "strict",
         }
+    }
+}
+
+/// The colors a host can be marked with, by name, as `0xrrggbb`.
+pub const HOST_COLORS: [(&str, u32); 5] = [
+    ("pink", 0xf472b6),
+    ("sky", 0x38bdf8),
+    ("green", 0x34d399),
+    ("amber", 0xfbbf24),
+    ("red", 0xf87171),
+];
+
+impl Host {
+    /// The host's color as `0xrrggbb`, from a name or `#rrggbb`.
+    pub fn color_rgb(&self) -> Option<u32> {
+        let c = self.color.as_deref()?.trim();
+        HOST_COLORS
+            .iter()
+            .find(|(n, _)| n.eq_ignore_ascii_case(c))
+            .map(|(_, v)| *v)
+            .or_else(|| {
+                c.strip_prefix('#')
+                    .filter(|h| h.len() == 6)
+                    .and_then(|h| u32::from_str_radix(h, 16).ok())
+            })
     }
 }

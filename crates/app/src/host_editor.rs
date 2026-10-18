@@ -11,7 +11,7 @@ use gpui::{
     Context, ElementId, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent,
     Render, SharedString, Window, div, prelude::*, px, rgb,
 };
-use shellwing_config::{Auth, AuthMethod, Host, HostKey, Hosts, Store};
+use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, Hosts, Store};
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
 use crate::input::TextInput;
@@ -97,6 +97,7 @@ struct Inputs {
     jump: Entity<TextInput>,
     forward: Entity<TextInput>,
     keepalive: Entity<TextInput>,
+    run: Entity<TextInput>,
 }
 
 pub struct HostEditor {
@@ -114,6 +115,8 @@ pub struct HostEditor {
     local_only: bool,
     forward_agent: bool,
     host_key: Option<HostKey>,
+    color: Option<String>,
+    favorite: bool,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -164,6 +167,7 @@ impl HostEditor {
             jump: input(cx, "a host here, an ssh alias, or user@host"),
             forward: input(cx, "-L 8080:localhost:80"),
             keepalive: input(cx, &ctx.app_ssh.keepalive.to_string()),
+            run: input(cx, "cd ~/apps && exec $SHELL -l"),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -179,6 +183,8 @@ impl HostEditor {
             local_only: false,
             forward_agent: false,
             host_key: None,
+            color: None,
+            favorite: false,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -242,6 +248,9 @@ impl HostEditor {
         );
         self.forward_agent = h.forward_agent;
         self.host_key = h.host_key;
+        self.set(&i.run, h.run.as_deref().unwrap_or(""), cx);
+        self.color = h.color.clone();
+        self.favorite = h.favorite;
         self.method = h.auth.method;
         self.jumps = h.jump.clone();
         self.forwards = h.forward.clone();
@@ -286,6 +295,9 @@ impl HostEditor {
             forward_agent: self.forward_agent,
             keepalive: self.text(&i.keepalive, cx).parse().ok(),
             host_key: self.host_key,
+            color: self.color.clone(),
+            favorite: self.favorite,
+            run: opt(self.text(&i.run, cx)),
         }
     }
 
@@ -464,6 +476,9 @@ impl HostEditor {
             forward_agent: false,
             keepalive: None,
             host_key: None,
+            color: None,
+            favorite: false,
+            run: None,
         };
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
@@ -562,6 +577,7 @@ impl HostEditor {
             order.push(&i.forward);
         }
         order.push(&i.tags);
+        order.push(&i.run);
         order.push(&i.keepalive);
         order.into_iter().map(|e| e.focus_handle(cx)).collect()
     }
@@ -1063,12 +1079,14 @@ impl Render for HostEditor {
         } else {
             "Not saved yet"
         };
-        let color = self
-            .group
-            .as_ref()
-            .and_then(|g| self.ctx.hosts.groups.iter().find(|x| &x.name == g))
-            .and_then(|g| g.color.as_deref())
-            .and_then(|c| u32::from_str_radix(c.trim_start_matches('#'), 16).ok());
+        // The host's own color, else its group's.
+        let color = self.current(cx).color_rgb().or_else(|| {
+            self.group
+                .as_ref()
+                .and_then(|g| self.ctx.hosts.groups.iter().find(|x| &x.name == g))
+                .and_then(|g| g.color.as_deref())
+                .and_then(|c| u32::from_str_radix(c.trim_start_matches('#'), 16).ok())
+        });
 
         let connection = section("Connection")
             .child(
@@ -1331,6 +1349,66 @@ impl Render for HostEditor {
             }
             organize = organize.child(self.menu_list(Menu::Group, choices, cx));
         }
+        // The colors, as round swatches; the chosen one ringed.
+        let mut swatches = div()
+            .flex()
+            .items_center()
+            .gap(px(8.))
+            .child(div().mr(px(6.)).child(label_text("Color")));
+        let none_on = self.color.is_none();
+        swatches = swatches.child(
+            div()
+                .id("color-none")
+                .size(px(20.))
+                .rounded_full()
+                .border_2()
+                .border_color(rgb(if none_on { TEXT } else { EDGE }))
+                .cursor_pointer()
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(ui(10.))
+                .text_color(rgb(MUTED))
+                .on_click(cx.listener(|e, _, _, cx| {
+                    e.color = None;
+                    cx.notify();
+                }))
+                .child("–"),
+        );
+        for (name, value) in HOST_COLORS {
+            let on = self
+                .color
+                .as_deref()
+                .is_some_and(|c| c.eq_ignore_ascii_case(name));
+            swatches = swatches.child(
+                div()
+                    .id(SharedString::from(format!("color-{name}")))
+                    .size(px(20.))
+                    .rounded_full()
+                    .bg(rgb(value))
+                    .when(on, |d| d.border_2().border_color(rgb(TEXT)))
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |e, _, _, cx| {
+                        e.color = Some(name.to_string());
+                        cx.notify();
+                    })),
+            );
+        }
+        swatches = swatches.child(hint_text("Shown on the tab and the pane border").ml(px(8.)));
+        organize = organize.child(swatches).child(
+            div()
+                .id("favorite")
+                .flex()
+                .items_center()
+                .gap_2()
+                .cursor_pointer()
+                .on_click(cx.listener(|e, _, _, cx| {
+                    e.favorite = !e.favorite;
+                    cx.notify();
+                }))
+                .child(checkbox(self.favorite))
+                .child(label_text("Favorite: listed first in the host list")),
+        );
 
         let mut terminal = section("Terminal").child(row().child(self.select(
             "theme-select",
@@ -1349,6 +1427,18 @@ impl Render for HostEditor {
             );
             terminal = terminal.child(self.menu_list(Menu::Theme, choices, cx));
         }
+        terminal = terminal
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(label_text("Run after connecting"))
+                    .child(self.input_box(&i.run, false, window, cx)),
+            )
+            .child(hint_text(
+                "Typed into the shell once it is ready, after every connect and reconnect.",
+            ));
 
         let mut keys = div()
             .flex()

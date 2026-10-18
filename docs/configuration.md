@@ -154,7 +154,13 @@ theme = "nord"              # beats the group's and config.toml's theme
 forward_agent = false       # let the host use your ssh-agent (see below)
 keepalive = 15              # seconds; beats [ssh] keepalive
 host_key = "accept-new"     # beats [ssh] host_key
+color = "pink"              # pink, sky, green, amber, red or "#rrggbb": on its tab and pane
+favorite = true             # listed first in the host list
+run = "cd ~/apps"           # typed into the shell once it is ready, after every connect
 ```
+
+The host list's filter matches every word typed against a host's name, alias,
+address, user and tags; **Enter** opens the first host shown, **Esc** clears it.
 
 **Agent forwarding** (`forward_agent = true`, or *Forward my agent* in the host
 editor) lets the host use your local ssh-agent while you are connected: `git`

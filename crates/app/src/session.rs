@@ -78,6 +78,8 @@ pub struct Session {
     held: Weak<Held>,
     /// The app's defaults for hosts that set none.
     ssh: shellwing_config::Ssh,
+    /// Typed into the shell once it is ready (the host's `run`).
+    run: Option<String>,
 }
 
 /// What a Files panel needs from its pane's connection.
@@ -224,9 +226,14 @@ impl Session {
             vault,
             held: Weak::new(),
             ssh,
+            run: None,
         };
         match target {
             Ok((resolved, entry)) => {
+                session.run = entry
+                    .as_ref()
+                    .and_then(|h| h.run.clone())
+                    .filter(|r| !r.trim().is_empty());
                 session.title = resolved.alias.clone();
                 session.entry = entry.map(|h| h.name);
                 session.target = Some(resolved);
@@ -332,6 +339,7 @@ impl Session {
         );
         let secrets = Some(self.secrets.clone());
         let policy = crate::target::policy(self.ssh.host_key);
+        let run = self.run.clone();
         let keepalive = std::time::Duration::from_secs(self.ssh.keepalive);
         // Lives as long as the connection: the forwarded callback and the ended
         // one hold it.
@@ -413,6 +421,10 @@ impl Session {
             match session {
                 Ok(s) => {
                     writer.start_session(s.sender());
+                    // Typed ahead: the shell reads it once it is ready.
+                    if let Some(cmd) = &run {
+                        writer.write(format!("{cmd}\r").into_bytes());
+                    }
                     if let Ok(mut st) = state.lock() {
                         st.ever_connected = true;
                     }

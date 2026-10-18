@@ -170,7 +170,7 @@ impl Workspace {
             active: 0,
             sidebar: {
                 let me = cx.weak_entity();
-                cx.new(|_| Sidebar::new(me))
+                cx.new(|cx| Sidebar::new(me, cx))
             },
             show_sidebar: true,
             live,
@@ -1593,9 +1593,23 @@ impl Workspace {
             let v = tab.focused.read(cx);
             let active = i == self.active;
             let title = v.session().title.clone();
+            let color = self.host_color(v.session().entry.as_deref());
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
+                    .relative()
+                    // The host's color, as a line along the top.
+                    .when_some(color, |d, c| {
+                        d.child(
+                            div()
+                                .absolute()
+                                .top_0()
+                                .left_0()
+                                .right_0()
+                                .h(px(2.))
+                                .bg(rgb(c)),
+                        )
+                    })
                     .flex()
                     .items_center()
                     .gap_2()
@@ -1697,6 +1711,11 @@ impl Workspace {
             )
     }
 
+    /// The color a hosts.toml host is marked with, by name.
+    fn host_color(&self, entry: Option<&str>) -> Option<u32> {
+        self.live.hosts().find(entry?).and_then(|h| h.color_rgb())
+    }
+
     /// What the host list shows now: hosts.toml by group, then ssh config
     /// aliases it does not already name, each with its tabs' status.
     fn sidebar_sections(&self, cx: &Context<Self>) -> Vec<Section> {
@@ -1710,8 +1729,25 @@ impl Workspace {
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
             status: self.host_status(cx, |s| s.entry.as_deref() == Some(h.name.as_str())),
             edit: EditTarget::Saved(h.name.clone()),
+            search: [
+                h.name.as_str(),
+                h.alias.as_deref().unwrap_or(""),
+                h.address.as_str(),
+                h.user.as_deref().unwrap_or(""),
+                &h.tags.join(" "),
+            ]
+            .join(" ")
+            .to_lowercase(),
         };
         let mut sections = vec![];
+        let favorites: Vec<Row> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
+        if !favorites.is_empty() {
+            sections.push(Section {
+                title: "Favorites".into(),
+                note: SharedString::default(),
+                rows: favorites,
+            });
+        }
         for g in &hosts.groups {
             let rows: Vec<Row> = hosts
                 .hosts
@@ -1722,6 +1758,7 @@ impl Workspace {
             if !rows.is_empty() {
                 sections.push(Section {
                     title: g.name.clone().into(),
+                    note: rows.len().to_string().into(),
                     rows,
                 });
             }
@@ -1735,6 +1772,7 @@ impl Workspace {
         if !loose.is_empty() {
             sections.push(Section {
                 title: "Hosts".into(),
+                note: loose.len().to_string().into(),
                 rows: loose,
             });
         }
@@ -1748,11 +1786,13 @@ impl Workspace {
                 spec: a.clone(),
                 status: self.host_status(cx, |s| s.entry.is_none() && &s.spec == a),
                 edit: EditTarget::Ssh(a.clone()),
+                search: a.to_lowercase(),
             })
             .collect();
         if !aliases.is_empty() {
             sections.push(Section {
                 title: "~/.ssh/config".into(),
+                note: "read only".into(),
                 rows: aliases,
             });
         }
@@ -1779,6 +1819,11 @@ impl Workspace {
         match pane {
             Pane::Leaf(view) => {
                 let v = view.clone();
+                // The focused pane's border: its host's color, else the theme's accent.
+                let accent = self
+                    .host_color(view.read(cx).session().entry.as_deref())
+                    .map(|c| rgb(c).into())
+                    .unwrap_or(accent);
                 div()
                     .flex_1()
                     .min_w_0()
