@@ -681,6 +681,11 @@ impl TermView {
 
     /// Picks the terminal font: $SHELLWING_FONT, else the configured family if
     /// installed, else the first installed candidate.
+    /// The font a terminal uses when none is set.
+    pub fn default_font(window: &mut Window) -> String {
+        Self::choose_font(window, None).to_string()
+    }
+
     fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
         if let Ok(f) = std::env::var("SHELLWING_FONT") {
             return f.into();

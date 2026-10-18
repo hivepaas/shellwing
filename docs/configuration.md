@@ -28,6 +28,12 @@ the maximised state come back; the compositor chooses the position.
 
 ## config.toml
 
+**Settings** (**Ctrl+,**, **Cmd+,** on macOS, or *Settings…* in the palette)
+changes these without opening the file: theme, font, size, line height,
+cursor, scrollbar, padding, scrollback, what a dropped connection does, and
+whether the last tabs come back. Each change is written here at once, keeping
+your comments, and applies to the open tabs.
+
 ```toml
 [general]
 restore_tabs = true          # a start without a host opens the last run's tabs

@@ -27,7 +27,7 @@ pub use settings::{
     Sync, Terminal,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
-pub use store::{EditFile, LoadError, Stamp, Store, WriteError};
+pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};
 pub use theme::{DEFAULT_THEME, Gradient, Theme, Themes};
 
 /// The theme in effect, from lowest to highest precedence: `config.toml`, the

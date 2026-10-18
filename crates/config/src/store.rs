@@ -55,6 +55,39 @@ pub enum WriteError {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Stamp(Vec<(PathBuf, Option<(SystemTime, u64)>)>);
 
+/// A value for [`Store::set_setting`].
+#[derive(Clone, Debug, PartialEq)]
+pub enum SettingValue {
+    Bool(bool),
+    Int(i64),
+    Float(f64),
+    Str(String),
+}
+
+impl SettingValue {
+    fn to_toml(&self) -> toml_edit::Value {
+        match self {
+            SettingValue::Bool(b) => (*b).into(),
+            SettingValue::Int(i) => (*i).into(),
+            // 14, not 14.0, as people write sizes.
+            SettingValue::Float(f) if f.fract() == 0. && f.abs() < 1e15 => (*f as i64).into(),
+            SettingValue::Float(f) => (*f).into(),
+            SettingValue::Str(s) => s.as_str().into(),
+        }
+    }
+
+    fn same(&self, v: &toml_edit::Value) -> bool {
+        match self {
+            SettingValue::Bool(b) => v.as_bool() == Some(*b),
+            SettingValue::Int(i) => v.as_integer() == Some(*i),
+            SettingValue::Float(f) => {
+                v.as_float() == Some(*f) || v.as_integer().is_some_and(|i| i as f64 == *f)
+            }
+            SettingValue::Str(s) => v.as_str() == Some(s.as_str()),
+        }
+    }
+}
+
 /// The config directory.
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -191,6 +224,55 @@ impl Store {
                 }
             }
             Ok(())
+        })
+    }
+
+    /// Sets one setting in `config.toml`, by its path (`["appearance", "font",
+    /// "size"]`), or with None removes it so the default applies. Comments and
+    /// everything else stay; a missing section is added, and a missing nested
+    /// table is added inline (`font = { size = 14 }`), as the docs write them.
+    pub fn set_setting(
+        &self,
+        path: &[&str],
+        value: Option<SettingValue>,
+    ) -> Result<(), WriteError> {
+        self.edit_if(SETTINGS, |doc| {
+            let (last, parents) = path.split_last().ok_or("no setting named")?;
+            let mut table: &mut dyn toml_edit::TableLike = doc.as_table_mut();
+            for (depth, key) in parents.iter().enumerate() {
+                if table.get(key).is_none() {
+                    if value.is_none() {
+                        return Ok(false);
+                    }
+                    let fresh = if depth == 0 {
+                        toml_edit::table()
+                    } else {
+                        toml_edit::Item::Value(toml_edit::InlineTable::new().into())
+                    };
+                    table.insert(key, fresh);
+                }
+                table = table
+                    .get_mut(key)
+                    .and_then(|i| i.as_table_like_mut())
+                    .ok_or("a setting's section is not a table")?;
+            }
+            let Some(value) = value else {
+                return Ok(table.remove(last).is_some());
+            };
+            if table
+                .get(last)
+                .and_then(|i| i.as_value())
+                .is_some_and(|v| value.same(v))
+            {
+                return Ok(false);
+            }
+            let mut new = value.to_toml();
+            if let Some(old) = table.get(last).and_then(|i| i.as_value()) {
+                // The spacing and comment around the old value stay.
+                *new.decor_mut() = old.decor().clone();
+            }
+            table.insert(last, toml_edit::Item::Value(new));
+            Ok(true)
         })
     }
 
@@ -401,6 +483,53 @@ mod tests {
             std::env::temp_dir().join(format!("shellwing-store-{}-{name}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         Store::new(dir)
+    }
+
+    #[test]
+    fn settings_are_set_gently() {
+        let store = temp("set");
+        fs::create_dir_all(store.dir()).expect("dir");
+        fs::write(
+            store.dir().join(SETTINGS),
+            "# Mine.\n[appearance]\nfont = { family = \"Fira Code\", size = 13 }  # small\n",
+        )
+        .expect("write");
+        let set = |path: &[&str], v: Option<SettingValue>| store.set_setting(path, v).expect("set");
+        set(
+            &["appearance", "font", "size"],
+            Some(SettingValue::Float(14.)),
+        );
+        set(
+            &["appearance", "cursor", "style"],
+            Some(SettingValue::Str("bar".into())),
+        );
+        set(&["terminal", "scrollback"], Some(SettingValue::Int(50_000)));
+        set(
+            &["general", "restore_tabs"],
+            Some(SettingValue::Bool(false)),
+        );
+        let text = fs::read_to_string(store.dir().join(SETTINGS)).expect("read");
+        assert!(text.starts_with("# Mine."), "comments stay:\n{text}");
+        assert!(
+            text.contains("size = 14 }  # small"),
+            "the line keeps its comment:\n{text}"
+        );
+        assert!(text.contains("cursor = { style = \"bar\" }"), "{text}");
+        let s = store.settings().expect("settings");
+        assert_eq!(s.appearance.font.size, 14.);
+        assert_eq!(s.appearance.font.family.as_deref(), Some("Fira Code"));
+        assert_eq!(s.terminal.scrollback, 50_000);
+        assert!(!s.general.restore_tabs);
+        // Setting the same again writes nothing; removing goes back to the default.
+        let before = store.stamp();
+        set(&["terminal", "scrollback"], Some(SettingValue::Int(50_000)));
+        assert_eq!(store.stamp(), before);
+        set(&["terminal", "scrollback"], None);
+        assert_eq!(
+            store.settings().expect("settings").terminal.scrollback,
+            Settings::default().terminal.scrollback
+        );
+        let _ = fs::remove_dir_all(store.dir());
     }
 
     #[test]

@@ -23,6 +23,7 @@ use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Session, Status};
+use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
@@ -51,6 +52,7 @@ enum Shortcut {
     Sidebar,
     /// The focused pane's Files panel.
     Files,
+    Settings,
     Theme(isize),
 }
 
@@ -100,6 +102,9 @@ pub struct Workspace {
     asking: Option<Asking>,
     /// The host editor drawer, while open.
     editor: Option<(Entity<HostEditor>, Subscription)>,
+    /// The settings page, while open, and the fonts it offers.
+    settings: Option<(Entity<SettingsView>, Subscription)>,
+    fonts: (Vec<String>, String),
 }
 
 /// What the host editor opens on.
@@ -183,6 +188,8 @@ impl Workspace {
             sync_error: None,
             asking: None,
             editor: None,
+            settings: None,
+            fonts: (vec![], String::new()),
         };
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
@@ -652,6 +659,15 @@ impl Workspace {
                 "iCloud Drive, Syncthing, Dropbox…".into(),
             ),
         }
+        action(
+            Action::Settings,
+            "Settings…".into(),
+            if cfg!(target_os = "macos") {
+                "Cmd+,".into()
+            } else {
+                "Ctrl+,".into()
+            },
+        );
         action(Action::NewHost, "New host…".into(), String::new());
         if let Some(target) = self.active_tab().map(|t| {
             let s = t.read(cx).session();
@@ -797,6 +813,7 @@ impl Workspace {
         }
         self.sync.set_folder(folder.map(|f| f.to_path_buf()));
         self.sync.now();
+        self.refresh_settings(cx);
     }
 
     fn ask_recovery_key(&mut self, again: bool, window: &mut Window, cx: &mut Context<Self>) {
@@ -821,6 +838,103 @@ impl Workspace {
         }
         let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    /// What the settings page shows.
+    fn settings_snap(&self) -> Snap {
+        Snap {
+            settings: self.live.settings().clone(),
+            themes: self.live.themes().all().to_vec(),
+            fonts: self.fonts.0.clone(),
+            default_font: self.fonts.1.clone(),
+            sync_folder: self.sync.folder(),
+            config_dir: self.live.store().map(|s| s.dir().to_path_buf()),
+            known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS")
+                .map(Into::into)
+                .or_else(|| std::env::home_dir().map(|h| h.join(".ssh").join("known_hosts"))),
+            ssh_config: ssh_config::default_config_path(),
+            secrets: self
+                .vault
+                .ready()
+                .and_then(|v| v.items().ok())
+                .map(|i| i.len()),
+        }
+    }
+
+    pub fn open_settings(&mut self, page: Page, window: &mut Window, cx: &mut Context<Self>) {
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        self.fonts = (
+            settings_view::mono_fonts(&window.text_system().all_font_names()),
+            TermView::default_font(window),
+        );
+        let snap = self.settings_snap();
+        let ws = cx.entity().downgrade();
+        let view = cx.new(|cx| SettingsView::new(ws, page, snap, cx));
+        let sub = cx.subscribe_in(
+            &view,
+            window,
+            |ws, _, ev: &SettingsEvent, window, cx| match ev {
+                SettingsEvent::Close => ws.close_settings(window, cx),
+            },
+        );
+        window.focus(&view.focus_handle(cx), cx);
+        self.settings = Some((view, sub));
+        cx.notify();
+    }
+
+    fn close_settings(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.settings.take().is_some() {
+            self.activate(self.active, window, cx);
+            cx.notify();
+        }
+    }
+
+    /// From the settings page: writes a setting, applies it to the open tabs,
+    /// and returns what the page shows now.
+    pub fn change_setting(
+        &mut self,
+        path: &[&str],
+        value: Option<shellwing_config::SettingValue>,
+        cx: &mut Context<Self>,
+    ) -> Option<Snap> {
+        if let Err(e) = self.live.set_setting(path, value) {
+            self.say(e, CONFIG_NOTICE, cx);
+        }
+        let problems = self.restyle(cx);
+        self.report(problems, cx);
+        Some(self.settings_snap())
+    }
+
+    pub fn set_app_theme(&mut self, id: &str, cx: &mut Context<Self>) -> Option<Snap> {
+        match self.live.set_theme(id) {
+            Ok(_) => {
+                self.restyle(cx);
+            }
+            Err(e) => self.say(e, CONFIG_NOTICE, cx),
+        }
+        Some(self.settings_snap())
+    }
+
+    /// From the settings page: the same actions as the palette's.
+    pub fn run_from_settings(
+        &mut self,
+        action: Action,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.run(action, window, cx);
+        self.refresh_settings(cx);
+    }
+
+    /// Shows the settings page what is true now. Deferred: this may run while
+    /// the page itself is handling a click.
+    fn refresh_settings(&self, cx: &mut Context<Self>) {
+        if let Some((view, _)) = &self.settings {
+            let (view, snap) = (view.clone(), self.settings_snap());
+            cx.defer(move |cx| view.update(cx, |v, cx| v.set_snap(snap, cx)));
+        }
     }
 
     /// Opens the host editor drawer on `target`.
@@ -1071,7 +1185,15 @@ impl Workspace {
             // Undo the preview.
             self.restyle(cx);
         }
-        self.activate(self.active, window, cx);
+        // Back to the settings page if the palette was opened from it.
+        match &self.settings {
+            Some((view, _)) => {
+                let view = view.clone();
+                self.refresh_settings(cx);
+                window.focus(&view.focus_handle(cx), cx);
+            }
+            None => self.activate(self.active, window, cx),
+        }
     }
 
     fn on_palette(
@@ -1184,6 +1306,7 @@ impl Workspace {
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
+            Action::Settings => self.open_settings(Page::Appearance, window, cx),
             Action::EditHost(target) => self.edit_host(target, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
             Action::SyncFolder => self.choose_sync_folder(window, cx),
@@ -1271,6 +1394,7 @@ impl Workspace {
             self.ssh_aliases = ssh_config::aliases(ssh_config::default_config_path().as_deref());
             problems.extend(self.restyle(cx));
             self.report(problems, cx);
+            self.refresh_settings(cx);
             self.refresh_sidebar(cx);
             self.sync.set_folder(self.live.sync_folder());
         }
@@ -1366,6 +1490,8 @@ impl Workspace {
             }),
             "b" if chord => Shortcut::Sidebar,
             "o" if chord => Shortcut::Files,
+            // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
+            "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
             "pagedown" if m.control && !m.shift => Shortcut::Step(1),
             "pageup" if m.control && !m.shift => Shortcut::Step(-1),
@@ -1421,6 +1547,13 @@ impl Workspace {
                 cx.notify();
             }
             Shortcut::Files => self.toggle_files(window, cx),
+            Shortcut::Settings => {
+                if self.settings.is_some() {
+                    self.close_settings(window, cx);
+                } else {
+                    self.open_settings(Page::Appearance, window, cx);
+                }
+            }
             Shortcut::Theme(step) => self.step_theme(step, cx),
         }
     }
@@ -1824,6 +1957,17 @@ impl Render for Workspace {
                                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                                 .child(e),
                         ),
+                )
+            })
+            .when_some(self.settings.as_ref().map(|(s, _)| s.clone()), |d, s| {
+                d.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .child(s),
                 )
             })
             .when_some(palette, |d, p| {
