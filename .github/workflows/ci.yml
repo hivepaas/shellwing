@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Linux packages (GPUI: Wayland, X11, Vulkan, fonts)
+      - name: "Linux packages (GPUI: Wayland, X11, Vulkan, fonts)"
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
