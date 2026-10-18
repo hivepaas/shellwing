@@ -34,6 +34,8 @@ pub enum Action {
     SplitDown,
     ChangeTheme,
     Files,
+    NewHost,
+    EditHost(crate::workspace::EditTarget),
     Forward,
     ToggleHosts,
     CloseTab,

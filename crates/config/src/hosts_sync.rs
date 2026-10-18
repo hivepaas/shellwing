@@ -192,18 +192,74 @@ fn set_auth(t: &mut Table, method: Option<&str>, key: Option<&str>) -> bool {
     true
 }
 
+/// In the order a new table gets them; existing keys keep their place.
 fn apply_host(t: &mut Table, f: &Fields) -> bool {
     let g = |k: &str| f.get(k).map(String::as_str);
     let mut changed = false;
-    for k in ["name", "alias", "address", "user", "group", "theme"] {
+    for k in ["name", "alias", "address"] {
         changed |= set_str(t, k, g(k));
     }
     changed |= set_port(t, g("port"));
+    for k in ["user", "group"] {
+        changed |= set_str(t, k, g(k));
+    }
     changed |= set_list(t, "tags", g("tags"));
     changed |= set_list(t, "jump", g("jump"));
     changed |= set_list(t, "forward", g("forward"));
     changed |= set_auth(t, g("auth_method"), g("auth_key"));
+    changed |= set_str(t, "theme", g("theme"));
     changed
+}
+
+fn set_flag(t: &mut Table, key: &str, on: bool) -> bool {
+    if t.get(key).and_then(Item::as_bool).unwrap_or(false) == on {
+        return false;
+    }
+    if on {
+        set_keeping_decor(t, key, true.into());
+    } else {
+        t.remove(key);
+    }
+    true
+}
+
+/// Writes `host` over the `[[host]]` with `id`, or adds it at the end, changing
+/// only what differs. Returns whether anything changed.
+pub(crate) fn save_host(doc: &mut DocumentMut, id: &str, host: &Host) -> bool {
+    if doc.get("host").and_then(Item::as_array_of_tables).is_none() {
+        doc.insert("host", Item::ArrayOfTables(Default::default()));
+    }
+    let Some(aot) = doc.get_mut("host").and_then(Item::as_array_of_tables_mut) else {
+        return false;
+    };
+    let fields = host.sync_fields();
+    if let Some(t) = aot
+        .iter_mut()
+        .find(|t| t.get("id").and_then(Item::as_str) == Some(id))
+    {
+        let changed = apply_host(t, &fields);
+        return set_flag(t, "local_only", host.local_only) || changed;
+    }
+    let mut t = Table::new();
+    t.insert("id", value(id));
+    apply_host(&mut t, &fields);
+    set_flag(&mut t, "local_only", host.local_only);
+    aot.push(t);
+    true
+}
+
+/// Removes the `[[host]]` with `id`. Returns whether it was there.
+pub(crate) fn delete_host(doc: &mut DocumentMut, id: &str) -> bool {
+    let Some(aot) = doc.get_mut("host").and_then(Item::as_array_of_tables_mut) else {
+        return false;
+    };
+    let at = aot
+        .iter()
+        .position(|t| t.get("id").and_then(Item::as_str) == Some(id));
+    if let Some(i) = at {
+        aot.remove(i);
+    }
+    at.is_some()
 }
 
 fn apply_group(t: &mut Table, f: &Fields) -> bool {
@@ -340,6 +396,52 @@ local_only = true
             doc.to_string().contains("[[host]]\nid = "),
             "id comes first"
         );
+    }
+
+    #[test]
+    fn a_host_is_saved_over_its_table_or_added() {
+        let mut doc: DocumentMut = FILE.parse().expect("doc");
+        let mut api = parse(FILE).hosts[0].clone();
+        api.address = "10.0.1.99".into();
+        api.local_only = true;
+        assert!(save_host(&mut doc, "h1", &api));
+        assert!(!save_host(&mut doc, "h1", &api), "nothing left to change");
+        let new = Host {
+            id: None,
+            name: "cache".into(),
+            alias: None,
+            address: "10.0.3.3".into(),
+            port: Some(2222),
+            user: Some("ops".into()),
+            group: None,
+            tags: vec![],
+            jump: vec![],
+            forward: vec!["-L 6379:localhost:6379".into()],
+            auth: Default::default(),
+            theme: None,
+            local_only: false,
+        };
+        assert!(save_host(&mut doc, "h9", &new));
+        let text = doc.to_string();
+        assert!(text.contains("# My hosts."), "comments stay");
+        assert!(
+            text.contains(r#"name = "api-1"   # the main one"#),
+            "untouched lines stay"
+        );
+        assert!(text.contains(
+            "[[host]]\nid = \"h9\"\nname = \"cache\"\naddress = \"10.0.3.3\"\nport = 2222\nuser = \"ops\"\n"
+        ), "a new table reads in a sensible order:\n{text}");
+        let hosts = parse(&text);
+        let saved = hosts.find("api-1").expect("api-1");
+        assert_eq!(
+            (saved.address.as_str(), saved.local_only),
+            ("10.0.1.99", true)
+        );
+        assert_eq!(hosts.find("cache").map(|h| h.port), Some(Some(2222)));
+
+        assert!(delete_host(&mut doc, "h9"));
+        assert!(!delete_host(&mut doc, "h9"));
+        assert!(parse(&doc.to_string()).find("cache").is_none());
     }
 
     #[test]
