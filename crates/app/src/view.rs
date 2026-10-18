@@ -31,15 +31,37 @@ const FONT_FAMILIES: &[&str] = &["JetBrains Mono", "SF Mono", "Menlo"];
 #[cfg(target_os = "windows")]
 const FONT_FAMILIES: &[&str] = &["JetBrains Mono", "Cascadia Mono", "Consolas"];
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-const FONT_FAMILIES: &[&str] = &["JetBrains Mono", "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono"];
+const FONT_FAMILIES: &[&str] = &[
+    "JetBrains Mono",
+    "DejaVu Sans Mono",
+    "Noto Sans Mono",
+    "Liberation Mono",
+];
 
 /// Tried in order for characters the terminal font lacks (CJK, emoji).
 #[cfg(target_os = "macos")]
-const FONT_FALLBACKS: &[&str] = &["Menlo", "Apple Color Emoji", "PingFang SC", "Hiragino Sans", "Apple SD Gothic Neo"];
+const FONT_FALLBACKS: &[&str] = &[
+    "Menlo",
+    "Apple Color Emoji",
+    "PingFang SC",
+    "Hiragino Sans",
+    "Apple SD Gothic Neo",
+];
 #[cfg(target_os = "windows")]
-const FONT_FALLBACKS: &[&str] = &["Consolas", "Segoe UI Emoji", "Microsoft YaHei", "Yu Gothic", "Malgun Gothic"];
+const FONT_FALLBACKS: &[&str] = &[
+    "Consolas",
+    "Segoe UI Emoji",
+    "Microsoft YaHei",
+    "Yu Gothic",
+    "Malgun Gothic",
+];
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-const FONT_FALLBACKS: &[&str] = &["Noto Sans Mono CJK SC", "Noto Color Emoji", "Noto Sans CJK SC", "DejaVu Sans Mono"];
+const FONT_FALLBACKS: &[&str] = &[
+    "Noto Sans Mono CJK SC",
+    "Noto Color Emoji",
+    "Noto Sans CJK SC",
+    "DejaVu Sans Mono",
+];
 const FONT_SIZE: f32 = 14.0;
 const LINE_HEIGHT: f32 = 1.3;
 /// Lines per wheel notch.
@@ -148,7 +170,9 @@ impl TermView {
     /// families are skipped by the text system.
     fn base_font(&self) -> Font {
         Font {
-            fallbacks: Some(FontFallbacks::from_fonts(FONT_FALLBACKS.iter().map(|f| f.to_string()).collect())),
+            fallbacks: Some(FontFallbacks::from_fonts(
+                FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
+            )),
             ..font(self.font_family.clone())
         }
     }

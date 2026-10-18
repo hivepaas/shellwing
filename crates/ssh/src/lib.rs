@@ -28,7 +28,9 @@ impl Target {
             Some((u, r)) => (u.to_string(), r),
             // USER on Unix, USERNAME on Windows.
             None => (
-                std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "root".into()),
+                std::env::var("USER")
+                    .or_else(|_| std::env::var("USERNAME"))
+                    .unwrap_or_else(|_| "root".into()),
                 s,
             ),
         };
@@ -328,7 +330,9 @@ async fn authenticate(handle: &mut Handle<Checker>, user: &str, auth: &Auth) -> 
                 } else {
                     None
                 };
-                if let Ok(r) = handle.authenticate_publickey_with(user, key, hash, &mut agent).await
+                if let Ok(r) = handle
+                    .authenticate_publickey_with(user, key, hash, &mut agent)
+                    .await
                     && r.success()
                 {
                     return Ok(());
