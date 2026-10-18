@@ -60,6 +60,11 @@ impl Host {
             self.keepalive.map(|k| k.to_string()).as_deref(),
         );
         put(&mut f, "host_key", self.host_key.map(|k| k.name()));
+        put(&mut f, "color", self.color.as_deref());
+        if self.favorite {
+            f.insert("favorite".into(), "true".into());
+        }
+        put(&mut f, "run", self.run.as_deref());
         f
     }
 }
@@ -224,6 +229,9 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_flag(t, "forward_agent", g("forward_agent") == Some("true"));
     changed |= set_int(t, "keepalive", g("keepalive"));
     changed |= set_str(t, "host_key", g("host_key"));
+    changed |= set_str(t, "color", g("color"));
+    changed |= set_flag(t, "favorite", g("favorite") == Some("true"));
+    changed |= set_str(t, "run", g("run"));
     changed
 }
 
@@ -439,6 +447,9 @@ local_only = true
             forward_agent: true,
             keepalive: Some(15),
             host_key: Some(crate::hosts::HostKey::AcceptNew),
+            color: Some("pink".into()),
+            favorite: true,
+            run: Some("cd ~/apps && ls".into()),
         };
         assert!(save_host(&mut doc, "h9", &new));
         let text = doc.to_string();
@@ -461,6 +472,10 @@ local_only = true
         assert!(cache.forward_agent);
         assert_eq!(cache.keepalive, Some(15));
         assert_eq!(cache.host_key, Some(crate::hosts::HostKey::AcceptNew));
+        assert_eq!(
+            (cache.color.as_deref(), cache.favorite, cache.run.as_deref()),
+            (Some("pink"), true, Some("cd ~/apps && ls"))
+        );
 
         assert!(delete_host(&mut doc, "h9"));
         assert!(!delete_host(&mut doc, "h9"));

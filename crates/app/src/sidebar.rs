@@ -2,9 +2,11 @@
 //! hands it, so the terminal's frames do not lay it out again (it is cached).
 
 use gpui::{
-    Context, Div, ElementId, FontWeight, Render, SharedString, WeakEntity, Window, div, prelude::*,
-    px, rgb,
+    App, Context, Div, ElementId, Entity, FontWeight, KeyDownEvent, Render, SharedString,
+    WeakEntity, Window, div, prelude::*, px, rgb,
 };
+
+use crate::input::{Changed, TextInput};
 
 use crate::session::Status;
 use crate::workspace::{EditTarget, Workspace};
@@ -19,6 +21,8 @@ const HOVER: u32 = 0x17233a;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Section {
     pub title: SharedString,
+    /// Beside the title: a count, or "read only".
+    pub note: SharedString,
     pub rows: Vec<Row>,
 }
 
@@ -32,6 +36,8 @@ pub struct Row {
     pub status: Option<Status>,
     /// Where Edit takes it.
     pub edit: EditTarget,
+    /// What the filter matches, lowercase: name, alias, address, user, tags.
+    pub search: String,
 }
 
 fn status_color(s: Status) -> u32 {
@@ -58,15 +64,61 @@ pub struct Sidebar {
     sections: Vec<Section>,
     /// The row under the pointer, which shows Edit.
     hovered: Option<u64>,
+    filter: Entity<TextInput>,
 }
 
 impl Sidebar {
-    pub fn new(workspace: WeakEntity<Workspace>) -> Self {
+    pub fn new(workspace: WeakEntity<Workspace>, cx: &mut Context<Self>) -> Self {
+        let filter = cx.new(|cx| TextInput::new("Filter by name, tag or address", cx));
+        cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify())
+            .detach();
         Sidebar {
             workspace,
             sections: vec![],
             hovered: None,
+            filter,
         }
+    }
+
+    /// The sections with only the rows the filter matches (all words, any order).
+    fn shown(&self, cx: &App) -> Vec<Section> {
+        let typed = self.filter.read(cx).text().to_lowercase();
+        let words: Vec<&str> = typed.split_whitespace().collect();
+        if words.is_empty() {
+            return self.sections.clone();
+        }
+        self.sections
+            .iter()
+            .filter_map(|s| {
+                let rows: Vec<Row> = s
+                    .rows
+                    .iter()
+                    .filter(|r| words.iter().all(|w| r.search.contains(w)))
+                    .cloned()
+                    .collect();
+                (!rows.is_empty()).then(|| Section { rows, ..s.clone() })
+            })
+            .collect()
+    }
+
+    fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        match ev.keystroke.key.as_str() {
+            // Esc empties the filter; Enter opens the first host it shows.
+            "escape" => {
+                self.filter.update(cx, |f, cx| f.set_text("", 0..0, cx));
+            }
+            "enter" => {
+                let first = self.shown(cx).into_iter().flat_map(|s| s.rows).next();
+                if let Some(row) = first {
+                    self.filter.update(cx, |f, cx| f.set_text("", 0..0, cx));
+                    let _ = self
+                        .workspace
+                        .update(cx, |ws, cx| ws.open(&row.spec, window, cx));
+                }
+            }
+            _ => return,
+        }
+        cx.stop_propagation();
     }
 
     pub fn set(&mut self, sections: Vec<Section>, cx: &mut Context<Self>) {
@@ -88,16 +140,25 @@ impl Render for Sidebar {
             .overflow_y_scroll()
             .pb_2();
         let mut id = 0u64;
-        for section in &self.sections {
+        let shown = self.shown(cx);
+        let filtering = !self.filter.read(cx).text().trim().is_empty();
+        for section in &shown {
             list = list.child(
                 div()
+                    .flex()
+                    .justify_between()
                     .px_3()
                     .pt_3()
                     .pb_1()
                     .text_xs()
                     .font_weight(FontWeight::SEMIBOLD)
                     .text_color(rgb(MUTED))
-                    .child(section.title.clone()),
+                    .child(section.title.clone())
+                    .child(
+                        div()
+                            .font_weight(FontWeight::NORMAL)
+                            .child(section.note.clone()),
+                    ),
             );
             for row in &section.rows {
                 id += 1;
@@ -178,7 +239,15 @@ impl Render for Sidebar {
                 );
             }
         }
-        if self.sections.is_empty() {
+        if filtering && shown.is_empty() {
+            list = list.child(
+                div()
+                    .px_3()
+                    .pt_3()
+                    .text_color(rgb(MUTED))
+                    .child("No host matches."),
+            );
+        } else if self.sections.is_empty() {
             list = list.child(
                 div()
                     .px_3()
@@ -217,6 +286,37 @@ impl Render for Sidebar {
             .border_r_1()
             .border_color(rgb(LINE))
             .text_sm()
+            .on_key_down(cx.listener(Self::on_key))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.))
+                    .px_3()
+                    .pt_3()
+                    .pb_1()
+                    .child(
+                        div()
+                            .text_xs()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(rgb(MUTED))
+                            .child("HOSTS"),
+                    )
+                    .child(
+                        div()
+                            .h(px(30.))
+                            .px(px(10.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(0x263042))
+                            .bg(rgb(0x0b0f17))
+                            .text_xs()
+                            .text_color(rgb(TEXT))
+                            .child(self.filter.clone()),
+                    ),
+            )
             .child(list)
             .child(footer)
     }
