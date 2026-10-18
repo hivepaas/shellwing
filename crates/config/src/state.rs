@@ -20,3 +20,34 @@ pub enum WindowMode {
     Maximized,
     Fullscreen,
 }
+
+/// The tabs and panes open when the app last ran, to open again.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SessionState {
+    pub tabs: Vec<TabState>,
+    /// The active tab.
+    #[serde(default)]
+    pub active: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TabState {
+    pub root: PaneState,
+    /// The focused pane, counted left to right and top to bottom.
+    #[serde(default)]
+    pub focused: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum PaneState {
+    /// A terminal connected to `spec` (a host name, an alias or `user@host`).
+    Leaf { spec: String },
+    Split {
+        /// `horizontal`: side by side; `vertical`: stacked.
+        horizontal: bool,
+        ratio: f32,
+        first: Box<PaneState>,
+        second: Box<PaneState>,
+    },
+}

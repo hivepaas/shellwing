@@ -21,13 +21,17 @@ How the files behave:
 
 The `state/` folder holds what shellwing remembers by itself, such as the window's
 size, place and maximised state (`state/window.json`) and the hosts opened lately
-(`state/recent.json`, shown in the palette). It is not meant for
+(`state/recent.json`, shown in the palette), and the tabs and panes that were open
+(`state/session.json`, opened again by `restore_tabs`). It is not meant for
 editing, and deleting it only forgets those things. On Wayland only the size and
 the maximised state come back; the compositor chooses the position.
 
 ## config.toml
 
 ```toml
+[general]
+restore_tabs = true          # a start without a host opens the last run's tabs
+
 [appearance]
 theme = "neon-nebula"        # a theme id or name, see below; default "default-slate"
 font = { family = "JetBrains Mono", size = 14 }

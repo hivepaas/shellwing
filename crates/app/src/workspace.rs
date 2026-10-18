@@ -11,7 +11,7 @@ use gpui::{
     KeyDownEvent, MouseButton, MouseMoveEvent, Render, SharedString, Subscription, Window, canvas,
     div, prelude::*, px, relative, rgb, rgba,
 };
-use shellwing_config::{EditFile, Host, WindowState};
+use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
 use shellwing_ssh::config as ssh_config;
 use tokio::runtime::Handle;
 
@@ -82,6 +82,23 @@ pub struct Workspace {
     /// The window's size and place, waiting to be saved, and which change it is.
     unsaved_bounds: Option<WindowState>,
     bounds_change: u64,
+    /// Counts changes to the tabs, to save them shortly after the last one.
+    layout_change: u64,
+}
+
+/// What `state/session.json` keeps of a pane tree: hosts and splits.
+fn pane_state(pane: &Pane<Entity<TermView>>, cx: &gpui::App) -> PaneState {
+    match pane {
+        Pane::Leaf(v) => PaneState::Leaf {
+            spec: v.read(cx).session().spec.clone(),
+        },
+        Pane::Split(s, a, b) => PaneState::Split {
+            horizontal: s.axis == Axis::Horizontal,
+            ratio: s.ratio.get(),
+            first: Box::new(pane_state(a, cx)),
+            second: Box::new(pane_state(b, cx)),
+        },
+    }
 }
 
 impl Workspace {
@@ -110,6 +127,7 @@ impl Workspace {
             dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
+            layout_change: 0,
         };
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
@@ -272,7 +290,118 @@ impl Workspace {
         Some(view)
     }
 
+    /// Opens `spec` if given; otherwise the last run's tabs, if the settings say so.
+    pub fn start(&mut self, spec: Option<&str>, window: &mut Window, cx: &mut Context<Self>) {
+        match spec {
+            Some(spec) => self.open(spec, window, cx),
+            None if self.live.restore_tabs() => self.restore(window, cx),
+            None => {}
+        }
+        cx.on_release(|ws, cx| ws.save_layout(cx)).detach();
+    }
+
+    /// Opens the tabs and panes saved in `state/session.json`.
+    fn restore(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(saved) = self.live.store().and_then(|s| s.session_state()) else {
+            return;
+        };
+        for tab in &saved.tabs {
+            if let Some(root) = self.build_pane(&tab.root, window, cx) {
+                let views = root.leaves();
+                let focused = views
+                    .get(tab.focused)
+                    .cloned()
+                    .unwrap_or_else(|| root.first());
+                self.tabs.push(Tab {
+                    root: Some(root),
+                    focused,
+                });
+            }
+        }
+        let active = saved.active.min(self.tabs.len().saturating_sub(1));
+        self.activate(active, window, cx);
+        self.refresh_sidebar(cx);
+    }
+
+    fn build_pane(
+        &mut self,
+        saved: &PaneState,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Pane<Entity<TermView>>> {
+        match saved {
+            PaneState::Leaf { spec } => self.make_view(spec, window, cx).map(Pane::Leaf),
+            PaneState::Split {
+                horizontal,
+                ratio,
+                first,
+                second,
+            } => {
+                let a = self.build_pane(first, window, cx);
+                let b = self.build_pane(second, window, cx);
+                match (a, b) {
+                    (Some(a), Some(b)) => {
+                        let s = SplitState::new(if *horizontal {
+                            Axis::Horizontal
+                        } else {
+                            Axis::Vertical
+                        });
+                        s.ratio.set(ratio.clamp(0.1, 0.9));
+                        Some(Pane::Split(s, Box::new(a), Box::new(b)))
+                    }
+                    (Some(only), None) | (None, Some(only)) => Some(only),
+                    (None, None) => None,
+                }
+            }
+        }
+    }
+
+    fn snapshot(&self, cx: &gpui::App) -> SessionState {
+        SessionState {
+            tabs: self
+                .tabs
+                .iter()
+                .filter_map(|t| {
+                    let root = t.root.as_ref()?;
+                    Some(TabState {
+                        root: pane_state(root, cx),
+                        focused: root
+                            .leaves()
+                            .iter()
+                            .position(|v| *v == t.focused)
+                            .unwrap_or(0),
+                    })
+                })
+                .collect(),
+            active: self.active,
+        }
+    }
+
+    fn save_layout(&self, cx: &gpui::App) {
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.save_session_state(&self.snapshot(cx))
+        {
+            eprintln!("cannot save the open tabs: {e}");
+        }
+    }
+
+    /// Saves the tabs shortly after they stop changing.
+    fn layout_changed(&mut self, cx: &mut Context<Self>) {
+        self.layout_change += 1;
+        let change = self.layout_change;
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(SAVE_BOUNDS).await;
+            let _ = this.update(cx, |ws, cx| {
+                if ws.layout_change == change {
+                    ws.save_layout(cx);
+                }
+            });
+        })
+        .detach();
+    }
+
     pub fn activate(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
+        self.layout_changed(cx);
         if let Some(tab) = self.tabs.get(ix).map(|t| t.focused.clone()) {
             self.active = ix;
             let title = tab.read(cx).session().title.clone();
@@ -1137,6 +1266,7 @@ impl Render for Workspace {
                     MouseButton::Left,
                     cx.listener(|ws, _, _, cx| {
                         ws.dragging = None;
+                        ws.layout_changed(cx);
                         cx.notify();
                     }),
                 )
