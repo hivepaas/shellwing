@@ -104,6 +104,14 @@ impl Writer {
         }
     }
 
+    /// A question whose answer must not be shown: a password, a passphrase, a
+    /// hidden one-time code.
+    pub fn is_secret_prompt(&self) -> bool {
+        self.state
+            .lock()
+            .is_ok_and(|st| matches!(st.mode, Mode::Prompt { echo: false, .. }))
+    }
+
     pub fn is_session(&self) -> bool {
         self.state
             .lock()
@@ -205,10 +213,12 @@ mod tests {
         let (w, rx) = Writer::new();
         let mut answer = ask(&w, false);
         assert_eq!(shown(&rx), "me@h's password: ");
+        assert!(w.is_secret_prompt());
         w.write(b"hunter3".to_vec());
         w.write(vec![0x7f]); // backspace
         w.write(b"2\r".to_vec());
         assert_eq!(answer.try_recv().ok(), Some(Some("hunter2".into())));
+        assert!(!w.is_secret_prompt());
         assert_eq!(shown(&rx), "\r\n", "nothing of the password is shown");
     }
 
@@ -217,6 +227,10 @@ mod tests {
         let (w, rx) = Writer::new();
         let mut answer = ask(&w, true);
         let _ = shown(&rx);
+        assert!(
+            !w.is_secret_prompt(),
+            "echoed answers may use the input method"
+        );
         w.write(b"12".to_vec());
         w.write(vec![0x15]); // Ctrl+U clears
         w.write("tiếng".as_bytes().to_vec());

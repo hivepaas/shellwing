@@ -580,6 +580,19 @@ impl TermView {
         let k = &ev.keystroke;
         let m = &k.modifiers;
         let key = k.key.as_str();
+        // A hidden answer is typed past the input method, which is off meanwhile
+        // (see `accepts_text_input`): Telex would turn "s" into a tone mark and
+        // "dd" into "đ", and its preedit would show the password.
+        if self.writer.is_secret_prompt()
+            && !(m.control || m.alt || m.platform)
+            && let Some(text) = k
+                .key_char
+                .as_ref()
+                .filter(|t| !t.is_empty() && !t.chars().any(char::is_control))
+        {
+            self.term.text(text.clone());
+            return cx.stop_propagation();
+        }
         // Clipboard and scrollback shortcuts: Ctrl+Shift on Linux/Windows, Cmd on macOS.
         let app_chord = if cfg!(target_os = "macos") {
             m.platform && !m.control
@@ -681,7 +694,10 @@ impl Render for TermView {
             .clone()
             .filter(|_| self.frame.background == theme_rgb(theme.background));
         let gradient_cache = self.gradient.clone();
-        let marked = self.marked.clone();
+        let marked = self
+            .marked
+            .clone()
+            .filter(|_| !self.writer.is_secret_prompt());
         let base_font = self.base_font();
         let entity = cx.entity();
         let focus = self.focus.clone();
@@ -854,6 +870,12 @@ impl Render for TermView {
 }
 
 impl EntityInputHandler for TermView {
+    /// Off while a hidden answer is typed, so the platform turns the input method
+    /// off; keys then arrive in `on_key` as typed.
+    fn accepts_text_input(&self, _: &mut Window, _: &mut Context<Self>) -> bool {
+        !self.writer.is_secret_prompt()
+    }
+
     fn text_for_range(
         &mut self,
         range: Range<usize>,
