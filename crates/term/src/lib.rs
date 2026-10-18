@@ -248,6 +248,8 @@ enum Cmd {
     Hover(Option<(f32, f32)>),
     Colors(Box<Colors>),
     Scrollback(usize),
+    /// Stop the thread, dropping the terminal and the write callback.
+    Close,
     /// Wakes the thread after the UI took a frame (see [`Shared::taken`]).
     Wake,
 }
@@ -365,6 +367,13 @@ impl TermHandle {
     /// Changes how many lines of history are kept.
     pub fn set_scrollback(&self, lines: usize) {
         let _ = self.tx.send(Cmd::Scrollback(lines));
+    }
+
+    /// Ends the terminal thread, for example when its tab closes. The callbacks
+    /// given to [`TermHandle::spawn`] are dropped, which breaks any cycle through
+    /// them; later calls on any clone of this handle do nothing.
+    pub fn close(&self) {
+        let _ = self.tx.send(Cmd::Close);
     }
 
     /// Takes the newest frame, if one was built since the last call.
@@ -566,6 +575,7 @@ fn run(
                 Cmd::Scrollback(lines) => {
                     e.term.set_scrollback_max_lines(Some(lines))?;
                 }
+                Cmd::Close => return Ok(()),
                 Cmd::Wake => continue,
             }
             changed = true;

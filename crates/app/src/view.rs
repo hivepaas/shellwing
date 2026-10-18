@@ -16,7 +16,6 @@ use gpui::{
     ScrollDelta, ScrollWheelEvent, SharedString, Size, TextAlign, TextRun, UTF16Selection,
     UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb, size,
 };
-use shellwing_config::WindowState;
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
     Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
@@ -25,8 +24,8 @@ use shellwing_term::{
 
 use crate::Writer;
 use crate::bench::Probe;
-use crate::chrome;
-use crate::look::{Live, Look, rgb as theme_rgb};
+use crate::look::{Look, rgb as theme_rgb};
+use crate::session::{Session, Status};
 
 /// Terminal font candidates; the first one installed is used ($SHELLWING_FONT wins).
 #[cfg(target_os = "macos")]
@@ -73,15 +72,11 @@ const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 const ZOOM_NOTICE: Duration = Duration::from_secs(2);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
-/// The window's size and place are saved this long after they stop changing.
-const SAVE_BOUNDS: Duration = Duration::from_millis(400);
-/// How long a problem with the config files stays on screen.
-const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// Longest side of the gradient image. The GPU stretches it with linear
 /// filtering, which keeps a gradient smooth, so only its aspect ratio matters.
 const GRADIENT_SIZE: f32 = 256.0;
 
-fn hsla(c: Rgb) -> Hsla {
+pub fn hsla(c: Rgb) -> Hsla {
     rgb(((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32).into()
 }
 
@@ -161,6 +156,9 @@ fn gradient_image(
     Some(image)
 }
 
+/// The session's status changed (connected, closed, failed).
+pub struct StatusChanged;
+
 /// The modifier that turns a click into "open link": Cmd on macOS, Ctrl elsewhere.
 fn link_mod(m: &Modifiers) -> bool {
     if cfg!(target_os = "macos") {
@@ -172,15 +170,17 @@ fn link_mod(m: &Modifiers) -> bool {
 
 pub struct TermView {
     focus: FocusHandle,
+    session: Session,
     term: TermHandle,
     writer: Writer,
-    title: String,
     frame: Arc<Frame>,
     paint_rows: Vec<PaintRow>,
     grid: (u16, u16),
     cell: (Pixels, Pixels),
     /// Window position of the grid's top-left corner, recorded at paint time.
     grid_origin: Rc<Cell<Point<Pixels>>>,
+    /// The area the terminal had at the last paint, which the grid fills.
+    area: Rc<Cell<Size<Pixels>>>,
     /// Text the input method is composing (preedit), shown at the cursor.
     marked: Option<String>,
     /// A paste the terminal refused as unsafe, waiting for confirmation.
@@ -192,36 +192,55 @@ pub struct TermView {
     look: Look,
     /// Points added to the configured font size by zooming; not saved.
     zoom: f32,
-    live: Live,
     gradient: Rc<RefCell<Option<GradientImage>>>,
-    /// The window's size and place, waiting to be saved, and which change it is.
-    unsaved_bounds: Option<WindowState>,
-    bounds_change: u64,
+    /// The status last announced with [`StatusChanged`].
+    last_status: Status,
     probe: Arc<Probe>,
 }
 
+impl gpui::EventEmitter<StatusChanged> for TermView {}
+
 impl TermView {
-    pub fn new(
-        term: TermHandle,
-        writer: Writer,
-        title: String,
-        probe: Arc<Probe>,
-        live: Live,
-        problems: Vec<String>,
-        cx: &mut Context<Self>,
-    ) -> Self {
-        let (look, problem) = live.look();
-        term.set_colors(look.colors());
-        let mut view = TermView {
+    pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
+        session.term.set_colors(look.colors());
+        // Repaint whenever the terminal thread has a new frame or the status changes.
+        let wake = session.wake.clone();
+        cx.spawn(async move |this, cx| {
+            while wake.recv().await.is_ok() {
+                let alive = this.update(cx, |v, cx| {
+                    let status = v.session.status();
+                    if status != v.last_status {
+                        v.last_status = status;
+                        cx.emit(StatusChanged);
+                    }
+                    cx.notify();
+                });
+                if alive.is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
+        let events = session.events.clone();
+        cx.spawn(async move |this, cx| {
+            while let Ok(ev) = events.recv().await {
+                if this.update(cx, |v, cx| v.on_term_event(ev, cx)).is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
+        TermView {
             focus: cx.focus_handle(),
-            term,
-            writer,
-            title,
+            term: session.term.clone(),
+            writer: session.writer.clone(),
+            session,
             frame: Arc::new(Frame::default()),
             paint_rows: vec![],
             grid: (0, 0),
             cell: (px(0.), px(0.)),
             grid_origin: Rc::new(Cell::new(point(px(0.), px(0.)))),
+            area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
             notice: None,
@@ -229,66 +248,25 @@ impl TermView {
             font_family: FONT_FAMILIES[0].into(),
             look,
             zoom: 0.,
-            live,
             gradient: Rc::new(RefCell::new(None)),
-            unsaved_bounds: None,
-            bounds_change: 0,
+            last_status: Status::Connecting,
             probe,
-        };
-        view.report(problems.into_iter().chain(problem).collect(), cx);
-        view
-    }
-
-    /// Shows problems with the config files, if any.
-    fn report(&mut self, problems: Vec<String>, cx: &mut Context<Self>) {
-        if !problems.is_empty() {
-            self.show_notice(problems.join("\n"), CONFIG_NOTICE, cx);
         }
     }
 
-    /// Remembers the window's size and place for the next start: saved shortly
-    /// after they change, and when the window closes.
-    pub fn track_bounds(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.bounds_changed(window, cx);
-        cx.observe_window_bounds(window, Self::bounds_changed)
-            .detach();
-        cx.on_release(|v, _| v.save_bounds()).detach();
+    pub fn session(&self) -> &Session {
+        &self.session
     }
 
-    fn bounds_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.unsaved_bounds = Some(crate::placement::state(window.window_bounds()));
-        self.bounds_change += 1;
-        let change = self.bounds_change;
-        cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(SAVE_BOUNDS).await;
-            let _ = this.update(cx, |v, _| {
-                if v.bounds_change == change {
-                    v.save_bounds();
-                }
-            });
-        })
-        .detach();
+    pub fn status(&self) -> Status {
+        self.session.status()
     }
 
-    fn save_bounds(&mut self) {
-        if let (Some(state), Some(store)) = (self.unsaved_bounds.take(), self.live.store())
-            && let Err(e) = store.save_window_state(&state)
-        {
-            eprintln!("cannot save the window size: {e}");
-        }
+    pub fn look(&self) -> &Look {
+        &self.look
     }
 
-    /// Called periodically: picks up edits to the config files.
-    pub fn poll_config(&mut self, cx: &mut Context<Self>) {
-        if let Some(mut problems) = self.live.reload_if_changed() {
-            let (look, problem) = self.live.look();
-            problems.extend(problem);
-            self.apply(look, cx);
-            self.report(problems, cx);
-        }
-    }
-
-    fn apply(&mut self, look: Look, cx: &mut Context<Self>) {
+    pub fn set_look(&mut self, look: Look, cx: &mut Context<Self>) {
         if look == self.look {
             return;
         }
@@ -331,17 +309,6 @@ impl TermView {
             self.paint_rows.clear();
         }
         self.show_notice(format!("Font size {}", self.font_size()), ZOOM_NOTICE, cx);
-    }
-
-    fn step_theme(&mut self, step: isize, cx: &mut Context<Self>) {
-        match self.live.step_theme(step) {
-            Ok(theme) => {
-                let (look, _) = self.live.look();
-                self.apply(look, cx);
-                self.show_notice(format!("Theme: {}", theme.name), CONFIRM_PASTE, cx);
-            }
-            Err(e) => self.show_notice(e, CONFIG_NOTICE, cx),
-        }
     }
 
     /// The terminal font, with fallbacks for glyphs it lacks. Missing fallback
@@ -387,7 +354,7 @@ impl TermView {
         }
     }
 
-    fn show_notice(
+    pub fn show_notice(
         &mut self,
         msg: impl Into<SharedString>,
         shown: Duration,
@@ -443,16 +410,13 @@ impl TermView {
         );
     }
 
-    /// Keeps the terminal grid and the remote PTY the size of the visible area.
-    fn fit_grid(&mut self, window: &mut Window) {
-        let vp = if matches!(
-            window.window_decorations(),
-            gpui::Decorations::Client { .. }
-        ) {
-            chrome::content_size(window)
-        } else {
-            window.viewport_size()
-        };
+    /// Keeps the terminal grid and the remote PTY the size of the terminal's area,
+    /// as measured at the last paint.
+    fn fit_grid(&mut self) {
+        let vp = self.area.get();
+        if vp.width <= px(0.) || vp.height <= px(0.) {
+            return;
+        }
         let cols = ((vp.width / self.cell.0).floor() as u16).max(2);
         let rows = ((vp.height / self.cell.1).floor() as u16).max(2);
         if (cols, rows) != self.grid {
@@ -664,21 +628,6 @@ impl TermView {
         } else {
             m.control && m.shift
         };
-        // Next and previous theme, until the theme picker exists. GPUI reports
-        // Shift+] as "}" and drops the Shift flag for symbols, so on Linux and
-        // Windows a brace with Ctrl is Ctrl+Shift+].
-        let braced = !cfg!(target_os = "macos") && m.control && !m.alt;
-        let theme_step = match key {
-            "]" if app_chord => Some(1),
-            "}" if app_chord || braced => Some(1),
-            "[" if app_chord => Some(-1),
-            "{" if app_chord || braced => Some(-1),
-            _ => None,
-        };
-        if let Some(step) = theme_step {
-            self.step_theme(step, cx);
-            return cx.stop_propagation();
-        }
         // Font size for this window, as in GNOME Terminal and browsers: Ctrl+= (or
         // Ctrl++), Ctrl+- and Ctrl+0 (Cmd on macOS). Ctrl+Shift+- is left alone; it
         // is Ctrl+_ for nano and Emacs.
@@ -760,7 +709,7 @@ impl Render for TermView {
         if self.cell.0 == px(0.) {
             self.measure_cell(window);
         }
-        self.fit_grid(window);
+        self.fit_grid();
         self.refresh_rows();
 
         let rows: Vec<Vec<Segment>> = self.paint_rows.iter().map(|r| r.segments.clone()).collect();
@@ -792,6 +741,7 @@ impl Render for TermView {
         let focus = self.focus.clone();
         let probe = self.probe.clone();
         let grid_origin = self.grid_origin.clone();
+        let area = self.area.clone();
 
         let mut terminal = div()
             .relative()
@@ -818,6 +768,11 @@ impl Render for TermView {
                     |_, _, _| {},
                     move |bounds, _, window, cx| {
                         grid_origin.set(bounds.origin);
+                        if area.get() != bounds.size {
+                            // The grid follows on the next frame.
+                            area.set(bounds.size);
+                            window.refresh();
+                        }
                         if let Some(g) = &gradient
                             && let Some(image) =
                                 gradient_image(&gradient_cache, &theme, g, bounds.size, window)
@@ -947,14 +902,7 @@ impl Render for TermView {
             );
         }
 
-        if matches!(
-            window.window_decorations(),
-            gpui::Decorations::Client { .. }
-        ) {
-            chrome::window_chrome(self.title.clone(), terminal, bg, window)
-        } else {
-            div().size_full().flex().flex_col().child(terminal)
-        }
+        terminal
     }
 }
 

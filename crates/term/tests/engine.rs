@@ -363,3 +363,28 @@ fn a_programs_color_override_survives_a_theme_change() {
         }
     );
 }
+
+#[test]
+fn close_ends_the_thread_and_drops_its_callbacks() {
+    let alive = std::sync::Arc::new(());
+    let held = alive.clone();
+    let term = TermHandle::spawn(
+        10,
+        3,
+        10,
+        Box::new(move |_| {
+            let _ = &held;
+        }),
+        Box::new(|| {}),
+        Box::new(|_| {}),
+    )
+    .expect("spawn");
+    term.close();
+    for _ in 0..100 {
+        if std::sync::Arc::strong_count(&alive) == 1 {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    panic!("the write callback was not dropped");
+}

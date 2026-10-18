@@ -30,17 +30,8 @@ fn tiling(window: &Window) -> Tiling {
     }
 }
 
-/// The room left for the content: inside the margin and border, below the title bar.
-pub fn content_size(window: &Window) -> Size<Pixels> {
-    let t = tiling(window);
-    let side = |tiled: bool| if tiled { px(0.) } else { px(INSET + BORDER) };
-    let mut s = window.viewport_size();
-    s.width -= side(t.left) + side(t.right);
-    s.height -= side(t.top) + side(t.bottom) + px(TITLEBAR_H);
-    s
-}
-
-pub fn window_chrome(title: String, content: Div, bg: Hsla, window: &mut Window) -> Div {
+/// The window frame around `content`, with `tabs` in the title bar.
+pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> Div {
     let t = tiling(window);
     window.set_client_inset(px(INSET));
     let button = |id: &'static str, label: &'static str, f: fn(&mut Window, &mut App)| {
@@ -51,8 +42,8 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla, window: &mut Window)
             .flex()
             .items_center()
             .justify_center()
-            .text_color(rgb(0xd4d4d8))
-            .hover(|s| s.bg(rgb(0x3f3f46)))
+            .text_color(rgb(0xb6c0cf))
+            .hover(|s| s.bg(rgb(0x1e2736)))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .on_click(move |_, window, cx| f(window, cx))
             .child(label)
@@ -63,8 +54,9 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla, window: &mut Window)
         .flex()
         .items_center()
         .justify_between()
-        .pl_3()
-        .bg(rgb(0x27272a))
+        .bg(rgb(0x0f1522))
+        .border_b_1()
+        .border_color(rgb(0x1e2736))
         .text_color(rgb(0xa1a1aa))
         .text_sm()
         .on_mouse_down(MouseButton::Left, |e, window, _| {
@@ -77,7 +69,7 @@ pub fn window_chrome(title: String, content: Div, bg: Hsla, window: &mut Window)
         .on_mouse_down(MouseButton::Right, |e, window, _| {
             window.show_window_menu(e.position)
         })
-        .child(title)
+        .child(div().flex_1().min_w_0().h_full().child(tabs))
         .child(
             div()
                 .flex()
