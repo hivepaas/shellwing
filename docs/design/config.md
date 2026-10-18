@@ -45,9 +45,11 @@ Rules:
   keys it touched, so comments and order survive.
 - **Saving:** write a temp file and rename it, so a crash never leaves a
   half-written file.
-- **Live reload:** a file watcher (`notify`) applies outside edits. A file that
-  fails to parse keeps the last good values, and the error is shown with the
-  line number.
+- **Live reload:** the files' modification times are checked twice a second,
+  and outside edits apply. Polling rather than a file watcher: editors that save
+  by replacing the file confuse watchers, and a few `stat` calls cost nothing. A
+  file that fails to parse keeps the last good values, and the error is shown
+  with the line number.
 
 ## Settings precedence
 
