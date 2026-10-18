@@ -226,6 +226,8 @@ impl Workspace {
             }
         }
         cx.set_global(EditorCommand(ws.live.settings().files.editor.clone()));
+        // The system editor's name is read from the desktop: once, off the UI thread.
+        std::thread::spawn(crate::editors::system_name);
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws

@@ -67,13 +67,78 @@ pub fn installed() -> Vec<(String, String)> {
         .collect()
 }
 
-/// The name of a known editor's command, else the command itself.
+/// The name of a known editor's command, else its program's file name.
 pub fn name_of(cmd: &str) -> String {
     let first = words(cmd).into_iter().next().unwrap_or_default();
     KNOWN
         .iter()
         .find(|(_, c)| *c == first)
-        .map_or_else(|| cmd.to_string(), |(n, _)| n.to_string())
+        .map(|(n, _)| n.to_string())
+        .unwrap_or_else(|| {
+            Path::new(&first)
+                .file_name()
+                .map_or(first.clone(), |f| f.to_string_lossy().into_owned())
+        })
+}
+
+/// The desktop's app for plain text, as its desktop file id (Linux).
+fn text_plain_app() -> Option<String> {
+    Command::new("xdg-mime")
+        .args(["query", "default", "text/plain"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|id| !id.is_empty())
+}
+
+/// The `Name=` of a desktop file, looked for where desktops keep them.
+fn desktop_name(id: &str) -> Option<String> {
+    let mut dirs: Vec<PathBuf> = vec![];
+    if let Some(home) = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::home_dir().map(|h| h.join(".local/share")))
+    {
+        dirs.push(home);
+    }
+    let shared =
+        std::env::var("XDG_DATA_DIRS").unwrap_or_else(|_| "/usr/local/share:/usr/share".into());
+    dirs.extend(
+        shared
+            .split(':')
+            .filter(|d| !d.is_empty())
+            .map(PathBuf::from),
+    );
+    let text = dirs
+        .iter()
+        .find_map(|d| std::fs::read_to_string(d.join("applications").join(id)).ok())?;
+    let mut in_entry = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_entry = line == "[Desktop Entry]";
+        } else if in_entry && let Some(name) = line.strip_prefix("Name=") {
+            return Some(name.trim().to_string());
+        }
+    }
+    None
+}
+
+/// What the system's text editor is called, for menus; worked out once.
+pub fn system_name() -> Option<String> {
+    static NAME: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    NAME.get_or_init(|| {
+        if cfg!(target_os = "windows") {
+            Some("Notepad".into())
+        } else if cfg!(target_os = "macos") {
+            None
+        } else {
+            text_plain_app()
+                .and_then(|id| desktop_name(&id))
+                .or_else(|| installed().first().map(|(n, _)| n.clone()))
+        }
+    })
+    .clone()
 }
 
 /// Splits a command as a shell would its words: spaces part them, quotes
@@ -133,14 +198,7 @@ pub fn open_text(path: &Path) -> std::io::Result<()> {
         return spawn("notepad", &[path.as_os_str()]);
     }
     // The desktop's app for plain text, then any known editor there is.
-    let id = Command::new("xdg-mime")
-        .args(["query", "default", "text/plain"])
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .filter(|id| !id.is_empty());
-    if let Some(id) = id
+    if let Some(id) = text_plain_app()
         && which("gtk-launch").is_some()
         && spawn("gtk-launch", &[id.as_ref(), path.as_os_str()]).is_ok()
     {
@@ -170,6 +228,6 @@ mod tests {
     #[test]
     fn known_commands_have_names() {
         assert_eq!(name_of("code -n"), "VS Code");
-        assert_eq!(name_of("/opt/x/edit"), "/opt/x/edit");
+        assert_eq!(name_of("/opt/x/edit --wait"), "edit");
     }
 }

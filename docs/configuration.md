@@ -250,16 +250,18 @@ on a channel of its own, so the terminal keeps working while files move.
   everything in it, and a link goes as a link, never what it points at. A
   rename never writes over something already there.
 - The icons at the top go up, home, refresh, make a folder and upload. A right
-  click on a file or folder opens its menu (Open, or Edit in text editor and
-  Open with default app; Download, Copy path, Rename, Delete); a right click beside them, the folder's (New folder, Upload,
+  click on a file or folder opens its menu (Open, or Edit in *your editor*
+  and Open with default app; Download, Download As…, Copy path, Rename,
+  Delete); a right click beside them, the folder's (New folder, Upload,
   Refresh, Copy path).
+- **Download As…** asks where and under what name, for a file or a folder.
 - **Download** fetches the chosen file or folder (folders whole) into your
   Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
   is written as `name.part` until it is complete.
 - **Upload…**, or dropping files and folders on the panel, uploads into the
   folder shown. Something already there with that name is not touched until you
   pick *Replace* (or *Merge* for a folder).
-- **Edit in text editor** opens the chosen file in the editor chosen in
+- **Edit in …** (named for the editor) opens the chosen file in the editor chosen in
   Settings > General (`[files] editor`), else the system's editor for plain
   text, whatever kind of file it is. **Open with default app** opens it in the
   system's app for its kind instead. Either way, each time you save it there,
