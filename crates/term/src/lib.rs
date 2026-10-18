@@ -16,6 +16,8 @@
 //! wheel are encoded for the program; otherwise they select text and scroll the
 //! scrollback. Holding Shift always selects, as in other terminals.
 
+pub mod links;
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::{Arc, Mutex};
@@ -66,6 +68,12 @@ pub struct Run {
     pub underline: bool,
     /// Inside the current selection; the UI chooses how to show it.
     pub selected: bool,
+    /// First column of the run.
+    pub col: u16,
+    /// Columns covered: the number of cells, or 2 for a wide glyph.
+    pub cells: u16,
+    /// A single wide glyph (CJK, most emoji) that spans two cells.
+    pub wide: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -85,6 +93,8 @@ pub struct Frame {
     pub cursor: Option<(u16, u16)>,
     /// True while the viewport shows scrollback instead of the live screen.
     pub scrolled_back: bool,
+    /// The link under the pointer while the link modifier is held.
+    pub hover_link: Option<LinkSpan>,
     /// Increases with every frame built.
     pub seq: u64,
 }
@@ -150,6 +160,14 @@ pub enum MouseAction {
     Motion,
 }
 
+/// Columns `start..end` of viewport row `row`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LinkSpan {
+    pub row: u16,
+    pub start: u16,
+    pub end: u16,
+}
+
 /// A mouse event in pixels relative to the top-left of the terminal grid.
 #[derive(Clone, Copy, Debug)]
 pub struct MouseInput {
@@ -159,6 +177,9 @@ pub struct MouseInput {
     pub x: f32,
     pub y: f32,
     pub mods: Mods,
+    /// The platform's link modifier is held (Ctrl, or Cmd on macOS): a left
+    /// press on a link opens it instead of selecting.
+    pub link: bool,
 }
 
 /// Something the UI has to act on.
@@ -170,6 +191,8 @@ pub enum Event {
     /// newline and the program did not enable bracketed paste). Paste it again
     /// with `allow_unsafe` once the user confirms.
     PasteRefused(String),
+    /// A link the user clicked; already filtered by [`links::openable`].
+    OpenLink(String),
 }
 
 enum Cmd {
@@ -198,6 +221,8 @@ enum Cmd {
     /// Scroll the viewport by whole pages; negative goes up.
     ScrollPages(i32),
     ScrollToBottom,
+    /// Show the link under the pointer, or none.
+    Hover(Option<(f32, f32)>),
     /// Wakes the thread after the UI took a frame (see [`Shared::taken`]).
     Wake,
 }
@@ -302,6 +327,11 @@ impl TermHandle {
         let _ = self.tx.send(Cmd::ScrollToBottom);
     }
 
+    /// Highlights the link at a position (in grid pixels), or clears it with `None`.
+    pub fn hover(&self, at: Option<(f32, f32)>) {
+        let _ = self.tx.send(Cmd::Hover(at));
+    }
+
     /// Takes the newest frame, if one was built since the last call.
     pub fn take_frame(&self) -> Option<Arc<Frame>> {
         let frame = self.shared.latest.lock().ok()?.take();
@@ -342,6 +372,8 @@ struct Engine {
     /// Fraction of a line left over from smooth (touchpad) scrolling.
     wheel_rest: f32,
     held: Option<MouseButton>,
+    hover: Option<LinkSpan>,
+    events: EventFn,
     seq: u64,
 }
 
@@ -389,6 +421,8 @@ fn run(
         cell: (8, 16),
         wheel_rest: 0.0,
         held: None,
+        hover: None,
+        events,
         seq: 0,
     };
     let mut changed = true;
@@ -434,7 +468,9 @@ fn run(
                         .paste(opts, &[mime], |_, w| w.write_all(text.as_bytes()))
                     {
                         Ok(_) => e.term.scroll_viewport(ScrollViewport::Bottom),
-                        Err(libghostty_vt::Error::Rejected) => events(Event::PasteRefused(text)),
+                        Err(libghostty_vt::Error::Rejected) => {
+                            (e.events)(Event::PasteRefused(text))
+                        }
                         Err(err) => return Err(err),
                     }
                 }
@@ -443,7 +479,7 @@ fn run(
                     if let Some(bytes) = e.term.format_selection_alloc(None, opts)? {
                         let text = String::from_utf8_lossy(&bytes).into_owned();
                         if !text.is_empty() {
-                            events(Event::Copied(text));
+                            (e.events)(Event::Copied(text));
                         }
                     }
                 }
@@ -467,6 +503,16 @@ fn run(
                         .scroll_viewport(ScrollViewport::Delta(p as isize * page));
                 }
                 Cmd::ScrollToBottom => e.term.scroll_viewport(ScrollViewport::Bottom),
+                Cmd::Hover(at) => {
+                    let span = match at {
+                        Some((x, y)) => e.link_at(x, y)?.map(|(span, _)| span),
+                        None => None,
+                    };
+                    if span == e.hover {
+                        continue;
+                    }
+                    e.hover = span;
+                }
                 Cmd::Wake => continue,
             }
             changed = true;
@@ -552,6 +598,81 @@ impl Engine {
             .set_track_last_cell(true);
     }
 
+    /// The OSC 8 URI of a viewport cell, if it has one.
+    fn cell_uri(&self, x: u16, y: u32, buf: &mut Vec<u8>) -> Option<String> {
+        let gref = self
+            .term
+            .grid_ref(Point::Viewport(PointCoordinate { x, y }))
+            .ok()?;
+        buf.resize(256, 0);
+        let n = match gref.hyperlink_uri(buf) {
+            Ok(n) => n,
+            Err(libghostty_vt::Error::OutOfSpace { required }) => {
+                buf.resize(required, 0);
+                gref.hyperlink_uri(buf).ok()?
+            }
+            Err(_) => return None,
+        };
+        (n > 0).then(|| String::from_utf8_lossy(&buf[..n]).into_owned())
+    }
+
+    /// The link at a position in grid pixels: an OSC 8 hyperlink if the program
+    /// set one, otherwise a URL found in the row's text.
+    fn link_at(&self, x: f32, y: f32) -> libghostty_vt::error::Result<Option<(LinkSpan, String)>> {
+        let Point::Viewport(PointCoordinate { x: cx, y: cy }) = self.point(x, y) else {
+            return Ok(None);
+        };
+        let mut buf = Vec::new();
+        if let Some(uri) = self.cell_uri(cx, cy, &mut buf) {
+            // Extend over neighbours that carry the same link.
+            let (mut start, mut end) = (cx, cx + 1);
+            while start > 0
+                && self.cell_uri(start - 1, cy, &mut buf).as_deref() == Some(uri.as_str())
+            {
+                start -= 1;
+            }
+            while end < self.cols
+                && self.cell_uri(end, cy, &mut buf).as_deref() == Some(uri.as_str())
+            {
+                end += 1;
+            }
+            return Ok(Some((
+                LinkSpan {
+                    row: cy as u16,
+                    start,
+                    end,
+                },
+                uri,
+            )));
+        }
+        let mut cells = Vec::with_capacity(self.cols as usize);
+        let mut g = ['\0'; 8];
+        for col in 0..self.cols {
+            let gref = self
+                .term
+                .grid_ref(Point::Viewport(PointCoordinate { x: col, y: cy }))?;
+            let n = gref.graphemes(&mut g).unwrap_or(0);
+            let wide_tail = matches!(gref.cell().and_then(|c| c.wide()), Ok(CellWide::SpacerTail));
+            cells.push(if wide_tail {
+                String::new()
+            } else if n == 0 {
+                " ".into()
+            } else {
+                g[..n].iter().collect()
+            });
+        }
+        Ok(links::url_at(&cells, cx as usize).map(|(start, end, url)| {
+            (
+                LinkSpan {
+                    row: cy as u16,
+                    start: start as u16,
+                    end: end as u16,
+                },
+                url,
+            )
+        }))
+    }
+
     /// Whether a gesture selects text (true) or goes to the program (false).
     fn selects(&self, mods: Mods) -> libghostty_vt::error::Result<bool> {
         Ok(!self.term.is_mouse_tracking()? || mods.shift)
@@ -564,6 +685,16 @@ impl Engine {
             MouseAction::Motion => {}
         }
         let left = m.button == Some(MouseButton::Left);
+        if left
+            && m.link
+            && m.action == MouseAction::Press
+            && let Some((_, url)) = self.link_at(m.x, m.y)?
+        {
+            if links::openable(&url) {
+                (self.events)(Event::OpenLink(url));
+            }
+            return Ok(());
+        }
         // Selection: left button presses and drags, unless the program wants the mouse.
         if left && m.action == MouseAction::Press && self.selects(m.mods)? {
             let grid = self.term.grid_ref(self.point(m.x, m.y))?;
@@ -697,10 +828,15 @@ impl Engine {
             if full || row.dirty()? {
                 let mut out = Row::default();
                 let mut cells = self.cells_it.update(row)?;
+                let mut col: u16 = 0;
                 while let Some(cell) = cells.next() {
-                    if matches!(cell.raw_cell()?.wide(), Ok(CellWide::SpacerTail)) {
+                    let width = cell.raw_cell()?.wide();
+                    if matches!(width, Ok(CellWide::SpacerTail)) {
+                        // Second half of a wide glyph, already covered by its run.
+                        col += 1;
                         continue;
                     }
+                    let wide = matches!(width, Ok(CellWide::Wide));
                     buf.clear();
                     if cell.graphemes_len()? == 0 {
                         buf.push(' ');
@@ -715,7 +851,11 @@ impl Engine {
                         italic: false,
                         underline: false,
                         selected: cell.is_selected()?,
+                        col,
+                        cells: if wide { 2 } else { 1 },
+                        wide,
                     };
+                    col += 1;
                     if cell.has_styling()? {
                         let st = cell.style()?;
                         run.bold = st.bold;
@@ -736,9 +876,12 @@ impl Engine {
                                 && last.bold == run.bold
                                 && last.italic == run.italic
                                 && last.underline == run.underline
-                                && last.selected == run.selected =>
+                                && last.selected == run.selected
+                                && !last.wide
+                                && !run.wide =>
                         {
-                            last.len += run.len
+                            last.len += run.len;
+                            last.cells += 1;
                         }
                         _ => out.runs.push(run),
                     }
@@ -758,6 +901,7 @@ impl Engine {
             foreground: fg,
             cursor: if scrolled_back { None } else { cursor },
             scrolled_back,
+            hover_link: self.hover,
             seq: self.seq,
         })
     }

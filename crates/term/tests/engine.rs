@@ -3,7 +3,9 @@
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use shellwing_term::{Event, Frame, Mods, MouseAction, MouseButton, MouseInput, TermHandle};
+use shellwing_term::{
+    Event, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, TermHandle,
+};
 
 const CELL: (u32, u32) = (10, 20);
 
@@ -72,6 +74,7 @@ impl Harness {
             x,
             y,
             mods,
+            link: false,
         });
     }
 }
@@ -202,5 +205,79 @@ fn frames_keep_coming_while_output_floods() {
     assert!(
         frames > 1,
         "the screen updated during the flood, not only after it ({frames} frames)"
+    );
+}
+
+#[test]
+fn hovering_finds_a_printed_url() {
+    let h = harness();
+    h.term
+        .feed(b"visit https://example.com/docs today".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0).starts_with("visit"));
+    // Cell 10 is inside the URL (columns 6..30).
+    h.term.hover(Some((105.0, 5.0)));
+    let f = h.frame_where(|f| f.hover_link.is_some());
+    assert_eq!(
+        f.hover_link,
+        Some(LinkSpan {
+            row: 0,
+            start: 6,
+            end: 30
+        })
+    );
+    h.term.hover(None);
+    h.frame_where(|f| f.hover_link.is_none());
+}
+
+#[test]
+fn link_click_opens_osc8_targets_but_not_unsafe_schemes() {
+    let h = harness();
+    // OSC 8: the visible text differs from the target.
+    h.term.feed(b"\x1b]8;;https://ghostty.org/\x1b\\click me\x1b]8;;\x1b\\ \x1b]8;;file:///etc/passwd\x1b\\local\x1b]8;;\x1b\\".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0).starts_with("click me"));
+    let click = |x: f32| {
+        h.term.mouse(MouseInput {
+            action: MouseAction::Press,
+            button: Some(MouseButton::Left),
+            x,
+            y: 5.0,
+            mods: Mods::default(),
+            link: true,
+        });
+        h.term.mouse(MouseInput {
+            action: MouseAction::Release,
+            button: Some(MouseButton::Left),
+            x,
+            y: 5.0,
+            mods: Mods::default(),
+            link: true,
+        });
+    };
+    click(25.0);
+    assert_eq!(
+        h.events.recv_timeout(Duration::from_secs(2)).ok(),
+        Some(Event::OpenLink("https://ghostty.org/".into()))
+    );
+    click(105.0); // "local" -> file://, never opened
+    assert!(h.events.recv_timeout(Duration::from_millis(300)).is_err());
+}
+
+#[test]
+fn wide_glyphs_take_two_cells() {
+    let h = harness();
+    h.term.feed("a日本b".as_bytes().to_vec());
+    let f = h.frame_where(|f| f.rows[0].text.starts_with("a日本b"));
+    let runs: Vec<(u16, u16, bool)> = f.rows[0]
+        .runs
+        .iter()
+        .take(4)
+        .map(|r| (r.col, r.cells, r.wide))
+        .collect();
+    assert_eq!(runs[0], (0, 1, false));
+    assert_eq!(runs[1], (1, 2, true));
+    assert_eq!(runs[2], (3, 2, true));
+    assert_eq!(
+        runs[3].0, 5,
+        "the run after the wide glyphs starts at column 5"
     );
 }
