@@ -23,6 +23,7 @@ mod pane;
 mod placement;
 mod secrets;
 mod session;
+mod settings_view;
 mod sidebar;
 mod syncing;
 mod target;

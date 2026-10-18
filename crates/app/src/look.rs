@@ -96,6 +96,28 @@ impl Live {
         Ok(())
     }
 
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
+
+    /// Writes one setting to `config.toml` and loads the result.
+    pub fn set_setting(
+        &mut self,
+        path: &[&str],
+        value: Option<shellwing_config::SettingValue>,
+    ) -> Result<(), String> {
+        let store = self
+            .store
+            .as_ref()
+            .ok_or("No config directory to save to.")?;
+        store.set_setting(path, value).map_err(|e| e.to_string())?;
+        let problems = self.load();
+        match problems.first() {
+            Some(p) => Err(p.clone()),
+            None => Ok(()),
+        }
+    }
+
     /// Whether a start without a host opens the last run's tabs.
     pub fn restore_tabs(&self) -> bool {
         self.settings.general.restore_tabs

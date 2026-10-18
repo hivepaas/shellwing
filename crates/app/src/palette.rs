@@ -36,6 +36,7 @@ pub enum Action {
     Files,
     NewHost,
     EditHost(crate::workspace::EditTarget),
+    Settings,
     Forward,
     ToggleHosts,
     CloseTab,
