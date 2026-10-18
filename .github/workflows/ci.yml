@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            bin: shellwing
+          - name: macos-arm64
+            os: macos-latest
+            bin: shellwing
+          - name: windows-x86_64
+            os: windows-latest
+            bin: shellwing.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux packages (GPUI: Wayland, X11, Vulkan, fonts)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libfontconfig-dev libfreetype-dev \
+            libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libvulkan-dev libdbus-1-dev libzstd-dev
+
+      # libghostty-vt is built from source with Zig.
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.name }}
+
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Release: dev builds compile libghostty in Zig's Debug mode, too slow for the flood test.
+      - name: Test
+        run: cargo test --release --workspace
+
+      - name: Build
+        run: cargo build --release -p shellwing
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shellwing-${{ matrix.name }}
+          path: target/release/${{ matrix.bin }}
+          if-no-files-found: error
+          retention-days: 14

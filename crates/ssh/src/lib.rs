@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use russh::client::{self, Handle};
-use russh::keys::agent::client::AgentClient;
+use russh::keys::agent::client::{AgentClient, AgentStream};
 use russh::keys::{PublicKey, PublicKeyOrCertificate, known_hosts};
 use russh::{ChannelMsg, Disconnect};
 use tokio::sync::mpsc;
@@ -26,7 +26,11 @@ impl Target {
     pub fn parse(s: &str) -> Result<Self, Error> {
         let (user, rest) = match s.rsplit_once('@') {
             Some((u, r)) => (u.to_string(), r),
-            None => (std::env::var("USER").unwrap_or_else(|_| "root".into()), s),
+            // USER on Unix, USERNAME on Windows.
+            None => (
+                std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "root".into()),
+                s,
+            ),
         };
         let (host, port) = match rest.rsplit_once(':') {
             Some((h, p)) if !h.contains(':') => (
@@ -291,24 +295,44 @@ pub async fn connect(
     Ok(Session { tx })
 }
 
-async fn authenticate(handle: &mut Handle<Checker>, user: &str, auth: &Auth) -> Result<(), Error> {
-    if auth.agent
-        && let Ok(mut agent) = AgentClient::connect_env().await
+type Agent = AgentClient<Box<dyn AgentStream + Send + Unpin + 'static>>;
+
+/// The ssh-agents this platform offers: `$SSH_AUTH_SOCK` on Unix; on Windows the
+/// OpenSSH agent's named pipe, then Pageant.
+async fn agents() -> Vec<Agent> {
+    let mut found = Vec::new();
+    #[cfg(unix)]
+    if let Ok(a) = AgentClient::connect_env().await {
+        found.push(a.dynamic());
+    }
+    #[cfg(windows)]
     {
-        let identities = agent.request_identities().await.unwrap_or_default();
-        for id in identities {
-            let key = id.public_key().into_owned();
-            let hash = if key.algorithm().is_rsa() {
-                handle.best_supported_rsa_hash().await?.flatten()
-            } else {
-                None
-            };
-            if let Ok(r) = handle
-                .authenticate_publickey_with(user, key, hash, &mut agent)
-                .await
-                && r.success()
-            {
-                return Ok(());
+        if let Ok(a) = AgentClient::connect_named_pipe(r"\\.\pipe\openssh-ssh-agent").await {
+            found.push(a.dynamic());
+        }
+        if let Ok(a) = AgentClient::connect_pageant().await {
+            found.push(a.dynamic());
+        }
+    }
+    found
+}
+
+async fn authenticate(handle: &mut Handle<Checker>, user: &str, auth: &Auth) -> Result<(), Error> {
+    if auth.agent {
+        for mut agent in agents().await {
+            let identities = agent.request_identities().await.unwrap_or_default();
+            for id in identities {
+                let key = id.public_key().into_owned();
+                let hash = if key.algorithm().is_rsa() {
+                    handle.best_supported_rsa_hash().await?.flatten()
+                } else {
+                    None
+                };
+                if let Ok(r) = handle.authenticate_publickey_with(user, key, hash, &mut agent).await
+                    && r.success()
+                {
+                    return Ok(());
+                }
             }
         }
     }
