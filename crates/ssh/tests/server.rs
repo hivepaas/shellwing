@@ -1071,7 +1071,7 @@ async fn sftp_session(
 
 #[tokio::test(flavor = "multi_thread")]
 async fn files_are_listed_downloaded_and_uploaded_over_sftp() {
-    use shellwing_ssh::sftp::{Kind, Progress, join};
+    use shellwing_ssh::sftp::{Progress, join};
     if sftp_server().is_none() {
         eprintln!("skipped: no sftp-server on this system");
         return;
@@ -1102,7 +1102,7 @@ async fn files_are_listed_downloaded_and_uploaded_over_sftp() {
     #[cfg(unix)]
     {
         assert_eq!(names, ["sub", "to-sub", "a.txt"], "directories first");
-        assert!(listed[1].kind == Kind::Link && listed[1].is_dir());
+        assert!(listed[1].kind == shellwing_ssh::sftp::Kind::Link && listed[1].is_dir());
     }
     #[cfg(not(unix))]
     assert_eq!(names, ["sub", "a.txt"]);
