@@ -197,6 +197,9 @@ pub struct StatusChanged;
 /// The session ended and the settings say to close the pane.
 pub struct CloseRequested;
 
+/// A secret was saved in the vault.
+pub struct VaultChanged;
+
 /// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
 const BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
 
@@ -255,6 +258,7 @@ pub struct TermView {
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
+impl gpui::EventEmitter<VaultChanged> for TermView {}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -462,7 +466,10 @@ impl TermView {
                     button("save-secret", "Save", true).on_click(cx.listener(|v, _, _, cx| {
                         if let Some(secret) = v.save_offer.take() {
                             match v.session.save(&secret) {
-                                Ok(()) => v.show_notice("Saved in the vault.", CONFIRM_PASTE, cx),
+                                Ok(()) => {
+                                    v.show_notice("Saved in the vault.", CONFIRM_PASTE, cx);
+                                    cx.emit(VaultChanged);
+                                }
                                 Err(e) => {
                                     v.show_notice(format!("Not saved: {e}"), CONFIRM_PASTE, cx)
                                 }

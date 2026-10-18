@@ -21,6 +21,7 @@ mod placement;
 mod secrets;
 mod session;
 mod sidebar;
+mod syncing;
 mod target;
 mod view;
 mod workspace;

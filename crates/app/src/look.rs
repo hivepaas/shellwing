@@ -70,6 +70,32 @@ impl Live {
         self.store.as_ref()
     }
 
+    /// The folder the vault syncs with, if any.
+    pub fn sync_folder(&self) -> Option<std::path::PathBuf> {
+        self.settings.sync.folder_path()
+    }
+
+    /// Saves the sync folder to `config.toml` (None: stop syncing).
+    pub fn set_sync_folder(&mut self, folder: Option<&std::path::Path>) -> Result<(), String> {
+        let store = self
+            .store
+            .as_ref()
+            .ok_or("No config directory to save to.")?;
+        // Shown with ~ for the home folder, as people write it.
+        let text = folder.map(|f| {
+            match std::env::home_dir().and_then(|h| f.strip_prefix(h).ok().map(|r| r.to_path_buf()))
+            {
+                Some(rest) => format!("~/{}", rest.display()),
+                None => f.display().to_string(),
+            }
+        });
+        store
+            .set_sync_folder(text.as_deref())
+            .map_err(|e| e.to_string())?;
+        self.load();
+        Ok(())
+    }
+
     /// Whether a start without a host opens the last run's tabs.
     pub fn restore_tabs(&self) -> bool {
         self.settings.general.restore_tabs

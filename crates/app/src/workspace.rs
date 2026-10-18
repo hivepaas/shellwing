@@ -23,8 +23,10 @@ use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Session, Status};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
+use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
-use crate::view::{CloseRequested, StatusChanged, TermView, hsla};
+use crate::view::{CloseRequested, StatusChanged, TermView, VaultChanged, hsla};
+use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
@@ -88,6 +90,11 @@ pub struct Workspace {
     vault: VaultSlot,
     /// A vault that failed to open was reported.
     vault_reported: bool,
+    sync: SyncWorker,
+    /// The last sync error shown, so it is not repeated every minute.
+    sync_error: Option<String>,
+    /// A folder holding another vault, waiting for its recovery key.
+    joining: Option<std::path::PathBuf>,
 }
 
 /// What `state/session.json` keeps of a pane tree: hosts and splits.
@@ -113,6 +120,21 @@ impl Workspace {
         bench: Option<(String, Arc<Probe>)>,
         cx: &mut Context<Self>,
     ) -> Self {
+        let vault = match live.store() {
+            Some(store) => VaultSlot::open(store.dir().join("vault.db")),
+            None => VaultSlot::none(),
+        };
+        let (sync_tx, sync_rx) = async_channel::unbounded();
+        let sync = SyncWorker::start(vault.clone(), sync_tx);
+        sync.set_folder(live.sync_folder());
+        cx.spawn(async move |this, cx| {
+            while let Ok(ev) = sync_rx.recv().await {
+                if this.update(cx, |ws, cx| ws.on_sync(ev, cx)).is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
         let mut ws = Workspace {
             focus: cx.focus_handle(),
             tabs: vec![],
@@ -132,12 +154,12 @@ impl Workspace {
             unsaved_bounds: None,
             bounds_change: 0,
             layout_change: 0,
-            vault: VaultSlot::none(),
+            vault,
             vault_reported: false,
+            sync,
+            sync_error: None,
+            joining: None,
         };
-        if let Some(store) = ws.live.store() {
-            ws.vault = VaultSlot::open(store.dir().join("vault.db"));
-        }
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
@@ -295,6 +317,8 @@ impl Workspace {
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
         // Tab and host list dots follow the session's status.
         cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| ws.refresh_sidebar(cx))
+            .detach();
+        cx.subscribe(&view, |ws, _, _: &VaultChanged, _| ws.sync.now())
             .detach();
         cx.subscribe_in(&view, window, |ws, view, _: &CloseRequested, window, cx| {
             ws.close_view(view, window, cx)
@@ -536,6 +560,26 @@ impl Workspace {
             "Saved passwords and passphrases…".into(),
             String::new(),
         );
+        match self.sync.folder() {
+            Some(f) => {
+                action(
+                    Action::SyncNow,
+                    format!("Sync now with {}", f.display()),
+                    String::new(),
+                );
+                action(
+                    Action::ShowRecoveryKey,
+                    "Show the recovery key".into(),
+                    String::new(),
+                );
+                action(Action::StopSync, "Stop syncing".into(), String::new());
+            }
+            None => action(
+                Action::SyncFolder,
+                "Sync passwords with a folder…".into(),
+                "iCloud Drive, Syncthing, Dropbox…".into(),
+            ),
+        }
         action(Action::EditHosts, "Edit hosts.toml".into(), String::new());
         action(
             Action::EditSettings,
@@ -578,6 +622,140 @@ impl Workspace {
             .collect();
         let palette = cx.new(|cx| Palette::themes(entries, &current, cx));
         self.show_palette(palette, true, window, cx);
+    }
+
+    fn on_sync(&mut self, ev: SyncEvent, cx: &mut Context<Self>) {
+        match ev {
+            SyncEvent::Done(r) => {
+                self.sync_error = None;
+                if r.pulled > 0 {
+                    let n = r.pulled;
+                    let s = if n == 1 { "" } else { "s" };
+                    self.say(
+                        format!("Synced {n} change{s} from other devices."),
+                        THEME_NOTICE,
+                        cx,
+                    );
+                }
+            }
+            SyncEvent::Failed(e) => {
+                if self.sync_error.as_ref() != Some(&e) {
+                    self.say(format!("Sync: {e}"), CONFIG_NOTICE, cx);
+                    self.sync_error = Some(e);
+                }
+            }
+        }
+    }
+
+    /// Asks for a folder, then starts syncing with it, or joins the vault in it.
+    fn choose_sync_folder(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let picked = cx.prompt_for_paths(gpui::PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some("Sync with this folder".into()),
+        });
+        cx.spawn_in(window, async move |this, cx| {
+            if let Ok(Ok(Some(paths))) = picked.await
+                && let Some(folder) = paths.into_iter().next()
+            {
+                let _ = this.update_in(cx, |ws, window, cx| ws.sync_with(folder, window, cx));
+            }
+        })
+        .detach();
+    }
+
+    fn sync_with(
+        &mut self,
+        folder: std::path::PathBuf,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(vault) = self.vault.ready() else {
+            let why = self
+                .vault
+                .problem()
+                .unwrap_or_else(|| "the vault is still opening".into());
+            return self.say(format!("Cannot sync: {why}."), CONFIG_NOTICE, cx);
+        };
+        let store = Folder::new(&folder);
+        match vault.folder_state(&store) {
+            Ok(FolderState::Empty) | Ok(FolderState::Ours) => match vault.start_sync(&store) {
+                Ok(rk) => {
+                    self.keep_sync_folder(Some(&folder), cx);
+                    self.show_recovery_key(rk.to_string(), true, window, cx);
+                }
+                Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
+            },
+            Ok(FolderState::Other) => {
+                self.joining = Some(folder);
+                self.ask_recovery_key(false, window, cx);
+            }
+            Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
+        }
+    }
+
+    fn keep_sync_folder(&mut self, folder: Option<&std::path::Path>, cx: &mut Context<Self>) {
+        if let Err(e) = self.live.set_sync_folder(folder) {
+            self.say(
+                format!("Cannot save the sync folder: {e}"),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
+        self.sync.set_folder(folder.map(|f| f.to_path_buf()));
+        self.sync.now();
+    }
+
+    fn ask_recovery_key(&mut self, again: bool, window: &mut Window, cx: &mut Context<Self>) {
+        let folder = self
+            .joining
+            .as_ref()
+            .map(|f| f.display().to_string())
+            .unwrap_or_default();
+        let mut notes = vec![
+            Entry::new(
+                Kind::Note,
+                "",
+                format!("{folder} holds a vault from another device."),
+            )
+            .detail("Type its recovery key to share it. Secrets saved here are kept and merged."),
+        ];
+        if again {
+            notes.insert(
+                0,
+                Entry::new(Kind::Note, "", "That recovery key does not open it.")
+                    .detail("Check each group of four; letters and case do not need to be exact."),
+            );
+        }
+        let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    fn show_recovery_key(
+        &mut self,
+        key: String,
+        new: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let entries = vec![
+            Entry::new(Kind::Copy(key.clone()), "Recovery key", key).hint("Enter copies"),
+            Entry::new(
+                Kind::Note,
+                "Recovery key",
+                if new {
+                    "Syncing. Write this key down and keep it safe."
+                } else {
+                    "The key of the synced vault."
+                },
+            )
+            .detail(
+                "Another device needs it to join; it also opens the vault if this device is lost.",
+            ),
+        ];
+        let palette = cx.new(|cx| Palette::show(entries, cx));
+        self.show_palette(palette, false, window, cx);
     }
 
     fn open_secrets(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -680,11 +858,42 @@ impl Workspace {
                     });
                 }
             }
+            PaletteEvent::Copy(text) => {
+                cx.write_to_clipboard(gpui::ClipboardItem::new_string(text.clone()));
+                self.close_palette(window, cx);
+                self.say("Copied.".into(), THEME_NOTICE, cx);
+            }
+            PaletteEvent::Answer(text) => {
+                let (Some(folder), Some(vault)) = (self.joining.clone(), self.vault.ready()) else {
+                    return self.close_palette(window, cx);
+                };
+                match vault.join(&Folder::new(&folder), text) {
+                    Ok(()) => {
+                        self.joining = None;
+                        self.close_palette(window, cx);
+                        self.keep_sync_folder(Some(&folder), cx);
+                        self.say(
+                            format!("Joined: this device syncs with {}.", folder.display()),
+                            CONFIG_NOTICE,
+                            cx,
+                        );
+                    }
+                    Err(shellwing_vault::Error::WrongRecoveryKey) => {
+                        self.close_palette(window, cx);
+                        self.ask_recovery_key(true, window, cx);
+                    }
+                    Err(e) => {
+                        self.close_palette(window, cx);
+                        self.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx);
+                    }
+                }
+            }
             PaletteEvent::Forget(id) => {
                 let forgotten = self.vault.ready().map(|v| v.delete(id));
                 self.close_palette(window, cx);
                 match forgotten {
                     Some(Ok(())) => {
+                        self.sync.now();
                         self.say("Forgotten.".into(), THEME_NOTICE, cx);
                         // Back to the list for the next one, if any is left.
                         let left = self
@@ -722,6 +931,25 @@ impl Workspace {
             Action::CloseTab => self.close(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
+            Action::SyncFolder => self.choose_sync_folder(window, cx),
+            Action::SyncNow => {
+                self.sync_error = None;
+                self.sync.now();
+                self.say("Syncing…".into(), THEME_NOTICE, cx);
+            }
+            Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
+                Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
+                Some(Err(e)) => self.say(format!("Cannot read the key: {e}"), CONFIG_NOTICE, cx),
+                _ => self.say("Not syncing yet.".into(), CONFIG_NOTICE, cx),
+            },
+            Action::StopSync => {
+                self.keep_sync_folder(None, cx);
+                self.say(
+                    "Stopped syncing. The folder and the secrets here are kept.".into(),
+                    CONFIG_NOTICE,
+                    cx,
+                );
+            }
             Action::ToggleHosts => {
                 self.show_sidebar = !self.show_sidebar;
                 cx.notify();
@@ -789,6 +1017,7 @@ impl Workspace {
             problems.extend(self.restyle(cx));
             self.report(problems, cx);
             self.refresh_sidebar(cx);
+            self.sync.set_folder(self.live.sync_folder());
         }
     }
 
