@@ -3,7 +3,7 @@
 
 use gpui::{
     App, Context, Div, ElementId, Entity, FontWeight, KeyDownEvent, Render, SharedString,
-    WeakEntity, Window, div, prelude::*, px, rgb,
+    WeakEntity, Window, div, prelude::*, px, rgb, rgba, svg,
 };
 
 use crate::input::{Changed, TextInput};
@@ -11,7 +11,12 @@ use crate::input::{Changed, TextInput};
 use crate::session::Status;
 use crate::workspace::{EditTarget, Workspace};
 
+/// The host list's width by default, and how far its edge can be dragged.
 pub const WIDTH: f32 = 248.;
+pub const MIN_WIDTH: f32 = 200.;
+pub const MAX_WIDTH: f32 = 480.;
+/// Folded to a rail of host tiles.
+pub const RAIL_WIDTH: f32 = 56.;
 pub const TEXT: u32 = 0xe2e8f0;
 pub const MUTED: u32 = 0x8a96aa;
 pub const LINE: u32 = 0x1e2736;
@@ -41,6 +46,10 @@ pub struct Row {
     pub status: Option<Status>,
     /// Where Edit takes it.
     pub edit: EditTarget,
+    /// The host's color (its tile on the rail).
+    pub color: Option<u32>,
+    /// The active tab is connected to it.
+    pub active: bool,
     /// What the filter matches, lowercase: name, alias, address, user, tags.
     pub search: String,
 }
@@ -72,6 +81,76 @@ pub struct Sidebar {
     /// The group header under the pointer, likewise.
     hovered_group: Option<usize>,
     filter: Entity<TextInput>,
+    /// Shown as a rail of host tiles.
+    collapsed: bool,
+}
+
+/// A host's tile on the rail: two letters from its name. `api-1` is A1,
+/// `db-primary` DP, `web-01` W1, `worker` WO.
+pub fn initials(name: &str) -> String {
+    let parts: Vec<&str> = name
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|p| !p.is_empty())
+        .collect();
+    let first = |p: &str| p.chars().next().map(|c| c.to_ascii_uppercase());
+    let mut out = String::new();
+    match parts.as_slice() {
+        [] => return "?".into(),
+        [only] => {
+            let chars: Vec<char> = only.chars().collect();
+            out.extend(first(only));
+            // A name ending in a number keeps its last digit: web01 is W1.
+            match chars.iter().rev().take_while(|c| c.is_ascii_digit()).last() {
+                Some(_) if chars.len() > 1 => out.extend(chars.last()),
+                _ => out.extend(chars.get(1).map(|c| c.to_ascii_uppercase())),
+            }
+        }
+        [head, .., last] => {
+            out.extend(first(head));
+            if last.chars().all(|c| c.is_ascii_digit()) {
+                out.extend(last.chars().last());
+            } else {
+                out.extend(first(parts[1]));
+            }
+        }
+    }
+    out
+}
+
+/// The tooltip of a tile on the rail.
+struct Tip {
+    title: SharedString,
+    detail: SharedString,
+}
+
+impl Render for Tip {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(2.))
+            .px(px(11.))
+            .py(px(7.))
+            .rounded(px(8.))
+            .bg(rgb(0x111a2a))
+            .border_1()
+            .border_color(rgb(0x2b3648))
+            .text_color(rgb(TEXT))
+            .child(
+                div()
+                    .text_sm()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child(self.title.clone()),
+            )
+            .when(!self.detail.is_empty(), |d| {
+                d.child(
+                    div()
+                        .text_xs()
+                        .text_color(rgb(MUTED))
+                        .child(self.detail.clone()),
+                )
+            })
+    }
 }
 
 impl Sidebar {
@@ -85,6 +164,7 @@ impl Sidebar {
             hovered: None,
             hovered_group: None,
             filter,
+            collapsed: false,
         }
     }
 
@@ -133,6 +213,186 @@ impl Sidebar {
         cx.stop_propagation();
     }
 
+    pub fn set_collapsed(&mut self, collapsed: bool, cx: &mut Context<Self>) {
+        if self.collapsed != collapsed {
+            self.collapsed = collapsed;
+            cx.notify();
+        }
+    }
+
+    /// The rail: the host list folded to tiles, with the way back.
+    fn rail(&self) -> Div {
+        let icon_button = |id: &'static str, icon: &'static str, on: bool| {
+            div()
+                .id(id)
+                .w(px(32.))
+                .h(px(28.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded_md()
+                .cursor_pointer()
+                .when(on, |d| d.bg(rgb(HOVER)))
+                .hover(|s| s.bg(rgb(0x1e2a40)))
+                .child(svg().path(icon).size(px(16.)).text_color(rgb(TEXT)))
+        };
+        let (expand, find, add) = (
+            self.workspace.clone(),
+            self.workspace.clone(),
+            self.workspace.clone(),
+        );
+        let mut tiles = div()
+            .id("rail")
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(8.))
+            .flex_1()
+            .min_h_0()
+            .w_full()
+            .overflow_y_scroll()
+            .pt_1()
+            .pb_2();
+        let mut id = 0u64;
+        for (n, section) in self
+            .sections
+            .iter()
+            .filter(|s| !s.rows.is_empty())
+            .enumerate()
+        {
+            if n > 0 {
+                tiles = tiles.child(div().w(px(24.)).h(px(1.)).my(px(2.)).bg(rgb(0x263042)));
+            }
+            for row in &section.rows {
+                id += 1;
+                let (spec, ws) = (row.spec.clone(), self.workspace.clone());
+                let title = row.name.clone();
+                let state = match row.status {
+                    Some(Status::Connected) => "connected",
+                    Some(Status::Connecting) => "connecting",
+                    Some(Status::Lost) => "connection lost",
+                    Some(Status::Failed) => "could not connect",
+                    Some(Status::Closed) => "closed",
+                    None => "",
+                };
+                let detail: SharedString = [row.detail.to_string(), state.to_string()]
+                    .into_iter()
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>()
+                    .join(" · ")
+                    .into();
+                let (bg, fg) = match row.color {
+                    Some(c) => (rgba((c << 8) | 0x2e), rgb(c)),
+                    None => (rgba(0x1a2333ff), rgb(0xcbd5e1)),
+                };
+                tiles = tiles.child(
+                    div()
+                        .id(ElementId::NamedInteger("tile".into(), id))
+                        .relative()
+                        .flex_shrink_0()
+                        .size(px(36.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(10.))
+                        .border_2()
+                        .border_color(if row.active {
+                            rgba(0x38bdf8ff)
+                        } else {
+                            rgba(0x00000000)
+                        })
+                        .bg(bg)
+                        .text_color(fg)
+                        .text_xs()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .cursor_pointer()
+                        .hover(|s| s.opacity(0.85))
+                        .tooltip(move |_, cx| {
+                            let (title, detail) = (title.clone(), detail.clone());
+                            cx.new(|_| Tip { title, detail }).into()
+                        })
+                        .on_click(move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open(&spec, window, cx));
+                        })
+                        .child(initials(&row.name))
+                        .child(
+                            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
+                                div()
+                                    .p(px(2.))
+                                    .rounded_full()
+                                    .bg(rgb(PANEL))
+                                    .child(dot(row.status)),
+                            ),
+                        ),
+                );
+            }
+        }
+        div()
+            .size_full()
+            .flex()
+            .flex_col()
+            .items_center()
+            .bg(rgb(PANEL))
+            .border_r_1()
+            .border_color(rgb(LINE))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(px(6.))
+                    .pt(px(10.))
+                    .pb(px(8.))
+                    .child(
+                        icon_button("expand-hosts", "icons/panel-open.svg", true).on_click(
+                            move |_, window, cx| {
+                                let _ = expand.update(cx, |ws, cx| {
+                                    ws.set_sidebar_collapsed(false, window, cx)
+                                });
+                            },
+                        ),
+                    )
+                    .child(
+                        icon_button("find-host", "icons/search.svg", false).on_click(
+                            move |_, window, cx| {
+                                let _ =
+                                    find.update(cx, |ws, cx| ws.open_palette_from_rail(window, cx));
+                            },
+                        ),
+                    ),
+            )
+            .child(tiles)
+            .child(
+                div()
+                    .w_full()
+                    .py_2()
+                    .flex()
+                    .justify_center()
+                    .border_t_1()
+                    .border_color(rgb(LINE))
+                    .child(
+                        div()
+                            .id("rail-new-host")
+                            .w(px(36.))
+                            .h(px(32.))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .rounded_md()
+                            .border_1()
+                            .border_color(rgb(0x263042))
+                            .text_color(rgb(TEXT))
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(HOVER)))
+                            .on_click(move |_, window, cx| {
+                                let _ = add
+                                    .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
+                            })
+                            .child("+"),
+                    ),
+            )
+    }
+
     pub fn set(&mut self, sections: Vec<Section>, cx: &mut Context<Self>) {
         if sections != self.sections {
             self.sections = sections;
@@ -143,6 +403,9 @@ impl Sidebar {
 
 impl Render for Sidebar {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.collapsed {
+            return self.rail();
+        }
         let mut list = div()
             .id("hosts")
             .flex()
@@ -367,10 +630,9 @@ impl Render for Sidebar {
                     })
                     .child("+ Group"),
             );
+        let collapse = self.workspace.clone();
         div()
-            .w(px(WIDTH))
-            .flex_shrink_0()
-            .h_full()
+            .size_full()
             .flex()
             .flex_col()
             .bg(rgb(PANEL))
@@ -388,10 +650,40 @@ impl Render for Sidebar {
                     .pb_1()
                     .child(
                         div()
-                            .text_xs()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(rgb(MUTED))
-                            .child("HOSTS"),
+                            .flex()
+                            .items_center()
+                            .justify_between()
+                            .h(px(24.))
+                            .child(
+                                div()
+                                    .text_xs()
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .text_color(rgb(MUTED))
+                                    .child("HOSTS"),
+                            )
+                            .child(
+                                div()
+                                    .id("collapse-hosts")
+                                    .w(px(26.))
+                                    .h(px(24.))
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .rounded_md()
+                                    .cursor_pointer()
+                                    .hover(|s| s.bg(rgb(HOVER)))
+                                    .on_click(move |_, window, cx| {
+                                        let _ = collapse.update(cx, |ws, cx| {
+                                            ws.set_sidebar_collapsed(true, window, cx)
+                                        });
+                                    })
+                                    .child(
+                                        svg()
+                                            .path("icons/panel-close.svg")
+                                            .size(px(16.))
+                                            .text_color(rgb(MUTED)),
+                                    ),
+                            ),
                     )
                     .child(
                         div()
@@ -410,5 +702,27 @@ impl Render for Sidebar {
             )
             .child(list)
             .child(footer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initials;
+
+    #[test]
+    fn tiles_get_two_letters() {
+        for (name, want) in [
+            ("api-1", "A1"),
+            ("db-primary", "DP"),
+            ("web-01", "W1"),
+            ("worker", "WO"),
+            ("stage-web", "SW"),
+            ("nas.home", "NH"),
+            ("web01", "W1"),
+            ("x", "X"),
+            ("--", "?"),
+        ] {
+            assert_eq!(initials(name), want, "{name}");
+        }
     }
 }

@@ -34,6 +34,8 @@ use shellwing_vault::{Folder, FolderState};
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
 /// How long a problem with the config files stays on screen.
+/// The host list's edge while dragged or hovered.
+const ACCENT_LINE: u32 = 0x38bdf8;
 /// The logo's sky blue, as in the sketch and the app icon.
 const LOGO: u32 = 0x38bdf8;
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
@@ -77,6 +79,12 @@ pub struct Workspace {
     active: usize,
     sidebar: Entity<Sidebar>,
     show_sidebar: bool,
+    /// The host list's width when expanded, as dragged.
+    sidebar_width: f32,
+    /// Folded to a rail of host tiles.
+    sidebar_collapsed: bool,
+    /// Dragging the host list's edge: where the drag began, and the width then.
+    sidebar_drag: Option<(f32, f32)>,
     live: Live,
     /// Hosts named in `~/.ssh/config`, for the sidebar.
     ssh_aliases: Vec<String>,
@@ -178,6 +186,9 @@ impl Workspace {
                 cx.new(|cx| Sidebar::new(me, cx))
             },
             show_sidebar: true,
+            sidebar_width: sidebar::WIDTH,
+            sidebar_collapsed: false,
+            sidebar_drag: None,
             live,
             ssh_aliases: ssh_config::aliases(ssh_config::default_config_path().as_deref()),
             rt,
@@ -198,9 +209,46 @@ impl Workspace {
             settings: None,
             fonts: (vec![], String::new(), vec![]),
         };
+        if let Some(s) = ws.live.store().and_then(|s| s.window_state()) {
+            ws.sidebar_width = s
+                .sidebar_width
+                .unwrap_or(sidebar::WIDTH)
+                .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
+            ws.sidebar_collapsed = s.sidebar_collapsed;
+        }
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
+    }
+
+    /// The rail's search button: the palette, to find a host by typing.
+    pub fn open_palette_from_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.open_palette(window, cx);
+    }
+
+    /// Folds the host list to a rail of host tiles, or unfolds it.
+    pub fn set_sidebar_collapsed(
+        &mut self,
+        collapsed: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.sidebar_collapsed = collapsed;
+        self.show_sidebar = true;
+        self.refresh_sidebar(cx);
+        self.save_sidebar(window);
+    }
+
+    /// Remembers the host list's width and fold with the window's place.
+    fn save_sidebar(&mut self, window: &Window) {
+        let mut state = crate::placement::state(window.window_bounds());
+        state.sidebar_width = Some(self.sidebar_width);
+        state.sidebar_collapsed = self.sidebar_collapsed;
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.save_window_state(&state)
+        {
+            eprintln!("cannot save the window layout: {e}");
+        }
     }
 
     pub fn active_index(&self) -> usize {
@@ -1511,10 +1559,12 @@ impl Workspace {
     }
 
     fn save_bounds(&mut self) {
-        if let (Some(state), Some(store)) = (self.unsaved_bounds.take(), self.live.store())
-            && let Err(e) = store.save_window_state(&state)
-        {
-            eprintln!("cannot save the window size: {e}");
+        if let (Some(mut state), Some(store)) = (self.unsaved_bounds.take(), self.live.store()) {
+            state.sidebar_width = Some(self.sidebar_width);
+            state.sidebar_collapsed = self.sidebar_collapsed;
+            if let Err(e) = store.save_window_state(&state) {
+                eprintln!("cannot save the window size: {e}");
+            }
         }
     }
 
@@ -1791,6 +1841,14 @@ impl Workspace {
     /// aliases it does not already name, each with its tabs' status.
     fn sidebar_sections(&self, cx: &Context<Self>) -> Vec<Section> {
         let hosts = self.live.hosts();
+        // The active tab's host, marked on its tile.
+        let (active_entry, active_spec) = match self.active_tab() {
+            Some(t) => {
+                let s = t.read(cx).session();
+                (s.entry.clone(), Some(s.spec.clone()))
+            }
+            None => (None, None),
+        };
         let row = |h: &Host| Row {
             name: h.name.clone().into(),
             detail: match &h.user {
@@ -1800,6 +1858,8 @@ impl Workspace {
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
             status: self.host_status(cx, |s| s.entry.as_deref() == Some(h.name.as_str())),
             edit: EditTarget::Saved(h.name.clone()),
+            color: h.color_rgb(),
+            active: active_entry.as_deref() == Some(h.name.as_str()),
             search: [
                 h.name.as_str(),
                 h.alias.as_deref().unwrap_or(""),
@@ -1859,6 +1919,8 @@ impl Workspace {
                 spec: a.clone(),
                 status: self.host_status(cx, |s| s.entry.is_none() && &s.spec == a),
                 edit: EditTarget::Ssh(a.clone()),
+                color: None,
+                active: active_entry.is_none() && active_spec.as_deref() == Some(a.as_str()),
                 search: a.to_lowercase(),
             })
             .collect();
@@ -1876,7 +1938,11 @@ impl Workspace {
     /// Hands the host list a fresh snapshot (it redraws only if it differs).
     fn refresh_sidebar(&mut self, cx: &mut Context<Self>) {
         let sections = self.sidebar_sections(cx);
-        self.sidebar.update(cx, |s, cx| s.set(sections, cx));
+        let collapsed = self.sidebar_collapsed;
+        self.sidebar.update(cx, |s, cx| {
+            s.set(sections, cx);
+            s.set_collapsed(collapsed, cx);
+        });
         cx.notify();
     }
 
@@ -2089,6 +2155,11 @@ impl Render for Workspace {
             None => self.welcome(bg).into_any_element(),
         };
         let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
+        let side_w = if self.sidebar_collapsed {
+            sidebar::RAIL_WIDTH
+        } else {
+            self.sidebar_width
+        };
         let body = div()
             .relative()
             .flex()
@@ -2099,13 +2170,68 @@ impl Render for Workspace {
                 d.child(
                     self.sidebar.clone().cached(
                         gpui::StyleRefinement::default()
-                            .w(px(sidebar::WIDTH))
+                            .w(px(side_w))
                             .h_full()
                             .flex_shrink_0(),
                     ),
                 )
             })
             .child(main)
+            // The host list's edge: drag to resize, double-click for the default.
+            .when(self.show_sidebar && !self.sidebar_collapsed, |d| {
+                let dragging = self.sidebar_drag.is_some();
+                d.child(
+                    div()
+                        .id("sidebar-edge")
+                        .group("sidebar-edge")
+                        .absolute()
+                        .top_0()
+                        .h_full()
+                        .left(px(side_w - 3.))
+                        .w(px(6.))
+                        .flex()
+                        .justify_center()
+                        .cursor(CursorStyle::ResizeLeftRight)
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|ws, e: &gpui::MouseDownEvent, window, cx| {
+                                cx.stop_propagation();
+                                if e.click_count >= 2 {
+                                    ws.sidebar_drag = None;
+                                    ws.sidebar_width = sidebar::WIDTH;
+                                    ws.save_sidebar(window);
+                                } else {
+                                    ws.sidebar_drag =
+                                        Some((f32::from(e.position.x), ws.sidebar_width));
+                                }
+                                cx.notify();
+                            }),
+                        )
+                        .child(
+                            div()
+                                .h_full()
+                                .w(px(if dragging { 3. } else { 1. }))
+                                .bg(rgb(if dragging { ACCENT_LINE } else { LINE }))
+                                .group_hover("sidebar-edge", |s| s.w(px(2.)).bg(rgb(ACCENT_LINE))),
+                        ),
+                )
+            })
+            .when(self.sidebar_drag.is_some(), |d| {
+                d.child(
+                    div()
+                        .absolute()
+                        .top(relative(0.45))
+                        .left(px(side_w + 12.))
+                        .px(px(9.))
+                        .py(px(3.))
+                        .rounded_md()
+                        .bg(rgb(ACCENT_LINE))
+                        .text_color(rgb(0x04121c))
+                        .text_xs()
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child(format!("{} px", side_w.round())),
+                )
+            })
             .when_some(self.editor.as_ref().map(|(e, _)| e.clone()), |d, e| {
                 let quiet = e.clone();
                 d.child(
@@ -2228,6 +2354,23 @@ impl Render for Workspace {
         root.when_some(ui_font.family, |d, f| d.font_family(f))
             .track_focus(&self.focus)
             .capture_key_down(cx.listener(Self::shortcut))
+            .when(self.sidebar_drag.is_some(), |d| {
+                d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
+                    if let Some((x0, w0)) = ws.sidebar_drag {
+                        ws.sidebar_width = (w0 + f32::from(e.position.x) - x0)
+                            .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
+                        cx.notify();
+                    }
+                }))
+                .on_mouse_up(
+                    MouseButton::Left,
+                    cx.listener(|ws, _, window, cx| {
+                        ws.sidebar_drag = None;
+                        ws.save_sidebar(window);
+                        cx.notify();
+                    }),
+                )
+            })
             .when(self.dragging.is_some(), |d| {
                 d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
                     if let Some(s) = &ws.dragging {

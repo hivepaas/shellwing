@@ -10,6 +10,12 @@ pub struct WindowState {
     pub height: f32,
     #[serde(default)]
     pub mode: WindowMode,
+    /// The host list's width as dragged; None: the default.
+    #[serde(default)]
+    pub sidebar_width: Option<f32>,
+    /// The host list folded to a rail of host tiles.
+    #[serde(default)]
+    pub sidebar_collapsed: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

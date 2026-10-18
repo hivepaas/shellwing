@@ -637,6 +637,8 @@ mod tests {
             width: 1200.0,
             height: 800.0,
             mode: crate::WindowMode::Maximized,
+            sidebar_width: Some(300.0),
+            sidebar_collapsed: true,
         };
         s.save_window_state(&w).expect("save");
         assert_eq!(s.window_state(), Some(w));
