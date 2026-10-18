@@ -11,11 +11,17 @@
 
 use gpui::{
     App, BoxShadow, CursorStyle, Decorations, Div, HitboxBehavior, Hsla, MouseButton, Pixels,
-    Point, ResizeEdge, Size, Tiling, Window, canvas, div, hsla, point, prelude::*, px, rgb,
+    Point, ResizeEdge, Size, Tiling, Window, canvas, div, hsla, point, prelude::*, px, rgb, svg,
     transparent_black,
 };
 
-pub const TITLEBAR_H: f32 = 32.0;
+/// The header bar: as tall as GNOME's own where the app draws it (Linux),
+/// a row for the tabs under the native title bar elsewhere.
+pub const TITLEBAR_H: f32 = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
+    44.0
+} else {
+    34.0
+};
 /// The invisible margin outside the visible window that resizes it; the shadow
 /// is drawn into it.
 const INSET: f32 = 12.0;
@@ -34,19 +40,20 @@ fn tiling(window: &Window) -> Tiling {
 pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> Div {
     let t = tiling(window);
     window.set_client_inset(px(INSET));
-    let button = |id: &'static str, label: &'static str, f: fn(&mut Window, &mut App)| {
+    // Round buttons with symbolic icons, as GNOME draws them.
+    let button = |id: &'static str, icon: &'static str, f: fn(&mut Window, &mut App)| {
         div()
             .id(id)
-            .w(px(36.))
-            .h_full()
+            .size(px(24.))
             .flex()
             .items_center()
             .justify_center()
-            .text_color(rgb(0xb6c0cf))
-            .hover(|s| s.bg(rgb(0x1e2736)))
+            .rounded_full()
+            .bg(rgb(0x1a2333))
+            .hover(|s| s.bg(rgb(0x2a3548)))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .on_click(move |_, window, cx| f(window, cx))
-            .child(label)
+            .child(svg().path(icon).size(px(14.)).text_color(rgb(0xd5dbe5)))
     };
     let titlebar = div()
         .h(px(TITLEBAR_H))
@@ -73,10 +80,16 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
         .child(
             div()
                 .flex()
+                .items_center()
+                .gap(px(10.))
                 .h_full()
-                .child(button("min", "—", |w, _| w.minimize_window()))
-                .child(button("max", "□", |w, _| w.zoom_window()))
-                .child(button("close", "✕", |w, _| w.remove_window())),
+                .pl(px(6.))
+                .pr(px(10.))
+                .child(button("min", "icons/minimize.svg", |w, _| {
+                    w.minimize_window()
+                }))
+                .child(button("max", "icons/maximize.svg", |w, _| w.zoom_window()))
+                .child(button("close", "icons/close.svg", |w, _| w.remove_window())),
         );
     let (inset, border) = (px(INSET), px(BORDER));
     let floating = !(t.top && t.bottom && t.left && t.right);

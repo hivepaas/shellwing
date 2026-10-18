@@ -74,8 +74,8 @@ pub struct UiFont {
     pub size: f32,
 }
 
-/// The UI font size everything was drawn at before it could be chosen.
-pub const UI_FONT_SIZE: f32 = 13.0;
+/// The UI font size by default: the terminal's, so the two match.
+pub const UI_FONT_SIZE: f32 = 14.0;
 
 impl Default for UiFont {
     fn default() -> Self {

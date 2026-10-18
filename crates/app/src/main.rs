@@ -39,6 +39,45 @@ use shellwing_config::Store;
 
 pub use writer::Writer;
 
+/// Icons drawn into the binary: the app has no other files.
+struct Assets;
+
+const ICONS: &[(&str, &[u8])] = &[
+    (
+        "icons/settings.svg",
+        include_bytes!("../assets/icons/settings.svg"),
+    ),
+    (
+        "icons/minimize.svg",
+        include_bytes!("../assets/icons/minimize.svg"),
+    ),
+    (
+        "icons/maximize.svg",
+        include_bytes!("../assets/icons/maximize.svg"),
+    ),
+    (
+        "icons/close.svg",
+        include_bytes!("../assets/icons/close.svg"),
+    ),
+];
+
+impl gpui::AssetSource for Assets {
+    fn load(&self, path: &str) -> gpui::Result<Option<std::borrow::Cow<'static, [u8]>>> {
+        Ok(ICONS
+            .iter()
+            .find(|(p, _)| *p == path)
+            .map(|(_, bytes)| std::borrow::Cow::Borrowed(*bytes)))
+    }
+
+    fn list(&self, path: &str) -> gpui::Result<Vec<gpui::SharedString>> {
+        Ok(ICONS
+            .iter()
+            .filter(|(p, _)| p.starts_with(path))
+            .map(|(p, _)| (*p).into())
+            .collect())
+    }
+}
+
 /// How often the config files are checked for edits.
 const CONFIG_POLL: Duration = Duration::from_millis(500);
 
@@ -99,56 +138,58 @@ fn main() -> anyhow::Result<()> {
         .filter(|m| !m.is_empty())
         .map(|m| (m, Arc::new(bench::Probe::new())));
 
-    gpui_platform::application().run(move |cx: &mut App| {
-        let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
-        // GNOME's Wayland compositor draws no window frame, so Linux gets
-        // client-side decorations; macOS and Windows keep their native title bar.
-        let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
-        let options = WindowOptions {
-            window_bounds: Some(window_bounds),
-            window_decorations: client_side.then_some(WindowDecorations::Client),
-            titlebar: (!client_side).then(|| gpui::TitlebarOptions {
-                title: Some("shellwing".into()),
+    gpui_platform::application()
+        .with_assets(Assets)
+        .run(move |cx: &mut App| {
+            let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
+            // GNOME's Wayland compositor draws no window frame, so Linux gets
+            // client-side decorations; macOS and Windows keep their native title bar.
+            let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
+            let options = WindowOptions {
+                window_bounds: Some(window_bounds),
+                window_decorations: client_side.then_some(WindowDecorations::Client),
+                titlebar: (!client_side).then(|| gpui::TitlebarOptions {
+                    title: Some("shellwing".into()),
+                    ..Default::default()
+                }),
+                app_id: Some("shellwing".into()),
                 ..Default::default()
-            }),
-            app_id: Some("shellwing".into()),
-            ..Default::default()
-        };
-        let mut setup = Some((live, problems, bench));
-        let Ok(window) = cx.open_window(options, |window, cx| {
-            cx.new(|cx| {
-                let (live, problems, bench) = setup
-                    .take()
-                    .unwrap_or_else(|| (look::Live::open(None).0, vec![], None));
-                let mut ws =
-                    workspace::Workspace::new(live, problems, rt_handle.clone(), bench, cx);
-                ws.start(arg.as_deref(), &forwards, window, cx);
-                ws
+            };
+            let mut setup = Some((live, problems, bench));
+            let Ok(window) = cx.open_window(options, |window, cx| {
+                cx.new(|cx| {
+                    let (live, problems, bench) = setup
+                        .take()
+                        .unwrap_or_else(|| (look::Live::open(None).0, vec![], None));
+                    let mut ws =
+                        workspace::Workspace::new(live, problems, rt_handle.clone(), bench, cx);
+                    ws.start(arg.as_deref(), &forwards, window, cx);
+                    ws
+                })
+            }) else {
+                eprintln!("cannot open a window");
+                cx.quit();
+                return;
+            };
+            let Ok(ws) = window.update(cx, |_, _, cx| cx.entity()) else {
+                return;
+            };
+            let ws: Entity<workspace::Workspace> = ws;
+            let _ = window.update(cx, |ws, window, cx| {
+                let active = ws.active_index();
+                ws.activate(active, window, cx);
+                cx.activate(true);
+                ws.track_bounds(window, cx);
+            });
+            // Edits to the config files apply while running.
+            cx.spawn(async move |cx| {
+                loop {
+                    cx.background_executor().timer(CONFIG_POLL).await;
+                    ws.update(cx, |ws, cx| ws.poll_config(cx));
+                }
             })
-        }) else {
-            eprintln!("cannot open a window");
-            cx.quit();
-            return;
-        };
-        let Ok(ws) = window.update(cx, |_, _, cx| cx.entity()) else {
-            return;
-        };
-        let ws: Entity<workspace::Workspace> = ws;
-        let _ = window.update(cx, |ws, window, cx| {
-            let active = ws.active_index();
-            ws.activate(active, window, cx);
-            cx.activate(true);
-            ws.track_bounds(window, cx);
+            .detach();
         });
-        // Edits to the config files apply while running.
-        cx.spawn(async move |cx| {
-            loop {
-                cx.background_executor().timer(CONFIG_POLL).await;
-                ws.update(cx, |ws, cx| ws.poll_config(cx));
-            }
-        })
-        .detach();
-    });
     drop(rt);
     Ok(())
 }
