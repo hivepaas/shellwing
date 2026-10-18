@@ -120,6 +120,8 @@ pub struct Workspace {
     settings: Option<(Entity<SettingsView>, Subscription)>,
     /// Code fonts, the default terminal font, and every installed font.
     fonts: (Vec<String>, String, Vec<String>),
+    /// Text editors found on this system, looked for when Settings opens.
+    editors: Vec<(String, String)>,
 }
 
 /// What the host editor opens on.
@@ -209,6 +211,7 @@ impl Workspace {
             group_editor: None,
             settings: None,
             fonts: (vec![], String::new(), vec![]),
+            editors: vec![],
         };
         if let Some(s) = ws.live.store().and_then(|s| s.window_state()) {
             ws.sidebar_width = s
@@ -922,6 +925,7 @@ impl Workspace {
             fonts: self.fonts.0.clone(),
             default_font: self.fonts.1.clone(),
             all_fonts: self.fonts.2.clone(),
+            editors: self.editors.clone(),
             sync_folder: self.sync.folder(),
             config_dir: self.live.store().map(|s| s.dir().to_path_buf()),
             known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS")
@@ -940,6 +944,7 @@ impl Workspace {
         if self.palette.is_some() {
             self.close_palette(window, cx);
         }
+        self.editors = crate::editors::installed();
         let installed = window.text_system().all_font_names();
         self.fonts = (
             settings_view::mono_fonts(&installed),

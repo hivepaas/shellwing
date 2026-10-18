@@ -56,7 +56,7 @@ scrollback = 10000           # lines of history
 on_disconnect = "reconnect"  # "reconnect", "ask" or "close"
 
 [files]
-editor = "code"              # what Edit in the Files panel opens a file with; none: the system's app
+editor = "code"              # the text editor for remote files (Settings > General); none: the system's
 
 [ssh]                        # defaults for every host; a host can set its own
 host_key = "ask"             # unknown host keys: "ask", "accept-new" or "strict"
@@ -250,8 +250,8 @@ on a channel of its own, so the terminal keeps working while files move.
   everything in it, and a link goes as a link, never what it points at. A
   rename never writes over something already there.
 - The icons at the top go up, home, refresh, make a folder and upload. A right
-  click on a file or folder opens its menu (Open or Edit, Download, Copy path,
-  Rename, Delete); a right click beside them, the folder's (New folder, Upload,
+  click on a file or folder opens its menu (Open, or Edit in text editor and
+  Open with default app; Download, Copy path, Rename, Delete); a right click beside them, the folder's (New folder, Upload,
   Refresh, Copy path).
 - **Download** fetches the chosen file or folder (folders whole) into your
   Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
@@ -259,9 +259,11 @@ on a channel of its own, so the terminal keeps working while files move.
 - **Upload…**, or dropping files and folders on the panel, uploads into the
   folder shown. Something already there with that name is not touched until you
   pick *Replace* (or *Merge* for a folder).
-- **Edit** opens the chosen file in your editor (`[files] editor`, else the
-  system's app for that kind of file). Each time you save it there, it is
-  written back to the server; before that, shellwing checks that nobody else
+- **Edit in text editor** opens the chosen file in the editor chosen in
+  Settings > General (`[files] editor`), else the system's editor for plain
+  text, whatever kind of file it is. **Open with default app** opens it in the
+  system's app for its kind instead. Either way, each time you save it there,
+  it is written back to the server; before that, shellwing checks that nobody else
   changed it on the server since, and asks before writing over their change.
   The copy lives in a folder of its own under your cache folder (only you can
   read it) until you press *Stop*.
