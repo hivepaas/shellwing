@@ -13,6 +13,8 @@ use tokio::task::AbortHandle;
 
 use crate::Writer;
 use crate::bench::{self, Probe};
+use crate::secrets::{SessionSecrets, VaultSlot};
+use shellwing_ssh::{Learned, Secrets};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Status {
@@ -66,6 +68,10 @@ pub struct Session {
     /// A new frame (or a status change) is ready.
     pub wake: async_channel::Receiver<()>,
     pub events: async_channel::Receiver<Event>,
+    /// Passwords and passphrases typed at a prompt that worked, to offer saving.
+    pub learned: async_channel::Receiver<Learned>,
+    secrets: Arc<dyn Secrets>,
+    vault: VaultSlot,
 }
 
 /// A dimmed status line written into the terminal itself.
@@ -87,8 +93,10 @@ impl Session {
         scrollback: usize,
         rt: &Handle,
         bench: Option<(String, Arc<Probe>)>,
+        vault: VaultSlot,
     ) -> std::io::Result<Session> {
         let (writer, shown) = Writer::new();
+        let (learned_tx, learned) = async_channel::unbounded();
         // The terminal thread wakes the UI through this; one pending wake is enough.
         let (wake_tx, wake) = async_channel::bounded::<()>(1);
         // Events the UI has to act on, such as copied text.
@@ -133,6 +141,12 @@ impl Session {
             wake_tx,
             wake,
             events,
+            learned,
+            secrets: Arc::new(SessionSecrets {
+                vault: vault.clone(),
+                learned: learned_tx,
+            }),
+            vault,
         };
         match target {
             Ok((resolved, entry)) => {
@@ -151,6 +165,11 @@ impl Session {
 
     fn set_status(&self, status: Status, ended: Option<String>) {
         set_status(&self.state, &self.wake_tx, status, ended);
+    }
+
+    /// Saves a typed password or passphrase in the vault.
+    pub fn save(&self, secret: &Learned) -> Result<(), String> {
+        self.vault.save(secret)
     }
 
     pub fn status(&self) -> Status {
@@ -205,6 +224,7 @@ impl Session {
             self.state.clone(),
             self.wake_tx.clone(),
         );
+        let secrets = Some(self.secrets.clone());
         let task = self.rt.spawn(async move {
             let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
             let via = if via.is_empty() {
@@ -233,6 +253,7 @@ impl Session {
                 policy: HostKeyPolicy::Ask,
                 known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
                 prompter: Some(prompter),
+                secrets: secrets.clone(),
                 cols: 80,
                 rows: 24,
                 term: "xterm-256color".into(),

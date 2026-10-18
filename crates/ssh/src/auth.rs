@@ -12,7 +12,8 @@ use russh::keys::{PrivateKey, PrivateKeyWithHashAlg};
 
 use crate::hostkey::Checker;
 use crate::prompt::{Prompt, Prompter};
-use crate::{Auth, Error};
+use crate::secrets::{Learned, Secrets};
+use crate::{Auth, Error, Target};
 
 const TRIES: usize = 3;
 
@@ -56,15 +57,30 @@ impl Methods {
     }
 }
 
-/// Loads a key file, asking for its passphrase if it has one. `None`: skip the key.
+/// The SHA256 fingerprint of a key file's public half, readable without the
+/// passphrase.
+fn fingerprint(path: &PathBuf) -> Option<String> {
+    let key = russh::keys::ssh_key::PrivateKey::read_openssh_file(path).ok()?;
+    Some(key.public_key().fingerprint(Default::default()).to_string())
+}
+
+/// Loads a key file, trying a saved passphrase, then asking. `None`: skip the key.
 async fn load_key(
     path: &PathBuf,
     prompter: Option<&Prompter>,
+    secrets: Option<&dyn Secrets>,
 ) -> Result<Option<PrivateKey>, Error> {
     match russh::keys::load_secret_key(path, None) {
         Ok(k) => return Ok(Some(k)),
         Err(russh::keys::Error::KeyIsEncrypted) => {}
         Err(_) => return Ok(None), // unreadable or not a key: try the next one, like ssh
+    }
+    let fp = fingerprint(path);
+    if let (Some(s), Some(fp)) = (secrets, &fp)
+        && let Some(saved) = s.passphrase(fp)
+        && let Ok(k) = russh::keys::load_secret_key(path, Some(&saved))
+    {
+        return Ok(Some(k));
     }
     let Some(prompter) = prompter else {
         return Ok(None);
@@ -84,6 +100,13 @@ async fn load_key(
             return Ok(None); // Enter alone skips the key, as in ssh
         }
         if let Ok(k) = russh::keys::load_secret_key(path, Some(&pass)) {
+            if let (Some(s), Some(fp)) = (secrets, fp) {
+                s.learned(Learned::Passphrase {
+                    fingerprint: fp,
+                    key_path: key,
+                    passphrase: pass,
+                });
+            }
             return Ok(Some(k));
         }
     }
@@ -92,12 +115,13 @@ async fn load_key(
 
 pub(crate) async fn authenticate(
     handle: &mut Handle<Checker>,
-    user: &str,
-    host: &str,
+    target: &Target,
     keys: &[PathBuf],
     auth: &Auth,
     prompter: Option<&Prompter>,
+    secrets: Option<&dyn Secrets>,
 ) -> Result<(), Error> {
+    let user = target.user.as_str();
     let mut methods = Methods(None);
 
     if auth.agent && methods.allows(MethodKind::PublicKey) {
@@ -124,7 +148,7 @@ pub(crate) async fn authenticate(
 
     if methods.allows(MethodKind::PublicKey) {
         for path in keys {
-            let Some(key) = load_key(path, prompter).await? else {
+            let Some(key) = load_key(path, prompter, secrets).await? else {
                 continue;
             };
             let hash = if key.algorithm().is_rsa() {
@@ -192,7 +216,13 @@ pub(crate) async fn authenticate(
     }
 
     if methods.allows(MethodKind::Password) {
-        if let Some(pw) = &auth.password {
+        // Saved under user@host:port; asked as OpenSSH asks, without the port.
+        let (key, shown) = (target.to_string(), format!("{user}@{}", target.host));
+        let saved = secrets.and_then(|s| s.password(&key));
+        for pw in auth.password.iter().chain(saved.iter()) {
+            if !methods.allows(MethodKind::Password) {
+                break;
+            }
             let r = handle.authenticate_password(user, pw).await?;
             if r.success() {
                 return Ok(());
@@ -200,18 +230,23 @@ pub(crate) async fn authenticate(
             methods.update(&r);
         }
         if let Some(prompter) = prompter {
-            let target = format!("{user}@{host}");
             for attempt in 0..TRIES {
                 if !methods.allows(MethodKind::Password) {
                     break;
                 }
                 let prompt = Prompt::Password {
-                    target: target.clone(),
+                    target: shown.clone(),
                     retry: attempt > 0,
                 };
                 let pw = prompter.ask(prompt).await.ok_or(Error::Cancelled)?;
                 let r = handle.authenticate_password(user, &pw).await?;
                 if r.success() {
+                    if let Some(s) = secrets {
+                        s.learned(Learned::Password {
+                            target: key.clone(),
+                            password: pw,
+                        });
+                    }
                     return Ok(());
                 }
                 methods.update(&r);

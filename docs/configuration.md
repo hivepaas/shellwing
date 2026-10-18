@@ -156,3 +156,17 @@ as `ssh` does.
 1. The host's `theme`.
 2. Its group's `theme`.
 3. `config.toml`.
+
+## Saved passwords
+
+When a password or a key passphrase typed at a prompt works, the pane asks
+whether to save it. Saved ones are tried before asking next time, also when
+reconnecting, so a lost connection comes back without typing.
+
+They live in `vault.db` in the config directory, each one encrypted with
+XChaCha20-Poly1305. The key that opens the vault is in the system keychain
+(Keychain on macOS, Credential Manager on Windows, GNOME Keyring or KWallet on
+Linux), so the file alone is useless. Passwords are saved per `user@host:port`,
+passphrases per key fingerprint, so a key keeps its passphrase wherever it
+lives. Design and threats: `docs/design/vault.md`.
+

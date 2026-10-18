@@ -20,6 +20,7 @@ use crate::chrome::{self, TITLEBAR_H};
 use crate::look::{Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
+use crate::secrets::VaultSlot;
 use crate::session::{Session, Status};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::target;
@@ -84,6 +85,9 @@ pub struct Workspace {
     bounds_change: u64,
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
+    vault: VaultSlot,
+    /// A vault that failed to open was reported.
+    vault_reported: bool,
 }
 
 /// What `state/session.json` keeps of a pane tree: hosts and splits.
@@ -128,7 +132,12 @@ impl Workspace {
             unsaved_bounds: None,
             bounds_change: 0,
             layout_change: 0,
+            vault: VaultSlot::none(),
+            vault_reported: false,
         };
+        if let Some(store) = ws.live.store() {
+            ws.vault = VaultSlot::open(store.dir().join("vault.db"));
+        }
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
@@ -263,7 +272,14 @@ impl Workspace {
         let probe = bench
             .as_ref()
             .map_or_else(|| Arc::new(Probe::new()), |(_, p)| p.clone());
-        let session = match Session::start(spec, target, look.scrollback, &self.rt, bench) {
+        let session = match Session::start(
+            spec,
+            target,
+            look.scrollback,
+            &self.rt,
+            bench,
+            self.vault.clone(),
+        ) {
             Ok(s) => s,
             Err(e) => {
                 self.notice = Some(format!("Cannot open a terminal: {e}").into());
@@ -688,6 +704,13 @@ impl Workspace {
 
     /// Called periodically: picks up edits to the config files.
     pub fn poll_config(&mut self, cx: &mut Context<Self>) {
+        if !self.vault_reported
+            && self.live.store().is_some()
+            && let Some(p) = self.vault.problem()
+        {
+            self.vault_reported = true;
+            self.say(format!("Passwords cannot be saved: {p}"), CONFIG_NOTICE, cx);
+        }
         if let Some(mut problems) = self.live.reload_if_changed() {
             self.ssh_aliases = ssh_config::aliases(ssh_config::default_config_path().as_deref());
             problems.extend(self.restyle(cx));

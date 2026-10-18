@@ -1,0 +1,20 @@
+[package]
+name = "shellwing-vault"
+description = "Encrypted secrets (passwords, key passphrases) unlocked through the OS keychain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+chacha20poly1305 = "0.10"
+getrandom = "0.3"
+keyring = "4"
+rusqlite = { version = "0.40", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror.workspace = true
+zeroize = "1"
+
+[lints]
+workspace = true

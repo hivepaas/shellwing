@@ -18,6 +18,7 @@ mod look;
 mod palette;
 mod pane;
 mod placement;
+mod secrets;
 mod session;
 mod sidebar;
 mod target;
