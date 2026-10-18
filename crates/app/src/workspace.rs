@@ -18,7 +18,7 @@ use tokio::runtime::Handle;
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
-use crate::look::{Live, rgb as theme_rgb};
+use crate::look::{self, Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
@@ -104,7 +104,8 @@ pub struct Workspace {
     editor: Option<(Entity<HostEditor>, Subscription)>,
     /// The settings page, while open, and the fonts it offers.
     settings: Option<(Entity<SettingsView>, Subscription)>,
-    fonts: (Vec<String>, String),
+    /// Code fonts, the default terminal font, and every installed font.
+    fonts: (Vec<String>, String, Vec<String>),
 }
 
 /// What the host editor opens on.
@@ -189,7 +190,7 @@ impl Workspace {
             asking: None,
             editor: None,
             settings: None,
-            fonts: (vec![], String::new()),
+            fonts: (vec![], String::new(), vec![]),
         };
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
@@ -847,6 +848,7 @@ impl Workspace {
             themes: self.live.themes().all().to_vec(),
             fonts: self.fonts.0.clone(),
             default_font: self.fonts.1.clone(),
+            all_fonts: self.fonts.2.clone(),
             sync_folder: self.sync.folder(),
             config_dir: self.live.store().map(|s| s.dir().to_path_buf()),
             known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS")
@@ -865,9 +867,11 @@ impl Workspace {
         if self.palette.is_some() {
             self.close_palette(window, cx);
         }
+        let installed = window.text_system().all_font_names();
         self.fonts = (
-            settings_view::mono_fonts(&window.text_system().all_font_names()),
+            settings_view::mono_fonts(&installed),
             TermView::default_font(window),
+            installed,
         );
         let snap = self.settings_snap();
         let ws = cx.entity().downgrade();
@@ -1374,8 +1378,13 @@ impl Workspace {
             let entry = tab.read(cx).session().entry.clone();
             let (look, problem) = self.live.look_for(entry.as_deref());
             problems.extend(problem);
-            tab.update(cx, |v, cx| v.set_look(look, cx));
+            tab.update(cx, |v, cx| {
+                v.set_look(look, cx);
+                v.refresh_panels(cx);
+            });
         }
+        // Cached views keep their old layout until told: the UI font may have changed.
+        self.sidebar.update(cx, |_, cx| cx.notify());
         problems.dedup();
         cx.notify();
         problems
@@ -1885,6 +1894,9 @@ impl Focusable for Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // The UI font: every rem-sized text follows its size; the terminal has its own.
+        let ui_font = self.live.settings().appearance.ui_font.clone();
+        window.set_rem_size(look::rem_for(ui_font.size));
         let look = match self.active_tab() {
             Some(t) => t.read(cx).look().clone(),
             None => self.live.look_for(None).0,
@@ -2012,7 +2024,8 @@ impl Render for Workspace {
                 )
                 .child(body)
         };
-        root.track_focus(&self.focus)
+        root.when_some(ui_font.family, |d, f| d.font_family(f))
+            .track_focus(&self.focus)
             .capture_key_down(cx.listener(Self::shortcut))
             .when(self.dragging.is_some(), |d| {
                 d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {

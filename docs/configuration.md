@@ -30,8 +30,8 @@ the maximised state come back; the compositor chooses the position.
 
 **Settings** (**Ctrl+,**, **Cmd+,** on macOS, or *Settings…* in the palette)
 changes these without opening the file: theme, font, size, line height,
-cursor, scrollbar, padding, scrollback, what a dropped connection does, and
-whether the last tabs come back. Each change is written here at once, keeping
+cursor, scrollbar, padding, the app's own font and size, scrollback, what a
+dropped connection does, and whether the last tabs come back. Each change is written here at once, keeping
 your comments, and applies to the open tabs.
 
 ```toml
@@ -45,6 +45,9 @@ line_height = 1.3            # row height as a multiple of the font size
 cursor = { style = "block" } # "block", "bar" or "underline"
 scrollbar = "auto"           # "auto", "always" or "never"
 padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
+# The app's own text (tabs, host list, palette, panels, settings), not the
+# terminal's. No family: the system's interface font. Size 10 to 20, default 13.
+ui_font = { family = "Inter", size = 13 }
 
 [terminal]
 scrollback = 10000           # lines of history

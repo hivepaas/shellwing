@@ -60,6 +60,30 @@ pub struct Appearance {
     pub scrollbar: Scrollbar,
     /// Space between the text and the pane's edges, in pixels.
     pub padding: Padding,
+    /// The app's own text: tabs, the host list, the palette, panels, settings.
+    pub ui_font: UiFont,
+}
+
+/// The font of everything but the terminal.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct UiFont {
+    /// None: the system's interface font.
+    pub family: Option<String>,
+    /// The size of body text; the rest scales with it.
+    pub size: f32,
+}
+
+/// The UI font size everything was drawn at before it could be chosen.
+pub const UI_FONT_SIZE: f32 = 13.0;
+
+impl Default for UiFont {
+    fn default() -> Self {
+        UiFont {
+            family: None,
+            size: UI_FONT_SIZE,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize)]
@@ -84,6 +108,7 @@ impl Default for Appearance {
             cursor: Cursor::default(),
             scrollbar: Scrollbar::default(),
             padding: Padding::default(),
+            ui_font: UiFont::default(),
         }
     }
 }
@@ -169,12 +194,12 @@ impl Settings {
         a.line_height = a.line_height.clamp(1.0, 3.0);
         a.padding.x = a.padding.x.clamp(0.0, 64.0);
         a.padding.y = a.padding.y.clamp(0.0, 64.0);
-        if a.font
-            .family
-            .as_deref()
-            .is_some_and(|f| f.trim().is_empty())
-        {
-            a.font.family = None;
+        // Past 20 the fixed-height rows of the app run out of room.
+        a.ui_font.size = a.ui_font.size.clamp(10.0, 20.0);
+        for family in [&mut a.font.family, &mut a.ui_font.family] {
+            if family.as_deref().is_some_and(|f| f.trim().is_empty()) {
+                *family = None;
+            }
         }
         self.terminal.scrollback = self.terminal.scrollback.min(1_000_000);
         self
@@ -205,6 +230,7 @@ mod tests {
             cursor = { style = "bar" }
             scrollbar = "always"
             padding = { x = 100 }
+            ui_font = { family = "Inter", size = 40 }
             something_new = true
 
             [terminal]
@@ -221,6 +247,8 @@ mod tests {
         assert_eq!(s.appearance.cursor.style, CursorStyle::Bar);
         assert_eq!(s.appearance.scrollbar, Scrollbar::Always);
         assert_eq!(s.appearance.padding, Padding { x: 64.0, y: 4.0 });
+        assert_eq!(s.appearance.ui_font.family.as_deref(), Some("Inter"));
+        assert_eq!(s.appearance.ui_font.size, 20.0);
         assert_eq!(s.terminal.scrollback, 50_000);
         assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
     }
