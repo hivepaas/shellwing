@@ -1,0 +1,41 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+repository = "https://github.com/tiendc/shellwing"
+publish = false
+
+[workspace.dependencies]
+shellwing-term = { path = "crates/term" }
+shellwing-ssh = { path = "crates/ssh" }
+# GPUI as published by Longbridge (the same snapshot tern and gpui-kit use).
+gpui = { package = "gpui-pre", version = "=0.3.8" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.8", default-features = false, features = ["font-kit", "wayland", "runtime_shaders"] }
+# Master tracks Zig 0.16; the 0.2.2 release still needs Zig 0.15.
+libghostty-vt = { git = "https://github.com/uzaaft/libghostty-rs", branch = "master" }
+russh = "0.64"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
+async-channel = "2"
+anyhow = "1"
+thiserror = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+dbg_macro = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
+
+# Dependencies optimised in dev builds too, so the terminal is usable while developing.
+[profile.dev.package."*"]
+opt-level = 2

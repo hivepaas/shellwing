@@ -1,0 +1,23 @@
+[package]
+name = "shellwing"
+description = "Native SSH client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "shellwing"
+path = "src/main.rs"
+
+[dependencies]
+shellwing-term.workspace = true
+shellwing-ssh.workspace = true
+gpui.workspace = true
+gpui_platform.workspace = true
+tokio.workspace = true
+async-channel.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true
