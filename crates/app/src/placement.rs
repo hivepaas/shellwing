@@ -58,6 +58,8 @@ pub fn state(bounds: WindowBounds) -> WindowState {
         width: f32::from(b.size.width),
         height: f32::from(b.size.height),
         mode,
+        sidebar_width: None,
+        sidebar_collapsed: false,
     }
 }
 

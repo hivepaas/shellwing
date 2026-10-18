@@ -20,7 +20,8 @@ How the files behave:
 - **Unknown keys are ignored**, so a file written by a newer version still loads.
 
 The `state/` folder holds what shellwing remembers by itself, such as the window's
-size, place and maximised state (`state/window.json`) and the hosts opened lately
+size, place and maximised state, and the host list's width and fold
+(`state/window.json`) and the hosts opened lately
 (`state/recent.json`, shown in the palette), and the tabs and panes that were open
 (`state/session.json`, opened again by `restore_tabs`). It is not meant for
 editing, and deleting it only forgets those things. On Wayland only the size and
@@ -164,6 +165,12 @@ palette, or *+ New group…* in a host's Group list (made when the host is saved
 Hovering a group's header shows *Edit*: its name, color and the theme of its
 hosts. Renaming a group takes its hosts along; deleting one keeps its hosts,
 without a group.
+
+The host list's right edge can be dragged (200 to 480 px; a double-click goes
+back to 248). The button at the right of *HOSTS* folds it to a rail of host
+tiles (initials, color, status; hover for the name, click to connect), with a
+button to unfold it and one to find a host in the palette. **Ctrl+Shift+B**
+still hides the host list altogether.
 
 The host list's filter matches every word typed against a host's name, alias,
 address, user and tags; **Enter** opens the first host shown, **Esc** clears it.
