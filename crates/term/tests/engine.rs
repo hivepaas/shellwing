@@ -423,3 +423,21 @@ fn resetting_modes_leaves_a_forgotten_alternate_screen() {
         "the shell's screen is back"
     );
 }
+
+#[test]
+fn the_scroll_position_follows_history() {
+    let h = harness();
+    let lines: String = (0..30).map(|i| format!("line {i}\r\n")).collect();
+    h.term.feed(lines.into_bytes());
+    let f = h.frame_where(|f| f.scroll.total >= 30);
+    assert_eq!(f.scroll.len, 5);
+    assert_eq!(
+        f.scroll.offset,
+        f.scroll.total - f.scroll.len,
+        "at the bottom"
+    );
+    h.term.scroll_to(0);
+    let f = h.frame_where(|f| f.scroll.offset == 0);
+    assert!(f.scrolled_back);
+    assert_eq!(Harness::row_text(&f, 0), "line 0");
+}

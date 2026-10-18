@@ -19,14 +19,14 @@ use gpui::{
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
     Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
-    Rgb, Row, TermHandle,
+    Rgb, Row, ScrollPos, TermHandle,
 };
 
 use crate::Writer;
 use crate::bench::Probe;
 use crate::look::{Look, rgb as theme_rgb};
 use crate::session::{Session, Status};
-use shellwing_config::OnDisconnect;
+use shellwing_config::{OnDisconnect, Scrollbar};
 
 fn capitalize(s: &str) -> String {
     let mut c = s.chars();
@@ -80,6 +80,33 @@ const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 const ZOOM_NOTICE: Duration = Duration::from_secs(2);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
+/// The scrollbar stays this long after scrolling stops (with `scrollbar = "auto"`).
+const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
+/// The pointer this close to the right edge shows the scrollbar.
+const SCROLLBAR_ZONE: f32 = 14.;
+const SCROLLBAR_MIN_THUMB: f32 = 24.;
+
+/// The scrollbar thumb's top and height in a track `track` px tall, or None
+/// when everything fits (no history, or the alternate screen).
+fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
+    if pos.total <= pos.len || track <= 0. {
+        return None;
+    }
+    let h = (track * pos.len as f32 / pos.total as f32)
+        .max(SCROLLBAR_MIN_THUMB)
+        .min(track);
+    let top = (track - h) * pos.offset as f32 / (pos.total - pos.len) as f32;
+    Some((top, h))
+}
+
+/// The first history row to show with the thumb's top at `top`.
+fn row_for_thumb(pos: ScrollPos, track: f32, top: f32) -> usize {
+    let Some((_, h)) = thumb(pos, track) else {
+        return 0;
+    };
+    let room = (track - h).max(1.);
+    ((top.clamp(0., room) / room) * (pos.total - pos.len) as f32).round() as usize
+}
 /// Longest side of the gradient image. The GPU stretches it with linear
 /// filtering, which keeps a gradient smooth, so only its aspect ratio matters.
 const GRADIENT_SIZE: f32 = 256.0;
@@ -209,6 +236,12 @@ pub struct TermView {
     gradient: Rc<RefCell<Option<GradientImage>>>,
     /// The session's status change last handled.
     last_change: u64,
+    /// Until when the scrollbar shows after scrolling.
+    scrollbar_until: Option<Instant>,
+    /// The pointer is at the right edge.
+    scrollbar_hover: bool,
+    /// Dragging the thumb: where in it the press was, in px from its top.
+    scrollbar_grab: Option<f32>,
     /// When the next automatic reconnect happens, if one is planned.
     retry_at: Option<Instant>,
     /// Automatic reconnects since the last successful connection.
@@ -272,6 +305,9 @@ impl TermView {
             zoom: 0.,
             gradient: Rc::new(RefCell::new(None)),
             last_change: 0,
+            scrollbar_until: None,
+            scrollbar_hover: false,
+            scrollbar_grab: None,
             retry_at: None,
             retries: 0,
             retry_plan: 0,
@@ -722,7 +758,11 @@ impl TermView {
         });
     }
 
-    fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, _: &mut Context<Self>) {
+    fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
+        if self.scrollbar_grab.take().is_some() {
+            self.reveal_scrollbar(cx);
+            return;
+        }
         let (x, y) = self.grid_pos(e.position);
         let button = term_button(e.button);
         self.term.mouse(MouseInput {
@@ -735,8 +775,19 @@ impl TermView {
         });
     }
 
-    fn mouse_move(&mut self, e: &MouseMoveEvent, _: &mut Window, _: &mut Context<Self>) {
+    fn mouse_move(&mut self, e: &MouseMoveEvent, _: &mut Window, cx: &mut Context<Self>) {
         let (x, y) = self.grid_pos(e.position);
+        if let Some(grab) = self.scrollbar_grab {
+            let pos = self.frame.scroll;
+            let track = f32::from(self.area.get().height);
+            self.term.scroll_to(row_for_thumb(pos, track, y - grab));
+            return;
+        }
+        let hover = x >= f32::from(self.area.get().width) - SCROLLBAR_ZONE;
+        if hover != self.scrollbar_hover {
+            self.scrollbar_hover = hover;
+            cx.notify();
+        }
         self.last_mouse = Some((x, y));
         if link_mod(&e.modifiers) {
             self.term.hover(Some((x, y)));
@@ -769,7 +820,80 @@ impl TermView {
         }
     }
 
-    fn scroll_wheel(&mut self, e: &ScrollWheelEvent, _: &mut Window, _: &mut Context<Self>) {
+    /// Shows the scrollbar for a moment (it hides again by itself).
+    fn reveal_scrollbar(&mut self, cx: &mut Context<Self>) {
+        let until = Instant::now() + SCROLLBAR_LINGER;
+        self.scrollbar_until = Some(until);
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            cx.background_executor()
+                .timer(SCROLLBAR_LINGER + Duration::from_millis(20))
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                if v.scrollbar_until == Some(until) {
+                    v.scrollbar_until = None;
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// The overlay scrollbar: a thumb to drag, a track to page through.
+    fn scrollbar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let pos = self.frame.scroll;
+        let track = f32::from(self.area.get().height);
+        let (top, h) = thumb(pos, track)?;
+        let active = self.scrollbar_grab.is_some() || self.scrollbar_hover;
+        let shown = match self.look.scrollbar {
+            Scrollbar::Never => false,
+            Scrollbar::Always => true,
+            Scrollbar::Auto => active || self.scrollbar_until.is_some_and(|u| Instant::now() < u),
+        };
+        if !shown {
+            return None;
+        }
+        let origin_y = self.grid_origin.get().y;
+        Some(
+            div()
+                .id("scrollbar")
+                .absolute()
+                .top_0()
+                .right_0()
+                .h_full()
+                .w(px(SCROLLBAR_ZONE))
+                .when(active, |d| d.bg(gpui::rgba(0xffffff0d)))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |v, e: &MouseDownEvent, _, cx| {
+                        cx.stop_propagation();
+                        let y = f32::from(e.position.y - origin_y);
+                        if (top..top + h).contains(&y) {
+                            v.scrollbar_grab = Some(y - top);
+                        } else {
+                            v.term.scroll_pages(if y < top { -1 } else { 1 });
+                            v.reveal_scrollbar(cx);
+                        }
+                        cx.notify();
+                    }),
+                )
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(top))
+                        .right(px(3.))
+                        .h(px(h))
+                        .w(px(if active { 8. } else { 5. }))
+                        .rounded_full()
+                        .bg(gpui::rgba(if active { 0xffffff8c } else { 0xffffff59 })),
+                )
+                .into_any_element(),
+        )
+    }
+
+    fn scroll_wheel(&mut self, e: &ScrollWheelEvent, _: &mut Window, cx: &mut Context<Self>) {
+        // Without history (the alternate screen) there is no scrollbar to show.
+        self.reveal_scrollbar(cx);
         // GPUI reports positive y when scrolling up; the terminal wants negative for up.
         let lines = match e.delta {
             ScrollDelta::Lines(p) => -p.y * WHEEL_LINES,
@@ -853,10 +977,12 @@ impl TermView {
             }
             "pageup" | "pagedown" if m.shift => {
                 self.term.scroll_pages(if key == "pageup" { -1 } else { 1 });
+                self.reveal_scrollbar(cx);
                 return cx.stop_propagation();
             }
             "end" if m.shift => {
                 self.term.scroll_to_bottom();
+                self.reveal_scrollbar(cx);
                 return cx.stop_propagation();
             }
             _ => {}
@@ -936,10 +1062,18 @@ impl Render for TermView {
         let area = self.area.clone();
 
         let mut terminal = div()
+            .id("terminal")
             .relative()
             .flex_1()
             .w_full()
             .overflow_hidden()
+            // Leaving at the right edge must not leave the scrollbar shown.
+            .on_hover(cx.listener(|v, hovered: &bool, _, cx| {
+                if !hovered && v.scrollbar_hover {
+                    v.scrollbar_hover = false;
+                    cx.notify();
+                }
+            }))
             .bg(bg)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
@@ -1078,6 +1212,9 @@ impl Render for TermView {
         if let Some(n) = &self.notice {
             terminal = terminal.child(badge().top_3().child(n.clone()));
         }
+        if let Some(s) = self.scrollbar(cx) {
+            terminal = terminal.child(s);
+        }
         if let Some(b) = self.banner(cx) {
             terminal = terminal.child(b);
         } else if self.frame.scrolled_back {
@@ -1192,5 +1329,37 @@ impl EntityInputHandler for TermView {
         _: &mut Context<Self>,
     ) -> Option<usize> {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pos(total: u64, offset: u64, len: u64) -> ScrollPos {
+        ScrollPos { total, offset, len }
+    }
+
+    #[test]
+    fn thumb_matches_the_viewport() {
+        // 100 rows, 25 shown, at the bottom of a 400 px track.
+        assert_eq!(thumb(pos(100, 75, 25), 400.), Some((300., 100.)));
+        assert_eq!(thumb(pos(100, 0, 25), 400.), Some((0., 100.)));
+        // Long history: the thumb keeps a size you can grab.
+        assert_eq!(
+            thumb(pos(100_000, 0, 25), 400.).map(|t| t.1),
+            Some(SCROLLBAR_MIN_THUMB)
+        );
+        // Nothing to scroll.
+        assert_eq!(thumb(pos(25, 0, 25), 400.), None);
+    }
+
+    #[test]
+    fn dragging_the_thumb_picks_the_row() {
+        let p = pos(100, 75, 25);
+        assert_eq!(row_for_thumb(p, 400., 0.), 0);
+        assert_eq!(row_for_thumb(p, 400., 150.), 38);
+        assert_eq!(row_for_thumb(p, 400., 300.), 75);
+        assert_eq!(row_for_thumb(p, 400., 900.), 75, "clamped at the bottom");
     }
 }

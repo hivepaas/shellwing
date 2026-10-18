@@ -37,6 +37,7 @@ theme = "neon-nebula"        # a theme id or name, see below; default "default-s
 font = { family = "JetBrains Mono", size = 14 }
 line_height = 1.3            # row height as a multiple of the font size
 cursor = { style = "block" } # "block", "bar" or "underline"
+scrollbar = "auto"           # "auto", "always" or "never"
 
 [terminal]
 scrollback = 10000           # lines of history
@@ -56,6 +57,11 @@ again (<kbd>Enter</kbd>):
 
 Reconnecting keeps the scrollback and resets modes a program left on (the
 alternate screen, mouse reporting).
+
+The scrollbar floats over the right edge, so it takes no column. With `auto` it
+shows while you scroll (wheel, <kbd>Shift</kbd>+<kbd>PageUp</kbd>) and while the
+pointer is at the right edge; drag the thumb to jump, click the track to page.
+Full-screen programs (vim, htop) have no history, so they get none.
 
 Fonts:
 
