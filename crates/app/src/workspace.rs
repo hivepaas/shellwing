@@ -17,6 +17,7 @@ use tokio::runtime::Handle;
 
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
+use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{self, Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
@@ -104,6 +105,8 @@ pub struct Workspace {
     asking: Option<Asking>,
     /// The host editor drawer, while open.
     editor: Option<(Entity<HostEditor>, Subscription)>,
+    /// The group editor drawer, while open.
+    group_editor: Option<(Entity<GroupEditor>, Subscription)>,
     /// The settings page, while open, and the fonts it offers.
     settings: Option<(Entity<SettingsView>, Subscription)>,
     /// Code fonts, the default terminal font, and every installed font.
@@ -191,6 +194,7 @@ impl Workspace {
             sync_error: None,
             asking: None,
             editor: None,
+            group_editor: None,
             settings: None,
             fonts: (vec![], String::new(), vec![]),
         };
@@ -673,6 +677,7 @@ impl Workspace {
             },
         );
         action(Action::NewHost, "New host…".into(), String::new());
+        action(Action::NewGroup, "New group…".into(), String::new());
         if let Some(target) = self.active_tab().map(|t| {
             let s = t.read(cx).session();
             match &s.entry {
@@ -1015,6 +1020,60 @@ impl Workspace {
         cx.notify();
     }
 
+    /// Opens the group editor on the group named `name`, or on a new one.
+    pub fn edit_group(
+        &mut self,
+        name: Option<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.assign_host_ids()
+        {
+            self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx);
+            return;
+        }
+        self.poll_config(cx);
+        let hosts = self.live.hosts().clone();
+        let group = name.and_then(|n| hosts.groups.iter().find(|g| g.name == n).cloned());
+        let themes = self
+            .live
+            .themes()
+            .all()
+            .iter()
+            .map(|t| (t.id.clone(), t.name.clone()))
+            .collect();
+        let store = self.live.store().cloned();
+        let editor = cx.new(|cx| GroupEditor::new(store, hosts, themes, group, cx));
+        let sub = cx.subscribe_in(&editor, window, |ws, _, ev: &GroupEvent, window, cx| {
+            let said = match ev {
+                GroupEvent::Close => None,
+                GroupEvent::Saved { name } => Some(format!("Saved the group {name}.")),
+                GroupEvent::Deleted { name } => Some(format!("Deleted the group {name}.")),
+            };
+            ws.close_group_editor(window, cx);
+            if let Some(msg) = said {
+                ws.poll_config(cx);
+                ws.sync.now();
+                ws.say(msg, THEME_NOTICE, cx);
+            }
+        });
+        let first = editor.read(cx).first_focus(cx);
+        self.group_editor = Some((editor, sub));
+        window.focus(&first, cx);
+        cx.notify();
+    }
+
+    fn close_group_editor(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.group_editor.take().is_some() {
+            self.activate(self.active, window, cx);
+            cx.notify();
+        }
+    }
+
     fn close_editor(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.editor.take().is_some() {
             self.activate(self.active, window, cx);
@@ -1314,6 +1373,7 @@ impl Workspace {
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
+            Action::NewGroup => self.edit_group(None, window, cx),
             Action::Settings => self.open_settings(Page::Appearance, window, cx),
             Action::EditHost(target) => self.edit_host(target, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
@@ -1756,6 +1816,7 @@ impl Workspace {
             sections.push(Section {
                 title: "Favorites".into(),
                 note: SharedString::default(),
+                group: None,
                 rows: favorites,
             });
         }
@@ -1766,13 +1827,13 @@ impl Workspace {
                 .filter(|h| h.group.as_deref() == Some(g.name.as_str()))
                 .map(row)
                 .collect();
-            if !rows.is_empty() {
-                sections.push(Section {
-                    title: g.name.clone().into(),
-                    note: rows.len().to_string().into(),
-                    rows,
-                });
-            }
+            // Shown even when empty: a new group is there to put hosts in.
+            sections.push(Section {
+                title: g.name.clone().into(),
+                note: rows.len().to_string().into(),
+                group: Some(g.name.clone()),
+                rows,
+            });
         }
         let loose: Vec<Row> = hosts
             .hosts
@@ -1784,6 +1845,7 @@ impl Workspace {
             sections.push(Section {
                 title: "Hosts".into(),
                 note: loose.len().to_string().into(),
+                group: None,
                 rows: loose,
             });
         }
@@ -1804,6 +1866,7 @@ impl Workspace {
             sections.push(Section {
                 title: "~/.ssh/config".into(),
                 note: "read only".into(),
+                group: None,
                 rows: aliases,
             });
         }
@@ -2074,6 +2137,41 @@ impl Render for Workspace {
                         ),
                 )
             })
+            .when_some(
+                self.group_editor.as_ref().map(|(e, _)| e.clone()),
+                |d, e| {
+                    let quiet = e.clone();
+                    d.child(
+                        div()
+                            .id("group-editor-backdrop")
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full()
+                            .bg(rgba(0x03060c8c))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |ws, _, window, cx| {
+                                    if quiet.read(cx).can_close_quietly(cx) {
+                                        ws.close_group_editor(window, cx);
+                                    }
+                                }),
+                            )
+                            .child(
+                                div()
+                                    .absolute()
+                                    .top_0()
+                                    .right_0()
+                                    .h_full()
+                                    .w(px(host_editor::WIDTH))
+                                    .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                        cx.stop_propagation()
+                                    })
+                                    .child(e),
+                            ),
+                    )
+                },
+            )
             .when_some(self.settings.as_ref().map(|(s, _)| s.clone()), |d, s| {
                 d.child(
                     div()
