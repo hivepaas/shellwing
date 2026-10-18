@@ -20,7 +20,8 @@ How the files behave:
 - **Unknown keys are ignored**, so a file written by a newer version still loads.
 
 The `state/` folder holds what shellwing remembers by itself, such as the window's
-size, place and maximised state (`state/window.json`). It is not meant for
+size, place and maximised state (`state/window.json`) and the hosts opened lately
+(`state/recent.json`, shown in the palette). It is not meant for
 editing, and deleting it only forgets those things. On Wayland only the size and
 the maximised state come back; the compositor chooses the position.
 
@@ -51,10 +52,12 @@ only that key, so your comments and layout stay as you wrote them.
 
 ## Themes
 
-**Changing the theme.** <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>]</kbd> and
+**Changing the theme.** In the palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>,
+<kbd>Cmd</kbd>+<kbd>K</kbd> on macOS), *Change theme…* lists every theme and previews
+the one highlighted; Enter keeps it. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>]</kbd> and
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>[</kbd> (<kbd>Cmd</kbd>+<kbd>]</kbd> and
 <kbd>Cmd</kbd>+<kbd>[</kbd> on macOS) step through the themes and save the
-choice to `config.toml`. They stand in until the theme picker arrives.
+choice to `config.toml` without opening the list.
 
 **Built in.**
 

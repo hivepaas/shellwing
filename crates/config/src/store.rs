@@ -16,6 +16,8 @@ const THEMES: &str = "themes";
 /// Machine-written files that never sync.
 const STATE: &str = "state";
 const WINDOW: &str = "window.json";
+const RECENT: &str = "recent.json";
+const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -193,15 +195,83 @@ impl Store {
     /// The window's last size and place (`state/window.json`). A missing or
     /// unreadable file is simply no saved state: the app writes it, not people.
     pub fn window_state(&self) -> Option<WindowState> {
-        let text = fs::read_to_string(self.dir.join(STATE).join(WINDOW)).ok()?;
-        serde_json::from_str(&text).ok()
+        self.load_state(WINDOW)
     }
 
     pub fn save_window_state(&self, state: &WindowState) -> io::Result<()> {
-        let json = serde_json::to_string_pretty(state).map_err(io::Error::other)?;
-        write_atomic(&self.dir.join(STATE).join(WINDOW), &(json + "\n"))
+        self.save_state(WINDOW, state)
+    }
+
+    /// Hosts opened lately, most recent first (`state/recent.json`).
+    pub fn recent(&self) -> Vec<String> {
+        self.load_state(RECENT).unwrap_or_default()
+    }
+
+    /// Puts `spec` first in the recent list, keeping it short.
+    pub fn add_recent(&self, spec: &str) -> io::Result<()> {
+        let mut recent = self.recent();
+        recent.retain(|r| r != spec);
+        recent.insert(0, spec.to_string());
+        recent.truncate(MAX_RECENT);
+        self.save_state(RECENT, &recent)
+    }
+
+    fn load_state<T: DeserializeOwned>(&self, file: &str) -> Option<T> {
+        let text = fs::read_to_string(self.dir.join(STATE).join(file)).ok()?;
+        serde_json::from_str(&text).ok()
+    }
+
+    fn save_state<T: serde::Serialize>(&self, file: &str, value: &T) -> io::Result<()> {
+        let json = serde_json::to_string_pretty(value).map_err(io::Error::other)?;
+        write_atomic(&self.dir.join(STATE).join(file), &(json + "\n"))
+    }
+
+    /// The path of `config.toml` or `hosts.toml`, creating it with a short
+    /// commented example first if it does not exist, so it can be opened in an
+    /// editor.
+    pub fn file_for_editing(&self, which: EditFile) -> io::Result<PathBuf> {
+        let (name, example) = match which {
+            EditFile::Settings => (SETTINGS, SETTINGS_EXAMPLE),
+            EditFile::Hosts => (HOSTS, HOSTS_EXAMPLE),
+        };
+        let path = self.dir.join(name);
+        if !path.exists() {
+            write_atomic(&path, example)?;
+        }
+        Ok(path)
     }
 }
+
+/// A file people edit, for [`Store::file_for_editing`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EditFile {
+    Settings,
+    Hosts,
+}
+
+const SETTINGS_EXAMPLE: &str = "# shellwing settings. Every key is optional; edits apply while running.\n\
+# [appearance]\n\
+# theme = \"neon-nebula\"\n\
+# font = { family = \"JetBrains Mono\", size = 14 }\n\
+# line_height = 1.3\n\
+# cursor = { style = \"block\" }   # block, bar or underline\n\
+#\n\
+# [terminal]\n\
+# scrollback = 10000\n";
+
+const HOSTS_EXAMPLE: &str = "# Hosts for shellwing; `shellwing <name or alias>` connects.\n\
+# [[group]]\n\
+# name = \"Production\"\n\
+#\n\
+# [[host]]\n\
+# name = \"api-1\"\n\
+# alias = \"api1\"\n\
+# address = \"10.0.1.11\"\n\
+# user = \"deploy\"\n\
+# port = 22\n\
+# group = \"Production\"\n\
+# jump = [\"bastion\"]\n\
+# theme = \"nord\"\n";
 
 /// Writes next to `path`, then renames over it: a crash leaves either the old
 /// file or the new one, never half of one.
@@ -343,6 +413,34 @@ mod tests {
         assert_eq!(s.window_state(), Some(w));
         fs::write(s.dir().join(STATE).join(WINDOW), "{ not json").expect("write");
         assert_eq!(s.window_state(), None);
+    }
+
+    #[test]
+    fn recent_hosts_come_first_once() {
+        let s = temp("recent");
+        assert!(s.recent().is_empty());
+        for spec in ["a", "b", "a", "c"] {
+            s.add_recent(spec).expect("add");
+        }
+        assert_eq!(s.recent(), ["c", "a", "b"]);
+        for i in 0..20 {
+            s.add_recent(&format!("h{i}")).expect("add");
+        }
+        assert_eq!(s.recent().len(), MAX_RECENT);
+    }
+
+    #[test]
+    fn files_for_editing_start_as_valid_examples() {
+        let s = temp("examples");
+        let path = s.file_for_editing(EditFile::Settings).expect("settings");
+        assert!(path.exists());
+        assert_eq!(s.settings().expect("parses"), Settings::default());
+        s.file_for_editing(EditFile::Hosts).expect("hosts");
+        assert_eq!(s.hosts().expect("parses"), Hosts::default());
+        // An existing file is left alone.
+        fs::write(&path, "[appearance]\ntheme = \"nord\"\n").expect("write");
+        s.file_for_editing(EditFile::Settings).expect("again");
+        assert_eq!(s.settings().expect("load").appearance.theme, "nord");
     }
 
     #[test]

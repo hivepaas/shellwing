@@ -28,6 +28,7 @@ gpui_platform.workspace = true
 tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
+unicode-segmentation = "1"
 
 [dev-dependencies]
 toml = "1"

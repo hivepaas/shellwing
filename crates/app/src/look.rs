@@ -139,13 +139,41 @@ impl Live {
             .map(|t| t.id.clone())
             .unwrap_or_default();
         let next = self.themes.step(&current, step);
+        self.save_theme(&next.id)?;
+        Ok(next)
+    }
+
+    /// Sets `config.toml`'s theme to `id` and saves it.
+    pub fn set_theme(&mut self, id: &str) -> Result<Arc<Theme>, String> {
+        let theme = self
+            .themes
+            .find(id)
+            .cloned()
+            .ok_or_else(|| format!("Theme `{id}` not found."))?;
+        self.save_theme(&theme.id)?;
+        Ok(theme)
+    }
+
+    fn save_theme(&mut self, id: &str) -> Result<(), String> {
         let store = self
             .store
             .as_ref()
             .ok_or("No config directory to save to.")?;
-        store.set_theme(&next.id).map_err(|e| e.to_string())?;
+        store.set_theme(id).map_err(|e| e.to_string())?;
         self.load();
-        Ok(next)
+        Ok(())
+    }
+
+    pub fn themes(&self) -> &Themes {
+        &self.themes
+    }
+
+    /// Whether the `hosts.toml` entry `host` sets a theme of its own (directly or
+    /// through its group), which the app theme does not change.
+    pub fn host_theme(&self, host: Option<&str>) -> Option<&str> {
+        let h = self.hosts.find(host?)?;
+        let t = theme_for(&self.settings, &self.hosts, Some(h));
+        (t != self.settings.appearance.theme).then_some(t)
     }
 }
 

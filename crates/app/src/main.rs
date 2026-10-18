@@ -13,7 +13,9 @@
 
 mod bench;
 mod chrome;
+mod input;
 mod look;
+mod palette;
 mod placement;
 mod session;
 mod sidebar;
