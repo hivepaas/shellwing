@@ -6,15 +6,16 @@ use std::time::Duration;
 
 use gpui::{
     AnyElement, Context, Div, ElementId, Entity, FocusHandle, Focusable, Hsla, KeyDownEvent,
-    MouseButton, Render, SharedString, Window, div, prelude::*, px, rgb,
+    MouseButton, Render, SharedString, Subscription, Window, div, prelude::*, px, rgb, rgba,
 };
-use shellwing_config::{Host, WindowState};
+use shellwing_config::{EditFile, Host, WindowState};
 use shellwing_ssh::config as ssh_config;
 use tokio::runtime::Handle;
 
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
 use crate::look::{Live, rgb as theme_rgb};
+use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::session::{Session, Status};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::target;
@@ -31,6 +32,7 @@ const DIM: u32 = 0xb6c0cf;
 /// Keyboard shortcuts that concern the whole window.
 #[derive(Debug, PartialEq, Eq)]
 enum Shortcut {
+    Palette,
     NewTab,
     CloseTab,
     Step(isize),
@@ -53,6 +55,9 @@ pub struct Workspace {
     bench: Option<(String, Arc<Probe>)>,
     /// Shown in place of the terminal while no tab is open.
     notice: Option<SharedString>,
+    /// The open palette, and whether it is picking a theme (whose preview must
+    /// be undone if nothing is picked).
+    palette: Option<(Entity<Palette>, Subscription, bool)>,
     /// The window's size and place, waiting to be saved, and which change it is.
     unsaved_bounds: Option<WindowState>,
     bounds_change: u64,
@@ -80,6 +85,7 @@ impl Workspace {
             rt,
             bench,
             notice: None,
+            palette: None,
             unsaved_bounds: None,
             bounds_change: 0,
         };
@@ -121,6 +127,11 @@ impl Workspace {
                 return;
             }
         };
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.add_recent(spec)
+        {
+            eprintln!("cannot save the recent hosts: {e}");
+        }
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
         // Tab and host list dots follow the session's status.
         cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| ws.refresh_sidebar(cx))
@@ -174,6 +185,202 @@ impl Workspace {
             None => {
                 self.notice = Some("Choose a host on the left to connect.".into());
                 cx.notify();
+            }
+        }
+    }
+
+    /// What the palette offers: hosts, recent connections, then actions.
+    fn palette_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
+        let mut entries = vec![];
+        let mut specs = vec![];
+        for section in self.sidebar_sections(cx) {
+            for r in section.rows {
+                specs.push(r.spec.clone());
+                entries.push(
+                    Entry::new(Kind::Host(r.spec), "Hosts", r.name)
+                        .detail(if r.detail.is_empty() {
+                            section.title.clone()
+                        } else {
+                            format!("{} · {}", r.detail, section.title).into()
+                        })
+                        .status(r.status)
+                        .hint("Enter"),
+                );
+            }
+        }
+        for spec in self.live.store().map(|s| s.recent()).unwrap_or_default() {
+            if !specs.contains(&spec) {
+                entries.push(Entry::new(Kind::Recent(spec.clone()), "Recent", spec).hint("Enter"));
+            }
+        }
+        let (chord, alt) = if cfg!(target_os = "macos") {
+            ("Cmd", "Cmd")
+        } else {
+            ("Ctrl+Shift", "Ctrl+Shift")
+        };
+        let mut action = |a: Action, title: String, keys: String| {
+            entries.push(Entry::new(Kind::Action(a), "Actions", title).hint(keys));
+        };
+        if let Some(t) = self.active_tab() {
+            let title = t.read(cx).session().title.clone();
+            action(
+                Action::Duplicate,
+                format!("Another tab to {title}"),
+                String::new(),
+            );
+            action(
+                Action::CloseTab,
+                "Close the tab".into(),
+                format!("{chord}+W"),
+            );
+        }
+        action(
+            Action::ChangeTheme,
+            "Change theme…".into(),
+            format!("{alt}+] / ["),
+        );
+        action(
+            Action::ToggleHosts,
+            if self.show_sidebar {
+                "Hide the host list".into()
+            } else {
+                "Show the host list".into()
+            },
+            format!("{chord}+B"),
+        );
+        action(Action::EditHosts, "Edit hosts.toml".into(), String::new());
+        action(
+            Action::EditSettings,
+            "Edit config.toml".into(),
+            String::new(),
+        );
+        entries
+    }
+
+    fn open_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let entries = self.palette_entries(cx);
+        let palette = cx.new(|cx| Palette::connect(entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    fn open_theme_picker(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let entry = self
+            .active_tab()
+            .and_then(|t| t.read(cx).session().entry.clone());
+        if let Some(t) = self.live.host_theme(entry.as_deref()) {
+            let msg = format!("This host uses the theme `{t}` from hosts.toml; change it there.");
+            self.say(msg, CONFIG_NOTICE, cx);
+            return;
+        }
+        let current = self.live.look_for(None).0.theme.id.clone();
+        let entries = self
+            .live
+            .themes()
+            .all()
+            .iter()
+            .map(|t| {
+                Entry::new(Kind::Theme(t.id.clone()), "Themes", t.name.clone()).detail(
+                    if t.gradient.is_some() {
+                        "gradient"
+                    } else {
+                        "solid"
+                    },
+                )
+            })
+            .collect();
+        let palette = cx.new(|cx| Palette::themes(entries, &current, cx));
+        self.show_palette(palette, true, window, cx);
+    }
+
+    fn show_palette(
+        &mut self,
+        palette: Entity<Palette>,
+        themes: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let sub = cx.subscribe_in(&palette, window, Self::on_palette);
+        window.focus(&palette.focus_handle(cx), cx);
+        self.palette = Some((palette, sub, themes));
+        cx.notify();
+    }
+
+    fn close_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some((_, _, themes)) = self.palette.take()
+            && themes
+        {
+            // Undo the preview.
+            self.restyle(cx);
+        }
+        self.activate(self.active, window, cx);
+    }
+
+    fn on_palette(
+        &mut self,
+        _: &Entity<Palette>,
+        ev: &PaletteEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match ev {
+            PaletteEvent::Dismiss => self.close_palette(window, cx),
+            PaletteEvent::Open(spec) => {
+                let spec = spec.clone();
+                self.close_palette(window, cx);
+                self.open(&spec, window, cx);
+            }
+            PaletteEvent::Act(a) => {
+                self.close_palette(window, cx);
+                self.run(a.clone(), window, cx);
+            }
+            PaletteEvent::Preview(id) => {
+                if let (Some(tab), Some(theme)) = (
+                    self.active_tab().cloned(),
+                    self.live.themes().find(id).cloned(),
+                ) {
+                    tab.update(cx, |v, cx| {
+                        let mut look = v.look().clone();
+                        look.theme = theme;
+                        v.set_look(look, cx);
+                    });
+                }
+            }
+            PaletteEvent::Pick(id) => {
+                let picked = self.live.set_theme(id);
+                self.close_palette(window, cx);
+                match picked {
+                    Ok(t) => {
+                        self.restyle(cx);
+                        self.say(format!("Theme: {}", t.name), THEME_NOTICE, cx);
+                    }
+                    Err(e) => self.say(e, CONFIG_NOTICE, cx),
+                }
+            }
+        }
+    }
+
+    fn run(&mut self, a: Action, window: &mut Window, cx: &mut Context<Self>) {
+        match a {
+            Action::Duplicate => self.duplicate(window, cx),
+            Action::CloseTab => self.close(self.active, window, cx),
+            Action::ChangeTheme => self.open_theme_picker(window, cx),
+            Action::ToggleHosts => {
+                self.show_sidebar = !self.show_sidebar;
+                cx.notify();
+            }
+            Action::EditHosts | Action::EditSettings => {
+                let which = if a == Action::EditHosts {
+                    EditFile::Hosts
+                } else {
+                    EditFile::Settings
+                };
+                match self.live.store().map(|s| s.file_for_editing(which)) {
+                    Some(Ok(path)) => cx.open_url(&format!("file://{}", path.display())),
+                    Some(Err(e)) => {
+                        self.say(format!("Cannot create the file: {e}"), CONFIG_NOTICE, cx)
+                    }
+                    None => self.say("No config directory.".into(), CONFIG_NOTICE, cx),
+                }
             }
         }
     }
@@ -283,7 +490,9 @@ impl Workspace {
         } else {
             m.alt && !m.control && !m.platform
         };
+        // Ctrl+K alone is the shell's kill-line, so the palette takes Ctrl+Shift+K.
         Some(match key {
+            "k" if chord => Shortcut::Palette,
             "t" if chord => Shortcut::NewTab,
             "w" if chord => Shortcut::CloseTab,
             "b" if chord => Shortcut::Sidebar,
@@ -309,8 +518,18 @@ impl Workspace {
             return;
         };
         cx.stop_propagation();
+        // Any other window shortcut leaves the palette first.
+        if self.palette.is_some() && !matches!(s, Shortcut::Palette | Shortcut::NewTab) {
+            self.close_palette(window, cx);
+        }
         match s {
-            Shortcut::NewTab => self.duplicate(window, cx),
+            Shortcut::Palette | Shortcut::NewTab => {
+                if self.palette.is_some() {
+                    self.close_palette(window, cx);
+                } else {
+                    self.open_palette(window, cx);
+                }
+            }
             Shortcut::CloseTab => self.close(self.active, window, cx),
             Shortcut::Step(by) => self.step(by, window, cx),
             Shortcut::Goto(ix) => {
@@ -409,7 +628,7 @@ impl Workspace {
                 .cursor_pointer()
                 .hover(|s| s.text_color(rgb(TEXT)))
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .on_click(cx.listener(|ws, _, window, cx| ws.duplicate(window, cx)))
+                .on_click(cx.listener(|ws, _, window, cx| ws.open_palette(window, cx)))
                 .child("+"),
         )
     }
@@ -510,18 +729,25 @@ impl Workspace {
                     .text_lg()
                     .child("Choose a host on the left to connect"),
             )
-            .child(
-                div()
-                    .text_color(rgb(MUTED))
-                    .child("or start with: shellwing user@host"),
-            )
+            .child(div().text_color(rgb(MUTED)).child(format!(
+                "or press {} to find one, or to connect to user@host",
+                if cfg!(target_os = "macos") {
+                    "Cmd+K"
+                } else {
+                    "Ctrl+Shift+K"
+                }
+            )))
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap_1()
                     .pt_2()
-                    .child(key(&format!("{chord}+T"), "another tab to the same host"))
+                    .child(key(
+                        &format!("{chord}+K"),
+                        "find a host, connect, run an action",
+                    ))
+                    .child(key(&format!("{chord}+T"), "a new tab"))
                     .child(key(&format!("{chord}+W"), "close the tab"))
                     .child(key("Ctrl+Tab", "next tab"))
                     .child(key(&format!("{alt}+1…9"), "go to a tab"))
@@ -559,7 +785,9 @@ impl Render for Workspace {
                 .into_any_element(),
             None => self.welcome(bg).into_any_element(),
         };
+        let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
         let body = div()
+            .relative()
             .flex()
             .flex_1()
             .min_h_0()
@@ -574,7 +802,26 @@ impl Render for Workspace {
                     ),
                 )
             })
-            .child(main);
+            .child(main)
+            .when_some(palette, |d, p| {
+                d.child(
+                    div()
+                        .id("palette-backdrop")
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .flex()
+                        .justify_center()
+                        .pt(px(56.))
+                        .bg(rgba(0x03060c99))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|ws, _, window, cx| ws.close_palette(window, cx)),
+                        )
+                        .child(p),
+                )
+            });
         let root = if matches!(
             window.window_decorations(),
             gpui::Decorations::Client { .. }

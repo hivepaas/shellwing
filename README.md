@@ -44,7 +44,8 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 
 | Keys | Does |
 | --- | --- |
-| Ctrl+Shift+T / W | Another tab to the same host / close the tab |
+| Ctrl+Shift+K (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
+| Ctrl+Shift+T / W | A new tab (opens the palette) / close the tab |
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
 | Alt+1…9 (Cmd+1…9) | Go to a tab |
 | Ctrl+Shift+B | Show or hide the host list |
