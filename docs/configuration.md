@@ -159,6 +159,12 @@ favorite = true             # listed first in the host list
 run = "cd ~/apps"           # typed into the shell once it is ready, after every connect
 ```
 
+**Groups** are made with *+ Group* under the host list, *New group…* in the
+palette, or *+ New group…* in a host's Group list (made when the host is saved).
+Hovering a group's header shows *Edit*: its name, color and the theme of its
+hosts. Renaming a group takes its hosts along; deleting one keeps its hosts,
+without a group.
+
 The host list's filter matches every word typed against a host's name, alias,
 address, user and tags; **Enter** opens the first host shown, **Esc** clears it.
 

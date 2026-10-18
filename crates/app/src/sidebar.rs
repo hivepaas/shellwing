@@ -26,6 +26,8 @@ pub struct Section {
     pub title: SharedString,
     /// Beside the title: a count, or "read only".
     pub note: SharedString,
+    /// The `[[group]]` it shows, which its Edit opens.
+    pub group: Option<String>,
     pub rows: Vec<Row>,
 }
 
@@ -67,6 +69,8 @@ pub struct Sidebar {
     sections: Vec<Section>,
     /// The row under the pointer, which shows Edit.
     hovered: Option<u64>,
+    /// The group header under the pointer, likewise.
+    hovered_group: Option<usize>,
     filter: Entity<TextInput>,
 }
 
@@ -79,6 +83,7 @@ impl Sidebar {
             workspace,
             sections: vec![],
             hovered: None,
+            hovered_group: None,
             filter,
         }
     }
@@ -99,7 +104,11 @@ impl Sidebar {
                     .filter(|r| words.iter().all(|w| r.search.contains(w)))
                     .cloned()
                     .collect();
-                (!rows.is_empty()).then(|| Section { rows, ..s.clone() })
+                (!rows.is_empty()).then(|| Section {
+                    note: rows.len().to_string().into(),
+                    rows,
+                    ..s.clone()
+                })
             })
             .collect()
     }
@@ -145,24 +154,72 @@ impl Render for Sidebar {
         let mut id = 0u64;
         let shown = self.shown(cx);
         let filtering = !self.filter.read(cx).text().trim().is_empty();
-        for section in &shown {
+        for (n, section) in shown.iter().enumerate() {
+            let over = self.hovered_group == Some(n) && section.group.is_some();
+            let (group, ws) = (section.group.clone(), self.workspace.clone());
             list = list.child(
                 div()
+                    .id(("section", n))
                     .flex()
+                    .items_center()
                     .justify_between()
+                    .h(px(26.))
                     .px_3()
-                    .pt_3()
-                    .pb_1()
+                    .mt_2()
                     .text_xs()
                     .font_weight(FontWeight::SEMIBOLD)
                     .text_color(rgb(MUTED))
+                    .on_hover(cx.listener(move |s, over: &bool, _, cx| {
+                        let now = if *over {
+                            Some(n)
+                        } else if s.hovered_group == Some(n) {
+                            None
+                        } else {
+                            s.hovered_group
+                        };
+                        if now != s.hovered_group {
+                            s.hovered_group = now;
+                            cx.notify();
+                        }
+                    }))
                     .child(section.title.clone())
-                    .child(
-                        div()
-                            .font_weight(FontWeight::NORMAL)
-                            .child(section.note.clone()),
-                    ),
+                    .when(!over, |d| {
+                        d.child(
+                            div()
+                                .font_weight(FontWeight::NORMAL)
+                                .child(section.note.clone()),
+                        )
+                    })
+                    .when(over, |d| {
+                        d.child(
+                            div()
+                                .id(("edit-group", n))
+                                .px_2()
+                                .py(px(1.))
+                                .rounded_md()
+                                .bg(rgb(EDIT))
+                                .text_color(rgb(0x1f1300))
+                                .cursor_pointer()
+                                .hover(|s| s.bg(rgb(EDIT_HOVER)))
+                                .on_click(move |_, window, cx| {
+                                    cx.stop_propagation();
+                                    let name = group.clone();
+                                    let _ = ws.update(cx, |ws, cx| ws.edit_group(name, window, cx));
+                                })
+                                .child("Edit"),
+                        )
+                    }),
             );
+            if section.rows.is_empty() {
+                list = list.child(
+                    div()
+                        .px_3()
+                        .pb_1()
+                        .text_xs()
+                        .text_color(rgb(0x5b6578))
+                        .child("No hosts yet"),
+                );
+            }
             for row in &section.rows {
                 id += 1;
                 let (spec, workspace) = (row.spec.clone(), self.workspace.clone());
@@ -264,26 +321,52 @@ impl Render for Sidebar {
                     .child("No hosts yet. Add one, or Host blocks to ~/.ssh/config."),
             );
         }
-        let workspace = self.workspace.clone();
-        let footer = div().p_2().border_t_1().border_color(rgb(LINE)).child(
-            div()
-                .id("new-host")
-                .h(px(32.))
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded_md()
-                .border_1()
-                .border_color(rgb(0x263042))
-                .text_color(rgb(TEXT))
-                .cursor_pointer()
-                .hover(|s| s.bg(rgb(HOVER)))
-                .on_click(move |_, window, cx| {
-                    let _ =
-                        workspace.update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
-                })
-                .child("+ New host"),
-        );
+        let (workspace, for_group) = (self.workspace.clone(), self.workspace.clone());
+        let footer = div()
+            .p_2()
+            .flex()
+            .gap_2()
+            .border_t_1()
+            .border_color(rgb(LINE))
+            .child(
+                div()
+                    .id("new-host")
+                    .flex_1()
+                    .h(px(32.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_md()
+                    .border_1()
+                    .border_color(rgb(0x263042))
+                    .text_color(rgb(TEXT))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(HOVER)))
+                    .on_click(move |_, window, cx| {
+                        let _ = workspace
+                            .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
+                    })
+                    .child("+ New host"),
+            )
+            .child(
+                div()
+                    .id("new-group")
+                    .h(px(32.))
+                    .px_3()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_md()
+                    .border_1()
+                    .border_color(rgb(0x263042))
+                    .text_color(rgb(TEXT))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(HOVER)))
+                    .on_click(move |_, window, cx| {
+                        let _ = for_group.update(cx, |ws, cx| ws.edit_group(None, window, cx));
+                    })
+                    .child("+ Group"),
+            );
         div()
             .w(px(WIDTH))
             .flex_shrink_0()

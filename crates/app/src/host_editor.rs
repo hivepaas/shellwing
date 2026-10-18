@@ -19,20 +19,20 @@ use crate::look::ui;
 
 pub const WIDTH: f32 = 520.;
 
-const BG: u32 = 0x0f1522;
-const EDGE: u32 = 0x2b3648;
-const RULE: u32 = 0x1f2937;
-const FIELD: u32 = 0x0b0f17;
-const FIELD_EDGE: u32 = 0x263042;
-const TEXT: u32 = 0xe2e8f0;
-const LABEL: u32 = 0xa3aec0;
-const MUTED: u32 = 0x8a96aa;
+pub(crate) const BG: u32 = 0x0f1522;
+pub(crate) const EDGE: u32 = 0x2b3648;
+pub(crate) const RULE: u32 = 0x1f2937;
+pub(crate) const FIELD: u32 = 0x0b0f17;
+pub(crate) const FIELD_EDGE: u32 = 0x263042;
+pub(crate) const TEXT: u32 = 0xe2e8f0;
+pub(crate) const LABEL: u32 = 0xa3aec0;
+pub(crate) const MUTED: u32 = 0x8a96aa;
 const ARROW: u32 = 0x5b6578;
-const ON: u32 = 0x17233a;
-const ACCENT: u32 = 0x38bdf8;
+pub(crate) const ON: u32 = 0x17233a;
+pub(crate) const ACCENT: u32 = 0x38bdf8;
 const CHIP: u32 = 0x111a2a;
-const BAD: u32 = 0xf87171;
-const FOOT: u32 = 0x0d121c;
+pub(crate) const BAD: u32 = 0xf87171;
+pub(crate) const FOOT: u32 = 0x0d121c;
 
 pub enum EditorEvent {
     Close,
@@ -98,6 +98,7 @@ struct Inputs {
     forward: Entity<TextInput>,
     keepalive: Entity<TextInput>,
     run: Entity<TextInput>,
+    new_group: Entity<TextInput>,
 }
 
 pub struct HostEditor {
@@ -117,6 +118,8 @@ pub struct HostEditor {
     host_key: Option<HostKey>,
     color: Option<String>,
     favorite: bool,
+    /// A group being named here, made when the host is saved.
+    naming_group: bool,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -168,6 +171,7 @@ impl HostEditor {
             forward: input(cx, "-L 8080:localhost:80"),
             keepalive: input(cx, &ctx.app_ssh.keepalive.to_string()),
             run: input(cx, "cd ~/apps && exec $SHELL -l"),
+            new_group: input(cx, "Staging"),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -185,6 +189,7 @@ impl HostEditor {
             host_key: None,
             color: None,
             favorite: false,
+            naming_group: false,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -280,7 +285,11 @@ impl HostEditor {
             address: self.text(&i.address, cx),
             port: self.text(&i.port, cx).parse().ok(),
             user: opt(self.text(&i.user, cx)),
-            group: self.group.clone(),
+            group: if self.naming_group {
+                opt(self.text(&i.new_group, cx))
+            } else {
+                self.group.clone()
+            },
             tags,
             jump: self.jumps.clone(),
             forward: self.forwards.clone(),
@@ -764,7 +773,10 @@ impl HostEditor {
                     .hover(|s| s.bg(rgb(0x1a2333)))
                     .on_click(cx.listener(move |e, _, _, cx| {
                         match menu {
-                            Menu::Group => e.group = value.clone(),
+                            Menu::Group => {
+                                e.group = value.clone();
+                                e.naming_group = false;
+                            }
                             Menu::Theme => e.theme = value.clone(),
                         }
                         e.menu = None;
@@ -837,21 +849,21 @@ impl HostEditor {
     }
 }
 
-fn label_text(s: &str) -> gpui::Div {
+pub(crate) fn label_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(12.))
         .text_color(rgb(LABEL))
         .child(s.to_string())
 }
 
-fn hint_text(s: &str) -> gpui::Div {
+pub(crate) fn hint_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(11.5))
         .text_color(rgb(MUTED))
         .child(s.to_string())
 }
 
-fn problem_text(s: &str) -> gpui::Div {
+pub(crate) fn problem_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(11.5))
         .text_color(rgb(BAD))
@@ -879,7 +891,7 @@ fn fact(label: &str, value: String) -> gpui::Div {
         )
 }
 
-fn section(title: &str) -> gpui::Div {
+pub(crate) fn section(title: &str) -> gpui::Div {
     div()
         .flex()
         .flex_col()
@@ -950,7 +962,7 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
         )
 }
 
-fn text_button(id: &str, label: &str, color: u32) -> gpui::Stateful<gpui::Div> {
+pub(crate) fn text_button(id: &str, label: &str, color: u32) -> gpui::Stateful<gpui::Div> {
     div()
         .id(SharedString::from(id.to_string()))
         .h(px(32.))
@@ -964,14 +976,14 @@ fn text_button(id: &str, label: &str, color: u32) -> gpui::Stateful<gpui::Div> {
         .child(label.to_string())
 }
 
-fn outline_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
+pub(crate) fn outline_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
     text_button(id, label, TEXT)
         .px(px(14.))
         .border_1()
         .border_color(rgb(FIELD_EDGE))
 }
 
-fn primary_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
+pub(crate) fn primary_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
     div()
         .id(SharedString::from(id.to_string()))
         .h(px(32.))
@@ -1084,8 +1096,7 @@ impl Render for HostEditor {
             self.group
                 .as_ref()
                 .and_then(|g| self.ctx.hosts.groups.iter().find(|x| &x.name == g))
-                .and_then(|g| g.color.as_deref())
-                .and_then(|c| u32::from_str_radix(c.trim_start_matches('#'), 16).ok())
+                .and_then(|g| g.color_rgb())
         });
 
         let connection = section("Connection")
@@ -1306,7 +1317,11 @@ impl Render for HostEditor {
                 "Synced with your other devices when sync is on."
             }));
 
-        let group_label = self.group.clone().unwrap_or_else(|| "None".into());
+        let group_label = if self.naming_group {
+            "New group".into()
+        } else {
+            self.group.clone().unwrap_or_else(|| "None".into())
+        };
         let theme_label = self
             .theme
             .as_ref()
@@ -1347,7 +1362,28 @@ impl Render for HostEditor {
             {
                 choices.push((Some(g.clone()), g.clone()));
             }
-            organize = organize.child(self.menu_list(Menu::Group, choices, cx));
+            organize = organize
+                .child(self.menu_list(Menu::Group, choices, cx))
+                .child(dashed("new-group", "+ New group…").on_click(cx.listener(
+                    |e, _, window, cx| {
+                        e.menu = None;
+                        e.naming_group = true;
+                        window.focus(&e.inputs.new_group.focus_handle(cx), cx);
+                        cx.notify();
+                    },
+                )));
+        }
+        if self.naming_group {
+            organize = organize
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(4.))
+                        .child(label_text("New group's name"))
+                        .child(self.input_box(&i.new_group, false, window, cx)),
+                )
+                .child(hint_text("Made when you save this host."));
         }
         // The colors, as round swatches; the chosen one ringed.
         let mut swatches = div()
@@ -1631,7 +1667,7 @@ impl Render for HostEditor {
     }
 }
 
-fn checkbox(on: bool) -> gpui::Div {
+pub(crate) fn checkbox(on: bool) -> gpui::Div {
     div()
         .size(px(16.))
         .flex()

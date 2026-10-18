@@ -35,6 +35,7 @@ pub enum Action {
     ChangeTheme,
     Files,
     NewHost,
+    NewGroup,
     EditHost(crate::workspace::EditTarget),
     Settings,
     Forward,

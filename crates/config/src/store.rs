@@ -190,6 +190,28 @@ impl Store {
         Ok(id)
     }
 
+    /// Writes `group` into `hosts.toml` (over the one with its id, or as a new
+    /// one); renamed from `old_name`, its hosts follow. Returns its id.
+    pub fn save_group(
+        &self,
+        group: &crate::Group,
+        old_name: Option<&str>,
+    ) -> Result<String, WriteError> {
+        let id = group.id.clone().unwrap_or_else(crate::hosts_sync::new_id);
+        self.edit_if(HOSTS, |doc| {
+            let ids = crate::hosts_sync::assign_ids(doc);
+            Ok(crate::hosts_sync::save_group(doc, &id, group, old_name) || ids)
+        })?;
+        Ok(id)
+    }
+
+    /// Removes a group from `hosts.toml`; its hosts stay, without a group.
+    pub fn delete_group(&self, id: &str, name: &str) -> Result<(), WriteError> {
+        self.edit_if(HOSTS, |doc| {
+            Ok(crate::hosts_sync::delete_group(doc, id, name))
+        })
+    }
+
     /// Removes the host with `id` from `hosts.toml`.
     pub fn delete_host(&self, id: &str) -> Result<(), WriteError> {
         self.edit_if(HOSTS, |doc| Ok(crate::hosts_sync::delete_host(doc, id)))

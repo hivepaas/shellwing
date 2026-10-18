@@ -257,19 +257,113 @@ pub(crate) fn save_host(doc: &mut DocumentMut, id: &str, host: &Host) -> bool {
         return false;
     };
     let fields = host.sync_fields();
-    if let Some(t) = aot
+    let changed = if let Some(t) = aot
         .iter_mut()
         .find(|t| t.get("id").and_then(Item::as_str) == Some(id))
     {
         let changed = apply_host(t, &fields);
-        return set_flag(t, "local_only", host.local_only) || changed;
+        set_flag(t, "local_only", host.local_only) || changed
+    } else {
+        let mut t = Table::new();
+        t.insert("id", value(id));
+        apply_host(&mut t, &fields);
+        set_flag(&mut t, "local_only", host.local_only);
+        aot.push(t);
+        true
+    };
+    // A group named for the first time becomes a [[group]] of its own.
+    let grouped = host.group.as_deref().is_some_and(|g| ensure_group(doc, g));
+    changed || grouped
+}
+
+fn groups_mut(doc: &mut DocumentMut) -> Option<&mut toml_edit::ArrayOfTables> {
+    if doc
+        .get("group")
+        .and_then(Item::as_array_of_tables)
+        .is_none()
+    {
+        doc.insert("group", Item::ArrayOfTables(Default::default()));
+    }
+    doc.get_mut("group").and_then(Item::as_array_of_tables_mut)
+}
+
+/// Adds a `[[group]]` named `name` unless one is. Returns whether it did.
+fn ensure_group(doc: &mut DocumentMut, name: &str) -> bool {
+    let Some(aot) = groups_mut(doc) else {
+        return false;
+    };
+    if aot
+        .iter()
+        .any(|t| t.get("name").and_then(Item::as_str) == Some(name))
+    {
+        return false;
     }
     let mut t = Table::new();
-    t.insert("id", value(id));
-    apply_host(&mut t, &fields);
-    set_flag(&mut t, "local_only", host.local_only);
+    t.insert("id", value(new_id()));
+    t.insert("name", value(name));
     aot.push(t);
     true
+}
+
+/// Moves the hosts in group `from` to `to` (None: no group).
+fn regroup(doc: &mut DocumentMut, from: &str, to: Option<&str>) -> bool {
+    let Some(aot) = doc.get_mut("host").and_then(Item::as_array_of_tables_mut) else {
+        return false;
+    };
+    let mut changed = false;
+    for t in aot.iter_mut() {
+        if t.get("group").and_then(Item::as_str) == Some(from) {
+            changed |= set_str(t, "group", to);
+        }
+    }
+    changed
+}
+
+/// Writes `group` over the `[[group]]` with `id`, or adds it. A group renamed
+/// from `old_name` takes its hosts along. Returns whether anything changed.
+pub(crate) fn save_group(
+    doc: &mut DocumentMut,
+    id: &str,
+    group: &Group,
+    old_name: Option<&str>,
+) -> bool {
+    let Some(aot) = groups_mut(doc) else {
+        return false;
+    };
+    let fields = group.sync_fields();
+    let at = aot
+        .iter()
+        .position(|t| t.get("id").and_then(Item::as_str) == Some(id));
+    let changed = match at.and_then(|i| aot.get_mut(i)) {
+        Some(t) => apply_group(t, &fields),
+        None => {
+            let mut t = Table::new();
+            t.insert("id", value(id));
+            apply_group(&mut t, &fields);
+            aot.push(t);
+            true
+        }
+    };
+    let moved = match old_name {
+        Some(old) if old != group.name => regroup(doc, old, Some(&group.name)),
+        _ => false,
+    };
+    changed || moved
+}
+
+/// Removes the `[[group]]` with `id`; its hosts stay, without a group.
+pub(crate) fn delete_group(doc: &mut DocumentMut, id: &str, name: &str) -> bool {
+    let mut removed = false;
+    if let Some(aot) = doc.get_mut("group").and_then(Item::as_array_of_tables_mut) {
+        let at = aot
+            .iter()
+            .position(|t| t.get("id").and_then(Item::as_str) == Some(id));
+        if let Some(i) = at {
+            aot.remove(i);
+            removed = true;
+        }
+    }
+    regroup(doc, name, None) || removed
 }
 
 /// Removes the `[[host]]` with `id`. Returns whether it was there.
@@ -480,6 +574,37 @@ local_only = true
         assert!(delete_host(&mut doc, "h9"));
         assert!(!delete_host(&mut doc, "h9"));
         assert!(parse(&doc.to_string()).find("cache").is_none());
+    }
+
+    #[test]
+    fn groups_are_made_renamed_and_removed_with_their_hosts() {
+        let mut doc: DocumentMut = FILE.parse().expect("doc");
+        // Renaming takes the hosts along.
+        let prod = Group {
+            id: Some("g1".into()),
+            name: "Prod".into(),
+            color: Some("#f87171".into()),
+            theme: None,
+        };
+        assert!(save_group(&mut doc, "g1", &prod, Some("Production")));
+        let hosts = parse(&doc.to_string());
+        assert_eq!(hosts.groups[0].name, "Prod");
+        assert_eq!(
+            hosts.find("api-1").and_then(|h| h.group.as_deref()),
+            Some("Prod")
+        );
+        // A host saved into a group nobody made yet makes it.
+        let mut cache = hosts.find("new-one").expect("host").clone();
+        cache.group = Some("Cache".into());
+        assert!(save_host(&mut doc, "h2", &cache));
+        let hosts = parse(&doc.to_string());
+        assert!(hosts.groups.iter().any(|g| g.name == "Cache"));
+        // Deleting a group leaves its hosts, ungrouped.
+        assert!(delete_group(&mut doc, "g1", "Prod"));
+        let hosts = parse(&doc.to_string());
+        assert!(hosts.groups.iter().all(|g| g.name != "Prod"));
+        let api = hosts.find("api-1").expect("api-1 stays");
+        assert_eq!(api.group, None);
     }
 
     #[test]

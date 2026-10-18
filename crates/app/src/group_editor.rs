@@ -1,0 +1,480 @@
+//! The group editor: the host editor's drawer for a `[[group]]` in hosts.toml:
+//! its name, its color, and the theme its hosts use unless they set their own.
+//! Renaming a group takes its hosts along; deleting one keeps its hosts,
+//! without a group.
+
+use gpui::{
+    Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render,
+    SharedString, Window, div, prelude::*, px, rgb,
+};
+use shellwing_config::{Group, HOST_COLORS, Hosts, Store};
+
+use crate::host_editor::{
+    ACCENT, BAD, BG, EDGE, FIELD, FIELD_EDGE, FOOT, LABEL, MUTED, ON, RULE, TEXT, hint_text,
+    label_text, outline_button, primary_button, problem_text, section, text_button,
+};
+use crate::input::TextInput;
+use crate::look::ui;
+
+pub enum GroupEvent {
+    Close,
+    Saved { name: String },
+    Deleted { name: String },
+}
+
+pub struct GroupEditor {
+    focus: FocusHandle,
+    store: Option<Store>,
+    hosts: Hosts,
+    /// Theme ids and names.
+    themes: Vec<(String, String)>,
+    /// The group as opened; None for a new one.
+    original: Option<Group>,
+    name: Entity<TextInput>,
+    color: Option<String>,
+    theme: Option<String>,
+    themes_open: bool,
+    problem: Option<String>,
+    confirm_delete: bool,
+}
+
+impl EventEmitter<GroupEvent> for GroupEditor {}
+
+impl GroupEditor {
+    pub fn new(
+        store: Option<Store>,
+        hosts: Hosts,
+        themes: Vec<(String, String)>,
+        group: Option<Group>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let name = cx.new(|cx| TextInput::new("Production", cx));
+        if let Some(g) = &group {
+            let n = g.name.clone();
+            name.update(cx, |i, cx| i.set_text(&n, n.len()..n.len(), cx));
+        }
+        GroupEditor {
+            focus: cx.focus_handle(),
+            store,
+            hosts,
+            themes,
+            color: group.as_ref().and_then(|g| g.color.clone()),
+            theme: group.as_ref().and_then(|g| g.theme.clone()),
+            original: group,
+            name,
+            themes_open: false,
+            problem: None,
+            confirm_delete: false,
+        }
+    }
+
+    /// Clicking beside the drawer closes it only when nothing would be lost.
+    pub fn can_close_quietly(&self, cx: &gpui::App) -> bool {
+        let o = self.original.as_ref();
+        self.typed(cx) == o.map(|g| g.name.clone()).unwrap_or_default()
+            && self.color == o.and_then(|g| g.color.clone())
+            && self.theme == o.and_then(|g| g.theme.clone())
+    }
+
+    pub fn first_focus(&self, cx: &gpui::App) -> FocusHandle {
+        self.name.focus_handle(cx)
+    }
+
+    fn typed(&self, cx: &gpui::App) -> String {
+        self.name.read(cx).text().trim().to_string()
+    }
+
+    /// The hosts in the group as opened.
+    fn members(&self) -> Vec<&str> {
+        let Some(g) = &self.original else {
+            return vec![];
+        };
+        self.hosts
+            .hosts
+            .iter()
+            .filter(|h| h.group.as_deref() == Some(g.name.as_str()))
+            .map(|h| h.name.as_str())
+            .collect()
+    }
+
+    fn save(&mut self, cx: &mut Context<Self>) {
+        self.confirm_delete = false;
+        let name = self.typed(cx);
+        let mine = |g: &Group| match &self.original {
+            Some(o) if o.id.is_some() => o.id == g.id,
+            Some(o) => o.name == g.name,
+            None => false,
+        };
+        self.problem = if name.is_empty() {
+            Some("A name is needed.".into())
+        } else if self.hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
+            Some("Another group has this name.".into())
+        } else {
+            None
+        };
+        if self.problem.is_some() {
+            return cx.notify();
+        }
+        let Some(store) = &self.store else {
+            self.problem = Some("There is no config directory to save in.".into());
+            return cx.notify();
+        };
+        let group = Group {
+            id: self.original.as_ref().and_then(|o| o.id.clone()),
+            name: name.clone(),
+            color: self.color.clone(),
+            theme: self.theme.clone(),
+        };
+        let old = self.original.as_ref().map(|o| o.name.as_str());
+        match store.save_group(&group, old) {
+            Ok(_) => cx.emit(GroupEvent::Saved { name }),
+            Err(e) => {
+                self.problem = Some(e.to_string());
+                cx.notify();
+            }
+        }
+    }
+
+    fn delete(&mut self, cx: &mut Context<Self>) {
+        let Some(g) = self.original.clone() else {
+            return;
+        };
+        if !self.confirm_delete {
+            self.confirm_delete = true;
+            return cx.notify();
+        }
+        let result = match (&self.store, &g.id) {
+            (Some(store), Some(id)) => store.delete_group(id, &g.name).map_err(|e| e.to_string()),
+            _ => Err("This group cannot be found in hosts.toml.".into()),
+        };
+        match result {
+            Ok(()) => cx.emit(GroupEvent::Deleted { name: g.name }),
+            Err(e) => {
+                self.confirm_delete = false;
+                self.problem = Some(e);
+                cx.notify();
+            }
+        }
+    }
+
+    fn on_key(&mut self, ev: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
+        match ev.keystroke.key.as_str() {
+            "escape" if self.themes_open => self.themes_open = false,
+            "escape" if self.confirm_delete => self.confirm_delete = false,
+            "escape" => cx.emit(GroupEvent::Close),
+            "enter" => self.save(cx),
+            _ => return,
+        }
+        cx.notify();
+        cx.stop_propagation();
+    }
+}
+
+impl Focusable for GroupEditor {
+    fn focus_handle(&self, _: &gpui::App) -> FocusHandle {
+        self.focus.clone()
+    }
+}
+
+impl Render for GroupEditor {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let typed = self.typed(cx);
+        let title = if typed.is_empty() {
+            "New group".to_string()
+        } else {
+            typed
+        };
+        let dot = self
+            .color
+            .as_deref()
+            .and_then(shellwing_config::color_rgb)
+            .unwrap_or(ACCENT);
+        let header = div()
+            .h(px(56.))
+            .flex_shrink_0()
+            .flex()
+            .items_center()
+            .gap(px(10.))
+            .px(px(20.))
+            .border_b_1()
+            .border_color(rgb(RULE))
+            .child(div().size(px(10.)).rounded(px(3.)).bg(rgb(dot)))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .overflow_hidden()
+                    .text_ellipsis()
+                    .whitespace_nowrap()
+                    .text_size(ui(15.))
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child(title.clone()),
+            )
+            .child(div().text_size(ui(12.)).text_color(rgb(MUTED)).child(
+                if self.original.is_some() {
+                    "Group in hosts.toml"
+                } else {
+                    "Not saved yet"
+                },
+            ))
+            .child(
+                div()
+                    .id("group-close")
+                    .size(px(28.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(6.))
+                    .text_color(rgb(0xb6c0cf))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(0x1a2333)))
+                    .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close)))
+                    .child("✕"),
+            );
+
+        let focused = self.name.focus_handle(cx).is_focused(window);
+        let name_box = div()
+            .h(px(30.))
+            .px(px(10.))
+            .flex()
+            .items_center()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(if self.problem.is_some() {
+                BAD
+            } else if focused {
+                ACCENT
+            } else {
+                FIELD_EDGE
+            }))
+            .bg(rgb(FIELD))
+            .text_size(ui(13.))
+            .child(self.name.clone());
+
+        let mut swatches = div().flex().items_center().gap(px(8.)).child(
+            div()
+                .id("group-color-none")
+                .size(px(20.))
+                .rounded_full()
+                .border_2()
+                .border_color(rgb(if self.color.is_none() { TEXT } else { EDGE }))
+                .cursor_pointer()
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(ui(10.))
+                .text_color(rgb(MUTED))
+                .on_click(cx.listener(|e, _, _, cx| {
+                    e.color = None;
+                    cx.notify();
+                }))
+                .child("–"),
+        );
+        for (name, value) in HOST_COLORS {
+            let on = self
+                .color
+                .as_deref()
+                .is_some_and(|c| c.eq_ignore_ascii_case(name));
+            swatches = swatches.child(
+                div()
+                    .id(SharedString::from(format!("group-color-{name}")))
+                    .size(px(20.))
+                    .rounded_full()
+                    .bg(rgb(value))
+                    .when(on, |d| d.border_2().border_color(rgb(TEXT)))
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |e, _, _, cx| {
+                        e.color = Some(name.to_string());
+                        cx.notify();
+                    })),
+            );
+        }
+
+        let theme_label = self
+            .theme
+            .as_ref()
+            .map(|t| {
+                self.themes
+                    .iter()
+                    .find(|(id, _)| id == t)
+                    .map(|(_, n)| n.clone())
+                    .unwrap_or_else(|| t.clone())
+            })
+            .unwrap_or_else(|| "Same as the app".into());
+        let mut theme = div()
+            .flex()
+            .flex_col()
+            .gap(px(4.))
+            .child(label_text("Theme for its hosts"))
+            .child(
+                div()
+                    .id("group-theme")
+                    .h(px(30.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(if self.themes_open { ACCENT } else { FIELD_EDGE }))
+                    .bg(rgb(FIELD))
+                    .text_size(ui(13.))
+                    .cursor_pointer()
+                    .on_click(cx.listener(|e, _, _, cx| {
+                        e.themes_open = !e.themes_open;
+                        cx.notify();
+                    }))
+                    .child(theme_label)
+                    .child(div().text_color(rgb(MUTED)).child("▾")),
+            );
+        if self.themes_open {
+            let mut list = div()
+                .id("group-themes")
+                .flex()
+                .flex_col()
+                .max_h(px(220.))
+                .overflow_y_scroll()
+                .p_1()
+                .rounded(px(6.))
+                .border_1()
+                .border_color(rgb(EDGE))
+                .bg(rgb(0x111826));
+            let mut choices = vec![(None, "Same as the app".to_string())];
+            choices.extend(
+                self.themes
+                    .iter()
+                    .map(|(id, n)| (Some(id.clone()), n.clone())),
+            );
+            for (n, (value, name)) in choices.into_iter().enumerate() {
+                let on = value == self.theme;
+                list = list.child(
+                    div()
+                        .id(("group-theme-choice", n))
+                        .px_2()
+                        .py(px(5.))
+                        .rounded(px(4.))
+                        .text_size(ui(13.))
+                        .cursor_pointer()
+                        .when(on, |d| d.bg(rgb(ON)))
+                        .hover(|s| s.bg(rgb(0x1a2333)))
+                        .on_click(cx.listener(move |e, _, _, cx| {
+                            e.theme = value.clone();
+                            e.themes_open = false;
+                            cx.notify();
+                        }))
+                        .child(name),
+                );
+            }
+            theme = theme.child(list);
+        }
+
+        let members = self.members();
+        let who = match members.len() {
+            0 if self.original.is_some() => {
+                "No hosts yet. Choose this group in a host's editor.".to_string()
+            }
+            0 => "Choose the group in a host's editor to put the host in it.".to_string(),
+            n => format!(
+                "{n} host{}: {}",
+                if n == 1 { "" } else { "s" },
+                members.join(", ")
+            ),
+        };
+
+        let body = section("Group")
+            .border_b_0()
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(label_text("Name"))
+                    .child(name_box)
+                    .when_some(self.problem.clone(), |d, p| d.child(problem_text(&p))),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(8.))
+                    .child(div().mr(px(6.)).child(label_text("Color")))
+                    .child(swatches),
+            )
+            .child(theme)
+            .child(hint_text("A host's own theme wins over its group's."))
+            .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(who));
+
+        let mut buttons = div().flex().items_center().gap_2();
+        if self.confirm_delete {
+            let n = members.len();
+            buttons = buttons
+                .child(div().text_size(ui(12.5)).child(if n == 0 {
+                    format!("Delete {title}?")
+                } else {
+                    format!(
+                        "Delete {title}? Its {n} host{} stay.",
+                        if n == 1 { "" } else { "s" }
+                    )
+                }))
+                .child(
+                    text_button("group-delete-yes", "Delete", BAD)
+                        .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                )
+                .child(
+                    text_button("group-delete-no", "Cancel", LABEL).on_click(cx.listener(
+                        |e, _, _, cx| {
+                            e.confirm_delete = false;
+                            cx.notify();
+                        },
+                    )),
+                );
+        } else if self.original.is_some() {
+            buttons = buttons.child(
+                text_button("group-delete", "Delete", BAD)
+                    .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+            );
+        }
+        buttons = buttons
+            .child(div().flex_1())
+            .child(
+                outline_button("group-cancel", "Cancel")
+                    .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close))),
+            )
+            .child(
+                primary_button("group-save", "Save")
+                    .on_click(cx.listener(|e, _, _, cx| e.save(cx))),
+            );
+
+        div()
+            .id("group-editor")
+            .track_focus(&self.focus)
+            .on_key_down(cx.listener(Self::on_key))
+            .size_full()
+            .flex()
+            .flex_col()
+            .bg(rgb(BG))
+            .border_l_1()
+            .border_color(rgb(EDGE))
+            .text_size(ui(13.))
+            .text_color(rgb(TEXT))
+            .child(header)
+            .child(
+                div()
+                    .id("group-body")
+                    .flex_1()
+                    .min_h_0()
+                    .overflow_y_scroll()
+                    .child(body),
+            )
+            .child(
+                div()
+                    .flex_shrink_0()
+                    .px(px(20.))
+                    .py(px(12.))
+                    .border_t_1()
+                    .border_color(rgb(RULE))
+                    .bg(rgb(FOOT))
+                    .child(buttons),
+            )
+    }
+}

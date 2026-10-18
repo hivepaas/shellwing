@@ -20,7 +20,7 @@ mod store;
 mod theme;
 
 pub use color::Color;
-pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts};
+pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, color_rgb};
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, Cursor, CursorStyle, Font, General, OnDisconnect, Padding, Scrollbar, Settings,

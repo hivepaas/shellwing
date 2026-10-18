@@ -199,18 +199,30 @@ pub const HOST_COLORS: [(&str, u32); 5] = [
     ("red", 0xf87171),
 ];
 
+/// A color as `0xrrggbb`, from a name in [`HOST_COLORS`] or `#rrggbb`.
+pub fn color_rgb(color: &str) -> Option<u32> {
+    let c = color.trim();
+    HOST_COLORS
+        .iter()
+        .find(|(n, _)| n.eq_ignore_ascii_case(c))
+        .map(|(_, v)| *v)
+        .or_else(|| {
+            c.strip_prefix('#')
+                .filter(|h| h.len() == 6)
+                .and_then(|h| u32::from_str_radix(h, 16).ok())
+        })
+}
+
 impl Host {
-    /// The host's color as `0xrrggbb`, from a name or `#rrggbb`.
+    /// The host's color as `0xrrggbb`.
     pub fn color_rgb(&self) -> Option<u32> {
-        let c = self.color.as_deref()?.trim();
-        HOST_COLORS
-            .iter()
-            .find(|(n, _)| n.eq_ignore_ascii_case(c))
-            .map(|(_, v)| *v)
-            .or_else(|| {
-                c.strip_prefix('#')
-                    .filter(|h| h.len() == 6)
-                    .and_then(|h| u32::from_str_radix(h, 16).ok())
-            })
+        color_rgb(self.color.as_deref()?)
+    }
+}
+
+impl Group {
+    /// The group's color as `0xrrggbb`.
+    pub fn color_rgb(&self) -> Option<u32> {
+        color_rgb(self.color.as_deref()?)
     }
 }
