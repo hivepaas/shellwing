@@ -258,6 +258,7 @@ impl Fixture {
             policy: HostKeyPolicy::Ask,
             known_hosts: Some(self.known_hosts()),
             prompter: Some(prompter),
+            secrets: None,
             cols: 80,
             rows: 24,
             term: "xterm-256color".into(),
@@ -605,4 +606,112 @@ async fn an_exit_closes_but_a_dying_server_disconnects() {
         end_with(opts(), b"die\r").await,
         shellwing_ssh::Ended::Error(Error::Disconnected)
     ));
+}
+
+/// Saved secrets for a test, and what the connection reported as learned.
+#[derive(Default)]
+struct Saved {
+    password: Option<String>,
+    passphrase: Option<(String, String)>,
+    learned: Mutex<Vec<shellwing_ssh::Learned>>,
+}
+
+impl shellwing_ssh::Secrets for Saved {
+    fn password(&self, _target: &str) -> Option<String> {
+        self.password.clone()
+    }
+
+    fn passphrase(&self, fingerprint: &str) -> Option<String> {
+        self.passphrase
+            .as_ref()
+            .filter(|(fp, _)| fp == fingerprint)
+            .map(|(_, p)| p.clone())
+    }
+
+    fn learned(&self, secret: shellwing_ssh::Learned) {
+        self.learned.lock().expect("learned").push(secret);
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_saved_password_is_used_and_a_typed_one_reported() {
+    let fx = Fixture::new("saved-password");
+    let (port, _) = serve(
+        Policy {
+            password: Some("secret"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    // Saved and right: only the host key is asked.
+    let saved = Arc::new(Saved {
+        password: Some("secret".into()),
+        ..Default::default()
+    });
+    let (p, asked) = scripted(vec![Some("yes")]);
+    let mut opts = fx.options(local(port, "alice"), p);
+    opts.secrets = Some(saved.clone());
+    connect(opts).await.expect("connect");
+    assert_eq!(kinds(&asked), ["hostkey"]);
+    assert!(saved.learned.lock().expect("learned").is_empty());
+
+    // Saved but stale: asked, and the typed one is reported under user@host:port.
+    let stale = Arc::new(Saved {
+        password: Some("old".into()),
+        ..Default::default()
+    });
+    let (p, asked) = scripted(vec![Some("secret")]);
+    let mut opts = fx.options(local(port, "alice"), p);
+    opts.secrets = Some(stale.clone());
+    connect(opts).await.expect("connect");
+    assert_eq!(kinds(&asked), ["password"]);
+    assert_eq!(
+        *stale.learned.lock().expect("learned"),
+        [shellwing_ssh::Learned::Password {
+            target: format!("alice@127.0.0.1:{port}"),
+            password: "secret".into(),
+        }]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_saved_passphrase_unlocks_the_key_without_asking() {
+    let fx = Fixture::new("saved-passphrase");
+    let client = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+    let fingerprint = client
+        .public_key()
+        .fingerprint(Default::default())
+        .to_string();
+    let encrypted = client
+        .encrypt(&mut rand::rng(), "correct horse")
+        .expect("encrypt");
+    let key_file = fx.dir.join("id_ed25519");
+    std::fs::write(
+        &key_file,
+        encrypted
+            .to_openssh(LineEnding::LF)
+            .expect("pem")
+            .as_bytes(),
+    )
+    .expect("write");
+    let (port, _) = serve(
+        Policy {
+            key: Some(client.public_key().clone()),
+            ..Default::default()
+        },
+        &[MethodKind::PublicKey],
+    )
+    .await;
+    let mut target = local(port, "alice");
+    target.identity_files = vec![key_file];
+    let saved = Arc::new(Saved {
+        passphrase: Some((fingerprint, "correct horse".into())),
+        ..Default::default()
+    });
+    let (p, asked) = scripted(vec![Some("yes")]);
+    let mut opts = fx.options(target, p);
+    opts.secrets = Some(saved);
+    connect(opts).await.expect("connect");
+    assert_eq!(kinds(&asked), ["hostkey"]);
 }

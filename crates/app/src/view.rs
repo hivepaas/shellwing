@@ -242,6 +242,8 @@ pub struct TermView {
     scrollbar_hover: bool,
     /// Dragging the thumb: where in it the press was, in px from its top.
     scrollbar_grab: Option<f32>,
+    /// A typed password or passphrase that worked, offered for saving.
+    save_offer: Option<shellwing_ssh::Learned>,
     /// When the next automatic reconnect happens, if one is planned.
     retry_at: Option<Instant>,
     /// Automatic reconnects since the last successful connection.
@@ -271,6 +273,21 @@ impl TermView {
                     cx.notify();
                 });
                 if alive.is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
+        let learned = session.learned.clone();
+        cx.spawn(async move |this, cx| {
+            while let Ok(secret) = learned.recv().await {
+                if this
+                    .update(cx, |v, cx| {
+                        v.save_offer = Some(secret);
+                        cx.notify();
+                    })
+                    .is_err()
+                {
                     break;
                 }
             }
@@ -308,6 +325,7 @@ impl TermView {
             scrollbar_until: None,
             scrollbar_hover: false,
             scrollbar_grab: None,
+            save_offer: None,
             retry_at: None,
             retries: 0,
             retry_plan: 0,
@@ -385,6 +403,76 @@ impl TermView {
         self.retry_plan += 1;
         self.retry_at = None;
         cx.notify();
+    }
+
+    /// Asks whether to keep a password or passphrase that was just typed.
+    fn save_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let offer = self.save_offer.as_ref()?;
+        let what = match offer {
+            shellwing_ssh::Learned::Password { target, .. } => {
+                format!("Save the password for {target} in the vault?")
+            }
+            shellwing_ssh::Learned::Passphrase { key_path, .. } => {
+                format!("Save the passphrase of {key_path} in the vault?")
+            }
+        };
+        let button = |id: &'static str, label: &'static str, primary: bool| {
+            div()
+                .id(id)
+                .px_3()
+                .py_1()
+                .rounded_md()
+                .cursor_pointer()
+                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(!primary, |d| {
+                    d.border_1()
+                        .border_color(rgb(0x3f4a5c))
+                        .hover(|s| s.bg(rgb(0x1e2736)))
+                })
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        Some(
+            div()
+                .absolute()
+                .top_3()
+                .left_3()
+                .right_3()
+                .flex()
+                .items_center()
+                .gap_3()
+                .px_3()
+                .py_2()
+                .rounded_lg()
+                .border_1()
+                .border_color(rgb(0x2b3648))
+                .bg(gpui::rgba(0x080a12e6))
+                .text_sm()
+                .text_color(rgb(0xe2e8f0))
+                .child(div().flex_1().min_w_0().child(what))
+                .child(
+                    button("save-not-now", "Not now", false).on_click(cx.listener(
+                        |v, _, _, cx| {
+                            v.save_offer = None;
+                            cx.notify();
+                        },
+                    )),
+                )
+                .child(
+                    button("save-secret", "Save", true).on_click(cx.listener(|v, _, _, cx| {
+                        if let Some(secret) = v.save_offer.take() {
+                            match v.session.save(&secret) {
+                                Ok(()) => v.show_notice("Saved in the vault.", CONFIRM_PASTE, cx),
+                                Err(e) => {
+                                    v.show_notice(format!("Not saved: {e}"), CONFIRM_PASTE, cx)
+                                }
+                            }
+                        }
+                        cx.notify();
+                    })),
+                )
+                .into_any_element(),
+        )
     }
 
     /// The bar shown while the pane has no connection.
@@ -1217,6 +1305,9 @@ impl Render for TermView {
             terminal = terminal.child(badge().top_3().child(n.clone()));
         }
         if let Some(s) = self.scrollbar(cx) {
+            terminal = terminal.child(s);
+        }
+        if let Some(s) = self.save_bar(cx) {
             terminal = terminal.child(s);
         }
         if let Some(b) = self.banner(cx) {

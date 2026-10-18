@@ -70,11 +70,27 @@ id     01JAQ9…                  clear
 kind   host | other             clear; the cloud only needs to count hosts
 space  personal | col_01J…      clear
 key    3                        version of the space key used
-nonce  24 bytes
-data   XChaCha20-Poly1305(space key, nonce, payload,
-                          aad = id ‖ kind ‖ space ‖ key)
-sig    Ed25519 by the writer    collections only, to prove authorship
+data   cipher id ‖ nonce ‖ AEAD(space key, nonce, payload,
+                                aad = id ‖ kind ‖ space ‖ key)
+sig    Ed25519 by the writer    collections only, to prove authorship (not yet)
 ```
+
+**Ciphers.** The first byte of every sealed value (records and wrapped keys)
+names the algorithm, so values sealed differently can sit side by side and a
+new algorithm needs no guessing about old data. Ids are never reused.
+
+| Id | Algorithm | Nonce | Use |
+| --- | --- | --- | --- |
+| 1 | XChaCha20-Poly1305 | 24 bytes, random | Default. Random nonces are safe however many devices write, and it is fast and constant-time without AES hardware. |
+| 2 | AES-256-GCM | 12 bytes, random | Where FIPS-approved algorithms are required (Business). Random 96-bit nonces are fine for the few thousand values one key seals. |
+
+New values are sealed with the vault's chosen cipher (a setting later); old
+ones open with whatever they carry. Values from the first builds had no id
+byte (`nonce ‖ ciphertext`, XChaCha20-Poly1305) and are rewritten on open.
+
+**Later, for collections:** neither Poly1305 nor GCM commits to its key, so a
+crafted ciphertext could decrypt under two keys. Shared collections should add
+a key commitment (a hash of the key) to the envelope.
 
 - **The AAD binds the ciphertext to its record.** A server cannot swap host A's
   data into host B.
@@ -103,9 +119,8 @@ CREATE TABLE records (
   kind     TEXT NOT NULL,      -- 'host' | 'other'
   space    TEXT NOT NULL,
   key_ver  INTEGER NOT NULL,
-  nonce    BLOB NOT NULL,
-  data     BLOB NOT NULL,
-  sig      BLOB,
+  data     BLOB NOT NULL,      -- cipher id, nonce, ciphertext and tag
+  sig      BLOB,               -- not yet: collections
   hlc      TEXT NOT NULL,      -- newest field clock, for quick change scans
   deleted  INTEGER NOT NULL DEFAULT 0
 );
@@ -116,7 +131,7 @@ CREATE TABLE keys (
   wrapped_by  TEXT NOT NULL,   -- 'keychain' | 'recovery' | 'passphrase' | 'account' | a user key id
   PRIMARY KEY (id, ver, wrapped_by)
 );
-CREATE TABLE sync (
+CREATE TABLE sync (            -- not yet: comes with sync
   backend     TEXT NOT NULL,
   record_id   TEXT NOT NULL,
   etag        TEXT,            -- remote version last seen

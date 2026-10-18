@@ -72,6 +72,7 @@ Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
 | --- | --- |
 | `crates/term` | libghostty-vt on its own thread; produces immutable frames |
 | `crates/ssh` | russh sessions as OpenSSH does them: ssh config, host keys, sign-in, ProxyJump |
+| `crates/vault` | Saved passwords and passphrases: encrypted records in SQLite, key in the OS keychain |
 | `crates/config` | `config.toml`, `hosts.toml` and themes: loading, precedence, comment-preserving writes |
 | `crates/app` | GPUI window: tabs, host list, terminal rendering, keys, IME (preedit), window chrome |
 

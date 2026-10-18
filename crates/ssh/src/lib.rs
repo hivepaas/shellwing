@@ -11,6 +11,7 @@ mod auth;
 pub mod config;
 pub mod hostkey;
 pub mod prompt;
+pub mod secrets;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -24,6 +25,7 @@ pub use config::Resolved;
 use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
+pub use secrets::{Learned, Secrets};
 
 /// Used when the config sets no ServerAliveInterval.
 const DEFAULT_KEEPALIVE: Duration = Duration::from_secs(30);
@@ -165,6 +167,8 @@ pub struct Options {
     /// Where questions go (passwords, passphrases, codes, new host keys). Without
     /// one, only non-interactive methods are tried and unknown hosts are refused.
     pub prompter: Option<Prompter>,
+    /// Saved passwords and passphrases, tried before asking.
+    pub secrets: Option<std::sync::Arc<dyn Secrets>>,
     pub cols: u32,
     pub rows: u32,
     pub term: String,
@@ -213,11 +217,11 @@ async fn open_hop(
     })?;
     auth::authenticate(
         &mut handle,
-        &hop.target.user,
-        &hop.target.host,
+        &hop.target,
         &hop.keys_to_try(),
         &opts.auth,
         opts.prompter.as_ref(),
+        opts.secrets.as_deref(),
     )
     .await?;
     Ok(handle)
