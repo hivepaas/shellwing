@@ -150,10 +150,16 @@ fn main() -> anyhow::Result<()> {
 
     gpui_platform::application().run(move |cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(1100.), px(720.)), cx);
+        // GNOME's Wayland compositor draws no window frame, so Linux gets
+        // client-side decorations; macOS and Windows keep their native title bar.
+        let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
-            window_decorations: Some(WindowDecorations::Client),
-            titlebar: None,
+            window_decorations: client_side.then_some(WindowDecorations::Client),
+            titlebar: (!client_side).then(|| gpui::TitlebarOptions {
+                title: Some(title.clone().into()),
+                ..Default::default()
+            }),
             app_id: Some("shellwing".into()),
             ..Default::default()
         };

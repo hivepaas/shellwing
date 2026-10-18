@@ -25,8 +25,37 @@ use crate::Writer;
 use crate::bench::Probe;
 use crate::chrome::{self, RESIZE_EDGE, TITLEBAR_H};
 
-const FONT_FAMILY: &str = "JetBrains Mono";
-/// Tried in order for characters the main font does not have.
+/// Terminal font candidates; the first one installed is used ($SHELLWING_FONT wins).
+#[cfg(target_os = "macos")]
+const FONT_FAMILIES: &[&str] = &["JetBrains Mono", "SF Mono", "Menlo"];
+#[cfg(target_os = "windows")]
+const FONT_FAMILIES: &[&str] = &["JetBrains Mono", "Cascadia Mono", "Consolas"];
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const FONT_FAMILIES: &[&str] = &[
+    "JetBrains Mono",
+    "DejaVu Sans Mono",
+    "Noto Sans Mono",
+    "Liberation Mono",
+];
+
+/// Tried in order for characters the terminal font lacks (CJK, emoji).
+#[cfg(target_os = "macos")]
+const FONT_FALLBACKS: &[&str] = &[
+    "Menlo",
+    "Apple Color Emoji",
+    "PingFang SC",
+    "Hiragino Sans",
+    "Apple SD Gothic Neo",
+];
+#[cfg(target_os = "windows")]
+const FONT_FALLBACKS: &[&str] = &[
+    "Consolas",
+    "Segoe UI Emoji",
+    "Microsoft YaHei",
+    "Yu Gothic",
+    "Malgun Gothic",
+];
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 const FONT_FALLBACKS: &[&str] = &[
     "Noto Sans Mono CJK SC",
     "Noto Color Emoji",
@@ -106,6 +135,7 @@ pub struct TermView {
     notice: Option<SharedString>,
     /// Last pointer position over the grid, to show links when the modifier goes down.
     last_mouse: Option<(f32, f32)>,
+    font_family: SharedString,
     probe: Arc<Probe>,
 }
 
@@ -131,19 +161,34 @@ impl TermView {
             pending_paste: None,
             notice: None,
             last_mouse: None,
+            font_family: FONT_FAMILIES[0].into(),
             probe,
         }
     }
 
-    /// The terminal font, with fallbacks for glyphs it lacks (CJK, emoji). Missing
-    /// fallback families are skipped by the text system.
-    fn base_font() -> Font {
+    /// The terminal font, with fallbacks for glyphs it lacks. Missing fallback
+    /// families are skipped by the text system.
+    fn base_font(&self) -> Font {
         Font {
             fallbacks: Some(FontFallbacks::from_fonts(
                 FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
             )),
-            ..font(FONT_FAMILY)
+            ..font(self.font_family.clone())
         }
+    }
+
+    /// Picks the terminal font: $SHELLWING_FONT, else the first installed candidate.
+    fn choose_font(window: &mut Window) -> SharedString {
+        if let Ok(f) = std::env::var("SHELLWING_FONT") {
+            return f.into();
+        }
+        let installed = window.text_system().all_font_names();
+        FONT_FAMILIES
+            .iter()
+            .find(|f| installed.iter().any(|i| i == *f))
+            .copied()
+            .unwrap_or(FONT_FAMILIES[FONT_FAMILIES.len() - 1])
+            .into()
     }
 
     /// Events from the terminal thread (copied text, refused pastes).
@@ -193,9 +238,10 @@ impl TermView {
     }
 
     fn measure_cell(&mut self, window: &mut Window) {
+        self.font_family = Self::choose_font(window);
         let run = TextRun {
             len: 1,
-            font: Self::base_font(),
+            font: self.base_font(),
             color: rgb(0xffffff).into(),
             background_color: None,
             underline: None,
@@ -246,7 +292,7 @@ impl TermView {
             {
                 continue;
             }
-            let base = Self::base_font();
+            let base = self.base_font();
             let mut segments: Vec<Segment> = Vec::new();
             let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
             let mut offset = 0;
@@ -482,6 +528,7 @@ impl Render for TermView {
         let fg = hsla(self.frame.foreground);
         let bg = hsla(self.frame.background);
         let marked = self.marked.clone();
+        let base_font = self.base_font();
         let entity = cx.entity();
         let focus = self.focus.clone();
         let probe = self.probe.clone();
@@ -562,7 +609,7 @@ impl Render for TermView {
                             if let Some(m) = &marked {
                                 let run = TextRun {
                                     len: m.len(),
-                                    font: TermView::base_font(),
+                                    font: base_font.clone(),
                                     color: fg,
                                     background_color: Some(bg),
                                     underline: Some(UnderlineStyle {

@@ -10,6 +10,13 @@ publish.workspace = true
 name = "shellwing"
 path = "src/main.rs"
 
+[features]
+default = ["wayland", "x11"]
+# Linux window system backends. Build with `--no-default-features --features wayland`
+# when the X11 development libraries are not installed.
+wayland = ["gpui_platform/wayland"]
+x11 = ["gpui_platform/x11"]
+
 [dependencies]
 shellwing-term.workspace = true
 shellwing-ssh.workspace = true
