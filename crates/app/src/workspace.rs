@@ -2319,6 +2319,8 @@ impl Render for Workspace {
                         .size_full()
                         .flex()
                         .justify_center()
+                        // At its own height: a flex row would stretch it to the bottom.
+                        .items_start()
                         .pt(px(56.))
                         .bg(rgba(0x03060c99))
                         .on_mouse_down(
