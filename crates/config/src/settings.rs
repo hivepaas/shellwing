@@ -48,7 +48,7 @@ pub struct Padding {
 
 impl Default for Padding {
     fn default() -> Self {
-        Padding { x: 8.0, y: 4.0 }
+        Padding { x: 4.0, y: 4.0 }
     }
 }
 
