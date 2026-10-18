@@ -22,7 +22,7 @@ pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
 pub use settings::{
     Appearance, Cursor, CursorStyle, Font, General, OnDisconnect, Padding, Scrollbar, Settings,
-    Terminal,
+    Sync, Terminal,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, Stamp, Store, WriteError};

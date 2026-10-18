@@ -172,3 +172,27 @@ lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
 
+## Syncing passwords between devices
+
+```toml
+[sync]
+folder = "~/Library/Mobile Documents/com~apple~CloudDocs/shellwing"   # any synced folder
+```
+
+Choose *Sync passwords with a folder…* in the palette, or set the folder here.
+Any folder another tool keeps in sync works: iCloud Drive, Syncthing, a Dropbox
+or OneDrive folder, a network share. shellwing writes `shellwing/format.json` and
+one encrypted file per saved secret in `shellwing/records/`; nothing in them is
+readable without the key.
+
+- **The first device** creates a **recovery key** (13 groups of 4 characters) and
+  shows it: write it down. *Show the recovery key* shows it again.
+- **Another device** choosing the same folder is asked for that key, then
+  shares the vault; what it had saved is kept and merged.
+- Syncing runs every minute, right after a secret is saved or forgotten, and on
+  *Sync now*. Edits merge field by field, so two devices offline never lose
+  each other's changes; a forgotten secret is forgotten everywhere.
+- *Stop syncing* leaves the folder and this device's secrets as they are.
+
+Hosts and settings do not sync yet; that comes next.
+

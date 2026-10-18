@@ -17,7 +17,7 @@ of each device.
 ## Keys
 
 ```
-Recovery key (24 words, printed) ──┐
+Recovery key (printed) ───────────┐
 Passphrase (optional, Argon2id) ───┼── unlocks ──▶ Account Key (AK, 256-bit random)
 OS keychain, per device ───────────┘                   │
                                                        ├─ wraps ─▶ user key pair (X25519 + Ed25519)
@@ -48,7 +48,10 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
       through the backend.
    4. Both screens show a short comparison code (SAS), so a malicious server
       cannot sit in the middle.
-2. **The recovery key.**
+2. **The recovery key:** 32 random bytes shown as 13 groups of 4 Crockford
+   base32 characters (no I, L, O, U; typing them loosely still works). The
+   store's `format.json` holds the space key sealed with it; the device keeps it
+   wrapped by the account key, so it can be shown again.
 3. **The passphrase**, if the user enabled it. Its wrapped AK is stored on the
    backend, so a leaked backend allows offline guessing. Two defences:
    - Argon2id tuned to about 0.5 s on the slowest supported machine, with at

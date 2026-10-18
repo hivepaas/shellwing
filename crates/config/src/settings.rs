@@ -8,8 +8,31 @@ use crate::theme::DEFAULT_THEME;
 #[serde(default)]
 pub struct Settings {
     pub general: General,
+    pub sync: Sync,
     pub appearance: Appearance,
     pub terminal: Terminal,
+}
+
+/// Syncing the vault through a folder (docs/design/sync.md).
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Sync {
+    /// The folder, `~/` allowed; None: no sync.
+    pub folder: Option<String>,
+}
+
+impl Sync {
+    /// The folder with `~/` expanded.
+    pub fn folder_path(&self) -> Option<std::path::PathBuf> {
+        let f = self.folder.as_deref()?.trim();
+        if f.is_empty() {
+            return None;
+        }
+        Some(match (f.strip_prefix("~/"), std::env::home_dir()) {
+            (Some(rest), Some(home)) => home.join(rest),
+            _ => std::path::PathBuf::from(f),
+        })
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]

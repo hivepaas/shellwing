@@ -138,6 +138,26 @@ impl Store {
         )
     }
 
+    /// Sets (or with None, removes) `[sync] folder` in `config.toml`.
+    pub fn set_sync_folder(&self, folder: Option<&str>) -> Result<(), WriteError> {
+        self.edit(SETTINGS, |doc| {
+            let sync = doc
+                .entry("sync")
+                .or_insert_with(toml_edit::table)
+                .as_table_like_mut()
+                .ok_or("`sync` is not a table")?;
+            match folder {
+                Some(f) => {
+                    sync.insert("folder", toml_edit::value(f));
+                }
+                None => {
+                    sync.remove("folder");
+                }
+            }
+            Ok(())
+        })
+    }
+
     /// Sets `[appearance] theme` in `config.toml`, keeping everything else in the
     /// file as written.
     pub fn set_theme(&self, id: &str) -> Result<(), WriteError> {
@@ -450,6 +470,16 @@ mod tests {
         };
         s.save_session_state(&state).expect("save");
         assert_eq!(s.session_state(), Some(state));
+    }
+
+    #[test]
+    fn sync_folder_is_set_and_removed() {
+        let s = temp("sync-folder");
+        s.set_sync_folder(Some("~/Sync/shellwing")).expect("set");
+        let folder = s.settings().expect("load").sync.folder;
+        assert_eq!(folder.as_deref(), Some("~/Sync/shellwing"));
+        s.set_sync_folder(None).expect("remove");
+        assert_eq!(s.settings().expect("load").sync.folder, None);
     }
 
     #[test]

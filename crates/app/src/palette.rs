@@ -21,6 +21,10 @@ pub enum PaletteEvent {
     Pick(String),
     /// Forget a saved secret (confirmed by a second Enter).
     Forget(String),
+    /// Put this on the clipboard.
+    Copy(String),
+    /// What was typed in answer to a question.
+    Answer(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,6 +38,10 @@ pub enum Action {
     EditSettings,
     EditHosts,
     ManageSecrets,
+    SyncFolder,
+    SyncNow,
+    ShowRecoveryKey,
+    StopSync,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -45,6 +53,10 @@ pub enum Kind {
     Theme(String),
     /// A vault item, by id.
     Secret(String),
+    /// Text to copy.
+    Copy(String),
+    /// Something to read; Enter does nothing.
+    Note,
 }
 
 #[derive(Clone, Debug)]
@@ -111,6 +123,10 @@ enum Mode {
     Connect,
     Themes,
     Secrets,
+    /// Text to copy and notes.
+    Show,
+    /// A question: Enter answers with what is typed.
+    Ask,
 }
 
 pub struct Palette {
@@ -139,6 +155,16 @@ impl Palette {
             "Find a host, or type user@host",
             cx,
         )
+    }
+
+    /// Entries to read or copy, such as the recovery key.
+    pub fn show(entries: Vec<Entry>, cx: &mut Context<Self>) -> Self {
+        Self::build(Mode::Show, entries, 0, "", cx)
+    }
+
+    /// A question, with notes under the field; Enter answers.
+    pub fn ask(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
+        Self::build(Mode::Ask, notes, 0, placeholder, cx)
     }
 
     /// Saved passwords and passphrases, to forget.
@@ -189,6 +215,13 @@ impl Palette {
 
     fn refilter(&mut self, cx: &mut Context<Self>) {
         let typed = self.input.read(cx).text().trim().to_string();
+        if self.mode == Mode::Ask {
+            // The notes stay; what is typed is the answer, not a filter.
+            self.shown = self.entries.clone();
+            self.unfiltered = true;
+            cx.notify();
+            return;
+        }
         let (actions_only, query) = match typed.strip_prefix('>') {
             Some(rest) if self.mode == Mode::Connect => (true, rest.trim().to_lowercase()),
             _ => (false, typed.to_lowercase()),
@@ -274,6 +307,8 @@ impl Palette {
                 return;
             }
             Kind::Secret(id) => PaletteEvent::Forget(id.clone()),
+            Kind::Copy(text) => PaletteEvent::Copy(text.clone()),
+            Kind::Note => return,
         });
     }
 
@@ -289,6 +324,12 @@ impl Palette {
         };
         match k.key.as_str() {
             "escape" => cx.emit(PaletteEvent::Dismiss),
+            "enter" if self.mode == Mode::Ask => {
+                let answer = self.input.read(cx).text().trim().to_string();
+                if !answer.is_empty() {
+                    cx.emit(PaletteEvent::Answer(answer));
+                }
+            }
             "enter" => self.choose(self.selected, cx),
             "down" => step(1, self, cx),
             "up" => step(-1, self, cx),
@@ -403,6 +444,8 @@ impl Render for Palette {
             Mode::Connect => "↑↓ move   Enter open   Esc close   type > for actions only",
             Mode::Themes => "↑↓ preview   Enter keep   Esc go back",
             Mode::Secrets => "↑↓ move   Enter twice forget   Esc close   secrets are never shown",
+            Mode::Show => "Enter copies   Esc close",
+            Mode::Ask => "Enter answers   Esc cancels",
         };
         div()
             .w(px(640.))

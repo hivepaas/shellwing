@@ -23,10 +23,15 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 mod cipher;
+mod hlc;
 mod keychain;
+mod recovery;
+mod sync;
 
 pub use cipher::Cipher;
 pub use keychain::{KeyStore, MemoryKeys, OsKeychain};
+pub use recovery::RecoveryKey;
+pub use sync::{Backend, Folder, FolderState, SyncReport};
 
 const KEY_LEN: usize = 32;
 const SPACE: &str = "personal";
@@ -48,6 +53,15 @@ pub enum Error {
     KeyMissing,
     #[error("a vault record failed to decrypt (wrong key or damaged data)")]
     Decrypt,
+    /// The sync store holds another vault: join it with its recovery key.
+    #[error("the sync folder holds another vault; enter its recovery key to join it")]
+    OtherVault,
+    #[error("the sync folder holds no vault yet")]
+    NotSynced,
+    #[error("that recovery key does not open the vault in the sync folder")]
+    WrongRecoveryKey,
+    #[error("sync folder: {0}")]
+    Sync(String),
     /// Sealed by a newer version with an algorithm this one does not know.
     #[error("a vault record uses an unknown cipher ({0}); update shellwing")]
     UnknownCipher(u8),
@@ -71,15 +85,15 @@ pub enum Item {
     },
 }
 
-/// A field and when it was set, for merging edits once sync arrives.
+/// A field and when it was set (a clock stamp), for merging edits.
 #[derive(Clone, Serialize, Deserialize)]
-struct Field {
+pub(crate) struct Field {
     val: String,
     t: String,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Record {
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct Record {
     v: u32,
     #[serde(rename = "type")]
     kind: String,
@@ -100,12 +114,6 @@ fn now_ms() -> u128 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or_default()
-}
-
-/// A clock stamp: milliseconds, a counter and the device, as the design's HLC
-/// will need; one device and no counter for now.
-fn stamp() -> String {
-    format!("{:013}-0000-local", now_ms())
 }
 
 fn random<const N: usize>() -> Result<[u8; N]> {
@@ -129,10 +137,24 @@ const SPACE_AAD: &[u8] = b"shellwing space key: personal v1";
 
 pub struct Vault {
     db: Mutex<Connection>,
-    space_key: Zeroizing<[u8; KEY_LEN]>,
+    /// From the keychain; wraps the space key and the recovery key.
+    account: Zeroizing<[u8; KEY_LEN]>,
+    /// Behind a lock so joining another vault can replace it while open.
+    space_key: std::sync::RwLock<Zeroizing<[u8; KEY_LEN]>>,
     /// What new values are sealed with; old ones open whatever they used.
     cipher: Cipher,
+    clock: hlc::Clock,
 }
+
+/// A record row as stored: sealed data, its newest stamp, and whether deleted.
+pub(crate) struct RawRow {
+    pub id: String,
+    pub data: Vec<u8>,
+    pub hlc: String,
+    pub deleted: bool,
+}
+
+const RECOVERY_KEY_AAD: &[u8] = b"shellwing recovery key wrapped by the account key v1";
 
 impl Vault {
     /// Opens (or creates) `vault.db` at `path`, unlocking it with the account key
@@ -149,8 +171,28 @@ impl Vault {
                 deleted INTEGER NOT NULL DEFAULT 0);
              CREATE TABLE IF NOT EXISTS keys (
                 id TEXT NOT NULL, ver INTEGER NOT NULL, wrapped BLOB NOT NULL,
-                wrapped_by TEXT NOT NULL, PRIMARY KEY (id, ver, wrapped_by));",
+                wrapped_by TEXT NOT NULL, PRIMARY KEY (id, ver, wrapped_by));
+             CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);",
         )?;
+        // This device's name in clock stamps: random, made once.
+        let device: String = match db
+            .query_row("SELECT value FROM meta WHERE key = 'device'", [], |r| {
+                r.get(0)
+            })
+            .optional()?
+        {
+            Some(d) => d,
+            None => {
+                let d: String = random::<4>()?.iter().map(|b| format!("{b:02x}")).collect();
+                db.execute(
+                    "INSERT INTO meta (key, value) VALUES ('device', ?1)",
+                    params![d],
+                )?;
+                d
+            }
+        };
+        let newest: Option<String> =
+            db.query_row("SELECT MAX(hlc) FROM records", [], |r| r.get(0))?;
         let has_records: bool =
             db.query_row("SELECT EXISTS(SELECT 1 FROM records)", [], |r| r.get(0))?;
         let account = match keys.load().map_err(Error::Keychain)? {
@@ -200,13 +242,24 @@ impl Vault {
                 s
             }
         };
+        let clock = hlc::Clock::new(&device);
+        if let Some(n) = &newest {
+            clock.observe(n);
+        }
         let vault = Vault {
             db: Mutex::new(db),
-            space_key,
+            account,
+            space_key: std::sync::RwLock::new(space_key),
             cipher,
+            clock,
         };
         vault.upgrade_untagged()?;
         Ok(vault)
+    }
+
+    /// The space key, read-locked for one use.
+    pub(crate) fn sk(&self) -> std::sync::RwLockReadGuard<'_, Zeroizing<[u8; KEY_LEN]>> {
+        self.space_key.read().unwrap_or_else(|e| e.into_inner())
     }
 
     /// Seals new values with `cipher` from now on (old ones keep theirs).
@@ -223,9 +276,9 @@ impl Vault {
                 .collect::<std::result::Result<_, _>>()?
         };
         for (id, data) in rows {
-            let (plain, legacy) = cipher::open(&self.space_key, &data, &record_aad(&id))?;
+            let (plain, legacy) = cipher::open(&self.sk(), &data, &record_aad(&id))?;
             if legacy {
-                let sealed = cipher::seal(self.cipher, &self.space_key, &plain, &record_aad(&id))?;
+                let sealed = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(&id))?;
                 let db = self.db.lock().map_err(|_| Error::Decrypt)?;
                 db.execute(
                     "UPDATE records SET data = ?2 WHERE id = ?1",
@@ -246,7 +299,7 @@ impl Vault {
         let mut out = vec![];
         for row in rows {
             let (id, data) = row?;
-            let (plain, _) = cipher::open(&self.space_key, &data, &record_aad(&id))?;
+            let (plain, _) = cipher::open(&self.sk(), &data, &record_aad(&id))?;
             out.push((id, serde_json::from_slice(&plain)?));
         }
         Ok(out)
@@ -261,14 +314,102 @@ impl Vault {
 
     fn write(&self, id: &str, record: &Record) -> Result<()> {
         let plain = Zeroizing::new(serde_json::to_vec(record)?);
-        let data = cipher::seal(self.cipher, &self.space_key, &plain, &record_aad(id))?;
+        let data = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(id))?;
+        let newest = record.f.values().map(|f| f.t.as_str()).max().unwrap_or("");
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
             "INSERT INTO records (id, kind, space, key_ver, data, hlc) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(id) DO UPDATE SET data = excluded.data, hlc = excluded.hlc, deleted = 0",
-            params![id, KIND, SPACE, KEY_VERSION, data, stamp()],
+            params![id, KIND, SPACE, KEY_VERSION, data, newest],
         )?;
         Ok(())
+    }
+
+    /// Every row, deleted ones too.
+    pub(crate) fn raw_rows(&self) -> Result<Vec<RawRow>> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        let mut q = db.prepare("SELECT id, data, hlc, deleted FROM records WHERE space = ?1")?;
+        let rows = q
+            .query_map(params![SPACE], |r| {
+                Ok(RawRow {
+                    id: r.get(0)?,
+                    data: r.get(1)?,
+                    hlc: r.get(2)?,
+                    deleted: r.get::<_, i64>(3)? != 0,
+                })
+            })?
+            .collect::<std::result::Result<_, _>>()?;
+        Ok(rows)
+    }
+
+    /// Stores a merged version from sync.
+    pub(crate) fn store_version(&self, id: &str, v: &sync::Version) -> Result<()> {
+        match v {
+            sync::Version::Live(r) => self.write(id, r),
+            sync::Version::Gone(t) => {
+                let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+                db.execute(
+                    "INSERT INTO records (id, kind, space, key_ver, data, hlc, deleted)
+                     VALUES (?1, ?2, ?3, ?4, X'', ?5, 1)
+                     ON CONFLICT(id) DO UPDATE SET data = X'', hlc = excluded.hlc, deleted = 1",
+                    params![id, KIND, SPACE, KEY_VERSION, t],
+                )?;
+                Ok(())
+            }
+        }
+    }
+
+    /// The recovery key, made (and kept, wrapped by the account key) on first use.
+    pub(crate) fn recovery_key_or_new(&self) -> Result<RecoveryKey> {
+        let wrapped: Option<Vec<u8>> = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            db.query_row(
+                "SELECT wrapped FROM keys WHERE id = 'recovery' AND wrapped_by = 'account'",
+                [],
+                |r| r.get(0),
+            )
+            .optional()?
+        };
+        if let Some(w) = wrapped {
+            let (k, _) = cipher::open(&self.account, &w, RECOVERY_KEY_AAD)?;
+            let mut key = Zeroizing::new([0u8; KEY_LEN]);
+            if k.len() != KEY_LEN {
+                return Err(Error::Decrypt);
+            }
+            key.copy_from_slice(&k);
+            return Ok(RecoveryKey(key));
+        }
+        let rk = RecoveryKey(Zeroizing::new(random::<KEY_LEN>()?));
+        self.store_recovery_key(&rk)?;
+        Ok(rk)
+    }
+
+    pub(crate) fn store_recovery_key(&self, rk: &RecoveryKey) -> Result<()> {
+        let sealed = cipher::seal(self.cipher, &self.account, &rk.0[..], RECOVERY_KEY_AAD)?;
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('recovery', 1, ?1, 'account')
+             ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+            params![sealed],
+        )?;
+        Ok(())
+    }
+
+    /// The recovery key, to show again, if syncing was ever started.
+    pub fn recovery_key(&self) -> Result<Option<RecoveryKey>> {
+        let has: bool = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            db.query_row(
+                "SELECT EXISTS(SELECT 1 FROM keys WHERE id = 'recovery')",
+                [],
+                |r| r.get(0),
+            )?
+        };
+        if has {
+            self.recovery_key_or_new().map(Some)
+        } else {
+            Ok(None)
+        }
     }
 
     fn put(
@@ -282,7 +423,7 @@ impl Vault {
             Some((id, _)) => id,
             None => new_id()?,
         };
-        let t = stamp();
+        let t = self.clock.tick();
         let mut f = std::collections::BTreeMap::new();
         for (k, v) in std::iter::once(&key_field).chain(fields) {
             f.insert(
@@ -367,7 +508,7 @@ impl Vault {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
             "UPDATE records SET deleted = 1, data = X'', hlc = ?2 WHERE id = ?1",
-            params![id, stamp()],
+            params![id, self.clock.tick()],
         )?;
         Ok(())
     }
@@ -533,15 +674,15 @@ mod tests {
                     Ok((r.get(0)?, r.get(1)?))
                 })
                 .expect("row");
-            let (plain, _) = cipher::open(&v.space_key, &data, &record_aad(&id)).expect("open");
+            let (plain, _) = cipher::open(&v.sk(), &data, &record_aad(&id)).expect("open");
             db.execute(
                 "UPDATE records SET data = ?2 WHERE id = ?1",
-                params![id, untagged(&v.space_key, &plain, &record_aad(&id))],
+                params![id, untagged(&v.sk(), &plain, &record_aad(&id))],
             )
             .expect("record");
             db.execute(
                 "UPDATE keys SET wrapped = ?1",
-                params![untagged(&account, &v.space_key[..], SPACE_AAD)],
+                params![untagged(&account, &v.sk()[..], SPACE_AAD)],
             )
             .expect("key");
         }

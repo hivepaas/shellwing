@@ -6267,12 +6267,14 @@ name = "shellwing-vault"
 version = "0.1.0"
 dependencies = [
  "aes-gcm 0.10.3",
+ "base64",
  "chacha20poly1305",
  "getrandom 0.3.4",
  "keyring",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.21",
  "zeroize",
 ]
