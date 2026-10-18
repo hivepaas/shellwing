@@ -2,25 +2,41 @@
 //!
 //! libghostty-vt's `Terminal` is not `Send`, so it lives on one dedicated thread
 //! for its whole life. Everything else talks to it through [`TermHandle`]: bytes
-//! from the host go in with [`TermHandle::feed`], key presses with
-//! [`TermHandle::key`], and the UI takes immutable [`Frame`]s out.
+//! from the host go in with [`TermHandle::feed`], user input (keys, text, paste,
+//! mouse, wheel) through the other methods, and the UI takes immutable [`Frame`]s
+//! out. Results the UI must act on (copied text, a refused paste) come back as
+//! [`Event`]s.
 //!
 //! Frames are pulled, not pushed: after the UI takes one, the thread builds the
 //! next only once something changed. While output floods in, parsing continues
 //! at full speed and the UI simply receives the latest state each frame.
+//!
+//! Mouse input is routed here because only the terminal knows whether the
+//! running program asked for mouse reporting: if it did, presses, motion and the
+//! wheel are encoded for the program; otherwise they select text and scroll the
+//! scrollback. Holding Shift always selects, as in other terminals.
 
-use std::sync::mpsc::{self, Receiver, SyncSender, TrySendError};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::{Duration, Instant};
 
 use libghostty_vt::render::{CellIterator, Dirty, RenderState, RowIterator};
 use libghostty_vt::screen::CellWide;
+use libghostty_vt::selection::FormatOptions;
+use libghostty_vt::selection::gesture::{DragEvent, Geometry, Gesture, PressEvent, ReleaseEvent};
 use libghostty_vt::style::RgbColor;
-use libghostty_vt::{Terminal, key};
+use libghostty_vt::terminal::{ClipboardMime, Point, PointCoordinate, ScrollViewport};
+use libghostty_vt::{Terminal, key, mouse, paste};
 
 /// How many feed chunks may wait for the parser before `feed` blocks. Blocking
 /// here is the backpressure that eventually slows the SSH server down.
 const FEED_QUEUE: usize = 64;
+/// Clicks closer together than this count as a double or triple click.
+const MULTI_CLICK: Duration = Duration::from_millis(500);
+/// Longest stretch of parsing before a frame may be built (about one 120 Hz frame).
+const BATCH_BUDGET: Duration = Duration::from_millis(8);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Rgb {
@@ -48,6 +64,8 @@ pub struct Run {
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
+    /// Inside the current selection; the UI chooses how to show it.
+    pub selected: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -63,8 +81,10 @@ pub struct Frame {
     pub rows: Vec<Arc<Row>>,
     pub background: Rgb,
     pub foreground: Rgb,
-    /// Cursor position in the viewport, when visible.
+    /// Cursor position in the viewport, when visible (hidden while scrolled back).
     pub cursor: Option<(u16, u16)>,
+    /// True while the viewport shows scrollback instead of the live screen.
+    pub scrolled_back: bool,
     /// Increases with every frame built.
     pub seq: u64,
 }
@@ -93,6 +113,63 @@ pub struct Mods {
     pub shift: bool,
     pub ctrl: bool,
     pub alt: bool,
+    /// Super / Command.
+    pub logo: bool,
+}
+
+impl Mods {
+    fn ghostty(self) -> key::Mods {
+        let mut m = key::Mods::empty();
+        if self.shift {
+            m |= key::Mods::SHIFT;
+        }
+        if self.ctrl {
+            m |= key::Mods::CTRL;
+        }
+        if self.alt {
+            m |= key::Mods::ALT;
+        }
+        if self.logo {
+            m |= key::Mods::SUPER;
+        }
+        m
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MouseButton {
+    Left,
+    Middle,
+    Right,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MouseAction {
+    Press,
+    Release,
+    Motion,
+}
+
+/// A mouse event in pixels relative to the top-left of the terminal grid.
+#[derive(Clone, Copy, Debug)]
+pub struct MouseInput {
+    pub action: MouseAction,
+    /// The button pressed or released; for motion, the button held, if any.
+    pub button: Option<MouseButton>,
+    pub x: f32,
+    pub y: f32,
+    pub mods: Mods,
+}
+
+/// Something the UI has to act on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Event {
+    /// Text to put on the clipboard.
+    Copied(String),
+    /// A paste refused because it could run commands (e.g. it contains a
+    /// newline and the program did not enable bracketed paste). Paste it again
+    /// with `allow_unsafe` once the user confirms.
+    PasteRefused(String),
 }
 
 enum Cmd {
@@ -104,20 +181,48 @@ enum Cmd {
         cell_h: u32,
     },
     Key(NamedKey, Mods),
-    /// The UI took the latest frame; build the next one when there are changes.
-    FrameTaken,
+    Text(String),
+    Paste {
+        text: String,
+        allow_unsafe: bool,
+    },
+    Copy,
+    Mouse(MouseInput),
+    /// Wheel movement in lines; negative scrolls up into history.
+    Wheel {
+        lines: f32,
+        x: f32,
+        y: f32,
+        mods: Mods,
+    },
+    /// Scroll the viewport by whole pages; negative goes up.
+    ScrollPages(i32),
+    ScrollToBottom,
+    /// Wakes the thread after the UI took a frame (see [`Shared::taken`]).
+    Wake,
 }
 
-/// Bytes the terminal wants written back to the host: key encodings and replies
-/// to queries such as device attributes.
+/// State shared between the UI and the terminal thread.
+struct Shared {
+    latest: Mutex<Option<Arc<Frame>>>,
+    /// The UI took the last frame, so the next change may build a new one. A flag
+    /// rather than a queued message: when output floods in, the queue is full and a
+    /// message could be dropped, which would stop frames for good.
+    taken: AtomicBool,
+}
+
+/// Bytes the terminal wants written back to the host: key encodings, typed and
+/// pasted text, mouse reports, and replies to queries such as device attributes.
 pub type WriteFn = Box<dyn Fn(Vec<u8>) + Send>;
 /// Called (from the terminal thread) when a new frame is ready.
 pub type WakeFn = Box<dyn Fn() + Send>;
+/// Called (from the terminal thread) with events for the UI.
+pub type EventFn = Box<dyn Fn(Event) + Send>;
 
 #[derive(Clone)]
 pub struct TermHandle {
     tx: SyncSender<Cmd>,
-    latest: Arc<Mutex<Option<Arc<Frame>>>>,
+    shared: Arc<Shared>,
 }
 
 impl TermHandle {
@@ -128,18 +233,22 @@ impl TermHandle {
         scrollback: usize,
         write: WriteFn,
         wake: WakeFn,
+        events: EventFn,
     ) -> std::io::Result<Self> {
         let (tx, rx) = mpsc::sync_channel(FEED_QUEUE);
-        let latest = Arc::new(Mutex::new(None));
-        let out = latest.clone();
+        let shared = Arc::new(Shared {
+            latest: Mutex::new(None),
+            taken: AtomicBool::new(true),
+        });
+        let out = shared.clone();
         thread::Builder::new()
             .name("shellwing-term".into())
             .spawn(move || {
-                if let Err(e) = run(cols, rows, scrollback, rx, out, write, wake) {
+                if let Err(e) = run(cols, rows, scrollback, rx, out, write, wake, events) {
                     eprintln!("terminal thread stopped: {e}");
                 }
             })?;
-        Ok(TermHandle { tx, latest })
+        Ok(TermHandle { tx, shared })
     }
 
     /// Queues host output for parsing. Blocks while the parser is `FEED_QUEUE` chunks behind.
@@ -162,16 +271,57 @@ impl TermHandle {
         let _ = self.tx.send(Cmd::Key(key, mods));
     }
 
+    /// Typed (or IME-committed) text.
+    pub fn text(&self, text: String) {
+        let _ = self.tx.send(Cmd::Text(text));
+    }
+
+    /// Pastes text, bracketed if the program enabled bracketed paste.
+    pub fn paste(&self, text: String, allow_unsafe: bool) {
+        let _ = self.tx.send(Cmd::Paste { text, allow_unsafe });
+    }
+
+    /// Copies the selection; the text arrives as [`Event::Copied`].
+    pub fn copy(&self) {
+        let _ = self.tx.send(Cmd::Copy);
+    }
+
+    pub fn mouse(&self, input: MouseInput) {
+        let _ = self.tx.send(Cmd::Mouse(input));
+    }
+
+    pub fn wheel(&self, lines: f32, x: f32, y: f32, mods: Mods) {
+        let _ = self.tx.send(Cmd::Wheel { lines, x, y, mods });
+    }
+
+    pub fn scroll_pages(&self, pages: i32) {
+        let _ = self.tx.send(Cmd::ScrollPages(pages));
+    }
+
+    pub fn scroll_to_bottom(&self) {
+        let _ = self.tx.send(Cmd::ScrollToBottom);
+    }
+
     /// Takes the newest frame, if one was built since the last call.
     pub fn take_frame(&self) -> Option<Arc<Frame>> {
-        let frame = self.latest.lock().ok()?.take();
+        let frame = self.shared.latest.lock().ok()?.take();
         if frame.is_some() {
-            // Never block the UI thread: if the queue is full the terminal thread is
-            // busy anyway and will see changes on its next pass.
-            if let Err(TrySendError::Full(_)) = self.tx.try_send(Cmd::FrameTaken) {}
+            self.shared.taken.store(true, Ordering::Release);
+            // Never block the UI thread. If the queue is full the terminal thread is
+            // busy and checks `taken` after its current batch anyway.
+            let _ = self.tx.try_send(Cmd::Wake);
         }
         frame
     }
+}
+
+struct Selecting {
+    gesture: Gesture<'static>,
+    press: PressEvent<'static>,
+    release: ReleaseEvent<'static>,
+    drag: DragEvent<'static>,
+    /// The left button went down on the grid for a selection (not for the program).
+    active: bool,
 }
 
 struct Engine {
@@ -181,21 +331,32 @@ struct Engine {
     cells_it: CellIterator<'static>,
     enc: key::Encoder<'static>,
     kev: key::Event<'static>,
+    mouse_enc: mouse::Encoder<'static>,
+    mouse_ev: mouse::Event<'static>,
+    sel: Selecting,
+    started: Instant,
     rows: Vec<Arc<Row>>,
     cols: u16,
+    grid_rows: u16,
+    cell: (u32, u32),
+    /// Fraction of a line left over from smooth (touchpad) scrolling.
+    wheel_rest: f32,
+    held: Option<MouseButton>,
     seq: u64,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     cols: u16,
     rows: u16,
     scrollback: usize,
     rx: Receiver<Cmd>,
-    latest: Arc<Mutex<Option<Arc<Frame>>>>,
+    shared: Arc<Shared>,
     write: WriteFn,
     wake: WakeFn,
+    events: EventFn,
 ) -> libghostty_vt::error::Result<()> {
-    // Shared by the PTY-reply callback and key encoding, both on this thread.
+    // Shared by the PTY-reply callback and input handling, both on this thread.
     let write = std::rc::Rc::new(write);
     let mut term = Terminal::new(cols, rows)?;
     term.set_scrollback_max_lines(Some(scrollback))?;
@@ -203,6 +364,8 @@ fn run(
         let write = write.clone();
         term.on_pty_write(move |_t, data| write(data.to_vec()))?;
     }
+    let mut press = PressEvent::new()?;
+    press.set_repeat_interval(MULTI_CLICK)?;
     let mut e = Engine {
         term,
         rs: RenderState::new()?,
@@ -210,22 +373,38 @@ fn run(
         cells_it: CellIterator::new()?,
         enc: key::Encoder::new()?,
         kev: key::Event::new()?,
+        mouse_enc: mouse::Encoder::new()?,
+        mouse_ev: mouse::Event::new()?,
+        sel: Selecting {
+            gesture: Gesture::new()?,
+            press,
+            release: ReleaseEvent::new()?,
+            drag: DragEvent::new()?,
+            active: false,
+        },
+        started: Instant::now(),
         rows: vec![],
         cols,
+        grid_rows: rows,
+        cell: (8, 16),
+        wheel_rest: 0.0,
+        held: None,
         seq: 0,
     };
-    // The UI holds no frame yet, so the first change produces one.
-    let mut ui_ready = true;
     let mut changed = true;
     while let Ok(first) = rx.recv() {
         let mut next = Some(first);
-        // Apply everything already queued before building a frame.
-        while let Some(cmd) = next.take().or_else(|| rx.try_recv().ok()) {
+        let batch_start = Instant::now();
+        // Apply what is queued before building a frame, but for at most BATCH_BUDGET:
+        // when input arrives faster than it parses, the queue never drains, and the
+        // screen must still update.
+        while let Some(cmd) = next.take().or_else(|| {
+            (batch_start.elapsed() < BATCH_BUDGET)
+                .then(|| rx.try_recv().ok())
+                .flatten()
+        }) {
             match cmd {
-                Cmd::Feed(b) => {
-                    e.term.vt_write(&b);
-                    changed = true;
-                }
+                Cmd::Feed(b) => e.term.vt_write(&b),
                 Cmd::Resize {
                     cols,
                     rows,
@@ -233,26 +412,71 @@ fn run(
                     cell_h,
                 } => {
                     e.term.resize(cols, rows, cell_w, cell_h)?;
-                    e.cols = cols;
-                    changed = true;
+                    (e.cols, e.grid_rows, e.cell) = (cols, rows, (cell_w.max(1), cell_h.max(1)));
                 }
                 Cmd::Key(k, m) => {
                     let mut out = Vec::new();
                     e.encode_key(k, m, &mut out)?;
                     if !out.is_empty() {
+                        e.term.scroll_viewport(ScrollViewport::Bottom);
                         write(out);
                     }
                 }
-                Cmd::FrameTaken => ui_ready = true,
+                Cmd::Text(t) => {
+                    e.term.scroll_viewport(ScrollViewport::Bottom);
+                    write(t.into_bytes());
+                }
+                Cmd::Paste { text, allow_unsafe } => {
+                    let mime = ClipboardMime::new("text/plain");
+                    let opts = paste::Options::new().with_allow_unsafe(allow_unsafe);
+                    match e
+                        .term
+                        .paste(opts, &[mime], |_, w| w.write_all(text.as_bytes()))
+                    {
+                        Ok(_) => e.term.scroll_viewport(ScrollViewport::Bottom),
+                        Err(libghostty_vt::Error::Rejected) => events(Event::PasteRefused(text)),
+                        Err(err) => return Err(err),
+                    }
+                }
+                Cmd::Copy => {
+                    let opts = FormatOptions::new().with_unwrap(true).with_trim(true);
+                    if let Some(bytes) = e.term.format_selection_alloc(None, opts)? {
+                        let text = String::from_utf8_lossy(&bytes).into_owned();
+                        if !text.is_empty() {
+                            events(Event::Copied(text));
+                        }
+                    }
+                }
+                Cmd::Mouse(m) => {
+                    let mut out = Vec::new();
+                    e.mouse(m, &mut out)?;
+                    if !out.is_empty() {
+                        write(out);
+                    }
+                }
+                Cmd::Wheel { lines, x, y, mods } => {
+                    let mut out = Vec::new();
+                    e.wheel(lines, x, y, mods, &mut out)?;
+                    if !out.is_empty() {
+                        write(out);
+                    }
+                }
+                Cmd::ScrollPages(p) => {
+                    let page = e.grid_rows.saturating_sub(1).max(1) as isize;
+                    e.term
+                        .scroll_viewport(ScrollViewport::Delta(p as isize * page));
+                }
+                Cmd::ScrollToBottom => e.term.scroll_viewport(ScrollViewport::Bottom),
+                Cmd::Wake => continue,
             }
+            changed = true;
         }
-        if changed && ui_ready {
+        if changed && shared.taken.swap(false, Ordering::AcqRel) {
             let frame = e.build_frame()?;
-            if let Ok(mut slot) = latest.lock() {
+            if let Ok(mut slot) = shared.latest.lock() {
                 *slot = Some(Arc::new(frame));
             }
             changed = false;
-            ui_ready = false;
             wake();
         }
     }
@@ -290,26 +514,161 @@ impl Engine {
             }
             NamedKey::Letter(_) => return Ok(()),
         };
-        let mut mods = key::Mods::empty();
-        if m.shift {
-            mods |= key::Mods::SHIFT;
-        }
-        if m.ctrl {
-            mods |= key::Mods::CTRL;
-        }
-        if m.alt {
-            mods |= key::Mods::ALT;
-        }
         self.kev
             .set_action(key::Action::Press)
             .set_key(gk)
-            .set_mods(mods)
+            .set_mods(m.ghostty())
             .set_consumed_mods(key::Mods::empty())
             .set_unshifted_codepoint(unshifted)
             .set_utf8(None::<String>);
         self.enc
             .set_options_from_terminal(&self.term)
             .encode_to_vec(&self.kev, out)
+    }
+
+    /// The viewport cell under a pixel position, clamped to the grid.
+    fn point(&self, x: f32, y: f32) -> Point {
+        let cx = (x / self.cell.0 as f32).clamp(0.0, self.cols.saturating_sub(1) as f32) as u16;
+        let cy =
+            (y / self.cell.1 as f32).clamp(0.0, self.grid_rows.saturating_sub(1) as f32) as u32;
+        Point::Viewport(PointCoordinate { x: cx, y: cy })
+    }
+
+    fn sync_mouse_encoder(&mut self) {
+        let size = mouse::EncoderSize {
+            screen_width: self.cols as u32 * self.cell.0,
+            screen_height: self.grid_rows as u32 * self.cell.1,
+            cell_width: self.cell.0,
+            cell_height: self.cell.1,
+            padding_top: 0,
+            padding_bottom: 0,
+            padding_left: 0,
+            padding_right: 0,
+        };
+        self.mouse_enc
+            .set_options_from_terminal(&self.term)
+            .set_size(size)
+            .set_any_button_pressed(self.held.is_some())
+            .set_track_last_cell(true);
+    }
+
+    /// Whether a gesture selects text (true) or goes to the program (false).
+    fn selects(&self, mods: Mods) -> libghostty_vt::error::Result<bool> {
+        Ok(!self.term.is_mouse_tracking()? || mods.shift)
+    }
+
+    fn mouse(&mut self, m: MouseInput, out: &mut Vec<u8>) -> libghostty_vt::error::Result<()> {
+        match m.action {
+            MouseAction::Press => self.held = m.button,
+            MouseAction::Release => self.held = None,
+            MouseAction::Motion => {}
+        }
+        let left = m.button == Some(MouseButton::Left);
+        // Selection: left button presses and drags, unless the program wants the mouse.
+        if left && m.action == MouseAction::Press && self.selects(m.mods)? {
+            let grid = self.term.grid_ref(self.point(m.x, m.y))?;
+            let distance = self.cell.0 as f64;
+            let sel = self
+                .sel
+                .press
+                .set_repeat_distance(distance)?
+                .set_time(self.started.elapsed())?
+                .set_position(m.x as f64, m.y as f64)?
+                .apply(&mut self.sel.gesture, &self.term, grid)?;
+            self.term.set_selection(sel.as_ref())?;
+            self.sel.active = true;
+            return Ok(());
+        }
+        if self.sel.active {
+            match m.action {
+                MouseAction::Motion if left => {
+                    let grid = self.term.grid_ref(self.point(m.x, m.y))?;
+                    let geometry = Geometry {
+                        columns: self.cols.into(),
+                        cell_width: self.cell.0,
+                        padding_left: 0,
+                        screen_height: self.grid_rows as u32 * self.cell.1,
+                    };
+                    let rect = m.mods.alt && (m.mods.ctrl || m.mods.logo);
+                    let sel = self
+                        .sel
+                        .drag
+                        .set_rectangle(rect)?
+                        .set_position(m.x as f64, m.y as f64)?
+                        .apply(&mut self.sel.gesture, &self.term, grid, geometry)?;
+                    self.term.set_selection(sel.as_ref())?;
+                }
+                MouseAction::Release if left => {
+                    let grid = self.term.grid_ref(self.point(m.x, m.y)).ok();
+                    self.sel
+                        .release
+                        .apply(&mut self.sel.gesture, &self.term, grid)?;
+                    self.sel.active = false;
+                }
+                _ => {}
+            }
+            return Ok(());
+        }
+        if !self.term.is_mouse_tracking()? {
+            return Ok(());
+        }
+        // The program asked for mouse reports.
+        self.sync_mouse_encoder();
+        let button = m.button.map(|b| match b {
+            MouseButton::Left => mouse::Button::Left,
+            MouseButton::Middle => mouse::Button::Middle,
+            MouseButton::Right => mouse::Button::Right,
+        });
+        let action = match m.action {
+            MouseAction::Press => mouse::Action::Press,
+            MouseAction::Release => mouse::Action::Release,
+            MouseAction::Motion => mouse::Action::Motion,
+        };
+        self.mouse_ev
+            .set_action(action)
+            .set_button(button)
+            .set_mods(m.mods.ghostty())
+            .set_position(mouse::Position { x: m.x, y: m.y });
+        self.mouse_enc.encode_to_vec(&self.mouse_ev, out)
+    }
+
+    fn wheel(
+        &mut self,
+        lines: f32,
+        x: f32,
+        y: f32,
+        mods: Mods,
+        out: &mut Vec<u8>,
+    ) -> libghostty_vt::error::Result<()> {
+        self.wheel_rest += lines;
+        let whole = self.wheel_rest.trunc();
+        self.wheel_rest -= whole;
+        if whole == 0.0 {
+            return Ok(());
+        }
+        if self.term.is_mouse_tracking()? && !mods.shift {
+            // Wheel up is button 4, down is button 5; one press/release per line.
+            self.sync_mouse_encoder();
+            let button = if whole < 0.0 {
+                mouse::Button::Four
+            } else {
+                mouse::Button::Five
+            };
+            for _ in 0..(whole.abs() as usize).min(10) {
+                for action in [mouse::Action::Press, mouse::Action::Release] {
+                    self.mouse_ev
+                        .set_action(action)
+                        .set_button(Some(button))
+                        .set_mods(mods.ghostty())
+                        .set_position(mouse::Position { x, y });
+                    self.mouse_enc.encode_to_vec(&self.mouse_ev, out)?;
+                }
+            }
+        } else {
+            self.term
+                .scroll_viewport(ScrollViewport::Delta(whole as isize));
+        }
+        Ok(())
     }
 
     /// Copies the rows libghostty marked dirty into `self.rows` and returns a frame
@@ -355,6 +714,7 @@ impl Engine {
                         bold: false,
                         italic: false,
                         underline: false,
+                        selected: cell.is_selected()?,
                     };
                     if cell.has_styling()? {
                         let st = cell.style()?;
@@ -375,7 +735,8 @@ impl Engine {
                                 && last.bg == run.bg
                                 && last.bold == run.bold
                                 && last.italic == run.italic
-                                && last.underline == run.underline =>
+                                && last.underline == run.underline
+                                && last.selected == run.selected =>
                         {
                             last.len += run.len
                         }
@@ -388,13 +749,15 @@ impl Engine {
             y += 1;
         }
         snap.set_dirty(Dirty::Clean)?;
+        let scrolled_back = !self.term.viewport_active().unwrap_or(true);
         self.seq += 1;
         Ok(Frame {
             cols: self.cols,
             rows: self.rows.clone(),
             background: bg,
             foreground: fg,
-            cursor,
+            cursor: if scrolled_back { None } else { cursor },
+            scrolled_back,
             seq: self.seq,
         })
     }
