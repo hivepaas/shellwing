@@ -14,6 +14,7 @@
 
 mod bench;
 mod chrome;
+mod files;
 mod input;
 mod look;
 mod palette;

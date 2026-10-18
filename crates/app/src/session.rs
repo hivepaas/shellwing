@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_config::Host;
 use shellwing_ssh::{
-    Active, Auth, Ended, Error, Forward, HostKeyPolicy, Input, Options, Prompter, Resolved,
+    Active, Auth, Ended, Error, Forward, HostKeyPolicy, Input, Options, Prompter, Resolved, Sftp,
 };
 use shellwing_term::{Event, TermHandle};
 use tokio::runtime::Handle;
@@ -76,6 +76,22 @@ pub struct Session {
     vault: VaultSlot,
     /// The forwards the current connection runs.
     held: Weak<Held>,
+}
+
+/// What a Files panel needs from its pane's connection.
+#[derive(Clone)]
+pub struct Remote {
+    writer: Writer,
+    /// The network runtime, where SFTP work runs.
+    pub rt: Handle,
+}
+
+impl Remote {
+    /// Opens SFTP on the running connection. None when nothing is connected.
+    pub fn sftp(&self) -> Option<tokio::sync::oneshot::Receiver<Result<Sftp, Error>>> {
+        let (reply, answer) = tokio::sync::oneshot::channel();
+        self.writer.send(Input::Sftp { reply }).then_some(answer)
+    }
 }
 
 /// Forwards running in this app, as specs. A second tab to a host finds the
@@ -266,6 +282,13 @@ impl Session {
         self.writer
             .send(Input::Forward { forward, reply })
             .then_some(answer)
+    }
+
+    pub fn remote(&self) -> Remote {
+        Remote {
+            writer: self.writer.clone(),
+            rt: self.rt.clone(),
+        }
     }
 
     /// Keeps a forward started by hand: it is set up again on reconnecting.

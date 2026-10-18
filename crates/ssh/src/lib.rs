@@ -8,6 +8,7 @@
 //! - Every question goes through a [`Prompter`], so the app decides how to ask.
 //! - [`forward`] forwards ports as `-L`, `-R` and `-D` do, for as long as the
 //!   session runs.
+//! - [`sftp`] browses and transfers files on a channel beside the shell.
 
 mod auth;
 pub mod config;
@@ -15,6 +16,7 @@ pub mod forward;
 pub mod hostkey;
 pub mod prompt;
 pub mod secrets;
+pub mod sftp;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -31,11 +33,17 @@ use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
 pub use secrets::{Learned, Secrets};
+pub use sftp::Sftp;
 
 /// Used when the config sets no ServerAliveInterval.
 const DEFAULT_KEEPALIVE: Duration = Duration::from_secs(30);
 /// Unanswered keepalives before the connection counts as dead.
 const KEEPALIVE_MAX: usize = 3;
+/// How much a channel may receive before the server waits for us: 8 MiB, not
+/// russh's and OpenSSH's 2 MiB, which hold a download to 2 MiB per round trip
+/// (18 MB/s at 50 ms; 65 MB/s with this). It applies to the shell too, where it
+/// bounds what still arrives after Ctrl+C in a flood (about 50 ms of parsing).
+const WINDOW: u32 = 8 * 1024 * 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Target {
@@ -117,6 +125,8 @@ pub enum Error {
     BadForward { spec: String, why: String },
     #[error("cannot forward {spec}: {why}")]
     Forward { spec: String, why: String },
+    #[error("{0}")]
+    Sftp(String),
     #[error("via {host}: {source}")]
     Jump {
         host: String,
@@ -140,6 +150,10 @@ pub enum Input {
     Forward {
         forward: Forward,
         reply: tokio::sync::oneshot::Sender<Result<Active, Error>>,
+    },
+    /// Opens SFTP on a channel of its own.
+    Sftp {
+        reply: tokio::sync::oneshot::Sender<Result<Sftp, Error>>,
     },
 }
 
@@ -216,6 +230,7 @@ async fn open_hop(
     let config = Arc::new(client::Config {
         keepalive_interval: Some(hop.keepalive.unwrap_or(DEFAULT_KEEPALIVE)),
         keepalive_max: KEEPALIVE_MAX,
+        window_size: WINDOW,
         ..Default::default()
     });
     let connected = match via {
@@ -314,6 +329,13 @@ pub async fn connect(
                         Some(Input::Resize { cols, rows }) => channel.window_change(cols, rows, 0, 0).await?,
                         Some(Input::Forward { forward, reply }) => {
                             let _ = reply.send(forwarder.start(&forward).await);
+                        }
+                        // Not waited for here: the shell's output keeps flowing.
+                        Some(Input::Sftp { reply }) => {
+                            let handle = handle.clone();
+                            tokio::spawn(async move {
+                                let _ = reply.send(sftp::open(&handle).await);
+                            });
                         }
                         None => break,
                     },

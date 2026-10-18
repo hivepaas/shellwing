@@ -1,8 +1,9 @@
 //! End-to-end tests against an in-process russh server: host key questions,
-//! password retries, one-time codes, encrypted keys, cancelling, ProxyJump and
-//! port forwarding.
+//! password retries, one-time codes, encrypted keys, cancelling, ProxyJump,
+//! port forwarding and SFTP (served by OpenSSH's sftp-server, where installed).
 //! Keys are generated at run time; nothing secret lives in the repository.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -24,6 +25,8 @@ struct Policy {
     key: Option<PublicKey>,
     /// Allow direct-tcpip (act as a jump host, carry -L and -D) and tcpip-forward (-R).
     forward: bool,
+    /// Serve the sftp subsystem from this directory.
+    sftp: Option<PathBuf>,
 }
 
 struct TestServer {
@@ -31,6 +34,9 @@ struct TestServer {
     methods: Vec<MethodKind>,
     /// Session channels, whose input is echoed back (direct-tcpip channels are not).
     sessions: Vec<ChannelId>,
+    /// Session channels not yet a shell or a subsystem. A shell's channel is
+    /// dropped (its input arrives in `data`); a subsystem's becomes a stream.
+    opened: HashMap<ChannelId, Channel<Msg>>,
 }
 
 impl TestServer {
@@ -115,6 +121,7 @@ impl server::Handler for TestServer {
         _session: &mut ServerSession,
     ) -> Result<(), Self::Error> {
         self.sessions.push(channel.id());
+        self.opened.insert(channel.id(), channel);
         reply.accept().await;
         Ok(())
     }
@@ -139,8 +146,54 @@ impl server::Handler for TestServer {
         channel: ChannelId,
         session: &mut ServerSession,
     ) -> Result<(), Self::Error> {
+        self.opened.remove(&channel);
         session.channel_success(channel)?;
         session.data(channel, "welcome\r\n")
+    }
+
+    /// `sftp`: OpenSSH's sftp-server, talking over the channel.
+    async fn subsystem_request(
+        &mut self,
+        channel: ChannelId,
+        name: &str,
+        session: &mut ServerSession,
+    ) -> Result<(), Self::Error> {
+        let opened = self.opened.remove(&channel);
+        let (Some(dir), Some(binary), Some(opened), "sftp") =
+            (self.policy.sftp.clone(), sftp_server(), opened, name)
+        else {
+            return session.channel_failure(channel);
+        };
+        let Ok(mut child) = tokio::process::Command::new(binary)
+            .current_dir(dir)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+        else {
+            return session.channel_failure(channel);
+        };
+        // Its input is the server's from now on, not an echo.
+        self.sessions.retain(|c| *c != channel);
+        session.channel_success(channel)?;
+        let (mut stdin, mut stdout) = (child.stdin.take(), child.stdout.take());
+        tokio::spawn(async move {
+            let (mut from, mut to) = tokio::io::split(opened.into_stream());
+            let up = async {
+                if let Some(stdin) = stdin.as_mut() {
+                    let _ = tokio::io::copy(&mut from, stdin).await;
+                }
+            };
+            let down = async {
+                if let Some(stdout) = stdout.as_mut() {
+                    let _ = tokio::io::copy(stdout, &mut to).await;
+                }
+                let _ = to.shutdown().await;
+            };
+            tokio::join!(up, down);
+            let _ = child.wait().await;
+        });
+        Ok(())
     }
 
     async fn data(
@@ -228,6 +281,19 @@ impl server::Handler for TestServer {
     }
 }
 
+/// OpenSSH's sftp-server, where this system has one.
+fn sftp_server() -> Option<PathBuf> {
+    [
+        "/usr/lib/openssh/sftp-server",
+        "/usr/libexec/sftp-server",
+        "/usr/libexec/openssh/sftp-server",
+        "/usr/lib/ssh/sftp-server",
+    ]
+    .iter()
+    .map(PathBuf::from)
+    .find(|p| p.exists())
+}
+
 /// Starts a server on 127.0.0.1 and returns its port and host public key.
 async fn serve(policy: Policy, methods: &[MethodKind]) -> (u16, PublicKey) {
     let host_key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("host key");
@@ -250,6 +316,7 @@ async fn serve(policy: Policy, methods: &[MethodKind]) -> (u16, PublicKey) {
                     policy,
                     methods,
                     sessions: vec![],
+                    opened: HashMap::new(),
                 };
                 if let Ok(running) = server::run_stream(config, socket, handler).await {
                     let _ = running.await;
@@ -969,4 +1036,140 @@ async fn forwards_that_fail_are_reported_and_the_session_goes_on() {
         .unwrap_or(0);
     assert_eq!(n, 0);
     drop(taken);
+}
+
+/// Connects with a password and opens SFTP.
+async fn sftp_session(
+    fx: &Fixture,
+    serve_from: Option<PathBuf>,
+) -> (shellwing_ssh::Session, Result<shellwing_ssh::Sftp, Error>) {
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            sftp: serve_from,
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, _) = scripted(vec![Some("yes"), Some("pw")]);
+    let session = shellwing_ssh::connect(
+        fx.options(local(port, "me"), p),
+        Box::new(|_| {}),
+        Box::new(|_| {}),
+    )
+    .await
+    .expect("connect");
+    let (reply, answer) = tokio::sync::oneshot::channel();
+    let _ = session.sender().send(Input::Sftp { reply });
+    let sftp = tokio::time::timeout(Duration::from_secs(10), answer)
+        .await
+        .expect("sftp in time")
+        .expect("answer");
+    (session, sftp)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn files_are_listed_downloaded_and_uploaded_over_sftp() {
+    use shellwing_ssh::sftp::{Kind, Progress, join};
+    if sftp_server().is_none() {
+        eprintln!("skipped: no sftp-server on this system");
+        return;
+    }
+    let fx = Fixture::new("sftp");
+    let remote = fx.dir.join("remote");
+    let local = fx.dir.join("local");
+    std::fs::create_dir_all(remote.join("sub/deeper")).expect("dirs");
+    std::fs::create_dir_all(&local).expect("local");
+    std::fs::write(remote.join("a.txt"), "hello").expect("a");
+    // Bigger than the pipeline, so reads really overlap.
+    let big: Vec<u8> = (0..3_000_000u32).map(|i| (i * 7 % 251) as u8).collect();
+    std::fs::write(remote.join("sub/big.bin"), &big).expect("big");
+    std::fs::write(remote.join("sub/deeper/c.txt"), "deep").expect("c");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("sub", remote.join("to-sub")).expect("link");
+
+    let (_session, sftp) = sftp_session(&fx, Some(remote.clone())).await;
+    let sftp = sftp.expect("sftp opens");
+    let home = sftp.home().await.expect("home");
+    assert_eq!(
+        std::fs::canonicalize(&home).ok(),
+        std::fs::canonicalize(&remote).ok()
+    );
+
+    let listed = sftp.list(&home).await.expect("list");
+    let names: Vec<&str> = listed.iter().map(|e| e.name.as_str()).collect();
+    #[cfg(unix)]
+    {
+        assert_eq!(names, ["sub", "to-sub", "a.txt"], "directories first");
+        assert!(listed[1].kind == Kind::Link && listed[1].is_dir());
+    }
+    #[cfg(not(unix))]
+    assert_eq!(names, ["sub", "a.txt"]);
+    assert_eq!(listed.last().map(|e| e.size), Some(5));
+    assert!(
+        sftp.stat(&join(&home, "nope"))
+            .await
+            .expect("stat")
+            .is_none()
+    );
+
+    // A whole directory, with progress known up front.
+    let progress = Progress::default();
+    sftp.download(&join(&home, "sub"), &local.join("sub"), &progress)
+        .await
+        .expect("download dir");
+    assert_eq!(std::fs::read(local.join("sub/big.bin")).expect("big"), big);
+    assert_eq!(
+        std::fs::read_to_string(local.join("sub/deeper/c.txt")).expect("c"),
+        "deep"
+    );
+    assert_eq!(progress.get(), (3_000_004, 3_000_004));
+    let parts = std::fs::read_dir(local.join("sub"))
+        .expect("ls")
+        .filter(|e| {
+            e.as_ref()
+                .is_ok_and(|e| e.file_name().to_string_lossy().ends_with(".part"))
+        })
+        .count();
+    assert_eq!(parts, 0, "no .part file left behind");
+
+    // Uploading a directory, and a file over an existing one.
+    std::fs::create_dir_all(local.join("up/nested")).expect("up");
+    std::fs::write(local.join("up/x.txt"), "x").expect("x");
+    std::fs::write(local.join("up/nested/y.txt"), "y").expect("y");
+    std::fs::write(local.join("a.txt"), "replaced").expect("a");
+    let progress = Progress::default();
+    sftp.upload(&local.join("up"), &join(&home, "up"), &progress)
+        .await
+        .expect("upload dir");
+    sftp.upload(&local.join("a.txt"), &join(&home, "a.txt"), &progress)
+        .await
+        .expect("upload file");
+    assert_eq!(
+        std::fs::read_to_string(remote.join("up/nested/y.txt")).expect("y"),
+        "y"
+    );
+    assert_eq!(
+        std::fs::read_to_string(remote.join("a.txt")).expect("a"),
+        "replaced"
+    );
+
+    let gone = sftp
+        .download(
+            &join(&home, "nope"),
+            &local.join("nope"),
+            &Progress::default(),
+        )
+        .await
+        .expect_err("nothing there");
+    assert!(gone.to_string().contains("is gone"), "{gone}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_server_without_sftp_says_so() {
+    let fx = Fixture::new("no-sftp");
+    let (_session, sftp) = sftp_session(&fx, None).await;
+    let e = sftp.err().expect("refused");
+    assert!(e.to_string().contains("does not offer SFTP"), "{e}");
 }

@@ -189,6 +189,27 @@ tab to the same host finds the first tab's ports taken and says so quietly.
 `LocalForward`, `RemoteForward` and `DynamicForward` in `~/.ssh/config` are not
 applied yet; put them in hosts.toml instead.
 
+## Files (SFTP)
+
+**Ctrl+Shift+O** (**Cmd+Shift+O** on macOS), or *Files on …* in the palette,
+opens the Files panel beside the focused pane. It browses the server over SFTP,
+on a channel of its own, so the terminal keeps working while files move.
+
+- Click to choose, double-click or **Enter** to open a folder or download a
+  file, **Backspace** to go up, **Esc** to go back to the terminal.
+- **Download** fetches the chosen file or folder (folders whole) into your
+  Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
+  is written as `name.part` until it is complete.
+- **Upload…**, or dropping files and folders on the panel, uploads into the
+  folder shown. Something already there with that name is not touched until you
+  pick *Replace* (or *Merge* for a folder).
+- Transfers show their progress and speed and can be cancelled. Links to folders
+  open as folders; when downloading a folder, links to folders inside it are
+  skipped so a loop cannot run forever.
+
+The panel keeps its folder and transfers while hidden, and opens SFTP again
+after a reconnect.
+
 ## Saved passwords
 
 When a password or a key passphrase typed at a prompt works, the pane asks
