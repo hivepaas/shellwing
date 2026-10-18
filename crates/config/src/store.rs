@@ -146,6 +146,22 @@ impl Store {
         self.edit_if(HOSTS, |doc| Ok(crate::hosts_sync::assign_ids(doc)))
     }
 
+    /// Writes `host` into `hosts.toml`: over the host with its id, or as a new
+    /// one. Comments and the rest of the file stay as they are. Returns its id.
+    pub fn save_host(&self, host: &crate::Host) -> Result<String, WriteError> {
+        let id = host.id.clone().unwrap_or_else(crate::hosts_sync::new_id);
+        self.edit_if(HOSTS, |doc| {
+            let ids = crate::hosts_sync::assign_ids(doc);
+            Ok(crate::hosts_sync::save_host(doc, &id, host) || ids)
+        })?;
+        Ok(id)
+    }
+
+    /// Removes the host with `id` from `hosts.toml`.
+    pub fn delete_host(&self, id: &str) -> Result<(), WriteError> {
+        self.edit_if(HOSTS, |doc| Ok(crate::hosts_sync::delete_host(doc, id)))
+    }
+
     /// Writes merged hosts and groups (id → fields) into `hosts.toml`, changing
     /// only what differs.
     pub fn apply_synced_hosts(

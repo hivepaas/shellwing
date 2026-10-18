@@ -15,6 +15,7 @@
 mod bench;
 mod chrome;
 mod files;
+mod host_editor;
 mod input;
 mod look;
 mod palette;

@@ -17,6 +17,7 @@ use tokio::runtime::Handle;
 
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
+use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
@@ -97,6 +98,18 @@ pub struct Workspace {
     sync_error: Option<String>,
     /// What the palette's question is for, while one is asked.
     asking: Option<Asking>,
+    /// The host editor drawer, while open.
+    editor: Option<(Entity<HostEditor>, Subscription)>,
+}
+
+/// What the host editor opens on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EditTarget {
+    New,
+    /// A host in hosts.toml, by name.
+    Saved(String),
+    /// A host from `~/.ssh/config`, by alias: shown read only.
+    Ssh(String),
 }
 
 #[derive(Clone)]
@@ -169,6 +182,7 @@ impl Workspace {
             sync,
             sync_error: None,
             asking: None,
+            editor: None,
         };
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
@@ -638,6 +652,26 @@ impl Workspace {
                 "iCloud Drive, Syncthing, Dropbox…".into(),
             ),
         }
+        action(Action::NewHost, "New host…".into(), String::new());
+        if let Some(target) = self.active_tab().map(|t| {
+            let s = t.read(cx).session();
+            match &s.entry {
+                Some(name) => EditTarget::Saved(name.clone()),
+                None => EditTarget::Ssh(s.spec.clone()),
+            }
+        }) && (matches!(target, EditTarget::Saved(_))
+            || matches!(&target, EditTarget::Ssh(a) if self.ssh_aliases.contains(a)))
+        {
+            let name = match &target {
+                EditTarget::Saved(n) | EditTarget::Ssh(n) => n.clone(),
+                EditTarget::New => String::new(),
+            };
+            action(
+                Action::EditHost(target),
+                format!("Edit host {name}…"),
+                String::new(),
+            );
+        }
         action(Action::EditHosts, "Edit hosts.toml".into(), String::new());
         action(
             Action::EditSettings,
@@ -787,6 +821,83 @@ impl Workspace {
         }
         let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    /// Opens the host editor drawer on `target`.
+    pub fn edit_host(&mut self, target: EditTarget, window: &mut Window, cx: &mut Context<Self>) {
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        // Every host gets an id first, so the one edited is found again on saving.
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.assign_host_ids()
+        {
+            self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx);
+            return;
+        }
+        self.poll_config(cx);
+        let ctx = EditorContext {
+            store: self.live.store().cloned(),
+            hosts: self.live.hosts().clone(),
+            ssh_aliases: self.ssh_aliases.clone(),
+            themes: self
+                .live
+                .themes()
+                .all()
+                .iter()
+                .map(|t| (t.id.clone(), t.name.clone()))
+                .collect(),
+        };
+        let found = match &target {
+            EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
+            _ => None,
+        };
+        let editor = cx.new(|cx| match (target, found) {
+            (EditTarget::Saved(_), Some(host)) => HostEditor::edit(ctx, host, cx),
+            (EditTarget::Ssh(alias), _) => HostEditor::ssh_config(ctx, alias, cx),
+            _ => HostEditor::new_host(ctx, cx),
+        });
+        let sub = cx.subscribe_in(
+            &editor,
+            window,
+            |ws, _, ev: &EditorEvent, window, cx| match ev {
+                EditorEvent::Close => ws.close_editor(window, cx),
+                EditorEvent::Saved { name, connect } => {
+                    let (name, connect) = (name.clone(), *connect);
+                    ws.close_editor(window, cx);
+                    ws.poll_config(cx);
+                    ws.sync.now();
+                    if connect {
+                        ws.open(&name, window, cx);
+                    } else {
+                        ws.say(format!("Saved {name}."), THEME_NOTICE, cx);
+                    }
+                }
+                EditorEvent::Deleted { name } => {
+                    let name = name.clone();
+                    ws.close_editor(window, cx);
+                    ws.poll_config(cx);
+                    ws.sync.now();
+                    ws.say(format!("Deleted {name}."), THEME_NOTICE, cx);
+                }
+                EditorEvent::OpenSshConfig => {
+                    if let Some(path) = ssh_config::default_config_path() {
+                        cx.open_url(&format!("file://{}", path.display()));
+                    }
+                }
+            },
+        );
+        let first = editor.read(cx).first_focus(cx);
+        self.editor = Some((editor, sub));
+        window.focus(&first, cx);
+        cx.notify();
+    }
+
+    fn close_editor(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.editor.take().is_some() {
+            self.activate(self.active, window, cx);
+            cx.notify();
+        }
     }
 
     fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -1072,6 +1183,8 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
+            Action::NewHost => self.edit_host(EditTarget::New, window, cx),
+            Action::EditHost(target) => self.edit_host(target, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
             Action::SyncFolder => self.choose_sync_folder(window, cx),
             Action::SyncNow => {
@@ -1413,6 +1526,7 @@ impl Workspace {
             },
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
             status: self.host_status(cx, |s| s.entry.as_deref() == Some(h.name.as_str())),
+            edit: EditTarget::Saved(h.name.clone()),
         };
         let mut sections = vec![];
         for g in &hosts.groups {
@@ -1450,6 +1564,7 @@ impl Workspace {
                 detail: SharedString::default(),
                 spec: a.clone(),
                 status: self.host_status(cx, |s| s.entry.is_none() && &s.spec == a),
+                edit: EditTarget::Ssh(a.clone()),
             })
             .collect();
         if !aliases.is_empty() {
@@ -1680,6 +1795,37 @@ impl Render for Workspace {
                 )
             })
             .child(main)
+            .when_some(self.editor.as_ref().map(|(e, _)| e.clone()), |d, e| {
+                let quiet = e.clone();
+                d.child(
+                    div()
+                        .id("editor-backdrop")
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .bg(rgba(0x03060c8c))
+                        // Beside the drawer: closes it, unless that would lose edits.
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |ws, _, window, cx| {
+                                if quiet.read(cx).can_close_quietly(cx) {
+                                    ws.close_editor(window, cx);
+                                }
+                            }),
+                        )
+                        .child(
+                            div()
+                                .absolute()
+                                .top_0()
+                                .right_0()
+                                .h_full()
+                                .w(px(host_editor::WIDTH))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                                .child(e),
+                        ),
+                )
+            })
             .when_some(palette, |d, p| {
                 d.child(
                     div()

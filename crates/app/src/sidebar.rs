@@ -7,7 +7,7 @@ use gpui::{
 };
 
 use crate::session::Status;
-use crate::workspace::Workspace;
+use crate::workspace::{EditTarget, Workspace};
 
 pub const WIDTH: f32 = 248.;
 pub const TEXT: u32 = 0xe2e8f0;
@@ -30,6 +30,8 @@ pub struct Row {
     pub spec: String,
     /// The best status among its open tabs; None when none is open.
     pub status: Option<Status>,
+    /// Where Edit takes it.
+    pub edit: EditTarget,
 }
 
 fn status_color(s: Status) -> u32 {
@@ -54,6 +56,8 @@ pub fn dot(status: Option<Status>) -> Div {
 pub struct Sidebar {
     workspace: WeakEntity<Workspace>,
     sections: Vec<Section>,
+    /// The row under the pointer, which shows Edit.
+    hovered: Option<u64>,
 }
 
 impl Sidebar {
@@ -61,6 +65,7 @@ impl Sidebar {
         Sidebar {
             workspace,
             sections: vec![],
+            hovered: None,
         }
     }
 
@@ -73,7 +78,7 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let mut list = div()
             .id("hosts")
             .flex()
@@ -97,9 +102,25 @@ impl Render for Sidebar {
             for row in &section.rows {
                 id += 1;
                 let (spec, workspace) = (row.spec.clone(), self.workspace.clone());
+                let this = id;
+                let hovered = self.hovered == Some(this);
+                let (edit, editing) = (row.edit.clone(), self.workspace.clone());
                 list = list.child(
                     div()
                         .id(ElementId::NamedInteger("host".into(), id))
+                        .on_hover(cx.listener(move |s, over: &bool, _, cx| {
+                            let now = if *over {
+                                Some(this)
+                            } else if s.hovered == Some(this) {
+                                None
+                            } else {
+                                s.hovered
+                            };
+                            if now != s.hovered {
+                                s.hovered = now;
+                                cx.notify();
+                            }
+                        }))
                         .flex()
                         .items_center()
                         .gap_2()
@@ -123,25 +144,69 @@ impl Render for Sidebar {
                                 .text_color(rgb(TEXT))
                                 .child(row.name.clone()),
                         )
-                        .child(
-                            div()
-                                .max_w(px(110.))
-                                .overflow_hidden()
-                                .text_ellipsis()
-                                .whitespace_nowrap()
-                                .text_xs()
-                                .text_color(rgb(MUTED))
-                                .child(row.detail.clone()),
-                        ),
+                        .when(!hovered, |d| {
+                            d.child(
+                                div()
+                                    .max_w(px(110.))
+                                    .overflow_hidden()
+                                    .text_ellipsis()
+                                    .whitespace_nowrap()
+                                    .text_xs()
+                                    .text_color(rgb(MUTED))
+                                    .child(row.detail.clone()),
+                            )
+                        })
+                        // Hovered: Edit instead of the address.
+                        .when(hovered, |d| {
+                            d.child(
+                                div()
+                                    .id(ElementId::NamedInteger("edit-host".into(), this))
+                                    .px_2()
+                                    .rounded_md()
+                                    .text_xs()
+                                    .text_color(rgb(MUTED))
+                                    .hover(|s| s.text_color(rgb(TEXT)).bg(rgb(0x22304a)))
+                                    .on_click(move |_, window, cx| {
+                                        cx.stop_propagation();
+                                        let edit = edit.clone();
+                                        let _ = editing
+                                            .update(cx, |ws, cx| ws.edit_host(edit, window, cx));
+                                    })
+                                    .child("Edit"),
+                            )
+                        }),
                 );
             }
         }
         if self.sections.is_empty() {
-            list =
-                list.child(div().px_3().pt_3().text_color(rgb(MUTED)).child(
-                    "No hosts yet. Add them to hosts.toml, or Host blocks to ~/.ssh/config.",
-                ));
+            list = list.child(
+                div()
+                    .px_3()
+                    .pt_3()
+                    .text_color(rgb(MUTED))
+                    .child("No hosts yet. Add one, or Host blocks to ~/.ssh/config."),
+            );
         }
+        let workspace = self.workspace.clone();
+        let footer = div().p_2().border_t_1().border_color(rgb(LINE)).child(
+            div()
+                .id("new-host")
+                .h(px(32.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded_md()
+                .border_1()
+                .border_color(rgb(0x263042))
+                .text_color(rgb(TEXT))
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(HOVER)))
+                .on_click(move |_, window, cx| {
+                    let _ =
+                        workspace.update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
+                })
+                .child("+ New host"),
+        );
         div()
             .w(px(WIDTH))
             .flex_shrink_0()
@@ -153,5 +218,6 @@ impl Render for Sidebar {
             .border_color(rgb(LINE))
             .text_sm()
             .child(list)
+            .child(footer)
     }
 }
