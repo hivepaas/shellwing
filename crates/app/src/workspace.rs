@@ -966,6 +966,7 @@ impl Workspace {
                 .iter()
                 .map(|t| (t.id.clone(), t.name.clone()))
                 .collect(),
+            app_ssh: self.live.settings().ssh.clone(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),

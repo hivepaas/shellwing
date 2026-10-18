@@ -54,6 +54,8 @@ pub struct EditorContext {
     pub ssh_aliases: Vec<String>,
     /// Theme ids and names.
     pub themes: Vec<(String, String)>,
+    /// The app's settings that a host's empty field falls back to.
+    pub app_ssh: shellwing_config::Ssh,
 }
 
 enum Mode {
@@ -161,7 +163,7 @@ impl HostEditor {
             tags: input(cx, "api, docker"),
             jump: input(cx, "a host here, an ssh alias, or user@host"),
             forward: input(cx, "-L 8080:localhost:80"),
-            keepalive: input(cx, "the app's setting"),
+            keepalive: input(cx, &ctx.app_ssh.keepalive.to_string()),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -1385,24 +1387,60 @@ impl Render for HostEditor {
                     .child(name),
             );
         }
-        let advanced = section("Advanced")
+        let app = &self.ctx.app_ssh;
+        let app_key = match app.host_key {
+            HostKey::Ask => "Ask",
+            HostKey::AcceptNew => "Accept new",
+            HostKey::Strict => "Strict",
+        };
+        let app_alive = match app.keepalive {
+            0 => "none".to_string(),
+            s => format!("{s} s"),
+        };
+        let mut advanced = section("Advanced")
             .border_b_0()
             .child(
-                row()
-                    .child(
-                        self.field("Keepalive (seconds)", &i.keepalive, Field::Keepalive, window, cx)
-                            .flex_grow(1.),
-                    )
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(label_text("Unknown host key"))
+                    .child(keys)
+                    .child(hint_text(&format!(
+                        "The app's setting is {app_key} now. A changed key is always refused."
+                    ))),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_end()
+                    .gap(px(10.))
                     .child(
                         div()
+                            .w(px(110.))
+                            .flex_shrink_0()
                             .flex()
                             .flex_col()
                             .gap(px(4.))
-                            .flex_grow(2.)
-                            .child(label_text("Unknown host key"))
-                            .child(keys),
+                            .child(label_text("Keepalive"))
+                            .child(self.input_box(
+                                &i.keepalive,
+                                self.problem(Field::Keepalive).is_some(),
+                                window,
+                                cx,
+                            )),
+                    )
+                    .child(
+                        hint_text(&format!(
+                            "Seconds between checks; 0: none. Empty: the app's setting ({app_alive})."
+                        ))
+                        .pb(px(7.)),
                     ),
-            )
+            );
+        if let Some(p) = self.problem(Field::Keepalive) {
+            advanced = advanced.child(problem_text(p));
+        }
+        let advanced = advanced
             .child(
                 div()
                     .id("forward-agent")
@@ -1418,9 +1456,9 @@ impl Render for HostEditor {
                     .child(label_text("Forward my agent to this host")),
             )
             .child(hint_text(if self.forward_agent {
-                "While connected, whoever is root on this host can sign in elsewhere with your keys. Only for hosts you trust."
+                "While you are connected, whoever is root on this host can sign in elsewhere with your keys too. Only for hosts you trust."
             } else {
-                "Lets this host use your keys to go on to others (git, a further ssh)."
+                "From this host you could then git push or ssh further with the keys on this computer; they are never copied there."
             }));
 
         let mut footer = div()
