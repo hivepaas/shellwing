@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+  # Only pull requests into main: stacked PRs on top of other branches are
+  # checked locally and get CI once they are retargeted to main.
   pull_request:
+    branches: [main]
   # macOS and Windows minutes cost more, so they run only when started by hand
   # (Actions > CI > Run workflow); pushes and pull requests build Linux only.
   workflow_dispatch:
