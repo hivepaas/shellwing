@@ -4,6 +4,7 @@ description = "SSH sessions over russh, with OpenSSH-compatible host key checkin
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 publish.workspace = true
 
 [dependencies]

@@ -81,3 +81,17 @@ Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
 | `crates/app` | GPUI window: tabs, host list, terminal rendering, keys, IME (preedit), window chrome |
 
 `SHELLWING_BENCH=latency` or `flood` runs a measurement and prints a `REPORT` line.
+
+## License
+
+shellwing is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License, version 3 or (at your option) any later
+version. See [LICENSE](LICENSE). Copyright (C) 2026 HivePaaS.
+
+The name and logo are not covered by the GPL: see [TRADEMARKS.md](TRADEMARKS.md).
+Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Code adapted from other projects keeps its license and notice:
+`crates/app/src/input.rs` is adapted from GPUI's `examples/input.rs`
+(Apache-2.0, Zed Industries). The libraries shellwing builds on are all under
+licenses that allow this (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0 and similar).
