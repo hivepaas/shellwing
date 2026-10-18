@@ -483,15 +483,17 @@ mod tests {
             (get("a@x"), get("b@x")),
             (Some("one".into()), Some("two".into()))
         );
-        let ids: Vec<u8> = {
+        let mut ids: Vec<u8> = {
             let db = v.db.lock().expect("db");
-            db.prepare("SELECT data FROM records ORDER BY id")
+            // Both may be saved within one millisecond, so ids do not give the order.
+            db.prepare("SELECT data FROM records")
                 .expect("prepare")
                 .query_map([], |r| r.get::<_, Vec<u8>>(0))
                 .expect("query")
                 .map(|d| d.expect("row")[0])
                 .collect()
         };
+        ids.sort();
         assert_eq!(
             ids,
             [Cipher::XChaCha20Poly1305.id(), Cipher::Aes256Gcm.id()]
