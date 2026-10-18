@@ -249,6 +249,10 @@ on a channel of its own, so the terminal keeps working while files move.
   on macOS) work in the folder shown. Deleting asks first; a folder goes with
   everything in it, and a link goes as a link, never what it points at. A
   rename never writes over something already there.
+- The icons at the top go up, home, refresh, make a folder and upload. A right
+  click on a file or folder opens its menu (Open or Edit, Download, Copy path,
+  Rename, Delete); a right click beside them, the folder's (New folder, Upload,
+  Refresh, Copy path).
 - **Download** fetches the chosen file or folder (folders whole) into your
   Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
   is written as `name.part` until it is complete.
