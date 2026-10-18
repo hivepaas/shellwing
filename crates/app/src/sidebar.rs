@@ -17,6 +17,9 @@ pub const MUTED: u32 = 0x8a96aa;
 pub const LINE: u32 = 0x1e2736;
 const PANEL: u32 = 0x0d121c;
 const HOVER: u32 = 0x17233a;
+/// The Edit badge on a hovered host.
+const EDIT: u32 = 0xf59e0b;
+const EDIT_HOVER: u32 = 0xfbbf24;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Section {
@@ -222,11 +225,16 @@ impl Render for Sidebar {
                             d.child(
                                 div()
                                     .id(ElementId::NamedInteger("edit-host".into(), this))
+                                    // An amber badge: plain to see on any row.
                                     .px_2()
+                                    .py(px(1.))
                                     .rounded_md()
+                                    .bg(rgb(EDIT))
                                     .text_xs()
-                                    .text_color(rgb(MUTED))
-                                    .hover(|s| s.text_color(rgb(TEXT)).bg(rgb(0x22304a)))
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .text_color(rgb(0x1f1300))
+                                    .cursor_pointer()
+                                    .hover(|s| s.bg(rgb(EDIT_HOVER)))
                                     .on_click(move |_, window, cx| {
                                         cx.stop_propagation();
                                         let edit = edit.clone();
