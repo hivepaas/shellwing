@@ -42,9 +42,13 @@ pub fn ui(px: f32) -> gpui::Rems {
     gpui::rems(px / 16.)
 }
 
-/// The window's rem for a UI font size: 16 px at the default, as GPUI's.
+/// The UI font size the views' sizes are written for (body text 13 px, the
+/// rem 16 px, as GPUI's).
+const DRAWN_AT: f32 = 13.;
+
+/// The window's rem for a UI font size.
 pub fn rem_for(ui_size: f32) -> gpui::Pixels {
-    gpui::px(16. * ui_size / shellwing_config::UI_FONT_SIZE)
+    gpui::px(16. * ui_size / DRAWN_AT)
 }
 
 pub fn rgb(c: shellwing_config::Color) -> Rgb {

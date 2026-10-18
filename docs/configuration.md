@@ -46,8 +46,9 @@ cursor = { style = "block" } # "block", "bar" or "underline"
 scrollbar = "auto"           # "auto", "always" or "never"
 padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
 # The app's own text (tabs, host list, palette, panels, settings), not the
-# terminal's. No family: the system's interface font. Size 10 to 20, default 13.
-ui_font = { family = "Inter", size = 13 }
+# terminal's. No family: the system's interface font. Size 10 to 20, default 14,
+# as the terminal's.
+ui_font = { family = "Inter", size = 14 }
 
 [terminal]
 scrollback = 10000           # lines of history

@@ -9,7 +9,7 @@ use std::rc::Rc;
 use gpui::{
     AnyElement, Axis, Context, CursorStyle, Div, ElementId, Entity, FocusHandle, Focusable, Hsla,
     KeyDownEvent, MouseButton, MouseMoveEvent, Render, SharedString, Subscription, Window, canvas,
-    div, prelude::*, px, relative, rgb, rgba,
+    div, prelude::*, px, relative, rgb, rgba, svg,
 };
 use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
 use shellwing_ssh::config as ssh_config;
@@ -1583,6 +1583,8 @@ impl Workspace {
             })
     }
 
+    /// The tabs, then empty header bar (which moves the window), then the
+    /// Settings button.
     fn tab_strip(&self, accent: Hsla, cx: &mut Context<Self>) -> Div {
         let mut strip = div().flex().h_full().min_w_0().overflow_hidden();
         for (i, tab) in self.tabs.iter().enumerate() {
@@ -1639,7 +1641,7 @@ impl Workspace {
                     ),
             );
         }
-        strip.child(
+        let strip = strip.child(
             div()
                 .id("new-tab")
                 .flex()
@@ -1653,7 +1655,44 @@ impl Workspace {
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .on_click(cx.listener(|ws, _, window, cx| ws.open_palette(window, cx)))
                 .child("+"),
-        )
+        );
+        let open = self.settings.is_some();
+        div()
+            .flex()
+            .items_center()
+            .h_full()
+            .w_full()
+            .min_w_0()
+            .child(strip)
+            .child(div().flex_1().h_full())
+            .child(
+                div()
+                    .id("settings-button")
+                    .flex_shrink_0()
+                    .size(px(30.))
+                    .mr(px(4.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(6.))
+                    .cursor_pointer()
+                    .when(open, |d| d.bg(rgb(0x1e2a40)))
+                    .hover(|s| s.bg(rgb(0x1e2736)))
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(|ws, _, window, cx| {
+                        if ws.settings.is_some() {
+                            ws.close_settings(window, cx);
+                        } else {
+                            ws.open_settings(Page::Appearance, window, cx);
+                        }
+                    }))
+                    .child(
+                        svg()
+                            .path("icons/settings.svg")
+                            .size(px(16.))
+                            .text_color(rgb(if open { TEXT } else { 0xb6c0cf })),
+                    ),
+            )
     }
 
     /// What the host list shows now: hosts.toml by group, then ssh config
