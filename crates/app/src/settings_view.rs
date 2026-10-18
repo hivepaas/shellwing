@@ -7,13 +7,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use gpui::{
-    Context, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render, SharedString,
-    WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb, uniform_list,
+    Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render,
+    SharedString, WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb,
+    uniform_list,
 };
 use shellwing_config::{
     Color, CursorStyle, HostKey, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
 };
 
+use crate::input::TextInput;
 use crate::look::ui;
 use crate::palette::Action;
 use crate::workspace::Workspace;
@@ -69,6 +71,8 @@ pub struct Snap {
     pub default_font: String,
     /// Every installed font, for the app's own text.
     pub all_fonts: Vec<String>,
+    /// Text editors found on this system: (name, command).
+    pub editors: Vec<(String, String)>,
     pub sync_folder: Option<PathBuf>,
     pub config_dir: Option<PathBuf>,
     pub known_hosts: Option<PathBuf>,
@@ -82,6 +86,10 @@ pub struct SettingsView {
     page: Page,
     snap: Snap,
     fonts_open: Option<Fonts>,
+    /// The editor command typed for Custom.
+    editor_input: Entity<TextInput>,
+    /// Custom chosen, the field shown.
+    custom_editor: bool,
 }
 
 /// Which font list is open.
@@ -140,13 +148,42 @@ impl SettingsView {
         snap: Snap,
         cx: &mut Context<Self>,
     ) -> Self {
+        // A command that is none of the editors found is a custom one.
+        let current = snap
+            .settings
+            .files
+            .editor
+            .clone()
+            .filter(|e| !e.trim().is_empty());
+        let custom = current
+            .as_ref()
+            .is_some_and(|c| !snap.editors.iter().any(|(_, cmd)| cmd == c));
+        let text = if custom {
+            current.unwrap_or_default()
+        } else {
+            String::new()
+        };
+        let editor_input = cx.new(|cx| {
+            let mut i = TextInput::new("e.g. code -n, or /path/to/editor --flag", cx);
+            i.set_text(&text, text.len()..text.len(), cx);
+            i
+        });
         SettingsView {
             focus: cx.focus_handle(),
             workspace,
             page,
             snap,
             fonts_open: None,
+            editor_input,
+            custom_editor: custom,
         }
+    }
+
+    /// Saves the command typed for Custom (empty: the system's editor).
+    fn save_custom_editor(&mut self, cx: &mut Context<Self>) {
+        let cmd = self.editor_input.read(cx).text().trim().to_string();
+        let value = (!cmd.is_empty()).then_some(SettingValue::Str(cmd));
+        self.change(&["files", "editor"], value, cx);
     }
 
     pub fn set_snap(&mut self, snap: Snap, cx: &mut Context<Self>) {
@@ -190,8 +227,18 @@ impl SettingsView {
         cx.open_url(&format!("file://{}", path.display()));
     }
 
-    fn on_key(&mut self, ev: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
+    fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
+        // Typing the editor command: Enter saves, the arrows are the field's.
+        if self.editor_input.focus_handle(cx).is_focused(window) {
+            match k.key.as_str() {
+                "enter" => self.save_custom_editor(cx),
+                "escape" => window.focus(&self.focus, cx),
+                _ => return,
+            }
+            cx.notify();
+            return cx.stop_propagation();
+        }
         let step = |by: isize, v: &mut Self| {
             let at = PAGES.iter().position(|(p, _)| *p == v.page).unwrap_or(0) as isize;
             v.page = PAGES[(at + by).rem_euclid(PAGES.len() as isize) as usize].0;
@@ -423,19 +470,79 @@ impl SettingsView {
 
     fn general(&self, cx: &mut Context<Self>) -> gpui::Div {
         let restore = self.snap.settings.general.restore_tabs;
-        let editor = self
+        // The text editor for remote files: the system's, one found here, or a command.
+        let configured = self
             .snap
             .settings
             .files
             .editor
             .clone()
-            .filter(|e| !e.trim().is_empty())
-            .unwrap_or_else(|| "the system's app for each file".into());
+            .filter(|e| !e.trim().is_empty());
+        let mut choices: Vec<(usize, String)> = vec![(0, "The system's".to_string())];
+        for (n, (name, _)) in self.snap.editors.iter().enumerate() {
+            choices.push((n + 1, name.clone()));
+        }
+        let custom_at = choices.len();
+        choices.push((custom_at, "Custom…".to_string()));
+        let current = if self.custom_editor {
+            custom_at
+        } else {
+            match &configured {
+                None => 0,
+                Some(c) => self
+                    .snap
+                    .editors
+                    .iter()
+                    .position(|(_, cmd)| cmd == c)
+                    .map_or(custom_at, |i| i + 1),
+            }
+        };
+        let editors = self.snap.editors.clone();
+        let mut editor_box = div().flex().flex_col().gap_2().child(self.pills(
+            "text-editor",
+            choices,
+            current,
+            move |v, i, cx| {
+                if i == custom_at {
+                    v.custom_editor = true;
+                    cx.notify();
+                    return;
+                }
+                v.custom_editor = false;
+                let value = editors
+                    .get(i.wrapping_sub(1))
+                    .map(|(_, cmd)| SettingValue::Str(cmd.clone()));
+                v.change(&["files", "editor"], value, cx);
+            },
+            cx,
+        ));
+        if current == custom_at {
+            editor_box = editor_box
+                .child(
+                    div()
+                        .h(px(30.))
+                        .px(px(10.))
+                        .flex()
+                        .items_center()
+                        .rounded(px(6.))
+                        .border_1()
+                        .border_color(rgb(FIELD_EDGE))
+                        .bg(rgb(BG))
+                        .text_size(ui(13.))
+                        .child(self.editor_input.clone()),
+                )
+                .child(
+                    div()
+                        .text_size(ui(11.5))
+                        .text_color(rgb(MUTED))
+                        .child("The file's path is added at the end. Enter saves."),
+                );
+        }
         let mut page = page("General")
             .child(setting(
-                "Editor for remote files",
-                "Edit in the Files panel opens a copy with it and writes the file back each time you save. Set [files] editor in config.toml, e.g. \"code\" or \"gnome-text-editor\".",
-                div().text_size(ui(12.5)).child(editor),
+                "Text editor for remote files",
+                "Edit in text editor, in the Files panel, opens a copy with it and writes the file back each time you save. The system's is the desktop's app for plain text.",
+                editor_box,
             ))
             .child(toggle(
             "restore-tabs",

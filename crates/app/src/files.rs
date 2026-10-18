@@ -19,6 +19,7 @@ use gpui::{
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
 
+use crate::editors;
 use crate::input::TextInput;
 use crate::session::Remote;
 use crate::sidebar::Tip;
@@ -135,6 +136,8 @@ struct RemoteEdit {
     /// The copy's mtime when last written back (or downloaded).
     written: Option<SystemTime>,
     step: EditStep,
+    /// Opened in a text editor, else in the system's app for the file.
+    text: bool,
 }
 
 /// How a write-back went.
@@ -145,33 +148,6 @@ enum Wrote {
 
 fn mtime(p: &Path) -> Option<SystemTime> {
     std::fs::metadata(p).and_then(|m| m.modified()).ok()
-}
-
-/// Splits an editor command as a shell would its words: spaces part them,
-/// quotes keep them together.
-fn words(cmd: &str) -> Vec<String> {
-    let (mut out, mut cur, mut quote, mut any) = (vec![], String::new(), None, false);
-    for c in cmd.chars() {
-        match (quote, c) {
-            (Some(q), c) if c == q => quote = None,
-            (Some(_), c) => cur.push(c),
-            (None, '"' | '\'') => {
-                quote = Some(c);
-                any = true;
-            }
-            (None, c) if c.is_whitespace() => {
-                if any || !cur.is_empty() {
-                    out.push(std::mem::take(&mut cur));
-                    any = false;
-                }
-            }
-            (None, c) => cur.push(c),
-        }
-    }
-    if any || !cur.is_empty() {
-        out.push(cur);
-    }
-    out
 }
 
 /// A folder of its own for one edited file, so its name (and the editor's
@@ -639,8 +615,9 @@ impl FilesPanel {
         });
     }
 
-    /// Opens the chosen file in the editor, writing it back on each save.
-    fn edit_chosen(&mut self, cx: &mut Context<Self>) {
+    /// Opens the chosen file (in a text editor, or the system's app for its
+    /// kind), writing it back on each save.
+    fn edit_chosen(&mut self, text: bool, cx: &mut Context<Self>) {
         let (Some(dir), Some(e)) = (
             self.dir.clone(),
             self.selected.and_then(|i| self.entries.get(i)).cloned(),
@@ -654,7 +631,7 @@ impl FilesPanel {
         // Already open: just to the editor again.
         if let Some(open) = self.edits.iter().find(|x| x.remote == remote) {
             let local = open.local.clone();
-            return self.open_editor(&local, cx);
+            return self.open_editor(&local, text, cx);
         }
         let local = match edit_dir() {
             Ok(d) => d.join(&e.name),
@@ -670,6 +647,7 @@ impl FilesPanel {
             server: (e.size, e.modified),
             written: None,
             step: EditStep::Opening,
+            text,
         });
         cx.notify();
         let into = local.clone();
@@ -684,8 +662,8 @@ impl FilesPanel {
                     Ok(()) => {
                         ed.written = mtime(&ed.local);
                         ed.step = EditStep::Watching(None);
-                        let local = ed.local.clone();
-                        p.open_editor(&local, cx);
+                        let (local, text) = (ed.local.clone(), ed.text);
+                        p.open_editor(&local, text, cx);
                         p.watch(cx);
                     }
                     Err(e) => ed.step = EditStep::Failed(e.to_string()),
@@ -695,23 +673,25 @@ impl FilesPanel {
         );
     }
 
-    /// The configured editor, else the system's app for the file.
-    fn open_editor(&mut self, path: &Path, cx: &mut Context<Self>) {
+    /// A text editor (the configured one, else the system's for text), or
+    /// the system's app for the file's kind.
+    fn open_editor(&mut self, path: &Path, text: bool, cx: &mut Context<Self>) {
+        if !text {
+            return cx.open_with_system(path);
+        }
         let cmd = cx
             .try_global::<EditorCommand>()
             .and_then(|c| c.0.clone())
             .filter(|c| !c.trim().is_empty());
-        let Some(cmd) = cmd else {
-            return cx.open_with_system(path);
+        let started = match &cmd {
+            Some(cmd) => editors::open_with(cmd, path),
+            None => editors::open_text(path),
         };
-        let w = words(&cmd);
-        let started = std::process::Command::new(&w[0])
-            .args(&w[1..])
-            .arg(path)
-            .stdin(std::process::Stdio::null())
-            .spawn();
         if let Err(e) = started {
-            let msg = format!("Cannot start {}: {e}", w[0]);
+            let who = cmd
+                .as_deref()
+                .map_or("the text editor".to_string(), editors::name_of);
+            let msg = format!("Cannot start {who}: {e}");
             if let Some(ed) = self.edits.iter_mut().find(|x| x.local == path) {
                 ed.step = EditStep::Failed(msg);
             }
@@ -830,10 +810,10 @@ impl FilesPanel {
                     .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, true, cx))),
             );
         } else if !matches!(ed.step, EditStep::Opening) {
-            let local = ed.local.clone();
+            let (local, text) = (ed.local.clone(), ed.text);
             actions = actions.child(
                 button(("edit-open", id), "Open")
-                    .on_click(cx.listener(move |p, _, _, cx| p.open_editor(&local, cx))),
+                    .on_click(cx.listener(move |p, _, _, cx| p.open_editor(&local, text, cx))),
             );
         }
         actions = actions.child(
@@ -1141,12 +1121,22 @@ impl FilesPanel {
                         )),
                     )
                 } else {
-                    menu.child(item("menu-edit", "Edit", "", false).on_click(cx.listener(
-                        |p, _, _, cx| {
-                            p.menu = None;
-                            p.edit_chosen(cx);
-                        },
-                    )))
+                    menu.child(
+                        item("menu-edit", "Edit in text editor", "", false).on_click(cx.listener(
+                            |p, _, _, cx| {
+                                p.menu = None;
+                                p.edit_chosen(true, cx);
+                            },
+                        )),
+                    )
+                    .child(
+                        item("menu-open-app", "Open with default app", "", false).on_click(
+                            cx.listener(|p, _, _, cx| {
+                                p.menu = None;
+                                p.edit_chosen(false, cx);
+                            }),
+                        ),
+                    )
                 };
                 menu = menu
                     .child(
@@ -1771,17 +1761,6 @@ impl Render for FilesPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn editor_commands_split_like_a_shell() {
-        assert_eq!(words("code -n"), ["code", "-n"]);
-        assert_eq!(
-            words(r#""/opt/My Editor/bin/edit" --wait"#),
-            ["/opt/My Editor/bin/edit", "--wait"]
-        );
-        assert_eq!(words("  subl  "), ["subl"]);
-        assert_eq!(words("vim -c ''"), ["vim", "-c", ""]);
-    }
 
     #[test]
     fn sizes_read_well() {
