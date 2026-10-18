@@ -622,6 +622,13 @@ impl TermView {
         &self.look
     }
 
+    /// Redraws the cached Files panel, as after the UI font changed.
+    pub fn refresh_panels(&self, cx: &mut Context<Self>) {
+        if let Some(f) = &self.files {
+            f.update(cx, |_, cx| cx.notify());
+        }
+    }
+
     pub fn set_look(&mut self, look: Look, cx: &mut Context<Self>) {
         if look == self.look {
             return;

@@ -36,6 +36,17 @@ impl Look {
     }
 }
 
+/// A text size as drawn at the default UI font size; it grows and shrinks with
+/// the chosen one (the window's rem follows it, see the workspace).
+pub fn ui(px: f32) -> gpui::Rems {
+    gpui::rems(px / 16.)
+}
+
+/// The window's rem for a UI font size: 16 px at the default, as GPUI's.
+pub fn rem_for(ui_size: f32) -> gpui::Pixels {
+    gpui::px(16. * ui_size / shellwing_config::UI_FONT_SIZE)
+}
+
 pub fn rgb(c: shellwing_config::Color) -> Rgb {
     Rgb {
         r: c.r,

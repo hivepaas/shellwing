@@ -8,12 +8,13 @@ use std::sync::Arc;
 
 use gpui::{
     Context, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render, SharedString,
-    WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb,
+    WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
     Color, CursorStyle, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
 };
 
+use crate::look::ui;
 use crate::palette::Action;
 use crate::workspace::Workspace;
 
@@ -66,6 +67,8 @@ pub struct Snap {
     pub fonts: Vec<String>,
     /// The font used when none is set.
     pub default_font: String,
+    /// Every installed font, for the app's own text.
+    pub all_fonts: Vec<String>,
     pub sync_folder: Option<PathBuf>,
     pub config_dir: Option<PathBuf>,
     pub known_hosts: Option<PathBuf>,
@@ -78,7 +81,14 @@ pub struct SettingsView {
     workspace: WeakEntity<Workspace>,
     page: Page,
     snap: Snap,
-    fonts_open: bool,
+    fonts_open: Option<Fonts>,
+}
+
+/// Which font list is open.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Fonts {
+    Terminal,
+    Ui,
 }
 
 impl EventEmitter<SettingsEvent> for SettingsView {}
@@ -135,7 +145,7 @@ impl SettingsView {
             workspace,
             page,
             snap,
-            fonts_open: false,
+            fonts_open: None,
         }
     }
 
@@ -187,7 +197,7 @@ impl SettingsView {
             v.page = PAGES[(at + by).rem_euclid(PAGES.len() as isize) as usize].0;
         };
         match k.key.as_str() {
-            "escape" if self.fonts_open => self.fonts_open = false,
+            "escape" if self.fonts_open.is_some() => self.fonts_open = None,
             "escape" => cx.emit(SettingsEvent::Close),
             "up" => step(-1, self),
             "down" => step(1, self),
@@ -223,7 +233,7 @@ impl SettingsView {
                     .border_1()
                     .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
                     .bg(rgb(if on { ON } else { BG }))
-                    .text_size(px(12.5))
+                    .text_size(ui(12.5))
                     .text_color(rgb(if on { TEXT } else { SOFT }))
                     .cursor_pointer()
                     .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
@@ -232,6 +242,183 @@ impl SettingsView {
             );
         }
         row
+    }
+
+    /// The fonts to choose from, the default first: (family, shown as).
+    fn font_choices(&self, which: Fonts) -> Vec<(Option<String>, String)> {
+        let (default, list) = match which {
+            Fonts::Terminal => (
+                format!("Default ({})", self.snap.default_font),
+                &self.snap.fonts,
+            ),
+            Fonts::Ui => ("Default (the system's)".to_string(), &self.snap.all_fonts),
+        };
+        let mut choices = vec![(None, default)];
+        choices.extend(list.iter().map(|f| (Some(f.clone()), f.clone())));
+        choices
+    }
+
+    fn current_font(&self, which: Fonts) -> Option<String> {
+        let a = &self.snap.settings.appearance;
+        match which {
+            Fonts::Terminal => a.font.family.clone(),
+            Fonts::Ui => a.ui_font.family.clone(),
+        }
+    }
+
+    /// A font field and, when open, the list of fonts, each in its own face.
+    fn font_picker(&self, which: Fonts, cx: &mut Context<Self>) -> gpui::Div {
+        const ROW: f32 = 28.;
+        let current = self.current_font(which);
+        let choices = self.font_choices(which);
+        let shown = choices
+            .iter()
+            .find(|(v, _)| *v == current)
+            .map(|(_, n)| n.clone())
+            .or(current.clone())
+            .unwrap_or_default();
+        let open = self.fonts_open == Some(which);
+        let mut picker = div()
+            .flex()
+            .flex_col()
+            .gap(px(4.))
+            .flex_1()
+            .min_w(px(200.))
+            .child(label("Font"))
+            .child(
+                div()
+                    .id(match which {
+                        Fonts::Terminal => "font-select",
+                        Fonts::Ui => "ui-font-select",
+                    })
+                    .h(px(30.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(if open { ACCENT } else { FIELD_EDGE }))
+                    .bg(rgb(BG))
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        v.fonts_open = if v.fonts_open == Some(which) {
+                            None
+                        } else {
+                            Some(which)
+                        };
+                        cx.notify();
+                    }))
+                    .child(
+                        div()
+                            .overflow_hidden()
+                            .text_ellipsis()
+                            .whitespace_nowrap()
+                            .child(shown),
+                    )
+                    .child(div().text_color(rgb(MUTED)).child("▾")),
+            );
+        if open {
+            let n = choices.len();
+            // Virtual: only the fonts in view are drawn (there may be hundreds).
+            let list = uniform_list(
+                match which {
+                    Fonts::Terminal => "font-list",
+                    Fonts::Ui => "ui-font-list",
+                },
+                n,
+                cx.processor(move |v, range: std::ops::Range<usize>, _, cx| {
+                    let choices = v.font_choices(which);
+                    let current = v.current_font(which);
+                    range
+                        .map(|i| {
+                            let (value, name) = choices[i].clone();
+                            let on = value == current;
+                            let pick = value.clone();
+                            div()
+                                .id(("font", i))
+                                .h(px(ROW))
+                                .px_2()
+                                .flex()
+                                .items_center()
+                                .rounded(px(4.))
+                                .cursor_pointer()
+                                .when(on, |d| d.bg(rgb(ON)))
+                                .hover(|s| s.bg(rgb(0x1a2333)))
+                                .when_some(value, |d, f| d.font_family(f))
+                                .on_click(cx.listener(move |v, _, _, cx| {
+                                    v.fonts_open = None;
+                                    let path: &'static [&'static str] = match which {
+                                        Fonts::Terminal => &["appearance", "font", "family"],
+                                        Fonts::Ui => &["appearance", "ui_font", "family"],
+                                    };
+                                    v.change(path, pick.clone().map(SettingValue::Str), cx);
+                                }))
+                                .child(name)
+                                .into_any_element()
+                        })
+                        .collect::<Vec<_>>()
+                }),
+            )
+            .h(px((n as f32 * ROW).min(240.)));
+            picker = picker.child(
+                div()
+                    .p_1()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(0x2b3648))
+                    .bg(rgb(0x111826))
+                    .child(list),
+            );
+        }
+        picker
+    }
+
+    /// The app's own font: tabs, the host list, the palette, panels, this page.
+    fn app_text(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let sizes: Vec<(u32, String)> = [11, 12, 13, 14, 15, 16]
+            .into_iter()
+            .map(|s| (s, s.to_string()))
+            .collect();
+        let size = self.snap.settings.appearance.ui_font.size.round() as u32;
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(14.))
+            .child(
+                div()
+                    .flex()
+                    .items_baseline()
+                    .gap_3()
+                    .child(heading2("App text"))
+                    .child(label(
+                        "Tabs, the host list, the palette, panels and this page.",
+                    )),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .gap(px(14.))
+                    .items_start()
+                    .child(self.font_picker(Fonts::Ui, cx))
+                    .child(labelled(
+                        "Size",
+                        self.pills(
+                            "ui-size",
+                            sizes,
+                            size,
+                            |v, s, cx| {
+                                v.change(
+                                    &["appearance", "ui_font", "size"],
+                                    Some(SettingValue::Float(s as f64)),
+                                    cx,
+                                )
+                            },
+                            cx,
+                        ),
+                    )),
+            )
     }
 
     fn general(&self, cx: &mut Context<Self>) -> gpui::Div {
@@ -266,7 +453,7 @@ impl SettingsView {
                     div()
                         .flex()
                         .gap_3()
-                        .text_size(px(12.5))
+                        .text_size(ui(12.5))
                         .child(div().w(px(130.)).flex_shrink_0().child(name))
                         .child(div().text_color(rgb(MUTED)).child(what)),
                 );
@@ -281,7 +468,7 @@ impl SettingsView {
                         .gap_3()
                         .child(
                             div()
-                                .text_size(px(12.5))
+                                .text_size(ui(12.5))
                                 .text_color(rgb(LABEL))
                                 .child(shown_path(&dir)),
                         )
@@ -325,7 +512,7 @@ impl SettingsView {
                 .child(swatch)
                 .child(
                     div()
-                        .text_size(px(11.5))
+                        .text_size(ui(11.5))
                         .text_color(rgb(if on { TEXT } else { LABEL }))
                         .overflow_hidden()
                         .text_ellipsis()
@@ -346,77 +533,7 @@ impl SettingsView {
         let themes_dir = self.snap.config_dir.as_ref().map(|d| d.join("themes"));
 
         // Text.
-        let family = a.font.family.clone();
-        let font_label = family
-            .clone()
-            .unwrap_or_else(|| format!("Default ({})", self.snap.default_font));
-        let mut font_box = div()
-            .flex()
-            .flex_col()
-            .gap(px(4.))
-            .flex_1()
-            .min_w(px(200.))
-            .child(label("Font"))
-            .child(
-                div()
-                    .id("font-select")
-                    .h(px(30.))
-                    .px(px(10.))
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .rounded(px(6.))
-                    .border_1()
-                    .border_color(rgb(if self.fonts_open { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(BG))
-                    .cursor_pointer()
-                    .on_click(cx.listener(|v, _, _, cx| {
-                        v.fonts_open = !v.fonts_open;
-                        cx.notify();
-                    }))
-                    .child(font_label)
-                    .child(div().text_color(rgb(MUTED)).child("▾")),
-            );
-        if self.fonts_open {
-            let mut list = div()
-                .id("font-list")
-                .flex()
-                .flex_col()
-                .max_h(px(240.))
-                .overflow_y_scroll()
-                .p_1()
-                .rounded(px(6.))
-                .border_1()
-                .border_color(rgb(0x2b3648))
-                .bg(rgb(0x111826));
-            let mut choices = vec![(None, format!("Default ({})", self.snap.default_font))];
-            choices.extend(self.snap.fonts.iter().map(|f| (Some(f.clone()), f.clone())));
-            for (n, (value, name)) in choices.into_iter().enumerate() {
-                let on = value == family;
-                let font = value.clone();
-                list = list.child(
-                    div()
-                        .id(("font", n))
-                        .px_2()
-                        .py(px(5.))
-                        .rounded(px(4.))
-                        .cursor_pointer()
-                        .when(on, |d| d.bg(rgb(ON)))
-                        .hover(|s| s.bg(rgb(0x1a2333)))
-                        .when_some(value, |d, f| d.font_family(f))
-                        .on_click(cx.listener(move |v, _, _, cx| {
-                            v.fonts_open = false;
-                            v.change(
-                                &["appearance", "font", "family"],
-                                font.clone().map(SettingValue::Str),
-                                cx,
-                            );
-                        }))
-                        .child(name),
-                );
-            }
-            font_box = font_box.child(list);
-        }
+        let font_box = self.font_picker(Fonts::Terminal, cx);
         let size = a.font.size;
         let sizes: Vec<(u32, String)> = [11, 12, 13, 14, 15, 16, 18]
             .into_iter()
@@ -445,7 +562,7 @@ impl SettingsView {
             .flex()
             .flex_col()
             .gap(px(14.))
-            .child(heading2("Text"))
+            .child(heading2("Terminal text"))
             .child(
                 div()
                     .flex()
@@ -586,7 +703,7 @@ impl SettingsView {
                     .gap_3()
                     .child(
                         div()
-                            .text_size(px(18.))
+                            .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
                             .child("Theme"),
                     )
@@ -616,7 +733,9 @@ impl SettingsView {
                 )
             })
             .child(rule())
-            .child(text);
+            .child(text)
+            .child(rule())
+            .child(self.app_text(cx));
 
         div()
             .flex()
@@ -716,7 +835,7 @@ impl SettingsView {
                     .bg(rgb(0x0d121c))
                     .border_1()
                     .border_color(rgb(LINE))
-                    .text_size(px(11.5))
+                    .text_size(ui(11.5))
                     .text_color(rgb(MUTED))
                     .child("# config.toml")
                     .child("[appearance]")
@@ -814,7 +933,7 @@ impl SettingsView {
                 div()
                     .flex()
                     .justify_between()
-                    .text_size(px(13.))
+                    .text_size(ui(13.))
                     .child(what)
                     .child(
                         div()
@@ -823,7 +942,7 @@ impl SettingsView {
                             .bg(rgb(0x111a2a))
                             .border_1()
                             .border_color(rgb(0x2b3648))
-                            .text_size(px(12.))
+                            .text_size(ui(12.))
                             .child(key),
                     ),
             );
@@ -859,7 +978,7 @@ impl SettingsView {
                     .gap_3()
                     .child(
                         div()
-                            .text_size(px(12.5))
+                            .text_size(ui(12.5))
                             .text_color(rgb(LABEL))
                             .child(shown),
                     )
@@ -875,7 +994,7 @@ impl SettingsView {
             .child(setting(
                 "Unknown host keys",
                 "A new host's key is shown with its fingerprint, and nothing is sent until you accept it. A changed key is always refused.",
-                div().text_size(px(12.5)).child("Ask"),
+                div().text_size(ui(12.5)).child("Ask"),
             ))
             .child(file_row(
                 "known-hosts",
@@ -891,7 +1010,7 @@ impl SettingsView {
                 self.snap.ssh_config.clone(),
                 cx,
             ))
-            .child(setting("Agent", "Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).", div().text_size(px(12.5)).child(agent)))
+            .child(setting("Agent", "Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).", div().text_size(ui(12.5)).child(agent)))
     }
 
     fn sync(&self, cx: &mut Context<Self>) -> gpui::Div {
@@ -926,7 +1045,7 @@ impl SettingsView {
             .child(setting(
                 "Sync through a folder",
                 "Hosts and saved passwords travel through a folder that another app syncs: iCloud Drive, Syncthing, Dropbox. Everything in it is encrypted with your recovery key.",
-                div().flex().flex_col().gap_2().child(div().text_size(px(12.5)).child(state)).child(buttons),
+                div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
             ))
             .child(label("Hosts kept on this device only (in their editor) stay out of it."))
     }
@@ -945,7 +1064,7 @@ impl SettingsView {
                 .flex()
                 .items_center()
                 .gap_3()
-                .child(div().text_size(px(12.5)).child(count))
+                .child(div().text_size(ui(12.5)).child(count))
                 .child(small_button("vault-manage", "Manage…").on_click(cx.listener(|v, _, w, cx| v.run(Action::ManageSecrets, w, cx)))),
         ))
     }
@@ -954,7 +1073,7 @@ impl SettingsView {
         page("About")
             .child(
                 div()
-                    .text_size(px(15.))
+                    .text_size(ui(15.))
                     .child(format!("shellwing {}", env!("CARGO_PKG_VERSION"))),
             )
             .child(label("A native SSH client."))
@@ -964,7 +1083,7 @@ impl SettingsView {
 fn page(title: &str) -> gpui::Div {
     div().flex().flex_col().gap(px(16.)).max_w(px(760.)).child(
         div()
-            .text_size(px(18.))
+            .text_size(ui(18.))
             .font_weight(FontWeight::SEMIBOLD)
             .child(title.to_string()),
     )
@@ -972,7 +1091,7 @@ fn page(title: &str) -> gpui::Div {
 
 fn heading(s: &str) -> gpui::Div {
     div()
-        .text_size(px(11.))
+        .text_size(ui(11.))
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(rgb(MUTED))
         .child(s.to_uppercase())
@@ -980,14 +1099,14 @@ fn heading(s: &str) -> gpui::Div {
 
 fn heading2(s: &str) -> gpui::Div {
     div()
-        .text_size(px(15.))
+        .text_size(ui(15.))
         .font_weight(FontWeight::SEMIBOLD)
         .child(s.to_string())
 }
 
 fn label(s: &str) -> gpui::Div {
     div()
-        .text_size(px(12.))
+        .text_size(ui(12.))
         .text_color(rgb(LABEL))
         .child(s.to_string())
 }
@@ -1020,10 +1139,10 @@ fn setting(title: &str, what: &str, control: gpui::Div) -> gpui::Div {
                 .flex()
                 .flex_col()
                 .gap(px(3.))
-                .child(div().text_size(px(13.)).child(title.to_string()))
+                .child(div().text_size(ui(13.)).child(title.to_string()))
                 .child(
                     div()
-                        .text_size(px(11.5))
+                        .text_size(ui(11.5))
                         .text_color(rgb(MUTED))
                         .child(what.to_string()),
                 ),
@@ -1059,7 +1178,7 @@ fn toggle(
                 .border_1()
                 .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
                 .bg(rgb(if on { ACCENT } else { BG }))
-                .text_size(px(11.))
+                .text_size(ui(11.))
                 .text_color(rgb(0x04121c))
                 .when(on, |d| d.child("✓")),
         )
@@ -1068,10 +1187,10 @@ fn toggle(
                 .flex()
                 .flex_col()
                 .gap(px(3.))
-                .child(div().text_size(px(13.)).child(title.to_string()))
+                .child(div().text_size(ui(13.)).child(title.to_string()))
                 .child(
                     div()
-                        .text_size(px(11.5))
+                        .text_size(ui(11.5))
                         .text_color(rgb(MUTED))
                         .child(what.to_string()),
                 ),
@@ -1088,7 +1207,7 @@ fn small_button(id: &'static str, label: &str) -> gpui::Stateful<gpui::Div> {
         .rounded(px(6.))
         .border_1()
         .border_color(rgb(FIELD_EDGE))
-        .text_size(px(12.))
+        .text_size(ui(12.))
         .text_color(rgb(SOFT))
         .cursor_pointer()
         .hover(|s| s.bg(rgb(0x121a28)).text_color(rgb(TEXT)))
@@ -1165,7 +1284,7 @@ impl Render for SettingsView {
                     .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
                     .on_click(cx.listener(move |v, _, _, cx| {
                         v.page = p;
-                        v.fonts_open = false;
+                        v.fonts_open = None;
                         cx.notify();
                     }))
                     .child(*name),
@@ -1189,7 +1308,7 @@ impl Render for SettingsView {
             .flex()
             .flex_col()
             .bg(rgb(BG))
-            .text_size(px(13.))
+            .text_size(ui(13.))
             .text_color(rgb(TEXT))
             .child(header)
             .child(

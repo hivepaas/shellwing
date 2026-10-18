@@ -15,6 +15,7 @@ use shellwing_config::{Auth, AuthMethod, Host, Hosts, Store};
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
 use crate::input::TextInput;
+use crate::look::ui;
 
 pub const WIDTH: f32 = 520.;
 
@@ -605,7 +606,7 @@ impl HostEditor {
                 FIELD_EDGE
             }))
             .bg(rgb(FIELD))
-            .text_size(px(13.))
+            .text_size(ui(13.))
             .text_color(rgb(TEXT))
             .child(input.clone())
     }
@@ -658,7 +659,7 @@ impl HostEditor {
                     .border_1()
                     .border_color(rgb(if open { ACCENT } else { FIELD_EDGE }))
                     .bg(rgb(FIELD))
-                    .text_size(px(13.))
+                    .text_size(ui(13.))
                     .cursor_pointer()
                     .on_click(cx.listener(move |e, _, _, cx| {
                         e.menu = if e.menu == Some(menu) {
@@ -712,7 +713,7 @@ impl HostEditor {
                     .px_2()
                     .py(px(5.))
                     .rounded(px(4.))
-                    .text_size(px(13.))
+                    .text_size(ui(13.))
                     .cursor_pointer()
                     .when(chosen, |d| d.bg(rgb(ON)))
                     .hover(|s| s.bg(rgb(0x1a2333)))
@@ -793,21 +794,21 @@ impl HostEditor {
 
 fn label_text(s: &str) -> gpui::Div {
     div()
-        .text_size(px(12.))
+        .text_size(ui(12.))
         .text_color(rgb(LABEL))
         .child(s.to_string())
 }
 
 fn hint_text(s: &str) -> gpui::Div {
     div()
-        .text_size(px(11.5))
+        .text_size(ui(11.5))
         .text_color(rgb(MUTED))
         .child(s.to_string())
 }
 
 fn problem_text(s: &str) -> gpui::Div {
     div()
-        .text_size(px(11.5))
+        .text_size(ui(11.5))
         .text_color(rgb(BAD))
         .child(s.to_string())
 }
@@ -816,7 +817,7 @@ fn fact(label: &str, value: String) -> gpui::Div {
     div()
         .flex()
         .gap_2()
-        .text_size(px(12.5))
+        .text_size(ui(12.5))
         .child(
             div()
                 .w(px(70.))
@@ -844,7 +845,7 @@ fn section(title: &str) -> gpui::Div {
         .border_color(rgb(RULE))
         .child(
             div()
-                .text_size(px(11.))
+                .text_size(ui(11.))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(rgb(MUTED))
                 .child(title.to_uppercase()),
@@ -878,13 +879,13 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
                 .overflow_hidden()
                 .text_ellipsis()
                 .whitespace_nowrap()
-                .text_size(px(15.))
+                .text_size(ui(15.))
                 .font_weight(FontWeight::SEMIBOLD)
                 .child(title.to_string()),
         )
         .child(
             div()
-                .text_size(px(12.))
+                .text_size(ui(12.))
                 .text_color(rgb(MUTED))
                 .child(note.to_string()),
         )
@@ -959,7 +960,7 @@ fn chip(
         .border_1()
         .border_color(rgb(EDGE))
         .bg(rgb(CHIP))
-        .text_size(px(12.))
+        .text_size(ui(12.))
         .child(name.to_string())
         .when(!detail.is_empty(), |d| {
             d.child(div().text_color(rgb(MUTED)).child(detail))
@@ -991,7 +992,7 @@ fn dashed(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
         .border_1()
         .border_dashed()
         .border_color(rgb(EDGE))
-        .text_size(px(12.))
+        .text_size(ui(12.))
         .text_color(rgb(LABEL))
         .cursor_pointer()
         .hover(|s| s.text_color(rgb(TEXT)))
@@ -1016,7 +1017,7 @@ impl Render for HostEditor {
             .bg(rgb(BG))
             .border_l_1()
             .border_color(rgb(EDGE))
-            .text_size(px(13.))
+            .text_size(ui(13.))
             .text_color(rgb(TEXT));
         if let Mode::SshConfig { alias, resolved } = &self.mode {
             let (alias, resolved) = (alias.clone(), resolved.clone());
@@ -1092,7 +1093,7 @@ impl Render for HostEditor {
                     .flex()
                     .items_center()
                     .justify_center()
-                    .text_size(px(12.5))
+                    .text_size(ui(12.5))
                     .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
                     .cursor_pointer()
                     .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
@@ -1144,7 +1145,7 @@ impl Render for HostEditor {
         }
         chain = chain.child(
             div()
-                .text_size(px(12.))
+                .text_size(ui(12.))
                 .text_color(rgb(0xb6c0cf))
                 .child(title.clone()),
         );
@@ -1337,7 +1338,7 @@ impl Render for HostEditor {
             buttons = buttons
                 .child(
                     div()
-                        .text_size(px(12.5))
+                        .text_size(ui(12.5))
                         .child(format!("Delete {title} from hosts.toml?")),
                 )
                 .child(
@@ -1405,7 +1406,7 @@ fn checkbox(on: bool) -> gpui::Div {
         .border_1()
         .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
         .bg(rgb(if on { ACCENT } else { FIELD }))
-        .text_size(px(11.))
+        .text_size(ui(11.))
         .text_color(rgb(0x04121c))
         .when(on, |d| d.child("✓"))
 }
