@@ -1167,6 +1167,59 @@ async fn files_are_listed_downloaded_and_uploaded_over_sftp() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn folders_are_made_renamed_and_removed_over_sftp() {
+    use shellwing_ssh::sftp::join;
+    if sftp_server().is_none() {
+        eprintln!("skipped: no sftp-server on this system");
+        return;
+    }
+    let fx = Fixture::new("sftp-manage");
+    let remote = fx.dir.join("remote");
+    std::fs::create_dir_all(remote.join("old/inner/deep")).expect("dirs");
+    std::fs::write(remote.join("old/inner/deep/f.txt"), "f").expect("f");
+    std::fs::write(remote.join("old/g.txt"), "g").expect("g");
+    std::fs::write(remote.join("keep.txt"), "keep").expect("keep");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(remote.join("keep.txt"), remote.join("old/to-keep")).expect("link");
+
+    let (_session, sftp) = sftp_session(&fx, Some(remote.clone())).await;
+    let sftp = sftp.expect("sftp opens");
+    let home = sftp.home().await.expect("home");
+
+    sftp.mkdir(&join(&home, "new")).await.expect("mkdir");
+    assert!(remote.join("new").is_dir());
+    let again = sftp.mkdir(&join(&home, "new")).await.expect_err("there");
+    assert!(again.to_string().contains("already there"), "{again}");
+
+    sftp.rename(&join(&home, "old"), &join(&home, "renamed"))
+        .await
+        .expect("rename");
+    assert!(remote.join("renamed/inner/deep/f.txt").is_file());
+    let onto = sftp
+        .rename(&join(&home, "renamed"), &join(&home, "keep.txt"))
+        .await
+        .expect_err("taken");
+    assert!(onto.to_string().contains("already there"), "{onto}");
+
+    // A whole tree goes; a link inside goes as a link, not what it points at.
+    sftp.remove(&join(&home, "renamed"))
+        .await
+        .expect("remove dir");
+    assert!(!remote.join("renamed").exists());
+    assert_eq!(
+        std::fs::read_to_string(remote.join("keep.txt")).expect("keep"),
+        "keep"
+    );
+    sftp.remove(&join(&home, "keep.txt"))
+        .await
+        .expect("remove file");
+    assert!(!remote.join("keep.txt").exists());
+    sftp.remove(&join(&home, "nothing"))
+        .await
+        .expect("already gone is fine");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn a_server_without_sftp_says_so() {
     let fx = Fixture::new("no-sftp");
     let (_session, sftp) = sftp_session(&fx, None).await;

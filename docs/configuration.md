@@ -197,6 +197,10 @@ on a channel of its own, so the terminal keeps working while files move.
 
 - Click to choose, double-click or **Enter** to open a folder or download a
   file, **Backspace** to go up, **Esc** to go back to the terminal.
+- **New folder**, **Rename** (**F2**) and **Delete** (**Delete**; Cmd+Backspace
+  on macOS) work in the folder shown. Deleting asks first; a folder goes with
+  everything in it, and a link goes as a link, never what it points at. A
+  rename never writes over something already there.
 - **Download** fetches the chosen file or folder (folders whole) into your
   Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
   is written as `name.part` until it is complete.
