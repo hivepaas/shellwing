@@ -1,0 +1,16 @@
+# Quiet neutral graphite, easy on long reads.
+name = "Graphite Mist"
+accent = "#94a3b8"
+background = "#0d0f13"
+gradient = { angle = 135, stops = ["#1c2028 0%", "#2a303b 35%", "#20252e 70%", "#0d0f13 100%"] }
+foreground = "#e5e7eb"
+cursor = "#cbd5e1"
+cursor_text = "#0d0f13"
+selection_background = "#475569"
+selection_foreground = "#ffffff"
+palette = [
+  "#0d0f13", "#f87171", "#4ade80", "#facc15",
+  "#7aa2f7", "#c4a7e7", "#5fd7d7", "#e5e7eb",
+  "#8b95a5", "#fca5a5", "#86efac", "#fde047",
+  "#a5c4ff", "#d8c4f5", "#99e9e9", "#ffffff",
+]

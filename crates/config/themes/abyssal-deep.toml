@@ -1,0 +1,16 @@
+# Dark oceanic sapphire abyss.
+name = "Abyssal Deep"
+accent = "#38bdf8"
+background = "#010f1a"
+gradient = { angle = 135, stops = ["#033252 0%", "#0a4773 35%", "#062d47 70%", "#010f1a 100%"] }
+foreground = "#f0f9ff"
+cursor = "#38bdf8"
+cursor_text = "#010f1a"
+selection_background = "#0284c7"
+selection_foreground = "#ffffff"
+palette = [
+  "#010f1a", "#fa9696", "#34d399", "#fbbf24",
+  "#38bdf8", "#a4acfa", "#22d3ee", "#f0f9ff",
+  "#9ca8b9", "#fca5a5", "#6ee7b7", "#fde047",
+  "#7dd3fc", "#a5b4fc", "#67e8f9", "#ffffff",
+]

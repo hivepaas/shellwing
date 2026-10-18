@@ -1,0 +1,16 @@
+# High-contrast neon synthwave glow.
+name = "Cyberpunk Synthwave"
+accent = "#facc15"
+background = "#0d061c"
+gradient = { angle = 135, stops = ["#0a1e3d 0%", "#2f0d4e 35%", "#630c69 65%", "#0d061c 100%"] }
+foreground = "#fdf4ff"
+cursor = "#facc15"
+cursor_text = "#0d061c"
+selection_background = "#e879f9"
+selection_foreground = "#000000"
+palette = [
+  "#0d061c", "#ff70b7", "#00ff9f", "#ffe600",
+  "#00b8ff", "#e870ff", "#00f0ff", "#ffffff",
+  "#b588b7", "#ff6fb4", "#50ffba", "#fff066",
+  "#5cd3ff", "#e96cff", "#66f6ff", "#ffffff",
+]

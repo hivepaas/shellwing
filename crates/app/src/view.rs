@@ -3,19 +3,20 @@
 //! input methods (ibus, fcitx, the macOS and Windows IMEs) can compose text with
 //! preedit.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::ops::Range;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use gpui::{
-    App, Bounds, ClipboardItem, Context, EntityInputHandler, FocusHandle, Focusable, Font,
+    App, Bounds, ClipboardItem, Context, Corners, EntityInputHandler, FocusHandle, Focusable, Font,
     FontFallbacks, FontStyle, FontWeight, Hsla, KeyDownEvent, Modifiers, ModifiersChangedEvent,
-    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, ScrollDelta,
-    ScrollWheelEvent, SharedString, TextAlign, TextRun, UTF16Selection, UnderlineStyle, Window,
-    canvas, div, font, point, prelude::*, px, rgb, size,
+    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, Render, RenderImage,
+    ScrollDelta, ScrollWheelEvent, SharedString, Size, TextAlign, TextRun, UTF16Selection,
+    UnderlineStyle, Window, canvas, div, font, point, prelude::*, px, rgb, size,
 };
+use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
     Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
     Rgb, Row, TermHandle,
@@ -24,6 +25,7 @@ use shellwing_term::{
 use crate::Writer;
 use crate::bench::Probe;
 use crate::chrome::{self, RESIZE_EDGE, TITLEBAR_H};
+use crate::look::{Live, Look, rgb as theme_rgb};
 
 /// Terminal font candidates; the first one installed is used ($SHELLWING_FONT wins).
 #[cfg(target_os = "macos")]
@@ -62,13 +64,15 @@ const FONT_FALLBACKS: &[&str] = &[
     "Noto Sans CJK SC",
     "DejaVu Sans Mono",
 ];
-const FONT_SIZE: f32 = 14.0;
-const LINE_HEIGHT: f32 = 1.3;
 /// Lines per wheel notch.
 const WHEEL_LINES: f32 = 3.0;
 /// How long a refused paste waits for the user to paste again to confirm.
 const CONFIRM_PASTE: Duration = Duration::from_secs(5);
-const SELECTION_BG: u32 = 0x264f78;
+/// How long a problem with the config files stays on screen.
+const CONFIG_NOTICE: Duration = Duration::from_secs(8);
+/// Longest side of the gradient image. The GPU stretches it with linear
+/// filtering, which keeps a gradient smooth, so only its aspect ratio matters.
+const GRADIENT_SIZE: f32 = 256.0;
 
 fn hsla(c: Rgb) -> Hsla {
     rgb(((c.r as u32) << 16) | ((c.g as u32) << 8) | c.b as u32).into()
@@ -108,6 +112,48 @@ struct PaintRow {
     segments: Vec<Segment>,
 }
 
+/// A theme's gradient rendered for one aspect ratio.
+struct GradientImage {
+    key: (String, u32, u32),
+    image: Arc<RenderImage>,
+}
+
+/// The image for `gradient` at `size`, rendered again only when the theme or
+/// the aspect ratio changed.
+fn gradient_image(
+    cache: &RefCell<Option<GradientImage>>,
+    theme: &Theme,
+    gradient: &Gradient,
+    size: Size<Pixels>,
+    window: &mut Window,
+) -> Option<Arc<RenderImage>> {
+    let (w, h) = (
+        f32::from(size.width).max(1.),
+        f32::from(size.height).max(1.),
+    );
+    let scale = GRADIENT_SIZE / w.max(h);
+    // Rounded to 4 px so a window being resized does not render on every step.
+    let dim = |v: f32| ((v * scale / 4.).round() as u32).max(1) * 4;
+    let key = (theme.id.clone(), dim(w), dim(h));
+    let mut cache = cache.borrow_mut();
+    if let Some(c) = cache.as_ref()
+        && c.key == key
+    {
+        return Some(c.image.clone());
+    }
+    let pixels = gradient.render_bgra(key.1, key.2);
+    let buffer = image::RgbaImage::from_raw(key.1, key.2, pixels)?;
+    let image = Arc::new(RenderImage::new([image::Frame::new(buffer)]));
+    if let Some(old) = cache.take() {
+        let _ = window.drop_image(old.image);
+    }
+    *cache = Some(GradientImage {
+        key,
+        image: image.clone(),
+    });
+    Some(image)
+}
+
 /// The modifier that turns a click into "open link": Cmd on macOS, Ctrl elsewhere.
 fn link_mod(m: &Modifiers) -> bool {
     if cfg!(target_os = "macos") {
@@ -136,6 +182,9 @@ pub struct TermView {
     /// Last pointer position over the grid, to show links when the modifier goes down.
     last_mouse: Option<(f32, f32)>,
     font_family: SharedString,
+    look: Look,
+    live: Live,
+    gradient: Rc<RefCell<Option<GradientImage>>>,
     probe: Arc<Probe>,
 }
 
@@ -145,9 +194,13 @@ impl TermView {
         writer: Writer,
         title: String,
         probe: Arc<Probe>,
+        live: Live,
+        problems: Vec<String>,
         cx: &mut Context<Self>,
     ) -> Self {
-        TermView {
+        let (look, problem) = live.look();
+        term.set_colors(look.colors());
+        let mut view = TermView {
             focus: cx.focus_handle(),
             term,
             writer,
@@ -162,7 +215,66 @@ impl TermView {
             notice: None,
             last_mouse: None,
             font_family: FONT_FAMILIES[0].into(),
+            look,
+            live,
+            gradient: Rc::new(RefCell::new(None)),
             probe,
+        };
+        view.report(problems.into_iter().chain(problem).collect(), cx);
+        view
+    }
+
+    /// Shows problems with the config files, if any.
+    fn report(&mut self, problems: Vec<String>, cx: &mut Context<Self>) {
+        if !problems.is_empty() {
+            self.show_notice(problems.join("\n"), CONFIG_NOTICE, cx);
+        }
+    }
+
+    /// Called periodically: picks up edits to the config files.
+    pub fn poll_config(&mut self, cx: &mut Context<Self>) {
+        if let Some(mut problems) = self.live.reload_if_changed() {
+            let (look, problem) = self.live.look();
+            problems.extend(problem);
+            self.apply(look, cx);
+            self.report(problems, cx);
+        }
+    }
+
+    fn apply(&mut self, look: Look, cx: &mut Context<Self>) {
+        if look == self.look {
+            return;
+        }
+        if look.theme != self.look.theme {
+            self.term.set_colors(look.colors());
+        }
+        if look.scrollback != self.look.scrollback {
+            self.term.set_scrollback(look.scrollback);
+        }
+        if (&look.font_family, look.font_size, look.line_height)
+            != (
+                &self.look.font_family,
+                self.look.font_size,
+                self.look.line_height,
+            )
+        {
+            // Measured again on the next render, which also resizes the grid.
+            self.cell = (px(0.), px(0.));
+        }
+        self.look = look;
+        // Text runs carry colors and fonts, so every row is converted again.
+        self.paint_rows.clear();
+        cx.notify();
+    }
+
+    fn step_theme(&mut self, step: isize, cx: &mut Context<Self>) {
+        match self.live.step_theme(step) {
+            Ok(theme) => {
+                let (look, _) = self.live.look();
+                self.apply(look, cx);
+                self.show_notice(format!("Theme: {}", theme.name), CONFIRM_PASTE, cx);
+            }
+            Err(e) => self.show_notice(e, CONFIG_NOTICE, cx),
         }
     }
 
@@ -177,17 +289,19 @@ impl TermView {
         }
     }
 
-    /// Picks the terminal font: $SHELLWING_FONT, else the first installed candidate.
-    fn choose_font(window: &mut Window) -> SharedString {
+    /// Picks the terminal font: $SHELLWING_FONT, else the configured family if
+    /// installed, else the first installed candidate.
+    fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
         if let Ok(f) = std::env::var("SHELLWING_FONT") {
             return f.into();
         }
         let installed = window.text_system().all_font_names();
-        FONT_FAMILIES
-            .iter()
-            .find(|f| installed.iter().any(|i| i == *f))
-            .copied()
+        configured
+            .into_iter()
+            .chain(FONT_FAMILIES.iter().copied())
+            .find(|f| installed.iter().any(|i| i == f))
             .unwrap_or(FONT_FAMILIES[FONT_FAMILIES.len() - 1])
+            .to_string()
             .into()
     }
 
@@ -200,19 +314,26 @@ impl TermView {
                 self.pending_paste = Some((text, Instant::now()));
                 self.show_notice(
                     "The pasted text could run commands. Paste again within 5 s to send it anyway.",
+                    CONFIRM_PASTE,
                     cx,
                 );
             }
         }
     }
 
-    fn show_notice(&mut self, msg: &'static str, cx: &mut Context<Self>) {
-        self.notice = Some(msg.into());
+    fn show_notice(
+        &mut self,
+        msg: impl Into<SharedString>,
+        shown: Duration,
+        cx: &mut Context<Self>,
+    ) {
+        let msg: SharedString = msg.into();
+        self.notice = Some(msg.clone());
         cx.notify();
         cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(CONFIRM_PASTE).await;
+            cx.background_executor().timer(shown).await;
             let _ = this.update(cx, |v, cx| {
-                if v.notice.as_ref().is_some_and(|n| n == msg) {
+                if v.notice.as_ref() == Some(&msg) {
                     v.notice = None;
                     cx.notify();
                 }
@@ -238,7 +359,7 @@ impl TermView {
     }
 
     fn measure_cell(&mut self, window: &mut Window) {
-        self.font_family = Self::choose_font(window);
+        self.font_family = Self::choose_font(window, self.look.font_family.as_deref());
         let run = TextRun {
             len: 1,
             font: self.base_font(),
@@ -247,10 +368,14 @@ impl TermView {
             underline: None,
             strikethrough: None,
         };
-        let line = window
-            .text_system()
-            .shape_line("M".into(), px(FONT_SIZE), &[run], None);
-        self.cell = (line.width, px((FONT_SIZE * LINE_HEIGHT).round()));
+        let line =
+            window
+                .text_system()
+                .shape_line("M".into(), px(self.look.font_size), &[run], None);
+        self.cell = (
+            line.width,
+            px((self.look.font_size * self.look.line_height).round()),
+        );
     }
 
     /// Keeps the terminal grid and the remote PTY the size of the visible area.
@@ -283,6 +408,9 @@ impl TermView {
             self.frame = f;
         }
         let rows = &self.frame.rows;
+        let theme = &self.look.theme;
+        let selection_bg = hsla(theme_rgb(theme.selection_background));
+        let selection_fg = theme.selection_foreground.map(|c| hsla(theme_rgb(c)));
         self.paint_rows.truncate(rows.len());
         for (i, row) in rows.iter().enumerate() {
             if self
@@ -314,9 +442,12 @@ impl TermView {
                         },
                         ..base.clone()
                     },
-                    color: hsla(r.fg),
+                    color: match selection_fg {
+                        Some(c) if r.selected => c,
+                        _ => hsla(r.fg),
+                    },
                     background_color: if r.selected {
-                        Some(rgb(SELECTION_BG).into())
+                        Some(selection_bg)
                     } else {
                         r.bg.map(hsla)
                     },
@@ -456,6 +587,15 @@ impl TermView {
             m.control && m.shift
         };
         match key {
+            // Next and previous theme, until the theme picker exists.
+            "]" | "}" if app_chord => {
+                self.step_theme(1, cx);
+                return cx.stop_propagation();
+            }
+            "[" | "{" if app_chord => {
+                self.step_theme(-1, cx);
+                return cx.stop_propagation();
+            }
             "c" | "C" if app_chord => {
                 self.term.copy();
                 return cx.stop_propagation();
@@ -527,6 +667,20 @@ impl Render for TermView {
         let cursor = self.frame.cursor;
         let fg = hsla(self.frame.foreground);
         let bg = hsla(self.frame.background);
+        let theme = self.look.theme.clone();
+        let cursor_style = self.look.cursor;
+        let cursor_color = hsla(
+            self.frame
+                .cursor_color
+                .unwrap_or_else(|| theme_rgb(theme.cursor)),
+        );
+        let font_size = px(self.look.font_size);
+        // The gradient replaces the background unless a program set its own (OSC 11).
+        let gradient = theme
+            .gradient
+            .clone()
+            .filter(|_| self.frame.background == theme_rgb(theme.background));
+        let gradient_cache = self.gradient.clone();
         let marked = self.marked.clone();
         let base_font = self.base_font();
         let entity = cx.entity();
@@ -559,6 +713,19 @@ impl Render for TermView {
                     |_, _, _| {},
                     move |bounds, _, window, cx| {
                         grid_origin.set(bounds.origin);
+                        if let Some(g) = &gradient
+                            && let Some(image) =
+                                gradient_image(&gradient_cache, &theme, g, bounds.size, window)
+                        {
+                            let _ = window.paint_image(
+                                bounds,
+                                bounds,
+                                Corners::default(),
+                                image,
+                                0,
+                                false,
+                            );
+                        }
                         window.handle_input(
                             &focus,
                             gpui::ElementInputHandler::new(bounds, entity),
@@ -575,7 +742,7 @@ impl Render for TermView {
                                 let advance = if seg.wide { cw * 2. } else { cw };
                                 let line = window.text_system().shape_line(
                                     seg.text.clone(),
-                                    px(FONT_SIZE),
+                                    font_size,
                                     &seg.runs,
                                     Some(advance),
                                 );
@@ -603,9 +770,17 @@ impl Render for TermView {
                                 bounds.origin.x + cw * x as f32,
                                 bounds.origin.y + ch * y as f32,
                             );
-                            let mut c = fg;
-                            c.a = 0.55;
-                            window.paint_quad(gpui::fill(Bounds::new(o, size(cw, ch)), c));
+                            let bar = px(2.);
+                            let (at, area, alpha) = match cursor_style {
+                                CursorStyle::Block => (o, size(cw, ch), 0.6),
+                                CursorStyle::Bar => (o, size(bar, ch), 1.0),
+                                CursorStyle::Underline => {
+                                    (point(o.x, o.y + ch - bar), size(cw, bar), 1.0)
+                                }
+                            };
+                            let mut c = cursor_color;
+                            c.a *= alpha;
+                            window.paint_quad(gpui::fill(Bounds::new(at, area), c));
                             if let Some(m) = &marked {
                                 let run = TextRun {
                                     len: m.len(),
@@ -621,7 +796,7 @@ impl Render for TermView {
                                 };
                                 let line = window.text_system().shape_line(
                                     m.clone().into(),
-                                    px(FONT_SIZE),
+                                    font_size,
                                     &[run],
                                     Some(cw),
                                 );

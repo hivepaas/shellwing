@@ -87,7 +87,7 @@ fn local_user() -> String {
 }
 
 /// Splits `[user@]host[:port]` without applying defaults.
-fn split(spec: &str) -> Result<(Option<String>, String, Option<u16>), Error> {
+pub fn split(spec: &str) -> Result<(Option<String>, String, Option<u16>), Error> {
     let (user, rest) = match spec.rsplit_once('@') {
         Some((u, r)) => (Some(u.to_string()), r),
         None => (None, spec),

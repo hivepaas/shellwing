@@ -1,0 +1,15 @@
+# Atom's iconic dark theme.
+name = "One Dark Pro"
+accent = "#61afef"
+background = "#282c34"
+foreground = "#abb2bf"
+cursor = "#528bff"
+cursor_text = "#282c34"
+selection_background = "#3e4451"
+selection_foreground = "#ffffff"
+palette = [
+  "#1e2127", "#e06c75", "#98c379", "#d19a66",
+  "#61afef", "#c678dd", "#56b6c2", "#abb2bf",
+  "#5c6370", "#e06c75", "#98c379", "#e5c07b",
+  "#61afef", "#c678dd", "#56b6c2", "#ffffff",
+]

@@ -1,0 +1,16 @@
+# Wine red fading to glowing embers.
+name = "Crimson Ember"
+accent = "#f87171"
+background = "#12060a"
+gradient = { angle = 135, stops = ["#2a0a12 0%", "#5c1220 35%", "#6b1d18 70%", "#12060a 100%"] }
+foreground = "#fff1f2"
+cursor = "#fb7185"
+cursor_text = "#12060a"
+selection_background = "#be123c"
+selection_foreground = "#ffffff"
+palette = [
+  "#12060a", "#fda4af", "#86efac", "#fcd34d",
+  "#93c5fd", "#f0abfc", "#67e8f9", "#fff1f2",
+  "#d19aa3", "#fecdd3", "#bbf7d0", "#fde68a",
+  "#bfdbfe", "#f5d0fe", "#a5f3fc", "#ffffff",
+]

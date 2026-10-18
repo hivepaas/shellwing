@@ -1,0 +1,16 @@
+# Rich plum and royal amethyst.
+name = "Cosmic Velvet"
+accent = "#c084fc"
+background = "#120621"
+gradient = { angle = 135, stops = ["#1f093d 0%", "#4c1266 45%", "#661470 70%", "#120621 100%"] }
+foreground = "#faf5ff"
+cursor = "#c084fc"
+cursor_text = "#120621"
+selection_background = "#9333ea"
+selection_foreground = "#ffffff"
+palette = [
+  "#120621", "#f88498", "#1abc86", "#f59e0b",
+  "#b597f9", "#c58efc", "#06b6d4", "#faf5ff",
+  "#ad97b7", "#fb7f91", "#34d399", "#fbbf24",
+  "#b097fa", "#d8b4fe", "#22d3ee", "#ffffff",
+]

@@ -4,7 +4,7 @@ use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use shellwing_term::{
-    Event, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, TermHandle,
+    Colors, Event, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, Rgb, TermHandle,
 };
 
 const CELL: (u32, u32) = (10, 20);
@@ -279,5 +279,87 @@ fn wide_glyphs_take_two_cells() {
     assert_eq!(
         runs[3].0, 5,
         "the run after the wide glyphs starts at column 5"
+    );
+}
+
+fn theme(base: u8) -> Colors {
+    let c = |v: u8| Rgb { r: v, g: v, b: v };
+    let mut palette = [c(0); 16];
+    palette[1] = Rgb {
+        r: base,
+        g: 0,
+        b: 0,
+    };
+    Colors {
+        foreground: c(base + 1),
+        background: c(base + 2),
+        cursor: c(base + 3),
+        palette,
+    }
+}
+
+#[test]
+fn theme_colors_reach_text_already_on_screen() {
+    let h = harness();
+    h.term.feed(b"\x1b[31mred\x1b[0m plain".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0) == "red plain");
+
+    h.term.set_colors(theme(100));
+    let f = h.frame_where(|f| {
+        f.background
+            == Rgb {
+                r: 102,
+                g: 102,
+                b: 102,
+            }
+    });
+    let runs = &f.rows[0].runs;
+    assert_eq!(
+        runs[0].fg,
+        Rgb { r: 100, g: 0, b: 0 },
+        "ANSI red from the palette"
+    );
+    assert_eq!(
+        runs[1].fg,
+        Rgb {
+            r: 101,
+            g: 101,
+            b: 101
+        },
+        "default foreground"
+    );
+    assert_eq!(runs[1].bg, None, "default background stays unpainted");
+    assert_eq!(
+        f.cursor_color,
+        Some(Rgb {
+            r: 103,
+            g: 103,
+            b: 103
+        })
+    );
+}
+
+#[test]
+fn a_programs_color_override_survives_a_theme_change() {
+    let h = harness();
+    h.term.set_colors(theme(100));
+    h.term.feed(b"\x1b]11;#102030\x1b\\x".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0) == "x");
+    h.term.set_colors(theme(50));
+    let f = h.frame_where(|f| {
+        f.foreground
+            == Rgb {
+                r: 51,
+                g: 51,
+                b: 51,
+            }
+    });
+    assert_eq!(
+        f.background,
+        Rgb {
+            r: 0x10,
+            g: 0x20,
+            b: 0x30
+        }
     );
 }

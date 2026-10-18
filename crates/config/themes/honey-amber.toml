@@ -1,0 +1,16 @@
+# Warm hive amber over dark honeycomb.
+name = "Honey Amber"
+accent = "#f59e0b"
+background = "#140c04"
+gradient = { angle = 135, stops = ["#2b1a08 0%", "#5c3a0c 35%", "#643e0e 70%", "#140c04 100%"] }
+foreground = "#fff7ed"
+cursor = "#fbbf24"
+cursor_text = "#140c04"
+selection_background = "#b45309"
+selection_foreground = "#ffffff"
+palette = [
+  "#140c04", "#fca5a5", "#86efac", "#fcd34d",
+  "#93c5fd", "#f0abfc", "#67e8f9", "#fff7ed",
+  "#c9a877", "#fecaca", "#bbf7d0", "#fde68a",
+  "#bfdbfe", "#f5d0fe", "#a5f3fc", "#ffffff",
+]

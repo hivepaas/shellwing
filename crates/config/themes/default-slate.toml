@@ -1,0 +1,15 @@
+# Modern slate dark theme.
+name = "Default Slate"
+accent = "#38bdf8"
+background = "#0f172a"
+foreground = "#e2e8f0"
+cursor = "#38bdf8"
+cursor_text = "#0f172a"
+selection_background = "#f59e0b"
+selection_foreground = "#000000"
+palette = [
+  "#0f172a", "#ef4444", "#22c55e", "#eab308",
+  "#3b82f6", "#a855f7", "#06b6d4", "#f8fafc",
+  "#64748b", "#f87171", "#4ade80", "#facc15",
+  "#60a5fa", "#c084fc", "#22d3ee", "#ffffff",
+]

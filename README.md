@@ -29,18 +29,29 @@ uploads the binaries as artifacts.
 shellwing [user@]host[:port]
 ```
 
-Authentication tries the ssh-agent keys (`$SSH_AUTH_SOCK`; on Windows the OpenSSH
-agent, then Pageant), then the password in
-`$SHELLWING_PASSWORD`. Host keys are checked against `~/.ssh/known_hosts`
-(override with `$SHELLWING_KNOWN_HOSTS`): a new host is recorded on first use and
-a changed key refuses the connection.
+`host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
+(`HostName`, `User`, `Port`, `IdentityFile`, `ProxyJump` are honoured). Sign-in
+follows OpenSSH: agent keys, key files, keyboard-interactive (one-time codes),
+then a password; questions are asked in the terminal. Host keys are checked
+against `~/.ssh/known_hosts` (override with `$SHELLWING_KNOWN_HOSTS`): a new key
+is shown with its fingerprint for you to accept, a changed key refuses the
+connection.
+
+## Configuration
+
+Settings (theme, font, cursor, scrollback), hosts and custom themes are TOML
+files in the config directory (`~/.config/shellwing` on Linux) and apply while
+running. 19 themes are built in, 12 of them gradients; Ctrl+Shift+] and
+Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
+[docs/configuration.md](docs/configuration.md).
 
 ## Layout
 
 | Crate | Role |
 | --- | --- |
 | `crates/term` | libghostty-vt on its own thread; produces immutable frames |
-| `crates/ssh` | russh sessions, OpenSSH-compatible host key checks, agent/password auth |
+| `crates/ssh` | russh sessions as OpenSSH does them: ssh config, host keys, sign-in, ProxyJump |
+| `crates/config` | `config.toml`, `hosts.toml` and themes: loading, precedence, comment-preserving writes |
 | `crates/app` | GPUI window: rendering, keys, IME (preedit), window chrome |
 
 `SHELLWING_BENCH=latency` or `flood` runs a measurement and prints a `REPORT` line.
