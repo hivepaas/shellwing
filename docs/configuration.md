@@ -37,6 +37,9 @@ Fonts:
 - **No family, or one that is not installed:** the first installed of JetBrains
   Mono and the platform's monospace fonts.
 - **`$SHELLWING_FONT`** overrides the family.
+- **Zoom one window:** <kbd>Ctrl</kbd>+<kbd>=</kbd> / <kbd>Ctrl</kbd>+<kbd>-</kbd>
+  change the font size of that window, and <kbd>Ctrl</kbd>+<kbd>0</kbd> goes back to
+  `size` (<kbd>Cmd</kbd> on macOS). The zoom is not saved.
 
 When shellwing changes this file itself (the theme shortcut below), it edits
 only that key, so your comments and layout stay as you wrote them.

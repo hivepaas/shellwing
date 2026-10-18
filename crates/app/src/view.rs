@@ -24,7 +24,7 @@ use shellwing_term::{
 
 use crate::Writer;
 use crate::bench::Probe;
-use crate::chrome::{self, RESIZE_EDGE, TITLEBAR_H};
+use crate::chrome;
 use crate::look::{Live, Look, rgb as theme_rgb};
 
 /// Terminal font candidates; the first one installed is used ($SHELLWING_FONT wins).
@@ -68,6 +68,10 @@ const FONT_FALLBACKS: &[&str] = &[
 const WHEEL_LINES: f32 = 3.0;
 /// How long a refused paste waits for the user to paste again to confirm.
 const CONFIRM_PASTE: Duration = Duration::from_secs(5);
+/// How long the font size stays on screen after zooming.
+const ZOOM_NOTICE: Duration = Duration::from_secs(2);
+/// Font sizes zooming may reach, as `config.toml` allows.
+const FONT_SIZES: (f32, f32) = (6.0, 72.0);
 /// How long a problem with the config files stays on screen.
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// Longest side of the gradient image. The GPU stretches it with linear
@@ -183,6 +187,8 @@ pub struct TermView {
     last_mouse: Option<(f32, f32)>,
     font_family: SharedString,
     look: Look,
+    /// Points added to the configured font size by zooming; not saved.
+    zoom: f32,
     live: Live,
     gradient: Rc<RefCell<Option<GradientImage>>>,
     probe: Arc<Probe>,
@@ -216,6 +222,7 @@ impl TermView {
             last_mouse: None,
             font_family: FONT_FAMILIES[0].into(),
             look,
+            zoom: 0.,
             live,
             gradient: Rc::new(RefCell::new(None)),
             probe,
@@ -265,6 +272,25 @@ impl TermView {
         // Text runs carry colors and fonts, so every row is converted again.
         self.paint_rows.clear();
         cx.notify();
+    }
+
+    /// The configured font size plus the zoom.
+    fn font_size(&self) -> f32 {
+        (self.look.font_size + self.zoom).clamp(FONT_SIZES.0, FONT_SIZES.1)
+    }
+
+    /// Changes the font size of this window by `step` points, or back to the
+    /// configured size with `None`.
+    fn zoom(&mut self, step: Option<f32>, cx: &mut Context<Self>) {
+        let before = self.font_size();
+        self.zoom = step.map_or(0., |s| self.zoom + s);
+        // Forget steps beyond the limits, so zooming back responds at once.
+        self.zoom = self.font_size() - self.look.font_size;
+        if self.font_size() != before {
+            self.cell = (px(0.), px(0.));
+            self.paint_rows.clear();
+        }
+        self.show_notice(format!("Font size {}", self.font_size()), ZOOM_NOTICE, cx);
     }
 
     fn step_theme(&mut self, step: isize, cx: &mut Context<Self>) {
@@ -368,26 +394,25 @@ impl TermView {
             underline: None,
             strikethrough: None,
         };
-        let line =
-            window
-                .text_system()
-                .shape_line("M".into(), px(self.look.font_size), &[run], None);
+        let line = window
+            .text_system()
+            .shape_line("M".into(), px(self.font_size()), &[run], None);
         self.cell = (
             line.width,
-            px((self.look.font_size * self.look.line_height).round()),
+            px((self.font_size() * self.look.line_height).round()),
         );
     }
 
     /// Keeps the terminal grid and the remote PTY the size of the visible area.
     fn fit_grid(&mut self, window: &mut Window) {
-        let mut vp = window.viewport_size();
-        if matches!(
+        let vp = if matches!(
             window.window_decorations(),
             gpui::Decorations::Client { .. }
         ) {
-            vp.width -= px(RESIZE_EDGE * 2.);
-            vp.height -= px(RESIZE_EDGE * 2. + TITLEBAR_H);
-        }
+            chrome::content_size(window)
+        } else {
+            window.viewport_size()
+        };
         let cols = ((vp.width / self.cell.0).floor() as u16).max(2);
         let rows = ((vp.height / self.cell.1).floor() as u16).max(2);
         if (cols, rows) != self.grid {
@@ -614,6 +639,24 @@ impl TermView {
             self.step_theme(step, cx);
             return cx.stop_propagation();
         }
+        // Font size for this window, as in GNOME Terminal and browsers: Ctrl+= (or
+        // Ctrl++), Ctrl+- and Ctrl+0 (Cmd on macOS). Ctrl+Shift+- is left alone; it
+        // is Ctrl+_ for nano and Emacs.
+        let zoom_mod = if cfg!(target_os = "macos") {
+            m.platform && !m.control && !m.alt
+        } else {
+            m.control && !m.alt && !m.platform
+        };
+        let zoom = match key {
+            "=" | "+" | "add" if zoom_mod => Some(Some(1.)),
+            "-" | "subtract" if zoom_mod => Some(Some(-1.)),
+            "0" if zoom_mod => Some(None),
+            _ => None,
+        };
+        if let Some(step) = zoom {
+            self.zoom(step, cx);
+            return cx.stop_propagation();
+        }
         match key {
             "c" | "C" if app_chord => {
                 self.term.copy();
@@ -693,7 +736,7 @@ impl Render for TermView {
                 .cursor_color
                 .unwrap_or_else(|| theme_rgb(theme.cursor)),
         );
-        let font_size = px(self.look.font_size);
+        let font_size = px(self.font_size());
         // The gradient replaces the background unless a program set its own (OSC 11).
         let gradient = theme
             .gradient
@@ -868,7 +911,7 @@ impl Render for TermView {
             window.window_decorations(),
             gpui::Decorations::Client { .. }
         ) {
-            chrome::window_chrome(self.title.clone(), terminal, bg)
+            chrome::window_chrome(self.title.clone(), terminal, bg, window)
         } else {
             div().size_full().flex().flex_col().child(terminal)
         }
