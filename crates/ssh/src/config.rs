@@ -33,6 +33,11 @@ pub struct Resolved {
     /// Ports to forward, as `-L`, `-R` and `-D` options are written. Read when
     /// connecting, so one that is wrong is reported without stopping the rest.
     pub forwards: Vec<String>,
+    /// Let the host use the local ssh-agent (`ForwardAgent`). Off unless asked:
+    /// whoever is root there can then sign with your keys while you are connected.
+    pub forward_agent: bool,
+    /// How an unknown host key is handled here; None: the app's setting.
+    pub host_key: Option<crate::HostKeyPolicy>,
 }
 
 impl Resolved {
@@ -45,6 +50,8 @@ impl Resolved {
             jumps: vec![],
             keepalive: None,
             forwards: vec![],
+            forward_agent: false,
+            host_key: None,
         }
     }
 
@@ -208,6 +215,8 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         jumps,
         keepalive: p.server_alive_interval,
         forwards: vec![],
+        forward_agent: p.forward_agent.unwrap_or(false),
+        host_key: None,
     })
 }
 

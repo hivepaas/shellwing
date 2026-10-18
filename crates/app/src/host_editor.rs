@@ -11,7 +11,7 @@ use gpui::{
     Context, ElementId, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent,
     Render, SharedString, Window, div, prelude::*, px, rgb,
 };
-use shellwing_config::{Auth, AuthMethod, Host, Hosts, Store};
+use shellwing_config::{Auth, AuthMethod, Host, HostKey, Hosts, Store};
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
 use crate::input::TextInput;
@@ -81,6 +81,7 @@ enum Field {
     Key,
     Jump,
     Forward,
+    Keepalive,
 }
 
 struct Inputs {
@@ -93,6 +94,7 @@ struct Inputs {
     tags: Entity<TextInput>,
     jump: Entity<TextInput>,
     forward: Entity<TextInput>,
+    keepalive: Entity<TextInput>,
 }
 
 pub struct HostEditor {
@@ -108,6 +110,8 @@ pub struct HostEditor {
     group: Option<String>,
     theme: Option<String>,
     local_only: bool,
+    forward_agent: bool,
+    host_key: Option<HostKey>,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -157,6 +161,7 @@ impl HostEditor {
             tags: input(cx, "api, docker"),
             jump: input(cx, "a host here, an ssh alias, or user@host"),
             forward: input(cx, "-L 8080:localhost:80"),
+            keepalive: input(cx, "the app's setting"),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -170,6 +175,8 @@ impl HostEditor {
             group: None,
             theme: None,
             local_only: false,
+            forward_agent: false,
+            host_key: None,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -226,6 +233,13 @@ impl HostEditor {
         self.set(&i.user, h.user.as_deref().unwrap_or(""), cx);
         self.set(&i.key, h.auth.key.as_deref().unwrap_or(""), cx);
         self.set(&i.tags, &h.tags.join(", "), cx);
+        self.set(
+            &i.keepalive,
+            &h.keepalive.map(|k| k.to_string()).unwrap_or_default(),
+            cx,
+        );
+        self.forward_agent = h.forward_agent;
+        self.host_key = h.host_key;
         self.method = h.auth.method;
         self.jumps = h.jump.clone();
         self.forwards = h.forward.clone();
@@ -267,6 +281,9 @@ impl HostEditor {
             },
             theme: self.theme.clone(),
             local_only: self.local_only,
+            forward_agent: self.forward_agent,
+            keepalive: self.text(&i.keepalive, cx).parse().ok(),
+            host_key: self.host_key,
         }
     }
 
@@ -325,6 +342,10 @@ impl HostEditor {
         }
         if self.method == AuthMethod::Key && host.auth.key.is_none() {
             problems.push((Field::Key, "Choose a key file.".into()));
+        }
+        let keepalive = self.text(&i.keepalive, cx);
+        if !keepalive.is_empty() && keepalive.parse::<u64>().map_or(true, |k| k > 3600) {
+            problems.push((Field::Keepalive, "Seconds, 0 to 3600 (0: none).".into()));
         }
         if host.jump.contains(&host.name) {
             problems.push((Field::Jump, "A host cannot jump through itself.".into()));
@@ -438,8 +459,13 @@ impl HostEditor {
             auth: Auth::default(),
             theme: None,
             local_only: false,
+            forward_agent: false,
+            keepalive: None,
+            host_key: None,
         };
         if let Some(r) = resolved {
+            host.forward_agent = r.forward_agent;
+            host.keepalive = r.keepalive.map(|k| k.as_secs());
             host.address = r.target.host.clone();
             host.port = (r.target.port != 22).then_some(r.target.port);
             // Your own login name is what ssh uses anyway; written out, it would
@@ -534,6 +560,7 @@ impl HostEditor {
             order.push(&i.forward);
         }
         order.push(&i.tags);
+        order.push(&i.keepalive);
         order.into_iter().map(|e| e.focus_handle(cx)).collect()
     }
 
@@ -1303,9 +1330,13 @@ impl Render for HostEditor {
             organize = organize.child(self.menu_list(Menu::Group, choices, cx));
         }
 
-        let mut terminal = section("Terminal")
-            .border_b_0()
-            .child(row().child(self.select("theme-select", "Theme", theme_label, Menu::Theme, cx)));
+        let mut terminal = section("Terminal").child(row().child(self.select(
+            "theme-select",
+            "Theme",
+            theme_label,
+            Menu::Theme,
+            cx,
+        )));
         if self.menu == Some(Menu::Theme) {
             let mut choices = vec![(None, "Same as the app".to_string())];
             choices.extend(
@@ -1316,6 +1347,81 @@ impl Render for HostEditor {
             );
             terminal = terminal.child(self.menu_list(Menu::Theme, choices, cx));
         }
+
+        let mut keys = div()
+            .flex()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(FIELD_EDGE))
+            .overflow_hidden();
+        for (n, (value, name)) in [
+            (None, "App setting"),
+            (Some(HostKey::Ask), "Ask"),
+            (Some(HostKey::AcceptNew), "Accept new"),
+            (Some(HostKey::Strict), "Strict"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let on = self.host_key == value;
+            keys = keys.child(
+                div()
+                    .id(("host-key", n))
+                    .flex_1()
+                    .h(px(30.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(ui(12.5))
+                    .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
+                    .cursor_pointer()
+                    .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
+                    .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .on_click(cx.listener(move |e, _, _, cx| {
+                        e.host_key = value;
+                        cx.notify();
+                    }))
+                    .child(name),
+            );
+        }
+        let advanced = section("Advanced")
+            .border_b_0()
+            .child(
+                row()
+                    .child(
+                        self.field("Keepalive (seconds)", &i.keepalive, Field::Keepalive, window, cx)
+                            .flex_grow(1.),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(4.))
+                            .flex_grow(2.)
+                            .child(label_text("Unknown host key"))
+                            .child(keys),
+                    ),
+            )
+            .child(
+                div()
+                    .id("forward-agent")
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .cursor_pointer()
+                    .on_click(cx.listener(|e, _, _, cx| {
+                        e.forward_agent = !e.forward_agent;
+                        cx.notify();
+                    }))
+                    .child(checkbox(self.forward_agent))
+                    .child(label_text("Forward my agent to this host")),
+            )
+            .child(hint_text(if self.forward_agent {
+                "While connected, whoever is root on this host can sign in elsewhere with your keys. Only for hosts you trust."
+            } else {
+                "Lets this host use your keys to go on to others (git, a further ssh)."
+            }));
 
         let mut footer = div()
             .flex_shrink_0()
@@ -1390,7 +1496,8 @@ impl Render for HostEditor {
                     .child(forwarding)
                     .child(sync)
                     .child(organize)
-                    .child(terminal),
+                    .child(terminal)
+                    .child(advanced),
             )
             .child(footer)
     }

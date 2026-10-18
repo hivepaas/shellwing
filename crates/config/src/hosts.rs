@@ -56,6 +56,15 @@ pub struct Host {
     /// Never synced.
     #[serde(default)]
     pub local_only: bool,
+    /// Let the host use the local ssh-agent (`ForwardAgent`).
+    #[serde(default)]
+    pub forward_agent: bool,
+    /// Seconds between keepalives (0: none); None: the app's setting.
+    #[serde(default)]
+    pub keepalive: Option<u64>,
+    /// How an unknown host key is handled; None: the app's setting.
+    #[serde(default)]
+    pub host_key: Option<HostKey>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
@@ -144,5 +153,29 @@ mod tests {
         )
         .expect("parse");
         assert_eq!(h.find("db").map(|h| h.address.as_str()), Some("b"));
+    }
+}
+
+/// What happens when a host shows a key not in known_hosts. A changed key is
+/// always refused.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HostKey {
+    /// Show the fingerprint and wait for an answer (OpenSSH's default).
+    #[default]
+    Ask,
+    /// Record it and go on (`StrictHostKeyChecking=accept-new`).
+    AcceptNew,
+    /// Refuse it.
+    Strict,
+}
+
+impl HostKey {
+    pub fn name(self) -> &'static str {
+        match self {
+            HostKey::Ask => "ask",
+            HostKey::AcceptNew => "accept-new",
+            HostKey::Strict => "strict",
+        }
     }
 }

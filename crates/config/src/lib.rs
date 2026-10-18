@@ -20,11 +20,11 @@ mod store;
 mod theme;
 
 pub use color::Color;
-pub use hosts::{Auth, AuthMethod, Group, Host, Hosts};
+pub use hosts::{Auth, AuthMethod, Group, Host, HostKey, Hosts};
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, Cursor, CursorStyle, Font, General, OnDisconnect, Padding, Scrollbar, Settings,
-    Sync, Terminal, UI_FONT_SIZE, UiFont,
+    Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};

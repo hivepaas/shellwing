@@ -11,6 +11,25 @@ pub struct Settings {
     pub sync: Sync,
     pub appearance: Appearance,
     pub terminal: Terminal,
+    pub ssh: Ssh,
+}
+
+/// Defaults for every host; a host in hosts.toml can set its own.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Ssh {
+    pub host_key: crate::hosts::HostKey,
+    /// Seconds between keepalives; 0: none. A host's ServerAliveInterval wins.
+    pub keepalive: u64,
+}
+
+impl Default for Ssh {
+    fn default() -> Self {
+        Ssh {
+            host_key: crate::hosts::HostKey::Ask,
+            keepalive: 30,
+        }
+    }
 }
 
 /// Syncing the vault through a folder (docs/design/sync.md).
@@ -236,6 +255,10 @@ mod tests {
             [terminal]
             scrollback = 50000
             on_disconnect = "close"
+
+            [ssh]
+            host_key = "accept-new"
+            keepalive = 0
             "#,
         )
         .expect("parse");
@@ -251,5 +274,7 @@ mod tests {
         assert_eq!(s.appearance.ui_font.size, 20.0);
         assert_eq!(s.terminal.scrollback, 50_000);
         assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
+        assert_eq!(s.ssh.host_key, crate::hosts::HostKey::AcceptNew);
+        assert_eq!(s.ssh.keepalive, 0);
     }
 }

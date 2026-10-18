@@ -355,6 +355,7 @@ impl Workspace {
             spec,
             target,
             look.scrollback,
+            self.live.settings().ssh.clone(),
             &self.rt,
             bench,
             self.vault.clone(),

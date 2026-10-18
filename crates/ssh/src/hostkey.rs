@@ -44,6 +44,10 @@ pub(crate) struct Checker {
     pub problem: Arc<Mutex<Option<Error>>>,
     /// Where connections the server forwards to us (`-R`) go.
     pub routes: Routes,
+    /// Agent forwarding was asked for: only then are the server's agent
+    /// channels accepted.
+    pub forward_agent: bool,
+    pub agent_socket: Option<PathBuf>,
 }
 
 fn default_known_hosts() -> Option<PathBuf> {
@@ -174,6 +178,36 @@ impl client::Handler for Checker {
             .open(channel, connected_address, connected_port, reply);
         Ok(())
     }
+
+    /// The server asks for the agent (`ssh-add -l` there, a jump onwards):
+    /// a fresh connection to the local agent, carried over this channel.
+    async fn server_channel_open_agent_forward(
+        &mut self,
+        channel: Channel<Msg>,
+        reply: ChannelOpenHandle,
+        _session: &mut client::Session,
+    ) -> Result<(), Self::Error> {
+        if !self.forward_agent {
+            // Not asked for: dropping the reply refuses it.
+            return Ok(());
+        }
+        let socket = self.agent_socket.clone();
+        tokio::spawn(async move {
+            let Some(agent) = crate::auth::agents(socket.as_deref())
+                .await
+                .into_iter()
+                .next()
+            else {
+                reply.reject(russh::ChannelOpenFailure::ConnectFailed).await;
+                return;
+            };
+            reply.accept().await;
+            let mut local = agent.into_inner();
+            let mut remote = channel.into_stream();
+            let _ = tokio::io::copy_bidirectional(&mut remote, &mut local).await;
+        });
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -198,6 +232,8 @@ mod tests {
             prompter: None,
             problem: Default::default(),
             routes: Default::default(),
+            forward_agent: false,
+            agent_socket: None,
         }
     }
 

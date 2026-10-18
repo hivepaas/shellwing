@@ -95,6 +95,9 @@ pub struct Auth {
     pub agent: bool,
     /// Tried once before asking (scripts, benchmarks).
     pub password: Option<String>,
+    /// The agent's socket instead of `$SSH_AUTH_SOCK` (tests), for signing in
+    /// and for forwarding.
+    pub agent_socket: Option<PathBuf>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -205,6 +208,8 @@ pub struct Options {
     /// Told about each of `target.forwards` once it is set up, before the shell
     /// starts, so reports come before any output.
     pub forwarded: Option<ForwardedFn>,
+    /// Keepalive for hosts that set none; zero: none. None: 30 seconds.
+    pub keepalive: Option<Duration>,
     pub cols: u32,
     pub rows: u32,
     pub term: String,
@@ -216,19 +221,26 @@ async fn open_hop(
     via: Option<&Handle<Checker>>,
     opts: &Options,
     routes: Routes,
+    forward_agent: bool,
 ) -> Result<Handle<Checker>, Error> {
     let problem = Arc::new(Mutex::new(None));
     let checker = Checker {
         host: hop.target.host.clone(),
         port: hop.target.port,
-        policy: opts.policy,
+        policy: hop.host_key.unwrap_or(opts.policy),
         known_hosts: opts.known_hosts.clone(),
         prompter: opts.prompter.clone(),
         problem: problem.clone(),
         routes,
+        forward_agent,
+        agent_socket: opts.auth.agent_socket.clone(),
     };
+    let keepalive = hop
+        .keepalive
+        .or(opts.keepalive)
+        .unwrap_or(DEFAULT_KEEPALIVE);
     let config = Arc::new(client::Config {
-        keepalive_interval: Some(hop.keepalive.unwrap_or(DEFAULT_KEEPALIVE)),
+        keepalive_interval: (!keepalive.is_zero()).then_some(keepalive),
         keepalive_max: KEEPALIVE_MAX,
         window_size: WINDOW,
         ..Default::default()
@@ -276,7 +288,8 @@ pub async fn connect(
 ) -> Result<Session, Error> {
     let mut jumps: Vec<Handle<Checker>> = Vec::new();
     for hop in &opts.target.jumps {
-        let h = open_hop(hop, jumps.last(), &opts, Routes::default())
+        // Jump hosts never get the agent: only the target asked for it.
+        let h = open_hop(hop, jumps.last(), &opts, Routes::default(), false)
             .await
             .map_err(|e| Error::Jump {
                 host: hop.alias.clone(),
@@ -285,7 +298,17 @@ pub async fn connect(
         jumps.push(h);
     }
     let routes = Routes::default();
-    let handle = Arc::new(open_hop(&opts.target, jumps.last(), &opts, routes.clone()).await?);
+    let forward_agent = opts.target.forward_agent;
+    let handle = Arc::new(
+        open_hop(
+            &opts.target,
+            jumps.last(),
+            &opts,
+            routes.clone(),
+            forward_agent,
+        )
+        .await?,
+    );
 
     // As OpenSSH, a forward that cannot be set up is reported, and the session goes on.
     let mut forwarder = Forwarder::new(handle.clone(), routes);
@@ -303,6 +326,9 @@ pub async fn connect(
     channel
         .request_pty(false, &opts.term, opts.cols, opts.rows, 0, 0, &[])
         .await?;
+    if forward_agent {
+        channel.agent_forward(false).await?;
+    }
     channel.request_shell(false).await?;
 
     let (tx, mut rx) = mpsc::unbounded_channel::<Input>();
