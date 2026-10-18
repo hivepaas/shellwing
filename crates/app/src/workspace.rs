@@ -4,9 +4,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use std::rc::Rc;
+
 use gpui::{
-    AnyElement, Context, Div, ElementId, Entity, FocusHandle, Focusable, Hsla, KeyDownEvent,
-    MouseButton, Render, SharedString, Subscription, Window, div, prelude::*, px, rgb, rgba,
+    AnyElement, Axis, Context, CursorStyle, Div, ElementId, Entity, FocusHandle, Focusable, Hsla,
+    KeyDownEvent, MouseButton, MouseMoveEvent, Render, SharedString, Subscription, Window, canvas,
+    div, prelude::*, px, relative, rgb, rgba,
 };
 use shellwing_config::{EditFile, Host, WindowState};
 use shellwing_ssh::config as ssh_config;
@@ -16,6 +19,7 @@ use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
 use crate::look::{Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
+use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::session::{Session, Status};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::target;
@@ -34,16 +38,31 @@ const DIM: u32 = 0xb6c0cf;
 enum Shortcut {
     Palette,
     NewTab,
-    CloseTab,
+    /// The focused pane, or the tab with its last pane.
+    Close,
+    Split(Axis),
+    Focus(Dir),
     Step(isize),
     Goto(usize),
     Sidebar,
     Theme(isize),
 }
 
+/// A tab: its panes, and which one has the keyboard.
+struct Tab {
+    root: Option<Pane<Entity<TermView>>>,
+    focused: Entity<TermView>,
+}
+
+impl Tab {
+    fn views(&self) -> Vec<Entity<TermView>> {
+        self.root.as_ref().map(Pane::leaves).unwrap_or_default()
+    }
+}
+
 pub struct Workspace {
     focus: FocusHandle,
-    tabs: Vec<Entity<TermView>>,
+    tabs: Vec<Tab>,
     active: usize,
     sidebar: Entity<Sidebar>,
     show_sidebar: bool,
@@ -58,6 +77,8 @@ pub struct Workspace {
     /// The open palette, and whether it is picking a theme (whose preview must
     /// be undone if nothing is picked).
     palette: Option<(Entity<Palette>, Subscription, bool)>,
+    /// The split whose divider is being dragged.
+    dragging: Option<Rc<SplitState>>,
     /// The window's size and place, waiting to be saved, and which change it is.
     unsaved_bounds: Option<WindowState>,
     bounds_change: u64,
@@ -86,6 +107,7 @@ impl Workspace {
             bench,
             notice: None,
             palette: None,
+            dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
         };
@@ -98,13 +120,100 @@ impl Workspace {
         self.active
     }
 
+    /// The focused pane of the active tab.
     fn active_tab(&self) -> Option<&Entity<TermView>> {
-        self.tabs.get(self.active)
+        self.tabs.get(self.active).map(|t| &t.focused)
+    }
+
+    /// Every pane of every tab.
+    fn all_views(&self) -> Vec<Entity<TermView>> {
+        self.tabs.iter().flat_map(Tab::views).collect()
     }
 
     /// Opens a tab connected to `spec`: a hosts.toml name, an ssh config alias or
     /// `[user@]host[:port]`.
     pub fn open(&mut self, spec: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(view) = self.make_view(spec, cx) {
+            self.tabs.push(Tab {
+                root: Some(Pane::Leaf(view.clone())),
+                focused: view,
+            });
+            self.activate(self.tabs.len() - 1, window, cx);
+            self.refresh_sidebar(cx);
+        }
+    }
+
+    /// Splits the focused pane, the new pane connected to the same host.
+    fn split(&mut self, axis: Axis, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(focused) = self.active_tab().cloned() else {
+            return;
+        };
+        let spec = focused.read(cx).session().spec.clone();
+        let Some(view) = self.make_view(&spec, cx) else {
+            return;
+        };
+        if let Some(tab) = self.tabs.get_mut(self.active) {
+            tab.root = tab
+                .root
+                .take()
+                .map(|r| r.with_split(&focused, view.clone(), axis));
+            tab.focused = view;
+        }
+        self.activate(self.active, window, cx);
+        self.refresh_sidebar(cx);
+    }
+
+    /// Closes the focused pane; the last one closes its tab.
+    fn close_pane(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(tab) = self.tabs.get_mut(self.active) else {
+            return;
+        };
+        if tab.views().len() < 2 {
+            return self.close(self.active, window, cx);
+        }
+        let gone = tab.focused.clone();
+        tab.root = tab.root.take().and_then(|r| r.without(&gone));
+        if let Some(r) = &tab.root {
+            tab.focused = r.first();
+        }
+        self.activate(self.active, window, cx);
+        self.refresh_sidebar(cx);
+    }
+
+    /// Moves the keyboard to the pane beside the focused one; false if there is
+    /// no other pane, so the key can go to the terminal instead.
+    fn focus_pane(&mut self, dir: Dir, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        let Some(tab) = self.tabs.get(self.active) else {
+            return false;
+        };
+        let views = tab.views();
+        if views.len() < 2 {
+            return false;
+        }
+        let from = tab.focused.read(cx).bounds();
+        let others: Vec<_> = views
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| **v != tab.focused)
+            .map(|(i, v)| (i, v.read(cx).bounds()))
+            .collect();
+        if let Some(i) = neighbor(from, &others, dir) {
+            self.set_focused(views[i].clone(), window, cx);
+        }
+        true
+    }
+
+    fn set_focused(&mut self, view: Entity<TermView>, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.tabs.get_mut(self.active)
+            && tab.focused != view
+        {
+            tab.focused = view;
+            self.activate(self.active, window, cx);
+        }
+    }
+
+    /// A terminal connected to `spec`, ready for a tab or a split.
+    fn make_view(&mut self, spec: &str, cx: &mut Context<Self>) -> Option<Entity<TermView>> {
         let target = target::resolve(
             spec,
             self.live.hosts(),
@@ -124,7 +233,7 @@ impl Workspace {
             Err(e) => {
                 self.notice = Some(format!("Cannot open a terminal: {e}").into());
                 cx.notify();
-                return;
+                return None;
             }
         };
         if let Some(store) = self.live.store()
@@ -136,16 +245,14 @@ impl Workspace {
         // Tab and host list dots follow the session's status.
         cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| ws.refresh_sidebar(cx))
             .detach();
-        self.tabs.push(view.clone());
-        self.activate(self.tabs.len() - 1, window, cx);
-        self.refresh_sidebar(cx);
         if let Some(p) = problem {
             view.update(cx, |v, cx| v.show_notice(p, CONFIG_NOTICE, cx));
         }
+        Some(view)
     }
 
     pub fn activate(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(tab) = self.tabs.get(ix) {
+        if let Some(tab) = self.tabs.get(ix).map(|t| t.focused.clone()) {
             self.active = ix;
             let title = tab.read(cx).session().title.clone();
             window.set_window_title(&format!("{title} — shellwing"));
@@ -406,7 +513,7 @@ impl Workspace {
     /// Gives every tab the look its host should have now.
     fn restyle(&mut self, cx: &mut Context<Self>) -> Vec<String> {
         let mut problems = vec![];
-        for tab in self.tabs.clone() {
+        for tab in self.all_views() {
             let entry = tab.read(cx).session().entry.clone();
             let (look, problem) = self.live.look_for(entry.as_deref());
             problems.extend(problem);
@@ -490,11 +597,31 @@ impl Workspace {
         } else {
             m.alt && !m.control && !m.platform
         };
+        // Moving between panes: Alt+arrows, as in Windows Terminal (Cmd+Alt on macOS).
+        let panes = if mac {
+            m.platform && m.alt && !m.control
+        } else {
+            m.alt && !m.control && !m.shift && !m.platform
+        };
         // Ctrl+K alone is the shell's kill-line, so the palette takes Ctrl+Shift+K.
         Some(match key {
             "k" if chord => Shortcut::Palette,
             "t" if chord => Shortcut::NewTab,
-            "w" if chord => Shortcut::CloseTab,
+            "w" if chord => Shortcut::Close,
+            // Cmd+D and Cmd+Shift+D on macOS, as in iTerm.
+            "d" if mac && chord => Shortcut::Split(if m.shift {
+                Axis::Vertical
+            } else {
+                Axis::Horizontal
+            }),
+            "d" if chord => Shortcut::Split(Axis::Horizontal),
+            "e" if !mac && chord => Shortcut::Split(Axis::Vertical),
+            "left" | "right" | "up" | "down" if panes => Shortcut::Focus(match key {
+                "left" => Dir::Left,
+                "right" => Dir::Right,
+                "up" => Dir::Up,
+                _ => Dir::Down,
+            }),
             "b" if chord => Shortcut::Sidebar,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
             "pagedown" if m.control && !m.shift => Shortcut::Step(1),
@@ -517,6 +644,13 @@ impl Workspace {
         let Some(s) = Self::shortcut_for(ev) else {
             return;
         };
+        // Without a second pane, Alt+arrows belong to the shell (word movement).
+        if let Shortcut::Focus(dir) = s {
+            if self.palette.is_none() && self.focus_pane(dir, window, cx) {
+                cx.stop_propagation();
+            }
+            return;
+        }
         cx.stop_propagation();
         // Any other window shortcut leaves the palette first.
         if self.palette.is_some() && !matches!(s, Shortcut::Palette | Shortcut::NewTab) {
@@ -530,7 +664,9 @@ impl Workspace {
                     self.open_palette(window, cx);
                 }
             }
-            Shortcut::CloseTab => self.close(self.active, window, cx),
+            Shortcut::Close => self.close_pane(window, cx),
+            Shortcut::Split(axis) => self.split(axis, window, cx),
+            Shortcut::Focus(_) => {}
             Shortcut::Step(by) => self.step(by, window, cx),
             Shortcut::Goto(ix) => {
                 if ix < self.tabs.len() {
@@ -547,7 +683,7 @@ impl Workspace {
 
     /// The best status among tabs matching `is_it`, for a sidebar dot.
     fn host_status(&self, cx: &Context<Self>, is_it: impl Fn(&Session) -> bool) -> Option<Status> {
-        self.tabs
+        self.all_views()
             .iter()
             .map(|t| t.read(cx))
             .filter(|v| is_it(v.session()))
@@ -563,7 +699,7 @@ impl Workspace {
     fn tab_strip(&self, accent: Hsla, cx: &mut Context<Self>) -> Div {
         let mut strip = div().flex().h_full().min_w_0().overflow_hidden();
         for (i, tab) in self.tabs.iter().enumerate() {
-            let v = tab.read(cx);
+            let v = tab.focused.read(cx);
             let active = i == self.active;
             let title = v.session().title.clone();
             strip = strip.child(
@@ -700,6 +836,108 @@ impl Workspace {
         cx.notify();
     }
 
+    /// A pane tree: terminals, and between the two sides of each split a divider
+    /// that can be dragged. With several panes, the focused one is marked.
+    fn render_pane(
+        &self,
+        pane: &Pane<Entity<TermView>>,
+        focused: &Entity<TermView>,
+        multi: bool,
+        accent: Hsla,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        match pane {
+            Pane::Leaf(view) => {
+                let v = view.clone();
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .min_h_0()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .when(multi, |d| {
+                        d.border_t_2().border_color(if view == focused {
+                            accent
+                        } else {
+                            gpui::transparent_black()
+                        })
+                    })
+                    // A click in a pane gives it the keyboard; the terminal sees the
+                    // press too, for selection.
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |ws, _, window, cx| ws.set_focused(v.clone(), window, cx)),
+                    )
+                    .child(view.clone())
+                    .into_any_element()
+            }
+            Pane::Split(state, a, b) => {
+                let horizontal = state.axis == Axis::Horizontal;
+                let ratio = state.ratio.get();
+                let (s_bounds, s_drag) = (state.clone(), state.clone());
+                let first = div()
+                    .flex()
+                    .min_w_0()
+                    .min_h_0()
+                    .flex_basis(relative(ratio))
+                    .flex_grow(0.)
+                    .child(self.render_pane(a, focused, multi, accent, cx));
+                let second = div()
+                    .flex()
+                    .min_w_0()
+                    .min_h_0()
+                    .flex_basis(relative(1. - ratio))
+                    .flex_grow(0.)
+                    .child(self.render_pane(b, focused, multi, accent, cx));
+                let divider = div()
+                    .id(ElementId::Name(
+                        format!("divider-{:p}", Rc::as_ptr(state)).into(),
+                    ))
+                    .flex_shrink_0()
+                    .bg(rgb(LINE))
+                    .when(horizontal, |d| {
+                        d.w(px(3.)).h_full().cursor(CursorStyle::ResizeLeftRight)
+                    })
+                    .when(!horizontal, |d| {
+                        d.h(px(3.)).w_full().cursor(CursorStyle::ResizeUpDown)
+                    })
+                    .hover(|s| s.bg(accent))
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |ws, _, _, cx| {
+                            ws.dragging = Some(s_drag.clone());
+                            cx.stop_propagation();
+                            cx.notify();
+                        }),
+                    );
+                div()
+                    .relative()
+                    .flex()
+                    .when(horizontal, |d| d.flex_row())
+                    .when(!horizontal, |d| d.flex_col())
+                    .flex_1()
+                    .size_full()
+                    .min_w_0()
+                    .min_h_0()
+                    .child(
+                        canvas(
+                            move |bounds, _, _| s_bounds.bounds.set(bounds),
+                            |_, _, _, _| {},
+                        )
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full(),
+                    )
+                    .child(first)
+                    .child(divider)
+                    .child(second)
+                    .into_any_element()
+            }
+        }
+    }
+
     fn welcome(&self, bg: Hsla) -> impl IntoElement {
         let key = |k: &str, what: &str| {
             div()
@@ -774,15 +1012,22 @@ impl Render for Workspace {
         let bg = hsla(theme_rgb(look.theme.background));
         let accent = hsla(theme_rgb(look.theme.accent));
         let tabs = self.tab_strip(accent, cx);
-        let main: AnyElement = match self.active_tab() {
-            Some(t) => div()
-                .flex_1()
-                .min_w_0()
-                .h_full()
-                .flex()
-                .flex_col()
-                .child(t.clone())
-                .into_any_element(),
+        let main: AnyElement = match self.tabs.get(self.active) {
+            Some(tab) => {
+                let multi = tab.views().len() > 1;
+                let pane = match &tab.root {
+                    Some(root) => self.render_pane(root, &tab.focused, multi, accent, cx),
+                    None => div().into_any_element(),
+                };
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .h_full()
+                    .flex()
+                    .flex_col()
+                    .child(pane)
+                    .into_any_element()
+            }
             None => self.welcome(bg).into_any_element(),
         };
         let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
@@ -847,6 +1092,21 @@ impl Render for Workspace {
         };
         root.track_focus(&self.focus)
             .capture_key_down(cx.listener(Self::shortcut))
+            .when(self.dragging.is_some(), |d| {
+                d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
+                    if let Some(s) = &ws.dragging {
+                        s.drag_to(e.position);
+                        cx.notify();
+                    }
+                }))
+                .on_mouse_up(
+                    MouseButton::Left,
+                    cx.listener(|ws, _, _, cx| {
+                        ws.dragging = None;
+                        cx.notify();
+                    }),
+                )
+            })
             .text_color(rgb(TEXT))
     }
 }
@@ -876,7 +1136,7 @@ mod tests {
     #[test]
     fn window_shortcuts() {
         assert_eq!(key("t", true, true, false), Some(Shortcut::NewTab));
-        assert_eq!(key("w", true, true, false), Some(Shortcut::CloseTab));
+        assert_eq!(key("w", true, true, false), Some(Shortcut::Close));
         assert_eq!(key("b", true, true, false), Some(Shortcut::Sidebar));
         assert_eq!(key("tab", true, false, false), Some(Shortcut::Step(1)));
         assert_eq!(key("tab", true, true, false), Some(Shortcut::Step(-1)));
@@ -884,6 +1144,19 @@ mod tests {
         // Ctrl+Shift+] arrives as "}" with only Ctrl.
         assert_eq!(key("}", true, false, false), Some(Shortcut::Theme(1)));
         assert_eq!(key("3", false, false, true), Some(Shortcut::Goto(2)));
+        assert_eq!(
+            key("d", true, true, false),
+            Some(Shortcut::Split(Axis::Horizontal))
+        );
+        assert_eq!(
+            key("e", true, true, false),
+            Some(Shortcut::Split(Axis::Vertical))
+        );
+        assert_eq!(
+            key("left", false, false, true),
+            Some(Shortcut::Focus(Dir::Left))
+        );
+        assert_eq!(key("k", true, true, false), Some(Shortcut::Palette));
     }
 
     #[test]
@@ -901,5 +1174,12 @@ mod tests {
             "Shift+PageUp scrolls"
         );
         assert_eq!(key("0", false, false, true), None);
+        assert_eq!(key("k", true, false, false), None, "Ctrl+K kills the line");
+        assert_eq!(key("d", true, false, false), None, "Ctrl+D ends the shell");
+        assert_eq!(
+            key("left", false, true, true),
+            None,
+            "Alt+Shift+Left selects"
+        );
     }
 }

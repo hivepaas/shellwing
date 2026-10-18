@@ -16,6 +16,7 @@ mod chrome;
 mod input;
 mod look;
 mod palette;
+mod pane;
 mod placement;
 mod session;
 mod sidebar;
