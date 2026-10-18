@@ -108,6 +108,16 @@ pub struct Row {
     pub runs: Vec<Run>,
 }
 
+/// Where the viewport sits in the history, in rows: `offset` is the first row
+/// shown, out of `total`, `len` at a time. On the alternate screen (vim, htop)
+/// there is no history, so `total == len`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ScrollPos {
+    pub total: u64,
+    pub offset: u64,
+    pub len: u64,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Frame {
     pub cols: u16,
@@ -120,6 +130,7 @@ pub struct Frame {
     pub cursor_color: Option<Rgb>,
     /// True while the viewport shows scrollback instead of the live screen.
     pub scrolled_back: bool,
+    pub scroll: ScrollPos,
     /// The link under the pointer while the link modifier is held.
     pub hover_link: Option<LinkSpan>,
     /// Increases with every frame built.
@@ -248,6 +259,8 @@ enum Cmd {
     /// Scroll the viewport by whole pages; negative goes up.
     ScrollPages(i32),
     ScrollToBottom,
+    /// Scroll so that history row `n` is the first shown.
+    ScrollTo(usize),
     /// Show the link under the pointer, or none.
     Hover(Option<(f32, f32)>),
     Colors(Box<Colors>),
@@ -353,6 +366,11 @@ impl TermHandle {
 
     pub fn scroll_pages(&self, pages: i32) {
         let _ = self.tx.send(Cmd::ScrollPages(pages));
+    }
+
+    /// Shows history from row `row` (see [`ScrollPos`]).
+    pub fn scroll_to(&self, row: usize) {
+        let _ = self.tx.send(Cmd::ScrollTo(row));
     }
 
     pub fn scroll_to_bottom(&self) {
@@ -563,6 +581,7 @@ fn run(
                         .scroll_viewport(ScrollViewport::Delta(p as isize * page));
                 }
                 Cmd::ScrollToBottom => e.term.scroll_viewport(ScrollViewport::Bottom),
+                Cmd::ScrollTo(row) => e.term.scroll_viewport(ScrollViewport::Row(row)),
                 Cmd::Hover(at) => {
                     let span = match at {
                         Some((x, y)) => e.link_at(x, y)?.map(|(span, _)| span),
@@ -979,6 +998,15 @@ impl Engine {
         }
         snap.set_dirty(Dirty::Clean)?;
         let scrolled_back = !self.term.viewport_active().unwrap_or(true);
+        let scroll = self
+            .term
+            .scrollbar()
+            .map(|s| ScrollPos {
+                total: s.total,
+                offset: s.offset,
+                len: s.len,
+            })
+            .unwrap_or_default();
         self.seq += 1;
         Ok(Frame {
             cols: self.cols,
@@ -988,6 +1016,7 @@ impl Engine {
             cursor: if scrolled_back { None } else { cursor },
             cursor_color,
             scrolled_back,
+            scroll,
             hover_link: self.hover,
             seq: self.seq,
         })

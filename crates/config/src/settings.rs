@@ -34,6 +34,7 @@ pub struct Appearance {
     /// Row height as a multiple of the font size.
     pub line_height: f32,
     pub cursor: Cursor,
+    pub scrollbar: Scrollbar,
 }
 
 impl Default for Appearance {
@@ -43,8 +44,20 @@ impl Default for Appearance {
             font: Font::default(),
             line_height: 1.3,
             cursor: Cursor::default(),
+            scrollbar: Scrollbar::default(),
         }
     }
+}
+
+/// The overlay scrollbar at the right edge of a terminal with history.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Scrollbar {
+    /// While scrolling, or with the pointer at the right edge.
+    #[default]
+    Auto,
+    Always,
+    Never,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -149,6 +162,7 @@ mod tests {
             font = { family = "Fira Code", size = 200 }
             line_height = 1.5
             cursor = { style = "bar" }
+            scrollbar = "always"
             something_new = true
 
             [terminal]
@@ -163,6 +177,7 @@ mod tests {
         assert_eq!(s.appearance.font.size, 72.0);
         assert_eq!(s.appearance.line_height, 1.5);
         assert_eq!(s.appearance.cursor.style, CursorStyle::Bar);
+        assert_eq!(s.appearance.scrollbar, Scrollbar::Always);
         assert_eq!(s.terminal.scrollback, 50_000);
         assert_eq!(s.terminal.on_disconnect, OnDisconnect::Close);
     }
