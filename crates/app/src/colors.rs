@@ -269,14 +269,28 @@ pub const LIGHT: Palette = Palette {
 };
 
 static LIGHT_IN_USE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The theme's accent in place of the palette's, `0xRRGGBB`; [`NO_ACCENT`]:
+/// the palette's own.
+static ACCENT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(NO_ACCENT);
+const NO_ACCENT: u32 = u32::MAX;
 
-/// The palette in use.
-pub fn colors() -> &'static Palette {
-    if LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed) {
-        &LIGHT
-    } else {
-        &DUSK
+/// The palette in use, with the theme's accent if one was set.
+pub fn colors() -> Palette {
+    let light = LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed);
+    let mut p = if light { LIGHT } else { DUSK };
+    let accent = ACCENT.load(std::sync::atomic::Ordering::Relaxed);
+    if accent != NO_ACCENT {
+        p.accent = accent;
+        // Lighter on dark, darker on light, as the palettes' own hover is.
+        p.accent_hover = mix(accent, if light { 0x000000 } else { 0xffffff }, 0.25);
+        // Whichever of dark and white text reads better on it.
+        p.on_accent = if contrast(accent, 0x04121c) > contrast(accent, 0xffffff) {
+            0x04121c
+        } else {
+            0xffffff
+        };
     }
+    p
 }
 
 /// Uses the light palette, or the dark one. Views pick it up when drawn
@@ -285,7 +299,77 @@ pub fn set_light(light: bool) {
     LIGHT_IN_USE.store(light, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// Takes the accent from a theme (`0xRRGGBB`), or (None) the palette's.
+/// One that would not stand out from the page (contrast under 3:1) is
+/// left out: the palette's is used instead.
+pub fn set_accent(accent: Option<u32>) {
+    let light = LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed);
+    let page = if light { LIGHT.page } else { DUSK.page };
+    let accent = accent.filter(|a| contrast(*a, page) >= 3.);
+    ACCENT.store(
+        accent.unwrap_or(NO_ACCENT),
+        std::sync::atomic::Ordering::Relaxed,
+    );
+}
+
+fn channels(c: u32) -> [f32; 3] {
+    [(c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff].map(|v| v as f32 / 255.)
+}
+
+/// WCAG's relative luminance.
+fn luminance(c: u32) -> f32 {
+    let [r, g, b] = channels(c).map(|v| {
+        if v <= 0.040_45 {
+            v / 12.92
+        } else {
+            ((v + 0.055) / 1.055).powf(2.4)
+        }
+    });
+    0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/// WCAG's contrast ratio, 1 to 21.
+fn contrast(a: u32, b: u32) -> f32 {
+    let (la, lb) = (luminance(a), luminance(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
+/// `a` moved `t` of the way to `b`.
+fn mix(a: u32, b: u32, t: f32) -> u32 {
+    let (a, b) = (channels(a), channels(b));
+    let c: Vec<u32> = (0..3)
+        .map(|i| ((a[i] + (b[i] - a[i]) * t) * 255.).round() as u32)
+        .collect();
+    (c[0] << 16) | (c[1] << 8) | c[2]
+}
+
 /// `color` (`0xRRGGBB`) with an alpha, for `gpui::rgba`.
 pub fn with_alpha(color: u32, alpha: u8) -> u32 {
     (color << 8) | u32::from(alpha)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_theme_accent_is_taken_unless_it_would_not_show() {
+        set_light(false);
+        set_accent(Some(0xbd93f9));
+        assert_eq!(colors().accent, 0xbd93f9);
+        assert_eq!(colors().on_accent, 0x04121c, "dark text on a light accent");
+        // Too close to Dusk's page to stand out.
+        set_accent(Some(0x2f3a48));
+        assert_eq!(colors().accent, DUSK.accent);
+        // A dark blue would not show on Dusk; it does on the light palette.
+        set_light(true);
+        set_accent(Some(0x1d4ed8));
+        assert_eq!(colors().accent, 0x1d4ed8);
+        assert_eq!(colors().on_accent, 0xffffff, "white on a dark one");
+        set_light(false);
+        set_accent(None);
+        assert_eq!(colors(), DUSK);
+        assert!((contrast(0xffffff, 0x000000) - 21.).abs() < 0.01);
+        assert_eq!(mix(0x000000, 0xffffff, 0.5), 0x808080);
+    }
 }

@@ -115,6 +115,12 @@ impl Default for Ssh {
 pub struct Sync {
     /// The folder, `~/` allowed; None: no sync.
     pub folder: Option<String>,
+    /// A WebDAV server instead (Nextcloud, Synology, Koofr). Its password is
+    /// in the vault, this device's own.
+    pub webdav: Option<WebDavSync>,
+    /// S3-compatible storage instead (AWS, R2, B2, MinIO, Wasabi). Its secret
+    /// key is in the vault, this device's own.
+    pub s3: Option<S3Sync>,
     /// The settings that are not this device's own sync too
     /// ([`crate::settings_sync::SYNCED`]).
     pub settings: bool,
@@ -124,6 +130,8 @@ impl Default for Sync {
     fn default() -> Self {
         Sync {
             folder: None,
+            webdav: None,
+            s3: None,
             settings: true,
         }
     }
@@ -134,6 +142,49 @@ impl Sync {
     pub fn folder_path(&self) -> Option<std::path::PathBuf> {
         expand_home(self.folder.as_deref()?)
     }
+
+    /// Where the vault syncs: one place, the folder first should several be
+    /// set by hand.
+    pub fn place(&self) -> Option<SyncPlace> {
+        if let Some(f) = self.folder_path() {
+            return Some(SyncPlace::Folder(f));
+        }
+        if let Some(w) = &self.webdav {
+            return Some(SyncPlace::WebDav(w.clone()));
+        }
+        self.s3.clone().map(SyncPlace::S3)
+    }
+}
+
+/// `[sync] webdav`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct WebDavSync {
+    /// The folder's address: `https://cloud.example.com/remote.php/dav/files/me/`.
+    pub url: String,
+    pub user: String,
+}
+
+/// `[sync] s3`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct S3Sync {
+    /// `https://s3.<region>.amazonaws.com`, `https://<account>.r2.cloudflarestorage.com`…
+    pub endpoint: String,
+    /// Empty: `auto`, as R2 takes.
+    pub region: String,
+    pub bucket: String,
+    /// A folder in the bucket; empty: its top.
+    pub prefix: String,
+    pub access_key: String,
+}
+
+/// Where the vault syncs, as `[sync]` says; secrets are not in it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SyncPlace {
+    Folder(std::path::PathBuf),
+    WebDav(WebDavSync),
+    S3(S3Sync),
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -168,6 +219,8 @@ pub struct Appearance {
     pub padding: Padding,
     /// The app's own text: tabs, the host list, the palette, panels, settings.
     pub ui_font: UiFont,
+    /// The app's accent (the logo, what is chosen, buttons) is the theme's.
+    pub theme_accent: bool,
 }
 
 /// The font of everything but the terminal.
@@ -217,6 +270,7 @@ impl Default for Appearance {
             scrollbar: Scrollbar::default(),
             padding: Padding::default(),
             ui_font: UiFont::default(),
+            theme_accent: true,
         }
     }
 }

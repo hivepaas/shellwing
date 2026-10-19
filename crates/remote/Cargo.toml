@@ -1,0 +1,37 @@
+[package]
+name = "shellwing-remote"
+description = "Sync backends over the network (WebDAV, S3-compatible) for the vault"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+shellwing-vault.workspace = true
+opendal = { version = "0.59", default-features = false, features = [
+    "services-s3",
+    "services-webdav",
+    "blocking",
+    # rustls with ring, as russh has it; not aws-lc, a C library to build.
+    "http-transport-reqwest-rustls-no-provider",
+    "executors-tokio",
+    "layers-retry",
+    "layers-timeout",
+] }
+tokio = { workspace = true }
+opendal-http-transport-reqwest = { version = "0.59", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+
+[dev-dependencies]
+opendal = { version = "0.59", default-features = false, features = ["services-memory", "blocking", "executors-tokio"] }
+# A WebDAV server in the tests, in memory.
+dav-server = { version = "0.11", default-features = false, features = ["memfs"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+# An S3 server in the tests, over a temporary folder.
+s3s = "0.17"
+s3s-fs = "0.17"
+
+[lints]
+workspace = true

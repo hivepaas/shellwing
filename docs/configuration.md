@@ -52,6 +52,7 @@ padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
 # terminal's. No family: the system's interface font. Size 10 to 20, default 14,
 # as the terminal's.
 ui_font = { family = "Inter", size = 14 }
+theme_accent = true          # the app's accent (logo, choices, buttons) is the theme's
 
 [terminal]
 scrollback = 10000           # lines of history
@@ -113,6 +114,11 @@ desktop is with `system` (the default), and changes when the desktop does
 `theme` when dark, `light_theme` when light. Choosing a theme, in Settings,
 the palette or with the shortcut, sets the one of the mode the app is in. A
 host's or a group's own theme is kept in both.
+
+**The app's accent** (the logo, what is chosen, the main buttons) is the
+theme's `accent`, unless `theme_accent = false` (*Settings › Appearance ›
+The app's accent from the theme*). The app's theme gives it, not a host's;
+one too close to the app's background (contrast under 3:1) is not taken.
 
 **Changing the theme.** In the palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>,
 <kbd>Cmd</kbd>+<kbd>K</kbd> on macOS), *Change theme…* lists every theme and previews
@@ -567,6 +573,32 @@ Any folder another tool keeps in sync works: iCloud Drive, Syncthing, a Dropbox
 or OneDrive folder, a network share. shellwing writes `shellwing/format.json` and
 one encrypted file per saved secret in `shellwing/records/`; nothing in them is
 readable without the key.
+
+**A server instead of a folder:** *Settings › Sync* (or *Sync passwords with a
+server…* in the palette) takes a WebDAV server or S3-compatible storage, one
+place at a time:
+
+```toml
+[sync]
+# WebDAV: Nextcloud, ownCloud, Synology, Koofr, Fastmail. The folder's address.
+webdav = { url = "https://cloud.example.com/remote.php/dav/files/me/", user = "me" }
+# Or S3-compatible: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi.
+# region: if the service asks for one (R2 takes "auto", the default).
+# prefix: a folder in the bucket; none: the top.
+s3 = { endpoint = "https://<account>.r2.cloudflarestorage.com", bucket = "vault", prefix = "me", access_key = "…" }
+```
+
+- The password (WebDAV) or secret key (S3) is not in the file: it is kept in
+  the vault, sealed, as this device's own, and never synced. Each device
+  signs in with its own; *Stop syncing* forgets it. An app password, or a key
+  limited to the bucket, is the safer choice.
+- The files are the same as in a folder, under `shellwing/` at the address
+  (or under the prefix). The server only ever sees them encrypted.
+- Each sync lists the records and fetches only those that changed since
+  (by their ETag), so a minute's sync with nothing new is a few small
+  requests.
+- Joining from another device works as with a folder: pairing, the recovery
+  key, or the sync passphrase.
 
 - **The first device** creates a **recovery key** (13 groups of 4 characters) and
   shows it: write it down. *Show the recovery key* shows it again.
