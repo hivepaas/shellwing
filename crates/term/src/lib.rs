@@ -173,6 +173,10 @@ pub struct Frame {
     pub hover_link: Option<LinkSpan>,
     /// The search, while text is being found.
     pub find: Option<FindStatus>,
+    /// The program asked for mouse reports (Shift still selects).
+    pub mouse_tracking: bool,
+    /// Some text is selected, to copy.
+    pub selected: bool,
     /// Increases with every frame built.
     pub seq: u64,
 }
@@ -1208,6 +1212,8 @@ impl Engine {
             scroll,
             hover_link: self.hover,
             find: self.find.as_ref().map(Finding::status),
+            mouse_tracking: self.term.is_mouse_tracking().unwrap_or(false),
+            selected: self.term.selection().is_ok_and(|s| s.is_some()),
             seq: self.seq,
         })
     }

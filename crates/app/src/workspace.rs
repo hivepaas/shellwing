@@ -29,7 +29,9 @@ use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
-use crate::view::{CloseRequested, FilesResized, StatusChanged, TermView, VaultChanged, hsla};
+use crate::view::{
+    CloseRequested, FilesResized, PaneCommand, StatusChanged, TermView, VaultChanged, hsla,
+};
 use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
@@ -474,6 +476,16 @@ impl Workspace {
                 v.update(cx, |v, cx| v.refresh_panels(cx));
             }
             cx.notify();
+        })
+        .detach();
+        cx.subscribe_in(&view, window, |ws, view, c: &PaneCommand, window, cx| {
+            // The menu's pane has the keyboard already; make it the tab's too.
+            ws.set_focused(view.clone(), window, cx);
+            match *c {
+                PaneCommand::Split(axis) => ws.split(axis, window, cx),
+                PaneCommand::Forward => ws.ask_forward(None, window, cx),
+                PaneCommand::Close => ws.close_view(view, window, cx),
+            }
         })
         .detach();
         cx.subscribe_in(&view, window, |ws, view, _: &CloseRequested, window, cx| {

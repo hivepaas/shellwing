@@ -206,6 +206,14 @@ pub struct VaultChanged;
 /// The Files panel's edge was dragged to a new width, to be remembered.
 pub struct FilesResized;
 
+/// What the pane's menu asks of the workspace, for this pane.
+#[derive(Clone, Copy)]
+pub enum PaneCommand {
+    Split(gpui::Axis),
+    Forward,
+    Close,
+}
+
 /// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
 const BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
 
@@ -266,6 +274,8 @@ pub struct TermView {
     /// Dragging the panel's edge: where the drag began, and the width then.
     files_drag: Option<(f32, f32)>,
     find: Option<FindBar>,
+    /// The right-click menu, open where it was asked for.
+    menu: Option<Point<Pixels>>,
 }
 
 /// Finding text on the screen and in its history.
@@ -294,6 +304,7 @@ impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
+impl gpui::EventEmitter<PaneCommand> for TermView {}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -373,6 +384,7 @@ impl TermView {
             files_shown: false,
             files_drag: None,
             find: None,
+            menu: None,
         }
     }
 
@@ -1005,6 +1017,141 @@ impl TermView {
         .detach();
     }
 
+    /// The right-click menu: what can be done in this pane, with its keys.
+    fn pane_menu(&self, at: Point<Pixels>, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let mac = cfg!(target_os = "macos");
+        let chord = |key: &str| {
+            if mac {
+                format!("Cmd+{key}")
+            } else {
+                format!("Ctrl+Shift+{key}")
+            }
+        };
+        let item = |id: &'static str, label: &str, hint: String, enabled: bool| {
+            div()
+                .id(id)
+                .flex()
+                .items_center()
+                .justify_between()
+                .gap_4()
+                .px_3()
+                .py(px(5.))
+                .rounded(px(4.))
+                .text_color(rgb(if enabled { 0xe2e8f0 } else { 0x5b6578 }))
+                .when(enabled, |d| {
+                    d.cursor_pointer().hover(|s| s.bg(rgb(0x1e2a3d)))
+                })
+                .child(label.to_string())
+                .child(div().text_xs().text_color(rgb(0x7d889b)).child(hint))
+        };
+        // Runs the item's command and closes the menu.
+        let act = |f: fn(&mut Self, &mut Window, &mut Context<Self>)| {
+            cx.listener(move |v: &mut Self, _: &gpui::ClickEvent, window, cx| {
+                v.menu = None;
+                f(v, window, cx);
+                cx.notify();
+            })
+        };
+        let line = || div().my_1().h(px(1.)).bg(rgb(0x1e2736));
+        let status = self.session.status();
+        let menu = div()
+            .id("pane-menu")
+            .w(px(240.))
+            .p_1()
+            .flex()
+            .flex_col()
+            .rounded(px(8.))
+            .bg(rgb(0x111826))
+            .border_1()
+            .border_color(rgb(0x2b3648))
+            .shadow_lg()
+            .text_sm()
+            // Another click anywhere closes it (a right click opens the next one).
+            .on_mouse_down_out(cx.listener(|v, e: &MouseDownEvent, _, cx| {
+                if e.button != MouseButton::Right {
+                    v.menu = None;
+                    cx.notify();
+                }
+            }))
+            .child(
+                item("menu-copy", "Copy", chord("C"), self.frame.selected)
+                    .when(self.frame.selected, |d| {
+                        d.on_click(act(|v, _, _| v.term.copy()))
+                    }),
+            )
+            .child(
+                item("menu-paste", "Paste", chord("V"), true)
+                    .on_click(act(|v, _, cx| v.paste_clipboard(cx))),
+            )
+            .child(line())
+            .child(
+                item("menu-find", "Find…", chord("F"), true)
+                    .on_click(act(|v, window, cx| v.open_find(window, cx))),
+            )
+            .child(
+                item(
+                    "menu-files",
+                    if self.files_shown {
+                        "Hide Files"
+                    } else {
+                        "Browse Files (SFTP)"
+                    },
+                    chord("O"),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.toggle_files(window, cx))),
+            )
+            .when(status == Status::Connected, |d| {
+                d.child(
+                    item("menu-forward", "Forward a Port…", String::new(), true)
+                        .on_click(act(|_, _, cx| cx.emit(PaneCommand::Forward))),
+                )
+            })
+            .child(line())
+            .child(
+                item("menu-split-right", "Split Right", chord("D"), true).on_click(act(
+                    |_, _, cx| cx.emit(PaneCommand::Split(gpui::Axis::Horizontal)),
+                )),
+            )
+            .child(
+                item(
+                    "menu-split-down",
+                    "Split Down",
+                    if mac {
+                        "Cmd+Shift+D".into()
+                    } else {
+                        chord("E")
+                    },
+                    true,
+                )
+                .on_click(act(|_, _, cx| {
+                    cx.emit(PaneCommand::Split(gpui::Axis::Vertical))
+                })),
+            )
+            .when(
+                matches!(status, Status::Closed | Status::Lost | Status::Failed),
+                |d| {
+                    d.child(
+                        item("menu-reconnect", "Reconnect", String::new(), true)
+                            .on_click(act(|v, _, cx| v.reconnect_now(cx))),
+                    )
+                },
+            )
+            .child(line())
+            .child(
+                item("menu-close", "Close Pane", chord("W"), true)
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Close))),
+            );
+        gpui::deferred(
+            gpui::anchored()
+                .position(at)
+                .snap_to_window_with_margin(px(8.))
+                .child(menu),
+        )
+        .with_priority(1)
+        .into_any_element()
+    }
+
     fn paste_clipboard(&mut self, cx: &mut Context<Self>) {
         let Some(text) = cx.read_from_clipboard().and_then(|c| c.text()) else {
             return;
@@ -1168,6 +1315,13 @@ impl TermView {
 
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         window.focus(&self.focus, cx);
+        // A right click opens the menu, unless the program takes the mouse; Shift
+        // opens it anyway, as Shift selects.
+        if e.button == MouseButton::Right && (!self.frame.mouse_tracking || e.modifiers.shift) {
+            self.menu = Some(e.position);
+            cx.notify();
+            return;
+        }
         let (x, y) = self.grid_pos(e.position);
         let button = term_button(e.button);
         self.term.mouse(MouseInput {
@@ -1181,6 +1335,10 @@ impl TermView {
     }
 
     fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
+        // The release of the click that opened the menu.
+        if e.button == MouseButton::Right && self.menu.is_some() {
+            return;
+        }
         if self.scrollbar_grab.take().is_some() {
             self.reveal_scrollbar(cx);
             return;
@@ -1329,6 +1487,13 @@ impl TermView {
         let k = &ev.keystroke;
         let m = &k.modifiers;
         let key = k.key.as_str();
+        // Any key closes the menu; Escape does nothing else.
+        if self.menu.take().is_some() {
+            cx.notify();
+            if key == "escape" {
+                return cx.stop_propagation();
+            }
+        }
         // Typing in the find bar is not for the shell, though it passes by
         // here: GPUI gives a key's text to the field only if no one took the
         // key. Shift+PageUp / PageDown still scroll.
@@ -1661,6 +1826,9 @@ impl Render for TermView {
         }
         if let Some(s) = self.save_bar(cx) {
             terminal = terminal.child(s);
+        }
+        if let Some(at) = self.menu {
+            terminal = terminal.child(self.pane_menu(at, cx));
         }
         if let Some(b) = self.banner(cx) {
             terminal = terminal.child(b);
