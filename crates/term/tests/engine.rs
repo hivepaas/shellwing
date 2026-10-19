@@ -658,3 +658,17 @@ fn a_log_gets_what_comes_while_it_is_on_and_all_the_text_can_be_had() {
     let html = all_text(&h, true);
     assert!(html.contains("logged") && html.contains('<'), "{html}");
 }
+
+#[test]
+fn a_title_the_program_sets_comes_as_an_event() {
+    let h = harness();
+    h.term.feed(b"\x1b]0;deploy@api-1: ~/apps\x07$ ".to_vec());
+    let got = h
+        .events
+        .recv_timeout(Duration::from_secs(5))
+        .expect("an event");
+    match got {
+        Event::Title(t) => assert_eq!(t, "deploy@api-1: ~/apps"),
+        _ => panic!("not a title"),
+    }
+}
