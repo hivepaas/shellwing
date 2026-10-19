@@ -1,8 +1,16 @@
-//! Client-side window decorations.
+//! The window's title bar, and on Linux its whole frame.
 //!
 //! GNOME's Wayland compositor draws no frame for clients, so the window provides
 //! its own title bar (drag to move, double-click to maximise, right-click for the
 //! window menu, buttons), a thin border and a shadow.
+//!
+//! macOS and Windows draw the frame (border, shadow, corners, resizing) but
+//! hide their title bar, and the app draws one in its place with the tabs in
+//! it. On macOS the system's traffic lights stay, over the left end. On
+//! Windows the app draws the caption buttons and marks them, and the empty
+//! parts of the bar, as window control areas: Windows then treats them as its
+//! own, so dragging, Snap, double-click to maximise, the window menu and the
+//! Snap Layouts flyout over the maximise button all work as in native apps.
 //!
 //! Resizing works as in GTK apps: an invisible margin (the client inset) runs
 //! around the visible window, and pressing there resizes. Near a corner a longer
@@ -16,19 +24,29 @@
 
 use gpui::{
     App, BoxShadow, Corners, CursorStyle, Decorations, Div, Edges, HitboxBehavior, Hsla,
-    MouseButton, Pixels, Point, ResizeEdge, Size, Tiling, Window, canvas, div, point, prelude::*,
-    px, rgb, rgba, svg, transparent_black,
+    MouseButton, Pixels, Point, ResizeEdge, Size, Tiling, Window, WindowControlArea, canvas, div,
+    point, prelude::*, px, rgb, rgba, svg, transparent_black,
 };
 
 use crate::colors::colors;
 
-/// The header bar: as tall as GNOME's own where the app draws it (Linux),
-/// a row for the tabs under the native title bar elsewhere.
+/// The header bar: as tall as GNOME's own on Linux; on macOS and Windows tall
+/// enough for the tabs, a little more than the system's own title bar.
 pub const TITLEBAR_H: f32 = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
     44.0
 } else {
-    34.0
+    40.0
 };
+/// Where macOS puts its traffic lights (the close button's top left): centred
+/// in the bar, as the buttons are 14 px tall.
+pub const TRAFFIC_LIGHTS: Point<Pixels> = Point {
+    x: px(12.),
+    y: px((TITLEBAR_H - 14.) / 2.),
+};
+/// The room the traffic lights take at the left of the bar, with a gap after.
+const TRAFFIC_LIGHTS_W: f32 = 78.0;
+/// A Windows caption button's width, as Windows 11 draws them.
+const CAPTION_W: f32 = 46.0;
 /// The invisible margin outside the visible window that resizes it; the shadow
 /// is drawn into it.
 const INSET: f32 = 12.0;
@@ -148,13 +166,17 @@ fn tiling(window: &Window) -> Tiling {
     }
 }
 
-/// The window frame around `content`, with `tabs` in the title bar.
-pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> Div {
-    let t = tiling(window);
-    window.set_client_inset(px(INSET));
-    let round = corners(window);
-    let inner = |r: Pixels| if r > px(0.) { r - px(BORDER) } else { r };
-    // Round buttons with symbolic icons, as GNOME draws them.
+/// Whether the app draws the title bar: always on macOS and Windows (inside
+/// the system's frame), on Linux where it draws the whole frame (Wayland).
+/// Elsewhere (X11 without client-side decorations) the system's title bar
+/// stays and the tabs get a row under it.
+pub fn draws_title_bar(window: &Window) -> bool {
+    cfg!(any(target_os = "macos", target_os = "windows"))
+        || matches!(window.window_decorations(), Decorations::Client { .. })
+}
+
+/// Round buttons with symbolic icons, as GNOME draws them.
+fn gnome_buttons() -> Div {
     let button = |id: &'static str, icon: &'static str, f: fn(&mut Window, &mut App)| {
         div()
             .id(id)
@@ -174,6 +196,93 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
                     .text_color(rgb(colors().text)),
             )
     };
+    div()
+        .flex()
+        .items_center()
+        .gap(px(10.))
+        .h_full()
+        .pl(px(6.))
+        .pr(px(10.))
+        .child(button("min", "icons/minimize.svg", |w, _| {
+            w.minimize_window()
+        }))
+        .child(button("max", "icons/maximize.svg", |w, _| w.zoom_window()))
+        .child(button(
+            "close",
+            "icons/close.svg",
+            crate::workspace::close_window,
+        ))
+}
+
+/// Flat full-height buttons, as Windows draws them. They do nothing on a
+/// click themselves: as window control areas, Windows sees its own caption
+/// buttons there and GPUI carries out the press (minimise, maximise or
+/// restore, and close, which asks the app like the system's close does).
+fn windows_buttons(window: &Window) -> Div {
+    let button = |id: &'static str, icon: &'static str, area: WindowControlArea| {
+        let close = area == WindowControlArea::Close;
+        div()
+            .id(id)
+            .group(id)
+            .w(px(CAPTION_W))
+            .h_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .window_control_area(area)
+            .when(close, |d| d.hover(|s| s.bg(rgb(0xc42b1c))))
+            .when(!close, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+            .child(
+                svg()
+                    .path(icon)
+                    .size(px(10.))
+                    .text_color(rgb(colors().text))
+                    .when(close, |d| {
+                        d.group_hover(id, |s| s.text_color(gpui::white()))
+                    }),
+            )
+    };
+    let max = if window.is_maximized() {
+        "icons/win-restore.svg"
+    } else {
+        "icons/win-maximize.svg"
+    };
+    div()
+        .flex()
+        .h_full()
+        .ml(px(6.))
+        .child(button(
+            "win-min",
+            "icons/win-minimize.svg",
+            WindowControlArea::Min,
+        ))
+        .child(button("win-max", max, WindowControlArea::Max))
+        .child(button(
+            "win-close",
+            "icons/win-close.svg",
+            WindowControlArea::Close,
+        ))
+}
+
+/// The window frame around `content`, with `tabs` in the title bar.
+pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> Div {
+    let t = tiling(window);
+    let client_side = matches!(window.window_decorations(), Decorations::Client { .. });
+    if client_side {
+        window.set_client_inset(px(INSET));
+    }
+    let round = corners(window);
+    let inner = |r: Pixels| if r > px(0.) { r - px(BORDER) } else { r };
+    let fullscreen = window.is_fullscreen();
+    let (mac, windows) = (cfg!(target_os = "macos"), cfg!(target_os = "windows"));
+    let buttons = if windows {
+        // Full screen has no caption: Windows ignores the control areas then.
+        (!fullscreen).then(|| windows_buttons(window))
+    } else if mac {
+        None
+    } else {
+        Some(gnome_buttons())
+    };
     let titlebar = div()
         .h(px(TITLEBAR_H))
         .w_full()
@@ -187,35 +296,32 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
         .border_color(rgb(colors().line))
         .text_color(rgb(colors().soft))
         .text_sm()
-        .on_mouse_down(MouseButton::Left, |e, window, _| {
-            if e.click_count == 2 {
-                window.zoom_window();
-            } else {
-                window.start_window_move();
-            }
+        // On Windows the system moves the window from the drag areas itself
+        // (see `windows_buttons`); handling the press here would stop it.
+        .when(!windows, |d| {
+            d.on_mouse_down(MouseButton::Left, move |e, window, _| {
+                if e.click_count != 2 {
+                    window.start_window_move();
+                } else if mac {
+                    // Zoom or minimise, as set in System Settings.
+                    window.titlebar_double_click();
+                } else {
+                    window.zoom_window();
+                }
+            })
         })
-        .on_mouse_down(MouseButton::Right, |e, window, _| {
-            window.show_window_menu(e.position)
+        .when(client_side, |d| {
+            d.on_mouse_down(MouseButton::Right, |e, window, _| {
+                window.show_window_menu(e.position)
+            })
+        })
+        // The traffic lights' place: nothing of the app's goes under them.
+        // Full screen hides them.
+        .when(mac && !fullscreen, |d| {
+            d.child(div().flex_shrink_0().w(px(TRAFFIC_LIGHTS_W)).h_full())
         })
         .child(div().flex_1().min_w_0().h_full().child(tabs))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .gap(px(10.))
-                .h_full()
-                .pl(px(6.))
-                .pr(px(10.))
-                .child(button("min", "icons/minimize.svg", |w, _| {
-                    w.minimize_window()
-                }))
-                .child(button("max", "icons/maximize.svg", |w, _| w.zoom_window()))
-                .child(button(
-                    "close",
-                    "icons/close.svg",
-                    crate::workspace::close_window,
-                )),
-        );
+        .children(buttons);
     let (inset, border) = (px(INSET), px(BORDER));
     let floating = !(t.top && t.bottom && t.left && t.right);
     div()
