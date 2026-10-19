@@ -11,6 +11,8 @@ use std::sync::{Arc, Mutex};
 
 use russh::Channel;
 use russh::client::{self, ChannelOpenHandle, Msg};
+use russh::keys::ssh_key::Certificate;
+use russh::keys::ssh_key::certificate::CertType;
 use russh::keys::{HashAlg, PublicKey, PublicKeyOrCertificate, known_hosts};
 
 use crate::Error;
@@ -104,6 +106,71 @@ impl Checker {
         Ok(Verdict::Unknown)
     }
 
+    /// The authorities known_hosts trusts for this host (`@cert-authority`):
+    /// with one, the server is asked for a host certificate.
+    pub(crate) fn authorities(&self) -> Vec<PublicKey> {
+        self.path()
+            .map(|p| crate::known_hosts::authorities(&p, &self.host, self.port))
+            .unwrap_or_default()
+    }
+
+    /// Accepts a host certificate signed by an authority known_hosts trusts
+    /// for this host, still valid, naming this host (when it names any), and
+    /// neither it nor its authority revoked; as OpenSSH does, it is never
+    /// learned.
+    pub(crate) fn check_certificate(&self, cert: &Certificate) -> Result<(), Error> {
+        let refuse = |why: String| Error::HostCertificate {
+            host: self.label(),
+            why,
+        };
+        let authorities = self.authorities();
+        if authorities.is_empty() {
+            return Err(refuse("known_hosts names no @cert-authority for it".into()));
+        }
+        if cert.cert_type() != CertType::Host {
+            return Err(refuse("it is a user certificate".into()));
+        }
+        let trusted: Vec<_> = authorities
+            .iter()
+            .map(|k| k.fingerprint(HashAlg::Sha256))
+            .collect();
+        cert.validate(trusted.iter()).map_err(|e| {
+            refuse(match e {
+                russh::keys::ssh_key::Error::CertificateValidation => {
+                    "it has expired, is not valid yet, or no trusted authority signed it".into()
+                }
+                other => other.to_string(),
+            })
+        })?;
+        let principals = cert.valid_principals();
+        if !principals.is_empty()
+            && !principals
+                .iter()
+                .any(|p| p.eq_ignore_ascii_case(&self.host))
+        {
+            return Err(refuse(format!(
+                "it is for {}, not {}",
+                principals.join(", "),
+                self.host
+            )));
+        }
+        let path = self.path()?;
+        let revoked: Vec<String> = crate::known_hosts::entries(&path)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|e| e.marker.as_deref() == Some("@revoked") && e.is_for(&self.host, self.port))
+            .map(|e| e.key.fingerprint)
+            .collect();
+        let of =
+            |k: &russh::keys::ssh_key::public::KeyData| k.fingerprint(HashAlg::Sha256).to_string();
+        if revoked.contains(&of(cert.public_key())) || revoked.contains(&of(cert.signature_key())) {
+            return Err(refuse(
+                "it, or its authority, is revoked in known_hosts".into(),
+            ));
+        }
+        Ok(())
+    }
+
     fn learn(&self, key: &PublicKey) -> Result<(), Error> {
         let path = self.path()?;
         if let Some(dir) = path.parent() {
@@ -179,12 +246,24 @@ impl client::Handler for Checker {
         &mut self,
         key: &PublicKeyOrCertificate,
     ) -> Result<bool, Self::Error> {
-        let PublicKeyOrCertificate::PublicKey { key, .. } = key else {
-            // Host certificates need a CA check; not supported yet, so refuse them.
-            if let Ok(mut p) = self.problem.lock() {
-                *p = Some(Error::HostCertificate { host: self.label() });
+        let key = match key {
+            PublicKeyOrCertificate::PublicKey { key, .. } => key,
+            PublicKeyOrCertificate::Certificate(cert) => {
+                let refused = match self.check_certificate(cert) {
+                    Ok(()) => return Ok(true),
+                    Err(e) => e,
+                };
+                // As OpenSSH: a certificate no authority vouches for may still
+                // carry a key known_hosts knows.
+                let plain = PublicKey::new(cert.public_key().clone(), "");
+                if matches!(self.verdict(&plain), Ok(Verdict::Known)) {
+                    return Ok(true);
+                }
+                if let Ok(mut p) = self.problem.lock() {
+                    *p = Some(refused);
+                }
+                return Ok(false);
             }
-            return Ok(false);
         };
         match self.check(key).await {
             Ok(()) => Ok(true),
@@ -268,6 +347,59 @@ mod tests {
             forward_agent: false,
             agent_socket: None,
         }
+    }
+
+    #[test]
+    fn host_certificates_are_checked_as_openssh_checks_them() {
+        use russh::keys::ssh_key::certificate::Builder;
+        use russh::keys::ssh_key::{Algorithm, PrivateKey};
+        let dir = std::env::temp_dir().join(format!("shellwing-hc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let file = dir.join("known_hosts");
+        let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+        let host = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("host");
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("time")
+            .as_secs();
+        let cert = |kind: CertType, principal: &str, from: u64, to: u64| {
+            let mut b = Builder::new_with_random_nonce(
+                &mut rand::rng(),
+                host.public_key().key_data().clone(),
+                from,
+                to,
+            )
+            .expect("builder");
+            b.cert_type(kind).expect("type");
+            b.valid_principal(principal).expect("principal");
+            b.sign(&ca).expect("sign")
+        };
+        let ca_line = ca.public_key().to_openssh().expect("line");
+        std::fs::write(
+            &file,
+            format!("@cert-authority h,*.example.com {ca_line}\n"),
+        )
+        .expect("write");
+        let c = checker(&file, HostKeyPolicy::Strict);
+        let good = cert(CertType::Host, "h", now - 60, now + 3600);
+        c.check_certificate(&good)
+            .expect("signed by the authority, for h");
+        let why = |cert: &Certificate| match c.check_certificate(cert) {
+            Err(Error::HostCertificate { why, .. }) => why,
+            other => panic!("{other:?}"),
+        };
+        assert!(why(&cert(CertType::Host, "other", now - 60, now + 3600)).contains("for other"));
+        assert!(why(&cert(CertType::User, "h", now - 60, now + 3600)).contains("user certificate"));
+        assert!(why(&cert(CertType::Host, "h", now - 7200, now - 3600)).contains("expired"));
+        std::fs::write(
+            &file,
+            format!("@cert-authority h {ca_line}\n@revoked h {ca_line}\n"),
+        )
+        .expect("write");
+        assert!(why(&good).contains("revoked"));
+        std::fs::write(&file, "").expect("write");
+        assert!(why(&good).contains("no @cert-authority"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[tokio::test]

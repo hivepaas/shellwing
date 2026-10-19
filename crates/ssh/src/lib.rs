@@ -120,8 +120,8 @@ pub enum Error {
     HostKeyUnknown { host: String },
     #[error("host key for {host} not accepted")]
     HostKeyRejected { host: String },
-    #[error("{host} presented a host certificate; certificates are not supported yet")]
-    HostCertificate { host: String },
+    #[error("{host}'s host certificate is not accepted: {why}")]
+    HostCertificate { host: String, why: String },
     #[error("permission denied: the server accepted none of the keys or passwords tried")]
     AuthFailed,
     #[error("cancelled")]
@@ -311,10 +311,17 @@ async fn open_hop(
         .keepalive
         .or(opts.keepalive)
         .unwrap_or(DEFAULT_KEEPALIVE);
+    // A host known_hosts trusts an authority for is asked for a certificate
+    // first, as OpenSSH asks; others for a plain key.
+    let mut preferred = russh::Preferred::DEFAULT;
+    if !checker.authorities().is_empty() {
+        preferred.host_key_certificates = std::borrow::Cow::Owned(preferred.key.to_vec());
+    }
     let config = Arc::new(client::Config {
         keepalive_interval: (!keepalive.is_zero()).then_some(keepalive),
         keepalive_max: KEEPALIVE_MAX,
         window_size: WINDOW,
+        preferred,
         ..Default::default()
     });
     let connected = match via {
@@ -342,6 +349,7 @@ async fn open_hop(
         &mut handle,
         &hop.target,
         &hop.keys_to_try(),
+        &hop.certificate_files,
         auth::StoredKeys::of(hop),
         &opts.auth,
         opts.prompter.as_ref(),

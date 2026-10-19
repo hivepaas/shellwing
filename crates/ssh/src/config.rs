@@ -28,6 +28,9 @@ pub struct Resolved {
     /// Keys to try, in order. Empty means the OpenSSH defaults, then every key
     /// the app keeps.
     pub identity_files: Vec<PathBuf>,
+    /// Certificates to sign in with (`CertificateFile`), beside the
+    /// `<key>-cert.pub` found next to each key file.
+    pub certificate_files: Vec<PathBuf>,
     /// The one key the app keeps to sign in with (its id), instead of any file.
     pub vault_key: Option<String>,
     /// Hosts to go through first, outermost first; each has no jumps of its own.
@@ -50,6 +53,7 @@ impl Resolved {
             alias: target.host.clone(),
             target,
             identity_files: vec![],
+            certificate_files: vec![],
             vault_key: None,
             jumps: vec![],
             keepalive: None,
@@ -374,6 +378,11 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         .iter()
         .map(|f| expand_tokens(f, &host, &user))
         .collect();
+    let certificate_files = p
+        .certificate_file
+        .iter()
+        .map(|f| expand_tokens(f, &host, &user))
+        .collect();
 
     let mut jumps = vec![];
     if let Some(list) = &p.proxy_jump
@@ -392,6 +401,7 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         alias,
         target: Target { user, host, port },
         identity_files,
+        certificate_files,
         vault_key: None,
         jumps,
         keepalive: p.server_alive_interval,

@@ -8,7 +8,9 @@ use std::sync::Arc;
 
 use russh::MethodKind;
 use russh::client::{AuthResult, Handle, KeyboardInteractiveAuthResponse};
+use russh::keys::agent::AgentIdentity;
 use russh::keys::agent::client::{AgentClient, AgentStream};
+use russh::keys::ssh_key::Certificate;
 use russh::keys::{PrivateKey, PrivateKeyWithHashAlg};
 
 use crate::hostkey::Checker;
@@ -159,11 +161,31 @@ impl<'a> StoredKeys<'a> {
     }
 }
 
+/// A certificate for `key`: one of `certs` (`CertificateFile`), else
+/// `<key file>-cert.pub` beside it, as OpenSSH looks for one.
+pub(crate) fn certificate_for(
+    key: &PrivateKey,
+    file: Option<&std::path::Path>,
+    certs: &[PathBuf],
+) -> Option<Certificate> {
+    let beside = file.map(|f| {
+        let mut name = f.as_os_str().to_owned();
+        name.push("-cert.pub");
+        PathBuf::from(name)
+    });
+    certs.iter().chain(beside.iter()).find_map(|path| {
+        let text = std::fs::read_to_string(path).ok()?;
+        let cert = Certificate::from_openssh(text.trim()).ok()?;
+        (cert.public_key() == key.public_key().key_data()).then_some(cert)
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn authenticate(
     handle: &mut Handle<Checker>,
     target: &Target,
     keys: &[PathBuf],
+    certs: &[PathBuf],
     stored: StoredKeys<'_>,
     auth: &Auth,
     prompter: Option<&Prompter>,
@@ -175,6 +197,24 @@ pub(crate) async fn authenticate(
     if auth.agent && methods.allows(MethodKind::PublicKey) {
         for mut agent in agents(auth.agent_socket.as_deref()).await {
             for id in agent.request_identities().await.unwrap_or_default() {
+                // A certificate the agent holds signs in as itself.
+                if let AgentIdentity::Certificate { certificate, .. } = id {
+                    let hash = if certificate.algorithm().is_rsa() {
+                        handle.best_supported_rsa_hash().await?.flatten()
+                    } else {
+                        None
+                    };
+                    if let Ok(r) = handle
+                        .authenticate_certificate_with(user, certificate, hash, &mut agent)
+                        .await
+                    {
+                        if r.success() {
+                            return Ok(());
+                        }
+                        methods.update(&r);
+                    }
+                    continue;
+                }
                 let key = id.public_key().into_owned();
                 let hash = if key.algorithm().is_rsa() {
                     handle.best_supported_rsa_hash().await?.flatten()
@@ -199,6 +239,16 @@ pub(crate) async fn authenticate(
             let Some(key) = load_key(path, prompter, secrets).await? else {
                 continue;
             };
+            // With a certificate for it, that first.
+            if let Some(cert) = certificate_for(&key, Some(path), certs) {
+                let r = handle
+                    .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
+                    .await?;
+                if r.success() {
+                    return Ok(());
+                }
+                methods.update(&r);
+            }
             let hash = if key.algorithm().is_rsa() {
                 handle.best_supported_rsa_hash().await?.flatten()
             } else {
@@ -223,6 +273,15 @@ pub(crate) async fn authenticate(
             let Ok(key) = crate::keys::parse(&k.openssh, None) else {
                 continue;
             };
+            if let Some(cert) = certificate_for(&key, None, certs) {
+                let r = handle
+                    .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
+                    .await?;
+                if r.success() {
+                    return Ok(());
+                }
+                methods.update(&r);
+            }
             let hash = if key.algorithm().is_rsa() {
                 handle.best_supported_rsa_hash().await?.flatten()
             } else {
