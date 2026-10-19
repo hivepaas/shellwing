@@ -504,8 +504,14 @@ readable without the key.
 
 - **The first device** creates a **recovery key** (13 groups of 4 characters) and
   shows it: write it down. *Show the recovery key* shows it again.
-- **Another device** choosing the same folder is asked for that key, then
-  shares the vault; what it had saved is kept and merged.
+- **Another device** choosing the same folder joins the vault one of two ways;
+  either way what it had saved is kept and merged:
+  - **Approve it on a device that syncs** (pairing). The new device asks; on a
+    device that syncs the folder (with shellwing open), *Let … into this
+    vault?* comes up. Both show a six-digit code: approve only if they are the
+    same. The keys travel encrypted, through the folder; the new device can
+    show the recovery key afterwards too. A request left 10 minutes is dropped.
+  - **Type the recovery key.**
 - Syncing runs every minute, right after a secret is saved or forgotten, and on
   *Sync now*. Edits merge field by field, so two devices offline never lose
   each other's changes; a forgotten secret is forgotten everywhere.

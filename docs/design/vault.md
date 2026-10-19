@@ -41,13 +41,23 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
 
 **A new device gets the AK in one of three ways:**
 
-1. **Pairing.**
-   1. The new device creates a temporary X25519 key and shows a code.
-   2. A device already signed in approves it.
-   3. The approving device sends the AK, encrypted to that temporary key,
-      through the backend.
-   4. Both screens show a short comparison code (SAS), so a malicious server
-      cannot sit in the middle.
+1. **Pairing** (built for the folder backend; `crates/vault/src/pairing.rs`).
+   The new device (asker) and one that syncs (answerer) exchange files in the
+   store's `pairing/`, each written by one side:
+   1. Asker: its name and a commitment, SHA-256 of a fresh X25519 public key.
+   2. Answerer: its name and a fresh X25519 public key.
+   3. Asker: its public key (checked against the commitment), and the answer
+      it took (another device may have answered too).
+   4. Both show a six-digit code, SHA-256 of the two public keys. The user
+      approves on the answerer if the codes match.
+   5. Answerer: the space key and the recovery key, sealed with a key from
+      HKDF-SHA256 over the X25519 result (salt: both public keys; info: the
+      request id), or a refusal.
+
+   Whoever can write the store could put their own keys in between, but the
+   codes would then differ: the commitment means neither side's key is chosen
+   knowing the other's, so a forged pair matches by chance once in a million.
+   Requests expire after 10 minutes; low-order keys are refused.
 2. **The recovery key:** 32 random bytes shown as 13 groups of 4 Crockford
    base32 characters (no I, L, O, U; typing them loosely still works). The
    store's `format.json` holds the space key sealed with it; the device keeps it

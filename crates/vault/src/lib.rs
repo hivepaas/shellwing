@@ -26,6 +26,7 @@ use zeroize::Zeroizing;
 mod cipher;
 mod hlc;
 mod keychain;
+mod pairing;
 mod recovery;
 mod sync;
 
@@ -33,6 +34,7 @@ pub use cipher::Cipher;
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use keychain::OsKeychain;
 pub use keychain::{KeyStore, MemoryKeys};
+pub use pairing::{Answerer, Ask, AskState, Request};
 pub use recovery::RecoveryKey;
 pub use sync::{Backend, Folder, FolderState, SyncReport};
 
@@ -77,6 +79,8 @@ pub enum Error {
     UnknownCipher(u8),
     #[error("a vault record is malformed: {0}")]
     Format(#[from] serde_json::Error),
+    #[error("pairing: {0}")]
+    Pairing(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

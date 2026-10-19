@@ -24,10 +24,10 @@ const RECORDS: &str = "records";
 const RECOVERY_AAD: &[u8] = b"shellwing space key wrapped by the recovery key v1";
 
 /// Where synced files live. Names are relative: `format.json`,
-/// `records/<file>`.
+/// `records/<file>`, `pairing/<file>`.
 pub trait Backend: Send + Sync {
-    /// File names in `records/`.
-    fn list(&self) -> io::Result<Vec<String>>;
+    /// File names in the folder `dir` (`records`, `pairing`).
+    fn list(&self, dir: &str) -> io::Result<Vec<String>>;
     fn read(&self, name: &str) -> io::Result<Option<Vec<u8>>>;
     fn write(&self, name: &str, data: &[u8]) -> io::Result<()>;
     fn remove(&self, name: &str) -> io::Result<()>;
@@ -48,8 +48,8 @@ impl Folder {
 }
 
 impl Backend for Folder {
-    fn list(&self) -> io::Result<Vec<String>> {
-        let dir = self.root.join(RECORDS);
+    fn list(&self, dir: &str) -> io::Result<Vec<String>> {
+        let dir = self.root.join(dir);
         match std::fs::read_dir(&dir) {
             Ok(entries) => Ok(entries
                 .flatten()
@@ -288,6 +288,19 @@ impl Vault {
         if key_id(&new_key) != format.key_id {
             return Err(Error::WrongRecoveryKey);
         }
+        self.adopt(new_key, &rk)
+    }
+
+    /// Whether `key` is the key of the vault in `b`.
+    pub(crate) fn is_key_of(&self, b: &dyn Backend, key: &[u8; KEY_LEN]) -> Result<bool> {
+        let format = self.format(b)?.ok_or(Error::NotSynced)?;
+        Ok(key_id(key) == format.key_id)
+    }
+
+    /// Makes `new_key` this vault's key (another vault's, checked by the
+    /// caller): local records are sealed again with it, to merge at the next
+    /// sync, and `rk` is kept as the recovery key.
+    pub(crate) fn adopt(&self, new_key: Zeroizing<[u8; KEY_LEN]>, rk: &RecoveryKey) -> Result<()> {
         let rows = self.raw_rows()?;
         let mut db = self.db.lock().map_err(|_| Error::Decrypt)?;
         let tx = db.transaction()?;
@@ -321,7 +334,7 @@ impl Vault {
         tx.commit()?;
         drop(db);
         *self.space_key.write().unwrap_or_else(|e| e.into_inner()) = new_key;
-        self.store_recovery_key(&rk)?;
+        self.store_recovery_key(rk)?;
         Ok(())
     }
 
@@ -336,7 +349,7 @@ impl Vault {
         let mut kinds: BTreeMap<String, String> = BTreeMap::new();
         // Remote versions of each record, with the files they came from.
         let mut remote: BTreeMap<String, Vec<(String, Version)>> = BTreeMap::new();
-        for name in b.list()? {
+        for name in b.list(RECORDS)? {
             let Some(id) = file_id(&name).map(str::to_string) else {
                 continue;
             };
