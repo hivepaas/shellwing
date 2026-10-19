@@ -37,5 +37,20 @@ unicode-segmentation = "1"
 dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
-[lints]
-workspace = true
+# To write `--help` and errors to the terminal the app was started from: a GUI
+# program on Windows has no console of its own (see main.rs).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
+
+# Puts the icon and the version into shellwing.exe (see build.rs).
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1.34"
+
+# The workspace's lints, except that unsafe code is denied rather than
+# forbidden: one Win32 call (AttachConsole, in main.rs) allows it.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "warn"
+dbg_macro = "deny"
