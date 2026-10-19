@@ -1,0 +1,15 @@
+# Light and warm, as ink on paper.
+name = "Paper"
+accent = "#b45309"
+background = "#faf8f3"
+foreground = "#2b2a26"
+cursor = "#b45309"
+cursor_text = "#faf8f3"
+selection_background = "#f2dfb6"
+selection_foreground = "#2b2a26"
+palette = [
+  "#2b2a26", "#b3261e", "#3d7a2a", "#8a6100",
+  "#2f5fa8", "#8a3fa0", "#1f7a7a", "#8c877a",
+  "#5c584e", "#d1453b", "#4f9a37", "#a77a00",
+  "#3f74c4", "#a855c0", "#2b9696", "#e8e2d4",
+]

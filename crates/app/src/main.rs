@@ -233,6 +233,7 @@ fn main() -> anyhow::Result<()> {
                 ws.activate(active, window, cx);
                 cx.activate(true);
                 ws.track_bounds(window, cx);
+                ws.track_appearance(window, cx);
                 ws.guard_close(window, cx);
             });
             // One window: closing it quits, on macOS too, where apps otherwise stay

@@ -2,8 +2,9 @@
 //! the palette in use. The terminal's colors come from its theme instead.
 //!
 //! Views ask [`colors`] for a role (`colors().text`, `colors().edge`), never
-//! for a value, so a palette is changed here alone, and another one (a light
-//! one) only has to fill in the same roles.
+//! for a value, so a palette is changed here alone. There are two, [`DUSK`]
+//! and [`LIGHT`], filling in the same roles; the workspace picks one with
+//! [`set_light`] and redraws.
 //!
 //! Values are `0xRRGGBB` for `gpui::rgb`; those ending in an alpha byte
 //! (`0xRRGGBBAA`, see [`Palette::scrim`]) are for `gpui::rgba`.
@@ -198,9 +199,90 @@ pub const DUSK: Palette = Palette {
     find_text: 0x000000,
 };
 
+/// The light palette: cool grays, white where things float.
+pub const LIGHT: Palette = Palette {
+    chrome: 0xe8ecf1,
+    panel: 0xf1f4f7,
+    page: 0xf7f9fb,
+    surface: 0xfbfcfd,
+    raised: 0xffffff,
+    chip: 0xe6ebf1,
+    field: 0xffffff,
+    tab_on: 0xfbfcfe,
+
+    line: 0xd8dee5,
+    field_edge: 0xc3ccd6,
+    edge: 0xc3ccd6,
+    window_edge: 0xa9b2bd,
+
+    hover: 0xe3e9f0,
+    menu_hover: 0xe6edf5,
+    selected: 0xd9e8f8,
+    button: 0xdce2e9,
+    button_hover: 0xcfd7e0,
+
+    text: 0x1b2230,
+    soft: 0x3a4454,
+    label: 0x4a5465,
+    muted: 0x5a6576,
+    faint: 0x8a94a3,
+
+    accent: 0x0284c7,
+    accent_hover: 0x0369a1,
+    on_accent: 0xffffff,
+
+    ok: 0x16a34a,
+    good: 0x15803d,
+    warn: 0xb45309,
+    amber: 0xd97706,
+    amber_hover: 0xb45309,
+    on_amber: 0xffffff,
+    lost: 0xea580c,
+    idle: 0x94a3b8,
+    bad: 0xc81e1e,
+    danger: 0xdc2626,
+
+    good_bg: 0xdcfce7,
+    warn_bg: 0xfef3c7,
+    warn_edge: 0xf2b84b,
+    warn_text: 0x92400e,
+    warn_hover: 0xfde68a,
+    bad_bg: 0xfdecec,
+    bad_edge: 0xf5b5b5,
+    bad_text: 0x991b1b,
+    bad_hover: 0xfbd5d5,
+
+    scrim: 0x0f172a59,
+    banner: 0xffffffee,
+    bad_banner: 0xfdf0f0f0,
+    dim_pane: 0xffffff80,
+    tint: 0x0000000d,
+    shadow: 0x0f172a33,
+
+    folder: 0x2563eb,
+    progress: 0x2563eb,
+    drop: 0xdbeafe,
+
+    find_match: 0xffd54f,
+    find_current: 0xf2a57e,
+    find_text: 0x000000,
+};
+
+static LIGHT_IN_USE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// The palette in use.
 pub fn colors() -> &'static Palette {
-    &DUSK
+    if LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed) {
+        &LIGHT
+    } else {
+        &DUSK
+    }
+}
+
+/// Uses the light palette, or the dark one. Views pick it up when drawn
+/// next; cached ones must be told to redraw.
+pub fn set_light(light: bool) {
+    LIGHT_IN_USE.store(light, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// `color` (`0xRRGGBB`) with an alpha, for `gpui::rgba`.

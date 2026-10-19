@@ -7,10 +7,14 @@ use crate::store::LoadError;
 
 /// The theme used when none is set or the one set does not exist.
 pub const DEFAULT_THEME: &str = "dusk";
+/// The theme used in the light mode when none is set.
+pub const DEFAULT_LIGHT_THEME: &str = "dawn";
 
 /// Built in, in the order the theme shortcut steps through them.
 const BUILTIN: &[(&str, &str)] = &[
     ("dusk", include_str!("../themes/dusk.toml")),
+    ("dawn", include_str!("../themes/dawn.toml")),
+    ("paper", include_str!("../themes/paper.toml")),
     (
         "default-slate",
         include_str!("../themes/default-slate.toml"),
@@ -344,7 +348,8 @@ mod tests {
             all.find("tokyo night").map(|t| t.id.as_str()),
             Some("tokyo-night")
         );
-        assert_eq!(all.step("dusk", 1).id, "default-slate");
+        assert_eq!(all.step("dusk", 1).id, "dawn");
+        assert_eq!(all.step("paper", 1).id, "default-slate");
         assert_eq!(all.step("default-slate", 1).id, "neon-nebula");
         assert_eq!(all.step("dusk", -1).id, "github-dark");
         assert_eq!(all.step("github-dark", 1).id, "dusk");

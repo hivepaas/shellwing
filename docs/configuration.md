@@ -30,7 +30,7 @@ the maximised state come back; the compositor chooses the position.
 ## config.toml
 
 **Settings** (**Ctrl+,**, **Cmd+,** on macOS, or *Settings…* in the palette)
-changes these without opening the file: theme, font, size, line height,
+changes these without opening the file: dark or light, theme, font, size, line height,
 cursor, scrollbar, padding, the app's own font and size, scrollback, what a
 dropped connection does, session logs, and whether the last tabs come back. Each change is written here at once, keeping
 your comments, and applies to the open tabs.
@@ -40,7 +40,9 @@ your comments, and applies to the open tabs.
 restore_tabs = true          # a start without a host opens the last run's tabs
 
 [appearance]
-theme = "neon-nebula"        # a theme id or name, see below; default "dusk"
+mode = "system"              # "system" (as the desktop is), "dark" or "light"
+theme = "neon-nebula"        # the terminal's theme when dark, see below; default "dusk"
+light_theme = "dawn"         # the terminal's theme when light; default "dawn"
 font = { family = "JetBrains Mono", size = 14 }
 line_height = 1.3            # row height as a multiple of the font size
 cursor = { style = "block" } # "block", "bar" or "underline"
@@ -102,6 +104,13 @@ only that key, so your comments and layout stay as you wrote them.
 
 ## Themes
 
+**Dark and light.** The app is dark or light as `mode` says, or as the
+desktop is with `system` (the default), and changes when the desktop does
+(*Settings › Appearance › Mode*). Each mode has its own terminal theme:
+`theme` when dark, `light_theme` when light. Choosing a theme, in Settings,
+the palette or with the shortcut, sets the one of the mode the app is in. A
+host's or a group's own theme is kept in both.
+
 **Changing the theme.** In the palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>,
 <kbd>Cmd</kbd>+<kbd>K</kbd> on macOS), *Change theme…* lists every theme and previews
 the one highlighted; Enter keeps it. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>]</kbd> and
@@ -111,7 +120,9 @@ choice to `config.toml` without opening the list.
 
 **Built in.**
 
-- **Default:** `dusk`, which matches the app's own colors.
+- **Default:** `dusk`, which matches the app's own colors; in the light mode,
+  `dawn`.
+- **Light:** `dawn`, `paper`.
 - **Gradients:** `neon-nebula`, `cyberpunk`, `midnight-aurora`, `sunset-glow`,
   `abyssal-deep`, `cosmic-velvet`, `honey-amber`, `emerald-forest`,
   `graphite-mist`, `crimson-ember`, `arctic-dawn`, `matrix-rain`.
