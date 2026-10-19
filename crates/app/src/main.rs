@@ -104,6 +104,23 @@ const ICONS: &[(&str, &[u8])] = &[
         "icons/close.svg",
         include_bytes!("../assets/icons/close.svg"),
     ),
+    // The caption buttons as Windows draws them.
+    (
+        "icons/win-minimize.svg",
+        include_bytes!("../assets/icons/win-minimize.svg"),
+    ),
+    (
+        "icons/win-maximize.svg",
+        include_bytes!("../assets/icons/win-maximize.svg"),
+    ),
+    (
+        "icons/win-restore.svg",
+        include_bytes!("../assets/icons/win-restore.svg"),
+    ),
+    (
+        "icons/win-close.svg",
+        include_bytes!("../assets/icons/win-close.svg"),
+    ),
 ];
 
 impl gpui::AssetSource for Assets {
@@ -209,14 +226,17 @@ fn main() -> anyhow::Result<()> {
             cx.set_prompt_builder(prompt::render);
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
-            // client-side decorations; macOS and Windows keep their native title bar.
+            // client-side decorations. macOS and Windows keep the system's frame
+            // but hide its title bar, and the app draws its own in its place,
+            // with the tabs in it (see chrome::window_chrome).
             let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
             let options = WindowOptions {
                 window_bounds: Some(window_bounds),
                 window_decorations: client_side.then_some(WindowDecorations::Client),
                 titlebar: (!client_side).then(|| gpui::TitlebarOptions {
                     title: Some("shellwing".into()),
-                    ..Default::default()
+                    appears_transparent: true,
+                    traffic_light_position: Some(chrome::TRAFFIC_LIGHTS),
                 }),
                 app_id: Some("shellwing".into()),
                 ..Default::default()
