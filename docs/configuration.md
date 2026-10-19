@@ -300,6 +300,25 @@ lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
 
+## Known hosts
+
+shellwing trusts host keys the way ssh does, through the same
+`~/.ssh/known_hosts` (`$SHELLWING_KNOWN_HOSTS` replaces it).
+
+**A host whose key changed is refused.** Its pane says so in red, with the key
+known_hosts has (and its line) next to the one the server shows now. If the
+server was reinstalled or its key was replaced, *Trust the new key and
+connect* takes the old lines out and writes the new key, as `ssh-keygen -R`
+followed by accepting the key would, then connects. If you do not know why the
+key changed, do not trust it: someone may be between you and the server. A
+key known_hosts marks `@revoked` is always refused.
+
+**Settings › Known hosts** lists every key, with the host's names, its kind, its
+fingerprint and its line. Find a host by name. Hashed lines show their name
+only once you type it in full. *Remove* takes a line out, so the next
+connection to that host asks about its key again. Every change keeps the file
+as it was in `known_hosts.old`, and comments and other lines stay as they are.
+
 ## Snippets
 
 Snippets are commands you run often. They are kept in the vault and sync with

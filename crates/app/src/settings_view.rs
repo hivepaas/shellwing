@@ -17,6 +17,7 @@ use shellwing_config::{
 
 use crate::input::TextInput;
 use crate::keys_view::KeysView;
+use crate::known_hosts_view::KnownHostsView;
 use crate::look::ui;
 use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
@@ -47,19 +48,21 @@ pub enum Page {
     Keyboard,
     Ssh,
     Keys,
+    KnownHosts,
     Snippets,
     Sync,
     Vault,
     About,
 }
 
-const PAGES: [(Page, &str); 10] = [
+const PAGES: [(Page, &str); 11] = [
     (Page::General, "General"),
     (Page::Appearance, "Appearance"),
     (Page::Terminal, "Terminal"),
     (Page::Keyboard, "Keyboard"),
     (Page::Ssh, "SSH and security"),
     (Page::Keys, "Keys"),
+    (Page::KnownHosts, "Known hosts"),
     (Page::Snippets, "Snippets"),
     (Page::Sync, "Sync"),
     (Page::Vault, "Vault"),
@@ -100,6 +103,8 @@ pub struct SettingsView {
     keys: Option<Entity<KeysView>>,
     /// The Snippets page, once shown.
     snippets: Option<Entity<SnippetsView>>,
+    /// The Known hosts page, once shown.
+    known_hosts: Option<Entity<KnownHostsView>>,
 }
 
 /// Which font list is open.
@@ -188,6 +193,7 @@ impl SettingsView {
             custom_editor: custom,
             keys: None,
             snippets: None,
+            known_hosts: None,
         }
     }
 
@@ -1500,6 +1506,11 @@ impl Render for SettingsView {
                         {
                             s.update(cx, |s, cx| s.refresh(cx));
                         }
+                        if p == Page::KnownHosts
+                            && let Some(k) = &v.known_hosts
+                        {
+                            k.update(cx, |k, cx| k.refresh(cx));
+                        }
                         cx.notify();
                     }))
                     .child(*name),
@@ -1513,6 +1524,13 @@ impl Render for SettingsView {
             Page::Ssh => self.ssh(cx),
             Page::Keys => self.keys_page(cx),
             Page::Snippets => self.snippets_page(cx),
+            Page::KnownHosts => {
+                let view = self
+                    .known_hosts
+                    .get_or_insert_with(|| cx.new(KnownHostsView::new))
+                    .clone();
+                div().child(view)
+            }
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
             Page::About => self.about(),

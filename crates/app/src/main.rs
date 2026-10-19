@@ -20,6 +20,7 @@ mod group_editor;
 mod host_editor;
 mod input;
 mod keys_view;
+mod known_hosts_view;
 mod look;
 mod palette;
 mod pane;

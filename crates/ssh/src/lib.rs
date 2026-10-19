@@ -16,6 +16,7 @@ pub mod config;
 pub mod forward;
 pub mod hostkey;
 pub mod keys;
+pub mod known_hosts;
 pub mod prompt;
 pub mod secrets;
 pub mod sftp;
@@ -109,9 +110,12 @@ pub enum Error {
     #[error("ssh config: {0}")]
     Config(String),
     #[error(
-        "the host key for {host} has changed (known_hosts line {line}). If you trust the new key, run: ssh-keygen -R {host}"
+        "the host key for {} has changed: known_hosts line {} has {}, the server now shows {}",
+        .0.label, .0.line, .0.old.first().map_or("another key", String::as_str), .0.fingerprint
     )]
-    HostKeyChanged { host: String, line: usize },
+    HostKeyChanged(Box<ChangedKey>),
+    #[error("the host key for {host} is revoked in known_hosts")]
+    HostKeyRevoked { host: String },
     #[error("{host} is not in known_hosts")]
     HostKeyUnknown { host: String },
     #[error("host key for {host} not accepted")]
@@ -170,6 +174,25 @@ pub enum Input {
         stdin: Vec<u8>,
         reply: tokio::sync::oneshot::Sender<Result<Exec, Error>>,
     },
+}
+
+/// A host whose key is not the one known_hosts has: what is known, and what
+/// the server showed, to trust it in place of the old one if the user is
+/// sure (see [`known_hosts::replace`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ChangedKey {
+    /// `host`, or `[host]:port`.
+    pub label: String,
+    pub host: String,
+    pub port: u16,
+    /// The first known_hosts line with the old key, from 1.
+    pub line: usize,
+    /// The fingerprints known_hosts has for the host.
+    pub old: Vec<String>,
+    /// The server's key: its fingerprint, kind, and line as known_hosts takes it.
+    pub fingerprint: String,
+    pub kind: String,
+    pub key: String,
 }
 
 /// How a command run beside the shell ended, and what it printed (the first
