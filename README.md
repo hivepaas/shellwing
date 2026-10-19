@@ -53,7 +53,7 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Ctrl+Shift+T | A new tab (opens the palette) |
 | Ctrl+Shift+D / E (Cmd+D / Cmd+Shift+D) | Split right / down, to the same host |
 | Alt+arrows (Cmd+Alt+arrows) | Move between panes (with one pane they go to the shell) |
-| Ctrl+Shift+W | Close the pane; the last one closes the tab |
+| Ctrl+Shift+W | Close the pane; the last one closes the tab (asks first while connected) |
 | Cmd+Q (macOS) | Quit; closing the window quits too, asking first while connections are open |
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
 | Alt+1…9 (Cmd+1…9) | Go to a tab |
