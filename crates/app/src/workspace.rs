@@ -30,6 +30,7 @@ use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, Row, Section, Sidebar, dot};
 use crate::snippets;
 use crate::syncing::{SyncEvent, SyncWorker};
+use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView, UseKey,
@@ -67,6 +68,8 @@ enum Shortcut {
     Theme(isize),
     /// Cmd+Q on macOS.
     Quit,
+    /// Every open tab, by host.
+    Tabs,
 }
 
 /// A tab: its panes, and which one has the keyboard.
@@ -110,6 +113,10 @@ pub struct Workspace {
     /// The open palette, and whether it is picking a theme (whose preview must
     /// be undone if nothing is picked).
     palette: Option<(Entity<Palette>, Subscription, bool)>,
+    /// Every open tab, by host, under the header's tab button.
+    overview: Option<(Entity<TabOverview>, Subscription)>,
+    /// Where the tab button is, for the overview to hang from.
+    overview_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
     /// The split whose divider is being dragged.
     dragging: Option<Rc<SplitState>>,
     /// The window's size and place, waiting to be saved, and which change it is.
@@ -244,6 +251,8 @@ impl Workspace {
             notice: None,
             prompting: false,
             palette: None,
+            overview: None,
+            overview_button: Rc::default(),
             dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
@@ -1126,6 +1135,17 @@ impl Workspace {
                         "Type in every pane of this tab".into()
                     },
                     format!("{chord}+I"),
+                );
+            }
+            if self.tabs.len() >= 2 {
+                action(
+                    Action::Tabs,
+                    format!("All {} tabs, by host…", self.tabs.len()),
+                    if cfg!(target_os = "macos") {
+                        "Cmd+Shift+A".into()
+                    } else {
+                        "Ctrl+Shift+A".into()
+                    },
                 );
             }
             action(
@@ -2188,6 +2208,7 @@ impl Workspace {
             Action::Files => self.toggle_files(window, cx),
             Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
+            Action::Tabs => self.toggle_overview(window, cx),
             Action::Log => self.toggle_log(cx),
             Action::SaveOutput { html } => self.save_output(html, window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
@@ -2420,6 +2441,8 @@ impl Workspace {
             "o" if chord => Shortcut::Files,
             "f" if chord => Shortcut::Find,
             "i" if chord => Shortcut::Broadcast,
+            // Cmd+Shift+A on macOS, as Chrome's tab search: Cmd+A selects all.
+            "a" if chord && (!mac || m.shift) => Shortcut::Tabs,
             // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
             "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
@@ -2454,6 +2477,9 @@ impl Workspace {
         // Any other window shortcut leaves the palette first.
         if self.palette.is_some() && !matches!(s, Shortcut::Palette | Shortcut::NewTab) {
             self.close_palette(window, cx);
+        }
+        if self.overview.is_some() && !matches!(s, Shortcut::Tabs) {
+            self.close_overview(window, cx);
         }
         match s {
             Shortcut::Palette | Shortcut::NewTab => {
@@ -2492,6 +2518,99 @@ impl Workspace {
                 }
             }
             Shortcut::Theme(step) => self.step_theme(step, cx),
+            Shortcut::Tabs => self.toggle_overview(window, cx),
+        }
+    }
+
+    /// The open tabs, for the overview.
+    fn overview_rows(&self, cx: &gpui::App) -> Vec<TabRow> {
+        self.tabs
+            .iter()
+            .enumerate()
+            .map(|(i, tab)| {
+                let v = tab.focused.read(cx);
+                let s = v.session();
+                let local = s.is_local();
+                let address: SharedString = match s.reached() {
+                    _ if local => "this computer".into(),
+                    Some(t) => format!("{}@{}", t.user, t.host).into(),
+                    None => s.spec.clone().into(),
+                };
+                TabRow {
+                    tab: i,
+                    host_key: if local {
+                        crate::local::SPEC.to_string()
+                    } else {
+                        s.entry.clone().unwrap_or_else(|| s.title.clone())
+                    },
+                    host: if local {
+                        "Local terminal".into()
+                    } else {
+                        s.title.clone().into()
+                    },
+                    local,
+                    mark: self.host_color(s.entry.as_deref()),
+                    title: v.shell_title().cloned().unwrap_or_else(|| address.clone()),
+                    address,
+                    status: v.status(),
+                    panes: tab.views().len(),
+                    here: i == self.active,
+                }
+            })
+            .collect()
+    }
+
+    /// Shows every open tab by host, or hides them.
+    fn toggle_overview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.overview.is_some() {
+            return self.close_overview(window, cx);
+        }
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        let rows = self.overview_rows(cx);
+        let view = cx.new(|cx| TabOverview::new(rows, cx));
+        let sub = cx.subscribe_in(&view, window, |ws, _, ev: &OverviewEvent, window, cx| {
+            match ev {
+                OverviewEvent::Dismiss => ws.close_overview(window, cx),
+                OverviewEvent::Go(ix) => {
+                    let ix = *ix;
+                    ws.close_overview(window, cx);
+                    ws.activate(ix, window, cx);
+                }
+                OverviewEvent::Close(ix) => {
+                    ws.request_close_tab(*ix, window, cx);
+                    ws.refresh_overview(cx);
+                    // The list keeps the keyboard, unless a question took it.
+                    if let Some((v, _)) = &ws.overview
+                        && ws.tabs.len() > 1
+                        && !ws.prompting
+                    {
+                        window.focus(&v.focus_handle(cx), cx);
+                    }
+                }
+            }
+        });
+        window.focus(&view.focus_handle(cx), cx);
+        self.overview = Some((view, sub));
+        cx.notify();
+    }
+
+    fn close_overview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.overview.take().is_some() {
+            self.activate(self.active, window, cx);
+        }
+    }
+
+    /// The overview follows the tabs while it is open.
+    fn refresh_overview(&mut self, cx: &mut Context<Self>) {
+        if let Some((view, _)) = &self.overview {
+            if self.tabs.len() < 2 {
+                self.overview = None;
+            } else {
+                let (view, rows) = (view.clone(), self.overview_rows(cx));
+                view.update(cx, |o, cx| o.set_rows(rows, cx));
+            }
         }
     }
 
@@ -2663,6 +2782,8 @@ impl Workspace {
                 .child("+"),
         );
         let open = self.settings.is_some();
+        let listing = self.overview.is_some();
+        let bounds = self.overview_button.clone();
         div()
             .flex()
             .items_center()
@@ -2680,6 +2801,53 @@ impl Workspace {
             )
             .child(strip)
             .child(div().flex_1().h_full())
+            // Every tab by host: for when the strip has more than it shows.
+            .when(self.tabs.len() >= 2, |d| {
+                d.child(
+                    div()
+                        .id("tabs-button")
+                        .relative()
+                        .flex_shrink_0()
+                        .h(px(30.))
+                        .mr(px(6.))
+                        .px(px(9.))
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .rounded(px(7.))
+                        .border_1()
+                        .cursor_pointer()
+                        .text_size(look::ui(12.5))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .when(listing, |d| {
+                            d.bg(rgb(colors().selected))
+                                .border_color(rgb(colors().accent))
+                                .text_color(rgb(colors().text))
+                        })
+                        .when(!listing, |d| {
+                            d.border_color(gpui::transparent_black())
+                                .text_color(rgb(colors().soft))
+                                .hover(|s| s.bg(rgb(colors().hover)))
+                        })
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .on_click(cx.listener(|ws, _, window, cx| ws.toggle_overview(window, cx)))
+                        .child(
+                            canvas(|_, _, _| {}, move |b, _, _, _| bounds.set(b))
+                                .absolute()
+                                .size_full()
+                                .top_0()
+                                .left_0(),
+                        )
+                        .child(svg().path("icons/tabs.svg").size(px(15.)).text_color(rgb(
+                            if listing {
+                                colors().text
+                            } else {
+                                colors().soft
+                            },
+                        )))
+                        .child(self.tabs.len().to_string()),
+                )
+            })
             .child(
                 div()
                     .id("settings-button")
@@ -2837,6 +3005,7 @@ impl Workspace {
 
     /// Hands the host list a fresh snapshot (it redraws only if it differs).
     fn refresh_sidebar(&mut self, cx: &mut Context<Self>) {
+        self.refresh_overview(cx);
         let sections = self.sidebar_sections(cx);
         let collapsed = self.sidebar_collapsed;
         self.sidebar.update(cx, |s, cx| {
@@ -3263,6 +3432,28 @@ impl Render for Workspace {
                         .size_full()
                         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                         .child(s),
+                )
+            })
+            // Hangs from the tab button; a press elsewhere puts it away.
+            .when_some(self.overview.as_ref().map(|(o, _)| o.clone()), |d, o| {
+                let button = self.overview_button.clone();
+                let b = button.get();
+                d.child(
+                    gpui::deferred(
+                        gpui::anchored()
+                            .anchor(gpui::Anchor::TopRight)
+                            .position(gpui::point(b.right(), b.bottom() + px(6.)))
+                            .snap_to_window_with_margin(px(8.))
+                            .child(div().child(o).on_mouse_down_out(cx.listener(
+                                move |ws, e: &gpui::MouseDownEvent, window, cx| {
+                                    // The button toggles it itself.
+                                    if !button.get().contains(&e.position) {
+                                        ws.close_overview(window, cx);
+                                    }
+                                },
+                            ))),
+                    )
+                    .with_priority(1),
                 )
             })
             .when_some(palette, |d, p| {
