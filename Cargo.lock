@@ -7650,6 +7650,7 @@ dependencies = [
  "hyper-util",
  "opendal",
  "opendal-http-transport-reqwest",
+ "reqwest",
  "rustls",
  "s3s",
  "s3s-fs",
