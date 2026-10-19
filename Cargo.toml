@@ -15,6 +15,7 @@ shellwing-term = { path = "crates/term" }
 shellwing-ssh = { path = "crates/ssh" }
 shellwing-config = { path = "crates/config" }
 shellwing-vault = { path = "crates/vault" }
+shellwing-core = { path = "crates/core" }
 # GPUI as published by Longbridge (the same snapshot tern and gpui-kit use).
 gpui = { package = "gpui-pre", version = "=0.3.8" }
 # font-kit and runtime_shaders only affect macOS; the Linux backends are app features.
