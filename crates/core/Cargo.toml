@@ -15,6 +15,8 @@ shellwing-vault.workspace = true
 tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
+# Local terminals: a PTY on Unix, ConPTY on Windows.
+portable-pty = "0.9"
 
 [dev-dependencies]
 toml = "1"

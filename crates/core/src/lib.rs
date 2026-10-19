@@ -3,6 +3,8 @@
 //! The desktop app draws it with GPUI; other front ends can use it as is.
 
 pub mod bench;
+pub mod command;
+pub mod local;
 pub mod secrets;
 pub mod session;
 pub mod target;

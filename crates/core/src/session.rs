@@ -92,6 +92,8 @@ pub struct Session {
     ssh: shellwing_config::Ssh,
     /// Typed into the shell once it is ready (the host's `run`).
     run: Option<String>,
+    /// A shell on this computer instead of a host: its program and arguments.
+    local: Option<Vec<String>>,
 }
 
 /// What a Files panel needs from its pane's connection.
@@ -189,12 +191,20 @@ fn failure(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[31m{msg}\x1b[0m\r\n").into_bytes());
 }
 
+/// What a pane opens.
+pub enum Opens {
+    /// An SSH host, as resolved from the spec (or why it could not be).
+    Host(Box<anyhow::Result<(Resolved, Option<Host>)>>),
+    /// A shell on this computer: the program and its arguments.
+    Local(Vec<String>),
+}
+
 impl Session {
     /// Starts connecting to `target` (resolved from `spec`) on `rt`. A target that
     /// failed to resolve still gets a session, which shows the error.
     pub fn start(
         spec: &str,
-        target: anyhow::Result<(Resolved, Option<Host>)>,
+        opens: Opens,
         scrollback: usize,
         ssh: shellwing_config::Ssh,
         rt: &Handle,
@@ -256,6 +266,16 @@ impl Session {
             held: Weak::new(),
             ssh,
             run: None,
+            local: None,
+        };
+        let target = match opens {
+            Opens::Host(target) => *target,
+            Opens::Local(argv) => {
+                session.title = crate::local::TITLE.into();
+                session.local = Some(argv);
+                session.connect(bench);
+                return Ok(session);
+            }
         };
         match target {
             Ok((resolved, entry)) => {
@@ -367,8 +387,14 @@ impl Session {
     }
 
     /// Connects again to the same target, below what the terminal shows.
+    /// A shell on this computer, not an SSH connection.
+    pub fn is_local(&self) -> bool {
+        self.local.is_some()
+    }
+
     pub fn reconnect(&mut self) {
-        if self.target.is_none() || matches!(self.status(), Status::Connecting | Status::Connected)
+        if (self.target.is_none() && self.local.is_none())
+            || matches!(self.status(), Status::Connecting | Status::Connected)
         {
             return;
         }
@@ -380,7 +406,54 @@ impl Session {
         self.connect(None);
     }
 
+    /// Starts the shell on this computer, in a PTY the pane's input goes to.
+    fn connect_local(&mut self, argv: Vec<String>) {
+        self.set_status(Status::Connecting, None);
+        let (term, writer, state, wake_tx) = (
+            self.term.clone(),
+            self.writer.clone(),
+            self.state.clone(),
+            self.wake_tx.clone(),
+        );
+        let task = self.rt.spawn(async move {
+            let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+            let out = term.clone();
+            let started = crate::local::start(
+                argv.clone(),
+                (80, 24),
+                rx,
+                Box::new(move |bytes| out.feed(bytes.to_vec())),
+            );
+            match started {
+                Ok(done) => {
+                    // Sends the pane's size first, then the keyboard.
+                    writer.start_session(tx);
+                    if let Ok(mut st) = state.lock() {
+                        st.ever_connected = true;
+                    }
+                    set_status(&state, &wake_tx, Status::Connected, None);
+                    let status = done.await.ok().flatten();
+                    writer.stop();
+                    let why = match status {
+                        Some(s) => format!("{} ended (exit {s})", crate::local::shell_name(&argv)),
+                        None => format!("{} ended", crate::local::shell_name(&argv)),
+                    };
+                    status_line(&term, &why);
+                    set_status(&state, &wake_tx, Status::Closed, Some(why));
+                }
+                Err(e) => {
+                    failure(&term, &e);
+                    set_status(&state, &wake_tx, Status::Failed, Some(e));
+                }
+            }
+        });
+        self.task = Some(task.abort_handle());
+    }
+
     fn connect(&mut self, bench: Option<(String, Arc<Probe>)>) {
+        if let Some(argv) = self.local.clone() {
+            return self.connect_local(argv);
+        }
         let Some(resolved) = self.target.clone() else {
             return;
         };

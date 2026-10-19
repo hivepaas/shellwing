@@ -846,6 +846,13 @@ impl TermView {
     /// Shows the Files panel (opening SFTP the first time) and gives it the
     /// keyboard, or hides it and gives the keyboard back to the terminal.
     pub fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.session.is_local() {
+            return self.show_notice(
+                "The Files panel browses a server over SFTP; this pane is a shell on this computer.",
+                CONFIRM_PASTE,
+                cx,
+            );
+        }
         if self.files_shown {
             self.hide_files(window, cx);
             return;
@@ -1146,6 +1153,9 @@ impl TermView {
                 )
             }
             (Status::Lost, None) => "Connection lost. Enter tries again.".to_string(),
+            (Status::Closed, _) if self.session.is_local() => {
+                format!("{}. Enter starts it again.", capitalize(&why))
+            }
             (Status::Closed, _) => format!("{}. Enter reconnects.", capitalize(&why)),
             (Status::Failed, _) if self.session.ever_connected() || !why.is_empty() => {
                 "Could not connect. Enter tries again.".to_string()
@@ -1193,8 +1203,16 @@ impl TermView {
                     )
                 })
                 .child(
-                    button("reconnect", "Reconnect (Enter)", true)
-                        .on_click(cx.listener(|v, _, _, cx| v.reconnect_now(cx))),
+                    button(
+                        "reconnect",
+                        if self.session.is_local() {
+                            "Start again (Enter)"
+                        } else {
+                            "Reconnect (Enter)"
+                        },
+                        true,
+                    )
+                    .on_click(cx.listener(|v, _, _, cx| v.reconnect_now(cx))),
                 )
                 .into_any_element(),
         )
@@ -1381,6 +1399,7 @@ impl TermView {
         };
         let line = || div().my_1().h(px(1.)).bg(rgb(0x1e2736));
         let status = self.session.status();
+        let local = self.session.is_local();
         let menu = div()
             .id("pane-menu")
             // As wide as its longest item: the text grows with the UI font.
@@ -1421,20 +1440,23 @@ impl TermView {
                 item("menu-find", "Find…", chord("F"), true)
                     .on_click(act(|v, window, cx| v.open_find(window, cx))),
             )
-            .child(
-                item(
-                    "menu-files",
-                    if self.files_shown {
-                        "Hide Files"
-                    } else {
-                        "Browse Files (SFTP)"
-                    },
-                    chord("O"),
-                    true,
+            // Files and forwards are SSH's.
+            .when(!local, |d| {
+                d.child(
+                    item(
+                        "menu-files",
+                        if self.files_shown {
+                            "Hide Files"
+                        } else {
+                            "Browse Files (SFTP)"
+                        },
+                        chord("O"),
+                        true,
+                    )
+                    .on_click(act(|v, window, cx| v.toggle_files(window, cx))),
                 )
-                .on_click(act(|v, window, cx| v.toggle_files(window, cx))),
-            )
-            .when(status == Status::Connected, |d| {
+            })
+            .when(status == Status::Connected && !local, |d| {
                 d.child(
                     item("menu-forward", "Forward a Port…", String::new(), true)
                         .on_click(act(|_, _, cx| cx.emit(PaneCommand::Forward))),

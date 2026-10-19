@@ -41,7 +41,7 @@ use gpui::{App, AppContext as _, Entity, WindowDecorations, WindowOptions};
 use shellwing_config::Store;
 
 // The UI-free half, under the names the app's modules use.
-use shellwing_core::{Writer, bench, secrets, session, target};
+use shellwing_core::{Writer, bench, local, secrets, session, target};
 
 /// Icons drawn into the binary: the app has no other files.
 struct Assets;
@@ -121,7 +121,9 @@ impl gpui::AssetSource for Assets {
 const CONFIG_POLL: Duration = Duration::from_millis(500);
 
 const USAGE: &str = "usage: shellwing [-L|-R|-D spec]... [[user@]host[:port]]
+       shellwing --local
   host     a name from hosts.toml, an alias from ~/.ssh/config, or a host name
+  --local  a shell on this computer
   -L spec  [bind:]port:host:hostport  a port here reaches host:hostport from the server
   -R spec  [bind:]port:host:hostport  a port on the server reaches host:hostport from here
   -D spec  [bind:]port                a SOCKS proxy here, going out from the server";
@@ -137,6 +139,8 @@ fn parse_args(
                 let spec = args.next().ok_or(format!("{a} needs a value"))?;
                 forwards.push(format!("{a} {spec}"));
             }
+            "--local" if host.is_some() => return Err("only one host can be given".into()),
+            "--local" => host = Some(local::SPEC.to_string()),
             s if ["-L", "-R", "-D"].iter().any(|f| s.starts_with(f)) => forwards.push(a),
             s if s.starts_with('-') => return Err(format!("unknown option {s}")),
             _ if host.is_some() => return Err("only one host can be given".into()),
@@ -147,7 +151,7 @@ fn parse_args(
         f.parse::<shellwing_ssh::Forward>()
             .map_err(|e| e.to_string())?;
     }
-    if host.is_none() && !forwards.is_empty() {
+    if !forwards.is_empty() && host.as_deref().is_none_or(|h| h == local::SPEC) {
         return Err("forwards need a host to go through".into());
     }
     Ok((host, forwards))
@@ -259,6 +263,10 @@ mod tests {
     fn reads_a_host_and_its_forwards() {
         assert_eq!(parse(&[]), Ok((None, vec![])));
         assert_eq!(
+            parse(&["--local"]),
+            Ok((Some(crate::local::SPEC.into()), vec![]))
+        );
+        assert_eq!(
             parse(&["-L", "8080:localhost:80", "-D1080", "me@web"]),
             Ok((
                 Some("me@web".into()),
@@ -271,6 +279,8 @@ mod tests {
             (&["-D", "1080"], "need a host"),
             (&["-x", "web"], "unknown option"),
             (&["a", "b"], "only one host"),
+            (&["--local", "web"], "only one host"),
+            (&["-D", "1080", "--local"], "need a host"),
         ] {
             let e = parse(args).expect_err(why);
             assert!(e.contains(why), "{args:?}: {e}");
