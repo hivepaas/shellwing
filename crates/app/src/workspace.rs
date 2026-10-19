@@ -42,6 +42,8 @@ const LOGO: u32 = 0x38bdf8;
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// How long the name of a newly chosen theme stays on screen.
 const THEME_NOTICE: Duration = Duration::from_secs(3);
+/// Edited files moved to Downloads: worth longer than other notices.
+const KEPT_NOTICE: Duration = Duration::from_secs(20);
 const DIM: u32 = 0xb6c0cf;
 
 /// Keyboard shortcuts that concern the whole window.
@@ -228,6 +230,19 @@ impl Workspace {
         ws.share_settings(cx);
         // The system editor's name is read from the desktop: once, off the UI thread.
         std::thread::spawn(crate::editors::system_name);
+        // Edited copies an earlier run left behind: those holding changes
+        // the server lacks go to Downloads, and the user is told.
+        cx.spawn(async move |this, cx| {
+            let into = crate::files::downloads_dir();
+            let kept = cx
+                .background_executor()
+                .spawn(async move { crate::copies::sweep(&into) })
+                .await;
+            if let Some(msg) = crate::copies::kept_notice(&kept) {
+                let _ = this.update(cx, |ws, cx| ws.say(msg, KEPT_NOTICE, cx));
+            }
+        })
+        .detach();
         ws.report(problems, cx);
         ws.refresh_sidebar(cx);
         ws
