@@ -279,12 +279,13 @@ opens the Files panel beside the focused pane. It browses the server over SFTP,
 on a channel of its own, so the terminal keeps working while files move.
 
 - Click to choose, double-click or **Enter** to open a folder or download a
-  file, **Backspace** to go up, **Esc** to go back to the terminal.
+  file, **Esc** to go back to the terminal. The `..` row at the top (a
+  double-click), or **Backspace**, goes up to the folder above.
 - **New folder**, **Rename** (**F2**) and **Delete** (**Delete**; Cmd+Backspace
   on macOS) work in the folder shown. Deleting asks first; a folder goes with
   everything in it, and a link goes as a link, never what it points at. A
   rename never writes over something already there.
-- The icons at the top go up, home, refresh, make a folder and upload. A right
+- The icons at the top go home, refresh, make a folder and upload. A right
   click on a file or folder opens its menu (Open, or Edit in *your editor*
   and Open with default app; Download, Download As…, Copy path, Rename,
   Delete); a right click beside them, the folder's (New folder, Upload,
@@ -294,7 +295,13 @@ on a channel of its own, so the terminal keeps working while files move.
   Downloads folder; a name already taken gets ` (1)`, ` (2)`… added. A download
   is written as `name.part` until it is complete.
 - **Upload…**, or dropping files and folders on the panel, uploads into the
-  folder shown. Something already there with that name is not touched until you
+  folder shown.
+- **Dragging a file or folder out** of the window, into a file manager or
+  another app, gives it a copy (on Linux under Wayland, and on macOS; not yet
+  on Windows or X11). The copy is fetched as the drag starts, into a folder of
+  its own under your cache folder, and appears there only once whole, so a
+  drop never takes half of it; a drop before then takes nothing. Such copies
+  are removed after a day. Something already there with that name is not touched until you
   pick *Replace* (or *Merge* for a folder).
 - **Edit in …** (named for the editor) opens the chosen file in the editor chosen in
   Settings > General (`[files] editor`), else the system's editor for plain
