@@ -100,7 +100,20 @@ struct Format {
     key_id: String,
     /// The space key, sealed with the recovery key.
     recovery: String,
+    /// The space key and the recovery key, sealed with a passphrase, when the
+    /// user lets a passphrase join devices.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    passphrase: Option<FolderPassphrase>,
 }
+
+#[derive(Serialize, Deserialize)]
+struct FolderPassphrase {
+    kdf: crate::Kdf,
+    sealed: String,
+}
+
+const FOLDER_PASSPHRASE_AAD: &[u8] =
+    b"shellwing space and recovery keys wrapped by a passphrase v1";
 
 /// One record in the store: the clear part and the sealed payload (absent for
 /// a deleted record).
@@ -264,6 +277,7 @@ impl Vault {
                 &self.sk()[..],
                 RECOVERY_AAD,
             )?),
+            passphrase: None,
         };
         b.write(FORMAT, &serde_json::to_vec_pretty(&format)?)?;
         Ok(rk)
@@ -289,6 +303,65 @@ impl Vault {
             return Err(Error::WrongRecoveryKey);
         }
         self.adopt(new_key, &rk)
+    }
+
+    /// Lets `passphrase` join new devices to the vault in `b` (with None,
+    /// stops). Anyone who can read the folder can guess at it, so it must be
+    /// hard to guess: [`crate::passphrase_strength`] 3 or more.
+    pub fn let_passphrase_join(&self, b: &dyn Backend, passphrase: Option<&str>) -> Result<()> {
+        let mut format = self.format(b)?.ok_or(Error::NotSynced)?;
+        if format.key_id != key_id(&self.sk()) {
+            return Err(Error::OtherVault);
+        }
+        format.passphrase = match passphrase {
+            None => None,
+            Some(p) => {
+                let strength = crate::passphrase_strength(p);
+                if strength < 3 || p.chars().count() < crate::MIN_PASSPHRASE {
+                    return Err(Error::GuessablePassphrase(strength));
+                }
+                let rk = self.recovery_key_or_new()?;
+                let kdf = crate::Kdf::new()?;
+                let mut both = Zeroizing::new(Vec::with_capacity(2 * KEY_LEN));
+                both.extend_from_slice(&self.sk()[..]);
+                both.extend_from_slice(&rk.0[..]);
+                let key = kdf.key(p)?;
+                let sealed = cipher::seal(self.cipher, &key, &both, FOLDER_PASSPHRASE_AAD)?;
+                Some(FolderPassphrase {
+                    kdf,
+                    sealed: B64.encode(sealed),
+                })
+            }
+        };
+        b.write(FORMAT, &serde_json::to_vec_pretty(&format)?)?;
+        Ok(())
+    }
+
+    /// Whether a passphrase joins devices to the vault in `b`.
+    pub fn passphrase_joins(&self, b: &dyn Backend) -> Result<bool> {
+        Ok(self.format(b)?.is_some_and(|f| f.passphrase.is_some()))
+    }
+
+    /// Joins the vault in `b` with the passphrase it lets join, as
+    /// [`Vault::join`] does with its recovery key.
+    pub fn join_with_passphrase(&self, b: &dyn Backend, passphrase: &str) -> Result<()> {
+        let format = self.format(b)?.ok_or(Error::NotSynced)?;
+        let fp = format.passphrase.as_ref().ok_or(Error::WrongPassphrase)?;
+        let sealed = B64.decode(&fp.sealed).map_err(|_| Error::WrongPassphrase)?;
+        let opener = fp.kdf.key(passphrase)?;
+        let (both, _) = cipher::open(&opener, &sealed, FOLDER_PASSPHRASE_AAD)
+            .map_err(|_| Error::WrongPassphrase)?;
+        if both.len() != 2 * KEY_LEN {
+            return Err(Error::WrongPassphrase);
+        }
+        let mut key = Zeroizing::new([0u8; KEY_LEN]);
+        key.copy_from_slice(&both[..KEY_LEN]);
+        let mut rk = Zeroizing::new([0u8; KEY_LEN]);
+        rk.copy_from_slice(&both[KEY_LEN..]);
+        if key_id(&key) != format.key_id {
+            return Err(Error::WrongPassphrase);
+        }
+        self.adopt(key, &RecoveryKey(rk))
     }
 
     /// Whether `key` is the key of the vault in `b`.
@@ -590,5 +663,65 @@ mod tests {
         }
         // A second sync with nothing new writes nothing.
         assert_eq!(a.sync(&folder).expect("idle"), SyncReport::default());
+    }
+
+    #[test]
+    fn a_strong_passphrase_joins_a_new_device() {
+        let dir = temp("passphrase");
+        let folder = Folder::new(&dir.join("shared"));
+        let (keys_a, keys_b) = (MemoryKeys::default(), MemoryKeys::default());
+        let a = Vault::open(&dir.join("a.db"), &keys_a).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &keys_b).expect("b");
+        a.set_password("deploy@web", "from-a").expect("save");
+        assert!(matches!(
+            a.let_passphrase_join(&folder, Some("correct horse battery")),
+            Err(Error::NotSynced)
+        ));
+        let rk = a.start_sync(&folder).expect("start").to_string();
+        a.sync(&folder).expect("sync a");
+        assert!(!b.passphrase_joins(&folder).expect("read"));
+
+        for weak in ["password123456", "qwertyuiop", "shellwing"] {
+            assert!(
+                matches!(
+                    a.let_passphrase_join(&folder, Some(weak)),
+                    Err(Error::GuessablePassphrase(_))
+                ),
+                "{weak}"
+            );
+        }
+        let strong = "tangerine copper lantern 49";
+        assert!(crate::passphrase_strength(strong) >= 3);
+        a.let_passphrase_join(&folder, Some(strong)).expect("let");
+        assert!(b.passphrase_joins(&folder).expect("read"));
+        let format =
+            std::fs::read_to_string(dir.join("shared/shellwing/format.json")).expect("format");
+        assert!(!format.contains("tangerine"), "{format}");
+
+        assert!(matches!(
+            b.join_with_passphrase(&folder, "tangerine copper lantern 48"),
+            Err(Error::WrongPassphrase)
+        ));
+        b.join_with_passphrase(&folder, strong).expect("join");
+        assert_eq!(b.folder_state(&folder).expect("state"), FolderState::Ours);
+        assert_eq!(
+            b.recovery_key().expect("rk").map(|k| k.to_string()),
+            Some(rk),
+            "the same recovery key on both"
+        );
+        b.sync(&folder).expect("sync b");
+        assert_eq!(
+            b.password("deploy@web")
+                .expect("read")
+                .map(|p| p.to_string())
+                .as_deref(),
+            Some("from-a")
+        );
+
+        // Stopping takes it out of the folder; a sync keeps it out.
+        a.let_passphrase_join(&folder, None).expect("stop");
+        a.sync(&folder).expect("sync");
+        assert!(!b.passphrase_joins(&folder).expect("read"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

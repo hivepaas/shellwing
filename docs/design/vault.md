@@ -36,8 +36,19 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
 
 - The AK sits in the OS keychain: macOS Keychain, Windows Credential Manager,
   Secret Service on Linux. The app opens without a prompt.
-- An optional idle lock asks again, by Touch ID, Windows Hello or the passphrase.
-- Linux without Secret Service falls back to the passphrase.
+- The key can leave the keychain (`KeyStore::forget`), with a passphrase set:
+  every start then asks for the passphrase or the recovery key.
+- Then an idle lock (`[vault] lock_after`, per device) drops the open vault
+  after that many minutes without a key or a click, and asks for the
+  passphrase again; *Lock the vault* does it at once. With the key in the
+  keychain there is nothing to lock: any program running as the user could
+  read it there. (Touch ID or Windows Hello in its place: later.)
+- Linux without Secret Service falls back to the passphrase (built: the
+  account key wrapped by Argon2id(passphrase), m = 64 MiB, t = 3, p = 1, with
+  its salt and parameters in `meta`; `wrapped_by = 'passphrase'`).
+- The account key is also wrapped by the recovery key (`wrapped_by =
+  'recovery'`), and every vault has one, synced or not: it opens a vault whose
+  keychain lost the key, or whose passphrase is forgotten.
 
 **A new device gets the AK in one of three ways:**
 
@@ -62,11 +73,16 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
    base32 characters (no I, L, O, U; typing them loosely still works). The
    store's `format.json` holds the space key sealed with it; the device keeps it
    wrapped by the account key, so it can be shown again.
-3. **The passphrase**, if the user enabled it. Its wrapped AK is stored on the
-   backend, so a leaked backend allows offline guessing. Two defences:
-   - Argon2id tuned to about 0.5 s on the slowest supported machine, with at
-     least 64 MiB of memory.
-   - A strength check, refusing weak passphrases.
+3. **A sync passphrase**, if the user enabled it (built for the folder
+   backend). `format.json` gains `passphrase: {kdf, sealed}`: the space key
+   and the recovery key, sealed with Argon2id(passphrase) under the same
+   parameters as the device passphrase. It is its own passphrase, not the
+   device's: one typed on a device that never syncs need not be strong.
+   The store holds it, so a leaked store allows offline guessing. Two
+   defences:
+   - Argon2id, m = 64 MiB, t = 3: about half a second per guess.
+   - A strength check: `zxcvbn` score 3 of 4 or more, and 10 characters.
+   Turning it off removes the field.
 
 **Rotation.**
 
