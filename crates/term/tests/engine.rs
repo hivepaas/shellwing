@@ -101,6 +101,7 @@ fn drag_selects_and_copy_returns_the_text() {
         f.rows[0].runs[0].selected,
         "selection is reported in the frame"
     );
+    assert!(f.selected, "and that there is one, for the menu's Copy");
 
     h.term.copy();
     let copied = h
@@ -154,8 +155,10 @@ fn wheel_scrolls_history_and_typing_returns_to_bottom() {
 fn mouse_goes_to_the_program_when_it_asks() {
     let h = harness();
     // SGR mouse reporting with button tracking, as htop or vim enable it.
+    assert!(!h.frame_where(|_| true).mouse_tracking);
     h.term.feed(b"\x1b[?1000h\x1b[?1006h".to_vec());
-    h.frame_where(|_| true);
+    // The frame says so, for the right-click menu to step aside.
+    h.frame_where(|f| f.mouse_tracking);
     h.mouse(MouseAction::Press, 25.0, 25.0, Mods::default());
     let out = String::from_utf8(h.written_all()).expect("utf8");
     // Cell (2, 1) in SGR is 1-based: column 3, row 2.
@@ -170,6 +173,9 @@ fn mouse_goes_to_the_program_when_it_asks() {
     let _ = h.written_all();
     h.mouse(MouseAction::Press, 25.0, 25.0, shift);
     assert!(h.written_all().is_empty());
+
+    h.term.feed(b"\x1b[?1000l".to_vec());
+    h.frame_where(|f| !f.mouse_tracking);
 }
 
 #[test]
