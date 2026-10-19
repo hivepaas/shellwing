@@ -18,6 +18,12 @@ pub struct Probe {
     samples: Mutex<Vec<f64>>,
 }
 
+impl Default for Probe {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Probe {
     pub fn new() -> Self {
         Probe {

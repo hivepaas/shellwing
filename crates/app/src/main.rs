@@ -12,7 +12,6 @@
 //! once before asking, and `$SHELLWING_KNOWN_HOSTS` replaces
 //! `~/.ssh/known_hosts` (both meant for scripts and benchmarks).
 
-mod bench;
 mod chrome;
 mod copies;
 mod editors;
@@ -26,17 +25,13 @@ mod palette;
 mod pane;
 mod placement;
 mod prompt;
-mod secrets;
-mod session;
 mod settings_view;
 mod sidebar;
 mod snippets;
 mod snippets_view;
 mod syncing;
-mod target;
 mod view;
 mod workspace;
-mod writer;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -44,7 +39,8 @@ use std::time::Duration;
 use gpui::{App, AppContext as _, Entity, WindowDecorations, WindowOptions};
 use shellwing_config::Store;
 
-pub use writer::Writer;
+// The UI-free half, under the names the app's modules use.
+use shellwing_core::{Writer, bench, secrets, session, target};
 
 /// Icons drawn into the binary: the app has no other files.
 struct Assets;

@@ -83,6 +83,7 @@ Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
 | `crates/ssh` | russh sessions as OpenSSH does them: ssh config, host keys, sign-in, ProxyJump |
 | `crates/vault` | Saved passwords and passphrases: encrypted records in SQLite, key in the OS keychain |
 | `crates/config` | `config.toml`, `hosts.toml` and themes: loading, precedence, comment-preserving writes |
+| `crates/core` | Sessions without a UI: connecting and reconnecting, prompts, saved secrets, host targets |
 | `crates/app` | GPUI window: tabs, host list, terminal rendering, keys, IME (preedit), window chrome |
 
 `SHELLWING_BENCH=latency` or `flood` runs a measurement and prints a `REPORT` line.
