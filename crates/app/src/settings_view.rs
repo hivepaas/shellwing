@@ -1649,7 +1649,10 @@ fn toggle(
                 .when(on, |d| d.child("✓")),
         )
         .child(
+            // The rest of the row, wrapping its text within the page.
             div()
+                .flex_1()
+                .min_w_0()
                 .flex()
                 .flex_col()
                 .gap(px(3.))
