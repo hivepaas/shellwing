@@ -8,8 +8,7 @@ use std::sync::Arc;
 
 use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render,
-    SharedString, WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb,
-    uniform_list,
+    SharedString, WeakEntity, Window, div, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
     Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue,
@@ -82,6 +81,10 @@ pub struct Snap {
 
 pub struct SettingsView {
     focus: FocusHandle,
+    /// Gradient themes drawn for their tiles and the preview, by theme and
+    /// size: GPUI's own gradients take two stops, these take them all.
+    gradients:
+        std::cell::RefCell<std::collections::HashMap<(String, u32, u32), Arc<gpui::RenderImage>>>,
     workspace: WeakEntity<Workspace>,
     page: Page,
     snap: Snap,
@@ -191,6 +194,7 @@ impl SettingsView {
             i
         });
         SettingsView {
+            gradients: Default::default(),
             focus: cx.focus_handle(),
             workspace,
             page,
@@ -691,13 +695,9 @@ impl SettingsView {
                 .rounded(px(8.))
                 .border_2()
                 .border_color(rgb(if on { colors().accent } else { colors().line }));
-            let swatch = match &t.gradient {
-                Some(g) if g.stops.len() >= 2 => swatch.bg(linear_gradient(
-                    g.angle,
-                    linear_color_stop(rgb(color(g.stops[0].0)), 0.),
-                    linear_color_stop(rgb(color(g.stops[g.stops.len() - 1].0)), 1.),
-                )),
-                _ => swatch.bg(rgb(color(t.background))),
+            let swatch = match self.gradient(t, 96, 40) {
+                Some(image) => swatch.relative().child(Self::painted(image, px(6.))),
+                None => swatch.bg(rgb(color(t.background))),
             };
             div()
                 .id(SharedString::from(format!("theme-{}", t.id)))
@@ -1001,6 +1001,31 @@ impl SettingsView {
             .child(self.preview())
     }
 
+    /// `t`'s gradient, all its stops, drawn at `w` by `h` (it is stretched to
+    /// fit), as the terminal draws it; None for a theme without one.
+    fn gradient(&self, t: &Theme, w: u32, h: u32) -> Option<Arc<gpui::RenderImage>> {
+        let g = t.gradient.as_ref()?;
+        let key = (t.id.clone(), w, h);
+        if let Some(image) = self.gradients.borrow().get(&key) {
+            return Some(image.clone());
+        }
+        let buffer = image::RgbaImage::from_raw(w, h, g.render_bgra(w, h))?;
+        let image = Arc::new(gpui::RenderImage::new([image::Frame::new(buffer)]));
+        self.gradients.borrow_mut().insert(key, image.clone());
+        Some(image)
+    }
+
+    /// An image filling its parent, behind what comes after it.
+    fn painted(image: Arc<gpui::RenderImage>, radius: gpui::Pixels) -> gpui::Img {
+        gpui::img(gpui::ImageSource::Render(image))
+            .absolute()
+            .top_0()
+            .left_0()
+            .size_full()
+            .rounded(radius)
+            .object_fit(gpui::ObjectFit::Fill)
+    }
+
     /// A terminal drawn in the chosen theme and font.
     fn preview(&self) -> gpui::Div {
         let a = &self.snap.settings.appearance;
@@ -1042,7 +1067,7 @@ impl SettingsView {
                 (cmd, fg),
             ])
         };
-        let mut screen = div()
+        let screen = div()
             .flex()
             .flex_col()
             .p(px(12.))
@@ -1067,13 +1092,13 @@ impl SettingsView {
             ]))
             .child(line(vec![("ok ", p(2)), ("deployed in 41 s", fg)]))
             .child(prompt(""));
-        screen = match &t.gradient {
-            Some(g) if g.stops.len() >= 2 => screen.bg(linear_gradient(
-                g.angle,
-                linear_color_stop(rgb(color(g.stops[0].0)), 0.),
-                linear_color_stop(rgb(color(g.stops[g.stops.len() - 1].0)), 1.),
-            )),
-            _ => screen.bg(rgb(color(t.background))),
+        // The gradient goes under the text, which is painted after it.
+        let screen = match self.gradient(t, 200, 130) {
+            Some(image) => div()
+                .relative()
+                .child(Self::painted(image, px(8.)))
+                .child(screen),
+            None => screen.bg(rgb(color(t.background))),
         };
         div()
             .w(px(400.))
