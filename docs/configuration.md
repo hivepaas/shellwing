@@ -153,7 +153,7 @@ user = "deploy"             # default: from ~/.ssh/config, else your login name
 group = "Production"
 jump = ["bastion"]          # outermost first: hosts here or ~/.ssh/config aliases
 forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
-auth = { method = "key", key = "~/.ssh/deploy_ed25519" }
+auth = { method = "key", key = "~/.ssh/deploy_ed25519" }   # or "vault:<id>": a key the app keeps
 theme = "nord"              # beats the group's and config.toml's theme
 forward_agent = false       # let the host use your ssh-agent (see below)
 keepalive = 15              # seconds; beats [ssh] keepalive
@@ -294,6 +294,31 @@ passphrases per key fingerprint, so a key keeps its passphrase wherever it
 lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
+
+## SSH keys
+
+*Settings › Keys* lists the keys there are, in three groups:
+
+- **In the vault.** These are keys generated or imported here. They are kept in
+  `vault.db` without a passphrase (the vault is encrypted already), and they
+  sync with the rest of the vault.
+- **In ~/.ssh.** These are key files, shared with ssh and git. Each one shows
+  whether it has a passphrase and whether the vault has saved it. *Copy to
+  vault* keeps a copy of the key in the vault; the file stays where it is.
+- **In ssh-agent.** These are the agent's keys.
+
+*Generate key…* makes an Ed25519 key (ECDSA P-256 and RSA 4096 too) and keeps
+it in the vault. *Export to file…* writes a kept key out for other tools, with
+its `.pub` beside it and an optional passphrase.
+
+*Install on…* adds a public key to a host's `~/.ssh/authorized_keys`, as
+`ssh-copy-id` does. It runs over the connection already open, or opens one
+first. Afterwards, a host in `hosts.toml` can be set to sign in with that key
+from then on. That writes `key = "vault:<id>"` in its `auth`, and the host
+editor offers the same choice.
+
+Hosts set to sign in automatically try the agent, then `~/.ssh`, then every key
+in the vault, then a password. A host that names a key offers only that key.
 
 ## Syncing passwords between devices
 

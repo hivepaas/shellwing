@@ -16,6 +16,7 @@ use shellwing_config::{
 };
 
 use crate::input::TextInput;
+use crate::keys_view::KeysView;
 use crate::look::ui;
 use crate::palette::Action;
 use crate::workspace::Workspace;
@@ -44,17 +45,19 @@ pub enum Page {
     Terminal,
     Keyboard,
     Ssh,
+    Keys,
     Sync,
     Vault,
     About,
 }
 
-const PAGES: [(Page, &str); 8] = [
+const PAGES: [(Page, &str); 9] = [
     (Page::General, "General"),
     (Page::Appearance, "Appearance"),
     (Page::Terminal, "Terminal"),
     (Page::Keyboard, "Keyboard"),
     (Page::Ssh, "SSH and security"),
+    (Page::Keys, "Keys"),
     (Page::Sync, "Sync"),
     (Page::Vault, "Vault"),
     (Page::About, "About"),
@@ -90,6 +93,8 @@ pub struct SettingsView {
     editor_input: Entity<TextInput>,
     /// Custom chosen, the field shown.
     custom_editor: bool,
+    /// The Keys page, once shown.
+    keys: Option<Entity<KeysView>>,
 }
 
 /// Which font list is open.
@@ -176,6 +181,7 @@ impl SettingsView {
             fonts_open: None,
             editor_input,
             custom_editor: custom,
+            keys: None,
         }
     }
 
@@ -1221,6 +1227,24 @@ impl SettingsView {
         ))
     }
 
+    /// The Keys page: a view of its own, made when first shown.
+    fn keys_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
+        let keys = match &self.keys {
+            Some(k) => k.clone(),
+            None => {
+                let Some((vault, rt)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
+                else {
+                    return page("Keys");
+                };
+                let ws = self.workspace.clone();
+                let k = cx.new(|cx| KeysView::new(ws, vault, rt, cx));
+                self.keys = Some(k.clone());
+                k
+            }
+        };
+        div().child(keys)
+    }
+
     fn about(&self) -> gpui::Div {
         page("About")
             .child(
@@ -1442,6 +1466,11 @@ impl Render for SettingsView {
                     .on_click(cx.listener(move |v, _, _, cx| {
                         v.page = p;
                         v.fonts_open = None;
+                        if p == Page::Keys
+                            && let Some(k) = &v.keys
+                        {
+                            k.update(cx, |k, cx| k.refresh(cx));
+                        }
                         cx.notify();
                     }))
                     .child(*name),
@@ -1453,6 +1482,7 @@ impl Render for SettingsView {
             Page::Terminal => self.terminal(cx),
             Page::Keyboard => self.keyboard(),
             Page::Ssh => self.ssh(cx),
+            Page::Keys => self.keys_page(cx),
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
             Page::About => self.about(),

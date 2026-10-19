@@ -20,6 +20,7 @@ mod files;
 mod group_editor;
 mod host_editor;
 mod input;
+mod keys_view;
 mod look;
 mod palette;
 mod pane;

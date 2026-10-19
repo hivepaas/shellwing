@@ -312,6 +312,11 @@ impl Session {
             .then_some(answer)
     }
 
+    /// The key the vault keeps that this host signs in with, if it names one.
+    pub fn vault_key(&self) -> Option<&str> {
+        self.target.as_ref()?.vault_key.as_deref()
+    }
+
     pub fn remote(&self) -> Remote {
         Remote {
             writer: self.writer.clone(),

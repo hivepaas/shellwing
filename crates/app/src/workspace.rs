@@ -29,7 +29,9 @@ use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
-use crate::view::{CloseRequested, FilesResized, StatusChanged, TermView, VaultChanged, hsla};
+use crate::view::{
+    CloseRequested, FilesResized, StatusChanged, TermView, UseKey, VaultChanged, hsla,
+};
 use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
@@ -130,6 +132,21 @@ pub struct Workspace {
     fonts: (Vec<String>, String, Vec<String>),
     /// Text editors found on this system, looked for when Settings opens.
     editors: Vec<(String, String)>,
+    /// A key waiting for the palette's choice of a host to install it on.
+    choosing: Option<KeyToInstall>,
+    /// Keys to install on panes once they are connected.
+    installs: Vec<(gpui::WeakEntity<TermView>, KeyToInstall)>,
+}
+
+/// A public key to put in a host's `authorized_keys`.
+#[derive(Clone, Debug)]
+pub struct KeyToInstall {
+    /// How the key is named to the user.
+    pub name: String,
+    /// One line, as `authorized_keys` takes it.
+    pub public: String,
+    /// A key the vault keeps: the host can be set to sign in with it after.
+    pub vault_id: Option<String>,
 }
 
 /// What the host editor opens on.
@@ -221,6 +238,8 @@ impl Workspace {
             settings: None,
             fonts: (vec![], String::new(), vec![]),
             editors: vec![],
+            choosing: None,
+            installs: vec![],
         };
         if let Some(s) = ws.live.store().and_then(|s| s.window_state()) {
             ws.sidebar_width = s
@@ -462,8 +481,14 @@ impl Workspace {
             eprintln!("cannot save the recent hosts: {e}");
         }
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
-        // Tab and host list dots follow the session's status.
-        cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| ws.refresh_sidebar(cx))
+        // Tab and host list dots follow the session's status; a key waiting
+        // for the connection is installed once it is up.
+        cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| {
+            ws.refresh_sidebar(cx);
+            ws.run_installs(cx);
+        })
+        .detach();
+        cx.subscribe(&view, |ws, _, ev: &UseKey, cx| ws.use_key(ev, cx))
             .detach();
         cx.subscribe(&view, |ws, _, _: &VaultChanged, _| ws.sync.now())
             .detach();
@@ -1090,6 +1115,198 @@ impl Workspace {
     }
 
     /// From the settings page: the same actions as the palette's.
+    /// The vault, and the network runtime, for the Keys page.
+    pub(crate) fn keys_context(&self) -> (VaultSlot, Handle) {
+        (self.vault.clone(), self.rt.clone())
+    }
+
+    /// The vault changed here: sync it.
+    pub(crate) fn vault_changed(&self) {
+        self.sync.now();
+    }
+
+    /// The keys a host can be set to sign in with: the vault's, then the
+    /// files in `~/.ssh`.
+    fn key_choices(&self) -> Vec<host_editor::KeyChoice> {
+        use shellwing_ssh::keys;
+        let mut choices: Vec<host_editor::KeyChoice> = self
+            .vault
+            .ready()
+            .and_then(|v| v.ssh_keys().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|k| {
+                let public = keys::ssh_key::PublicKey::from_openssh(&k.public).ok()?;
+                Some(host_editor::KeyChoice {
+                    value: format!("{}{}", target::VAULT_KEY, k.id),
+                    name: k.name,
+                    kind: keys::info(&public).kind,
+                    vault: true,
+                })
+            })
+            .collect();
+        let home = std::env::home_dir();
+        if let Some(dir) = home.as_ref().map(|h| h.join(".ssh")) {
+            for f in keys::key_files(&dir) {
+                let value = match home.as_ref().and_then(|h| f.path.strip_prefix(h).ok()) {
+                    Some(rest) => format!("~/{}", rest.display()),
+                    None => f.path.display().to_string(),
+                };
+                choices.push(host_editor::KeyChoice {
+                    name: value.clone(),
+                    value,
+                    kind: f.info.kind,
+                    vault: false,
+                });
+            }
+        }
+        choices
+    }
+
+    /// The hosts that sign in with each key the vault keeps, by its id.
+    pub(crate) fn key_users(&self) -> std::collections::BTreeMap<String, Vec<String>> {
+        let mut users: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+        for h in &self.live.hosts().hosts {
+            if h.auth.method == shellwing_config::AuthMethod::Key
+                && let Some(id) = h
+                    .auth
+                    .key
+                    .as_deref()
+                    .and_then(|k| k.strip_prefix(target::VAULT_KEY))
+            {
+                users
+                    .entry(id.to_string())
+                    .or_default()
+                    .push(h.name.clone());
+            }
+        }
+        users
+    }
+
+    /// Asks which host to install `key` on: connected ones first.
+    pub(crate) fn choose_host_for_key(
+        &mut self,
+        key: KeyToInstall,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let (mut connected, mut others) = (vec![], vec![]);
+        for section in self.sidebar_sections(cx) {
+            for r in section.rows {
+                let up = r.status == Some(Status::Connected);
+                let entry = Entry::new(
+                    Kind::Choice(r.spec),
+                    if up {
+                        "Connected"
+                    } else {
+                        "Other hosts · connected first"
+                    },
+                    r.name,
+                )
+                .detail(if r.detail.is_empty() {
+                    section.title.clone()
+                } else {
+                    r.detail
+                })
+                .status(r.status)
+                .hint("Enter");
+                if up {
+                    connected.push(entry)
+                } else {
+                    others.push(entry)
+                }
+            }
+        }
+        connected.extend(others);
+        let title = format!("Install {} on…", key.name);
+        self.choosing = Some(key);
+        let palette = cx.new(|cx| Palette::chooser(&title, connected, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Installs `key` on the host `spec`: on a pane connected to it, else on
+    /// a new tab once that connects.
+    fn install_on(
+        &mut self,
+        spec: &str,
+        key: KeyToInstall,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.close_settings(window, cx);
+        let up = self.tabs.iter().enumerate().find_map(|(i, t)| {
+            t.views().into_iter().find_map(|v| {
+                let s = v.read(cx).session();
+                (s.spec == spec && s.status() == Status::Connected).then_some((i, v.clone()))
+            })
+        });
+        match up {
+            Some((tab, view)) => {
+                self.activate(tab, window, cx);
+                view.update(cx, |v, cx| v.install_key(key, cx));
+            }
+            None => {
+                let before = self.tabs.len();
+                self.open(spec, window, cx);
+                if self.tabs.len() > before
+                    && let Some(view) = self.tabs.last().map(|t| t.focused.clone())
+                {
+                    view.update(cx, |v, cx| {
+                        v.show_notice(
+                            format!("{} goes on here once connected.", key.name),
+                            CONFIG_NOTICE,
+                            cx,
+                        )
+                    });
+                    self.installs.push((view.downgrade(), key));
+                }
+            }
+        }
+    }
+
+    /// Installs the keys waiting for panes that are connected now.
+    fn run_installs(&mut self, cx: &mut Context<Self>) {
+        let waiting = std::mem::take(&mut self.installs);
+        for (view, key) in waiting {
+            let Some(v) = view.upgrade() else {
+                continue;
+            };
+            if v.read(cx).session().status() == Status::Connected {
+                v.update(cx, |v, cx| v.install_key(key, cx));
+            } else {
+                self.installs.push((view, key));
+            }
+        }
+    }
+
+    /// From a pane: sign in to its host with a key the vault keeps.
+    fn use_key(&mut self, ev: &UseKey, cx: &mut Context<Self>) {
+        let Some(mut host) = self.live.hosts().find(&ev.host).cloned() else {
+            return;
+        };
+        host.auth.method = shellwing_config::AuthMethod::Key;
+        host.auth.key = Some(format!("{}{}", target::VAULT_KEY, ev.vault_id));
+        let saved = match self.live.store() {
+            Some(store) => store
+                .save_host(&host)
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            None => Err("no config directory".into()),
+        };
+        match saved {
+            Ok(()) => {
+                self.poll_config(cx);
+                self.sync.now();
+                self.say(
+                    format!("{} signs in with {} from now on.", ev.host, ev.key_name),
+                    CONFIG_NOTICE,
+                    cx,
+                );
+            }
+            Err(e) => self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx),
+        }
+    }
+
     pub fn run_from_settings(
         &mut self,
         action: Action,
@@ -1134,6 +1351,7 @@ impl Workspace {
                 .map(|t| (t.id.clone(), t.name.clone()))
                 .collect(),
             app_ssh: self.live.settings().ssh.clone(),
+            keys: self.key_choices(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
@@ -1412,6 +1630,7 @@ impl Workspace {
     }
 
     fn close_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.choosing = None;
         if let Some((_, _, themes)) = self.palette.take()
             && themes
         {
@@ -1442,6 +1661,13 @@ impl Workspace {
                 let spec = spec.clone();
                 self.close_palette(window, cx);
                 self.open(&spec, window, cx);
+            }
+            PaletteEvent::Chose(spec) => {
+                let (spec, key) = (spec.clone(), self.choosing.take());
+                self.close_palette(window, cx);
+                if let Some(key) = key {
+                    self.install_on(&spec, key, window, cx);
+                }
             }
             PaletteEvent::Act(a) => {
                 self.close_palette(window, cx);
