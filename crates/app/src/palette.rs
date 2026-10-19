@@ -34,6 +34,7 @@ pub enum Action {
     SplitDown,
     ChangeTheme,
     Files,
+    Find,
     NewHost,
     NewGroup,
     EditHost(crate::workspace::EditTarget),

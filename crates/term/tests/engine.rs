@@ -4,7 +4,8 @@ use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use shellwing_term::{
-    Colors, Event, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, Rgb, TermHandle,
+    Colors, Event, Found, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, Rgb,
+    TermHandle,
 };
 
 const CELL: (u32, u32) = (10, 20);
@@ -17,13 +18,17 @@ struct Harness {
 }
 
 fn harness() -> Harness {
+    harness_keeping(100)
+}
+
+fn harness_keeping(scrollback: usize) -> Harness {
     let (wtx, written) = channel();
     let (etx, events) = channel();
     let (ktx, woke) = channel();
     let term = TermHandle::spawn(
         40,
         5,
-        100,
+        scrollback,
         Box::new(move |b| {
             let _ = wtx.send(b);
         }),
@@ -440,4 +445,78 @@ fn the_scroll_position_follows_history() {
     let f = h.frame_where(|f| f.scroll.offset == 0);
     assert!(f.scrolled_back);
     assert_eq!(Harness::row_text(&f, 0), "line 0");
+}
+
+/// The text of each run marked `found`, after the start of its row.
+fn marked(f: &Frame, found: Found) -> Vec<(String, String)> {
+    let mut out = vec![];
+    for row in &f.rows {
+        let mut at = 0;
+        for r in &row.runs {
+            let text = &row.text[at..at + r.len];
+            at += r.len;
+            if r.found == found {
+                let line = row.text.split(" needle").next().unwrap_or_default();
+                out.push((line.to_string(), text.to_string()));
+            }
+        }
+    }
+    out
+}
+
+#[test]
+fn find_marks_matches_and_walks_into_history() {
+    let h = harness();
+    // A needle on lines 3, 13 and 23; the screen shows the last few lines.
+    let lines: String = (0..30)
+        .map(|i| format!("line {i}{}\r\n", if i % 10 == 3 { " needle" } else { "" }))
+        .collect();
+    h.term.feed(lines.into_bytes());
+    h.frame_where(|f| f.rows.iter().any(|r| r.text.starts_with("line 29")));
+
+    // ASCII letters match in either case; the newest match is chosen, and
+    // scrolled to.
+    h.term.find("NEEDLE".into());
+    let f = h.frame_where(|f| {
+        f.find
+            .is_some_and(|s| s.total == 3 && s.current == Some(0) && !s.searching)
+            && !marked(f, Found::Current).is_empty()
+    });
+    assert_eq!(
+        marked(&f, Found::Current),
+        [("line 23".to_string(), "needle".to_string())]
+    );
+    assert!(f.scrolled_back);
+
+    // Enter goes up into history, Shift+Enter comes back down.
+    h.term.find_next(true);
+    let f = h.frame_where(|f| f.find.is_some_and(|s| s.current == Some(1)));
+    let f = if marked(&f, Found::Current).is_empty() {
+        h.frame_where(|f| !marked(f, Found::Current).is_empty())
+    } else {
+        f
+    };
+    assert_eq!(marked(&f, Found::Current)[0].0, "line 13");
+    h.term.find_next(false);
+    h.frame_where(|f| {
+        f.find.is_some_and(|s| s.current == Some(0))
+            && marked(f, Found::Current)
+                .first()
+                .is_some_and(|m| m.0 == "line 23")
+    });
+
+    // Empty text stops finding, and the marks go.
+    h.term.find(String::new());
+    let f = h.frame_where(|f| f.find.is_none());
+    assert!(marked(&f, Found::Match).is_empty() && marked(&f, Found::Current).is_empty());
+}
+
+#[test]
+fn history_keeps_the_lines_asked_for() {
+    // libghostty's own default would keep about a thousand, whatever was asked.
+    let h = harness_keeping(5000);
+    let lines: String = (0..4000).map(|i| format!("line {i}\r\n")).collect();
+    h.term.feed(lines.into_bytes());
+    let f = h.frame_where(|f| f.rows.iter().any(|r| r.text.starts_with("line 3999")));
+    assert!(f.scroll.total >= 4000, "kept {} rows", f.scroll.total);
 }

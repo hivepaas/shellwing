@@ -60,6 +60,8 @@ enum Shortcut {
     Sidebar,
     /// The focused pane's Files panel.
     Files,
+    /// Find text in the focused pane.
+    Find,
     Settings,
     Theme(isize),
 }
@@ -697,6 +699,11 @@ impl Workspace {
             );
             action(Action::CloseTab, "Close the tab".into(), String::new());
             action(
+                Action::Find,
+                format!("Find in {title}…"),
+                format!("{chord}+F"),
+            );
+            action(
                 Action::Files,
                 if t.read(cx).files_shown() {
                     "Hide the files".into()
@@ -1182,6 +1189,12 @@ impl Workspace {
         }
     }
 
+    fn find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.active_tab().cloned() {
+            tab.update(cx, |v, cx| v.open_find(window, cx));
+        }
+    }
+
     fn ask_forward(
         &mut self,
         problem: Option<String>,
@@ -1467,6 +1480,7 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
+            Action::Find => self.find(window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
             Action::Settings => self.open_settings(Page::Appearance, window, cx),
@@ -1662,6 +1676,7 @@ impl Workspace {
             }),
             "b" if chord => Shortcut::Sidebar,
             "o" if chord => Shortcut::Files,
+            "f" if chord => Shortcut::Find,
             // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
             "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
@@ -1719,6 +1734,7 @@ impl Workspace {
                 cx.notify();
             }
             Shortcut::Files => self.toggle_files(window, cx),
+            Shortcut::Find => self.find(window, cx),
             Shortcut::Settings => {
                 if self.settings.is_some() {
                     self.close_settings(window, cx);

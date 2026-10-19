@@ -19,13 +19,14 @@ use gpui::{
 };
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
-    Event as TermEvent, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput, NamedKey,
-    Rgb, Row, ScrollPos, TermHandle,
+    Event as TermEvent, Found, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput,
+    NamedKey, Rgb, Row, ScrollPos, TermHandle,
 };
 
 use crate::Writer;
 use crate::bench::Probe;
 use crate::files::{self, FilesEvent, FilesPanel};
+use crate::input::{Changed, TextInput};
 use crate::look::{Look, rgb as theme_rgb};
 use crate::session::{Session, Status};
 use shellwing_config::{OnDisconnect, Scrollbar};
@@ -264,7 +265,20 @@ pub struct TermView {
     files_shown: bool,
     /// Dragging the panel's edge: where the drag began, and the width then.
     files_drag: Option<(f32, f32)>,
+    find: Option<FindBar>,
 }
+
+/// Finding text on the screen and in its history.
+struct FindBar {
+    input: Entity<TextInput>,
+    _changed: gpui::Subscription,
+}
+
+/// Matches of the text being found, as Ghostty shows them: yellow, and the
+/// chosen one orange, under black text.
+const MATCH_BG: u32 = 0xffe082;
+const CURRENT_BG: u32 = 0xf2a57e;
+const FOUND_TEXT: u32 = 0x000000;
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
@@ -348,7 +362,155 @@ impl TermView {
             files: None,
             files_shown: false,
             files_drag: None,
+            find: None,
         }
+    }
+
+    /// Opens the find bar, or takes the keyboard back to it with its text
+    /// chosen, to type over.
+    pub fn open_find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let input = match &self.find {
+            Some(f) => {
+                f.input.update(cx, |i, cx| {
+                    let text = i.text().to_string();
+                    i.set_text(&text, 0..text.len(), cx);
+                });
+                f.input.clone()
+            }
+            None => {
+                let input = cx.new(|cx| TextInput::new("Find", cx));
+                let changed = cx.subscribe(&input, |v, input, _: &Changed, cx| {
+                    v.term.find(input.read(cx).text().to_string());
+                });
+                self.find = Some(FindBar {
+                    input: input.clone(),
+                    _changed: changed,
+                });
+                input
+            }
+        };
+        let focus = input.read(cx).focus_handle(cx);
+        window.focus(&focus, cx);
+        cx.notify();
+    }
+
+    fn close_find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.find.take().is_some() {
+            self.term.find(String::new());
+        }
+        window.focus(&self.focus, cx);
+        cx.notify();
+    }
+
+    /// Keys in the find bar: Enter (or F3, or Up) for the next match up the
+    /// screen and into history, with Shift (or Down) for the next one down.
+    fn find_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let k = &ev.keystroke;
+        match k.key.as_str() {
+            "enter" | "f3" => self.term.find_next(!k.modifiers.shift),
+            "up" => self.term.find_next(true),
+            "down" => self.term.find_next(false),
+            "escape" => self.close_find(window, cx),
+            _ => {}
+        }
+        // Nothing typed here reaches the shell.
+        cx.stop_propagation();
+    }
+
+    fn find_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let f = self.find.as_ref()?;
+        let typed = !f.input.read(cx).text().is_empty();
+        let (count, none) = match self.frame.find {
+            _ if !typed => (String::new(), false),
+            None => ("…".to_string(), false),
+            Some(s) => {
+                let more = if s.searching { "…" } else { "" };
+                match (s.total, s.current) {
+                    (0, _) if !s.searching => ("No results".to_string(), true),
+                    (n, Some(i)) => (format!("{} of {n}{more}", i + 1), false),
+                    (n, None) => (format!("{n} found{more}"), false),
+                }
+            }
+        };
+        let step = |id: &'static str, label: &'static str, older: bool, cx: &mut Context<Self>| {
+            div()
+                .id(id)
+                .w(px(24.))
+                .h(px(24.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(5.))
+                .text_color(rgb(0xb6c0cf))
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(0x1a2333)))
+                .on_click(cx.listener(move |v, _, _, _| v.term.find_next(older)))
+                .child(label)
+        };
+        Some(
+            div()
+                .id("find")
+                .absolute()
+                .top_3()
+                .right(px(SCROLLBAR_ZONE + 6.))
+                .flex()
+                .items_center()
+                .gap_1()
+                .pl_2()
+                .pr_1()
+                .py_1()
+                .rounded_md()
+                .border_1()
+                .border_color(rgb(0x2b3648))
+                .bg(rgb(0x111a2a))
+                .shadow_lg()
+                .text_sm()
+                .text_color(rgb(0xe2e8f0))
+                .cursor_default()
+                .on_key_down(cx.listener(Self::find_key))
+                // Clicks here are not selections in the terminal.
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .on_mouse_up(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(
+                    div()
+                        .w(px(200.))
+                        .h(px(26.))
+                        .px_2()
+                        .flex()
+                        .items_center()
+                        .rounded(px(5.))
+                        .border_1()
+                        .border_color(rgb(0x263042))
+                        .bg(rgb(0x0b0f17))
+                        .child(f.input.clone()),
+                )
+                .child(
+                    div()
+                        .min_w(px(64.))
+                        .px_1()
+                        .text_xs()
+                        .text_color(rgb(if none { 0xf87171 } else { 0x8a96aa }))
+                        .child(count),
+                )
+                .child(step("find-older", "↑", true, cx))
+                .child(step("find-newer", "↓", false, cx))
+                .child(
+                    div()
+                        .id("find-close")
+                        .w(px(24.))
+                        .h(px(24.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(5.))
+                        .text_color(rgb(0xb6c0cf))
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(0x1a2333)))
+                        .on_click(cx.listener(|v, _, window, cx| v.close_find(window, cx)))
+                        .child("✕"),
+                )
+                .into_any_element(),
+        )
     }
 
     /// Shows the Files panel (opening SFTP the first time) and gives it the
@@ -847,14 +1009,16 @@ impl TermView {
                         },
                         ..base.clone()
                     },
-                    color: match selection_fg {
-                        Some(c) if r.selected => c,
+                    color: match (selection_fg, r.found) {
+                        (Some(c), _) if r.selected => c,
+                        (_, Found::Match | Found::Current) if !r.selected => rgb(FOUND_TEXT).into(),
                         _ => hsla(r.fg),
                     },
-                    background_color: if r.selected {
-                        Some(selection_bg)
-                    } else {
-                        r.bg.map(hsla)
+                    background_color: match r.found {
+                        _ if r.selected => Some(selection_bg),
+                        Found::Current => Some(rgb(CURRENT_BG).into()),
+                        Found::Match => Some(rgb(MATCH_BG).into()),
+                        Found::No => r.bg.map(hsla),
                     },
                     underline: r.underline.then(|| UnderlineStyle {
                         thickness: px(1.),
@@ -1379,7 +1543,16 @@ impl Render for TermView {
                 .text_color(rgb(0xe4e4e7))
         };
         if let Some(n) = &self.notice {
-            terminal = terminal.child(badge().top_3().child(n.clone()));
+            // Below the find bar, when that is open.
+            let top = if self.find.is_some() {
+                px(52.)
+            } else {
+                px(12.)
+            };
+            terminal = terminal.child(badge().top(top).child(n.clone()));
+        }
+        if let Some(bar) = self.find_bar(cx) {
+            terminal = terminal.child(bar);
         }
         if let Some(s) = self.scrollbar(cx) {
             terminal = terminal.child(s);
