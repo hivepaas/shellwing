@@ -164,11 +164,20 @@ Build order:
   keeps each file it read with the ETag its listing gave, and reads again
   only when a listing shows another. A round with nothing new costs a few
   small requests: the listings (`records/`, `pairing/`) and `format.json`.
-- **No conditional writes yet.** Two devices writing the same record at
-  once: the last write wins on the server, but each device still has its
-  own fields and the next round merges them back in, so nothing is lost
-  for long. `If-Match` on writes (both services support it) would close
-  that window.
+- **Conditional writes.** A record is written only if it is still as this
+  device last saw it: `If-Match` with the ETag of the listing (or of its own
+  last write), `If-None-Match: *` for a new one. Refused (412), the device
+  reads the record again, merges it in and writes once more, up to three
+  times in a sync. S3 does it through OpenDAL; WebDAV through a `PUT` of
+  our own, since OpenDAL writes WebDAV without conditions. Where it cannot
+  work, the write goes as before and the next round merges:
+  - a listing without ETags (some S3 look-alikes), or weak ones (`W/`);
+  - a server that says it cannot (405, 501), or refuses six in a row
+    though the file was looked at again;
+  - a new file refused though it is still not there (a folder not made
+    yet, on some WebDAV servers).
+  A tag made of size and time (Apache's, dav-server's) misses another
+  write of the same size within its time's precision.
 - **Credentials** are a device secret in the vault (`keys` table, wrapped by
   the account key, never synced) rather than the keychain, so they work
   where there is no keychain too. The vault opens before syncing anyway.

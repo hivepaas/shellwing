@@ -597,6 +597,9 @@ s3 = { endpoint = "https://<account>.r2.cloudflarestorage.com", bucket = "vault"
 - Each sync lists the records and fetches only those that changed since
   (by their ETag), so a minute's sync with nothing new is a few small
   requests.
+- A record another device wrote a moment ago is not written over: the
+  server refuses the write (`If-Match`), and shellwing merges theirs in
+  and writes again.
 - Joining from another device works as with a folder: pairing, the recovery
   key, or the sync passphrase.
 
