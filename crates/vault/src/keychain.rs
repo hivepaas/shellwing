@@ -11,10 +11,13 @@ pub trait KeyStore: Send + Sync {
 
 /// The operating system's keychain: Keychain Services on macOS, Credential
 /// Manager on Windows, the Secret Service (GNOME Keyring, KWallet) on Linux.
+/// Not on iOS or Android, where the app supplies its own [`KeyStore`].
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub struct OsKeychain {
     service: String,
 }
 
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 impl Default for OsKeychain {
     fn default() -> Self {
         OsKeychain {
@@ -23,12 +26,14 @@ impl Default for OsKeychain {
     }
 }
 
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 impl OsKeychain {
     fn entry(&self) -> Result<keyring::Entry, String> {
         keyring::Entry::new(&self.service, "vault account key").map_err(|e| e.to_string())
     }
 }
 
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 impl KeyStore for OsKeychain {
     fn load(&self) -> Result<Option<Vec<u8>>, String> {
         match self.entry()?.get_secret() {

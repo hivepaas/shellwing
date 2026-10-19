@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
 use shellwing_ssh::{Learned, Secrets};
-use shellwing_vault::{OsKeychain, Vault};
+use shellwing_vault::{KeyStore, Vault};
 
 /// The vault, opened on a thread of its own at start: the keychain may be slow,
 /// or ask the user to unlock it, and the window must not wait for that.
@@ -13,14 +13,22 @@ use shellwing_vault::{OsKeychain, Vault};
 pub struct VaultSlot(Arc<OnceLock<Result<Arc<Vault>, String>>>);
 
 impl VaultSlot {
+    /// Opens the vault with its key in the system keychain.
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
     pub fn open(path: PathBuf) -> Self {
+        Self::open_with(path, shellwing_vault::OsKeychain::default())
+    }
+
+    /// Opens the vault with its key in `keys`: on iOS and Android, a store the
+    /// app backs with the platform keychain.
+    pub fn open_with(path: PathBuf, keys: impl KeyStore + 'static) -> Self {
         let slot = VaultSlot(Arc::new(OnceLock::new()));
         let fill = slot.0.clone();
         let opened = std::thread::Builder::new()
             .name("shellwing-vault".into())
             .spawn(move || {
                 let _ = fill.set(
-                    Vault::open(&path, &OsKeychain::default())
+                    Vault::open(&path, &keys)
                         .map(Arc::new)
                         .map_err(|e| e.to_string()),
                 );
