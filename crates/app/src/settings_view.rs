@@ -1457,11 +1457,21 @@ impl SettingsView {
                 "Off".into()
             }
         };
+        let settings_on = self.snap.settings.sync.settings;
         page("Sync")
             .child(setting(
                 "Sync through a folder",
-                "Hosts and saved passwords travel through a folder that another app syncs: iCloud Drive, Syncthing, Dropbox. Everything in it is encrypted with your recovery key.",
+                "Hosts, saved passwords, keys and snippets travel through a folder that another app syncs: iCloud Drive, Syncthing, Dropbox. Everything in it is encrypted with your recovery key.",
                 div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
+            ))
+            .child(toggle(
+                "sync-settings",
+                settings_on,
+                "Sync settings too",
+                "The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.",
+                cx.listener(move |v, _, _, cx| {
+                    v.change(&["sync", "settings"], Some(SettingValue::Bool(!settings_on)), cx)
+                }),
             ))
             .child(label("Hosts kept on this device only (in their editor) stay out of it."))
     }

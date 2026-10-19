@@ -494,6 +494,7 @@ in the vault, then a password. A host that names a key offers only that key.
 ```toml
 [sync]
 folder = "~/Library/Mobile Documents/com~apple~CloudDocs/shellwing"   # any synced folder
+settings = true             # sync the settings that are not this device's own
 ```
 
 Choose *Sync passwords with a folder…* in the palette, or set the folder here.
@@ -529,5 +530,19 @@ Hosts and groups in `hosts.toml` sync the same way, encrypted like the secrets:
 - A missing `hosts.toml` is written again from the synced hosts, never taken as
   "delete them all".
 
-Settings (`config.toml`) do not sync yet.
+Settings in `config.toml` sync too, unless `settings = false` under `[sync]`
+(*Settings › Sync › Sync settings too*):
+
+- **What syncs:** `[general] restore_tabs`; all of `[appearance]` (dark or
+  light, both themes, fonts and sizes, line height, cursor, scrollbar,
+  padding); `[terminal] scrollback` and `on_disconnect`; `[ssh] host_key` and
+  `keepalive`; `[log] always`, `format` and `timestamps`.
+- **What each device keeps:** `[sync] folder`, `[log] folder`,
+  `[terminal] local_shell` and `[files] editor`, which name things of that
+  computer.
+- **Merging** is per setting, as for hosts; the file keeps its comments and
+  layout. A device whose settings sync for the first time takes the others'
+  where they set one, and keeps its own where they set none.
+- A value this version does not know (written by a newer one) is left out
+  rather than breaking the file.
 
