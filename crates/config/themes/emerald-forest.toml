@@ -1,5 +1,6 @@
 # Deep forest green under the canopy.
 name = "Emerald Forest"
+group = "gradient"
 accent = "#4ade80"
 background = "#020f0a"
 gradient = { angle = 135, stops = ["#06281a 0%", "#0f4a2c 35%", "#0a3a22 70%", "#020f0a 100%"] }

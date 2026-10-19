@@ -1,5 +1,6 @@
 # Warm dusk embers and twilight.
 name = "Sunset Glow"
+group = "gradient"
 accent = "#fb923c"
 background = "#16071c"
 gradient = { angle = 135, stops = ["#300c3b 0%", "#681842 35%", "#882b19 70%", "#16071c 100%"] }

@@ -1,0 +1,17 @@
+# Dark rose to plum.
+name = "Sakura Night"
+group = "gradient"
+accent = "#f9a8d4"
+background = "#14060f"
+gradient = { angle = 135, stops = ["#3b0f2a 0%", "#6b1d4a 35%", "#4a1838 70%", "#14060f 100%"] }
+foreground = "#fff1f6"
+cursor = "#f9a8d4"
+cursor_text = "#14060f"
+selection_background = "#f9a8d4"
+selection_foreground = "#000000"
+palette = [
+  "#14060f", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

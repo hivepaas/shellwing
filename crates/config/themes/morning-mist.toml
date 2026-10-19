@@ -1,0 +1,17 @@
+# Light: pale blue into lavender.
+name = "Morning Mist"
+group = "gradient-light"
+accent = "#6366f1"
+background = "#f6f7fb"
+gradient = { angle = 135, stops = ["#e3eefb 0%", "#eceffb 50%", "#f5eefa 100%"] }
+foreground = "#1f2937"
+cursor = "#6366f1"
+cursor_text = "#f6f7fb"
+selection_background = "#bfdbfe"
+selection_foreground = "#0f172a"
+palette = [
+  "#1f2937", "#c0262d", "#1a7f37", "#8a5a00",
+  "#1f5fd1", "#8e3fd0", "#0b7285", "#94a3b8",
+  "#4b5563", "#dc2626", "#16a34a", "#a16207",
+  "#2563eb", "#a855f7", "#0891b2", "#e5e7eb",
+]

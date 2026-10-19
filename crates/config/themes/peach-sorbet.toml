@@ -1,0 +1,17 @@
+# Light: peach into rose.
+name = "Peach Sorbet"
+group = "gradient-light"
+accent = "#ea580c"
+background = "#fff8f3"
+gradient = { angle = 135, stops = ["#ffe9dc 0%", "#fde6ee 50%", "#fbf3ea 100%"] }
+foreground = "#3b2a26"
+cursor = "#ea580c"
+cursor_text = "#fff8f3"
+selection_background = "#bfdbfe"
+selection_foreground = "#0f172a"
+palette = [
+  "#1f2937", "#c0262d", "#1a7f37", "#8a5a00",
+  "#1f5fd1", "#8e3fd0", "#0b7285", "#94a3b8",
+  "#4b5563", "#dc2626", "#16a34a", "#a16207",
+  "#2563eb", "#a855f7", "#0891b2", "#e5e7eb",
+]

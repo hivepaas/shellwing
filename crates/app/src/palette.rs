@@ -322,7 +322,7 @@ impl Palette {
 
     /// Group headers only while nothing is typed; a filtered list is one ranking.
     fn headers(&self) -> bool {
-        matches!(self.mode, Mode::Connect | Mode::Choose) && self.unfiltered
+        matches!(self.mode, Mode::Connect | Mode::Choose | Mode::Themes) && self.unfiltered
     }
 
     /// `all`: Alt+Enter, a snippet for every pane of the tab.

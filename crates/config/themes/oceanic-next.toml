@@ -1,0 +1,17 @@
+# Oceanic Next, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Oceanic Next"
+group = "green"
+accent = "#6699cc"
+background = "#162c35"
+foreground = "#c0c5ce"
+cursor = "#c0c5ce"
+cursor_text = "#1b2b34"
+selection_background = "#4f5b66"
+selection_foreground = "#c0c5ce"
+palette = [
+  "#162c35", "#ec5f67", "#99c794", "#fac863",
+  "#6699cc", "#c594c5", "#5fb3b3", "#ffffff",
+  "#65737e", "#ec5f67", "#99c794", "#fac863",
+  "#6699cc", "#c594c5", "#5fb3b3", "#ffffff",
+]

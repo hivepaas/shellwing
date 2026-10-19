@@ -1,5 +1,6 @@
 # Light and warm, as ink on paper.
 name = "Paper"
+group = "light-warm"
 accent = "#b45309"
 background = "#faf8f3"
 foreground = "#2b2a26"

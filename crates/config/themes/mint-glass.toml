@@ -1,0 +1,17 @@
+# Light: mint into a cool white.
+name = "Mint Glass"
+group = "gradient-light"
+accent = "#059669"
+background = "#f5fbf8"
+gradient = { angle = 135, stops = ["#dff6ec 0%", "#e8f4fa 50%", "#f2fbf5 100%"] }
+foreground = "#1f3a33"
+cursor = "#059669"
+cursor_text = "#f5fbf8"
+selection_background = "#bfdbfe"
+selection_foreground = "#0f172a"
+palette = [
+  "#1f2937", "#c0262d", "#1a7f37", "#8a5a00",
+  "#1f5fd1", "#8e3fd0", "#0b7285", "#94a3b8",
+  "#4b5563", "#dc2626", "#16a34a", "#a16207",
+  "#2563eb", "#a855f7", "#0891b2", "#e5e7eb",
+]

@@ -1,5 +1,6 @@
 # Soothing pastel dark theme.
 name = "Catppuccin Mocha"
+group = "purple"
 accent = "#cba6f7"
 background = "#1e1e2e"
 foreground = "#cdd6f4"

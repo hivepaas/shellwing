@@ -1,0 +1,17 @@
+# Monokai Pro, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Monokai Pro"
+group = "warm"
+accent = "#c1c0c0"
+background = "#2d2a2e"
+foreground = "#fcfcfa"
+cursor = "#c1c0c0"
+cursor_text = "#8e8d8d"
+selection_background = "#5b595c"
+selection_foreground = "#fcfcfa"
+palette = [
+  "#2d2a2e", "#ff6188", "#a9dc76", "#ffd866",
+  "#fc9867", "#ab9df2", "#78dce8", "#fcfcfa",
+  "#727072", "#ff6188", "#a9dc76", "#ffd866",
+  "#fc9867", "#ab9df2", "#78dce8", "#fcfcfa",
+]

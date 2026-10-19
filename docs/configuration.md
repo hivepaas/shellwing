@@ -118,22 +118,34 @@ the one highlighted; Enter keeps it. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>]</kb
 <kbd>Cmd</kbd>+<kbd>[</kbd> on macOS) step through the themes and save the
 choice to `config.toml` without opening the list.
 
-**Built in.**
+**Built in,** 69, in groups (Settings › Appearance and *Change theme…* show
+them so, the light mode's first while the app is light):
 
-- **Default:** `dusk`, which matches the app's own colors; in the light mode,
-  `dawn`.
-- **Light:** `dawn`, `paper`.
-- **Gradients:** `neon-nebula`, `cyberpunk`, `midnight-aurora`, `sunset-glow`,
-  `abyssal-deep`, `cosmic-velvet`, `honey-amber`, `emerald-forest`,
-  `graphite-mist`, `crimson-ember`, `arctic-dawn`, `matrix-rain`.
-- **Solid:** `default-slate` (the default before `dusk`), `dracula`, `tokyo-night`, `one-dark`, `nord`, `catppuccin`,
-  `github-dark`.
+- **Defaults:** `dusk`, which matches the app's own colors, and in the light
+  mode `dawn`.
+- **Blue and slate:** `dusk`, `default-slate`, `tokyo-night`, `nord`, `cobalt2`, `iceberg-dark`, `kanagawa-wave`, `material-ocean`, `night-owl`.
+- **Purple and pink:** `dracula`, `catppuccin`, `rose-pine-moon`, `rose-pine`, `synthwave`, `ubuntu`.
+- **Green and teal:** `everforest-dark`, `homebrew`, `oceanic-next`, `poimandres`, `solarized-dark`.
+- **Warm:** `ayu-mirage`, `flexoki-dark`, `gruvbox-dark`, `melange-dark`, `monokai-pro`, `zenburn`.
+- **Neutral:** `github-dark`, `one-dark`, `carbonfox`, `nightfox`, `oxocarbon`, `vesper`.
+- **Gradient:** `neon-nebula`, `cyberpunk`, `midnight-aurora`, `sunset-glow`, `abyssal-deep`, `cosmic-velvet`, `honey-amber`, `emerald-forest`, `graphite-mist`, `crimson-ember`, `arctic-dawn`, `matrix-rain`, `aurora-borealis`, `desert-dune`, `indigo-dream`, `ocean-glass`, `sakura-night`.
+- **Gradient, light:** `mint-glass`, `morning-mist`, `peach-sorbet`.
+- **Light, cool:** `dawn`, `ayu-light`, `catppuccin-latte`, `github-light`, `iceberg-light`, `light-owl`, `one-light`, `tokyo-night-day`.
+- **Light, warm:** `paper`, `alabaster`, `everforest-light`, `flexoki-light`, `gruvbox-light`, `kanagawa-lotus`, `rose-pine-dawn`, `selenized-light`, `solarized-light`.
+
+Most of the solid ones come from
+[iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes), as
+Ghostty's do, under the MIT license (each file says so;
+`crates/config/themes/LICENSE-iTerm2-Color-Schemes` has the notice). A theme
+file may set `group` to one of the ids above (`blue`, `light-warm`…); one that
+does not shows under *Your themes*.
 
 **Your own themes.** They go in `themes/<id>.toml`. A file with a built-in's id
 replaces that built-in. The format, with every key:
 
 ```toml
 name = "My Theme"
+group = "purple"                   # where it is listed; default: Your themes
 accent = "#f472b6"                 # UI accents; default: palette blue
 background = "#0b0e17"             # what programs see as the background
 # Optional: painted behind the text instead of `background`. Angle in degrees as

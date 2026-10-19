@@ -1263,19 +1263,19 @@ impl Workspace {
             return;
         }
         let current = self.live.look_for(None).0.theme.id.clone();
-        let entries = self
-            .live
-            .themes()
-            .all()
-            .iter()
+        // By group, as in Settings; while light, the light ones first.
+        let mut themes: Vec<_> = self.live.themes().all().iter().collect();
+        if self.live.light() {
+            themes.sort_by_key(|t| !t.group.as_deref().is_some_and(|g| g.contains("light")));
+        }
+        let entries = themes
+            .into_iter()
             .map(|t| {
-                Entry::new(Kind::Theme(t.id.clone()), "Themes", t.name.clone()).detail(
-                    if t.gradient.is_some() {
-                        "gradient"
-                    } else {
-                        "solid"
-                    },
-                )
+                let group = shellwing_config::GROUPS
+                    .iter()
+                    .find(|(g, _)| Some(*g) == t.group.as_deref())
+                    .map_or("Your themes", |(_, title)| *title);
+                Entry::new(Kind::Theme(t.id.clone()), group, t.name.clone())
             })
             .collect();
         let palette = cx.new(|cx| Palette::themes(entries, &current, cx));

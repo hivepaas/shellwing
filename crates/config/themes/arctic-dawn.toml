@@ -1,5 +1,6 @@
 # Glacier blue meeting a violet dawn.
 name = "Arctic Dawn"
+group = "gradient"
 accent = "#7dd3fc"
 background = "#0a1220"
 gradient = { angle = 135, stops = ["#0c2a3f 0%", "#1b4a63 35%", "#3a3f6b 70%", "#0a1220 100%"] }

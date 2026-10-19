@@ -1,5 +1,6 @@
 # Arctic, north-bluish color palette.
 name = "Nord"
+group = "blue"
 accent = "#88c0d0"
 background = "#2e3440"
 foreground = "#d8dee9"

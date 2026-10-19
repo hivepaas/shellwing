@@ -718,15 +718,44 @@ impl SettingsView {
                         .child(t.name.clone()),
                 )
         };
-        let (gradients, solids): (Vec<_>, Vec<_>) =
-            self.snap.themes.iter().partition(|t| t.gradient.is_some());
-        let mut grad_grid = div().grid().grid_cols(6).gap(px(10.));
-        for t in &gradients {
-            grad_grid = grad_grid.child(tile(t, cx));
+        // By group; while light, the light ones first. The user's own last.
+        let mut order: Vec<(Option<&str>, &str)> = shellwing_config::GROUPS
+            .iter()
+            .map(|(id, title)| (Some(*id), *title))
+            .collect();
+        if light {
+            order.sort_by_key(|(id, _)| !id.is_some_and(|g| g.contains("light")));
         }
-        let mut solid_grid = div().grid().grid_cols(6).gap(px(10.));
-        for t in &solids {
-            solid_grid = solid_grid.child(tile(t, cx));
+        order.push((None, "Your themes"));
+        let mut groups = div().flex().flex_col().gap(px(14.));
+        for (id, title) in order {
+            let members: Vec<&Arc<Theme>> = self
+                .snap
+                .themes
+                .iter()
+                .filter(|t| match id {
+                    Some(g) => t.group.as_deref() == Some(g),
+                    // Not in a group the app knows.
+                    None => !shellwing_config::GROUPS
+                        .iter()
+                        .any(|(g, _)| t.group.as_deref() == Some(*g)),
+                })
+                .collect();
+            if members.is_empty() {
+                continue;
+            }
+            let mut grid = div().grid().grid_cols(6).gap(px(10.));
+            for t in members {
+                grid = grid.child(tile(t, cx));
+            }
+            groups = groups.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(8.))
+                    .child(heading(title))
+                    .child(grid),
+            );
         }
         let themes_dir = self.snap.config_dir.as_ref().map(|d| d.join("themes"));
 
@@ -942,12 +971,7 @@ impl SettingsView {
                         "The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor."
                     })),
             )
-            .when(!gradients.is_empty(), |d| {
-                d.child(heading("Gradient")).child(grad_grid)
-            })
-            .when(!solids.is_empty(), |d| {
-                d.child(heading("Solid")).child(solid_grid)
-            })
+            .child(groups)
             .when_some(themes_dir, |d, dir| {
                 d.child(
                     div()

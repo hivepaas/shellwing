@@ -1,0 +1,17 @@
+# Gruvbox Light, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Gruvbox Light"
+group = "light-warm"
+accent = "#458588"
+background = "#fbf1c7"
+foreground = "#3c3836"
+cursor = "#3c3836"
+cursor_text = "#fbf1c7"
+selection_background = "#3c3836"
+selection_foreground = "#fbf1c7"
+palette = [
+  "#fbf1c7", "#cc241d", "#98971a", "#d79921",
+  "#458588", "#b16286", "#689d6a", "#7c6f64",
+  "#928374", "#9d0006", "#79740e", "#b57614",
+  "#076678", "#8f3f71", "#427b58", "#3c3836",
+]

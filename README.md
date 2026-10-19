@@ -100,5 +100,7 @@ Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Code adapted from other projects keeps its license and notice:
 `crates/app/src/input.rs` is adapted from GPUI's `examples/input.rs`
-(Apache-2.0, Zed Industries). The libraries shellwing builds on are all under
+(Apache-2.0, Zed Industries), and most built-in terminal themes come from
+iTerm2-Color-Schemes (MIT; see `crates/config/themes/LICENSE-iTerm2-Color-Schemes`).
+The libraries shellwing builds on are all under
 licenses that allow this (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0 and similar).

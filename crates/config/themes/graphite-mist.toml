@@ -1,5 +1,6 @@
 # Quiet neutral graphite, easy on long reads.
 name = "Graphite Mist"
+group = "gradient"
 accent = "#94a3b8"
 background = "#0d0f13"
 gradient = { angle = 135, stops = ["#1c2028 0%", "#2a303b 35%", "#20252e 70%", "#0d0f13 100%"] }

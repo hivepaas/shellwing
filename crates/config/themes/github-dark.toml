@@ -1,5 +1,6 @@
 # GitHub's official dark theme.
 name = "GitHub Dark"
+group = "neutral"
 accent = "#58a6ff"
 background = "#0d1117"
 foreground = "#c9d1d9"

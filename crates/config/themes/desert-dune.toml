@@ -1,0 +1,17 @@
+# Terracotta and copper.
+name = "Desert Dune"
+group = "gradient"
+accent = "#fdba74"
+background = "#160a05"
+gradient = { angle = 135, stops = ["#3a1a0c 0%", "#7a3a18 35%", "#5a2a14 70%", "#160a05 100%"] }
+foreground = "#fff4ea"
+cursor = "#fdba74"
+cursor_text = "#160a05"
+selection_background = "#fdba74"
+selection_foreground = "#000000"
+palette = [
+  "#160a05", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

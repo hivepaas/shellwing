@@ -1,0 +1,17 @@
+# Tokyo Night Day, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Tokyo Night Day"
+group = "light-cool"
+accent = "#2e7de9"
+background = "#e1e2e7"
+foreground = "#3760bf"
+cursor = "#3760bf"
+cursor_text = "#e1e2e7"
+selection_background = "#99a7df"
+selection_foreground = "#3760bf"
+palette = [
+  "#e9e9ed", "#f52a65", "#587539", "#8c6c3e",
+  "#2e7de9", "#9854f1", "#007197", "#6172b0",
+  "#a1a6c5", "#f52a65", "#587539", "#8c6c3e",
+  "#2e7de9", "#9854f1", "#007197", "#3760bf",
+]

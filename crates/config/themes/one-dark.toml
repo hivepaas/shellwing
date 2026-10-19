@@ -1,5 +1,6 @@
 # Atom's iconic dark theme.
 name = "One Dark Pro"
+group = "neutral"
 accent = "#61afef"
 background = "#282c34"
 foreground = "#abb2bf"

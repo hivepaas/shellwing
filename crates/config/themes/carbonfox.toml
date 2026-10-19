@@ -1,0 +1,17 @@
+# Carbonfox, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Carbonfox"
+group = "neutral"
+accent = "#78a9ff"
+background = "#161616"
+foreground = "#f2f4f8"
+cursor = "#f2f4f8"
+cursor_text = "#161616"
+selection_background = "#2a2a2a"
+selection_foreground = "#f2f4f8"
+palette = [
+  "#282828", "#ee5396", "#25be6a", "#08bdba",
+  "#78a9ff", "#be95ff", "#33b1ff", "#dfdfe0",
+  "#484848", "#f16da6", "#46c880", "#2dc7c4",
+  "#8cb6ff", "#c8a5ff", "#52bdff", "#e4e4e5",
+]

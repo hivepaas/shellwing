@@ -28,7 +28,7 @@ pub use settings::{
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};
-pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, Gradient, Theme, Themes};
+pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, GROUPS, Gradient, Theme, Themes};
 
 /// The theme in effect, from lowest to highest precedence: `config.toml`, the
 /// host's group, the host.

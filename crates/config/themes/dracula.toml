@@ -1,5 +1,6 @@
 # Classic dark theme with vibrant pastels.
 name = "Dracula"
+group = "purple"
 accent = "#bd93f9"
 background = "#282a36"
 foreground = "#f8f8f2"

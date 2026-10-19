@@ -10,15 +10,73 @@ pub const DEFAULT_THEME: &str = "dusk";
 /// The theme used in the light mode when none is set.
 pub const DEFAULT_LIGHT_THEME: &str = "dawn";
 
-/// Built in, in the order the theme shortcut steps through them.
+/// The groups themes are shown in, in order: (id, title). A theme names its
+/// own with `group`; one that names none is the user's.
+pub const GROUPS: &[(&str, &str)] = &[
+    ("blue", "Blue and slate"),
+    ("purple", "Purple and pink"),
+    ("green", "Green and teal"),
+    ("warm", "Warm"),
+    ("neutral", "Neutral"),
+    ("gradient", "Gradient"),
+    ("gradient-light", "Gradient, light"),
+    ("light-cool", "Light, cool"),
+    ("light-warm", "Light, warm"),
+];
+
+/// Built in, by group, in the order the theme shortcut steps through them.
+/// Those from iTerm2-Color-Schemes (MIT) say so in their files.
 const BUILTIN: &[(&str, &str)] = &[
     ("dusk", include_str!("../themes/dusk.toml")),
-    ("dawn", include_str!("../themes/dawn.toml")),
-    ("paper", include_str!("../themes/paper.toml")),
     (
         "default-slate",
         include_str!("../themes/default-slate.toml"),
     ),
+    ("tokyo-night", include_str!("../themes/tokyo-night.toml")),
+    ("nord", include_str!("../themes/nord.toml")),
+    ("cobalt2", include_str!("../themes/cobalt2.toml")),
+    ("iceberg-dark", include_str!("../themes/iceberg-dark.toml")),
+    (
+        "kanagawa-wave",
+        include_str!("../themes/kanagawa-wave.toml"),
+    ),
+    (
+        "material-ocean",
+        include_str!("../themes/material-ocean.toml"),
+    ),
+    ("night-owl", include_str!("../themes/night-owl.toml")),
+    ("dracula", include_str!("../themes/dracula.toml")),
+    ("catppuccin", include_str!("../themes/catppuccin.toml")),
+    (
+        "rose-pine-moon",
+        include_str!("../themes/rose-pine-moon.toml"),
+    ),
+    ("rose-pine", include_str!("../themes/rose-pine.toml")),
+    ("synthwave", include_str!("../themes/synthwave.toml")),
+    ("ubuntu", include_str!("../themes/ubuntu.toml")),
+    (
+        "everforest-dark",
+        include_str!("../themes/everforest-dark.toml"),
+    ),
+    ("homebrew", include_str!("../themes/homebrew.toml")),
+    ("oceanic-next", include_str!("../themes/oceanic-next.toml")),
+    ("poimandres", include_str!("../themes/poimandres.toml")),
+    (
+        "solarized-dark",
+        include_str!("../themes/solarized-dark.toml"),
+    ),
+    ("ayu-mirage", include_str!("../themes/ayu-mirage.toml")),
+    ("flexoki-dark", include_str!("../themes/flexoki-dark.toml")),
+    ("gruvbox-dark", include_str!("../themes/gruvbox-dark.toml")),
+    ("melange-dark", include_str!("../themes/melange-dark.toml")),
+    ("monokai-pro", include_str!("../themes/monokai-pro.toml")),
+    ("zenburn", include_str!("../themes/zenburn.toml")),
+    ("github-dark", include_str!("../themes/github-dark.toml")),
+    ("one-dark", include_str!("../themes/one-dark.toml")),
+    ("carbonfox", include_str!("../themes/carbonfox.toml")),
+    ("nightfox", include_str!("../themes/nightfox.toml")),
+    ("oxocarbon", include_str!("../themes/oxocarbon.toml")),
+    ("vesper", include_str!("../themes/vesper.toml")),
     ("neon-nebula", include_str!("../themes/neon-nebula.toml")),
     ("cyberpunk", include_str!("../themes/cyberpunk.toml")),
     (
@@ -46,12 +104,64 @@ const BUILTIN: &[(&str, &str)] = &[
     ),
     ("arctic-dawn", include_str!("../themes/arctic-dawn.toml")),
     ("matrix-rain", include_str!("../themes/matrix-rain.toml")),
-    ("dracula", include_str!("../themes/dracula.toml")),
-    ("tokyo-night", include_str!("../themes/tokyo-night.toml")),
-    ("one-dark", include_str!("../themes/one-dark.toml")),
-    ("nord", include_str!("../themes/nord.toml")),
-    ("catppuccin", include_str!("../themes/catppuccin.toml")),
-    ("github-dark", include_str!("../themes/github-dark.toml")),
+    (
+        "aurora-borealis",
+        include_str!("../themes/aurora-borealis.toml"),
+    ),
+    ("desert-dune", include_str!("../themes/desert-dune.toml")),
+    ("indigo-dream", include_str!("../themes/indigo-dream.toml")),
+    ("ocean-glass", include_str!("../themes/ocean-glass.toml")),
+    ("sakura-night", include_str!("../themes/sakura-night.toml")),
+    ("mint-glass", include_str!("../themes/mint-glass.toml")),
+    ("morning-mist", include_str!("../themes/morning-mist.toml")),
+    ("peach-sorbet", include_str!("../themes/peach-sorbet.toml")),
+    ("dawn", include_str!("../themes/dawn.toml")),
+    ("ayu-light", include_str!("../themes/ayu-light.toml")),
+    (
+        "catppuccin-latte",
+        include_str!("../themes/catppuccin-latte.toml"),
+    ),
+    ("github-light", include_str!("../themes/github-light.toml")),
+    (
+        "iceberg-light",
+        include_str!("../themes/iceberg-light.toml"),
+    ),
+    ("light-owl", include_str!("../themes/light-owl.toml")),
+    ("one-light", include_str!("../themes/one-light.toml")),
+    (
+        "tokyo-night-day",
+        include_str!("../themes/tokyo-night-day.toml"),
+    ),
+    ("paper", include_str!("../themes/paper.toml")),
+    ("alabaster", include_str!("../themes/alabaster.toml")),
+    (
+        "everforest-light",
+        include_str!("../themes/everforest-light.toml"),
+    ),
+    (
+        "flexoki-light",
+        include_str!("../themes/flexoki-light.toml"),
+    ),
+    (
+        "gruvbox-light",
+        include_str!("../themes/gruvbox-light.toml"),
+    ),
+    (
+        "kanagawa-lotus",
+        include_str!("../themes/kanagawa-lotus.toml"),
+    ),
+    (
+        "rose-pine-dawn",
+        include_str!("../themes/rose-pine-dawn.toml"),
+    ),
+    (
+        "selenized-light",
+        include_str!("../themes/selenized-light.toml"),
+    ),
+    (
+        "solarized-light",
+        include_str!("../themes/solarized-light.toml"),
+    ),
 ];
 
 #[derive(Clone, Debug, PartialEq)]
@@ -59,6 +169,8 @@ pub struct Theme {
     /// The file name without `.toml`.
     pub id: String,
     pub name: String,
+    /// One of [`GROUPS`]' ids; None for a theme of the user's.
+    pub group: Option<String>,
     /// For UI accents (the active tab, focus rings).
     pub accent: Color,
     /// The terminal's default background: what programs see and what inverse
@@ -91,6 +203,7 @@ pub struct Gradient {
 #[serde(deny_unknown_fields)]
 struct ThemeFile {
     name: Option<String>,
+    group: Option<String>,
     accent: Option<Color>,
     background: Color,
     gradient: Option<GradientFile>,
@@ -136,6 +249,7 @@ impl Theme {
         Ok(Theme {
             id: id.to_string(),
             name: f.name.unwrap_or_else(|| id.to_string()),
+            group: f.group,
             accent: f.accent.unwrap_or(palette[4]),
             background: f.background,
             gradient,
@@ -303,6 +417,7 @@ fn fallback_theme() -> Theme {
     Theme {
         id: DEFAULT_THEME.into(),
         name: "Default".into(),
+        group: None,
         accent: gray,
         background: Color::new(0, 0, 0),
         gradient: None,
@@ -332,9 +447,24 @@ mod tests {
         assert_eq!(all.all().len(), BUILTIN.len());
         assert_eq!(
             all.all().iter().filter(|t| t.gradient.is_some()).count(),
-            12
+            20
         );
         assert_eq!(all.fallback().id, DEFAULT_THEME);
+        // Each in a known group, and the list in the groups' order.
+        let rank = |t: &Theme| {
+            GROUPS
+                .iter()
+                .position(|(g, _)| Some(*g) == t.group.as_deref())
+                .unwrap_or_else(|| panic!("{}: no known group", t.id))
+        };
+        assert!(all.all().windows(2).all(|w| rank(&w[0]) <= rank(&w[1])));
+        // The light ones are light: the light mode lists them first.
+        for t in all.all() {
+            let light = t.group.as_deref().is_some_and(|g| g.contains("light"));
+            let (r, g, b) = (t.background.r, t.background.g, t.background.b);
+            let luma = (u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114) / 1000;
+            assert_eq!(light, luma > 128, "{}", t.id);
+        }
     }
 
     #[test]
@@ -348,11 +478,9 @@ mod tests {
             all.find("tokyo night").map(|t| t.id.as_str()),
             Some("tokyo-night")
         );
-        assert_eq!(all.step("dusk", 1).id, "dawn");
-        assert_eq!(all.step("paper", 1).id, "default-slate");
-        assert_eq!(all.step("default-slate", 1).id, "neon-nebula");
-        assert_eq!(all.step("dusk", -1).id, "github-dark");
-        assert_eq!(all.step("github-dark", 1).id, "dusk");
+        assert_eq!(all.step("dusk", 1).id, "default-slate");
+        assert_eq!(all.step("dusk", -1).id, "solarized-light");
+        assert_eq!(all.step("solarized-light", 1).id, "dusk");
     }
 
     #[test]

@@ -1,0 +1,17 @@
+# Rosé Pine Dawn, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Rosé Pine Dawn"
+group = "light-warm"
+accent = "#56949f"
+background = "#faf4ed"
+foreground = "#575279"
+cursor = "#575279"
+cursor_text = "#faf4ed"
+selection_background = "#dfdad9"
+selection_foreground = "#575279"
+palette = [
+  "#f2e9e1", "#b4637a", "#286983", "#ea9d34",
+  "#56949f", "#907aa9", "#d7827e", "#575279",
+  "#9893a5", "#b4637a", "#286983", "#ea9d34",
+  "#56949f", "#907aa9", "#d7827e", "#575279",
+]

@@ -1,0 +1,17 @@
+# Kanagawa Lotus, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Kanagawa Lotus"
+group = "light-warm"
+accent = "#43436c"
+background = "#f2ecbc"
+foreground = "#545464"
+cursor = "#43436c"
+cursor_text = "#f2ecbc"
+selection_background = "#545464"
+selection_foreground = "#f2ecbc"
+palette = [
+  "#1f1f28", "#c84053", "#6f894e", "#77713f",
+  "#4d699b", "#b35b79", "#597b75", "#545464",
+  "#8a8980", "#d7474b", "#6e915f", "#836f4a",
+  "#6693bf", "#624c83", "#5e857a", "#43436c",
+]
