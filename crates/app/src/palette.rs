@@ -67,6 +67,13 @@ pub enum Action {
     SyncFolder,
     SyncNow,
     ShowRecoveryKey,
+    /// Open the locked vault with its passphrase or recovery key.
+    UnlockVault,
+    /// Set or change the passphrase that keeps the vault's key.
+    SetVaultPassphrase,
+    RemoveVaultPassphrase,
+    /// Put the vault's key in the system keychain.
+    KeepVaultKey,
     StopSync,
 }
 
@@ -197,6 +204,14 @@ impl Palette {
     /// A question, with notes under the field; Enter answers.
     pub fn ask(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
         Self::build(Mode::Ask, notes, 0, placeholder, cx)
+    }
+
+    /// Like [`Palette::ask`], typing a secret: the field shows dots.
+    pub fn ask_secret(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
+        let mut p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
+        p.input = cx.new(|cx| TextInput::new(placeholder.to_string(), cx).masked());
+        p._changed = cx.subscribe(&p.input, |p, _, _: &Changed, cx| p.refilter(cx));
+        p
     }
 
     /// Saved passwords and passphrases, to forget.
