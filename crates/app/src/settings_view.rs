@@ -992,13 +992,9 @@ impl SettingsView {
             .child(rule())
             .child(self.app_text(cx));
 
-        div()
-            .flex()
-            .flex_wrap()
-            .gap(px(24.))
-            .items_start()
-            .child(left)
-            .child(self.preview())
+        // The preview is beside the page, not in it: it stays in view while
+        // the themes scroll (see the render).
+        left
     }
 
     /// `t`'s gradient, all its stops, drawn at `w` by `h` (it is stretched to
@@ -1809,16 +1805,34 @@ impl Render for SettingsView {
             .text_color(rgb(colors().text))
             .child(header)
             .child(
-                div().flex_1().min_h_0().flex().child(nav).child(
-                    div()
-                        .id("settings-content")
-                        .flex_1()
-                        .min_w_0()
-                        .overflow_y_scroll()
-                        .px(px(24.))
-                        .py(px(20.))
-                        .child(content),
-                ),
+                div()
+                    .flex_1()
+                    .min_h_0()
+                    .flex()
+                    .child(nav)
+                    .child(
+                        div()
+                            .id("settings-content")
+                            .flex_1()
+                            .min_w_0()
+                            .overflow_y_scroll()
+                            .px(px(24.))
+                            .py(px(20.))
+                            .child(content),
+                    )
+                    // Appearance: the terminal as chosen, beside what scrolls.
+                    .when(self.page == Page::Appearance, |d| {
+                        d.child(
+                            div()
+                                .id("settings-preview")
+                                .flex_shrink_0()
+                                .overflow_y_scroll()
+                                .pt(px(20.))
+                                .pr(px(24.))
+                                .pb(px(20.))
+                                .child(self.preview()),
+                        )
+                    }),
             )
     }
 }
