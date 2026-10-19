@@ -416,6 +416,39 @@ only once you type it in full. *Remove* takes a line out, so the next
 connection to that host asks about its key again. Every change keeps the file
 as it was in `known_hosts.old`, and comments and other lines stay as they are.
 
+## Certificates
+
+shellwing takes OpenSSH certificates both ways, as `ssh` does, for setups where
+a certificate authority (Teleport, Vault SSH, smallstep, `ssh-keygen -s`) signs
+keys instead of every key being listed on every server.
+
+**Hosts.** A line such as
+
+```
+@cert-authority *.example.com,[*.example.com]:2222 ssh-ed25519 AAAA… ca@example.com
+```
+
+in known_hosts makes shellwing ask those hosts for a host certificate and trust
+one that:
+
+- the authority signed;
+- is a host certificate, still valid;
+- names the host among its principals (or names none);
+- is not `@revoked`, nor is its authority.
+
+Nothing is learned into known_hosts. A certificate that fails these checks is
+still accepted if known_hosts knows the key inside it; otherwise the pane says
+why it was refused. Names in known_hosts may be patterns (`*`, `?`, and
+`!name` to leave one out), as in OpenSSH.
+
+**Signing in.** A certificate for a key is used before the key alone. It is
+found:
+
+- beside the key file, as `<key>-cert.pub` (`~/.ssh/id_ed25519-cert.pub`);
+- or named by `CertificateFile` in `~/.ssh/config`;
+- or held by ssh-agent with its key (`ssh-add` adds `id_ed25519-cert.pub` with
+  `id_ed25519`).
+
 ## Snippets
 
 Snippets are commands you run often. They are kept in the vault and sync with

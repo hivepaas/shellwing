@@ -8,7 +8,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use russh::keys::ssh_key::{Algorithm, LineEnding};
+use russh::keys::ssh_key::certificate::{Builder, CertType};
+use russh::keys::ssh_key::{Algorithm, Certificate, HashAlg, LineEnding};
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth as ServerAuth, ChannelOpenHandle, Msg, Session as ServerSession};
 use russh::{Channel, ChannelId, MethodKind, MethodSet};
@@ -35,6 +36,27 @@ struct Policy {
     rogue: bool,
     /// Run commands (exec requests) with `sh`, with this as `$HOME`.
     home: Option<PathBuf>,
+    /// Accept user certificates this authority signed.
+    user_ca: Option<PublicKey>,
+}
+
+/// A certificate for `key`, signed by `ca`, valid from a minute ago for an hour.
+fn certify(ca: &PrivateKey, key: &PublicKey, kind: CertType, principal: &str) -> Certificate {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("time")
+        .as_secs();
+    let mut b = Builder::new_with_random_nonce(
+        &mut rand::rng(),
+        key.key_data().clone(),
+        now - 60,
+        now + 3600,
+    )
+    .expect("builder");
+    b.cert_type(kind).expect("type");
+    b.key_id("test").expect("id");
+    b.valid_principal(principal).expect("principal");
+    b.sign(ca).expect("sign")
 }
 
 /// The agent's answer as the server got it, or why it got none.
@@ -113,14 +135,40 @@ impl server::Handler for TestServer {
         _user: &str,
         key: &PublicKey,
     ) -> Result<ServerAuth, Self::Error> {
-        // The key itself: a key on the wire has no comment.
+        // The key itself: a key on the wire has no comment. With an authority
+        // to trust, any key may go on: its certificate decides, or the key's
+        // own check refuses it.
         Ok(
-            if self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data()) {
+            if self.policy.user_ca.is_some()
+                || self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data())
+            {
                 ServerAuth::Accept
             } else {
                 ServerAuth::reject()
             },
         )
+    }
+
+    async fn auth_openssh_certificate(
+        &mut self,
+        user: &str,
+        certificate: &Certificate,
+    ) -> Result<ServerAuth, Self::Error> {
+        let trusted = self
+            .policy
+            .user_ca
+            .as_ref()
+            .map(|ca| ca.fingerprint(HashAlg::Sha256));
+        let ok = trusted.is_some_and(|fp| {
+            certificate.cert_type() == CertType::User
+                && certificate.validate([&fp]).is_ok()
+                && certificate.valid_principals().iter().any(|p| p == user)
+        });
+        Ok(if ok {
+            ServerAuth::Accept
+        } else {
+            ServerAuth::reject()
+        })
     }
 
     async fn auth_publickey(
@@ -421,11 +469,24 @@ fn sftp_server() -> Option<PathBuf> {
 
 /// Starts a server on 127.0.0.1 and returns its port and host public key.
 async fn serve(policy: Policy, methods: &[MethodKind]) -> (u16, PublicKey) {
+    serve_as(policy, methods, None).await
+}
+
+/// Like [`serve`], with a host certificate `host_ca` signed when there is one.
+async fn serve_as(
+    policy: Policy,
+    methods: &[MethodKind],
+    host_ca: Option<&PrivateKey>,
+) -> (u16, PublicKey) {
     let host_key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("host key");
     let public = host_key.public_key().clone();
+    let certificates = host_ca
+        .map(|ca| vec![certify(ca, &public, CertType::Host, "127.0.0.1")])
+        .unwrap_or_default();
     let config = Arc::new(server::Config {
         methods: MethodSet::from(methods),
         keys: vec![host_key],
+        certificates,
         auth_rejection_time: Duration::from_millis(1),
         auth_rejection_time_initial: Some(Duration::ZERO),
         ..Default::default()
@@ -1617,4 +1678,90 @@ async fn a_public_key_is_installed_beside_the_shell() {
         assert_eq!(mode(home.join(".ssh")), 0o700);
         assert_eq!(mode(home.join(".ssh/authorized_keys")), 0o600);
     }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_host_certificate_from_a_trusted_authority_is_accepted_and_not_learned() {
+    let fx = Fixture::new("hostcert");
+    let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+    let policy = Policy {
+        password: Some("pw"),
+        ..Default::default()
+    };
+    let (port, _) = serve_as(policy, &[MethodKind::Password], Some(&ca)).await;
+    let lines = format!(
+        "@cert-authority [127.0.0.1]:* {}\n",
+        ca.public_key().to_openssh().expect("ca line")
+    );
+    std::fs::write(fx.known_hosts(), &lines).expect("known_hosts");
+    let (prompter, asked) = scripted(vec![Some("pw")]);
+    let mut opts = fx.options(local(port, "u"), prompter);
+    // Nothing known about the key itself, and nothing may be learned.
+    opts.policy = HostKeyPolicy::Strict;
+    connect(opts).await.expect("signed by a trusted authority");
+    assert!(
+        asked
+            .lock()
+            .expect("asked")
+            .iter()
+            .all(|p| !matches!(p, Prompt::HostKey { .. })),
+        "never asked about the key"
+    );
+    assert_eq!(
+        std::fs::read_to_string(fx.known_hosts()).expect("read"),
+        lines
+    );
+
+    // Another authority than the one that signed it: refused.
+    let other = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("other");
+    std::fs::write(
+        fx.known_hosts(),
+        format!(
+            "@cert-authority [127.0.0.1]:* {}\n",
+            other.public_key().to_openssh().expect("line")
+        ),
+    )
+    .expect("known_hosts");
+    let (prompter, _) = scripted(vec![Some("pw")]);
+    let mut opts = fx.options(local(port, "u"), prompter);
+    opts.policy = HostKeyPolicy::Strict;
+    let err = connect(opts)
+        .await
+        .expect_err("no trusted authority signed it");
+    assert!(matches!(err, Error::HostCertificate { .. }), "{err}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_user_certificate_beside_the_key_signs_in() {
+    let fx = Fixture::new("usercert");
+    let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+    let policy = Policy {
+        user_ca: Some(ca.public_key().clone()),
+        ..Default::default()
+    };
+    let (port, _) = serve(policy, &[MethodKind::PublicKey]).await;
+    let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+    let file = fx.dir.join("id_test");
+    std::fs::write(
+        &file,
+        key.to_openssh(LineEnding::LF).expect("pem").as_bytes(),
+    )
+    .expect("key file");
+
+    // The key alone is not enough: the server takes certificates only.
+    let mut target = local(port, "deploy");
+    target.identity_files = vec![file.clone()];
+    let (prompter, _) = scripted(vec![]);
+    let mut opts = fx.options(target.clone(), prompter);
+    opts.policy = HostKeyPolicy::AcceptNew;
+    assert!(connect(opts).await.is_err(), "no certificate yet");
+
+    let cert = certify(&ca, key.public_key(), CertType::User, "deploy");
+    let mut cert_file = file.as_os_str().to_owned();
+    cert_file.push("-cert.pub");
+    std::fs::write(&cert_file, cert.to_openssh().expect("cert")).expect("cert file");
+    let (prompter, _) = scripted(vec![]);
+    let mut opts = fx.options(target, prompter);
+    opts.policy = HostKeyPolicy::AcceptNew;
+    connect(opts).await.expect("signed in with the certificate");
 }

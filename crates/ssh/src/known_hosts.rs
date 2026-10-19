@@ -43,21 +43,48 @@ impl Entry {
             .collect()
     }
 
-    /// Whether the line is for `host` on `port`, hashed names included.
+    /// Whether the line is for `host` on `port`: a name that is it, hashed or
+    /// not, or a pattern (`*.example.com`) that matches it, and no negated one
+    /// (`!bastion.example.com`) that does.
     pub fn is_for(&self, host: &str, port: u16) -> bool {
         let name = if port == 22 {
             host.to_string()
         } else {
             format!("[{host}]:{port}")
         };
-        self.hosts.iter().any(|h| name_matches(h, &name))
+        let (negated, names): (Vec<&String>, Vec<&String>) =
+            self.hosts.iter().partition(|h| h.starts_with('!'));
+        !negated.iter().any(|h| name_matches(&h[1..], &name))
+            && names.iter().any(|h| name_matches(h, &name))
     }
+}
+
+/// Whether `pattern` (`*` for any run, `?` for any one character) matches
+/// `name`, ignoring case.
+fn glob(pattern: &[u8], name: &[u8]) -> bool {
+    let (mut p, mut n) = (0, 0);
+    // Where the last `*` was, and where in `name` it is tried from next.
+    let mut star: Option<(usize, usize)> = None;
+    while n < name.len() {
+        if p < pattern.len() && (pattern[p] == b'?' || pattern[p].eq_ignore_ascii_case(&name[n])) {
+            (p, n) = (p + 1, n + 1);
+        } else if p < pattern.len() && pattern[p] == b'*' {
+            star = Some((p, n));
+            p += 1;
+        } else if let Some((sp, sn)) = star {
+            (p, n) = (sp + 1, sn + 1);
+            star = Some((sp, sn + 1));
+        } else {
+            return false;
+        }
+    }
+    pattern[p..].iter().all(|&c| c == b'*')
 }
 
 /// Whether a name of a known_hosts line is `name` (`host` or `[host]:port`).
 fn name_matches(written: &str, name: &str) -> bool {
     let Some(hashed) = written.strip_prefix("|1|") else {
-        return written.eq_ignore_ascii_case(name);
+        return glob(written.as_bytes(), name.as_bytes());
     };
     let mut parts = hashed.split('|');
     let (Some(salt), Some(hash)) = (parts.next(), parts.next()) else {
@@ -153,6 +180,17 @@ pub fn forget(path: &Path, host: &str, port: u16) -> io::Result<usize> {
     remove_lines(path, &lines)
 }
 
+/// The certificate authorities known_hosts trusts to sign `host`'s keys on
+/// `port` (`@cert-authority` lines).
+pub fn authorities(path: &Path, host: &str, port: u16) -> Vec<PublicKey> {
+    entries(path)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|e| e.marker.as_deref() == Some("@cert-authority") && e.is_for(host, port))
+        .filter_map(|e| PublicKey::from_openssh(&e.key.public).ok())
+        .collect()
+}
+
 /// The fingerprints known_hosts has for `host` on `port`.
 pub fn fingerprints(path: &Path, host: &str, port: u16) -> Vec<String> {
     entries(path)
@@ -194,6 +232,15 @@ mod tests {
             data_encoding::BASE64.encode(salt),
             data_encoding::BASE64.encode(&hash)
         )
+    }
+
+    #[test]
+    fn patterns_match_as_openssh_does() {
+        assert!(glob(b"*.example.com", b"api.example.com"));
+        assert!(glob(b"web-?", b"web-1") && !glob(b"web-?", b"web-12"));
+        assert!(glob(b"*", b"anything") && glob(b"a*b*c", b"axxbyyc"));
+        assert!(!glob(b"*.example.com", b"example.com"));
+        assert!(glob(b"[*.example.com]:2222", b"[db.example.com]:2222"));
     }
 
     #[test]
@@ -255,6 +302,32 @@ mod tests {
         );
 
         assert_eq!(remove_lines(&path, &[999]).expect("none"), 0);
+
+        // Patterns, negated names, and the authorities for a host.
+        let ca = keys::generate(keys::KeyKind::Ed25519, "").expect("ca");
+        std::fs::write(
+            &path,
+            format!(
+                "@cert-authority *.example.com,!bastion.example.com {}\n",
+                line(&ca)
+            ),
+        )
+        .expect("write");
+        assert_eq!(authorities(&path, "api.example.com", 22).len(), 1);
+        assert_eq!(
+            authorities(&path, "API.Example.com", 22).len(),
+            1,
+            "names ignore case"
+        );
+        assert!(
+            authorities(&path, "bastion.example.com", 22).is_empty(),
+            "negated"
+        );
+        assert!(authorities(&path, "example.org", 22).is_empty());
+        assert!(
+            authorities(&path, "api.example.com", 2222).is_empty(),
+            "another port"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
