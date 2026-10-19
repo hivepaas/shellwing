@@ -223,6 +223,9 @@ pub struct StatusChanged;
 /// The session ended and the settings say to close the pane.
 pub struct CloseRequested;
 
+/// The program set the terminal's title (OSC 0/2).
+pub struct TitleChanged;
+
 /// A secret was saved in the vault.
 pub struct VaultChanged;
 
@@ -355,6 +358,7 @@ impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<ListenToggled> for TermView {}
 impl gpui::EventEmitter<UseKey> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
+impl gpui::EventEmitter<TitleChanged> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
 impl gpui::EventEmitter<PaneCommand> for TermView {}
@@ -469,6 +473,13 @@ impl TermView {
     /// What the program says the terminal is (OSC 0/2), if it said.
     pub fn shell_title(&self) -> Option<&SharedString> {
         self.shell_title.as_ref()
+    }
+
+    /// What the shell's title adds to the host's name, for the tab: a
+    /// `user@host:` start (bash's and zsh's own titles) is left out, since
+    /// the tab names the host already.
+    pub fn title_detail(&self) -> Option<String> {
+        shell_detail(self.shell_title.as_deref()?, &self.session.title)
     }
 
     /// The window's bottom corners this pane fills (see `corners`).
@@ -1498,7 +1509,11 @@ impl TermView {
             }
             TermEvent::Title(t) => {
                 let t = t.trim();
-                self.shell_title = (!t.is_empty()).then(|| t.to_string().into());
+                let title = (!t.is_empty()).then(|| SharedString::from(t.to_string()));
+                if title != self.shell_title {
+                    self.shell_title = title;
+                    cx.emit(TitleChanged);
+                }
                 cx.notify();
             }
             TermEvent::LogFailed(e) => {
@@ -2676,9 +2691,34 @@ impl EntityInputHandler for TermView {
     }
 }
 
+/// See [`TermView::title_detail`].
+fn shell_detail(shell: &str, host: &str) -> Option<String> {
+    let shell = shell.trim();
+    let rest = match shell.split_once(':') {
+        Some((who, rest)) if who.contains('@') && !who.contains(char::is_whitespace) => rest.trim(),
+        _ => shell,
+    };
+    (!rest.is_empty() && rest != host).then(|| rest.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_tab_leaves_out_what_names_the_host() {
+        assert_eq!(
+            shell_detail("deploy@api-1: ~/apps/billing", "api-1").as_deref(),
+            Some("~/apps/billing")
+        );
+        assert_eq!(shell_detail("root@db:~", "db").as_deref(), Some("~"));
+        assert_eq!(
+            shell_detail("vim src/a:b.rs", "api-1").as_deref(),
+            Some("vim src/a:b.rs")
+        );
+        assert_eq!(shell_detail("api-1", "api-1"), None);
+        assert_eq!(shell_detail("deploy@api-1:", "api-1"), None);
+    }
 
     fn pos(total: u64, offset: u64, len: u64) -> ScrollPos {
         ScrollPos { total, offset, len }

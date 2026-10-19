@@ -37,7 +37,9 @@ shellwing --local             # and a tab with a shell on this computer
 
 `host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
 (`HostName`, `User`, `Port`, `IdentityFile` and `ProxyJump` are honoured). The host
-list on the left shows both; clicking one opens a tab. Sign-in follows OpenSSH:
+list on the left shows both; clicking one opens a tab. A tab shows the host's
+name and what the shell puts in the title (its folder, the program running);
+drag a tab onto another to move it there. Sign-in follows OpenSSH:
 agent keys, key files, keyboard-interactive (one-time codes, or the password when
 PAM asks for it), then a password;
 questions are asked in the terminal. Host keys are checked against

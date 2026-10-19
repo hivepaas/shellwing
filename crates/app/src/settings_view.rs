@@ -998,6 +998,18 @@ impl SettingsView {
                         .child(label("A .toml file there is a theme of your own.")),
                 )
             })
+            .child(toggle(
+                "theme-accent",
+                a.theme_accent,
+                "The app's accent from the theme",
+                "The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.",
+                {
+                    let on = a.theme_accent;
+                    cx.listener(move |v, _, _, cx| {
+                        v.change(&["appearance", "theme_accent"], Some(SettingValue::Bool(!on)), cx)
+                    })
+                },
+            ))
             .child(rule())
             .child(text)
             .child(rule())

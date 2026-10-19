@@ -104,7 +104,8 @@ struct DragOut {
 }
 
 /// What follows the pointer while an entry is dragged in the window.
-struct DragGhost(SharedString);
+/// What follows the pointer while something is dragged: its name.
+pub(crate) struct DragGhost(pub SharedString);
 
 impl Render for DragGhost {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {

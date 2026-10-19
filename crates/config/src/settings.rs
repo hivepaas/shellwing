@@ -168,6 +168,8 @@ pub struct Appearance {
     pub padding: Padding,
     /// The app's own text: tabs, the host list, the palette, panels, settings.
     pub ui_font: UiFont,
+    /// The app's accent (the logo, what is chosen, buttons) is the theme's.
+    pub theme_accent: bool,
 }
 
 /// The font of everything but the terminal.
@@ -217,6 +219,7 @@ impl Default for Appearance {
             scrollbar: Scrollbar::default(),
             padding: Padding::default(),
             ui_font: UiFont::default(),
+            theme_accent: true,
         }
     }
 }
