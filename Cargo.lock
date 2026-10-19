@@ -6367,6 +6367,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "chrono",
+ "dirs 7.0.0",
  "portable-pty",
  "russh",
  "shellwing-config",
@@ -6399,6 +6401,7 @@ version = "0.1.0"
 dependencies = [
  "libghostty-vt",
  "regex",
+ "unicode-width",
 ]
 
 [[package]]

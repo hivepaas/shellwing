@@ -13,6 +13,62 @@ pub struct Settings {
     pub terminal: Terminal,
     pub ssh: Ssh,
     pub files: Files,
+    pub log: Log,
+}
+
+/// Session logs: what a pane was sent, written to a file as it comes.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Log {
+    /// Every session is logged from its start, but those of hosts with
+    /// `log = false`.
+    pub always: bool,
+    /// The folder, `~/` allowed; None: `shellwing/logs` in the user's data
+    /// folder.
+    pub folder: Option<String>,
+    pub format: LogFormat,
+    /// Each line of a text log starts with the time.
+    pub timestamps: bool,
+}
+
+impl Default for Log {
+    fn default() -> Self {
+        Log {
+            always: false,
+            folder: None,
+            format: LogFormat::Text,
+            timestamps: true,
+        }
+    }
+}
+
+impl Log {
+    /// The folder with `~/` expanded; None: the default.
+    pub fn folder_path(&self) -> Option<std::path::PathBuf> {
+        expand_home(self.folder.as_deref()?)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogFormat {
+    /// The lines, as plain text.
+    #[default]
+    Text,
+    /// Every byte as it came, colors and all.
+    Raw,
+}
+
+/// A folder as written in the settings, `~/` expanded. None when empty.
+fn expand_home(f: &str) -> Option<std::path::PathBuf> {
+    let f = f.trim();
+    if f.is_empty() {
+        return None;
+    }
+    Some(match (f.strip_prefix("~/"), std::env::home_dir()) {
+        (Some(rest), Some(home)) => home.join(rest),
+        _ => std::path::PathBuf::from(f),
+    })
 }
 
 /// The Files panel.
@@ -53,14 +109,7 @@ pub struct Sync {
 impl Sync {
     /// The folder with `~/` expanded.
     pub fn folder_path(&self) -> Option<std::path::PathBuf> {
-        let f = self.folder.as_deref()?.trim();
-        if f.is_empty() {
-            return None;
-        }
-        Some(match (f.strip_prefix("~/"), std::env::home_dir()) {
-            (Some(rest), Some(home)) => home.join(rest),
-            _ => std::path::PathBuf::from(f),
-        })
+        expand_home(self.folder.as_deref()?)
     }
 }
 
@@ -276,6 +325,12 @@ mod tests {
 
             [files]
             editor = "code -n"
+
+            [log]
+            always = true
+            folder = "~/logs"
+            format = "raw"
+            timestamps = false
             "#,
         )
         .expect("parse");
@@ -294,5 +349,11 @@ mod tests {
         assert_eq!(s.ssh.host_key, crate::hosts::HostKey::AcceptNew);
         assert_eq!(s.ssh.keepalive, 0);
         assert_eq!(s.files.editor.as_deref(), Some("code -n"));
+        assert!(s.log.always && !s.log.timestamps);
+        assert_eq!(s.log.format, LogFormat::Raw);
+        assert_eq!(
+            s.log.folder_path(),
+            std::env::home_dir().map(|h| h.join("logs"))
+        );
     }
 }

@@ -83,6 +83,8 @@ const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 const ZOOM_NOTICE: Duration = Duration::from_secs(2);
 /// How a key's install went.
 const KEY_NOTICE: Duration = Duration::from_secs(8);
+/// Where a log or the saved output went.
+const LOG_NOTICE: Duration = Duration::from_secs(6);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
 /// The scrollbar stays this long after scrolling stops (with `scrollbar = "auto"`).
@@ -90,6 +92,24 @@ const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
 /// The pointer this close to the right edge shows the scrollbar.
 const SCROLLBAR_ZONE: f32 = 14.;
 const SCROLLBAR_MIN_THUMB: f32 = 24.;
+
+/// A page for the terminal's HTML, in the pane's colors.
+fn html_page(title: &str, body: &[u8], colors: &shellwing_term::Colors) -> Vec<u8> {
+    let hex = |c: shellwing_term::Rgb| format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b);
+    let title = title
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    let mut page = format!(
+        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>{title}</title></head>\n<body style=\"margin: 16px; background: {}; color: {}\">\n",
+        hex(colors.background),
+        hex(colors.foreground)
+    )
+    .into_bytes();
+    page.extend_from_slice(body);
+    page.extend_from_slice(b"\n</body></html>\n");
+    page
+}
 
 /// The scrollbar thumb's top and height in a track `track` px tall, or None
 /// when everything fits (no history, or the alternate screen).
@@ -215,6 +235,8 @@ pub enum PaneCommand {
     Palette,
     Split(gpui::Axis),
     Forward,
+    /// Log the pane to a file, or stop: the workspace has the settings.
+    Log,
     Close,
 }
 
@@ -453,9 +475,76 @@ impl TermView {
         }
     }
 
-    /// The badge on a pane of a tab that types in every pane.
-    fn listen_badge(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
-        let listening = self.broadcast?;
+    /// Starts logging the pane to a new file, or stops, and says where.
+    pub fn toggle_log(&mut self, settings: &shellwing_config::Log, cx: &mut Context<Self>) {
+        let said = match self.session.stop_log() {
+            Some(path) => format!("Log saved: {}", path.display()),
+            None => match self.session.start_log(settings) {
+                Ok(path) => format!("Logging to {}", path.display()),
+                Err(e) => format!("Cannot log: {e}"),
+            },
+        };
+        self.show_notice(said, LOG_NOTICE, cx);
+    }
+
+    /// Asks where, then saves all the text, the history included: as plain
+    /// text, or as an HTML page with its colors.
+    pub fn save_output(&mut self, html: bool, window: &mut Window, cx: &mut Context<Self>) {
+        let name = format!(
+            "{}_{}.{}",
+            shellwing_core::logs::file_safe(&self.session.title),
+            chrono::Local::now().format("%Y-%m-%d_%H-%M-%S"),
+            if html { "html" } else { "txt" }
+        );
+        let picked = cx.prompt_for_new_path(&crate::files::downloads_dir(), Some(&name));
+        let (term, title, colors) = (
+            self.term.clone(),
+            self.session.title.clone(),
+            self.look.colors(),
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let Ok(Ok(Some(path))) = picked.await else {
+                return;
+            };
+            let (tx, rx) = async_channel::bounded(1);
+            term.format_all(
+                html,
+                Box::new(move |bytes| {
+                    let _ = tx.try_send(bytes);
+                }),
+            );
+            let Ok(mut bytes) = rx.recv().await else {
+                return;
+            };
+            if html {
+                bytes = html_page(&title, &bytes, &colors);
+            }
+            let to = path.clone();
+            let written = cx
+                .background_executor()
+                .spawn(async move { std::fs::write(&to, bytes) })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                let said = match written {
+                    Ok(()) => format!(
+                        "Saved as {}: {}",
+                        if html { "HTML" } else { "text" },
+                        path.display()
+                    ),
+                    Err(e) => format!("Not saved: {e}"),
+                };
+                v.show_notice(said, LOG_NOTICE, cx);
+            });
+        })
+        .detach();
+    }
+
+    /// The badges at the pane's top right: logging, and typing in every pane.
+    fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let (log, listen) = (self.log_badge(cx), self.listen_badge(cx));
+        if log.is_none() && listen.is_none() {
+            return None;
+        }
         let top = if self.find.is_some() {
             px(52.)
         } else {
@@ -463,10 +552,50 @@ impl TermView {
         };
         Some(
             div()
-                .id("listen-badge")
                 .absolute()
                 .top(top)
                 .right(px(SCROLLBAR_ZONE + 6.))
+                .flex()
+                .gap(px(6.))
+                .children(log)
+                .children(listen)
+                .into_any_element(),
+        )
+    }
+
+    /// While the pane is logged; a click opens the log.
+    fn log_badge(&self, cx: &mut Context<Self>) -> Option<gpui::Stateful<gpui::Div>> {
+        let path = self.session.log_path()?.to_path_buf();
+        Some(
+            div()
+                .id("log-badge")
+                .flex()
+                .items_center()
+                .gap(px(6.))
+                .h(px(22.))
+                .px(px(8.))
+                .rounded_full()
+                .border_1()
+                .border_color(rgb(0x7f1d1d))
+                .bg(rgb(0x2a1215))
+                .text_xs()
+                .text_color(rgb(0xfecaca))
+                .cursor_pointer()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .on_click(cx.listener(move |_, _, _, cx| {
+                    cx.open_url(&format!("file://{}", path.display()))
+                }))
+                .child(div().size(px(6.)).rounded_full().bg(rgb(0xef4444)))
+                .child("logging"),
+        )
+    }
+
+    /// The badge on a pane of a tab that types in every pane.
+    fn listen_badge(&self, cx: &mut Context<Self>) -> Option<gpui::Stateful<gpui::Div>> {
+        let listening = self.broadcast?;
+        Some(
+            div()
+                .id("listen-badge")
                 .flex()
                 .items_center()
                 .gap(px(6.))
@@ -486,8 +615,7 @@ impl TermView {
                 } else {
                     0x5b6578
                 })))
-                .child(if listening { "listening" } else { "left out" })
-                .into_any_element(),
+                .child(if listening { "listening" } else { "left out" }),
         )
     }
 
@@ -1337,6 +1465,10 @@ impl TermView {
                     cx,
                 );
             }
+            TermEvent::LogFailed(e) => {
+                self.session.stop_log();
+                self.show_notice(format!("Logging stopped: {e}"), LOG_NOTICE, cx);
+            }
         }
     }
 
@@ -1462,6 +1594,39 @@ impl TermView {
                         .on_click(act(|_, _, cx| cx.emit(PaneCommand::Forward))),
                 )
             })
+            .child(line())
+            // What the pane shows, kept: now (with its history), or from now on.
+            .child(
+                item(
+                    "menu-save-text",
+                    "Save Output as Text…",
+                    String::new(),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.save_output(false, window, cx))),
+            )
+            .child(
+                item(
+                    "menu-save-html",
+                    "Save Output as HTML…",
+                    "with colors".into(),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.save_output(true, window, cx))),
+            )
+            .child(
+                item(
+                    "menu-log",
+                    if self.session.log_path().is_some() {
+                        "Stop Logging"
+                    } else {
+                        "Start Logging"
+                    },
+                    String::new(),
+                    true,
+                )
+                .on_click(act(|_, _, cx| cx.emit(PaneCommand::Log))),
+            )
             .child(line())
             .child(
                 item("menu-split-right", "Split Right", chord("D"), true).on_click(act(
@@ -2208,7 +2373,7 @@ impl Render for TermView {
             }
             None => {}
         }
-        if let Some(b) = self.listen_badge(cx) {
+        if let Some(b) = self.badges(cx) {
             terminal = terminal.child(b);
         }
         if let Some(at) = self.menu {

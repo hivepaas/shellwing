@@ -17,6 +17,9 @@ async-channel.workspace = true
 anyhow.workspace = true
 # Local terminals: a PTY on Unix, ConPTY on Windows.
 portable-pty = "0.9"
+# Session logs: their folder, and the time in their names and lines.
+dirs = "7"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
 [dev-dependencies]
 toml = "1"

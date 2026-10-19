@@ -5,6 +5,7 @@
 pub mod bench;
 pub mod command;
 pub mod local;
+pub mod logs;
 pub mod secrets;
 pub mod session;
 pub mod target;

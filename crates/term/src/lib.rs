@@ -22,6 +22,7 @@
 
 pub mod find;
 pub mod links;
+pub mod log;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, SyncSender};
@@ -275,6 +276,9 @@ pub enum Event {
     PasteRefused(String),
     /// A link the user clicked; already filtered by [`links::openable`].
     OpenLink(String),
+    /// The log could not be written (the disk is full, the folder went):
+    /// logging stopped.
+    LogFailed(String),
 }
 
 enum Cmd {
@@ -315,6 +319,13 @@ enum Cmd {
     FindNext {
         older: bool,
     },
+    /// Log what comes from now on, or stop logging.
+    Log(Option<Box<log::Log>>),
+    /// All the text, history included, as plain text or HTML.
+    Format {
+        html: bool,
+        reply: FormatFn,
+    },
     /// Stop the thread, dropping the terminal and the write callback.
     Close,
     ResetModes,
@@ -338,6 +349,8 @@ pub type WriteFn = Box<dyn Fn(Vec<u8>) + Send>;
 pub type WakeFn = Box<dyn Fn() + Send>;
 /// Called (from the terminal thread) with events for the UI.
 pub type EventFn = Box<dyn Fn(Event) + Send>;
+/// Called (from the terminal thread) with the text asked for.
+pub type FormatFn = Box<dyn FnOnce(Vec<u8>) + Send>;
 
 #[derive(Clone)]
 pub struct TermHandle {
@@ -404,6 +417,18 @@ impl TermHandle {
     /// Copies the selection; the text arrives as [`Event::Copied`].
     pub fn copy(&self) {
         let _ = self.tx.send(Cmd::Copy);
+    }
+
+    /// Writes what the terminal is sent from now on to `log`, in place of
+    /// the log before, which ends; None stops logging.
+    pub fn log(&self, log: Option<log::Log>) {
+        let _ = self.tx.send(Cmd::Log(log.map(Box::new)));
+    }
+
+    /// Hands `reply` all the text, the history and the screen, as plain text
+    /// or as HTML with its colors.
+    pub fn format_all(&self, html: bool, reply: FormatFn) {
+        let _ = self.tx.send(Cmd::Format { html, reply });
     }
 
     pub fn mouse(&self, input: MouseInput) {
@@ -607,6 +632,7 @@ fn run(
         find: None,
         found: vec![],
     };
+    let mut logging = Logging(None);
     let mut changed = true;
     loop {
         // A search still going through history goes on between commands.
@@ -633,13 +659,19 @@ fn run(
                 .flatten()
         }) {
             match cmd {
-                Cmd::Feed(b) => e.term.vt_write(&b),
+                Cmd::Feed(b) => {
+                    logging.write(&b, &e.events);
+                    e.term.vt_write(&b);
+                }
                 Cmd::Resize {
                     cols,
                     rows,
                     cell_w,
                     cell_h,
                 } => {
+                    if let Some(l) = &mut logging.0 {
+                        l.resize(cols);
+                    }
                     e.term.resize(cols, rows, cell_w, cell_h)?;
                     (e.cols, e.grid_rows, e.cell) = (cols, rows, (cell_w.max(1), cell_h.max(1)));
                 }
@@ -730,6 +762,19 @@ fn run(
                         e.find_failed();
                     }
                 }
+                Cmd::Log(log) => {
+                    logging.end(&e.events);
+                    logging.0 = log.map(|mut l| {
+                        l.resize(e.cols);
+                        l
+                    });
+                    continue;
+                }
+                Cmd::Format { html, reply } => {
+                    // Nothing, rather than the thread stopping.
+                    reply(e.format_all(html).unwrap_or_default());
+                    continue;
+                }
                 Cmd::Close => return Ok(()),
                 Cmd::ResetModes => {
                     // Only leave the alternate screen if a program left it on:
@@ -744,6 +789,7 @@ fn run(
             }
             changed = true;
         }
+        logging.flush(&e.events);
         if e.advance_find(changed) {
             changed = true;
         }
@@ -759,7 +805,72 @@ fn run(
     Ok(())
 }
 
+/// The log being written, if any. When the thread stops, it ends: its last
+/// line is written.
+struct Logging(Option<Box<log::Log>>);
+
+impl Logging {
+    fn write(&mut self, bytes: &[u8], events: &EventFn) {
+        if let Some(l) = &mut self.0
+            && let Err(err) = l.write(bytes)
+        {
+            self.failed(&err, events);
+        }
+    }
+
+    fn flush(&mut self, events: &EventFn) {
+        if let Some(l) = &mut self.0
+            && let Err(err) = l.flush()
+        {
+            self.failed(&err, events);
+        }
+    }
+
+    fn end(&mut self, events: &EventFn) {
+        if let Some(l) = self.0.take()
+            && let Err(err) = l.finish()
+        {
+            self.failed(&err, events);
+        }
+    }
+
+    fn failed(&mut self, err: &std::io::Error, events: &EventFn) {
+        self.0 = None;
+        events(Event::LogFailed(err.to_string()));
+    }
+}
+
+impl Drop for Logging {
+    fn drop(&mut self) {
+        if let Some(l) = self.0.take() {
+            let _ = l.finish();
+        }
+    }
+}
+
 impl Engine {
+    /// The text of the history and the screen.
+    fn format_all(&mut self, html: bool) -> libghostty_vt::error::Result<Vec<u8>> {
+        let Some(all) = self.term.select_all()? else {
+            return Ok(Vec::new());
+        };
+        let format = if html {
+            libghostty_vt::fmt::Format::Html
+        } else {
+            libghostty_vt::fmt::Format::Plain
+        };
+        let opts = FormatOptions::new()
+            .with_emit_format(format)
+            .with_unwrap(true)
+            .with_trim(true)
+            .with_selection(&all);
+        Ok(self
+            .term
+            .format_selection_alloc(None, opts)?
+            .map(|b| b.to_vec())
+            .unwrap_or_default())
+    }
+
     fn encode_key(
         &mut self,
         k: NamedKey,

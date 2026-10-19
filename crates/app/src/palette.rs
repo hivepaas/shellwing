@@ -42,6 +42,13 @@ pub enum Action {
     ChangeTheme,
     Files,
     Find,
+    /// Log the focused pane to a file, or stop.
+    Log,
+    /// Save the focused pane's text, history included: plain, or an HTML
+    /// page with its colors.
+    SaveOutput {
+        html: bool,
+    },
     NewHost,
     NewGroup,
     EditHost(crate::workspace::EditTarget),

@@ -780,8 +780,7 @@ impl Workspace {
         let session = match Session::start(
             spec,
             opens,
-            look.scrollback,
-            self.live.settings().ssh.clone(),
+            self.live.settings(),
             &self.rt,
             bench,
             self.vault.clone(),
@@ -832,6 +831,7 @@ impl Workspace {
                 PaneCommand::Palette => ws.open_palette(window, cx),
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
+                PaneCommand::Log => ws.toggle_log(cx),
                 PaneCommand::Close => ws.request_close_view(view, window, cx),
             }
         })
@@ -1136,6 +1136,25 @@ impl Workspace {
                 Action::Find,
                 format!("Find in {title}…"),
                 format!("{chord}+F"),
+            );
+            action(
+                Action::SaveOutput { html: false },
+                format!("Save the output of {title} as text…"),
+                String::new(),
+            );
+            action(
+                Action::SaveOutput { html: true },
+                format!("Save the output of {title} as HTML, with colors…"),
+                String::new(),
+            );
+            action(
+                Action::Log,
+                if t.read(cx).session().log_path().is_some() {
+                    format!("Stop logging {title}")
+                } else {
+                    format!("Log {title} to a file")
+                },
+                String::new(),
             );
             action(
                 Action::Files,
@@ -1722,6 +1741,7 @@ impl Workspace {
                 .map(|t| (t.id.clone(), t.name.clone()))
                 .collect(),
             app_ssh: self.live.settings().ssh.clone(),
+            app_logs: self.live.settings().log.always,
             keys: self.key_choices(),
             vault: self.vault.clone(),
         };
@@ -1846,6 +1866,20 @@ impl Workspace {
     fn find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(tab) = self.active_tab().cloned() {
             tab.update(cx, |v, cx| v.open_find(window, cx));
+        }
+    }
+
+    /// Logs the focused pane to a file, or stops.
+    fn toggle_log(&mut self, cx: &mut Context<Self>) {
+        let settings = self.live.settings().log.clone();
+        if let Some(tab) = self.active_tab().cloned() {
+            tab.update(cx, |v, cx| v.toggle_log(&settings, cx));
+        }
+    }
+
+    fn save_output(&mut self, html: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.active_tab().cloned() {
+            tab.update(cx, |v, cx| v.save_output(html, window, cx));
         }
     }
 
@@ -2157,6 +2191,8 @@ impl Workspace {
             Action::Files => self.toggle_files(window, cx),
             Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
+            Action::Log => self.toggle_log(cx),
+            Action::SaveOutput { html } => self.save_output(html, window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
             Action::Settings => self.open_settings(Page::Appearance, window, cx),

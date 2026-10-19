@@ -50,9 +50,12 @@ fn harness_keeping(scrollback: usize) -> Harness {
 }
 
 impl Harness {
-    /// Waits until a frame satisfying `pred` is built.
+    /// Waits until a frame satisfying `pred` is built. Debug builds of
+    /// libghostty parse slowly (seconds for a few thousand lines), so the
+    /// wait is long; it only runs out when something is wrong.
     fn frame_where(&self, pred: impl Fn(&Frame) -> bool) -> Frame {
-        for _ in 0..200 {
+        let deadline = std::time::Instant::now() + Duration::from_secs(15);
+        while std::time::Instant::now() < deadline {
             if let Some(f) = self.term.take_frame()
                 && pred(&f)
             {
@@ -605,4 +608,53 @@ fn find_follows_new_output() {
     // `clear` (the screen and the history): what it wiped is no longer found.
     h.term.feed(b"\x1b[2J\x1b[3J\x1b[H".to_vec());
     h.frame_where(|f| f.find.is_some_and(|s| s.total == 0 && !s.searching));
+}
+
+/// Written to memory, for reading back.
+#[derive(Clone, Default)]
+struct Sink(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Sink {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().expect("sink").extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn all_text(h: &Harness, html: bool) -> String {
+    let (tx, rx) = channel();
+    h.term.format_all(
+        html,
+        Box::new(move |b| {
+            let _ = tx.send(b);
+        }),
+    );
+    let bytes = rx.recv_timeout(Duration::from_secs(2)).expect("text");
+    String::from_utf8(bytes).expect("utf-8")
+}
+
+#[test]
+fn a_log_gets_what_comes_while_it_is_on_and_all_the_text_can_be_had() {
+    use shellwing_term::log::{Log, LogFormat};
+    let h = harness();
+    let sink = Sink::default();
+    h.term.feed(b"before\r\n".to_vec());
+    h.term.log(Some(Log::new(
+        Box::new(sink.clone()),
+        LogFormat::Text,
+        None,
+    )));
+    h.term.feed(b"\x1b[32mlogged\x1b[0m\r\n$ ".to_vec());
+    h.term.log(None);
+    h.term.feed(b"after\r\n".to_vec());
+    // Commands run in order: once the text comes, the log has ended.
+    let all = all_text(&h, false);
+    assert_eq!(all.trim_end(), "before\nlogged\n$ after");
+    let logged = String::from_utf8(sink.0.lock().expect("sink").clone()).expect("utf-8");
+    assert_eq!(logged, "logged\n$\n");
+    let html = all_text(&h, true);
+    assert!(html.contains("logged") && html.contains('<'), "{html}");
 }
