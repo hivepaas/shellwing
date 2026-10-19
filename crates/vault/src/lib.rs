@@ -30,7 +30,9 @@ mod recovery;
 mod sync;
 
 pub use cipher::Cipher;
-pub use keychain::{KeyStore, MemoryKeys, OsKeychain};
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
+pub use keychain::OsKeychain;
+pub use keychain::{KeyStore, MemoryKeys};
 pub use recovery::RecoveryKey;
 pub use sync::{Backend, Folder, FolderState, SyncReport};
 
