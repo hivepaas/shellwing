@@ -8,8 +8,8 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, Axis, Context, CursorStyle, Div, ElementId, Entity, FocusHandle, Focusable, Hsla,
-    KeyDownEvent, MouseButton, MouseMoveEvent, Render, SharedString, Subscription, Window, canvas,
-    div, prelude::*, px, relative, rgb, rgba, svg,
+    KeyDownEvent, MouseButton, MouseMoveEvent, PromptLevel, Render, SharedString, Subscription,
+    Window, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
 };
 use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
 use shellwing_ssh::config as ssh_config;
@@ -64,6 +64,8 @@ enum Shortcut {
     Find,
     Settings,
     Theme(isize),
+    /// Cmd+Q on macOS.
+    Quit,
 }
 
 /// A tab: its panes, and which one has the keyboard.
@@ -98,6 +100,8 @@ pub struct Workspace {
     bench: Option<(String, Arc<Probe>)>,
     /// Shown in place of the terminal while no tab is open.
     notice: Option<SharedString>,
+    /// The quit question is showing (GPUI allows one prompt at a time).
+    asking_to_quit: bool,
     /// The open palette, and whether it is picking a theme (whose preview must
     /// be undone if nothing is picked).
     palette: Option<(Entity<Palette>, Subscription, bool)>,
@@ -201,6 +205,7 @@ impl Workspace {
             rt,
             bench,
             notice: None,
+            asking_to_quit: false,
             palette: None,
             dragging: None,
             unsaved_bounds: None,
@@ -623,6 +628,59 @@ impl Workspace {
         }
         self.activate(self.active, window, cx);
         self.refresh_sidebar(cx);
+    }
+
+    /// Connections open now, in every tab and pane.
+    fn connections(&self, cx: &gpui::App) -> usize {
+        self.tabs
+            .iter()
+            .flat_map(Tab::views)
+            .filter(|v| v.read(cx).session().status() == Status::Connected)
+            .count()
+    }
+
+    /// Whether quitting, or closing the window (which quits), may go ahead now.
+    /// While connections are open it asks instead, quits if told to, and says no.
+    pub fn may_quit(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        let open = self.connections(cx);
+        if open == 0 {
+            return true;
+        }
+        if !self.asking_to_quit {
+            self.asking_to_quit = true;
+            let detail = if open == 1 {
+                "A connection is open; quitting closes it.".to_string()
+            } else {
+                format!("{open} connections are open; quitting closes them.")
+            };
+            let answer = window.prompt(
+                PromptLevel::Warning,
+                "Quit shellwing?",
+                Some(&detail),
+                &["Quit", "Cancel"],
+                cx,
+            );
+            cx.spawn(async move |this, cx| {
+                let quit = matches!(answer.await, Ok(0));
+                let _ = this.update(cx, |ws, cx| {
+                    ws.asking_to_quit = false;
+                    if quit {
+                        cx.quit();
+                    }
+                });
+            })
+            .detach();
+        }
+        false
+    }
+
+    /// Closing the window quits, so the system's close button asks first too.
+    pub fn guard_close(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let ws = cx.entity().downgrade();
+        window.on_window_should_close(cx, move |window, cx| {
+            ws.update(cx, |ws, cx| ws.may_quit(window, cx))
+                .unwrap_or(true)
+        });
     }
 
     fn step(&mut self, by: isize, window: &mut Window, cx: &mut Context<Self>) {
@@ -1660,6 +1718,7 @@ impl Workspace {
             "k" if chord => Shortcut::Palette,
             "t" if chord => Shortcut::NewTab,
             "w" if chord => Shortcut::Close,
+            "q" if mac && m.platform && !m.control && !m.alt && !m.shift => Shortcut::Quit,
             // Cmd+D and Cmd+Shift+D on macOS, as in iTerm.
             "d" if mac && chord => Shortcut::Split(if m.shift {
                 Axis::Vertical
@@ -1721,6 +1780,11 @@ impl Workspace {
                 }
             }
             Shortcut::Close => self.close_pane(window, cx),
+            Shortcut::Quit => {
+                if self.may_quit(window, cx) {
+                    cx.quit();
+                }
+            }
             Shortcut::Split(axis) => self.split(axis, window, cx),
             Shortcut::Focus(_) => {}
             Shortcut::Step(by) => self.step(by, window, cx),
@@ -2455,6 +2519,14 @@ impl Render for Workspace {
                 )
             })
             .text_color(rgb(TEXT))
+    }
+}
+
+/// The drawn title bar's close button: as the system's, asking first while connected.
+pub fn close_window(window: &mut Window, cx: &mut gpui::App) {
+    let ws = window.root::<Workspace>().flatten();
+    if ws.is_none_or(|ws| ws.update(cx, |ws, cx| ws.may_quit(window, cx))) {
+        window.remove_window();
     }
 }
 
