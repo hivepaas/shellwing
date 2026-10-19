@@ -25,8 +25,11 @@ pub struct Resolved {
     pub alias: String,
     /// The real host name, port and user.
     pub target: Target,
-    /// Keys to try, in order. Empty means the OpenSSH defaults.
+    /// Keys to try, in order. Empty means the OpenSSH defaults, then every key
+    /// the app keeps.
     pub identity_files: Vec<PathBuf>,
+    /// The one key the app keeps to sign in with (its id), instead of any file.
+    pub vault_key: Option<String>,
     /// Hosts to go through first, outermost first; each has no jumps of its own.
     pub jumps: Vec<Resolved>,
     pub keepalive: Option<Duration>,
@@ -47,6 +50,7 @@ impl Resolved {
             alias: target.host.clone(),
             target,
             identity_files: vec![],
+            vault_key: None,
             jumps: vec![],
             keepalive: None,
             forwards: vec![],
@@ -55,8 +59,12 @@ impl Resolved {
         }
     }
 
-    /// The keys to offer: the configured ones, else the OpenSSH defaults that exist.
+    /// The key files to offer: none for a key the app keeps, the configured
+    /// ones, else the OpenSSH defaults that exist.
     pub fn keys_to_try(&self) -> Vec<PathBuf> {
+        if self.vault_key.is_some() {
+            return vec![];
+        }
         if !self.identity_files.is_empty() {
             return self.identity_files.clone();
         }
@@ -212,6 +220,7 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         alias,
         target: Target { user, host, port },
         identity_files,
+        vault_key: None,
         jumps,
         keepalive: p.server_alive_interval,
         forwards: vec![],

@@ -63,7 +63,7 @@ enum Mode {
     /// A host from `~/.ssh/config`, as ssh would reach it.
     SshConfig {
         alias: String,
-        resolved: Option<Resolved>,
+        resolved: Option<Box<Resolved>>,
     },
 }
 
@@ -217,7 +217,9 @@ impl HostEditor {
     /// A host from `~/.ssh/config`, read only until copied.
     pub fn ssh_config(ctx: EditorContext, alias: String, cx: &mut Context<Self>) -> Self {
         let resolved =
-            ssh_config::resolve(&alias, ssh_config::default_config_path().as_deref()).ok();
+            ssh_config::resolve(&alias, ssh_config::default_config_path().as_deref())
+                .ok()
+                .map(Box::new);
         Self::blank(ctx, Mode::SshConfig { alias, resolved }, cx)
     }
 
@@ -1078,7 +1080,7 @@ impl Render for HostEditor {
             .text_color(rgb(TEXT));
         if let Mode::SshConfig { alias, resolved } = &self.mode {
             let (alias, resolved) = (alias.clone(), resolved.clone());
-            return shell.child(self.render_ssh(&alias, resolved.as_ref(), cx));
+            return shell.child(self.render_ssh(&alias, resolved.as_deref(), cx));
         }
 
         let i = &self.inputs;

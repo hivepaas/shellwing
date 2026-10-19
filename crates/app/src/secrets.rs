@@ -90,4 +90,20 @@ impl Secrets for SessionSecrets {
     fn learned(&self, secret: Learned) {
         let _ = self.learned.try_send(secret);
     }
+
+    fn keys(&self) -> Vec<shellwing_ssh::keys::StoredKey> {
+        let Some(vault) = self.vault.get() else {
+            return vec![];
+        };
+        vault
+            .ssh_keys()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|k| shellwing_ssh::keys::StoredKey {
+                id: k.id,
+                name: k.name,
+                openssh: k.private,
+            })
+            .collect()
+    }
 }

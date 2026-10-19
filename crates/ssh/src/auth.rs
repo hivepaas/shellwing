@@ -133,10 +133,38 @@ async fn load_key(
     Ok(None)
 }
 
+/// Which of the keys the app keeps to offer.
+pub(crate) enum StoredKeys<'a> {
+    All,
+    Only(&'a str),
+    None,
+}
+
+impl<'a> StoredKeys<'a> {
+    /// A host's: its own key, else every one unless it names its key files.
+    pub(crate) fn of(hop: &'a crate::Resolved) -> Self {
+        match (&hop.vault_key, hop.identity_files.is_empty()) {
+            (Some(id), _) => StoredKeys::Only(id),
+            (None, true) => StoredKeys::All,
+            (None, false) => StoredKeys::None,
+        }
+    }
+
+    fn wants(&self, id: &str) -> bool {
+        match self {
+            StoredKeys::All => true,
+            StoredKeys::Only(only) => *only == id,
+            StoredKeys::None => false,
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn authenticate(
     handle: &mut Handle<Checker>,
     target: &Target,
     keys: &[PathBuf],
+    stored: StoredKeys<'_>,
     auth: &Auth,
     prompter: Option<&Prompter>,
     secrets: Option<&dyn Secrets>,
@@ -169,6 +197,30 @@ pub(crate) async fn authenticate(
     if methods.allows(MethodKind::PublicKey) {
         for path in keys {
             let Some(key) = load_key(path, prompter, secrets).await? else {
+                continue;
+            };
+            let hash = if key.algorithm().is_rsa() {
+                handle.best_supported_rsa_hash().await?.flatten()
+            } else {
+                None
+            };
+            let r = handle
+                .authenticate_publickey(user, PrivateKeyWithHashAlg::new(Arc::new(key), hash))
+                .await?;
+            if r.success() {
+                return Ok(());
+            }
+            methods.update(&r);
+        }
+    }
+
+    // Keys the app keeps: no passphrase, the vault is encrypted already.
+    if methods.allows(MethodKind::PublicKey)
+        && let Some(s) = secrets
+        && !matches!(stored, StoredKeys::None)
+    {
+        for k in s.keys().into_iter().filter(|k| stored.wants(&k.id)) {
+            let Ok(key) = crate::keys::parse(&k.openssh, None) else {
                 continue;
             };
             let hash = if key.algorithm().is_rsa() {

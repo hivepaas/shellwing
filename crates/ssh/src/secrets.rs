@@ -9,6 +9,11 @@ pub trait Secrets: Send + Sync {
     fn passphrase(&self, fingerprint: &str) -> Option<String>;
     /// A secret typed at a prompt worked.
     fn learned(&self, secret: Learned);
+    /// Keys kept by the app, tried after the key files (see
+    /// [`crate::Resolved::vault_key`]).
+    fn keys(&self) -> Vec<crate::keys::StoredKey> {
+        vec![]
+    }
 }
 
 /// A secret that was typed and worked.

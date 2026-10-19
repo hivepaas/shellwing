@@ -13,10 +13,12 @@ tokio = { workspace = true, features = ["io-util", "fs"] }
 thiserror.workspace = true
 ssh2-config = "0.8"
 russh-sftp = "3"
+# Randomness for new keys and for locking exported ones.
+rand = { version = "0.10", features = ["thread_rng"] }
+zeroize = "1"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "io-util", "process", "fs"] }
-rand = { version = "0.10", features = ["thread_rng"] }
 
 [lints]
 workspace = true

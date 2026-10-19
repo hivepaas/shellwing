@@ -6306,6 +6306,7 @@ dependencies = [
  "ssh2-config",
  "thiserror 2.0.21",
  "tokio",
+ "zeroize",
 ]
 
 [[package]]

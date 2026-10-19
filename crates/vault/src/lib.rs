@@ -93,6 +93,16 @@ pub enum Item {
     },
 }
 
+/// A key kept in the vault: what the Keys page and signing in read.
+pub struct SshKey {
+    pub id: String,
+    pub name: String,
+    /// One line, as `authorized_keys` takes it.
+    pub public: String,
+    /// In OpenSSH's format, without a passphrase: the vault is encrypted.
+    pub private: Zeroizing<String>,
+}
+
 /// A field and when it was set (a clock stamp), for merging edits.
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Field {
@@ -495,6 +505,52 @@ impl Vault {
         )
     }
 
+    /// The keys kept here, oldest first.
+    pub fn ssh_keys(&self) -> Result<Vec<SshKey>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "ssh_key")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                SshKey {
+                    name: get("name"),
+                    public: get("public"),
+                    private: Zeroizing::new(get("private")),
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// Keeps a key under `name`; the same key kept again is renamed instead.
+    /// Returns its id.
+    pub fn add_ssh_key(&self, name: &str, public: &str, private: &str) -> Result<String> {
+        self.put(
+            "ssh_key",
+            ("public", public),
+            name,
+            &[("name", name), ("private", private)],
+        )?;
+        Ok(self
+            .find("ssh_key", "public", public)?
+            .map(|(id, _)| id)
+            .unwrap_or_default())
+    }
+
+    pub fn rename_ssh_key(&self, id: &str, name: &str) -> Result<()> {
+        let Some(k) = self.ssh_keys()?.into_iter().find(|k| k.id == id) else {
+            return Ok(());
+        };
+        let values = BTreeMap::from([
+            ("name".to_string(), name.to_string()),
+            ("public".to_string(), k.public.clone()),
+            ("private".to_string(), k.private.to_string()),
+        ]);
+        self.update(id, "ssh_key", name, &values)?;
+        Ok(())
+    }
+
     /// Every item, without the secrets.
     pub fn items(&self) -> Result<Vec<Item>> {
         let get = |r: &Record, k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
@@ -613,6 +669,36 @@ mod tests {
             std::env::temp_dir().join(format!("shellwing-vault-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir.join("vault.db")
+    }
+
+    #[test]
+    fn keeps_renames_and_forgets_ssh_keys() {
+        let path = temp("ssh-keys");
+        let v = Vault::open(&path, &MemoryKeys::default()).expect("open");
+        let id = v
+            .add_ssh_key("laptop", "ssh-ed25519 AAAA me", "PRIVATE")
+            .expect("add");
+        // The same key again is the same record.
+        assert_eq!(
+            v.add_ssh_key("laptop 2", "ssh-ed25519 AAAA me", "PRIVATE")
+                .expect("again"),
+            id
+        );
+        v.rename_ssh_key(&id, "work").expect("rename");
+        let keys = v.ssh_keys().expect("keys");
+        assert_eq!(keys.len(), 1);
+        assert_eq!(
+            (
+                keys[0].name.as_str(),
+                keys[0].public.as_str(),
+                keys[0].private.as_str()
+            ),
+            ("work", "ssh-ed25519 AAAA me", "PRIVATE")
+        );
+        // Not a password or a passphrase.
+        assert!(v.items().expect("items").is_empty());
+        v.delete(&id).expect("delete");
+        assert!(v.ssh_keys().expect("keys").is_empty());
     }
 
     #[test]
