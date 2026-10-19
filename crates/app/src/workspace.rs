@@ -36,6 +36,7 @@ use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView, UseKey,
     VaultChanged, hsla,
 };
+use shellwing_vault::{AskState, Request};
 use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
@@ -124,6 +125,10 @@ pub struct Workspace {
     bounds_change: u64,
     /// The system is light (with `mode = "system"`, so is the app).
     system_light: bool,
+    /// The window, for questions that come from the sync thread.
+    window_handle: Option<gpui::AnyWindowHandle>,
+    /// Pairing requests already put to the user.
+    prompted: std::collections::HashSet<String>,
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
     vault: VaultSlot,
@@ -177,6 +182,10 @@ pub enum EditTarget {
 enum Asking {
     /// A folder holding another vault, waiting for its recovery key.
     RecoveryKey(std::path::PathBuf),
+    /// A folder holding another vault: join it by pairing, or with its key?
+    JoinHow(std::path::PathBuf),
+    /// Asking a device that syncs this folder to let this one in.
+    Pairing(std::path::PathBuf),
     /// A port to forward on the active tab's connection.
     Forward,
     /// A value a snippet needs before it runs.
@@ -257,6 +266,8 @@ impl Workspace {
             unsaved_bounds: None,
             bounds_change: 0,
             system_light: false,
+            window_handle: None,
+            prompted: Default::default(),
             layout_change: 0,
             vault,
             vault_reported: false,
@@ -1322,7 +1333,134 @@ impl Workspace {
                     self.sync_error = Some(e);
                 }
             }
+            SyncEvent::Asking(state) => {
+                // Cancelled meanwhile.
+                let Some(Asking::Pairing(folder)) = self.asking.clone() else {
+                    return;
+                };
+                match state {
+                    AskState::Waiting | AskState::Compare { .. } => {
+                        self.in_window(cx, move |ws, window, cx| {
+                            ws.show_pairing(&state, window, cx)
+                        });
+                    }
+                    AskState::Joined => {
+                        self.asking = None;
+                        self.in_window(cx, |ws, window, cx| ws.close_palette(window, cx));
+                        self.keep_sync_folder(Some(&folder), cx);
+                        let msg = format!("Joined: this device syncs with {}.", folder.display());
+                        self.say(msg, CONFIG_NOTICE, cx);
+                    }
+                    AskState::Refused | AskState::Expired => {
+                        self.asking = None;
+                        self.in_window(cx, |ws, window, cx| ws.close_palette(window, cx));
+                        let msg = if state == AskState::Refused {
+                            "The other device refused to let this one in."
+                        } else {
+                            "No device let this one in within 10 minutes. Ask again, or use the recovery key."
+                        };
+                        self.say(msg.into(), CONFIG_NOTICE, cx);
+                    }
+                }
+            }
+            SyncEvent::Requests(requests) => {
+                for r in requests {
+                    if self.prompted.insert(r.id.clone()) {
+                        self.in_window(cx, move |ws, window, cx| ws.prompt_pairing(r, window, cx));
+                    }
+                }
+            }
+            SyncEvent::PairingFailed(e) => self.say(format!("Pairing: {e}"), CONFIG_NOTICE, cx),
         }
+    }
+
+    /// Runs `f` with the window, from where there is none (the sync thread's
+    /// events).
+    fn in_window(
+        &self,
+        cx: &mut Context<Self>,
+        f: impl FnOnce(&mut Self, &mut Window, &mut Context<Self>) + 'static,
+    ) {
+        let Some(handle) = self.window_handle else {
+            return;
+        };
+        let me = cx.entity();
+        cx.defer(move |cx| {
+            let _ = handle.update(cx, |_, window, cx| {
+                me.update(cx, |ws, cx| f(ws, window, cx))
+            });
+        });
+    }
+
+    /// Asks the user whether a new device may join: they check it shows the
+    /// same code.
+    fn prompt_pairing(&mut self, r: Request, window: &mut Window, cx: &mut Context<Self>) {
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &format!("Let {} into this vault?", r.device),
+            Some(&format!(
+                "It gets everything the vault holds: passwords, keys, snippets and hosts. Approve only if {} shows the code {}.",
+                r.device, r.code
+            )),
+            &[
+                gpui::PromptButton::Ok("Approve".into()),
+                gpui::PromptButton::Cancel("Refuse".into()),
+            ],
+            cx,
+        );
+        let sync = self.sync.clone();
+        cx.spawn(async move |_, _| match answer.await {
+            Ok(0) => sync.approve(r.id),
+            _ => sync.refuse(r.id),
+        })
+        .detach();
+    }
+
+    /// Joining a vault found in a folder: by approving on a device that
+    /// syncs it, or with its recovery key.
+    fn ask_join_how(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let folder = match &self.asking {
+            Some(Asking::JoinHow(f)) => f.display().to_string(),
+            _ => return,
+        };
+        let entries = vec![
+            Entry::new(
+                Kind::Choice("pair".into()),
+                "",
+                "Approve it on a device that syncs",
+            )
+            .detail(
+                "That device asks whether to let this one in; you check both show the same code.",
+            ),
+            Entry::new(Kind::Choice("recovery".into()), "", "Type the recovery key")
+                .detail("The 13 groups of four from when syncing started."),
+        ];
+        let palette = cx.new(|cx| {
+            Palette::chooser(
+                &format!("{folder} holds a vault from another device: join it"),
+                entries,
+                cx,
+            )
+        });
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Where this device's request to join stands.
+    fn show_pairing(&mut self, state: &AskState, window: &mut Window, cx: &mut Context<Self>) {
+        let entries = match state {
+            AskState::Compare { device, code } => vec![
+                Entry::new(Kind::Note, "", format!("Code {code}")).detail(format!(
+                    "{device} asks whether to let this device in. Approve there if it shows this same code."
+                )),
+            ],
+            _ => vec![
+                Entry::new(Kind::Note, "", "Waiting for a device that syncs").detail(
+                    "Open shellwing on a device that syncs this folder: it asks whether to let this one in. Esc cancels.",
+                ),
+            ],
+        };
+        let palette = cx.new(|cx| Palette::show(entries, cx));
+        self.show_palette(palette, false, window, cx);
     }
 
     /// Asks for a folder, then starts syncing with it, or joins the vault in it.
@@ -1366,8 +1504,8 @@ impl Workspace {
                 Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
             },
             Ok(FolderState::Other) => {
-                self.asking = Some(Asking::RecoveryKey(folder));
-                self.ask_recovery_key(false, window, cx);
+                self.asking = Some(Asking::JoinHow(folder));
+                self.ask_join_how(window, cx);
             }
             Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
         }
@@ -2085,7 +2223,13 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) {
         match ev {
-            PaletteEvent::Dismiss => self.close_palette(window, cx),
+            PaletteEvent::Dismiss => {
+                if let Some(Asking::Pairing(_)) = self.asking.take() {
+                    self.sync.cancel_ask();
+                    self.say("Pairing cancelled.".into(), THEME_NOTICE, cx);
+                }
+                self.close_palette(window, cx)
+            }
             PaletteEvent::Open(spec) => {
                 let spec = spec.clone();
                 self.close_palette(window, cx);
@@ -2095,6 +2239,20 @@ impl Workspace {
                 let (id, all) = (id.clone(), *all);
                 self.close_palette(window, cx);
                 self.run_snippet(&id, all, window, cx);
+            }
+            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::JoinHow(_))) => {
+                let Some(Asking::JoinHow(folder)) = self.asking.take() else {
+                    return;
+                };
+                self.close_palette(window, cx);
+                if how == "pair" {
+                    self.asking = Some(Asking::Pairing(folder.clone()));
+                    self.sync.ask_to_join(folder);
+                    self.show_pairing(&AskState::Waiting, window, cx);
+                } else {
+                    self.asking = Some(Asking::RecoveryKey(folder));
+                    self.ask_recovery_key(false, window, cx);
+                }
             }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
@@ -2136,7 +2294,9 @@ impl Workspace {
                         return self.ask_snippet(run, window, cx);
                     }
                     Some(Asking::RecoveryKey(folder)) => folder,
-                    None => return self.close_palette(window, cx),
+                    Some(Asking::JoinHow(_) | Asking::Pairing(_)) | None => {
+                        return self.close_palette(window, cx);
+                    }
                 };
                 let Some(vault) = self.vault.ready() else {
                     return self.close_palette(window, cx);
@@ -2333,6 +2493,7 @@ impl Workspace {
     /// Follows the system's light or dark appearance, which the app takes
     /// with `mode = "system"`.
     pub fn track_appearance(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.window_handle = Some(window.window_handle());
         self.system_light = Self::looks_light(window);
         // Applies the mode at the start, whatever the system is.
         let problems = self.restyle(cx);
