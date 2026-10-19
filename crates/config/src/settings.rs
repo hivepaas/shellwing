@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::theme::DEFAULT_THEME;
+use crate::theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME};
 
 /// `config.toml`. Every key is optional; unknown keys are ignored so a file
 /// written by a newer version still loads.
@@ -129,8 +129,13 @@ impl Default for General {
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Appearance {
-    /// A theme id (its file name without `.toml`) or name.
+    /// Dark or light, or as the system is.
+    pub mode: ColorMode,
+    /// The terminal's theme when dark: a theme id (its file name without
+    /// `.toml`) or name.
     pub theme: String,
+    /// The terminal's theme when light.
+    pub light_theme: String,
     pub font: Font,
     /// Row height as a multiple of the font size.
     pub line_height: f32,
@@ -180,7 +185,9 @@ impl Default for Padding {
 impl Default for Appearance {
     fn default() -> Self {
         Appearance {
+            mode: ColorMode::default(),
             theme: DEFAULT_THEME.into(),
+            light_theme: DEFAULT_LIGHT_THEME.into(),
             font: Font::default(),
             line_height: 1.3,
             cursor: Cursor::default(),
@@ -189,6 +196,28 @@ impl Default for Appearance {
             ui_font: UiFont::default(),
         }
     }
+}
+
+impl Appearance {
+    /// The terminal's theme in the light mode or the dark one.
+    pub fn app_theme(&self, light: bool) -> &str {
+        if light {
+            &self.light_theme
+        } else {
+            &self.theme
+        }
+    }
+}
+
+/// Whether the app is dark or light.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorMode {
+    /// As the system is, and changing when it does.
+    #[default]
+    System,
+    Dark,
+    Light,
 }
 
 /// The overlay scrollbar at the right edge of a terminal with history.
@@ -306,7 +335,9 @@ mod tests {
             r#"
             # A comment.
             [appearance]
+            mode = "light"
             theme = "nord"
+            light_theme = "paper"
             font = { family = "Fira Code", size = 200 }
             line_height = 1.5
             cursor = { style = "bar" }
@@ -336,6 +367,9 @@ mod tests {
         .expect("parse");
         let s = s.sanitized();
         assert_eq!(s.appearance.theme, "nord");
+        assert_eq!(s.appearance.mode, ColorMode::Light);
+        assert_eq!(s.appearance.app_theme(true), "paper");
+        assert_eq!(s.appearance.app_theme(false), "nord");
         assert_eq!(s.appearance.font.family.as_deref(), Some("Fira Code"));
         assert_eq!(s.appearance.font.size, 72.0);
         assert_eq!(s.appearance.line_height, 1.5);

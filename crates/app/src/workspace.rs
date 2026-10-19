@@ -115,6 +115,8 @@ pub struct Workspace {
     /// The window's size and place, waiting to be saved, and which change it is.
     unsaved_bounds: Option<WindowState>,
     bounds_change: u64,
+    /// The system is light (with `mode = "system"`, so is the app).
+    system_light: bool,
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
     vault: VaultSlot,
@@ -245,6 +247,7 @@ impl Workspace {
             dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
+            system_light: false,
             layout_change: 0,
             vault,
             vault_reported: false,
@@ -1391,6 +1394,7 @@ impl Workspace {
     fn settings_snap(&self) -> Snap {
         Snap {
             settings: self.live.settings().clone(),
+            light: self.live.light(),
             themes: self.live.themes().all().to_vec(),
             fonts: self.fonts.0.clone(),
             default_font: self.fonts.1.clone(),
@@ -2249,8 +2253,12 @@ impl Workspace {
         }
     }
 
-    /// Gives every tab the look its host should have now.
+    /// Gives every tab the look its host should have now, in the mode the
+    /// app is in: light or dark, by the settings or the system.
     fn restyle(&mut self, cx: &mut Context<Self>) -> Vec<String> {
+        let light = self.live.light_for(self.system_light);
+        crate::colors::set_light(light);
+        self.live.set_light(light);
         let mut problems = vec![];
         for tab in self.all_views() {
             let entry = tab.read(cx).session().entry.clone();
@@ -2298,6 +2306,34 @@ impl Workspace {
                 self.say(format!("Theme: {}", theme.name), THEME_NOTICE, cx);
             }
             Err(e) => self.say(e, CONFIG_NOTICE, cx),
+        }
+    }
+
+    /// Follows the system's light or dark appearance, which the app takes
+    /// with `mode = "system"`.
+    pub fn track_appearance(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.system_light = Self::looks_light(window);
+        // Applies the mode at the start, whatever the system is.
+        let problems = self.restyle(cx);
+        self.report(problems, cx);
+        cx.observe_window_appearance(window, Self::appearance_changed)
+            .detach();
+    }
+
+    fn looks_light(window: &Window) -> bool {
+        matches!(
+            window.appearance(),
+            gpui::WindowAppearance::Light | gpui::WindowAppearance::VibrantLight
+        )
+    }
+
+    fn appearance_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let light = Self::looks_light(window);
+        if light != self.system_light {
+            self.system_light = light;
+            let problems = self.restyle(cx);
+            self.report(problems, cx);
+            self.refresh_settings(cx);
         }
     }
 

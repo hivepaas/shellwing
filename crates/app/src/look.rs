@@ -5,8 +5,8 @@
 use std::sync::Arc;
 
 use shellwing_config::{
-    CursorStyle, Hosts, LoadError, OnDisconnect, Scrollbar, Settings, Stamp, Store, Theme, Themes,
-    theme_for,
+    ColorMode, CursorStyle, Hosts, LoadError, OnDisconnect, Scrollbar, Settings, Stamp, Store,
+    Theme, Themes, theme_for,
 };
 use shellwing_term::{Colors, Rgb};
 
@@ -65,6 +65,8 @@ pub struct Live {
     settings: Settings,
     hosts: Hosts,
     themes: Themes,
+    /// The app is light: the terminal takes `light_theme`.
+    light: bool,
 }
 
 impl Live {
@@ -76,6 +78,7 @@ impl Live {
             settings: Settings::default(),
             hosts: Hosts::default(),
             themes: Themes::builtin(),
+            light: false,
         };
         let problems = live.load();
         (live, problems)
@@ -113,6 +116,30 @@ impl Live {
 
     pub fn settings(&self) -> &Settings {
         &self.settings
+    }
+
+    /// Whether the app is light now: its mode, or the system's when it
+    /// follows the system (`system_light`).
+    pub fn light_for(&self, system_light: bool) -> bool {
+        match self.settings.appearance.mode {
+            ColorMode::System => system_light,
+            ColorMode::Dark => false,
+            ColorMode::Light => true,
+        }
+    }
+
+    /// Makes the terminal's theme the light one, or the dark one.
+    pub fn set_light(&mut self, light: bool) {
+        self.light = light;
+    }
+
+    pub fn light(&self) -> bool {
+        self.light
+    }
+
+    /// The app's theme in the mode in use (a host can set its own).
+    pub fn app_theme(&self) -> &str {
+        self.settings.appearance.app_theme(self.light)
     }
 
     /// Writes one setting to `config.toml` and loads the result.
@@ -172,7 +199,7 @@ impl Live {
     /// theme wins), and a problem to report (an unknown theme).
     pub fn look_for(&self, host: Option<&str>) -> (Look, Option<String>) {
         let host = host.and_then(|h| self.hosts.find(h));
-        let want = theme_for(&self.settings, &self.hosts, host);
+        let want = theme_for(&self.settings, &self.hosts, host, self.light);
         let (theme, problem) = match self.themes.find(want) {
             Some(t) => (t.clone(), None),
             None => (
@@ -201,7 +228,7 @@ impl Live {
     pub fn step_theme(&mut self, step: isize, host: Option<&str>) -> Result<Arc<Theme>, String> {
         let host = host.and_then(|h| self.hosts.find(h));
         if let Some(h) = host
-            && theme_for(&self.settings, &self.hosts, Some(h)) != self.settings.appearance.theme
+            && theme_for(&self.settings, &self.hosts, Some(h), self.light) != self.app_theme()
         {
             return Err(format!(
                 "{} sets its own theme in hosts.toml; change it there.",
@@ -210,7 +237,7 @@ impl Live {
         }
         let current = self
             .themes
-            .find(&self.settings.appearance.theme)
+            .find(self.app_theme())
             .map(|t| t.id.clone())
             .unwrap_or_default();
         let next = self.themes.step(&current, step);
@@ -234,7 +261,16 @@ impl Live {
             .store
             .as_ref()
             .ok_or("No config directory to save to.")?;
-        store.set_theme(id).map_err(|e| e.to_string())?;
+        // The light mode's theme is a key of its own.
+        if self.light {
+            store.set_setting(
+                &["appearance", "light_theme"],
+                Some(shellwing_config::SettingValue::Str(id.into())),
+            )
+        } else {
+            store.set_theme(id)
+        }
+        .map_err(|e| e.to_string())?;
         self.load();
         Ok(())
     }
@@ -247,8 +283,8 @@ impl Live {
     /// through its group), which the app theme does not change.
     pub fn host_theme(&self, host: Option<&str>) -> Option<&str> {
         let h = self.hosts.find(host?)?;
-        let t = theme_for(&self.settings, &self.hosts, Some(h));
-        (t != self.settings.appearance.theme).then_some(t)
+        let t = theme_for(&self.settings, &self.hosts, Some(h), self.light);
+        (t != self.app_theme()).then_some(t)
     }
 }
 
@@ -283,6 +319,44 @@ mod tests {
         assert_eq!(l.look_for(Some("db")).0.theme.id, "dracula");
         assert!(l.step_theme(1, Some("db")).is_err());
         assert!(l.step_theme(1, None).is_ok(), "other tabs may still step");
+    }
+
+    #[test]
+    fn the_light_mode_has_a_theme_of_its_own() {
+        let mut l = live(
+            "light",
+            &[
+                (
+                    "config.toml",
+                    "[appearance]
+mode = \"system\"\ntheme = \"nord\"\n",
+                ),
+                (
+                    "hosts.toml",
+                    "[[host]]\nname = \"db\"\naddress = \"x\"\ntheme = \"dracula\"\n",
+                ),
+            ],
+        );
+        assert!(!l.light_for(false) && l.light_for(true), "system follows");
+        l.set_light(true);
+        assert_eq!(l.look_for(None).0.theme.id, "dawn", "the default light one");
+        assert_eq!(
+            l.look_for(Some("db")).0.theme.id,
+            "dracula",
+            "a host keeps its own"
+        );
+        // Choosing while light sets the light mode's, not the dark one.
+        l.set_theme("paper").expect("set");
+        assert_eq!(l.settings().appearance.light_theme, "paper");
+        assert_eq!(l.settings().appearance.theme, "nord");
+        l.set_light(false);
+        assert_eq!(l.look_for(None).0.theme.id, "nord");
+        l.set_setting(
+            &["appearance", "mode"],
+            Some(shellwing_config::SettingValue::Str("light".into())),
+        )
+        .expect("mode");
+        assert!(l.light_for(false), "light, whatever the system is");
     }
 
     #[test]

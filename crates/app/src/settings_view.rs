@@ -12,7 +12,8 @@ use gpui::{
     uniform_list,
 };
 use shellwing_config::{
-    Color, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
+    Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue,
+    Settings, Theme,
 };
 
 use crate::colors::colors;
@@ -61,6 +62,8 @@ const PAGES: [(Page, &str); 11] = [
 #[derive(Clone)]
 pub struct Snap {
     pub settings: Settings,
+    /// The app is light now: the theme chosen is the light mode's.
+    pub light: bool,
     pub themes: Vec<Arc<Theme>>,
     /// Installed fonts that look monospaced.
     pub fonts: Vec<String>,
@@ -673,7 +676,13 @@ impl SettingsView {
 
     fn appearance(&self, cx: &mut Context<Self>) -> gpui::Div {
         let a = &self.snap.settings.appearance;
-        let current = a.theme.clone();
+        let light = self.snap.light;
+        let current = a.app_theme(light).to_string();
+        let modes = vec![
+            (ColorMode::System, "System".to_string()),
+            (ColorMode::Dark, "Dark".to_string()),
+            (ColorMode::Light, "Light".to_string()),
+        ];
         let tile = |t: &Arc<Theme>, cx: &mut Context<Self>| {
             let on = t.id == current;
             let id = t.id.clone();
@@ -888,17 +897,50 @@ impl SettingsView {
             .child(
                 div()
                     .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(
+                        div()
+                            .text_size(ui(18.))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child("Mode"),
+                    )
+                    .child(self.pills(
+                        "color-mode",
+                        modes,
+                        a.mode,
+                        |v, m, cx| {
+                            let name = match m {
+                                ColorMode::System => "system",
+                                ColorMode::Dark => "dark",
+                                ColorMode::Light => "light",
+                            };
+                            v.change(&["appearance", "mode"], Some(SettingValue::Str(name.into())), cx)
+                        },
+                        cx,
+                    ))
+                    .child(label(match a.mode {
+                        ColorMode::System if light => "The system is light now.",
+                        ColorMode::System => "The system is dark now.",
+                        _ => "",
+                    })),
+            )
+            .child(
+                div()
+                    .flex()
                     .items_baseline()
                     .gap_3()
                     .child(
                         div()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Theme"),
+                            .child(if light { "Light theme" } else { "Dark theme" }),
                     )
-                    .child(label(
-                        "Applies to every tab. A host can have its own in its editor.",
-                    )),
+                    .child(label(if light {
+                        "The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor."
+                    } else {
+                        "The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor."
+                    })),
             )
             .when(!gradients.is_empty(), |d| {
                 d.child(heading("Gradient")).child(grad_grid)
@@ -942,7 +984,7 @@ impl SettingsView {
             .snap
             .themes
             .iter()
-            .find(|t| t.id == a.theme)
+            .find(|t| t.id == a.app_theme(self.snap.light))
             .or(self.snap.themes.first());
         let Some(t) = theme else {
             return div();
@@ -1028,7 +1070,11 @@ impl SettingsView {
                     .text_color(rgb(colors().muted))
                     .child("# config.toml")
                     .child("[appearance]")
-                    .child(format!("theme = \"{}\"", a.theme))
+                    .child(if self.snap.light {
+                        format!("light_theme = \"{}\"", a.light_theme)
+                    } else {
+                        format!("theme = \"{}\"", a.theme)
+                    })
                     .child(match &a.font.family {
                         Some(f) => format!("font = {{ family = \"{f}\", size = {} }}", a.font.size),
                         None => format!("font = {{ size = {} }}", a.font.size),
