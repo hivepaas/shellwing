@@ -1,5 +1,6 @@
 # Warm hive amber over dark honeycomb.
 name = "Honey Amber"
+group = "gradient"
 accent = "#f59e0b"
 background = "#140c04"
 gradient = { angle = 135, stops = ["#2b1a08 0%", "#5c3a0c 35%", "#643e0e 70%", "#140c04 100%"] }

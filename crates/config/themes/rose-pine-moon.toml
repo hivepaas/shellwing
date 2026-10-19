@@ -1,0 +1,17 @@
+# Rosé Pine Moon, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Rosé Pine Moon"
+group = "purple"
+accent = "#9ccfd8"
+background = "#232136"
+foreground = "#e0def4"
+cursor = "#e0def4"
+cursor_text = "#232136"
+selection_background = "#44415a"
+selection_foreground = "#e0def4"
+palette = [
+  "#393552", "#eb6f92", "#3e8fb0", "#f6c177",
+  "#9ccfd8", "#c4a7e7", "#ea9a97", "#e0def4",
+  "#6e6a86", "#eb6f92", "#3e8fb0", "#f6c177",
+  "#9ccfd8", "#c4a7e7", "#ea9a97", "#e0def4",
+]

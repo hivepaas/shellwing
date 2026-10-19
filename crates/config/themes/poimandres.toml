@@ -1,0 +1,17 @@
+# Poimandres, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Poimandres"
+group = "green"
+accent = "#ffffff"
+background = "#1a1e28"
+foreground = "#a6accd"
+cursor = "#ffffff"
+cursor_text = "#1a1e29"
+selection_background = "#a6accd"
+selection_foreground = "#ffffff"
+palette = [
+  "#1a1e28", "#d0679d", "#5de4c7", "#fffac2",
+  "#89ddff", "#fcc5e9", "#add7ff", "#ffffff",
+  "#a6accd", "#d0679d", "#5de4c7", "#fffac2",
+  "#add7ff", "#fae4fc", "#89ddff", "#ffffff",
+]

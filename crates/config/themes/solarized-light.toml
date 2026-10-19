@@ -1,0 +1,17 @@
+# Solarized Light, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Solarized Light"
+group = "light-warm"
+accent = "#268bd2"
+background = "#fdf6e3"
+foreground = "#657b83"
+cursor = "#657b83"
+cursor_text = "#eee8d5"
+selection_background = "#eee8d5"
+selection_foreground = "#586e75"
+palette = [
+  "#073642", "#dc322f", "#859900", "#b58900",
+  "#268bd2", "#d33682", "#2aa198", "#bbb5a2",
+  "#002b36", "#cb4b16", "#586e75", "#657b83",
+  "#839496", "#6c71c4", "#93a1a1", "#fdf6e3",
+]

@@ -1,0 +1,17 @@
+# Night Owl, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Night Owl"
+group = "blue"
+accent = "#7e57c2"
+background = "#011627"
+foreground = "#d6deeb"
+cursor = "#7e57c2"
+cursor_text = "#ffffff"
+selection_background = "#5f7e97"
+selection_foreground = "#dfe5ee"
+palette = [
+  "#011627", "#ef5350", "#22da6e", "#addb67",
+  "#82aaff", "#c792ea", "#21c7a8", "#ffffff",
+  "#575656", "#ef5350", "#22da6e", "#ffeb95",
+  "#82aaff", "#c792ea", "#7fdbca", "#ffffff",
+]

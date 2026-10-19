@@ -1,5 +1,6 @@
 # Blue-gray, a step lighter than near-black; the app's own colors match it.
 name = "Dusk"
+group = "blue"
 accent = "#4cc4f9"
 background = "#272e38"
 foreground = "#e2e8f0"

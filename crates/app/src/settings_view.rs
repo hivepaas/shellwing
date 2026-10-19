@@ -8,8 +8,7 @@ use std::sync::Arc;
 
 use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render,
-    SharedString, WeakEntity, Window, div, linear_color_stop, linear_gradient, prelude::*, px, rgb,
-    uniform_list,
+    SharedString, WeakEntity, Window, div, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
     Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue,
@@ -82,6 +81,10 @@ pub struct Snap {
 
 pub struct SettingsView {
     focus: FocusHandle,
+    /// Gradient themes drawn for their tiles and the preview, by theme and
+    /// size: GPUI's own gradients take two stops, these take them all.
+    gradients:
+        std::cell::RefCell<std::collections::HashMap<(String, u32, u32), Arc<gpui::RenderImage>>>,
     workspace: WeakEntity<Workspace>,
     page: Page,
     snap: Snap,
@@ -191,6 +194,7 @@ impl SettingsView {
             i
         });
         SettingsView {
+            gradients: Default::default(),
             focus: cx.focus_handle(),
             workspace,
             page,
@@ -691,13 +695,9 @@ impl SettingsView {
                 .rounded(px(8.))
                 .border_2()
                 .border_color(rgb(if on { colors().accent } else { colors().line }));
-            let swatch = match &t.gradient {
-                Some(g) if g.stops.len() >= 2 => swatch.bg(linear_gradient(
-                    g.angle,
-                    linear_color_stop(rgb(color(g.stops[0].0)), 0.),
-                    linear_color_stop(rgb(color(g.stops[g.stops.len() - 1].0)), 1.),
-                )),
-                _ => swatch.bg(rgb(color(t.background))),
+            let swatch = match self.gradient(t, 96, 40) {
+                Some(image) => swatch.relative().child(Self::painted(image, px(6.))),
+                None => swatch.bg(rgb(color(t.background))),
             };
             div()
                 .id(SharedString::from(format!("theme-{}", t.id)))
@@ -718,15 +718,44 @@ impl SettingsView {
                         .child(t.name.clone()),
                 )
         };
-        let (gradients, solids): (Vec<_>, Vec<_>) =
-            self.snap.themes.iter().partition(|t| t.gradient.is_some());
-        let mut grad_grid = div().grid().grid_cols(6).gap(px(10.));
-        for t in &gradients {
-            grad_grid = grad_grid.child(tile(t, cx));
+        // By group; while light, the light ones first. The user's own last.
+        let mut order: Vec<(Option<&str>, &str)> = shellwing_config::GROUPS
+            .iter()
+            .map(|(id, title)| (Some(*id), *title))
+            .collect();
+        if light {
+            order.sort_by_key(|(id, _)| !id.is_some_and(|g| g.contains("light")));
         }
-        let mut solid_grid = div().grid().grid_cols(6).gap(px(10.));
-        for t in &solids {
-            solid_grid = solid_grid.child(tile(t, cx));
+        order.push((None, "Your themes"));
+        let mut groups = div().flex().flex_col().gap(px(14.));
+        for (id, title) in order {
+            let members: Vec<&Arc<Theme>> = self
+                .snap
+                .themes
+                .iter()
+                .filter(|t| match id {
+                    Some(g) => t.group.as_deref() == Some(g),
+                    // Not in a group the app knows.
+                    None => !shellwing_config::GROUPS
+                        .iter()
+                        .any(|(g, _)| t.group.as_deref() == Some(*g)),
+                })
+                .collect();
+            if members.is_empty() {
+                continue;
+            }
+            let mut grid = div().grid().grid_cols(6).gap(px(10.));
+            for t in members {
+                grid = grid.child(tile(t, cx));
+            }
+            groups = groups.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(8.))
+                    .child(heading(title))
+                    .child(grid),
+            );
         }
         let themes_dir = self.snap.config_dir.as_ref().map(|d| d.join("themes"));
 
@@ -942,12 +971,7 @@ impl SettingsView {
                         "The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor."
                     })),
             )
-            .when(!gradients.is_empty(), |d| {
-                d.child(heading("Gradient")).child(grad_grid)
-            })
-            .when(!solids.is_empty(), |d| {
-                d.child(heading("Solid")).child(solid_grid)
-            })
+            .child(groups)
             .when_some(themes_dir, |d, dir| {
                 d.child(
                     div()
@@ -968,13 +992,34 @@ impl SettingsView {
             .child(rule())
             .child(self.app_text(cx));
 
-        div()
-            .flex()
-            .flex_wrap()
-            .gap(px(24.))
-            .items_start()
-            .child(left)
-            .child(self.preview())
+        // The preview is beside the page, not in it: it stays in view while
+        // the themes scroll (see the render).
+        left
+    }
+
+    /// `t`'s gradient, all its stops, drawn at `w` by `h` (it is stretched to
+    /// fit), as the terminal draws it; None for a theme without one.
+    fn gradient(&self, t: &Theme, w: u32, h: u32) -> Option<Arc<gpui::RenderImage>> {
+        let g = t.gradient.as_ref()?;
+        let key = (t.id.clone(), w, h);
+        if let Some(image) = self.gradients.borrow().get(&key) {
+            return Some(image.clone());
+        }
+        let buffer = image::RgbaImage::from_raw(w, h, g.render_bgra(w, h))?;
+        let image = Arc::new(gpui::RenderImage::new([image::Frame::new(buffer)]));
+        self.gradients.borrow_mut().insert(key, image.clone());
+        Some(image)
+    }
+
+    /// An image filling its parent, behind what comes after it.
+    fn painted(image: Arc<gpui::RenderImage>, radius: gpui::Pixels) -> gpui::Img {
+        gpui::img(gpui::ImageSource::Render(image))
+            .absolute()
+            .top_0()
+            .left_0()
+            .size_full()
+            .rounded(radius)
+            .object_fit(gpui::ObjectFit::Fill)
     }
 
     /// A terminal drawn in the chosen theme and font.
@@ -1018,7 +1063,7 @@ impl SettingsView {
                 (cmd, fg),
             ])
         };
-        let mut screen = div()
+        let screen = div()
             .flex()
             .flex_col()
             .p(px(12.))
@@ -1043,13 +1088,13 @@ impl SettingsView {
             ]))
             .child(line(vec![("ok ", p(2)), ("deployed in 41 s", fg)]))
             .child(prompt(""));
-        screen = match &t.gradient {
-            Some(g) if g.stops.len() >= 2 => screen.bg(linear_gradient(
-                g.angle,
-                linear_color_stop(rgb(color(g.stops[0].0)), 0.),
-                linear_color_stop(rgb(color(g.stops[g.stops.len() - 1].0)), 1.),
-            )),
-            _ => screen.bg(rgb(color(t.background))),
+        // The gradient goes under the text, which is painted after it.
+        let screen = match self.gradient(t, 200, 130) {
+            Some(image) => div()
+                .relative()
+                .child(Self::painted(image, px(8.)))
+                .child(screen),
+            None => screen.bg(rgb(color(t.background))),
         };
         div()
             .w(px(400.))
@@ -1760,16 +1805,34 @@ impl Render for SettingsView {
             .text_color(rgb(colors().text))
             .child(header)
             .child(
-                div().flex_1().min_h_0().flex().child(nav).child(
-                    div()
-                        .id("settings-content")
-                        .flex_1()
-                        .min_w_0()
-                        .overflow_y_scroll()
-                        .px(px(24.))
-                        .py(px(20.))
-                        .child(content),
-                ),
+                div()
+                    .flex_1()
+                    .min_h_0()
+                    .flex()
+                    .child(nav)
+                    .child(
+                        div()
+                            .id("settings-content")
+                            .flex_1()
+                            .min_w_0()
+                            .overflow_y_scroll()
+                            .px(px(24.))
+                            .py(px(20.))
+                            .child(content),
+                    )
+                    // Appearance: the terminal as chosen, beside what scrolls.
+                    .when(self.page == Page::Appearance, |d| {
+                        d.child(
+                            div()
+                                .id("settings-preview")
+                                .flex_shrink_0()
+                                .overflow_y_scroll()
+                                .pt(px(20.))
+                                .pr(px(24.))
+                                .pb(px(20.))
+                                .child(self.preview()),
+                        )
+                    }),
             )
     }
 }

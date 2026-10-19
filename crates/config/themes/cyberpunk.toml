@@ -1,5 +1,6 @@
 # High-contrast neon synthwave glow.
 name = "Cyberpunk Synthwave"
+group = "gradient"
 accent = "#facc15"
 background = "#0d061c"
 gradient = { angle = 135, stops = ["#0a1e3d 0%", "#2f0d4e 35%", "#630c69 65%", "#0d061c 100%"] }

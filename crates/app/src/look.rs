@@ -368,8 +368,8 @@ mode = \"system\"\ntheme = \"nord\"\n",
                 "# mine\n[appearance]\ntheme = \"default-slate\"\n",
             )],
         );
-        assert_eq!(l.step_theme(1, None).expect("step").id, "neon-nebula");
-        assert_eq!(l.look_for(None).0.theme.id, "neon-nebula");
+        assert_eq!(l.step_theme(1, None).expect("step").id, "tokyo-night");
+        assert_eq!(l.look_for(None).0.theme.id, "tokyo-night");
         assert_eq!(
             l.reload_if_changed(),
             None,

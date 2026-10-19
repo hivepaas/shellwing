@@ -1,0 +1,17 @@
+# Cobalt2, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Cobalt2"
+group = "blue"
+accent = "#f0cc09"
+background = "#132738"
+foreground = "#ffffff"
+cursor = "#f0cc09"
+cursor_text = "#98998c"
+selection_background = "#18354f"
+selection_foreground = "#b5b5b5"
+palette = [
+  "#000000", "#ff0000", "#38de21", "#ffe50a",
+  "#1460d2", "#ff005d", "#00bbbb", "#bbbbbb",
+  "#555555", "#f40e17", "#3bd01d", "#edc809",
+  "#5555ff", "#ff55ff", "#6ae3fa", "#ffffff",
+]

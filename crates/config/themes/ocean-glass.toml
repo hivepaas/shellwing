@@ -1,0 +1,17 @@
+# Sea green into deep blue.
+name = "Ocean Glass"
+group = "gradient"
+accent = "#67e8f9"
+background = "#08202c"
+gradient = { angle = 135, stops = ["#0e3a52 0%", "#126b7a 40%", "#0f4a63 70%", "#08202c 100%"] }
+foreground = "#ecfeff"
+cursor = "#67e8f9"
+cursor_text = "#08202c"
+selection_background = "#67e8f9"
+selection_foreground = "#000000"
+palette = [
+  "#08202c", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

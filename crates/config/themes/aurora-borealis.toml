@@ -1,0 +1,17 @@
+# Green fading into violet.
+name = "Aurora Borealis"
+group = "gradient"
+accent = "#5eead4"
+background = "#0a0b1c"
+gradient = { angle = 135, stops = ["#06302a 0%", "#0e5a4a 35%", "#2a2a6b 70%", "#0a0b1c 100%"] }
+foreground = "#eefdf8"
+cursor = "#5eead4"
+cursor_text = "#0a0b1c"
+selection_background = "#5eead4"
+selection_foreground = "#000000"
+palette = [
+  "#0a0b1c", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

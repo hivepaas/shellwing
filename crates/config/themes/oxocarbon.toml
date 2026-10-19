@@ -1,0 +1,17 @@
+# Oxocarbon, from iTerm2-Color-Schemes (MIT, Mark Badolato and contributors):
+# https://github.com/mbadolato/iTerm2-Color-Schemes
+name = "Oxocarbon"
+group = "neutral"
+accent = "#ffffff"
+background = "#161616"
+foreground = "#f2f4f8"
+cursor = "#ffffff"
+cursor_text = "#000000"
+selection_background = "#393939"
+selection_foreground = "#626262"
+palette = [
+  "#161616", "#00dfdb", "#00b4ff", "#ff4297",
+  "#00c15a", "#c693ff", "#ff74b8", "#f2f4f8",
+  "#585858", "#00dfdb", "#00b4ff", "#ff4297",
+  "#00c15a", "#c693ff", "#ff74b8", "#f2f4f8",
+]

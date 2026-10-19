@@ -1,5 +1,6 @@
 # Glowing cosmic nebula.
 name = "Neon Nebula"
+group = "gradient"
 accent = "#f472b6"
 background = "#0b0e17"
 gradient = { angle = 135, stops = ["#0b3a4f 0%", "#1e1e3b 25%", "#761a60 50%", "#3e103e 75%", "#0b0e17 100%"] }

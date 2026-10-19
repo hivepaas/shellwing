@@ -1,0 +1,17 @@
+# Deep indigo into blue.
+name = "Indigo Dream"
+group = "gradient"
+accent = "#a5b4fc"
+background = "#0a0a24"
+gradient = { angle = 135, stops = ["#1a1650 0%", "#2c2a8a 35%", "#1b2e6b 70%", "#0a0a24 100%"] }
+foreground = "#eef2ff"
+cursor = "#a5b4fc"
+cursor_text = "#0a0a24"
+selection_background = "#a5b4fc"
+selection_foreground = "#000000"
+palette = [
+  "#0a0a24", "#fc8d9d", "#34d399", "#fbbf24",
+  "#76b2fb", "#f68bc3", "#22d3ee", "#f8fafc",
+  "#9ca6b5", "#fda4af", "#6ee7b7", "#fde047",
+  "#93c5fd", "#f9a8d4", "#67e8f9", "#ffffff",
+]

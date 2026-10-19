@@ -1,5 +1,6 @@
 # Classic green phosphor on black.
 name = "Matrix Rain"
+group = "gradient"
 accent = "#22c55e"
 background = "#000000"
 gradient = { angle = 135, stops = ["#020a05 0%", "#06210f 35%", "#041a0c 70%", "#000000 100%"] }

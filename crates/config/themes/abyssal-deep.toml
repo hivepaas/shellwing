@@ -1,5 +1,6 @@
 # Dark oceanic sapphire abyss.
 name = "Abyssal Deep"
+group = "gradient"
 accent = "#38bdf8"
 background = "#010f1a"
 gradient = { angle = 135, stops = ["#033252 0%", "#0a4773 35%", "#062d47 70%", "#010f1a 100%"] }

@@ -1,5 +1,6 @@
 # Light, a cool gray-blue: the light mode's default, matching the app.
 name = "Dawn"
+group = "light-cool"
 accent = "#0284c7"
 background = "#fbfcfe"
 foreground = "#1f2937"

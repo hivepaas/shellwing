@@ -1,5 +1,6 @@
 # Wine red fading to glowing embers.
 name = "Crimson Ember"
+group = "gradient"
 accent = "#f87171"
 background = "#12060a"
 gradient = { angle = 135, stops = ["#2a0a12 0%", "#5c1220 35%", "#6b1d18 70%", "#12060a 100%"] }

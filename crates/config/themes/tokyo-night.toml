@@ -1,5 +1,6 @@
 # Clean dark theme celebrating downtown Tokyo.
 name = "Tokyo Night"
+group = "blue"
 accent = "#7aa2f7"
 background = "#1a1b26"
 foreground = "#a9b1d6"

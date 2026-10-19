@@ -1,5 +1,6 @@
 # Deep boreal emerald night.
 name = "Midnight Aurora"
+group = "gradient"
 accent = "#2dd4bf"
 background = "#02121a"
 gradient = { angle = 135, stops = ["#042e3b 0%", "#055952 35%", "#073d36 70%", "#02121a 100%"] }

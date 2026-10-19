@@ -1,5 +1,6 @@
 # Modern slate dark theme.
 name = "Default Slate"
+group = "blue"
 accent = "#38bdf8"
 background = "#0f172a"
 foreground = "#e2e8f0"
