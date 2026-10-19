@@ -1,9 +1,10 @@
-//! Syncing the vault with a folder, on a thread of its own: every minute, and
+//! Syncing the vault with a folder, a WebDAV server or S3-compatible storage
+//! (the place, [`SyncPlace`]), on a thread of its own: every minute, and
 //! right after something asks (a secret saved or forgotten, Sync now).
 //!
-//! Pairing goes through the folder too: a new device's request to join (see
+//! Pairing goes through the place too: a new device's request to join (see
 //! `shellwing_vault::Ask`), and the answers of a device that syncs. While one
-//! is open the folder is looked at every two seconds.
+//! is open the place is looked at every two seconds.
 //!
 //! Hosts and groups from hosts.toml ride along as vault records: before each
 //! sync, edits in the file are recorded (only the fields that changed get new
@@ -11,15 +12,15 @@
 //! the settings of config.toml that are not this device's own (with `[sync]
 //! settings`, on by default), as one record with a field per setting.
 
-use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use std::collections::BTreeSet;
 
-use shellwing_config::Store;
-use shellwing_vault::{Answerer, Ask, AskState, Folder, FolderState, Request, SyncReport, Vault};
+use shellwing_config::{Store, SyncPlace};
+use shellwing_remote::Place;
+use shellwing_vault::{Answerer, Ask, AskState, Backend, FolderState, Request, SyncReport, Vault};
 
 use crate::secrets::VaultSlot;
 
@@ -39,12 +40,96 @@ pub enum SyncEvent {
     Requests(Vec<Request>),
     /// A step of pairing failed.
     PairingFailed(String),
+    /// Whether a passphrase joins new devices to the vault there.
+    PassphraseJoins(bool),
+}
+
+/// The vault's own secret of the place (a WebDAV password, an S3 secret
+/// key), kept as this device's.
+pub const PLACE_SECRET: &str = "sync";
+
+/// The place with its secret from the vault, ready to open.
+pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Place> {
+    let secret = || -> shellwing_vault::Result<String> {
+        match vault.device_secret(PLACE_SECRET)? {
+            Some(s) => Ok(s.to_string()),
+            None => Err(shellwing_vault::Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "its password is not saved on this device: connect again in Settings › Sync",
+            ))),
+        }
+    };
+    Ok(match place {
+        SyncPlace::Folder(f) => Place::Folder(f.clone()),
+        SyncPlace::WebDav(w) => Place::WebDav {
+            url: w.url.clone(),
+            user: w.user.clone(),
+            password: secret()?,
+        },
+        SyncPlace::S3(s3) => Place::S3 {
+            endpoint: s3.endpoint.clone(),
+            region: s3.region.clone(),
+            bucket: s3.bucket.clone(),
+            prefix: s3.prefix.clone(),
+            access_key: s3.access_key.clone(),
+            secret_key: secret()?,
+        },
+    })
+}
+
+/// How `place` is named to the user.
+pub fn describe(place: &SyncPlace) -> String {
+    let unsealed = match place {
+        SyncPlace::Folder(f) => Place::Folder(f.clone()),
+        SyncPlace::WebDav(w) => Place::WebDav {
+            url: w.url.clone(),
+            user: w.user.clone(),
+            password: String::new(),
+        },
+        SyncPlace::S3(s3) => Place::S3 {
+            endpoint: s3.endpoint.clone(),
+            region: s3.region.clone(),
+            bucket: s3.bucket.clone(),
+            prefix: s3.prefix.clone(),
+            access_key: String::new(),
+            secret_key: String::new(),
+        },
+    };
+    unsealed.describe()
+}
+
+/// Opens the place's backend with its secret.
+pub fn open(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Arc<dyn Backend>> {
+    Ok(resolve(place, vault)?.open()?)
+}
+
+/// The backend of the place now, opened again only when the place (or its
+/// secret) changed: a remote one keeps what it read.
+#[derive(Default)]
+struct Opened(Option<(Place, Arc<dyn Backend>)>);
+
+impl Opened {
+    fn get(
+        &mut self,
+        place: &SyncPlace,
+        vault: &Vault,
+    ) -> shellwing_vault::Result<Arc<dyn Backend>> {
+        let resolved = resolve(place, vault)?;
+        if let Some((p, b)) = &self.0
+            && *p == resolved
+        {
+            return Ok(b.clone());
+        }
+        let backend = resolved.open()?;
+        self.0 = Some((resolved, backend.clone()));
+        Ok(backend)
+    }
 }
 
 enum Cmd {
     Sync,
-    /// Ask to join the vault in the folder, as this device.
-    Ask(PathBuf),
+    /// Ask to join the vault there, as this device.
+    Ask(SyncPlace),
     CancelAsk,
     Approve(String),
     Refuse(String),
@@ -53,7 +138,7 @@ enum Cmd {
 #[derive(Clone)]
 pub struct SyncWorker {
     wake: mpsc::Sender<Cmd>,
-    folder: Arc<Mutex<Option<PathBuf>>>,
+    place: Arc<Mutex<Option<SyncPlace>>>,
 }
 
 /// This device's name, shown to the other when pairing.
@@ -80,14 +165,17 @@ impl SyncWorker {
         events: async_channel::Sender<SyncEvent>,
     ) -> SyncWorker {
         let (wake, woken) = mpsc::channel::<Cmd>();
-        let folder: Arc<Mutex<Option<PathBuf>>> = Arc::default();
-        let watched = folder.clone();
+        let place: Arc<Mutex<Option<SyncPlace>>> = Arc::default();
+        let watched = place.clone();
         let config = store;
         let spawned = std::thread::Builder::new()
             .name("shellwing-sync".into())
             .spawn(move || {
                 let mut answerer = Answerer::new(&device_name());
-                let mut asking: Option<(Ask, PathBuf)> = None;
+                let mut asking: Option<(Ask, SyncPlace, Arc<dyn Backend>)> = None;
+                let mut opened = Opened::default();
+                // What the app was last told of the passphrase that joins.
+                let mut joins: Option<bool> = None;
                 let mut offered: Vec<Request> = vec![];
                 // What the app was last told of this device's request.
                 let mut told: Option<AskState> = None;
@@ -97,16 +185,29 @@ impl SyncWorker {
                     let pairing = asking.is_some() || answerer.busy();
                     let wait = if pairing { PAIRING } else { EVERY };
                     let mut sync = match woken.recv_timeout(wait) {
-                        Ok(cmd) => {
-                            Self::run(cmd, &vault, &mut asking, &mut answerer, &watched, &events)
-                        }
+                        Ok(cmd) => Self::run(
+                            cmd,
+                            &vault,
+                            &mut asking,
+                            &mut answerer,
+                            &mut opened,
+                            &watched,
+                            &events,
+                        ),
                         Err(RecvTimeoutError::Timeout) => false,
                         Err(RecvTimeoutError::Disconnected) => return,
                     };
                     // Several wakes in a row are one sync.
                     while let Ok(cmd) = woken.try_recv() {
-                        sync |=
-                            Self::run(cmd, &vault, &mut asking, &mut answerer, &watched, &events);
+                        sync |= Self::run(
+                            cmd,
+                            &vault,
+                            &mut asking,
+                            &mut answerer,
+                            &mut opened,
+                            &watched,
+                            &events,
+                        );
                     }
                     let Some(vault) = vault.get() else {
                         continue;
@@ -114,8 +215,8 @@ impl SyncWorker {
                     if asking.is_none() {
                         told = None;
                     }
-                    if let Some((ask, path)) = &mut asking {
-                        let state = ask.step(&vault, &Folder::new(path));
+                    if let Some((ask, at, backend)) = &mut asking {
+                        let state = ask.step(&vault, backend.as_ref());
                         // Over once in, refused or expired, or when the keys sent
                         // are no good; a folder that cannot be read is tried again.
                         let done = matches!(
@@ -125,7 +226,7 @@ impl SyncWorker {
                         );
                         if matches!(state, Ok(AskState::Joined)) {
                             if let Ok(mut f) = watched.lock() {
-                                *f = Some(path.clone());
+                                *f = Some(at.clone());
                             }
                             sync = true;
                         }
@@ -147,11 +248,24 @@ impl SyncWorker {
                             asking = None;
                         }
                     }
-                    let Some(path) = watched.lock().ok().and_then(|f| f.clone()) else {
+                    let Some(place) = watched.lock().ok().and_then(|f| f.clone()) else {
+                        joins = None;
                         continue;
                     };
-                    let store = Folder::new(&path);
-                    match answerer.poll(&vault, &store) {
+                    let store = match opened.get(&place, &vault) {
+                        Ok(b) => b,
+                        Err(e) => {
+                            if events
+                                .send_blocking(SyncEvent::Failed(e.to_string()))
+                                .is_err()
+                            {
+                                return;
+                            }
+                            continue;
+                        }
+                    };
+                    let store = store.as_ref();
+                    match answerer.poll(&vault, store) {
                         Ok(ready) if ready != offered => {
                             offered = ready.clone();
                             if events.send_blocking(SyncEvent::Requests(ready)).is_err() {
@@ -168,26 +282,37 @@ impl SyncWorker {
                         continue;
                     }
                     last_sync = Some(Instant::now());
-                    let event = sync_once(&vault, &store, config.as_ref());
+                    let event = sync_once(&vault, store, config.as_ref());
                     if events.send_blocking(event).is_err() {
                         return;
+                    }
+                    if let Ok(now) = vault.passphrase_joins(store)
+                        && joins != Some(now)
+                    {
+                        joins = Some(now);
+                        if events
+                            .send_blocking(SyncEvent::PassphraseJoins(now))
+                            .is_err()
+                        {
+                            return;
+                        }
                     }
                 }
             });
         if let Err(e) = spawned {
             eprintln!("cannot start syncing: {e}");
         }
-        SyncWorker { wake, folder }
+        SyncWorker { wake, place }
     }
 
-    /// Syncs with `folder` from now on (None: stops), starting right away.
-    pub fn set_folder(&self, folder: Option<PathBuf>) {
+    /// Syncs with `place` from now on (None: stops), starting right away.
+    pub fn set_place(&self, place: Option<SyncPlace>) {
         let changed = self
-            .folder
+            .place
             .lock()
             .map(|mut f| {
-                let changed = *f != folder;
-                *f = folder;
+                let changed = *f != place;
+                *f = place;
                 changed
             })
             .unwrap_or(false);
@@ -196,18 +321,18 @@ impl SyncWorker {
         }
     }
 
-    pub fn folder(&self) -> Option<PathBuf> {
-        self.folder.lock().ok().and_then(|f| f.clone())
+    pub fn place(&self) -> Option<SyncPlace> {
+        self.place.lock().ok().and_then(|f| f.clone())
     }
 
     pub fn now(&self) {
         let _ = self.wake.send(Cmd::Sync);
     }
 
-    /// Asks to join the vault in `folder` from a device that syncs it; how it
+    /// Asks to join the vault at `place` from a device that syncs it; how it
     /// goes comes as [`SyncEvent::Asking`].
-    pub fn ask_to_join(&self, folder: PathBuf) {
-        let _ = self.wake.send(Cmd::Ask(folder));
+    pub fn ask_to_join(&self, place: SyncPlace) {
+        let _ = self.wake.send(Cmd::Ask(place));
     }
 
     pub fn cancel_ask(&self) {
@@ -227,49 +352,66 @@ impl SyncWorker {
     fn run(
         cmd: Cmd,
         vault: &VaultSlot,
-        asking: &mut Option<(Ask, PathBuf)>,
+        asking: &mut Option<(Ask, SyncPlace, Arc<dyn Backend>)>,
         answerer: &mut Answerer,
-        watched: &Mutex<Option<PathBuf>>,
+        opened: &mut Opened,
+        watched: &Mutex<Option<SyncPlace>>,
         events: &async_channel::Sender<SyncEvent>,
     ) -> bool {
         let fail = |e: shellwing_vault::Error| {
             let _ = events.send_blocking(SyncEvent::PairingFailed(e.to_string()));
             false
         };
+        // The place synced now, opened.
+        let mut current = |vault: &Vault| {
+            let place = watched.lock().ok().and_then(|f| f.clone())?;
+            opened.get(&place, vault).ok()
+        };
         match cmd {
             Cmd::Sync => true,
-            Cmd::Ask(path) => {
-                if let Some((old, at)) = asking.take() {
-                    let _ = old.cancel(&Folder::new(&at));
+            Cmd::Ask(place) => {
+                if let Some((old, _, at)) = asking.take() {
+                    let _ = old.cancel(at.as_ref());
                 }
-                match Ask::new(&Folder::new(&path), &device_name()) {
-                    Ok(ask) => *asking = Some((ask, path)),
+                let Some(v) = vault.get() else {
+                    return false;
+                };
+                let backend = match open(&place, &v) {
+                    Ok(b) => b,
+                    Err(e) => return fail(e),
+                };
+                match Ask::new(backend.as_ref(), &device_name()) {
+                    Ok(ask) => *asking = Some((ask, place, backend)),
                     Err(e) => return fail(e),
                 }
                 false
             }
             Cmd::CancelAsk => {
-                if let Some((ask, at)) = asking.take() {
-                    let _ = ask.cancel(&Folder::new(&at));
+                if let Some((ask, _, at)) = asking.take() {
+                    let _ = ask.cancel(at.as_ref());
                 }
                 false
             }
             Cmd::Approve(id) => {
-                let (Some(vault), Some(path)) =
-                    (vault.get(), watched.lock().ok().and_then(|f| f.clone()))
-                else {
+                let Some(v) = vault.get() else {
                     return false;
                 };
-                match answerer.approve(&vault, &Folder::new(&path), &id) {
+                let Some(store) = current(&v) else {
+                    return false;
+                };
+                match answerer.approve(&v, store.as_ref(), &id) {
                     Ok(()) => false,
                     Err(e) => fail(e),
                 }
             }
             Cmd::Refuse(id) => {
-                let Some(path) = watched.lock().ok().and_then(|f| f.clone()) else {
+                let Some(v) = vault.get() else {
                     return false;
                 };
-                match answerer.refuse(&Folder::new(&path), &id) {
+                let Some(store) = current(&v) else {
+                    return false;
+                };
+                match answerer.refuse(store.as_ref(), &id) {
                     Ok(()) => false,
                     Err(e) => fail(e),
                 }
@@ -280,7 +422,7 @@ impl SyncWorker {
 
 /// One round: records the edits made in the files, syncs, and writes the
 /// merged result back into them.
-fn sync_once(vault: &Vault, store: &Folder, config: Option<&Store>) -> SyncEvent {
+fn sync_once(vault: &Vault, store: &dyn Backend, config: Option<&Store>) -> SyncEvent {
     // A folder set by hand in config.toml starts empty: begin
     // there (the recovery key can be shown from the palette).
     let started = match vault.folder_state(store) {
@@ -435,7 +577,7 @@ fn write_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shellwing_vault::MemoryKeys;
+    use shellwing_vault::{Folder, MemoryKeys};
 
     struct Device {
         store: Store,
