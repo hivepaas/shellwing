@@ -33,8 +33,8 @@ use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
 use crate::view::{
-    CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView, UseKey,
-    VaultChanged, hsla,
+    CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
+    TitleChanged, UseKey, VaultChanged, hsla,
 };
 use shellwing_config::SyncPlace;
 use shellwing_vault::FolderState;
@@ -72,6 +72,11 @@ enum Shortcut {
     Quit,
     /// Every open tab, by host.
     Tabs,
+}
+
+/// A tab being dragged to another place in the strip.
+struct DraggedTab {
+    from: usize,
 }
 
 /// A tab: its panes, and which one has the keyboard.
@@ -853,6 +858,13 @@ impl Workspace {
         .detach();
         cx.subscribe(&view, |ws, _, _: &VaultChanged, _| ws.sync.now())
             .detach();
+        // The tab, and the window while it is the active one, show the
+        // shell's title.
+        cx.subscribe_in(&view, window, |ws, _, _: &TitleChanged, window, cx| {
+            ws.title_window(window, cx);
+            cx.notify();
+        })
+        .detach();
         cx.subscribe_in(&view, window, |ws, _, _: &FilesResized, window, cx| {
             ws.save_sidebar(window, cx);
             // Every pane's panel takes the new width.
@@ -1007,14 +1019,47 @@ impl Workspace {
         self.layout_changed(cx);
         if let Some(tab) = self.tabs.get(ix).map(|t| t.focused.clone()) {
             self.active = ix;
-            let title = tab.read(cx).session().title.clone();
-            window.set_window_title(&format!("{title} — shellwing"));
             window.focus(&tab.focus_handle(cx), cx);
         } else {
-            window.set_window_title("shellwing");
             window.focus(&self.focus, cx);
         }
+        self.title_window(window, cx);
         cx.notify();
+    }
+
+    /// Moves a tab to `to`, the others making room; the active one stays
+    /// active.
+    fn move_tab(&mut self, from: usize, to: usize, cx: &mut Context<Self>) {
+        if from == to || from >= self.tabs.len() || to >= self.tabs.len() {
+            return;
+        }
+        let active = self.active_tab().map(|t| t.entity_id());
+        let tab = self.tabs.remove(from);
+        self.tabs.insert(to, tab);
+        if let Some(id) = active {
+            self.active = self
+                .tabs
+                .iter()
+                .position(|t| t.focused.entity_id() == id)
+                .unwrap_or(self.active);
+        }
+        self.layout_changed(cx);
+        cx.notify();
+    }
+
+    /// The window's title: the active tab's host, and what its shell says.
+    fn title_window(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let title = match self.active_tab() {
+            Some(t) => {
+                let v = t.read(cx);
+                match v.title_detail() {
+                    Some(d) => format!("{}: {d} — shellwing", v.session().title),
+                    None => format!("{} — shellwing", v.session().title),
+                }
+            }
+            None => "shellwing".into(),
+        };
+        window.set_window_title(&title);
     }
 
     fn close(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
@@ -3005,6 +3050,11 @@ impl Workspace {
         let light = self.live.light_for(self.system_light);
         crate::colors::set_light(light);
         self.live.set_light(light);
+        let accent = self.live.settings().appearance.theme_accent.then(|| {
+            let c = self.live.look_for(None).0.theme.accent;
+            (u32::from(c.r) << 16) | (u32::from(c.g) << 8) | u32::from(c.b)
+        });
+        crate::colors::set_accent(accent);
         let mut problems = vec![];
         for tab in self.all_views() {
             let entry = tab.read(cx).session().entry.clone();
@@ -3440,6 +3490,7 @@ impl Workspace {
             let v = tab.focused.read(cx);
             let active = i == self.active;
             let title = v.session().title.clone();
+            let detail = v.title_detail();
             let color = self.host_color(v.session().entry.as_deref());
             strip = strip.child(
                 div()
@@ -3451,7 +3502,7 @@ impl Workspace {
                     .h(px(30.))
                     .pl(px(9.))
                     .pr(px(4.))
-                    .max_w(px(220.))
+                    .max_w(px(if detail.is_some() { 280. } else { 220. }))
                     .rounded(px(7.))
                     .border_1()
                     .cursor_pointer()
@@ -3483,6 +3534,15 @@ impl Workspace {
                     // A press on a tab must not start moving the window.
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(move |ws, _, window, cx| ws.activate(i, window, cx)))
+                    // Dragged onto another tab, it takes that one's place.
+                    .on_drag(DraggedTab { from: i }, {
+                        let name = SharedString::from(title.clone());
+                        move |_, _, _, cx| cx.new(|_| crate::files::DragGhost(name.clone()))
+                    })
+                    .drag_over::<DraggedTab>(|s, _, _, _| s.border_color(rgb(colors().accent)))
+                    .on_drop(
+                        cx.listener(move |ws, d: &DraggedTab, _, cx| ws.move_tab(d.from, i, cx)),
+                    )
                     .on_mouse_down(
                         MouseButton::Middle,
                         cx.listener(move |ws, _, window, cx| ws.request_close_tab(i, window, cx)),
@@ -3492,14 +3552,28 @@ impl Workspace {
                     .when(tab.broadcast, |d| {
                         d.child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
                     })
+                    // The host's name keeps its place; what the shell says
+                    // after it gives way first.
                     .child(
                         div()
-                            .min_w_0()
+                            .flex_shrink_0()
+                            .max_w(px(150.))
                             .overflow_hidden()
                             .text_ellipsis()
                             .whitespace_nowrap()
                             .child(title),
                     )
+                    .when_some(detail, |d, detail| {
+                        d.child(
+                            div()
+                                .min_w_0()
+                                .overflow_hidden()
+                                .text_ellipsis()
+                                .whitespace_nowrap()
+                                .text_color(rgb(colors().muted))
+                                .child(detail),
+                        )
+                    })
                     .child(
                         div()
                             .id(ElementId::NamedInteger("close-tab".into(), i as u64))

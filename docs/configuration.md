@@ -52,6 +52,7 @@ padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
 # terminal's. No family: the system's interface font. Size 10 to 20, default 14,
 # as the terminal's.
 ui_font = { family = "Inter", size = 14 }
+theme_accent = true          # the app's accent (logo, choices, buttons) is the theme's
 
 [terminal]
 scrollback = 10000           # lines of history
@@ -113,6 +114,11 @@ desktop is with `system` (the default), and changes when the desktop does
 `theme` when dark, `light_theme` when light. Choosing a theme, in Settings,
 the palette or with the shortcut, sets the one of the mode the app is in. A
 host's or a group's own theme is kept in both.
+
+**The app's accent** (the logo, what is chosen, the main buttons) is the
+theme's `accent`, unless `theme_accent = false` (*Settings › Appearance ›
+The app's accent from the theme*). The app's theme gives it, not a host's;
+one too close to the app's background (contrast under 3:1) is not taken.
 
 **Changing the theme.** In the palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>,
 <kbd>Cmd</kbd>+<kbd>K</kbd> on macOS), *Change theme…* lists every theme and previews
