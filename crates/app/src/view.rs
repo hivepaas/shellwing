@@ -19,8 +19,8 @@ use gpui::{
 };
 use shellwing_config::{CursorStyle, Gradient, Theme};
 use shellwing_term::{
-    Event as TermEvent, Found, Frame, Mods, MouseAction, MouseButton as TermButton, MouseInput,
-    NamedKey, Rgb, Row, ScrollPos, TermHandle,
+    Event as TermEvent, FindQuery, Found, Frame, Mods, MouseAction, MouseButton as TermButton,
+    MouseInput, NamedKey, Rgb, Row, ScrollPos, TermHandle,
 };
 
 use crate::Writer;
@@ -274,6 +274,16 @@ struct FindBar {
     _changed: gpui::Subscription,
 }
 
+/// How text is found, the same in every pane: the last choice stays for the
+/// next find bar.
+#[derive(Clone, Copy, Default)]
+struct FindOptions {
+    match_case: bool,
+    regex: bool,
+}
+
+impl gpui::Global for FindOptions {}
+
 /// Matches of the text being found, as Ghostty shows them: yellow, and the
 /// chosen one orange, under black text.
 const MATCH_BG: u32 = 0xffe082;
@@ -379,9 +389,7 @@ impl TermView {
             }
             None => {
                 let input = cx.new(|cx| TextInput::new("Find", cx));
-                let changed = cx.subscribe(&input, |v, input, _: &Changed, cx| {
-                    v.term.find(input.read(cx).text().to_string());
-                });
+                let changed = cx.subscribe(&input, |v, _, _: &Changed, cx| v.send_find(cx));
                 self.find = Some(FindBar {
                     input: input.clone(),
                     _changed: changed,
@@ -394,21 +402,47 @@ impl TermView {
         cx.notify();
     }
 
+    /// Hands the terminal what the find bar asks for now.
+    fn send_find(&mut self, cx: &mut Context<Self>) {
+        let Some(f) = &self.find else {
+            return;
+        };
+        let o = cx.try_global::<FindOptions>().copied().unwrap_or_default();
+        self.term.find(FindQuery {
+            text: f.input.read(cx).text().to_string(),
+            match_case: o.match_case,
+            regex: o.regex,
+        });
+    }
+
+    fn toggle_find_option(&mut self, flip: fn(&mut FindOptions), cx: &mut Context<Self>) {
+        let mut o = cx.try_global::<FindOptions>().copied().unwrap_or_default();
+        flip(&mut o);
+        cx.set_global(o);
+        self.send_find(cx);
+        cx.notify();
+    }
+
     fn close_find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.find.take().is_some() {
-            self.term.find(String::new());
+            self.term.find(FindQuery::default());
         }
         window.focus(&self.focus, cx);
         cx.notify();
     }
 
     /// Keys in the find bar: Enter (or F3, or Up) for the next match up the
-    /// screen and into history, with Shift (or Down) for the next one down.
+    /// screen and into history, with Shift (or Down) for the next one down;
+    /// Alt+C to match case, Alt+R for a regular expression, as in VS Code.
     /// Other keys go on: the terminal leaves them alone (see `on_key`), and
     /// only an unhandled key's text reaches the field.
     fn find_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
+        let m = &k.modifiers;
+        let alt = m.alt && !m.control && !m.platform;
         match k.key.as_str() {
+            "c" if alt => self.toggle_find_option(|o| o.match_case = !o.match_case, cx),
+            "r" if alt => self.toggle_find_option(|o| o.regex = !o.regex, cx),
             "enter" | "f3" => self.term.find_next(!k.modifiers.shift),
             "up" => self.term.find_next(true),
             "down" => self.term.find_next(false),
@@ -424,14 +458,55 @@ impl TermView {
         let (count, none) = match self.frame.find {
             _ if !typed => (String::new(), false),
             None => ("…".to_string(), false),
+            Some(s) if s.invalid => ("Invalid pattern".to_string(), true),
             Some(s) => {
-                let more = if s.searching { "…" } else { "" };
+                let more = if s.searching {
+                    "…"
+                } else if s.capped {
+                    "+"
+                } else {
+                    ""
+                };
                 match (s.total, s.current) {
                     (0, _) if !s.searching => ("No results".to_string(), true),
                     (n, Some(i)) => (format!("{} of {n}{more}", i + 1), false),
                     (n, None) => (format!("{n} found{more}"), false),
                 }
             }
+        };
+        let options = cx.try_global::<FindOptions>().copied().unwrap_or_default();
+        let toggle = |id: &'static str,
+                      label: &'static str,
+                      tip: &'static str,
+                      on: bool,
+                      flip: fn(&mut FindOptions),
+                      cx: &mut Context<Self>| {
+            div()
+                .id(id)
+                .h(px(22.))
+                .min_w(px(24.))
+                .px_1()
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(5.))
+                .border_1()
+                .border_color(rgb(if on { 0x38bdf8 } else { 0x111a2a }))
+                .bg(rgb(if on { 0x17304a } else { 0x111a2a }))
+                .text_xs()
+                .font_weight(FontWeight::SEMIBOLD)
+                .text_color(rgb(if on { 0xe2e8f0 } else { 0x8a96aa }))
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(0x1a2333)))
+                .tooltip(move |_, cx| {
+                    cx.new(|_| crate::sidebar::Tip {
+                        title: tip.into(),
+                        detail: SharedString::default(),
+                    })
+                    .into()
+                })
+                .on_click(cx.listener(move |v, _, _, cx| v.toggle_find_option(flip, cx)))
+                .child(label)
         };
         let step = |id: &'static str, label: &'static str, older: bool, cx: &mut Context<Self>| {
             div()
@@ -485,6 +560,22 @@ impl TermView {
                         .bg(rgb(0x0b0f17))
                         .child(f.input.clone()),
                 )
+                .child(toggle(
+                    "find-case",
+                    "Aa",
+                    "Match case (Alt+C)",
+                    options.match_case,
+                    |o| o.match_case = !o.match_case,
+                    cx,
+                ))
+                .child(toggle(
+                    "find-regex",
+                    ".*",
+                    "Regular expression (Alt+R)",
+                    options.regex,
+                    |o| o.regex = !o.regex,
+                    cx,
+                ))
                 .child(
                     div()
                         .min_w(px(64.))

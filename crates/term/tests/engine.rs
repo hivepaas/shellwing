@@ -4,8 +4,8 @@ use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use shellwing_term::{
-    Colors, Event, Found, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput, Rgb,
-    TermHandle,
+    Colors, Event, FindQuery, Found, Frame, LinkSpan, Mods, MouseAction, MouseButton, MouseInput,
+    Rgb, TermHandle,
 };
 
 const CELL: (u32, u32) = (10, 20);
@@ -447,6 +447,13 @@ fn the_scroll_position_follows_history() {
     assert_eq!(Harness::row_text(&f, 0), "line 0");
 }
 
+fn text(t: &str) -> FindQuery {
+    FindQuery {
+        text: t.into(),
+        ..FindQuery::default()
+    }
+}
+
 /// The text of each run marked `found`, after the start of its row.
 fn marked(f: &Frame, found: Found) -> Vec<(String, String)> {
     let mut out = vec![];
@@ -476,7 +483,7 @@ fn find_marks_matches_and_walks_into_history() {
 
     // ASCII letters match in either case; the newest match is chosen, and
     // scrolled to.
-    h.term.find("NEEDLE".into());
+    h.term.find(text("NEEDLE"));
     let f = h.frame_where(|f| {
         f.find
             .is_some_and(|s| s.total == 3 && s.current == Some(0) && !s.searching)
@@ -506,7 +513,7 @@ fn find_marks_matches_and_walks_into_history() {
     });
 
     // Empty text stops finding, and the marks go.
-    h.term.find(String::new());
+    h.term.find(FindQuery::default());
     let f = h.frame_where(|f| f.find.is_none());
     assert!(marked(&f, Found::Match).is_empty() && marked(&f, Found::Current).is_empty());
 }
@@ -519,4 +526,77 @@ fn history_keeps_the_lines_asked_for() {
     h.term.feed(lines.into_bytes());
     let f = h.frame_where(|f| f.rows.iter().any(|r| r.text.starts_with("line 3999")));
     assert!(f.scroll.total >= 4000, "kept {} rows", f.scroll.total);
+}
+
+/// Waits for a search to be done, and returns how it ended.
+fn found(h: &Harness, query: FindQuery) -> Frame {
+    h.term.find(query);
+    h.frame_where(|f| f.find.is_some_and(|s| !s.searching))
+}
+
+#[test]
+fn find_minds_case_when_asked_and_takes_regular_expressions() {
+    let h = harness();
+    h.term.feed(
+        "Needle\r\nneedle\r\nNEEDLE 42\r\nviệt and VIỆT\r\n"
+            .as_bytes()
+            .to_vec(),
+    );
+    h.frame_where(|f| f.rows.iter().any(|r| r.text.starts_with("việt")));
+
+    let total = |f: &Frame| f.find.map_or(0, |s| s.total);
+    assert_eq!(total(&found(&h, text("needle"))), 3);
+    let exact = FindQuery {
+        text: "Needle".into(),
+        match_case: true,
+        regex: false,
+    };
+    assert_eq!(total(&found(&h, exact)), 1);
+    // Case goes beyond ASCII: Vietnamese letters with their marks too.
+    assert_eq!(total(&found(&h, text("Việt"))), 2);
+
+    let regex = |t: &str| FindQuery {
+        text: t.into(),
+        match_case: false,
+        regex: true,
+    };
+    let f = found(&h, regex(r"needle \d+"));
+    assert_eq!(total(&f), 1);
+    assert_eq!(marked(&f, Found::Current)[0].1, "NEEDLE 42");
+    // Plain text is not a pattern: "." is a dot.
+    assert_eq!(total(&found(&h, text("ne.dle"))), 0);
+    h.term.find(regex("ne(dle"));
+    h.frame_where(|f| f.find.is_some_and(|s| s.invalid));
+}
+
+#[test]
+fn find_sees_matches_across_a_wrapped_row() {
+    let h = harness();
+    // 38 columns of x, then a needle that wraps after "ne" on a 40-column grid.
+    h.term
+        .feed(format!("{}needle\r\n", "x".repeat(38)).into_bytes());
+    h.frame_where(|f| f.rows.iter().any(|r| r.text.starts_with("edle")));
+    let f = found(&h, text("needle"));
+    assert_eq!(f.find.map(|s| s.total), Some(1));
+    let parts: Vec<String> = marked(&f, Found::Current)
+        .into_iter()
+        .map(|(_, part)| part)
+        .collect();
+    assert_eq!(parts, ["ne", "edle"]);
+}
+
+#[test]
+fn find_follows_new_output() {
+    let h = harness();
+    let f = found(&h, text("needle"));
+    assert_eq!(f.find.map(|s| s.total), Some(0));
+    // Output that scrolls the first match up into history, then more.
+    let lines: String = (0..20)
+        .map(|i| format!("{i}{}\r\n", if i % 5 == 0 { " needle" } else { "" }))
+        .collect();
+    h.term.feed(lines.into_bytes());
+    h.frame_where(|f| f.find.is_some_and(|s| s.total == 4 && !s.searching));
+    // `clear` (the screen and the history): what it wiped is no longer found.
+    h.term.feed(b"\x1b[2J\x1b[3J\x1b[H".to_vec());
+    h.frame_where(|f| f.find.is_some_and(|s| s.total == 0 && !s.searching));
 }

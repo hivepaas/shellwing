@@ -16,10 +16,11 @@
 //! wheel are encoded for the program; otherwise they select text and scroll the
 //! scrollback. Holding Shift always selects, as in other terminals.
 //!
-//! Finding text ([`TermHandle::find`]) runs here too, with libghostty's search
-//! over the screen and its history: a little at a time between batches, so a
-//! long history never holds up the output. Frames mark the matches in view.
+//! Finding text ([`TermHandle::find`], see [`find`]) runs here too, over the
+//! screen and its history: a little at a time between batches, so a long
+//! history never holds up the output. Frames mark the matches in view.
 
+pub mod find;
 pub mod links;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -30,12 +31,14 @@ use std::time::{Duration, Instant};
 
 use libghostty_vt::render::{CellIterator, Dirty, RenderState, RowIterator};
 use libghostty_vt::screen::{CellWide, Screen};
-use libghostty_vt::search::{MatchBuffer, Search, Status as SearchStatus};
 use libghostty_vt::selection::FormatOptions;
 use libghostty_vt::selection::gesture::{DragEvent, Geometry, Gesture, PressEvent, ReleaseEvent};
 use libghostty_vt::style::RgbColor;
-use libghostty_vt::terminal::{ClipboardMime, Point, PointCoordinate, PointSpace, ScrollViewport};
+use libghostty_vt::terminal::{ClipboardMime, Point, PointCoordinate, ScrollViewport};
 use libghostty_vt::{Terminal, key, mouse, paste};
+
+pub use find::FindQuery;
+use find::Finder;
 
 /// How many feed chunks may wait for the parser before `feed` blocks. Blocking
 /// here is the backpressure that eventually slows the SSH server down.
@@ -130,6 +133,10 @@ pub struct FindStatus {
     pub current: Option<usize>,
     /// Still looking through the history.
     pub searching: bool,
+    /// [`find::MAX_MATCHES`] found: the rest of the history is not looked at.
+    pub capped: bool,
+    /// The query is not a regular expression.
+    pub invalid: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -298,8 +305,8 @@ enum Cmd {
     Hover(Option<(f32, f32)>),
     Colors(Box<Colors>),
     Scrollback(usize),
-    /// Find this text; empty stops finding.
-    Find(String),
+    /// Find this; empty text stops finding.
+    Find(FindQuery),
     /// Choose the next match: older (up the screen and into history), or newer.
     FindNext {
         older: bool,
@@ -431,12 +438,12 @@ impl TermHandle {
         let _ = self.tx.send(Cmd::Scrollback(lines));
     }
 
-    /// Finds `text` on the screen and in its history, ASCII letters in either
-    /// case, and chooses the newest match as soon as there is one, scrolling
-    /// to it. Frames then mark the matches and say how many there are. The
-    /// same text again keeps the matches and the choice; empty stops finding.
-    pub fn find(&self, text: String) {
-        let _ = self.tx.send(Cmd::Find(text));
+    /// Finds `query` on the screen and in its history, and chooses the newest
+    /// match as soon as there is one, scrolling to it. Frames then mark the
+    /// matches and say how many there are. The same query again keeps the
+    /// matches and the choice; empty text stops finding.
+    pub fn find(&self, query: FindQuery) {
+        let _ = self.tx.send(Cmd::Find(query));
     }
 
     /// Chooses the next match, `older` or newer, wrapping round at either
@@ -510,13 +517,30 @@ struct Engine {
     found: Vec<Vec<(u16, u16, Found)>>,
 }
 
-/// Text being found.
-struct Finding {
-    search: Search<'static, 'static>,
-    matches: MatchBuffer,
-    /// Choose the newest match once there is one: the text is new.
-    choose: bool,
-    status: FindStatus,
+/// Something being found.
+enum Finding {
+    Going(Finder),
+    /// Not a regular expression: nothing to look for.
+    Invalid(FindQuery),
+}
+
+impl Finding {
+    fn query(&self) -> &FindQuery {
+        match self {
+            Finding::Going(f) => f.query(),
+            Finding::Invalid(q) => q,
+        }
+    }
+
+    fn status(&self) -> FindStatus {
+        match self {
+            Finding::Going(f) => f.status(),
+            Finding::Invalid(_) => FindStatus {
+                invalid: true,
+                ..FindStatus::default()
+            },
+        }
+    }
 }
 
 /// Keeps `lines` of history. libghostty also caps history at 10 000 bytes
@@ -582,7 +606,7 @@ fn run(
     let mut changed = true;
     loop {
         // A search still going through history goes on between commands.
-        let first = if e.find.as_ref().is_some_and(|f| f.status.searching) {
+        let first = if matches!(&e.find, Some(Finding::Going(f)) if f.searching()) {
             match rx.try_recv() {
                 Ok(cmd) => Some(cmd),
                 Err(mpsc::TryRecvError::Empty) => None,
@@ -694,15 +718,12 @@ fn run(
                     e.repaint_all = true;
                 }
                 Cmd::Scrollback(lines) => set_scrollback(&mut e.term, lines)?,
-                Cmd::Find(text) => e.set_find(&text)?,
+                Cmd::Find(query) => e.set_find(query),
                 Cmd::FindNext { older } => {
-                    if let Some(f) = &mut e.find {
-                        f.choose = false;
-                        if older {
-                            f.search.select_next(&mut e.term)?;
-                        } else {
-                            f.search.select_prev(&mut e.term)?;
-                        }
+                    if let Some(Finding::Going(f)) = &mut e.find
+                        && f.step(&mut e.term, older).is_err()
+                    {
+                        e.find_failed();
                     }
                 }
                 Cmd::Close => return Ok(()),
@@ -719,7 +740,7 @@ fn run(
             }
             changed = true;
         }
-        if e.find.is_some() && e.advance_find(changed)? {
+        if e.advance_find(changed) {
             changed = true;
         }
         if changed && shared.taken.swap(false, Ordering::AcqRel) {
@@ -1007,111 +1028,68 @@ impl Engine {
         Ok(())
     }
 
-    fn set_find(&mut self, text: &str) -> libghostty_vt::error::Result<()> {
-        if text.is_empty() {
+    fn set_find(&mut self, query: FindQuery) {
+        if query.text.is_empty() {
             self.find = None;
-            return Ok(());
+            return;
         }
-        let f = match &mut self.find {
-            Some(f) => f,
-            None => self.find.insert(Finding {
-                search: Search::new(&mut self.term)?,
-                matches: MatchBuffer::new(),
-                choose: false,
-                status: FindStatus::default(),
-            }),
+        // The same query keeps its matches and the one chosen.
+        if self.find.as_ref().is_some_and(|f| *f.query() == query) {
+            return;
+        }
+        self.find = match query.compile() {
+            Ok(re) => Finder::new(query, re, &mut self.term)
+                .ok()
+                .map(Finding::Going),
+            Err(_) => Some(Finding::Invalid(query)),
         };
-        // The same text keeps its matches and the one chosen.
-        if f.search.needle()? != Some(text.as_bytes()) {
-            f.search.set_needle(&mut self.term, text.as_bytes())?;
-            f.choose = true;
-        }
-        Ok(())
     }
 
-    /// Moves the search along for a while: it reads the terminal again when
-    /// that `changed`, and goes on through the history. Says whether there is
-    /// news to show.
-    fn advance_find(&mut self, changed: bool) -> libghostty_vt::error::Result<bool> {
-        let Some(f) = &mut self.find else {
-            return Ok(false);
+    /// A search that hit a terminal error starts over, so that finding never
+    /// stops the terminal; one that cannot start over ends.
+    fn find_failed(&mut self) {
+        let query = self.find.take().map(|f| f.query().clone());
+        if let Some(q) = query
+            && let Ok(re) = q.compile()
+        {
+            self.find = Finder::new(q, re, &mut self.term).ok().map(Finding::Going);
+        }
+    }
+
+    /// Moves the search along for a while (see [`Finder::advance`]). Says
+    /// whether there is news to show.
+    fn advance_find(&mut self, changed: bool) -> bool {
+        let Some(Finding::Going(f)) = &mut self.find else {
+            return false;
         };
-        if !changed && !f.status.searching && !f.choose {
-            return Ok(false);
+        if !changed && !f.searching() {
+            return false;
         }
-        let start = Instant::now();
-        loop {
-            f.search.feed(&mut self.term)?;
-            let mut status = f.search.status()?;
-            while status == SearchStatus::Running && start.elapsed() < SEARCH_BUDGET {
-                status = f.search.tick()?;
-            }
-            if status != SearchStatus::FeedRequired || start.elapsed() >= SEARCH_BUDGET {
-                break;
+        match f.advance(&mut self.term, changed, SEARCH_BUDGET) {
+            Ok(news) => news,
+            Err(_) => {
+                self.find_failed();
+                true
             }
         }
-        // The newest match is found first, from the bottom of the screen up.
-        if f.choose && f.search.total_matches()? > 0 {
-            f.choose = !f.search.select_next(&mut self.term)?;
-        }
-        let status = FindStatus {
-            total: f.search.total_matches()?,
-            current: f.search.selected_index()?,
-            searching: f.search.status()? != SearchStatus::Complete,
-        };
-        let news = status != f.status;
-        f.status = status;
-        Ok(news)
     }
 
     /// The matches in view, as column ranges for each row.
-    fn found_rows(&mut self) -> libghostty_vt::error::Result<Vec<Vec<(u16, u16, Found)>>> {
-        let (rows, cols) = (self.grid_rows as u32, self.cols);
-        let mut out = vec![Vec::new(); rows as usize];
-        let Some(f) = &mut self.find else {
-            return Ok(out);
+    fn found_rows(&mut self) -> Vec<Vec<(u16, u16, Found)>> {
+        let rows = self.grid_rows as usize;
+        let mut out = match &self.find {
+            Some(Finding::Going(f)) => f.spans(&self.term).unwrap_or_default(),
+            _ => vec![],
         };
-        let snap = f.search.snapshot(&mut self.term)?;
-        let term = snap.terminal();
-        let view = |g| term.point_from_grid_ref(&g, PointSpace::Viewport);
-        let chosen = match snap.selected_match()? {
-            Some(m) => Some((view(m.start())?, view(m.end())?)),
-            None => None,
-        };
-        for m in snap.viewport_matches(&mut f.matches)? {
-            let ends = (view(m.start())?, view(m.end())?);
-            let found = if Some(ends) == chosen {
-                Found::Current
-            } else {
-                Found::Match
-            };
-            // A match that runs off the top or the bottom shows its part in view.
-            let (from, to) = match ends {
-                (Some(a), Some(b)) => (a, b),
-                (None, Some(b)) => (PointCoordinate { x: 0, y: 0 }, b),
-                (Some(a), None) => (
-                    a,
-                    PointCoordinate {
-                        x: cols.saturating_sub(1),
-                        y: rows.saturating_sub(1),
-                    },
-                ),
-                (None, None) => continue,
-            };
-            for y in from.y..=to.y.min(rows.saturating_sub(1)) {
-                let start = if y == from.y { from.x } else { 0 };
-                let end = if y == to.y { to.x + 1 } else { cols };
-                out[y as usize].push((start, end, found));
-            }
-        }
-        Ok(out)
+        out.resize_with(rows, Vec::new);
+        out
     }
 
     /// Copies the rows libghostty marked dirty into `self.rows` and returns a frame
     /// sharing the unchanged rows with the previous one.
     fn build_frame(&mut self) -> libghostty_vt::error::Result<Frame> {
         // Rows whose matches changed are built again, as dirty ones are.
-        let found = self.found_rows()?;
+        let found = self.found_rows();
         self.found.resize_with(found.len(), Vec::new);
         let snap = self.rs.update(&self.term)?;
         let full = std::mem::take(&mut self.repaint_all) || matches!(snap.dirty()?, Dirty::Full);
@@ -1229,7 +1207,7 @@ impl Engine {
             scrolled_back,
             scroll,
             hover_link: self.hover,
-            find: self.find.as_ref().map(|f| f.status),
+            find: self.find.as_ref().map(Finding::status),
             seq: self.seq,
         })
     }
