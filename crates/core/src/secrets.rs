@@ -2,15 +2,35 @@
 //! worked, handed to the pane so it can offer to save them.
 
 use std::path::PathBuf;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Condvar, Mutex};
 
 use shellwing_ssh::{Learned, Secrets};
-use shellwing_vault::{KeyStore, Vault};
+use shellwing_vault::{KeyStore, Lock, Unlock, Vault};
+
+enum State {
+    Opening,
+    Ready(Arc<Vault>),
+    /// Waits for a passphrase or the recovery key (see [`VaultSlot::unlock`]).
+    Locked(Lock),
+    Failed(String),
+}
+
+struct Inner {
+    state: Mutex<State>,
+    /// The keychain holds the open vault's key (it opened from there, or was
+    /// given it), so no passphrase is needed to open it.
+    kept: std::sync::atomic::AtomicBool,
+    opened: Condvar,
+    path: Option<PathBuf>,
+    keys: Option<Arc<dyn KeyStore>>,
+}
 
 /// The vault, opened on a thread of its own at start: the keychain may be slow,
-/// or ask the user to unlock it, and the window must not wait for that.
+/// or ask the user to unlock it, and the window must not wait for that. Without
+/// a keychain to give its key, it waits locked for a passphrase or the
+/// recovery key.
 #[derive(Clone)]
-pub struct VaultSlot(Arc<OnceLock<Result<Arc<Vault>, String>>>);
+pub struct VaultSlot(Arc<Inner>);
 
 impl VaultSlot {
     /// Opens the vault with its key in the system keychain.
@@ -22,43 +42,130 @@ impl VaultSlot {
     /// Opens the vault with its key in `keys`: on iOS and Android, a store the
     /// app backs with the platform keychain.
     pub fn open_with(path: PathBuf, keys: impl KeyStore + 'static) -> Self {
-        let slot = VaultSlot(Arc::new(OnceLock::new()));
-        let fill = slot.0.clone();
+        let keys: Arc<dyn KeyStore> = Arc::new(keys);
+        let slot = VaultSlot(Arc::new(Inner {
+            kept: Default::default(),
+            state: Mutex::new(State::Opening),
+            opened: Condvar::new(),
+            path: Some(path.clone()),
+            keys: Some(keys.clone()),
+        }));
+        let fill = slot.clone();
         let opened = std::thread::Builder::new()
             .name("shellwing-vault".into())
             .spawn(move || {
-                let _ = fill.set(
-                    Vault::open(&path, &keys)
-                        .map(Arc::new)
-                        .map_err(|e| e.to_string()),
-                );
+                let state = Self::state_of(Vault::open(&path, keys.as_ref()));
+                fill.keep(matches!(state, State::Ready(_)));
+                fill.set(state)
             });
         if let Err(e) = opened {
-            let _ = slot.0.set(Err(e.to_string()));
+            slot.set(State::Failed(e.to_string()));
         }
         slot
     }
 
     /// No vault (no config directory).
     pub fn none() -> Self {
-        let slot = VaultSlot(Arc::new(OnceLock::new()));
-        let _ = slot.0.set(Err("no config directory".into()));
-        slot
+        VaultSlot(Arc::new(Inner {
+            kept: Default::default(),
+            state: Mutex::new(State::Failed("no config directory".into())),
+            opened: Condvar::new(),
+            path: None,
+            keys: None,
+        }))
     }
 
-    /// Waits for the vault to open; None if it could not.
+    fn state_of(opened: shellwing_vault::Result<Vault>) -> State {
+        match opened {
+            Ok(v) => State::Ready(Arc::new(v)),
+            Err(shellwing_vault::Error::Locked(lock)) => State::Locked(lock),
+            Err(e) => State::Failed(e.to_string()),
+        }
+    }
+
+    fn set(&self, state: State) {
+        if let Ok(mut s) = self.0.state.lock() {
+            *s = state;
+        }
+        self.0.opened.notify_all();
+    }
+
+    /// Waits for the vault to open; None if it could not, or is locked.
     pub fn get(&self) -> Option<Arc<Vault>> {
-        self.0.wait().as_ref().ok().cloned()
+        let mut s = self.0.state.lock().ok()?;
+        while matches!(*s, State::Opening) {
+            s = self.0.opened.wait(s).ok()?;
+        }
+        match &*s {
+            State::Ready(v) => Some(v.clone()),
+            _ => None,
+        }
     }
 
     /// The vault if it is open already; never waits.
     pub fn ready(&self) -> Option<Arc<Vault>> {
-        self.0.get()?.as_ref().ok().cloned()
+        match &*self.0.state.lock().ok()? {
+            State::Ready(v) => Some(v.clone()),
+            _ => None,
+        }
     }
 
-    /// Why the vault could not open, once it tried.
+    /// Why the vault could not open, once it tried; a locked one says so.
     pub fn problem(&self) -> Option<String> {
-        self.0.get()?.as_ref().err().cloned()
+        match &*self.0.state.lock().ok()? {
+            State::Failed(e) => Some(e.clone()),
+            State::Locked(Lock::New) => {
+                Some("there is no system keychain to keep its key: set a passphrase".into())
+            }
+            State::Locked(_) => Some("it is locked".into()),
+            _ => None,
+        }
+    }
+
+    /// What it waits for, while locked.
+    pub fn locked(&self) -> Option<Lock> {
+        match &*self.0.state.lock().ok()? {
+            State::Locked(l) => Some(*l),
+            _ => None,
+        }
+    }
+
+    /// Opens the locked vault with a passphrase or the recovery key.
+    pub fn unlock(&self, how: Unlock) -> Result<Arc<Vault>, shellwing_vault::Error> {
+        let (Some(path), Some(keys)) = (&self.0.path, &self.0.keys) else {
+            return Err(shellwing_vault::Error::NotSynced);
+        };
+        let vault = Arc::new(Vault::unlock(path, keys.as_ref(), how)?);
+        // A recovery key puts the key back where it can: one look tells.
+        self.keep(vault.kept_in(keys.as_ref()));
+        self.set(State::Ready(vault.clone()));
+        Ok(vault)
+    }
+
+    fn keep(&self, kept: bool) {
+        self.0
+            .kept
+            .store(kept, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Whether the system keychain holds the open vault's key.
+    pub fn in_keychain(&self) -> bool {
+        self.0.kept.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Puts the open vault's key in the system keychain.
+    pub fn keep_in_keychain(&self) -> Result<(), String> {
+        let (Some(vault), Some(keys)) = (self.ready(), &self.0.keys) else {
+            return Err("the vault is not open".into());
+        };
+        vault.keep_in(keys.as_ref()).map_err(|e| e.to_string())?;
+        self.keep(true);
+        Ok(())
+    }
+
+    /// The keychain the vault's key goes in, where there is one.
+    pub fn keys(&self) -> Option<Arc<dyn KeyStore>> {
+        self.0.keys.clone()
     }
 
     /// Saves a typed secret.

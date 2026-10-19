@@ -337,6 +337,22 @@ lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
 
+**Without a system keychain** (a window manager without GNOME Keyring or
+KWallet, an SSH or remote desktop session, WSL, a container), a **passphrase**
+keeps the vault's key instead. The first start asks for one (twice, at least
+10 characters) and shows the vault's recovery key; each start then asks for it.
+Esc leaves the vault locked, and SSH works as before without saved secrets;
+*Unlock the vault…* in the palette asks again.
+
+- The passphrase is stretched with Argon2id (about half a second and 64 MiB),
+  so a copied `vault.db` is slow to guess at.
+- **The recovery key always opens the vault**, synced or not: type it where the
+  passphrase is asked for. It is also what opens a vault whose keychain lost
+  its key (a reinstalled keyring), and it puts the key back there.
+- *Settings › Vault* says where the key is kept, and sets, changes or removes
+  the passphrase (removing it only while the keychain holds the key), keeps the
+  key in the keychain once there is one, and shows the recovery key.
+
 ## Local terminal
 
 *This computer › Local terminal*, at the top of the host list (and of the

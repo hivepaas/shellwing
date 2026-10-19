@@ -77,6 +77,12 @@ pub struct Snap {
     pub known_hosts: Option<PathBuf>,
     pub ssh_config: Option<PathBuf>,
     pub secrets: Option<usize>,
+    /// The vault waits for its passphrase or recovery key.
+    pub vault_locked: bool,
+    /// A passphrase keeps the vault's key; None while it is not open.
+    pub vault_passphrase: Option<bool>,
+    /// The system keychain keeps the vault's key.
+    pub vault_keychain: bool,
 }
 
 pub struct SettingsView {
@@ -1483,16 +1489,74 @@ impl SettingsView {
             Some(n) => format!("{n} saved."),
             None => "The vault is not open.".to_string(),
         };
-        page("Vault").child(setting(
-            "Saved passwords and passphrases",
-            "Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted; its key is in the system keychain.",
-            div()
-                .flex()
-                .items_center()
-                .gap_3()
-                .child(div().text_size(ui(12.5)).child(count))
-                .child(small_button("vault-manage", "Manage…").on_click(cx.listener(|v, _, w, cx| v.run(Action::ManageSecrets, w, cx)))),
-        ))
+        // Where the vault's key is kept, and what to change about it.
+        let (state, mut buttons) = (
+            match (
+                self.snap.vault_locked,
+                self.snap.vault_passphrase,
+                self.snap.vault_keychain,
+            ) {
+                (true, _, _) => "Locked: its passphrase or recovery key opens it.",
+                (_, None, _) => "Not open.",
+                (_, Some(true), true) => "In the system keychain, and kept by a passphrase too.",
+                (_, Some(true), false) => "Kept by its passphrase: typed when shellwing starts.",
+                (_, Some(false), true) => "In the system keychain.",
+                (_, Some(false), false) => "Open, but nothing keeps its key: set a passphrase.",
+            },
+            div().flex().flex_wrap().gap_2(),
+        );
+        if self.snap.vault_locked {
+            buttons = buttons.child(
+                small_button("vault-unlock", "Unlock…")
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::UnlockVault, w, cx))),
+            );
+        } else if let Some(has) = self.snap.vault_passphrase {
+            buttons = buttons.child(
+                small_button(
+                    "vault-pass",
+                    if has {
+                        "Change the passphrase…"
+                    } else {
+                        "Set a passphrase…"
+                    },
+                )
+                .on_click(cx.listener(|v, _, w, cx| v.run(Action::SetVaultPassphrase, w, cx))),
+            );
+            if has && self.snap.vault_keychain {
+                buttons = buttons.child(
+                    small_button("vault-pass-off", "Remove the passphrase").on_click(
+                        cx.listener(|v, _, w, cx| v.run(Action::RemoveVaultPassphrase, w, cx)),
+                    ),
+                );
+            }
+            if !self.snap.vault_keychain {
+                buttons = buttons.child(
+                    small_button("vault-keep", "Keep it in the system keychain")
+                        .on_click(cx.listener(|v, _, w, cx| v.run(Action::KeepVaultKey, w, cx))),
+                );
+            }
+            buttons =
+                buttons
+                    .child(small_button("vault-rk", "Show the recovery key").on_click(
+                        cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx)),
+                    ));
+        }
+        page("Vault")
+            .child(setting(
+                "Saved passwords and passphrases",
+                "Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted.",
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_3()
+                    .child(div().text_size(ui(12.5)).child(count))
+                    .child(small_button("vault-manage", "Manage…").on_click(cx.listener(|v, _, w, cx| v.run(Action::ManageSecrets, w, cx)))),
+            ))
+            .child(setting(
+                "The vault's key",
+                "What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.",
+                div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
+            ))
     }
 
     /// The Keys page: a view of its own, made when first shown.

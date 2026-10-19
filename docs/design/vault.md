@@ -37,7 +37,12 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
 - The AK sits in the OS keychain: macOS Keychain, Windows Credential Manager,
   Secret Service on Linux. The app opens without a prompt.
 - An optional idle lock asks again, by Touch ID, Windows Hello or the passphrase.
-- Linux without Secret Service falls back to the passphrase.
+- Linux without Secret Service falls back to the passphrase (built: the
+  account key wrapped by Argon2id(passphrase), m = 64 MiB, t = 3, p = 1, with
+  its salt and parameters in `meta`; `wrapped_by = 'passphrase'`).
+- The account key is also wrapped by the recovery key (`wrapped_by =
+  'recovery'`), and every vault has one, synced or not: it opens a vault whose
+  keychain lost the key, or whose passphrase is forgotten.
 
 **A new device gets the AK in one of three ways:**
 
