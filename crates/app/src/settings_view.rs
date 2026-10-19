@@ -11,8 +11,8 @@ use gpui::{
     SharedString, WeakEntity, Window, div, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
-    Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue,
-    Settings, Theme,
+    Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, S3Sync, Scrollbar,
+    SettingValue, Settings, SyncPlace, Theme, WebDavSync,
 };
 
 use crate::colors::colors;
@@ -72,7 +72,8 @@ pub struct Snap {
     pub all_fonts: Vec<String>,
     /// Text editors found on this system: (name, command).
     pub editors: Vec<(String, String)>,
-    pub sync_folder: Option<PathBuf>,
+    /// Where the vault syncs now.
+    pub sync_place: Option<SyncPlace>,
     pub config_dir: Option<PathBuf>,
     pub known_hosts: Option<PathBuf>,
     pub ssh_config: Option<PathBuf>,
@@ -112,6 +113,135 @@ pub struct SettingsView {
     snippets: Option<Entity<SnippetsView>>,
     /// The Known hosts page, once shown.
     known_hosts: Option<Entity<KnownHostsView>>,
+    /// Where to sync, as typed before connecting.
+    sync_form: SyncForm,
+}
+
+/// The Sync page's choice of a place, before syncing starts.
+struct SyncForm {
+    kind: SyncKind,
+    /// Address, user, password.
+    dav: [Entity<TextInput>; 3],
+    /// Endpoint, region, bucket, folder in it, access key, secret key.
+    s3: [Entity<TextInput>; 6],
+    /// What is missing, after Connect.
+    problem: Option<String>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SyncKind {
+    Folder,
+    WebDav,
+    S3,
+}
+
+impl SyncForm {
+    fn new(sync: &shellwing_config::Sync, cx: &mut Context<SettingsView>) -> SyncForm {
+        let field = |hint: &str, text: &str, masked: bool, cx: &mut Context<SettingsView>| {
+            cx.new(|cx| {
+                let mut i = TextInput::new(hint.to_string(), cx);
+                if masked {
+                    i = i.masked();
+                }
+                i.set_text(text, text.len()..text.len(), cx);
+                i
+            })
+        };
+        let dav = sync.webdav.clone().unwrap_or_default();
+        let s3 = sync.s3.clone().unwrap_or_default();
+        SyncForm {
+            kind: if sync.s3.is_some() {
+                SyncKind::S3
+            } else if sync.webdav.is_some() {
+                SyncKind::WebDav
+            } else {
+                SyncKind::Folder
+            },
+            dav: [
+                field(
+                    "https://cloud.example.com/remote.php/dav/files/you/",
+                    &dav.url,
+                    false,
+                    cx,
+                ),
+                field("you", &dav.user, false, cx),
+                field(
+                    "Its password (an app password, where it has them)",
+                    "",
+                    true,
+                    cx,
+                ),
+            ],
+            s3: [
+                field(
+                    "https://s3.eu-west-1.amazonaws.com",
+                    &s3.endpoint,
+                    false,
+                    cx,
+                ),
+                field("auto", &s3.region, false, cx),
+                field("my-bucket", &s3.bucket, false, cx),
+                field("none: the top of the bucket", &s3.prefix, false, cx),
+                field("AKIA…", &s3.access_key, false, cx),
+                field("Its secret", "", true, cx),
+            ],
+            problem: None,
+        }
+    }
+
+    /// The fields of the place chosen, in order.
+    fn fields(&self) -> &[Entity<TextInput>] {
+        match self.kind {
+            SyncKind::Folder => &[],
+            SyncKind::WebDav => &self.dav,
+            SyncKind::S3 => &self.s3,
+        }
+    }
+
+    /// The place typed and its secret, or what is missing.
+    fn place(&self, cx: &gpui::App) -> Result<(SyncPlace, String), String> {
+        let text = |i: &Entity<TextInput>| i.read(cx).text().trim().to_string();
+        match self.kind {
+            SyncKind::Folder => Err("choose a folder".into()),
+            SyncKind::WebDav => {
+                let [url, user, password] = &self.dav;
+                let (url, user) = (text(url), text(user));
+                let password = password.read(cx).text().to_string();
+                if url.is_empty() || user.is_empty() || password.is_empty() {
+                    return Err("Fill in the address, the user and the password.".into());
+                }
+                if !url.starts_with("https://") && !url.starts_with("http://") {
+                    return Err("The address starts with https://.".into());
+                }
+                Ok((SyncPlace::WebDav(WebDavSync { url, user }), password))
+            }
+            SyncKind::S3 => {
+                let [endpoint, region, bucket, prefix, access_key, secret] = &self.s3;
+                let place = S3Sync {
+                    endpoint: text(endpoint),
+                    region: text(region),
+                    bucket: text(bucket),
+                    prefix: text(prefix),
+                    access_key: text(access_key),
+                };
+                let secret = secret.read(cx).text().to_string();
+                if place.endpoint.is_empty()
+                    || place.bucket.is_empty()
+                    || place.access_key.is_empty()
+                    || secret.is_empty()
+                {
+                    return Err(
+                        "Fill in the endpoint, the bucket, the access key and its secret.".into(),
+                    );
+                }
+                if !place.endpoint.starts_with("https://") && !place.endpoint.starts_with("http://")
+                {
+                    return Err("The endpoint starts with https://.".into());
+                }
+                Ok((SyncPlace::S3(place), secret))
+            }
+        }
+    }
 }
 
 /// Which font list is open.
@@ -204,7 +334,9 @@ impl SettingsView {
             i.set_text(&text, text.len()..text.len(), cx);
             i
         });
+        let sync_form = SyncForm::new(&snap.settings.sync, cx);
         SettingsView {
+            sync_form,
             gradients: Default::default(),
             focus: cx.focus_handle(),
             workspace,
@@ -296,8 +428,49 @@ impl SettingsView {
         .detach();
     }
 
+    /// Starts syncing with the server typed on the Sync page.
+    fn connect_sync(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        match self.sync_form.place(cx) {
+            Ok((place, secret)) => {
+                self.sync_form.problem = None;
+                // Kept in the vault from here on, not in the field.
+                for f in [&self.sync_form.dav[2], &self.sync_form.s3[5]] {
+                    f.update(cx, |i, cx| i.set_text("", 0..0, cx));
+                }
+                window.focus(&self.focus, cx);
+                let _ = self
+                    .workspace
+                    .update(cx, |ws, cx| ws.connect_sync(place, secret, window, cx));
+            }
+            Err(e) => self.sync_form.problem = Some(e),
+        }
+        cx.notify();
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
+        // Typing a server's address and sign-in: Enter connects, Tab goes on.
+        let fields = self.sync_form.fields().to_vec();
+        if let Some(at) = fields
+            .iter()
+            .position(|f| f.focus_handle(cx).is_focused(window))
+        {
+            match k.key.as_str() {
+                "enter" => self.connect_sync(window, cx),
+                "escape" => window.focus(&self.focus, cx),
+                "tab" => {
+                    let next = if k.modifiers.shift {
+                        at.checked_sub(1).unwrap_or(fields.len() - 1)
+                    } else {
+                        (at + 1) % fields.len()
+                    };
+                    window.focus(&fields[next].focus_handle(cx), cx);
+                }
+                _ => return,
+            }
+            cx.notify();
+            return cx.stop_propagation();
+        }
         // Typing the editor command: Enter saves, the arrows are the field's.
         if self.shell_input.focus_handle(cx).is_focused(window) {
             match k.key.as_str() {
@@ -1454,8 +1627,8 @@ impl SettingsView {
 
     fn sync(&self, cx: &mut Context<Self>) -> gpui::Div {
         let mut buttons = div().flex().flex_wrap().gap_2();
-        let state = match &self.snap.sync_folder {
-            Some(f) => {
+        let place = match &self.snap.sync_place {
+            Some(p) => {
                 buttons = buttons
                     .child(
                         small_button("sync-now", "Sync now")
@@ -1470,22 +1643,25 @@ impl SettingsView {
                         small_button("sync-stop", "Stop syncing")
                             .on_click(cx.listener(|v, _, w, cx| v.run(Action::StopSync, w, cx))),
                     );
-                format!("With {}", shown_path(f))
+                let shown = match p {
+                    SyncPlace::Folder(f) => shown_path(f),
+                    other => crate::syncing::describe(other),
+                };
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_2()
+                    .child(div().text_size(ui(12.5)).child(format!("With {shown}")))
+                    .child(buttons)
             }
-            None => {
-                buttons = buttons.child(
-                    small_button("sync-folder", "Sync with a folder…")
-                        .on_click(cx.listener(|v, _, w, cx| v.run(Action::SyncFolder, w, cx))),
-                );
-                "Off".into()
-            }
+            None => self.sync_choice(cx),
         };
         let settings_on = self.snap.settings.sync.settings;
         page("Sync")
             .child(setting(
-                "Sync through a folder",
-                "Hosts, saved passwords, keys and snippets travel through a folder that another app syncs: iCloud Drive, Syncthing, Dropbox. Everything in it is encrypted with your recovery key.",
-                div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
+                "Sync with a folder or a server",
+                "Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.",
+                place,
             ))
             .child(toggle(
                 "sync-settings",
@@ -1501,7 +1677,7 @@ impl SettingsView {
                     "sync-passphrase",
                     joins,
                     "Let a passphrase join new devices",
-                    "A new device that syncs this folder types it instead of the recovery key or being approved here. It is kept in the folder, sealed by the passphrase: anyone who can read the folder can try to guess it, so it has to be hard to guess.",
+                    "A new device that syncs the same place types it instead of the recovery key or being approved here. It is kept there, sealed by the passphrase: anyone who can read the place can try to guess it, so it has to be hard to guess.",
                     cx.listener(move |v, _, w, cx| {
                         let a = if joins {
                             Action::StopPassphraseJoin
@@ -1513,6 +1689,102 @@ impl SettingsView {
                 ))
             })
             .child(label("Hosts kept on this device only (in their editor) stay out of it."))
+    }
+
+    /// Where to sync, while not syncing: a folder, or a server's address
+    /// and sign-in.
+    fn sync_choice(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let form = &self.sync_form;
+        let kinds = vec![
+            (SyncKind::Folder, "A folder".to_string()),
+            (SyncKind::WebDav, "WebDAV".to_string()),
+            (SyncKind::S3, "S3-compatible".to_string()),
+        ];
+        let pick = self.pills(
+            "sync-kind",
+            kinds,
+            form.kind,
+            |v, k, cx| {
+                v.sync_form.kind = k;
+                v.sync_form.problem = None;
+                cx.notify();
+            },
+            cx,
+        );
+        let field = |title: &str, input: &Entity<TextInput>| {
+            labelled(
+                title,
+                div()
+                    .w(px(380.))
+                    .h(px(30.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(colors().field_edge))
+                    .bg(rgb(colors().page))
+                    .text_size(ui(13.))
+                    .child(input.clone()),
+            )
+        };
+        let connect = small_button("sync-connect", "Connect")
+            .on_click(cx.listener(|v, _, w, cx| v.connect_sync(w, cx)));
+        let body = match form.kind {
+            SyncKind::Folder => div()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .child(label("iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share."))
+                .child(
+                    div().flex().child(
+                        small_button("sync-folder", "Choose a folder…").on_click(
+                            cx.listener(|v, _, w, cx| v.run(Action::SyncFolder, w, cx)),
+                        ),
+                    ),
+                ),
+            SyncKind::WebDav => div()
+                .flex()
+                .flex_col()
+                .gap(px(10.))
+                .child(label("Nextcloud, ownCloud, Synology, Koofr, Fastmail: the address of a folder there."))
+                .child(field("Address", &form.dav[0]))
+                .child(field("User", &form.dav[1]))
+                .child(field("Password", &form.dav[2])),
+            SyncKind::S3 => div()
+                .flex()
+                .flex_col()
+                .gap(px(10.))
+                .child(label("AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi: a bucket, and a key that can read and write it."))
+                .child(field("Endpoint", &form.s3[0]))
+                .child(field("Region (if it asks for one)", &form.s3[1]))
+                .child(field("Bucket", &form.s3[2]))
+                .child(field("Folder in the bucket", &form.s3[3]))
+                .child(field("Access key", &form.s3[4]))
+                .child(field("Secret key", &form.s3[5])),
+        };
+        let remote = form.kind != SyncKind::Folder;
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(12.))
+            .child(pick)
+            .child(body)
+            .when(remote, |d| {
+                d.child(label(
+                    "The password or secret key stays on this device, in the vault; other devices sign in with their own.",
+                ))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_3()
+                        .child(connect)
+                        .when_some(form.problem.clone(), |d, p| {
+                            d.child(div().text_size(ui(12.5)).text_color(rgb(colors().bad)).child(p))
+                        }),
+                )
+            })
     }
 
     fn vault(&self, cx: &mut Context<Self>) -> gpui::Div {

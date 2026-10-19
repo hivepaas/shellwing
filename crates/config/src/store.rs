@@ -10,6 +10,15 @@ use crate::settings::Settings;
 use crate::state::{SessionState, WindowState};
 use crate::theme::{Theme, Themes};
 
+/// Where the vault syncs, as written in `config.toml`: the folder as typed
+/// (`~/Sync`), not expanded.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SyncPlaceText {
+    Folder(String),
+    WebDav(crate::WebDavSync),
+    S3(crate::S3Sync),
+}
+
 const SETTINGS: &str = "config.toml";
 const HOSTS: &str = "hosts.toml";
 const THEMES: &str = "themes";
@@ -274,20 +283,47 @@ impl Store {
         })
     }
 
-    /// Sets (or with None, removes) `[sync] folder` in `config.toml`.
-    pub fn set_sync_folder(&self, folder: Option<&str>) -> Result<(), WriteError> {
+    /// Sets where the vault syncs in `config.toml`'s `[sync]`: `folder`
+    /// (written as given, `~/` and all), `webdav` or `s3`, removing the
+    /// other two; None removes all three.
+    pub fn set_sync_place(&self, place: Option<&SyncPlaceText>) -> Result<(), WriteError> {
         self.edit(SETTINGS, |doc| {
             let sync = doc
                 .entry("sync")
                 .or_insert_with(toml_edit::table)
                 .as_table_like_mut()
                 .ok_or("`sync` is not a table")?;
-            match folder {
-                Some(f) => {
-                    sync.insert("folder", toml_edit::value(f));
+            for key in ["folder", "webdav", "s3"] {
+                sync.remove(key);
+            }
+            let inline = |pairs: &[(&str, &str)]| {
+                let mut t = toml_edit::InlineTable::new();
+                for (k, v) in pairs {
+                    if !v.is_empty() {
+                        t.insert(*k, (*v).into());
+                    }
                 }
-                None => {
-                    sync.remove("folder");
+                toml_edit::value(t)
+            };
+            match place {
+                None => {}
+                Some(SyncPlaceText::Folder(f)) => {
+                    sync.insert("folder", toml_edit::value(f.as_str()));
+                }
+                Some(SyncPlaceText::WebDav(w)) => {
+                    sync.insert("webdav", inline(&[("url", &w.url), ("user", &w.user)]));
+                }
+                Some(SyncPlaceText::S3(s3)) => {
+                    sync.insert(
+                        "s3",
+                        inline(&[
+                            ("endpoint", &s3.endpoint),
+                            ("region", &s3.region),
+                            ("bucket", &s3.bucket),
+                            ("prefix", &s3.prefix),
+                            ("access_key", &s3.access_key),
+                        ]),
+                    );
                 }
             }
             Ok(())
@@ -706,13 +742,39 @@ mod tests {
     }
 
     #[test]
-    fn sync_folder_is_set_and_removed() {
-        let s = temp("sync-folder");
-        s.set_sync_folder(Some("~/Sync/shellwing")).expect("set");
-        let folder = s.settings().expect("load").sync.folder;
-        assert_eq!(folder.as_deref(), Some("~/Sync/shellwing"));
-        s.set_sync_folder(None).expect("remove");
-        assert_eq!(s.settings().expect("load").sync.folder, None);
+    fn one_sync_place_is_kept_at_a_time() {
+        let s = temp("sync-place");
+        s.set_sync_place(Some(&SyncPlaceText::Folder("~/Sync/shellwing".into())))
+            .expect("set");
+        let sync = s.settings().expect("load").sync;
+        assert_eq!(sync.folder.as_deref(), Some("~/Sync/shellwing"));
+        let dav = crate::WebDavSync {
+            url: "https://cloud.example.com/remote.php/dav/files/me/".into(),
+            user: "me".into(),
+        };
+        s.set_sync_place(Some(&SyncPlaceText::WebDav(dav.clone())))
+            .expect("webdav");
+        let sync = s.settings().expect("load").sync;
+        assert_eq!(sync.folder, None, "the folder gave way");
+        assert_eq!(sync.place(), Some(crate::SyncPlace::WebDav(dav)));
+        let s3 = crate::S3Sync {
+            endpoint: "https://acct.r2.cloudflarestorage.com".into(),
+            bucket: "vault".into(),
+            access_key: "AKIA".into(),
+            ..Default::default()
+        };
+        s.set_sync_place(Some(&SyncPlaceText::S3(s3.clone())))
+            .expect("s3");
+        let text = std::fs::read_to_string(s.dir().join("config.toml")).expect("read");
+        assert!(
+            !text.contains("region"),
+            "empty fields are left out\n{text}"
+        );
+        let sync = s.settings().expect("load").sync;
+        assert!(sync.webdav.is_none());
+        assert_eq!(sync.place(), Some(crate::SyncPlace::S3(s3)));
+        s.set_sync_place(None).expect("remove");
+        assert_eq!(s.settings().expect("load").sync.place(), None);
     }
 
     #[test]

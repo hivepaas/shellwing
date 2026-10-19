@@ -25,10 +25,11 @@ pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, colo
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, Log, LogFormat, OnDisconnect,
-    Padding, Scrollbar, Settings, Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont, VaultSettings,
+    Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal, UI_FONT_SIZE, UiFont,
+    VaultSettings, WebDavSync,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
-pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};
+pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, SyncPlaceText, WriteError};
 pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, GROUPS, Gradient, Theme, Themes};
 
 /// The theme in effect, from lowest to highest precedence: `config.toml`, the

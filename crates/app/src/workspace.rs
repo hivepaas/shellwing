@@ -36,8 +36,9 @@ use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
     TitleChanged, UseKey, VaultChanged, hsla,
 };
+use shellwing_config::SyncPlace;
+use shellwing_vault::FolderState;
 use shellwing_vault::{AskState, Request};
-use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
@@ -146,6 +147,9 @@ pub struct Workspace {
     sync: SyncWorker,
     /// The last sync error shown, so it is not repeated every minute.
     sync_error: Option<String>,
+    /// A passphrase joins new devices where the vault syncs, as the sync
+    /// thread last found.
+    passphrase_joins: Option<bool>,
     /// What the palette's question is for, while one is asked.
     asking: Option<Asking>,
     /// The host editor drawer, while open.
@@ -189,12 +193,13 @@ pub enum EditTarget {
 
 #[derive(Clone)]
 enum Asking {
-    /// A folder holding another vault, waiting for its recovery key.
-    RecoveryKey(std::path::PathBuf),
-    /// A folder holding another vault: join it by pairing, or with its key?
-    JoinHow(std::path::PathBuf),
-    /// Asking a device that syncs this folder to let this one in.
-    Pairing(std::path::PathBuf),
+    /// A place holding another vault, waiting for its recovery key.
+    RecoveryKey(SyncPlace),
+    /// A place holding another vault: join it by pairing, with its key, or
+    /// (if it lets one) with its passphrase?
+    JoinHow { place: SyncPlace, passphrase: bool },
+    /// Asking a device that syncs there to let this one in.
+    Pairing(SyncPlace),
     /// A locked vault's passphrase or recovery key.
     VaultUnlock(shellwing_vault::Lock),
     /// A passphrase for the vault, typed once (`None`) or a second time to
@@ -203,8 +208,8 @@ enum Asking {
     /// A passphrase that lets new devices join the vault in the sync folder,
     /// typed once or a second time.
     FolderPassphrase { first: Option<String> },
-    /// A folder whose vault a passphrase joins, waiting for it.
-    JoinPassphrase(std::path::PathBuf),
+    /// A place whose vault a passphrase joins, waiting for it.
+    JoinPassphrase(SyncPlace),
     /// A port to forward on the active tab's connection.
     Forward,
     /// A value a snippet needs before it runs.
@@ -251,7 +256,7 @@ impl Workspace {
         };
         let (sync_tx, sync_rx) = async_channel::unbounded();
         let sync = SyncWorker::start(vault.clone(), live.store().cloned(), sync_tx);
-        sync.set_folder(live.sync_folder());
+        sync.set_place(live.sync_place());
         cx.spawn(async move |this, cx| {
             while let Ok(ev) = sync_rx.recv().await {
                 if this.update(cx, |ws, cx| ws.on_sync(ev, cx)).is_err() {
@@ -294,6 +299,7 @@ impl Workspace {
             last_input: std::time::Instant::now(),
             sync,
             sync_error: None,
+            passphrase_joins: None,
             asking: None,
             editor: None,
             group_editor: None,
@@ -1290,11 +1296,11 @@ impl Workspace {
         if self.vault.can_lock() {
             action(Action::LockVault, "Lock the vault".into(), String::new());
         }
-        match self.sync.folder() {
+        match self.sync.place() {
             Some(f) => {
                 action(
                     Action::SyncNow,
-                    format!("Sync now with {}", f.display()),
+                    format!("Sync now with {}", crate::syncing::describe(&f)),
                     String::new(),
                 );
                 action(
@@ -1304,11 +1310,18 @@ impl Workspace {
                 );
                 action(Action::StopSync, "Stop syncing".into(), String::new());
             }
-            None => action(
-                Action::SyncFolder,
-                "Sync passwords with a folder…".into(),
-                "iCloud Drive, Syncthing, Dropbox…".into(),
-            ),
+            None => {
+                action(
+                    Action::SyncFolder,
+                    "Sync passwords with a folder…".into(),
+                    "iCloud Drive, Syncthing, Dropbox…".into(),
+                );
+                action(
+                    Action::SyncServer,
+                    "Sync passwords with a server…".into(),
+                    "WebDAV (Nextcloud, Synology), S3 (AWS, R2, B2, MinIO)".into(),
+                );
+            }
         }
         action(
             Action::Settings,
@@ -1406,7 +1419,7 @@ impl Workspace {
             }
             SyncEvent::Asking(state) => {
                 // Cancelled meanwhile.
-                let Some(Asking::Pairing(folder)) = self.asking.clone() else {
+                let Some(Asking::Pairing(place)) = self.asking.clone() else {
                     return;
                 };
                 match state {
@@ -1418,9 +1431,7 @@ impl Workspace {
                     AskState::Joined => {
                         self.asking = None;
                         self.in_window(cx, |ws, window, cx| ws.close_palette(window, cx));
-                        self.keep_sync_folder(Some(&folder), cx);
-                        let msg = format!("Joined: this device syncs with {}.", folder.display());
-                        self.say(msg, CONFIG_NOTICE, cx);
+                        self.joined(place, cx);
                     }
                     AskState::Refused | AskState::Expired => {
                         self.asking = None;
@@ -1442,6 +1453,10 @@ impl Workspace {
                 }
             }
             SyncEvent::PairingFailed(e) => self.say(format!("Pairing: {e}"), CONFIG_NOTICE, cx),
+            SyncEvent::PassphraseJoins(joins) => {
+                self.passphrase_joins = Some(joins);
+                self.refresh_settings(cx);
+            }
         }
     }
 
@@ -1693,14 +1708,17 @@ impl Workspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(Asking::JoinPassphrase(folder)) = &self.asking else {
+        let Some(Asking::JoinPassphrase(place)) = &self.asking else {
             return;
         };
         let mut notes = vec![
             Entry::new(
                 Kind::Note,
                 "",
-                format!("{} lets a passphrase join its vault", folder.display()),
+                format!(
+                    "{} lets a passphrase join its vault",
+                    crate::syncing::describe(place)
+                ),
             )
             .detail("The one set on a device that syncs (Settings › Sync). Secrets saved here are kept and merged."),
         ];
@@ -1721,10 +1739,6 @@ impl Workspace {
     ) {
         use shellwing_vault::Error as VaultError;
         self.close_palette(window, cx);
-        let Some(vault) = self.vault.ready() else {
-            self.asking = None;
-            return self.say("The vault is not open.".into(), CONFIG_NOTICE, cx);
-        };
         match self.asking.take() {
             Some(Asking::FolderPassphrase { first: None }) => {
                 let min = shellwing_vault::MIN_PASSPHRASE;
@@ -1752,42 +1766,56 @@ impl Workspace {
                         cx,
                     );
                 }
-                let done = match self.sync.folder() {
-                    Some(f) => vault
-                        .let_passphrase_join(&Folder::new(&f), Some(&text))
-                        .map_err(|e| e.to_string()),
-                    None => Err("this device does not sync".into()),
-                };
-                match done {
-                    Ok(()) => self.say(
-                        "New devices can join with the sync passphrase now.".into(),
+                let Some(place) = self.sync.place() else {
+                    return self.say(
+                        "Not set: this device does not sync.".into(),
                         CONFIG_NOTICE,
                         cx,
-                    ),
-                    Err(e) => self.say(format!("Not set: {e}"), CONFIG_NOTICE, cx),
-                }
-                self.refresh_settings(cx);
+                    );
+                };
+                self.say("Setting the sync passphrase…".into(), THEME_NOTICE, cx);
+                self.at_place(
+                    place,
+                    move |vault, b| vault.let_passphrase_join(b, Some(&text)),
+                    |ws, done, _, cx| {
+                        match done {
+                            Ok(()) => {
+                                ws.passphrase_joins = Some(true);
+                                ws.say(
+                                    "New devices can join with the sync passphrase now.".into(),
+                                    CONFIG_NOTICE,
+                                    cx,
+                                )
+                            }
+                            Err(e) => ws.say(format!("Not set: {e}"), CONFIG_NOTICE, cx),
+                        }
+                        ws.refresh_settings(cx);
+                    },
+                    window,
+                    cx,
+                );
             }
-            Some(Asking::JoinPassphrase(folder)) => {
-                match vault.join_with_passphrase(&Folder::new(&folder), &text) {
-                    Ok(()) => {
-                        self.keep_sync_folder(Some(&folder), cx);
-                        self.say(
-                            format!("Joined: this device syncs with {}.", folder.display()),
-                            CONFIG_NOTICE,
-                            cx,
-                        );
-                    }
-                    Err(VaultError::WrongPassphrase) => {
-                        self.asking = Some(Asking::JoinPassphrase(folder));
-                        self.ask_join_passphrase(
-                            Some("That passphrase does not open it."),
-                            window,
-                            cx,
-                        );
-                    }
-                    Err(e) => self.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
-                }
+            Some(Asking::JoinPassphrase(place)) => {
+                let at = place.clone();
+                self.say("Joining…".into(), THEME_NOTICE, cx);
+                self.at_place(
+                    place,
+                    move |vault, b| vault.join_with_passphrase(b, &text),
+                    move |ws, joined, window, cx| match joined {
+                        Ok(()) => ws.joined(at, cx),
+                        Err(VaultError::WrongPassphrase) => {
+                            ws.asking = Some(Asking::JoinPassphrase(at));
+                            ws.ask_join_passphrase(
+                                Some("That passphrase does not open it."),
+                                window,
+                                cx,
+                            );
+                        }
+                        Err(e) => ws.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
+                    },
+                    window,
+                    cx,
+                );
             }
             other => self.asking = other,
         }
@@ -1796,8 +1824,10 @@ impl Workspace {
     /// Joining a vault found in a folder: by approving on a device that
     /// syncs it, or with its recovery key.
     fn ask_join_how(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let (path, folder) = match &self.asking {
-            Some(Asking::JoinHow(f)) => (f.clone(), f.display().to_string()),
+        let (folder, joins) = match &self.asking {
+            Some(Asking::JoinHow { place, passphrase }) => {
+                (crate::syncing::describe(place), *passphrase)
+            }
             _ => return,
         };
         let mut entries = vec![
@@ -1812,10 +1842,6 @@ impl Workspace {
             Entry::new(Kind::Choice("recovery".into()), "", "Type the recovery key")
                 .detail("The 13 groups of four from when syncing started."),
         ];
-        let joins = self
-            .vault
-            .ready()
-            .is_some_and(|v| v.passphrase_joins(&Folder::new(&path)).unwrap_or(false));
         if joins {
             entries.push(
                 Entry::new(
@@ -1866,15 +1892,20 @@ impl Workspace {
             if let Ok(Ok(Some(paths))) = picked.await
                 && let Some(folder) = paths.into_iter().next()
             {
-                let _ = this.update_in(cx, |ws, window, cx| ws.sync_with(folder, window, cx));
+                let _ = this.update_in(cx, |ws, window, cx| {
+                    ws.sync_with(SyncPlace::Folder(folder), window, cx)
+                });
             }
         })
         .detach();
     }
 
-    fn sync_with(
+    /// Saves the secret of a WebDAV server or S3 storage (from Settings ›
+    /// Sync) as this device's, then syncs there.
+    pub fn connect_sync(
         &mut self,
-        folder: std::path::PathBuf,
+        place: SyncPlace,
+        secret: String,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -1882,42 +1913,120 @@ impl Workspace {
             let why = self
                 .vault
                 .problem()
-                .unwrap_or_else(|| "the vault is still opening".into());
-            return self.say(format!("Cannot sync: {why}."), CONFIG_NOTICE, cx);
+                .unwrap_or_else(|| "it is still opening".into());
+            return self.say(format!("Cannot sync: the vault: {why}."), CONFIG_NOTICE, cx);
         };
-        let store = Folder::new(&folder);
-        match vault.folder_state(&store) {
-            Ok(FolderState::Empty) | Ok(FolderState::Ours) => match vault.start_sync(&store) {
-                Ok(rk) => {
-                    self.keep_sync_folder(Some(&folder), cx);
-                    self.show_recovery_key(rk.to_string(), true, window, cx);
-                }
-                Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
-            },
-            Ok(FolderState::Other) => {
-                self.asking = Some(Asking::JoinHow(folder));
-                self.ask_join_how(window, cx);
-            }
-            Err(e) => self.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
+        if let Err(e) = vault.set_device_secret(crate::syncing::PLACE_SECRET, Some(&secret)) {
+            return self.say(format!("Cannot keep the password: {e}"), CONFIG_NOTICE, cx);
         }
+        self.sync_with(place, window, cx);
     }
 
-    fn keep_sync_folder(&mut self, folder: Option<&std::path::Path>, cx: &mut Context<Self>) {
-        if let Err(e) = self.live.set_sync_folder(folder) {
+    /// Starts syncing with `place`, or joins the vault there.
+    fn sync_with(&mut self, place: SyncPlace, window: &mut Window, cx: &mut Context<Self>) {
+        // Empty (or ours): started, with the recovery key to show. Another
+        // vault's: whether its passphrase lets this device in.
+        enum Found {
+            Started(String),
+            Other { passphrase: bool },
+        }
+        self.say(
+            format!("Connecting to {}…", crate::syncing::describe(&place)),
+            THEME_NOTICE,
+            cx,
+        );
+        let at = place.clone();
+        self.at_place(
+            place,
+            |vault, b| match vault.folder_state(b)? {
+                FolderState::Empty | FolderState::Ours => {
+                    Ok(Found::Started(vault.start_sync(b)?.to_string()))
+                }
+                FolderState::Other => Ok(Found::Other {
+                    passphrase: vault.passphrase_joins(b)?,
+                }),
+            },
+            move |ws, found, window, cx| match found {
+                Ok(Found::Started(rk)) => {
+                    ws.keep_sync_place(Some(&at), cx);
+                    ws.show_recovery_key(rk, true, window, cx);
+                }
+                Ok(Found::Other { passphrase }) => {
+                    ws.asking = Some(Asking::JoinHow {
+                        place: at,
+                        passphrase,
+                    });
+                    ws.ask_join_how(window, cx);
+                }
+                Err(e) => ws.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
+            },
+            window,
+            cx,
+        );
+    }
+
+    /// Runs `work` against `place` off the UI thread (a server may be slow to
+    /// answer), then `then` with what it gave.
+    fn at_place<T: Send + 'static>(
+        &mut self,
+        place: SyncPlace,
+        work: impl FnOnce(
+            &shellwing_vault::Vault,
+            &dyn shellwing_vault::Backend,
+        ) -> shellwing_vault::Result<T>
+        + Send
+        + 'static,
+        then: impl FnOnce(&mut Self, shellwing_vault::Result<T>, &mut Window, &mut Context<Self>)
+        + 'static,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(vault) = self.vault.ready() else {
+            let why = self
+                .vault
+                .problem()
+                .unwrap_or_else(|| "it is still opening".into());
+            return self.say(format!("The vault: {why}."), CONFIG_NOTICE, cx);
+        };
+        let job = cx.background_spawn(async move {
+            let backend = crate::syncing::open(&place, &vault)?;
+            work(&vault, backend.as_ref())
+        });
+        cx.spawn_in(window, async move |this, cx| {
+            let done = job.await;
+            let _ = this.update_in(cx, |ws, window, cx| then(ws, done, window, cx));
+        })
+        .detach();
+    }
+
+    /// This device joined the vault at `place`: it syncs there from now on.
+    fn joined(&mut self, place: SyncPlace, cx: &mut Context<Self>) {
+        self.asking = None;
+        let msg = format!(
+            "Joined: this device syncs with {}.",
+            crate::syncing::describe(&place)
+        );
+        self.keep_sync_place(Some(&place), cx);
+        self.say(msg, CONFIG_NOTICE, cx);
+    }
+
+    fn keep_sync_place(&mut self, place: Option<&SyncPlace>, cx: &mut Context<Self>) {
+        if let Err(e) = self.live.set_sync_place(place) {
             self.say(
-                format!("Cannot save the sync folder: {e}"),
+                format!("Cannot save where the vault syncs: {e}"),
                 CONFIG_NOTICE,
                 cx,
             );
         }
-        self.sync.set_folder(folder.map(|f| f.to_path_buf()));
+        self.passphrase_joins = None;
+        self.sync.set_place(place.cloned());
         self.sync.now();
         self.refresh_settings(cx);
     }
 
     fn ask_recovery_key(&mut self, again: bool, window: &mut Window, cx: &mut Context<Self>) {
         let folder = match &self.asking {
-            Some(Asking::RecoveryKey(f)) => f.display().to_string(),
+            Some(Asking::RecoveryKey(f)) => crate::syncing::describe(f),
             _ => String::new(),
         };
         let mut notes = vec![
@@ -1949,7 +2058,7 @@ impl Workspace {
             default_font: self.fonts.1.clone(),
             all_fonts: self.fonts.2.clone(),
             editors: self.editors.clone(),
-            sync_folder: self.sync.folder(),
+            sync_place: self.sync.place(),
             config_dir: self.live.store().map(|s| s.dir().to_path_buf()),
             known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS")
                 .map(Into::into)
@@ -1962,10 +2071,7 @@ impl Workspace {
                 .and_then(|v| v.has_vault_passphrase().ok()),
             vault_keychain: self.vault.in_keychain(),
             vault_can_lock: self.vault.can_lock(),
-            passphrase_joins: match (self.vault.ready(), self.sync.folder()) {
-                (Some(v), Some(f)) => v.passphrase_joins(&Folder::new(&f)).ok(),
-                _ => None,
-            },
+            passphrase_joins: self.sync.place().and(self.passphrase_joins),
             secrets: self
                 .vault
                 .ready()
@@ -2642,8 +2748,8 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.run_snippet(&id, all, window, cx);
             }
-            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::JoinHow(_))) => {
-                let Some(Asking::JoinHow(folder)) = self.asking.take() else {
+            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::JoinHow { .. })) => {
+                let Some(Asking::JoinHow { place: folder, .. }) = self.asking.take() else {
                     return;
                 };
                 self.close_palette(window, cx);
@@ -2705,33 +2811,28 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow(_) | Asking::Pairing(_)) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
                         return self.close_palette(window, cx);
                     }
                 };
-                let Some(vault) = self.vault.ready() else {
-                    return self.close_palette(window, cx);
-                };
-                match vault.join(&Folder::new(&folder), text) {
-                    Ok(()) => {
-                        self.asking = None;
-                        self.close_palette(window, cx);
-                        self.keep_sync_folder(Some(&folder), cx);
-                        self.say(
-                            format!("Joined: this device syncs with {}.", folder.display()),
-                            CONFIG_NOTICE,
-                            cx,
-                        );
-                    }
-                    Err(shellwing_vault::Error::WrongRecoveryKey) => {
-                        self.close_palette(window, cx);
-                        self.ask_recovery_key(true, window, cx);
-                    }
-                    Err(e) => {
-                        self.close_palette(window, cx);
-                        self.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx);
-                    }
-                }
+                let text = text.clone();
+                let at = folder.clone();
+                self.close_palette(window, cx);
+                self.say("Joining…".into(), THEME_NOTICE, cx);
+                self.at_place(
+                    folder,
+                    move |vault, b| vault.join(b, &text),
+                    move |ws, joined, window, cx| match joined {
+                        Ok(()) => ws.joined(at, cx),
+                        Err(shellwing_vault::Error::WrongRecoveryKey) => {
+                            ws.asking = Some(Asking::RecoveryKey(at));
+                            ws.ask_recovery_key(true, window, cx);
+                        }
+                        Err(e) => ws.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
+                    },
+                    window,
+                    cx,
+                );
             }
             PaletteEvent::Forget(id) => {
                 let forgotten = self.vault.ready().map(|v| v.delete(id));
@@ -2788,6 +2889,7 @@ impl Workspace {
             Action::EditHost(target) => self.edit_host(target, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
             Action::SyncFolder => self.choose_sync_folder(window, cx),
+            Action::SyncServer => self.open_settings(Page::Sync, window, cx),
             Action::SyncNow => {
                 self.sync_error = None;
                 self.sync.now();
@@ -2854,21 +2956,30 @@ impl Workspace {
                 self.ask_folder_passphrase(None, window, cx);
             }
             Action::StopPassphraseJoin => {
-                let done = match (self.vault.ready(), self.sync.folder()) {
-                    (Some(v), Some(f)) => v
-                        .let_passphrase_join(&Folder::new(&f), None)
-                        .map_err(|e| e.to_string()),
-                    _ => Err("the vault is not open, or does not sync".into()),
+                let Some(place) = self.sync.place() else {
+                    return;
                 };
-                match done {
-                    Ok(()) => self.say(
-                        "New devices join with the recovery key, or by approving them.".into(),
-                        CONFIG_NOTICE,
-                        cx,
-                    ),
-                    Err(e) => self.say(format!("Not stopped: {e}"), CONFIG_NOTICE, cx),
-                }
-                self.refresh_settings(cx);
+                self.at_place(
+                    place,
+                    |vault, b| vault.let_passphrase_join(b, None),
+                    |ws, done, _, cx| {
+                        match done {
+                            Ok(()) => {
+                                ws.passphrase_joins = Some(false);
+                                ws.say(
+                                    "New devices join with the recovery key, or by approving them."
+                                        .into(),
+                                    CONFIG_NOTICE,
+                                    cx,
+                                )
+                            }
+                            Err(e) => ws.say(format!("Not stopped: {e}"), CONFIG_NOTICE, cx),
+                        }
+                        ws.refresh_settings(cx);
+                    },
+                    window,
+                    cx,
+                );
             }
             Action::KeepVaultKey => {
                 let done = self.vault.keep_in_keychain();
@@ -2883,9 +2994,13 @@ impl Workspace {
                 self.refresh_settings(cx);
             }
             Action::StopSync => {
-                self.keep_sync_folder(None, cx);
+                self.keep_sync_place(None, cx);
+                // The place's password goes with it.
+                if let Some(v) = self.vault.ready() {
+                    let _ = v.set_device_secret(crate::syncing::PLACE_SECRET, None);
+                }
                 self.say(
-                    "Stopped syncing. The folder and the secrets here are kept.".into(),
+                    "Stopped syncing. What is there and the secrets here are kept.".into(),
                     CONFIG_NOTICE,
                     cx,
                 );
@@ -3000,7 +3115,7 @@ impl Workspace {
             self.report(problems, cx);
             self.refresh_settings(cx);
             self.refresh_sidebar(cx);
-            self.sync.set_folder(self.live.sync_folder());
+            self.sync.set_place(self.live.sync_place());
         }
     }
 
@@ -3503,6 +3618,9 @@ impl Workspace {
             .h_full()
             .w_full()
             .min_w_0()
+            // Its own size: under a native title bar (Windows, X11) nothing
+            // above it sets one, and the rem default is bigger than the sidebar's.
+            .text_sm()
             // The logo, as the sketch puts it before the tabs.
             .child(
                 div().flex_shrink_0().pl(px(12.)).pr(px(8.)).child(

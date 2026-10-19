@@ -65,6 +65,8 @@ pub enum Action {
     EditHosts,
     ManageSecrets,
     SyncFolder,
+    /// Settings › Sync, to type a WebDAV or S3 server's address.
+    SyncServer,
     SyncNow,
     ShowRecoveryKey,
     /// Open the locked vault with its passphrase or recovery key.

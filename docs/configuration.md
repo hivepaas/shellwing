@@ -574,6 +574,32 @@ or OneDrive folder, a network share. shellwing writes `shellwing/format.json` an
 one encrypted file per saved secret in `shellwing/records/`; nothing in them is
 readable without the key.
 
+**A server instead of a folder:** *Settings › Sync* (or *Sync passwords with a
+server…* in the palette) takes a WebDAV server or S3-compatible storage, one
+place at a time:
+
+```toml
+[sync]
+# WebDAV: Nextcloud, ownCloud, Synology, Koofr, Fastmail. The folder's address.
+webdav = { url = "https://cloud.example.com/remote.php/dav/files/me/", user = "me" }
+# Or S3-compatible: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi.
+# region: if the service asks for one (R2 takes "auto", the default).
+# prefix: a folder in the bucket; none: the top.
+s3 = { endpoint = "https://<account>.r2.cloudflarestorage.com", bucket = "vault", prefix = "me", access_key = "…" }
+```
+
+- The password (WebDAV) or secret key (S3) is not in the file: it is kept in
+  the vault, sealed, as this device's own, and never synced. Each device
+  signs in with its own; *Stop syncing* forgets it. An app password, or a key
+  limited to the bucket, is the safer choice.
+- The files are the same as in a folder, under `shellwing/` at the address
+  (or under the prefix). The server only ever sees them encrypted.
+- Each sync lists the records and fetches only those that changed since
+  (by their ETag), so a minute's sync with nothing new is a few small
+  requests.
+- Joining from another device works as with a folder: pairing, the recovery
+  key, or the sync passphrase.
+
 - **The first device** creates a **recovery key** (13 groups of 4 characters) and
   shows it: write it down. *Show the recovery key* shows it again.
 - **Another device** choosing the same folder joins the vault one of two ways;
