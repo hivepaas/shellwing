@@ -32,6 +32,7 @@ mod sidebar;
 mod snippets;
 mod snippets_view;
 mod syncing;
+mod tab_overview;
 mod view;
 mod workspace;
 
@@ -66,6 +67,7 @@ const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../assets/icons/upload.svg"),
     ),
     ("icons/logo.svg", include_bytes!("../assets/icons/logo.svg")),
+    ("icons/tabs.svg", include_bytes!("../assets/icons/tabs.svg")),
     (
         "icons/terminal.svg",
         include_bytes!("../assets/icons/terminal.svg"),

@@ -59,6 +59,7 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Cmd+Q (macOS) | Quit; closing the window quits too, asking first while connections are open |
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
 | Alt+1…9 (Cmd+1…9) | Go to a tab |
+| Ctrl+Shift+A (Cmd+Shift+A) | Every open tab by host (also the tab button in the header): type to find one, Enter to go to it, Ctrl+W to close it |
 | Ctrl+Shift+B | Show or hide the host list |
 | Ctrl+Shift+F (Cmd+F) | Find in the pane and its history: Enter (or Up) for the next match up, Shift+Enter (or Down) back down, Alt+C to match case, Alt+R for a regular expression, Esc to close |
 | Ctrl+Shift+C / V, Shift+Insert | Copy / paste |

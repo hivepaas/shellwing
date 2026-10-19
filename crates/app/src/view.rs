@@ -267,6 +267,9 @@ pub struct TermView {
     /// The window's bottom corners this pane fills, which it rounds; the
     /// workspace sets them as it lays the panes out.
     corners: Rc<Cell<crate::chrome::BottomCorners>>,
+    /// What the program says the terminal is (OSC 0/2), such as the shell's
+    /// `user@host: ~/dir`.
+    shell_title: Option<SharedString>,
     /// The area the terminal had at the last paint, which the grid fills.
     area: Rc<Cell<Size<Pixels>>>,
     /// Text the input method is composing (preedit), shown at the cursor.
@@ -413,6 +416,7 @@ impl TermView {
             cell: (px(0.), px(0.)),
             grid_origin: Rc::new(Cell::new(point(px(0.), px(0.)))),
             corners: Rc::default(),
+            shell_title: None,
             area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
@@ -460,6 +464,11 @@ impl TermView {
         }
         self.broadcast = state;
         self.echo = echo;
+    }
+
+    /// What the program says the terminal is (OSC 0/2), if it said.
+    pub fn shell_title(&self) -> Option<&SharedString> {
+        self.shell_title.as_ref()
     }
 
     /// The window's bottom corners this pane fills (see `corners`).
@@ -1486,6 +1495,11 @@ impl TermView {
                     CONFIRM_PASTE,
                     cx,
                 );
+            }
+            TermEvent::Title(t) => {
+                let t = t.trim();
+                self.shell_title = (!t.is_empty()).then(|| t.to_string().into());
+                cx.notify();
             }
             TermEvent::LogFailed(e) => {
                 self.session.stop_log();

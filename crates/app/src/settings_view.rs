@@ -1259,6 +1259,14 @@ impl SettingsView {
             ("Move between panes", format!("{pane}+arrows")),
             ("Next and previous tab", "Ctrl+Tab, Ctrl+Shift+Tab".into()),
             (
+                "Every tab, by host",
+                if mac {
+                    "Cmd+Shift+A".into()
+                } else {
+                    "Ctrl+Shift+A".into()
+                },
+            ),
+            (
                 "Go to tab 1–9",
                 if mac {
                     "Cmd+1…9".into()

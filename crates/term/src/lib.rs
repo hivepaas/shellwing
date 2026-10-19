@@ -279,6 +279,9 @@ pub enum Event {
     /// The log could not be written (the disk is full, the folder went):
     /// logging stopped.
     LogFailed(String),
+    /// The program set the terminal's title (OSC 0 or 2), such as the shell's
+    /// `user@host: ~/dir`; empty when it cleared it.
+    Title(String),
 }
 
 enum Cmd {
@@ -600,6 +603,12 @@ fn run(
         let write = write.clone();
         term.on_pty_write(move |_t, data| write(data.to_vec()))?;
     }
+    // The new title can be read only once the write that set it is done.
+    let titled = std::rc::Rc::new(std::cell::Cell::new(false));
+    {
+        let titled = titled.clone();
+        term.on_title_changed(move |_| titled.set(true))?;
+    }
     let mut press = PressEvent::new()?;
     press.set_repeat_interval(MULTI_CLICK)?;
     let mut e = Engine {
@@ -662,6 +671,11 @@ fn run(
                 Cmd::Feed(b) => {
                     logging.write(&b, &e.events);
                     e.term.vt_write(&b);
+                    if titled.replace(false)
+                        && let Ok(title) = e.term.title()
+                    {
+                        (e.events)(Event::Title(title.to_string()));
+                    }
                 }
                 Cmd::Resize {
                     cols,

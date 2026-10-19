@@ -43,6 +43,8 @@ pub enum Action {
     ChangeTheme,
     Files,
     Find,
+    /// Every open tab, by host.
+    Tabs,
     /// Log the focused pane to a file, or stop.
     Log,
     /// Save the focused pane's text, history included: plain, or an HTML
