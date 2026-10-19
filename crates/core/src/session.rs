@@ -3,6 +3,7 @@
 //! new network task that writes below what the old one left. Dropping a
 //! `Session` disconnects and frees all of it.
 
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_config::Host;
@@ -94,6 +95,8 @@ pub struct Session {
     run: Option<String>,
     /// A shell on this computer instead of a host: its program and arguments.
     local: Option<Vec<String>>,
+    /// The file the terminal is logged to.
+    log: Option<PathBuf>,
 }
 
 /// What a Files panel needs from its pane's connection.
@@ -201,12 +204,12 @@ pub enum Opens {
 
 impl Session {
     /// Starts connecting to `target` (resolved from `spec`) on `rt`. A target that
-    /// failed to resolve still gets a session, which shows the error.
+    /// failed to resolve still gets a session, which shows the error. The
+    /// session is logged from the start when the settings or the host say so.
     pub fn start(
         spec: &str,
         opens: Opens,
-        scrollback: usize,
-        ssh: shellwing_config::Ssh,
+        settings: &shellwing_config::Settings,
         rt: &Handle,
         bench: Option<(String, Arc<Probe>)>,
         vault: VaultSlot,
@@ -222,7 +225,7 @@ impl Session {
             TermHandle::spawn(
                 80,
                 24,
-                scrollback,
+                settings.terminal.scrollback,
                 Box::new(move |bytes| w.write(bytes)),
                 Box::new(move || {
                     let _ = wake_tx.try_send(());
@@ -264,15 +267,19 @@ impl Session {
             }),
             vault,
             held: Weak::new(),
-            ssh,
+            ssh: settings.ssh.clone(),
             run: None,
             local: None,
+            log: None,
         };
         let target = match opens {
             Opens::Host(target) => *target,
             Opens::Local(argv) => {
                 session.title = crate::local::TITLE.into();
                 session.local = Some(argv);
+                if settings.log.always {
+                    session.log_from_start(&settings.log);
+                }
                 session.connect(bench);
                 return Ok(session);
             }
@@ -284,8 +291,12 @@ impl Session {
                     .and_then(|h| h.run.clone())
                     .filter(|r| !r.trim().is_empty());
                 session.title = resolved.alias.clone();
+                let logged = entry.as_ref().and_then(|h| h.log);
                 session.entry = entry.map(|h| h.name);
                 session.target = Some(resolved);
+                if logged.unwrap_or(settings.log.always) {
+                    session.log_from_start(&settings.log);
+                }
                 session.connect(bench);
             }
             Err(e) => {
@@ -298,6 +309,47 @@ impl Session {
 
     fn set_status(&self, status: Status, ended: Option<String>) {
         set_status(&self.state, &self.wake_tx, status, ended);
+    }
+
+    /// Logs the terminal from now on, to a new file in the settings' folder.
+    /// Returns the file.
+    pub fn start_log(&mut self, settings: &shellwing_config::Log) -> std::io::Result<PathBuf> {
+        let (name, about) = match &self.local {
+            Some(argv) => (
+                crate::local::TITLE.to_string(),
+                format!("{} on this computer", crate::local::shell_name(argv)),
+            ),
+            None => {
+                let name = self.entry.clone().unwrap_or_else(|| self.title.clone());
+                let about = match self.reached() {
+                    Some(t) => format!("{name} ({}@{}:{})", t.user, t.host, t.port),
+                    None => name.clone(),
+                };
+                (name, about)
+            }
+        };
+        let (path, log) = crate::logs::open(settings, &name, &about)?;
+        self.term.log(Some(log));
+        self.log = Some(path.clone());
+        Ok(path)
+    }
+
+    /// Before connecting: a log that cannot start says why in the pane.
+    fn log_from_start(&mut self, settings: &shellwing_config::Log) {
+        if let Err(e) = self.start_log(settings) {
+            failure(&self.term, &format!("Not logged: {e}"));
+        }
+    }
+
+    /// Stops logging; the file it was.
+    pub fn stop_log(&mut self) -> Option<PathBuf> {
+        self.term.log(None);
+        self.log.take()
+    }
+
+    /// The file the terminal is logged to.
+    pub fn log_path(&self) -> Option<&Path> {
+        self.log.as_deref()
     }
 
     /// Saves a typed password or passphrase in the vault.
@@ -386,12 +438,12 @@ impl Session {
         }
     }
 
-    /// Connects again to the same target, below what the terminal shows.
     /// A shell on this computer, not an SSH connection.
     pub fn is_local(&self) -> bool {
         self.local.is_some()
     }
 
+    /// Connects again to the same target, below what the terminal shows.
     pub fn reconnect(&mut self) {
         if (self.target.is_none() && self.local.is_none())
             || matches!(self.status(), Status::Connecting | Status::Connected)
@@ -630,5 +682,51 @@ mod tests {
             host: "bastion".into(),
             source: Box::new(io),
         }));
+    }
+
+    /// A session the settings log from its start: what the shell says, and
+    /// how it ended, are in the file.
+    #[cfg(unix)]
+    #[test]
+    fn a_session_is_logged_from_its_start() {
+        use std::time::Duration;
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-session-log-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let mut settings = shellwing_config::Settings::default();
+        settings.log.always = true;
+        settings.log.timestamps = false;
+        settings.log.folder = Some(dir.display().to_string());
+        let shell = ["/bin/sh", "-c", "echo logged-$((40+2))"];
+        let mut session = Session::start(
+            crate::local::SPEC,
+            Opens::Local(shell.map(String::from).to_vec()),
+            &settings,
+            rt.handle(),
+            None,
+            VaultSlot::none(),
+        )
+        .expect("start");
+        let path = session.log_path().expect("logged").to_path_buf();
+        // Written as the terminal thread gets to it.
+        let mut text = String::new();
+        for _ in 0..250 {
+            text = std::fs::read_to_string(&path).unwrap_or_default();
+            if text.contains("ended") {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert!(
+            text.starts_with("# sh on this computer, logged by shellwing from "),
+            "{text}"
+        );
+        assert!(text.contains("\nlogged-42\n"), "{text}");
+        assert!(text.contains("[sh ended (exit 0)]"), "{text}");
+        assert_eq!(session.stop_log(), Some(path));
+        assert!(session.log_path().is_none());
+        drop(session);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

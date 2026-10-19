@@ -11,6 +11,8 @@ publish.workspace = true
 libghostty-vt.workspace = true
 # Finding text on the screen and in its history.
 regex = "1"
+# How many columns a character of a log takes.
+unicode-width = "0.2"
 
 [lints]
 workspace = true

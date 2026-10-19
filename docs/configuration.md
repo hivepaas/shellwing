@@ -32,7 +32,7 @@ the maximised state come back; the compositor chooses the position.
 **Settings** (**Ctrl+,**, **Cmd+,** on macOS, or *Settings…* in the palette)
 changes these without opening the file: theme, font, size, line height,
 cursor, scrollbar, padding, the app's own font and size, scrollback, what a
-dropped connection does, and whether the last tabs come back. Each change is written here at once, keeping
+dropped connection does, session logs, and whether the last tabs come back. Each change is written here at once, keeping
 your comments, and applies to the open tabs.
 
 ```toml
@@ -61,6 +61,12 @@ editor = "code"              # the text editor for remote files (Settings > Gene
 [ssh]                        # defaults for every host; a host can set its own
 host_key = "ask"             # unknown host keys: "ask", "accept-new" or "strict"
 keepalive = 30               # seconds between keepalives; 0: none
+
+[log]                        # see Session logs
+always = false               # log every session from its start
+folder = "~/logs/shellwing"  # default: shellwing/logs in your data folder
+format = "text"              # "text" or "raw"
+timestamps = true            # each line of a text log starts with the time
 ```
 
 When a connection ends, the pane shows a bar saying why and offers to connect
@@ -161,6 +167,7 @@ host_key = "accept-new"     # beats [ssh] host_key
 color = "pink"              # pink, sky, green, amber, red or "#rrggbb": on its tab and pane
 favorite = true             # listed first in the host list
 run = "cd ~/apps"           # typed into the shell once it is ready, after every connect
+log = true                  # logged from the start (false: never); beats [log] always
 ```
 
 **Groups** are made with *+ Group* under the host list, *New group…* in the
@@ -322,6 +329,42 @@ palette), opens a shell on this computer in a tab, beside the SSH ones;
 
 - **When the shell ends** (`exit`), the pane says so and Enter starts it again,
   or the pane closes when `on_disconnect = "close"`.
+
+## Session logs
+
+A log is a file that gets what a pane shows, as it comes. Each log is a file of
+its own, named for the host and the time it started
+(`api-1_2026-10-19_09-12-03.log`), and a text log starts with a line saying
+which host it is (`user@address:port`) and when it started.
+
+- **Logging one pane:** *Start Logging* in the pane's menu (right click), or
+  *Log … to a file* in the palette. The log starts there, not with what is
+  already on screen; *Stop Logging* ends it. While a pane is logged, a red
+  *logging* badge shows at its top right; clicking it opens the file.
+- **Logging every session** from its start: `always = true` under `[log]`
+  (*Settings › Terminal › Log every session*). A host's own `log` wins:
+  `log = false` keeps one out (a host whose output you would rather not keep),
+  `log = true` logs one when the rest are not. *Session log* in the host
+  editor sets it.
+- **The format:**
+  - `text` (the default): lines of plain text, as each was left. A progress bar
+    logs its last state, a command edited at the prompt logs as it was entered,
+    and colors go. What full-screen programs (vim, htop, less) draw is left
+    out: it is not lines of output. With `timestamps`, each line starts with
+    `[2026-10-19 09:12:03] `.
+  - `raw`: every byte as it came, escape sequences and all. `cat` or `less -R`
+    plays it back in color.
+- **The folder:** `folder` (`~/` allowed), or *Change…* in Settings; by
+  default `shellwing/logs` in your data folder (`~/.local/share` on Linux,
+  `~/Library/Application Support` on macOS, `%LOCALAPPDATA%` on Windows).
+  Logs hold whatever the sessions showed, so on Linux and macOS only you can
+  read them (the folder is `0700`, each file `0600`).
+- **A log that cannot be written** (the disk is full, the folder went away)
+  stops, and the pane says why.
+
+**Saving what a pane shows** at any time, history included: *Save Output As…*
+in the pane's menu, or *Save the output of …* in the palette. A name ending in
+`.html` saves a page with the colors; anything else, plain text.
 
 ## Known hosts
 

@@ -42,6 +42,10 @@ pub enum Action {
     ChangeTheme,
     Files,
     Find,
+    /// Log the focused pane to a file, or stop.
+    Log,
+    /// Save the focused pane's text, history included.
+    SaveOutput,
     NewHost,
     NewGroup,
     EditHost(crate::workspace::EditTarget),

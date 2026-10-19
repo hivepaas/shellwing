@@ -58,6 +58,8 @@ pub struct EditorContext {
     pub themes: Vec<(String, String)>,
     /// The app's settings that a host's empty field falls back to.
     pub app_ssh: shellwing_config::Ssh,
+    /// Whether the app logs every session (`[log] always`).
+    pub app_logs: bool,
     /// Keys to choose from: the vault's, then the files in `~/.ssh`.
     pub keys: Vec<KeyChoice>,
     /// Where a key made here is kept.
@@ -140,6 +142,7 @@ pub struct HostEditor {
     local_only: bool,
     forward_agent: bool,
     host_key: Option<HostKey>,
+    log: Option<bool>,
     color: Option<String>,
     favorite: bool,
     /// A group being named here, made when the host is saved.
@@ -212,6 +215,7 @@ impl HostEditor {
             local_only: false,
             forward_agent: false,
             host_key: None,
+            log: None,
             color: None,
             favorite: false,
             naming_group: false,
@@ -279,6 +283,7 @@ impl HostEditor {
         );
         self.forward_agent = h.forward_agent;
         self.host_key = h.host_key;
+        self.log = h.log;
         self.set(&i.run, h.run.as_deref().unwrap_or(""), cx);
         self.color = h.color.clone();
         self.favorite = h.favorite;
@@ -333,6 +338,7 @@ impl HostEditor {
             color: self.color.clone(),
             favorite: self.favorite,
             run: opt(self.text(&i.run, cx)),
+            log: self.log,
         }
     }
 
@@ -582,6 +588,7 @@ impl HostEditor {
             color: None,
             favorite: false,
             run: None,
+            log: None,
         };
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
@@ -729,6 +736,46 @@ impl HostEditor {
             _ => return,
         }
         cx.stop_propagation();
+    }
+
+    /// A row of choices, the current one marked; a click sets it with `set`.
+    fn segments<T: Copy + PartialEq + 'static>(
+        id: &'static str,
+        choices: &[(T, &str)],
+        current: T,
+        set: fn(&mut Self, T),
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
+        let mut row = div()
+            .flex()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(FIELD_EDGE))
+            .overflow_hidden();
+        for (n, &(value, name)) in choices.iter().enumerate() {
+            let on = current == value;
+            row = row.child(
+                div()
+                    .id((id, n))
+                    .flex_1()
+                    .h(px(30.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(ui(12.5))
+                    .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
+                    .cursor_pointer()
+                    .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
+                    .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .on_click(cx.listener(move |e, _, _, cx| {
+                        set(e, value);
+                        cx.notify();
+                    }))
+                    .child(name.to_string()),
+            );
+        }
+        row
     }
 
     fn input_box(
@@ -1648,43 +1695,29 @@ impl Render for HostEditor {
                 "Typed into the shell once it is ready, after every connect and reconnect.",
             ));
 
-        let mut keys = div()
-            .flex()
-            .rounded(px(6.))
-            .border_1()
-            .border_color(rgb(FIELD_EDGE))
-            .overflow_hidden();
-        for (n, (value, name)) in [
-            (None, "App setting"),
-            (Some(HostKey::Ask), "Ask"),
-            (Some(HostKey::AcceptNew), "Accept new"),
-            (Some(HostKey::Strict), "Strict"),
-        ]
-        .into_iter()
-        .enumerate()
-        {
-            let on = self.host_key == value;
-            keys = keys.child(
-                div()
-                    .id(("host-key", n))
-                    .flex_1()
-                    .h(px(30.))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .text_size(ui(12.5))
-                    .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
-                    .cursor_pointer()
-                    .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
-                    .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
-                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
-                    .on_click(cx.listener(move |e, _, _, cx| {
-                        e.host_key = value;
-                        cx.notify();
-                    }))
-                    .child(name),
-            );
-        }
+        let keys = Self::segments(
+            "host-key",
+            &[
+                (None, "App setting"),
+                (Some(HostKey::Ask), "Ask"),
+                (Some(HostKey::AcceptNew), "Accept new"),
+                (Some(HostKey::Strict), "Strict"),
+            ],
+            self.host_key,
+            |e, v| e.host_key = v,
+            cx,
+        );
+        let logs = Self::segments(
+            "host-log",
+            &[
+                (None, "App setting"),
+                (Some(true), "Always"),
+                (Some(false), "Never"),
+            ],
+            self.log,
+            |e, v| e.log = v,
+            cx,
+        );
         let app = &self.ctx.app_ssh;
         let app_key = match app.host_key {
             HostKey::Ask => "Ask",
@@ -1706,6 +1739,18 @@ impl Render for HostEditor {
                     .child(keys)
                     .child(hint_text(&format!(
                         "The app's setting is {app_key} now. A changed key is always refused."
+                    ))),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(label_text("Session log"))
+                    .child(logs)
+                    .child(hint_text(&format!(
+                        "Always: each session is logged to a file from its start. Never: not even when the app logs every session. The app logs {} now.",
+                        if self.ctx.app_logs { "every session" } else { "none" }
                     ))),
             )
             .child(

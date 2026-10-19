@@ -12,7 +12,7 @@ use gpui::{
     uniform_list,
 };
 use shellwing_config::{
-    Color, CursorStyle, HostKey, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
+    Color, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
 };
 
 use crate::input::TextInput;
@@ -267,6 +267,27 @@ impl SettingsView {
 
     fn open(&self, path: &std::path::Path, cx: &mut Context<Self>) {
         cx.open_url(&format!("file://{}", path.display()));
+    }
+
+    /// Asks for the folder logs go to.
+    fn choose_log_folder(&mut self, cx: &mut Context<Self>) {
+        let picked = cx.prompt_for_paths(gpui::PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some("Keep logs here".into()),
+        });
+        cx.spawn(async move |this, cx| {
+            if let Ok(Ok(Some(paths))) = picked.await
+                && let Some(folder) = paths.into_iter().next()
+            {
+                let _ = this.update(cx, |v, cx| {
+                    let folder = SettingValue::Str(folder.display().to_string());
+                    v.change(&["log", "folder"], Some(folder), cx)
+                });
+            }
+        })
+        .detach();
     }
 
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -1067,6 +1088,86 @@ impl SettingsView {
                         .child(self.shell_input.clone()),
                 ),
             ))
+            .child(self.logs(cx))
+    }
+
+    fn logs(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let l = &self.snap.settings.log;
+        let always = l.always;
+        let timestamps = l.timestamps;
+        let folder = shellwing_core::logs::folder(l);
+        let formats = vec![
+            (LogFormat::Text, "Text".to_string()),
+            (LogFormat::Raw, "Raw".to_string()),
+        ];
+        let mut buttons = div().flex().flex_wrap().gap(px(6.)).child(
+            small_button("log-folder", "Change…")
+                .on_click(cx.listener(|v, _, _, cx| v.choose_log_folder(cx))),
+        );
+        if let Some(dir) = folder.clone() {
+            buttons = buttons.child(small_button("log-open", "Open").on_click(cx.listener(
+                move |v, _, _, cx| {
+                    // Made first, as no log may have been written yet; if it
+                    // cannot be, the file manager says what is wrong.
+                    let _ = shellwing_core::logs::make_folder(&dir);
+                    v.open(&dir, cx);
+                },
+            )));
+        }
+        if l.folder.is_some() {
+            buttons = buttons.child(
+                small_button("log-default", "Use the default")
+                    .on_click(cx.listener(|v, _, _, cx| v.change(&["log", "folder"], None, cx))),
+            );
+        }
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(16.))
+            .pt(px(8.))
+            .child(heading("Session logs"))
+            .child(div().flex().flex_col().child(toggle(
+                "log-always",
+                always,
+                "Log every session",
+                "From its start, to a file of its own. A host can say otherwise in its editor, and Start Logging in a pane's menu logs it from then on.",
+                cx.listener(move |v, _, _, cx| {
+                    v.change(&["log", "always"], Some(SettingValue::Bool(!always)), cx)
+                }),
+            ))
+            .child(setting(
+                "Format",
+                "Text: the lines as they were left, colors gone; what full-screen programs (vim, htop) draw is left out. Raw: every byte as it came, which cat or less -R shows in color.",
+                self.pills("log-format", formats, l.format, |v, f, cx| {
+                    let name = match f {
+                        LogFormat::Text => "text",
+                        LogFormat::Raw => "raw",
+                    };
+                    v.change(&["log", "format"], Some(SettingValue::Str(name.into())), cx)
+                }, cx),
+            ))
+            .when(l.format == LogFormat::Text, |d| {
+                d.child(toggle(
+                    "log-timestamps",
+                    timestamps,
+                    "The time on each line",
+                    "Each line of a text log starts with the date and time it was written.",
+                    cx.listener(move |v, _, _, cx| {
+                        v.change(&["log", "timestamps"], Some(SettingValue::Bool(!timestamps)), cx)
+                    }),
+                ))
+            })
+            .child(setting(
+                "Folder",
+                &match &folder {
+                    Some(dir) => format!(
+                        "Logs go to {}. Only you can read them: they hold whatever the sessions showed.",
+                        dir.display()
+                    ),
+                    None => "No folder for logs: choose one.".to_string(),
+                },
+                buttons,
+            )))
     }
 
     fn keyboard(&self) -> gpui::Div {

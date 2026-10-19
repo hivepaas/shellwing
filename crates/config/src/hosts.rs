@@ -75,6 +75,10 @@ pub struct Host {
     /// Typed into the shell once it is ready, after every connect.
     #[serde(default)]
     pub run: Option<String>,
+    /// Sessions are logged from their start (true) or not (false); None:
+    /// the app's setting (`[log] always`).
+    #[serde(default)]
+    pub log: Option<bool>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]

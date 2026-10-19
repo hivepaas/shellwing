@@ -65,6 +65,11 @@ impl Host {
             f.insert("favorite".into(), "true".into());
         }
         put(&mut f, "run", self.run.as_deref());
+        put(
+            &mut f,
+            "log",
+            self.log.map(|l| if l { "true" } else { "false" }),
+        );
         f
     }
 }
@@ -232,7 +237,23 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_str(t, "color", g("color"));
     changed |= set_flag(t, "favorite", g("favorite") == Some("true"));
     changed |= set_str(t, "run", g("run"));
+    changed |= set_bool(t, "log", g("log"));
     changed
+}
+
+/// A true or false that can also be left out.
+fn set_bool(t: &mut Table, key: &str, want: Option<&str>) -> bool {
+    let want = want.map(|w| w == "true");
+    if t.get(key).and_then(Item::as_bool) == want {
+        return false;
+    }
+    match want {
+        Some(on) => set_keeping_decor(t, key, on.into()),
+        None => {
+            t.remove(key);
+        }
+    }
+    true
 }
 
 fn set_flag(t: &mut Table, key: &str, on: bool) -> bool {
@@ -544,6 +565,7 @@ local_only = true
             color: Some("pink".into()),
             favorite: true,
             run: Some("cd ~/apps && ls".into()),
+            log: Some(false),
         };
         assert!(save_host(&mut doc, "h9", &new));
         let text = doc.to_string();
@@ -570,6 +592,7 @@ local_only = true
             (cache.color.as_deref(), cache.favorite, cache.run.as_deref()),
             (Some("pink"), true, Some("cd ~/apps && ls"))
         );
+        assert_eq!(cache.log, Some(false), "false is kept, not left out");
 
         assert!(delete_host(&mut doc, "h9"));
         assert!(!delete_host(&mut doc, "h9"));
