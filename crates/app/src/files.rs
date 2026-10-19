@@ -21,12 +21,12 @@ use gpui::{
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
 
+use crate::colors::colors;
 use crate::copies::{self, EditCopy};
 use crate::editors;
 use crate::input::TextInput;
 use crate::session::Remote;
 use crate::sidebar::Tip;
-use crate::sidebar::{LINE, MUTED, TEXT};
 
 /// The panel's width by default, and how far its edge can be dragged.
 pub const WIDTH: f32 = 480.;
@@ -45,13 +45,6 @@ impl Default for PanelWidth {
     }
 }
 const ROW_H: f32 = 26.;
-const PANEL: u32 = 0x0d121c;
-const HOVER: u32 = 0x141c2b;
-const SELECTED: u32 = 0x17233a;
-const DROP: u32 = 0x132036;
-const FOLDER: u32 = 0x7aa2f7;
-const BAD: u32 = 0xf87171;
-const BAR: u32 = 0x3b82f6;
 /// How often running transfers redraw their progress.
 const TICK: Duration = Duration::from_millis(250);
 /// Finished transfers kept in the list.
@@ -283,10 +276,10 @@ fn button(id: impl Into<ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
         .py(px(2.))
         .rounded_md()
         .text_xs()
-        .text_color(rgb(TEXT))
-        .bg(rgb(0x1a2333))
+        .text_color(rgb(colors().text))
+        .bg(rgb(colors().button))
         .cursor_pointer()
-        .hover(|s| s.bg(rgb(0x243047)))
+        .hover(|s| s.bg(rgb(colors().button_hover)))
         .child(label.to_string())
 }
 
@@ -1006,7 +999,7 @@ impl FilesPanel {
                     .overflow_hidden()
                     .text_ellipsis()
                     .whitespace_nowrap()
-                    .text_color(rgb(if bad { BAD } else { MUTED }))
+                    .text_color(rgb(if bad { colors().bad } else { colors().muted }))
                     .child(status),
             )
             .into_any_element()
@@ -1229,17 +1222,17 @@ impl FilesPanel {
                 .rounded(px(4.))
                 .whitespace_nowrap()
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(SELECTED)))
-                .text_color(rgb(if danger { BAD } else { TEXT }))
+                .hover(|s| s.bg(rgb(colors().selected)))
+                .text_color(rgb(if danger { colors().bad } else { colors().text }))
                 .child(label.to_string())
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child(hint.to_string()),
                 )
         };
-        let line = || div().my_1().h(px(1.)).bg(rgb(LINE));
+        let line = || div().my_1().h(px(1.)).bg(rgb(colors().line));
         // Named for the editor it opens: the chosen one, else the system's.
         let edit_label = cx
             .try_global::<EditorCommand>()
@@ -1259,9 +1252,9 @@ impl FilesPanel {
             .flex()
             .flex_col()
             .rounded(px(8.))
-            .bg(rgb(0x111826))
+            .bg(rgb(colors().raised))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_sm()
             // Another click anywhere closes it (a right click opens the next one).
@@ -1488,8 +1481,8 @@ impl FilesPanel {
             .items_center()
             .gap_2()
             .cursor_pointer()
-            .when(selected, |d| d.bg(rgb(SELECTED)))
-            .when(!selected, |d| d.hover(|s| s.bg(rgb(HOVER))))
+            .when(selected, |d| d.bg(rgb(colors().selected)))
+            .when(!selected, |d| d.hover(|s| s.bg(rgb(colors().hover))))
             // Right click: chosen, with its context menu.
             .on_mouse_down(
                 MouseButton::Right,
@@ -1518,7 +1511,11 @@ impl FilesPanel {
                     })
                     .size(px(15.))
                     .flex_shrink_0()
-                    .text_color(rgb(if e.is_dir() { FOLDER } else { MUTED })),
+                    .text_color(rgb(if e.is_dir() {
+                        colors().folder
+                    } else {
+                        colors().muted
+                    })),
             )
             .child(
                 div()
@@ -1527,11 +1524,20 @@ impl FilesPanel {
                     .overflow_hidden()
                     .text_ellipsis()
                     .whitespace_nowrap()
-                    .text_color(rgb(if e.is_dir() { FOLDER } else { TEXT }))
+                    .text_color(rgb(if e.is_dir() {
+                        colors().folder
+                    } else {
+                        colors().text
+                    }))
                     .child(name),
             )
             .when(e.kind == sftp::Kind::Link, |d| {
-                d.child(div().text_xs().text_color(rgb(MUTED)).child("link"))
+                d.child(
+                    div()
+                        .text_xs()
+                        .text_color(rgb(colors().muted))
+                        .child("link"),
+                )
             })
             .child(
                 div()
@@ -1539,7 +1545,7 @@ impl FilesPanel {
                     .flex_shrink_0()
                     .text_xs()
                     .text_right()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child(if e.is_dir() {
                         String::new()
                     } else {
@@ -1552,7 +1558,7 @@ impl FilesPanel {
                     .flex_shrink_0()
                     .text_xs()
                     .text_right()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child(e.modified.map(when).unwrap_or_default()),
             )
             .into_any_element()
@@ -1650,18 +1656,23 @@ impl FilesPanel {
                     .overflow_hidden()
                     .text_ellipsis()
                     .whitespace_nowrap()
-                    .text_color(rgb(if failed { BAD } else { MUTED }))
+                    .text_color(rgb(if failed { colors().bad } else { colors().muted }))
                     .child(status),
             )
             .when(matches!(t.step, Step::Running), |d| {
                 d.child(
-                    div().h(px(3.)).w_full().rounded_full().bg(rgb(LINE)).child(
-                        div()
-                            .h_full()
-                            .rounded_full()
-                            .bg(rgb(BAR))
-                            .w(relative(fraction.clamp(0., 1.))),
-                    ),
+                    div()
+                        .h(px(3.))
+                        .w_full()
+                        .rounded_full()
+                        .bg(rgb(colors().line))
+                        .child(
+                            div()
+                                .h_full()
+                                .rounded_full()
+                                .bg(rgb(colors().progress))
+                                .w(relative(fraction.clamp(0., 1.))),
+                        ),
                 )
             })
             .into_any_element()
@@ -1681,7 +1692,7 @@ impl Render for FilesPanel {
                 .justify_center()
                 .rounded_md()
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(0x1a2333)))
+                .hover(|s| s.bg(rgb(colors().hover)))
                 .tooltip(move |_, cx| {
                     cx.new(|_| Tip {
                         title: tip.into(),
@@ -1689,7 +1700,12 @@ impl Render for FilesPanel {
                     })
                     .into()
                 })
-                .child(svg().path(icon).size(px(16.)).text_color(rgb(TEXT)))
+                .child(
+                    svg()
+                        .path(icon)
+                        .size(px(16.))
+                        .text_color(rgb(colors().text)),
+                )
         };
         let header = div()
             .flex()
@@ -1699,7 +1715,7 @@ impl Render for FilesPanel {
             .pl_3()
             .pr_1()
             .border_b_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .child(
                 div()
                     .flex_1()
@@ -1736,11 +1752,11 @@ impl Render for FilesPanel {
             .px_3()
             .py(px(6.))
             .border_b_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .child(
                 div()
                     .text_xs()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .whitespace_nowrap()
                     .overflow_hidden()
                     .child(self.shown_path()),
@@ -1761,23 +1777,26 @@ impl Render for FilesPanel {
                     .px_3()
                     .py_2()
                     .border_b_1()
-                    .border_color(rgb(LINE))
-                    .child(div().text_xs().text_color(rgb(MUTED)).child(label))
+                    .border_color(rgb(colors().line))
+                    .child(div().text_xs().text_color(rgb(colors().muted)).child(label))
                     .child(
                         div()
                             .px_2()
                             .py_1()
                             .rounded_md()
                             .border_1()
-                            .border_color(rgb(0x2b3a55))
-                            .bg(rgb(0x0a0f18))
+                            .border_color(rgb(colors().field_edge))
+                            .bg(rgb(colors().field))
                             .child(self.input.clone()),
                     )
                     .child(match &self.edit_problem {
-                        Some(p) => div().text_xs().text_color(rgb(BAD)).child(p.clone()),
+                        Some(p) => div()
+                            .text_xs()
+                            .text_color(rgb(colors().bad))
+                            .child(p.clone()),
                         None => div()
                             .text_xs()
-                            .text_color(rgb(MUTED))
+                            .text_color(rgb(colors().muted))
                             .child("Enter to save · Esc to cancel"),
                     }),
             );
@@ -1796,7 +1815,7 @@ impl Render for FilesPanel {
                     .px_3()
                     .py_2()
                     .border_b_1()
-                    .border_color(rgb(LINE))
+                    .border_color(rgb(colors().line))
                     .child(div().text_xs().child(question))
                     .child(
                         div()
@@ -1804,8 +1823,8 @@ impl Render for FilesPanel {
                             .gap_1()
                             .child(
                                 button("files-delete-yes", "Delete")
-                                    .bg(rgb(0x7f1d1d))
-                                    .hover(|s| s.bg(rgb(0x991b1b)))
+                                    .bg(rgb(colors().bad_edge))
+                                    .hover(|s| s.bg(rgb(colors().bad_hover)))
                                     .on_click(cx.listener(|p, _, _, cx| p.confirm_delete(cx))),
                             )
                             .child(button("files-delete-no", "Cancel").on_click(cx.listener(
@@ -1843,9 +1862,9 @@ impl Render for FilesPanel {
                 }),
             );
         match &self.state {
-            State::Opening => body = body.child(note("Opening SFTP…".into(), MUTED)),
+            State::Opening => body = body.child(note("Opening SFTP…".into(), colors().muted)),
             State::Loading if self.entries.is_empty() => {
-                body = body.child(note("Loading…".into(), MUTED))
+                body = body.child(note("Loading…".into(), colors().muted))
             }
             State::Failed(why) => {
                 body = body.child(
@@ -1854,7 +1873,7 @@ impl Render for FilesPanel {
                         .items_center()
                         .gap_2()
                         .pr_3()
-                        .child(note(why.to_string(), BAD).flex_1())
+                        .child(note(why.to_string(), colors().bad).flex_1())
                         .child(
                             button("files-retry", "Try again")
                                 .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
@@ -1864,7 +1883,7 @@ impl Render for FilesPanel {
             _ => {}
         }
         if self.dir.is_some() && self.entries.is_empty() && self.state == State::Ready {
-            body = body.child(note("Empty folder.".into(), MUTED));
+            body = body.child(note("Empty folder.".into(), colors().muted));
         }
         if !self.entries.is_empty() {
             body = body.child(
@@ -1885,7 +1904,7 @@ impl Render for FilesPanel {
             .flex()
             .flex_col()
             .border_t_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .py_1();
         for ed in &self.edits {
             transfers = transfers.child(self.edit_row(ed, cx));
@@ -1894,7 +1913,7 @@ impl Render for FilesPanel {
             transfers = transfers.child(note(
                 "Right-click a file or folder for its actions; drop files here to upload them."
                     .into(),
-                MUTED,
+                colors().muted,
             ));
         }
         for t in &self.transfers {
@@ -1917,15 +1936,15 @@ impl Render for FilesPanel {
             .on_drop(cx.listener(|p, paths: &ExternalPaths, _, cx| {
                 p.upload(paths.paths().to_vec(), cx);
             }))
-            .drag_over::<ExternalPaths>(|s, _, _, _| s.bg(rgb(DROP)))
+            .drag_over::<ExternalPaths>(|s, _, _, _| s.bg(rgb(colors().drop)))
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(PANEL))
+            // The ground is the pane's, which rounds the window's corner.
             .border_l_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .text_sm()
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .when_some(self.menu, |d, (at, target)| {
                 d.child(self.context_menu(at, target, cx))
             })

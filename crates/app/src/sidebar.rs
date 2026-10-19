@@ -8,6 +8,7 @@ use gpui::{
 
 use crate::input::{Changed, TextInput};
 
+use crate::colors::colors;
 use crate::session::Status;
 use crate::workspace::{EditTarget, Workspace};
 
@@ -17,14 +18,6 @@ pub const MIN_WIDTH: f32 = 200.;
 pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
-pub const TEXT: u32 = 0xe2e8f0;
-pub const MUTED: u32 = 0x8a96aa;
-pub const LINE: u32 = 0x1e2736;
-const PANEL: u32 = 0x0d121c;
-const HOVER: u32 = 0x17233a;
-/// The Edit badge on a hovered host.
-const EDIT: u32 = 0xf59e0b;
-const EDIT_HOVER: u32 = 0xfbbf24;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Section {
@@ -33,6 +26,8 @@ pub struct Section {
     pub note: SharedString,
     /// The `[[group]]` it shows, which its Edit opens.
     pub group: Option<String>,
+    /// The group's color, as a chip before the title.
+    pub color: Option<u32>,
     pub rows: Vec<Row>,
 }
 
@@ -55,12 +50,13 @@ pub struct Row {
 }
 
 fn status_color(s: Status) -> u32 {
+    let c = colors();
     match s {
-        Status::Connecting => 0xf59e0b,
-        Status::Connected => 0x22c55e,
-        Status::Closed => 0x6b7588,
-        Status::Lost => 0xf97316,
-        Status::Failed => 0xef4444,
+        Status::Connecting => c.amber,
+        Status::Connected => c.ok,
+        Status::Closed => c.idle,
+        Status::Lost => c.lost,
+        Status::Failed => c.danger,
     }
 }
 
@@ -69,7 +65,7 @@ pub fn dot(status: Option<Status>) -> Div {
     let d = div().size(px(7.)).flex_shrink_0().rounded_full();
     match status {
         Some(s) => d.bg(rgb(status_color(s))),
-        None => d.border_1().border_color(rgb(0x5b6578)),
+        None => d.border_1().border_color(rgb(colors().faint)),
     }
 }
 
@@ -133,10 +129,10 @@ impl Render for Tip {
             .px(px(11.))
             .py(px(7.))
             .rounded(px(8.))
-            .bg(rgb(0x111a2a))
+            .bg(rgb(colors().chip))
             .border_1()
-            .border_color(rgb(0x2b3648))
-            .text_color(rgb(TEXT))
+            .border_color(rgb(colors().edge))
+            .text_color(rgb(colors().text))
             .child(
                 div()
                     .text_sm()
@@ -147,7 +143,7 @@ impl Render for Tip {
                 d.child(
                     div()
                         .text_xs()
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child(self.detail.clone()),
                 )
             })
@@ -233,9 +229,14 @@ impl Sidebar {
                 .justify_center()
                 .rounded_md()
                 .cursor_pointer()
-                .when(on, |d| d.bg(rgb(HOVER)))
-                .hover(|s| s.bg(rgb(0x1e2a40)))
-                .child(svg().path(icon).size(px(16.)).text_color(rgb(TEXT)))
+                .when(on, |d| d.bg(rgb(colors().hover)))
+                .hover(|s| s.bg(rgb(colors().selected)))
+                .child(
+                    svg()
+                        .path(icon)
+                        .size(px(16.))
+                        .text_color(rgb(colors().text)),
+                )
         };
         let (expand, find, add) = (
             self.workspace.clone(),
@@ -262,7 +263,13 @@ impl Sidebar {
             .enumerate()
         {
             if n > 0 {
-                tiles = tiles.child(div().w(px(24.)).h(px(1.)).my(px(2.)).bg(rgb(0x263042)));
+                tiles = tiles.child(
+                    div()
+                        .w(px(24.))
+                        .h(px(1.))
+                        .my(px(2.))
+                        .bg(rgb(colors().field_edge)),
+                );
             }
             for row in &section.rows {
                 id += 1;
@@ -284,7 +291,7 @@ impl Sidebar {
                     .into();
                 let (bg, fg) = match row.color {
                     Some(c) => (rgba((c << 8) | 0x2e), rgb(c)),
-                    None => (rgba(0x1a2333ff), rgb(0xcbd5e1)),
+                    None => (rgb(colors().button), rgb(colors().soft)),
                 };
                 tiles = tiles.child(
                     div()
@@ -312,7 +319,7 @@ impl Sidebar {
                                 .rounded(px(10.))
                                 .border_2()
                                 .border_color(if row.active {
-                                    rgba(0x38bdf8ff)
+                                    rgb(colors().accent)
                                 } else {
                                     rgba(0x00000000)
                                 })
@@ -327,21 +334,21 @@ impl Sidebar {
                                 div()
                                     .p(px(2.))
                                     .rounded_full()
-                                    .bg(rgb(PANEL))
+                                    .bg(rgb(colors().panel))
                                     .child(dot(row.status)),
                             ),
                         ),
                 );
             }
         }
+        // The ground is the workspace's, which rounds the window's corner.
         div()
             .size_full()
             .flex()
             .flex_col()
             .items_center()
-            .bg(rgb(PANEL))
             .border_r_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .child(
                 div()
                     .flex()
@@ -376,7 +383,7 @@ impl Sidebar {
                     .flex()
                     .justify_center()
                     .border_t_1()
-                    .border_color(rgb(LINE))
+                    .border_color(rgb(colors().line))
                     .child(
                         div()
                             .id("rail-new-host")
@@ -387,10 +394,10 @@ impl Sidebar {
                             .justify_center()
                             .rounded_md()
                             .border_1()
-                            .border_color(rgb(0x263042))
-                            .text_color(rgb(TEXT))
+                            .border_color(rgb(colors().field_edge))
+                            .text_color(rgb(colors().text))
                             .cursor_pointer()
-                            .hover(|s| s.bg(rgb(HOVER)))
+                            .hover(|s| s.bg(rgb(colors().hover)))
                             .on_click(move |_, window, cx| {
                                 let _ = add
                                     .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
@@ -438,7 +445,7 @@ impl Render for Sidebar {
                     .mt_2()
                     .text_xs()
                     .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .on_hover(cx.listener(move |s, over: &bool, _, cx| {
                         let now = if *over {
                             Some(n)
@@ -452,7 +459,22 @@ impl Render for Sidebar {
                             cx.notify();
                         }
                     }))
-                    .child(section.title.clone())
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(7.))
+                            .when_some(section.color, |d, c| {
+                                d.child(
+                                    div()
+                                        .size(px(8.))
+                                        .flex_shrink_0()
+                                        .rounded(px(2.))
+                                        .bg(rgb(c)),
+                                )
+                            })
+                            .child(section.title.to_uppercase()),
+                    )
                     .when(!over, |d| {
                         d.child(
                             div()
@@ -467,10 +489,10 @@ impl Render for Sidebar {
                                 .px_2()
                                 .py(px(1.))
                                 .rounded_md()
-                                .bg(rgb(EDIT))
-                                .text_color(rgb(0x1f1300))
+                                .bg(rgb(colors().amber))
+                                .text_color(rgb(colors().on_amber))
                                 .cursor_pointer()
-                                .hover(|s| s.bg(rgb(EDIT_HOVER)))
+                                .hover(|s| s.bg(rgb(colors().amber_hover)))
                                 .on_click(move |_, window, cx| {
                                     cx.stop_propagation();
                                     let name = group.clone();
@@ -486,7 +508,7 @@ impl Render for Sidebar {
                         .px_3()
                         .pb_1()
                         .text_xs()
-                        .text_color(rgb(0x5b6578))
+                        .text_color(rgb(colors().faint))
                         .child("No hosts yet"),
                 );
             }
@@ -514,17 +536,36 @@ impl Render for Sidebar {
                         }))
                         .flex()
                         .items_center()
-                        .gap_2()
+                        .gap(px(9.))
                         .h(px(30.))
-                        .px_2()
+                        .px(px(10.))
                         .mx_1()
                         .rounded_md()
                         .cursor_pointer()
-                        .hover(|s| s.bg(rgb(HOVER)))
+                        // The host of the active tab.
+                        .when(row.active, |d| d.bg(rgb(colors().selected)))
+                        .when(!row.active, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                         .on_click(move |_, window, cx| {
                             let _ = workspace.update(cx, |ws, cx| ws.open(&spec, window, cx));
                         })
-                        .child(dot(row.status))
+                        // A shell here has its icon; a host its color, or the
+                        // place for one, so the names line up.
+                        .child(if matches!(row.edit, EditTarget::Local) {
+                            svg()
+                                .path("icons/terminal.svg")
+                                .size(px(14.))
+                                .flex_shrink_0()
+                                .text_color(rgb(colors().soft))
+                                .into_any_element()
+                        } else {
+                            div()
+                                .w(px(3.))
+                                .h(px(14.))
+                                .flex_shrink_0()
+                                .rounded(px(2.))
+                                .when_some(row.color, |d, c| d.bg(rgb(c)))
+                                .into_any_element()
+                        })
                         .child(
                             div()
                                 .flex_1()
@@ -532,7 +573,7 @@ impl Render for Sidebar {
                                 .overflow_hidden()
                                 .text_ellipsis()
                                 .whitespace_nowrap()
-                                .text_color(rgb(TEXT))
+                                .text_color(rgb(colors().text))
                                 .child(row.name.clone()),
                         )
                         .when(!hovered, |d| {
@@ -543,7 +584,7 @@ impl Render for Sidebar {
                                     .text_ellipsis()
                                     .whitespace_nowrap()
                                     .text_xs()
-                                    .text_color(rgb(MUTED))
+                                    .text_color(rgb(colors().muted))
                                     .child(row.detail.clone()),
                             )
                         })
@@ -556,12 +597,12 @@ impl Render for Sidebar {
                                     .px_2()
                                     .py(px(1.))
                                     .rounded_md()
-                                    .bg(rgb(EDIT))
+                                    .bg(rgb(colors().amber))
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
-                                    .text_color(rgb(0x1f1300))
+                                    .text_color(rgb(colors().on_amber))
                                     .cursor_pointer()
-                                    .hover(|s| s.bg(rgb(EDIT_HOVER)))
+                                    .hover(|s| s.bg(rgb(colors().amber_hover)))
                                     .on_click(move |_, window, cx| {
                                         cx.stop_propagation();
                                         let edit = edit.clone();
@@ -570,7 +611,8 @@ impl Render for Sidebar {
                                     })
                                     .child("Edit"),
                             )
-                        }),
+                        })
+                        .child(dot(row.status)),
                 );
             }
         }
@@ -579,7 +621,7 @@ impl Render for Sidebar {
                 div()
                     .px_3()
                     .pt_3()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("No host matches."),
             );
         } else if self.sections.is_empty() {
@@ -587,7 +629,7 @@ impl Render for Sidebar {
                 div()
                     .px_3()
                     .pt_3()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("No hosts yet. Add one, or Host blocks to ~/.ssh/config."),
             );
         }
@@ -597,7 +639,7 @@ impl Render for Sidebar {
             .flex()
             .gap_2()
             .border_t_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .child(
                 div()
                     .id("new-host")
@@ -608,10 +650,10 @@ impl Render for Sidebar {
                     .justify_center()
                     .rounded_md()
                     .border_1()
-                    .border_color(rgb(0x263042))
-                    .text_color(rgb(TEXT))
+                    .border_color(rgb(colors().field_edge))
+                    .text_color(rgb(colors().text))
                     .cursor_pointer()
-                    .hover(|s| s.bg(rgb(HOVER)))
+                    .hover(|s| s.bg(rgb(colors().hover)))
                     .on_click(move |_, window, cx| {
                         let _ = workspace
                             .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
@@ -628,23 +670,23 @@ impl Render for Sidebar {
                     .justify_center()
                     .rounded_md()
                     .border_1()
-                    .border_color(rgb(0x263042))
-                    .text_color(rgb(TEXT))
+                    .border_color(rgb(colors().field_edge))
+                    .text_color(rgb(colors().text))
                     .cursor_pointer()
-                    .hover(|s| s.bg(rgb(HOVER)))
+                    .hover(|s| s.bg(rgb(colors().hover)))
                     .on_click(move |_, window, cx| {
                         let _ = for_group.update(cx, |ws, cx| ws.edit_group(None, window, cx));
                     })
                     .child("+ Group"),
             );
         let collapse = self.workspace.clone();
+        // The ground is the workspace's, which rounds the window's corner.
         div()
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(PANEL))
             .border_r_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .text_sm()
             .on_key_down(cx.listener(Self::on_key))
             .child(
@@ -665,7 +707,7 @@ impl Render for Sidebar {
                                 div()
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
-                                    .text_color(rgb(MUTED))
+                                    .text_color(rgb(colors().muted))
                                     .child("HOSTS"),
                             )
                             .child(
@@ -678,7 +720,7 @@ impl Render for Sidebar {
                                     .justify_center()
                                     .rounded_md()
                                     .cursor_pointer()
-                                    .hover(|s| s.bg(rgb(HOVER)))
+                                    .hover(|s| s.bg(rgb(colors().hover)))
                                     .on_click(move |_, window, cx| {
                                         let _ = collapse.update(cx, |ws, cx| {
                                             ws.set_sidebar_collapsed(true, window, cx)
@@ -688,7 +730,7 @@ impl Render for Sidebar {
                                         svg()
                                             .path("icons/panel-close.svg")
                                             .size(px(16.))
-                                            .text_color(rgb(MUTED)),
+                                            .text_color(rgb(colors().muted)),
                                     ),
                             ),
                     )
@@ -700,10 +742,10 @@ impl Render for Sidebar {
                             .items_center()
                             .rounded(px(6.))
                             .border_1()
-                            .border_color(rgb(0x263042))
-                            .bg(rgb(0x0b0f17))
+                            .border_color(rgb(colors().field_edge))
+                            .bg(rgb(colors().field))
                             .text_xs()
-                            .text_color(rgb(TEXT))
+                            .text_color(rgb(colors().text))
                             .child(self.filter.clone()),
                     ),
             )

@@ -7,9 +7,10 @@ use gpui::{
     ScrollHandle, SharedString, Subscription, Window, div, prelude::*, px, rgb,
 };
 
+use crate::colors::colors;
 use crate::input::{Changed, TextInput};
 use crate::session::Status;
-use crate::sidebar::{MUTED, TEXT, dot};
+use crate::sidebar::dot;
 
 /// What the palette asks the workspace to do.
 pub enum PaletteEvent {
@@ -412,7 +413,7 @@ impl Render for Palette {
                         .pb_1()
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child(e.group),
                 );
             }
@@ -429,8 +430,8 @@ impl Render for Palette {
                     .py(px(7.))
                     .rounded_md()
                     .cursor_pointer()
-                    .when(selected, |d| d.bg(rgb(0x17233a)))
-                    .when(!selected, |d| d.hover(|s| s.bg(rgb(0x141c2b))))
+                    .when(selected, |d| d.bg(rgb(colors().selected)))
+                    .when(!selected, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |p, e: &gpui::ClickEvent, _, cx| {
                         p.choose(i, e.modifiers().alt, cx)
                     }))
@@ -443,7 +444,7 @@ impl Render for Palette {
                             .min_w_0()
                             .child(
                                 div()
-                                    .text_color(rgb(TEXT))
+                                    .text_color(rgb(colors().text))
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
@@ -453,7 +454,7 @@ impl Render for Palette {
                                 d.child(
                                     div()
                                         .text_xs()
-                                        .text_color(rgb(MUTED))
+                                        .text_color(rgb(colors().muted))
                                         .overflow_hidden()
                                         .text_ellipsis()
                                         .whitespace_nowrap()
@@ -465,12 +466,17 @@ impl Render for Palette {
                         d.child(
                             div()
                                 .text_xs()
-                                .text_color(rgb(0xf87171))
+                                .text_color(rgb(colors().bad))
                                 .child("Enter again to forget"),
                         )
                     })
                     .when(!armed && selected && !e.hint.is_empty(), |d| {
-                        d.child(div().text_xs().text_color(rgb(MUTED)).child(e.hint.clone()))
+                        d.child(
+                            div()
+                                .text_xs()
+                                .text_color(rgb(colors().muted))
+                                .child(e.hint.clone()),
+                        )
                     }),
             );
         }
@@ -479,7 +485,7 @@ impl Render for Palette {
                 div()
                     .px_3()
                     .py_2()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("Nothing matches."),
             );
         }
@@ -495,9 +501,9 @@ impl Render for Palette {
             .w(px(640.))
             .flex()
             .flex_col()
-            .bg(rgb(0x111826))
+            .bg(rgb(colors().raised))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .rounded_lg()
             .shadow_lg()
             .overflow_hidden()
@@ -513,12 +519,12 @@ impl Render for Palette {
                     .h(px(48.))
                     .px_4()
                     .border_b_1()
-                    .border_color(rgb(0x1f2937))
+                    .border_color(rgb(colors().line))
                     .text_base()
-                    .text_color(rgb(TEXT))
-                    .child(div().text_color(rgb(MUTED)).child("›"))
+                    .text_color(rgb(colors().text))
+                    .child(div().text_color(rgb(colors().muted)).child("›"))
                     .child(self.input.clone())
-                    .child(div().text_xs().text_color(rgb(MUTED)).child("Esc")),
+                    .child(div().text_xs().text_color(rgb(colors().muted)).child("Esc")),
             )
             .child(list)
             .child(
@@ -526,9 +532,9 @@ impl Render for Palette {
                     .px_4()
                     .py_2()
                     .border_t_1()
-                    .border_color(rgb(0x1f2937))
+                    .border_color(rgb(colors().line))
                     .text_xs()
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child(footer),
             )
     }

@@ -15,6 +15,7 @@ use shellwing_config::{
     Color, CursorStyle, HostKey, LogFormat, OnDisconnect, Scrollbar, SettingValue, Settings, Theme,
 };
 
+use crate::colors::colors;
 use crate::input::TextInput;
 use crate::keys_view::KeysView;
 use crate::known_hosts_view::KnownHostsView;
@@ -22,19 +23,6 @@ use crate::look::ui;
 use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
 use crate::workspace::Workspace;
-
-const BG: u32 = 0x0b0f17;
-const BAR: u32 = 0x0f1522;
-const NAV: u32 = 0x0d121c;
-const LINE: u32 = 0x1e2736;
-const RULE: u32 = 0x1f2937;
-const FIELD_EDGE: u32 = 0x263042;
-const TEXT: u32 = 0xe2e8f0;
-const SOFT: u32 = 0xb6c0cf;
-const LABEL: u32 = 0xa3aec0;
-const MUTED: u32 = 0x8a96aa;
-const ON: u32 = 0x17233a;
-const ACCENT: u32 = 0x38bdf8;
 
 pub enum SettingsEvent {
     Close,
@@ -350,12 +338,16 @@ impl SettingsView {
                     .justify_center()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(if on { ON } else { BG }))
+                    .border_color(rgb(if on {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(if on { colors().selected } else { colors().page }))
                     .text_size(ui(12.5))
-                    .text_color(rgb(if on { TEXT } else { SOFT }))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
                     .cursor_pointer()
-                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |v, _, _, cx| pick(v, value, cx)))
                     .child(label),
             );
@@ -417,8 +409,12 @@ impl SettingsView {
                     .justify_between()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if open { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(BG))
+                    .border_color(rgb(if open {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().page))
                     .cursor_pointer()
                     .on_click(cx.listener(move |v, _, _, cx| {
                         v.fonts_open = if v.fonts_open == Some(which) {
@@ -435,7 +431,7 @@ impl SettingsView {
                             .whitespace_nowrap()
                             .child(shown),
                     )
-                    .child(div().text_color(rgb(MUTED)).child("▾")),
+                    .child(div().text_color(rgb(colors().muted)).child("▾")),
             );
         if open {
             let n = choices.len();
@@ -462,8 +458,8 @@ impl SettingsView {
                                 .items_center()
                                 .rounded(px(4.))
                                 .cursor_pointer()
-                                .when(on, |d| d.bg(rgb(ON)))
-                                .hover(|s| s.bg(rgb(0x1a2333)))
+                                .when(on, |d| d.bg(rgb(colors().selected)))
+                                .hover(|s| s.bg(rgb(colors().hover)))
                                 .when_some(value, |d, f| d.font_family(f))
                                 .on_click(cx.listener(move |v, _, _, cx| {
                                     v.fonts_open = None;
@@ -485,8 +481,8 @@ impl SettingsView {
                     .p_1()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(0x2b3648))
-                    .bg(rgb(0x111826))
+                    .border_color(rgb(colors().edge))
+                    .bg(rgb(colors().raised))
                     .child(list),
             );
         }
@@ -598,15 +594,15 @@ impl SettingsView {
                         .items_center()
                         .rounded(px(6.))
                         .border_1()
-                        .border_color(rgb(FIELD_EDGE))
-                        .bg(rgb(BG))
+                        .border_color(rgb(colors().field_edge))
+                        .bg(rgb(colors().page))
                         .text_size(ui(13.))
                         .child(self.editor_input.clone()),
                 )
                 .child(
                     div()
                         .text_size(ui(11.5))
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child("The file's path is added at the end. Enter saves."),
                 );
         }
@@ -648,7 +644,7 @@ impl SettingsView {
                         .gap_3()
                         .text_size(ui(12.5))
                         .child(div().w(px(130.)).flex_shrink_0().child(name))
-                        .child(div().text_color(rgb(MUTED)).child(what)),
+                        .child(div().text_color(rgb(colors().muted)).child(what)),
                 );
             }
             page = page
@@ -662,7 +658,7 @@ impl SettingsView {
                         .child(
                             div()
                                 .text_size(ui(12.5))
-                                .text_color(rgb(LABEL))
+                                .text_color(rgb(colors().label))
                                 .child(shown_path(&dir)),
                         )
                         .child(
@@ -685,7 +681,7 @@ impl SettingsView {
                 .h(px(46.))
                 .rounded(px(8.))
                 .border_2()
-                .border_color(rgb(if on { ACCENT } else { RULE }));
+                .border_color(rgb(if on { colors().accent } else { colors().line }));
             let swatch = match &t.gradient {
                 Some(g) if g.stops.len() >= 2 => swatch.bg(linear_gradient(
                     g.angle,
@@ -706,7 +702,7 @@ impl SettingsView {
                 .child(
                     div()
                         .text_size(ui(11.5))
-                        .text_color(rgb(if on { TEXT } else { LABEL }))
+                        .text_color(rgb(if on { colors().text } else { colors().label }))
                         .overflow_hidden()
                         .text_ellipsis()
                         .whitespace_nowrap()
@@ -986,7 +982,7 @@ impl SettingsView {
             .p(px(12.))
             .rounded(px(8.))
             .border_1()
-            .border_color(rgb(LINE))
+            .border_color(rgb(colors().line))
             .overflow_hidden()
             .font_family(font)
             .text_size(px(size))
@@ -1025,11 +1021,11 @@ impl SettingsView {
                 div()
                     .p(px(10.))
                     .rounded(px(6.))
-                    .bg(rgb(0x0d121c))
+                    .bg(rgb(colors().panel))
                     .border_1()
-                    .border_color(rgb(LINE))
+                    .border_color(rgb(colors().line))
                     .text_size(ui(11.5))
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("# config.toml")
                     .child("[appearance]")
                     .child(format!("theme = \"{}\"", a.theme))
@@ -1082,8 +1078,8 @@ impl SettingsView {
                         .items_center()
                         .rounded(px(6.))
                         .border_1()
-                        .border_color(rgb(FIELD_EDGE))
-                        .bg(rgb(BG))
+                        .border_color(rgb(colors().field_edge))
+                        .bg(rgb(colors().page))
                         .text_size(ui(13.))
                         .child(self.shell_input.clone()),
                 ),
@@ -1229,9 +1225,9 @@ impl SettingsView {
                         div()
                             .px_2()
                             .rounded(px(4.))
-                            .bg(rgb(0x111a2a))
+                            .bg(rgb(colors().chip))
                             .border_1()
-                            .border_color(rgb(0x2b3648))
+                            .border_color(rgb(colors().edge))
                             .text_size(ui(12.))
                             .child(key),
                     ),
@@ -1269,7 +1265,7 @@ impl SettingsView {
                     .child(
                         div()
                             .text_size(ui(12.5))
-                            .text_color(rgb(LABEL))
+                            .text_color(rgb(colors().label))
                             .child(shown),
                     )
                     .when_some(path.filter(|p| p.exists()), |d, p| {
@@ -1450,7 +1446,7 @@ fn heading(s: &str) -> gpui::Div {
     div()
         .text_size(ui(11.))
         .font_weight(FontWeight::SEMIBOLD)
-        .text_color(rgb(MUTED))
+        .text_color(rgb(colors().muted))
         .child(s.to_uppercase())
 }
 
@@ -1464,7 +1460,7 @@ fn heading2(s: &str) -> gpui::Div {
 fn label(s: &str) -> gpui::Div {
     div()
         .text_size(ui(12.))
-        .text_color(rgb(LABEL))
+        .text_color(rgb(colors().label))
         .child(s.to_string())
 }
 
@@ -1478,7 +1474,7 @@ fn labelled(title: &str, control: gpui::Div) -> gpui::Div {
 }
 
 fn rule() -> gpui::Div {
-    div().h(px(1.)).w_full().bg(rgb(RULE))
+    div().h(px(1.)).w_full().bg(rgb(colors().line))
 }
 
 /// A setting: its name and what it does on the left, the control on the right.
@@ -1489,7 +1485,7 @@ fn setting(title: &str, what: &str, control: gpui::Div) -> gpui::Div {
         .gap(px(16.))
         .py(px(10.))
         .border_b_1()
-        .border_color(rgb(RULE))
+        .border_color(rgb(colors().line))
         .child(
             div()
                 .w(px(300.))
@@ -1500,7 +1496,7 @@ fn setting(title: &str, what: &str, control: gpui::Div) -> gpui::Div {
                 .child(
                     div()
                         .text_size(ui(11.5))
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child(what.to_string()),
                 ),
         )
@@ -1520,7 +1516,7 @@ fn toggle(
         .gap_3()
         .py(px(10.))
         .border_b_1()
-        .border_color(rgb(RULE))
+        .border_color(rgb(colors().line))
         .cursor_pointer()
         .on_click(click)
         .child(
@@ -1533,10 +1529,14 @@ fn toggle(
                 .justify_center()
                 .rounded(px(4.))
                 .border_1()
-                .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
-                .bg(rgb(if on { ACCENT } else { BG }))
+                .border_color(rgb(if on {
+                    colors().accent
+                } else {
+                    colors().field_edge
+                }))
+                .bg(rgb(if on { colors().accent } else { colors().page }))
                 .text_size(ui(11.))
-                .text_color(rgb(0x04121c))
+                .text_color(rgb(colors().on_accent))
                 .when(on, |d| d.child("✓")),
         )
         .child(
@@ -1548,7 +1548,7 @@ fn toggle(
                 .child(
                     div()
                         .text_size(ui(11.5))
-                        .text_color(rgb(MUTED))
+                        .text_color(rgb(colors().muted))
                         .child(what.to_string()),
                 ),
         )
@@ -1563,11 +1563,11 @@ fn small_button(id: &'static str, label: &str) -> gpui::Stateful<gpui::Div> {
         .items_center()
         .rounded(px(6.))
         .border_1()
-        .border_color(rgb(FIELD_EDGE))
+        .border_color(rgb(colors().field_edge))
         .text_size(ui(12.))
-        .text_color(rgb(SOFT))
+        .text_color(rgb(colors().soft))
         .cursor_pointer()
-        .hover(|s| s.bg(rgb(0x121a28)).text_color(rgb(TEXT)))
+        .hover(|s| s.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
         .child(label.to_string())
 }
 
@@ -1588,14 +1588,14 @@ impl Render for SettingsView {
                 .gap(px(10.))
                 .pl(px(14.))
                 .pr(px(6.))
-                .bg(rgb(BAR))
+                .bg(rgb(colors().surface))
                 .border_b_1()
-                .border_color(rgb(LINE))
+                .border_color(rgb(colors().line))
                 .child(
                     gpui::svg()
                         .path("icons/logo.svg")
                         .size(px(16.))
-                        .text_color(rgb(ACCENT)),
+                        .text_color(rgb(colors().accent)),
                 )
                 .child(div().font_weight(FontWeight::SEMIBOLD).child("Settings"))
                 .child(div().flex_1())
@@ -1613,23 +1613,26 @@ impl Render for SettingsView {
                         .items_center()
                         .justify_center()
                         .rounded(px(6.))
-                        .text_color(rgb(SOFT))
+                        .text_color(rgb(colors().soft))
                         .cursor_pointer()
-                        .hover(|s| s.bg(rgb(0x1a2333)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                         .on_click(cx.listener(|_, _, _, cx| cx.emit(SettingsEvent::Close)))
                         .child("✕"),
                 );
+        // Settings fills the window's body, its bottom corners too.
+        let corners = crate::chrome::BottomCorners::current(cx);
         let mut nav = div()
             .w(px(220.))
+            .rounded_bl(corners.left)
             .flex_shrink_0()
             .flex()
             .flex_col()
             .gap(px(2.))
             .px(px(8.))
             .py(px(12.))
-            .bg(rgb(NAV))
+            .bg(rgb(colors().panel))
             .border_r_1()
-            .border_color(rgb(LINE));
+            .border_color(rgb(colors().line));
         for (n, (p, name)) in PAGES.iter().enumerate() {
             let (p, on) = (*p, *p == self.page);
             nav = nav.child(
@@ -1640,10 +1643,14 @@ impl Render for SettingsView {
                     .flex()
                     .items_center()
                     .rounded(px(6.))
-                    .text_color(rgb(if on { TEXT } else { SOFT }))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
                     .cursor_pointer()
-                    .when(on, |d| d.bg(rgb(ON)).border_l_2().border_color(rgb(ACCENT)))
-                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .when(on, |d| {
+                        d.bg(rgb(colors().selected))
+                            .border_l_2()
+                            .border_color(rgb(colors().accent))
+                    })
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |v, _, _, cx| {
                         v.page = p;
                         v.fonts_open = None;
@@ -1686,16 +1693,17 @@ impl Render for SettingsView {
             Page::Vault => self.vault(cx),
             Page::About => self.about(),
         };
-        div()
+        corners
+            .round(div())
             .id("settings")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(BG))
+            .bg(rgb(colors().page))
             .text_size(ui(13.))
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .child(header)
             .child(
                 div().flex_1().min_h_0().flex().child(nav).child(

@@ -9,9 +9,9 @@ use gpui::{
 };
 use shellwing_config::{Group, HOST_COLORS, Hosts, Store};
 
+use crate::colors::colors;
 use crate::host_editor::{
-    ACCENT, BAD, BG, EDGE, FIELD, FIELD_EDGE, FOOT, LABEL, MUTED, ON, RULE, TEXT, hint_text,
-    label_text, outline_button, primary_button, problem_text, section, text_button,
+    hint_text, label_text, outline_button, primary_button, problem_text, section, text_button,
 };
 use crate::input::TextInput;
 use crate::look::ui;
@@ -188,7 +188,7 @@ impl Render for GroupEditor {
             .color
             .as_deref()
             .and_then(shellwing_config::color_rgb)
-            .unwrap_or(ACCENT);
+            .unwrap_or(colors().accent);
         let header = div()
             .h(px(56.))
             .flex_shrink_0()
@@ -197,7 +197,7 @@ impl Render for GroupEditor {
             .gap(px(10.))
             .px(px(20.))
             .border_b_1()
-            .border_color(rgb(RULE))
+            .border_color(rgb(colors().line))
             .child(div().size(px(10.)).rounded(px(3.)).bg(rgb(dot)))
             .child(
                 div()
@@ -210,13 +210,16 @@ impl Render for GroupEditor {
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(title.clone()),
             )
-            .child(div().text_size(ui(12.)).text_color(rgb(MUTED)).child(
-                if self.original.is_some() {
-                    "Group in hosts.toml"
-                } else {
-                    "Not saved yet"
-                },
-            ))
+            .child(
+                div()
+                    .text_size(ui(12.))
+                    .text_color(rgb(colors().muted))
+                    .child(if self.original.is_some() {
+                        "Group in hosts.toml"
+                    } else {
+                        "Not saved yet"
+                    }),
+            )
             .child(
                 div()
                     .id("group-close")
@@ -225,9 +228,9 @@ impl Render for GroupEditor {
                     .items_center()
                     .justify_center()
                     .rounded(px(6.))
-                    .text_color(rgb(0xb6c0cf))
+                    .text_color(rgb(colors().soft))
                     .cursor_pointer()
-                    .hover(|s| s.bg(rgb(0x1a2333)))
+                    .hover(|s| s.bg(rgb(colors().hover)))
                     .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close)))
                     .child("✕"),
             );
@@ -241,13 +244,13 @@ impl Render for GroupEditor {
             .rounded(px(6.))
             .border_1()
             .border_color(rgb(if self.problem.is_some() {
-                BAD
+                colors().bad
             } else if focused {
-                ACCENT
+                colors().accent
             } else {
-                FIELD_EDGE
+                colors().field_edge
             }))
-            .bg(rgb(FIELD))
+            .bg(rgb(colors().field))
             .text_size(ui(13.))
             .child(self.name.clone());
 
@@ -257,13 +260,17 @@ impl Render for GroupEditor {
                 .size(px(20.))
                 .rounded_full()
                 .border_2()
-                .border_color(rgb(if self.color.is_none() { TEXT } else { EDGE }))
+                .border_color(rgb(if self.color.is_none() {
+                    colors().text
+                } else {
+                    colors().edge
+                }))
                 .cursor_pointer()
                 .flex()
                 .items_center()
                 .justify_center()
                 .text_size(ui(10.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .on_click(cx.listener(|e, _, _, cx| {
                     e.color = None;
                     cx.notify();
@@ -281,7 +288,7 @@ impl Render for GroupEditor {
                     .size(px(20.))
                     .rounded_full()
                     .bg(rgb(value))
-                    .when(on, |d| d.border_2().border_color(rgb(TEXT)))
+                    .when(on, |d| d.border_2().border_color(rgb(colors().text)))
                     .cursor_pointer()
                     .on_click(cx.listener(move |e, _, _, cx| {
                         e.color = Some(name.to_string());
@@ -316,8 +323,12 @@ impl Render for GroupEditor {
                     .justify_between()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if self.themes_open { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(FIELD))
+                    .border_color(rgb(if self.themes_open {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
                     .text_size(ui(13.))
                     .cursor_pointer()
                     .on_click(cx.listener(|e, _, _, cx| {
@@ -325,7 +336,7 @@ impl Render for GroupEditor {
                         cx.notify();
                     }))
                     .child(theme_label)
-                    .child(div().text_color(rgb(MUTED)).child("▾")),
+                    .child(div().text_color(rgb(colors().muted)).child("▾")),
             );
         if self.themes_open {
             let mut list = div()
@@ -337,8 +348,8 @@ impl Render for GroupEditor {
                 .p_1()
                 .rounded(px(6.))
                 .border_1()
-                .border_color(rgb(EDGE))
-                .bg(rgb(0x111826));
+                .border_color(rgb(colors().edge))
+                .bg(rgb(colors().raised));
             let mut choices = vec![(None, "Same as the app".to_string())];
             choices.extend(
                 self.themes
@@ -355,8 +366,8 @@ impl Render for GroupEditor {
                         .rounded(px(4.))
                         .text_size(ui(13.))
                         .cursor_pointer()
-                        .when(on, |d| d.bg(rgb(ON)))
-                        .hover(|s| s.bg(rgb(0x1a2333)))
+                        .when(on, |d| d.bg(rgb(colors().selected)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                         .on_click(cx.listener(move |e, _, _, cx| {
                             e.theme = value.clone();
                             e.themes_open = false;
@@ -402,7 +413,12 @@ impl Render for GroupEditor {
             )
             .child(theme)
             .child(hint_text("A host's own theme wins over its group's."))
-            .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(who));
+            .child(
+                div()
+                    .text_size(ui(12.5))
+                    .text_color(rgb(colors().label))
+                    .child(who),
+            );
 
         let mut buttons = div().flex().items_center().gap_2();
         if self.confirm_delete {
@@ -417,11 +433,11 @@ impl Render for GroupEditor {
                     )
                 }))
                 .child(
-                    text_button("group-delete-yes", "Delete", BAD)
+                    text_button("group-delete-yes", "Delete", colors().bad)
                         .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
                 )
                 .child(
-                    text_button("group-delete-no", "Cancel", LABEL).on_click(cx.listener(
+                    text_button("group-delete-no", "Cancel", colors().label).on_click(cx.listener(
                         |e, _, _, cx| {
                             e.confirm_delete = false;
                             cx.notify();
@@ -430,7 +446,7 @@ impl Render for GroupEditor {
                 );
         } else if self.original.is_some() {
             buttons = buttons.child(
-                text_button("group-delete", "Delete", BAD)
+                text_button("group-delete", "Delete", colors().bad)
                     .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
             );
         }
@@ -445,18 +461,21 @@ impl Render for GroupEditor {
                     .on_click(cx.listener(|e, _, _, cx| e.save(cx))),
             );
 
+        // At the window's right edge: its bottom corner is the window's.
+        let corner = crate::chrome::BottomCorners::current(cx).right;
         div()
             .id("group-editor")
+            .rounded_br(corner)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(BG))
+            .bg(rgb(colors().surface))
             .border_l_1()
-            .border_color(rgb(EDGE))
+            .border_color(rgb(colors().edge))
             .text_size(ui(13.))
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .child(header)
             .child(
                 div()
@@ -472,8 +491,9 @@ impl Render for GroupEditor {
                     .px(px(20.))
                     .py(px(12.))
                     .border_t_1()
-                    .border_color(rgb(RULE))
-                    .bg(rgb(FOOT))
+                    .border_color(rgb(colors().line))
+                    .rounded_br(corner)
+                    .bg(rgb(colors().panel))
                     .child(buttons),
             )
     }

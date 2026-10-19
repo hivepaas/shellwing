@@ -8,29 +8,17 @@ use std::path::{Path, PathBuf};
 
 use gpui::{
     ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton,
-    Pixels, Point, Render, SharedString, WeakEntity, Window, anchored, deferred, div, point,
-    prelude::*, px, rgb, rgba,
+    Pixels, Point, Render, SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*,
+    px, rgb,
 };
 use shellwing_ssh::keys::{self, KeyFile, KeyInfo, KeyKind, ReadError};
 
+use crate::colors::colors;
 use crate::host_editor::{hint_text, label_text, outline_button, primary_button, problem_text};
 use crate::input::TextInput;
 use crate::look::ui;
 use crate::secrets::VaultSlot;
 use crate::workspace::{KeyToInstall, Workspace};
-
-const TEXT: u32 = 0xe2e8f0;
-const SOFT: u32 = 0xb6c0cf;
-const LABEL: u32 = 0xa3aec0;
-const MUTED: u32 = 0x8a96aa;
-const RULE: u32 = 0x1f2937;
-const FIELD_EDGE: u32 = 0x263042;
-const ACCENT: u32 = 0x38bdf8;
-const ON: u32 = 0x17233a;
-const CARD: u32 = 0x0f1522;
-const BAD: u32 = 0xf87171;
-const GOOD: u32 = 0x86efac;
-const WARN: u32 = 0xfbbf24;
 
 /// A key the vault keeps, as listed.
 #[derive(Clone)]
@@ -831,9 +819,9 @@ impl KeysView {
     }
 
     fn kind_chip(kind: &str) -> gpui::Div {
-        Self::chip(kind.to_string(), SOFT, 0x111a2a)
+        Self::chip(kind.to_string(), colors().soft, colors().chip)
             .border_1()
-            .border_color(rgb(FIELD_EDGE))
+            .border_color(rgb(colors().field_edge))
     }
 
     fn small(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
@@ -845,10 +833,10 @@ impl KeysView {
             .items_center()
             .flex_shrink_0()
             .rounded(px(6.))
-            .bg(rgb(0x1a2333))
+            .bg(rgb(colors().button))
             .text_size(ui(12.))
             .cursor_pointer()
-            .hover(|s| s.bg(rgb(0x243047)))
+            .hover(|s| s.bg(rgb(colors().button_hover)))
             .child(label.to_string())
     }
 
@@ -858,21 +846,21 @@ impl KeysView {
             .flex_col()
             .rounded(px(8.))
             .border_1()
-            .border_color(rgb(RULE));
+            .border_color(rgb(colors().line));
         if rows.is_empty() {
             list = list.child(
                 div()
                     .px(px(12.))
                     .py(px(10.))
                     .text_size(ui(12.))
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child(empty.to_string()),
             );
         }
         for (i, r) in rows.into_iter().enumerate() {
             list = list.child(
                 div()
-                    .when(i > 0, |d| d.border_t_1().border_color(rgb(RULE)))
+                    .when(i > 0, |d| d.border_t_1().border_color(rgb(colors().line)))
                     .child(r),
             );
         }
@@ -889,13 +877,13 @@ impl KeysView {
                         div()
                             .text_size(ui(11.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(rgb(MUTED))
+                            .text_color(rgb(colors().muted))
                             .child(title.to_uppercase()),
                     )
                     .child(
                         div()
                             .text_size(ui(11.5))
-                            .text_color(rgb(MUTED))
+                            .text_color(rgb(colors().muted))
                             .child(note.to_string()),
                     ),
             )
@@ -930,7 +918,7 @@ impl KeysView {
                     .child(
                         div()
                             .text_size(ui(11.5))
-                            .text_color(rgb(MUTED))
+                            .text_color(rgb(colors().muted))
                             .overflow_hidden()
                             .text_ellipsis()
                             .whitespace_nowrap()
@@ -984,7 +972,7 @@ impl KeysView {
                         ))
                         .child(
                             Self::small(("kept-more", i), "⋯")
-                                .when(open, |d| d.bg(rgb(0x243047)))
+                                .when(open, |d| d.bg(rgb(colors().button_hover)))
                                 .on_mouse_down(
                                     MouseButton::Left,
                                     cx.listener(move |v, e: &gpui::MouseDownEvent, _, cx| {
@@ -1011,15 +999,23 @@ impl KeysView {
             .enumerate()
             .map(|(i, f)| {
                 let pass = if !f.file.encrypted {
-                    Self::chip("no passphrase", WARN, 0x2a2110)
+                    Self::chip("no passphrase", colors().warn, colors().warn_bg)
                 } else if f.saved {
-                    Self::chip("passphrase saved in the vault", GOOD, 0x12291d)
+                    Self::chip(
+                        "passphrase saved in the vault",
+                        colors().good,
+                        colors().good_bg,
+                    )
                 } else {
-                    Self::chip("passphrase", SOFT, 0x111a2a)
+                    Self::chip("passphrase", colors().soft, colors().chip)
                 };
                 let mut marks = vec![Self::kind_chip(&f.file.info.kind), pass];
                 if f.kept {
-                    marks.push(Self::chip("also in the vault", SOFT, 0x111a2a));
+                    marks.push(Self::chip(
+                        "also in the vault",
+                        colors().soft,
+                        colors().chip,
+                    ));
                 }
                 let mut detail = vec![f.file.info.fingerprint.clone()];
                 if !f.file.info.comment.is_empty() {
@@ -1046,7 +1042,7 @@ impl KeysView {
                 let open = self.menu.is_some_and(|(_, m)| m == MenuFor::File(i));
                 actions = actions.child(
                     Self::small(("file-more", i), "⋯")
-                        .when(open, |d| d.bg(rgb(0x243047)))
+                        .when(open, |d| d.bg(rgb(colors().button_hover)))
                         .on_mouse_down(
                             MouseButton::Left,
                             cx.listener(move |v, e: &gpui::MouseDownEvent, _, cx| {
@@ -1155,11 +1151,17 @@ impl KeysView {
                 .rounded(px(5.))
                 .whitespace_nowrap()
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(ON)))
-                .text_color(rgb(if danger { BAD } else { TEXT }))
+                .hover(|s| s.bg(rgb(colors().selected)))
+                .text_color(rgb(if danger { colors().bad } else { colors().text }))
                 .child(label.to_string())
         };
-        let line = || div().h(px(1.)).mx(px(6.)).my(px(4.)).bg(rgb(FIELD_EDGE));
+        let line = || {
+            div()
+                .h(px(1.))
+                .mx(px(6.))
+                .my(px(4.))
+                .bg(rgb(colors().field_edge))
+        };
         let mut menu = div()
             .id("key-menu")
             .min_w(px(190.))
@@ -1167,9 +1169,9 @@ impl KeysView {
             .flex()
             .flex_col()
             .rounded(px(8.))
-            .bg(rgb(0x111a2a))
+            .bg(rgb(colors().chip))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_size(ui(13.))
             .on_mouse_down_out(cx.listener(|v, _, _, cx| {
@@ -1331,8 +1333,12 @@ impl KeysView {
                     .items_center()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if focused { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(0x0b0f17))
+                    .border_color(rgb(if focused {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
                     .text_size(ui(13.))
                     .when_some(mono, |d, f| d.font_family(f))
                     .child(input.clone()),
@@ -1390,11 +1396,11 @@ impl KeysView {
             .px(px(24.))
             .py(px(22.))
             .rounded(px(12.))
-            .bg(rgb(CARD))
+            .bg(rgb(colors().surface))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation());
         let body = match d {
             Dialog::Generate {
@@ -1408,7 +1414,7 @@ impl KeysView {
                     .flex()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(FIELD_EDGE))
+                    .border_color(rgb(colors().field_edge))
                     .overflow_hidden();
                 for (n, k) in [KeyKind::Ed25519, KeyKind::EcdsaP256, KeyKind::Rsa4096]
                     .into_iter()
@@ -1424,11 +1430,17 @@ impl KeysView {
                             .items_center()
                             .justify_center()
                             .text_size(ui(12.5))
-                            .text_color(rgb(if on { TEXT } else { SOFT }))
+                            .text_color(rgb(if on { colors().text } else { colors().soft }))
                             .cursor_pointer()
-                            .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
-                            .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
-                            .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                            .when(n > 0, |d| {
+                                d.border_l_1().border_color(rgb(colors().field_edge))
+                            })
+                            .when(on, |d| {
+                                d.bg(rgb(colors().selected))
+                                    .border_b_2()
+                                    .border_color(rgb(colors().accent))
+                            })
+                            .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                             .on_click(cx.listener(move |v, _, _, cx| {
                                 if let Some(Dialog::Generate { kind, .. }) = &mut v.dialog {
                                     *kind = k;
@@ -1468,11 +1480,11 @@ impl KeysView {
                             .px(px(12.))
                             .py(px(10.))
                             .rounded(px(8.))
-                            .bg(rgb(0x111a2a))
+                            .bg(rgb(colors().chip))
                             .border_1()
-                            .border_color(rgb(RULE))
+                            .border_color(rgb(colors().line))
                             .text_size(ui(12.5))
-                            .text_color(rgb(SOFT))
+                            .text_color(rgb(colors().soft))
                             .child(
                                 "Kept in the vault, encrypted, and synced to your other devices, so it needs no passphrase. To use it with ssh or git too, export it to a file, with a passphrase if you like.",
                             ),
@@ -1497,7 +1509,7 @@ impl KeysView {
                 );
                 let k = kept.clone();
                 card.child(title(format!("{} is ready", kept.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(
+                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(
                         "A server lets this key in once its public key is in the server's ~/.ssh/authorized_keys. Install it on a host from here, or copy it into a web console (GitHub, GitLab, a cloud provider).",
                     ))
                     .child(
@@ -1512,7 +1524,7 @@ impl KeysView {
                                     .child(
                                         div()
                                             .text_size(ui(11.5))
-                                            .text_color(rgb(MUTED))
+                                            .text_color(rgb(colors().muted))
                                             .child(kept.info.fingerprint.clone()),
                                     ),
                             )
@@ -1524,16 +1536,16 @@ impl KeysView {
                                     .px(px(12.))
                                     .py(px(10.))
                                     .rounded(px(8.))
-                                    .bg(rgb(0x0b0f17))
+                                    .bg(rgb(colors().field))
                                     .border_1()
-                                    .border_color(rgb(FIELD_EDGE))
+                                    .border_color(rgb(colors().field_edge))
                                     .child(
                                         div()
                                             .flex_1()
                                             .min_w_0()
                                             .font_family(self.mono.clone())
                                             .text_size(ui(12.))
-                                            .text_color(rgb(0xcbd5e1))
+                                            .text_color(rgb(colors().soft))
                                             .child(kept.info.public.clone()),
                                     )
                                     .child(Self::small("gen-copy", "Copy").on_click(cx.listener(
@@ -1587,7 +1599,12 @@ impl KeysView {
                     )
                 };
                 card.child(title(format!("Delete {}?", kept.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(what))
+                    .child(
+                        div()
+                            .text_size(ui(12.5))
+                            .text_color(rgb(colors().label))
+                            .child(what),
+                    )
                     .child(buttons(Some("Cancel"), ("delete-ok", "Delete"), cx))
             }
             Dialog::Export {
@@ -1598,7 +1615,7 @@ impl KeysView {
             } => {
                 let mut b = card
                     .child(title(format!("Export {}", kept.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(
+                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(
                         "Written as an OpenSSH key file, for ssh, git and other tools, with its .pub beside it. A passphrase locks the file; the key in the vault stays as it is.",
                     ))
                     .child(Self::field("Passphrase", pass, focused(pass, window, cx), None))
@@ -1633,7 +1650,12 @@ impl KeysView {
                 };
                 let mut b = card
                     .child(title(head))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(what))
+                    .child(
+                        div()
+                            .text_size(ui(12.5))
+                            .text_color(rgb(colors().label))
+                            .child(what),
+                    )
                     .child(Self::field("Passphrase", pass, true, None));
                 if let Some(p) = problem {
                     b = b.child(problem_text(p));
@@ -1691,14 +1713,14 @@ impl Render for KeysView {
                 div()
                     .mt(px(-6.))
                     .text_size(ui(12.5))
-                    .text_color(rgb(LABEL))
+                    .text_color(rgb(colors().label))
                     .child("Keys for signing in to servers. Keys you generate or import here are kept in the vault, encrypted, and sync to your other devices."),
             );
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
                 div()
                     .text_size(ui(12.5))
-                    .text_color(rgb(if *bad { BAD } else { GOOD }))
+                    .text_color(rgb(if *bad { colors().bad } else { colors().good }))
                     .child(msg.clone()),
             );
         }
@@ -1727,7 +1749,7 @@ impl Render for KeysView {
             .child(
                 div()
                     .text_size(ui(12.))
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("Hosts set to Automatic try the agent, then ~/.ssh, then the vault, then ask for a password."),
             );
         if let Some((at, whose)) = self.menu
@@ -1736,18 +1758,15 @@ impl Render for KeysView {
             page = page.child(m);
         }
         if let Some(card) = self.dialog_card(window, cx) {
-            let size = window.viewport_size();
+            let (at, shade) = crate::chrome::shade(window);
             page = page.child(
                 deferred(
-                    anchored().position(point(px(0.), px(0.))).child(
-                        div()
+                    anchored().position(at).child(
+                        shade
                             .id("key-dialog-backdrop")
-                            .w(size.width)
-                            .h(size.height)
                             .flex()
                             .items_center()
                             .justify_center()
-                            .bg(rgba(0x03060ca8))
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .child(card),
                     ),

@@ -40,7 +40,7 @@ your comments, and applies to the open tabs.
 restore_tabs = true          # a start without a host opens the last run's tabs
 
 [appearance]
-theme = "neon-nebula"        # a theme id or name, see below; default "default-slate"
+theme = "neon-nebula"        # a theme id or name, see below; default "dusk"
 font = { family = "JetBrains Mono", size = 14 }
 line_height = 1.3            # row height as a multiple of the font size
 cursor = { style = "block" } # "block", "bar" or "underline"
@@ -111,11 +111,11 @@ choice to `config.toml` without opening the list.
 
 **Built in.**
 
-- **Default:** `default-slate`.
+- **Default:** `dusk`, which matches the app's own colors.
 - **Gradients:** `neon-nebula`, `cyberpunk`, `midnight-aurora`, `sunset-glow`,
   `abyssal-deep`, `cosmic-velvet`, `honey-amber`, `emerald-forest`,
   `graphite-mist`, `crimson-ember`, `arctic-dawn`, `matrix-rain`.
-- **Solid:** `dracula`, `tokyo-night`, `one-dark`, `nord`, `catppuccin`,
+- **Solid:** `default-slate` (the default before `dusk`), `dracula`, `tokyo-night`, `one-dark`, `nord`, `catppuccin`,
   `github-dark`.
 
 **Your own themes.** They go in `themes/<id>.toml`. A file with a built-in's id

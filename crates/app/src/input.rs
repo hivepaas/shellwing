@@ -16,6 +16,8 @@ use gpui::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::colors::colors;
+
 /// The text changed.
 pub struct Changed;
 
@@ -463,7 +465,7 @@ impl Element for TextElement {
         let input = self.input.read(cx);
         let style = window.text_style();
         let (text, color) = if input.content.is_empty() {
-            (input.placeholder.clone(), rgb(0x6b7588).into())
+            (input.placeholder.clone(), rgb(colors().faint).into())
         } else {
             (input.shown(), style.color)
         };
@@ -521,7 +523,7 @@ impl Element for TextElement {
                         point(bounds.left() + caret_at, bounds.top()),
                         size(px(2.), bounds.size.height),
                     ),
-                    rgb(0x38bdf8),
+                    rgb(colors().accent),
                 )),
             )
         } else {
@@ -539,7 +541,7 @@ impl Element for TextElement {
                             bounds.bottom(),
                         ),
                     ),
-                    rgba(0x38bdf855),
+                    rgba(crate::colors::with_alpha(colors().accent, 0x55)),
                 )),
                 None,
             )

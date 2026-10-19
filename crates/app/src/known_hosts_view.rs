@@ -10,17 +10,10 @@ use gpui::{
 };
 use shellwing_ssh::known_hosts::{self, Entry};
 
+use crate::colors::colors;
 use crate::host_editor::{label_text, outline_button};
 use crate::input::{Changed, TextInput};
 use crate::look::ui;
-
-const LABEL: u32 = 0xa3aec0;
-const MUTED: u32 = 0x8a96aa;
-const SOFT: u32 = 0xb6c0cf;
-const RULE: u32 = 0x1f2937;
-const FIELD_EDGE: u32 = 0x263042;
-const BAD: u32 = 0xf87171;
-const GOOD: u32 = 0x86efac;
 
 pub struct KnownHostsView {
     focus: FocusHandle,
@@ -126,14 +119,14 @@ impl Render for KnownHostsView {
             .flex_col()
             .rounded(px(8.))
             .border_1()
-            .border_color(rgb(RULE));
+            .border_color(rgb(colors().line));
         if shown.is_empty() {
             list = list.child(
                 div()
                     .px(px(12.))
                     .py(px(10.))
                     .text_size(ui(12.))
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child(if self.entries.is_empty() {
                         "No hosts yet: each one you trust is added here."
                     } else {
@@ -175,10 +168,10 @@ impl Render for KnownHostsView {
                         .py(px(1.))
                         .rounded(px(4.))
                         .border_1()
-                        .border_color(rgb(FIELD_EDGE))
-                        .bg(rgb(0x111a2a))
+                        .border_color(rgb(colors().field_edge))
+                        .bg(rgb(colors().chip))
                         .text_size(ui(10.5))
-                        .text_color(rgb(SOFT))
+                        .text_color(rgb(colors().soft))
                         .child(e.key.kind.clone()),
                 );
             if let Some(m) = &e.marker {
@@ -189,8 +182,12 @@ impl Render for KnownHostsView {
                         .py(px(1.))
                         .rounded(px(4.))
                         .text_size(ui(10.5))
-                        .text_color(rgb(if revoked { BAD } else { SOFT }))
-                        .bg(rgb(if revoked { 0x2a1215 } else { 0x111a2a }))
+                        .text_color(rgb(if revoked { colors().bad } else { colors().soft }))
+                        .bg(rgb(if revoked {
+                            colors().bad_bg
+                        } else {
+                            colors().chip
+                        }))
                         .child(if revoked {
                             "revoked"
                         } else {
@@ -205,7 +202,7 @@ impl Render for KnownHostsView {
                     .gap(px(12.))
                     .px(px(12.))
                     .py(px(9.))
-                    .when(i > 0, |d| d.border_t_1().border_color(rgb(RULE)))
+                    .when(i > 0, |d| d.border_t_1().border_color(rgb(colors().line)))
                     .child(
                         div()
                             .flex_1()
@@ -217,7 +214,7 @@ impl Render for KnownHostsView {
                             .child(
                                 div()
                                     .text_size(ui(11.5))
-                                    .text_color(rgb(MUTED))
+                                    .text_color(rgb(colors().muted))
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
@@ -237,11 +234,11 @@ impl Render for KnownHostsView {
                             .items_center()
                             .flex_shrink_0()
                             .rounded(px(6.))
-                            .bg(rgb(0x1a2333))
+                            .bg(rgb(colors().button))
                             .text_size(ui(12.))
-                            .text_color(rgb(BAD))
+                            .text_color(rgb(colors().bad))
                             .cursor_pointer()
-                            .hover(|s| s.bg(rgb(0x243047)))
+                            .hover(|s| s.bg(rgb(colors().button_hover)))
                             .on_click(cx.listener(move |v, _, _, cx| v.remove(line, cx)))
                             .child("Remove"),
                     ),
@@ -275,7 +272,7 @@ impl Render for KnownHostsView {
                         ))
                     }),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(LABEL)).child(format!(
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(format!(
                 "The servers you trust, and their keys, from {}: the same file ssh reads. A server showing another key is refused, and its pane says what changed. Removing one makes the next connection ask about it again.",
                 path.as_deref().map_or("known_hosts".to_string(), |p| p.display().to_string())
             )));
@@ -283,7 +280,7 @@ impl Render for KnownHostsView {
             page = page.child(
                 div()
                     .text_size(ui(12.5))
-                    .text_color(rgb(if *bad { BAD } else { GOOD }))
+                    .text_color(rgb(if *bad { colors().bad } else { colors().good }))
                     .child(msg.clone()),
             );
         }
@@ -309,8 +306,8 @@ impl Render for KnownHostsView {
                         .items_center()
                         .rounded(px(6.))
                         .border_1()
-                        .border_color(rgb(FIELD_EDGE))
-                        .bg(rgb(0x0b0f17))
+                        .border_color(rgb(colors().field_edge))
+                        .bg(rgb(colors().field))
                         .text_size(ui(13.))
                         .child(self.filter.clone()),
                 ),
