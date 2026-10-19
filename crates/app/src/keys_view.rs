@@ -975,6 +975,7 @@ impl KeysView {
                 .flex()
                 .items_center()
                 .rounded(px(5.))
+                .whitespace_nowrap()
                 .cursor_pointer()
                 .hover(|s| s.bg(rgb(ON)))
                 .text_color(rgb(if danger { BAD } else { TEXT }))
@@ -989,7 +990,7 @@ impl KeysView {
                     .child(
                         div()
                             .id("key-menu")
-                            .w(px(190.))
+                            .min_w(px(190.))
                             .p(px(4.))
                             .flex()
                             .flex_col()

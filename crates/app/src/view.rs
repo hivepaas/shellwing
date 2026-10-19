@@ -1264,6 +1264,7 @@ impl TermView {
                 .py(px(5.))
                 .rounded(px(4.))
                 .text_color(rgb(if enabled { 0xe2e8f0 } else { 0x5b6578 }))
+                .whitespace_nowrap()
                 .when(enabled, |d| {
                     d.cursor_pointer().hover(|s| s.bg(rgb(0x1e2a3d)))
                 })
@@ -1282,7 +1283,8 @@ impl TermView {
         let status = self.session.status();
         let menu = div()
             .id("pane-menu")
-            .w(px(240.))
+            // As wide as its longest item: the text grows with the UI font.
+            .min_w(px(240.))
             .p_1()
             .flex()
             .flex_col()
