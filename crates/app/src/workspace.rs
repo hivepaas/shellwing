@@ -3429,6 +3429,9 @@ impl Workspace {
             .h_full()
             .w_full()
             .min_w_0()
+            // Its own size: under a native title bar (Windows, X11) nothing
+            // above it sets one, and the rem default is bigger than the sidebar's.
+            .text_sm()
             // The logo, as the sketch puts it before the tabs.
             .child(
                 div().flex_shrink_0().pl(px(12.)).pr(px(8.)).child(
