@@ -177,7 +177,179 @@ fn expand_tokens(path: &Path, host: &str, user: &str) -> PathBuf {
 /// Resolves `[user@]host[:port]` through the config file at `config` (none: defaults only).
 pub fn resolve(spec: &str, config: Option<&Path>) -> Result<Resolved, Error> {
     let cfg = load(config)?;
-    resolve_with(&cfg, spec, &mut vec![])
+    let mut r = resolve_with(&cfg, spec, &mut vec![])?;
+    // The host's own forwards; jump hosts forward nothing, as with ssh -J.
+    if let Some(path) = config.filter(|p| p.exists()) {
+        r.forwards = forwards_for(path, &r.alias);
+    }
+    Ok(r)
+}
+
+/// How deep `Include`s may nest, as in OpenSSH.
+const MAX_INCLUDE: usize = 16;
+
+/// A line of a config file that forwarding depends on.
+enum ForwardLine {
+    /// `LocalForward`, `RemoteForward` or `DynamicForward`, as a `-L`/`-R`/`-D` spec.
+    Forward(String),
+    /// `ClearAllForwardings`.
+    Clear(bool),
+}
+
+/// Whether `host` matches a `Host` line's patterns: one of them does and
+/// none of the negated (`!`) ones, ignoring case.
+fn host_matches(patterns: &[String], host: &str) -> bool {
+    let host = host.to_lowercase();
+    let mut hit = false;
+    for p in patterns {
+        let p = p.to_lowercase();
+        match p.strip_prefix('!') {
+            Some(neg) if wildcard(neg, &host) => return false,
+            Some(_) => {}
+            None => hit |= wildcard(&p, &host),
+        }
+    }
+    hit
+}
+
+/// `*` for any run of characters, `?` for one.
+fn wildcard(pattern: &str, text: &str) -> bool {
+    let (p, t): (Vec<char>, Vec<char>) = (pattern.chars().collect(), text.chars().collect());
+    let (mut pi, mut ti, mut star, mut mark) = (0, 0, None, 0);
+    while ti < t.len() {
+        if pi < p.len() && (p[pi] == '?' || p[pi] == t[ti]) {
+            pi += 1;
+            ti += 1;
+        } else if pi < p.len() && p[pi] == '*' {
+            star = Some(pi);
+            mark = ti;
+            pi += 1;
+        } else if let Some(s) = star {
+            pi = s + 1;
+            mark += 1;
+            ti = mark;
+        } else {
+            return false;
+        }
+    }
+    p[pi..].iter().all(|c| *c == '*')
+}
+
+/// The files an `Include` names: `~` expanded, relative to `~/.ssh`, and a
+/// `*` or `?` in the file name matched, in name order.
+fn include_paths(arg: &str) -> Vec<PathBuf> {
+    let home = std::env::home_dir().unwrap_or_default();
+    let path = match arg.strip_prefix("~/") {
+        Some(rest) => home.join(rest),
+        None if Path::new(arg).is_absolute() => PathBuf::from(arg),
+        None => home.join(".ssh").join(arg),
+    };
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    if !name.contains(['*', '?']) {
+        return vec![path];
+    }
+    let Some(dir) = path.parent() else {
+        return vec![];
+    };
+    let mut found: Vec<PathBuf> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| wildcard(&name, &e.file_name().to_string_lossy()))
+        .map(|e| e.path())
+        .collect();
+    found.sort();
+    found
+}
+
+/// Reads the forwarding lines of the config file at `path` (and the files
+/// it includes), each with the `Host` patterns it comes under: None before
+/// any `Host` (every host), Some(empty) under a `Match` (not read: no host).
+fn scan_forwards(
+    path: &Path,
+    mut under: Option<Vec<String>>,
+    depth: usize,
+    out: &mut Vec<(Option<Vec<String>>, ForwardLine)>,
+) {
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return;
+    };
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        // `Keyword value…` or `Keyword=value…`.
+        let (key, rest) = match line.find(|c: char| c.is_whitespace() || c == '=') {
+            Some(i) => (
+                &line[..i],
+                line[i..].trim_start_matches(|c: char| c.is_whitespace() || c == '='),
+            ),
+            None => (line, ""),
+        };
+        let args: Vec<String> = rest
+            .split_whitespace()
+            .map(|a| a.trim_matches('"').to_string())
+            .collect();
+        match key.to_lowercase().as_str() {
+            "host" => under = Some(args),
+            "match" => under = Some(vec![]),
+            "include" if depth < MAX_INCLUDE => {
+                for a in &args {
+                    for file in include_paths(a) {
+                        scan_forwards(&file, under.clone(), depth + 1, out);
+                    }
+                }
+            }
+            "localforward" | "remoteforward" | "dynamicforward" if !args.is_empty() => {
+                let flag = match key.to_lowercase().as_str() {
+                    "localforward" => "-L",
+                    "remoteforward" => "-R",
+                    _ => "-D",
+                };
+                out.push((
+                    under.clone(),
+                    ForwardLine::Forward(format!("{flag} {}", args.join(":"))),
+                ));
+            }
+            "clearallforwardings" => out.push((
+                under.clone(),
+                ForwardLine::Clear(args.first().is_some_and(|a| a.eq_ignore_ascii_case("yes"))),
+            )),
+            _ => {}
+        }
+    }
+}
+
+/// The forwards the config file at `path` gives `alias`, as ssh reads them:
+/// every `LocalForward`, `RemoteForward` and `DynamicForward` of every block
+/// that matches, in order, unless `ClearAllForwardings yes` comes first.
+/// (Not taken from the parsed config, which keeps only one of each.)
+pub fn forwards_for(path: &Path, alias: &str) -> Vec<String> {
+    let mut lines = vec![];
+    scan_forwards(path, None, 0, &mut lines);
+    let applies =
+        |under: &Option<Vec<String>>| under.as_ref().is_none_or(|p| host_matches(p, alias));
+    let clear = lines.iter().find_map(|(under, l)| match l {
+        ForwardLine::Clear(on) if applies(under) => Some(*on),
+        _ => None,
+    });
+    if clear == Some(true) {
+        return vec![];
+    }
+    let mut out: Vec<String> = vec![];
+    for (under, l) in &lines {
+        if let ForwardLine::Forward(spec) = l
+            && applies(under)
+            && !out.contains(spec)
+        {
+            out.push(spec.clone());
+        }
+    }
+    out
 }
 
 fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<Resolved, Error> {
@@ -232,6 +404,71 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn forwards_add_up_as_in_ssh() {
+        let dir = std::env::temp_dir().join(format!("shellwing-fwd-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("conf.d")).expect("dir");
+        std::fs::write(
+            dir.join("conf.d/10-extra.conf"),
+            "Host web\n  LocalForward 7000 y:7\n",
+        )
+        .expect("include");
+        let main = dir.join("config");
+        std::fs::write(
+            &main,
+            format!(
+                "LocalForward 1111 localhost:1\n\
+                 Host web\n  LocalForward 8080 localhost:80\n  LocalForward=127.0.0.1:8443 localhost:443\n  DynamicForward 1080\n\
+                 Host web*\n  RemoteForward 9000 localhost:3000\n  LocalForward 8080 localhost:80\n\
+                 Host * !web\n  LocalForward 5555 x:5\n\
+                 Host quiet\n  ClearAllForwardings yes\n\
+                 Match user root\n  LocalForward 6666 z:6\n\
+                 Include {}/conf.d/*.conf\n",
+                dir.display()
+            ),
+        )
+        .expect("config");
+        assert_eq!(
+            forwards_for(&main, "WEB"),
+            [
+                "-L 1111:localhost:1",
+                "-L 8080:localhost:80",
+                "-L 127.0.0.1:8443:localhost:443",
+                "-D 1080",
+                "-R 9000:localhost:3000",
+                "-L 7000:y:7",
+            ]
+        );
+        assert_eq!(forwards_for(&main, "quiet"), Vec::<String>::new());
+        assert_eq!(
+            forwards_for(&main, "db"),
+            ["-L 1111:localhost:1", "-L 5555:x:5"]
+        );
+        // Each one reads as a forward.
+        for spec in forwards_for(&main, "web") {
+            spec.parse::<crate::Forward>().expect("a forward");
+        }
+        // Resolving gives the host its forwards, and a jump host none.
+        let r = resolve("web", Some(&main)).expect("resolve");
+        assert_eq!(r.forwards.len(), 6);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn host_patterns_match_like_ssh() {
+        let p = |s: &[&str]| s.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert!(host_matches(&p(&["*.example.com"]), "api.EXAMPLE.com"));
+        assert!(host_matches(&p(&["web?"]), "web1"));
+        assert!(!host_matches(&p(&["web?"]), "web12"));
+        assert!(!host_matches(&p(&["*", "!bastion"]), "bastion"));
+        assert!(host_matches(&p(&["*", "!bastion"]), "api"));
+        assert!(
+            !host_matches(&p(&["!api"]), "web"),
+            "a negation alone matches nothing"
+        );
+    }
 
     fn config(text: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!(

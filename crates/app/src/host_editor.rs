@@ -516,6 +516,9 @@ impl HostEditor {
             host.user =
                 (me.as_deref() != Ok(r.target.user.as_str())).then(|| r.target.user.clone());
             host.jump = r.jumps.iter().map(|j| j.alias.clone()).collect();
+            // The copy goes to the address itself, which ~/.ssh/config's
+            // block for the alias does not match: its forwards come along.
+            host.forward = r.forwards.clone();
             if let Some(key) = r.identity_files.first() {
                 host.auth = Auth {
                     method: AuthMethod::Key,
@@ -841,6 +844,9 @@ impl HostEditor {
                 if !r.jumps.is_empty() {
                     let via: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
                     facts = facts.child(fact("Through", via.join(" → ")));
+                }
+                if !r.forwards.is_empty() {
+                    facts = facts.child(fact("Forwards", r.forwards.join(", ")));
                 }
             }
             None => facts = facts.child(hint_text("It could not be read.")),
