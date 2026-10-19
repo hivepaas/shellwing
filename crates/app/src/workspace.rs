@@ -1422,6 +1422,8 @@ impl Workspace {
     /// here reloads at once, so the periodic look finds nothing new after it.
     fn share_settings(&self, cx: &mut Context<Self>) {
         cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
+        let font = self.live.settings().appearance.ui_font.family.clone();
+        cx.set_global(crate::prompt::PromptFont(font.map(Into::into)));
     }
 
     pub fn change_setting(

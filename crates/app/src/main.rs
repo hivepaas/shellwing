@@ -25,6 +25,7 @@ mod look;
 mod palette;
 mod pane;
 mod placement;
+mod prompt;
 mod secrets;
 mod session;
 mod settings_view;
@@ -182,6 +183,11 @@ fn main() -> anyhow::Result<()> {
     gpui_platform::application()
         .with_assets(Assets)
         .run(move |cx: &mut App| {
+            // Linux has no dialogs of its own: questions are drawn in the
+            // app's look, where GPUI would draw a white box.
+            if cfg!(not(any(target_os = "macos", target_os = "windows"))) {
+                cx.set_prompt_builder(prompt::render);
+            }
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations; macOS and Windows keep their native title bar.
