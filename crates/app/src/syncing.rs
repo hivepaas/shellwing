@@ -7,7 +7,9 @@
 //!
 //! Hosts and groups from hosts.toml ride along as vault records: before each
 //! sync, edits in the file are recorded (only the fields that changed get new
-//! stamps); after it, the merged result is written back into the file.
+//! stamps); after it, the merged result is written back into the file. So do
+//! the settings of config.toml that are not this device's own (with `[sync]
+//! settings`, on by default), as one record with a field per setting.
 
 use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -22,6 +24,9 @@ use shellwing_vault::{Answerer, Ask, AskState, Folder, FolderState, Request, Syn
 use crate::secrets::VaultSlot;
 
 const EVERY: Duration = Duration::from_secs(60);
+/// The settings' record: the same on every device, so they merge into one.
+/// Hex, as synced files' names must start with.
+const SETTINGS_ID: &str = "5e771a65000000000000000000000000";
 /// How often the folder is looked at while pairing.
 const PAIRING: Duration = Duration::from_secs(2);
 
@@ -163,25 +168,7 @@ impl SyncWorker {
                         continue;
                     }
                     last_sync = Some(Instant::now());
-                    // A folder set by hand in config.toml starts empty: begin
-                    // there (the recovery key can be shown from the palette).
-                    let started = match vault.folder_state(&store) {
-                        Ok(FolderState::Empty) => vault.start_sync(&store).map(|_| ()),
-                        Ok(_) => Ok(()),
-                        Err(e) => Err(e),
-                    };
-                    // Hosts problems (a broken hosts.toml) do not stop secrets from syncing.
-                    let hosts_problem = config.as_ref().and_then(|c| record_hosts(c, &vault).err());
-                    let synced = started.and_then(|()| vault.sync(&store));
-                    let written = match (&synced, &config) {
-                        (Ok(_), Some(c)) if hosts_problem.is_none() => write_hosts(c, &vault).err(),
-                        _ => None,
-                    };
-                    let event = match (synced, hosts_problem.or(written)) {
-                        (Ok(_), Some(p)) => SyncEvent::Failed(p),
-                        (Ok(r), None) => SyncEvent::Done(r),
-                        (Err(e), _) => SyncEvent::Failed(e.to_string()),
-                    };
+                    let event = sync_once(&vault, &store, config.as_ref());
                     if events.send_blocking(event).is_err() {
                         return;
                     }
@@ -291,6 +278,51 @@ impl SyncWorker {
     }
 }
 
+/// One round: records the edits made in the files, syncs, and writes the
+/// merged result back into them.
+fn sync_once(vault: &Vault, store: &Folder, config: Option<&Store>) -> SyncEvent {
+    // A folder set by hand in config.toml starts empty: begin
+    // there (the recovery key can be shown from the palette).
+    let started = match vault.folder_state(store) {
+        Ok(FolderState::Empty) => vault.start_sync(store).map(|_| ()),
+        Ok(_) => Ok(()),
+        Err(e) => Err(e),
+    };
+    // Hosts problems (a broken hosts.toml) do not stop secrets from syncing.
+    let hosts_problem = config.and_then(|c| record_hosts(c, vault).err());
+    let settings = config.filter(|c| c.settings().is_ok_and(|s| s.sync.settings));
+    // A device whose settings have never synced takes the
+    // others' first: recording its own now would stamp them
+    // newer than the ones it has not seen yet.
+    let settings_known = settings.is_some_and(|_| has_settings(vault));
+    let settings_problem = settings
+        .filter(|_| settings_known)
+        .and_then(|c| record_settings(c, vault).err());
+    let synced = started.and_then(|()| vault.sync(store));
+    let written = match (&synced, config) {
+        (Ok(_), Some(c)) if hosts_problem.is_none() => write_hosts(c, vault).err(),
+        _ => None,
+    };
+    let settings_written = match (&synced, settings) {
+        (Ok(_), Some(c)) if settings_problem.is_none() => {
+            let joined = write_settings(c, vault, !settings_known);
+            // Its own settings go out now, merged with the others'.
+            if joined.as_ref().is_ok_and(|&new| new) {
+                let _ = vault.sync(store);
+            }
+            joined.err()
+        }
+        _ => None,
+    };
+    let hosts_problem = hosts_problem.or(settings_problem);
+    let written = written.or(settings_written);
+    match (synced, hosts_problem.or(written)) {
+        (Ok(_), Some(p)) => SyncEvent::Failed(p),
+        (Ok(r), None) => SyncEvent::Done(r),
+        (Err(e), _) => SyncEvent::Failed(e.to_string()),
+    }
+}
+
 /// Records edits made in hosts.toml since the last sync.
 fn record_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
     let file_exists = store.dir().join("hosts.toml").exists();
@@ -340,6 +372,56 @@ fn record_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
     Ok(())
 }
 
+fn has_settings(vault: &Vault) -> bool {
+    vault
+        .entries("settings")
+        .is_ok_and(|e| e.iter().any(|(id, _)| id == SETTINGS_ID))
+}
+
+/// Records the synced settings config.toml has now.
+fn record_settings(store: &Store, vault: &Vault) -> Result<(), String> {
+    let fields = store
+        .synced_settings()
+        .map_err(|e| format!("settings not synced: {e}"))?;
+    vault
+        .update(SETTINGS_ID, "settings", "Settings", &fields)
+        .map_err(|e| format!("settings not synced: {e}"))?;
+    Ok(())
+}
+
+/// Writes the merged settings into config.toml. The first time (`first`),
+/// the others' are taken where they set a value and this device's kept
+/// where they set none, then recorded, to go out: whether that happened.
+fn write_settings(store: &Store, vault: &Vault, first: bool) -> Result<bool, String> {
+    let err = |e: String| format!("settings not written: {e}");
+    let theirs = vault
+        .entries("settings")
+        .map_err(|e| err(e.to_string()))?
+        .into_iter()
+        .find(|(id, _)| id == SETTINGS_ID)
+        .map(|(_, f)| f);
+    let fields = match (theirs, first) {
+        (Some(theirs), false) => theirs,
+        (Some(theirs), true) => {
+            let mut mine = store.synced_settings().map_err(|e| err(e.to_string()))?;
+            mine.extend(theirs);
+            mine
+        }
+        // Nobody's yet: this device's are the first.
+        (None, _) => {
+            record_settings(store, vault)?;
+            return Ok(true);
+        }
+    };
+    store
+        .apply_synced_settings(&fields)
+        .map_err(|e| err(e.to_string()))?;
+    if first {
+        record_settings(store, vault)?;
+    }
+    Ok(first)
+}
+
 /// Writes the merged hosts and groups back into hosts.toml.
 fn write_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
     let err = |e: shellwing_vault::Error| format!("hosts not written: {e}");
@@ -377,9 +459,19 @@ mod tests {
 
         /// One round, as the worker does it.
         fn sync(&self, folder: &Folder) {
-            record_hosts(&self.store, &self.vault).expect("record");
-            self.vault.sync(folder).expect("sync");
-            write_hosts(&self.store, &self.vault).expect("write");
+            match sync_once(&self.vault, folder, Some(&self.store)) {
+                SyncEvent::Done(_) => {}
+                SyncEvent::Failed(e) => panic!("sync: {e}"),
+                _ => panic!("not a sync"),
+            }
+        }
+
+        fn config(&self) -> String {
+            std::fs::read_to_string(self.store.dir().join("config.toml")).unwrap_or_default()
+        }
+
+        fn set_config(&self, text: &str) {
+            std::fs::write(self.store.dir().join("config.toml"), text).expect("config");
         }
 
         fn hosts(&self) -> shellwing_config::Hosts {
@@ -392,6 +484,67 @@ mod tests {
             assert!(text.contains(from), "{from:?} in\n{text}");
             std::fs::write(&path, text.replacen(from, to, 1)).expect("write");
         }
+    }
+
+    #[test]
+    fn settings_travel_but_each_device_keeps_its_own() {
+        let root =
+            std::env::temp_dir().join(format!("shellwing-settings-sync-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let folder = Folder::new(&root.join("sync"));
+        let a = Device::new(&root, "a", "");
+        a.set_config("[appearance]\ntheme = \"nord\"\nfont = { size = 16 }\n");
+        a.sync(&folder);
+        let rk = a.vault.recovery_key().expect("rk").expect("started");
+
+        // The second device had its own theme and a UI font, and a shell of its own.
+        let b = Device::new(&root, "b", "");
+        b.set_config("# b's\n[appearance]\ntheme = \"dracula\"\nui_font = { size = 15 }\n\n[terminal]\nlocal_shell = \"fish\"\n");
+        b.vault.join(&folder, &rk.to_string()).expect("join");
+        b.sync(&folder);
+        let bs = b.store.settings().expect("b");
+        assert_eq!(
+            bs.appearance.theme, "nord",
+            "the synced ones win, the first time"
+        );
+        assert_eq!(bs.appearance.font.size, 16.0);
+        assert_eq!(bs.appearance.ui_font.size, 15.0, "what only it set stays");
+        assert_eq!(bs.terminal.local_shell.as_deref(), Some("fish"));
+        assert!(
+            b.config().starts_with("# b's"),
+            "its file keeps its comments"
+        );
+
+        // And goes the other way; edits then travel both ways.
+        a.sync(&folder);
+        assert_eq!(a.store.settings().expect("a").appearance.ui_font.size, 15.0);
+        assert!(
+            a.store
+                .settings()
+                .expect("a")
+                .terminal
+                .local_shell
+                .is_none(),
+            "b's own shell stays on b"
+        );
+        a.set_config(&a.config().replace("\"nord\"", "\"tokyo-night\""));
+        a.sync(&folder);
+        b.sync(&folder);
+        assert_eq!(
+            b.store.settings().expect("b").appearance.theme,
+            "tokyo-night"
+        );
+
+        // Turned off on a device, nothing more comes in.
+        b.set_config(&format!("{}\n[sync]\nsettings = false\n", b.config()));
+        a.set_config(&a.config().replace("\"tokyo-night\"", "\"nord\""));
+        a.sync(&folder);
+        b.sync(&folder);
+        assert_eq!(
+            b.store.settings().expect("b").appearance.theme,
+            "tokyo-night"
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

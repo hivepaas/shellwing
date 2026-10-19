@@ -15,6 +15,7 @@ mod color;
 mod hosts;
 mod hosts_sync;
 mod settings;
+pub mod settings_sync;
 mod state;
 mod store;
 mod theme;

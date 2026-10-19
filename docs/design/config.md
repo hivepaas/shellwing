@@ -102,6 +102,6 @@ local_only = false        # true: never synced, even when slots are free
 | File | Syncs |
 | --- | --- |
 | `hosts.toml`, `snippets.toml`, the vault | Yes |
-| `config.toml` | No, by default. One option syncs only the `[appearance]` and `[keys]` tables. |
+| `config.toml` | Yes, unless `[sync] settings = false`: the settings that are not the device's own (`settings_sync::SYNCED`), one vault record with a field per setting. The sync folder, log folder, local shell and editor stay per device. |
 | `themes/` | Only themes a synced host or the synced appearance refers to |
 | `state/` | Never |

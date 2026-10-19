@@ -99,11 +99,23 @@ impl Default for Ssh {
 }
 
 /// Syncing the vault through a folder (docs/design/sync.md).
-#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Sync {
     /// The folder, `~/` allowed; None: no sync.
     pub folder: Option<String>,
+    /// The settings that are not this device's own sync too
+    /// ([`crate::settings_sync::SYNCED`]).
+    pub settings: bool,
+}
+
+impl Default for Sync {
+    fn default() -> Self {
+        Sync {
+            folder: None,
+            settings: true,
+        }
+    }
 }
 
 impl Sync {
