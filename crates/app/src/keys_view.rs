@@ -1193,9 +1193,8 @@ impl KeysView {
                         ),
                     )
                     .child(
+                        // A block, not a flex row: text in a row does not wrap.
                         div()
-                            .flex()
-                            .gap(px(10.))
                             .px(px(12.))
                             .py(px(10.))
                             .rounded(px(8.))
