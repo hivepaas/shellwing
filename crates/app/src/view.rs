@@ -1029,7 +1029,107 @@ impl TermView {
     }
 
     /// The bar shown while the pane has no connection.
+    /// The host's key changed: what was known and what the server shows,
+    /// and whether to trust the new one. Not to be taken lightly: someone in
+    /// the middle looks just like this.
+    fn changed_key_banner(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        if self.session.status() != Status::Failed {
+            return None;
+        }
+        let c = self.session.changed_key()?;
+        let button = |id: &'static str, label: &'static str, danger: bool| {
+            div()
+                .id(id)
+                .px_3()
+                .py_1()
+                .rounded_md()
+                .cursor_pointer()
+                .whitespace_nowrap()
+                .when(danger, |d| {
+                    d.border_1()
+                        .border_color(rgb(0xb45309))
+                        .text_color(rgb(0xfde68a))
+                        .hover(|s| s.bg(rgb(0x3a2a0c)))
+                })
+                .when(!danger, |d| {
+                    d.border_1()
+                        .border_color(rgb(0x3f4a5c))
+                        .hover(|s| s.bg(rgb(0x1e2736)))
+                })
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        let old = c.old.first().cloned().unwrap_or_default();
+        let fact = |label: &str, value: String| {
+            div()
+                .flex()
+                .gap_2()
+                .child(
+                    div()
+                        .w(px(110.))
+                        .flex_shrink_0()
+                        .text_color(rgb(0x8a96aa))
+                        .child(label.to_string()),
+                )
+                .child(
+                    div()
+                        .min_w_0()
+                        .font_family(self.font_family.clone())
+                        .child(value),
+                )
+        };
+        Some(
+            div()
+                .absolute()
+                .left_3()
+                .right_3()
+                .bottom_3()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .px_4()
+                .py_3()
+                .rounded_lg()
+                .border_1()
+                .border_color(rgb(0x7f1d1d))
+                .bg(gpui::rgba(0x1a0b0ef0))
+                .text_sm()
+                .text_color(rgb(0xe2e8f0))
+                .child(
+                    div()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(0xfca5a5))
+                        .child(format!("The host key for {} has changed.", c.label)),
+                )
+                .child(div().text_color(rgb(0xcbd5e1)).child(
+                    "If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send.",
+                ))
+                .child(fact(
+                    "Known",
+                    format!("{old}  (known_hosts line {})", c.line),
+                ))
+                .child(fact("Now", format!("{}  {}", c.fingerprint, c.kind)))
+                .child(
+                    div()
+                        .flex()
+                        .justify_end()
+                        .gap_2()
+                        .child(
+                            button("key-changed-trust", "Trust the new key and connect", true)
+                                .on_click(cx.listener(|v, _, _, cx| match v.session.trust_changed_key() {
+                                    Ok(()) => v.reconnect_now(cx),
+                                    Err(e) => v.show_notice(format!("Not trusted: {e}"), KEY_NOTICE, cx),
+                                })),
+                        ),
+                )
+                .into_any_element(),
+        )
+    }
+
     fn banner(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        if let Some(b) = self.changed_key_banner(cx) {
+            return Some(b);
+        }
         let status = self.session.status();
         let why = self.session.ended().unwrap_or_default();
         let text = match (status, self.retry_at) {

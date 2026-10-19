@@ -32,6 +32,15 @@ pub enum Status {
 }
 
 /// Errors worth retrying on their own: the network, not the person.
+/// A changed host key, the target's or a jump host's.
+fn changed_key(e: &Error) -> Option<&shellwing_ssh::ChangedKey> {
+    match e {
+        Error::HostKeyChanged(c) => Some(c),
+        Error::Jump { source, .. } => changed_key(source),
+        _ => None,
+    }
+}
+
 fn retryable(e: &Error) -> bool {
     match e {
         Error::Ssh(_) | Error::Disconnected => true,
@@ -51,6 +60,9 @@ struct State {
     ever_connected: bool,
     /// How the last connection ended, for the banner.
     ended: Option<String>,
+    /// The last attempt found the host's key changed: what was known, and
+    /// what the server showed.
+    changed_key: Option<shellwing_ssh::ChangedKey>,
 }
 
 pub struct Session {
@@ -300,6 +312,21 @@ impl Session {
         self.state.lock().ok().and_then(|s| s.ended.clone())
     }
 
+    /// The host's key changed at the last attempt: what was known and what
+    /// the server showed.
+    pub fn changed_key(&self) -> Option<shellwing_ssh::ChangedKey> {
+        self.state.lock().ok().and_then(|s| s.changed_key.clone())
+    }
+
+    /// Trusts the key the server showed in place of the old one (as
+    /// `ssh-keygen -R` and accepting it would), for the next attempt.
+    pub fn trust_changed_key(&self) -> Result<(), String> {
+        let c = self.changed_key().ok_or("no key changed")?;
+        let path = shellwing_ssh::known_hosts::default_path().ok_or("no home folder")?;
+        shellwing_ssh::known_hosts::replace(&path, &c.host, c.port, &c.key)
+            .map_err(|e| e.to_string())
+    }
+
     /// Starts forwarding on the running connection; the answer comes on the
     /// receiver. None when nothing is connected.
     pub fn forward(
@@ -464,6 +491,9 @@ impl Session {
                 Err(e) => {
                     writer.stop();
                     failure(&term, &e.to_string());
+                    if let (Some(c), Ok(mut st)) = (changed_key(&e), state.lock()) {
+                        st.changed_key = Some(c.clone());
+                    }
                     let status = if retryable(&e) {
                         Status::Lost
                     } else {
@@ -488,6 +518,10 @@ fn set_status(
         st.changes += 1;
         if ended.is_some() {
             st.ended = ended;
+        }
+        // A new attempt looks at the key again.
+        if status == Status::Connecting {
+            st.changed_key = None;
         }
     }
     let _ = wake.try_send(());

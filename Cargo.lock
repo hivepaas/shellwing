@@ -6300,9 +6300,12 @@ dependencies = [
 name = "shellwing-ssh"
 version = "0.1.0"
 dependencies = [
+ "data-encoding",
+ "hmac 0.13.0",
  "rand 0.10.3",
  "russh",
  "russh-sftp",
+ "sha1",
  "ssh2-config",
  "thiserror 2.0.21",
  "tokio",

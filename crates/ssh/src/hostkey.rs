@@ -31,7 +31,13 @@ pub enum HostKeyPolicy {
 pub(crate) enum Verdict {
     Known,
     Unknown,
-    Changed { line: usize },
+    /// Another key of its kind is known: on that line, with those fingerprints.
+    Changed {
+        line: usize,
+        old: Vec<String>,
+    },
+    /// known_hosts has this key `@revoked`.
+    Revoked,
 }
 
 pub(crate) struct Checker {
@@ -64,19 +70,36 @@ impl Checker {
 
     pub(crate) fn verdict(&self, key: &PublicKey) -> Result<Verdict, Error> {
         let path = self.path()?;
-        let recorded = if path.exists() {
-            known_hosts::known_host_keys_path(&self.host, self.port, &path)?
-        } else {
-            vec![]
-        };
-        if recorded.iter().any(|(_, k)| k == key) {
+        let fingerprint = key.fingerprint(HashAlg::Sha256).to_string();
+        let lines: Vec<crate::known_hosts::Entry> = crate::known_hosts::entries(&path)
+            .map_err(|e| Error::Config(format!("{}: {e}", path.display())))?
+            .into_iter()
+            .filter(|e| e.is_for(&self.host, self.port))
+            .collect();
+        if lines
+            .iter()
+            .any(|e| e.marker.as_deref() == Some("@revoked") && e.key.fingerprint == fingerprint)
+        {
+            return Ok(Verdict::Revoked);
+        }
+        // Keys, not certificate authorities.
+        let recorded: Vec<(usize, PublicKey)> = lines
+            .iter()
+            .filter(|e| e.marker.is_none())
+            .filter_map(|e| Some((e.line, PublicKey::from_openssh(&e.key.public).ok()?)))
+            .collect();
+        if recorded.iter().any(|(_, k)| k.key_data() == key.key_data()) {
             return Ok(Verdict::Known);
         }
         if let Some((line, _)) = recorded
             .iter()
             .find(|(_, k)| k.algorithm() == key.algorithm())
         {
-            return Ok(Verdict::Changed { line: *line });
+            let old = recorded
+                .iter()
+                .map(|(_, k)| k.fingerprint(HashAlg::Sha256).to_string())
+                .collect();
+            return Ok(Verdict::Changed { line: *line, old });
         }
         Ok(Verdict::Unknown)
     }
@@ -101,10 +124,20 @@ impl Checker {
     async fn check(&self, key: &PublicKey) -> Result<(), Error> {
         match self.verdict(key)? {
             Verdict::Known => Ok(()),
-            Verdict::Changed { line } => Err(Error::HostKeyChanged {
-                host: self.label(),
-                line,
-            }),
+            Verdict::Changed { line, old } => {
+                let info = crate::keys::info(key);
+                Err(Error::HostKeyChanged(Box::new(crate::ChangedKey {
+                    label: self.label(),
+                    host: self.host.clone(),
+                    port: self.port,
+                    line,
+                    old,
+                    fingerprint: info.fingerprint,
+                    kind: info.kind,
+                    key: info.public,
+                })))
+            }
+            Verdict::Revoked => Err(Error::HostKeyRevoked { host: self.label() }),
             Verdict::Unknown => match (self.policy, &self.prompter) {
                 (HostKeyPolicy::AcceptNew, _) => self.learn(key),
                 (HostKeyPolicy::Ask, Some(prompter)) => {
@@ -257,7 +290,25 @@ mod tests {
         let r = checker(&file, HostKeyPolicy::AcceptNew)
             .check(&key(K1))
             .await;
-        assert!(matches!(r, Err(Error::HostKeyChanged { line: 1, .. })));
+        match r {
+            Err(Error::HostKeyChanged(c)) => {
+                assert_eq!((c.line, c.old.len()), (1, 1));
+                assert_eq!(
+                    c.fingerprint,
+                    key(K1).fingerprint(HashAlg::Sha256).to_string()
+                );
+                assert_eq!(c.key, key(K1).to_openssh().expect("line"));
+            }
+            other => panic!("not changed: {other:?}"),
+        }
+        // A key known_hosts revokes is refused.
+        std::fs::write(&file, format!("@revoked h {K1}\n")).expect("write");
+        assert!(matches!(
+            checker(&file, HostKeyPolicy::AcceptNew)
+                .check(&key(K1))
+                .await,
+            Err(Error::HostKeyRevoked { .. })
+        ));
 
         // Unknown host: refused when strict, recorded when accept-new.
         std::fs::write(&file, "").expect("write");
