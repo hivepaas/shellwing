@@ -8,15 +8,18 @@
 //! stopping it removes the copy, after asking when it holds changes the
 //! server lacks (see `copies`).
 
+use std::cell::RefCell;
 use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
 use gpui::{
-    ClickEvent, Context, ElementId, Entity, EventEmitter, ExternalPaths, FocusHandle, Focusable,
-    FontWeight, KeyDownEvent, MouseButton, Render, ScrollStrategy, SharedString,
-    UniformListScrollHandle, Window, div, prelude::*, px, relative, rgb, svg, uniform_list,
+    ClickEvent, Context, ElementId, Entity, EventEmitter, ExternalDragPayload, ExternalPaths,
+    FileDragPaths, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
+    ScrollStrategy, SharedString, UniformListScrollHandle, Window, div, prelude::*, px, relative,
+    rgb, svg, uniform_list,
 };
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
@@ -89,6 +92,57 @@ enum Outcome {
         local: PathBuf,
         remote: String,
     },
+}
+
+/// An entry being dragged. Out of the window it is a file of this computer's
+/// for the system: fetched into a folder of its own as the drag starts.
+struct DragOut {
+    name: String,
+    dir: bool,
+    /// Where it is being fetched to, once the drag has started.
+    staged: Rc<RefCell<Option<PathBuf>>>,
+}
+
+/// What follows the pointer while an entry is dragged in the window.
+struct DragGhost(SharedString);
+
+impl Render for DragGhost {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .px_2()
+            .py_1()
+            .rounded_md()
+            .border_1()
+            .border_color(rgb(colors().edge))
+            .bg(rgb(colors().raised))
+            .text_sm()
+            .text_color(rgb(colors().text))
+            .child(self.0.clone())
+    }
+}
+
+/// Where dragged entries are fetched to, each drag in a folder of its own.
+fn drag_folder() -> Option<PathBuf> {
+    Some(dirs::cache_dir()?.join("shellwing").join("drag"))
+}
+
+/// Forgets drags of more than a day ago: whatever took them has its copy.
+fn clean_drags(root: &Path) {
+    let Ok(read) = std::fs::read_dir(root) else {
+        return;
+    };
+    let day = Duration::from_secs(24 * 3600);
+    for e in read.flatten() {
+        let old = e
+            .metadata()
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.elapsed().ok())
+            .is_some_and(|age| age > day);
+        if old {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
+    }
 }
 
 /// The editor command (`[files] editor`), set by the workspace from the settings.
@@ -631,6 +685,36 @@ impl FilesPanel {
             }
         })
         .detach();
+    }
+
+    /// Fetches the entry `name` of the folder shown for a drag out of the
+    /// window, into a folder of its own in the cache. It is fetched beside its
+    /// place and moved there only once whole, so a drop never takes half of
+    /// it. Returns its place.
+    fn stage(&mut self, name: &str, cx: &mut Context<Self>) -> Option<PathBuf> {
+        let dir = self.dir.clone()?;
+        let root = drag_folder()?;
+        clean_drags(&root);
+        self.next_id += 1;
+        let stamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map_or(0, |d| d.as_millis());
+        let folder = root.join(format!("{stamp}-{}", self.next_id));
+        let target = folder.join(name);
+        let fetching = folder.join(".fetching").join(name);
+        let remote = sftp::join(&dir, name);
+        let (id, progress) = self.add_transfer(false, name.to_string(), None, None);
+        let place = target.clone();
+        self.start(id, cx, move |sftp| async move {
+            let io = |e: std::io::Error| Error::Sftp(format!("{}: {e}", place.display()));
+            if let Some(into) = fetching.parent() {
+                tokio::fs::create_dir_all(into).await.map_err(io)?;
+            }
+            sftp.download(&remote, &fetching, &progress).await?;
+            tokio::fs::rename(&fetching, &place).await.map_err(io)?;
+            Ok(Outcome::Done(None))
+        });
+        Some(target)
     }
 
     /// Downloads the entry `name` of the folder shown to `local`.
@@ -1465,6 +1549,7 @@ impl FilesPanel {
 
     fn row(&self, i: usize, cx: &mut Context<Self>) -> gpui::AnyElement {
         let e = &self.entries[i];
+        let panel = cx.entity().downgrade();
         let selected = self.selected == Some(i);
         let name = if e.is_dir() {
             format!("{}/", e.name)
@@ -1483,6 +1568,27 @@ impl FilesPanel {
             .cursor_pointer()
             .when(selected, |d| d.bg(rgb(colors().selected)))
             .when(!selected, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+            // Dragged out of the window, it is fetched for the system to take.
+            .on_drag(
+                DragOut {
+                    name: e.name.clone(),
+                    dir: e.is_dir(),
+                    staged: Rc::default(),
+                },
+                move |d: &DragOut, _, _, cx| {
+                    if let Some(panel) = panel.upgrade() {
+                        let staged = panel.update(cx, |p, cx| p.stage(&d.name, cx));
+                        *d.staged.borrow_mut() = staged;
+                    }
+                    cx.new(|_| DragGhost(d.name.clone().into()))
+                },
+            )
+            .external_drag_payload(|d: &DragOut, _, _| {
+                let path = d.staged.borrow().clone()?;
+                Some(ExternalDragPayload::Files(FileDragPaths::new([(
+                    path, d.dir,
+                )])))
+            })
             // Right click: chosen, with its context menu.
             .on_mouse_down(
                 MouseButton::Right,
@@ -1723,10 +1829,6 @@ impl Render for FilesPanel {
                     .child("Files"),
             )
             .child(
-                tool("files-up", "icons/arrow-up.svg", "Up (Backspace)")
-                    .on_click(cx.listener(|p, _, _, cx| p.up(cx))),
-            )
-            .child(
                 tool("files-home", "icons/home.svg", "Home")
                     .on_click(cx.listener(|p, _, _, cx| p.go_home(cx))),
             )
@@ -1881,6 +1983,42 @@ impl Render for FilesPanel {
                 )
             }
             _ => {}
+        }
+        // The folder above, as a first row that stays while the list scrolls.
+        if self.dir.as_deref().is_some_and(|d| d != "/") {
+            body = body.child(
+                div()
+                    .id("files-parent")
+                    .w_full()
+                    .h(px(ROW_H))
+                    .flex_shrink_0()
+                    .px_3()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().hover)))
+                    .on_click(cx.listener(|p, ev: &ClickEvent, window, cx| {
+                        window.focus(&p.focus, cx);
+                        if ev.click_count() >= 2 {
+                            p.up(cx);
+                        }
+                    }))
+                    .child(
+                        svg()
+                            .path("icons/folder.svg")
+                            .size(px(15.))
+                            .flex_shrink_0()
+                            .text_color(rgb(colors().folder)),
+                    )
+                    .child(div().flex_1().text_color(rgb(colors().folder)).child(".."))
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(rgb(colors().muted))
+                            .child("Backspace"),
+                    ),
+            );
         }
         if self.dir.is_some() && self.entries.is_empty() && self.state == State::Ready {
             body = body.child(note("Empty folder.".into(), colors().muted));
