@@ -191,6 +191,9 @@ pub struct Terminal {
     /// Lines of history kept per terminal.
     pub scrollback: usize,
     pub on_disconnect: OnDisconnect,
+    /// The shell a local terminal runs, with its arguments; None: the
+    /// user's own (`$SHELL`; PowerShell or cmd on Windows).
+    pub local_shell: Option<String>,
 }
 
 impl Default for Terminal {
@@ -198,6 +201,7 @@ impl Default for Terminal {
         Terminal {
             scrollback: 10_000,
             on_disconnect: OnDisconnect::default(),
+            local_shell: None,
         }
     }
 }

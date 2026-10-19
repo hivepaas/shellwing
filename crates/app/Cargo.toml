@@ -34,6 +34,8 @@ unicode-segmentation = "1"
 # Where downloads go, and file dates in local time.
 dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# Local terminals: a PTY on Unix, ConPTY on Windows.
+portable-pty = "0.9"
 
 [dev-dependencies]
 toml = "1"

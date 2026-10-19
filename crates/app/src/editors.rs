@@ -40,7 +40,7 @@ const KNOWN: &[(&str, &str)] = &[
 ];
 
 /// Where `cmd` is on `PATH`, if it is.
-fn which(cmd: &str) -> Option<PathBuf> {
+pub(crate) fn which(cmd: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
     let exts: Vec<String> = if cfg!(windows) {
         std::env::var("PATHEXT")

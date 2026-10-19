@@ -97,6 +97,8 @@ pub struct SettingsView {
     fonts_open: Option<Fonts>,
     /// The editor command typed for Custom.
     editor_input: Entity<TextInput>,
+    /// The local shell's command, as typed.
+    shell_input: Entity<TextInput>,
     /// Custom chosen, the field shown.
     custom_editor: bool,
     /// The Keys page, once shown.
@@ -178,6 +180,20 @@ impl SettingsView {
         } else {
             String::new()
         };
+        let shell = snap
+            .settings
+            .terminal
+            .local_shell
+            .clone()
+            .unwrap_or_default();
+        let shell_input = cx.new(|cx| {
+            let mut i = TextInput::new(
+                format!("{} (yours)", crate::local::shell(None).join(" ")),
+                cx,
+            );
+            i.set_text(&shell, shell.len()..shell.len(), cx);
+            i
+        });
         let editor_input = cx.new(|cx| {
             let mut i = TextInput::new("e.g. code -n, or /path/to/editor --flag", cx);
             i.set_text(&text, text.len()..text.len(), cx);
@@ -190,11 +206,19 @@ impl SettingsView {
             snap,
             fonts_open: None,
             editor_input,
+            shell_input,
             custom_editor: custom,
             keys: None,
             snippets: None,
             known_hosts: None,
         }
+    }
+
+    /// Saves the local shell typed (empty: the user's own).
+    fn save_local_shell(&mut self, cx: &mut Context<Self>) {
+        let cmd = self.shell_input.read(cx).text().trim().to_string();
+        let value = (!cmd.is_empty()).then_some(SettingValue::Str(cmd));
+        self.change(&["terminal", "local_shell"], value, cx);
     }
 
     /// Saves the command typed for Custom (empty: the system's editor).
@@ -248,6 +272,15 @@ impl SettingsView {
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
         // Typing the editor command: Enter saves, the arrows are the field's.
+        if self.shell_input.focus_handle(cx).is_focused(window) {
+            match k.key.as_str() {
+                "enter" => self.save_local_shell(cx),
+                "escape" => window.focus(&self.focus, cx),
+                _ => return,
+            }
+            cx.notify();
+            return cx.stop_propagation();
+        }
         if self.editor_input.focus_handle(cx).is_focused(window) {
             match k.key.as_str() {
                 "enter" => self.save_custom_editor(cx),
@@ -1016,6 +1049,23 @@ impl SettingsView {
                     };
                     v.change(&["terminal", "on_disconnect"], Some(SettingValue::Str(name.into())), cx)
                 }, cx),
+            ))
+            .child(setting(
+                "Local shell",
+                "What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.",
+                div().w(px(320.)).child(
+                    div()
+                        .h(px(30.))
+                        .px(px(10.))
+                        .flex()
+                        .items_center()
+                        .rounded(px(6.))
+                        .border_1()
+                        .border_color(rgb(FIELD_EDGE))
+                        .bg(rgb(BG))
+                        .text_size(ui(13.))
+                        .child(self.shell_input.clone()),
+                ),
             ))
     }
 

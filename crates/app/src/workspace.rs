@@ -24,7 +24,7 @@ use crate::look::{self, Live, rgb as theme_rgb};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
-use crate::session::{Session, Status};
+use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::snippets;
@@ -167,6 +167,8 @@ pub enum EditTarget {
     Saved(String),
     /// A host from `~/.ssh/config`, by alias: shown read only.
     Ssh(String),
+    /// This computer: its shell is a setting.
+    Local,
 }
 
 #[derive(Clone)]
@@ -745,19 +747,31 @@ impl Workspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Entity<TermView>> {
-        let target = target::resolve(
-            spec,
-            self.live.hosts(),
-            ssh_config::default_config_path().as_deref(),
-        )
-        .map(|(mut r, h)| {
-            r.forwards.extend_from_slice(forwards);
-            (r, h)
-        });
-        let entry = target
-            .as_ref()
-            .ok()
-            .and_then(|(_, h)| h.as_ref().map(|h| h.name.clone()));
+        let local = spec == crate::local::SPEC;
+        let opens = if local {
+            Opens::Local(crate::local::shell(
+                self.live.settings().terminal.local_shell.as_deref(),
+            ))
+        } else {
+            Opens::Host(Box::new(
+                target::resolve(
+                    spec,
+                    self.live.hosts(),
+                    ssh_config::default_config_path().as_deref(),
+                )
+                .map(|(mut r, h)| {
+                    r.forwards.extend_from_slice(forwards);
+                    (r, h)
+                }),
+            ))
+        };
+        let entry = match &opens {
+            Opens::Host(t) => (**t)
+                .as_ref()
+                .ok()
+                .and_then(|(_, h)| h.as_ref().map(|h| h.name.clone())),
+            Opens::Local(_) => None,
+        };
         let (look, problem) = self.live.look_for(entry.as_deref());
         let bench = self.bench.take();
         let probe = bench
@@ -765,7 +779,7 @@ impl Workspace {
             .map_or_else(|| Arc::new(Probe::new()), |(_, p)| p.clone());
         let session = match Session::start(
             spec,
-            target,
+            opens,
             look.scrollback,
             self.live.settings().ssh.clone(),
             &self.rt,
@@ -779,7 +793,9 @@ impl Workspace {
                 return None;
             }
         };
-        if let Some(store) = self.live.store()
+        // A local shell is one of the host list's own, not a recent host.
+        if !local
+            && let Some(store) = self.live.store()
             && let Err(e) = store.add_recent(spec)
         {
             eprintln!("cannot save the recent hosts: {e}");
@@ -1199,7 +1215,7 @@ impl Workspace {
         {
             let name = match &target {
                 EditTarget::Saved(n) | EditTarget::Ssh(n) => n.clone(),
-                EditTarget::New => String::new(),
+                EditTarget::New | EditTarget::Local => String::new(),
             };
             action(
                 Action::EditHost(target),
@@ -1681,6 +1697,10 @@ impl Workspace {
     pub fn edit_host(&mut self, target: EditTarget, window: &mut Window, cx: &mut Context<Self>) {
         if self.palette.is_some() {
             self.close_palette(window, cx);
+        }
+        // The local terminal's one choice, its shell, is on the Terminal page.
+        if target == EditTarget::Local {
+            return self.open_settings(Page::Terminal, window, cx);
         }
         // Every host gets an id first, so the one edited is found again on saving.
         if let Some(store) = self.live.store()
@@ -2652,6 +2672,23 @@ impl Workspace {
             .to_lowercase(),
         };
         let mut sections = vec![];
+        let shell = crate::local::shell(self.live.settings().terminal.local_shell.as_deref());
+        let shell_name = crate::local::shell_name(&shell);
+        sections.push(Section {
+            title: "This computer".into(),
+            note: SharedString::default(),
+            group: None,
+            rows: vec![Row {
+                name: "Local terminal".into(),
+                detail: shell_name.clone().into(),
+                spec: crate::local::SPEC.into(),
+                status: self.host_status(cx, Session::is_local),
+                edit: EditTarget::Local,
+                color: None,
+                active: active_spec.as_deref() == Some(crate::local::SPEC),
+                search: format!("local terminal this computer shell {shell_name}"),
+            }],
+        });
         let favorites: Vec<Row> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
         if !favorites.is_empty() {
             sections.push(Section {

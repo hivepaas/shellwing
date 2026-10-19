@@ -300,6 +300,29 @@ lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
 
+## Local terminal
+
+*This computer › Local terminal*, at the top of the host list (and of the
+palette), opens a shell on this computer in a tab, beside the SSH ones;
+`shellwing --local` opens one from the command line.
+
+- **Splitting**, finding, snippets and typing in every pane work as with SSH.
+  The Files panel and port forwarding do not: they are SSH's.
+- **The shell** is yours: `$SHELL` (a login shell on macOS, as Terminal starts
+  it), and on Windows PowerShell 7, else Windows PowerShell, else `cmd`. It
+  starts in your home folder with `TERM=xterm-256color`, `COLORTERM=truecolor`
+  and `TERM_PROGRAM=shellwing`.
+- **Another shell:** set `local_shell` under `[terminal]` (*Settings ›
+  Terminal › Local shell*), with its arguments:
+
+  ```toml
+  [terminal]
+  local_shell = "/usr/bin/fish -l"
+  ```
+
+- **When the shell ends** (`exit`), the pane says so and Enter starts it again,
+  or the pane closes when `on_disconnect = "close"`.
+
 ## Known hosts
 
 shellwing trusts host keys the way ssh does, through the same

@@ -32,6 +32,7 @@ it); `--remove` takes them away. The icon itself is `packaging/icons/shellwing.s
 ```sh
 shellwing                     # the window with the host list
 shellwing [user@]host[:port]  # and a tab connected to host
+shellwing --local             # and a tab with a shell on this computer
 ```
 
 `host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
