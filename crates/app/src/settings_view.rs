@@ -83,6 +83,11 @@ pub struct Snap {
     pub vault_passphrase: Option<bool>,
     /// The system keychain keeps the vault's key.
     pub vault_keychain: bool,
+    /// It is open, and its passphrase alone opens it again.
+    pub vault_can_lock: bool,
+    /// A passphrase joins new devices to the vault in the sync folder; None
+    /// while not syncing.
+    pub passphrase_joins: Option<bool>,
 }
 
 pub struct SettingsView {
@@ -1479,6 +1484,22 @@ impl SettingsView {
                     v.change(&["sync", "settings"], Some(SettingValue::Bool(!settings_on)), cx)
                 }),
             ))
+            .when_some(self.snap.passphrase_joins, |d, joins| {
+                d.child(toggle(
+                    "sync-passphrase",
+                    joins,
+                    "Let a passphrase join new devices",
+                    "A new device that syncs this folder types it instead of the recovery key or being approved here. It is kept in the folder, sealed by the passphrase: anyone who can read the folder can try to guess it, so it has to be hard to guess.",
+                    cx.listener(move |v, _, w, cx| {
+                        let a = if joins {
+                            Action::StopPassphraseJoin
+                        } else {
+                            Action::LetPassphraseJoin
+                        };
+                        v.run(a, w, cx)
+                    }),
+                ))
+            })
             .child(label("Hosts kept on this device only (in their editor) stay out of it."))
     }
 
@@ -1522,12 +1543,24 @@ impl SettingsView {
                 )
                 .on_click(cx.listener(|v, _, w, cx| v.run(Action::SetVaultPassphrase, w, cx))),
             );
-            if has && self.snap.vault_keychain {
+            if self.snap.vault_can_lock {
                 buttons = buttons.child(
-                    small_button("vault-pass-off", "Remove the passphrase").on_click(
-                        cx.listener(|v, _, w, cx| v.run(Action::RemoveVaultPassphrase, w, cx)),
-                    ),
+                    small_button("vault-lock", "Lock now")
+                        .on_click(cx.listener(|v, _, w, cx| v.run(Action::LockVault, w, cx))),
                 );
+            }
+            if has && self.snap.vault_keychain {
+                buttons = buttons
+                    .child(
+                        small_button("vault-leave", "Ask for it at every start").on_click(
+                            cx.listener(|v, _, w, cx| v.run(Action::LeaveKeychain, w, cx)),
+                        ),
+                    )
+                    .child(
+                        small_button("vault-pass-off", "Remove the passphrase").on_click(
+                            cx.listener(|v, _, w, cx| v.run(Action::RemoveVaultPassphrase, w, cx)),
+                        ),
+                    );
             }
             if !self.snap.vault_keychain {
                 buttons = buttons.child(
@@ -1557,6 +1590,34 @@ impl SettingsView {
                 "What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.",
                 div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
             ))
+            .when(self.snap.vault_passphrase == Some(true), |d| {
+                let after = self.snap.settings.vault.lock_after.unwrap_or(0);
+                let options = [0, 5, 15, 30, 60]
+                    .into_iter()
+                    .map(|m| {
+                        let label = match m {
+                            0 => "Never".to_string(),
+                            60 => "1 hour".to_string(),
+                            m => format!("{m} min"),
+                        };
+                        (m, label)
+                    })
+                    .collect();
+                d.child(setting(
+                    "Lock when idle",
+                    "After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.",
+                    self.pills(
+                        "vault-lock-after",
+                        options,
+                        after,
+                        |v, m, cx| {
+                            let value = (m > 0).then_some(SettingValue::Int(i64::from(m)));
+                            v.change(&["vault", "lock_after"], value, cx)
+                        },
+                        cx,
+                    ),
+                ))
+            })
     }
 
     /// The Keys page: a view of its own, made when first shown.

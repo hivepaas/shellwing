@@ -69,6 +69,9 @@ always = false               # log every session from its start
 folder = "~/logs/shellwing"  # default: shellwing/logs in your data folder
 format = "text"              # "text" or "raw"
 timestamps = true            # each line of a text log starts with the time
+
+[vault]                      # this device's own; does not sync
+lock_after = 15              # minutes idle before the vault locks; 0: never
 ```
 
 When a connection ends, the pane shows a bar saying why and offers to connect
@@ -353,6 +356,19 @@ Esc leaves the vault locked, and SSH works as before without saved secrets;
   the passphrase (removing it only while the keychain holds the key), keeps the
   key in the keychain once there is one, and shows the recovery key.
 
+**With a system keychain**, a passphrase can still be asked for:
+*Settings › Vault › Ask for it at every start* takes the key out of the
+keychain, so only the passphrase (or the recovery key) opens the vault.
+*Keep it in the system keychain* puts it back. While the keychain does not
+hold the key:
+
+- *Lock now* (or *Lock the vault* in the palette) closes the vault until the
+  passphrase is typed again. Open connections stay; new ones ask for their
+  passwords.
+- *Lock when idle* (`lock_after` under `[vault]`, in minutes) locks it after
+  that long without a key pressed or a click in shellwing, and asks for the
+  passphrase, waiting for your return. Each device has its own.
+
 ## Local terminal
 
 *This computer › Local terminal*, at the top of the host list (and of the
@@ -562,6 +578,11 @@ readable without the key.
     same. The keys travel encrypted, through the folder; the new device can
     show the recovery key afterwards too. A request left 10 minutes is dropped.
   - **Type the recovery key.**
+  - **Type the sync passphrase**, if a device that syncs set one
+    (*Settings › Sync › Let a passphrase join new devices*). It is kept in
+    the folder, sealed by itself, so anyone who can read the folder can guess
+    at it: it must be hard to guess (several unrelated words; shellwing
+    refuses easy ones). Turning the option off removes it.
 - Syncing runs every minute, right after a secret is saved or forgotten, and on
   *Sync now*. Edits merge field by field, so two devices offline never lose
   each other's changes; a forgotten secret is forgotten everywhere.

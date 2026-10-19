@@ -163,6 +163,39 @@ impl VaultSlot {
         Ok(())
     }
 
+    /// Takes the open vault's key out of the system keychain, so every start
+    /// asks for the passphrase. Needs one set.
+    pub fn leave_keychain(&self) -> Result<(), String> {
+        let (Some(vault), Some(keys)) = (self.ready(), &self.0.keys) else {
+            return Err("the vault is not open".into());
+        };
+        vault.leave_keychain(keys.as_ref()).map_err(|e| match e {
+            shellwing_vault::Error::Locked(_) => "set a passphrase first".to_string(),
+            e => e.to_string(),
+        })?;
+        self.keep(false);
+        Ok(())
+    }
+
+    /// Whether [`VaultSlot::lock`] can lock it: open, with a passphrase to
+    /// open it again and its key not in the keychain.
+    pub fn can_lock(&self) -> bool {
+        !self.in_keychain()
+            && self
+                .ready()
+                .is_some_and(|v| v.has_vault_passphrase().unwrap_or(false))
+    }
+
+    /// Closes the open vault until its passphrase is typed again. Those
+    /// holding it (a connection reading a password) finish with it first.
+    pub fn lock(&self) -> bool {
+        if !self.can_lock() {
+            return false;
+        }
+        self.set(State::Locked(Lock::Passphrase));
+        true
+    }
+
     /// The keychain the vault's key goes in, where there is one.
     pub fn keys(&self) -> Option<Arc<dyn KeyStore>> {
         self.0.keys.clone()
@@ -220,5 +253,41 @@ impl Secrets for SessionSecrets {
                 openssh: k.private,
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use shellwing_vault::MemoryKeys;
+
+    #[test]
+    fn a_vault_out_of_the_keychain_locks_and_opens_with_its_passphrase() {
+        let dir = std::env::temp_dir().join(format!("shellwing-slot-lock-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let slot = VaultSlot::open_with(dir.join("vault.db"), MemoryKeys::default());
+        let vault = slot.get().expect("open");
+        assert!(slot.in_keychain());
+        assert!(!slot.can_lock() && !slot.lock(), "the keychain opens it");
+        assert!(slot.leave_keychain().is_err(), "not without a passphrase");
+
+        vault
+            .set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        drop(vault);
+        slot.leave_keychain().expect("left");
+        assert!(!slot.in_keychain() && slot.can_lock());
+        assert!(slot.lock());
+        assert_eq!(slot.locked(), Some(Lock::Passphrase));
+        assert!(slot.ready().is_none() && slot.get().is_none());
+
+        assert!(
+            slot.unlock(Unlock::Passphrase("wrong horse battery"))
+                .is_err()
+        );
+        slot.unlock(Unlock::Passphrase("correct horse battery"))
+            .expect("unlocked");
+        assert!(slot.ready().is_some() && !slot.in_keychain());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
