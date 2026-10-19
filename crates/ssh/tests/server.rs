@@ -1159,10 +1159,13 @@ async fn socks_connections_go_where_they_ask() {
     assert_eq!(reply[1], 0x5a, "granted");
     echoes(&mut s, b"through socks4").await;
 
-    // Somewhere nothing listens: refused, as SOCKS says it.
-    let closed = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    // Somewhere nothing listens: refused, as SOCKS says it. The port stays
+    // bound (not listening), so no test running beside this one takes it.
+    let closed = tokio::net::TcpSocket::new_v4().expect("socket");
+    closed
+        .bind("127.0.0.1:0".parse().expect("addr"))
+        .expect("bind");
     let nowhere = closed.local_addr().expect("addr").port();
-    drop(closed);
     let mut s = TcpStream::connect(("127.0.0.1", port))
         .await
         .expect("socks5");

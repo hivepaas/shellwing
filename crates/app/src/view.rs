@@ -211,6 +211,8 @@ pub struct FilesResized;
 /// What the pane's menu asks of the workspace, for this pane.
 #[derive(Clone, Copy)]
 pub enum PaneCommand {
+    /// The palette: hosts, actions, themes, for those who do not know the keys.
+    Palette,
     Split(gpui::Axis),
     Forward,
     Close,
@@ -1262,6 +1264,7 @@ impl TermView {
                 .py(px(5.))
                 .rounded(px(4.))
                 .text_color(rgb(if enabled { 0xe2e8f0 } else { 0x5b6578 }))
+                .whitespace_nowrap()
                 .when(enabled, |d| {
                     d.cursor_pointer().hover(|s| s.bg(rgb(0x1e2a3d)))
                 })
@@ -1280,7 +1283,8 @@ impl TermView {
         let status = self.session.status();
         let menu = div()
             .id("pane-menu")
-            .w(px(240.))
+            // As wide as its longest item: the text grows with the UI font.
+            .min_w(px(240.))
             .p_1()
             .flex()
             .flex_col()
@@ -1297,6 +1301,11 @@ impl TermView {
                     cx.notify();
                 }
             }))
+            .child(
+                item("menu-palette", "Command Palette…", chord("K"), true)
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
+            )
+            .child(line())
             .child(
                 item("menu-copy", "Copy", chord("C"), self.frame.selected)
                     .when(self.frame.selected, |d| {

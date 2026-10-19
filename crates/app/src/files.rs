@@ -1227,6 +1227,7 @@ impl FilesPanel {
                 .px_3()
                 .py(px(5.))
                 .rounded(px(4.))
+                .whitespace_nowrap()
                 .cursor_pointer()
                 .hover(|s| s.bg(rgb(SELECTED)))
                 .text_color(rgb(if danger { BAD } else { TEXT }))
@@ -1252,7 +1253,8 @@ impl FilesPanel {
             );
         let mut menu = div()
             .id("files-menu")
-            .w(px(230.))
+            // As wide as its longest item: the text grows with the UI font.
+            .min_w(px(230.))
             .p_1()
             .flex()
             .flex_col()
