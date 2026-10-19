@@ -404,6 +404,8 @@ impl TermView {
 
     /// Keys in the find bar: Enter (or F3, or Up) for the next match up the
     /// screen and into history, with Shift (or Down) for the next one down.
+    /// Other keys go on: the terminal leaves them alone (see `on_key`), and
+    /// only an unhandled key's text reaches the field.
     fn find_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
         match k.key.as_str() {
@@ -411,9 +413,8 @@ impl TermView {
             "up" => self.term.find_next(true),
             "down" => self.term.find_next(false),
             "escape" => self.close_find(window, cx),
-            _ => {}
+            _ => return,
         }
-        // Nothing typed here reaches the shell.
         cx.stop_propagation();
     }
 
@@ -1233,10 +1234,20 @@ impl TermView {
         self.term.wheel(lines, x, y, mods(&e.modifiers));
     }
 
-    fn on_key(&mut self, ev: &KeyDownEvent, _window: &mut Window, cx: &mut Context<Self>) {
+    fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let k = &ev.keystroke;
         let m = &k.modifiers;
         let key = k.key.as_str();
+        // Typing in the find bar is not for the shell, though it passes by
+        // here: GPUI gives a key's text to the field only if no one took the
+        // key. Shift+PageUp / PageDown still scroll.
+        let finding = self
+            .find
+            .as_ref()
+            .is_some_and(|f| f.input.read(cx).focus_handle(cx).is_focused(window));
+        if finding && !(m.shift && matches!(key, "pageup" | "pagedown")) {
+            return;
+        }
         // A hidden answer is typed past the input method, which is off meanwhile
         // (see `accepts_text_input`): Telex would turn "s" into a tone mark and
         // "dd" into "đ", and its preedit would show the password.
