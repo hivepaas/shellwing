@@ -96,6 +96,23 @@ impl Remote {
         let (reply, answer) = tokio::sync::oneshot::channel();
         self.writer.send(Input::Sftp { reply }).then_some(answer)
     }
+
+    /// Runs `command` on the running connection, beside the shell. None when
+    /// nothing is connected.
+    pub fn exec(
+        &self,
+        command: &str,
+        stdin: Vec<u8>,
+    ) -> Option<tokio::sync::oneshot::Receiver<Result<shellwing_ssh::Exec, Error>>> {
+        let (reply, answer) = tokio::sync::oneshot::channel();
+        self.writer
+            .send(Input::Exec {
+                command: command.into(),
+                stdin,
+                reply,
+            })
+            .then_some(answer)
+    }
 }
 
 /// Forwards running in this app, as specs. A second tab to a host finds the
@@ -293,6 +310,11 @@ impl Session {
         self.writer
             .send(Input::Forward { forward, reply })
             .then_some(answer)
+    }
+
+    /// The key the vault keeps that this host signs in with, if it names one.
+    pub fn vault_key(&self) -> Option<&str> {
+        self.target.as_ref()?.vault_key.as_deref()
     }
 
     pub fn remote(&self) -> Remote {

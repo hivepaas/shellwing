@@ -33,6 +33,8 @@ struct Policy {
     /// something: on a forwarding request, or (`rogue`) unasked at shell start.
     agent_reply: Option<AgentReply>,
     rogue: bool,
+    /// Run commands (exec requests) with `sh`, with this as `$HOME`.
+    home: Option<PathBuf>,
 }
 
 /// The agent's answer as the server got it, or why it got none.
@@ -111,11 +113,14 @@ impl server::Handler for TestServer {
         _user: &str,
         key: &PublicKey,
     ) -> Result<ServerAuth, Self::Error> {
-        Ok(if self.policy.key.as_ref() == Some(key) {
-            ServerAuth::Accept
-        } else {
-            ServerAuth::reject()
-        })
+        // The key itself: a key on the wire has no comment.
+        Ok(
+            if self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data()) {
+                ServerAuth::Accept
+            } else {
+                ServerAuth::reject()
+            },
+        )
     }
 
     async fn auth_publickey(
@@ -123,11 +128,14 @@ impl server::Handler for TestServer {
         _user: &str,
         key: &PublicKey,
     ) -> Result<ServerAuth, Self::Error> {
-        Ok(if self.policy.key.as_ref() == Some(key) {
-            ServerAuth::Accept
-        } else {
-            ServerAuth::reject()
-        })
+        // The key itself: a key on the wire has no comment.
+        Ok(
+            if self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data()) {
+                ServerAuth::Accept
+            } else {
+                ServerAuth::reject()
+            },
+        )
     }
 
     async fn auth_keyboard_interactive<'a>(
@@ -209,6 +217,63 @@ impl server::Handler for TestServer {
             ask_agent(session.handle(), record);
         }
         Ok(true)
+    }
+
+    /// A command: run by `sh` with `policy.home` as `$HOME`, its input,
+    /// output, errors and exit status over the channel.
+    async fn exec_request(
+        &mut self,
+        channel: ChannelId,
+        data: &[u8],
+        session: &mut ServerSession,
+    ) -> Result<(), Self::Error> {
+        let opened = self.opened.remove(&channel);
+        let (Some(home), Some(opened)) = (self.policy.home.clone(), opened) else {
+            return session.channel_failure(channel);
+        };
+        let Ok(mut child) = tokio::process::Command::new("sh")
+            .arg("-c")
+            .arg(String::from_utf8_lossy(data).into_owned())
+            .env("HOME", &home)
+            .current_dir(&home)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+        else {
+            return session.channel_failure(channel);
+        };
+        self.sessions.retain(|c| *c != channel);
+        session.channel_success(channel)?;
+        let handle = session.handle();
+        tokio::spawn(async move {
+            let (stdin, stdout, stderr) =
+                (child.stdin.take(), child.stdout.take(), child.stderr.take());
+            let mut errors = opened.make_writer_ext(Some(1));
+            let (mut from, mut to) = tokio::io::split(opened.into_stream());
+            let up = async move {
+                if let Some(mut stdin) = stdin {
+                    let _ = tokio::io::copy(&mut from, &mut stdin).await;
+                }
+            };
+            let down = async {
+                if let Some(mut out) = stdout {
+                    let _ = tokio::io::copy(&mut out, &mut to).await;
+                }
+            };
+            let err = async {
+                if let Some(mut e) = stderr {
+                    let _ = tokio::io::copy(&mut e, &mut errors).await;
+                }
+            };
+            tokio::join!(up, down, err);
+            let code = child.wait().await.ok().and_then(|s| s.code()).unwrap_or(1);
+            let _ = handle.exit_status_request(channel, code as u32).await;
+            let _ = to.shutdown().await;
+            let _ = handle.close(channel).await;
+        });
+        Ok(())
     }
 
     /// `sftp`: OpenSSH's sftp-server, talking over the channel.
@@ -784,6 +849,8 @@ struct Saved {
     password: Option<String>,
     passphrase: Option<(String, String)>,
     learned: Mutex<Vec<shellwing_ssh::Learned>>,
+    /// Keys the app keeps: id, and the key in OpenSSH's format.
+    stored: Vec<(String, String)>,
 }
 
 impl shellwing_ssh::Secrets for Saved {
@@ -800,6 +867,17 @@ impl shellwing_ssh::Secrets for Saved {
 
     fn learned(&self, secret: shellwing_ssh::Learned) {
         self.learned.lock().expect("learned").push(secret);
+    }
+
+    fn keys(&self) -> Vec<shellwing_ssh::keys::StoredKey> {
+        self.stored
+            .iter()
+            .map(|(id, text)| shellwing_ssh::keys::StoredKey {
+                id: id.clone(),
+                name: id.clone(),
+                openssh: shellwing_ssh::keys::Zeroizing::new(text.clone()),
+            })
+            .collect()
     }
 }
 
@@ -1448,4 +1526,92 @@ async fn a_host_can_take_new_keys_without_asking() {
             .contains(&format!("[127.0.0.1]:{port}")),
         "the key was recorded"
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_key_the_app_keeps_signs_in_without_a_file() {
+    use shellwing_ssh::keys::{KeyKind, generate, to_vault};
+    let fx = Fixture::new("stored-key");
+    let kept = generate(KeyKind::Ed25519, "kept").expect("key");
+    let other = generate(KeyKind::Ed25519, "other").expect("key");
+    let (port, _) = serve(
+        Policy {
+            key: Some(kept.public_key().clone()),
+            ..Default::default()
+        },
+        &[MethodKind::PublicKey],
+    )
+    .await;
+    let saved = Arc::new(Saved {
+        stored: vec![
+            ("other".into(), to_vault(&other).expect("pem").to_string()),
+            ("kept".into(), to_vault(&kept).expect("pem").to_string()),
+        ],
+        ..Default::default()
+    });
+    let with = |key: &str, answers| {
+        let mut target = local(port, "alice");
+        target.vault_key = Some(key.into());
+        let (p, asked) = scripted(answers);
+        let mut opts = fx.options(target, p);
+        opts.secrets = Some(saved.clone());
+        (opts, asked)
+    };
+    let (opts, asked) = with("kept", vec![Some("yes")]);
+    connect(opts).await.expect("the kept key signs in");
+    assert_eq!(kinds(&asked), ["hostkey"], "nothing else was asked");
+    // A host given another key offers only that one.
+    let (opts, _) = with("other", vec![]);
+    assert!(connect(opts).await.is_err());
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_public_key_is_installed_beside_the_shell() {
+    use shellwing_ssh::keys::{INSTALL, Installed, installed};
+    let fx = Fixture::new("install");
+    let home = fx.dir.join("home");
+    std::fs::create_dir_all(&home).expect("home");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            home: Some(home.clone()),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, _) = scripted(vec![Some("yes"), Some("pw")]);
+    let session = shellwing_ssh::connect(
+        fx.options(local(port, "me"), p),
+        Box::new(|_| {}),
+        Box::new(|_| {}),
+    )
+    .await
+    .expect("connect");
+    let line = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample me@here";
+    let install = || async {
+        let (reply, answer) = tokio::sync::oneshot::channel();
+        let _ = session.sender().send(Input::Exec {
+            command: INSTALL.into(),
+            stdin: format!("{line}\n").into_bytes(),
+            reply,
+        });
+        let out = tokio::time::timeout(Duration::from_secs(10), answer)
+            .await
+            .expect("in time")
+            .expect("answer")
+            .expect("exec");
+        installed(out.status, &out.stdout, &out.stderr)
+    };
+    assert_eq!(install().await, Ok(Installed::Added));
+    assert_eq!(install().await, Ok(Installed::Present));
+    let keys = std::fs::read_to_string(home.join(".ssh/authorized_keys")).expect("keys");
+    assert_eq!(keys, format!("{line}\n"));
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = |p: PathBuf| std::fs::metadata(p).expect("meta").permissions().mode() & 0o777;
+        assert_eq!(mode(home.join(".ssh")), 0o700);
+        assert_eq!(mode(home.join(".ssh/authorized_keys")), 0o600);
+    }
 }

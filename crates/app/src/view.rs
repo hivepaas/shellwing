@@ -81,6 +81,8 @@ const WHEEL_LINES: f32 = 3.0;
 const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 /// How long the font size stays on screen after zooming.
 const ZOOM_NOTICE: Duration = Duration::from_secs(2);
+/// How a key's install went.
+const KEY_NOTICE: Duration = Duration::from_secs(8);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
 /// The scrollbar stays this long after scrolling stops (with `scrollbar = "auto"`).
@@ -274,6 +276,7 @@ pub struct TermView {
     /// Dragging the panel's edge: where the drag began, and the width then.
     files_drag: Option<(f32, f32)>,
     find: Option<FindBar>,
+    key_offer: Option<KeyOffer>,
     /// The right-click menu, open where it was asked for.
     menu: Option<Point<Pixels>>,
 }
@@ -300,7 +303,23 @@ const MATCH_BG: u32 = 0xffe082;
 const CURRENT_BG: u32 = 0xf2a57e;
 const FOUND_TEXT: u32 = 0x000000;
 
+/// The pane's host is to sign in with a key the vault keeps.
+pub struct UseKey {
+    /// The host's name in hosts.toml.
+    pub host: String,
+    pub vault_id: String,
+    pub key_name: String,
+}
+
+/// A key just installed on this pane's host, offered as its way to sign in.
+struct KeyOffer {
+    host: String,
+    vault_id: String,
+    key_name: String,
+}
+
 impl gpui::EventEmitter<StatusChanged> for TermView {}
+impl gpui::EventEmitter<UseKey> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
@@ -384,8 +403,132 @@ impl TermView {
             files_shown: false,
             files_drag: None,
             find: None,
+            key_offer: None,
             menu: None,
         }
+    }
+
+    /// Adds `key` to the host's `authorized_keys` over this pane's
+    /// connection, and says how it went; a key the vault keeps is then
+    /// offered as the host's way to sign in.
+    pub fn install_key(&mut self, key: crate::workspace::KeyToInstall, cx: &mut Context<Self>) {
+        let host = self.session.title.clone();
+        let Some(answer) = self.session.remote().exec(
+            shellwing_ssh::keys::INSTALL,
+            format!("{}\n", key.public.trim()).into_bytes(),
+        ) else {
+            return self.show_notice("Not connected.", CONFIRM_PASTE, cx);
+        };
+        self.show_notice(
+            format!("Installing {} on {host}…", key.name),
+            CONFIRM_PASTE,
+            cx,
+        );
+        cx.spawn(async move |this, cx| {
+            let result = answer.await;
+            let _ = this.update(cx, |v, cx| {
+                let done = match result {
+                    Ok(Ok(out)) => {
+                        shellwing_ssh::keys::installed(out.status, &out.stdout, &out.stderr)
+                    }
+                    Ok(Err(e)) => Err(e.to_string()),
+                    Err(_) => Err("the connection ended".into()),
+                };
+                let said = match &done {
+                    Ok(shellwing_ssh::keys::Installed::Added) => {
+                        format!("{} is installed on {host}.", key.name)
+                    }
+                    Ok(shellwing_ssh::keys::Installed::Present) => {
+                        format!("{host} has {} already.", key.name)
+                    }
+                    Err(why) => format!("{} was not installed on {host}: {why}", key.name),
+                };
+                // Offered only for a host in hosts.toml not set to it already.
+                let offer = key
+                    .vault_id
+                    .clone()
+                    .filter(|id| done.is_ok() && v.session.vault_key() != Some(id.as_str()))
+                    .zip(v.session.entry.clone());
+                match offer {
+                    Some((vault_id, host)) => {
+                        v.notice = None;
+                        v.key_offer = Some(KeyOffer {
+                            host,
+                            vault_id,
+                            key_name: key.name.clone(),
+                        });
+                        cx.notify();
+                    }
+                    None => v.show_notice(said, KEY_NOTICE, cx),
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn key_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let offer = self.key_offer.as_ref()?;
+        let button = |id: &'static str, label: String, primary: bool| {
+            div()
+                .id(id)
+                .px_3()
+                .py_1()
+                .rounded_md()
+                .cursor_pointer()
+                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(!primary, |d| {
+                    d.border_1()
+                        .border_color(rgb(0x3f4a5c))
+                        .hover(|s| s.bg(rgb(0x1e2736)))
+                })
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        Some(
+            div()
+                .absolute()
+                .top_3()
+                .left_3()
+                .right_3()
+                .flex()
+                .items_center()
+                .gap_3()
+                .px_3()
+                .py_2()
+                .rounded_lg()
+                .border_1()
+                .border_color(rgb(0x2b3648))
+                .bg(gpui::rgba(0x080a12e6))
+                .text_sm()
+                .text_color(rgb(0xe2e8f0))
+                .child(div().flex_1().min_w_0().child(format!(
+                    "{} is installed on {}. Sign in to {} with it from now on?",
+                    offer.key_name, offer.host, offer.host
+                )))
+                .child(
+                    button("key-not-now", "Not now".into(), false).on_click(cx.listener(
+                        |v, _, _, cx| {
+                            v.key_offer = None;
+                            cx.notify();
+                        },
+                    )),
+                )
+                .child(
+                    button("key-use", format!("Use it for {}", offer.host), true).on_click(
+                        cx.listener(|v, _, _, cx| {
+                            if let Some(o) = v.key_offer.take() {
+                                cx.emit(UseKey {
+                                    host: o.host,
+                                    vault_id: o.vault_id,
+                                    key_name: o.key_name,
+                                });
+                            }
+                            cx.notify();
+                        }),
+                    ),
+                )
+                .into_any_element(),
+        )
     }
 
     /// Opens the find bar, or takes the keyboard back to it with its text
@@ -1826,6 +1969,9 @@ impl Render for TermView {
         }
         if let Some(s) = self.save_bar(cx) {
             terminal = terminal.child(s);
+        }
+        if let Some(k) = self.key_bar(cx) {
+            terminal = terminal.child(k);
         }
         if let Some(at) = self.menu {
             terminal = terminal.child(self.pane_menu(at, cx));

@@ -56,6 +56,20 @@ pub struct EditorContext {
     pub themes: Vec<(String, String)>,
     /// The app's settings that a host's empty field falls back to.
     pub app_ssh: shellwing_config::Ssh,
+    /// Keys to choose from: the vault's, then the files in `~/.ssh`.
+    pub keys: Vec<KeyChoice>,
+}
+
+/// A key the host can sign in with.
+#[derive(Clone)]
+pub struct KeyChoice {
+    /// As hosts.toml writes it: `vault:<id>`, or a path.
+    pub value: String,
+    pub name: String,
+    /// `ED25519`, `RSA 3072`…
+    pub kind: String,
+    /// Kept in the vault rather than a file.
+    pub vault: bool,
 }
 
 enum Mode {
@@ -63,7 +77,7 @@ enum Mode {
     /// A host from `~/.ssh/config`, as ssh would reach it.
     SshConfig {
         alias: String,
-        resolved: Option<Resolved>,
+        resolved: Option<Box<Resolved>>,
     },
 }
 
@@ -71,6 +85,7 @@ enum Mode {
 enum Menu {
     Group,
     Theme,
+    Key,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -216,8 +231,9 @@ impl HostEditor {
 
     /// A host from `~/.ssh/config`, read only until copied.
     pub fn ssh_config(ctx: EditorContext, alias: String, cx: &mut Context<Self>) -> Self {
-        let resolved =
-            ssh_config::resolve(&alias, ssh_config::default_config_path().as_deref()).ok();
+        let resolved = ssh_config::resolve(&alias, ssh_config::default_config_path().as_deref())
+            .ok()
+            .map(Box::new);
         Self::blank(ctx, Mode::SshConfig { alias, resolved }, cx)
     }
 
@@ -364,7 +380,7 @@ impl HostEditor {
             problems.push((Field::User, "No spaces.".into()));
         }
         if self.method == AuthMethod::Key && host.auth.key.is_none() {
-            problems.push((Field::Key, "Choose a key file.".into()));
+            problems.push((Field::Key, "Choose a key.".into()));
         }
         let keepalive = self.text(&i.keepalive, cx);
         if !keepalive.is_empty() && keepalive.parse::<u64>().map_or(true, |k| k > 3600) {
@@ -576,9 +592,6 @@ impl HostEditor {
     fn tab_order(&self, cx: &gpui::App) -> Vec<FocusHandle> {
         let i = &self.inputs;
         let mut order = vec![&i.name, &i.alias, &i.address, &i.port, &i.user];
-        if self.method == AuthMethod::Key {
-            order.push(&i.key);
-        }
         if self.adding_jump {
             order.push(&i.jump);
         }
@@ -744,11 +757,13 @@ impl HostEditor {
         let current = match menu {
             Menu::Group => self.group.clone(),
             Menu::Theme => self.theme.clone(),
+            Menu::Key => Some(self.text(&self.inputs.key, cx)),
         };
         let mut list = div()
             .id(match menu {
                 Menu::Group => "group-menu",
                 Menu::Theme => "theme-menu",
+                Menu::Key => "key-menu",
             })
             .flex()
             .flex_col()
@@ -778,6 +793,15 @@ impl HostEditor {
                                 e.naming_group = false;
                             }
                             Menu::Theme => e.theme = value.clone(),
+                            // No value: another file, to look for.
+                            Menu::Key => match &value {
+                                Some(v) => {
+                                    let key = e.inputs.key.clone();
+                                    e.set(&key, v, cx);
+                                    e.problems.retain(|(f, _)| *f != Field::Key);
+                                }
+                                None => e.browse_key(cx),
+                            },
                         }
                         e.menu = None;
                         cx.notify();
@@ -1078,7 +1102,7 @@ impl Render for HostEditor {
             .text_color(rgb(TEXT));
         if let Mode::SshConfig { alias, resolved } = &self.mode {
             let (alias, resolved) = (alias.clone(), resolved.clone());
-            return shell.child(self.render_ssh(&alias, resolved.as_ref(), cx));
+            return shell.child(self.render_ssh(&alias, resolved.as_deref(), cx));
         }
 
         let i = &self.inputs;
@@ -1166,21 +1190,44 @@ impl Render for HostEditor {
             );
         }
         let mut sign_in = section("Sign in").child(seg);
+        let key_text = self.text(&i.key, cx);
+        let chosen_key = self.ctx.keys.iter().find(|k| k.value == key_text);
         if self.method == AuthMethod::Key {
-            sign_in = sign_in.child(
-                row()
-                    .items_end()
-                    .child(self.field("Key", &i.key, Field::Key, window, cx))
-                    .child(
-                        outline_button("browse-key", "Browse…")
-                            .h(px(30.))
-                            .on_click(cx.listener(|e, _, _, cx| e.browse_key(cx))),
-                    ),
-            );
+            let shown = match chosen_key {
+                Some(k) if k.vault => format!("{} · in the vault · {}", k.name, k.kind),
+                Some(k) => format!("{} · {}", k.value, k.kind),
+                None if key_text.is_empty() => "Choose a key".to_string(),
+                None => key_text.clone(),
+            };
+            sign_in =
+                sign_in.child(row().child(self.select("key-select", "Key", shown, Menu::Key, cx)));
+            if self.menu == Some(Menu::Key) {
+                let mut choices: Vec<(Option<String>, String)> = self
+                    .ctx
+                    .keys
+                    .iter()
+                    .map(|k| {
+                        let label = if k.vault {
+                            format!("{}   in the vault · {}", k.name, k.kind)
+                        } else {
+                            format!("{}   {}", k.value, k.kind)
+                        };
+                        (Some(k.value.clone()), label)
+                    })
+                    .collect();
+                choices.push((None, "Another key file…".to_string()));
+                sign_in = sign_in.child(self.menu_list(Menu::Key, choices, cx));
+            }
+            if let Some((_, p)) = self.problems.iter().find(|(f, _)| *f == Field::Key) {
+                sign_in = sign_in.child(problem_text(p));
+            }
         }
         sign_in = sign_in.child(hint_text(match self.method {
             AuthMethod::Auto => {
-                "Tries the agent, then your keys, then asks for a password, like ssh."
+                "Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh."
+            }
+            AuthMethod::Key if chosen_key.is_some_and(|k| k.vault) => {
+                "Kept in the vault: no passphrase to ask for."
             }
             AuthMethod::Key => "Passphrase: asked for when needed, and can be saved in the vault.",
             AuthMethod::Password => "Asked for when connecting, and can be saved in the vault.",

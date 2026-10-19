@@ -1,5 +1,6 @@
 //! A one-line text field with input method support (preedit), selection and
-//! the clipboard.
+//! the clipboard. A masked one (for passphrases) shows a dot per character
+//! and gives nothing to the clipboard.
 //!
 //! Adapted from GPUI's `examples/input.rs` (Apache-2.0, Zed Industries): keys
 //! are handled directly instead of through actions, and the look is shellwing's.
@@ -28,7 +29,11 @@ pub struct TextInput {
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
     selecting: bool,
+    masked: bool,
 }
+
+/// What a masked field shows for each character.
+const DOT: char = '•';
 
 impl gpui::EventEmitter<Changed> for TextInput {}
 
@@ -44,6 +49,49 @@ impl TextInput {
             last_layout: None,
             last_bounds: None,
             selecting: false,
+            masked: false,
+        }
+    }
+
+    /// A field whose text is hidden, for passphrases.
+    pub fn masked(mut self) -> Self {
+        self.masked = true;
+        self
+    }
+
+    /// What is drawn: the text, or a dot per character.
+    fn shown(&self) -> SharedString {
+        if self.masked {
+            std::iter::repeat_n(DOT, self.content.graphemes(true).count())
+                .collect::<String>()
+                .into()
+        } else {
+            self.content.clone()
+        }
+    }
+
+    /// An offset in the text as one in what is drawn.
+    fn shown_offset(&self, offset: usize) -> usize {
+        if self.masked {
+            self.content[..offset.min(self.content.len())]
+                .graphemes(true)
+                .count()
+                * DOT.len_utf8()
+        } else {
+            offset
+        }
+    }
+
+    /// An offset in what is drawn as one in the text.
+    fn text_offset(&self, shown: usize) -> usize {
+        if self.masked {
+            let n = shown / DOT.len_utf8();
+            self.content
+                .grapheme_indices(true)
+                .nth(n)
+                .map_or(self.content.len(), |(i, _)| i)
+        } else {
+            shown
         }
     }
 
@@ -169,7 +217,7 @@ impl TextInput {
                     self.replace(self.selected.clone(), &text.replace(['\r', '\n'], " "), cx);
                 }
             }
-            "c" | "x" if cmd && !self.selected.is_empty() => {
+            "c" | "x" if cmd && !self.selected.is_empty() && !self.masked => {
                 let text = self.content[self.selected.clone()].to_string();
                 cx.write_to_clipboard(ClipboardItem::new_string(text));
                 if k.key == "x" {
@@ -195,7 +243,7 @@ impl TextInput {
         if position.y > bounds.bottom() {
             return self.content.len();
         }
-        line.closest_index_for_x(position.x - bounds.left())
+        self.text_offset(line.closest_index_for_x(position.x - bounds.left()))
     }
 
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -336,11 +384,11 @@ impl EntityInputHandler for TextInput {
         let range = self.range_from_utf16(&range_utf16);
         Some(Bounds::from_corners(
             point(
-                bounds.left() + layout.x_for_index(range.start),
+                bounds.left() + layout.x_for_index(self.shown_offset(range.start)),
                 bounds.top(),
             ),
             point(
-                bounds.left() + layout.x_for_index(range.end),
+                bounds.left() + layout.x_for_index(self.shown_offset(range.end)),
                 bounds.bottom(),
             ),
         ))
@@ -354,7 +402,7 @@ impl EntityInputHandler for TextInput {
     ) -> Option<usize> {
         let local = self.last_bounds?.localize(&p)?;
         let layout = self.last_layout.as_ref()?;
-        let utf8 = layout.index_for_x(p.x - local.x)?;
+        let utf8 = self.text_offset(layout.index_for_x(p.x - local.x)?);
         Some(self.offset_to_utf16(utf8))
     }
 }
@@ -417,7 +465,7 @@ impl Element for TextElement {
         let (text, color) = if input.content.is_empty() {
             (input.placeholder.clone(), rgb(0x6b7588).into())
         } else {
-            (input.content.clone(), style.color)
+            (input.shown(), style.color)
         };
         let run = TextRun {
             len: text.len(),
@@ -427,7 +475,11 @@ impl Element for TextElement {
             underline: None,
             strikethrough: None,
         };
-        let runs = match input.marked.as_ref() {
+        let marked = input
+            .marked
+            .as_ref()
+            .map(|m| input.shown_offset(m.start)..input.shown_offset(m.end));
+        let runs = match marked.as_ref() {
             Some(m) if !input.content.is_empty() => [
                 TextRun {
                     len: m.start,
@@ -459,7 +511,7 @@ impl Element for TextElement {
         let caret_at = if input.content.is_empty() {
             px(0.)
         } else {
-            line.x_for_index(input.cursor())
+            line.x_for_index(input.shown_offset(input.cursor()))
         };
         let (selection, cursor) = if input.selected.is_empty() {
             (
@@ -477,11 +529,13 @@ impl Element for TextElement {
                 Some(fill(
                     Bounds::from_corners(
                         point(
-                            bounds.left() + line.x_for_index(input.selected.start),
+                            bounds.left()
+                                + line.x_for_index(input.shown_offset(input.selected.start)),
                             bounds.top(),
                         ),
                         point(
-                            bounds.left() + line.x_for_index(input.selected.end),
+                            bounds.left()
+                                + line.x_for_index(input.shown_offset(input.selected.end)),
                             bounds.bottom(),
                         ),
                     ),

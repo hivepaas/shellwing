@@ -9,11 +9,13 @@
 //! - [`forward`] forwards ports as `-L`, `-R` and `-D` do, for as long as the
 //!   session runs.
 //! - [`sftp`] browses and transfers files on a channel beside the shell.
+//! - [`keys`] makes, reads and writes keys, and adds one to a server.
 
 mod auth;
 pub mod config;
 pub mod forward;
 pub mod hostkey;
+pub mod keys;
 pub mod prompt;
 pub mod secrets;
 pub mod sftp;
@@ -130,6 +132,10 @@ pub enum Error {
     Forward { spec: String, why: String },
     #[error("{0}")]
     Sftp(String),
+    #[error("key: {0}")]
+    Key(String),
+    #[error("{0}")]
+    Exec(String),
     #[error("via {host}: {source}")]
     Jump {
         host: String,
@@ -158,6 +164,49 @@ pub enum Input {
     Sftp {
         reply: tokio::sync::oneshot::Sender<Result<Sftp, Error>>,
     },
+    /// Runs a command on a channel of its own, with `stdin` as its input.
+    Exec {
+        command: String,
+        stdin: Vec<u8>,
+        reply: tokio::sync::oneshot::Sender<Result<Exec, Error>>,
+    },
+}
+
+/// How a command run beside the shell ended, and what it printed (the first
+/// [`EXEC_KEEP`] bytes of each stream).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Exec {
+    pub status: Option<u32>,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+pub const EXEC_KEEP: usize = 64 * 1024;
+
+async fn exec(handle: &Handle<Checker>, command: &str, stdin: &[u8]) -> Result<Exec, Error> {
+    let mut ch = handle.channel_open_session().await?;
+    ch.exec(true, command).await?;
+    if !stdin.is_empty() {
+        ch.data(stdin).await?;
+    }
+    ch.eof().await?;
+    let mut out = Exec::default();
+    let keep = |buf: &mut Vec<u8>, data: &[u8]| {
+        let room = EXEC_KEEP.saturating_sub(buf.len());
+        buf.extend_from_slice(&data[..data.len().min(room)]);
+    };
+    while let Some(msg) = ch.wait().await {
+        match msg {
+            ChannelMsg::Data { data } => keep(&mut out.stdout, &data),
+            ChannelMsg::ExtendedData { data, ext: 1 } => keep(&mut out.stderr, &data),
+            ChannelMsg::ExitStatus { exit_status } => out.status = Some(exit_status),
+            ChannelMsg::Failure => {
+                return Err(Error::Exec("the server would not run a command".into()));
+            }
+            _ => {}
+        }
+    }
+    Ok(out)
 }
 
 /// A connected interactive shell. Dropping every sender closes the session.
@@ -270,6 +319,7 @@ async fn open_hop(
         &mut handle,
         &hop.target,
         &hop.keys_to_try(),
+        auth::StoredKeys::of(hop),
         &opts.auth,
         opts.prompter.as_ref(),
         opts.secrets.as_deref(),
@@ -361,6 +411,12 @@ pub async fn connect(
                             let handle = handle.clone();
                             tokio::spawn(async move {
                                 let _ = reply.send(sftp::open(&handle).await);
+                            });
+                        }
+                        Some(Input::Exec { command, stdin, reply }) => {
+                            let handle = handle.clone();
+                            tokio::spawn(async move {
+                                let _ = reply.send(exec(&handle, &command, &stdin).await);
                             });
                         }
                         None => break,

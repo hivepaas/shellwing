@@ -25,6 +25,8 @@ pub enum PaletteEvent {
     Copy(String),
     /// What was typed in answer to a question.
     Answer(String),
+    /// An entry chosen for what the palette was opened for (see [`Palette::chooser`]).
+    Chose(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -64,6 +66,8 @@ pub enum Kind {
     Copy(String),
     /// Something to read; Enter does nothing.
     Note,
+    /// A host (its spec) to choose for something, such as installing a key.
+    Choice(String),
 }
 
 #[derive(Clone, Debug)]
@@ -134,6 +138,8 @@ enum Mode {
     Show,
     /// A question: Enter answers with what is typed.
     Ask,
+    /// Hosts to choose one of, for something other than connecting.
+    Choose,
 }
 
 pub struct Palette {
@@ -183,6 +189,12 @@ impl Palette {
             "Find a saved password or passphrase",
             cx,
         )
+    }
+
+    /// Hosts to choose one of (entries of [`Kind::Choice`]), for what the
+    /// field's placeholder says.
+    pub fn chooser(placeholder: &str, entries: Vec<Entry>, cx: &mut Context<Self>) -> Self {
+        Self::build(Mode::Choose, entries, 0, placeholder, cx)
     }
 
     /// Themes, starting on `current`.
@@ -293,7 +305,7 @@ impl Palette {
 
     /// Group headers only while nothing is typed; a filtered list is one ranking.
     fn headers(&self) -> bool {
-        self.mode == Mode::Connect && self.unfiltered
+        matches!(self.mode, Mode::Connect | Mode::Choose) && self.unfiltered
     }
 
     fn choose(&mut self, ix: usize, cx: &mut Context<Self>) {
@@ -315,6 +327,7 @@ impl Palette {
             }
             Kind::Secret(id) => PaletteEvent::Forget(id.clone()),
             Kind::Copy(text) => PaletteEvent::Copy(text.clone()),
+            Kind::Choice(spec) => PaletteEvent::Chose(spec.clone()),
             Kind::Note => return,
         });
     }
@@ -384,7 +397,7 @@ impl Render for Palette {
             }
             let selected = i == self.selected;
             let armed = self.armed == Some(i);
-            let has_dot = matches!(e.kind, Kind::Host(_));
+            let has_dot = matches!(e.kind, Kind::Host(_) | Kind::Choice(_));
             list = list.child(
                 div()
                     .id(("palette-entry", i))
@@ -453,6 +466,7 @@ impl Render for Palette {
             Mode::Secrets => "↑↓ move   Enter twice forget   Esc close   secrets are never shown",
             Mode::Show => "Enter copies   Esc close",
             Mode::Ask => "Enter answers   Esc cancels",
+            Mode::Choose => "↑↓ move   Enter choose   Esc cancel",
         };
         div()
             .w(px(640.))

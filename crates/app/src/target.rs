@@ -79,7 +79,11 @@ fn from_host(
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
-        r.identity_files = vec![expand_home(key)];
+        // `vault:<id>`: a key the app keeps; else a key file.
+        match key.strip_prefix(VAULT_KEY) {
+            Some(id) => r.vault_key = Some(id.to_string()),
+            None => r.identity_files = vec![expand_home(key)],
+        }
     }
     if !h.jump.is_empty() {
         chain.push(h.name.clone());
@@ -95,6 +99,9 @@ fn from_host(
     }
     Ok(r)
 }
+
+/// How hosts.toml names a key the app keeps: `key = "vault:<id>"`.
+pub const VAULT_KEY: &str = "vault:";
 
 fn expand_home(path: &str) -> PathBuf {
     match (path.strip_prefix("~/"), std::env::home_dir()) {
@@ -176,6 +183,16 @@ mod tests {
         let (r, entry) = resolve("me@plain.example:2022", &hosts(SAMPLE), None).expect("resolve");
         assert!(entry.is_none());
         assert_eq!(r.target.to_string(), "me@plain.example:2022");
+    }
+
+    #[test]
+    fn a_key_the_app_keeps_is_named_by_its_id() {
+        let h = hosts(
+            "[[host]]\nname = \"v\"\naddress = \"v.example\"\n[host.auth]\nmethod = \"key\"\nkey = \"vault:0192ab\"\n",
+        );
+        let (r, _) = resolve("v", &h, None).expect("resolve");
+        assert_eq!(r.vault_key.as_deref(), Some("0192ab"));
+        assert!(r.identity_files.is_empty() && r.keys_to_try().is_empty());
     }
 
     #[test]
