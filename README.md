@@ -57,6 +57,7 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
 | Alt+1…9 (Cmd+1…9) | Go to a tab |
 | Ctrl+Shift+B | Show or hide the host list |
+| Ctrl+Shift+F (Cmd+F) | Find in the pane and its history: Enter (or Up) for the next match up, Shift+Enter (or Down) back down, Alt+C to match case, Alt+R for a regular expression, Esc to close |
 | Ctrl+Shift+C / V, Shift+Insert | Copy / paste |
 | Shift+PageUp / PageDown / End | Scroll the history / back to the bottom |
 | Ctrl+= / Ctrl+- / Ctrl+0 | Zoom the font in this tab (Cmd on macOS) |
