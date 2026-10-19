@@ -27,6 +27,11 @@ pub enum PaletteEvent {
     Answer(String),
     /// An entry chosen for what the palette was opened for (see [`Palette::chooser`]).
     Chose(String),
+    /// Run a snippet (by id): in the pane, or in every pane of the tab.
+    Snippet {
+        id: String,
+        all: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -43,6 +48,8 @@ pub enum Action {
     Settings,
     Forward,
     ToggleHosts,
+    /// Type in every pane of the tab, or stop.
+    Broadcast,
     CloseTab,
     EditSettings,
     EditHosts,
@@ -68,6 +75,8 @@ pub enum Kind {
     Note,
     /// A host (its spec) to choose for something, such as installing a key.
     Choice(String),
+    /// A snippet, by id.
+    Snippet(String),
 }
 
 #[derive(Clone, Debug)]
@@ -308,7 +317,8 @@ impl Palette {
         matches!(self.mode, Mode::Connect | Mode::Choose) && self.unfiltered
     }
 
-    fn choose(&mut self, ix: usize, cx: &mut Context<Self>) {
+    /// `all`: Alt+Enter, a snippet for every pane of the tab.
+    fn choose(&mut self, ix: usize, all: bool, cx: &mut Context<Self>) {
         let Some(e) = self.shown.get(ix) else {
             return;
         };
@@ -328,6 +338,10 @@ impl Palette {
             Kind::Secret(id) => PaletteEvent::Forget(id.clone()),
             Kind::Copy(text) => PaletteEvent::Copy(text.clone()),
             Kind::Choice(spec) => PaletteEvent::Chose(spec.clone()),
+            Kind::Snippet(id) => PaletteEvent::Snippet {
+                id: id.clone(),
+                all,
+            },
             Kind::Note => return,
         });
     }
@@ -350,7 +364,7 @@ impl Palette {
                     cx.emit(PaletteEvent::Answer(answer));
                 }
             }
-            "enter" => self.choose(self.selected, cx),
+            "enter" => self.choose(self.selected, k.modifiers.alt, cx),
             "down" => step(1, self, cx),
             "up" => step(-1, self, cx),
             "n" if k.modifiers.control => step(1, self, cx),
@@ -410,7 +424,9 @@ impl Render for Palette {
                     .cursor_pointer()
                     .when(selected, |d| d.bg(rgb(0x17233a)))
                     .when(!selected, |d| d.hover(|s| s.bg(rgb(0x141c2b))))
-                    .on_click(cx.listener(move |p, _, _, cx| p.choose(i, cx)))
+                    .on_click(cx.listener(move |p, e: &gpui::ClickEvent, _, cx| {
+                        p.choose(i, e.modifiers().alt, cx)
+                    }))
                     .when(has_dot, |d| d.child(dot(e.status)))
                     .child(
                         div()

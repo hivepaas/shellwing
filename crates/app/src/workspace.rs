@@ -27,10 +27,12 @@ use crate::secrets::VaultSlot;
 use crate::session::{Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
+use crate::snippets;
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
 use crate::view::{
-    CloseRequested, FilesResized, PaneCommand, StatusChanged, TermView, UseKey, VaultChanged, hsla,
+    CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView, UseKey,
+    VaultChanged, hsla,
 };
 use shellwing_vault::{Folder, FolderState};
 
@@ -39,6 +41,8 @@ const SAVE_BOUNDS: Duration = Duration::from_millis(400);
 /// How long a problem with the config files stays on screen.
 /// The host list's edge while dragged or hovered.
 const ACCENT_LINE: u32 = 0x38bdf8;
+/// Typing in every pane of a tab: amber, as the panes show it.
+const BROADCAST: u32 = 0xf59e0b;
 /// The logo's sky blue, as in the sketch and the app icon.
 const LOGO: u32 = 0x38bdf8;
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
@@ -64,6 +68,8 @@ enum Shortcut {
     Files,
     /// Find text in the focused pane.
     Find,
+    /// Type in every pane of the tab, or stop.
+    Broadcast,
     Settings,
     Theme(isize),
     /// Cmd+Q on macOS.
@@ -74,6 +80,10 @@ enum Shortcut {
 struct Tab {
     root: Option<Pane<Entity<TermView>>>,
     focused: Entity<TermView>,
+    /// What is typed in one pane goes to every pane that listens.
+    broadcast: bool,
+    /// Panes left out of that.
+    left_out: Vec<gpui::EntityId>,
 }
 
 impl Tab {
@@ -165,6 +175,19 @@ enum Asking {
     RecoveryKey(std::path::PathBuf),
     /// A port to forward on the active tab's connection.
     Forward,
+    /// A value a snippet needs before it runs.
+    Snippet(SnippetRun),
+}
+
+/// A snippet on its way to running.
+#[derive(Clone)]
+struct SnippetRun {
+    snippet: snippets::Snippet,
+    /// In every pane of the tab (that listens), not only the focused one.
+    all: bool,
+    values: std::collections::BTreeMap<String, String>,
+    /// The names still to ask for.
+    left: Vec<String>,
 }
 
 /// What `state/session.json` keeps of a pane tree: hosts and splits.
@@ -336,6 +359,8 @@ impl Workspace {
             self.tabs.push(Tab {
                 root: Some(Pane::Leaf(view.clone())),
                 focused: view,
+                broadcast: false,
+                left_out: vec![],
             });
             self.activate(self.tabs.len() - 1, window, cx);
             self.refresh_sidebar(cx);
@@ -358,8 +383,189 @@ impl Workspace {
                 .map(|r| r.with_split(&focused, view.clone(), axis));
             tab.focused = view;
         }
+        self.refresh_broadcast(self.active, cx);
         self.activate(self.active, window, cx);
         self.refresh_sidebar(cx);
+    }
+
+    /// The panes a snippet goes to: the focused one, or (`all`) every pane of
+    /// the tab that listens.
+    fn snippet_targets(&self, all: bool) -> Vec<Entity<TermView>> {
+        let Some(tab) = self.tabs.get(self.active) else {
+            return vec![];
+        };
+        if !all {
+            return vec![tab.focused.clone()];
+        }
+        tab.views()
+            .into_iter()
+            .filter(|v| !(tab.broadcast && tab.left_out.contains(&v.entity_id())))
+            .collect()
+    }
+
+    /// The snippets the palette offers for the focused pane's host.
+    fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
+        let Some(view) = self.active_tab() else {
+            return vec![];
+        };
+        let s = view.read(cx).session();
+        let host = s.entry.clone().unwrap_or_else(|| s.spec.clone());
+        let group = s
+            .entry
+            .as_deref()
+            .and_then(|n| self.live.hosts().find(n))
+            .and_then(|h| h.group.clone());
+        let panes = self.snippet_targets(true).len();
+        self.vault
+            .ready()
+            .and_then(|v| v.snippets().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|sn| snippets::Scope::parse(&sn.scope).fits(Some(&host), group.as_deref()))
+            .map(|sn| {
+                Entry::new(Kind::Snippet(sn.id.clone()), "Snippets", sn.name.clone())
+                    .detail(sn.command.clone())
+                    .hint(if panes > 1 {
+                        format!("Enter · Alt+Enter: {panes} panes")
+                    } else {
+                        "Enter".to_string()
+                    })
+            })
+            .collect()
+    }
+
+    fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(snippet) = self
+            .vault
+            .ready()
+            .and_then(|v| v.snippets().ok())
+            .and_then(|l| l.into_iter().find(|s| s.id == id))
+        else {
+            return;
+        };
+        let left = snippets::asked(&snippet.command);
+        self.ask_snippet(
+            SnippetRun {
+                snippet,
+                all,
+                values: Default::default(),
+                left,
+            },
+            window,
+            cx,
+        );
+    }
+
+    /// Asks for the next value the snippet needs, or, with none left, types
+    /// it into its panes.
+    fn ask_snippet(&mut self, run: SnippetRun, window: &mut Window, cx: &mut Context<Self>) {
+        let targets = self.snippet_targets(run.all);
+        let Some(name) = run.left.first().cloned() else {
+            self.asking = None;
+            for v in targets {
+                let text = {
+                    let s = v.read(cx).session();
+                    let mut values = run.values.clone();
+                    values.insert(
+                        "host".into(),
+                        s.entry.clone().unwrap_or_else(|| s.title.clone()),
+                    );
+                    if let Some(t) = s.reached() {
+                        values.insert("user".into(), t.user.clone());
+                        values.insert("address".into(), t.host.clone());
+                    }
+                    snippets::fill(&run.snippet.command, &values)
+                };
+                v.update(cx, |v, _| v.type_text(&text, run.snippet.enter));
+            }
+            return;
+        };
+        let total = snippets::asked(&run.snippet.command).len();
+        let at = total - run.left.len() + 1;
+        let panes = match targets.len() {
+            1 => "in this pane".to_string(),
+            n => format!("in {n} panes"),
+        };
+        let notes = vec![
+            Entry::new(
+                Kind::Note,
+                "",
+                format!("{} · {panes} · {name} ({at} of {total})", run.snippet.name),
+            ),
+            Entry::new(Kind::Note, "", "Will run")
+                .detail(snippets::fill(&run.snippet.command, &run.values)),
+        ];
+        self.asking = Some(Asking::Snippet(run));
+        let palette = cx.new(|cx| Palette::ask(&name, notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Types in every pane of the active tab, or stops.
+    fn toggle_broadcast(&mut self, cx: &mut Context<Self>) {
+        let Some(tab) = self.tabs.get_mut(self.active) else {
+            return;
+        };
+        if !tab.broadcast && tab.views().len() < 2 {
+            return self.say(
+                "Split the tab first: there is one pane to type in.".into(),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
+        tab.broadcast = !tab.broadcast;
+        tab.left_out.clear();
+        self.refresh_broadcast(self.active, cx);
+        cx.notify();
+    }
+
+    /// Hands each pane of tab `ix` whether it listens, and the terminals
+    /// what is typed in it goes to as well.
+    fn refresh_broadcast(&mut self, ix: usize, cx: &mut Context<Self>) {
+        let Some(tab) = self.tabs.get_mut(ix) else {
+            return;
+        };
+        let views = tab.views();
+        // Panes gone from the tab are forgotten.
+        tab.left_out
+            .retain(|id| views.iter().any(|v| v.entity_id() == *id));
+        let (on, left_out) = (tab.broadcast, tab.left_out.clone());
+        let handles: Vec<(gpui::EntityId, shellwing_term::TermHandle)> = views
+            .iter()
+            .filter(|v| !left_out.contains(&v.entity_id()))
+            .map(|v| (v.entity_id(), v.read(cx).term_handle()))
+            .collect();
+        for v in &views {
+            let id = v.entity_id();
+            let (state, echo) = if !on {
+                (None, vec![])
+            } else if left_out.contains(&id) {
+                (Some(false), vec![])
+            } else {
+                let others = handles
+                    .iter()
+                    .filter(|(o, _)| *o != id)
+                    .map(|(_, h)| h.clone())
+                    .collect();
+                (Some(true), others)
+            };
+            v.update(cx, |v, cx| v.set_broadcast(state, echo, cx));
+        }
+    }
+
+    /// A pane's badge: leave it out of typing in every pane, or bring it back.
+    fn toggle_listen(&mut self, view: &Entity<TermView>, cx: &mut Context<Self>) {
+        let Some(ix) = self.tabs.iter().position(|t| t.views().contains(view)) else {
+            return;
+        };
+        let id = view.entity_id();
+        let tab = &mut self.tabs[ix];
+        if let Some(at) = tab.left_out.iter().position(|x| *x == id) {
+            tab.left_out.remove(at);
+        } else {
+            tab.left_out.push(id);
+        }
+        self.refresh_broadcast(ix, cx);
+        cx.notify();
     }
 
     /// Closes the focused pane; the last one closes its tab.
@@ -478,6 +684,11 @@ impl Workspace {
         {
             tab.focused = r.first();
         }
+        // One pane left: nothing to type in every pane of.
+        if tab.views().len() < 2 {
+            tab.broadcast = false;
+        }
+        self.refresh_broadcast(ix, cx);
         if ix == self.active {
             self.activate(ix, window, cx);
         }
@@ -583,6 +794,10 @@ impl Workspace {
         .detach();
         cx.subscribe(&view, |ws, _, ev: &UseKey, cx| ws.use_key(ev, cx))
             .detach();
+        cx.subscribe(&view, |ws, view, _: &ListenToggled, cx| {
+            ws.toggle_listen(&view, cx)
+        })
+        .detach();
         cx.subscribe(&view, |ws, _, _: &VaultChanged, _| ws.sync.now())
             .detach();
         cx.subscribe_in(&view, window, |ws, _, _: &FilesResized, window, cx| {
@@ -646,6 +861,8 @@ impl Workspace {
                 self.tabs.push(Tab {
                     root: Some(root),
                     focused,
+                    broadcast: false,
+                    left_out: vec![],
                 });
             }
         }
@@ -854,6 +1071,7 @@ impl Workspace {
                 entries.push(Entry::new(Kind::Recent(spec.clone()), "Recent", spec).hint("Enter"));
             }
         }
+        entries.extend(self.snippet_entries(cx));
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
@@ -884,6 +1102,19 @@ impl Workspace {
                 },
             );
             action(Action::CloseTab, "Close the tab".into(), String::new());
+            if let Some(tab) = self.tabs.get(self.active)
+                && tab.views().len() > 1
+            {
+                action(
+                    Action::Broadcast,
+                    if tab.broadcast {
+                        "Stop typing in every pane".into()
+                    } else {
+                        "Type in every pane of this tab".into()
+                    },
+                    format!("{chord}+I"),
+                );
+            }
             action(
                 Action::Find,
                 format!("Find in {title}…"),
@@ -1221,6 +1452,20 @@ impl Workspace {
     /// The vault, and the network runtime, for the Keys page.
     pub(crate) fn keys_context(&self) -> (VaultSlot, Handle) {
         (self.vault.clone(), self.rt.clone())
+    }
+
+    /// What a snippet can be offered for: the groups, and the hosts (from
+    /// hosts.toml, then ~/.ssh/config).
+    pub(crate) fn snippet_scopes(&self) -> (Vec<String>, Vec<String>) {
+        let hosts = self.live.hosts();
+        let groups = hosts.groups.iter().map(|g| g.name.clone()).collect();
+        let mut names: Vec<String> = hosts.hosts.iter().map(|h| h.name.clone()).collect();
+        for a in &self.ssh_aliases {
+            if !names.contains(a) {
+                names.push(a.clone());
+            }
+        }
+        (groups, names)
     }
 
     /// The vault changed here: sync it.
@@ -1765,6 +2010,11 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.open(&spec, window, cx);
             }
+            PaletteEvent::Snippet { id, all } => {
+                let (id, all) = (id.clone(), *all);
+                self.close_palette(window, cx);
+                self.run_snippet(&id, all, window, cx);
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -1796,6 +2046,14 @@ impl Workspace {
             PaletteEvent::Answer(text) => {
                 let folder = match self.asking.clone() {
                     Some(Asking::Forward) => return self.answer_forward(text, window, cx),
+                    Some(Asking::Snippet(mut run)) => {
+                        if !run.left.is_empty() {
+                            let name = run.left.remove(0);
+                            run.values.insert(name, text.clone());
+                        }
+                        self.close_palette(window, cx);
+                        return self.ask_snippet(run, window, cx);
+                    }
                     Some(Asking::RecoveryKey(folder)) => folder,
                     None => return self.close_palette(window, cx),
                 };
@@ -1867,6 +2125,7 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
+            Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
@@ -2065,6 +2324,7 @@ impl Workspace {
             "b" if chord => Shortcut::Sidebar,
             "o" if chord => Shortcut::Files,
             "f" if chord => Shortcut::Find,
+            "i" if chord => Shortcut::Broadcast,
             // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
             "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
             "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
@@ -2128,6 +2388,7 @@ impl Workspace {
             }
             Shortcut::Files => self.toggle_files(window, cx),
             Shortcut::Find => self.find(window, cx),
+            Shortcut::Broadcast => self.toggle_broadcast(cx),
             Shortcut::Settings => {
                 if self.settings.is_some() {
                     self.close_settings(window, cx);
@@ -2157,6 +2418,48 @@ impl Workspace {
 
     /// The tabs, then empty header bar (which moves the window), then the
     /// Settings button.
+    /// Above the panes of a tab that types in every pane.
+    fn broadcast_strip(&self, listening: usize, panes: usize, cx: &mut Context<Self>) -> Div {
+        let keys = if cfg!(target_os = "macos") {
+            "Cmd+Shift+I"
+        } else {
+            "Ctrl+Shift+I"
+        };
+        div()
+            .h(px(34.))
+            .flex_shrink_0()
+            .flex()
+            .items_center()
+            .gap(px(10.))
+            .px(px(14.))
+            .bg(rgb(0x2a1d07))
+            .border_b_1()
+            .border_color(rgb(0x4a3410))
+            .text_sm()
+            .text_color(rgb(0xfcd34d))
+            .child(div().size(px(8.)).rounded_full().bg(rgb(BROADCAST)))
+            .child(div().flex_1().min_w_0().child(format!(
+                "Typing goes to {listening} of {panes} panes. Click a pane's badge to leave it out or bring it back."
+            )))
+            .child(
+                div()
+                    .id("stop-broadcast")
+                    .h(px(24.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(0xa16207))
+                    .text_xs()
+                    .text_color(rgb(0xfde68a))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(0x3a2a0c)))
+                    .on_click(cx.listener(|ws, _, _, cx| ws.toggle_broadcast(cx)))
+                    .child(format!("Stop ({keys})")),
+            )
+    }
+
     fn tab_strip(&self, accent: Hsla, cx: &mut Context<Self>) -> Div {
         let mut strip = div().flex().h_full().min_w_0().overflow_hidden();
         for (i, tab) in self.tabs.iter().enumerate() {
@@ -2190,7 +2493,13 @@ impl Workspace {
                     .border_b_2()
                     .cursor_pointer()
                     .text_color(rgb(if active { TEXT } else { DIM }))
-                    .when(active, |d| d.bg(rgb(0x0b0f17)).border_color(accent))
+                    .when(active, |d| {
+                        d.bg(rgb(0x0b0f17)).border_color(if tab.broadcast {
+                            rgb(BROADCAST).into()
+                        } else {
+                            accent
+                        })
+                    })
                     .when(!active, |d| {
                         d.border_color(gpui::transparent_black())
                             .hover(|s| s.bg(rgb(0x141c2b)))
@@ -2203,6 +2512,10 @@ impl Workspace {
                         cx.listener(move |ws, _, window, cx| ws.request_close_tab(i, window, cx)),
                     )
                     .child(dot(Some(v.status())))
+                    // Typing in every pane: said on the tab too.
+                    .when(tab.broadcast, |d| {
+                        d.child(div().size(px(8.)).rounded_full().bg(rgb(BROADCAST)))
+                    })
                     .child(
                         div()
                             .min_w_0()
@@ -2601,12 +2914,17 @@ impl Render for Workspace {
                     Some(root) => self.render_pane(root, &tab.focused, multi, accent, cx),
                     None => div().into_any_element(),
                 };
+                let strip = tab.broadcast.then(|| {
+                    let n = tab.views().len();
+                    self.broadcast_strip(n - tab.left_out.len(), n, cx)
+                });
                 div()
                     .flex_1()
                     .min_w_0()
                     .h_full()
                     .flex()
                     .flex_col()
+                    .children(strip)
                     .child(pane)
                     .into_any_element()
             }

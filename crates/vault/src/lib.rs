@@ -103,6 +103,19 @@ pub struct SshKey {
     pub private: Zeroizing<String>,
 }
 
+/// A command kept to run in panes: what the Snippets page and the palette read.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Snippet {
+    pub id: String,
+    pub name: String,
+    pub command: String,
+    /// Where the palette offers it: empty for every host, `group:<name>` or
+    /// `host:<name>`.
+    pub scope: String,
+    /// Enter is pressed after it is typed.
+    pub enter: bool,
+}
+
 /// A field and when it was set (a clock stamp), for merging edits.
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct Field {
@@ -551,6 +564,46 @@ impl Vault {
         Ok(())
     }
 
+    /// The snippets kept here, oldest first.
+    pub fn snippets(&self) -> Result<Vec<Snippet>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "snippet")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                Snippet {
+                    name: get("name"),
+                    command: get("command"),
+                    scope: get("scope"),
+                    // Unset means yes: running is what a snippet is for.
+                    enter: get("enter") != "no",
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// Keeps a snippet, new when its id is empty; returns its id.
+    pub fn save_snippet(&self, s: &Snippet) -> Result<String> {
+        let id = if s.id.is_empty() {
+            new_id()?
+        } else {
+            s.id.clone()
+        };
+        let values = BTreeMap::from([
+            ("name".to_string(), s.name.clone()),
+            ("command".to_string(), s.command.clone()),
+            ("scope".to_string(), s.scope.clone()),
+            (
+                "enter".to_string(),
+                if s.enter { "yes" } else { "no" }.to_string(),
+            ),
+        ]);
+        self.update(&id, "snippet", &s.name, &values)?;
+        Ok(id)
+    }
+
     /// Every item, without the secrets.
     pub fn items(&self) -> Result<Vec<Item>> {
         let get = |r: &Record, k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
@@ -669,6 +722,28 @@ mod tests {
             std::env::temp_dir().join(format!("shellwing-vault-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir.join("vault.db")
+    }
+
+    #[test]
+    fn keeps_edits_and_forgets_snippets() {
+        let path = temp("snippets");
+        let v = Vault::open(&path, &MemoryKeys::default()).expect("open");
+        let mut s = Snippet {
+            id: String::new(),
+            name: "Disk".into(),
+            command: "df -h /".into(),
+            scope: String::new(),
+            enter: true,
+        };
+        s.id = v.save_snippet(&s).expect("save");
+        s.command = "df -h / && free -h".into();
+        s.scope = "group:Production".into();
+        s.enter = false;
+        assert_eq!(v.save_snippet(&s).expect("edit"), s.id);
+        assert_eq!(v.snippets().expect("list"), [s.clone()]);
+        assert!(v.items().expect("items").is_empty(), "not a secret");
+        v.delete(&s.id).expect("delete");
+        assert!(v.snippets().expect("list").is_empty());
     }
 
     #[test]

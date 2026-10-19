@@ -277,6 +277,11 @@ pub struct TermView {
     files_drag: Option<(f32, f32)>,
     find: Option<FindBar>,
     key_offer: Option<KeyOffer>,
+    /// The tab types in every pane: None when not, else whether this one
+    /// listens.
+    broadcast: Option<bool>,
+    /// The other panes that what is typed here goes to as well.
+    echo: Vec<TermHandle>,
     /// The right-click menu, open where it was asked for.
     menu: Option<Point<Pixels>>,
 }
@@ -318,7 +323,14 @@ struct KeyOffer {
     key_name: String,
 }
 
+/// The pane's broadcast badge was clicked: leave it out, or bring it back.
+pub struct ListenToggled;
+
+/// Typing in every pane of the tab: amber, as the host list's Edit badge.
+const BROADCAST: u32 = 0xf59e0b;
+
 impl gpui::EventEmitter<StatusChanged> for TermView {}
+impl gpui::EventEmitter<ListenToggled> for TermView {}
 impl gpui::EventEmitter<UseKey> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
@@ -404,8 +416,77 @@ impl TermView {
             files_drag: None,
             find: None,
             key_offer: None,
+            broadcast: None,
+            echo: vec![],
             menu: None,
         }
+    }
+
+    /// The terminal, for other panes to type into (see [`Self::set_broadcast`]).
+    pub fn term_handle(&self) -> TermHandle {
+        self.term.clone()
+    }
+
+    /// Typing in every pane of the tab: whether this one listens, and the
+    /// terminals what is typed here goes to as well.
+    pub fn set_broadcast(
+        &mut self,
+        state: Option<bool>,
+        echo: Vec<TermHandle>,
+        cx: &mut Context<Self>,
+    ) {
+        if self.broadcast != state {
+            cx.notify();
+        }
+        self.broadcast = state;
+        self.echo = echo;
+    }
+
+    /// Types `text` into the shell as if typed here, and presses Enter when
+    /// `enter`: what a snippet does. Only this pane gets it.
+    pub fn type_text(&mut self, text: &str, enter: bool) {
+        self.term.text(text.to_string());
+        if enter {
+            self.term.key(NamedKey::Enter, Mods::default());
+        }
+    }
+
+    /// The badge on a pane of a tab that types in every pane.
+    fn listen_badge(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let listening = self.broadcast?;
+        let top = if self.find.is_some() {
+            px(52.)
+        } else {
+            px(12.)
+        };
+        Some(
+            div()
+                .id("listen-badge")
+                .absolute()
+                .top(top)
+                .right(px(SCROLLBAR_ZONE + 6.))
+                .flex()
+                .items_center()
+                .gap(px(6.))
+                .h(px(22.))
+                .px(px(8.))
+                .rounded_full()
+                .border_1()
+                .border_color(rgb(if listening { 0xa16207 } else { 0x263042 }))
+                .bg(rgb(if listening { 0x2a1d07 } else { 0x111a2a }))
+                .text_xs()
+                .text_color(rgb(if listening { 0xfde68a } else { 0x8a96aa }))
+                .cursor_pointer()
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .on_click(cx.listener(|_, _, _, cx| cx.emit(ListenToggled)))
+                .child(div().size(px(6.)).rounded_full().bg(rgb(if listening {
+                    BROADCAST
+                } else {
+                    0x5b6578
+                })))
+                .child(if listening { "listening" } else { "left out" })
+                .into_any_element(),
+        )
     }
 
     /// Adds `key` to the host's `authorized_keys` over this pane's
@@ -1307,6 +1388,9 @@ impl TermView {
         if confirmed {
             self.notice = None;
         }
+        for t in &self.echo {
+            t.paste(text.clone(), confirmed);
+        }
         self.term.paste(text, confirmed);
         cx.notify();
     }
@@ -1752,6 +1836,9 @@ impl TermView {
             _ => return,
         };
         self.term.key(named, mods);
+        for t in &self.echo {
+            t.key(named, mods);
+        }
         cx.stop_propagation();
     }
 }
@@ -1973,6 +2060,26 @@ impl Render for TermView {
         if let Some(k) = self.key_bar(cx) {
             terminal = terminal.child(k);
         }
+        // Typing in every pane: an amber edge on those that listen, the
+        // others dimmed; each with its badge.
+        match self.broadcast {
+            Some(true) => {
+                terminal = terminal.child(
+                    div()
+                        .absolute()
+                        .inset_0()
+                        .border_2()
+                        .border_color(rgb(BROADCAST)),
+                )
+            }
+            Some(false) => {
+                terminal = terminal.child(div().absolute().inset_0().bg(gpui::rgba(0x0b0f1766)))
+            }
+            None => {}
+        }
+        if let Some(b) = self.listen_badge(cx) {
+            terminal = terminal.child(b);
+        }
         if let Some(at) = self.menu {
             terminal = terminal.child(self.pane_menu(at, cx));
         }
@@ -2153,6 +2260,9 @@ impl EntityInputHandler for TermView {
     ) {
         self.marked = None;
         self.term.text(text.to_string());
+        for t in &self.echo {
+            t.text(text.to_string());
+        }
         cx.notify();
     }
 

@@ -19,6 +19,7 @@ use crate::input::TextInput;
 use crate::keys_view::KeysView;
 use crate::look::ui;
 use crate::palette::Action;
+use crate::snippets_view::SnippetsView;
 use crate::workspace::Workspace;
 
 const BG: u32 = 0x0b0f17;
@@ -46,18 +47,20 @@ pub enum Page {
     Keyboard,
     Ssh,
     Keys,
+    Snippets,
     Sync,
     Vault,
     About,
 }
 
-const PAGES: [(Page, &str); 9] = [
+const PAGES: [(Page, &str); 10] = [
     (Page::General, "General"),
     (Page::Appearance, "Appearance"),
     (Page::Terminal, "Terminal"),
     (Page::Keyboard, "Keyboard"),
     (Page::Ssh, "SSH and security"),
     (Page::Keys, "Keys"),
+    (Page::Snippets, "Snippets"),
     (Page::Sync, "Sync"),
     (Page::Vault, "Vault"),
     (Page::About, "About"),
@@ -95,6 +98,8 @@ pub struct SettingsView {
     custom_editor: bool,
     /// The Keys page, once shown.
     keys: Option<Entity<KeysView>>,
+    /// The Snippets page, once shown.
+    snippets: Option<Entity<SnippetsView>>,
 }
 
 /// Which font list is open.
@@ -182,6 +187,7 @@ impl SettingsView {
             editor_input,
             custom_editor: custom,
             keys: None,
+            snippets: None,
         }
     }
 
@@ -1245,6 +1251,24 @@ impl SettingsView {
         div().child(keys)
     }
 
+    /// The Snippets page: a view of its own, made when first shown.
+    fn snippets_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
+        let view = match &self.snippets {
+            Some(s) => s.clone(),
+            None => {
+                let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
+                else {
+                    return page("Snippets");
+                };
+                let ws = self.workspace.clone();
+                let s = cx.new(|cx| SnippetsView::new(ws, vault, cx));
+                self.snippets = Some(s.clone());
+                s
+            }
+        };
+        div().child(view)
+    }
+
     fn about(&self) -> gpui::Div {
         page("About")
             .child(
@@ -1471,6 +1495,11 @@ impl Render for SettingsView {
                         {
                             k.update(cx, |k, cx| k.refresh(cx));
                         }
+                        if p == Page::Snippets
+                            && let Some(s) = &v.snippets
+                        {
+                            s.update(cx, |s, cx| s.refresh(cx));
+                        }
                         cx.notify();
                     }))
                     .child(*name),
@@ -1483,6 +1512,7 @@ impl Render for SettingsView {
             Page::Keyboard => self.keyboard(),
             Page::Ssh => self.ssh(cx),
             Page::Keys => self.keys_page(cx),
+            Page::Snippets => self.snippets_page(cx),
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
             Page::About => self.about(),
