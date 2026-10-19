@@ -6,10 +6,11 @@ use crate::color::Color;
 use crate::store::LoadError;
 
 /// The theme used when none is set or the one set does not exist.
-pub const DEFAULT_THEME: &str = "default-slate";
+pub const DEFAULT_THEME: &str = "dusk";
 
 /// Built in, in the order the theme shortcut steps through them.
 const BUILTIN: &[(&str, &str)] = &[
+    ("dusk", include_str!("../themes/dusk.toml")),
     (
         "default-slate",
         include_str!("../themes/default-slate.toml"),
@@ -343,9 +344,10 @@ mod tests {
             all.find("tokyo night").map(|t| t.id.as_str()),
             Some("tokyo-night")
         );
+        assert_eq!(all.step("dusk", 1).id, "default-slate");
         assert_eq!(all.step("default-slate", 1).id, "neon-nebula");
-        assert_eq!(all.step("default-slate", -1).id, "github-dark");
-        assert_eq!(all.step("github-dark", 1).id, "default-slate");
+        assert_eq!(all.step("dusk", -1).id, "github-dark");
+        assert_eq!(all.step("github-dark", 1).id, "dusk");
     }
 
     #[test]

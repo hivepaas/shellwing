@@ -13,6 +13,7 @@
 //! `~/.ssh/known_hosts` (both meant for scripts and benchmarks).
 
 mod chrome;
+mod colors;
 mod copies;
 mod editors;
 mod files;
@@ -65,6 +66,10 @@ const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../assets/icons/upload.svg"),
     ),
     ("icons/logo.svg", include_bytes!("../assets/icons/logo.svg")),
+    (
+        "icons/terminal.svg",
+        include_bytes!("../assets/icons/terminal.svg"),
+    ),
     (
         "icons/folder.svg",
         include_bytes!("../assets/icons/folder.svg"),

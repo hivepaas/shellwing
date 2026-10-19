@@ -1,0 +1,15 @@
+# Blue-gray, a step lighter than near-black; the app's own colors match it.
+name = "Dusk"
+accent = "#4cc4f9"
+background = "#272e38"
+foreground = "#e2e8f0"
+cursor = "#4cc4f9"
+cursor_text = "#272e38"
+selection_background = "#f59e0b"
+selection_foreground = "#000000"
+palette = [
+  "#1c2129", "#f87171", "#4ade80", "#facc15",
+  "#60a5fa", "#c084fc", "#22d3ee", "#e2e8f0",
+  "#7c8798", "#fca5a5", "#86efac", "#fde047",
+  "#93c5fd", "#d8b4fe", "#67e8f9", "#ffffff",
+]

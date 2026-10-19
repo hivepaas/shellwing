@@ -3,9 +3,10 @@
 
 use gpui::{
     Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
-    SharedString, WeakEntity, Window, anchored, deferred, div, point, prelude::*, px, rgb, rgba,
+    SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*, px, rgb,
 };
 
+use crate::colors::colors;
 use crate::host_editor::{
     checkbox, hint_text, label_text, outline_button, primary_button, problem_text,
 };
@@ -14,16 +15,6 @@ use crate::look::ui;
 use crate::secrets::VaultSlot;
 use crate::snippets::{self, Scope, Snippet};
 use crate::workspace::Workspace;
-
-const TEXT: u32 = 0xe2e8f0;
-const SOFT: u32 = 0xb6c0cf;
-const LABEL: u32 = 0xa3aec0;
-const MUTED: u32 = 0x8a96aa;
-const RULE: u32 = 0x1f2937;
-const FIELD_EDGE: u32 = 0x263042;
-const ACCENT: u32 = 0x38bdf8;
-const ON: u32 = 0x17233a;
-const BAD: u32 = 0xf87171;
 
 /// Which list of the scope is open.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -238,10 +229,10 @@ impl SnippetsView {
             .items_center()
             .flex_shrink_0()
             .rounded(px(6.))
-            .bg(rgb(0x1a2333))
+            .bg(rgb(colors().button))
             .text_size(ui(12.))
             .cursor_pointer()
-            .hover(|s| s.bg(rgb(0x243047)))
+            .hover(|s| s.bg(rgb(colors().button_hover)))
             .child(label.to_string())
     }
 
@@ -264,8 +255,12 @@ impl SnippetsView {
                     .items_center()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if focused { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(0x0b0f17))
+                    .border_color(rgb(if focused {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
                     .text_size(ui(13.))
                     .when_some(mono, |d, f| d.font_family(f))
                     .child(input.clone()),
@@ -285,7 +280,7 @@ impl SnippetsView {
                     .gap(px(12.))
                     .px(px(12.))
                     .py(px(10.))
-                    .when(i > 0, |d| d.border_t_1().border_color(rgb(RULE)))
+                    .when(i > 0, |d| d.border_t_1().border_color(rgb(colors().line)))
                     .child(
                         div()
                             .flex_1()
@@ -307,17 +302,17 @@ impl SnippetsView {
                                             .py(px(1.))
                                             .rounded(px(4.))
                                             .border_1()
-                                            .border_color(rgb(FIELD_EDGE))
-                                            .bg(rgb(0x111a2a))
+                                            .border_color(rgb(colors().field_edge))
+                                            .bg(rgb(colors().chip))
                                             .text_size(ui(10.5))
-                                            .text_color(rgb(SOFT))
+                                            .text_color(rgb(colors().soft))
                                             .child(scope.label()),
                                     )
                                     .when(!s.enter, |d| {
                                         d.child(
                                             div()
                                                 .text_size(ui(11.))
-                                                .text_color(rgb(MUTED))
+                                                .text_color(rgb(colors().muted))
                                                 .child("typed, not run"),
                                         )
                                     }),
@@ -326,7 +321,7 @@ impl SnippetsView {
                                 div()
                                     .font_family(self.mono.clone())
                                     .text_size(ui(12.))
-                                    .text_color(rgb(0xcbd5e1))
+                                    .text_color(rgb(colors().soft))
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
@@ -338,7 +333,7 @@ impl SnippetsView {
                     ))
                     .child(
                         Self::small(("snippet-delete", i), "Delete")
-                            .text_color(rgb(BAD))
+                            .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
                                 v.dialog = Some(Dialog::Delete {
                                     snippet: del.clone(),
@@ -367,11 +362,11 @@ impl SnippetsView {
             .px(px(24.))
             .py(px(22.))
             .rounded(px(12.))
-            .bg(rgb(0x0f1522))
+            .bg(rgb(colors().surface))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation());
         let title = |s: &str| {
             div()
@@ -400,13 +395,17 @@ impl SnippetsView {
                 )
         };
         Some(match d {
-            Dialog::Delete { snippet } => {
-                card.child(title(&format!("Delete {}?", snippet.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(LABEL)).child(
-                        "It goes from the vault, and from your other devices once they sync.",
-                    ))
-                    .child(buttons("Delete", cx))
-            }
+            Dialog::Delete { snippet } => card
+                .child(title(&format!("Delete {}?", snippet.name)))
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().label))
+                        .child(
+                            "It goes from the vault, and from your other devices once they sync.",
+                        ),
+                )
+                .child(buttons("Delete", cx)),
             Dialog::Edit {
                 id,
                 name,
@@ -426,7 +425,7 @@ impl SnippetsView {
                     .items_center()
                     .gap(px(6.))
                     .text_size(ui(11.5))
-                    .text_color(rgb(MUTED));
+                    .text_color(rgb(colors().muted));
                 if asked.is_empty() {
                     vars = vars.child("{{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.");
                 } else {
@@ -437,8 +436,8 @@ impl SnippetsView {
                                 .px(px(7.))
                                 .py(px(1.))
                                 .rounded(px(4.))
-                                .bg(rgb(0x2a2110))
-                                .text_color(rgb(0xfbbf24))
+                                .bg(rgb(colors().warn_bg))
+                                .text_color(rgb(colors().warn))
                                 .font_family(self.mono.clone())
                                 .child(a),
                         );
@@ -459,7 +458,7 @@ impl SnippetsView {
                     .flex()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(FIELD_EDGE))
+                    .border_color(rgb(colors().field_edge))
                     .overflow_hidden();
                 let choices = [
                     (
@@ -494,11 +493,17 @@ impl SnippetsView {
                             .items_center()
                             .justify_center()
                             .text_size(ui(12.5))
-                            .text_color(rgb(if on { TEXT } else { SOFT }))
+                            .text_color(rgb(if on { colors().text } else { colors().soft }))
                             .cursor_pointer()
-                            .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
-                            .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
-                            .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                            .when(n > 0, |d| {
+                                d.border_l_1().border_color(rgb(colors().field_edge))
+                            })
+                            .when(on, |d| {
+                                d.bg(rgb(colors().selected))
+                                    .border_b_2()
+                                    .border_color(rgb(colors().accent))
+                            })
+                            .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                             .on_click(cx.listener(move |v, _, _, cx| {
                                 if let Some(Dialog::Edit { scope, pick, .. }) = &mut v.dialog {
                                     match n {
@@ -541,15 +546,15 @@ impl SnippetsView {
                         .p(px(4.))
                         .rounded(px(6.))
                         .border_1()
-                        .border_color(rgb(0x2b3648))
-                        .bg(rgb(0x111826));
+                        .border_color(rgb(colors().edge))
+                        .bg(rgb(colors().raised));
                     if names.is_empty() {
                         list = list.child(
                             div()
                                 .px_2()
                                 .py(px(5.))
                                 .text_size(ui(12.5))
-                                .text_color(rgb(MUTED))
+                                .text_color(rgb(colors().muted))
                                 .child(empty),
                         );
                     }
@@ -570,8 +575,8 @@ impl SnippetsView {
                                 .rounded(px(4.))
                                 .text_size(ui(13.))
                                 .cursor_pointer()
-                                .when(chosen, |d| d.bg(rgb(ON)))
-                                .hover(|s| s.bg(rgb(0x1a2333)))
+                                .when(chosen, |d| d.bg(rgb(colors().selected)))
+                                .hover(|s| s.bg(rgb(colors().hover)))
                                 .on_click(cx.listener(move |v, _, _, cx| {
                                     if let Some(Dialog::Edit { scope, pick, .. }) = &mut v.dialog {
                                         *scope = match p {
@@ -654,14 +659,14 @@ impl Render for SnippetsView {
             .flex_col()
             .rounded(px(8.))
             .border_1()
-            .border_color(rgb(RULE));
+            .border_color(rgb(colors().line));
         if rows.is_empty() {
             list = list.child(
                 div()
                     .px(px(12.))
                     .py(px(10.))
                     .text_size(ui(12.))
-                    .text_color(rgb(MUTED))
+                    .text_color(rgb(colors().muted))
                     .child("None yet."),
             );
         }
@@ -693,36 +698,33 @@ impl Render for SnippetsView {
                             .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx))),
                     ),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(LABEL)).child(format!(
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(format!(
                 "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts."
             )));
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
                 div()
                     .text_size(ui(12.5))
-                    .text_color(rgb(if *bad { BAD } else { 0x86efac }))
+                    .text_color(rgb(if *bad { colors().bad } else { colors().good }))
                     .child(msg.clone()),
             );
         }
         page = page.child(list).child(
             div()
                 .text_size(ui(12.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .child("{{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs."),
         );
         if let Some(card) = self.dialog_card(window, cx) {
-            let size = window.viewport_size();
+            let (at, shade) = crate::chrome::shade(window);
             page = page.child(
                 deferred(
-                    anchored().position(point(px(0.), px(0.))).child(
-                        div()
+                    anchored().position(at).child(
+                        shade
                             .id("snippet-backdrop")
-                            .w(size.width)
-                            .h(size.height)
                             .flex()
                             .items_center()
                             .justify_center()
-                            .bg(rgba(0x03060ca8))
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .child(card),
                     ),

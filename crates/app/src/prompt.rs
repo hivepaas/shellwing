@@ -9,6 +9,7 @@ use gpui::{
     SharedString, Window, div, prelude::*, px, rgb, rgba,
 };
 
+use crate::colors::colors;
 use crate::host_editor::{outline_button, primary_button};
 use crate::look::ui;
 
@@ -62,12 +63,12 @@ impl AppPrompt {
 }
 
 impl Render for AppPrompt {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let font = cx.try_global::<PromptFont>().and_then(|f| f.0.clone());
         let mark = match self.level {
             PromptLevel::Info => None,
-            PromptLevel::Warning => Some((0xf59e0b, 0x2a1d07)),
-            PromptLevel::Critical => Some((0xf87171, 0x2a1215)),
+            PromptLevel::Warning => Some((colors().amber, colors().warn_bg)),
+            PromptLevel::Critical => Some((colors().bad, colors().bad_bg)),
         };
         // Cancel first, at the left of the row; the main answer last.
         let main = self.main();
@@ -121,9 +122,9 @@ impl Render for AppPrompt {
             .px(px(24.))
             .py(px(22.))
             .rounded(px(12.))
-            .bg(rgb(0x0f1522))
+            .bg(rgb(colors().surface))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .child(title)
@@ -131,25 +132,43 @@ impl Render for AppPrompt {
                 d.child(
                     div()
                         .text_size(ui(13.))
-                        .text_color(rgb(0xa3aec0))
+                        .text_color(rgb(colors().label))
                         .child(detail),
                 )
             })
             .child(buttons);
+        // It covers the whole surface, the margin around the window too: the
+        // shade stops at the window's edge and follows its corners.
+        let (margin, round) = (
+            crate::chrome::margins(window),
+            crate::chrome::corners(window),
+        );
         div()
             .id("prompt")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             .size_full()
-            .flex()
-            .items_center()
-            .justify_center()
-            .bg(rgba(0x03060ca8))
+            .pt(margin.top)
+            .pr(margin.right)
+            .pb(margin.bottom)
+            .pl(margin.left)
             .text_size(ui(13.))
-            .text_color(rgb(0xe2e8f0))
+            .text_color(rgb(colors().text))
             .when_some(font, |d, f| d.font_family(f))
             .cursor_default()
-            .child(card)
+            .child(
+                div()
+                    .size_full()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_tl(round.top_left)
+                    .rounded_tr(round.top_right)
+                    .rounded_bl(round.bottom_left)
+                    .rounded_br(round.bottom_right)
+                    .bg(rgba(colors().scrim))
+                    .child(card),
+            )
     }
 }
 

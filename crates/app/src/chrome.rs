@@ -8,12 +8,19 @@
 //! around the visible window, and pressing there resizes. Near a corner a longer
 //! stretch of each edge resizes diagonally, so corners are easy to grab. Tiled
 //! or maximised sides have neither margin nor border.
+//!
+//! The window's corners are round where both their sides are free. GPUI clips
+//! children to rectangles only, so what reaches a corner rounds its own: the
+//! title bar the top ones, and at the bottom whatever the workspace puts there
+//! (see [`BottomCorners`]).
 
 use gpui::{
-    App, BoxShadow, CursorStyle, Decorations, Div, HitboxBehavior, Hsla, MouseButton, Pixels,
-    Point, ResizeEdge, Size, Tiling, Window, canvas, div, hsla, point, prelude::*, px, rgb, svg,
-    transparent_black,
+    App, BoxShadow, Corners, CursorStyle, Decorations, Div, Edges, HitboxBehavior, Hsla,
+    MouseButton, Pixels, Point, ResizeEdge, Size, Tiling, Window, canvas, div, point, prelude::*,
+    px, rgb, rgba, svg, transparent_black,
 };
+
+use crate::colors::colors;
 
 /// The header bar: as tall as GNOME's own where the app draws it (Linux),
 /// a row for the tabs under the native title bar elsewhere.
@@ -28,6 +35,111 @@ const INSET: f32 = 12.0;
 const BORDER: f32 = 1.0;
 /// Along each edge, this far from the window's corner resizes diagonally.
 const CORNER: f32 = 28.0;
+/// How round the window's corners are, as GNOME rounds its own.
+pub const RADIUS: f32 = 10.0;
+
+/// The radius of each corner of the window: [`RADIUS`] where the app draws
+/// the frame and both sides of the corner are free (not tiled, not
+/// maximised); none where the system draws the frame, which rounds its own.
+pub fn corners(window: &Window) -> Corners<Pixels> {
+    let Decorations::Client { tiling: t } = window.window_decorations() else {
+        return Corners::default();
+    };
+    let round = |a: bool, b: bool| if a || b { px(0.) } else { px(RADIUS) };
+    Corners {
+        top_left: round(t.top, t.left),
+        top_right: round(t.top, t.right),
+        bottom_left: round(t.bottom, t.left),
+        bottom_right: round(t.bottom, t.right),
+    }
+}
+
+/// The invisible margin outside the visible window, on each side: none on a
+/// tiled side, and none where the system draws the frame.
+pub fn margins(window: &Window) -> Edges<Pixels> {
+    let Decorations::Client { tiling: t } = window.window_decorations() else {
+        return Edges::default();
+    };
+    let side = |tiled: bool| if tiled { px(0.) } else { px(INSET) };
+    Edges {
+        top: side(t.top),
+        right: side(t.right),
+        bottom: side(t.bottom),
+        left: side(t.left),
+    }
+}
+
+/// The shade a dialog puts over the whole window, and where it goes (for
+/// `anchored().position`): the surface is larger than the window, by the
+/// margin the shadow is drawn in, so it stops at the window's edge and
+/// follows its corners.
+pub fn shade(window: &Window) -> (Point<Pixels>, Div) {
+    let size = window.viewport_size();
+    let (m, round) = (margins(window), corners(window));
+    let shade = div()
+        .w(size.width - m.left - m.right)
+        .h(size.height - m.top - m.bottom)
+        .rounded_tl(round.top_left)
+        .rounded_tr(round.top_right)
+        .rounded_bl(round.bottom_left)
+        .rounded_br(round.bottom_right)
+        .bg(rgba(colors().scrim));
+    (point(m.left, m.top), shade)
+}
+
+/// The bottom corners of the window's body, inside its border: what fills
+/// one of them rounds it by this much. The workspace sets it each frame.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct BottomCorners {
+    pub left: Pixels,
+    pub right: Pixels,
+}
+
+impl gpui::Global for BottomCorners {}
+
+impl BottomCorners {
+    /// The window's, inside the 1 px border.
+    pub fn of(window: &Window) -> Self {
+        let c = corners(window);
+        let inner = |r: Pixels| if r > px(0.) { r - px(BORDER) } else { r };
+        BottomCorners {
+            left: inner(c.bottom_left),
+            right: inner(c.bottom_right),
+        }
+    }
+
+    /// The window's, as the workspace last set them.
+    pub fn current(cx: &App) -> Self {
+        cx.try_global::<BottomCorners>()
+            .copied()
+            .unwrap_or_default()
+    }
+
+    /// Only the left one: for what fills the left of the body.
+    pub fn left(self) -> Self {
+        BottomCorners {
+            right: px(0.),
+            ..self
+        }
+    }
+
+    /// Only the right one.
+    pub fn right(self) -> Self {
+        BottomCorners {
+            left: px(0.),
+            ..self
+        }
+    }
+
+    pub fn none() -> Self {
+        Self::default()
+    }
+
+    /// Rounds the bottom corners of `el`.
+    pub fn round<E: Styled>(self, el: E) -> E {
+        el.rounded_bl(self.left).rounded_br(self.right)
+    }
+}
 
 fn tiling(window: &Window) -> Tiling {
     match window.window_decorations() {
@@ -40,6 +152,8 @@ fn tiling(window: &Window) -> Tiling {
 pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> Div {
     let t = tiling(window);
     window.set_client_inset(px(INSET));
+    let round = corners(window);
+    let inner = |r: Pixels| if r > px(0.) { r - px(BORDER) } else { r };
     // Round buttons with symbolic icons, as GNOME draws them.
     let button = |id: &'static str, icon: &'static str, f: fn(&mut Window, &mut App)| {
         div()
@@ -49,11 +163,16 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
             .items_center()
             .justify_center()
             .rounded_full()
-            .bg(rgb(0x1a2333))
-            .hover(|s| s.bg(rgb(0x2a3548)))
+            .bg(rgb(colors().button))
+            .hover(|s| s.bg(rgb(colors().button_hover)))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .on_click(move |_, window, cx| f(window, cx))
-            .child(svg().path(icon).size(px(14.)).text_color(rgb(0xd5dbe5)))
+            .child(
+                svg()
+                    .path(icon)
+                    .size(px(14.))
+                    .text_color(rgb(colors().text)),
+            )
     };
     let titlebar = div()
         .h(px(TITLEBAR_H))
@@ -61,10 +180,12 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
         .flex()
         .items_center()
         .justify_between()
-        .bg(rgb(0x0f1522))
+        .rounded_tl(inner(round.top_left))
+        .rounded_tr(inner(round.top_right))
+        .bg(rgb(colors().chrome))
         .border_b_1()
-        .border_color(rgb(0x1e2736))
-        .text_color(rgb(0xa1a1aa))
+        .border_color(rgb(colors().line))
+        .text_color(rgb(colors().soft))
         .text_sm()
         .on_mouse_down(MouseButton::Left, |e, window, _| {
             if e.click_count == 2 {
@@ -137,14 +258,18 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
                 .flex()
                 .flex_col()
                 .bg(bg)
-                .border_color(rgb(0x3f3f46))
+                .rounded_tl(round.top_left)
+                .rounded_tr(round.top_right)
+                .rounded_bl(round.bottom_left)
+                .rounded_br(round.bottom_right)
+                .border_color(rgb(colors().window_edge))
                 .when(!t.top, |d| d.border_t(border))
                 .when(!t.bottom, |d| d.border_b(border))
                 .when(!t.left, |d| d.border_l(border))
                 .when(!t.right, |d| d.border_r(border))
                 .when(floating, |d| {
                     d.shadow(vec![BoxShadow {
-                        color: hsla(0., 0., 0., 0.45),
+                        color: rgba(colors().shadow).into(),
                         offset: point(px(0.), px(2.)),
                         blur_radius: px(INSET - 2.),
                         spread_radius: px(0.),

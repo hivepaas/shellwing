@@ -17,6 +17,7 @@ use tokio::runtime::Handle;
 
 use crate::bench::Probe;
 use crate::chrome::{self, TITLEBAR_H};
+use crate::colors::colors;
 use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
@@ -26,7 +27,7 @@ use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
-use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
+use crate::sidebar::{self, Row, Section, Sidebar, dot};
 use crate::snippets;
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
@@ -38,19 +39,11 @@ use shellwing_vault::{Folder, FolderState};
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
-/// How long a problem with the config files stays on screen.
-/// The host list's edge while dragged or hovered.
-const ACCENT_LINE: u32 = 0x38bdf8;
-/// Typing in every pane of a tab: amber, as the panes show it.
-const BROADCAST: u32 = 0xf59e0b;
-/// The logo's sky blue, as in the sketch and the app icon.
-const LOGO: u32 = 0x38bdf8;
 const CONFIG_NOTICE: Duration = Duration::from_secs(8);
 /// How long the name of a newly chosen theme stays on screen.
 const THEME_NOTICE: Duration = Duration::from_secs(3);
 /// Edited files moved to Downloads: worth longer than other notices.
 const KEPT_NOTICE: Duration = Duration::from_secs(20);
-const DIM: u32 = 0xb6c0cf;
 
 /// Keyboard shortcuts that concern the whole window.
 #[derive(Debug, PartialEq, Eq)]
@@ -2498,12 +2491,12 @@ impl Workspace {
             .items_center()
             .gap(px(10.))
             .px(px(14.))
-            .bg(rgb(0x2a1d07))
+            .bg(rgb(colors().warn_bg))
             .border_b_1()
-            .border_color(rgb(0x4a3410))
+            .border_color(rgb(colors().warn_edge))
             .text_sm()
-            .text_color(rgb(0xfcd34d))
-            .child(div().size(px(8.)).rounded_full().bg(rgb(BROADCAST)))
+            .text_color(rgb(colors().warn_text))
+            .child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
             .child(div().flex_1().min_w_0().child(format!(
                 "Typing goes to {listening} of {panes} panes. Click a pane's badge to leave it out or bring it back."
             )))
@@ -2516,18 +2509,24 @@ impl Workspace {
                     .items_center()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(0xa16207))
+                    .border_color(rgb(colors().warn_edge))
                     .text_xs()
-                    .text_color(rgb(0xfde68a))
+                    .text_color(rgb(colors().warn_text))
                     .cursor_pointer()
-                    .hover(|s| s.bg(rgb(0x3a2a0c)))
+                    .hover(|s| s.bg(rgb(colors().warn_hover)))
                     .on_click(cx.listener(|ws, _, _, cx| ws.toggle_broadcast(cx)))
                     .child(format!("Stop ({keys})")),
             )
     }
 
-    fn tab_strip(&self, accent: Hsla, cx: &mut Context<Self>) -> Div {
-        let mut strip = div().flex().h_full().min_w_0().overflow_hidden();
+    fn tab_strip(&self, cx: &mut Context<Self>) -> Div {
+        let mut strip = div()
+            .flex()
+            .items_center()
+            .gap(px(4.))
+            .h_full()
+            .min_w_0()
+            .overflow_hidden();
         for (i, tab) in self.tabs.iter().enumerate() {
             let v = tab.focused.read(cx);
             let active = i == self.active;
@@ -2536,40 +2535,42 @@ impl Workspace {
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
-                    .relative()
-                    // The host's color, as a line along the top.
-                    .when_some(color, |d, c| {
-                        d.child(
-                            div()
-                                .absolute()
-                                .top_0()
-                                .left_0()
-                                .right_0()
-                                .h(px(2.))
-                                .bg(rgb(c)),
-                        )
-                    })
                     .flex()
+                    .flex_shrink_0()
                     .items_center()
-                    .gap_2()
-                    .h_full()
-                    .pl_3()
-                    .pr_1()
+                    .gap(px(8.))
+                    .h(px(30.))
+                    .pl(px(9.))
+                    .pr(px(4.))
                     .max_w(px(220.))
-                    .border_b_2()
+                    .rounded(px(7.))
+                    .border_1()
                     .cursor_pointer()
-                    .text_color(rgb(if active { TEXT } else { DIM }))
+                    .text_color(rgb(if active { colors().text } else { colors().soft }))
+                    // The active one joins the pane under it; amber while it
+                    // types in every pane.
                     .when(active, |d| {
-                        d.bg(rgb(0x0b0f17)).border_color(if tab.broadcast {
-                            rgb(BROADCAST).into()
-                        } else {
-                            accent
-                        })
+                        d.bg(rgb(colors().tab_on))
+                            .border_color(rgb(if tab.broadcast {
+                                colors().amber
+                            } else {
+                                colors().edge
+                            }))
                     })
                     .when(!active, |d| {
                         d.border_color(gpui::transparent_black())
-                            .hover(|s| s.bg(rgb(0x141c2b)))
+                            .hover(|s| s.bg(rgb(colors().hover)))
                     })
+                    // The host's color, as a mark at the start; a host without
+                    // one keeps the place, so the titles line up.
+                    .child(
+                        div()
+                            .w(px(3.))
+                            .h(px(14.))
+                            .flex_shrink_0()
+                            .rounded(px(2.))
+                            .when_some(color, |d, c| d.bg(rgb(c))),
+                    )
                     // A press on a tab must not start moving the window.
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(move |ws, _, window, cx| ws.activate(i, window, cx)))
@@ -2580,7 +2581,7 @@ impl Workspace {
                     .child(dot(Some(v.status())))
                     // Typing in every pane: said on the tab too.
                     .when(tab.broadcast, |d| {
-                        d.child(div().size(px(8.)).rounded_full().bg(rgb(BROADCAST)))
+                        d.child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
                     })
                     .child(
                         div()
@@ -2595,8 +2596,11 @@ impl Workspace {
                             .id(ElementId::NamedInteger("close-tab".into(), i as u64))
                             .px_1()
                             .rounded_sm()
-                            .text_color(rgb(MUTED))
-                            .hover(|s| s.bg(rgb(0x2a3446)).text_color(rgb(TEXT)))
+                            .text_color(rgb(colors().muted))
+                            .hover(|s| {
+                                s.bg(rgb(colors().button_hover))
+                                    .text_color(rgb(colors().text))
+                            })
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(move |ws, _, window, cx| {
                                 cx.stop_propagation();
@@ -2610,13 +2614,14 @@ impl Workspace {
             div()
                 .id("new-tab")
                 .flex()
+                .flex_shrink_0()
                 .items_center()
                 .justify_center()
-                .w(px(32.))
-                .h_full()
-                .text_color(rgb(MUTED))
+                .size(px(28.))
+                .rounded(px(6.))
+                .text_color(rgb(colors().soft))
                 .cursor_pointer()
-                .hover(|s| s.text_color(rgb(TEXT)))
+                .hover(|s| s.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .on_click(cx.listener(|ws, _, window, cx| ws.open_palette(window, cx)))
                 .child("+"),
@@ -2634,7 +2639,7 @@ impl Workspace {
                     svg()
                         .path("icons/logo.svg")
                         .size(px(18.))
-                        .text_color(rgb(LOGO)),
+                        .text_color(rgb(colors().accent)),
                 ),
             )
             .child(strip)
@@ -2650,8 +2655,8 @@ impl Workspace {
                     .justify_center()
                     .rounded(px(6.))
                     .cursor_pointer()
-                    .when(open, |d| d.bg(rgb(0x1e2a40)))
-                    .hover(|s| s.bg(rgb(0x1e2736)))
+                    .when(open, |d| d.bg(rgb(colors().selected)))
+                    .hover(|s| s.bg(rgb(colors().hover)))
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(|ws, _, window, cx| {
                         if ws.settings.is_some() {
@@ -2664,7 +2669,7 @@ impl Workspace {
                         svg()
                             .path("icons/settings.svg")
                             .size(px(16.))
-                            .text_color(rgb(if open { TEXT } else { 0xb6c0cf })),
+                            .text_color(rgb(if open { colors().text } else { colors().soft })),
                     ),
             )
     }
@@ -2714,6 +2719,7 @@ impl Workspace {
             title: "This computer".into(),
             note: SharedString::default(),
             group: None,
+            color: None,
             rows: vec![Row {
                 name: "Local terminal".into(),
                 detail: shell_name.clone().into(),
@@ -2731,6 +2737,7 @@ impl Workspace {
                 title: "Favorites".into(),
                 note: SharedString::default(),
                 group: None,
+                color: None,
                 rows: favorites,
             });
         }
@@ -2746,6 +2753,7 @@ impl Workspace {
                 title: g.name.clone().into(),
                 note: rows.len().to_string().into(),
                 group: Some(g.name.clone()),
+                color: g.color.as_deref().and_then(shellwing_config::color_rgb),
                 rows,
             });
         }
@@ -2760,6 +2768,7 @@ impl Workspace {
                 title: "Hosts".into(),
                 note: loose.len().to_string().into(),
                 group: None,
+                color: None,
                 rows: loose,
             });
         }
@@ -2783,6 +2792,7 @@ impl Workspace {
                 title: "~/.ssh/config".into(),
                 note: "read only".into(),
                 group: None,
+                color: None,
                 rows: aliases,
             });
         }
@@ -2802,16 +2812,20 @@ impl Workspace {
 
     /// A pane tree: terminals, and between the two sides of each split a divider
     /// that can be dragged. With several panes, the focused one is marked.
+    /// A pane, or a split of two; `corners` are the window's bottom corners
+    /// it fills, which it rounds.
     fn render_pane(
         &self,
         pane: &Pane<Entity<TermView>>,
         focused: &Entity<TermView>,
         multi: bool,
         accent: Hsla,
+        corners: chrome::BottomCorners,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         match pane {
             Pane::Leaf(view) => {
+                view.read(cx).set_corners(corners);
                 let v = view.clone();
                 // The focused pane's border: its host's color, else the theme's accent.
                 let accent = self
@@ -2844,6 +2858,13 @@ impl Workspace {
             Pane::Split(state, a, b) => {
                 let horizontal = state.axis == Axis::Horizontal;
                 let ratio = state.ratio.get();
+                // Side by side, each has one corner; one over the other, the
+                // lower has both.
+                let (corners_a, corners_b) = if horizontal {
+                    (corners.left(), corners.right())
+                } else {
+                    (chrome::BottomCorners::none(), corners)
+                };
                 let (s_bounds, s_drag) = (state.clone(), state.clone());
                 let first = div()
                     .flex()
@@ -2851,20 +2872,20 @@ impl Workspace {
                     .min_h_0()
                     .flex_basis(relative(ratio))
                     .flex_grow(0.)
-                    .child(self.render_pane(a, focused, multi, accent, cx));
+                    .child(self.render_pane(a, focused, multi, accent, corners_a, cx));
                 let second = div()
                     .flex()
                     .min_w_0()
                     .min_h_0()
                     .flex_basis(relative(1. - ratio))
                     .flex_grow(0.)
-                    .child(self.render_pane(b, focused, multi, accent, cx));
+                    .child(self.render_pane(b, focused, multi, accent, corners_b, cx));
                 let divider = div()
                     .id(ElementId::Name(
                         format!("divider-{:p}", Rc::as_ptr(state)).into(),
                     ))
                     .flex_shrink_0()
-                    .bg(rgb(LINE))
+                    .bg(rgb(colors().line))
                     .when(horizontal, |d| {
                         d.w(px(3.)).h_full().cursor(CursorStyle::ResizeLeftRight)
                     })
@@ -2907,20 +2928,30 @@ impl Workspace {
         }
     }
 
-    fn welcome(&self, bg: Hsla) -> impl IntoElement {
+    fn welcome(&self, bg: Hsla, corners: chrome::BottomCorners) -> impl IntoElement {
         let key = |k: &str, what: &str| {
             div()
                 .flex()
                 .gap_3()
-                .child(div().w(px(150.)).text_color(rgb(DIM)).child(k.to_string()))
-                .child(div().text_color(rgb(MUTED)).child(what.to_string()))
+                .child(
+                    div()
+                        .w(px(150.))
+                        .text_color(rgb(colors().soft))
+                        .child(k.to_string()),
+                )
+                .child(
+                    div()
+                        .text_color(rgb(colors().muted))
+                        .child(what.to_string()),
+                )
         };
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
             ("Ctrl+Shift", "Alt")
         };
-        div()
+        corners
+            .round(div())
             .flex_1()
             .h_full()
             .flex()
@@ -2934,15 +2965,15 @@ impl Workspace {
                 svg()
                     .path("icons/logo.svg")
                     .size(px(56.))
-                    .text_color(rgb(LOGO)),
+                    .text_color(rgb(colors().accent)),
             )
             .child(
                 div()
-                    .text_color(rgb(TEXT))
+                    .text_color(rgb(colors().text))
                     .text_lg()
                     .child("Choose a host on the left to connect"),
             )
-            .child(div().text_color(rgb(MUTED)).child(format!(
+            .child(div().text_color(rgb(colors().muted)).child(format!(
                 "or press {} to find one, or to connect to user@host",
                 if cfg!(target_os = "macos") {
                     "Cmd+K"
@@ -2967,7 +2998,7 @@ impl Workspace {
                     .child(key(&format!("{chord}+B"), "show or hide the host list")),
             )
             .when_some(self.notice.clone(), |d, n| {
-                d.child(div().pt_2().text_color(rgb(0xfbbf24)).child(n))
+                d.child(div().pt_2().text_color(rgb(colors().warn)).child(n))
             })
     }
 }
@@ -2989,12 +3020,24 @@ impl Render for Workspace {
         };
         let bg = hsla(theme_rgb(look.theme.background));
         let accent = hsla(theme_rgb(look.theme.accent));
-        let tabs = self.tab_strip(accent, cx);
+        // What fills the window's bottom corners rounds them.
+        let bottom = chrome::BottomCorners::of(window);
+        if chrome::BottomCorners::current(cx) != bottom {
+            cx.set_global(bottom);
+        }
+        let main_corners = if self.show_sidebar {
+            bottom.right()
+        } else {
+            bottom
+        };
+        let tabs = self.tab_strip(cx);
         let main: AnyElement = match self.tabs.get(self.active) {
             Some(tab) => {
                 let multi = tab.views().len() > 1;
                 let pane = match &tab.root {
-                    Some(root) => self.render_pane(root, &tab.focused, multi, accent, cx),
+                    Some(root) => {
+                        self.render_pane(root, &tab.focused, multi, accent, main_corners, cx)
+                    }
                     None => div().into_any_element(),
                 };
                 let strip = tab.broadcast.then(|| {
@@ -3011,7 +3054,7 @@ impl Render for Workspace {
                     .child(pane)
                     .into_any_element()
             }
-            None => self.welcome(bg).into_any_element(),
+            None => self.welcome(bg, main_corners).into_any_element(),
         };
         let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
         let side_w = if self.sidebar_collapsed {
@@ -3026,13 +3069,23 @@ impl Render for Workspace {
             .min_h_0()
             .w_full()
             .when(self.show_sidebar, |d| {
+                // Its ground is drawn here, where the window's corner can be
+                // rounded: a cached view is laid out by its parent, not painted.
                 d.child(
-                    self.sidebar.clone().cached(
-                        gpui::StyleRefinement::default()
-                            .w(px(side_w))
-                            .h_full()
-                            .flex_shrink_0(),
-                    ),
+                    bottom
+                        .left()
+                        .round(
+                            div()
+                                .w(px(side_w))
+                                .h_full()
+                                .flex_shrink_0()
+                                .bg(rgb(colors().panel)),
+                        )
+                        .child(
+                            self.sidebar
+                                .clone()
+                                .cached(gpui::StyleRefinement::default().size_full()),
+                        ),
                 )
             })
             .child(main)
@@ -3070,8 +3123,14 @@ impl Render for Workspace {
                             div()
                                 .h_full()
                                 .w(px(if dragging { 3. } else { 1. }))
-                                .bg(rgb(if dragging { ACCENT_LINE } else { LINE }))
-                                .group_hover("sidebar-edge", |s| s.w(px(2.)).bg(rgb(ACCENT_LINE))),
+                                .bg(rgb(if dragging {
+                                    colors().accent
+                                } else {
+                                    colors().line
+                                }))
+                                .group_hover("sidebar-edge", |s| {
+                                    s.w(px(2.)).bg(rgb(colors().accent))
+                                }),
                         ),
                 )
             })
@@ -3084,8 +3143,8 @@ impl Render for Workspace {
                         .px(px(9.))
                         .py(px(3.))
                         .rounded_md()
-                        .bg(rgb(ACCENT_LINE))
-                        .text_color(rgb(0x04121c))
+                        .bg(rgb(colors().accent))
+                        .text_color(rgb(colors().on_accent))
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
                         .child(format!("{} px", side_w.round())),
@@ -3094,13 +3153,14 @@ impl Render for Workspace {
             .when_some(self.editor.as_ref().map(|(e, _)| e.clone()), |d, e| {
                 let quiet = e.clone();
                 d.child(
-                    div()
+                    bottom
+                        .round(div())
                         .id("editor-backdrop")
                         .absolute()
                         .top_0()
                         .left_0()
                         .size_full()
-                        .bg(rgba(0x03060c8c))
+                        .bg(rgba(colors().scrim))
                         // Beside the drawer: closes it, unless that would lose edits.
                         .on_mouse_down(
                             MouseButton::Left,
@@ -3127,13 +3187,14 @@ impl Render for Workspace {
                 |d, e| {
                     let quiet = e.clone();
                     d.child(
-                        div()
+                        bottom
+                            .round(div())
                             .id("group-editor-backdrop")
                             .absolute()
                             .top_0()
                             .left_0()
                             .size_full()
-                            .bg(rgba(0x03060c8c))
+                            .bg(rgba(colors().scrim))
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(move |ws, _, window, cx| {
@@ -3170,7 +3231,8 @@ impl Render for Workspace {
             })
             .when_some(palette, |d, p| {
                 d.child(
-                    div()
+                    bottom
+                        .round(div())
                         .id("palette-backdrop")
                         .absolute()
                         .top_0()
@@ -3181,7 +3243,7 @@ impl Render for Workspace {
                         // At its own height: a flex row would stretch it to the bottom.
                         .items_start()
                         .pt(px(56.))
-                        .bg(rgba(0x03060c99))
+                        .bg(rgba(colors().scrim))
                         .on_mouse_down(
                             MouseButton::Left,
                             cx.listener(|ws, _, window, cx| ws.close_palette(window, cx)),
@@ -3205,9 +3267,9 @@ impl Render for Workspace {
                     div()
                         .h(px(TITLEBAR_H))
                         .flex_shrink_0()
-                        .bg(rgb(0x0f1522))
+                        .bg(rgb(colors().chrome))
                         .border_b_1()
-                        .border_color(rgb(LINE))
+                        .border_color(rgb(colors().line))
                         .child(tabs),
                 )
                 .child(body)
@@ -3248,7 +3310,7 @@ impl Render for Workspace {
                     }),
                 )
             })
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
     }
 }
 

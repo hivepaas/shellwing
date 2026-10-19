@@ -25,6 +25,7 @@ use shellwing_term::{
 
 use crate::Writer;
 use crate::bench::Probe;
+use crate::colors::colors;
 use crate::files::{self, FilesEvent, FilesPanel};
 use crate::input::{Changed, TextInput};
 use crate::look::{Look, rgb as theme_rgb};
@@ -263,6 +264,9 @@ pub struct TermView {
     cell: (Pixels, Pixels),
     /// Window position of the grid's top-left corner, recorded at paint time.
     grid_origin: Rc<Cell<Point<Pixels>>>,
+    /// The window's bottom corners this pane fills, which it rounds; the
+    /// workspace sets them as it lays the panes out.
+    corners: Rc<Cell<crate::chrome::BottomCorners>>,
     /// The area the terminal had at the last paint, which the grid fills.
     area: Rc<Cell<Size<Pixels>>>,
     /// Text the input method is composing (preedit), shown at the cursor.
@@ -326,12 +330,6 @@ struct FindOptions {
 
 impl gpui::Global for FindOptions {}
 
-/// Matches of the text being found, as Ghostty shows them: yellow, and the
-/// chosen one orange, under black text.
-const MATCH_BG: u32 = 0xffe082;
-const CURRENT_BG: u32 = 0xf2a57e;
-const FOUND_TEXT: u32 = 0x000000;
-
 /// The pane's host is to sign in with a key the vault keeps.
 pub struct UseKey {
     /// The host's name in hosts.toml.
@@ -349,9 +347,6 @@ struct KeyOffer {
 
 /// The pane's broadcast badge was clicked: leave it out, or bring it back.
 pub struct ListenToggled;
-
-/// Typing in every pane of the tab: amber, as the host list's Edit badge.
-const BROADCAST: u32 = 0xf59e0b;
 
 impl gpui::EventEmitter<StatusChanged> for TermView {}
 impl gpui::EventEmitter<ListenToggled> for TermView {}
@@ -417,6 +412,7 @@ impl TermView {
             grid: (0, 0),
             cell: (px(0.), px(0.)),
             grid_origin: Rc::new(Cell::new(point(px(0.), px(0.)))),
+            corners: Rc::default(),
             area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
@@ -464,6 +460,11 @@ impl TermView {
         }
         self.broadcast = state;
         self.echo = echo;
+    }
+
+    /// The window's bottom corners this pane fills (see `corners`).
+    pub fn set_corners(&self, corners: crate::chrome::BottomCorners) {
+        self.corners.set(corners);
     }
 
     /// Types `text` into the shell as if typed here, and presses Enter when
@@ -576,16 +577,16 @@ impl TermView {
                 .px(px(8.))
                 .rounded_full()
                 .border_1()
-                .border_color(rgb(0x7f1d1d))
-                .bg(rgb(0x2a1215))
+                .border_color(rgb(colors().bad_edge))
+                .bg(rgb(colors().bad_bg))
                 .text_xs()
-                .text_color(rgb(0xfecaca))
+                .text_color(rgb(colors().bad_text))
                 .cursor_pointer()
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .on_click(cx.listener(move |_, _, _, cx| {
                     cx.open_url(&format!("file://{}", path.display()))
                 }))
-                .child(div().size(px(6.)).rounded_full().bg(rgb(0xef4444)))
+                .child(div().size(px(6.)).rounded_full().bg(rgb(colors().danger)))
                 .child("logging"),
         )
     }
@@ -603,17 +604,29 @@ impl TermView {
                 .px(px(8.))
                 .rounded_full()
                 .border_1()
-                .border_color(rgb(if listening { 0xa16207 } else { 0x263042 }))
-                .bg(rgb(if listening { 0x2a1d07 } else { 0x111a2a }))
+                .border_color(rgb(if listening {
+                    colors().warn_edge
+                } else {
+                    colors().field_edge
+                }))
+                .bg(rgb(if listening {
+                    colors().warn_bg
+                } else {
+                    colors().chip
+                }))
                 .text_xs()
-                .text_color(rgb(if listening { 0xfde68a } else { 0x8a96aa }))
+                .text_color(rgb(if listening {
+                    colors().warn_text
+                } else {
+                    colors().muted
+                }))
                 .cursor_pointer()
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .on_click(cx.listener(|_, _, _, cx| cx.emit(ListenToggled)))
                 .child(div().size(px(6.)).rounded_full().bg(rgb(if listening {
-                    BROADCAST
+                    colors().amber
                 } else {
-                    0x5b6578
+                    colors().faint
                 })))
                 .child(if listening { "listening" } else { "left out" }),
         )
@@ -686,11 +699,14 @@ impl TermView {
                 .py_1()
                 .rounded_md()
                 .cursor_pointer()
-                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(primary, |d| {
+                    d.bg(rgb(colors().accent))
+                        .text_color(rgb(colors().on_accent))
+                })
                 .when(!primary, |d| {
                     d.border_1()
-                        .border_color(rgb(0x3f4a5c))
-                        .hover(|s| s.bg(rgb(0x1e2736)))
+                        .border_color(rgb(colors().edge))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                 })
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .child(label)
@@ -708,10 +724,10 @@ impl TermView {
                 .py_2()
                 .rounded_lg()
                 .border_1()
-                .border_color(rgb(0x2b3648))
-                .bg(gpui::rgba(0x080a12e6))
+                .border_color(rgb(colors().edge))
+                .bg(gpui::rgba(colors().banner))
                 .text_sm()
-                .text_color(rgb(0xe2e8f0))
+                .text_color(rgb(colors().text))
                 .child(div().flex_1().min_w_0().child(format!(
                     "{} is installed on {}. Sign in to {} with it from now on?",
                     offer.key_name, offer.host, offer.host
@@ -857,13 +873,13 @@ impl TermView {
                 .justify_center()
                 .rounded(px(5.))
                 .border_1()
-                .border_color(rgb(if on { 0x38bdf8 } else { 0x111a2a }))
-                .bg(rgb(if on { 0x17304a } else { 0x111a2a }))
+                .border_color(rgb(if on { colors().accent } else { colors().chip }))
+                .bg(rgb(if on { colors().selected } else { colors().chip }))
                 .text_xs()
                 .font_weight(FontWeight::SEMIBOLD)
-                .text_color(rgb(if on { 0xe2e8f0 } else { 0x8a96aa }))
+                .text_color(rgb(if on { colors().text } else { colors().muted }))
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(0x1a2333)))
+                .hover(|s| s.bg(rgb(colors().hover)))
                 .tooltip(move |_, cx| {
                     cx.new(|_| crate::sidebar::Tip {
                         title: tip.into(),
@@ -883,9 +899,9 @@ impl TermView {
                 .items_center()
                 .justify_center()
                 .rounded(px(5.))
-                .text_color(rgb(0xb6c0cf))
+                .text_color(rgb(colors().soft))
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(0x1a2333)))
+                .hover(|s| s.bg(rgb(colors().hover)))
                 .on_click(cx.listener(move |v, _, _, _| v.term.find_next(older)))
                 .child(label)
         };
@@ -903,11 +919,11 @@ impl TermView {
                 .py_1()
                 .rounded_md()
                 .border_1()
-                .border_color(rgb(0x2b3648))
-                .bg(rgb(0x111a2a))
+                .border_color(rgb(colors().edge))
+                .bg(rgb(colors().chip))
                 .shadow_lg()
                 .text_sm()
-                .text_color(rgb(0xe2e8f0))
+                .text_color(rgb(colors().text))
                 .cursor_default()
                 .on_key_down(cx.listener(Self::find_key))
                 // Clicks here are not selections in the terminal.
@@ -922,8 +938,8 @@ impl TermView {
                         .items_center()
                         .rounded(px(5.))
                         .border_1()
-                        .border_color(rgb(0x263042))
-                        .bg(rgb(0x0b0f17))
+                        .border_color(rgb(colors().field_edge))
+                        .bg(rgb(colors().field))
                         .child(f.input.clone()),
                 )
                 .child(toggle(
@@ -947,7 +963,7 @@ impl TermView {
                         .min_w(px(64.))
                         .px_1()
                         .text_xs()
-                        .text_color(rgb(if none { 0xf87171 } else { 0x8a96aa }))
+                        .text_color(rgb(if none { colors().bad } else { colors().muted }))
                         .child(count),
                 )
                 .child(step("find-older", "↑", true, cx))
@@ -961,9 +977,9 @@ impl TermView {
                         .items_center()
                         .justify_center()
                         .rounded(px(5.))
-                        .text_color(rgb(0xb6c0cf))
+                        .text_color(rgb(colors().soft))
                         .cursor_pointer()
-                        .hover(|s| s.bg(rgb(0x1a2333)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                         .on_click(cx.listener(|v, _, window, cx| v.close_find(window, cx)))
                         .child("✕"),
                 )
@@ -1108,11 +1124,14 @@ impl TermView {
                 .py_1()
                 .rounded_md()
                 .cursor_pointer()
-                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(primary, |d| {
+                    d.bg(rgb(colors().accent))
+                        .text_color(rgb(colors().on_accent))
+                })
                 .when(!primary, |d| {
                     d.border_1()
-                        .border_color(rgb(0x3f4a5c))
-                        .hover(|s| s.bg(rgb(0x1e2736)))
+                        .border_color(rgb(colors().edge))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                 })
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .child(label)
@@ -1130,10 +1149,10 @@ impl TermView {
                 .py_2()
                 .rounded_lg()
                 .border_1()
-                .border_color(rgb(0x2b3648))
-                .bg(gpui::rgba(0x080a12e6))
+                .border_color(rgb(colors().edge))
+                .bg(gpui::rgba(colors().banner))
                 .text_sm()
-                .text_color(rgb(0xe2e8f0))
+                .text_color(rgb(colors().text))
                 .child(div().flex_1().min_w_0().child(what))
                 .child(
                     button("save-not-now", "Not now", false).on_click(cx.listener(
@@ -1182,14 +1201,14 @@ impl TermView {
                 .whitespace_nowrap()
                 .when(danger, |d| {
                     d.border_1()
-                        .border_color(rgb(0xb45309))
-                        .text_color(rgb(0xfde68a))
-                        .hover(|s| s.bg(rgb(0x3a2a0c)))
+                        .border_color(rgb(colors().warn_edge))
+                        .text_color(rgb(colors().warn_text))
+                        .hover(|s| s.bg(rgb(colors().warn_hover)))
                 })
                 .when(!danger, |d| {
                     d.border_1()
-                        .border_color(rgb(0x3f4a5c))
-                        .hover(|s| s.bg(rgb(0x1e2736)))
+                        .border_color(rgb(colors().edge))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                 })
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .child(label)
@@ -1203,7 +1222,7 @@ impl TermView {
                     div()
                         .w(px(110.))
                         .flex_shrink_0()
-                        .text_color(rgb(0x8a96aa))
+                        .text_color(rgb(colors().muted))
                         .child(label.to_string()),
                 )
                 .child(
@@ -1226,17 +1245,17 @@ impl TermView {
                 .py_3()
                 .rounded_lg()
                 .border_1()
-                .border_color(rgb(0x7f1d1d))
-                .bg(gpui::rgba(0x1a0b0ef0))
+                .border_color(rgb(colors().bad_edge))
+                .bg(gpui::rgba(colors().bad_banner))
                 .text_sm()
-                .text_color(rgb(0xe2e8f0))
+                .text_color(rgb(colors().text))
                 .child(
                     div()
                         .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(rgb(0xfca5a5))
+                        .text_color(rgb(colors().bad_text))
                         .child(format!("The host key for {} has changed.", c.label)),
                 )
-                .child(div().text_color(rgb(0xcbd5e1)).child(
+                .child(div().text_color(rgb(colors().soft)).child(
                     "If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send.",
                 ))
                 .child(fact(
@@ -1297,11 +1316,14 @@ impl TermView {
                 .py_1()
                 .rounded_md()
                 .cursor_pointer()
-                .when(primary, |d| d.bg(rgb(0x38bdf8)).text_color(rgb(0x04121c)))
+                .when(primary, |d| {
+                    d.bg(rgb(colors().accent))
+                        .text_color(rgb(colors().on_accent))
+                })
                 .when(!primary, |d| {
                     d.border_1()
-                        .border_color(rgb(0x3f4a5c))
-                        .hover(|s| s.bg(rgb(0x1e2736)))
+                        .border_color(rgb(colors().edge))
+                        .hover(|s| s.bg(rgb(colors().hover)))
                 })
                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                 .child(label)
@@ -1319,10 +1341,10 @@ impl TermView {
                 .py_2()
                 .rounded_lg()
                 .border_1()
-                .border_color(rgb(0x2b3648))
-                .bg(gpui::rgba(0x080a12e6))
+                .border_color(rgb(colors().edge))
+                .bg(gpui::rgba(colors().banner))
                 .text_sm()
-                .text_color(rgb(0xe2e8f0))
+                .text_color(rgb(colors().text))
                 .child(div().flex_1().min_w_0().child(text))
                 .when(self.retry_at.is_some(), |d| {
                     d.child(
@@ -1513,13 +1535,17 @@ impl TermView {
                 .px_3()
                 .py(px(5.))
                 .rounded(px(4.))
-                .text_color(rgb(if enabled { 0xe2e8f0 } else { 0x5b6578 }))
+                .text_color(rgb(if enabled {
+                    colors().text
+                } else {
+                    colors().faint
+                }))
                 .whitespace_nowrap()
                 .when(enabled, |d| {
-                    d.cursor_pointer().hover(|s| s.bg(rgb(0x1e2a3d)))
+                    d.cursor_pointer().hover(|s| s.bg(rgb(colors().menu_hover)))
                 })
                 .child(label.to_string())
-                .child(div().text_xs().text_color(rgb(0x7d889b)).child(hint))
+                .child(div().text_xs().text_color(rgb(colors().muted)).child(hint))
         };
         // Runs the item's command and closes the menu.
         let act = |f: fn(&mut Self, &mut Window, &mut Context<Self>)| {
@@ -1529,7 +1555,7 @@ impl TermView {
                 cx.notify();
             })
         };
-        let line = || div().my_1().h(px(1.)).bg(rgb(0x1e2736));
+        let line = || div().my_1().h(px(1.)).bg(rgb(colors().line));
         let status = self.session.status();
         let local = self.session.is_local();
         let menu = div()
@@ -1540,9 +1566,9 @@ impl TermView {
             .flex()
             .flex_col()
             .rounded(px(8.))
-            .bg(rgb(0x111826))
+            .bg(rgb(colors().raised))
             .border_1()
-            .border_color(rgb(0x2b3648))
+            .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_sm()
             // Another click anywhere closes it (a right click opens the next one).
@@ -1696,6 +1722,7 @@ impl TermView {
         let run = TextRun {
             len: 1,
             font: self.base_font(),
+            // Measured, never drawn.
             color: rgb(0xffffff).into(),
             background_color: None,
             underline: None,
@@ -1773,13 +1800,15 @@ impl TermView {
                     },
                     color: match (selection_fg, r.found) {
                         (Some(c), _) if r.selected => c,
-                        (_, Found::Match | Found::Current) if !r.selected => rgb(FOUND_TEXT).into(),
+                        (_, Found::Match | Found::Current) if !r.selected => {
+                            rgb(colors().find_text).into()
+                        }
                         _ => hsla(r.fg),
                     },
                     background_color: match r.found {
                         _ if r.selected => Some(selection_bg),
-                        Found::Current => Some(rgb(CURRENT_BG).into()),
-                        Found::Match => Some(rgb(MATCH_BG).into()),
+                        Found::Current => Some(rgb(colors().find_current).into()),
+                        Found::Match => Some(rgb(colors().find_match).into()),
                         Found::No => r.bg.map(hsla),
                     },
                     underline: r.underline.then(|| UnderlineStyle {
@@ -1965,7 +1994,7 @@ impl TermView {
                 .right_0()
                 .h_full()
                 .w(px(SCROLLBAR_ZONE))
-                .when(active, |d| d.bg(gpui::rgba(0xffffff0d)))
+                .when(active, |d| d.bg(gpui::rgba(colors().tint)))
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(move |v, e: &MouseDownEvent, _, cx| {
@@ -2184,8 +2213,16 @@ impl Render for TermView {
         let grid_origin = self.grid_origin.clone();
         let area = self.area.clone();
         let (pad_x, pad_y) = (px(self.look.padding.0), px(self.look.padding.1));
+        // With the Files panel open, the panel has the right corner.
+        let corners = self.corners.get();
+        let term_corners = if self.files.is_some() && self.files_shown {
+            corners.left()
+        } else {
+            corners
+        };
 
-        let mut terminal = div()
+        let mut terminal = term_corners
+            .round(div())
             .id("terminal")
             .relative()
             .flex_1()
@@ -2235,8 +2272,12 @@ impl Render for TermView {
                             && let Some(image) =
                                 gradient_image(&gradient_cache, &theme, g, full.size, window)
                         {
-                            let _ =
-                                window.paint_image(full, full, Corners::default(), image, 0, false);
+                            let round = Corners {
+                                bottom_left: term_corners.left,
+                                bottom_right: term_corners.right,
+                                ..Corners::default()
+                            };
+                            let _ = window.paint_image(full, full, round, image, 0, false);
                         }
                         window.handle_input(
                             &focus,
@@ -2332,8 +2373,8 @@ impl Render for TermView {
                 .py_1()
                 .rounded_md()
                 .text_sm()
-                .bg(rgb(0x3f3f46))
-                .text_color(rgb(0xe4e4e7))
+                .bg(rgb(colors().button))
+                .text_color(rgb(colors().text))
         };
         if let Some(n) = &self.notice {
             // Below the find bar, when that is open.
@@ -2361,15 +2402,22 @@ impl Render for TermView {
         match self.broadcast {
             Some(true) => {
                 terminal = terminal.child(
-                    div()
+                    term_corners
+                        .round(div())
                         .absolute()
                         .inset_0()
                         .border_2()
-                        .border_color(rgb(BROADCAST)),
+                        .border_color(rgb(colors().amber)),
                 )
             }
             Some(false) => {
-                terminal = terminal.child(div().absolute().inset_0().bg(gpui::rgba(0x0b0f1766)))
+                terminal = terminal.child(
+                    term_corners
+                        .round(div())
+                        .absolute()
+                        .inset_0()
+                        .bg(gpui::rgba(colors().dim_pane)),
+                )
             }
             None => {}
         }
@@ -2387,7 +2435,7 @@ impl Render for TermView {
                     .id("to-bottom")
                     .bottom_3()
                     .cursor_pointer()
-                    .hover(|s| s.bg(rgb(0x52525b)))
+                    .hover(|s| s.bg(rgb(colors().button_hover)))
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(|v, _, _, cx| {
                         v.term.scroll_to_bottom();
@@ -2412,13 +2460,19 @@ impl Render for TermView {
             .min_h_0()
             .child(terminal)
             .when_some(files, |d, f| {
+                // Its ground is drawn here, where the window's corner can be
+                // rounded: a cached view is laid out by its parent, not painted.
                 d.child(
-                    f.cached(
-                        gpui::StyleRefinement::default()
-                            .w(px(width))
-                            .h_full()
-                            .flex_shrink_0(),
-                    ),
+                    corners
+                        .right()
+                        .round(
+                            div()
+                                .w(px(width))
+                                .h_full()
+                                .flex_shrink_0()
+                                .bg(rgb(colors().panel)),
+                        )
+                        .child(f.cached(gpui::StyleRefinement::default().size_full())),
                 )
                 // Its left edge: drag to resize, double-click for the default.
                 .child(
@@ -2452,8 +2506,14 @@ impl Render for TermView {
                             div()
                                 .h_full()
                                 .w(px(if dragging { 3. } else { 1. }))
-                                .bg(rgb(if dragging { 0x38bdf8 } else { 0x1e2736 }))
-                                .group_hover("files-edge", |s| s.w(px(2.)).bg(rgb(0x38bdf8))),
+                                .bg(rgb(if dragging {
+                                    colors().accent
+                                } else {
+                                    colors().line
+                                }))
+                                .group_hover("files-edge", |s| {
+                                    s.w(px(2.)).bg(rgb(colors().accent))
+                                }),
                         ),
                 )
                 .when(dragging, |d| {
@@ -2465,8 +2525,8 @@ impl Render for TermView {
                             .px(px(9.))
                             .py(px(3.))
                             .rounded_md()
-                            .bg(rgb(0x38bdf8))
-                            .text_color(rgb(0x04121c))
+                            .bg(rgb(colors().accent))
+                            .text_color(rgb(colors().on_accent))
                             .text_xs()
                             .font_weight(FontWeight::SEMIBOLD)
                             .child(format!("{} px", width.round())),

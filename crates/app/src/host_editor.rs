@@ -14,25 +14,11 @@ use gpui::{
 use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, Hosts, Store};
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
+use crate::colors::colors;
 use crate::input::TextInput;
 use crate::look::ui;
 
 pub const WIDTH: f32 = 520.;
-
-pub(crate) const BG: u32 = 0x0f1522;
-pub(crate) const EDGE: u32 = 0x2b3648;
-pub(crate) const RULE: u32 = 0x1f2937;
-pub(crate) const FIELD: u32 = 0x0b0f17;
-pub(crate) const FIELD_EDGE: u32 = 0x263042;
-pub(crate) const TEXT: u32 = 0xe2e8f0;
-pub(crate) const LABEL: u32 = 0xa3aec0;
-pub(crate) const MUTED: u32 = 0x8a96aa;
-const ARROW: u32 = 0x5b6578;
-pub(crate) const ON: u32 = 0x17233a;
-pub(crate) const ACCENT: u32 = 0x38bdf8;
-const CHIP: u32 = 0x111a2a;
-pub(crate) const BAD: u32 = 0xf87171;
-pub(crate) const FOOT: u32 = 0x0d121c;
 
 pub enum EditorEvent {
     Close,
@@ -750,7 +736,7 @@ impl HostEditor {
             .flex()
             .rounded(px(6.))
             .border_1()
-            .border_color(rgb(FIELD_EDGE))
+            .border_color(rgb(colors().field_edge))
             .overflow_hidden();
         for (n, &(value, name)) in choices.iter().enumerate() {
             let on = current == value;
@@ -763,11 +749,17 @@ impl HostEditor {
                     .items_center()
                     .justify_center()
                     .text_size(ui(12.5))
-                    .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
                     .cursor_pointer()
-                    .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
-                    .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
-                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .when(n > 0, |d| {
+                        d.border_l_1().border_color(rgb(colors().field_edge))
+                    })
+                    .when(on, |d| {
+                        d.bg(rgb(colors().selected))
+                            .border_b_2()
+                            .border_color(rgb(colors().accent))
+                    })
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |e, _, _, cx| {
                         set(e, value);
                         cx.notify();
@@ -794,15 +786,15 @@ impl HostEditor {
             .rounded(px(6.))
             .border_1()
             .border_color(rgb(if bad {
-                BAD
+                colors().bad
             } else if focused {
-                ACCENT
+                colors().accent
             } else {
-                FIELD_EDGE
+                colors().field_edge
             }))
-            .bg(rgb(FIELD))
+            .bg(rgb(colors().field))
             .text_size(ui(13.))
-            .text_color(rgb(TEXT))
+            .text_color(rgb(colors().text))
             .child(input.clone())
     }
 
@@ -852,8 +844,12 @@ impl HostEditor {
                     .justify_between()
                     .rounded(px(6.))
                     .border_1()
-                    .border_color(rgb(if open { ACCENT } else { FIELD_EDGE }))
-                    .bg(rgb(FIELD))
+                    .border_color(rgb(if open {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
                     .text_size(ui(13.))
                     .cursor_pointer()
                     .on_click(cx.listener(move |e, _, _, cx| {
@@ -871,7 +867,7 @@ impl HostEditor {
                             .whitespace_nowrap()
                             .child(value),
                     )
-                    .child(div().text_color(rgb(MUTED)).child("▾")),
+                    .child(div().text_color(rgb(colors().muted)).child("▾")),
             )
     }
 
@@ -900,8 +896,8 @@ impl HostEditor {
             .p_1()
             .rounded(px(6.))
             .border_1()
-            .border_color(rgb(EDGE))
-            .bg(rgb(0x111826));
+            .border_color(rgb(colors().edge))
+            .bg(rgb(colors().raised));
         for (i, (value, label)) in choices.into_iter().enumerate() {
             let chosen = value == current;
             list = list.child(
@@ -912,8 +908,8 @@ impl HostEditor {
                     .rounded(px(4.))
                     .text_size(ui(13.))
                     .cursor_pointer()
-                    .when(chosen, |d| d.bg(rgb(ON)))
-                    .hover(|s| s.bg(rgb(0x1a2333)))
+                    .when(chosen, |d| d.bg(rgb(colors().selected)))
+                    .hover(|s| s.bg(rgb(colors().hover)))
                     .on_click(cx.listener(move |e, _, _, cx| {
                         match menu {
                             Menu::Group => {
@@ -1008,21 +1004,21 @@ impl HostEditor {
 pub(crate) fn label_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(12.))
-        .text_color(rgb(LABEL))
+        .text_color(rgb(colors().label))
         .child(s.to_string())
 }
 
 pub(crate) fn hint_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(11.5))
-        .text_color(rgb(MUTED))
+        .text_color(rgb(colors().muted))
         .child(s.to_string())
 }
 
 pub(crate) fn problem_text(s: &str) -> gpui::Div {
     div()
         .text_size(ui(11.5))
-        .text_color(rgb(BAD))
+        .text_color(rgb(colors().bad))
         .child(s.to_string())
 }
 
@@ -1034,7 +1030,7 @@ fn fact(label: &str, value: String) -> gpui::Div {
         .child(
             div()
                 .w(px(70.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .child(label.to_string()),
         )
         .child(
@@ -1055,12 +1051,12 @@ pub(crate) fn section(title: &str) -> gpui::Div {
         .px(px(20.))
         .py(px(14.))
         .border_b_1()
-        .border_color(rgb(RULE))
+        .border_color(rgb(colors().line))
         .child(
             div()
                 .text_size(ui(11.))
                 .font_weight(FontWeight::SEMIBOLD)
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .child(title.to_uppercase()),
         )
 }
@@ -1078,12 +1074,12 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
         .gap(px(10.))
         .px(px(20.))
         .border_b_1()
-        .border_color(rgb(RULE))
+        .border_color(rgb(colors().line))
         .child(
             div()
                 .size(px(10.))
                 .rounded(px(3.))
-                .bg(rgb(color.unwrap_or(ACCENT))),
+                .bg(rgb(color.unwrap_or(colors().accent))),
         )
         .child(
             div()
@@ -1099,7 +1095,7 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
         .child(
             div()
                 .text_size(ui(12.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .child(note.to_string()),
         )
         .child(
@@ -1110,9 +1106,9 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
                 .items_center()
                 .justify_center()
                 .rounded(px(6.))
-                .text_color(rgb(0xb6c0cf))
+                .text_color(rgb(colors().soft))
                 .cursor_pointer()
-                .hover(|s| s.bg(rgb(0x1a2333)))
+                .hover(|s| s.bg(rgb(colors().hover)))
                 .on_click(cx.listener(|_, _, _, cx| cx.emit(EditorEvent::Close)))
                 .child("✕"),
         )
@@ -1128,15 +1124,15 @@ pub(crate) fn text_button(id: &str, label: &str, color: u32) -> gpui::Stateful<g
         .rounded(px(6.))
         .text_color(rgb(color))
         .cursor_pointer()
-        .hover(|s| s.bg(rgb(0x161e2c)))
+        .hover(|s| s.bg(rgb(colors().hover)))
         .child(label.to_string())
 }
 
 pub(crate) fn outline_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
-    text_button(id, label, TEXT)
+    text_button(id, label, colors().text)
         .px(px(14.))
         .border_1()
-        .border_color(rgb(FIELD_EDGE))
+        .border_color(rgb(colors().field_edge))
 }
 
 pub(crate) fn primary_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
@@ -1147,9 +1143,9 @@ pub(crate) fn primary_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div>
         .flex()
         .items_center()
         .rounded(px(6.))
-        .bg(rgb(ACCENT))
-        .hover(|s| s.bg(rgb(0x5cc8f9)))
-        .text_color(rgb(0x04121c))
+        .bg(rgb(colors().accent))
+        .hover(|s| s.bg(rgb(colors().accent_hover)))
+        .text_color(rgb(colors().on_accent))
         .font_weight(FontWeight::SEMIBOLD)
         .cursor_pointer()
         .child(label.to_string())
@@ -1171,21 +1167,21 @@ fn chip(
         .pr(px(4.))
         .rounded(px(13.))
         .border_1()
-        .border_color(rgb(EDGE))
-        .bg(rgb(CHIP))
+        .border_color(rgb(colors().edge))
+        .bg(rgb(colors().chip))
         .text_size(ui(12.))
         .child(name.to_string())
         .when(!detail.is_empty(), |d| {
-            d.child(div().text_color(rgb(MUTED)).child(detail))
+            d.child(div().text_color(rgb(colors().muted)).child(detail))
         })
         .child(
             div()
                 .id(id)
                 .px(px(4.))
                 .rounded(px(4.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .cursor_pointer()
-                .hover(|s| s.text_color(rgb(TEXT)))
+                .hover(|s| s.text_color(rgb(colors().text)))
                 .on_click(cx.listener(move |e, _, _, cx| {
                     remove(e, cx);
                     cx.notify();
@@ -1204,11 +1200,11 @@ fn dashed(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
         .rounded(px(13.))
         .border_1()
         .border_dashed()
-        .border_color(rgb(EDGE))
+        .border_color(rgb(colors().edge))
         .text_size(ui(12.))
-        .text_color(rgb(LABEL))
+        .text_color(rgb(colors().label))
         .cursor_pointer()
-        .hover(|s| s.text_color(rgb(TEXT)))
+        .hover(|s| s.text_color(rgb(colors().text)))
         .child(label.to_string())
 }
 
@@ -1220,18 +1216,21 @@ impl Focusable for HostEditor {
 
 impl Render for HostEditor {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // At the window's right edge: its bottom corner is the window's.
+        let corner = crate::chrome::BottomCorners::current(cx).right;
         let shell = div()
             .id("host-editor")
+            .rounded_br(corner)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(BG))
+            .bg(rgb(colors().surface))
             .border_l_1()
-            .border_color(rgb(EDGE))
+            .border_color(rgb(colors().edge))
             .text_size(ui(13.))
-            .text_color(rgb(TEXT));
+            .text_color(rgb(colors().text));
         if let Mode::SshConfig { alias, resolved } = &self.mode {
             let (alias, resolved) = (alias.clone(), resolved.clone());
             return shell.child(self.render_ssh(&alias, resolved.as_deref(), cx));
@@ -1287,7 +1286,7 @@ impl Render for HostEditor {
             .flex()
             .rounded(px(6.))
             .border_1()
-            .border_color(rgb(FIELD_EDGE))
+            .border_color(rgb(colors().field_edge))
             .overflow_hidden();
         for (n, m) in [
             AuthMethod::Auto,
@@ -1308,11 +1307,17 @@ impl Render for HostEditor {
                     .items_center()
                     .justify_center()
                     .text_size(ui(12.5))
-                    .text_color(rgb(if on { TEXT } else { 0xb6c0cf }))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
                     .cursor_pointer()
-                    .when(n > 0, |d| d.border_l_1().border_color(rgb(FIELD_EDGE)))
-                    .when(on, |d| d.bg(rgb(ON)).border_b_2().border_color(rgb(ACCENT)))
-                    .when(!on, |d| d.hover(|s| s.bg(rgb(0x121a28))))
+                    .when(n > 0, |d| {
+                        d.border_l_1().border_color(rgb(colors().field_edge))
+                    })
+                    .when(on, |d| {
+                        d.bg(rgb(colors().selected))
+                            .border_b_2()
+                            .border_color(rgb(colors().accent))
+                    })
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |e, _, _, cx| {
                         e.method = m;
                         e.problems.retain(|(f, _)| *f != Field::Key);
@@ -1418,12 +1423,12 @@ impl Render for HostEditor {
                     move |e, _| e.jumps.retain(|x| *x != name),
                     cx,
                 ))
-                .child(div().text_color(rgb(ARROW)).child("→"));
+                .child(div().text_color(rgb(colors().faint)).child("→"));
         }
         chain = chain.child(
             div()
                 .text_size(ui(12.))
-                .text_color(rgb(0xb6c0cf))
+                .text_color(rgb(colors().soft))
                 .child(title.clone()),
         );
         if !self.adding_jump {
@@ -1617,13 +1622,17 @@ impl Render for HostEditor {
                 .size(px(20.))
                 .rounded_full()
                 .border_2()
-                .border_color(rgb(if none_on { TEXT } else { EDGE }))
+                .border_color(rgb(if none_on {
+                    colors().text
+                } else {
+                    colors().edge
+                }))
                 .cursor_pointer()
                 .flex()
                 .items_center()
                 .justify_center()
                 .text_size(ui(10.))
-                .text_color(rgb(MUTED))
+                .text_color(rgb(colors().muted))
                 .on_click(cx.listener(|e, _, _, cx| {
                     e.color = None;
                     cx.notify();
@@ -1641,7 +1650,7 @@ impl Render for HostEditor {
                     .size(px(20.))
                     .rounded_full()
                     .bg(rgb(value))
-                    .when(on, |d| d.border_2().border_color(rgb(TEXT)))
+                    .when(on, |d| d.border_2().border_color(rgb(colors().text)))
                     .cursor_pointer()
                     .on_click(cx.listener(move |e, _, _, cx| {
                         e.color = Some(name.to_string());
@@ -1812,8 +1821,9 @@ impl Render for HostEditor {
             .px(px(20.))
             .py(px(12.))
             .border_t_1()
-            .border_color(rgb(RULE))
-            .bg(rgb(FOOT));
+            .border_color(rgb(colors().line))
+            .rounded_br(corner)
+            .bg(rgb(colors().panel));
         if let Some(p) = &self.save_problem {
             footer = footer.child(problem_text(p));
         }
@@ -1822,32 +1832,31 @@ impl Render for HostEditor {
         }
         let mut buttons = div().flex().items_center().gap_2();
         if self.confirm_delete {
-            buttons = buttons
-                .child(
-                    div()
-                        .text_size(ui(12.5))
-                        .child(format!("Delete {title} from hosts.toml?")),
-                )
-                .child(
-                    text_button("delete-yes", "Delete", BAD)
-                        .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
-                )
-                .child(
-                    text_button("delete-no", "Cancel", LABEL).on_click(cx.listener(
-                        |e, _, _, cx| {
+            buttons =
+                buttons
+                    .child(
+                        div()
+                            .text_size(ui(12.5))
+                            .child(format!("Delete {title} from hosts.toml?")),
+                    )
+                    .child(
+                        text_button("delete-yes", "Delete", colors().bad)
+                            .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                    )
+                    .child(text_button("delete-no", "Cancel", colors().label).on_click(
+                        cx.listener(|e, _, _, cx| {
                             e.confirm_delete = false;
                             cx.notify();
-                        },
-                    )),
-                );
+                        }),
+                    ));
         } else if self.original.is_some() {
             buttons = buttons
                 .child(
-                    text_button("delete", "Delete", BAD)
+                    text_button("delete", "Delete", colors().bad)
                         .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
                 )
                 .child(
-                    text_button("duplicate", "Duplicate", LABEL)
+                    text_button("duplicate", "Duplicate", colors().label)
                         .on_click(cx.listener(|e, _, window, cx| e.duplicate(window, cx))),
                 );
         }
@@ -1892,10 +1901,14 @@ pub(crate) fn checkbox(on: bool) -> gpui::Div {
         .justify_center()
         .rounded(px(4.))
         .border_1()
-        .border_color(rgb(if on { ACCENT } else { FIELD_EDGE }))
-        .bg(rgb(if on { ACCENT } else { FIELD }))
+        .border_color(rgb(if on {
+            colors().accent
+        } else {
+            colors().field_edge
+        }))
+        .bg(rgb(if on { colors().accent } else { colors().field }))
         .text_size(ui(11.))
-        .text_color(rgb(0x04121c))
+        .text_color(rgb(colors().on_accent))
         .when(on, |d| d.child("✓"))
 }
 
