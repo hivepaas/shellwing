@@ -20,7 +20,7 @@ pub const TITLE: &str = "local";
 /// user's own.
 pub fn shell(command: Option<&str>) -> Vec<String> {
     if let Some(c) = command.filter(|c| !c.trim().is_empty()) {
-        let words = crate::editors::words(c);
+        let words = crate::command::words(c);
         if !words.is_empty() {
             return words;
         }
@@ -31,7 +31,7 @@ pub fn shell(command: Option<&str>) -> Vec<String> {
 #[cfg(windows)]
 fn default_shell() -> Vec<String> {
     for p in ["pwsh.exe", "powershell.exe"] {
-        if crate::editors::which(p).is_some() {
+        if crate::command::which(p).is_some() {
             return vec![p.to_string(), "-NoLogo".to_string()];
         }
     }

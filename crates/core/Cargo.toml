@@ -1,0 +1,26 @@
+[package]
+name = "shellwing-core"
+description = "Sessions without a UI: connecting, prompts, saved secrets, host targets"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+shellwing-term.workspace = true
+shellwing-ssh.workspace = true
+shellwing-config.workspace = true
+shellwing-vault.workspace = true
+tokio.workspace = true
+async-channel.workspace = true
+anyhow.workspace = true
+# Local terminals: a PTY on Unix, ConPTY on Windows.
+portable-pty = "0.9"
+
+[dev-dependencies]
+toml = "1"
+russh.workspace = true
+
+[lints]
+workspace = true

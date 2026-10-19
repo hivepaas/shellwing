@@ -4,6 +4,8 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use shellwing_core::command::{which, words};
+
 /// Editors worth offering, by the name shown and the command that starts one.
 #[cfg(target_os = "macos")]
 const KNOWN: &[(&str, &str)] = &[
@@ -38,25 +40,6 @@ const KNOWN: &[(&str, &str)] = &[
     ("Pluma", "pluma"),
     ("Geany", "geany"),
 ];
-
-/// Where `cmd` is on `PATH`, if it is.
-pub(crate) fn which(cmd: &str) -> Option<PathBuf> {
-    let path = std::env::var_os("PATH")?;
-    let exts: Vec<String> = if cfg!(windows) {
-        std::env::var("PATHEXT")
-            .unwrap_or_else(|_| ".EXE;.CMD;.BAT".into())
-            .split(';')
-            .map(str::to_lowercase)
-            .collect()
-    } else {
-        vec![String::new()]
-    };
-    std::env::split_paths(&path).find_map(|dir| {
-        exts.iter()
-            .map(|e| dir.join(format!("{cmd}{e}")))
-            .find(|p| p.is_file())
-    })
-}
 
 /// The known editors this system has: (name, command).
 pub fn installed() -> Vec<(String, String)> {
@@ -141,33 +124,6 @@ pub fn system_name() -> Option<String> {
     .clone()
 }
 
-/// Splits a command as a shell would its words: spaces part them, quotes
-/// keep them together.
-pub fn words(cmd: &str) -> Vec<String> {
-    let (mut out, mut cur, mut quote, mut any) = (vec![], String::new(), None, false);
-    for c in cmd.chars() {
-        match (quote, c) {
-            (Some(q), c) if c == q => quote = None,
-            (Some(_), c) => cur.push(c),
-            (None, '"' | '\'') => {
-                quote = Some(c);
-                any = true;
-            }
-            (None, c) if c.is_whitespace() => {
-                if any || !cur.is_empty() {
-                    out.push(std::mem::take(&mut cur));
-                    any = false;
-                }
-            }
-            (None, c) => cur.push(c),
-        }
-    }
-    if any || !cur.is_empty() {
-        out.push(cur);
-    }
-    out
-}
-
 fn spawn(program: &str, args: &[&std::ffi::OsStr]) -> std::io::Result<()> {
     Command::new(program)
         .args(args)
@@ -213,17 +169,6 @@ pub fn open_text(path: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn commands_split_like_a_shell() {
-        assert_eq!(words("code -n"), ["code", "-n"]);
-        assert_eq!(
-            words(r#""/opt/My Editor/bin/edit" --wait"#),
-            ["/opt/My Editor/bin/edit", "--wait"]
-        );
-        assert_eq!(words("  subl  "), ["subl"]);
-        assert_eq!(words("vim -c ''"), ["vim", "-c", ""]);
-    }
 
     #[test]
     fn known_commands_have_names() {
