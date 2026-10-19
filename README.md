@@ -64,6 +64,7 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Ctrl+= / Ctrl+- / Ctrl+0 | Zoom the font in this tab (Cmd on macOS) |
 | Ctrl+Shift+] / [ (Cmd+] / [) | Next / previous theme, saved to `config.toml` |
 | Ctrl+click (Cmd+click) | Open a link |
+| Right-click (Shift+right-click while a program takes the mouse) | The pane's menu: copy, paste, find, files, forward, split, reconnect, close |
 
 ## Configuration
 

@@ -30,7 +30,7 @@ use crate::sidebar::{self, LINE, MUTED, Row, Section, Sidebar, TEXT, dot};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::target;
 use crate::view::{
-    CloseRequested, FilesResized, StatusChanged, TermView, UseKey, VaultChanged, hsla,
+    CloseRequested, FilesResized, PaneCommand, StatusChanged, TermView, UseKey, VaultChanged, hsla,
 };
 use shellwing_vault::{Folder, FolderState};
 
@@ -499,6 +499,16 @@ impl Workspace {
                 v.update(cx, |v, cx| v.refresh_panels(cx));
             }
             cx.notify();
+        })
+        .detach();
+        cx.subscribe_in(&view, window, |ws, view, c: &PaneCommand, window, cx| {
+            // The menu's pane has the keyboard already; make it the tab's too.
+            ws.set_focused(view.clone(), window, cx);
+            match *c {
+                PaneCommand::Split(axis) => ws.split(axis, window, cx),
+                PaneCommand::Forward => ws.ask_forward(None, window, cx),
+                PaneCommand::Close => ws.close_view(view, window, cx),
+            }
         })
         .detach();
         cx.subscribe_in(&view, window, |ws, view, _: &CloseRequested, window, cx| {
