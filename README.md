@@ -52,6 +52,7 @@ Ctrl+Shift on Linux and Windows is Cmd on macOS.
 | Ctrl+Shift+K (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
 | Ctrl+Shift+T | A new tab (opens the palette) |
 | Ctrl+Shift+D / E (Cmd+D / Cmd+Shift+D) | Split right / down, to the same host |
+| Ctrl+Shift+I (Cmd+Shift+I) | Type in every pane of the tab, or stop; a pane's badge leaves it out |
 | Alt+arrows (Cmd+Alt+arrows) | Move between panes (with one pane they go to the shell) |
 | Ctrl+Shift+W | Close the pane; the last one closes the tab (asks first while connected) |
 | Cmd+Q (macOS) | Quit; closing the window quits too, asking first while connections are open |

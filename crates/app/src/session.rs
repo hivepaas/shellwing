@@ -312,6 +312,11 @@ impl Session {
             .then_some(answer)
     }
 
+    /// Where the pane connects: user, host and port.
+    pub fn reached(&self) -> Option<&shellwing_ssh::Target> {
+        self.target.as_ref().map(|r| &r.target)
+    }
+
     /// The key the vault keeps that this host signs in with, if it names one.
     pub fn vault_key(&self) -> Option<&str> {
         self.target.as_ref()?.vault_key.as_deref()

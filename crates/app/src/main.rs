@@ -29,6 +29,8 @@ mod secrets;
 mod session;
 mod settings_view;
 mod sidebar;
+mod snippets;
+mod snippets_view;
 mod syncing;
 mod target;
 mod view;

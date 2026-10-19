@@ -300,6 +300,40 @@ lives. To see or forget them, open the palette and choose *Saved passwords and
 passphrases…*; Enter twice forgets one. The secrets themselves are never shown.
 Design and threats: `docs/design/vault.md`.
 
+## Snippets
+
+Snippets are commands you run often. They are kept in the vault and sync with
+it. Make and edit them in *Settings › Snippets*: a name, a one-line command
+(chain commands with `&&` or `;`), the hosts they are offered for (every host,
+a group or one host), and whether Enter is pressed after typing.
+
+In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
+
+- **Enter** types the snippet into the pane.
+- **Alt+Enter** (Option+Enter on macOS) types it into every pane of the tab;
+  while typing in every pane, only into the panes that listen.
+
+In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
+pane's host. Any other `{{name}}` is asked for first, with the command shown as
+it will run.
+
+## Typing in every pane
+
+**Ctrl+Shift+I** (**Cmd+Shift+I**) types what you type in one pane into every
+pane of the tab, as tmux's `synchronize-panes` does. Each pane gets the key
+itself, so the program running there reads it with its own modes.
+
+While it is on:
+
+- the tab shows an amber dot;
+- a strip above the panes says how many panes listen;
+- listening panes have an amber edge;
+- a pane's badge leaves it out (dimmed) or brings it back.
+
+Ctrl+Shift+I again, *Stop* on the strip, or leaving the tab with one pane
+stops it. Passwords and passphrases that shellwing itself asks for are never
+copied to other panes.
+
 ## SSH keys
 
 *Settings › Keys* lists the keys there are, in three groups:
