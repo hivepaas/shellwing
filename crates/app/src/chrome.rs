@@ -89,7 +89,11 @@ pub fn window_chrome(tabs: Div, content: Div, bg: Hsla, window: &mut Window) -> 
                     w.minimize_window()
                 }))
                 .child(button("max", "icons/maximize.svg", |w, _| w.zoom_window()))
-                .child(button("close", "icons/close.svg", |w, _| w.remove_window())),
+                .child(button(
+                    "close",
+                    "icons/close.svg",
+                    crate::workspace::close_window,
+                )),
         );
     let (inset, border) = (px(INSET), px(BORDER));
     let floating = !(t.top && t.bottom && t.left && t.right);

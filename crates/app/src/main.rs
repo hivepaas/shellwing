@@ -218,7 +218,16 @@ fn main() -> anyhow::Result<()> {
                 ws.activate(active, window, cx);
                 cx.activate(true);
                 ws.track_bounds(window, cx);
+                ws.guard_close(window, cx);
             });
+            // One window: closing it quits, on macOS too, where apps otherwise stay
+            // in the Dock with no window and no way to open one.
+            cx.on_window_closed(|cx, _| {
+                if cx.windows().is_empty() {
+                    cx.quit();
+                }
+            })
+            .detach();
             // Edits to the config files apply while running.
             cx.spawn(async move |cx| {
                 loop {
