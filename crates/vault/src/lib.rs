@@ -88,6 +88,9 @@ pub enum Error {
     WrongPassphrase,
     #[error("the passphrase is too short: at least {0} characters")]
     WeakPassphrase(usize),
+    /// Too easy to guess for a folder others may read: `zxcvbn`'s score, 0–4.
+    #[error("the passphrase is too easy to guess (strength {0} of 4; 3 is needed)")]
+    GuessablePassphrase(u8),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -114,6 +117,11 @@ pub enum Unlock<'a> {
 
 /// The shortest passphrase taken.
 pub const MIN_PASSPHRASE: usize = 10;
+
+/// How hard `passphrase` is to guess, `zxcvbn`'s 0 (very easy) to 4.
+pub fn passphrase_strength(passphrase: &str) -> u8 {
+    zxcvbn::zxcvbn(passphrase, &[]).score() as u8
+}
 const PASSPHRASE_AAD: &[u8] = b"shellwing account key wrapped by a passphrase v1";
 const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery key v1";
 
@@ -121,7 +129,7 @@ const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery
 /// so a stolen vault.db is slow to guess at. Kept with the vault, so it can be
 /// raised later.
 #[derive(Serialize, Deserialize)]
-struct Kdf {
+pub(crate) struct Kdf {
     alg: String,
     m_kib: u32,
     t: u32,
@@ -130,7 +138,7 @@ struct Kdf {
 }
 
 impl Kdf {
-    fn new() -> Result<Kdf> {
+    pub(crate) fn new() -> Result<Kdf> {
         use base64::Engine as _;
         // Tests run unoptimised: a small cost there, the real one otherwise.
         let (m_kib, t) = if cfg!(test) { (256, 1) } else { (64 * 1024, 3) };
@@ -143,7 +151,7 @@ impl Kdf {
         })
     }
 
-    fn key(&self, passphrase: &str) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+    pub(crate) fn key(&self, passphrase: &str) -> Result<Zeroizing<[u8; KEY_LEN]>> {
         use base64::Engine as _;
         if self.alg != "argon2id" {
             return Err(Error::Keychain(format!(
@@ -442,6 +450,16 @@ impl Vault {
     /// without a passphrase.
     pub fn keep_in(&self, keys: &dyn KeyStore) -> Result<()> {
         keys.save(&self.account[..]).map_err(Error::Keychain)
+    }
+
+    /// Takes the account key out of `keys`, so every start asks for the
+    /// passphrase. Only with a passphrase set: else nothing would open it
+    /// but the recovery key.
+    pub fn leave_keychain(&self, keys: &dyn KeyStore) -> Result<()> {
+        if !self.has_vault_passphrase()? {
+            return Err(Error::Locked(Lock::Recovery));
+        }
+        keys.forget().map_err(Error::Keychain)
     }
 
     /// Whether `keys` holds this vault's account key.
@@ -1416,6 +1434,32 @@ mod tests {
         );
         drop(v);
         Vault::open(&path, &fresh).expect("the key is back in the keychain");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn leaving_the_keychain_asks_for_the_passphrase_at_the_next_start() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-leave-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("made");
+        assert!(
+            matches!(v.leave_keychain(&keys), Err(Error::Locked(Lock::Recovery))),
+            "not without a passphrase"
+        );
+        assert!(v.kept_in(&keys));
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.leave_keychain(&keys).expect("left");
+        assert!(!v.kept_in(&keys));
+        drop(v);
+
+        assert_eq!(locked(Vault::open(&path, &keys)), Lock::Passphrase);
+        let v = Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
+            .expect("opened");
+        assert!(!v.kept_in(&keys), "a passphrase does not put it back");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

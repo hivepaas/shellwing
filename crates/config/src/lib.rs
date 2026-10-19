@@ -25,7 +25,7 @@ pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, colo
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, Log, LogFormat, OnDisconnect,
-    Padding, Scrollbar, Settings, Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont,
+    Padding, Scrollbar, Settings, Ssh, Sync, Terminal, UI_FONT_SIZE, UiFont, VaultSettings,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, WriteError};

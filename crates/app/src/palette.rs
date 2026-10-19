@@ -74,6 +74,13 @@ pub enum Action {
     RemoveVaultPassphrase,
     /// Put the vault's key in the system keychain.
     KeepVaultKey,
+    /// Take it out, so every start asks for the passphrase.
+    LeaveKeychain,
+    /// Close the open vault until its passphrase is typed again.
+    LockVault,
+    /// Let a passphrase join new devices through the sync folder, or stop.
+    LetPassphraseJoin,
+    StopPassphraseJoin,
     StopSync,
 }
 
