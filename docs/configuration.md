@@ -350,6 +350,20 @@ copied to other panes.
 it in the vault. *Export to file…* writes a kept key out for other tools, with
 its `.pub` beside it and an optional passphrase.
 
+Each key's ⋯ menu has more:
+
+- **Add to ssh-agent.** Available for kept keys and key files, so that ssh, git
+  and a forwarded agent can sign with the key until the agent stops. *Remove
+  from ssh-agent* takes it out again.
+- **Save its passphrase…** For a key file with a passphrase. Once the vault
+  keeps the passphrase, signing in with that key does not ask, here or on your
+  other devices. *Forget its saved passphrase* undoes it.
+
+In the host editor, the *Key* list can also *Generate a key for* the host. The
+new key is kept in the vault and chosen for the host. *Save and install on …*
+then saves the host, connects once another way (with a password, for example)
+and adds the key to the host.
+
 *Install on…* adds a public key to a host's `~/.ssh/authorized_keys`, as
 `ssh-copy-id` does. It runs over the connection already open, or opens one
 first. Afterwards, a host in `hosts.toml` can be set to sign in with that key

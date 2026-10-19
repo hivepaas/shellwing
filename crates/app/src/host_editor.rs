@@ -36,10 +36,12 @@ pub(crate) const FOOT: u32 = 0x0d121c;
 
 pub enum EditorEvent {
     Close,
-    /// Written to hosts.toml; connect to it when asked.
+    /// Written to hosts.toml; connect to it when asked, or install a key
+    /// made here on it.
     Saved {
         name: String,
         connect: bool,
+        install: Option<crate::workspace::KeyToInstall>,
     },
     Deleted {
         name: String,
@@ -58,7 +60,12 @@ pub struct EditorContext {
     pub app_ssh: shellwing_config::Ssh,
     /// Keys to choose from: the vault's, then the files in `~/.ssh`.
     pub keys: Vec<KeyChoice>,
+    /// Where a key made here is kept.
+    pub vault: crate::secrets::VaultSlot,
 }
+
+/// The Key list's choice that makes a key for the host.
+const GENERATE: &str = "\0generate";
 
 /// A key the host can sign in with.
 #[derive(Clone)]
@@ -119,6 +126,8 @@ struct Inputs {
 pub struct HostEditor {
     focus: FocusHandle,
     ctx: EditorContext,
+    /// A key made here for the host, which the host does not have yet.
+    new_key: Option<crate::workspace::KeyToInstall>,
     mode: Mode,
     /// The host as opened; None for a new one.
     original: Option<Host>,
@@ -191,6 +200,7 @@ impl HostEditor {
         HostEditor {
             focus: cx.focus_handle(),
             ctx,
+            new_key: None,
             mode,
             original: None,
             inputs,
@@ -401,6 +411,73 @@ impl HostEditor {
     }
 
     fn save(&mut self, connect: bool, cx: &mut Context<Self>) {
+        self.save_with(connect, None, cx);
+    }
+
+    /// Makes an Ed25519 key for the host, keeps it in the vault, and signs
+    /// in with it.
+    fn generate_key(&mut self, cx: &mut Context<Self>) {
+        use shellwing_ssh::keys;
+        let host = self.text(&self.inputs.name, cx);
+        let name = if host.is_empty() {
+            "new key".to_string()
+        } else {
+            host
+        };
+        let comment = format!(
+            "{}@{}",
+            crate::keys_view::user(),
+            crate::keys_view::machine()
+        );
+        let made = keys::generate(keys::KeyKind::Ed25519, &comment)
+            .map_err(|e| e.to_string())
+            .and_then(|key| {
+                let info = keys::info(key.public_key());
+                let pem = keys::to_vault(&key).map_err(|e| e.to_string())?;
+                let vault = self
+                    .ctx
+                    .vault
+                    .get()
+                    .ok_or_else(|| "the vault is not open".to_string())?;
+                let id = vault
+                    .add_ssh_key(&name, &info.public, &pem)
+                    .map_err(|e| e.to_string())?;
+                Ok((id, info))
+            });
+        self.problems.retain(|(f, _)| *f != Field::Key);
+        match made {
+            Ok((id, info)) => {
+                let value = format!("{}{id}", crate::target::VAULT_KEY);
+                self.ctx.keys.insert(
+                    0,
+                    KeyChoice {
+                        value: value.clone(),
+                        name: name.clone(),
+                        kind: info.kind.clone(),
+                        vault: true,
+                    },
+                );
+                let key = self.inputs.key.clone();
+                self.set(&key, &value, cx);
+                self.new_key = Some(crate::workspace::KeyToInstall {
+                    name,
+                    public: info.public,
+                    vault_id: Some(id),
+                });
+            }
+            Err(e) => self
+                .problems
+                .push((Field::Key, format!("No key made: {e}"))),
+        }
+        cx.notify();
+    }
+
+    fn save_with(
+        &mut self,
+        connect: bool,
+        install: Option<crate::workspace::KeyToInstall>,
+        cx: &mut Context<Self>,
+    ) {
         self.confirm_delete = false;
         let Some(host) = self.checked(cx) else {
             self.save_problem = None;
@@ -414,6 +491,7 @@ impl HostEditor {
             Ok(_) => cx.emit(EditorEvent::Saved {
                 name: host.name,
                 connect,
+                install,
             }),
             Err(e) => {
                 self.save_problem = Some(e.to_string());
@@ -798,6 +876,7 @@ impl HostEditor {
                             Menu::Theme => e.theme = value.clone(),
                             // No value: another file, to look for.
                             Menu::Key => match &value {
+                                Some(v) if v == GENERATE => e.generate_key(cx),
                                 Some(v) => {
                                     let key = e.inputs.key.clone();
                                     e.set(&key, v, cx);
@@ -1222,7 +1301,47 @@ impl Render for HostEditor {
                     })
                     .collect();
                 choices.push((None, "Another key file…".to_string()));
+                let host = self.text(&i.name, cx);
+                choices.push((
+                    Some(GENERATE.to_string()),
+                    if host.is_empty() {
+                        "+ Generate a key for this host".to_string()
+                    } else {
+                        format!("+ Generate a key for {host}")
+                    },
+                ));
                 sign_in = sign_in.child(self.menu_list(Menu::Key, choices, cx));
+            }
+            // A key made here: the host has to be given it.
+            if let Some(k) = self.new_key.clone()
+                && k.vault_id
+                    .as_deref()
+                    .is_some_and(|id| key_text == format!("{}{id}", crate::target::VAULT_KEY))
+            {
+                let host = self.text(&i.name, cx);
+                let host = if host.is_empty() {
+                    "the host".to_string()
+                } else {
+                    host
+                };
+                sign_in = sign_in.child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(10.))
+                        .child(div().flex_1().min_w_0().child(hint_text(&format!(
+                            "{} is new: {host} does not have it yet. Saving and installing signs in once another way (a password, say), then adds it.",
+                            k.name
+                        ))))
+                        .child(
+                            primary_button("save-install", &format!("Save and install on {host}"))
+                                .flex_shrink_0()
+                                .on_click(cx.listener(move |e, _, _, cx| {
+                                    let key = e.new_key.clone();
+                                    e.save_with(false, key, cx);
+                                })),
+                        ),
+                );
             }
             if let Some((_, p)) = self.problems.iter().find(|(f, _)| *f == Field::Key) {
                 sign_in = sign_in.child(problem_text(p));
