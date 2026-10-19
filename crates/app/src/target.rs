@@ -69,7 +69,12 @@ fn from_host(
     if let Some(p) = port.or(h.port) {
         r.target.port = p;
     }
-    r.forwards = h.forward.clone();
+    // The entry's forwards add to those ~/.ssh/config gives the address.
+    for f in &h.forward {
+        if !r.forwards.contains(f) {
+            r.forwards.push(f.clone());
+        }
+    }
     // On here, or `ForwardAgent yes` for the address in ~/.ssh/config.
     r.forward_agent |= h.forward_agent;
     if let Some(k) = h.keepalive {

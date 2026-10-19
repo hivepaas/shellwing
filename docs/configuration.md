@@ -220,10 +220,15 @@ Ports listen on loopback unless `bind` says otherwise; `*` means every
 interface (for `-R`, the server's `GatewayPorts` decides). Port `0` takes any
 free one; the one taken is shown. IPv6 addresses go in brackets: `[::1]:8080:…`.
 
-There are three ways to forward:
+There are four ways to forward:
 
 - **For a host,** in hosts.toml: `forward = ["-L 8080:localhost:80"]`. Set up
   on every connection, again after a reconnect. Synced with the host.
+- **In `~/.ssh/config`:** `LocalForward`, `RemoteForward` and `DynamicForward`,
+  as `ssh` reads them. Every one from every matching `Host` block applies, in
+  order, `Include`d files too, unless `ClearAllForwardings yes` is set. A
+  hosts.toml host adds its own to those its address gets. Jump hosts forward
+  nothing.
 - **From the command line,** for the tab it opens:
   `shellwing -L 8080:localhost:80 -D 1080 api1`.
 - **In a running tab:** *Forward a port through …* in the palette. It lasts for
@@ -234,8 +239,8 @@ localhost:80]`, or in red why a forward could not start (a port in use, a
 server that refuses). The session goes on either way, as with `ssh`. A second
 tab to the same host finds the first tab's ports taken and says so quietly.
 
-`LocalForward`, `RemoteForward` and `DynamicForward` in `~/.ssh/config` are not
-applied yet; put them in hosts.toml instead.
+Forwards under a `Match` block in `~/.ssh/config` are not applied: shellwing
+does not read `Match` conditions.
 
 ## Files (SFTP)
 
