@@ -88,6 +88,51 @@ impl SettingValue {
     }
 }
 
+/// Sets one setting in `doc` by its path, or with None removes it; whether it
+/// changed. A missing section is added, a missing nested table inline.
+pub(crate) fn set_in(
+    doc: &mut toml_edit::DocumentMut,
+    path: &[&str],
+    value: Option<SettingValue>,
+) -> Result<bool, &'static str> {
+    let (last, parents) = path.split_last().ok_or("no setting named")?;
+    let mut table: &mut dyn toml_edit::TableLike = doc.as_table_mut();
+    for (depth, key) in parents.iter().enumerate() {
+        if table.get(key).is_none() {
+            if value.is_none() {
+                return Ok(false);
+            }
+            let fresh = if depth == 0 {
+                toml_edit::table()
+            } else {
+                toml_edit::Item::Value(toml_edit::InlineTable::new().into())
+            };
+            table.insert(key, fresh);
+        }
+        table = table
+            .get_mut(key)
+            .and_then(|i| i.as_table_like_mut())
+            .ok_or("a setting's section is not a table")?;
+    }
+    let Some(value) = value else {
+        return Ok(table.remove(last).is_some());
+    };
+    if table
+        .get(last)
+        .and_then(|i| i.as_value())
+        .is_some_and(|v| value.same(v))
+    {
+        return Ok(false);
+    }
+    let mut new = value.to_toml();
+    if let Some(old) = table.get(last).and_then(|i| i.as_value()) {
+        // The spacing and comment around the old value stay.
+        *new.decor_mut() = old.decor().clone();
+    }
+    table.insert(last, toml_edit::Item::Value(new));
+    Ok(true)
+}
+
 /// The config directory.
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -258,44 +303,30 @@ impl Store {
         path: &[&str],
         value: Option<SettingValue>,
     ) -> Result<(), WriteError> {
-        self.edit_if(SETTINGS, |doc| {
-            let (last, parents) = path.split_last().ok_or("no setting named")?;
-            let mut table: &mut dyn toml_edit::TableLike = doc.as_table_mut();
-            for (depth, key) in parents.iter().enumerate() {
-                if table.get(key).is_none() {
-                    if value.is_none() {
-                        return Ok(false);
-                    }
-                    let fresh = if depth == 0 {
-                        toml_edit::table()
-                    } else {
-                        toml_edit::Item::Value(toml_edit::InlineTable::new().into())
-                    };
-                    table.insert(key, fresh);
-                }
-                table = table
-                    .get_mut(key)
-                    .and_then(|i| i.as_table_like_mut())
-                    .ok_or("a setting's section is not a table")?;
+        self.edit_if(SETTINGS, |doc| set_in(doc, path, value))
+    }
+
+    /// The settings of config.toml that sync, as vault fields (see
+    /// [`crate::settings_sync`]).
+    pub fn synced_settings(&self) -> Result<crate::Fields, LoadError> {
+        let path = self.dir.join(SETTINGS);
+        let text = match fs::read_to_string(&path) {
+            Ok(t) => t,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
+            Err(e) => {
+                return Err(LoadError {
+                    file: SETTINGS.into(),
+                    line: None,
+                    message: e.to_string(),
+                });
             }
-            let Some(value) = value else {
-                return Ok(table.remove(last).is_some());
-            };
-            if table
-                .get(last)
-                .and_then(|i| i.as_value())
-                .is_some_and(|v| value.same(v))
-            {
-                return Ok(false);
-            }
-            let mut new = value.to_toml();
-            if let Some(old) = table.get(last).and_then(|i| i.as_value()) {
-                // The spacing and comment around the old value stay.
-                *new.decor_mut() = old.decor().clone();
-            }
-            table.insert(last, toml_edit::Item::Value(new));
-            Ok(true)
-        })
+        };
+        crate::settings_sync::fields_of(&text).map_err(|e| LoadError::toml(SETTINGS, &text, &e))
+    }
+
+    /// Writes synced settings into config.toml, keeping everything else.
+    pub fn apply_synced_settings(&self, fields: &crate::Fields) -> Result<(), WriteError> {
+        self.edit_if(SETTINGS, |doc| Ok(crate::settings_sync::apply(doc, fields)))
     }
 
     /// Sets `[appearance] theme` in `config.toml`, keeping everything else in the
