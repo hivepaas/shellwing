@@ -1,5 +1,6 @@
 //! Places to sync the vault with over the network, WebDAV and S3-compatible
-//! storage (through OpenDAL), beside the folder on disk. Files go under
+//! storage (through OpenDAL) and Git repositories (through the system's
+//! `git`, see [`git`]), beside the folder on disk. Files go under
 //! `shellwing/` in the place given, as the folder backend puts them.
 //!
 //! The engine reads every record at each sync. Over the network that would
@@ -21,6 +22,9 @@ use std::time::Duration;
 
 use opendal::{ErrorKind, Operator, blocking, layers, services};
 use shellwing_vault::{Backend, Folder};
+
+pub mod git;
+pub use git::{Git, GitRepo, Install, NoGit};
 
 /// Where the vault syncs. Secrets (a password, a secret key) are in it:
 /// not `Debug`, so they are never printed by accident.
@@ -45,6 +49,17 @@ pub enum Place {
         access_key: String,
         secret_key: String,
     },
+    /// A Git repository: `https://…` or SSH (`git@host:you/vault.git`).
+    /// `branch` empty: its default. `token` empty: git signs in as it does
+    /// for the user; else as `user` (empty: any) with the token. `device`
+    /// names the commits.
+    Git {
+        url: String,
+        branch: String,
+        user: String,
+        token: String,
+        device: String,
+    },
 }
 
 impl Place {
@@ -64,6 +79,19 @@ impl Place {
                 match prefix.trim_matches('/') {
                     "" => format!("{bucket} on {host} (S3)"),
                     p => format!("{bucket}/{p} on {host} (S3)"),
+                }
+            }
+            Place::Git { url, branch, .. } => {
+                let repo = url
+                    .trim()
+                    .trim_start_matches("https://")
+                    .trim_start_matches("http://")
+                    .trim_start_matches("ssh://")
+                    .trim_end_matches('/')
+                    .trim_end_matches(".git");
+                match branch.trim() {
+                    "" => format!("{repo} (Git)"),
+                    b => format!("{repo}, {b} (Git)"),
                 }
             }
         }
@@ -118,8 +146,38 @@ impl Place {
                     .disable_ec2_metadata();
                 Remote::open(Operator::new(builder).map_err(to_io)?, None)
             }
+            Place::Git {
+                url,
+                branch,
+                user,
+                token,
+                device,
+            } => {
+                let git = Git::find()
+                    .map_err(|e| io::Error::new(io::ErrorKind::NotFound, e.to_string()))?;
+                let dir = clone_dir(url, branch)?;
+                let token = (!token.is_empty()).then_some((user.as_str(), token.as_str()));
+                Ok(Arc::new(GitRepo::open(
+                    git, &dir, url, branch, token, device,
+                )?))
+            }
         }
     }
+}
+
+/// Where the clone of a repository goes: a cache, made again if lost.
+fn clone_dir(url: &str, branch: &str) -> io::Result<PathBuf> {
+    let cache = dirs::cache_dir()
+        .ok_or_else(|| io::Error::other("this system has no cache folder for the clone"))?;
+    // FNV-1a: a stable name for the repository and branch.
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in format!("{}\n{}", url.trim(), branch.trim()).bytes() {
+        hash = (hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3);
+    }
+    Ok(cache
+        .join("shellwing")
+        .join("git")
+        .join(format!("{hash:016x}")))
 }
 
 /// `https://host:port` and the path after it (`/` if none).

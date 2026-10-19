@@ -24,9 +24,9 @@ pub use color::Color;
 pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, color_rgb};
 pub use hosts_sync::Fields;
 pub use settings::{
-    Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, Log, LogFormat, OnDisconnect,
-    Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal, UI_FONT_SIZE, UiFont,
-    VaultSettings, WebDavSync,
+    Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, GitSync, Log, LogFormat,
+    OnDisconnect, Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal,
+    UI_FONT_SIZE, UiFont, VaultSettings, WebDavSync,
 };
 pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, SyncPlaceText, WriteError};

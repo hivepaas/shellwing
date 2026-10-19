@@ -20,7 +20,9 @@ use std::collections::BTreeSet;
 
 use shellwing_config::{Store, SyncPlace};
 use shellwing_remote::Place;
-use shellwing_vault::{Answerer, Ask, AskState, Backend, FolderState, Request, SyncReport, Vault};
+use shellwing_vault::{
+    Answerer, Ask, AskState, Backend, FolderState, Request, SyncReport, Vault, transact,
+};
 
 use crate::secrets::VaultSlot;
 
@@ -28,8 +30,10 @@ const EVERY: Duration = Duration::from_secs(60);
 /// The settings' record: the same on every device, so they merge into one.
 /// Hex, as synced files' names must start with.
 const SETTINGS_ID: &str = "5e771a65000000000000000000000000";
-/// How often the folder is looked at while pairing.
+/// How often the place is looked at while pairing.
 const PAIRING: Duration = Duration::from_secs(2);
+/// The same over Git, where each look is a fetch.
+const PAIRING_GIT: Duration = Duration::from_secs(5);
 
 pub enum SyncEvent {
     Done(SyncReport),
@@ -50,6 +54,13 @@ pub const PLACE_SECRET: &str = "sync";
 
 /// The place with its secret from the vault, ready to open.
 pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Place> {
+    // A token for Git is not needed: git signs in as it does for the user.
+    let token = || -> shellwing_vault::Result<String> {
+        Ok(vault
+            .device_secret(PLACE_SECRET)?
+            .map(|s| s.to_string())
+            .unwrap_or_default())
+    };
     let secret = || -> shellwing_vault::Result<String> {
         match vault.device_secret(PLACE_SECRET)? {
             Some(s) => Ok(s.to_string()),
@@ -74,6 +85,13 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
             access_key: s3.access_key.clone(),
             secret_key: secret()?,
         },
+        SyncPlace::Git(g) => Place::Git {
+            url: g.url.clone(),
+            branch: g.branch.clone(),
+            user: g.user.clone(),
+            token: token()?,
+            device: device_name(),
+        },
     })
 }
 
@@ -93,6 +111,13 @@ pub fn describe(place: &SyncPlace) -> String {
             prefix: s3.prefix.clone(),
             access_key: String::new(),
             secret_key: String::new(),
+        },
+        SyncPlace::Git(g) => Place::Git {
+            url: g.url.clone(),
+            branch: g.branch.clone(),
+            user: g.user.clone(),
+            token: String::new(),
+            device: String::new(),
         },
     };
     unsealed.describe()
@@ -183,7 +208,15 @@ impl SyncWorker {
                 let mut last_sync: Option<Instant> = None;
                 loop {
                     let pairing = asking.is_some() || answerer.busy();
-                    let wait = if pairing { PAIRING } else { EVERY };
+                    let over_git = matches!(
+                        watched.lock().ok().and_then(|f| f.clone()),
+                        Some(SyncPlace::Git(_))
+                    ) || matches!(&asking, Some((_, SyncPlace::Git(_), _)));
+                    let wait = match (pairing, over_git) {
+                        (false, _) => EVERY,
+                        (true, false) => PAIRING,
+                        (true, true) => PAIRING_GIT,
+                    };
                     let mut sync = match woken.recv_timeout(wait) {
                         Ok(cmd) => Self::run(
                             cmd,
@@ -216,7 +249,7 @@ impl SyncWorker {
                         told = None;
                     }
                     if let Some((ask, at, backend)) = &mut asking {
-                        let state = ask.step(&vault, backend.as_ref());
+                        let state = transact(backend.as_ref(), |b| ask.step(&vault, b));
                         // Over once in, refused or expired, or when the keys sent
                         // are no good; a folder that cannot be read is tried again.
                         let done = matches!(
@@ -265,7 +298,7 @@ impl SyncWorker {
                         }
                     };
                     let store = store.as_ref();
-                    match answerer.poll(&vault, store) {
+                    match transact(store, |b| answerer.poll(&vault, b)) {
                         Ok(ready) if ready != offered => {
                             offered = ready.clone();
                             if events.send_blocking(SyncEvent::Requests(ready)).is_err() {
@@ -371,7 +404,7 @@ impl SyncWorker {
             Cmd::Sync => true,
             Cmd::Ask(place) => {
                 if let Some((old, _, at)) = asking.take() {
-                    let _ = old.cancel(at.as_ref());
+                    let _ = transact(at.as_ref(), |b| old.cancel(b));
                 }
                 let Some(v) = vault.get() else {
                     return false;
@@ -380,7 +413,7 @@ impl SyncWorker {
                     Ok(b) => b,
                     Err(e) => return fail(e),
                 };
-                match Ask::new(backend.as_ref(), &device_name()) {
+                match transact(backend.as_ref(), |b| Ask::new(b, &device_name())) {
                     Ok(ask) => *asking = Some((ask, place, backend)),
                     Err(e) => return fail(e),
                 }
@@ -388,7 +421,7 @@ impl SyncWorker {
             }
             Cmd::CancelAsk => {
                 if let Some((ask, _, at)) = asking.take() {
-                    let _ = ask.cancel(at.as_ref());
+                    let _ = transact(at.as_ref(), |b| ask.cancel(b));
                 }
                 false
             }
@@ -399,7 +432,7 @@ impl SyncWorker {
                 let Some(store) = current(&v) else {
                     return false;
                 };
-                match answerer.approve(&v, store.as_ref(), &id) {
+                match transact(store.as_ref(), |b| answerer.approve(&v, b, &id)) {
                     Ok(()) => false,
                     Err(e) => fail(e),
                 }
@@ -411,7 +444,7 @@ impl SyncWorker {
                 let Some(store) = current(&v) else {
                     return false;
                 };
-                match answerer.refuse(store.as_ref(), &id) {
+                match transact(store.as_ref(), |b| answerer.refuse(b, &id)) {
                     Ok(()) => false,
                     Err(e) => fail(e),
                 }
@@ -425,11 +458,10 @@ impl SyncWorker {
 fn sync_once(vault: &Vault, store: &dyn Backend, config: Option<&Store>) -> SyncEvent {
     // A folder set by hand in config.toml starts empty: begin
     // there (the recovery key can be shown from the palette).
-    let started = match vault.folder_state(store) {
-        Ok(FolderState::Empty) => vault.start_sync(store).map(|_| ()),
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    };
+    let started = transact(store, |b| match vault.folder_state(b)? {
+        FolderState::Empty => vault.start_sync(b).map(|_| ()),
+        _ => Ok(()),
+    });
     // Hosts problems (a broken hosts.toml) do not stop secrets from syncing.
     let hosts_problem = config.and_then(|c| record_hosts(c, vault).err());
     let settings = config.filter(|c| c.settings().is_ok_and(|s| s.sync.settings));

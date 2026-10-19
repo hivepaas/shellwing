@@ -11,7 +11,7 @@ use gpui::{
     SharedString, WeakEntity, Window, div, prelude::*, px, rgb, uniform_list,
 };
 use shellwing_config::{
-    Color, ColorMode, CursorStyle, HostKey, LogFormat, OnDisconnect, S3Sync, Scrollbar,
+    Color, ColorMode, CursorStyle, GitSync, HostKey, LogFormat, OnDisconnect, S3Sync, Scrollbar,
     SettingValue, Settings, SyncPlace, Theme, WebDavSync,
 };
 
@@ -124,8 +124,14 @@ struct SyncForm {
     dav: [Entity<TextInput>; 3],
     /// Endpoint, region, bucket, folder in it, access key, secret key.
     s3: [Entity<TextInput>; 6],
+    /// Repository, branch, token, the token's user.
+    git: [Entity<TextInput>; 4],
     /// What is missing, after Connect.
     problem: Option<String>,
+    /// Why git cannot be used here, after Connect, with how to install it.
+    no_git: Option<shellwing_remote::NoGit>,
+    /// Installing git now.
+    installing: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -133,6 +139,7 @@ enum SyncKind {
     Folder,
     WebDav,
     S3,
+    Git,
 }
 
 impl SyncForm {
@@ -149,8 +156,11 @@ impl SyncForm {
         };
         let dav = sync.webdav.clone().unwrap_or_default();
         let s3 = sync.s3.clone().unwrap_or_default();
+        let git = sync.git.clone().unwrap_or_default();
         SyncForm {
-            kind: if sync.s3.is_some() {
+            kind: if sync.git.is_some() {
+                SyncKind::Git
+            } else if sync.s3.is_some() {
                 SyncKind::S3
             } else if sync.webdav.is_some() {
                 SyncKind::WebDav
@@ -185,7 +195,20 @@ impl SyncForm {
                 field("AKIA…", &s3.access_key, false, cx),
                 field("Its secret", "", true, cx),
             ],
+            git: [
+                field(
+                    "https://github.com/you/vault.git, or git@github.com:you/vault.git",
+                    &git.url,
+                    false,
+                    cx,
+                ),
+                field("its default", &git.branch, false, cx),
+                field("none: git signs in as it does for you", "", true, cx),
+                field("any (Gitea: yours)", &git.user, false, cx),
+            ],
             problem: None,
+            no_git: None,
+            installing: false,
         }
     }
 
@@ -195,11 +218,13 @@ impl SyncForm {
             SyncKind::Folder => &[],
             SyncKind::WebDav => &self.dav,
             SyncKind::S3 => &self.s3,
+            SyncKind::Git => &self.git,
         }
     }
 
-    /// The place typed and its secret, or what is missing.
-    fn place(&self, cx: &gpui::App) -> Result<(SyncPlace, String), String> {
+    /// The place typed and its secret (none for Git without a token), or
+    /// what is missing.
+    fn place(&self, cx: &gpui::App) -> Result<(SyncPlace, Option<String>), String> {
         let text = |i: &Entity<TextInput>| i.read(cx).text().trim().to_string();
         match self.kind {
             SyncKind::Folder => Err("choose a folder".into()),
@@ -213,7 +238,7 @@ impl SyncForm {
                 if !url.starts_with("https://") && !url.starts_with("http://") {
                     return Err("The address starts with https://.".into());
                 }
-                Ok((SyncPlace::WebDav(WebDavSync { url, user }), password))
+                Ok((SyncPlace::WebDav(WebDavSync { url, user }), Some(password)))
             }
             SyncKind::S3 => {
                 let [endpoint, region, bucket, prefix, access_key, secret] = &self.s3;
@@ -238,7 +263,20 @@ impl SyncForm {
                 {
                     return Err("The endpoint starts with https://.".into());
                 }
-                Ok((SyncPlace::S3(place), secret))
+                Ok((SyncPlace::S3(place), Some(secret)))
+            }
+            SyncKind::Git => {
+                let [url, branch, token, user] = &self.git;
+                let place = GitSync {
+                    url: text(url),
+                    branch: text(branch),
+                    user: text(user),
+                };
+                if place.url.is_empty() {
+                    return Err("Fill in the repository's address.".into());
+                }
+                let token = token.read(cx).text().trim().to_string();
+                Ok((SyncPlace::Git(place), (!token.is_empty()).then_some(token)))
             }
         }
     }
@@ -433,8 +471,20 @@ impl SettingsView {
         match self.sync_form.place(cx) {
             Ok((place, secret)) => {
                 self.sync_form.problem = None;
+                // Git: the system's, or how to get it, before anything else.
+                self.sync_form.no_git = None;
+                if matches!(place, SyncPlace::Git(_))
+                    && let Err(e) = shellwing_remote::Git::find()
+                {
+                    self.sync_form.no_git = Some(e);
+                    return cx.notify();
+                }
                 // Kept in the vault from here on, not in the field.
-                for f in [&self.sync_form.dav[2], &self.sync_form.s3[5]] {
+                for f in [
+                    &self.sync_form.dav[2],
+                    &self.sync_form.s3[5],
+                    &self.sync_form.git[2],
+                ] {
                     f.update(cx, |i, cx| i.set_text("", 0..0, cx));
                 }
                 window.focus(&self.focus, cx);
@@ -445,6 +495,48 @@ impl SettingsView {
             Err(e) => self.sync_form.problem = Some(e),
         }
         cx.notify();
+    }
+
+    /// Installs git where the system asks for the rights itself, then looks
+    /// for it again.
+    fn install_git(&mut self, how: shellwing_remote::Install, cx: &mut Context<Self>) {
+        self.sync_form.installing = true;
+        cx.notify();
+        let job = cx.background_spawn(async move {
+            shellwing_remote::git::install(&how)?;
+            Ok::<_, std::io::Error>(shellwing_remote::Git::find())
+        });
+        cx.spawn(async move |this, cx| {
+            let done = job.await;
+            let _ = this.update(cx, |v, cx| {
+                let form = &mut v.sync_form;
+                form.installing = false;
+                match done {
+                    Ok(Ok(git)) => {
+                        form.no_git = None;
+                        form.problem = None;
+                        v.say(
+                            format!("git {} is installed: Connect again.", git.version()),
+                            cx,
+                        );
+                    }
+                    // Apple's dialog goes on by itself after this returns.
+                    Ok(Err(_)) if cfg!(target_os = "macos") => {
+                        form.problem =
+                            Some("When Apple's installer is done, Connect again.".into());
+                    }
+                    Ok(Err(e)) => form.no_git = Some(e),
+                    Err(e) => form.problem = Some(format!("git was not installed: {e}")),
+                }
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// A notice from the page, through the workspace.
+    fn say(&self, msg: String, cx: &mut Context<Self>) {
+        let _ = self.workspace.update(cx, |ws, cx| ws.notice(msg, cx));
     }
 
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -1699,6 +1791,7 @@ impl SettingsView {
             (SyncKind::Folder, "A folder".to_string()),
             (SyncKind::WebDav, "WebDAV".to_string()),
             (SyncKind::S3, "S3-compatible".to_string()),
+            (SyncKind::Git, "Git".to_string()),
         ];
         let pick = self.pills(
             "sync-kind",
@@ -1762,6 +1855,16 @@ impl SettingsView {
                 .child(field("Folder in the bucket", &form.s3[3]))
                 .child(field("Access key", &form.s3[4]))
                 .child(field("Secret key", &form.s3[5])),
+            SyncKind::Git => div()
+                .flex()
+                .flex_col()
+                .gap(px(10.))
+                .child(label("A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit."))
+                .child(field("Repository", &form.git[0]))
+                .child(field("Branch", &form.git[1]))
+                .child(field("Token (if git cannot sign in by itself)", &form.git[2]))
+                .child(field("The token's user", &form.git[3]))
+                .when_some(form.no_git.clone(), |d, no| d.child(self.no_git(no, cx))),
         };
         let remote = form.kind != SyncKind::Folder;
         div()
@@ -1772,7 +1875,7 @@ impl SettingsView {
             .child(body)
             .when(remote, |d| {
                 d.child(label(
-                    "The password or secret key stays on this device, in the vault; other devices sign in with their own.",
+                    "The password, secret key or token stays on this device, in the vault; other devices sign in with their own.",
                 ))
                 .child(
                     div()
@@ -1780,11 +1883,99 @@ impl SettingsView {
                         .items_center()
                         .gap_3()
                         .child(connect)
+                        .when(form.installing, |d| {
+                            d.child(div().text_size(ui(12.5)).child("Installing git…"))
+                        })
                         .when_some(form.problem.clone(), |d, p| {
                             d.child(div().text_size(ui(12.5)).text_color(rgb(colors().bad)).child(p))
                         }),
                 )
             })
+    }
+
+    /// Why git cannot be used, and how to get it.
+    fn no_git(&self, no: shellwing_remote::NoGit, cx: &mut Context<Self>) -> gpui::Div {
+        use shellwing_remote::{Install, NoGit};
+        let how = match &no {
+            NoGit::Missing(how) => Some(how.clone()),
+            _ => None,
+        };
+        let mut what = div()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .p(px(12.))
+            .rounded(px(8.))
+            .border_1()
+            .border_color(rgb(colors().warn_edge))
+            .bg(rgb(colors().warn_bg))
+            .text_size(ui(12.5))
+            .child(
+                div()
+                    .text_color(rgb(colors().warn_text))
+                    .child(format!("{no}.")),
+            );
+        what = match how {
+            Some(Install::CommandLineTools) => {
+                what.child(label(
+                    "macOS installs it with Apple's Command Line Tools, in a dialog of its own.",
+                ))
+                .child(div().flex().child(
+                    small_button("git-install", "Install git…").on_click(
+                        cx.listener(|v, _, _, cx| v.install_git(Install::CommandLineTools, cx)),
+                    ),
+                ))
+            }
+            Some(Install::Winget) => what
+                .child(label(
+                    "Windows installs it with winget, and asks to allow it.",
+                ))
+                .child(
+                    div().flex().child(
+                        small_button("git-install", "Install git…").on_click(
+                            cx.listener(|v, _, _, cx| v.install_git(Install::Winget, cx)),
+                        ),
+                    ),
+                ),
+            Some(Install::Download(url)) => what.child(
+                div().flex().child(
+                    small_button("git-download", "Download git")
+                        .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url))),
+                ),
+            ),
+            Some(Install::Command(cmd)) => {
+                let copied = cmd.clone();
+                what.child(label("Install it in a terminal, then Connect again:"))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .child(
+                                div()
+                                    .px(px(8.))
+                                    .py(px(4.))
+                                    .rounded(px(5.))
+                                    .bg(rgb(colors().field))
+                                    .font_family("monospace")
+                                    .child(cmd),
+                            )
+                            .child(small_button("git-copy", "Copy").on_click(cx.listener(
+                                move |v, _, _, cx| {
+                                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(
+                                        copied.clone(),
+                                    ));
+                                    v.say("Copied.".into(), cx);
+                                },
+                            ))),
+                    )
+            }
+            // Too old, or failing: what it said is above.
+            None => what.child(label(
+                "Install a newer git (git-scm.com), then Connect again.",
+            )),
+        };
+        what
     }
 
     fn vault(&self, cx: &mut Context<Self>) -> gpui::Div {

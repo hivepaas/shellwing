@@ -22,6 +22,10 @@ opendal = { version = "0.59", default-features = false, features = [
 tokio = { workspace = true }
 opendal-http-transport-reqwest = { version = "0.59", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+# A token for Git over HTTPS, as a Basic header.
+base64 = "0.22"
+# The clone of a Git repository lives in the cache folder.
+dirs = "7"
 # WebDAV's conditional writes, which OpenDAL leaves out; the client it uses.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 
