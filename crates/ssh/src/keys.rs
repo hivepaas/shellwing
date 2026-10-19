@@ -233,6 +233,38 @@ pub async fn agent_keys(socket: Option<&Path>) -> Vec<KeyInfo> {
     keys
 }
 
+/// Hands `key` to the platform's ssh-agent (the first there is), for
+/// `lifetime` when given, else until the agent stops. ssh, git and a
+/// forwarded agent can then sign with it.
+pub async fn add_to_agent(
+    key: &PrivateKey,
+    lifetime: Option<std::time::Duration>,
+    socket: Option<&Path>,
+) -> Result<(), Error> {
+    let constraints: Vec<_> = lifetime
+        .map(|d| russh::keys::agent::Constraint::KeyLifetime {
+            seconds: d.as_secs().min(u32::MAX as u64) as u32,
+        })
+        .into_iter()
+        .collect();
+    let mut agent = crate::auth::agents(socket)
+        .await
+        .into_iter()
+        .next()
+        .ok_or_else(|| Error::Key("no ssh-agent is running".into()))?;
+    agent.add_identity(key, &constraints).await.map_err(bad)
+}
+
+/// Takes a key out of the ssh-agent again.
+pub async fn remove_from_agent(public: &PublicKey, socket: Option<&Path>) -> Result<(), Error> {
+    let mut agent = crate::auth::agents(socket)
+        .await
+        .into_iter()
+        .next()
+        .ok_or_else(|| Error::Key("no ssh-agent is running".into()))?;
+    agent.remove_identity(public).await.map_err(bad)
+}
+
 /// Run on the server, with the public key line as its input: adds it to
 /// `~/.ssh/authorized_keys` unless it is there, making the folder and the
 /// file as sshd wants them (private to the user). Prints `added` or
@@ -340,6 +372,59 @@ mod tests {
                 .mode();
             assert_eq!(mode & 0o777, 0o600);
         }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A real ssh-agent, on a socket of its own: a kept key goes in and out.
+    #[cfg(unix)]
+    #[tokio::test(flavor = "multi_thread")]
+    async fn keys_go_into_the_agent_and_out() {
+        let Ok(found) = std::process::Command::new("sh")
+            .args(["-c", "command -v ssh-agent"])
+            .output()
+        else {
+            return;
+        };
+        if !found.status.success() {
+            eprintln!("skipped: no ssh-agent");
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("shellwing-agent-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let sock = dir.join("agent.sock");
+        let mut agent = std::process::Command::new("ssh-agent")
+            .arg("-D")
+            .arg("-a")
+            .arg(&sock)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("ssh-agent");
+        for _ in 0..100 {
+            if sock.exists() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let key = generate(KeyKind::Ed25519, "agent@test").expect("key");
+        let fp = info(key.public_key()).fingerprint;
+        add_to_agent(&key, Some(std::time::Duration::from_secs(600)), Some(&sock))
+            .await
+            .expect("add");
+        let listed = agent_keys(Some(&sock)).await;
+        assert!(listed.iter().any(|k| k.fingerprint == fp), "{listed:?}");
+        remove_from_agent(key.public_key(), Some(&sock))
+            .await
+            .expect("remove");
+        assert!(
+            agent_keys(Some(&sock))
+                .await
+                .iter()
+                .all(|k| k.fingerprint != fp)
+        );
+        let _ = agent.kill();
+        let _ = agent.wait();
         let _ = std::fs::remove_dir_all(&dir);
     }
 

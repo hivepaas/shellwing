@@ -1703,6 +1703,7 @@ impl Workspace {
                 .collect(),
             app_ssh: self.live.settings().ssh.clone(),
             keys: self.key_choices(),
+            vault: self.vault.clone(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
@@ -1718,12 +1719,18 @@ impl Workspace {
             window,
             |ws, _, ev: &EditorEvent, window, cx| match ev {
                 EditorEvent::Close => ws.close_editor(window, cx),
-                EditorEvent::Saved { name, connect } => {
-                    let (name, connect) = (name.clone(), *connect);
+                EditorEvent::Saved {
+                    name,
+                    connect,
+                    install,
+                } => {
+                    let (name, connect, install) = (name.clone(), *connect, install.clone());
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
                     ws.sync.now();
-                    if connect {
+                    if let Some(key) = install {
+                        ws.install_on(&name, key, window, cx);
+                    } else if connect {
                         ws.open(&name, window, cx);
                     } else {
                         ws.say(format!("Saved {name}."), THEME_NOTICE, cx);
