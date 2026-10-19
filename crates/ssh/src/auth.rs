@@ -1,6 +1,7 @@
 //! Client authentication, in OpenSSH's order: agent keys, key files (asking for
-//! passphrases), keyboard-interactive (one-time codes), then password. Methods the
-//! server no longer offers are skipped, and each interactive method gets three tries.
+//! passphrases), keyboard-interactive (one-time codes, or PAM asking the password),
+//! then password. Methods the server no longer offers are skipped, and each
+//! interactive method gets three tries.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -63,6 +64,17 @@ impl Methods {
             self.0 = Some(remaining_methods.iter().copied().collect());
         }
     }
+}
+
+/// Whether a keyboard-interactive question asks for the account password, as PAM
+/// does ("Password:"): hidden, naming a password, and not one being changed.
+fn asks_password(text: &str, echo: bool) -> bool {
+    let text = text.to_lowercase();
+    !echo
+        && text.contains("password")
+        && !["new", "retype", "again", "old", "current"]
+            .iter()
+            .any(|w| text.contains(w))
 }
 
 /// The SHA256 fingerprint of a key file's public half, readable without the
@@ -174,21 +186,62 @@ pub(crate) async fn authenticate(
         }
     }
 
+    // Saved under user@host:port; asked as OpenSSH asks, without the port.
+    let (key, shown) = (target.to_string(), format!("{user}@{}", target.host));
+    let saved = secrets.and_then(|s| s.password(&key));
+
     if let Some(prompter) = prompter
         && methods.allows(MethodKind::KeyboardInteractive)
     {
+        // PAM asks for the password here, so the known ones answer it before the user.
+        let mut known = auth.password.iter().chain(saved.iter());
         for _ in 0..TRIES {
+            // The password the user typed in this attempt, to offer saving.
+            let mut typed = None;
             let mut reply = handle
                 .authenticate_keyboard_interactive_start(user, None)
                 .await?;
             loop {
                 match reply {
-                    KeyboardInteractiveAuthResponse::Success => return Ok(()),
+                    KeyboardInteractiveAuthResponse::Success => {
+                        if let (Some(s), Some(password)) = (secrets, typed.take()) {
+                            s.learned(Learned::Password {
+                                target: key.clone(),
+                                password,
+                            });
+                        }
+                        return Ok(());
+                    }
                     KeyboardInteractiveAuthResponse::Failure {
                         remaining_methods, ..
                     } => {
                         methods.0 = Some(remaining_methods.iter().copied().collect());
                         break;
+                    }
+                    KeyboardInteractiveAuthResponse::InfoRequest { prompts, .. }
+                        if prompts.len() == 1
+                            && asks_password(&prompts[0].prompt, prompts[0].echo) =>
+                    {
+                        let pw = match known.next() {
+                            Some(pw) => {
+                                typed = None;
+                                pw.clone()
+                            }
+                            None => {
+                                let q = Prompt::Question {
+                                    name: String::new(),
+                                    instructions: String::new(),
+                                    text: prompts[0].prompt.clone(),
+                                    echo: false,
+                                };
+                                let pw = prompter.ask(q).await.ok_or(Error::Cancelled)?;
+                                typed = Some(pw.clone());
+                                pw
+                            }
+                        };
+                        reply = handle
+                            .authenticate_keyboard_interactive_respond(vec![pw])
+                            .await?;
                     }
                     KeyboardInteractiveAuthResponse::InfoRequest {
                         name,
@@ -224,9 +277,6 @@ pub(crate) async fn authenticate(
     }
 
     if methods.allows(MethodKind::Password) {
-        // Saved under user@host:port; asked as OpenSSH asks, without the port.
-        let (key, shown) = (target.to_string(), format!("{user}@{}", target.host));
-        let saved = secrets.and_then(|s| s.password(&key));
         for pw in auth.password.iter().chain(saved.iter()) {
             if !methods.allows(MethodKind::Password) {
                 break;
@@ -262,4 +312,30 @@ pub(crate) async fn authenticate(
         }
     }
     Err(Error::AuthFailed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pam_password_prompts_count_as_the_password() {
+        assert!(asks_password("Password:", false));
+        assert!(asks_password("(deploy@10.0.0.5) Password: ", false));
+        assert!(asks_password("Password for deploy@host: ", false));
+        assert!(asks_password("deploy's password: ", false));
+    }
+
+    #[test]
+    fn other_questions_are_not_the_password() {
+        assert!(!asks_password("Verification code: ", false));
+        assert!(!asks_password(
+            "One-time password (OATH) for `deploy':",
+            true
+        ));
+        assert!(!asks_password("Password:", true));
+        assert!(!asks_password("New password: ", false));
+        assert!(!asks_password("Retype new password: ", false));
+        assert!(!asks_password("(current) UNIX password: ", false));
+    }
 }

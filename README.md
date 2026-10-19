@@ -37,7 +37,8 @@ shellwing [user@]host[:port]  # and a tab connected to host
 `host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
 (`HostName`, `User`, `Port`, `IdentityFile` and `ProxyJump` are honoured). The host
 list on the left shows both; clicking one opens a tab. Sign-in follows OpenSSH:
-agent keys, key files, keyboard-interactive (one-time codes), then a password;
+agent keys, key files, keyboard-interactive (one-time codes, or the password when
+PAM asks for it), then a password;
 questions are asked in the terminal. Host keys are checked against
 `~/.ssh/known_hosts` (override with `$SHELLWING_KNOWN_HOSTS`): a new key is shown
 with its fingerprint for you to accept, a changed key refuses the connection.

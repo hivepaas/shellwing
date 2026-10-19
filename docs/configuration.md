@@ -283,6 +283,8 @@ and is remembered with the window's layout.
 When a password or a key passphrase typed at a prompt works, the pane asks
 whether to save it. Saved ones are tried before asking next time, also when
 reconnecting, so a lost connection comes back without typing.
+That includes a password a server asks for through keyboard-interactive, as
+servers that sign in through PAM do (macOS among them).
 
 They live in `vault.db` in the config directory, each one encrypted with
 XChaCha20-Poly1305. The key that opens the vault is in the system keychain
