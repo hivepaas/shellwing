@@ -134,6 +134,10 @@ pub struct Workspace {
     vault: VaultSlot,
     /// A vault that failed to open was reported.
     vault_reported: bool,
+    /// The locked vault was asked about at start.
+    vault_asked: bool,
+    /// The last key pressed or click, for locking the vault when idle.
+    last_input: std::time::Instant,
     sync: SyncWorker,
     /// The last sync error shown, so it is not repeated every minute.
     sync_error: Option<String>,
@@ -186,6 +190,16 @@ enum Asking {
     JoinHow(std::path::PathBuf),
     /// Asking a device that syncs this folder to let this one in.
     Pairing(std::path::PathBuf),
+    /// A locked vault's passphrase or recovery key.
+    VaultUnlock(shellwing_vault::Lock),
+    /// A passphrase for the vault, typed once (`None`) or a second time to
+    /// check it; `new` makes the vault, else sets it on the open one.
+    VaultPassphrase { first: Option<String>, new: bool },
+    /// A passphrase that lets new devices join the vault in the sync folder,
+    /// typed once or a second time.
+    FolderPassphrase { first: Option<String> },
+    /// A folder whose vault a passphrase joins, waiting for it.
+    JoinPassphrase(std::path::PathBuf),
     /// A port to forward on the active tab's connection.
     Forward,
     /// A value a snippet needs before it runs.
@@ -271,6 +285,8 @@ impl Workspace {
             layout_change: 0,
             vault,
             vault_reported: false,
+            vault_asked: false,
+            last_input: std::time::Instant::now(),
             sync,
             sync_error: None,
             asking: None,
@@ -1219,6 +1235,16 @@ impl Workspace {
             "Saved passwords and passphrases…".into(),
             String::new(),
         );
+        if self.vault.locked().is_some() {
+            action(
+                Action::UnlockVault,
+                "Unlock the vault…".into(),
+                String::new(),
+            );
+        }
+        if self.vault.can_lock() {
+            action(Action::LockVault, "Lock the vault".into(), String::new());
+        }
         match self.sync.folder() {
             Some(f) => {
                 action(
@@ -1416,14 +1442,320 @@ impl Workspace {
         .detach();
     }
 
+    /// Asks for what opens the locked vault; `problem` says why again.
+    fn ask_vault(
+        &mut self,
+        lock: shellwing_vault::Lock,
+        problem: Option<&str>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        use shellwing_vault::Lock;
+        if lock == Lock::New {
+            self.asking = Some(Asking::VaultPassphrase {
+                first: None,
+                new: true,
+            });
+            return self.ask_passphrase(problem, window, cx);
+        }
+        self.asking = Some(Asking::VaultUnlock(lock));
+        let mut notes = vec![if lock == Lock::Passphrase {
+            Entry::new(Kind::Note, "", "The vault is locked").detail(
+                "Its passphrase opens it, or its recovery key (13 groups of four). Esc leaves it locked: Unlock the vault, in the palette, asks again.",
+            )
+        } else {
+            Entry::new(Kind::Note, "", "The system keychain lost the vault's key").detail(
+                "Its recovery key (13 groups of four) opens it, and puts the key back in the keychain.",
+            )
+        }];
+        if let Some(p) = problem {
+            notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
+        }
+        let placeholder = if lock == Lock::Passphrase {
+            "The vault's passphrase, or its recovery key"
+        } else {
+            "The recovery key"
+        };
+        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Asks for a new passphrase, or for it again to check it.
+    fn ask_passphrase(
+        &mut self,
+        problem: Option<&str>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(Asking::VaultPassphrase { first, new }) = &self.asking else {
+            return;
+        };
+        let min = shellwing_vault::MIN_PASSPHRASE;
+        let mut notes = vec![if first.is_some() {
+            Entry::new(Kind::Note, "", "Type it again").detail("To be sure of it.")
+        } else if *new {
+            Entry::new(Kind::Note, "", "There is no system keychain to keep the vault's key").detail(format!(
+                "A passphrase keeps it instead: you type it when shellwing starts. At least {min} characters. Esc: no saved passwords, keys or sync this time."
+            ))
+        } else {
+            Entry::new(Kind::Note, "", "A passphrase for the vault").detail(format!(
+                "It opens the vault where the system keychain cannot. At least {min} characters."
+            ))
+        }];
+        if let Some(p) = problem {
+            notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
+        }
+        let placeholder = if first.is_some() {
+            "The passphrase again"
+        } else {
+            "A passphrase"
+        };
+        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// An answer to [`Workspace::ask_vault`] or [`Workspace::ask_passphrase`].
+    fn answer_vault(&mut self, text: String, window: &mut Window, cx: &mut Context<Self>) {
+        use shellwing_vault::{Error as VaultError, Lock, Unlock};
+        match self.asking.take() {
+            Some(Asking::VaultUnlock(lock)) => {
+                let tried = if lock == Lock::Passphrase {
+                    match self.vault.unlock(Unlock::Passphrase(&text)) {
+                        // Not the passphrase: perhaps the recovery key.
+                        Err(VaultError::WrongPassphrase)
+                            if shellwing_vault::RecoveryKey::parse(&text).is_some() =>
+                        {
+                            self.vault.unlock(Unlock::RecoveryKey(&text))
+                        }
+                        other => other,
+                    }
+                } else {
+                    self.vault.unlock(Unlock::RecoveryKey(&text))
+                };
+                self.close_palette(window, cx);
+                match tried {
+                    Ok(_) => {
+                        self.sync.now();
+                        self.say("The vault is open.".into(), THEME_NOTICE, cx);
+                        self.refresh_settings(cx);
+                    }
+                    Err(e @ (VaultError::WrongPassphrase | VaultError::WrongRecoveryKey)) => self
+                        .ask_vault(
+                            lock,
+                            Some(&format!("That does not open it: {e}.")),
+                            window,
+                            cx,
+                        ),
+                    Err(e) => self.say(format!("The vault stays locked: {e}"), CONFIG_NOTICE, cx),
+                }
+            }
+            Some(Asking::VaultPassphrase { first: None, new }) => {
+                let min = shellwing_vault::MIN_PASSPHRASE;
+                self.close_palette(window, cx);
+                self.asking = Some(Asking::VaultPassphrase {
+                    first: (text.chars().count() >= min).then(|| text.clone()),
+                    new,
+                });
+                let short = format!("Too short: at least {min} characters.");
+                let problem = (text.chars().count() < min).then_some(short.as_str());
+                self.ask_passphrase(problem, window, cx);
+            }
+            Some(Asking::VaultPassphrase {
+                first: Some(first),
+                new,
+            }) => {
+                self.close_palette(window, cx);
+                if first != text {
+                    self.asking = Some(Asking::VaultPassphrase { first: None, new });
+                    return self.ask_passphrase(Some("The two were not the same."), window, cx);
+                }
+                let done = if new {
+                    self.vault.unlock(Unlock::NewPassphrase(&text)).map(|_| ())
+                } else {
+                    match self.vault.ready() {
+                        Some(v) => v.set_vault_passphrase(Some(&text)),
+                        None => Err(VaultError::Locked(Lock::Passphrase)),
+                    }
+                };
+                match done {
+                    Ok(()) if new => {
+                        // Its recovery key, for when the passphrase is forgotten.
+                        if let Some(Ok(Some(rk))) = self.vault.ready().map(|v| v.recovery_key()) {
+                            let key = rk.to_string();
+                            let entries = vec![
+                                Entry::new(Kind::Copy(key.clone()), "Recovery key", key).hint("Enter copies"),
+                                Entry::new(Kind::Note, "Recovery key", "Write this key down and keep it safe.").detail(
+                                    "It opens the vault if the passphrase is forgotten; Settings › Vault shows it again.",
+                                ),
+                            ];
+                            let palette = cx.new(|cx| Palette::show(entries, cx));
+                            self.show_palette(palette, false, window, cx);
+                        }
+                        self.say(
+                            "The vault is ready; its passphrase keeps it.".into(),
+                            CONFIG_NOTICE,
+                            cx,
+                        );
+                    }
+                    Ok(()) => self.say(
+                        "The passphrase opens the vault too now.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("No passphrase set: {e}"), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
+            other => self.asking = other,
+        }
+    }
+
+    /// Asks for a passphrase that lets new devices join the vault in the
+    /// sync folder, or for it again to check it.
+    fn ask_folder_passphrase(
+        &mut self,
+        problem: Option<&str>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(Asking::FolderPassphrase { first }) = &self.asking else {
+            return;
+        };
+        let min = shellwing_vault::MIN_PASSPHRASE;
+        let mut notes = vec![if first.is_some() {
+            Entry::new(Kind::Note, "", "Type it again").detail("To be sure of it.")
+        } else {
+            Entry::new(Kind::Note, "", "A passphrase that joins new devices").detail(format!(
+                "Typed on a new device that syncs the same folder, instead of the recovery key. Anyone who can read the folder can try to guess it: four or more unrelated words, at least {min} characters."
+            ))
+        }];
+        if let Some(p) = problem {
+            notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
+        }
+        let placeholder = if first.is_some() {
+            "The passphrase again"
+        } else {
+            "A sync passphrase"
+        };
+        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Asks for the passphrase that joins the vault in a folder.
+    fn ask_join_passphrase(
+        &mut self,
+        problem: Option<&str>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(Asking::JoinPassphrase(folder)) = &self.asking else {
+            return;
+        };
+        let mut notes = vec![
+            Entry::new(
+                Kind::Note,
+                "",
+                format!("{} lets a passphrase join its vault", folder.display()),
+            )
+            .detail("The one set on a device that syncs (Settings › Sync). Secrets saved here are kept and merged."),
+        ];
+        if let Some(p) = problem {
+            notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
+        }
+        let palette = cx.new(|cx| Palette::ask_secret("The sync passphrase", notes, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// An answer to [`Workspace::ask_folder_passphrase`] or
+    /// [`Workspace::ask_join_passphrase`].
+    fn answer_folder_passphrase(
+        &mut self,
+        text: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        use shellwing_vault::Error as VaultError;
+        self.close_palette(window, cx);
+        let Some(vault) = self.vault.ready() else {
+            self.asking = None;
+            return self.say("The vault is not open.".into(), CONFIG_NOTICE, cx);
+        };
+        match self.asking.take() {
+            Some(Asking::FolderPassphrase { first: None }) => {
+                let min = shellwing_vault::MIN_PASSPHRASE;
+                let strength = shellwing_vault::passphrase_strength(&text);
+                let problem = if text.chars().count() < min {
+                    Some(format!("Too short: at least {min} characters."))
+                } else if strength < 3 {
+                    Some(format!(
+                        "Too easy to guess (strength {strength} of 4; 3 is needed). Several unrelated words work well."
+                    ))
+                } else {
+                    None
+                };
+                self.asking = Some(Asking::FolderPassphrase {
+                    first: problem.is_none().then_some(text),
+                });
+                self.ask_folder_passphrase(problem.as_deref(), window, cx);
+            }
+            Some(Asking::FolderPassphrase { first: Some(first) }) => {
+                if first != text {
+                    self.asking = Some(Asking::FolderPassphrase { first: None });
+                    return self.ask_folder_passphrase(
+                        Some("The two were not the same."),
+                        window,
+                        cx,
+                    );
+                }
+                let done = match self.sync.folder() {
+                    Some(f) => vault
+                        .let_passphrase_join(&Folder::new(&f), Some(&text))
+                        .map_err(|e| e.to_string()),
+                    None => Err("this device does not sync".into()),
+                };
+                match done {
+                    Ok(()) => self.say(
+                        "New devices can join with the sync passphrase now.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("Not set: {e}"), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
+            Some(Asking::JoinPassphrase(folder)) => {
+                match vault.join_with_passphrase(&Folder::new(&folder), &text) {
+                    Ok(()) => {
+                        self.keep_sync_folder(Some(&folder), cx);
+                        self.say(
+                            format!("Joined: this device syncs with {}.", folder.display()),
+                            CONFIG_NOTICE,
+                            cx,
+                        );
+                    }
+                    Err(VaultError::WrongPassphrase) => {
+                        self.asking = Some(Asking::JoinPassphrase(folder));
+                        self.ask_join_passphrase(
+                            Some("That passphrase does not open it."),
+                            window,
+                            cx,
+                        );
+                    }
+                    Err(e) => self.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
+                }
+            }
+            other => self.asking = other,
+        }
+    }
+
     /// Joining a vault found in a folder: by approving on a device that
     /// syncs it, or with its recovery key.
     fn ask_join_how(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let folder = match &self.asking {
-            Some(Asking::JoinHow(f)) => f.display().to_string(),
+        let (path, folder) = match &self.asking {
+            Some(Asking::JoinHow(f)) => (f.clone(), f.display().to_string()),
             _ => return,
         };
-        let entries = vec![
+        let mut entries = vec![
             Entry::new(
                 Kind::Choice("pair".into()),
                 "",
@@ -1435,6 +1767,20 @@ impl Workspace {
             Entry::new(Kind::Choice("recovery".into()), "", "Type the recovery key")
                 .detail("The 13 groups of four from when syncing started."),
         ];
+        let joins = self
+            .vault
+            .ready()
+            .is_some_and(|v| v.passphrase_joins(&Folder::new(&path)).unwrap_or(false));
+        if joins {
+            entries.push(
+                Entry::new(
+                    Kind::Choice("passphrase".into()),
+                    "",
+                    "Type the sync passphrase",
+                )
+                .detail("The one a device that syncs set to let new devices join."),
+            );
+        }
         let palette = cx.new(|cx| {
             Palette::chooser(
                 &format!("{folder} holds a vault from another device: join it"),
@@ -1564,6 +1910,17 @@ impl Workspace {
                 .map(Into::into)
                 .or_else(|| std::env::home_dir().map(|h| h.join(".ssh").join("known_hosts"))),
             ssh_config: ssh_config::default_config_path(),
+            vault_locked: self.vault.locked().is_some(),
+            vault_passphrase: self
+                .vault
+                .ready()
+                .and_then(|v| v.has_vault_passphrase().ok()),
+            vault_keychain: self.vault.in_keychain(),
+            vault_can_lock: self.vault.can_lock(),
+            passphrase_joins: match (self.vault.ready(), self.sync.folder()) {
+                (Some(v), Some(f)) => v.passphrase_joins(&Folder::new(&f)).ok(),
+                _ => None,
+            },
             secrets: self
                 .vault
                 .ready()
@@ -2249,6 +2606,9 @@ impl Workspace {
                     self.asking = Some(Asking::Pairing(folder.clone()));
                     self.sync.ask_to_join(folder);
                     self.show_pairing(&AskState::Waiting, window, cx);
+                } else if how == "passphrase" {
+                    self.asking = Some(Asking::JoinPassphrase(folder));
+                    self.ask_join_passphrase(None, window, cx);
                 } else {
                     self.asking = Some(Asking::RecoveryKey(folder));
                     self.ask_recovery_key(false, window, cx);
@@ -2294,6 +2654,12 @@ impl Workspace {
                         return self.ask_snippet(run, window, cx);
                     }
                     Some(Asking::RecoveryKey(folder)) => folder,
+                    Some(Asking::VaultUnlock(_) | Asking::VaultPassphrase { .. }) => {
+                        return self.answer_vault(text.clone(), window, cx);
+                    }
+                    Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
+                        return self.answer_folder_passphrase(text.clone(), window, cx);
+                    }
                     Some(Asking::JoinHow(_) | Asking::Pairing(_)) | None => {
                         return self.close_palette(window, cx);
                     }
@@ -2385,8 +2751,92 @@ impl Workspace {
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(format!("Cannot read the key: {e}"), CONFIG_NOTICE, cx),
-                _ => self.say("Not syncing yet.".into(), CONFIG_NOTICE, cx),
+                _ => self.say("The vault is not open.".into(), CONFIG_NOTICE, cx),
             },
+            Action::UnlockVault => match self.vault.locked() {
+                Some(lock) => self.ask_vault(lock, None, window, cx),
+                None => self.say("The vault is open.".into(), THEME_NOTICE, cx),
+            },
+            Action::SetVaultPassphrase => {
+                self.asking = Some(Asking::VaultPassphrase {
+                    first: None,
+                    new: false,
+                });
+                self.ask_passphrase(None, window, cx);
+            }
+            Action::RemoveVaultPassphrase => {
+                let done = match self.vault.ready() {
+                    Some(v) if self.vault.in_keychain() => {
+                        v.set_vault_passphrase(None).map_err(|e| e.to_string())
+                    }
+                    _ => Err("the system keychain does not hold the vault's key: without a passphrase, only the recovery key would open it".into()),
+                };
+                match done {
+                    Ok(()) => self.say(
+                        "The vault opens with the system keychain alone now.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("Passphrase kept: {e}."), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
+            Action::LockVault => {
+                if self.vault.lock() {
+                    self.say("The vault is locked.".into(), THEME_NOTICE, cx);
+                } else {
+                    self.say(
+                        "The vault cannot lock: the system keychain opens it, or it has no passphrase.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    );
+                }
+                self.refresh_settings(cx);
+            }
+            Action::LeaveKeychain => {
+                match self.vault.leave_keychain() {
+                    Ok(()) => self.say(
+                        "The vault's key is out of the system keychain: each start asks for the passphrase.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("The key stays in the keychain: {e}."), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
+            Action::LetPassphraseJoin => {
+                self.asking = Some(Asking::FolderPassphrase { first: None });
+                self.ask_folder_passphrase(None, window, cx);
+            }
+            Action::StopPassphraseJoin => {
+                let done = match (self.vault.ready(), self.sync.folder()) {
+                    (Some(v), Some(f)) => v
+                        .let_passphrase_join(&Folder::new(&f), None)
+                        .map_err(|e| e.to_string()),
+                    _ => Err("the vault is not open, or does not sync".into()),
+                };
+                match done {
+                    Ok(()) => self.say(
+                        "New devices join with the recovery key, or by approving them.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("Not stopped: {e}"), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
+            Action::KeepVaultKey => {
+                let done = self.vault.keep_in_keychain();
+                match done {
+                    Ok(()) => self.say(
+                        "The system keychain keeps the vault's key now.".into(),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    Err(e) => self.say(format!("Not kept: {e}"), CONFIG_NOTICE, cx),
+                }
+                self.refresh_settings(cx);
+            }
             Action::StopSync => {
                 self.keep_sync_folder(None, cx);
                 self.say(
@@ -2459,8 +2909,35 @@ impl Workspace {
 
     /// Called periodically: picks up edits to the config files.
     pub fn poll_config(&mut self, cx: &mut Context<Self>) {
+        let idle = self.live.settings().vault.lock_after.unwrap_or(0);
+        if idle > 0
+            && self.last_input.elapsed() >= std::time::Duration::from_secs(u64::from(idle) * 60)
+            && self.vault.lock()
+        {
+            self.say(
+                format!("The vault locked: {idle} minutes without use."),
+                CONFIG_NOTICE,
+                cx,
+            );
+            self.refresh_settings(cx);
+            // Its passphrase is asked for, waiting there for the user's return.
+            if self.palette.is_none() {
+                self.in_window(cx, |ws, window, cx| {
+                    ws.ask_vault(shellwing_vault::Lock::Passphrase, None, window, cx)
+                });
+            }
+        }
+        if !self.vault_asked
+            && let Some(lock) = self.vault.locked()
+        {
+            self.vault_asked = true;
+            self.in_window(cx, move |ws, window, cx| {
+                ws.ask_vault(lock, None, window, cx)
+            });
+        }
         if !self.vault_reported
             && self.live.store().is_some()
+            && self.vault.locked().is_none()
             && let Some(p) = self.vault.problem()
         {
             self.vault_reported = true;
@@ -2624,6 +3101,7 @@ impl Workspace {
 
     /// Runs before the terminal sees the key, so these never reach the host.
     fn shortcut(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        self.last_input = std::time::Instant::now();
         let Some(s) = Self::shortcut_for(ev) else {
             return;
         };
@@ -3668,6 +4146,9 @@ impl Render for Workspace {
         root.when_some(ui_font.family, |d, f| d.font_family(f))
             .track_focus(&self.focus)
             .capture_key_down(cx.listener(Self::shortcut))
+            .capture_any_mouse_down(cx.listener(|ws, _, _, _| {
+                ws.last_input = std::time::Instant::now();
+            }))
             .when(self.sidebar_drag.is_some(), |d| {
                 d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
                     if let Some((x0, w0)) = ws.sidebar_drag {

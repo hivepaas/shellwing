@@ -81,9 +81,104 @@ pub enum Error {
     Format(#[from] serde_json::Error),
     #[error("pairing: {0}")]
     Pairing(String),
+    /// The vault cannot open without being told something: see [`Lock`].
+    #[error("the vault is locked")]
+    Locked(Lock),
+    #[error("that passphrase does not open the vault")]
+    WrongPassphrase,
+    #[error("the passphrase is too short: at least {0} characters")]
+    WeakPassphrase(usize),
+    /// Too easy to guess for a folder others may read: `zxcvbn`'s score, 0–4.
+    #[error("the passphrase is too easy to guess (strength {0} of 4; 3 is needed)")]
+    GuessablePassphrase(u8),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Why a vault waits to be opened, and what opens it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Lock {
+    /// No vault yet and no keychain to keep its key: a passphrase makes one.
+    New,
+    /// Its passphrase opens it (and so does the recovery key).
+    Passphrase,
+    /// The keychain has lost its key and there is no passphrase: only the
+    /// recovery key opens it.
+    Recovery,
+}
+
+/// What opens a locked vault (see [`Vault::unlock`]).
+pub enum Unlock<'a> {
+    Passphrase(&'a str),
+    RecoveryKey(&'a str),
+    /// Makes a new vault whose key this passphrase keeps ([`Lock::New`]).
+    NewPassphrase(&'a str),
+}
+
+/// The shortest passphrase taken.
+pub const MIN_PASSPHRASE: usize = 10;
+
+/// How hard `passphrase` is to guess, `zxcvbn`'s 0 (very easy) to 4.
+pub fn passphrase_strength(passphrase: &str) -> u8 {
+    zxcvbn::zxcvbn(passphrase, &[]).score() as u8
+}
+const PASSPHRASE_AAD: &[u8] = b"shellwing account key wrapped by a passphrase v1";
+const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery key v1";
+
+/// How a passphrase becomes a key: Argon2id, about half a second and 64 MiB,
+/// so a stolen vault.db is slow to guess at. Kept with the vault, so it can be
+/// raised later.
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Kdf {
+    alg: String,
+    m_kib: u32,
+    t: u32,
+    p: u32,
+    salt: String,
+}
+
+impl Kdf {
+    pub(crate) fn new() -> Result<Kdf> {
+        use base64::Engine as _;
+        // Tests run unoptimised: a small cost there, the real one otherwise.
+        let (m_kib, t) = if cfg!(test) { (256, 1) } else { (64 * 1024, 3) };
+        Ok(Kdf {
+            alg: "argon2id".into(),
+            m_kib,
+            t,
+            p: 1,
+            salt: base64::engine::general_purpose::STANDARD.encode(random::<16>()?),
+        })
+    }
+
+    pub(crate) fn key(&self, passphrase: &str) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        use base64::Engine as _;
+        if self.alg != "argon2id" {
+            return Err(Error::Keychain(format!(
+                "unknown passphrase scheme {}",
+                self.alg
+            )));
+        }
+        let salt = base64::engine::general_purpose::STANDARD
+            .decode(&self.salt)
+            .map_err(|_| Error::Decrypt)?;
+        let params = argon2::Params::new(self.m_kib, self.t, self.p, Some(KEY_LEN))
+            .map_err(|e| Error::Keychain(e.to_string()))?;
+        let mut key = Zeroizing::new([0u8; KEY_LEN]);
+        argon2::Argon2::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params)
+            .hash_password_into(passphrase.as_bytes(), &salt, &mut key[..])
+            .map_err(|e| Error::Keychain(e.to_string()))?;
+        Ok(key)
+    }
+}
+
+/// The database, and what it says about itself, before any key is known.
+struct Opened {
+    db: Connection,
+    device: String,
+    newest: Option<String>,
+    has_records: bool,
+}
 
 /// What a record holds, without the secret itself.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -197,8 +292,185 @@ const RECOVERY_KEY_AAD: &[u8] = b"shellwing recovery key wrapped by the account 
 
 impl Vault {
     /// Opens (or creates) `vault.db` at `path`, unlocking it with the account key
-    /// from `keys`; a first run creates both keys.
+    /// from `keys`; a first run creates both keys. Without a usable keychain,
+    /// or with one that lost the key, it is [`Error::Locked`]: see
+    /// [`Vault::unlock`].
     pub fn open(path: &Path, keys: &dyn KeyStore) -> Result<Vault> {
+        let o = Self::open_db(path)?;
+        let lock = |o: &Opened, err: Error| -> Error {
+            match Self::wrapped_account(&o.db, "passphrase") {
+                Ok(Some(_)) => Error::Locked(Lock::Passphrase),
+                _ if !o.has_records => Error::Locked(Lock::New),
+                _ => match Self::wrapped_account(&o.db, "recovery") {
+                    Ok(Some(_)) => Error::Locked(Lock::Recovery),
+                    _ => err,
+                },
+            }
+        };
+        let account = match keys.load() {
+            Ok(Some(k)) if k.len() == KEY_LEN => {
+                let mut a = Zeroizing::new([0u8; KEY_LEN]);
+                a.copy_from_slice(&k);
+                a
+            }
+            Ok(Some(_)) => return Err(Error::Keychain("the stored key has the wrong size".into())),
+            Ok(None) if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() => {
+                return Err(lock(&o, Error::KeyMissing));
+            }
+            Ok(None) => {
+                let a = Zeroizing::new(random::<KEY_LEN>()?);
+                if let Err(e) = keys.save(&a[..]) {
+                    return Err(lock(&o, Error::Keychain(e)));
+                }
+                a
+            }
+            Err(e) => return Err(lock(&o, Error::Keychain(e))),
+        };
+        Self::finish(o, account)
+    }
+
+    /// Opens a vault that [`Vault::open`] found locked. A recovery key also
+    /// puts the account key back in `keys` when it can, so the next start
+    /// needs nothing typed.
+    pub fn unlock(path: &Path, keys: &dyn KeyStore, how: Unlock) -> Result<Vault> {
+        let o = Self::open_db(path)?;
+        let account = match how {
+            Unlock::Passphrase(p) => {
+                let (Some(wrapped), Some(kdf)) = (
+                    Self::wrapped_account(&o.db, "passphrase")?,
+                    Self::kdf(&o.db)?,
+                ) else {
+                    return Err(Error::WrongPassphrase);
+                };
+                let key = kdf.key(p)?;
+                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
+                    .map_err(|_| Error::WrongPassphrase)?;
+                Self::account_from(&a)?
+            }
+            Unlock::RecoveryKey(text) => {
+                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
+                let wrapped =
+                    Self::wrapped_account(&o.db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
+                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
+                    .map_err(|_| Error::WrongRecoveryKey)?;
+                let a = Self::account_from(&a)?;
+                let _ = keys.save(&a[..]);
+                a
+            }
+            Unlock::NewPassphrase(p) => {
+                if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() {
+                    return Err(Error::Locked(Lock::Passphrase));
+                }
+                let a = Zeroizing::new(random::<KEY_LEN>()?);
+                Self::wrap_with_passphrase(&o.db, &a, p)?;
+                a
+            }
+        };
+        Self::finish(o, account)
+    }
+
+    fn account_from(plain: &[u8]) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        if plain.len() != KEY_LEN {
+            return Err(Error::Decrypt);
+        }
+        let mut a = Zeroizing::new([0u8; KEY_LEN]);
+        a.copy_from_slice(plain);
+        Ok(a)
+    }
+
+    /// The account key as kept by `by` (`passphrase`, `recovery`), sealed.
+    fn wrapped_account(db: &Connection, by: &str) -> Result<Option<Vec<u8>>> {
+        Ok(db
+            .query_row(
+                "SELECT wrapped FROM keys WHERE id = 'account' AND wrapped_by = ?1",
+                params![by],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+
+    fn kdf(db: &Connection) -> Result<Option<Kdf>> {
+        let text: Option<String> = db
+            .query_row("SELECT value FROM meta WHERE key = 'passphrase'", [], |r| {
+                r.get(0)
+            })
+            .optional()?;
+        Ok(text.and_then(|t| serde_json::from_str(&t).ok()))
+    }
+
+    fn wrap_with_passphrase(
+        db: &Connection,
+        account: &[u8; KEY_LEN],
+        passphrase: &str,
+    ) -> Result<()> {
+        let length = passphrase.chars().count();
+        if length < MIN_PASSPHRASE {
+            return Err(Error::WeakPassphrase(MIN_PASSPHRASE));
+        }
+        let kdf = Kdf::new()?;
+        let key = kdf.key(passphrase)?;
+        let sealed = cipher::seal(Cipher::default(), &key, &account[..], PASSPHRASE_AAD)?;
+        db.execute(
+            "INSERT INTO meta (key, value) VALUES ('passphrase', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![serde_json::to_string(&kdf)?],
+        )?;
+        db.execute(
+            "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('account', 1, ?1, 'passphrase')
+             ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+            params![sealed],
+        )?;
+        Ok(())
+    }
+
+    /// Sets, changes or (with None) removes the passphrase that keeps the
+    /// account key besides the keychain.
+    pub fn set_vault_passphrase(&self, passphrase: Option<&str>) -> Result<()> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        match passphrase {
+            Some(p) => Self::wrap_with_passphrase(&db, &self.account, p),
+            None => {
+                db.execute(
+                    "DELETE FROM keys WHERE id = 'account' AND wrapped_by = 'passphrase'",
+                    [],
+                )?;
+                db.execute("DELETE FROM meta WHERE key = 'passphrase'", [])?;
+                Ok(())
+            }
+        }
+    }
+
+    /// Whether a passphrase keeps the account key too.
+    pub fn has_vault_passphrase(&self) -> Result<bool> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        Ok(Self::wrapped_account(&db, "passphrase")?.is_some())
+    }
+
+    /// Puts the account key in `keys` (the keychain), so the vault opens
+    /// without a passphrase.
+    pub fn keep_in(&self, keys: &dyn KeyStore) -> Result<()> {
+        keys.save(&self.account[..]).map_err(Error::Keychain)
+    }
+
+    /// Takes the account key out of `keys`, so every start asks for the
+    /// passphrase. Only with a passphrase set: else nothing would open it
+    /// but the recovery key.
+    pub fn leave_keychain(&self, keys: &dyn KeyStore) -> Result<()> {
+        if !self.has_vault_passphrase()? {
+            return Err(Error::Locked(Lock::Recovery));
+        }
+        keys.forget().map_err(Error::Keychain)
+    }
+
+    /// Whether `keys` holds this vault's account key.
+    pub fn kept_in(&self, keys: &dyn KeyStore) -> bool {
+        keys.load()
+            .ok()
+            .flatten()
+            .is_some_and(|k| k[..] == self.account[..])
+    }
+
+    fn open_db(path: &Path) -> Result<Opened> {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir)?;
         }
@@ -234,20 +506,19 @@ impl Vault {
             db.query_row("SELECT MAX(hlc) FROM records", [], |r| r.get(0))?;
         let has_records: bool =
             db.query_row("SELECT EXISTS(SELECT 1 FROM records)", [], |r| r.get(0))?;
-        let account = match keys.load().map_err(Error::Keychain)? {
-            Some(k) if k.len() == KEY_LEN => {
-                let mut a = Zeroizing::new([0u8; KEY_LEN]);
-                a.copy_from_slice(&k);
-                a
-            }
-            Some(_) => return Err(Error::Keychain("the stored key has the wrong size".into())),
-            None if has_records => return Err(Error::KeyMissing),
-            None => {
-                let a = Zeroizing::new(random::<KEY_LEN>()?);
-                keys.save(&a[..]).map_err(Error::Keychain)?;
-                a
-            }
-        };
+        Ok(Opened {
+            db,
+            device,
+            newest,
+            has_records,
+        })
+    }
+
+    /// The vault, from its database and its account key.
+    fn finish(o: Opened, account: Zeroizing<[u8; KEY_LEN]>) -> Result<Vault> {
+        let Opened {
+            db, device, newest, ..
+        } = o;
         let wrapped: Option<Vec<u8>> = db
             .query_row(
                 "SELECT wrapped FROM keys WHERE id = ?1 AND ver = ?2 AND wrapped_by = 'account'",
@@ -293,6 +564,16 @@ impl Vault {
             clock,
         };
         vault.upgrade_untagged()?;
+        // A recovery key always opens it, synced or not: made now if there is
+        // none, and kept able to open the account key.
+        let rk = vault.recovery_key_or_new()?;
+        let wraps = {
+            let db = vault.db.lock().map_err(|_| Error::Decrypt)?;
+            Self::wrapped_account(&db, "recovery")?.is_some()
+        };
+        if !wraps {
+            vault.store_recovery_key(&rk)?;
+        }
         Ok(vault)
     }
 
@@ -426,13 +707,21 @@ impl Vault {
         Ok(rk)
     }
 
+    /// Keeps `rk` as the recovery key: wrapped by the account key (to show
+    /// it), and wrapping the account key (so it opens the vault).
     pub(crate) fn store_recovery_key(&self, rk: &RecoveryKey) -> Result<()> {
         let sealed = cipher::seal(self.cipher, &self.account, &rk.0[..], RECOVERY_KEY_AAD)?;
+        let opens = cipher::seal(self.cipher, &rk.0, &self.account[..], RECOVERY_WRAP_AAD)?;
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
             "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('recovery', 1, ?1, 'account')
              ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
             params![sealed],
+        )?;
+        db.execute(
+            "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('account', 1, ?1, 'recovery')
+             ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+            params![opens],
         )?;
         Ok(())
     }
@@ -834,10 +1123,11 @@ mod tests {
         let other = MemoryKeys::default();
         other.save(&[7u8; KEY_LEN]).expect("save");
         assert!(matches!(Vault::open(&path, &other), Err(Error::Decrypt)));
-        // A vault with records whose key vanished says so.
+        // A vault with records whose key vanished says so: the recovery key
+        // can open it.
         assert!(matches!(
             Vault::open(&path, &MemoryKeys::default()),
-            Err(Error::KeyMissing)
+            Err(Error::Locked(Lock::Recovery))
         ));
     }
 
@@ -938,8 +1228,8 @@ mod tests {
             )
             .expect("record");
             db.execute(
-                "UPDATE keys SET wrapped = ?1",
-                params![untagged(&account, &v.sk()[..], SPACE_AAD)],
+                "UPDATE keys SET wrapped = ?1 WHERE id = ?2 AND wrapped_by = 'account'",
+                params![untagged(&account, &v.sk()[..], SPACE_AAD), SPACE],
             )
             .expect("key");
         }
@@ -1023,5 +1313,153 @@ mod tests {
         v.delete(&id).expect("delete");
         assert_eq!(v.password("a@x").expect("read"), None);
         assert!(v.items().expect("items").is_empty());
+    }
+
+    /// A keychain that is not there, as on Linux without the Secret Service.
+    struct NoKeychain;
+
+    impl KeyStore for NoKeychain {
+        fn load(&self) -> std::result::Result<Option<Vec<u8>>, String> {
+            Err("no secret service".into())
+        }
+        fn save(&self, _: &[u8]) -> std::result::Result<(), String> {
+            Err("no secret service".into())
+        }
+    }
+
+    fn locked(r: Result<Vault>) -> Lock {
+        match r {
+            Err(Error::Locked(l)) => l,
+            Ok(_) => panic!("opened"),
+            Err(e) => panic!("{e}"),
+        }
+    }
+
+    #[test]
+    fn without_a_keychain_a_passphrase_keeps_the_key() {
+        let dir = std::env::temp_dir().join(format!("shellwing-vault-pass-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        assert_eq!(locked(Vault::open(&path, &NoKeychain)), Lock::New);
+        assert!(matches!(
+            Vault::unlock(&path, &NoKeychain, Unlock::NewPassphrase("short")),
+            Err(Error::WeakPassphrase(_))
+        ));
+        let v = Vault::unlock(
+            &path,
+            &NoKeychain,
+            Unlock::NewPassphrase("correct horse battery"),
+        )
+        .expect("made");
+        v.set_password("u@h:22", "hunter2").expect("save");
+        let rk = v.recovery_key().expect("rk").expect("always there");
+        drop(v);
+
+        assert_eq!(locked(Vault::open(&path, &NoKeychain)), Lock::Passphrase);
+        assert!(matches!(
+            Vault::unlock(
+                &path,
+                &NoKeychain,
+                Unlock::Passphrase("wrong horse battery")
+            ),
+            Err(Error::WrongPassphrase)
+        ));
+        let v = Vault::unlock(
+            &path,
+            &NoKeychain,
+            Unlock::Passphrase("correct horse battery"),
+        )
+        .expect("opened");
+        assert_eq!(
+            v.password("u@h:22")
+                .expect("read")
+                .as_deref()
+                .map(|s| s.as_str()),
+            Some("hunter2")
+        );
+        assert!(v.has_vault_passphrase().expect("has"));
+        drop(v);
+
+        // The recovery key opens it too, and puts the key in a keychain that works.
+        let keys = MemoryKeys::default();
+        let v = Vault::unlock(&path, &keys, Unlock::RecoveryKey(&rk.to_string())).expect("by rk");
+        assert!(v.kept_in(&keys));
+        drop(v);
+        let v = Vault::open(&path, &keys).expect("from the keychain now");
+        // Changed, the old passphrase no longer opens it; removed, none does.
+        v.set_vault_passphrase(Some("another long passphrase"))
+            .expect("change");
+        drop(v);
+        assert!(
+            Vault::unlock(
+                &path,
+                &NoKeychain,
+                Unlock::Passphrase("correct horse battery")
+            )
+            .is_err()
+        );
+        let v = Vault::unlock(
+            &path,
+            &NoKeychain,
+            Unlock::Passphrase("another long passphrase"),
+        )
+        .expect("new one");
+        v.set_vault_passphrase(None).expect("remove");
+        assert!(!v.has_vault_passphrase().expect("has"));
+        drop(v);
+        assert_eq!(locked(Vault::open(&path, &NoKeychain)), Lock::Recovery);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_keychain_that_lost_the_key_leaves_the_recovery_key() {
+        let dir = std::env::temp_dir().join(format!("shellwing-vault-lost-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("open");
+        v.set_password("u@h:22", "hunter2").expect("save");
+        let rk = v.recovery_key().expect("rk").expect("made on open");
+        drop(v);
+        // A reinstalled keychain: empty.
+        let fresh = MemoryKeys::default();
+        assert_eq!(locked(Vault::open(&path, &fresh)), Lock::Recovery);
+        let v = Vault::unlock(&path, &fresh, Unlock::RecoveryKey(&rk.to_string())).expect("rk");
+        assert_eq!(
+            v.password("u@h:22")
+                .expect("read")
+                .as_deref()
+                .map(|s| s.as_str()),
+            Some("hunter2")
+        );
+        drop(v);
+        Vault::open(&path, &fresh).expect("the key is back in the keychain");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn leaving_the_keychain_asks_for_the_passphrase_at_the_next_start() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-leave-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("made");
+        assert!(
+            matches!(v.leave_keychain(&keys), Err(Error::Locked(Lock::Recovery))),
+            "not without a passphrase"
+        );
+        assert!(v.kept_in(&keys));
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.leave_keychain(&keys).expect("left");
+        assert!(!v.kept_in(&keys));
+        drop(v);
+
+        assert_eq!(locked(Vault::open(&path, &keys)), Lock::Passphrase);
+        let v = Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
+            .expect("opened");
+        assert!(!v.kept_in(&keys), "a passphrase does not put it back");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -1,7 +1,7 @@
 //! Questions that need an answer before going on (quitting, closing a pane
-//! that is connected), drawn in the app's look. Linux has no dialog of its
-//! own for GPUI to use, and GPUI's stand-in is a white box that fits nothing
-//! here; macOS and Windows keep their own.
+//! that is connected), drawn in the app's look on every system, so they read
+//! the same on macOS, Windows and Linux (which has no dialog of its own for
+//! GPUI to use).
 
 use gpui::{
     App, Context, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton,

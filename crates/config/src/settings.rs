@@ -14,6 +14,17 @@ pub struct Settings {
     pub ssh: Ssh,
     pub files: Files,
     pub log: Log,
+    pub vault: VaultSettings,
+}
+
+/// The vault on this device.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct VaultSettings {
+    /// Minutes without a key pressed or a click before the vault locks, when
+    /// its key is not in the keychain (only its passphrase opens it). None
+    /// or 0: it stays open.
+    pub lock_after: Option<u32>,
 }
 
 /// Session logs: what a pane was sent, written to a file as it comes.

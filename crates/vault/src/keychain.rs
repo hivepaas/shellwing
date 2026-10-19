@@ -7,6 +7,11 @@ pub trait KeyStore: Send + Sync {
     /// The key, or None if none was stored yet.
     fn load(&self) -> Result<Option<Vec<u8>>, String>;
     fn save(&self, key: &[u8]) -> Result<(), String>;
+    /// Removes the key, so only a passphrase or the recovery key opens the
+    /// vault.
+    fn forget(&self) -> Result<(), String> {
+        Err("this keychain cannot forget its key".into())
+    }
 }
 
 /// The operating system's keychain: Keychain Services on macOS, Credential
@@ -46,6 +51,13 @@ impl KeyStore for OsKeychain {
     fn save(&self, key: &[u8]) -> Result<(), String> {
         self.entry()?.set_secret(key).map_err(|e| e.to_string())
     }
+
+    fn forget(&self) -> Result<(), String> {
+        match self.entry()?.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(e) => Err(e.to_string()),
+        }
+    }
 }
 
 /// In memory, for tests.
@@ -59,6 +71,11 @@ impl KeyStore for MemoryKeys {
 
     fn save(&self, key: &[u8]) -> Result<(), String> {
         *self.0.lock().map_err(|e| e.to_string())? = Some(key.to_vec());
+        Ok(())
+    }
+
+    fn forget(&self) -> Result<(), String> {
+        *self.0.lock().map_err(|e| e.to_string())? = None;
         Ok(())
     }
 }
