@@ -22,6 +22,8 @@ use tokio::net::{TcpListener, TcpStream};
 struct Policy {
     password: Option<&'static str>,
     otp: Option<&'static str>,
+    /// Ask for `password` through keyboard-interactive, as PAM does (macOS sshd).
+    pam: bool,
     key: Option<PublicKey>,
     /// Allow direct-tcpip (act as a jump host, carry -L and -D) and tcpip-forward (-R).
     forward: bool,
@@ -134,17 +136,20 @@ impl server::Handler for TestServer {
         _submethods: &str,
         response: Option<server::Response<'a>>,
     ) -> Result<ServerAuth, Self::Error> {
-        let Some(otp) = self.policy.otp else {
-            return Ok(ServerAuth::reject());
-        };
+        let (name, question, answer) =
+            match (self.policy.pam, self.policy.password, self.policy.otp) {
+                (true, Some(pw), _) => ("", "Password:", pw),
+                (_, _, Some(otp)) => ("Two-factor", "Verification code: ", otp),
+                _ => return Ok(ServerAuth::reject()),
+            };
         Ok(match response {
             None => ServerAuth::Partial {
-                name: "Two-factor".into(),
+                name: name.into(),
                 instructions: "".into(),
-                prompts: vec![("Verification code: ".into(), false)].into(),
+                prompts: vec![(question.into(), false)].into(),
             },
             Some(mut r) => {
-                if r.next().as_deref() == Some(otp.as_bytes()) {
+                if r.next().as_deref() == Some(answer.as_bytes()) {
                     ServerAuth::Accept
                 } else {
                     self.reject()
@@ -838,6 +843,58 @@ async fn a_saved_password_is_used_and_a_typed_one_reported() {
             password: "secret".into(),
         }]
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_pam_password_is_reported_then_used_without_asking() {
+    let fx = Fixture::new("pam-password");
+    let (port, _) = serve(
+        Policy {
+            password: Some("secret"),
+            pam: true,
+            ..Default::default()
+        },
+        &[MethodKind::KeyboardInteractive],
+    )
+    .await;
+    let learned = |s: &Saved| s.learned.lock().expect("learned").clone();
+    let typed = [shellwing_ssh::Learned::Password {
+        target: format!("alice@127.0.0.1:{port}"),
+        password: "secret".into(),
+    }];
+
+    // Nothing saved: PAM's question is asked, and the answer reported like a password.
+    let none = Arc::new(Saved::default());
+    let (p, asked) = scripted(vec![Some("yes"), Some("secret")]);
+    let mut opts = fx.options(local(port, "alice"), p);
+    opts.secrets = Some(none.clone());
+    connect(opts).await.expect("connect");
+    assert_eq!(kinds(&asked), ["hostkey", "question"]);
+    assert_eq!(learned(&none), typed);
+
+    // Saved and right: it answers PAM, nothing is asked or reported.
+    let saved = Arc::new(Saved {
+        password: Some("secret".into()),
+        ..Default::default()
+    });
+    let (p, asked) = scripted(vec![]);
+    let mut opts = fx.options(local(port, "alice"), p);
+    opts.secrets = Some(saved.clone());
+    connect(opts).await.expect("connect");
+    assert!(kinds(&asked).is_empty());
+    assert!(learned(&saved).is_empty());
+
+    // Saved but stale: asked again, and the typed one reported.
+    let stale = Arc::new(Saved {
+        password: Some("old".into()),
+        ..Default::default()
+    });
+    let (p, asked) = scripted(vec![Some("secret")]);
+    let mut opts = fx.options(local(port, "alice"), p);
+    opts.secrets = Some(stale.clone());
+    connect(opts).await.expect("connect");
+    assert_eq!(kinds(&asked), ["question"]);
+    assert_eq!(learned(&stale), typed);
 }
 
 #[tokio::test(flavor = "multi_thread")]
