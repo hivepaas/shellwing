@@ -813,6 +813,7 @@ impl Workspace {
             // The menu's pane has the keyboard already; make it the tab's too.
             ws.set_focused(view.clone(), window, cx);
             match *c {
+                PaneCommand::Palette => ws.open_palette(window, cx),
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Close => ws.request_close_view(view, window, cx),

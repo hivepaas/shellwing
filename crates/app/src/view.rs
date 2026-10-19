@@ -211,6 +211,8 @@ pub struct FilesResized;
 /// What the pane's menu asks of the workspace, for this pane.
 #[derive(Clone, Copy)]
 pub enum PaneCommand {
+    /// The palette: hosts, actions, themes, for those who do not know the keys.
+    Palette,
     Split(gpui::Axis),
     Forward,
     Close,
@@ -1297,6 +1299,11 @@ impl TermView {
                     cx.notify();
                 }
             }))
+            .child(
+                item("menu-palette", "Command Palette…", chord("K"), true)
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
+            )
+            .child(line())
             .child(
                 item("menu-copy", "Copy", chord("C"), self.frame.selected)
                     .when(self.frame.selected, |d| {
