@@ -487,13 +487,14 @@ impl TermView {
         self.show_notice(said, LOG_NOTICE, cx);
     }
 
-    /// Asks where, then saves all the text, the history included: as HTML
-    /// with its colors when the name ends in `.html`, else as plain text.
-    pub fn save_output(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// Asks where, then saves all the text, the history included: as plain
+    /// text, or as an HTML page with its colors.
+    pub fn save_output(&mut self, html: bool, window: &mut Window, cx: &mut Context<Self>) {
         let name = format!(
-            "{}_{}.txt",
+            "{}_{}.{}",
             shellwing_core::logs::file_safe(&self.session.title),
-            chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")
+            chrono::Local::now().format("%Y-%m-%d_%H-%M-%S"),
+            if html { "html" } else { "txt" }
         );
         let picked = cx.prompt_for_new_path(&crate::files::downloads_dir(), Some(&name));
         let (term, title, colors) = (
@@ -505,10 +506,6 @@ impl TermView {
             let Ok(Ok(Some(path))) = picked.await else {
                 return;
             };
-            let html = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .is_some_and(|e| e.eq_ignore_ascii_case("html") || e.eq_ignore_ascii_case("htm"));
             let (tx, rx) = async_channel::bounded(1);
             term.format_all(
                 html,
@@ -529,7 +526,11 @@ impl TermView {
                 .await;
             let _ = this.update(cx, |v, cx| {
                 let said = match written {
-                    Ok(()) => format!("Saved {}", path.display()),
+                    Ok(()) => format!(
+                        "Saved as {}: {}",
+                        if html { "HTML" } else { "text" },
+                        path.display()
+                    ),
                     Err(e) => format!("Not saved: {e}"),
                 };
                 v.show_notice(said, LOG_NOTICE, cx);
@@ -1571,23 +1572,6 @@ impl TermView {
                 item("menu-find", "Find…", chord("F"), true)
                     .on_click(act(|v, window, cx| v.open_find(window, cx))),
             )
-            .child(
-                item("menu-save-output", "Save Output As…", String::new(), true)
-                    .on_click(act(|v, window, cx| v.save_output(window, cx))),
-            )
-            .child(
-                item(
-                    "menu-log",
-                    if self.session.log_path().is_some() {
-                        "Stop Logging"
-                    } else {
-                        "Start Logging"
-                    },
-                    String::new(),
-                    true,
-                )
-                .on_click(act(|_, _, cx| cx.emit(PaneCommand::Log))),
-            )
             // Files and forwards are SSH's.
             .when(!local, |d| {
                 d.child(
@@ -1610,6 +1594,39 @@ impl TermView {
                         .on_click(act(|_, _, cx| cx.emit(PaneCommand::Forward))),
                 )
             })
+            .child(line())
+            // What the pane shows, kept: now (with its history), or from now on.
+            .child(
+                item(
+                    "menu-save-text",
+                    "Save Output as Text…",
+                    String::new(),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.save_output(false, window, cx))),
+            )
+            .child(
+                item(
+                    "menu-save-html",
+                    "Save Output as HTML…",
+                    "with colors".into(),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.save_output(true, window, cx))),
+            )
+            .child(
+                item(
+                    "menu-log",
+                    if self.session.log_path().is_some() {
+                        "Stop Logging"
+                    } else {
+                        "Start Logging"
+                    },
+                    String::new(),
+                    true,
+                )
+                .on_click(act(|_, _, cx| cx.emit(PaneCommand::Log))),
+            )
             .child(line())
             .child(
                 item("menu-split-right", "Split Right", chord("D"), true).on_click(act(

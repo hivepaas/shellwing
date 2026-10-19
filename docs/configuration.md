@@ -362,9 +362,10 @@ which host it is (`user@address:port`) and when it started.
 - **A log that cannot be written** (the disk is full, the folder went away)
   stops, and the pane says why.
 
-**Saving what a pane shows** at any time, history included: *Save Output As…*
-in the pane's menu, or *Save the output of …* in the palette. A name ending in
-`.html` saves a page with the colors; anything else, plain text.
+**Saving what a pane shows** at any time, history included, logged or not:
+*Save Output as Text…* or *Save Output as HTML…* in the pane's menu, or *Save
+the output of … as text / as HTML* in the palette. The HTML page keeps the
+colors, on the pane's background.
 
 ## Known hosts
 

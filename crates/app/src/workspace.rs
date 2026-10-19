@@ -1138,8 +1138,13 @@ impl Workspace {
                 format!("{chord}+F"),
             );
             action(
-                Action::SaveOutput,
-                format!("Save the output of {title}…"),
+                Action::SaveOutput { html: false },
+                format!("Save the output of {title} as text…"),
+                String::new(),
+            );
+            action(
+                Action::SaveOutput { html: true },
+                format!("Save the output of {title} as HTML, with colors…"),
                 String::new(),
             );
             action(
@@ -1872,9 +1877,9 @@ impl Workspace {
         }
     }
 
-    fn save_output(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn save_output(&mut self, html: bool, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(tab) = self.active_tab().cloned() {
-            tab.update(cx, |v, cx| v.save_output(window, cx));
+            tab.update(cx, |v, cx| v.save_output(html, window, cx));
         }
     }
 
@@ -2187,7 +2192,7 @@ impl Workspace {
             Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
             Action::Log => self.toggle_log(cx),
-            Action::SaveOutput => self.save_output(window, cx),
+            Action::SaveOutput { html } => self.save_output(html, window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
             Action::Settings => self.open_settings(Page::Appearance, window, cx),
