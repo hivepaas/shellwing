@@ -102,8 +102,8 @@ pub struct Workspace {
     bench: Option<(String, Arc<Probe>)>,
     /// Shown in place of the terminal while no tab is open.
     notice: Option<SharedString>,
-    /// The quit question is showing (GPUI allows one prompt at a time).
-    asking_to_quit: bool,
+    /// A quit or close question is showing (GPUI allows one prompt at a time).
+    prompting: bool,
     /// The open palette, and whether it is picking a theme (whose preview must
     /// be undone if nothing is picked).
     palette: Option<(Entity<Palette>, Subscription, bool)>,
@@ -222,7 +222,7 @@ impl Workspace {
             rt,
             bench,
             notice: None,
-            asking_to_quit: false,
+            prompting: false,
             palette: None,
             dragging: None,
             unsaved_bounds: None,
@@ -365,8 +365,101 @@ impl Workspace {
     /// Closes the focused pane; the last one closes its tab.
     fn close_pane(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(view) = self.active_tab().cloned() {
-            self.close_view(&view, window, cx);
+            self.request_close_view(&view, window, cx);
         }
+    }
+
+    /// Closes the tab at `ix`, asking first while any of its panes is connected.
+    fn request_close_tab(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(tab) = self.tabs.get(ix) else {
+            return;
+        };
+        // Found again by a pane on Close: tabs may have moved meanwhile.
+        let (views, key) = (tab.views(), tab.focused.clone());
+        self.confirm_close(
+            &views,
+            "Close the tab?",
+            window,
+            cx,
+            move |ws, window, cx| {
+                if let Some(ix) = ws.tabs.iter().position(|t| t.views().contains(&key)) {
+                    ws.close(ix, window, cx);
+                }
+            },
+        );
+    }
+
+    /// Closes the pane showing `view`, asking first while it is connected.
+    fn request_close_view(
+        &mut self,
+        view: &Entity<TermView>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let last = self
+            .tabs
+            .iter()
+            .find(|t| t.views().contains(view))
+            .is_some_and(|t| t.views().len() < 2);
+        let question = if last {
+            "Close the tab?"
+        } else {
+            "Close the pane?"
+        };
+        let v = view.clone();
+        self.confirm_close(
+            std::slice::from_ref(view),
+            question,
+            window,
+            cx,
+            move |ws, window, cx| ws.close_view(&v, window, cx),
+        );
+    }
+
+    /// Runs `close` at once if none of `views` is connected; else asks, and runs
+    /// it on Close.
+    fn confirm_close(
+        &mut self,
+        views: &[Entity<TermView>],
+        question: &'static str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+        close: impl FnOnce(&mut Self, &mut Window, &mut Context<Self>) + 'static,
+    ) {
+        let open: Vec<String> = views
+            .iter()
+            .map(|v| v.read(cx).session())
+            .filter(|s| s.status() == Status::Connected)
+            .map(|s| s.title.clone())
+            .collect();
+        if open.is_empty() {
+            return close(self, window, cx);
+        }
+        if self.prompting {
+            return;
+        }
+        self.prompting = true;
+        let detail = match open.as_slice() {
+            [one] => format!("The connection to {one} is open; closing ends it."),
+            _ => format!("{} connections are open; closing ends them.", open.len()),
+        };
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            question,
+            Some(&detail),
+            &["Close", "Cancel"],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let yes = matches!(answer.await, Ok(0));
+            let _ = this.update_in(cx, |ws, window, cx| {
+                ws.prompting = false;
+                if yes {
+                    close(ws, window, cx);
+                }
+            });
+        })
+        .detach();
     }
 
     /// Closes the pane showing `view`, wherever it is; the last pane of a tab
@@ -507,7 +600,7 @@ impl Workspace {
             match *c {
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
-                PaneCommand::Close => ws.close_view(view, window, cx),
+                PaneCommand::Close => ws.request_close_view(view, window, cx),
             }
         })
         .detach();
@@ -681,8 +774,8 @@ impl Workspace {
         if open == 0 {
             return true;
         }
-        if !self.asking_to_quit {
-            self.asking_to_quit = true;
+        if !self.prompting {
+            self.prompting = true;
             let detail = if open == 1 {
                 "A connection is open; quitting closes it.".to_string()
             } else {
@@ -698,7 +791,7 @@ impl Workspace {
             cx.spawn(async move |this, cx| {
                 let quit = matches!(answer.await, Ok(0));
                 let _ = this.update(cx, |ws, cx| {
-                    ws.asking_to_quit = false;
+                    ws.prompting = false;
                     if quit {
                         cx.quit();
                     }
@@ -1770,7 +1863,7 @@ impl Workspace {
             Action::Duplicate => self.duplicate(window, cx),
             Action::SplitRight => self.split(Axis::Horizontal, window, cx),
             Action::SplitDown => self.split(Axis::Vertical, window, cx),
-            Action::CloseTab => self.close(self.active, window, cx),
+            Action::CloseTab => self.request_close_tab(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::Files => self.toggle_files(window, cx),
@@ -2107,7 +2200,7 @@ impl Workspace {
                     .on_click(cx.listener(move |ws, _, window, cx| ws.activate(i, window, cx)))
                     .on_mouse_down(
                         MouseButton::Middle,
-                        cx.listener(move |ws, _, window, cx| ws.close(i, window, cx)),
+                        cx.listener(move |ws, _, window, cx| ws.request_close_tab(i, window, cx)),
                     )
                     .child(dot(Some(v.status())))
                     .child(
@@ -2128,7 +2221,7 @@ impl Workspace {
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(move |ws, _, window, cx| {
                                 cx.stop_propagation();
-                                ws.close(i, window, cx);
+                                ws.request_close_tab(i, window, cx);
                             }))
                             .child("✕"),
                     ),
