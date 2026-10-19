@@ -55,7 +55,7 @@ pub(crate) fn clear_kind(record_type: &str) -> &'static str {
 pub enum Error {
     #[error("vault database: {0}")]
     Db(#[from] rusqlite::Error),
-    #[error("vault folder: {0}")]
+    #[error("sync: {0}")]
     Io(#[from] std::io::Error),
     #[error("system keychain: {0}")]
     Keychain(String),
@@ -124,6 +124,10 @@ pub fn passphrase_strength(passphrase: &str) -> u8 {
 }
 const PASSPHRASE_AAD: &[u8] = b"shellwing account key wrapped by a passphrase v1";
 const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery key v1";
+
+fn device_secret_aad(name: &str) -> Vec<u8> {
+    format!("shellwing device secret v1 {name}").into_bytes()
+}
 
 /// How a passphrase becomes a key: Argon2id, about half a second and 64 MiB,
 /// so a stolen vault.db is slow to guess at. Kept with the vault, so it can be
@@ -680,6 +684,56 @@ impl Vault {
                 Ok(())
             }
         }
+    }
+
+    /// A secret of this device's own, such as the password of the place it
+    /// syncs with: sealed with the account key, kept in vault.db, never
+    /// synced (other devices sign in there with their own).
+    pub fn device_secret(&self, name: &str) -> Result<Option<Zeroizing<String>>> {
+        let wrapped: Option<Vec<u8>> = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            db.query_row(
+                "SELECT wrapped FROM keys WHERE id = ?1 AND wrapped_by = 'account'",
+                params![format!("device:{name}")],
+                |r| r.get(0),
+            )
+            .optional()?
+        };
+        let Some(w) = wrapped else {
+            return Ok(None);
+        };
+        let (plain, _) = cipher::open(&self.account, &w, &device_secret_aad(name))?;
+        let text = String::from_utf8(plain.to_vec()).map_err(|_| Error::Decrypt)?;
+        Ok(Some(Zeroizing::new(text)))
+    }
+
+    /// Keeps `secret` as this device's `name` (see [`Vault::device_secret`]);
+    /// None forgets it.
+    pub fn set_device_secret(&self, name: &str, secret: Option<&str>) -> Result<()> {
+        let id = format!("device:{name}");
+        let sealed = secret
+            .map(|s| {
+                cipher::seal(
+                    self.cipher,
+                    &self.account,
+                    s.as_bytes(),
+                    &device_secret_aad(name),
+                )
+            })
+            .transpose()?;
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        match sealed {
+            Some(w) => db.execute(
+                "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES (?1, 1, ?2, 'account')
+                 ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+                params![id, w],
+            )?,
+            None => db.execute(
+                "DELETE FROM keys WHERE id = ?1 AND wrapped_by = 'account'",
+                params![id],
+            )?,
+        };
+        Ok(())
     }
 
     /// The recovery key, made (and kept, wrapped by the account key) on first use.
@@ -1460,6 +1514,39 @@ mod tests {
         let v = Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
             .expect("opened");
         assert!(!v.kept_in(&keys), "a passphrase does not put it back");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_device_secret_is_kept_sealed_and_can_be_forgotten() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-device-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let v = Vault::open(&path, &keys).expect("open");
+        assert!(v.device_secret("sync").expect("read").is_none());
+        v.set_device_secret("sync", Some("hunter2-webdav"))
+            .expect("set");
+        v.set_device_secret("sync", Some("hunter3-webdav"))
+            .expect("replace");
+        assert_eq!(
+            v.device_secret("sync")
+                .expect("read")
+                .as_deref()
+                .map(|s| s.as_str()),
+            Some("hunter3-webdav")
+        );
+        assert!(
+            v.items().expect("items").is_empty(),
+            "not an item: never synced"
+        );
+        drop(v);
+        let raw = std::fs::read(&path).expect("raw");
+        assert!(!raw.windows(6).any(|w| w == b"hunter"), "sealed on disk");
+        let v = Vault::open(&path, &keys).expect("again");
+        v.set_device_secret("sync", None).expect("forget");
+        assert!(v.device_secret("sync").expect("read").is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

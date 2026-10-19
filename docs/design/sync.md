@@ -137,17 +137,40 @@ Notes:
 - **Drive scope.** Use the `drive.appdata` scope: a hidden per-app folder. Google
   classes it as non-sensitive, so only basic verification is needed, not the
   security assessment the full `drive` scope requires.
-- **Backend credentials** (Git token, S3 secret) live in the OS keychain on each
-  device, not in the vault. The vault cannot be fetched without them.
+- **Backend credentials** (Git token, S3 secret) stay on each device: as built
+  for S3 and WebDAV, a device secret in the local vault, never synced.
 - **Git history.** Encrypted records do not delta-compress, so history grows by
   roughly a record per change. Records are small (under 2 KB), so this is fine
   for years.
 
 Build order:
 
-1. The engine plus the local folder backend. This exercises the engine, and gives
-   iCloud (which has no API on Windows or Linux) and Syncthing for free.
-2. shellwing cloud and the portal.
-3. Git.
-4. S3 and WebDAV, through OpenDAL.
+1. The engine plus the local folder backend (built). This exercises the
+   engine, and gives iCloud (which has no API on Windows or Linux) and
+   Syncthing for free.
+2. S3 and WebDAV, through OpenDAL (built: `crates/remote`). Moved ahead of
+   the cloud: no server of ours is needed.
+3. shellwing cloud and the portal.
+4. Git.
 5. Drive, OneDrive and Dropbox.
+
+**S3 and WebDAV as built.**
+
+- `Place` names where the vault syncs (a folder, a WebDAV folder, a bucket
+  and prefix); `Remote` implements the engine's `Backend` over OpenDAL's
+  blocking operator, on a one-thread Tokio runtime of its own. TLS is rustls
+  with ring, as russh's, so no C crypto library is built.
+- **Fewer requests.** The engine reads every record each round. `Remote`
+  keeps each file it read with the ETag its listing gave, and reads again
+  only when a listing shows another. A round with nothing new costs a few
+  small requests: the listings (`records/`, `pairing/`) and `format.json`.
+- **No conditional writes yet.** Two devices writing the same record at
+  once: the last write wins on the server, but each device still has its
+  own fields and the next round merges them back in, so nothing is lost
+  for long. `If-Match` on writes (both services support it) would close
+  that window.
+- **Credentials** are a device secret in the vault (`keys` table, wrapped by
+  the account key, never synced) rather than the keychain, so they work
+  where there is no keychain too. The vault opens before syncing anyway.
+- Calls that the app makes against the place (starting, joining) run off
+  the UI thread: a server may take seconds to answer.
