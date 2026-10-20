@@ -697,6 +697,14 @@ impl WaylandClientStatePtr {
         true
     }
 
+    // shellwing: the surface that has the keyboard, to ask an activation
+    // token from (see WaylandWindow::activate).
+    pub fn keyboard_focused_surface(&self) -> Option<wl_surface::WlSurface> {
+        let client = self.0.upgrade()?;
+        let window = client.borrow().keyboard_focused_window.clone()?;
+        Some(window.surface())
+    }
+
     pub fn set_pending_activation(&self, window: ObjectId) {
         self.0.upgrade().unwrap().borrow_mut().pending_activation =
             Some(PendingActivation::Window(window));
