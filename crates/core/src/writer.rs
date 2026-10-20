@@ -1,6 +1,11 @@
-//! Where keyboard input goes: nowhere while connecting, into a line answer while
-//! the connection asks something (password, passphrase, code, host key), and to
-//! the SSH session once it runs.
+//! Where keyboard input goes: into a line answer while the connection asks
+//! something (password, passphrase, code, host key), to the SSH session once it
+//! runs, and nowhere once it has ended.
+//!
+//! Typed while connecting, it is kept and sent once the session starts, as
+//! OpenSSH's terminal keeps it: a command typed right after the password is
+//! not lost, or worse cut short. What was typed before a question is dropped
+//! when the question comes, so it never becomes the answer.
 //!
 //! Answers are edited like a simple line: printable text, Backspace, Ctrl+U to
 //! clear, Enter to submit, Ctrl+C to cancel. Escape sequences (arrows, the
@@ -12,8 +17,14 @@ use std::sync::{Arc, Mutex};
 use shellwing_ssh::{Input, PromptRequest};
 use tokio::sync::{mpsc::UnboundedSender, oneshot};
 
+/// The most kept from typing ahead while connecting.
+const TYPE_AHEAD_MAX: usize = 4096;
+
 enum Mode {
-    Waiting,
+    /// No connection: input is dropped (the session ended, or none started).
+    Idle,
+    /// A connection is being made: input is kept for the session.
+    Connecting(Vec<u8>),
     Prompt {
         echo: bool,
         answer: String,
@@ -43,7 +54,7 @@ impl Writer {
     pub fn new() -> (Self, mpsc::Receiver<Vec<u8>>) {
         let (show, shown) = mpsc::channel();
         let state = Arc::new(Mutex::new(State {
-            mode: Mode::Waiting,
+            mode: Mode::Idle,
             size: None,
         }));
         (Writer { state, show }, shown)
@@ -58,7 +69,12 @@ impl Writer {
                 let _ = tx.send(Input::Data(bytes));
             }
             Mode::Prompt { .. } => self.prompt_input(&mut st, &bytes),
-            Mode::Waiting => {}
+            Mode::Connecting(kept) => {
+                if kept.len() + bytes.len() <= TYPE_AHEAD_MAX {
+                    kept.extend_from_slice(&bytes);
+                }
+            }
+            Mode::Idle => {}
         }
     }
 
@@ -72,7 +88,15 @@ impl Writer {
         }
     }
 
-    /// Shows a question and collects the answer from the keyboard.
+    /// A connection starts: what is typed from now on is kept for its session.
+    pub fn connecting(&self) {
+        if let Ok(mut st) = self.state.lock() {
+            st.mode = Mode::Connecting(Vec::new());
+        }
+    }
+
+    /// Shows a question and collects the answer from the keyboard. Anything
+    /// typed ahead is dropped: it was not typed as an answer.
     pub fn ask(&self, req: PromptRequest) {
         let Ok(mut st) = self.state.lock() else {
             return;
@@ -94,6 +118,11 @@ impl Writer {
         if let Some((cols, rows)) = st.size {
             let _ = tx.send(Input::Resize { cols, rows });
         }
+        if let Mode::Connecting(kept) = &mut st.mode
+            && !kept.is_empty()
+        {
+            let _ = tx.send(Input::Data(std::mem::take(kept)));
+        }
         st.mode = Mode::Session(tx);
     }
 
@@ -108,7 +137,7 @@ impl Writer {
     /// The session ended or failed: drop input until the next connection.
     pub fn stop(&self) {
         if let Ok(mut st) = self.state.lock() {
-            st.mode = Mode::Waiting;
+            st.mode = Mode::Idle;
         }
     }
 
@@ -182,7 +211,10 @@ impl Writer {
     }
 
     fn finish(&self, st: &mut State, answer: Option<String>) {
-        if let Mode::Prompt { reply, .. } = std::mem::replace(&mut st.mode, Mode::Waiting) {
+        // Still connecting: what is typed next goes to the session.
+        if let Mode::Prompt { reply, .. } =
+            std::mem::replace(&mut st.mode, Mode::Connecting(Vec::new()))
+        {
             let _ = reply.send(answer);
         }
     }
@@ -270,5 +302,74 @@ mod tests {
         ));
         w.write(b"ls\r".to_vec());
         assert!(matches!(rx.try_recv(), Ok(Input::Data(d)) if d == b"ls\r"));
+    }
+
+    /// What the session got, as bytes, and whether a resize came first.
+    fn sent(rx: &mut tokio::sync::mpsc::UnboundedReceiver<Input>) -> Vec<u8> {
+        let mut bytes = vec![];
+        while let Ok(input) = rx.try_recv() {
+            if let Input::Data(d) = input {
+                bytes.extend(d);
+            }
+        }
+        bytes
+    }
+
+    #[test]
+    fn typed_after_the_password_reaches_the_shell() {
+        let (w, _rx) = Writer::new();
+        w.connecting();
+        let mut answer = ask(&w, false);
+        w.write(b"hunter2\r".to_vec());
+        assert_eq!(answer.try_recv().ok(), Some(Some("hunter2".into())));
+        // Typed quickly, before the shell is up.
+        w.write(b"sudo systemctl restart nginx\r".to_vec());
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        w.start_session(tx);
+        assert_eq!(sent(&mut rx), b"sudo systemctl restart nginx\r");
+        w.write(b"ls\r".to_vec());
+        assert_eq!(sent(&mut rx), b"ls\r");
+    }
+
+    #[test]
+    fn typed_ahead_never_becomes_an_answer() {
+        let (w, _rx) = Writer::new();
+        w.connecting();
+        w.write(b"yes\r".to_vec());
+        let mut answer = ask(&w, false);
+        w.write(b"pw\r".to_vec());
+        assert_eq!(answer.try_recv().ok(), Some(Some("pw".into())));
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        w.start_session(tx);
+        assert!(
+            sent(&mut rx).is_empty(),
+            "what came before the question is gone"
+        );
+    }
+
+    #[test]
+    fn typed_while_disconnected_is_dropped() {
+        let (w, _rx) = Writer::new();
+        w.connecting();
+        let (tx, _session) = tokio::sync::mpsc::unbounded_channel();
+        w.start_session(tx);
+        w.stop();
+        w.write(b"rm -rf build\r".to_vec());
+        // Reconnecting does not send it.
+        w.connecting();
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        w.start_session(tx);
+        assert!(sent(&mut rx).is_empty());
+    }
+
+    #[test]
+    fn type_ahead_is_bounded() {
+        let (w, _rx) = Writer::new();
+        w.connecting();
+        w.write(vec![b'a'; TYPE_AHEAD_MAX]);
+        w.write(b"more".to_vec());
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        w.start_session(tx);
+        assert_eq!(sent(&mut rx).len(), TYPE_AHEAD_MAX);
     }
 }

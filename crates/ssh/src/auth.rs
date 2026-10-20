@@ -6,12 +6,12 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use russh::MethodKind;
 use russh::client::{AuthResult, Handle, KeyboardInteractiveAuthResponse};
 use russh::keys::agent::AgentIdentity;
 use russh::keys::agent::client::{AgentClient, AgentStream};
 use russh::keys::ssh_key::Certificate;
 use russh::keys::{PrivateKey, PrivateKeyWithHashAlg};
+use russh::{MethodKind, MethodSet};
 
 use crate::hostkey::Checker;
 use crate::prompt::{Prompt, Prompter};
@@ -19,6 +19,9 @@ use crate::secrets::{Learned, Secrets};
 use crate::{Auth, Error, Target};
 
 const TRIES: usize = 3;
+/// Rounds of methods: a server may want more than one ("password, then a
+/// code"), saying each time one is accepted that more is needed.
+const ROUNDS: usize = 3;
 
 type Agent = AgentClient<Box<dyn AgentStream + Send + Unpin + 'static>>;
 
@@ -50,20 +53,31 @@ pub(crate) async fn agents(socket: Option<&std::path::Path>) -> Vec<Agent> {
     found
 }
 
-/// Tracks which methods the server still accepts; `None` until it has told us.
-struct Methods(Option<Vec<MethodKind>>);
+/// Tracks which methods the server still accepts (`None` until it has told
+/// us), and whether one was accepted with more needed (a partial success).
+#[derive(Default)]
+struct Methods {
+    allowed: Option<Vec<MethodKind>>,
+    partial: bool,
+}
 
 impl Methods {
     fn allows(&self, m: MethodKind) -> bool {
-        self.0.as_ref().is_none_or(|v| v.contains(&m))
+        self.allowed.as_ref().is_none_or(|v| v.contains(&m))
+    }
+
+    fn set(&mut self, remaining: &MethodSet, partial: bool) {
+        self.allowed = Some(remaining.iter().copied().collect());
+        self.partial |= partial;
     }
 
     fn update(&mut self, r: &AuthResult) {
         if let AuthResult::Failure {
-            remaining_methods, ..
+            remaining_methods,
+            partial_success,
         } = r
         {
-            self.0 = Some(remaining_methods.iter().copied().collect());
+            self.set(remaining_methods, *partial_success);
         }
     }
 }
@@ -192,20 +206,42 @@ pub(crate) async fn authenticate(
     secrets: Option<&dyn Secrets>,
 ) -> Result<(), Error> {
     let user = target.user.as_str();
-    let mut methods = Methods(None);
+    let mut methods = Methods::default();
 
-    if auth.agent && methods.allows(MethodKind::PublicKey) {
-        for mut agent in agents(auth.agent_socket.as_deref()).await {
-            for id in agent.request_identities().await.unwrap_or_default() {
-                // A certificate the agent holds signs in as itself.
-                if let AgentIdentity::Certificate { certificate, .. } = id {
-                    let hash = if certificate.algorithm().is_rsa() {
+    // Each round tries the methods in order; a partial success (one accepted,
+    // more needed) starts another with the methods the server names.
+    for _ in 0..ROUNDS {
+        methods.partial = false;
+
+        if auth.agent && methods.allows(MethodKind::PublicKey) {
+            for mut agent in agents(auth.agent_socket.as_deref()).await {
+                for id in agent.request_identities().await.unwrap_or_default() {
+                    // A certificate the agent holds signs in as itself.
+                    if let AgentIdentity::Certificate { certificate, .. } = id {
+                        let hash = if certificate.algorithm().is_rsa() {
+                            handle.best_supported_rsa_hash().await?.flatten()
+                        } else {
+                            None
+                        };
+                        if let Ok(r) = handle
+                            .authenticate_certificate_with(user, certificate, hash, &mut agent)
+                            .await
+                        {
+                            if r.success() {
+                                return Ok(());
+                            }
+                            methods.update(&r);
+                        }
+                        continue;
+                    }
+                    let key = id.public_key().into_owned();
+                    let hash = if key.algorithm().is_rsa() {
                         handle.best_supported_rsa_hash().await?.flatten()
                     } else {
                         None
                     };
                     if let Ok(r) = handle
-                        .authenticate_certificate_with(user, certificate, hash, &mut agent)
+                        .authenticate_publickey_with(user, key, hash, &mut agent)
                         .await
                     {
                         if r.success() {
@@ -213,18 +249,201 @@ pub(crate) async fn authenticate(
                         }
                         methods.update(&r);
                     }
-                    continue;
                 }
-                let key = id.public_key().into_owned();
+            }
+        }
+
+        if methods.allows(MethodKind::PublicKey) {
+            for path in keys {
+                let Some(key) = load_key(path, prompter, secrets).await? else {
+                    continue;
+                };
+                // With a certificate for it, that first.
+                if let Some(cert) = certificate_for(&key, Some(path), certs) {
+                    let r = handle
+                        .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
+                        .await?;
+                    if r.success() {
+                        return Ok(());
+                    }
+                    methods.update(&r);
+                }
                 let hash = if key.algorithm().is_rsa() {
                     handle.best_supported_rsa_hash().await?.flatten()
                 } else {
                     None
                 };
-                if let Ok(r) = handle
-                    .authenticate_publickey_with(user, key, hash, &mut agent)
-                    .await
-                {
+                let r = handle
+                    .authenticate_publickey(user, PrivateKeyWithHashAlg::new(Arc::new(key), hash))
+                    .await?;
+                if r.success() {
+                    return Ok(());
+                }
+                methods.update(&r);
+            }
+        }
+
+        // Keys the app keeps: no passphrase, the vault is encrypted already.
+        if methods.allows(MethodKind::PublicKey)
+            && let Some(s) = secrets
+            && !matches!(stored, StoredKeys::None)
+        {
+            for k in s.keys().into_iter().filter(|k| stored.wants(&k.id)) {
+                let Ok(key) = crate::keys::parse(&k.openssh, None) else {
+                    continue;
+                };
+                if let Some(cert) = certificate_for(&key, None, certs) {
+                    let r = handle
+                        .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
+                        .await?;
+                    if r.success() {
+                        return Ok(());
+                    }
+                    methods.update(&r);
+                }
+                let hash = if key.algorithm().is_rsa() {
+                    handle.best_supported_rsa_hash().await?.flatten()
+                } else {
+                    None
+                };
+                let r = handle
+                    .authenticate_publickey(user, PrivateKeyWithHashAlg::new(Arc::new(key), hash))
+                    .await?;
+                if r.success() {
+                    return Ok(());
+                }
+                methods.update(&r);
+            }
+        }
+
+        // Saved under user@host:port; asked as OpenSSH asks, without the port.
+        let (key, shown) = (target.to_string(), format!("{user}@{}", target.host));
+        let saved = secrets.and_then(|s| s.password(&key));
+
+        if let Some(prompter) = prompter
+            && methods.allows(MethodKind::KeyboardInteractive)
+        {
+            // PAM asks for the password here, so the known ones answer it before the user.
+            let mut known = auth.password.iter().chain(saved.iter());
+            for _ in 0..TRIES {
+                // The password the user typed in this attempt, to offer saving.
+                let mut typed = None;
+                let mut reply = handle
+                    .authenticate_keyboard_interactive_start(user, None)
+                    .await?;
+                loop {
+                    match reply {
+                        KeyboardInteractiveAuthResponse::Success => {
+                            if let (Some(s), Some(password)) = (secrets, typed.take()) {
+                                s.learned(Learned::Password {
+                                    target: key.clone(),
+                                    password,
+                                });
+                            }
+                            return Ok(());
+                        }
+                        KeyboardInteractiveAuthResponse::Failure {
+                            remaining_methods,
+                            partial_success,
+                        } => {
+                            methods.set(&remaining_methods, partial_success);
+                            break;
+                        }
+                        KeyboardInteractiveAuthResponse::InfoRequest { prompts, .. }
+                            if prompts.len() == 1
+                                && asks_password(&prompts[0].prompt, prompts[0].echo) =>
+                        {
+                            let pw = match known.next() {
+                                Some(pw) => {
+                                    typed = None;
+                                    pw.clone()
+                                }
+                                None => {
+                                    let q = Prompt::Question {
+                                        name: String::new(),
+                                        instructions: String::new(),
+                                        text: prompts[0].prompt.clone(),
+                                        echo: false,
+                                    };
+                                    let pw = prompter.ask(q).await.ok_or(Error::Cancelled)?;
+                                    typed = Some(pw.clone());
+                                    pw
+                                }
+                            };
+                            reply = handle
+                                .authenticate_keyboard_interactive_respond(vec![pw])
+                                .await?;
+                        }
+                        KeyboardInteractiveAuthResponse::InfoRequest {
+                            name,
+                            instructions,
+                            prompts,
+                        } => {
+                            let mut answers = Vec::with_capacity(prompts.len());
+                            for (i, p) in prompts.iter().enumerate() {
+                                // Show the round's name and instructions once, with its first question.
+                                let (name, instructions) = if i == 0 {
+                                    (name.clone(), instructions.clone())
+                                } else {
+                                    Default::default()
+                                };
+                                let q = Prompt::Question {
+                                    name,
+                                    instructions,
+                                    text: p.prompt.clone(),
+                                    echo: p.echo,
+                                };
+                                answers.push(prompter.ask(q).await.ok_or(Error::Cancelled)?);
+                            }
+                            reply = handle
+                                .authenticate_keyboard_interactive_respond(answers)
+                                .await?;
+                        }
+                    }
+                }
+                if !methods.allows(MethodKind::KeyboardInteractive) {
+                    break;
+                }
+            }
+        }
+
+        if methods.allows(MethodKind::Password) {
+            for pw in auth.password.iter().chain(saved.iter()) {
+                if !methods.allows(MethodKind::Password) {
+                    break;
+                }
+                let r = handle.authenticate_password(user, pw).await?;
+                if r.success() {
+                    return Ok(());
+                }
+                methods.update(&r);
+            }
+            if let Some(prompter) = prompter {
+                for attempt in 0..TRIES {
+                    if !methods.allows(MethodKind::Password) {
+                        break;
+                    }
+                    let prompt = Prompt::Password {
+                        target: shown.clone(),
+                        retry: attempt > 0,
+                    };
+                    let pw = prompter.ask(prompt).await.ok_or(Error::Cancelled)?;
+                    let r = handle.authenticate_password(user, &pw).await?;
+                    // Right, whether or not more is needed after it: worth saving.
+                    let right = r.success()
+                        || matches!(
+                            r,
+                            AuthResult::Failure {
+                                partial_success: true,
+                                ..
+                            }
+                        );
+                    if right && let Some(s) = secrets {
+                        s.learned(Learned::Password {
+                            target: key.clone(),
+                            password: pw,
+                        });
+                    }
                     if r.success() {
                         return Ok(());
                     }
@@ -232,194 +451,8 @@ pub(crate) async fn authenticate(
                 }
             }
         }
-    }
-
-    if methods.allows(MethodKind::PublicKey) {
-        for path in keys {
-            let Some(key) = load_key(path, prompter, secrets).await? else {
-                continue;
-            };
-            // With a certificate for it, that first.
-            if let Some(cert) = certificate_for(&key, Some(path), certs) {
-                let r = handle
-                    .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
-                    .await?;
-                if r.success() {
-                    return Ok(());
-                }
-                methods.update(&r);
-            }
-            let hash = if key.algorithm().is_rsa() {
-                handle.best_supported_rsa_hash().await?.flatten()
-            } else {
-                None
-            };
-            let r = handle
-                .authenticate_publickey(user, PrivateKeyWithHashAlg::new(Arc::new(key), hash))
-                .await?;
-            if r.success() {
-                return Ok(());
-            }
-            methods.update(&r);
-        }
-    }
-
-    // Keys the app keeps: no passphrase, the vault is encrypted already.
-    if methods.allows(MethodKind::PublicKey)
-        && let Some(s) = secrets
-        && !matches!(stored, StoredKeys::None)
-    {
-        for k in s.keys().into_iter().filter(|k| stored.wants(&k.id)) {
-            let Ok(key) = crate::keys::parse(&k.openssh, None) else {
-                continue;
-            };
-            if let Some(cert) = certificate_for(&key, None, certs) {
-                let r = handle
-                    .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
-                    .await?;
-                if r.success() {
-                    return Ok(());
-                }
-                methods.update(&r);
-            }
-            let hash = if key.algorithm().is_rsa() {
-                handle.best_supported_rsa_hash().await?.flatten()
-            } else {
-                None
-            };
-            let r = handle
-                .authenticate_publickey(user, PrivateKeyWithHashAlg::new(Arc::new(key), hash))
-                .await?;
-            if r.success() {
-                return Ok(());
-            }
-            methods.update(&r);
-        }
-    }
-
-    // Saved under user@host:port; asked as OpenSSH asks, without the port.
-    let (key, shown) = (target.to_string(), format!("{user}@{}", target.host));
-    let saved = secrets.and_then(|s| s.password(&key));
-
-    if let Some(prompter) = prompter
-        && methods.allows(MethodKind::KeyboardInteractive)
-    {
-        // PAM asks for the password here, so the known ones answer it before the user.
-        let mut known = auth.password.iter().chain(saved.iter());
-        for _ in 0..TRIES {
-            // The password the user typed in this attempt, to offer saving.
-            let mut typed = None;
-            let mut reply = handle
-                .authenticate_keyboard_interactive_start(user, None)
-                .await?;
-            loop {
-                match reply {
-                    KeyboardInteractiveAuthResponse::Success => {
-                        if let (Some(s), Some(password)) = (secrets, typed.take()) {
-                            s.learned(Learned::Password {
-                                target: key.clone(),
-                                password,
-                            });
-                        }
-                        return Ok(());
-                    }
-                    KeyboardInteractiveAuthResponse::Failure {
-                        remaining_methods, ..
-                    } => {
-                        methods.0 = Some(remaining_methods.iter().copied().collect());
-                        break;
-                    }
-                    KeyboardInteractiveAuthResponse::InfoRequest { prompts, .. }
-                        if prompts.len() == 1
-                            && asks_password(&prompts[0].prompt, prompts[0].echo) =>
-                    {
-                        let pw = match known.next() {
-                            Some(pw) => {
-                                typed = None;
-                                pw.clone()
-                            }
-                            None => {
-                                let q = Prompt::Question {
-                                    name: String::new(),
-                                    instructions: String::new(),
-                                    text: prompts[0].prompt.clone(),
-                                    echo: false,
-                                };
-                                let pw = prompter.ask(q).await.ok_or(Error::Cancelled)?;
-                                typed = Some(pw.clone());
-                                pw
-                            }
-                        };
-                        reply = handle
-                            .authenticate_keyboard_interactive_respond(vec![pw])
-                            .await?;
-                    }
-                    KeyboardInteractiveAuthResponse::InfoRequest {
-                        name,
-                        instructions,
-                        prompts,
-                    } => {
-                        let mut answers = Vec::with_capacity(prompts.len());
-                        for (i, p) in prompts.iter().enumerate() {
-                            // Show the round's name and instructions once, with its first question.
-                            let (name, instructions) = if i == 0 {
-                                (name.clone(), instructions.clone())
-                            } else {
-                                Default::default()
-                            };
-                            let q = Prompt::Question {
-                                name,
-                                instructions,
-                                text: p.prompt.clone(),
-                                echo: p.echo,
-                            };
-                            answers.push(prompter.ask(q).await.ok_or(Error::Cancelled)?);
-                        }
-                        reply = handle
-                            .authenticate_keyboard_interactive_respond(answers)
-                            .await?;
-                    }
-                }
-            }
-            if !methods.allows(MethodKind::KeyboardInteractive) {
-                break;
-            }
-        }
-    }
-
-    if methods.allows(MethodKind::Password) {
-        for pw in auth.password.iter().chain(saved.iter()) {
-            if !methods.allows(MethodKind::Password) {
-                break;
-            }
-            let r = handle.authenticate_password(user, pw).await?;
-            if r.success() {
-                return Ok(());
-            }
-            methods.update(&r);
-        }
-        if let Some(prompter) = prompter {
-            for attempt in 0..TRIES {
-                if !methods.allows(MethodKind::Password) {
-                    break;
-                }
-                let prompt = Prompt::Password {
-                    target: shown.clone(),
-                    retry: attempt > 0,
-                };
-                let pw = prompter.ask(prompt).await.ok_or(Error::Cancelled)?;
-                let r = handle.authenticate_password(user, &pw).await?;
-                if r.success() {
-                    if let Some(s) = secrets {
-                        s.learned(Learned::Password {
-                            target: key.clone(),
-                            password: pw,
-                        });
-                    }
-                    return Ok(());
-                }
-                methods.update(&r);
-            }
+        if !methods.partial {
+            break;
         }
     }
     Err(Error::AuthFailed)

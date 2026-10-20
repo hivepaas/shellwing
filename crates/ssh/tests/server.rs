@@ -38,6 +38,10 @@ struct Policy {
     home: Option<PathBuf>,
     /// Accept user certificates this authority signed.
     user_ca: Option<PublicKey>,
+    /// The password is only the first factor: once it is right, the server
+    /// wants `otp` through keyboard-interactive (`AuthenticationMethods
+    /// password,keyboard-interactive`).
+    then_otp: bool,
 }
 
 /// A certificate for `key`, signed by `ca`, valid from a minute ago for an hour.
@@ -102,6 +106,8 @@ struct TestServer {
     /// Session channels not yet a shell or a subsystem. A shell's channel is
     /// dropped (its input arrives in `data`); a subsystem's becomes a stream.
     opened: HashMap<ChannelId, Channel<Msg>>,
+    /// The first factor passed (with `then_otp`).
+    first_factor: bool,
 }
 
 impl TestServer {
@@ -123,11 +129,21 @@ impl server::Handler for TestServer {
         _user: &str,
         password: &str,
     ) -> Result<ServerAuth, Self::Error> {
-        Ok(if self.policy.password == Some(password) {
-            ServerAuth::Accept
-        } else {
-            self.reject()
-        })
+        Ok(
+            if self.policy.password == Some(password) && self.policy.then_otp {
+                self.first_factor = true;
+                ServerAuth::Reject {
+                    proceed_with_methods: Some(MethodSet::from(
+                        &[MethodKind::KeyboardInteractive][..],
+                    )),
+                    partial_success: true,
+                }
+            } else if self.policy.password == Some(password) {
+                ServerAuth::Accept
+            } else {
+                self.reject()
+            },
+        )
     }
 
     async fn auth_publickey_offered(
@@ -192,6 +208,10 @@ impl server::Handler for TestServer {
         _submethods: &str,
         response: Option<server::Response<'a>>,
     ) -> Result<ServerAuth, Self::Error> {
+        // The code comes second, after the password.
+        if self.policy.then_otp && !self.first_factor {
+            return Ok(self.reject());
+        }
         let (name, question, answer) =
             match (self.policy.pam, self.policy.password, self.policy.otp) {
                 (true, Some(pw), _) => ("", "Password:", pw),
@@ -503,6 +523,7 @@ async fn serve_as(
                     methods,
                     sessions: vec![],
                     opened: HashMap::new(),
+                    first_factor: false,
                 };
                 if let Ok(running) = server::run_stream(config, socket, handler).await {
                     let _ = running.await;
@@ -729,6 +750,28 @@ async fn wrong_password_is_asked_again() {
         text.starts_with("Permission denied, please try again.\r\nalice@127.0.0.1's password: "),
         "{text:?}"
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn password_then_one_time_code() {
+    // `AuthenticationMethods password,keyboard-interactive`: the password is
+    // accepted in part, and the code is asked for after it.
+    let fx = Fixture::new("password-then-otp");
+    let (port, _) = serve(
+        Policy {
+            password: Some("hunter2"),
+            otp: Some("123456"),
+            then_otp: true,
+            ..Default::default()
+        },
+        &[MethodKind::Password, MethodKind::KeyboardInteractive],
+    )
+    .await;
+    let (p, asked) = scripted(vec![Some("yes"), Some("hunter2"), Some("123456")]);
+    connect(fx.options(local(port, "alice"), p))
+        .await
+        .expect("connect");
+    assert_eq!(kinds(&asked), ["hostkey", "password", "question"]);
 }
 
 #[tokio::test(flavor = "multi_thread")]

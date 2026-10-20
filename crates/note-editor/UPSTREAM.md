@@ -6,14 +6,15 @@ MIT, Copyright (c) 2026 Will Lehnertz, taken in and changed. This file says
 every change: what, where, and why, so that a newer zorite-editor can be taken
 in again with each change made again, on purpose.
 
-- **As published:** commit `f1b4d50` ("Take in zorite-editor 0.11.2 as
-  crates/note-editor, as it is") holds `src/` exactly as the 0.11.2 crate has it.
-  `git diff f1b4d50 -- crates/note-editor/src` shows everything shellwing changed.
+- **As published:** `scripts/upstream_diff.sh zorite-editor 0.11.2 crates/note-editor`
+  fetches the 0.11.2 crate from crates.io and shows everything shellwing
+  changed in `src/`. (It was first taken in unchanged, at `f1b4d50`; PRs are
+  squash-merged, so that commit is not on main.)
 - **Not taken:** `examples/demo.rs` (it needs `os-spellcheck`, a sibling crate),
   `API.md`, the crate's own `README.md`. Its `LICENSE` is kept as it is.
 - **Dependencies,** pinned: `zorite-markdown =0.10.0` (default features off: its
   `syntax` module), `gpui-bidi =0.1.1`, `unicode-segmentation 1`; `gpui` is the
-  workspace's (`gpui-pre =0.3.8`). Upstream takes them from its own workspace.
+  workspace's (`gpui-pre =0.3.9`). Upstream takes them from its own workspace.
 
 In the code, every change says `shellwing:` or goes through `crate::obsidian`:
 
