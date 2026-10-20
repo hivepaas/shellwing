@@ -120,6 +120,8 @@ pub mod limits {
     pub const ENVIRONMENT: usize = 64 * 1024;
     /// The environments loaded into one shell, together.
     pub const LOADED: usize = 256 * 1024;
+    /// A config file, in bytes.
+    pub const FILE: usize = 1024 * 1024;
 }
 
 /// What is past one of the [`limits`].
@@ -135,6 +137,8 @@ pub enum Oversize {
     Vars(usize),
     /// An environment of this many bytes.
     Environment(usize),
+    /// A config file of this many bytes.
+    File(usize),
 }
 
 impl std::fmt::Display for Oversize {
@@ -160,6 +164,12 @@ impl std::fmt::Display for Oversize {
                 "the variables come to {} KB; {} KB at most",
                 kb(*n),
                 kb(limits::ENVIRONMENT)
+            ),
+            Oversize::File(n) => write!(
+                f,
+                "the file is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::FILE)
             ),
         }
     }
@@ -320,6 +330,31 @@ pub struct Snippet {
     /// The environments (their ids) loaded for it alone: it runs in a
     /// subshell that has them, and they go when it ends.
     pub needs: Vec<String>,
+}
+
+/// A file kept in the vault to place on hosts, such as `~/.kube/config`:
+/// what it is, without its content ([`Vault::config_file_content`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConfigFile {
+    pub id: String,
+    pub name: String,
+    /// What it is filed under; empty: none.
+    pub category: String,
+    /// Where it goes on a host, `~/` for the home directory.
+    pub path: String,
+    /// Its permissions there, as `chmod` takes them: 0o600.
+    pub mode: u32,
+    /// Where it is offered, as a snippet's scope.
+    pub scope: String,
+    /// Its content's bytes.
+    pub size: usize,
+    /// Not text (not UTF-8, or holding a NUL): replaced whole, not edited.
+    pub binary: bool,
+}
+
+/// Whether `bytes` are text to edit: UTF-8 without a NUL.
+pub fn is_text(bytes: &[u8]) -> bool {
+    !bytes.contains(&0) && std::str::from_utf8(bytes).is_ok()
 }
 
 /// An environment's variables: names and their values.
@@ -1238,6 +1273,86 @@ impl Vault {
             }))
     }
 
+    /// The config files kept here, without their contents.
+    pub fn config_files(&self) -> Result<Vec<ConfigFile>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "config_file")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                ConfigFile {
+                    name: get("name"),
+                    category: get("category"),
+                    path: get("path"),
+                    mode: u32::from_str_radix(&get("mode"), 8).unwrap_or(0o600),
+                    scope: get("scope"),
+                    size: get("size").parse().unwrap_or(0),
+                    binary: get("binary") == "yes",
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// A config file's content.
+    pub fn config_file_content(&self, id: &str) -> Result<Option<Zeroizing<Vec<u8>>>> {
+        use base64::Engine as _;
+        let Some((_, r)) = self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "config_file")
+        else {
+            return Ok(None);
+        };
+        let text = r.f.get("content").map(|f| f.val.as_str()).unwrap_or("");
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(text)
+            .map_err(|_| Error::Decrypt)?;
+        Ok(Some(Zeroizing::new(bytes)))
+    }
+
+    /// Keeps a config file, new when `f.id` is empty; returns its id.
+    /// `content` None keeps the one it had; `f.size` and `f.binary` are
+    /// worked out from it.
+    pub fn save_config_file(&self, f: &ConfigFile, content: Option<&[u8]>) -> Result<String> {
+        use base64::Engine as _;
+        let id = if f.id.is_empty() {
+            new_id()?
+        } else {
+            f.id.clone()
+        };
+        let old;
+        let content = match content {
+            Some(c) => c,
+            None => {
+                old = self.config_file_content(&id)?.unwrap_or_default();
+                &old[..]
+            }
+        };
+        if content.len() > limits::FILE {
+            return Err(Error::TooLarge(Oversize::File(content.len())));
+        }
+        let values = BTreeMap::from([
+            ("name".to_string(), f.name.clone()),
+            ("category".to_string(), f.category.clone()),
+            ("path".to_string(), f.path.clone()),
+            ("mode".to_string(), format!("{:o}", f.mode)),
+            ("scope".to_string(), f.scope.clone()),
+            ("size".to_string(), content.len().to_string()),
+            (
+                "binary".to_string(),
+                if is_text(content) { "no" } else { "yes" }.to_string(),
+            ),
+            (
+                "content".to_string(),
+                base64::engine::general_purpose::STANDARD.encode(content),
+            ),
+        ]);
+        self.update(&id, "config_file", &f.name, &values)?;
+        Ok(id)
+    }
+
     /// Keeps an environment, new when `id` is empty; returns its id. Each
     /// variable is its own field, so edits on two devices to two variables
     /// both stay. A variable given None keeps the value it had; one left
@@ -1980,6 +2095,51 @@ mod tests {
         assert!(matches!(
             v.save_environment("", "e", "", &many),
             Err(Error::TooLarge(Oversize::Vars(_)))
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_files_keep_their_bytes_and_stay_within_a_megabyte() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-files-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let mut f = ConfigFile {
+            id: String::new(),
+            name: "kube prod".into(),
+            category: "Kubernetes".into(),
+            path: "~/.kube/config".into(),
+            mode: 0o600,
+            scope: "group:prod".into(),
+            size: 0,
+            binary: false,
+        };
+        let id = v
+            .save_config_file(&f, Some(b"apiVersion: v1\n"))
+            .expect("saved");
+        let listed = v.config_files().expect("listed");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            (listed[0].size, listed[0].binary, listed[0].mode),
+            (15, false, 0o600)
+        );
+        assert_eq!(listed[0].category, "Kubernetes");
+        // Renamed, its content kept.
+        f.id = id.clone();
+        f.name = "kube".into();
+        v.save_config_file(&f, None).expect("renamed");
+        assert_eq!(
+            v.config_file_content(&id).expect("read").as_deref().map(|c| &c[..]),
+            Some(&b"apiVersion: v1\n"[..])
+        );
+        // Bytes that are not text.
+        v.save_config_file(&f, Some(&[0x30, 0x82, 0, 1])).expect("binary");
+        assert!(v.config_files().expect("listed")[0].binary);
+        let big = vec![b'x'; limits::FILE + 1];
+        assert!(matches!(
+            v.save_config_file(&f, Some(&big)),
+            Err(Error::TooLarge(Oversize::File(_)))
         ));
         let _ = std::fs::remove_dir_all(&dir);
     }
