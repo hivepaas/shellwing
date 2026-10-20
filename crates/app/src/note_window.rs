@@ -23,9 +23,14 @@ use crate::host_editor::{checkbox, hint_text, primary_button, problem_text};
 use crate::input::{Changed, TextInput};
 use crate::look::{self, ui};
 use crate::secrets::VaultSlot;
+use shellwing_note_editor::{EditorEvent, EditorState, SyntaxStyle};
+
+/// A note's window when none was opened before, and the least it opens at.
+const DEFAULT_SIZE: (f32, f32) = (800., 700.);
+const LEAST_SIZE: (f32, f32) = (600., 500.);
 
 /// How long after the last key a note is saved.
-const SAVE_AFTER: Duration = Duration::from_secs(1);
+const SAVE_AFTER: Duration = Duration::from_secs(3);
 /// How often a window looks whether the vault locked or opened.
 const WATCH: Duration = Duration::from_secs(1);
 
@@ -43,8 +48,13 @@ impl gpui::Global for NoteLook {}
 /// What a note window tells the rest of the app.
 #[derive(Clone)]
 pub struct Hooks {
-    /// The vault changed: sync it, refresh lists.
+    /// A note was saved (on this device only): lists show it again.
     pub saved: Rc<dyn Fn(&mut App)>,
+    /// A note is open in its window: left out of syncs until let go.
+    pub hold: Hold,
+    /// Its window is done with it: it syncs again, at once when it
+    /// changed meanwhile.
+    pub release: Release,
     /// A key or a click: the vault is in use (it locks when idle).
     pub touched: Rc<dyn Fn(&mut App)>,
     /// The hosts a note can be about.
@@ -54,8 +64,17 @@ pub struct Hooks {
     pub pane: PaneTitle,
     /// Types text into that pane, without Enter.
     pub insert: Insert,
+    /// The window's size as it closes, for the next to open so.
+    pub sized: SizeKept,
 }
 
+/// See [`Hooks::sized`].
+pub type SizeKept = Rc<dyn Fn(f32, f32, &mut App)>;
+
+/// See [`Hooks::hold`].
+pub type Hold = Rc<dyn Fn(&str, &mut App)>;
+/// See [`Hooks::release`].
+pub type Release = Rc<dyn Fn(&str, bool, &mut App)>;
 /// See [`Hooks::pane`].
 pub type PaneTitle = Rc<dyn Fn(&App) -> Option<String>>;
 /// See [`Hooks::insert`].
@@ -72,7 +91,20 @@ impl gpui::Global for Opened {}
 
 /// Opens `note` (None: a new one) in a window, or brings forward the one
 /// it is open in.
-pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
+/// The size a note's window opens at: the last one's (`last`), never less
+/// than 600 × 500; 800 × 700 the first time.
+pub fn opening_size(last: Option<(f32, f32)>) -> (f32, f32) {
+    let (w, h) = last.unwrap_or(DEFAULT_SIZE);
+    (w.max(LEAST_SIZE.0), h.max(LEAST_SIZE.1))
+}
+
+pub fn open(
+    note: Option<Note>,
+    vault: VaultSlot,
+    hooks: Hooks,
+    last: Option<(f32, f32)>,
+    cx: &mut App,
+) {
     if let Some(id) = note.as_ref().map(|n| n.id.clone())
         && let Some(h) = cx.default_global::<Opened>().0.get(&id).copied()
         && h.update(cx, |_, window, _| window.activate_window())
@@ -89,7 +121,10 @@ pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
     let options = WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(Bounds::centered(
             None,
-            size(px(760.), px(680.)),
+            {
+                let (w, h) = opening_size(last);
+                size(px(w), px(h))
+            },
             cx,
         ))),
         window_decorations: client_side.then_some(WindowDecorations::Client),
@@ -116,13 +151,27 @@ pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
     }
 }
 
+/// Quitting: every note window saves, and lets its note sync again. True
+/// when any changed while open, for the app to sync before it goes.
+pub fn finish_all(cx: &mut App) -> bool {
+    let windows: Vec<_> = cx.default_global::<Opened>().0.values().copied().collect();
+    let mut changed = false;
+    for h in windows {
+        let _ = h.update(cx, |v, _, cx| {
+            v.save(cx);
+            changed |= v.unsynced;
+            v.let_go(cx);
+        });
+    }
+    changed
+}
+
 /// The vault is about to lock: every note window saves, and lets go of its
 /// text.
 pub fn before_lock(cx: &mut App) {
     let windows: Vec<_> = cx.default_global::<Opened>().0.values().copied().collect();
     for h in windows {
         let _ = h.update(cx, |v, _, cx| {
-            v.end_external(cx);
             v.save(cx);
             v.unload(cx);
         });
@@ -148,7 +197,17 @@ pub struct NoteWindow {
     focus: FocusHandle,
     title: Entity<TextInput>,
     category: Entity<TextInput>,
-    text: Entity<TextInput>,
+    /// The text's editor (shellwing-note-editor: zorite-editor, taken in).
+    text: Entity<EditorState>,
+    /// The editor auto-grows: it scrolls in here, with a bar.
+    scroll: gpui::ScrollHandle,
+    drag: crate::scrollbar::Drag,
+    /// Frames left in which the view brings the caret into sight (it moved).
+    reveal: u8,
+    /// The window's size, not maximized, as last drawn: kept as it closes.
+    size: Option<(f32, f32)>,
+    /// The pane "Insert into" names in the editor's menu, as last set.
+    insert_into: Option<Option<String>>,
     /// The text is in the field (not while locked, nor a sensitive note's
     /// before it is shown).
     loaded: bool,
@@ -162,13 +221,11 @@ pub struct NoteWindow {
     /// Counts the edits, so a save waits for the last one.
     edits: u64,
     saved_at: u64,
+    /// What was last saved (or loaded), to save only what differs.
+    last_saved: Option<u64>,
+    /// Saved here since the window held its note: it syncs when let go.
+    unsynced: bool,
     problem: Option<String>,
-    /// The copy an editor of the user's own has open, and how it was when
-    /// last read.
-    external: Option<(std::path::PathBuf, Option<crate::copies::Stamp>)>,
-    /// How high the room for the text was when last laid out: the editor
-    /// takes as many rows as fit.
-    body_h: Rc<std::cell::Cell<gpui::Pixels>>,
     _subs: Vec<Subscription>,
 }
 
@@ -201,17 +258,41 @@ impl NoteWindow {
         let title = field(|| tr!("Title"), &note.title, cx);
         let category = field(|| tr!("No category"), &note.category, cx);
         let text = cx.new(|cx| {
-            TextInput::said(|| tr!("Write here; Markdown shows when previewed."), cx)
-                .multiline(10, 10)
+            let mut e = EditorState::new(window, cx)
+                .with_placeholder(tr!("Write here; Markdown shows as you type."));
+            e.set_labels(editor_labels(), cx);
+            // A selection made with the mouse opens the menu, with the
+            // app's items first.
+            e.set_menu_on_select(true);
+            e
         });
         let mut subs = vec![];
-        for i in [&title, &category, &text] {
+        for i in [&title, &category] {
             subs.push(cx.subscribe(i, |v, _, _: &Changed, cx| v.edited(cx)));
         }
+        subs.push(cx.subscribe(&text, |v, _, e: &EditorEvent, cx| match e {
+            EditorEvent::Changed => {
+                v.reveal = 2;
+                v.edited(cx);
+            }
+            EditorEvent::SelectionChanged => {
+                v.reveal = 2;
+                cx.notify();
+            }
+            EditorEvent::HostItem(id) if id.as_ref() == "insert" => v.insert(cx),
+            EditorEvent::InsertCode(code) => v.insert_text(code.to_string(), cx),
+            EditorEvent::OpenLink(url) if zorite_markdown::syntax::is_safe_external_url(url) => {
+                cx.open_url(url)
+            }
+            _ => {}
+        }));
         // Saved as it goes, so leaving keeps the last of it.
         cx.on_release(|v, cx| {
-            v.end_external(cx);
             v.save(cx);
+            v.let_go(cx);
+            if let Some((w, h)) = v.size {
+                (v.hooks.sized)(w, h, cx);
+            }
             let id = v.note.id.clone();
             let opened = &mut cx.default_global::<Opened>().0;
             if opened.get(&id).is_some_and(|h| Some(*h) == v.handle) {
@@ -220,7 +301,6 @@ impl NoteWindow {
         })
         .detach();
         cx.on_app_quit(|v, cx| {
-            v.end_external(cx);
             v.save(cx);
             async {}
         })
@@ -252,14 +332,22 @@ impl NoteWindow {
             ask: None,
             edits: 0,
             saved_at: 0,
+            last_saved: None,
+            unsynced: false,
             problem: None,
-            external: None,
-            body_h: Rc::new(std::cell::Cell::new(px(0.))),
+            scroll: gpui::ScrollHandle::new(),
+            drag: Default::default(),
+            reveal: 0,
+            size: None,
+            insert_into: None,
             _subs: subs,
         };
         v.load(cx);
-        let first = if new { &v.title } else { &v.text };
-        let f = first.read(cx).focus_handle(cx);
+        let f = if new {
+            v.title.read(cx).focus_handle(cx)
+        } else {
+            v.text.read(cx).focus_handle(cx)
+        };
         window.focus(&f, cx);
         v
     }
@@ -273,7 +361,9 @@ impl NoteWindow {
             return;
         }
         let text = if self.note.id.is_empty() {
-            Default::default()
+            // A new note starts with a guide to write over (not an edit:
+            // closed untouched, nothing is kept).
+            zeroize::Zeroizing::new(template().to_string())
         } else {
             match vault.note_text(&self.note.id) {
                 Ok(Some(t)) => t,
@@ -287,12 +377,49 @@ impl NoteWindow {
                 }
             }
         };
-        self.text.update(cx, |i, cx| i.set_text(&text, 0..0, cx));
+        let md = self.note.format == NoteFormat::Markdown;
+        let ro = self.preview && md;
+        self.text.update(cx, |e, cx| {
+            e.set_text(text.to_string(), cx);
+            style_editor(e, md, cx);
+            e.set_read_only(ro, cx);
+        });
         // Loading is not an edit.
         self.saved_at = self.edits + 1;
         self.edits += 1;
         self.loaded = true;
+        // As it is in the vault: a save of the same is no save. A new
+        // note's guide is not kept unless written over.
+        self.last_saved = (!self.note.id.is_empty()).then(|| self.snapshot(cx));
         cx.notify();
+    }
+
+    /// What a save would keep, hashed: the note's parts and its text.
+    fn snapshot(&self, cx: &App) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let n = self.current(cx);
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        (
+            &n.title,
+            &n.category,
+            n.format == NoteFormat::Markdown,
+            &n.hosts,
+            n.sensitive,
+        )
+            .hash(&mut h);
+        if self.loaded {
+            self.text.read(cx).text().hash(&mut h);
+        }
+        h.finish()
+    }
+
+    /// The window is done with its note: it syncs again (at once when it
+    /// changed meanwhile).
+    fn let_go(&mut self, cx: &mut App) {
+        if !self.note.id.is_empty() {
+            (self.hooks.release)(&self.note.id, self.unsynced, cx);
+        }
+        self.unsynced = false;
     }
 
     /// Notes the window under the note's id, once it has one.
@@ -303,6 +430,8 @@ impl NoteWindow {
             cx.default_global::<Opened>()
                 .0
                 .insert(self.note.id.clone(), h);
+            // Open here: it syncs when the window closes.
+            (self.hooks.hold)(&self.note.id, cx);
         }
     }
 
@@ -311,7 +440,7 @@ impl NoteWindow {
         if !self.loaded {
             return;
         }
-        self.text.update(cx, |i, cx| i.set_text("", 0..0, cx));
+        self.text.update(cx, |e, cx| e.set_text(String::new(), cx));
         self.edits += 1;
         self.saved_at = self.edits;
         self.loaded = false;
@@ -321,10 +450,6 @@ impl NoteWindow {
     }
 
     fn watch(&mut self, cx: &mut Context<Self>) {
-        if self.external.is_some() {
-            self.read_external(cx);
-            cx.notify();
-        }
         let open = self.vault.ready().is_some();
         if !open && self.loaded {
             self.unload(cx);
@@ -368,6 +493,12 @@ impl NoteWindow {
         let Some(vault) = self.vault.ready() else {
             return;
         };
+        // The same as last saved: nothing to write.
+        let snap = self.snapshot(cx);
+        if self.last_saved == Some(snap) {
+            self.saved_at = self.edits;
+            return;
+        }
         let note = self.current(cx);
         let text = self.loaded.then(|| self.text.read(cx).text().to_string());
         if note.id.is_empty() && note.title.is_empty() && text.as_deref().unwrap_or("").is_empty() {
@@ -378,6 +509,8 @@ impl NoteWindow {
         match vault.save_note(&note, text.as_deref()) {
             Ok(id) => {
                 self.saved_at = self.edits;
+                self.last_saved = Some(snap);
+                self.unsynced = true;
                 self.problem = None;
                 if self.note.id.is_empty() {
                     self.note.id = id;
@@ -441,6 +574,9 @@ impl NoteWindow {
                     }
                     cx.default_global::<Opened>().0.remove(&id);
                     (v.hooks.saved)(cx);
+                    // Gone: that goes out at once.
+                    (v.hooks.release)(&id, true, cx);
+                    v.note.id.clear();
                 }
                 // Nothing to save on the way out.
                 v.saved_at = v.edits;
@@ -450,112 +586,24 @@ impl NoteWindow {
         .detach();
     }
 
-    /// Opens the text in an editor of the user's own, after saying a copy
-    /// is on the disk meanwhile.
-    fn ask_external(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let (yes, no) = (tr!("Open"), tr!("Cancel"));
-        let answer = window.prompt(
-            PromptLevel::Warning,
-            &tr!("Edit it in another app?"),
-            Some(&tr!(
-                "While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done."
-            )),
-            &[yes.as_str(), no.as_str()],
-            cx,
-        );
-        cx.spawn_in(window, async move |this, cx| {
-            if matches!(answer.await, Ok(0)) {
-                let _ = this.update(cx, |v, cx| v.open_external(cx));
-            }
-        })
-        .detach();
-    }
-
-    fn open_external(&mut self, cx: &mut Context<Self>) {
-        if !self.loaded || self.note.sensitive {
-            return;
-        }
-        self.save(cx);
-        let note = self.current(cx);
-        let ext = match note.format {
-            NoteFormat::Markdown => "md",
-            NoteFormat::Plain => "txt",
-        };
-        let text = self.text.read(cx).text().to_string();
-        let path = match crate::note_files::write(&note.title, ext, &text) {
-            Ok(p) => p,
-            Err(e) => {
-                self.problem = Some(tr!("Cannot make the copy: {e}", e = e.to_string()));
-                return cx.notify();
-            }
-        };
-        let cmd = cx
-            .try_global::<crate::files::EditorCommand>()
-            .and_then(|c| c.0.clone())
-            .filter(|c| !c.trim().is_empty());
-        let started = match &cmd {
-            Some(cmd) => crate::editors::open_with(cmd, &path),
-            None => crate::editors::open_text(&path),
-        };
-        if let Err(e) = started {
-            crate::note_files::remove(&path);
-            let who = cmd
-                .as_deref()
-                .map_or(tr!("the text editor"), crate::editors::name_of);
-            self.problem = Some(tr!("Cannot start {who}: {e}", who = who, e = e.to_string()));
-            return cx.notify();
-        }
-        let stamp = crate::copies::stamp(&path);
-        self.external = Some((path, stamp));
-        self.problem = None;
-        cx.notify();
-    }
-
-    /// What the editor saved, into the note.
-    fn read_external(&mut self, cx: &mut App) {
-        let Some((path, seen)) = self.external.clone() else {
-            return;
-        };
-        let now = crate::copies::stamp(&path);
-        if now.is_none() || now == seen {
-            return;
-        }
-        if let Some(e) = self.external.as_mut() {
-            e.1 = now;
-        }
-        let read = std::fs::read(&path)
-            .map_err(|e| e.to_string())
-            .and_then(|b| String::from_utf8(b).map_err(|_| tr!("It is not text any more.")));
-        match read {
-            Ok(text) if text != self.text.read(cx).text() => {
-                self.text.update(cx, |i, cx| i.set_text(&text, 0..0, cx));
-                // An edit even when the window is closing (no event then).
-                self.edits += 1;
-            }
-            Ok(_) => {}
-            Err(e) => self.problem = Some(tr!("Not read back: {e}", e = e)),
-        }
-    }
-
-    /// Done with the editor: its last save read, the copy removed.
-    fn end_external(&mut self, cx: &mut App) {
-        if self.external.is_none() {
-            return;
-        }
-        self.read_external(cx);
-        if let Some((path, _)) = self.external.take() {
-            crate::note_files::remove(&path);
-        }
-    }
-
-    /// The selection formatted as Markdown (or the format taken off).
-    fn format(&mut self, f: crate::md_format::Format, cx: &mut Context<Self>) {
-        let text = self.text.read(cx).text().to_string();
+    /// The selection as a link, `[it](url)`, `url` selected to type over
+    /// (the editor has no link of its own).
+    fn link(&mut self, cx: &mut Context<Self>) {
         let sel = self.text.read(cx).selected_range();
-        let (new, select) = crate::md_format::apply(&text, sel, f);
-        let len = text.len();
-        self.text
-            .update(cx, |i, cx| i.edit(0..len, &new, select, cx));
+        let text = self
+            .text
+            .read(cx)
+            .text()
+            .get(sel.clone())
+            .unwrap_or("")
+            .to_string();
+        let url = sel.start + text.len() + 3;
+        self.text.update(cx, |e, cx| {
+            e.replace_range(sel, &format!("[{text}](url)"), cx);
+            e.select(url..url + 3, cx);
+        });
+        // A replace says nothing: an edit all the same.
+        self.edited(cx);
     }
 
     fn selected_text(&self, cx: &App) -> String {
@@ -569,6 +617,11 @@ impl NoteWindow {
     /// The selection into the main window's pane, to run from there.
     fn insert(&mut self, cx: &mut Context<Self>) {
         let text = self.selected_text(cx);
+        self.insert_text(text, cx);
+    }
+
+    /// `text` into the main window's pane (a selection, a code block).
+    fn insert_text(&mut self, text: String, cx: &mut Context<Self>) {
         if text.is_empty() {
             return;
         }
@@ -577,101 +630,6 @@ impl NoteWindow {
             Err(e) => self.problem = Some(e),
         }
         cx.notify();
-    }
-
-    /// Over the selection: formats (Markdown), copy, and into the shell.
-    fn selection_bar(&self, window: &Window, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
-        let input = self.text.read(cx);
-        let focused = input.focus_handle(cx).is_focused(window);
-        if !focused || input.selected_range().is_empty() || input.dragging() {
-            return None;
-        }
-        let at = input.selection_origin()?;
-        let md = self.note.format == NoteFormat::Markdown;
-        let tool = |id: &'static str, label: SharedString| {
-            div()
-                .id(id)
-                .h(px(26.))
-                .min_w(px(26.))
-                .px(px(7.))
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(px(5.))
-                .text_size(ui(12.5))
-                .text_color(rgb(colors().text))
-                .cursor_pointer()
-                .hover(|s| s.bg(rgb(colors().hover)))
-                // Pressing it must not take the focus from the text.
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .child(label)
-        };
-        let gap = || div().w(px(1.)).h(px(16.)).mx(px(3.)).bg(rgb(colors().line));
-        let mut bar = div()
-            .flex()
-            .items_center()
-            .gap(px(2.))
-            .p(px(3.))
-            .rounded(px(7.))
-            .border_1()
-            .border_color(rgb(colors().edge))
-            .bg(rgb(colors().raised))
-            .shadow_lg();
-        if md {
-            use crate::md_format::Format;
-            let marks: [(&'static str, &'static str, Format); 9] = [
-                ("fmt-bold", "B", Format::Bold),
-                ("fmt-italic", "I", Format::Italic),
-                ("fmt-strike", "S", Format::Strike),
-                ("fmt-code", "</>", Format::Code),
-                ("fmt-link", "[ ]( )", Format::Link),
-                ("fmt-heading", "H", Format::Heading),
-                ("fmt-quote", "❝", Format::Quote),
-                ("fmt-bullet", "•", Format::Bullet),
-                ("fmt-task", "☐", Format::Task),
-            ];
-            for (id, label, f) in marks {
-                let t = tool(id, label.into())
-                    .when(f == Format::Bold, |d| d.font_weight(FontWeight::BOLD))
-                    .when(f == Format::Italic, |d| d.italic())
-                    .when(f == Format::Strike, |d| d.line_through())
-                    .on_click(cx.listener(move |v, _, _, cx| v.format(f, cx)));
-                bar = bar.child(t);
-            }
-            bar = bar.child(gap());
-        }
-        bar = bar.child(tool("sel-copy", tr!("Copy").into()).on_click(cx.listener(
-            |v, _, _, cx| {
-                let text = v.selected_text(cx);
-                cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
-            },
-        )));
-        bar = match (self.hooks.pane)(cx) {
-            Some(pane) => bar.child(
-                tool("sel-insert", tr!("Insert into {pane}", pane = pane).into())
-                    .text_color(rgb(colors().accent))
-                    .on_click(cx.listener(|v, _, _, cx| v.insert(cx))),
-            ),
-            None => bar.child(
-                div()
-                    .px(px(7.))
-                    .text_size(ui(12.))
-                    .text_color(rgb(colors().faint))
-                    .child(tr!("No shell to insert into")),
-            ),
-        };
-        Some(
-            deferred(
-                anchored()
-                    .anchor(gpui::Anchor::BottomLeft)
-                    .position(gpui::point(at.x, at.y - px(6.)))
-                    // Within the window, however near its edge the text is.
-                    .snap_to_window_with_margin(px(8.))
-                    .child(bar),
-            )
-            .with_priority(3)
-            .into_any_element(),
-        )
     }
 
     /// A sensitive note's eye: asks it is the user.
@@ -743,15 +701,6 @@ impl NoteWindow {
         }
     }
 
-    /// A task's box ticked or unticked in the reading view, at `at` in the
-    /// text.
-    fn toggle_task(&mut self, at: usize, cx: &mut Context<Self>) {
-        let text = self.text.read(cx).text().to_string();
-        if let Some(new) = zorite_markdown::toggle_task_at(&text, at) {
-            self.text.update(cx, |i, cx| i.set_text(&new, 0..0, cx));
-        }
-    }
-
     fn confirmed(&mut self, cx: &mut Context<Self>) {
         self.ask = None;
         self.shown = true;
@@ -768,22 +717,9 @@ impl NoteWindow {
         };
         let md = self.note.format == NoteFormat::Markdown
             && self.text.read(cx).focus_handle(cx).is_focused(window);
-        let format = |key: &str| {
-            use crate::md_format::Format;
-            match key {
-                "b" => Some(Format::Bold),
-                "i" => Some(Format::Italic),
-                "e" => Some(Format::Code),
-                "k" => Some(Format::Link),
-                _ => None,
-            }
-        };
-        if md
-            && cmd
-            && !k.modifiers.shift
-            && let Some(f) = format(k.key.as_str())
-        {
-            self.format(f, cx);
+        // The editor binds B, I, E and the like itself; K (a link) is ours.
+        if md && cmd && !k.modifiers.shift && k.key == "k" {
+            self.link(cx);
             return cx.stop_propagation();
         }
         match k.key.as_str() {
@@ -933,12 +869,8 @@ impl NoteWindow {
                 d.child(deferred(anchored().child(div().mt(px(30.)).child(list))).with_priority(2))
             });
         let _ = window;
-        let status = if self.external.is_some() {
-            None
-        } else if self.saved_at != self.edits {
+        let status = if self.saved_at != self.edits {
             Some(tr!("Saving…"))
-        } else if self.preview && md {
-            Some(tr!("Click the text to edit it"))
         } else if !self.note.id.is_empty() {
             Some(tr!("Saved"))
         } else {
@@ -959,12 +891,17 @@ impl NoteWindow {
                             cx.listener(|v, _, w, cx| {
                                 v.note.format = NoteFormat::Plain;
                                 v.preview = false;
+                                v.text.update(cx, |e, cx| {
+                                    style_editor(e, false, cx);
+                                    e.set_read_only(false, cx);
+                                });
                                 v.changed_meta(w, cx);
                             }),
                         ))
                         .child(Self::chip("note-md", "Markdown".to_string(), md).on_click(
                             cx.listener(|v, _, w, cx| {
                                 v.note.format = NoteFormat::Markdown;
+                                v.text.update(cx, |e, cx| style_editor(e, true, cx));
                                 v.changed_meta(w, cx);
                             }),
                         )),
@@ -982,10 +919,12 @@ impl NoteWindow {
                         )
                         .on_click(cx.listener(|v, _, w, cx| {
                             v.preview = !v.preview;
-                            if !v.preview {
-                                let f = v.text.read(cx).focus_handle(cx);
-                                w.focus(&f, cx);
-                            }
+                            // The same editor, read-only: the text stays where
+                            // it is between the two.
+                            let ro = v.preview;
+                            v.text.update(cx, |e, cx| e.set_read_only(ro, cx));
+                            let f = v.text.read(cx).focus_handle(cx);
+                            w.focus(&f, cx);
                             cx.notify();
                         })),
                     )
@@ -1000,12 +939,8 @@ impl NoteWindow {
                         .text_size(ui(12.5))
                         .on_click(cx.listener(|v, _, w, cx| {
                             v.note.sensitive = !v.note.sensitive;
-                            // Who turns it on sees the text already; no copy
-                            // of it stays on the disk.
+                            // Who turns it on sees the text already.
                             v.shown = true;
-                            if v.note.sensitive {
-                                v.end_external(cx);
-                            }
                             v.changed_meta(w, cx);
                         }))
                         .child(checkbox(self.note.sensitive))
@@ -1026,15 +961,6 @@ impl NoteWindow {
                         .child(s),
                 )
             })
-            .when(
-                !self.note.sensitive && self.loaded && self.external.is_none(),
-                |d| {
-                    d.child(
-                        Self::chip("note-external", tr!("Edit in another app…"), false)
-                            .on_click(cx.listener(|v, _, w, cx| v.ask_external(w, cx))),
-                    )
-                },
-            )
             .child(
                 Self::chip("note-delete", tr!("Delete"), false)
                     .text_color(rgb(colors().bad))
@@ -1052,9 +978,12 @@ impl NoteWindow {
 
     /// The text: edited, drawn as Markdown, or held back (locked, or
     /// sensitive and not shown).
-    fn body(&self, rows: usize, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn body(&self, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
         let look = cx.try_global::<NoteLook>().cloned();
-        let mono = look.map(|l| l.mono).unwrap_or_else(|| "monospace".into());
+        let mono = look
+            .as_ref()
+            .map(|l| l.mono.clone())
+            .unwrap_or_else(|| "monospace".into());
         let panel = |msg: String| {
             div()
                 .flex_1()
@@ -1106,98 +1035,192 @@ impl NoteWindow {
             };
             return p.into_any_element();
         }
-        if self.external.is_some() {
-            return panel(tr!(
-                "Open in another app: what it saves comes here, and is kept."
-            ))
-            .child(
-                primary_button("note-external-done", &tr!("Done")).on_click(cx.listener(
-                    |v, _, _, cx| {
-                        v.end_external(cx);
-                        cx.notify();
-                    },
-                )),
-            )
-            .into_any_element();
-        }
-        if self.preview && self.note.format == NoteFormat::Markdown {
-            let text = self.text.read(cx).text().to_string();
-            let empty = text.trim().is_empty();
-            let rem = f32::from(look::rem_for(
-                cx.try_global::<NoteLook>().map_or(13., |l| l.size),
-            ));
-            let view = cx.entity().downgrade();
-            // Ticking a task in the reading view changes the text, as typing does.
-            let toggle: zorite_markdown::TaskToggleHandler = {
-                let view = view.clone();
-                Rc::new(move |at, _, cx| {
-                    let _ = view.update(cx, |v, cx| v.toggle_task(at, cx));
-                })
-            };
-            // A click on the text edits it there: the reading view selects
-            // nothing; the editor does.
-            let edit_at: zorite_markdown::ClickSourceHandler = Rc::new(move |at, _, window, cx| {
-                let _ = view.update(cx, |v, cx| {
-                    v.preview = false;
-                    v.text.update(cx, |i, cx| i.place_cursor(at, cx));
-                    let f = v.text.read(cx).focus_handle(cx);
-                    window.focus(&f, cx);
-                    cx.notify();
-                });
-            });
-            return div()
-                .id("note-preview")
-                .flex_1()
-                .min_h_0()
-                .overflow_y_scroll()
-                .px(px(4.))
-                .child(if empty {
-                    div()
-                        .text_color(rgb(colors().muted))
-                        .child(tr!("Nothing written yet: Edit to write."))
-                        .into_any_element()
-                } else {
-                    zorite_markdown::MarkdownView::new("note-md", text)
-                        .style(reading_style(px(rem * 13.5 / 16.), mono))
-                        .on_task_toggle(toggle)
-                        .on_click_source(edit_at)
-                        .set_labels(zorite_markdown::Labels {
-                            code_copy: tr!("Copy").into(),
-                        })
-                        .into_any_element()
-                })
-                .into_any_element();
-        }
-        self.text.update(cx, |i, cx| i.set_rows(rows, rows, cx));
         let on = self.text.read(cx).focus_handle(cx).is_focused(window);
-        Self::field_box(&self.text, on)
-            .font_family(mono)
-            .items_start()
-            .flex_shrink_0()
-            .children(self.selection_bar(window, cx))
+        let md = self.note.format == NoteFormat::Markdown;
+        let family = look.and_then(|l| l.family);
+        div()
+            .relative()
+            .flex_1()
+            .min_h_0()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(if on {
+                colors().accent
+            } else {
+                colors().field_edge
+            }))
+            .bg(rgb(colors().field))
+            .overflow_hidden()
+            .child(
+                div()
+                    .id("note-scroll")
+                    .size_full()
+                    .overflow_y_scroll()
+                    .track_scroll(&self.scroll)
+                    .child(
+                        div()
+                            .px(px(12.))
+                            .py(px(10.))
+                            .text_size(ui(13.5))
+                            .text_color(rgb(colors().text))
+                            // Markdown in the app's font (code in the terminal's);
+                            // plain text in the terminal's.
+                            .when(!md, |d| d.font_family(mono.clone()))
+                            .when_some(family.filter(|_| md), |d, f| d.font_family(f))
+                            .child(self.text.clone()),
+                    ),
+            )
+            .child(crate::scrollbar::overlay(
+                self.scroll.clone(),
+                self.drag.clone(),
+            ))
             .into_any_element()
+    }
+
+    /// The app's item in the editor's menu: Insert into the main window's
+    /// pane, named; set again only when that changes.
+    fn menu_items(&mut self, cx: &mut Context<Self>) {
+        let pane = (self.hooks.pane)(cx);
+        if self.insert_into.as_ref() == Some(&pane) {
+            return;
+        }
+        let item = shellwing_note_editor::HostItem {
+            id: "insert".into(),
+            label: match &pane {
+                Some(p) => tr!("Insert into {pane}", pane = p.clone()).into(),
+                None => tr!("No shell to insert into").into(),
+            },
+            enabled: pane.is_some(),
+        };
+        // A code block's Insert too, while a pane can take it.
+        let code = pane.as_ref().map(|_| tr!("Insert").into());
+        self.insert_into = Some(pane);
+        self.text.update(cx, |e, cx| {
+            e.set_host_items(vec![item], cx);
+            e.set_code_insert(code, cx);
+        });
+    }
+
+    /// The caret back in sight after it moved (the editor grows; the view
+    /// around it scrolls): from where it was drawn last.
+    fn reveal_caret(&mut self, cx: &mut Context<Self>) {
+        if self.reveal == 0 {
+            return;
+        }
+        self.reveal -= 1;
+        let Some(caret) = self.text.read(cx).caret_screen_bounds() else {
+            return;
+        };
+        let view = self.scroll.bounds();
+        let mut off = self.scroll.offset();
+        let margin = px(8.);
+        if caret.top() < view.top() + margin {
+            off.y += view.top() + margin - caret.top();
+        } else if caret.bottom() > view.bottom() - margin {
+            off.y -= caret.bottom() - (view.bottom() - margin);
+        } else {
+            return;
+        }
+        off.y = off.y.min(px(0.)).max(-self.scroll.max_offset().y);
+        self.scroll.set_offset(off);
+        cx.notify();
     }
 }
 
-/// The reading view in the app's colors.
-fn reading_style(size: gpui::Pixels, mono: SharedString) -> zorite_markdown::MarkdownStyle {
+/// What a new note starts with, in the app's language: how to write one,
+/// a code block, and that it goes into the shell.
+fn template() -> &'static str {
+    match shellwing_i18n::language() {
+        "vi" => include_str!("note_templates/vi.md"),
+        "de" => include_str!("note_templates/de.md"),
+        "es" => include_str!("note_templates/es.md"),
+        "fr" => include_str!("note_templates/fr.md"),
+        "ja" => include_str!("note_templates/ja.md"),
+        "ko" => include_str!("note_templates/ko.md"),
+        "pt" => include_str!("note_templates/pt.md"),
+        "ru" => include_str!("note_templates/ru.md"),
+        "zh" => include_str!("note_templates/zh.md"),
+        _ => include_str!("note_templates/en.md"),
+    }
+}
+
+/// The editor in the app's colors: Markdown shown as it is typed, or plain
+/// text.
+fn style_editor(e: &mut EditorState, markdown: bool, cx: &mut Context<EditorState>) {
+    if !markdown {
+        return e.clear_markdown_style(cx);
+    }
     let c = colors();
     let hsla = |v: u32| -> gpui::Hsla { rgb(v).into() };
-    zorite_markdown::MarkdownStyle {
-        text_color: hsla(c.text),
-        text_size: size,
-        heading_color: hsla(c.text),
-        link_color: hsla(c.accent),
-        tag_color: hsla(c.accent),
-        code_color: hsla(c.accent),
-        code_bg: hsla(c.chip),
-        muted_color: hsla(c.muted),
-        rule_color: hsla(c.line),
-        guide_color: hsla(c.line),
-        mark_bg: hsla(c.warn_bg),
-        search_bg: hsla(c.warn_bg),
-        search_current_bg: hsla(c.selected),
-        mono_font: mono,
+    let mono = cx
+        .try_global::<NoteLook>()
+        .map_or_else(|| SharedString::from("monospace"), |l| l.mono.clone());
+    e.set_markdown_style(
+        SyntaxStyle {
+            marker: hsla(c.faint),
+            code: hsla(c.accent),
+            code_bg: hsla(c.chip),
+            link: hsla(c.accent),
+            tag: hsla(c.accent),
+            quote: hsla(c.soft),
+            alert_note: hsla(c.accent),
+            alert_tip: hsla(c.good),
+            alert_important: hsla(c.accent),
+            alert_warning: hsla(c.warn),
+            alert_caution: hsla(c.bad),
+            alert_icons: None,
+            rule: hsla(c.line),
+            mark_bg: hsla(c.warn_bg),
+            block_label: None,
+            block_label_gen: 0,
+            block_ref_count: None,
+            popover_bg: hsla(c.raised),
+            popover_border: hsla(c.edge),
+            popover_fg: hsla(c.text),
+            popover_hover: hsla(c.hover),
+            popover_divider: hsla(c.line),
+            popover_danger: hsla(c.bad),
+            mono: gpui::font(mono),
+            property_icon: None,
+        },
+        cx,
+    );
+}
+
+/// The editor's menus, in the app's language.
+fn editor_labels() -> shellwing_note_editor::Labels {
+    shellwing_note_editor::Labels {
+        cut: tr!("Cut").into(),
+        copy: tr!("Copy").into(),
+        copy_as_markdown: tr!("Copy as Markdown").into(),
+        paste: tr!("Paste").into(),
+        code_copy: tr!("Copy").into(),
+        turn_into: tr!("Turn into").into(),
+        text: tr!("Text").into(),
+        heading_1: tr!("Heading 1").into(),
+        heading_2: tr!("Heading 2").into(),
+        heading_3: tr!("Heading 3").into(),
+        bulleted_list: tr!("Bulleted list").into(),
+        numbered_list: tr!("Numbered list").into(),
+        todo: tr!("To-do").into(),
+        quote: tr!("Quote").into(),
+        callout: tr!("Callout").into(),
+        code_block: tr!("Code block").into(),
+        insert_row_above: tr!("Insert row above").into(),
+        insert_row_below: tr!("Insert row below").into(),
+        duplicate_row: tr!("Duplicate row").into(),
+        insert_column_left: tr!("Insert column left").into(),
+        insert_column_right: tr!("Insert column right").into(),
+        align_left: tr!("Align left").into(),
+        align_center: tr!("Align center").into(),
+        align_right: tr!("Align right").into(),
+        grid_style: tr!("Grid style").into(),
+        striped_style: tr!("Striped style").into(),
+        header_style: tr!("Header style").into(),
+        minimal_style: tr!("Minimal style").into(),
+        delete_row: tr!("Delete row").into(),
+        delete_column: tr!("Delete column").into(),
+        delete_table: tr!("Delete table").into(),
         ..Default::default()
     }
 }
@@ -1220,20 +1243,11 @@ impl Render for NoteWindow {
             title
         };
         window.set_window_title(&shown_title);
-        // The editor's rows: as many as fit the room measured last time
-        // (its box adds 14 px of padding and border).
-        let line = f32::from(
-            self.text
-                .read(cx)
-                .line_height()
-                .unwrap_or(px(ui_size * 1.6)),
-        );
-        let room = f32::from(self.body_h.get());
-        let rows = if room > 0. {
-            (((room - 14.) / line).floor() as usize).max(3)
-        } else {
-            8
-        };
+        self.reveal_caret(cx);
+        // Its size as it would be restored (a maximized window's too).
+        let b = window.window_bounds().get_bounds().size;
+        self.size = Some((f32::from(b.width), f32::from(b.height)));
+        self.menu_items(cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
         let content = div()
@@ -1266,32 +1280,14 @@ impl Render for NoteWindow {
             )
             .child(self.toolbar(window, cx))
             .when_some(self.problem.clone(), |d, p| d.child(problem_text(&p)))
-            .child({
-                // The room left for the text, measured as laid out; a change
-                // draws again with the rows that fit.
-                let cell = self.body_h.clone();
+            .child(
                 div()
-                    .relative()
                     .flex_1()
                     .min_h_0()
                     .flex()
                     .flex_col()
-                    .child(
-                        gpui::canvas(
-                            move |bounds, window, _| {
-                                let h = bounds.size.height;
-                                if (f32::from(h) - f32::from(cell.get())).abs() > 0.5 {
-                                    cell.set(h);
-                                    window.refresh();
-                                }
-                            },
-                            |_, _, _, _| {},
-                        )
-                        .absolute()
-                        .size_full(),
-                    )
-                    .child(self.body(rows, window, cx))
-            });
+                    .child(self.body(window, cx)),
+            );
         let bar = div()
             .h_full()
             .flex()
@@ -1302,5 +1298,38 @@ impl Render for NoteWindow {
         let content = div().size_full().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_note_window_opens_as_the_last_one_closed_but_not_smaller() {
+        use super::opening_size;
+        assert_eq!(opening_size(None), (800., 700.));
+        assert_eq!(opening_size(Some((1000., 820.))), (1000., 820.));
+        assert_eq!(opening_size(Some((420., 900.))), (600., 900.));
+        assert_eq!(opening_size(Some((300., 200.))), (600., 500.));
+    }
+
+    #[test]
+    fn every_template_shows_a_command_to_insert() {
+        for t in [
+            include_str!("note_templates/en.md"),
+            include_str!("note_templates/vi.md"),
+            include_str!("note_templates/de.md"),
+            include_str!("note_templates/es.md"),
+            include_str!("note_templates/fr.md"),
+            include_str!("note_templates/ja.md"),
+            include_str!("note_templates/ko.md"),
+            include_str!("note_templates/pt.md"),
+            include_str!("note_templates/ru.md"),
+            include_str!("note_templates/zh.md"),
+        ] {
+            assert!(t.starts_with("# "), "a heading first");
+            assert_eq!(t.matches("```").count(), 2, "one code block");
+            assert!(t.contains("sudo systemctl restart nginx"));
+            assert!(t.contains("- [ ] "), "a task");
+        }
     }
 }

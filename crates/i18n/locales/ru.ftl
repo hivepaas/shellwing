@@ -991,8 +991,8 @@ t24d471a9 = Заголовок
 # No category
 t44662d06 = Без категории
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Пишите здесь; Markdown виден в предпросмотре.
+# Write here; Markdown shows as you type.
+t117b6c23 = Пишите здесь; Markdown виден по мере ввода.
 
 # It is not in the vault any more.
 td11af590 = Его больше нет в хранилище.
@@ -1002,27 +1002,6 @@ t4545c373 = эту заметку
 
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
-
-# Edit it in another app?
-t1719e0f2 = Редактировать в другом приложении?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = Пока она открыта там, копия обычным текстом лежит на диске этого компьютера (в папке, доступной только вам), а редактор может хранить свои копии, например резервные или историю. Копия удаляется, когда вы закончите.
-
-# Cannot make the copy: {e}
-td59a6621 = Не удалось создать копию: { $e }
-
-# It is not text any more.
-te3591497 = Это больше не текст.
-
-# Not read back: {e}
-tf04d4bce = Не удалось прочитать обратно: { $e }
-
-# Insert into {pane}
-t3d5eaffc = Вставить в { $pane }
-
-# No shell to insert into
-t825e7370 = Нет оболочки для вставки
 
 # The vault's passphrase
 tb66334ea = Парольная фраза хранилища
@@ -1039,9 +1018,6 @@ t71734b03 = Хостов пока нет.
 # Saving…
 tbd79b37d = Сохранение…
 
-# Click the text to edit it
-t63928671 = Нажмите на текст, чтобы изменить его
-
 # Saved
 t8a6979e4 = Сохранено
 
@@ -1056,9 +1032,6 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
-
-# Edit in another app…
-t1c6d0a34 = Редактировать в другом приложении…
 
 # The vault is locked: unlock it in the main window.
 te327c98e = Хранилище заблокировано: разблокируйте его в главном окне.
@@ -1075,11 +1048,101 @@ t3ab56316 = Подтвердите, что это вы, в окне систем
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Хранилище не защищено парольной фразой, поэтому показать его может любой, кто сидит за этим устройством.
 
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = Открыта в другом приложении: то, что оно сохраняет, приходит сюда и сохраняется.
+# Insert into {pane}
+t3d5eaffc = Вставить в { $pane }
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Пока ничего не написано: нажмите «Изменить», чтобы писать.
+# No shell to insert into
+t825e7370 = Нет оболочки для вставки
+
+# Insert
+t0f317948 = Вставить
+
+# Cut
+t58e25863 = Вырезать
+
+# Copy as Markdown
+t944799cd = Копировать как Markdown
+
+# Paste
+tb34a0288 = Вставить
+
+# Turn into
+t10726570 = Превратить в
+
+# Text
+t3e142d5e = Текст
+
+# Heading 1
+ta590c41a = Заголовок 1
+
+# Heading 2
+ta490c287 = Заголовок 2
+
+# Heading 3
+ta390c0f4 = Заголовок 3
+
+# Bulleted list
+t1721be78 = Маркированный список
+
+# Numbered list
+t910847bb = Нумерованный список
+
+# To-do
+t082e6fd6 = Задача
+
+# Quote
+t5abe5677 = Цитата
+
+# Callout
+t10591ec3 = Выноска
+
+# Code block
+t3026e515 = Блок кода
+
+# Insert row above
+t2f1931cd = Вставить строку выше
+
+# Insert row below
+t870e8f41 = Вставить строку ниже
+
+# Duplicate row
+te898fcce = Дублировать строку
+
+# Insert column left
+tb49d3fc3 = Вставить столбец слева
+
+# Insert column right
+t60f12dcc = Вставить столбец справа
+
+# Align left
+tbdd22217 = По левому краю
+
+# Align center
+t76127b0f = По центру
+
+# Align right
+t1a76ce88 = По правому краю
+
+# Grid style
+t531d1674 = Сетка
+
+# Striped style
+t10b52f0d = Полосы
+
+# Header style
+te7eb6c45 = С заголовком
+
+# Minimal style
+t70f1e7d5 = Минимальный
+
+# Delete row
+t33de1b52 = Удалить строку
+
+# Delete column
+tea682d34 = Удалить столбец
+
+# Delete table
+t29ccb392 = Удалить таблицу
 
 # Untitled note
 t4ce277c4 = Заметка без названия
@@ -1395,9 +1458,6 @@ tef7cec6a = Локальная оболочка
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = Что запускает локальный терминал («Этот компьютер» в списке хостов), с аргументами. Пусто: ваша оболочка. Enter сохраняет; применяется к новым локальным вкладкам.
-
-# Text
-t3e142d5e = Текст
 
 # Raw
 ta689aa91 = Сырой
@@ -2398,9 +2458,6 @@ t4efeb00b = Удалить { $names }
 # Unload {names}
 t362b9a48 = Выгрузить { $names }
 
-# Paste
-tb34a0288 = Вставить
-
 # Find…
 t1ecb565a = Найти…
 
@@ -2628,6 +2685,9 @@ tc7b3d356 = Выйти
 
 # Quit shellwing?
 tfa31f588 = Выйти из shellwing?
+
+# Syncing the notes before quitting…
+tb66945de = Синхронизация заметок перед выходом…
 
 # Choose a host on the left to connect.
 tf7759ebb = Выберите хост слева, чтобы подключиться.

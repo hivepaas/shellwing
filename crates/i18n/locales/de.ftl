@@ -981,8 +981,8 @@ t24d471a9 = Titel
 # No category
 t44662d06 = Keine Kategorie
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Hier schreiben; Markdown erscheint in der Vorschau.
+# Write here; Markdown shows as you type.
+t117b6c23 = Hier schreiben; Markdown erscheint beim Tippen.
 
 # It is not in the vault any more.
 td11af590 = Sie ist nicht mehr im Tresor.
@@ -992,27 +992,6 @@ t4545c373 = diese Notiz
 
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Es wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren.
-
-# Edit it in another app?
-t1719e0f2 = In einer anderen App bearbeiten?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = Solange sie dort offen ist, liegt eine Kopie als reiner Text auf der Festplatte dieses Computers (in einem Ordner, den nur du lesen kannst), und der Editor kann eigene Kopien behalten, etwa Sicherungen oder Verlauf. Die Kopie verschwindet, wenn du fertig bist.
-
-# Cannot make the copy: {e}
-td59a6621 = Die Kopie lässt sich nicht anlegen: { $e }
-
-# It is not text any more.
-te3591497 = Es ist kein Text mehr.
-
-# Not read back: {e}
-tf04d4bce = Nicht zurückgelesen: { $e }
-
-# Insert into {pane}
-t3d5eaffc = In { $pane } einfügen
-
-# No shell to insert into
-t825e7370 = Keine Shell zum Einfügen
 
 # The vault's passphrase
 tb66334ea = Passphrase des Tresors
@@ -1029,9 +1008,6 @@ t71734b03 = Noch keine Hosts.
 # Saving…
 tbd79b37d = Wird gespeichert…
 
-# Click the text to edit it
-t63928671 = Zum Bearbeiten auf den Text klicken
-
 # Saved
 t8a6979e4 = Gespeichert
 
@@ -1046,9 +1022,6 @@ tfdda4cf7 = Vorschau
 
 # Sensitive
 tf603feef = Vertraulich
-
-# Edit in another app…
-t1c6d0a34 = In einer anderen App bearbeiten…
 
 # The vault is locked: unlock it in the main window.
 te327c98e = Der Tresor ist gesperrt: Entsperre ihn im Hauptfenster.
@@ -1065,11 +1038,101 @@ t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Gerät ihn anzeigen.
 
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = In einer anderen App geöffnet: Was sie speichert, kommt hierher und bleibt.
+# Insert into {pane}
+t3d5eaffc = In { $pane } einfügen
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Noch nichts geschrieben: Zum Schreiben auf Bearbeiten.
+# No shell to insert into
+t825e7370 = Keine Shell zum Einfügen
+
+# Insert
+t0f317948 = Einfügen
+
+# Cut
+t58e25863 = Ausschneiden
+
+# Copy as Markdown
+t944799cd = Als Markdown kopieren
+
+# Paste
+tb34a0288 = Einfügen
+
+# Turn into
+t10726570 = Umwandeln in
+
+# Text
+t3e142d5e = Text
+
+# Heading 1
+ta590c41a = Überschrift 1
+
+# Heading 2
+ta490c287 = Überschrift 2
+
+# Heading 3
+ta390c0f4 = Überschrift 3
+
+# Bulleted list
+t1721be78 = Aufzählung
+
+# Numbered list
+t910847bb = Nummerierte Liste
+
+# To-do
+t082e6fd6 = Aufgabe
+
+# Quote
+t5abe5677 = Zitat
+
+# Callout
+t10591ec3 = Hinweis
+
+# Code block
+t3026e515 = Codeblock
+
+# Insert row above
+t2f1931cd = Zeile darüber einfügen
+
+# Insert row below
+t870e8f41 = Zeile darunter einfügen
+
+# Duplicate row
+te898fcce = Zeile duplizieren
+
+# Insert column left
+tb49d3fc3 = Spalte links einfügen
+
+# Insert column right
+t60f12dcc = Spalte rechts einfügen
+
+# Align left
+tbdd22217 = Linksbündig
+
+# Align center
+t76127b0f = Zentriert
+
+# Align right
+t1a76ce88 = Rechtsbündig
+
+# Grid style
+t531d1674 = Gitter
+
+# Striped style
+t10b52f0d = Gestreift
+
+# Header style
+te7eb6c45 = Mit Kopfzeile
+
+# Minimal style
+t70f1e7d5 = Minimal
+
+# Delete row
+t33de1b52 = Zeile löschen
+
+# Delete column
+tea682d34 = Spalte löschen
+
+# Delete table
+t29ccb392 = Tabelle löschen
 
 # Untitled note
 t4ce277c4 = Notiz ohne Titel
@@ -1385,9 +1448,6 @@ tef7cec6a = Lokale Shell
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = Was ein lokales Terminal (Dieser Computer, in der Hostliste) mit seinen Argumenten ausführt. Leer: deine eigene Shell. Enter speichert; gilt für neue lokale Tabs.
-
-# Text
-t3e142d5e = Text
 
 # Raw
 ta689aa91 = Roh
@@ -2360,9 +2420,6 @@ t4efeb00b = { $names } entfernen
 # Unload {names}
 t362b9a48 = { $names } entladen
 
-# Paste
-tb34a0288 = Einfügen
-
 # Find…
 t1ecb565a = Suchen…
 
@@ -2580,6 +2637,9 @@ tc7b3d356 = Beenden
 
 # Quit shellwing?
 tfa31f588 = shellwing beenden?
+
+# Syncing the notes before quitting…
+tb66945de = Notizen werden vor dem Beenden synchronisiert…
 
 # Choose a host on the left to connect.
 tf7759ebb = Wähle links einen Host zum Verbinden.

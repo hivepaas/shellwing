@@ -24,14 +24,13 @@ mod input;
 mod keys_view;
 mod known_hosts_view;
 mod look;
-mod md_format;
-mod note_files;
 mod note_window;
 mod palette;
 mod pane;
 mod placement;
 mod placing;
 mod prompt;
+mod scrollbar;
 mod settings_view;
 mod sidebar;
 mod snippets;
@@ -229,8 +228,8 @@ fn main() -> anyhow::Result<()> {
             // each one's own dialog (and Linux has none: GPUI would draw a
             // white box).
             cx.set_prompt_builder(prompt::render);
-            // Copies of notes a run that ended left behind: plain text, gone.
-            note_files::sweep();
+            // The notes' editor: its keys, while it has the focus.
+            shellwing_note_editor::bind_keys(cx);
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations. macOS and Windows keep the system's frame

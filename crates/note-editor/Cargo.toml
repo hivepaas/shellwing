@@ -1,0 +1,23 @@
+[package]
+name = "shellwing-note-editor"
+description = "The editor of shellwing's notes: zorite-editor 0.11.2, taken in and cut down (see README.md)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+# Taken in from zorite-editor (MIT, Copyright (c) 2026 Will Lehnertz): its
+# license stays with it, in LICENSE.
+license = "MIT"
+publish = false
+
+[dependencies]
+gpui.workspace = true
+unicode-segmentation = "1"
+# What counts as an alert, a table style, a heading's scale: shared with the
+# reading view (zorite-markdown, pinned the same in the app).
+zorite-markdown = { version = "=0.10.0", default-features = false }
+# Right-to-left lines: index <-> x for the caret and clicks.
+gpui-bidi = "=0.1.1"
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }

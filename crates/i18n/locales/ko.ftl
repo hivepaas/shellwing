@@ -961,8 +961,8 @@ t24d471a9 = 제목
 # No category
 t44662d06 = 카테고리 없음
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = 여기에 작성하세요. Markdown은 미리 보기에서 표시됩니다.
+# Write here; Markdown shows as you type.
+t117b6c23 = 여기에 작성하세요. Markdown은 입력하는 대로 표시됩니다.
 
 # It is not in the vault any more.
 td11af590 = 더 이상 보관함에 없습니다.
@@ -972,27 +972,6 @@ t4545c373 = 이 노트
 
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
-
-# Edit it in another app?
-t1719e0f2 = 다른 앱에서 편집할까요?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = 그곳에서 열려 있는 동안 일반 텍스트 사본이 이 컴퓨터의 디스크(본인만 읽을 수 있는 폴더)에 있으며, 편집기가 백업이나 기록 같은 자체 사본을 남길 수 있습니다. 사본은 편집을 마치면 삭제됩니다.
-
-# Cannot make the copy: {e}
-td59a6621 = 사본을 만들 수 없습니다: { $e }
-
-# It is not text any more.
-te3591497 = 더 이상 텍스트가 아닙니다.
-
-# Not read back: {e}
-tf04d4bce = 다시 읽지 못했습니다: { $e }
-
-# Insert into {pane}
-t3d5eaffc = { $pane }에 삽입
-
-# No shell to insert into
-t825e7370 = 삽입할 셸이 없습니다
 
 # The vault's passphrase
 tb66334ea = 보관함 암호 문구
@@ -1009,9 +988,6 @@ t71734b03 = 아직 호스트가 없습니다.
 # Saving…
 tbd79b37d = 저장 중…
 
-# Click the text to edit it
-t63928671 = 텍스트를 클릭해 편집
-
 # Saved
 t8a6979e4 = 저장됨
 
@@ -1026,9 +1002,6 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
-
-# Edit in another app…
-t1c6d0a34 = 다른 앱에서 편집…
 
 # The vault is locked: unlock it in the main window.
 te327c98e = 보관함이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
@@ -1045,11 +1018,101 @@ t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 볼 수 있습니다.
 
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = 다른 앱에서 열려 있음: 그 앱에서 저장한 내용이 여기로 와서 유지됩니다.
+# Insert into {pane}
+t3d5eaffc = { $pane }에 삽입
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = 아직 작성된 내용이 없습니다. 편집을 눌러 작성하세요.
+# No shell to insert into
+t825e7370 = 삽입할 셸이 없습니다
+
+# Insert
+t0f317948 = 삽입
+
+# Cut
+t58e25863 = 잘라내기
+
+# Copy as Markdown
+t944799cd = Markdown으로 복사
+
+# Paste
+tb34a0288 = 붙여넣기
+
+# Turn into
+t10726570 = 변환
+
+# Text
+t3e142d5e = 텍스트
+
+# Heading 1
+ta590c41a = 제목 1
+
+# Heading 2
+ta490c287 = 제목 2
+
+# Heading 3
+ta390c0f4 = 제목 3
+
+# Bulleted list
+t1721be78 = 글머리 기호 목록
+
+# Numbered list
+t910847bb = 번호 목록
+
+# To-do
+t082e6fd6 = 할 일
+
+# Quote
+t5abe5677 = 인용
+
+# Callout
+t10591ec3 = 콜아웃
+
+# Code block
+t3026e515 = 코드 블록
+
+# Insert row above
+t2f1931cd = 위에 행 삽입
+
+# Insert row below
+t870e8f41 = 아래에 행 삽입
+
+# Duplicate row
+te898fcce = 행 복제
+
+# Insert column left
+tb49d3fc3 = 왼쪽에 열 삽입
+
+# Insert column right
+t60f12dcc = 오른쪽에 열 삽입
+
+# Align left
+tbdd22217 = 왼쪽 정렬
+
+# Align center
+t76127b0f = 가운데 정렬
+
+# Align right
+t1a76ce88 = 오른쪽 정렬
+
+# Grid style
+t531d1674 = 격자 스타일
+
+# Striped style
+t10b52f0d = 줄무늬 스타일
+
+# Header style
+te7eb6c45 = 머리글 스타일
+
+# Minimal style
+t70f1e7d5 = 최소 스타일
+
+# Delete row
+t33de1b52 = 행 삭제
+
+# Delete column
+tea682d34 = 열 삭제
+
+# Delete table
+t29ccb392 = 표 삭제
 
 # Untitled note
 t4ce277c4 = 제목 없는 노트
@@ -1365,9 +1428,6 @@ tef7cec6a = 로컬 셸
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = 로컬 터미널(호스트 목록의 이 컴퓨터)에서 실행할 명령과 인수입니다. 비워 두면 내 셸을 사용합니다. Enter를 누르면 저장되며, 새 로컬 탭부터 적용됩니다.
-
-# Text
-t3e142d5e = 텍스트
 
 # Raw
 ta689aa91 = 원시
@@ -2293,9 +2353,6 @@ t4efeb00b = { $names } 삭제
 # Unload {names}
 t362b9a48 = { $names } 해제
 
-# Paste
-tb34a0288 = 붙여넣기
-
 # Find…
 t1ecb565a = 찾기…
 
@@ -2496,6 +2553,9 @@ tc7b3d356 = 종료
 
 # Quit shellwing?
 tfa31f588 = shellwing을 종료하시겠습니까?
+
+# Syncing the notes before quitting…
+tb66945de = 종료하기 전에 노트를 동기화하는 중…
 
 # Choose a host on the left to connect.
 tf7759ebb = 연결하려면 왼쪽에서 호스트를 선택하세요.

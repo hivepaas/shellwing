@@ -1321,7 +1321,9 @@ impl Workspace {
     pub fn may_quit(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let open = self.connections(cx);
         if open == 0 {
-            return true;
+            // Notes changed in their windows sync first.
+            self.finish_then_quit(cx);
+            return false;
         }
         if !self.prompting {
             self.prompting = true;
@@ -1349,13 +1351,33 @@ impl Workspace {
                     if quit {
                         // The files placed until their tab closes go first.
                         let views = ws.tabs.iter().flat_map(|t| t.views()).collect();
-                        ws.take_down_then(views, window, cx, |_, _, cx| cx.quit());
+                        ws.take_down_then(views, window, cx, |ws, _, cx| ws.finish_then_quit(cx));
                     }
                 });
             })
             .detach();
         }
         false
+    }
+
+    /// Quits once the notes open in their windows are saved and, when any
+    /// changed, synced (10 s at most: a place that does not answer does not
+    /// hold the app).
+    fn finish_then_quit(&mut self, cx: &mut Context<Self>) {
+        if !crate::note_window::finish_all(cx) || self.sync.place().is_none() {
+            return cx.quit();
+        }
+        self.say(tr!("Syncing the notes before quitting…"), THEME_NOTICE, cx);
+        let sync = self.sync.clone();
+        let job =
+            cx.background_spawn(
+                async move { sync.sync_and_wait(std::time::Duration::from_secs(10)) },
+            );
+        cx.spawn(async move |_, cx| {
+            let _ = job.await;
+            cx.update(|cx| cx.quit());
+        })
+        .detach();
     }
 
     /// Closing the window quits, so the system's close button asks first too.

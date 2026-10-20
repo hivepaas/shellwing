@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+/// A note's window's size when one last closed, in logical pixels: the
+/// next opens so.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct NoteWindowState {
+    pub width: f32,
+    pub height: f32,
+}
+
 /// Where the window was when last seen, in logical pixels. For a maximised or
 /// fullscreen window, the bounds it returns to.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

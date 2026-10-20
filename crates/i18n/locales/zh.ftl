@@ -961,8 +961,8 @@ t24d471a9 = 标题
 # No category
 t44662d06 = 无分类
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = 在此书写；Markdown 在预览中显示。
+# Write here; Markdown shows as you type.
+t117b6c23 = 在此书写；Markdown 会在输入时显示。
 
 # It is not in the vault any more.
 td11af590 = 它已不在保险库中。
@@ -972,27 +972,6 @@ t4545c373 = 这条笔记
 
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
-
-# Edit it in another app?
-t1719e0f2 = 在其他应用中编辑？
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = 在那里打开期间，一份纯文本副本会存放在这台电脑的磁盘上（仅你可读的文件夹中），编辑器也可能保留自己的副本，例如备份或历史记录。完成后副本会被删除。
-
-# Cannot make the copy: {e}
-td59a6621 = 无法创建副本：{ $e }
-
-# It is not text any more.
-te3591497 = 它已不再是文本。
-
-# Not read back: {e}
-tf04d4bce = 未能读回：{ $e }
-
-# Insert into {pane}
-t3d5eaffc = 插入到 { $pane }
-
-# No shell to insert into
-t825e7370 = 没有可插入的 shell
 
 # The vault's passphrase
 tb66334ea = 保险库的密码短语
@@ -1009,9 +988,6 @@ t71734b03 = 还没有主机。
 # Saving…
 tbd79b37d = 正在保存…
 
-# Click the text to edit it
-t63928671 = 点击文本即可编辑
-
 # Saved
 t8a6979e4 = 已保存
 
@@ -1026,9 +1002,6 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
-
-# Edit in another app…
-t1c6d0a34 = 在其他应用中编辑…
 
 # The vault is locked: unlock it in the main window.
 te327c98e = 保险库已锁定：请在主窗口中解锁。
@@ -1045,11 +1018,101 @@ t3ab56316 = 请在系统对话框中确认是你本人…
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它。
 
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = 正在其他应用中打开：它保存的内容会回到这里并被保留。
+# Insert into {pane}
+t3d5eaffc = 插入到 { $pane }
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = 尚未书写内容：点击编辑开始书写。
+# No shell to insert into
+t825e7370 = 没有可插入的 shell
+
+# Insert
+t0f317948 = 插入
+
+# Cut
+t58e25863 = 剪切
+
+# Copy as Markdown
+t944799cd = 复制为 Markdown
+
+# Paste
+tb34a0288 = 粘贴
+
+# Turn into
+t10726570 = 转换为
+
+# Text
+t3e142d5e = 文本
+
+# Heading 1
+ta590c41a = 标题 1
+
+# Heading 2
+ta490c287 = 标题 2
+
+# Heading 3
+ta390c0f4 = 标题 3
+
+# Bulleted list
+t1721be78 = 项目符号列表
+
+# Numbered list
+t910847bb = 编号列表
+
+# To-do
+t082e6fd6 = 待办事项
+
+# Quote
+t5abe5677 = 引用
+
+# Callout
+t10591ec3 = 标注
+
+# Code block
+t3026e515 = 代码块
+
+# Insert row above
+t2f1931cd = 在上方插入行
+
+# Insert row below
+t870e8f41 = 在下方插入行
+
+# Duplicate row
+te898fcce = 复制行
+
+# Insert column left
+tb49d3fc3 = 在左侧插入列
+
+# Insert column right
+t60f12dcc = 在右侧插入列
+
+# Align left
+tbdd22217 = 左对齐
+
+# Align center
+t76127b0f = 居中
+
+# Align right
+t1a76ce88 = 右对齐
+
+# Grid style
+t531d1674 = 网格样式
+
+# Striped style
+t10b52f0d = 条纹样式
+
+# Header style
+te7eb6c45 = 表头样式
+
+# Minimal style
+t70f1e7d5 = 极简样式
+
+# Delete row
+t33de1b52 = 删除行
+
+# Delete column
+tea682d34 = 删除列
+
+# Delete table
+t29ccb392 = 删除表格
 
 # Untitled note
 t4ce277c4 = 无标题笔记
@@ -1365,9 +1428,6 @@ tef7cec6a = 本地 shell
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = 本地终端（主机列表中的“此计算机”）运行的程序及其参数。留空：使用你自己的 shell。按 Enter 保存；对新的本地标签页生效。
-
-# Text
-t3e142d5e = 文本
 
 # Raw
 ta689aa91 = 原始
@@ -2293,9 +2353,6 @@ t4efeb00b = 删除 { $names }
 # Unload {names}
 t362b9a48 = 卸载 { $names }
 
-# Paste
-tb34a0288 = 粘贴
-
 # Find…
 t1ecb565a = 查找…
 
@@ -2496,6 +2553,9 @@ tc7b3d356 = 退出
 
 # Quit shellwing?
 tfa31f588 = 退出 shellwing？
+
+# Syncing the notes before quitting…
+tb66945de = 正在退出前同步笔记…
 
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。

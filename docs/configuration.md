@@ -653,19 +653,36 @@ opens in a window of its own, from *Settings › Notes*, or from the palette
 (under *Notes*; *New note…* there too). The palette lists first the notes
 about the focused pane's host.
 
+A note's window opens at the size the last one had when it closed (800 × 700
+the first time; never less than 600 × 500), kept in `state/note-window.json`.
+
 In its window, a note has a title, a category, a format and the hosts it is
 about (*For a host ▾*):
 
-- **Plain text** is edited as it is.
-- **Markdown** opens as it shows (headings, emphasis, `code`, code blocks,
-  lists and task lists, quotes, GitHub alerts, rules, tables, footnotes, links
-  that open in the browser); a task's box ticks there too. *Edit* switches to
-  its text, *Preview* back. The reading view is
-  [zorite-markdown](https://crates.io/crates/zorite-markdown), which only reads
-  the text: it never changes it.
+- **Plain text** is edited as it is, in the terminal's font.
+- **Markdown** shows as it is typed: headings, emphasis, `code`, code blocks,
+  lists and task lists, quotes, GitHub alerts, rules, tables; the marks
+  (`**`, `#`) show on the caret's line only. Enter carries a list on (an empty
+  item ends it), Tab and Shift+Tab indent; a table is edited in its cells; a
+  task's box ticks on a click. The right-click menu cuts, copies (also as
+  Markdown), pastes, turns a line into another kind of block, and edits a
+  table. *Preview* shows it read-only, laid out as when it is edited: it
+  selects and copies, a task's box ticks, nothing else changes it. A code
+  block has *Copy* and *Insert* (into the main window's pane) at its top.
 
-Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z) redoes, in a
-note as in every field of the app.
+The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
+into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as
+it is, and Obsidian's constructs (`[[links]]`, `#tags`, `key:: value`) and
+math (`$`, `$$`) are plain text, as commands and paths are. The read-only view
+is the same editor, read-only.
+
+Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z (Cmd+Shift+Z) redoes. A long note scrolls,
+with a bar to drag. Text wraps to the window; a table wider than it scrolls
+sideways, by its bar, a sideways swipe, or Shift and the wheel.
+
+A new note starts with a short guide, in the app's language: what Markdown
+does there, a code block, and how it goes into the shell. Write over it;
+closed untouched, a new note is not kept.
 
 **Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
 it into the main window's focused pane (connected), without Enter, and brings
@@ -675,18 +692,15 @@ block for several lines), link, heading, quote, list, task; applied again, each
 comes off. Ctrl+B, Ctrl+I, Ctrl+E and Ctrl+K (Cmd on macOS) do bold, italic,
 code and link.
 
-**Edit in another app…** opens a note that is not sensitive in your text editor
-(*Settings › Files*, else the system's). While it is open there, a copy in plain
-text is on this computer's disk, in a folder only you can read
-(`<cache>/shellwing/notes`), and the editor may keep copies of its own (backups,
-swap files, history): the app says so first. What the editor saves comes into
-the note and is kept; *Done* (or closing the note's window, or the vault
-locking) reads it once more and removes the copy. Copies a run of the app left
-behind (it crashed, or was killed) are removed at the next start.
+It is saved on this device three seconds after it last changed (nothing is
+written when it is as last saved), when its window closes, before the vault
+locks, and when the app quits; Ctrl+S (Cmd+S on macOS) saves at once. *Delete*
+removes it, after asking.
 
-It is saved a second after typing stops, when its window closes, and when the
-app quits (Ctrl+S, Cmd+S on macOS, saves at once). *Delete* removes it, after
-asking.
+**Syncing.** While a note is open in its window, syncs leave it alone (both
+ways): it goes out when the window closes, at once if it changed, and when the
+app quits (the app syncs before it goes, ten seconds at most). The rest of the
+vault syncs as before: when it changes, and every minute.
 
 While the vault is locked, a note's window holds no text: it comes back once
 the vault is open. A **sensitive** note's text shows only after asking it is

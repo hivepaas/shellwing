@@ -981,8 +981,8 @@ t24d471a9 = Titre
 # No category
 t44662d06 = Sans catégorie
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Écrivez ici ; le Markdown s'affiche en aperçu.
+# Write here; Markdown shows as you type.
+t117b6c23 = Écrivez ici ; le Markdown s'affiche à la frappe.
 
 # It is not in the vault any more.
 td11af590 = Il n'est plus dans le coffre.
@@ -992,27 +992,6 @@ t4545c373 = cette note
 
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
-
-# Edit it in another app?
-t1719e0f2 = La modifier dans une autre application ?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = Tant qu'elle y est ouverte, une copie en texte brut se trouve sur le disque de cet ordinateur (dans un dossier que vous seul pouvez lire), et l'éditeur peut garder ses propres copies, comme des sauvegardes ou un historique. La copie disparaît quand vous avez fini.
-
-# Cannot make the copy: {e}
-td59a6621 = Impossible de créer la copie : { $e }
-
-# It is not text any more.
-te3591497 = Ce n'est plus du texte.
-
-# Not read back: {e}
-tf04d4bce = Non relu : { $e }
-
-# Insert into {pane}
-t3d5eaffc = Insérer dans { $pane }
-
-# No shell to insert into
-t825e7370 = Aucun shell où insérer
 
 # The vault's passphrase
 tb66334ea = Phrase secrète du coffre
@@ -1029,9 +1008,6 @@ t71734b03 = Aucun serveur pour l'instant.
 # Saving…
 tbd79b37d = Enregistrement…
 
-# Click the text to edit it
-t63928671 = Cliquez sur le texte pour le modifier
-
 # Saved
 t8a6979e4 = Enregistrés
 
@@ -1046,9 +1022,6 @@ tfdda4cf7 = Aperçu
 
 # Sensitive
 tf603feef = Sensible
-
-# Edit in another app…
-t1c6d0a34 = Modifier dans une autre application…
 
 # The vault is locked: unlock it in the main window.
 te327c98e = Le coffre est verrouillé : déverrouillez-le dans la fenêtre principale.
@@ -1065,11 +1038,101 @@ t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Aucune phrase secrète ne protège le coffre : toute personne devant cet appareil peut l'afficher.
 
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = Ouverte dans une autre application : ce qu'elle enregistre arrive ici et est conservé.
+# Insert into {pane}
+t3d5eaffc = Insérer dans { $pane }
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Rien d'écrit pour l'instant : Modifier pour écrire.
+# No shell to insert into
+t825e7370 = Aucun shell où insérer
+
+# Insert
+t0f317948 = Insérer
+
+# Cut
+t58e25863 = Couper
+
+# Copy as Markdown
+t944799cd = Copier en Markdown
+
+# Paste
+tb34a0288 = Coller
+
+# Turn into
+t10726570 = Transformer en
+
+# Text
+t3e142d5e = Texte
+
+# Heading 1
+ta590c41a = Titre 1
+
+# Heading 2
+ta490c287 = Titre 2
+
+# Heading 3
+ta390c0f4 = Titre 3
+
+# Bulleted list
+t1721be78 = Liste à puces
+
+# Numbered list
+t910847bb = Liste numérotée
+
+# To-do
+t082e6fd6 = Tâche
+
+# Quote
+t5abe5677 = Citation
+
+# Callout
+t10591ec3 = Encadré
+
+# Code block
+t3026e515 = Bloc de code
+
+# Insert row above
+t2f1931cd = Insérer une ligne au-dessus
+
+# Insert row below
+t870e8f41 = Insérer une ligne en dessous
+
+# Duplicate row
+te898fcce = Dupliquer la ligne
+
+# Insert column left
+tb49d3fc3 = Insérer une colonne à gauche
+
+# Insert column right
+t60f12dcc = Insérer une colonne à droite
+
+# Align left
+tbdd22217 = Aligner à gauche
+
+# Align center
+t76127b0f = Centrer
+
+# Align right
+t1a76ce88 = Aligner à droite
+
+# Grid style
+t531d1674 = Style grille
+
+# Striped style
+t10b52f0d = Style rayé
+
+# Header style
+te7eb6c45 = Style en-tête
+
+# Minimal style
+t70f1e7d5 = Style minimal
+
+# Delete row
+t33de1b52 = Supprimer la ligne
+
+# Delete column
+tea682d34 = Supprimer la colonne
+
+# Delete table
+t29ccb392 = Supprimer le tableau
 
 # Untitled note
 t4ce277c4 = Note sans titre
@@ -1385,9 +1448,6 @@ tef7cec6a = Shell local
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = Ce qu'exécute un terminal local (Cet ordinateur, dans la liste des serveurs), avec ses arguments. Vide : votre propre shell. Enter enregistre ; les nouveaux onglets locaux en bénéficient.
-
-# Text
-t3e142d5e = Texte
 
 # Raw
 ta689aa91 = Brut
@@ -2360,9 +2420,6 @@ t4efeb00b = Supprimer { $names }
 # Unload {names}
 t362b9a48 = Décharger { $names }
 
-# Paste
-tb34a0288 = Coller
-
 # Find…
 t1ecb565a = Rechercher…
 
@@ -2580,6 +2637,9 @@ tc7b3d356 = Quitter
 
 # Quit shellwing?
 tfa31f588 = Quitter shellwing ?
+
+# Syncing the notes before quitting…
+tb66945de = Synchronisation des notes avant de quitter…
 
 # Choose a host on the left to connect.
 tf7759ebb = Choisissez un serveur à gauche pour vous connecter.

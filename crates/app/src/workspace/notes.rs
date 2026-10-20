@@ -13,17 +13,29 @@ impl Workspace {
     fn note_hooks(&self, cx: &Context<Self>) -> Hooks {
         let ws = cx.entity().downgrade();
         let (saved, touched, hosts, pane, insert) =
-            (ws.clone(), ws.clone(), ws.clone(), ws.clone(), ws);
+            (ws.clone(), ws.clone(), ws.clone(), ws.clone(), ws.clone());
+        let (hold, release) = (self.sync.clone(), self.sync.clone());
+        let store = self.live.store().cloned();
         Hooks {
             saved: Rc::new(move |cx| {
+                // Saved here only: it syncs when its window lets it go.
                 let _ = saved.update(cx, |ws, cx| {
-                    ws.vault_changed();
                     if let Some((view, _)) = &ws.settings {
                         let view = view.clone();
                         cx.defer(move |cx| view.update(cx, |v, cx| v.notes_changed(cx)));
                     }
                 });
             }),
+            sized: Rc::new(move |width, height, _| {
+                if let Some(s) = &store
+                    && let Err(e) =
+                        s.save_note_window(&shellwing_config::NoteWindowState { width, height })
+                {
+                    eprintln!("cannot keep the note window's size: {e}");
+                }
+            }),
+            hold: Rc::new(move |id, _| hold.hold(id)),
+            release: Rc::new(move |id, changed, _| release.release(id, changed)),
             touched: Rc::new(move |cx| {
                 let _ = touched.update(cx, |ws, _| ws.last_input = std::time::Instant::now());
             }),
@@ -69,7 +81,12 @@ impl Workspace {
     pub(crate) fn open_note(&mut self, note: Option<Note>, cx: &mut Context<Self>) {
         let hooks = self.note_hooks(cx);
         let vault = self.vault.clone();
-        cx.defer(move |cx| note_window::open(note, vault, hooks, cx));
+        let last = self
+            .live
+            .store()
+            .and_then(|s| s.note_window())
+            .map(|s| (s.width, s.height));
+        cx.defer(move |cx| note_window::open(note, vault, hooks, last, cx));
     }
 
     pub(super) fn open_note_id(&mut self, id: &str, cx: &mut Context<Self>) {
