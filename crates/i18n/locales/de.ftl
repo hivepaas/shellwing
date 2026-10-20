@@ -2400,6 +2400,15 @@ tc12e4203 = Nicht abgelegt: { $e }
 # Removing the config files placed…
 tbd123099 = Die abgelegten Konfigurationsdateien werden entfernt…
 
+# Open a tab first
+t6460fddf = Öffne zuerst einen Tab
+
+# Connect first
+t0b55252f = Verbinde dich zuerst
+
+# Over SSH only
+t14e43465 = Nur über SSH
+
 # Snippets · {category}
 t85f58d76 = Snippets · { $category }
 
@@ -2409,6 +2418,9 @@ t3bbceccc =
         [one] Enter · Alt+Enter: { $n } Bereich
        *[other] Enter · Alt+Enter: { $n } Bereiche
     }
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Öffne zuerst einen Tab: Ein Snippet läuft im ausgewählten Bereich.
 
 # in this pane
 t57139bb8 = in diesem Bereich

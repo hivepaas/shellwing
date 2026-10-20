@@ -2440,6 +2440,15 @@ tc12e4203 = Не сохранено: { $e }
 # Removing the config files placed…
 tbd123099 = Удаление размещённых файлов конфигурации…
 
+# Open a tab first
+t6460fddf = Сначала откройте вкладку
+
+# Connect first
+t0b55252f = Сначала подключитесь
+
+# Over SSH only
+t14e43465 = Только по SSH
+
 # Snippets · {category}
 t85f58d76 = Сниппеты · { $category }
 
@@ -2451,6 +2460,9 @@ t3bbceccc =
         [many] Enter · Alt+Enter: { $n } панелей
        *[other] Enter · Alt+Enter: { $n } панели
     }
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Сначала откройте вкладку: сниппет выполняется в выбранной панели.
 
 # in this pane
 t57139bb8 = в этой панели

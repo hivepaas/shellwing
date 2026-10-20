@@ -2400,6 +2400,15 @@ tc12e4203 = Non conservée : { $e }
 # Removing the config files placed…
 tbd123099 = Suppression des fichiers de configuration déposés…
 
+# Open a tab first
+t6460fddf = Ouvrez d'abord un onglet
+
+# Connect first
+t0b55252f = Connectez-vous d'abord
+
+# Over SSH only
+t14e43465 = Par SSH uniquement
+
 # Snippets · {category}
 t85f58d76 = Extraits · { $category }
 
@@ -2409,6 +2418,9 @@ t3bbceccc =
         [one] Enter · Alt+Enter : { $n } volet
        *[other] Enter · Alt+Enter : { $n } volets
     }
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Ouvrez d'abord un onglet : un extrait s'exécute dans le volet sélectionné.
 
 # in this pane
 t57139bb8 = dans ce volet

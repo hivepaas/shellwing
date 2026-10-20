@@ -854,12 +854,16 @@ t63904f7b = A file on { $host } to keep in the vault
 t8589664d = Kept { $path } in the vault: see Settings › Config files.
 tc12e4203 = Not kept: { $e }
 tbd123099 = Removing the config files placed…
+t6460fddf = Open a tab first
+t0b55252f = Connect first
+t14e43465 = Over SSH only
 t85f58d76 = Snippets · { $category }
 t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter: { $n } pane
        *[other] Enter · Alt+Enter: { $n } panes
     }
+t45260fd2 = Open a tab first: a snippet runs in the focused pane.
 t57139bb8 = in this pane
 tca97c422 =
     { $n ->

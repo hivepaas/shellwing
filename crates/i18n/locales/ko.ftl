@@ -2332,11 +2332,23 @@ tc12e4203 = 보관되지 않음: { $e }
 # Removing the config files placed…
 tbd123099 = 배치된 설정 파일을 삭제하는 중…
 
+# Open a tab first
+t6460fddf = 먼저 탭을 여세요
+
+# Connect first
+t0b55252f = 먼저 연결하세요
+
+# Over SSH only
+t14e43465 = SSH 전용
+
 # Snippets · {category}
 t85f58d76 = 스니펫 · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: 창 { $n }개
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = 먼저 탭을 여세요. 스니펫은 선택된 창에서 실행됩니다.
 
 # in this pane
 t57139bb8 = 이 창에서

@@ -490,34 +490,53 @@ impl Workspace {
 
     /// The environments that can be loaded in the focused pane.
     fn pane_envs(&self, cx: &Context<Self>) -> Vec<shellwing_vault::Environment> {
-        let Some((host, group)) = self.pane_scope(cx) else {
-            return vec![];
-        };
         let mut envs: Vec<_> = self
             .vault
             .ready()
             .and_then(|v| v.environments().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|e| snippets::Scope::parse(&e.scope).fits(Some(&host), group.as_deref()))
+            .filter(|e| self.fits_pane(&e.scope, cx))
             .collect();
         envs.sort_by_key(|e| e.name.to_lowercase());
         envs
     }
 
+    /// Whether something offered for `scope` is for the focused pane's
+    /// host; with no pane, everything is (listed, to say what it needs).
+    pub(super) fn fits_pane(&self, scope: &str, cx: &Context<Self>) -> bool {
+        match self.pane_scope(cx) {
+            Some((host, group)) => {
+                snippets::Scope::parse(scope).fits(Some(&host), group.as_deref())
+            }
+            None => true,
+        }
+    }
+
+    /// Why the focused pane cannot take an environment or a config file
+    /// (`ssh`: over SSH only) now, if so: said in the palette, and on Enter.
+    pub(super) fn pane_unready(&self, ssh: bool, cx: &Context<Self>) -> Option<String> {
+        let Some(view) = self.active_tab() else {
+            return Some(tr!("Open a tab first"));
+        };
+        let s = view.read(cx).session();
+        if s.status() != Status::Connected {
+            return Some(tr!("Connect first"));
+        }
+        (ssh && s.is_local()).then(|| tr!("Over SSH only"))
+    }
+
     /// The snippets the palette offers for the focused pane's host.
     fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some((host, group)) = self.pane_scope(cx) else {
-            return vec![];
-        };
         let panes = self.snippet_targets(true).len();
+        let no_tab = self.active_tab().is_none();
         let mut list: Vec<_> = self
             .vault
             .ready()
             .and_then(|v| v.snippets().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|sn| snippets::Scope::parse(&sn.scope).fits(Some(&host), group.as_deref()))
+            .filter(|sn| self.fits_pane(&sn.scope, cx))
             .collect();
         // By category, those without first, as in Settings.
         list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
@@ -535,7 +554,9 @@ impl Workspace {
                 )
                 .detail(snippets::one_line(&sn.command))
                 .section(Part::Snippets)
-                .hint(if panes > 1 {
+                .hint(if no_tab {
+                    tr!("Open a tab first")
+                } else if panes > 1 {
                     tr_n!(
                         panes,
                         "Enter · Alt+Enter: {n} pane",
@@ -549,6 +570,13 @@ impl Workspace {
     }
 
     fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if self.active_tab().is_none() {
+            return self.say(
+                tr!("Open a tab first: a snippet runs in the focused pane."),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
         let Some(snippet) = self
             .vault
             .ready()
@@ -663,25 +691,26 @@ impl Workspace {
     /// The environments the palette offers to load into the focused pane,
     /// while it is connected.
     fn env_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some(view) = self.active_tab() else {
-            return vec![];
-        };
-        if view.read(cx).session().status() != Status::Connected {
-            return vec![];
-        }
-        let loaded: Vec<String> = view
-            .read(cx)
-            .loaded_envs()
-            .iter()
-            .map(|e| e.id.clone())
-            .collect();
+        let unready = self.pane_unready(false, cx);
+        let loaded: Vec<String> = self
+            .active_tab()
+            .map(|v| {
+                v.read(cx)
+                    .loaded_envs()
+                    .iter()
+                    .map(|e| e.id.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
         self.pane_envs(cx)
             .into_iter()
             .map(|e| {
                 let on = loaded.contains(&e.id);
                 Entry::new(Kind::Env(e.id.clone()), tr!("Environments"), e.name.clone())
                     .detail(e.names.join(" "))
-                    .hint(if on {
+                    .hint(if let Some(why) = &unready {
+                        why.clone()
+                    } else if on {
                         tr!("loaded: Enter loads it again")
                     } else {
                         "Enter".into()
@@ -693,6 +722,9 @@ impl Workspace {
 
     /// Loads environment `id` into the focused pane.
     fn load_env(&mut self, id: &str, cx: &mut Context<Self>) {
+        if let Some(why) = self.pane_unready(false, cx) {
+            return self.say(why, CONFIG_NOTICE, cx);
+        }
         let Some(view) = self.active_tab().cloned() else {
             return;
         };
@@ -1382,7 +1414,7 @@ impl Workspace {
                 );
             }
         }
-        if self.vault.locked().is_some() && self.active_tab().is_some() {
+        if self.vault.locked().is_some() {
             // Not left out without a word: they are in the locked vault.
             entries.push(
                 Entry::new(

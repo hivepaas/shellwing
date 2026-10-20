@@ -2332,11 +2332,23 @@ tc12e4203 = Chưa giữ: { $e }
 # Removing the config files placed…
 tbd123099 = Đang gỡ các tệp cấu hình đã đặt…
 
+# Open a tab first
+t6460fddf = Hãy mở một tab trước
+
+# Connect first
+t0b55252f = Hãy kết nối trước
+
+# Over SSH only
+t14e43465 = Chỉ qua SSH
+
 # Snippets · {category}
 t85f58d76 = Đoạn lệnh · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: { $n } khung
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Hãy mở một tab trước: đoạn lệnh chạy trong pane đang chọn.
 
 # in this pane
 t57139bb8 = trong khung này

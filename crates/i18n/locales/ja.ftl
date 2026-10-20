@@ -2332,11 +2332,23 @@ tc12e4203 = 保存できませんでした：{ $e }
 # Removing the config files placed…
 tbd123099 = 配置した設定ファイルを削除しています…
 
+# Open a tab first
+t6460fddf = 先にタブを開いてください
+
+# Connect first
+t0b55252f = 先に接続してください
+
+# Over SSH only
+t14e43465 = SSH のみ
+
 # Snippets · {category}
 t85f58d76 = スニペット · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 個のペイン
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = 先にタブを開いてください。スニペットは選択中のペインで実行されます。
 
 # in this pane
 t57139bb8 = このペインで

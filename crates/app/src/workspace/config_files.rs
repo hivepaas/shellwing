@@ -16,24 +16,24 @@ impl Workspace {
     /// The config files the palette offers to place on the focused pane's
     /// host, while it is connected (over SSH).
     pub(super) fn file_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some(view) = self.active_tab() else {
-            return vec![];
-        };
-        let v = view.read(cx);
-        if v.session().status() != Status::Connected || v.session().is_local() {
-            return vec![];
-        }
-        let Some((host, group)) = self.pane_scope(cx) else {
-            return vec![];
-        };
-        let placed: Vec<String> = v.placed_files().iter().map(|p| p.id.clone()).collect();
+        let unready = self.pane_unready(true, cx);
+        let placed: Vec<String> = self
+            .active_tab()
+            .map(|v| {
+                v.read(cx)
+                    .placed_files()
+                    .iter()
+                    .map(|p| p.id.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
         let mut files: Vec<ConfigFile> = self
             .vault
             .ready()
             .and_then(|v| v.config_files().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|f| snippets::Scope::parse(&f.scope).fits(Some(&host), group.as_deref()))
+            .filter(|f| self.fits_pane(&f.scope, cx))
             .collect();
         files.sort_by_key(|f| (f.category.trim().to_lowercase(), f.name.to_lowercase()));
         files
@@ -50,7 +50,9 @@ impl Workspace {
                     f.name.clone(),
                 )
                 .detail(format!("{} · {}", f.path, size_said(f.size)))
-                .hint(if placed.contains(&f.id) {
+                .hint(if let Some(why) = &unready {
+                    why.clone()
+                } else if placed.contains(&f.id) {
                     tr!("placed: Enter places it again")
                 } else {
                     "Enter".into()
@@ -80,6 +82,9 @@ impl Workspace {
 
     /// Asks where on the focused pane's host to place config file `id`.
     pub(super) fn ask_place(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(why) = self.pane_unready(true, cx) {
+            return self.say(why, CONFIG_NOTICE, cx);
+        }
         let (Some(file), Some(view)) = (self.config_file(id), self.active_tab().cloned()) else {
             return;
         };

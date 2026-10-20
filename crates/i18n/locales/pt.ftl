@@ -2400,6 +2400,15 @@ tc12e4203 = Não guardada: { $e }
 # Removing the config files placed…
 tbd123099 = Removendo os arquivos de configuração colocados…
 
+# Open a tab first
+t6460fddf = Abra uma aba primeiro
+
+# Connect first
+t0b55252f = Conecte-se primeiro
+
+# Over SSH only
+t14e43465 = Só por SSH
+
 # Snippets · {category}
 t85f58d76 = Trechos · { $category }
 
@@ -2409,6 +2418,9 @@ t3bbceccc =
         [one] Enter · Alt+Enter: { $n } painel
        *[other] Enter · Alt+Enter: { $n } painéis
     }
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Abra uma aba primeiro: um trecho roda no painel selecionado.
 
 # in this pane
 t57139bb8 = neste painel

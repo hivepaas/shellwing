@@ -2332,11 +2332,23 @@ tc12e4203 = 未保存：{ $e }
 # Removing the config files placed…
 tbd123099 = 正在移除已放置的配置文件…
 
+# Open a tab first
+t6460fddf = 请先打开一个标签页
+
+# Connect first
+t0b55252f = 请先连接
+
+# Over SSH only
+t14e43465 = 仅限 SSH
+
 # Snippets · {category}
 t85f58d76 = 代码片段 · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 个窗格
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = 请先打开一个标签页：代码片段在选中的窗格中运行。
 
 # in this pane
 t57139bb8 = 在此窗格中
