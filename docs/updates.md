@@ -2,10 +2,8 @@
 
 shellwing tells its user when a newer version is out (*Settings › About*, a dot
 on the Settings button, an entry of the palette). It looks once a day while
-`[updates] check` is on (the default), and when asked (*Check now*). Installing
-what is offered is the user's, for now: the app opens the release's page, or, when
-something else installed it (Homebrew, Scoop, Flatpak, Snap, a system package, a
-store), says what updates it.
+`[updates] check` is on (the default), and when asked (*Check now*). Nothing is
+downloaded or installed until the user says so (see [Installing](#installing)).
 
 ## Channels
 
@@ -46,8 +44,41 @@ files one by one can never serve a new list with an old signature. `release.json
 
 The app refuses a list that does not hold together: a version not written
 `vX.Y.Z` or `vX.Y.Z-betaN`, a channel naming a release it does not list, a beta on
-stable, a SHA-256 that is not one. `archives` is for the app installing a release
-itself, later; nothing reads it yet.
+stable, a SHA-256 that is not one, a file not named as its platform's is
+(below).
+
+## Installing
+
+What the app does with a release depends on how it was installed, as told from
+where it runs:
+
+| installed as | the app |
+|---|---|
+| an AppImage (`$APPIMAGE`) | downloads the release's AppImage and puts it in place of this one |
+| `Shellwing.app` on macOS | downloads the `.app` (tarred), checks it with `codesign` (valid, signed by the team that signed this one), and swaps the two |
+| by its installer on Windows (`…\AppData\Local\Programs\shellwing\`, `…\Program Files\shellwing\`) | downloads the installer and runs it, quiet (`/S`), once the app has quit |
+| by Homebrew, Scoop, Flatpak, Snap, a system package, a store | says what updates it (`brew upgrade shellwing`, …) |
+| by hand (a binary in a folder) | opens the release's page |
+
+A release has one file for each platform, named so (`v0.2.0`):
+
+| platform | file |
+|---|---|
+| `linux_x86_64`, `linux_aarch64` | `shellwing_0.2.0_linux_x86_64.AppImage` |
+| `macos_aarch64`, `macos_x86_64` | `shellwing_0.2.0_macos_aarch64.app.tar.gz` |
+| `windows_x86_64`, `windows_aarch64` | `shellwing_0.2.0_windows_x86_64-setup.exe` |
+
+They are the release's assets on GitHub
+(`https://github.com/hivepaas/shellwing/releases/download/v0.2.0/<file>`); the
+list names each one's SHA-256, and the app keeps a download only when its hash is
+that one. The signed list is read again, and checked again, before each download.
+
+*Download and install* downloads the file to the cache folder
+(`~/.cache/shellwing/updates/` and the like), and says the release is ready. It is
+installed as the app quits: at *Restart now* (asked first while connections are
+open, as quitting is), which starts the new one, or whenever the user quits. A
+release downloaded by an earlier run is still ready at the next start; once the
+app running is that version or newer, its file goes.
 
 ## Signing
 

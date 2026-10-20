@@ -1972,14 +1972,26 @@ tf6c5f76d = 키 입력이나 클릭 없이 이 시간이 지나면 암호 문구
 # This build has no release keys, so it cannot tell of updates.
 t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
 
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } 준비 완료
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Restart now
+t54001a7c = 지금 다시 시작
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
 # Looking for a newer version…
 tf1905fe9 = 새 버전을 확인하는 중…
 
 # How to update
 t3603428f = 업데이트 방법
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } 출시
+# Download and install
+t1a99173f = 다운로드 및 설치
 
 # {by} updates it: {command}
 tdf2cab9c = { $by }에서 업데이트합니다: { $command }
@@ -1987,8 +1999,17 @@ tdf2cab9c = { $by }에서 업데이트합니다: { $command }
 # {by} updates it.
 t84b27295 = { $by }에서 업데이트합니다.
 
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = 다운로드하고 확인한 뒤, 종료할 때 설치합니다.
+
 # Download it, and install it in place of this one.
 t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 출시
+
+# The download failed: {why}
+t5e96c075 = 다운로드 실패: { $why }
 
 # Skip this version
 t2c33d756 = 이 버전 건너뛰기
@@ -2020,8 +2041,8 @@ t4f0e0677 = 지금 확인
 # Look for updates once a day
 tcc27ace1 = 하루에 한 번 업데이트 확인
 
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
-t64b22a53 = GitHub에서 릴리스 목록을 읽고, 서명이 검증된 경우에만 신뢰합니다. 직접 승인하지 않으면 아무것도 설치되지 않습니다.
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = GitHub에서 릴리스 목록을 읽고, 서명이 검증될 때만 신뢰합니다. 사용자 동의 없이는 아무것도 다운로드하거나 설치하지 않습니다.
 
 # Open config.toml
 t07a52335 = config.toml 열기
@@ -2851,6 +2872,18 @@ t270e30ba = shellwing { $version }이(가) 출시되었습니다: { $by }에서 
 # shellwing {version} is out: {by} updates it.
 t34c8e3f2 = shellwing { $version }이(가) 출시되었습니다: { $by }에서 업데이트합니다.
 
+# No folder to download to.
+t2bfc1370 = 다운로드할 폴더가 없습니다.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } 준비 완료: 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Downloading… {got} of {total}
+taee668c2 = 다운로드 중… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = 다운로드 중… { $got }
+
 # Over SSH only
 t14e43465 = SSH 전용
 
@@ -2913,6 +2946,12 @@ tf3732b18 = 연결이 열려 있습니다. 종료하면 연결이 닫힙니다.
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = 연결 { $n }개가 열려 있습니다. 종료하면 연결이 닫힙니다.
+
+# Restart
+t2f44ed8c = 다시 시작
+
+# Restart to install the update?
+tdab4b0cf = 다시 시작하여 업데이트를 설치하시겠습니까?
 
 # Quit shellwing?
 tfa31f588 = shellwing을 종료하시겠습니까?
@@ -3003,6 +3042,9 @@ tc73a9bf6 = 서버와 비밀번호 동기화…
 
 # Settings…
 t64d0d0b4 = 설정…
+
+# Restart to install shellwing {version}
+taadea299 = 다시 시작하여 shellwing { $version } 설치
 
 # shellwing {version} is out…
 tab699ac8 = shellwing { $version } 출시…

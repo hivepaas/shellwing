@@ -24,7 +24,7 @@ use crate::known_hosts_view::KnownHostsView;
 use crate::look::ui;
 use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
-use crate::workspace::Workspace;
+use crate::workspace::{UpdateStage, Workspace};
 
 mod keyboard;
 
@@ -2298,60 +2298,104 @@ impl SettingsView {
             label(&tr!(
                 "This build has no release keys, so it cannot tell of updates."
             ))
+        } else if let UpdateStage::Ready(v) = &u.stage {
+            update_card(
+                tr!("shellwing {version} is ready", version = v.to_string()),
+                div().child(label(&tr!(
+                    "It is installed when you quit, or now with Restart."
+                ))),
+            )
+            .child(
+                small_button("update-restart", &tr!("Restart now"))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::RestartToUpdate, w, cx))),
+            )
+        } else if let UpdateStage::Downloading(got, of) = u.stage {
+            let v = u.offered.clone().unwrap_or_default();
+            update_card(
+                tr!("shellwing {version}", version = v),
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.))
+                    .child(label(&Workspace::download_said(got, of)))
+                    .when_some(of.filter(|n| *n > 0), |d, of| {
+                        let done = (got as f32 / of as f32).clamp(0., 1.);
+                        d.child(
+                            div()
+                                .h(px(4.))
+                                .w_full()
+                                .rounded_full()
+                                .bg(rgb(colors().edge))
+                                .child(
+                                    div()
+                                        .h_full()
+                                        .w(gpui::relative(done))
+                                        .rounded_full()
+                                        .bg(rgb(colors().accent)),
+                                ),
+                        )
+                    }),
+            )
         } else if u.checking {
             label(&tr!("Looking for a newer version…"))
         } else if let Some(v) = &u.offered {
             let get = match u.managed {
-                None => tr!("Download"),
                 Some(_) => tr!("How to update"),
+                None if u.updates_itself => match u.stage {
+                    UpdateStage::Failed(_) => tr!("Try again"),
+                    _ => tr!("Download and install"),
+                },
+                None => tr!("Download"),
             };
-            div()
-                .flex()
-                .flex_wrap()
-                .items_center()
-                .gap(px(10.))
-                .p(px(12.))
-                .rounded(px(8.))
-                .border_1()
-                .border_color(rgb(colors().accent))
-                .bg(rgb(colors().selected))
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w(px(220.))
-                        .flex()
-                        .flex_col()
-                        .gap(px(2.))
-                        .child(
-                            div()
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .child(tr!("shellwing {version} is out", version = v.clone())),
-                        )
-                        .child(label(&match u.managed {
-                            Some((by, Some(command))) => {
-                                tr!(
-                                    "{by} updates it: {command}",
-                                    by = crate::workspace::by_said(by),
-                                    command = command
-                                )
-                            }
-                            Some((by, None)) => {
-                                tr!("{by} updates it.", by = crate::workspace::by_said(by))
-                            }
-                            None => tr!("Download it, and install it in place of this one."),
-                        })),
-                )
-                .child(
-                    small_button("update-get", &get)
-                        .on_click(cx.listener(|v, _, w, cx| v.run(Action::Update, w, cx))),
-                )
-                .child(
-                    small_button("update-skip", &tr!("Skip this version")).on_click(cx.listener(
-                        |v, _, _, cx| {
-                            let _ = v.workspace.update(cx, |ws, cx| ws.skip_update(cx));
+            let said = match u.managed {
+                Some((by, Some(command))) => {
+                    tr!(
+                        "{by} updates it: {command}",
+                        by = crate::workspace::by_said(by),
+                        command = command
+                    )
+                }
+                Some((by, None)) => {
+                    tr!("{by} updates it.", by = crate::workspace::by_said(by))
+                }
+                None if u.updates_itself => {
+                    tr!("It is downloaded and checked, then installed when you quit.")
+                }
+                None => tr!("Download it, and install it in place of this one."),
+            };
+            update_card(
+                tr!("shellwing {version} is out", version = v.clone()),
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(label(&said))
+                    .when_some(
+                        match &u.stage {
+                            UpdateStage::Failed(why) => Some(why.clone()),
+                            _ => None,
                         },
-                    )),
-                )
+                        |d, why| {
+                            d.child(
+                                div()
+                                    .text_size(ui(12.))
+                                    .text_color(rgb(colors().bad))
+                                    .child(tr!("The download failed: {why}", why = why)),
+                            )
+                        },
+                    ),
+            )
+            .child(
+                small_button("update-get", &get)
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::Update, w, cx))),
+            )
+            .child(
+                small_button("update-skip", &tr!("Skip this version")).on_click(cx.listener(
+                    |v, _, _, cx| {
+                        let _ = v.workspace.update(cx, |ws, cx| ws.skip_update(cx));
+                    },
+                )),
+            )
         } else if let Some(p) = &u.problem {
             div()
                 .text_size(ui(12.))
@@ -2395,12 +2439,37 @@ impl SettingsView {
                 "update-auto",
                 on,
                 &tr!("Look for updates once a day"),
-                &tr!("It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you."),
+                &tr!("It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you."),
                 cx.listener(move |v, _, _, cx| {
                     v.change(&["updates", "check"], Some(SettingValue::Bool(!on)), cx)
                 }),
             )))
     }
+}
+
+/// A release, as About shows it: what it is, and what is said of it; the
+/// buttons follow.
+fn update_card(title: String, body: gpui::Div) -> gpui::Div {
+    div()
+        .flex()
+        .flex_wrap()
+        .items_center()
+        .gap(px(10.))
+        .p(px(12.))
+        .rounded(px(8.))
+        .border_1()
+        .border_color(rgb(colors().accent))
+        .bg(rgb(colors().selected))
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(220.))
+                .flex()
+                .flex_col()
+                .gap(px(2.))
+                .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
+                .child(body),
+        )
 }
 
 fn page(title: &str) -> gpui::Div {

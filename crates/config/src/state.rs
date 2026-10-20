@@ -12,6 +12,10 @@ pub struct UpdateState {
     /// A release the user said to skip.
     #[serde(default)]
     pub skipped: Option<String>,
+    /// A release downloaded and checked, waiting to be installed as the app
+    /// quits: its version, and its file.
+    #[serde(default)]
+    pub staged: Option<(String, String)>,
 }
 
 /// A note's window's size when one last closed, in logical pixels: the

@@ -39,7 +39,7 @@ mod config_files;
 mod notes;
 mod snippet_windows;
 mod updates;
-pub(crate) use updates::{UpdateSnap, by_said};
+pub(crate) use updates::{Stage as UpdateStage, UpdateSnap, by_said};
 
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
@@ -1359,10 +1359,21 @@ impl Workspace {
                     "{n} connections are open; quitting closes them."
                 )
             };
-            let (quit_label, cancel_label) = (tr!("Quit"), tr!("Cancel"));
+            // Restarting to install an update says so.
+            let restart = self.updates.relaunch;
+            let (quit_label, cancel_label) = if restart {
+                (tr!("Restart"), tr!("Cancel"))
+            } else {
+                (tr!("Quit"), tr!("Cancel"))
+            };
+            let title = if restart {
+                tr!("Restart to install the update?")
+            } else {
+                tr!("Quit shellwing?")
+            };
             let answer = window.prompt(
                 PromptLevel::Warning,
-                &tr!("Quit shellwing?"),
+                &title,
                 Some(&detail),
                 &[quit_label.as_str(), cancel_label.as_str()],
                 cx,
@@ -1371,6 +1382,9 @@ impl Workspace {
                 let quit = matches!(answer.await, Ok(0));
                 let _ = this.update_in(cx, |ws, window, cx| {
                     ws.prompting = false;
+                    if !quit {
+                        ws.updates.relaunch = false;
+                    }
                     if quit {
                         // The files placed until their tab closes go first.
                         let views = ws.tabs.iter().flat_map(|t| t.views()).collect();
@@ -1656,7 +1670,16 @@ impl Workspace {
             tr!("Settings…"),
             keys.hint(Hotkey::Settings),
         );
-        if let Some(v) = self.update_offered() {
+        if let updates::Stage::Ready(v) = &self.updates.stage {
+            setting(
+                Action::RestartToUpdate,
+                tr!(
+                    "Restart to install shellwing {version}",
+                    version = v.to_string()
+                ),
+                String::new(),
+            );
+        } else if let Some(v) = self.update_offered() {
             setting(
                 Action::Update,
                 tr!("shellwing {version} is out…", version = v.to_string()),
@@ -3451,6 +3474,7 @@ impl Workspace {
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
             Action::Update => self.get_update(cx),
+            Action::RestartToUpdate => self.restart_to_update(window, cx),
             Action::CheckUpdates => {
                 self.check_updates(cx);
                 self.open_settings(Page::About, window, cx);
@@ -4448,17 +4472,21 @@ impl Workspace {
                             .text_color(rgb(if open { colors().text } else { colors().soft })),
                     )
                     // A newer shellwing is out (Settings › About says which).
-                    .when(self.update_offered().is_some(), |d| {
-                        d.child(
-                            div()
-                                .absolute()
-                                .top(px(5.))
-                                .right(px(5.))
-                                .size(px(7.))
-                                .rounded_full()
-                                .bg(rgb(colors().accent)),
-                        )
-                    }),
+                    .when(
+                        self.update_offered().is_some()
+                            || matches!(self.updates.stage, updates::Stage::Ready(_)),
+                        |d| {
+                            d.child(
+                                div()
+                                    .absolute()
+                                    .top(px(5.))
+                                    .right(px(5.))
+                                    .size(px(7.))
+                                    .rounded_full()
+                                    .bg(rgb(colors().accent)),
+                            )
+                        },
+                    ),
             )
             .child(self.sync_button(cx))
     }
