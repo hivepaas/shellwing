@@ -1008,12 +1008,6 @@ te3591497 = Ce n'est plus du texte.
 # Not read back: {e}
 tf04d4bce = Non relu : { $e }
 
-# Insert into {pane}
-t3d5eaffc = Insérer dans { $pane }
-
-# No shell to insert into
-t825e7370 = Aucun shell où insérer
-
 # The vault's passphrase
 tb66334ea = Phrase secrète du coffre
 
@@ -1028,9 +1022,6 @@ t71734b03 = Aucun serveur pour l'instant.
 
 # Saving…
 tbd79b37d = Enregistrement…
-
-# Click the text to edit it
-t63928671 = Cliquez sur le texte pour le modifier
 
 # Saved
 t8a6979e4 = Enregistrés
@@ -1068,8 +1059,14 @@ t41e36c52 = Aucune phrase secrète ne protège le coffre : toute personne devant
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = Ouverte dans une autre application : ce qu'elle enregistre arrive ici et est conservé.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Rien d'écrit pour l'instant : Modifier pour écrire.
+# Insert into {pane}
+t3d5eaffc = Insérer dans { $pane }
+
+# No shell to insert into
+t825e7370 = Aucun shell où insérer
+
+# Insert
+t0f317948 = Insérer
 
 # Cut
 t58e25863 = Couper

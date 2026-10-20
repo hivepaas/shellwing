@@ -229,6 +229,7 @@ impl NoteWindow {
                 cx.notify();
             }
             EditorEvent::HostItem(id) if id.as_ref() == "insert" => v.insert(cx),
+            EditorEvent::InsertCode(code) => v.insert_text(code.to_string(), cx),
             EditorEvent::OpenLink(url) if zorite_markdown::syntax::is_safe_external_url(url) => {
                 cx.open_url(url)
             }
@@ -320,9 +321,11 @@ impl NoteWindow {
             }
         };
         let md = self.note.format == NoteFormat::Markdown;
+        let ro = self.preview && md;
         self.text.update(cx, |e, cx| {
             e.set_text(text.to_string(), cx);
             style_editor(e, md, cx);
+            e.set_read_only(ro, cx);
         });
         // Loading is not an edit.
         self.saved_at = self.edits + 1;
@@ -615,6 +618,11 @@ impl NoteWindow {
     /// The selection into the main window's pane, to run from there.
     fn insert(&mut self, cx: &mut Context<Self>) {
         let text = self.selected_text(cx);
+        self.insert_text(text, cx);
+    }
+
+    /// `text` into the main window's pane (a selection, a code block).
+    fn insert_text(&mut self, text: String, cx: &mut Context<Self>) {
         if text.is_empty() {
             return;
         }
@@ -691,18 +699,6 @@ impl NoteWindow {
                 .detach();
             }
             _ => {}
-        }
-    }
-
-    /// A task's box ticked or unticked in the reading view, at `at` in the
-    /// text.
-    fn toggle_task(&mut self, at: usize, cx: &mut Context<Self>) {
-        let text = self.text.read(cx).text().to_string();
-        if let Some(new) = zorite_markdown::toggle_task_at(&text, at) {
-            let len = text.len();
-            self.text
-                .update(cx, |e, cx| e.replace_range(0..len, &new, cx));
-            self.edited(cx);
         }
     }
 
@@ -878,8 +874,6 @@ impl NoteWindow {
             None
         } else if self.saved_at != self.edits {
             Some(tr!("Saving…"))
-        } else if self.preview && md {
-            Some(tr!("Click the text to edit it"))
         } else if !self.note.id.is_empty() {
             Some(tr!("Saved"))
         } else {
@@ -900,7 +894,10 @@ impl NoteWindow {
                             cx.listener(|v, _, w, cx| {
                                 v.note.format = NoteFormat::Plain;
                                 v.preview = false;
-                                v.text.update(cx, |e, cx| style_editor(e, false, cx));
+                                v.text.update(cx, |e, cx| {
+                                    style_editor(e, false, cx);
+                                    e.set_read_only(false, cx);
+                                });
                                 v.changed_meta(w, cx);
                             }),
                         ))
@@ -925,10 +922,12 @@ impl NoteWindow {
                         )
                         .on_click(cx.listener(|v, _, w, cx| {
                             v.preview = !v.preview;
-                            if !v.preview {
-                                let f = v.text.read(cx).focus_handle(cx);
-                                w.focus(&f, cx);
-                            }
+                            // The same editor, read-only: the text stays where
+                            // it is between the two.
+                            let ro = v.preview;
+                            v.text.update(cx, |e, cx| e.set_read_only(ro, cx));
+                            let f = v.text.read(cx).focus_handle(cx);
+                            w.focus(&f, cx);
                             cx.notify();
                         })),
                     )
@@ -1066,54 +1065,6 @@ impl NoteWindow {
             )
             .into_any_element();
         }
-        if self.preview && self.note.format == NoteFormat::Markdown {
-            let text = self.text.read(cx).text().to_string();
-            let empty = text.trim().is_empty();
-            let rem = f32::from(look::rem_for(
-                cx.try_global::<NoteLook>().map_or(13., |l| l.size),
-            ));
-            let view = cx.entity().downgrade();
-            // Ticking a task in the reading view changes the text, as typing does.
-            let toggle: zorite_markdown::TaskToggleHandler = {
-                let view = view.clone();
-                Rc::new(move |at, _, cx| {
-                    let _ = view.update(cx, |v, cx| v.toggle_task(at, cx));
-                })
-            };
-            // A click on the text edits it there: the reading view selects
-            // nothing; the editor does.
-            let edit_at: zorite_markdown::ClickSourceHandler = Rc::new(move |at, _, window, cx| {
-                let _ = view.update(cx, |v, cx| {
-                    v.preview = false;
-                    v.text.update(cx, |e, cx| e.set_cursor(at, cx));
-                    let f = v.text.read(cx).focus_handle(cx);
-                    window.focus(&f, cx);
-                    cx.notify();
-                });
-            });
-            return div()
-                .id("note-preview")
-                .flex_1()
-                .min_h_0()
-                .overflow_y_scroll()
-                .px(px(4.))
-                .child(if empty {
-                    div()
-                        .text_color(rgb(colors().muted))
-                        .child(tr!("Nothing written yet: Edit to write."))
-                        .into_any_element()
-                } else {
-                    zorite_markdown::MarkdownView::new("note-md", text)
-                        .style(reading_style(px(rem * 13.5 / 16.), mono))
-                        .on_task_toggle(toggle)
-                        .on_click_source(edit_at)
-                        .set_labels(zorite_markdown::Labels {
-                            code_copy: tr!("Copy").into(),
-                        })
-                        .into_any_element()
-                })
-                .into_any_element();
-        }
         let on = self.text.read(cx).focus_handle(cx).is_focused(window);
         let md = self.note.format == NoteFormat::Markdown;
         let family = look.and_then(|l| l.family);
@@ -1171,9 +1122,13 @@ impl NoteWindow {
             },
             enabled: pane.is_some(),
         };
+        // A code block's Insert too, while a pane can take it.
+        let code = pane.as_ref().map(|_| tr!("Insert").into());
         self.insert_into = Some(pane);
-        self.text
-            .update(cx, |e, cx| e.set_host_items(vec![item], cx));
+        self.text.update(cx, |e, cx| {
+            e.set_host_items(vec![item], cx);
+            e.set_code_insert(code, cx);
+        });
     }
 
     /// The caret back in sight after it moved (the editor grows; the view
@@ -1279,29 +1234,6 @@ fn editor_labels() -> shellwing_note_editor::Labels {
         delete_row: tr!("Delete row").into(),
         delete_column: tr!("Delete column").into(),
         delete_table: tr!("Delete table").into(),
-        ..Default::default()
-    }
-}
-
-/// The reading view in the app's colors.
-fn reading_style(size: gpui::Pixels, mono: SharedString) -> zorite_markdown::MarkdownStyle {
-    let c = colors();
-    let hsla = |v: u32| -> gpui::Hsla { rgb(v).into() };
-    zorite_markdown::MarkdownStyle {
-        text_color: hsla(c.text),
-        text_size: size,
-        heading_color: hsla(c.text),
-        link_color: hsla(c.accent),
-        tag_color: hsla(c.accent),
-        code_color: hsla(c.accent),
-        code_bg: hsla(c.chip),
-        muted_color: hsla(c.muted),
-        rule_color: hsla(c.line),
-        guide_color: hsla(c.line),
-        mark_bg: hsla(c.warn_bg),
-        search_bg: hsla(c.warn_bg),
-        search_current_bg: hsla(c.selected),
-        mono_font: mono,
         ..Default::default()
     }
 }

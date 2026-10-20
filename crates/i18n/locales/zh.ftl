@@ -988,12 +988,6 @@ te3591497 = 它已不再是文本。
 # Not read back: {e}
 tf04d4bce = 未能读回：{ $e }
 
-# Insert into {pane}
-t3d5eaffc = 插入到 { $pane }
-
-# No shell to insert into
-t825e7370 = 没有可插入的 shell
-
 # The vault's passphrase
 tb66334ea = 保险库的密码短语
 
@@ -1008,9 +1002,6 @@ t71734b03 = 还没有主机。
 
 # Saving…
 tbd79b37d = 正在保存…
-
-# Click the text to edit it
-t63928671 = 点击文本即可编辑
 
 # Saved
 t8a6979e4 = 已保存
@@ -1048,8 +1039,14 @@ t41e36c52 = 保险库没有密码短语保护，因此任何使用此设备的�
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = 正在其他应用中打开：它保存的内容会回到这里并被保留。
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = 尚未书写内容：点击编辑开始书写。
+# Insert into {pane}
+t3d5eaffc = 插入到 { $pane }
+
+# No shell to insert into
+t825e7370 = 没有可插入的 shell
+
+# Insert
+t0f317948 = 插入
 
 # Cut
 t58e25863 = 剪切

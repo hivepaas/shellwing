@@ -1008,12 +1008,6 @@ te3591497 = Ya no es texto.
 # Not read back: {e}
 tf04d4bce = No se pudo volver a leer: { $e }
 
-# Insert into {pane}
-t3d5eaffc = Insertar en { $pane }
-
-# No shell to insert into
-t825e7370 = No hay shell donde insertar
-
 # The vault's passphrase
 tb66334ea = Frase de contraseña de la bóveda
 
@@ -1028,9 +1022,6 @@ t71734b03 = Aún no hay servidores.
 
 # Saving…
 tbd79b37d = Guardando…
-
-# Click the text to edit it
-t63928671 = Haz clic en el texto para editarlo
 
 # Saved
 t8a6979e4 = Guardadas
@@ -1068,8 +1059,14 @@ t41e36c52 = Ninguna frase de contraseña protege la bóveda, así que cualquiera
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = Abierta en otra aplicación: lo que guarde llega aquí y se conserva.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Aún no hay nada escrito: pulsa Editar para escribir.
+# Insert into {pane}
+t3d5eaffc = Insertar en { $pane }
+
+# No shell to insert into
+t825e7370 = No hay shell donde insertar
+
+# Insert
+t0f317948 = Insertar
 
 # Cut
 t58e25863 = Cortar

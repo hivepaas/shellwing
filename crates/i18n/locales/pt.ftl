@@ -1008,12 +1008,6 @@ te3591497 = Não é mais texto.
 # Not read back: {e}
 tf04d4bce = Não foi relido: { $e }
 
-# Insert into {pane}
-t3d5eaffc = Inserir em { $pane }
-
-# No shell to insert into
-t825e7370 = Nenhum shell para inserir
-
 # The vault's passphrase
 tb66334ea = Frase secreta do cofre
 
@@ -1028,9 +1022,6 @@ t71734b03 = Nenhum servidor ainda.
 
 # Saving…
 tbd79b37d = Salvando…
-
-# Click the text to edit it
-t63928671 = Clique no texto para editá-lo
 
 # Saved
 t8a6979e4 = Salvas
@@ -1068,8 +1059,14 @@ t41e36c52 = Nenhuma frase secreta protege o cofre, então qualquer pessoa neste 
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = Aberta em outro aplicativo: o que ele salvar chega aqui e é mantido.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Nada escrito ainda: clique em Editar para escrever.
+# Insert into {pane}
+t3d5eaffc = Inserir em { $pane }
+
+# No shell to insert into
+t825e7370 = Nenhum shell para inserir
+
+# Insert
+t0f317948 = Inserir
 
 # Cut
 t58e25863 = Recortar

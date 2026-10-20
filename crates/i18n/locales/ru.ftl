@@ -1018,12 +1018,6 @@ te3591497 = Это больше не текст.
 # Not read back: {e}
 tf04d4bce = Не удалось прочитать обратно: { $e }
 
-# Insert into {pane}
-t3d5eaffc = Вставить в { $pane }
-
-# No shell to insert into
-t825e7370 = Нет оболочки для вставки
-
 # The vault's passphrase
 tb66334ea = Парольная фраза хранилища
 
@@ -1038,9 +1032,6 @@ t71734b03 = Хостов пока нет.
 
 # Saving…
 tbd79b37d = Сохранение…
-
-# Click the text to edit it
-t63928671 = Нажмите на текст, чтобы изменить его
 
 # Saved
 t8a6979e4 = Сохранено
@@ -1078,8 +1069,14 @@ t41e36c52 = Хранилище не защищено парольной фраз
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = Открыта в другом приложении: то, что оно сохраняет, приходит сюда и сохраняется.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Пока ничего не написано: нажмите «Изменить», чтобы писать.
+# Insert into {pane}
+t3d5eaffc = Вставить в { $pane }
+
+# No shell to insert into
+t825e7370 = Нет оболочки для вставки
+
+# Insert
+t0f317948 = Вставить
 
 # Cut
 t58e25863 = Вырезать

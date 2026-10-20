@@ -103,6 +103,40 @@ fenced block of the selection against the caret's block).
 shellwing puts *Insert into …* (the shell) first, and the menu shows on
 selecting, not only on a right click.
 
+### 6. Read-only
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, `struct EditorState` and `new` | Added the field `read_only`. |
+| `src/lib.rs`, `impl EditorState` | Added `set_read_only(on, cx)` (closes the menus, drops a composition) and `is_read_only()`. |
+| `src/lib.rs`, `render` | The actions that edit (`backspace`, `delete`, `newline`, `bold`, `italic`, `underline`, `strike`, `highlight`, `code`, `indent`, `outdent`, `paste`, `cut`, `undo`, `redo`) are registered only while editable (`.when(!self.read_only, …)`, with `use gpui::prelude::FluentBuilder`); the moves, selection, `select_all`, `copy`, `dismiss` always. |
+| `src/lib.rs`, `on_mouse_down` | While read-only: no image resize (`grip_at`), no language picker on a code card (Copy still copies), no callout fold flip (`alert_fold_at`, it rewrites the source), no table `+` (`table_add_row_at`, `table_add_col_at`), no row/column delete (`table_row_del`, `table_col_del`), no column resize. A task's box still ticks. |
+| `src/lib.rs`, `on_right_mouse_down` | While read-only: no image menu, no table menu: the plain menu. |
+| `src/lib.rs`, `render`, the menu | While read-only: no Cut, no Paste; `markdown` (format bar, colors, Turn into) is off too. |
+| `src/element.rs`, both `caret_row` and `selection` (prepaint, and the measuring before it) | Not while read-only: no reveal on the caret's line, as when unfocused. |
+| `src/element.rs`, `paint` | No `handle_input` while read-only (no typing, no IME); no caret painted. |
+| `src/element.rs`, the gutter grip | Not while read-only (no block drag). |
+
+**Why:** a note's reading view is the editor itself, read-only, so the text
+stays where it is between reading and editing (zorite-markdown, the reader,
+lays out otherwise and selects nothing); it selects and copies.
+
+### 7. A code block's Insert
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, `enum EditorEvent` | Added `InsertCode(SharedString)`: a code block's body. |
+| `src/lib.rs`, `struct EditorState` and `new` | Added the field `code_insert: Option<SharedString>` (the button's label). |
+| `src/lib.rs`, `impl EditorState` | Added `set_code_insert(label, cx)`. |
+| `src/lib.rs`, `struct CodeChipHit` | Added `insert: Option<Bounds<Pixels>>`. |
+| `src/lib.rs`, `struct CodeChip` | Added `insert: Option<(SharedString, Bounds<Pixels>, Hitbox)>`. |
+| `src/lib.rs`, new `enum ChipPart` (`Lang`, `Copy`, `Insert`) | `code_chip_at` returns it instead of `(bool, usize)`'s bool. |
+| `src/lib.rs`, `on_mouse_down`, the code card branch | `ChipPart::Insert` emits `InsertCode` with the block's body. |
+| `src/element.rs`, the code card chrome (prepaint) | With a label, an Insert pill left of Copy; the language pill moves left of it. |
+| `src/element.rs`, the code card chrome (paint) | Paints the Insert pill as the others; `CodeChipHit.insert`. |
+
+**Why:** a command in a note's code block goes into the shell with one press.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.

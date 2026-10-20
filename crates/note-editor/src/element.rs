@@ -165,8 +165,8 @@ impl Element for EditorElement {
                 // Sum of per-line (variable) heights × each line's wrap rows.
                 // Reveal-on-caret applies only while focused (matches prepaint).
                 let focused = editor.focus_handle.is_focused(window);
-                let caret_row = focused.then(|| editor.row_col(editor.cursor_offset()).0);
-                let selection = if focused {
+                let caret_row = (focused && !editor.read_only).then(|| editor.row_col(editor.cursor_offset()).0);
+                let selection = if focused && !editor.read_only {
                     (editor.selected_range.start, editor.selected_range.end)
                 } else {
                     (usize::MAX, usize::MAX)
@@ -341,8 +341,9 @@ impl Element for EditorElement {
 
         // Placeholder (uniform) when empty; else shape per line so headings get
         // their own taller rows (W2) and image lines render inline (W4).
-        let caret_row = focused.then(|| editor.row_col(editor.cursor_offset()).0);
-        let selection = if focused {
+        let caret_row =
+            (focused && !editor.read_only).then(|| editor.row_col(editor.cursor_offset()).0);
+        let selection = if focused && !editor.read_only {
             (editor.selected_range.start, editor.selected_range.end)
         } else {
             (usize::MAX, usize::MAX)
@@ -678,13 +679,31 @@ impl Element for EditorElement {
                     point(right - copy_w - px(4.) - lang_w, y),
                     size(lang_w, chip_h),
                 );
+                // shellwing: Insert, left of Copy; the language moves left
+                // of it (UPSTREAM.md, change 7).
+                let insert = editor.code_insert.clone().map(|t| {
+                    let w = shape(window, &t, st.quote) + px(12.);
+                    let b = Bounds::new(point(right - copy_w - px(4.) - w, y), size(w, chip_h));
+                    (t, b)
+                });
+                let lang_bounds = match &insert {
+                    Some((_, b)) => {
+                        Bounds::new(point(b.origin.x - px(4.) - lang_w, y), size(lang_w, chip_h))
+                    }
+                    None => lang_bounds,
+                };
                 let lang_hb = window.insert_hitbox(lang_bounds, HitboxBehavior::Normal);
                 let copy_hb = window.insert_hitbox(copy_bounds, HitboxBehavior::Normal);
+                let insert = insert.map(|(t, b)| {
+                    let hb = window.insert_hitbox(b, HitboxBehavior::Normal);
+                    (t, b, hb)
+                });
                 code_chips.push(CodeChip {
                     lang_text,
                     copy_text,
                     lang_bounds,
                     copy_bounds,
+                    insert,
                     fence_row,
                     // The popover surface (opaque) — the card tint is
                     // translucent, and the labels must cover the code text.
@@ -875,7 +894,9 @@ impl Element for EditorElement {
             grip_hb = Some(window.insert_hitbox(all, HitboxBehavior::Normal));
         }
         let gl = grip_left(bounds.origin.x, editor.grip_inset);
+        // shellwing: read-only (UPSTREAM.md, change 6): no block drag.
         if editor.markdown_style.is_some()
+            && !editor.read_only
             && editor.line_drag.is_none()
             && mouse.x >= gl - px(4.)
             && mouse.x <= bounds.origin.x + bounds.size.width
@@ -1489,11 +1510,14 @@ impl Element for EditorElement {
         cx: &mut App,
     ) {
         let focus = self.editor.read(cx).focus_handle.clone();
-        window.handle_input(
-            &focus,
-            ElementInputHandler::new(bounds, self.editor.clone()),
-            cx,
-        );
+        // shellwing: read-only (UPSTREAM.md, change 6): no text input.
+        if !self.editor.read(cx).read_only {
+            window.handle_input(
+                &focus,
+                ElementInputHandler::new(bounds, self.editor.clone()),
+                cx,
+            );
+        }
 
         for quad in prepaint.search.drain(..) {
             window.paint_quad(quad);
@@ -2113,7 +2137,9 @@ impl Element for EditorElement {
             }
         }
 
+        // shellwing: read-only (UPSTREAM.md, change 6): no caret.
         if focus.is_focused(window)
+            && !self.editor.read(cx).read_only
             && let Some(cursor) = prepaint.cursor.take()
         {
             window.paint_quad(cursor);
@@ -2345,10 +2371,15 @@ impl Element for EditorElement {
         // readable over a long first line; hover brightens it.
         let mut code_chip_rects = Vec::new();
         for chip in &prepaint.code_chips {
-            for (bounds_, text, hb) in [
+            let mut parts = vec![
                 (chip.lang_bounds, &chip.lang_text, &chip.lang_hb),
                 (chip.copy_bounds, &chip.copy_text, &chip.copy_hb),
-            ] {
+            ];
+            // shellwing: Insert (UPSTREAM.md, change 7).
+            if let Some((t, b, hb)) = &chip.insert {
+                parts.push((*b, t, hb));
+            }
+            for (bounds_, text, hb) in parts {
                 let hovered = hb.is_hovered(window);
                 window.paint_quad(PaintQuad {
                     bounds: bounds_,
@@ -2386,6 +2417,7 @@ impl Element for EditorElement {
             code_chip_rects.push(CodeChipHit {
                 lang: chip.lang_bounds,
                 copy: chip.copy_bounds,
+                insert: chip.insert.as_ref().map(|(_, b, _)| *b),
                 fence_row: chip.fence_row,
             });
         }

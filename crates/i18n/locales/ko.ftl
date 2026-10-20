@@ -988,12 +988,6 @@ te3591497 = 더 이상 텍스트가 아닙니다.
 # Not read back: {e}
 tf04d4bce = 다시 읽지 못했습니다: { $e }
 
-# Insert into {pane}
-t3d5eaffc = { $pane }에 삽입
-
-# No shell to insert into
-t825e7370 = 삽입할 셸이 없습니다
-
 # The vault's passphrase
 tb66334ea = 보관함 암호 문구
 
@@ -1008,9 +1002,6 @@ t71734b03 = 아직 호스트가 없습니다.
 
 # Saving…
 tbd79b37d = 저장 중…
-
-# Click the text to edit it
-t63928671 = 텍스트를 클릭해 편집
 
 # Saved
 t8a6979e4 = 저장됨
@@ -1048,8 +1039,14 @@ t41e36c52 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰�
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = 다른 앱에서 열려 있음: 그 앱에서 저장한 내용이 여기로 와서 유지됩니다.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = 아직 작성된 내용이 없습니다. 편집을 눌러 작성하세요.
+# Insert into {pane}
+t3d5eaffc = { $pane }에 삽입
+
+# No shell to insert into
+t825e7370 = 삽입할 셸이 없습니다
+
+# Insert
+t0f317948 = 삽입
 
 # Cut
 t58e25863 = 잘라내기

@@ -33,6 +33,7 @@
 use std::ops::Range;
 use std::sync::Arc;
 
+use gpui::prelude::FluentBuilder as _;
 use gpui::{
     App, AvailableSpace, BorderStyle, Bounds, ClipboardItem, Context, Corners, CursorStyle, Edges,
     Element, ElementId, ElementInputHandler, Entity, EntityInputHandler, EventEmitter, FocusHandle,
@@ -544,6 +545,9 @@ pub enum EditorEvent {
     /// The document text changed via a user edit (typing, delete, paste, IME,
     /// applying a suggestion). Not emitted for programmatic `set_text`.
     Changed,
+    /// shellwing: a code block's Insert was pressed: its body (see
+    /// [`EditorState::set_code_insert`]). (UPSTREAM.md, change 7.)
+    InsertCode(SharedString),
     /// shellwing: one of the host's items at the top of the menu was chosen
     /// (its id; see [`EditorState::set_host_items`]). (UPSTREAM.md, change 5.)
     HostItem(SharedString),
@@ -925,6 +929,12 @@ pub struct EditorState {
     /// selection made with the mouse opens the menu. (UPSTREAM.md, change 5.)
     host_items: Vec<HostItem>,
     menu_on_select: bool,
+    /// shellwing: read, not edited: selection and copy only (UPSTREAM.md,
+    /// change 6).
+    read_only: bool,
+    /// shellwing: the label of a code block's Insert button; None: no such
+    /// button (UPSTREAM.md, change 7).
+    code_insert: Option<SharedString>,
     /// The open table right-click menu's anchor (window space), if any. Its actions
     /// operate on the caret's table cell.
     table_menu: Option<Point<Pixels>>,
@@ -1167,6 +1177,8 @@ impl EditorState {
             menu: None,
             host_items: Vec::new(),
             menu_on_select: false,
+            read_only: false,
+            code_insert: None,
             table_menu: None,
             table_menu_scroll: ScrollHandle::new(),
             image_menu: None,
@@ -3275,7 +3287,10 @@ impl EditorState {
         // precedence over placing the caret on the image row (which the press
         // would otherwise do). The image keeps its bounds; the drag previews a new
         // width and release writes `{width=N}` (see on_mouse_move / on_mouse_up).
-        if let Some((line, width)) = self.grip_at(event.position) {
+        // shellwing: read-only (UPSTREAM.md, change 6): no image resize.
+        if !self.read_only
+            && let Some((line, width)) = self.grip_at(event.position)
+        {
             self.image_resize = Some(ImageResize {
                 line,
                 start_width: width,
@@ -3309,13 +3324,19 @@ impl EditorState {
         }
         // A press on a code card's chrome: Copy writes the block's body to the
         // clipboard; the language tag opens the picker — neither places the caret.
-        if let Some((on_copy, fence_row)) = self.code_chip_at(event.position) {
-            if on_copy {
+        if let Some((part, fence_row)) = self.code_chip_at(event.position) {
+            if part == ChipPart::Copy {
                 if let Some((_, body)) = self.code_block_at(fence_row) {
                     let text = self.content[body].to_string();
                     self.write_clipboard(text, cx);
                 }
-            } else if !self.code_langs.is_empty() {
+            } else if part == ChipPart::Insert {
+                // shellwing: the block's body to the host (UPSTREAM.md, change 7).
+                if let Some((_, body)) = self.code_block_at(fence_row) {
+                    let text = self.content[body].to_string();
+                    cx.emit(EditorEvent::InsertCode(text.into()));
+                }
+            } else if !self.code_langs.is_empty() && !self.read_only {
                 self.code_lang_menu = Some((fence_row, event.position));
                 cx.notify();
             }
@@ -3324,7 +3345,10 @@ impl EditorState {
         // A press on a foldable callout's chevron flips its `-`/`+` fold char
         // (folding/unfolding the body) instead of placing the caret — the same
         // toggle-in-source model as the task checkbox.
-        if let Some(row) = self.alert_fold_at(event.position) {
+        // shellwing: read-only (UPSTREAM.md, change 6): the fold char is the source's.
+        if !self.read_only
+            && let Some(row) = self.alert_fold_at(event.position)
+        {
             let start = self.line_starts()[row];
             let line = &self.content[start..self.line_end(row)];
             if let Some((at, folded)) = zorite_markdown::syntax::alert_fold_char(line) {
@@ -3490,7 +3514,9 @@ impl EditorState {
         // The insert APIs are caret-driven, so seat the caret in the table to target
         // them — but capture the user's cell first and restore it after, so the
         // caret stays put instead of following the new row/column.
-        if let Some(row) = self.table_add_row_at(event.position) {
+        if !self.read_only
+            && let Some(row) = self.table_add_row_at(event.position)
+        {
             let keep = self.caret_table_cell_pos();
             if let Some(off) = self.cell_start_offset(row, 0) {
                 self.selected_range = off..off;
@@ -3503,7 +3529,9 @@ impl EditorState {
             }
             return;
         }
-        if let Some((row, col)) = self.table_add_col_at(event.position) {
+        if !self.read_only
+            && let Some((row, col)) = self.table_add_col_at(event.position)
+        {
             let keep = self.caret_table_cell_pos();
             if let Some(off) = self.cell_start_offset(row, col) {
                 self.selected_range = off..off;
@@ -3518,7 +3546,8 @@ impl EditorState {
         }
         // A press on a row/column delete "−" handle removes that row/column (seat
         // the caret in it, then reuse the caret-driven delete APIs).
-        if let Some((rect, row)) = self.table_row_del
+        if !self.read_only
+            && let Some((rect, row)) = self.table_row_del
             && rect.contains(&event.position)
         {
             if let Some(off) = self.cell_start_offset(row, 0) {
@@ -3527,7 +3556,8 @@ impl EditorState {
             }
             return;
         }
-        if let Some((rect, row, col)) = self.table_col_del
+        if !self.read_only
+            && let Some((rect, row, col)) = self.table_col_del
             && rect.contains(&event.position)
         {
             if let Some(off) = self.cell_start_offset(row, col) {
@@ -3553,10 +3583,11 @@ impl EditorState {
         // resizes live; release persists the width (issue #16). A DOUBLE-click
         // auto-fits the column to its content instead (the Excel/Sheets
         // convention for a column border).
-        if let Some(&(_, header_row, col, width)) = self
-            .table_col_resize_rects
-            .iter()
-            .find(|(band, ..)| band.contains(&event.position))
+        if !self.read_only
+            && let Some(&(_, header_row, col, width)) = self
+                .table_col_resize_rects
+                .iter()
+                .find(|(band, ..)| band.contains(&event.position))
         {
             if event.click_count == 2 {
                 self.autofit_table_col(header_row, col, window, cx);
@@ -3928,11 +3959,12 @@ impl EditorState {
         // row renders as a picture, there's no text under the pointer to edit.
         // Only for real `![](src)` rows: mermaid/math rasters share the widget
         // type but delete as text (their menu would silently no-op).
-        if let Some(&(line, _)) = self
-            .image_rects
-            .iter()
-            .find(|(_, rect)| rect.contains(&event.position))
-            .filter(|&&(line, _)| self.image_row_range(line).is_some())
+        if !self.read_only
+            && let Some(&(line, _)) = self
+                .image_rects
+                .iter()
+                .find(|(_, rect)| rect.contains(&event.position))
+                .filter(|&&(line, _)| self.image_row_range(line).is_some())
         {
             self.menu = None;
             self.table_menu = None;
@@ -3985,7 +4017,9 @@ impl EditorState {
         // selection, keep the selection and show the clipboard menu instead —
         // Cut/Copy act on it, like prose; the structure menu stays a
         // selection-free right-click away.
-        if let Some(offset) = self.table_offset_at(event.position, window) {
+        if !self.read_only
+            && let Some(offset) = self.table_offset_at(event.position, window)
+        {
             self.menu = None;
             self.focus(window, cx);
             let sel = self.selected_range.clone();
@@ -4214,6 +4248,36 @@ impl EditorState {
     /// in it does. (UPSTREAM.md, change 5.)
     pub fn set_menu_on_select(&mut self, on: bool) {
         self.menu_on_select = on;
+    }
+
+    /// shellwing: read-only: the text is drawn as when unfocused (no marks
+    /// shown, no caret), and selects and copies, but takes no typing, no
+    /// editing action, no drag that edits; a task's box still ticks. For a
+    /// note's reading view, laid out as when it is edited. (UPSTREAM.md,
+    /// change 6.)
+    pub fn set_read_only(&mut self, on: bool, cx: &mut Context<Self>) {
+        self.read_only = on;
+        self.marked_range = None;
+        self.menu = None;
+        self.table_menu = None;
+        self.image_menu = None;
+        self.prop_menu = None;
+        self.code_lang_menu = None;
+        cx.notify();
+    }
+
+    pub fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    /// shellwing: a code block gets an Insert button beside its Copy, with
+    /// this label (None: none); a press emits [`EditorEvent::InsertCode`]
+    /// with the block's body. (UPSTREAM.md, change 7.)
+    pub fn set_code_insert(&mut self, label: Option<SharedString>, cx: &mut Context<Self>) {
+        if self.code_insert != label {
+            self.code_insert = label;
+            cx.notify();
+        }
     }
 
     /// shellwing: toggles an inline format on the selection, as the editor's
@@ -4942,12 +5006,14 @@ impl EditorState {
     /// If `position` lands on a code card's chrome painted last frame:
     /// `(on_copy, fence_row)` — `true` = the Copy button, `false` = the
     /// language tag.
-    fn code_chip_at(&self, position: Point<Pixels>) -> Option<(bool, usize)> {
+    fn code_chip_at(&self, position: Point<Pixels>) -> Option<(ChipPart, usize)> {
         self.code_chip_rects.iter().find_map(|c| {
             if c.copy.contains(&position) {
-                Some((true, c.fence_row))
+                Some((ChipPart::Copy, c.fence_row))
+            } else if c.insert.is_some_and(|b| b.contains(&position)) {
+                Some((ChipPart::Insert, c.fence_row))
             } else if c.lang.contains(&position) {
-                Some((false, c.fence_row))
+                Some((ChipPart::Lang, c.fence_row))
             } else {
                 None
             }
@@ -5424,8 +5490,25 @@ impl Render for EditorState {
             )
             .track_focus(&self.focus_handle)
             .cursor(CursorStyle::IBeam)
-            .on_action(cx.listener(Self::backspace))
-            .on_action(cx.listener(Self::delete))
+            // shellwing: the actions that edit, only when editable
+            // (UPSTREAM.md, change 6).
+            .when(!self.read_only, |d| {
+                d.on_action(cx.listener(Self::backspace))
+                    .on_action(cx.listener(Self::delete))
+                    .on_action(cx.listener(Self::newline))
+                    .on_action(cx.listener(Self::bold))
+                    .on_action(cx.listener(Self::italic))
+                    .on_action(cx.listener(Self::underline))
+                    .on_action(cx.listener(Self::strike))
+                    .on_action(cx.listener(Self::highlight))
+                    .on_action(cx.listener(Self::code))
+                    .on_action(cx.listener(Self::indent))
+                    .on_action(cx.listener(Self::outdent))
+                    .on_action(cx.listener(Self::paste))
+                    .on_action(cx.listener(Self::cut))
+                    .on_action(cx.listener(Self::undo))
+                    .on_action(cx.listener(Self::redo))
+            })
             .on_action(cx.listener(Self::left))
             .on_action(cx.listener(Self::right))
             .on_action(cx.listener(Self::up))
@@ -5441,21 +5524,8 @@ impl Render for EditorState {
             .on_action(cx.listener(Self::select_word_left))
             .on_action(cx.listener(Self::select_word_right))
             .on_action(cx.listener(Self::select_all))
-            .on_action(cx.listener(Self::newline))
-            .on_action(cx.listener(Self::bold))
-            .on_action(cx.listener(Self::italic))
-            .on_action(cx.listener(Self::underline))
-            .on_action(cx.listener(Self::strike))
-            .on_action(cx.listener(Self::highlight))
-            .on_action(cx.listener(Self::code))
-            .on_action(cx.listener(Self::indent))
-            .on_action(cx.listener(Self::outdent))
-            .on_action(cx.listener(Self::paste))
             .on_action(cx.listener(Self::copy))
-            .on_action(cx.listener(Self::cut))
             .on_action(cx.listener(Self::show_character_palette))
-            .on_action(cx.listener(Self::undo))
-            .on_action(cx.listener(Self::redo))
             .on_action(cx.listener(Self::dismiss))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .on_mouse_down(MouseButton::Right, cx.listener(Self::on_right_mouse_down))
@@ -5601,8 +5671,9 @@ impl Render for EditorState {
                 });
                 let mut clipboard = div().flex().flex_col().py(px(4.));
                 if has_sel {
+                    // shellwing: no Cut while read-only (UPSTREAM.md, change 6).
                     clipboard = clipboard
-                        .child(
+                        .children((!self.read_only).then(|| {
                             clip_item("menu-cut", self.labels.cut.clone()).on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(|editor, _: &MouseDownEvent, window, cx| {
@@ -5610,8 +5681,8 @@ impl Render for EditorState {
                                     editor.menu = None;
                                     editor.cut(&Cut, window, cx);
                                 }),
-                            ),
-                        )
+                            )
+                        }))
                         .child(
                             clip_item("menu-copy", self.labels.copy.clone()).on_mouse_down(
                                 MouseButton::Left,
@@ -5637,7 +5708,8 @@ impl Render for EditorState {
                                 ),
                         );
                 }
-                let clipboard = clipboard.child(
+                // shellwing: no Paste while read-only (UPSTREAM.md, change 6).
+                let clipboard = clipboard.children((!self.read_only).then(|| {
                     clip_item("menu-paste", self.labels.paste.clone()).on_mouse_down(
                         MouseButton::Left,
                         cx.listener(|editor, _: &MouseDownEvent, window, cx| {
@@ -5645,8 +5717,8 @@ impl Render for EditorState {
                             editor.menu = None;
                             editor.paste(&Paste, window, cx);
                         }),
-                    ),
-                );
+                    )
+                }));
 
                 // Inline-format bar (Cditor-style): with a selection, a strip of
                 // B / I / S / <> buttons across the menu's top — each toggles its
@@ -5664,7 +5736,7 @@ impl Render for EditorState {
                 };
                 // shellwing: Markdown's bar, colors and "Turn into" only in
                 // Markdown; plain text has none of it (UPSTREAM.md, change 5).
-                let markdown = st.is_some();
+                let markdown = st.is_some() && !self.read_only;
                 let format_bar = (has_sel && markdown).then(|| {
                     div()
                         .flex()
@@ -6550,7 +6622,18 @@ impl Block {
 struct CodeChipHit {
     lang: Bounds<Pixels>,
     copy: Bounds<Pixels>,
+    /// shellwing: the Insert button, when there is one (UPSTREAM.md, change 7).
+    insert: Option<Bounds<Pixels>>,
     fence_row: usize,
+}
+
+/// What of a code card's chrome a press is on.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ChipPart {
+    Lang,
+    Copy,
+    /// shellwing: Insert (UPSTREAM.md, change 7).
+    Insert,
 }
 
 /// A code card's top-right chrome, laid out in prepaint: the language tag and
@@ -6561,6 +6644,9 @@ struct CodeChip {
     copy_text: SharedString,
     lang_bounds: Bounds<Pixels>,
     copy_bounds: Bounds<Pixels>,
+    /// shellwing: the Insert button, when the host has one (UPSTREAM.md,
+    /// change 7).
+    insert: Option<(SharedString, Bounds<Pixels>, Hitbox)>,
     fence_row: usize,
     /// Card background — the labels sit on an opaque pill of it so they stay
     /// readable over a long first line.

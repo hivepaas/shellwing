@@ -988,12 +988,6 @@ te3591497 = Tệp không còn là văn bản.
 # Not read back: {e}
 tf04d4bce = Không đọc lại được: { $e }
 
-# Insert into {pane}
-t3d5eaffc = Chèn vào { $pane }
-
-# No shell to insert into
-t825e7370 = Không có shell để chèn vào
-
 # The vault's passphrase
 tb66334ea = Passphrase của kho
 
@@ -1008,9 +1002,6 @@ t71734b03 = Chưa có máy chủ.
 
 # Saving…
 tbd79b37d = Đang lưu…
-
-# Click the text to edit it
-t63928671 = Bấm vào chữ để sửa
 
 # Saved
 t8a6979e4 = Đã lưu
@@ -1048,8 +1039,14 @@ t41e36c52 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này c
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = Đang mở ở ứng dụng khác: những gì nó lưu sẽ về đây và được giữ.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Chưa viết gì: bấm Sửa để viết.
+# Insert into {pane}
+t3d5eaffc = Chèn vào { $pane }
+
+# No shell to insert into
+t825e7370 = Không có shell để chèn vào
+
+# Insert
+t0f317948 = Chèn
 
 # Cut
 t58e25863 = Cắt

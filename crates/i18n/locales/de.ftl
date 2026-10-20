@@ -1008,12 +1008,6 @@ te3591497 = Es ist kein Text mehr.
 # Not read back: {e}
 tf04d4bce = Nicht zurückgelesen: { $e }
 
-# Insert into {pane}
-t3d5eaffc = In { $pane } einfügen
-
-# No shell to insert into
-t825e7370 = Keine Shell zum Einfügen
-
 # The vault's passphrase
 tb66334ea = Passphrase des Tresors
 
@@ -1028,9 +1022,6 @@ t71734b03 = Noch keine Hosts.
 
 # Saving…
 tbd79b37d = Wird gespeichert…
-
-# Click the text to edit it
-t63928671 = Zum Bearbeiten auf den Text klicken
 
 # Saved
 t8a6979e4 = Gespeichert
@@ -1068,8 +1059,14 @@ t41e36c52 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Ger�
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = In einer anderen App geöffnet: Was sie speichert, kommt hierher und bleibt.
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = Noch nichts geschrieben: Zum Schreiben auf Bearbeiten.
+# Insert into {pane}
+t3d5eaffc = In { $pane } einfügen
+
+# No shell to insert into
+t825e7370 = Keine Shell zum Einfügen
+
+# Insert
+t0f317948 = Einfügen
 
 # Cut
 t58e25863 = Ausschneiden

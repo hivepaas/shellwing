@@ -988,12 +988,6 @@ te3591497 = テキストではなくなりました。
 # Not read back: {e}
 tf04d4bce = 読み戻せません: { $e }
 
-# Insert into {pane}
-t3d5eaffc = { $pane } に挿入
-
-# No shell to insert into
-t825e7370 = 挿入先のシェルがありません
-
 # The vault's passphrase
 tb66334ea = 保管庫のパスフレーズ
 
@@ -1008,9 +1002,6 @@ t71734b03 = まだホストはありません。
 
 # Saving…
 tbd79b37d = 保存中…
-
-# Click the text to edit it
-t63928671 = テキストをクリックして編集
 
 # Saved
 t8a6979e4 = 保存済み
@@ -1048,8 +1039,14 @@ t41e36c52 = 保管庫はパスフレーズで保護されていないため、�
 # Open in another app: what it saves comes here, and is kept.
 t340e0631 = 別のアプリで開いています。そこで保存した内容がここに反映され、保持されます。
 
-# Nothing written yet: Edit to write.
-t21ced1e5 = まだ何も書かれていません。編集で書き始めます。
+# Insert into {pane}
+t3d5eaffc = { $pane } に挿入
+
+# No shell to insert into
+t825e7370 = 挿入先のシェルがありません
+
+# Insert
+t0f317948 = 挿入
 
 # Cut
 t58e25863 = 切り取り
