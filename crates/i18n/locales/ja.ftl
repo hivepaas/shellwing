@@ -28,6 +28,9 @@ t1c9f770c = 変数が { $count } 個あります。最大 { $max } 個です。
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = 変数の合計は { $size } KB です。最大 { $max } KB です。
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = ファイルは { $size } KB です。最大 { $max } KB です。
+
 # Name
 t0fe07306 = 名前
 
@@ -958,6 +961,9 @@ t648fcbf7 = スニペット
 # Environments
 t273b1ccb = 環境
 
+# Config files
+t16261310 = 設定ファイル
+
 # Actions
 te65fb504 = アクション
 
@@ -1630,6 +1636,90 @@ t0d325d34 = ホスト
 # every host
 t444612de = すべてのホスト
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+       *[other] { $n } バイト
+    }
+
+# {n} MB
+t3258fa2a = { $n } MB
+
+# {n} KB
+te253ff0c = { $n } KB
+
+# The file's text
+t7fb1322b = ファイルのテキスト
+
+# What it is, such as kube prod
+t2c4b7067 = 何のファイルか（例：kube prod）
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = テキストではないか { $max } KB を超えています。代わりにファイルから置き換えてください。
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = 配置先：/ または ~/ で始まるパス（例：~/.kube/config）。
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = 配置先：フォルダではなくファイルのパス。
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = パーミッション：8進数3桁（例：600）。
+
+# No category
+t44662d06 = カテゴリなし
+
+# {size}, not text
+t5956f56a = { $size }、テキストではありません
+
+# Edit…
+t8e7efcd7 = 編集…
+
+# Choose a file…
+t28a576c9 = ファイルを選択…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }：{ $size }、そのまま取り込みました
+
+# Content
+tc1679f62 = 内容
+
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = { $edited } までのテキストはここで編集できます。{ $max } までの任意のファイルをこのコンピューターから取り込めます。
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = パレットには、これらのホストのペインにのみ配置の候補が表示されます。
+
+# Where it goes on the host
+taf38972d = ホスト上の配置先
+
+# Permissions
+t8700fd83 = パーミッション
+
+# New config file
+td0fa9fed = 新しい設定ファイル
+
+# Edit config file
+t56c9aeed = 設定ファイルを編集
+
+# Category
+tafb3e591 = カテゴリ
+
+# The vault's passphrase
+tb66334ea = 保管庫のパスフレーズ
+
+# Wrong passphrase.
+t2ebec270 = パスフレーズが違います。
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = システムのダイアログで本人確認してください…
+
+# The vault's passphrase, to show the values
+teecb1d4f = 値を表示するための保管庫のパスフレーズ
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 保管庫はパスフレーズで保護されていないため、このデバイスを使う人なら誰でも表示できます。値を表示しますか？
+
 # value
 t425ed3ca = 値
 
@@ -1654,32 +1744,14 @@ tbf497c49 = クリップボードに NAME=value の行がありません。
 # Not NAME=value: {e}
 t65a67e1e = NAME=value の形式ではありません: { $e }
 
-# The vault's passphrase
-tb66334ea = 保管庫のパスフレーズ
-
-# Wrong passphrase.
-t2ebec270 = パスフレーズが違います。
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
        *[other] { $n } 件のスニペットが必要としています
     }
 
-# Edit…
-t8e7efcd7 = 編集…
-
 # Change
 ta1de2fdd = 変更
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = システムのダイアログで本人確認してください…
-
-# The vault's passphrase, to show the values
-teecb1d4f = 値を表示するための保管庫のパスフレーズ
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = 保管庫はパスフレーズで保護されていないため、このデバイスを使う人なら誰でも表示できます。値を表示しますか？
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = パレットでは、これらのホストのペインにのみ読み込みを提案します。
@@ -1707,9 +1779,6 @@ td9b8e02f = パレットで探すための説明
 
 # A name and a command are needed.
 t7f4c69bb = 名前とコマンドが必要です。
-
-# No category
-t44662d06 = カテゴリなし
 
 # typed, not run
 td4e41905 = 入力のみ（実行しない）
@@ -1741,6 +1810,9 @@ t3c6666da = 保管庫から削除され、同期後は他のデバイスから�
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 保管庫から削除され、同期後は他のデバイスからも削除されます。配置済みの場所にはそのまま残ります。
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
 
@@ -1752,9 +1824,6 @@ t883a11f4 = Enter で改行します。各行は順に実行されます。{ $sa
 
 # The palette lists it in panes of those hosts only.
 t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
-
-# Category
-tafb3e591 = カテゴリ
 
 # Environments it needs
 tebd9fda9 = 必要な環境
@@ -1780,17 +1849,23 @@ t32122ee4 = 実行する：入力後に Enter を押す
 # None yet.
 t786bc275 = まだありません。
 
-# New environment…
-t0c42d278 = 新しい環境…
-
 # New snippet…
 tec3111a4 = 新しいスニペット…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = API のキーなど、シェル用の変数です。暗号化して保管庫に保存され、保管庫と一緒に同期されます。パレット（{ $chord }、環境を読み込む…）からペインに読み込み、使い終わったら読み込みを解除するか、必要とするスニペットだけに使わせることもできます。
+# New environment…
+t0c42d278 = 新しい環境…
+
+# New config file…
+t58dfdc93 = 新しい設定ファイル…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = API のキーなど、シェル用の変数です。保管庫に暗号化して保存され、保管庫と一緒に同期されます。パレット（{ $chord }、環境の項目）またはペインのメニューからペインに読み込み、使い終わったら読み込みを解除します。それを必要とするスニペットだけに使わせることもできます。
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = よく実行するコマンドです。パレット（{ $chord } を押して名前を入力）から実行できます。Enter でペインで実行し、{ $alt } でタブ内のすべてのペインで実行します。保管庫に保存されるため、ホストと一緒に同期されます。
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = ~/.kube/config や ~/.aws/credentials など、ホストに配置するファイルです。保管庫に暗号化して保存され、保管庫と一緒に同期されます。パレット（{ $chord }、設定ファイルの項目）またはペインのメニューから配置します。タブを閉じるまでの一時配置も、そのまま残す配置もできます。
 
 # While loaded, the server can read them
 te60c8275 = 読み込み中は、サーバーから読み取れます
@@ -1800,6 +1875,9 @@ t87b5db80 = 値はエコーをオフにして送信され、シェルの履歴�
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = 信頼できるサーバーにのみ読み込み、使い終わったら解除してください。有効期限のあるキーや権限の小さいキー、たとえば短命のトークンや作業に必要な権限だけを持つロールを推奨します。
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = 配置したファイルはサーバーのディスク上にパーミッション付きで存在し、削除されるまで、そのサーバーの root 権限を持つ人は読み取れます。機密情報は信頼できるサーバーにのみ、タブを閉じるまでの配置で置いてください。
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} にはペインのホストの値が入ります。それ以外の {"{{"}name{"}}"} はスニペットの実行時に尋ねられます。
@@ -1944,6 +2022,12 @@ t82a6adaf = Ctrl+W 閉じる
 
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = このペインではフルスクリーンのプログラムが動作中です。終了してからもう一度お試しください。
+
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+       *[other] { $n } 件のファイルを削除しました。
+    }
 
 # It has no variables.
 t0993a534 = 変数がありません。
@@ -2104,6 +2188,15 @@ t2b3c5b61 = スニペット…
 # Load Environment…
 td34b2cc0 = 環境を読み込む…
 
+# Place Config File…
+t49f82f0c = 設定ファイルを配置…
+
+# Keep a File in the Vault…
+t25c07703 = ファイルを保管庫に保存…
+
+# Remove {names}
+t4efeb00b = { $names } を削除
+
 # Unload {names}
 t362b9a48 = { $names } の読み込みを解除
 
@@ -2149,11 +2242,116 @@ t21a947cf = ペインを閉じる
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 最下部に戻る（Shift+End）
 
+# Config files · {category}
+t59edc3e9 = 設定ファイル · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = 配置済み：Enter でもう一度配置します
+
+# It is not in the vault any more.
+td11af590 = 保管庫にはもうありません。
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · パーミッション { $mode }
+
+# Where on {host}
+t0f76d445 = { $host } 上の場所
+
+# Cannot place {name}: {e}
+t1383f29b = { $name } を配置できません：{ $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = ここに配置済みのファイルをタブを閉じるまで置き換える
+
+# What was there before still comes back when the tab closes.
+t55130ddc = 以前あったファイルは、タブを閉じると元に戻ります。
+
+# {path} holds it already.
+t3ec4172b = { $path } にはすでに同じものがあります。
+
+# Place it until the tab closes
+t19537c52 = タブを閉じるまで配置する
+
+# Then it is taken away.
+t1302797a = その後、削除されます。
+
+# Place it to stay
+t698a38cf = そのまま残るように配置する
+
+# It stays when the tab closes.
+tb2bc8f3b = タブを閉じても残ります。
+
+# Replace the file there until the tab closes
+t7e646019 = そこにあるファイルをタブを閉じるまで置き換える
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 現在のファイルは別名で退避され、タブを閉じると元に戻ります。
+
+# Replace it, keeping the old one
+tc95f7291 = 置き換えて、古いファイルを残す
+
+# As {path}
+tfb10a76a = { $path } として
+
+# Replace it
+t1e17fc0c = 置き換える
+
+# The one there now is gone.
+t7fa127b9 = 現在のファイルは失われます。
+
+# {path} is there already…
+td716b366 = { $path } はすでに存在します…
+
+# Place at {path}…
+tdcc97a76 = { $path } に配置…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = { $name } を { $path } にタブを閉じるまで配置しました。
+
+# Placed {name} at {path}.
+tfce33e2b = { $name } を { $path } に配置しました。
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+       *[other] 以前のセッションが残した設定ファイル { $n } 件を削除しました。
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path } はそのままにしました：配置後に変更されています。
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = このホスト用の設定ファイルとして暗号化して保存します（最大 { $max } KB）。
+
+# A file on {host} to keep in the vault
+t63904f7b = 保管庫に保存する { $host } 上のファイル
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = { $path } を保管庫に保存しました：設定 › 設定ファイル をご覧ください。
+
+# Not kept: {e}
+tc12e4203 = 保存できませんでした：{ $e }
+
+# Removing the config files placed…
+tbd123099 = 配置した設定ファイルを削除しています…
+
+# Open a tab first
+t6460fddf = 先にタブを開いてください
+
+# Connect first
+t0b55252f = 先に接続してください
+
+# Over SSH only
+t14e43465 = SSH のみ
+
 # Snippets · {category}
 t85f58d76 = スニペット · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 個のペイン
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = 先にタブを開いてください。スニペットは選択中のペインで実行されます。
 
 # in this pane
 t57139bb8 = このペインで
@@ -2205,6 +2403,12 @@ tfa31f588 = shellwing を終了しますか？
 
 # Choose a host on the left to connect.
 tf7759ebb = 左のホストを選んで接続してください。
+
+# Unlock the vault…
+tdf659182 = 保管庫のロックを解除…
+
+# Snippets, environments and config files are in it.
+t1646a763 = スニペット、環境、設定ファイルはこの中にあります。
 
 # Another tab to {title}
 ta46c00f0 = 別のタブで { $title } に接続
@@ -2266,9 +2470,6 @@ t4754a8f9 = ホスト一覧を表示
 # Saved passwords and passphrases…
 tdfc17c92 = 保存済みのパスワードとパスフレーズ…
 
-# Unlock the vault…
-tdf659182 = 保管庫のロックを解除…
-
 # Lock the vault
 tc05449a1 = 保管庫をロック
 
@@ -2301,6 +2502,9 @@ tf108a14d = config.toml を編集
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = このホスト用のスニペットがありません: 設定 › スニペット で追加してください。
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = このホスト用の設定ファイルがありません: 設定 › 設定ファイル で追加してください。
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = このホスト用の環境がありません: 設定 › 環境 で追加してください。
@@ -2658,9 +2862,6 @@ t3ea0b584 = 停止できませんでした：{ $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = 保管庫の鍵をシステムのキーチェーンに保存しました。
-
-# Not kept: {e}
-tc12e4203 = 保存できませんでした：{ $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = 同期を停止しました。同期先のデータとこのデバイスのシークレットは保持されます。

@@ -34,6 +34,9 @@ t1c9f770c = Переменных: { $count }; не больше { $max }.
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = Переменные занимают { $size } КБ; не больше { $max } КБ.
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = Файл занимает { $size } КБ; не больше { $max } КБ.
+
 # Name
 t0fe07306 = Имя
 
@@ -988,6 +991,9 @@ t648fcbf7 = Сниппеты
 # Environments
 t273b1ccb = Окружения
 
+# Config files
+t16261310 = Файлы конфигурации
+
 # Actions
 te65fb504 = Действия
 
@@ -1666,6 +1672,93 @@ t0d325d34 = ХОСТЫ
 # every host
 t444612de = все хосты
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+        [one] { $n } байт
+        [few] { $n } байта
+        [many] { $n } байт
+       *[other] { $n } байта
+    }
+
+# {n} MB
+t3258fa2a = { $n } МБ
+
+# {n} KB
+te253ff0c = { $n } КБ
+
+# The file's text
+t7fb1322b = Текст файла
+
+# What it is, such as kube prod
+t2c4b7067 = Что это, например kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = Это не текст или больше { $max } КБ: замените его из файла.
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = Куда он попадёт: путь, начинающийся с / или с ~/, например ~/.kube/config.
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = Куда он попадёт: путь к файлу, а не к папке.
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = Права доступа: три восьмеричные цифры, например 600.
+
+# No category
+t44662d06 = Без категории
+
+# {size}, not text
+t5956f56a = { $size }, не текст
+
+# Edit…
+t8e7efcd7 = Изменить…
+
+# Choose a file…
+t28a576c9 = Выбрать файл…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }: { $size }, взят как есть
+
+# Content
+tc1679f62 = Содержимое
+
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = Текст до { $edited } редактируется здесь; любой файл до { $max } можно взять с этого компьютера.
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = Палитра предлагает разместить его только в панелях этих хостов.
+
+# Where it goes on the host
+taf38972d = Куда он попадёт на хосте
+
+# Permissions
+t8700fd83 = Права доступа
+
+# New config file
+td0fa9fed = Новый файл конфигурации
+
+# Edit config file
+t56c9aeed = Изменить файл конфигурации
+
+# Category
+tafb3e591 = Категория
+
+# The vault's passphrase
+tb66334ea = Парольная фраза хранилища
+
+# Wrong passphrase.
+t2ebec270 = Неверная парольная фраза.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Подтвердите, что это вы, в окне системы…
+
+# The vault's passphrase, to show the values
+teecb1d4f = Парольная фраза хранилища, чтобы показать значения
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Хранилище не защищено парольной фразой, поэтому показать их может любой, кто сидит за этим устройством. Показать значения?
+
 # value
 t425ed3ca = значение
 
@@ -1690,12 +1783,6 @@ tbf497c49 = В буфере обмена нет строк NAME=value.
 # Not NAME=value: {e}
 t65a67e1e = Не NAME=value: { $e }
 
-# The vault's passphrase
-tb66334ea = Парольная фраза хранилища
-
-# Wrong passphrase.
-t2ebec270 = Неверная парольная фраза.
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
@@ -1705,20 +1792,8 @@ t79d75da2 =
        *[other] нужно { $n } сниппета
     }
 
-# Edit…
-t8e7efcd7 = Изменить…
-
 # Change
 ta1de2fdd = Изменить
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Подтвердите, что это вы, в окне системы…
-
-# The vault's passphrase, to show the values
-teecb1d4f = Парольная фраза хранилища, чтобы показать значения
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = Хранилище не защищено парольной фразой, поэтому показать их может любой, кто сидит за этим устройством. Показать значения?
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Палитра предлагает загрузить его только в панели этих хостов.
@@ -1746,9 +1821,6 @@ td9b8e02f = Что он делает, чтобы найти его в палит
 
 # A name and a command are needed.
 t7f4c69bb = Нужны имя и команда.
-
-# No category
-t44662d06 = Без категории
 
 # typed, not run
 td4e41905 = вводится, но не выполняется
@@ -1780,6 +1852,9 @@ t3c6666da = Он будет удалён из хранилища и с друг�
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Он будет удалён из хранилища и с других ваших устройств после синхронизации. Там, где он уже размещён, он остаётся.
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
 
@@ -1791,9 +1866,6 @@ t883a11f4 = Enter начинает новую строку; строки вып�
 
 # The palette lists it in panes of those hosts only.
 t66336218 = Палитра показывает его только в панелях этих хостов.
-
-# Category
-tafb3e591 = Категория
 
 # Environments it needs
 tebd9fda9 = Нужные окружения
@@ -1819,17 +1891,23 @@ t32122ee4 = Выполнять: нажимать Enter после ввода
 # None yet.
 t786bc275 = Пока нет.
 
-# New environment…
-t0c42d278 = Новое окружение…
-
 # New snippet…
 tec3111a4 = Новый сниппет…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = Переменные для оболочки, например ключи API, хранятся зашифрованными в хранилище и синхронизируются вместе с ним. Загрузите окружение в панель через палитру ({ $chord }, Загрузить окружение…) и выгрузите, когда закончите, или позвольте сниппету, которому оно нужно, получить его только для себя.
+# New environment…
+t0c42d278 = Новое окружение…
+
+# New config file…
+t58dfdc93 = Новый файл конфигурации…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = Переменные для оболочки, например ключи API, хранятся в хранилище в зашифрованном виде и синхронизируются вместе с ним. Загрузите набор в панель из палитры ({ $chord }, раздел «Окружения») или из меню панели и выгрузите, когда закончите; или дайте его только сниппету, которому он нужен.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Команды, которые вы часто выполняете. Запускайте из палитры ({ $chord }, затем введите имя): Enter выполняет в панели, { $alt } — во всех панелях вкладки. Хранятся в хранилище, поэтому синхронизируются вместе с хостами.
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = Файлы для размещения на хостах, например ~/.kube/config или ~/.aws/credentials, хранятся в хранилище в зашифрованном виде и синхронизируются вместе с ним. Разместите файл из палитры ({ $chord }, раздел «Файлы конфигурации») или из меню панели: до закрытия вкладки или насовсем.
 
 # While loaded, the server can read them
 te60c8275 = Пока они загружены, сервер может их прочитать
@@ -1839,6 +1917,9 @@ t87b5db80 = Значения отправляются с отключённым 
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = Загружайте их на надёжные серверы, выгружайте, когда закончите, и отдавайте предпочтение ключам, которые истекают или мало что могут, например краткоживущим токенам или роли только с нужными для работы правами.
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = Размещённый файл лежит на диске сервера вместе со своими правами: любой, у кого там есть root, может прочитать его, пока он не удалён. Размещайте секреты только на доверенных серверах и только до закрытия вкладки.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются для хоста панели; любое другое {"{{"}name{"}}"} запрашивается при запуске сниппета.
@@ -2038,6 +2119,15 @@ t82a6adaf = Ctrl+W закрыть
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = В этой панели запущена полноэкранная программа: выйдите из неё и повторите попытку.
 
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+        [one] Удалён { $n } файл.
+        [few] Удалено { $n } файла.
+        [many] Удалено { $n } файлов.
+       *[other] Удалено { $n } файла.
+    }
+
 # It has no variables.
 t0993a534 = В нём нет переменных.
 
@@ -2203,6 +2293,15 @@ t2b3c5b61 = Сниппеты…
 # Load Environment…
 td34b2cc0 = Загрузить окружение…
 
+# Place Config File…
+t49f82f0c = Разместить файл конфигурации…
+
+# Keep a File in the Vault…
+t25c07703 = Сохранить файл в хранилище…
+
+# Remove {names}
+t4efeb00b = Удалить { $names }
+
 # Unload {names}
 t362b9a48 = Выгрузить { $names }
 
@@ -2248,6 +2347,111 @@ t21a947cf = Закрыть панель
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Вернуться вниз (Shift+End)
 
+# Config files · {category}
+t59edc3e9 = Файлы конфигурации · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = размещён: Enter разместит его снова
+
+# It is not in the vault any more.
+td11af590 = Его больше нет в хранилище.
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · права { $mode }
+
+# Where on {host}
+t0f76d445 = Куда на { $host }
+
+# Cannot place {name}: {e}
+t1383f29b = Не удалось разместить { $name }: { $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = Заменить размещённый здесь до закрытия вкладки
+
+# What was there before still comes back when the tab closes.
+t55130ddc = То, что было раньше, вернётся при закрытии вкладки.
+
+# {path} holds it already.
+t3ec4172b = { $path } уже содержит его.
+
+# Place it until the tab closes
+t19537c52 = Разместить до закрытия вкладки
+
+# Then it is taken away.
+t1302797a = Затем он будет удалён.
+
+# Place it to stay
+t698a38cf = Разместить насовсем
+
+# It stays when the tab closes.
+tb2bc8f3b = Он останется после закрытия вкладки.
+
+# Replace the file there until the tab closes
+t7e646019 = Заменить файл там до закрытия вкладки
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Текущий откладывается в сторону и возвращается при закрытии вкладки.
+
+# Replace it, keeping the old one
+tc95f7291 = Заменить, сохранив старый
+
+# As {path}
+tfb10a76a = Как { $path }
+
+# Replace it
+t1e17fc0c = Заменить
+
+# The one there now is gone.
+t7fa127b9 = Текущий будет потерян.
+
+# {path} is there already…
+td716b366 = { $path } уже существует…
+
+# Place at {path}…
+tdcc97a76 = Разместить в { $path }…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = { $name } размещён в { $path } до закрытия вкладки.
+
+# Placed {name} at {path}.
+tfce33e2b = { $name } размещён в { $path }.
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+        [one] Удалён { $n } файл конфигурации, оставшийся с прошлого раза.
+        [few] Удалено { $n } файла конфигурации, оставшихся с прошлого раза.
+        [many] Удалено { $n } файлов конфигурации, оставшихся с прошлого раза.
+       *[other] Удалено { $n } файла конфигурации, оставшихся с прошлого раза.
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path } оставлен как есть: он изменился после размещения.
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = Хранится в зашифрованном виде как файл конфигурации для этого хоста, до { $max } КБ.
+
+# A file on {host} to keep in the vault
+t63904f7b = Файл на { $host }, который нужно сохранить в хранилище
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = { $path } сохранён в хранилище: см. Настройки › Файлы конфигурации.
+
+# Not kept: {e}
+tc12e4203 = Не сохранено: { $e }
+
+# Removing the config files placed…
+tbd123099 = Удаление размещённых файлов конфигурации…
+
+# Open a tab first
+t6460fddf = Сначала откройте вкладку
+
+# Connect first
+t0b55252f = Сначала подключитесь
+
+# Over SSH only
+t14e43465 = Только по SSH
+
 # Snippets · {category}
 t85f58d76 = Сниппеты · { $category }
 
@@ -2259,6 +2463,9 @@ t3bbceccc =
         [many] Enter · Alt+Enter: { $n } панелей
        *[other] Enter · Alt+Enter: { $n } панели
     }
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Сначала откройте вкладку: сниппет выполняется в выбранной панели.
 
 # in this pane
 t57139bb8 = в этой панели
@@ -2329,6 +2536,12 @@ tfa31f588 = Выйти из shellwing?
 # Choose a host on the left to connect.
 tf7759ebb = Выберите хост слева, чтобы подключиться.
 
+# Unlock the vault…
+tdf659182 = Разблокировать хранилище…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Сниппеты, окружения и файлы конфигурации находятся в нём.
+
 # Another tab to {title}
 ta46c00f0 = Ещё одна вкладка с { $title }
 
@@ -2389,9 +2602,6 @@ t4754a8f9 = Показать список хостов
 # Saved passwords and passphrases…
 tdfc17c92 = Сохранённые пароли и парольные фразы…
 
-# Unlock the vault…
-tdf659182 = Разблокировать хранилище…
-
 # Lock the vault
 tc05449a1 = Заблокировать хранилище
 
@@ -2424,6 +2634,9 @@ tf108a14d = Изменить config.toml
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = Для этого хоста нет сниппетов: добавьте в Настройки › Сниппеты.
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = Для этого хоста нет файлов конфигурации: добавьте в Настройки › Файлы конфигурации.
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = Для этого хоста нет окружения: добавьте в Настройки › Окружения.
@@ -2787,9 +3000,6 @@ t3ea0b584 = Не остановлено: { $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = Теперь ключ хранилища хранится в системной связке ключей.
-
-# Not kept: {e}
-tc12e4203 = Не сохранено: { $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = Синхронизация остановлена. Данные там и секреты здесь сохранены.

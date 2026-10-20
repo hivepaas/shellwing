@@ -27,6 +27,7 @@ mod look;
 mod palette;
 mod pane;
 mod placement;
+mod placing;
 mod prompt;
 mod settings_view;
 mod sidebar;

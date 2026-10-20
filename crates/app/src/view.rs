@@ -269,6 +269,10 @@ pub struct TitleChanged;
 /// A secret was saved in the vault.
 pub struct VaultChanged;
 
+/// Config files taken away from the pane's host (their full paths): no
+/// longer to tidy up later.
+pub struct Unplaced(pub Vec<String>);
+
 /// The Files panel's edge was dragged to a new width, to be remembered.
 pub struct FilesResized;
 
@@ -281,6 +285,10 @@ pub enum PaneCommand {
     Snippets,
     /// The palette, at the environments to load.
     Environments,
+    /// The palette, at the config files to place.
+    ConfigFiles,
+    /// Keep a file of the host in the vault, as a config file.
+    SaveFile,
     Split(gpui::Axis),
     Forward,
     /// Log the pane to a file, or stop: the workspace has the settings.
@@ -328,6 +336,8 @@ pub struct TermView {
     env_pending: Vec<EnvLoad>,
     /// Environments loaded into this pane's shell.
     env_loaded: Vec<LoadedEnv>,
+    /// Config files placed on the host until the tab closes.
+    placed: Vec<crate::placing::Placed>,
     notice: Option<SharedString>,
     /// Last pointer position over the grid, to show links when the modifier goes down.
     last_mouse: Option<(f32, f32)>,
@@ -409,6 +419,7 @@ impl gpui::EventEmitter<UseKey> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<TitleChanged> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
+impl gpui::EventEmitter<Unplaced> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
 impl gpui::EventEmitter<PaneCommand> for TermView {}
 
@@ -475,6 +486,7 @@ impl TermView {
             pending_paste: None,
             env_pending: vec![],
             env_loaded: vec![],
+            placed: vec![],
             notice: None,
             last_mouse: None,
             font_family: FONT_FAMILIES[0].into(),
@@ -564,6 +576,88 @@ impl TermView {
         self.frame.alternate.then(|| {
             tr!("A full-screen program is running in this pane: leave it, then try again.")
         })
+    }
+
+    /// The config files placed on this pane's host until its tab closes.
+    pub fn placed_files(&self) -> &[crate::placing::Placed] {
+        &self.placed
+    }
+
+    pub fn add_placed(&mut self, p: crate::placing::Placed, cx: &mut Context<Self>) {
+        self.placed.retain(|x| x.path != p.path);
+        self.placed.push(p);
+        cx.notify();
+    }
+
+    /// Takes the placed config files away from the host (all of them, or
+    /// the one at `path`), on the network runtime; the ones gone are said
+    /// with [`Unplaced`]. None when there are none, or no connection.
+    pub fn take_down(
+        &mut self,
+        path: Option<&str>,
+    ) -> Option<tokio::task::JoinHandle<(Vec<String>, Option<String>)>> {
+        let todo: Vec<crate::placing::Placed> = self
+            .placed
+            .iter()
+            .filter(|p| path.is_none_or(|x| p.path == x))
+            .cloned()
+            .collect();
+        if todo.is_empty() || self.session.status() != Status::Connected {
+            return None;
+        }
+        let remote = self.session.remote();
+        let answer = remote.sftp()?;
+        let job = async move {
+            let sftp = match crate::placing::open(answer).await {
+                Ok(s) => s,
+                Err(e) => return (vec![], Some(e)),
+            };
+            let (mut gone, mut problem) = (vec![], None);
+            for p in todo {
+                match crate::placing::unplace(&sftp, &p.path, p.aside.as_deref()).await {
+                    Ok(()) => gone.push(p.path),
+                    Err(e) => problem = Some(e),
+                }
+            }
+            (gone, problem)
+        };
+        // A host that does not answer does not hold the tab open long.
+        Some(remote.rt.spawn(async move {
+            tokio::time::timeout(std::time::Duration::from_secs(10), job)
+                .await
+                .unwrap_or_else(|_| (vec![], Some("no answer".into())))
+        }))
+    }
+
+    /// The placed files at `paths` are gone from the host.
+    pub fn took_down(&mut self, paths: &[String], cx: &mut Context<Self>) {
+        self.placed.retain(|p| !paths.contains(&p.path));
+        if !paths.is_empty() {
+            cx.emit(Unplaced(paths.to_vec()));
+        }
+        cx.notify();
+    }
+
+    /// Takes away the placed file at `path` (None: all), and says so.
+    pub fn remove_placed(&mut self, path: Option<&str>, cx: &mut Context<Self>) {
+        let Some(job) = self.take_down(path) else {
+            return self.show_notice(tr!("Not connected."), LOG_NOTICE, cx);
+        };
+        cx.spawn(async move |this, cx| {
+            let (gone, problem) = job.await.unwrap_or_else(|e| (vec![], Some(e.to_string())));
+            let _ = this.update(cx, |v, cx| {
+                v.took_down(&gone, cx);
+                match problem {
+                    Some(e) => v.show_notice(tr!("Not removed: {e}", e = e), LOG_NOTICE, cx),
+                    None => v.show_notice(
+                        tr_n!(gone.len(), "Removed {n} file.", "Removed {n} files."),
+                        LOG_NOTICE,
+                        cx,
+                    ),
+                }
+            });
+        })
+        .detach();
     }
 
     /// The environments loaded into this pane's shell.
@@ -831,7 +925,8 @@ impl TermView {
     fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
         let (log, listen) = (self.log_badge(cx), self.listen_badge(cx));
         let envs = self.env_badges(cx);
-        if log.is_none() && listen.is_none() && envs.is_empty() {
+        let files = self.file_badges(cx);
+        if log.is_none() && listen.is_none() && envs.is_empty() && files.is_empty() {
             return None;
         }
         let top = if self.find.is_some() {
@@ -850,6 +945,7 @@ impl TermView {
                 .opacity(0.45)
                 .hover(|s| s.opacity(1.))
                 .children(envs)
+                .children(files)
                 .children(log)
                 .children(listen)
                 .into_any_element(),
@@ -884,6 +980,36 @@ impl TermView {
                     }))
                     .child(div().size(px(6.)).rounded_full().bg(rgb(colors().amber)))
                     .child(e.name.clone())
+                    .child("✕")
+            })
+            .collect()
+    }
+
+    /// A config file placed until the tab closes: its name; a click takes
+    /// it away.
+    fn file_badges(&self, cx: &mut Context<Self>) -> Vec<gpui::Stateful<gpui::Div>> {
+        self.placed
+            .iter()
+            .map(|p| {
+                let path = p.path.clone();
+                div()
+                    .id(SharedString::from(format!("file-badge-{}", p.path)))
+                    .flex()
+                    .items_center()
+                    .gap(px(6.))
+                    .h(px(22.))
+                    .px(px(8.))
+                    .rounded_full()
+                    .border_1()
+                    .border_color(rgb(colors().field_edge))
+                    .bg(rgb(colors().chip))
+                    .text_xs()
+                    .text_color(rgb(colors().text))
+                    .cursor_pointer()
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(move |v, _, _, cx| v.remove_placed(Some(&path), cx)))
+                    .child(div().size(px(6.)).rounded_full().bg(rgb(colors().accent)))
+                    .child(p.name.clone())
                     .child("✕")
             })
             .collect()
@@ -1385,6 +1511,9 @@ impl TermView {
         if status != Status::Connected {
             self.env_pending.clear();
             self.env_loaded.clear();
+            // Placed files stay on the host: back with the connection, or
+            // taken away when the tab closes (or, failing that, when the
+            // host connects next).
         }
         match status {
             Status::Connected => {
@@ -1980,6 +2109,38 @@ impl TermView {
                         true,
                     )
                     .on_click(act(|_, _, cx| cx.emit(PaneCommand::Environments))),
+                )
+            })
+            .when(status == Status::Connected && !local, |d| {
+                d.child(
+                    item(
+                        "menu-place-file",
+                        &tr!("Place Config File…"),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::ConfigFiles))),
+                )
+                .child(
+                    item(
+                        "menu-save-file",
+                        &tr!("Keep a File in the Vault…"),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::SaveFile))),
+                )
+            })
+            .when(!self.placed.is_empty(), |d| {
+                let names: Vec<String> = self.placed.iter().map(|p| p.name.clone()).collect();
+                d.child(
+                    item(
+                        "menu-remove-files",
+                        &tr!("Remove {names}", names = names.join(", ")),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|v, _, cx| v.remove_placed(None, cx))),
                 )
             })
             .when(!self.env_loaded.is_empty(), |d| {

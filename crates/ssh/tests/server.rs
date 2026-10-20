@@ -1475,6 +1475,78 @@ async fn folders_are_made_renamed_and_removed_over_sftp() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn config_files_are_placed_whole_and_taken_back() {
+    if sftp_server().is_none() {
+        eprintln!("skipped: no sftp-server on this system");
+        return;
+    }
+    let fx = Fixture::new("sftp-place");
+    let remote = fx.dir.join("remote");
+    std::fs::create_dir_all(&remote).expect("remote");
+    std::fs::write(remote.join(".npmrc"), "theirs").expect("theirs");
+    let (_session, sftp) = sftp_session(&fx, Some(remote.clone())).await;
+    let sftp = sftp.expect("sftp opens");
+
+    let kube = sftp.expand("~/.kube/config").await.expect("expand");
+    assert!(kube.ends_with("/.kube/config"), "{kube}");
+    assert!(sftp.read_file(&kube, 1024).await.expect("read").is_none());
+    // Its directory made, 0700; the file 0600.
+    sftp.place(&kube, b"apiVersion: v1\n", 0o600, None)
+        .await
+        .expect("placed");
+    assert_eq!(
+        std::fs::read(remote.join(".kube/config")).expect("kube"),
+        b"apiVersion: v1\n"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode =
+            |p: &std::path::Path| std::fs::metadata(p).expect("meta").permissions().mode() & 0o777;
+        assert_eq!(mode(&remote.join(".kube/config")), 0o600);
+        assert_eq!(mode(&remote.join(".kube")), 0o700);
+    }
+    assert_eq!(
+        sftp.read_file(&kube, 1024).await.expect("read").as_deref(),
+        Some(&b"apiVersion: v1\n"[..])
+    );
+    assert!(sftp.read_file(&kube, 4).await.is_err(), "past the most");
+
+    // Over a file there: what was there set aside, and put back.
+    let npmrc = sftp.expand("~/.npmrc").await.expect("expand");
+    let aside = format!("{npmrc}.shellwing-saved");
+    sftp.place(&npmrc, b"ours", 0o600, Some(&aside))
+        .await
+        .expect("placed over");
+    assert_eq!(std::fs::read(remote.join(".npmrc")).expect("ours"), b"ours");
+    assert_eq!(
+        std::fs::read(remote.join(".npmrc.shellwing-saved")).expect("aside"),
+        b"theirs"
+    );
+    sftp.unplace(&npmrc, Some(&aside))
+        .await
+        .expect("taken back");
+    assert_eq!(
+        std::fs::read(remote.join(".npmrc")).expect("back"),
+        b"theirs"
+    );
+    assert!(!remote.join(".npmrc.shellwing-saved").exists());
+    // Over a file, not set aside: it is replaced, nothing left beside it.
+    sftp.place(&npmrc, b"again", 0o600, None)
+        .await
+        .expect("replaced");
+    sftp.unplace(&kube, None).await.expect("removed");
+    assert!(!remote.join(".kube/config").exists());
+    let left: Vec<String> = std::fs::read_dir(&remote)
+        .expect("ls")
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.contains("shellwing"))
+        .collect();
+    assert!(left.is_empty(), "nothing left beside: {left:?}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn a_server_without_sftp_says_so() {
     let fx = Fixture::new("no-sftp");
     let (_session, sftp) = sftp_session(&fx, None).await;

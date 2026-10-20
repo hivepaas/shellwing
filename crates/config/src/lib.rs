@@ -28,7 +28,7 @@ pub use settings::{
     OnDisconnect, Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal,
     UI_FONT_SIZE, UiFont, VaultSettings, WebDavSync,
 };
-pub use state::{PaneState, SessionState, TabState, WindowMode, WindowState};
+pub use state::{PaneState, PlacedFile, SessionState, TabState, WindowMode, WindowState};
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, SyncPlaceText, WriteError};
 pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, GROUPS, Gradient, Theme, Themes};
 

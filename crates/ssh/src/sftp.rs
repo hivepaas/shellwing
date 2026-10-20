@@ -279,6 +279,151 @@ impl Sftp {
         Ok(())
     }
 
+    /// `path` with a leading `~` (or `~/`) as the home directory.
+    pub async fn expand(&self, path: &str) -> Result<String, Error> {
+        match path.strip_prefix('~') {
+            Some(rest) if rest.is_empty() || rest.starts_with('/') => {
+                let home = self.home().await?;
+                Ok(format!("{}{rest}", home.trim_end_matches('/')))
+            }
+            _ => Ok(path.to_string()),
+        }
+    }
+
+    /// The bytes of the file at `path`, None when nothing is there; a file
+    /// of more than `max` bytes, or not a file, is an error.
+    pub async fn read_file(&self, path: &str, max: usize) -> Result<Option<Vec<u8>>, Error> {
+        let Some(e) = self.stat(path).await? else {
+            return Ok(None);
+        };
+        if e.kind != Kind::File {
+            return Err(Error::Sftp(format!("{} is not a file", name_of(path))));
+        }
+        if e.size > max as u64 {
+            return Err(Error::Sftp(format!(
+                "{} is {} KB; {} KB at most",
+                name_of(path),
+                e.size.div_ceil(1024),
+                max / 1024
+            )));
+        }
+        self.0.read(path).await.map(Some).map_err(err)
+    }
+
+    /// Makes the directories up to `dir` that are missing, `0700`: a place
+    /// for secrets.
+    async fn make_dirs(&self, dir: &str) -> Result<(), Error> {
+        let mut missing = vec![];
+        let mut at = dir.trim_end_matches('/').to_string();
+        while !at.is_empty() && at != "/" && self.stat(&at).await?.is_none() {
+            missing.push(at.clone());
+            let up = parent(&at);
+            if up == at {
+                break;
+            }
+            at = up;
+        }
+        for d in missing.into_iter().rev() {
+            self.0.create_dir(d.as_str()).await.map_err(err)?;
+            self.set_mode(&d, 0o700).await?;
+        }
+        Ok(())
+    }
+
+    async fn set_mode(&self, path: &str, mode: u32) -> Result<(), Error> {
+        let attrs = russh_sftp::protocol::FileAttributes {
+            permissions: Some(mode),
+            ..russh_sftp::protocol::FileAttributes::empty()
+        };
+        self.0.set_metadata(path, attrs).await.map_err(err)
+    }
+
+    /// Writes `data` to the file at `path`, whole or not at all: to a file
+    /// beside it first, with `mode` from the start, then renamed over it.
+    /// What was there goes to `aside` when given (kept), else is removed.
+    /// The directories missing are made, `0700`.
+    pub async fn place(
+        &self,
+        path: &str,
+        data: &[u8],
+        mode: u32,
+        aside: Option<&str>,
+    ) -> Result<(), Error> {
+        use russh_sftp::protocol::{FileAttributes, OpenFlags};
+        let dir = parent(path);
+        self.make_dirs(&dir).await?;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default();
+        let tmp = join(&dir, &format!(".{}.shellwing-{stamp:x}", name_of(path)));
+        let attrs = FileAttributes {
+            permissions: Some(mode),
+            ..FileAttributes::empty()
+        };
+        let written = async {
+            let mut f = self
+                .0
+                .open_with_flags_and_attributes(
+                    tmp.as_str(),
+                    OpenFlags::CREATE | OpenFlags::EXCLUDE | OpenFlags::WRITE,
+                    attrs,
+                )
+                .await
+                .map_err(err)?;
+            f.write_all(data).await.map_err(io)?;
+            f.shutdown().await.map_err(io)?;
+            // The umask may have taken bits off.
+            self.set_mode(&tmp, mode).await
+        }
+        .await;
+        if let Err(e) = written {
+            let _ = self.0.remove_file(tmp.as_str()).await;
+            return Err(e);
+        }
+        // SFTP's rename does not write over a file: what is there moves
+        // out of the way first, and comes back if the rename fails.
+        let there = self.lstat(path).await?.is_some();
+        let old = match aside {
+            Some(a) => a.to_string(),
+            None => format!("{tmp}.old"),
+        };
+        if there {
+            if aside.is_some() && self.lstat(&old).await?.is_some() {
+                self.0.remove_file(old.as_str()).await.map_err(err)?;
+            }
+            if let Err(e) = self.0.rename(path, old.as_str()).await {
+                let _ = self.0.remove_file(tmp.as_str()).await;
+                return Err(err(e));
+            }
+        }
+        if let Err(e) = self.0.rename(tmp.as_str(), path).await {
+            if there {
+                let _ = self.0.rename(old.as_str(), path).await;
+            }
+            let _ = self.0.remove_file(tmp.as_str()).await;
+            return Err(err(e));
+        }
+        if there && aside.is_none() {
+            let _ = self.0.remove_file(old.as_str()).await;
+        }
+        Ok(())
+    }
+
+    /// Takes the file at `path` away, and puts back what was set `aside`
+    /// when it was placed, if anything.
+    pub async fn unplace(&self, path: &str, aside: Option<&str>) -> Result<(), Error> {
+        if self.lstat(path).await?.is_some() {
+            self.0.remove_file(path).await.map_err(err)?;
+        }
+        if let Some(a) = aside
+            && self.lstat(a).await?.is_some()
+        {
+            self.0.rename(a, path).await.map_err(err)?;
+        }
+        Ok(())
+    }
+
     /// The kind of what is at `path` itself (a link is a link); None when nothing is.
     async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
         use russh_sftp::client::error::Error as E;

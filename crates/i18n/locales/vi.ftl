@@ -28,6 +28,9 @@ t1c9f770c = { $count } biến; tối đa { $max }.
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = Tệp dài { $size } KB; tối đa { $max } KB.
+
 # Name
 t0fe07306 = Tên
 
@@ -958,6 +961,9 @@ t648fcbf7 = Đoạn lệnh
 # Environments
 t273b1ccb = Biến môi trường
 
+# Config files
+t16261310 = Tệp cấu hình
+
 # Actions
 te65fb504 = Thao tác
 
@@ -1630,6 +1636,90 @@ t0d325d34 = MÁY CHỦ
 # every host
 t444612de = mọi máy chủ
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+       *[other] { $n } byte
+    }
+
+# {n} MB
+t3258fa2a = { $n } MB
+
+# {n} KB
+te253ff0c = { $n } KB
+
+# The file's text
+t7fb1322b = Nội dung văn bản của tệp
+
+# What it is, such as kube prod
+t2c4b7067 = Tệp gì, ví dụ kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = Tệp không phải văn bản, hoặc dài hơn { $max } KB: hãy thay bằng một tệp khác.
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = Vị trí đặt: đường dẫn bắt đầu bằng / hoặc ~/, ví dụ ~/.kube/config.
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = Vị trí đặt: phải là đường dẫn tệp, không phải thư mục.
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = Quyền: ba chữ số bát phân, ví dụ 600.
+
+# No category
+t44662d06 = Chưa phân loại
+
+# {size}, not text
+t5956f56a = { $size }, không phải văn bản
+
+# Edit…
+t8e7efcd7 = Sửa…
+
+# Choose a file…
+t28a576c9 = Chọn tệp…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }: { $size }, giữ nguyên
+
+# Content
+tc1679f62 = Nội dung
+
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = Văn bản tới { $edited } sửa được ngay ở đây; mọi tệp tới { $max } đều lấy được từ máy này.
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = Bảng lệnh chỉ đề nghị đặt nó trong các pane của những máy chủ đó.
+
+# Where it goes on the host
+taf38972d = Vị trí trên máy chủ
+
+# Permissions
+t8700fd83 = Quyền
+
+# New config file
+td0fa9fed = Tệp cấu hình mới
+
+# Edit config file
+t56c9aeed = Sửa tệp cấu hình
+
+# Category
+tafb3e591 = Phân loại
+
+# The vault's passphrase
+tb66334ea = Passphrase của kho
+
+# Wrong passphrase.
+t2ebec270 = Sai passphrase.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
+
+# The vault's passphrase, to show the values
+teecb1d4f = Passphrase của kho, để hiện giá trị
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng hiện được. Hiện giá trị?
+
 # value
 t425ed3ca = giá trị
 
@@ -1654,32 +1744,14 @@ tbf497c49 = Clipboard không có dòng NAME=value nào.
 # Not NAME=value: {e}
 t65a67e1e = Không đúng dạng NAME=value: { $e }
 
-# The vault's passphrase
-tb66334ea = Passphrase của kho
-
-# Wrong passphrase.
-t2ebec270 = Sai passphrase.
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
        *[other] { $n } đoạn lệnh cần dùng
     }
 
-# Edit…
-t8e7efcd7 = Sửa…
-
 # Change
 ta1de2fdd = Đổi
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
-
-# The vault's passphrase, to show the values
-teecb1d4f = Passphrase của kho, để hiện giá trị
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng hiện được. Hiện giá trị?
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Bảng lệnh chỉ đề nghị nạp nó trong các pane của những máy chủ đó.
@@ -1707,9 +1779,6 @@ td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
 
 # A name and a command are needed.
 t7f4c69bb = Cần có tên và lệnh.
-
-# No category
-t44662d06 = Chưa phân loại
 
 # typed, not run
 td4e41905 = chỉ gõ, không chạy
@@ -1741,6 +1810,9 @@ t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác c�
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Tệp bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Những nơi đã đặt tệp thì vẫn giữ.
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
 
@@ -1752,9 +1824,6 @@ t883a11f4 = Enter để xuống dòng; các dòng chạy lần lượt. { $save 
 
 # The palette lists it in panes of those hosts only.
 t66336218 = Bảng lệnh chỉ hiện nó trong khung của những máy chủ đó.
-
-# Category
-tafb3e591 = Phân loại
 
 # Environments it needs
 tebd9fda9 = Bộ biến cần dùng
@@ -1780,17 +1849,23 @@ t32122ee4 = Chạy luôn: nhấn Enter sau khi gõ
 # None yet.
 t786bc275 = Chưa có.
 
-# New environment…
-t0c42d278 = Bộ biến mới…
-
 # New snippet…
 tec3111a4 = Đoạn lệnh mới…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = Biến cho shell, như khoá của một API, được mã hoá trong kho và đồng bộ cùng kho. Nạp vào một pane từ bảng lệnh ({ $chord }, Nạp biến môi trường…) rồi gỡ ra khi xong, hoặc để một đoạn lệnh cần nó dùng riêng.
+# New environment…
+t0c42d278 = Bộ biến mới…
+
+# New config file…
+t58dfdc93 = Tệp cấu hình mới…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = Biến cho shell, như khoá của một API, được mã hoá trong kho và đồng bộ cùng kho. Nạp vào một pane từ bảng lệnh ({ $chord }, nhóm Biến môi trường) hoặc menu của pane, rồi gỡ ra khi xong; hoặc để một đoạn lệnh cần nó dùng riêng.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Các lệnh bạn hay chạy. Chạy từ bảng lệnh ({ $chord }, rồi gõ tên của nó): Enter chạy trong khung, { $alt } chạy trong mọi khung của tab. Giữ trong kho, nên được đồng bộ cùng máy chủ của bạn.
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = Các tệp để đặt lên máy chủ, như ~/.kube/config hay ~/.aws/credentials, được mã hoá trong kho và đồng bộ cùng kho. Đặt từ bảng lệnh ({ $chord }, nhóm Tệp cấu hình) hoặc menu của pane: tới khi đóng tab, hoặc giữ lại luôn.
 
 # While loaded, the server can read them
 te60c8275 = Khi đang nạp, máy chủ có thể đọc được
@@ -1800,6 +1875,9 @@ t87b5db80 = Giá trị được gửi khi đã tắt echo và không vào lịch
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = Chỉ nạp trên máy chủ bạn tin cậy, gỡ ra khi xong, và nên dùng khoá có hạn hoặc ít quyền, như token ngắn hạn hay một role chỉ có đúng quyền công việc cần.
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = Tệp đã đặt nằm trên đĩa của máy chủ, với quyền của nó: ai có root ở đó đều đọc được cho tới khi tệp bị gỡ. Chỉ đặt bí mật trên máy chủ bạn tin cậy, và chỉ tới khi đóng tab.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền theo máy chủ của khung; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi đoạn lệnh chạy.
@@ -1944,6 +2022,12 @@ t82a6adaf = Ctrl+W để đóng
 
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = Một chương trình toàn màn hình đang chạy trong pane này: thoát nó rồi thử lại.
+
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+       *[other] Đã gỡ { $n } tệp.
+    }
 
 # It has no variables.
 t0993a534 = Nó không có biến nào.
@@ -2104,6 +2188,15 @@ t2b3c5b61 = Đoạn lệnh…
 # Load Environment…
 td34b2cc0 = Nạp biến môi trường…
 
+# Place Config File…
+t49f82f0c = Đặt tệp cấu hình…
+
+# Keep a File in the Vault…
+t25c07703 = Lưu một tệp vào kho…
+
+# Remove {names}
+t4efeb00b = Gỡ { $names }
+
 # Unload {names}
 t362b9a48 = Gỡ { $names }
 
@@ -2149,11 +2242,116 @@ t21a947cf = Đóng khung
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Về cuối (Shift+End)
 
+# Config files · {category}
+t59edc3e9 = Tệp cấu hình · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = đã đặt: Enter để đặt lại
+
+# It is not in the vault any more.
+td11af590 = Tệp không còn trong kho.
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · quyền { $mode }
+
+# Where on {host}
+t0f76d445 = Vị trí trên { $host }
+
+# Cannot place {name}: {e}
+t1383f29b = Không đặt được { $name }: { $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = Thay tệp đã đặt ở đây, tới khi đóng tab
+
+# What was there before still comes back when the tab closes.
+t55130ddc = Tệp có sẵn trước đó vẫn được trả lại khi đóng tab.
+
+# {path} holds it already.
+t3ec4172b = { $path } đã có đúng tệp này.
+
+# Place it until the tab closes
+t19537c52 = Đặt tới khi đóng tab
+
+# Then it is taken away.
+t1302797a = Sau đó tệp được gỡ đi.
+
+# Place it to stay
+t698a38cf = Đặt và giữ lại luôn
+
+# It stays when the tab closes.
+tb2bc8f3b = Tệp vẫn ở đó khi đóng tab.
+
+# Replace the file there until the tab closes
+t7e646019 = Thay tệp đang có, tới khi đóng tab
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Tệp đang có được cất sang bên, và trả lại khi đóng tab.
+
+# Replace it, keeping the old one
+tc95f7291 = Thay, giữ lại bản cũ
+
+# As {path}
+tfb10a76a = Thành { $path }
+
+# Replace it
+t1e17fc0c = Thay luôn
+
+# The one there now is gone.
+t7fa127b9 = Tệp đang có sẽ mất.
+
+# {path} is there already…
+td716b366 = { $path } đã có tệp…
+
+# Place at {path}…
+tdcc97a76 = Đặt vào { $path }…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = Đã đặt { $name } vào { $path } tới khi đóng tab.
+
+# Placed {name} at {path}.
+tfce33e2b = Đã đặt { $name } vào { $path }.
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+       *[other] Đã gỡ { $n } tệp cấu hình còn sót từ lần trước.
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = Giữ nguyên { $path }: tệp đã thay đổi từ lúc được đặt.
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = Lưu mã hoá thành tệp cấu hình cho máy chủ này, tối đa { $max } KB.
+
+# A file on {host} to keep in the vault
+t63904f7b = Tệp trên { $host } để lưu vào kho
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = Đã lưu { $path } vào kho: xem Cài đặt › Tệp cấu hình.
+
+# Not kept: {e}
+tc12e4203 = Chưa giữ: { $e }
+
+# Removing the config files placed…
+tbd123099 = Đang gỡ các tệp cấu hình đã đặt…
+
+# Open a tab first
+t6460fddf = Hãy mở một tab trước
+
+# Connect first
+t0b55252f = Hãy kết nối trước
+
+# Over SSH only
+t14e43465 = Chỉ qua SSH
+
 # Snippets · {category}
 t85f58d76 = Đoạn lệnh · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: { $n } khung
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = Hãy mở một tab trước: đoạn lệnh chạy trong pane đang chọn.
 
 # in this pane
 t57139bb8 = trong khung này
@@ -2205,6 +2403,12 @@ tfa31f588 = Thoát shellwing?
 
 # Choose a host on the left to connect.
 tf7759ebb = Chọn một máy chủ bên trái để kết nối.
+
+# Unlock the vault…
+tdf659182 = Mở khoá kho…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Đoạn lệnh, biến môi trường và tệp cấu hình nằm trong đó.
 
 # Another tab to {title}
 ta46c00f0 = Tab khác tới { $title }
@@ -2266,9 +2470,6 @@ t4754a8f9 = Hiện danh sách máy chủ
 # Saved passwords and passphrases…
 tdfc17c92 = Mật khẩu và cụm mật khẩu đã lưu…
 
-# Unlock the vault…
-tdf659182 = Mở khoá kho…
-
 # Lock the vault
 tc05449a1 = Khoá kho
 
@@ -2301,6 +2502,9 @@ tf108a14d = Sửa config.toml
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = Không có đoạn lệnh nào cho máy chủ này: thêm trong Cài đặt › Đoạn lệnh.
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = Không có tệp cấu hình nào cho máy chủ này: thêm trong Cài đặt › Tệp cấu hình.
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = Không có bộ biến nào cho máy chủ này: thêm trong Cài đặt › Biến môi trường.
@@ -2658,9 +2862,6 @@ t3ea0b584 = Chưa dừng: { $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = Giờ kho khoá của hệ thống giữ khoá của kho.
-
-# Not kept: {e}
-tc12e4203 = Chưa giữ: { $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = Đã ngừng đồng bộ. Những gì ở đó và các bí mật ở đây vẫn được giữ.

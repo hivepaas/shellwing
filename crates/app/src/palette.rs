@@ -8,6 +8,10 @@ use gpui::{
 };
 use shellwing_i18n::tr;
 
+/// The most a question's list (not the main palette's) is high before it
+/// scrolls.
+const LIST_H: f32 = 420.;
+
 use crate::colors::colors;
 use crate::input::{Changed, TextInput};
 use crate::session::Status;
@@ -36,6 +40,8 @@ pub enum PaletteEvent {
     },
     /// Load an environment (by id) into the focused pane.
     LoadEnv(String),
+    /// Place a config file (by id) on the focused pane's host.
+    PlaceFile(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -112,6 +118,8 @@ pub enum Kind {
     Snippet(String),
     /// An environment to load into the focused pane, by id.
     Env(String),
+    /// A config file to place on the focused pane's host, by id.
+    File(String),
 }
 
 /// What part of the palette an entry is in, to jump to from the row of
@@ -123,6 +131,7 @@ pub enum Part {
     Recent,
     Snippets,
     Environments,
+    ConfigFiles,
     Actions,
     Settings,
     /// No badge.
@@ -136,6 +145,7 @@ impl Part {
             Part::Recent => tr!("Recent"),
             Part::Snippets => tr!("Snippets"),
             Part::Environments => tr!("Environments"),
+            Part::ConfigFiles => tr!("Config files"),
             Part::Actions => tr!("Actions"),
             Part::Settings => tr!("Settings"),
             Part::Other => String::new(),
@@ -311,6 +321,20 @@ impl Palette {
         Self::build(Mode::Ask, notes, 0, placeholder, cx)
     }
 
+    /// Like [`Palette::ask`], with `text` typed already (all of it chosen,
+    /// to type over).
+    pub fn ask_with(
+        placeholder: &str,
+        text: &str,
+        notes: Vec<Entry>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
+        p.input
+            .update(cx, |i, cx| i.set_text(text, text.len()..text.len(), cx));
+        p
+    }
+
     /// Like [`Palette::ask`], typing a secret: the field shows dots.
     pub fn ask_secret(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
         let mut p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
@@ -473,6 +497,7 @@ impl Palette {
                 all,
             },
             Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
+            Kind::File(id) => PaletteEvent::PlaceFile(id.clone()),
             Kind::Note => return,
         });
     }
@@ -568,28 +593,42 @@ impl Focusable for Palette {
 }
 
 impl Render for Palette {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let headers = self.headers();
         let mut list = div()
             .id("palette-list")
             .track_scroll(&self.scroll)
             .overflow_y_scroll()
-            .max_h(px(420.))
+            // The main palette's fills it; a question's is as long as it is.
+            .when(self.mode == Mode::Connect, |d| d.flex_1())
+            .when(self.mode != Mode::Connect, |d| d.max_h(px(LIST_H)))
+            .min_h_0()
             .flex()
             .flex_col()
-            .p_1();
+            // Headings span the list; entries keep a margin.
+            .px_1()
+            .pb_1()
+            .when(!headers, |d| d.pt_1());
         let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
                 last = e.group.clone();
                 list = list.child(
                     div()
-                        .px_3()
-                        .pt_2()
-                        .pb_1()
+                        // A band across the whole list.
+                        .mx(px(-4.))
+                        .mb_1()
+                        .when(i > 0, |d| d.mt_1())
+                        .px(px(16.))
+                        .py(px(5.))
+                        .bg(rgb(colors().chip))
+                        .border_b_1()
+                        // The first one's top is the badges' line.
+                        .when(i > 0, |d| d.border_t_1())
+                        .border_color(rgb(colors().line))
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
-                        .text_color(rgb(colors().muted))
+                        .text_color(rgb(colors().accent))
                         .child(e.group.clone()),
                 );
             }
@@ -677,8 +716,16 @@ impl Render for Palette {
             Mode::Ask => tr!("Enter answers   Esc cancels"),
             Mode::Choose => tr!("↑↓ move   Enter choose   Esc cancel"),
         };
+        // 800 px, or 40% of a wide window; never past the window.
+        let window_w = window.viewport_size().width;
+        let width = px(800.).max(window_w * 0.4).min(window_w - px(32.));
         div()
-            .w(px(640.))
+            .w(width)
+            // The main palette as high as the room left between margins
+            // alike above and below (the backdrop's); a question as high
+            // as it needs, within them.
+            .when(self.mode == Mode::Connect, |d| d.h_full())
+            .max_h_full()
             .flex()
             .flex_col()
             .bg(rgb(colors().raised))

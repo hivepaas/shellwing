@@ -33,9 +33,11 @@ use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
+mod config_files;
+
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
-    TitleChanged, UseKey, VaultChanged, hsla,
+    TitleChanged, Unplaced, UseKey, VaultChanged, hsla,
 };
 use shellwing_config::SyncPlace;
 use shellwing_i18n::{tr, tr_n};
@@ -224,6 +226,16 @@ enum Asking {
     Forward,
     /// A value a snippet needs before it runs.
     Snippet(SnippetRun),
+    /// Where on the host to place a config file.
+    PlacePath(shellwing_vault::ConfigFile),
+    /// How to place it there (`full`), in `view`'s host.
+    PlaceHow {
+        file: shellwing_vault::ConfigFile,
+        full: String,
+        view: gpui::WeakEntity<TermView>,
+    },
+    /// A file of the host to keep in the vault.
+    SaveFile,
 }
 
 /// A snippet on its way to running.
@@ -478,34 +490,53 @@ impl Workspace {
 
     /// The environments that can be loaded in the focused pane.
     fn pane_envs(&self, cx: &Context<Self>) -> Vec<shellwing_vault::Environment> {
-        let Some((host, group)) = self.pane_scope(cx) else {
-            return vec![];
-        };
         let mut envs: Vec<_> = self
             .vault
             .ready()
             .and_then(|v| v.environments().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|e| snippets::Scope::parse(&e.scope).fits(Some(&host), group.as_deref()))
+            .filter(|e| self.fits_pane(&e.scope, cx))
             .collect();
         envs.sort_by_key(|e| e.name.to_lowercase());
         envs
     }
 
+    /// Whether something offered for `scope` is for the focused pane's
+    /// host; with no pane, everything is (listed, to say what it needs).
+    pub(super) fn fits_pane(&self, scope: &str, cx: &Context<Self>) -> bool {
+        match self.pane_scope(cx) {
+            Some((host, group)) => {
+                snippets::Scope::parse(scope).fits(Some(&host), group.as_deref())
+            }
+            None => true,
+        }
+    }
+
+    /// Why the focused pane cannot take an environment or a config file
+    /// (`ssh`: over SSH only) now, if so: said in the palette, and on Enter.
+    pub(super) fn pane_unready(&self, ssh: bool, cx: &Context<Self>) -> Option<String> {
+        let Some(view) = self.active_tab() else {
+            return Some(tr!("Open a tab first"));
+        };
+        let s = view.read(cx).session();
+        if s.status() != Status::Connected {
+            return Some(tr!("Connect first"));
+        }
+        (ssh && s.is_local()).then(|| tr!("Over SSH only"))
+    }
+
     /// The snippets the palette offers for the focused pane's host.
     fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some((host, group)) = self.pane_scope(cx) else {
-            return vec![];
-        };
         let panes = self.snippet_targets(true).len();
+        let no_tab = self.active_tab().is_none();
         let mut list: Vec<_> = self
             .vault
             .ready()
             .and_then(|v| v.snippets().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|sn| snippets::Scope::parse(&sn.scope).fits(Some(&host), group.as_deref()))
+            .filter(|sn| self.fits_pane(&sn.scope, cx))
             .collect();
         // By category, those without first, as in Settings.
         list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
@@ -523,7 +554,9 @@ impl Workspace {
                 )
                 .detail(snippets::one_line(&sn.command))
                 .section(Part::Snippets)
-                .hint(if panes > 1 {
+                .hint(if no_tab {
+                    tr!("Open a tab first")
+                } else if panes > 1 {
                     tr_n!(
                         panes,
                         "Enter · Alt+Enter: {n} pane",
@@ -537,6 +570,13 @@ impl Workspace {
     }
 
     fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if self.active_tab().is_none() {
+            return self.say(
+                tr!("Open a tab first: a snippet runs in the focused pane."),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
         let Some(snippet) = self
             .vault
             .ready()
@@ -651,25 +691,26 @@ impl Workspace {
     /// The environments the palette offers to load into the focused pane,
     /// while it is connected.
     fn env_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some(view) = self.active_tab() else {
-            return vec![];
-        };
-        if view.read(cx).session().status() != Status::Connected {
-            return vec![];
-        }
-        let loaded: Vec<String> = view
-            .read(cx)
-            .loaded_envs()
-            .iter()
-            .map(|e| e.id.clone())
-            .collect();
+        let unready = self.pane_unready(false, cx);
+        let loaded: Vec<String> = self
+            .active_tab()
+            .map(|v| {
+                v.read(cx)
+                    .loaded_envs()
+                    .iter()
+                    .map(|e| e.id.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
         self.pane_envs(cx)
             .into_iter()
             .map(|e| {
                 let on = loaded.contains(&e.id);
                 Entry::new(Kind::Env(e.id.clone()), tr!("Environments"), e.name.clone())
                     .detail(e.names.join(" "))
-                    .hint(if on {
+                    .hint(if let Some(why) = &unready {
+                        why.clone()
+                    } else if on {
                         tr!("loaded: Enter loads it again")
                     } else {
                         "Enter".into()
@@ -681,6 +722,9 @@ impl Workspace {
 
     /// Loads environment `id` into the focused pane.
     fn load_env(&mut self, id: &str, cx: &mut Context<Self>) {
+        if let Some(why) = self.pane_unready(false, cx) {
+            return self.say(why, CONFIG_NOTICE, cx);
+        }
         let Some(view) = self.active_tab().cloned() else {
             return;
         };
@@ -846,8 +890,10 @@ impl Workspace {
             .filter(|s| s.status() == Status::Connected)
             .map(|s| s.title.clone())
             .collect();
+        // The files placed until the tab closes go first.
+        let views = views.to_vec();
         if open.is_empty() {
-            return close(self, window, cx);
+            return self.take_down_then(views, window, cx, close);
         }
         if self.prompting {
             return;
@@ -877,7 +923,7 @@ impl Workspace {
             let _ = this.update_in(cx, |ws, window, cx| {
                 ws.prompting = false;
                 if yes {
-                    close(ws, window, cx);
+                    ws.take_down_then(views, window, cx, close);
                 }
             });
         })
@@ -1016,9 +1062,17 @@ impl Workspace {
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
         // Tab and host list dots follow the session's status; a key waiting
         // for the connection is installed once it is up.
-        cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| {
+        cx.subscribe(&view, |ws, view, _: &StatusChanged, cx| {
             ws.refresh_sidebar(cx);
             ws.run_installs(cx);
+            if view.read(cx).session().status() == Status::Connected {
+                ws.tidy_placed(&view, cx);
+            }
+        })
+        .detach();
+        cx.subscribe(&view, |ws, view, ev: &Unplaced, cx| {
+            let spec = view.read(cx).session().spec.clone();
+            ws.forget_placed(&spec, &ev.0);
         })
         .detach();
         cx.subscribe(&view, |ws, _, ev: &UseKey, cx| ws.use_key(ev, cx))
@@ -1054,6 +1108,8 @@ impl Workspace {
                 PaneCommand::Environments => {
                     ws.open_palette_at(Some(Part::Environments), window, cx)
                 }
+                PaneCommand::ConfigFiles => ws.open_palette_at(Some(Part::ConfigFiles), window, cx),
+                PaneCommand::SaveFile => ws.ask_save_file(window, cx),
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Log => ws.toggle_log(cx),
@@ -1285,12 +1341,14 @@ impl Workspace {
                 &[quit_label.as_str(), cancel_label.as_str()],
                 cx,
             );
-            cx.spawn(async move |this, cx| {
+            cx.spawn_in(window, async move |this, cx| {
                 let quit = matches!(answer.await, Ok(0));
-                let _ = this.update(cx, |ws, cx| {
+                let _ = this.update_in(cx, |ws, window, cx| {
                     ws.prompting = false;
                     if quit {
-                        cx.quit();
+                        // The files placed until their tab closes go first.
+                        let views = ws.tabs.iter().flat_map(|t| t.views()).collect();
+                        ws.take_down_then(views, window, cx, |_, _, cx| cx.quit());
                     }
                 });
             })
@@ -1356,8 +1414,22 @@ impl Workspace {
                 );
             }
         }
+        if self.vault.locked().is_some() {
+            // Not left out without a word: they are in the locked vault.
+            entries.push(
+                Entry::new(
+                    Kind::Action(Action::UnlockVault),
+                    tr!("Snippets"),
+                    tr!("Unlock the vault…"),
+                )
+                .detail(tr!("Snippets, environments and config files are in it."))
+                .hint("Enter")
+                .section(Part::Snippets),
+            );
+        }
         entries.extend(self.snippet_entries(cx));
         entries.extend(self.env_entries(cx));
+        entries.extend(self.file_entries(cx));
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
@@ -1588,6 +1660,9 @@ impl Workspace {
             let said = match s {
                 Part::Snippets => {
                     tr!("No snippet for this host: add one in Settings › Snippets.")
+                }
+                Part::ConfigFiles => {
+                    tr!("No config file for this host: add one in Settings › Config files.")
                 }
                 _ => tr!("No environment for this host: add one in Settings › Environments."),
             };
@@ -3174,6 +3249,15 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.load_env(&id, cx);
             }
+            PaletteEvent::PlaceFile(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.ask_place(&id, window, cx);
+            }
+            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::PlaceHow { .. })) => {
+                let how = how.clone();
+                self.chose_place(&how, window, cx);
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -3205,6 +3289,12 @@ impl Workspace {
             PaletteEvent::Answer(text) => {
                 let folder = match self.asking.clone() {
                     Some(Asking::Forward) => return self.answer_forward(text, window, cx),
+                    Some(Asking::PlacePath(_)) => {
+                        return self.answer_place_path(text.clone(), window, cx);
+                    }
+                    Some(Asking::SaveFile) => {
+                        return self.answer_save_file(text.clone(), window, cx);
+                    }
                     Some(Asking::Snippet(mut run)) => {
                         if !run.left.is_empty() {
                             let name = run.left.remove(0);
@@ -3220,7 +3310,8 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::PlaceHow { .. })
+                    | None => {
                         return self.close_palette(window, cx);
                     }
                 };
@@ -4987,7 +5078,9 @@ impl Render for Workspace {
                         .justify_center()
                         // At its own height: a flex row would stretch it to the bottom.
                         .items_start()
+                        // The same margin below as above.
                         .pt(px(56.))
+                        .pb(px(56.))
                         .bg(rgba(colors().scrim))
                         .on_mouse_down(
                             MouseButton::Left,

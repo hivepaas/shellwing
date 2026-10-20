@@ -28,6 +28,9 @@ t1c9f770c = 共 { $count } 个变量；最多 { $max } 个。
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = 变量合计 { $size } KB；最多 { $max } KB。
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = 文件为 { $size } KB；最多 { $max } KB。
+
 # Name
 t0fe07306 = 名称
 
@@ -958,6 +961,9 @@ t648fcbf7 = 代码片段
 # Environments
 t273b1ccb = 环境
 
+# Config files
+t16261310 = 配置文件
+
 # Actions
 te65fb504 = 操作
 
@@ -1630,6 +1636,90 @@ t0d325d34 = 主机
 # every host
 t444612de = 所有主机
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+       *[other] { $n } 字节
+    }
+
+# {n} MB
+t3258fa2a = { $n } MB
+
+# {n} KB
+te253ff0c = { $n } KB
+
+# The file's text
+t7fb1322b = 文件的文本
+
+# What it is, such as kube prod
+t2c4b7067 = 它是什么，例如 kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = 它不是文本，或超过 { $max } KB：请改为从文件替换。
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = 放置位置：以 / 或 ~/ 开头的路径，例如 ~/.kube/config。
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = 放置位置：文件的路径，而不是文件夹的路径。
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = 权限：三位八进制数字，例如 600。
+
+# No category
+t44662d06 = 无分类
+
+# {size}, not text
+t5956f56a = { $size }，非文本
+
+# Edit…
+t8e7efcd7 = 编辑…
+
+# Choose a file…
+t28a576c9 = 选择文件…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }：{ $size }，按原样读取
+
+# Content
+tc1679f62 = 内容
+
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = 不超过 { $edited } 的文本可在此编辑；不超过 { $max } 的任何文件都可从这台电脑导入。
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = 命令面板只会在这些主机的窗格中提供放置它。
+
+# Where it goes on the host
+taf38972d = 在主机上的放置位置
+
+# Permissions
+t8700fd83 = 权限
+
+# New config file
+td0fa9fed = 新建配置文件
+
+# Edit config file
+t56c9aeed = 编辑配置文件
+
+# Category
+tafb3e591 = 分类
+
+# The vault's passphrase
+tb66334ea = 保险库的密码短语
+
+# Wrong passphrase.
+t2ebec270 = 密码短语错误。
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 请在系统对话框中确认是你本人…
+
+# The vault's passphrase, to show the values
+teecb1d4f = 保险库的密码短语，用于显示值
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它们。要显示值吗？
+
 # value
 t425ed3ca = 值
 
@@ -1654,32 +1744,14 @@ tbf497c49 = 剪贴板中没有 NAME=value 行。
 # Not NAME=value: {e}
 t65a67e1e = 不是 NAME=value 格式：{ $e }
 
-# The vault's passphrase
-tb66334ea = 保险库的密码短语
-
-# Wrong passphrase.
-t2ebec270 = 密码短语错误。
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
        *[other] { $n } 个代码片段需要
     }
 
-# Edit…
-t8e7efcd7 = 编辑…
-
 # Change
 ta1de2fdd = 更改
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = 请在系统对话框中确认是你本人…
-
-# The vault's passphrase, to show the values
-teecb1d4f = 保险库的密码短语，用于显示值
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它们。要显示值吗？
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = 命令面板只会在这些主机的窗格中提供加载它。
@@ -1707,9 +1779,6 @@ td9b8e02f = 用途说明，便于在命令面板中查找
 
 # A name and a command are needed.
 t7f4c69bb = 需要填写名称和命令。
-
-# No category
-t44662d06 = 无分类
 
 # typed, not run
 td4e41905 = 仅输入，不运行
@@ -1741,6 +1810,9 @@ t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删�
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 它将从保险库中删除，你的其他设备同步后也会删除。已放置的地方会保留。
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
 
@@ -1752,9 +1824,6 @@ t883a11f4 = 按 Enter 另起一行；各行依次运行。按 { $save } 保存�
 
 # The palette lists it in panes of those hosts only.
 t66336218 = 命令面板仅在这些主机的窗格中列出它。
-
-# Category
-tafb3e591 = 分类
 
 # Environments it needs
 tebd9fda9 = 所需环境
@@ -1780,17 +1849,23 @@ t32122ee4 = 运行：输入后按 Enter
 # None yet.
 t786bc275 = 还没有。
 
-# New environment…
-t0c42d278 = 新建环境…
-
 # New snippet…
 tec3111a4 = 新建代码片段…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = 供 shell 使用的变量，例如某个 API 的密钥，加密保存在保险库中并随之同步。可通过命令面板（{ $chord }，加载环境…）将其加载到窗格中，用完后卸载，也可以让需要它的代码片段单独使用。
+# New environment…
+t0c42d278 = 新建环境…
+
+# New config file…
+t58dfdc93 = 新建配置文件…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = 供 shell 使用的变量，例如某个 API 的密钥，加密保存在保险库中并随之同步。可从命令面板（{ $chord }，在“环境”下）或窗格菜单将其加载到窗格中，用完后卸载；也可以只让需要它的代码片段单独使用。
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 常用的命令。从命令面板运行（按 { $chord }，然后输入名称）：Enter 在当前窗格中运行，{ $alt } 在该标签页的所有窗格中运行。保存在保险库中，因此会随主机一起同步。
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = 要放置到主机上的文件，例如 ~/.kube/config 或 ~/.aws/credentials，加密保存在保险库中并随之同步。可从命令面板（{ $chord }，在“配置文件”下）或窗格菜单放置：直到标签页关闭，或永久保留。
 
 # While loaded, the server can read them
 te60c8275 = 加载期间，服务器可以读取它们
@@ -1800,6 +1875,9 @@ t87b5db80 = 值在关闭回显的情况下发送，也不会进入 shell 历史�
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = 请只在你信任的服务器上加载，用完后卸载，并优先使用会过期或权限很小的密钥，例如短期令牌或仅具备工作所需权限的角色。
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = 放置的文件位于服务器磁盘上，并带有其权限：在该服务器上拥有 root 权限的人在文件被移除前都能读取它。请只在你信任的服务器上放置机密，并且只放到标签页关闭为止。
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会按窗格的主机自动填入；其他 {"{{"}name{"}}"} 会在代码片段运行时询问。
@@ -1944,6 +2022,12 @@ t82a6adaf = Ctrl+W 关闭
 
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = 此窗格中正在运行全屏程序：请先退出，然后重试。
+
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+       *[other] 已移除 { $n } 个文件。
+    }
 
 # It has no variables.
 t0993a534 = 它没有变量。
@@ -2104,6 +2188,15 @@ t2b3c5b61 = 代码片段…
 # Load Environment…
 td34b2cc0 = 加载环境…
 
+# Place Config File…
+t49f82f0c = 放置配置文件…
+
+# Keep a File in the Vault…
+t25c07703 = 将文件保存到保险库…
+
+# Remove {names}
+t4efeb00b = 删除 { $names }
+
 # Unload {names}
 t362b9a48 = 卸载 { $names }
 
@@ -2149,11 +2242,116 @@ t21a947cf = 关闭窗格
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 回到底部（Shift+End）
 
+# Config files · {category}
+t59edc3e9 = 配置文件 · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = 已放置：按 Enter 再次放置
+
+# It is not in the vault any more.
+td11af590 = 它已不在保险库中。
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · 权限 { $mode }
+
+# Where on {host}
+t0f76d445 = 在 { $host } 上的位置
+
+# Cannot place {name}: {e}
+t1383f29b = 无法放置 { $name }：{ $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = 替换此处已放置的文件，直到标签页关闭
+
+# What was there before still comes back when the tab closes.
+t55130ddc = 之前的文件会在标签页关闭时恢复。
+
+# {path} holds it already.
+t3ec4172b = { $path } 已包含它。
+
+# Place it until the tab closes
+t19537c52 = 放置到标签页关闭为止
+
+# Then it is taken away.
+t1302797a = 之后它会被移除。
+
+# Place it to stay
+t698a38cf = 放置并保留
+
+# It stays when the tab closes.
+tb2bc8f3b = 标签页关闭后它仍会保留。
+
+# Replace the file there until the tab closes
+t7e646019 = 替换那里的文件，直到标签页关闭
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 现有的文件会被移到一旁，并在标签页关闭时恢复。
+
+# Replace it, keeping the old one
+tc95f7291 = 替换，并保留旧文件
+
+# As {path}
+tfb10a76a = 为 { $path }
+
+# Replace it
+t1e17fc0c = 替换
+
+# The one there now is gone.
+t7fa127b9 = 现有的文件将消失。
+
+# {path} is there already…
+td716b366 = { $path } 已存在…
+
+# Place at {path}…
+tdcc97a76 = 放置到 { $path }…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = 已将 { $name } 放置到 { $path }，直到标签页关闭。
+
+# Placed {name} at {path}.
+tfce33e2b = 已将 { $name } 放置到 { $path }。
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+       *[other] 已移除之前遗留的 { $n } 个配置文件。
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path } 保持原样：它在放置后已被更改。
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = 加密保存为此主机的配置文件，最多 { $max } KB。
+
+# A file on {host} to keep in the vault
+t63904f7b = { $host } 上要保存到保险库的文件
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = 已将 { $path } 保存到保险库：请参阅 设置 › 配置文件。
+
+# Not kept: {e}
+tc12e4203 = 未保存：{ $e }
+
+# Removing the config files placed…
+tbd123099 = 正在移除已放置的配置文件…
+
+# Open a tab first
+t6460fddf = 请先打开一个标签页
+
+# Connect first
+t0b55252f = 请先连接
+
+# Over SSH only
+t14e43465 = 仅限 SSH
+
 # Snippets · {category}
 t85f58d76 = 代码片段 · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 个窗格
+
+# Open a tab first: a snippet runs in the focused pane.
+t45260fd2 = 请先打开一个标签页：代码片段在选中的窗格中运行。
 
 # in this pane
 t57139bb8 = 在此窗格中
@@ -2205,6 +2403,12 @@ tfa31f588 = 退出 shellwing？
 
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。
+
+# Unlock the vault…
+tdf659182 = 解锁保险库…
+
+# Snippets, environments and config files are in it.
+t1646a763 = 代码片段、环境和配置文件都在其中。
 
 # Another tab to {title}
 ta46c00f0 = 再开一个连接到 { $title } 的标签页
@@ -2266,9 +2470,6 @@ t4754a8f9 = 显示主机列表
 # Saved passwords and passphrases…
 tdfc17c92 = 已保存的密码和密码短语…
 
-# Unlock the vault…
-tdf659182 = 解锁保险库…
-
 # Lock the vault
 tc05449a1 = 锁定保险库
 
@@ -2301,6 +2502,9 @@ tf108a14d = 编辑 config.toml
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = 此主机没有代码片段：请在 设置 › 代码片段 中添加。
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = 此主机没有配置文件：请在 设置 › 配置文件 中添加。
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
@@ -2658,9 +2862,6 @@ t3ea0b584 = 未停止：{ $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = 系统钥匙串现在保存保险库的密钥。
-
-# Not kept: {e}
-tc12e4203 = 未保存：{ $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = 已停止同步。同步位置中的内容和此处的机密信息均保留。

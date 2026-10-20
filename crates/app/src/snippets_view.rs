@@ -18,7 +18,18 @@ use crate::snippets::{self, Scope, Snippet};
 use crate::workspace::Workspace;
 use shellwing_vault::Environment;
 
+mod config_files;
+pub use config_files::size_said;
+mod confirm;
 mod environments;
+
+/// Which of the pages this view is.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Shown {
+    Snippets,
+    Environments,
+    Files,
+}
 
 /// Which list of the scope is open.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -33,6 +44,7 @@ impl Dialog {
         match self {
             Dialog::Edit { scope, pick, .. } => Some((scope, pick)),
             Dialog::EditEnv(e) => Some((&mut e.scope, &mut e.pick)),
+            Dialog::EditFile(f) => Some((&mut f.scope, &mut f.pick)),
             _ => None,
         }
     }
@@ -59,6 +71,10 @@ enum Dialog {
     DeleteEnv {
         env: Environment,
     },
+    EditFile(Box<config_files::FileEdit>),
+    DeleteFile {
+        file: shellwing_vault::ConfigFile,
+    },
 }
 
 pub struct SnippetsView {
@@ -72,13 +88,17 @@ pub struct SnippetsView {
     notice: Option<(SharedString, bool)>,
     /// The terminal's font, for commands.
     mono: SharedString,
-    /// The Environments page, not the Snippets one.
-    envs_page: bool,
+    /// Which page it is.
+    shown: Shown,
+    /// The config files, for their page.
+    files: Vec<shellwing_vault::ConfigFile>,
+    /// Asking it is the user before a secret shows.
+    confirm: Option<confirm::Confirm>,
 }
 
 impl SnippetsView {
     pub fn new(workspace: WeakEntity<Workspace>, vault: VaultSlot, cx: &mut Context<Self>) -> Self {
-        Self::make(workspace, vault, false, cx)
+        Self::make(workspace, vault, Shown::Snippets, cx)
     }
 
     /// The Environments page: the variables snippets and shells are given.
@@ -87,13 +107,22 @@ impl SnippetsView {
         vault: VaultSlot,
         cx: &mut Context<Self>,
     ) -> Self {
-        Self::make(workspace, vault, true, cx)
+        Self::make(workspace, vault, Shown::Environments, cx)
+    }
+
+    /// The Config files page: files to place on hosts.
+    pub fn config_files(
+        workspace: WeakEntity<Workspace>,
+        vault: VaultSlot,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self::make(workspace, vault, Shown::Files, cx)
     }
 
     fn make(
         workspace: WeakEntity<Workspace>,
         vault: VaultSlot,
-        envs_page: bool,
+        shown: Shown,
         cx: &mut Context<Self>,
     ) -> Self {
         let mut v = SnippetsView {
@@ -105,7 +134,9 @@ impl SnippetsView {
             dialog: None,
             notice: None,
             mono: SharedString::default(),
-            envs_page,
+            shown,
+            files: vec![],
+            confirm: None,
         };
         v.refresh(cx);
         v
@@ -118,12 +149,21 @@ impl SnippetsView {
                 .background_executor()
                 .spawn(async move {
                     let v = vault.get()?;
-                    Some((v.snippets().ok()?, v.environments().unwrap_or_default()))
+                    Some((
+                        v.snippets().ok()?,
+                        v.environments().unwrap_or_default(),
+                        v.config_files().unwrap_or_default(),
+                    ))
                 })
                 .await;
             let _ = this.update(cx, |v, cx| {
                 match list {
-                    Some((mut l, envs)) => {
+                    Some((mut l, envs, mut files)) => {
+                        files.sort_by(|a, b| {
+                            (a.category.to_lowercase(), a.name.to_lowercase())
+                                .cmp(&(b.category.to_lowercase(), b.name.to_lowercase()))
+                        });
+                        v.files = files;
                         // By category, the ones without first.
                         l.sort_by(|a, b| {
                             (a.category.to_lowercase(), a.name.to_lowercase())
@@ -202,6 +242,7 @@ impl SnippetsView {
 
     fn close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.dialog = None;
+        self.confirm = None;
         window.focus(&self.focus, cx);
         cx.notify();
     }
@@ -303,6 +344,8 @@ impl SnippetsView {
                 Some(Dialog::Delete { .. }) => self.delete(window, cx),
                 Some(Dialog::EditEnv(_)) => self.env_enter(window, cx),
                 Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
+                Some(Dialog::EditFile(_)) => self.file_enter(window, cx),
+                Some(Dialog::DeleteFile { .. }) => self.delete_file(window, cx),
                 None => {}
             },
             _ => return,
@@ -676,6 +719,8 @@ impl SnippetsView {
                         Some(Dialog::Delete { .. }) => v.delete(w, cx),
                         Some(Dialog::EditEnv(_)) => v.save_env(w, cx),
                         Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
+                        Some(Dialog::EditFile(_)) => v.save_file(w, cx),
+                        Some(Dialog::DeleteFile { .. }) => v.delete_file(w, cx),
                         None => {}
                     },
                 )),
@@ -731,6 +776,18 @@ impl SnippetsView {
                 )
                 .child(buttons(&tr!("Delete"), cx)),
             Dialog::EditEnv(e) => self.env_card(e, card, window, cx),
+            Dialog::EditFile(f) => self.file_card(f, card, window, cx),
+            Dialog::DeleteFile { file } => card
+                .child(title(&tr!("Delete {name}?", name = file.name.as_str())))
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().label))
+                        .child(tr!(
+                            "It goes from the vault, and from your other devices once they sync. Where it was placed, it stays."
+                        )),
+                )
+                .child(buttons(&tr!("Delete"), cx)),
             Dialog::Edit {
                 id,
                 name,
@@ -910,10 +967,10 @@ impl Render for SnippetsView {
         if self.mono.is_empty() {
             self.mono = crate::view::TermView::default_font(window).into();
         }
-        let rows = if self.envs_page {
-            self.env_rows(cx)
-        } else {
-            self.rows(cx)
+        let rows = match self.shown {
+            Shown::Snippets => self.rows(cx),
+            Shown::Environments => self.env_rows(cx),
+            Shown::Files => self.file_rows(cx),
         };
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd+K", "Option+Enter")
@@ -957,31 +1014,35 @@ impl Render for SnippetsView {
                             .flex_1()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child(if self.envs_page {
-                                tr!("Environments")
-                            } else {
-                                tr!("Snippets")
+                            .child(match self.shown {
+                                Shown::Snippets => tr!("Snippets"),
+                                Shown::Environments => tr!("Environments"),
+                                Shown::Files => tr!("Config files"),
                             }),
                     )
-                    .child(if self.envs_page {
-                        primary_button("env-new", &tr!("New environment…"))
-                            .on_click(cx.listener(|v, _, w, cx| v.edit_env(None, w, cx)))
-                    } else {
-                        primary_button("snippet-new", &tr!("New snippet…"))
-                            .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx)))
+                    .child(match self.shown {
+                        Shown::Snippets => primary_button("snippet-new", &tr!("New snippet…"))
+                            .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx))),
+                        Shown::Environments => primary_button("env-new", &tr!("New environment…"))
+                            .on_click(cx.listener(|v, _, w, cx| v.edit_env(None, w, cx))),
+                        Shown::Files => primary_button("file-new", &tr!("New config file…"))
+                            .on_click(cx.listener(|v, _, w, cx| v.edit_file(None, w, cx))),
                     }),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(if self.envs_page {
-                tr!(
-                    "Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.",
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(match self.shown {
+                Shown::Environments => tr!(
+                    "Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.",
                     chord = chord
-                )
-            } else {
-                tr!(
+                ),
+                Shown::Snippets => tr!(
                     "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.",
                     chord = chord,
                     alt = alt
-                )
+                ),
+                Shown::Files => tr!(
+                    "Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.",
+                    chord = chord
+                ),
             }));
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
@@ -992,7 +1053,7 @@ impl Render for SnippetsView {
             );
         }
         page = page.child(list);
-        page = if self.envs_page {
+        page = if self.shown == Shown::Environments {
             page.child(
                 div()
                     .flex()
@@ -1007,6 +1068,13 @@ impl Render for SnippetsView {
                     .child(div().font_weight(FontWeight::SEMIBOLD).text_color(rgb(colors().warn)).child(tr!("While loaded, the server can read them")))
                     .child(tr!("Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends."))
                     .child(tr!("Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.")),
+            )
+        } else if self.shown == Shown::Files {
+            page.child(
+                div()
+                    .text_size(ui(12.))
+                    .text_color(rgb(colors().muted))
+                    .child(tr!("A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.")),
             )
         } else {
             page.child(
