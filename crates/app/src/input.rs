@@ -112,6 +112,17 @@ impl TextInput {
         self
     }
 
+    /// A field of several lines shows `min` to `max` rows from now on.
+    pub fn set_rows(&mut self, min: usize, max: usize, cx: &mut Context<Self>) {
+        if let Some(l) = self.lines.as_mut() {
+            let rows = (min.max(1), max.max(min.max(1)));
+            if l.rows != rows {
+                l.rows = rows;
+                cx.notify();
+            }
+        }
+    }
+
     /// Where the line holding `offset` starts and ends.
     fn line_bounds(&self, offset: usize) -> (usize, usize) {
         let start = self.content[..offset].rfind('\n').map_or(0, |i| i + 1);

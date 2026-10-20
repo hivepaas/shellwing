@@ -645,6 +645,31 @@ left as it is, and said so.
 A placed file is on the server's disk: whoever has root there can read it until
 it is removed. Place secrets on servers you trust, until the tab closes.
 
+## Notes
+
+Notes are free text kept in the vault, encrypted, and synced with it: what a
+server is for, how to restart it, codes to keep. One holds 256 KB at most. Each
+opens in a window of its own, from *Settings › Notes*, or from the palette
+(under *Notes*; *New note…* there too). The palette lists first the notes
+about the focused pane's host.
+
+In its window, a note has a title, a category, a format and the hosts it is
+about (*For a host ▾*):
+
+- **Plain text** is edited as it is.
+- **Markdown** opens as it shows (headings, emphasis, `code`, code blocks,
+  lists and task lists, quotes, rules, tables, links that open in the
+  browser); *Edit* switches to its text, *Preview* back.
+
+It is saved a second after typing stops, when its window closes, and when the
+app quits (Ctrl+S, Cmd+S on macOS, saves at once). *Delete* removes it, after
+asking.
+
+While the vault is locked, a note's window holds no text: it comes back once
+the vault is open. A **sensitive** note's text shows only after asking it is
+you, as for an environment's values. Closing the main window closes the notes'
+windows too.
+
 ## Typing in every pane
 
 **Ctrl+Shift+I** (**Cmd+Shift+I**) types what you type in one pane into every

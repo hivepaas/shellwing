@@ -22,6 +22,7 @@ mod config_files;
 pub use config_files::size_said;
 mod confirm;
 mod environments;
+mod notes;
 
 /// Which of the pages this view is.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -29,6 +30,7 @@ enum Shown {
     Snippets,
     Environments,
     Files,
+    Notes,
 }
 
 /// Which list of the scope is open.
@@ -75,6 +77,9 @@ enum Dialog {
     DeleteFile {
         file: shellwing_vault::ConfigFile,
     },
+    DeleteNote {
+        note: shellwing_vault::Note,
+    },
 }
 
 pub struct SnippetsView {
@@ -92,6 +97,8 @@ pub struct SnippetsView {
     shown: Shown,
     /// The config files, for their page.
     files: Vec<shellwing_vault::ConfigFile>,
+    /// The notes, for theirs.
+    notes: Vec<shellwing_vault::Note>,
     /// Asking it is the user before a secret shows.
     confirm: Option<confirm::Confirm>,
 }
@@ -119,6 +126,15 @@ impl SnippetsView {
         Self::make(workspace, vault, Shown::Files, cx)
     }
 
+    /// The Notes page: free text, each opening in a window of its own.
+    pub fn notes(
+        workspace: WeakEntity<Workspace>,
+        vault: VaultSlot,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self::make(workspace, vault, Shown::Notes, cx)
+    }
+
     fn make(
         workspace: WeakEntity<Workspace>,
         vault: VaultSlot,
@@ -136,6 +152,7 @@ impl SnippetsView {
             mono: SharedString::default(),
             shown,
             files: vec![],
+            notes: vec![],
             confirm: None,
         };
         v.refresh(cx);
@@ -153,12 +170,18 @@ impl SnippetsView {
                         v.snippets().ok()?,
                         v.environments().unwrap_or_default(),
                         v.config_files().unwrap_or_default(),
+                        v.notes().unwrap_or_default(),
                     ))
                 })
                 .await;
             let _ = this.update(cx, |v, cx| {
                 match list {
-                    Some((mut l, envs, mut files)) => {
+                    Some((mut l, envs, mut files, mut notes)) => {
+                        notes.sort_by(|a, b| {
+                            (a.category.to_lowercase(), a.title.to_lowercase())
+                                .cmp(&(b.category.to_lowercase(), b.title.to_lowercase()))
+                        });
+                        v.notes = notes;
                         files.sort_by(|a, b| {
                             (a.category.to_lowercase(), a.name.to_lowercase())
                                 .cmp(&(b.category.to_lowercase(), b.name.to_lowercase()))
@@ -346,6 +369,7 @@ impl SnippetsView {
                 Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
                 Some(Dialog::EditFile(_)) => self.file_enter(window, cx),
                 Some(Dialog::DeleteFile { .. }) => self.delete_file(window, cx),
+                Some(Dialog::DeleteNote { .. }) => self.delete_note(window, cx),
                 None => {}
             },
             _ => return,
@@ -721,6 +745,7 @@ impl SnippetsView {
                         Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
                         Some(Dialog::EditFile(_)) => v.save_file(w, cx),
                         Some(Dialog::DeleteFile { .. }) => v.delete_file(w, cx),
+                        Some(Dialog::DeleteNote { .. }) => v.delete_note(w, cx),
                         None => {}
                     },
                 )),
@@ -777,6 +802,17 @@ impl SnippetsView {
                 .child(buttons(&tr!("Delete"), cx)),
             Dialog::EditEnv(e) => self.env_card(e, card, window, cx),
             Dialog::EditFile(f) => self.file_card(f, card, window, cx),
+            Dialog::DeleteNote { note } => card
+                .child(title(&tr!("Delete {name}?", name = note.title.as_str())))
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().label))
+                        .child(tr!(
+                            "It goes from the vault, and from your other devices once they sync."
+                        )),
+                )
+                .child(buttons(&tr!("Delete"), cx)),
             Dialog::DeleteFile { file } => card
                 .child(title(&tr!("Delete {name}?", name = file.name.as_str())))
                 .child(
@@ -971,6 +1007,7 @@ impl Render for SnippetsView {
             Shown::Snippets => self.rows(cx),
             Shown::Environments => self.env_rows(cx),
             Shown::Files => self.file_rows(cx),
+            Shown::Notes => self.note_rows(cx),
         };
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd+K", "Option+Enter")
@@ -1018,6 +1055,7 @@ impl Render for SnippetsView {
                                 Shown::Snippets => tr!("Snippets"),
                                 Shown::Environments => tr!("Environments"),
                                 Shown::Files => tr!("Config files"),
+                                Shown::Notes => tr!("Notes"),
                             }),
                     )
                     .child(match self.shown {
@@ -1027,6 +1065,8 @@ impl Render for SnippetsView {
                             .on_click(cx.listener(|v, _, w, cx| v.edit_env(None, w, cx))),
                         Shown::Files => primary_button("file-new", &tr!("New config file…"))
                             .on_click(cx.listener(|v, _, w, cx| v.edit_file(None, w, cx))),
+                        Shown::Notes => primary_button("note-new", &tr!("New note…"))
+                            .on_click(cx.listener(|v, _, _, cx| v.open_note(None, cx))),
                     }),
             )
             .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(match self.shown {
@@ -1038,6 +1078,10 @@ impl Render for SnippetsView {
                     "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.",
                     chord = chord,
                     alt = alt
+                ),
+                Shown::Notes => tr!(
+                    "Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.",
+                    chord = chord
                 ),
                 Shown::Files => tr!(
                     "Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.",
@@ -1069,6 +1113,8 @@ impl Render for SnippetsView {
                     .child(tr!("Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends."))
                     .child(tr!("Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.")),
             )
+        } else if self.shown == Shown::Notes {
+            page
         } else if self.shown == Shown::Files {
             page.child(
                 div()

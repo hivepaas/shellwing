@@ -31,6 +31,9 @@ tdbf76954 = 変数の合計は { $size } KB です。最大 { $max } KB です�
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = ファイルは { $size } KB です。最大 { $max } KB です。
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = ノートは { $size } KB です。最大 { $max } KB です。
+
 # Name
 t0fe07306 = 名前
 
@@ -949,6 +952,78 @@ tdd571ace = ライト（ウォーム）
 # Your themes
 tb2e83d5c = マイテーマ
 
+# New note
+t788c7123 = 新しいノート
+
+# Title
+t24d471a9 = タイトル
+
+# No category
+t44662d06 = カテゴリなし
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = ここに書きます。Markdown はプレビューで表示されます。
+
+# It is not in the vault any more.
+td11af590 = 保管庫にはもうありません。
+
+# this note
+t4545c373 = このノート
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 保管庫から削除され、同期後は他のデバイスからも削除されます。
+
+# The vault's passphrase
+tb66334ea = 保管庫のパスフレーズ
+
+# Wrong passphrase.
+t2ebec270 = パスフレーズが違います。
+
+# For a host ▾
+tfa622581 = ホストを指定 ▾
+
+# No hosts yet.
+t71734b03 = まだホストはありません。
+
+# Plain text
+tb7fc0ade = プレーンテキスト
+
+# Edit
+tc2c76cb1 = 編集
+
+# Preview
+tfdda4cf7 = プレビュー
+
+# Sensitive
+tf603feef = 機密
+
+# Saved
+t8a6979e4 = 保存済み
+
+# Editing…
+t1f2b8dc9 = 編集中…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 保管庫はロックされています。メインウィンドウでロックを解除してください。
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = 機密: 本人確認後にテキストが表示されます。
+
+# Show the text
+t0ff690fe = テキストを表示
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = システムのダイアログで本人確認してください…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = 保管庫はパスフレーズで保護されていないため、このデバイスを使う人なら誰でも表示できます。
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = まだ何も書かれていません。編集で書き始めます。
+
+# Untitled note
+t4ce277c4 = 無題のノート
+
 # Hosts
 tcf9aefb4 = ホスト
 
@@ -963,6 +1038,9 @@ t273b1ccb = 環境
 
 # Config files
 t16261310 = 設定ファイル
+
+# Notes
+t0ff01b6a = ノート
 
 # Actions
 te65fb504 = アクション
@@ -1230,9 +1308,6 @@ t44bdb829 = テーマのアクセントカラーをアプリに使用
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = ロゴ、選択中の項目、主要なボタンに、アプリの青の代わりにテーマのアクセントカラーを使います。アプリの背景色に近すぎる色は使われません。
-
-# Preview
-tfdda4cf7 = プレビュー
 
 # {k} k
 t450902df = { $k } k
@@ -1612,9 +1687,6 @@ t87553579 = 接続失敗
 # closed
 tebee50c5 = 終了
 
-# Edit
-tc2c76cb1 = 編集
-
 # No hosts yet
 ta58f36ff = まだホストはありません
 
@@ -1666,9 +1738,6 @@ t0038f509 = 配置先：フォルダではなくファイルのパス。
 # Permissions: three octal digits, such as 600.
 t5dde13fd = パーミッション：8進数3桁（例：600）。
 
-# No category
-t44662d06 = カテゴリなし
-
 # {size}, not text
 t5956f56a = { $size }、テキストではありません
 
@@ -1704,15 +1773,6 @@ t56c9aeed = 設定ファイルを編集
 
 # Category
 tafb3e591 = カテゴリ
-
-# The vault's passphrase
-tb66334ea = 保管庫のパスフレーズ
-
-# Wrong passphrase.
-t2ebec270 = パスフレーズが違います。
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = システムのダイアログで本人確認してください…
 
 # The vault's passphrase, to show the values
 teecb1d4f = 値を表示するための保管庫のパスフレーズ
@@ -1774,6 +1834,9 @@ tf3955dbc = 新しい環境
 # Edit environment
 t79646cbc = 環境を編集
 
+# sensitive
+ta2bd2f4f = 機密
+
 # What it does, to find it in the palette
 td9b8e02f = パレットで探すための説明
 
@@ -1800,12 +1863,6 @@ tbafebe63 = 対象
 
 # No groups yet: make one in the host list.
 t31c54e54 = まだグループはありません。ホスト一覧で作成してください。
-
-# No hosts yet.
-t71734b03 = まだホストはありません。
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 保管庫から削除され、同期後は他のデバイスからも削除されます。
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
@@ -1858,11 +1915,17 @@ t0c42d278 = 新しい環境…
 # New config file…
 t58dfdc93 = 新しい設定ファイル…
 
+# New note…
+tdad71f9d = 新しいノート…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = API のキーなど、シェル用の変数です。保管庫に暗号化して保存され、保管庫と一緒に同期されます。パレット（{ $chord }、環境の項目）またはペインのメニューからペインに読み込み、使い終わったら読み込みを解除します。それを必要とするスニペットだけに使わせることもできます。
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = よく実行するコマンドです。パレット（{ $chord } を押して名前を入力）から実行できます。Enter でペインで実行し、{ $alt } でタブ内のすべてのペインで実行します。保管庫に保存されるため、ホストと一緒に同期されます。
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = 自由なテキスト。保管庫に暗号化して保存され、同期されます。サーバーの用途、再起動の手順、保管しておくコードなど。ここかパレット ({ $chord }、ノート) から、それぞれ専用のウィンドウで開きます。プレーンテキストまたは Markdown で、入力しながら保存されます。
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = ~/.kube/config や ~/.aws/credentials など、ホストに配置するファイルです。保管庫に暗号化して保存され、保管庫と一緒に同期されます。パレット（{ $chord }、設定ファイルの項目）またはペインのメニューから配置します。タブを閉じるまでの一時配置も、そのまま残す配置もできます。
@@ -2248,9 +2311,6 @@ t59edc3e9 = 設定ファイル · { $category }
 # placed: Enter places it again
 taf8f6d41 = 配置済み：Enter でもう一度配置します
 
-# It is not in the vault any more.
-td11af590 = 保管庫にはもうありません。
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · パーミッション { $mode }
 
@@ -2334,6 +2394,12 @@ tc12e4203 = 保存できませんでした：{ $e }
 
 # Removing the config files placed…
 tbd123099 = 配置した設定ファイルを削除しています…
+
+# Notes for {host}
+ta77bd589 = { $host } のノート
+
+# Notes · {category}
+tbb112cdf = ノート · { $category }
 
 # Open a tab first
 t6460fddf = 先にタブを開いてください
@@ -2793,9 +2859,6 @@ t0cf7277a = 保管庫がまだ開いている途中です
 
 # No saved passwords: {why}.
 tf97d3647 = 保存済みのパスワードを使えません：{ $why }。
-
-# Saved
-t8a6979e4 = 保存済み
 
 # Password for {target}
 t2cd4c302 = { $target } のパスワード

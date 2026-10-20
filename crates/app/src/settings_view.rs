@@ -42,12 +42,13 @@ pub enum Page {
     Snippets,
     Environments,
     ConfigFiles,
+    Notes,
     Sync,
     Vault,
     About,
 }
 
-const PAGES: [Page; 13] = [
+const PAGES: [Page; 14] = [
     Page::General,
     Page::Appearance,
     Page::Terminal,
@@ -58,6 +59,7 @@ const PAGES: [Page; 13] = [
     Page::Snippets,
     Page::Environments,
     Page::ConfigFiles,
+    Page::Notes,
     Page::Sync,
     Page::Vault,
     Page::About,
@@ -77,6 +79,7 @@ impl Page {
             Page::Snippets => tr!("Snippets"),
             Page::Environments => tr!("Environments"),
             Page::ConfigFiles => tr!("Config files"),
+            Page::Notes => tr!("Notes"),
             Page::Sync => tr!("Sync"),
             Page::Vault => tr!("Vault"),
             Page::About => tr!("About"),
@@ -145,6 +148,8 @@ pub struct SettingsView {
     environments: Option<Entity<SnippetsView>>,
     /// The Config files page, once shown.
     config_files: Option<Entity<SnippetsView>>,
+    /// The Notes page, once shown.
+    notes: Option<Entity<SnippetsView>>,
     /// The Known hosts page, once shown.
     known_hosts: Option<Entity<KnownHostsView>>,
     /// Where to sync, as typed before connecting.
@@ -431,6 +436,7 @@ impl SettingsView {
             snippets: None,
             environments: None,
             config_files: None,
+            notes: None,
             known_hosts: None,
         }
     }
@@ -447,6 +453,13 @@ impl SettingsView {
         let cmd = self.editor_input.read(cx).text().trim().to_string();
         let value = (!cmd.is_empty()).then_some(SettingValue::Str(cmd));
         self.change(&["files", "editor"], value, cx);
+    }
+
+    /// A note changed in its window: the Notes page lists it again.
+    pub fn notes_changed(&mut self, cx: &mut Context<Self>) {
+        if let Some(n) = &self.notes {
+            n.update(cx, |n, cx| n.refresh(cx));
+        }
     }
 
     pub fn set_snap(&mut self, snap: Snap, cx: &mut Context<Self>) {
@@ -2288,6 +2301,24 @@ impl SettingsView {
         div().child(view)
     }
 
+    /// The Notes page, likewise.
+    fn notes_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
+        let view = match &self.notes {
+            Some(s) => s.clone(),
+            None => {
+                let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
+                else {
+                    return page(&tr!("Notes"));
+                };
+                let ws = self.workspace.clone();
+                let s = cx.new(|cx| SnippetsView::notes(ws, vault, cx));
+                self.notes = Some(s.clone());
+                s
+            }
+        };
+        div().child(view)
+    }
+
     fn about(&self) -> gpui::Div {
         page(&tr!("About"))
             .child(
@@ -2548,6 +2579,11 @@ impl Render for SettingsView {
                         {
                             s.update(cx, |s, cx| s.refresh(cx));
                         }
+                        if p == Page::Notes
+                            && let Some(s) = &v.notes
+                        {
+                            s.update(cx, |s, cx| s.refresh(cx));
+                        }
                         if p == Page::KnownHosts
                             && let Some(k) = &v.known_hosts
                         {
@@ -2568,6 +2604,7 @@ impl Render for SettingsView {
             Page::Snippets => self.snippets_page(cx),
             Page::Environments => self.environments_page(cx),
             Page::ConfigFiles => self.config_files_page(cx),
+            Page::Notes => self.notes_page(cx),
             Page::KnownHosts => {
                 let view = self
                     .known_hosts

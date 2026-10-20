@@ -42,6 +42,8 @@ pub enum PaletteEvent {
     LoadEnv(String),
     /// Place a config file (by id) on the focused pane's host.
     PlaceFile(String),
+    /// Open a note (by id) in its window.
+    OpenNote(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -68,6 +70,8 @@ pub enum Action {
     Forward,
     /// Unload the ones loaded there.
     UnloadEnv,
+    /// A new note, in a window of its own.
+    NewNote,
     ToggleHosts,
     /// Type in every pane of the tab, or stop.
     Broadcast,
@@ -120,6 +124,8 @@ pub enum Kind {
     Env(String),
     /// A config file to place on the focused pane's host, by id.
     File(String),
+    /// A note to open in its window, by id.
+    OpenNote(String),
 }
 
 /// What part of the palette an entry is in, to jump to from the row of
@@ -132,6 +138,7 @@ pub enum Part {
     Snippets,
     Environments,
     ConfigFiles,
+    Notes,
     Actions,
     Settings,
     /// No badge.
@@ -146,6 +153,7 @@ impl Part {
             Part::Snippets => tr!("Snippets"),
             Part::Environments => tr!("Environments"),
             Part::ConfigFiles => tr!("Config files"),
+            Part::Notes => tr!("Notes"),
             Part::Actions => tr!("Actions"),
             Part::Settings => tr!("Settings"),
             Part::Other => String::new(),
@@ -498,6 +506,7 @@ impl Palette {
             },
             Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
             Kind::File(id) => PaletteEvent::PlaceFile(id.clone()),
+            Kind::OpenNote(id) => PaletteEvent::OpenNote(id.clone()),
             Kind::Note => return,
         });
     }

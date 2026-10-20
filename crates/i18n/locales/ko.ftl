@@ -31,6 +31,9 @@ tdbf76954 = 변수 합계가 { $size }KB입니다. 최대 { $max }KB입니다.
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = 파일이 { $size }KB입니다. 최대 { $max }KB입니다.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = 노트가 { $size }KB입니다. 최대 { $max }KB입니다.
+
 # Name
 t0fe07306 = 이름
 
@@ -949,6 +952,78 @@ tdd571ace = 밝은 따뜻한 톤
 # Your themes
 tb2e83d5c = 내 테마
 
+# New note
+t788c7123 = 새 노트
+
+# Title
+t24d471a9 = 제목
+
+# No category
+t44662d06 = 카테고리 없음
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = 여기에 작성하세요. Markdown은 미리 보기에서 표시됩니다.
+
+# It is not in the vault any more.
+td11af590 = 더 이상 보관함에 없습니다.
+
+# this note
+t4545c373 = 이 노트
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
+
+# The vault's passphrase
+tb66334ea = 보관함 암호 문구
+
+# Wrong passphrase.
+t2ebec270 = 암호 문구가 틀렸습니다.
+
+# For a host ▾
+tfa622581 = 호스트 지정 ▾
+
+# No hosts yet.
+t71734b03 = 아직 호스트가 없습니다.
+
+# Plain text
+tb7fc0ade = 일반 텍스트
+
+# Edit
+tc2c76cb1 = 편집
+
+# Preview
+tfdda4cf7 = 미리 보기
+
+# Sensitive
+tf603feef = 민감 정보
+
+# Saved
+t8a6979e4 = 저장됨
+
+# Editing…
+t1f2b8dc9 = 편집 중…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 보관함이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = 민감 정보: 본인 확인 후 텍스트가 표시됩니다.
+
+# Show the text
+t0ff690fe = 텍스트 표시
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 볼 수 있습니다.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = 아직 작성된 내용이 없습니다. 편집을 눌러 작성하세요.
+
+# Untitled note
+t4ce277c4 = 제목 없는 노트
+
 # Hosts
 tcf9aefb4 = 호스트
 
@@ -963,6 +1038,9 @@ t273b1ccb = 환경
 
 # Config files
 t16261310 = 설정 파일
+
+# Notes
+t0ff01b6a = 노트
 
 # Actions
 te65fb504 = 작업
@@ -1230,9 +1308,6 @@ t44bdb829 = 테마의 강조 색을 앱에 적용
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = 로고, 선택된 항목, 주요 버튼에 앱의 파란색 대신 테마의 강조 색을 사용합니다. 앱 배경과 너무 비슷한 색은 적용되지 않습니다.
-
-# Preview
-tfdda4cf7 = 미리 보기
 
 # {k} k
 t450902df = { $k }k
@@ -1612,9 +1687,6 @@ t87553579 = 연결 실패
 # closed
 tebee50c5 = 닫힘
 
-# Edit
-tc2c76cb1 = 편집
-
 # No hosts yet
 ta58f36ff = 아직 호스트 없음
 
@@ -1666,9 +1738,6 @@ t0038f509 = 놓을 위치: 폴더가 아닌 파일의 경로.
 # Permissions: three octal digits, such as 600.
 t5dde13fd = 권한: 8진수 세 자리, 예: 600.
 
-# No category
-t44662d06 = 카테고리 없음
-
 # {size}, not text
 t5956f56a = { $size }, 텍스트 아님
 
@@ -1704,15 +1773,6 @@ t56c9aeed = 설정 파일 편집
 
 # Category
 tafb3e591 = 카테고리
-
-# The vault's passphrase
-tb66334ea = 보관함 암호 문구
-
-# Wrong passphrase.
-t2ebec270 = 암호 문구가 틀렸습니다.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
 
 # The vault's passphrase, to show the values
 teecb1d4f = 값을 표시하기 위한 보관함 암호 문구
@@ -1774,6 +1834,9 @@ tf3955dbc = 새 환경
 # Edit environment
 t79646cbc = 환경 편집
 
+# sensitive
+ta2bd2f4f = 민감 정보
+
 # What it does, to find it in the palette
 td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
 
@@ -1800,12 +1863,6 @@ tbafebe63 = 사용 대상
 
 # No groups yet: make one in the host list.
 t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
-
-# No hosts yet.
-t71734b03 = 아직 호스트가 없습니다.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
@@ -1858,11 +1915,17 @@ t0c42d278 = 새 환경…
 # New config file…
 t58dfdc93 = 새 설정 파일…
 
+# New note…
+tdad71f9d = 새 노트…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = API 키처럼 셸에서 쓰는 변수로, 보관함에 암호화되어 보관되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 환경 항목) 또는 창의 메뉴에서 창에 불러오고, 다 쓰면 해제하세요. 필요로 하는 스니펫에만 따로 쓰게 할 수도 있습니다.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 자주 실행하는 명령입니다. 팔레트({ $chord }을(를) 누른 뒤 이름 입력)에서 실행하세요. Enter는 현재 창에서, { $alt }는 탭의 모든 창에서 실행합니다. 보관함에 보관되므로 호스트와 함께 동기화됩니다.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = 자유 텍스트. 보관함에 암호화되어 저장되고 함께 동기화됩니다: 서버의 용도, 재시작 방법, 보관할 코드 등. 여기 또는 팔레트({ $chord }, 노트)에서 각각 별도 창으로 열립니다. 일반 텍스트 또는 Markdown이며, 입력하는 대로 저장됩니다.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = ~/.kube/config나 ~/.aws/credentials처럼 호스트에 배치할 파일로, 보관함에 암호화되어 보관되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 설정 파일 항목) 또는 창의 메뉴에서 배치하세요. 탭을 닫을 때까지만 두거나 계속 남겨 둘 수 있습니다.
@@ -2248,9 +2311,6 @@ t59edc3e9 = 설정 파일 · { $category }
 # placed: Enter places it again
 taf8f6d41 = 배치됨: Enter를 누르면 다시 배치합니다
 
-# It is not in the vault any more.
-td11af590 = 더 이상 보관함에 없습니다.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · 권한 { $mode }
 
@@ -2334,6 +2394,12 @@ tc12e4203 = 보관되지 않음: { $e }
 
 # Removing the config files placed…
 tbd123099 = 배치된 설정 파일을 삭제하는 중…
+
+# Notes for {host}
+ta77bd589 = { $host }용 노트
+
+# Notes · {category}
+tbb112cdf = 노트 · { $category }
 
 # Open a tab first
 t6460fddf = 먼저 탭을 여세요
@@ -2793,9 +2859,6 @@ t0cf7277a = 보관함을 아직 여는 중
 
 # No saved passwords: {why}.
 tf97d3647 = 저장된 비밀번호를 사용할 수 없음: { $why }.
-
-# Saved
-t8a6979e4 = 저장됨
 
 # Password for {target}
 t2cd4c302 = { $target }의 비밀번호

@@ -37,6 +37,9 @@ tdbf76954 = Переменные занимают { $size } КБ; не боль�
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = Файл занимает { $size } КБ; не больше { $max } КБ.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = Заметка занимает { $size } КБ; не больше { $max } КБ.
+
 # Name
 t0fe07306 = Имя
 
@@ -979,6 +982,78 @@ tdd571ace = Светлые, тёплые
 # Your themes
 tb2e83d5c = Ваши темы
 
+# New note
+t788c7123 = Новая заметка
+
+# Title
+t24d471a9 = Заголовок
+
+# No category
+t44662d06 = Без категории
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = Пишите здесь; Markdown виден в предпросмотре.
+
+# It is not in the vault any more.
+td11af590 = Его больше нет в хранилище.
+
+# this note
+t4545c373 = эту заметку
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
+
+# The vault's passphrase
+tb66334ea = Парольная фраза хранилища
+
+# Wrong passphrase.
+t2ebec270 = Неверная парольная фраза.
+
+# For a host ▾
+tfa622581 = Для хоста ▾
+
+# No hosts yet.
+t71734b03 = Хостов пока нет.
+
+# Plain text
+tb7fc0ade = Обычный текст
+
+# Edit
+tc2c76cb1 = Изменить
+
+# Preview
+tfdda4cf7 = Предпросмотр
+
+# Sensitive
+tf603feef = Конфиденциально
+
+# Saved
+t8a6979e4 = Сохранено
+
+# Editing…
+t1f2b8dc9 = Редактируется…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Хранилище заблокировано: разблокируйте его в главном окне.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = Конфиденциально: текст покажется, когда вы подтвердите, что это вы.
+
+# Show the text
+t0ff690fe = Показать текст
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Подтвердите, что это вы, в окне системы…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = Хранилище не защищено парольной фразой, поэтому показать его может любой, кто сидит за этим устройством.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = Пока ничего не написано: нажмите «Изменить», чтобы писать.
+
+# Untitled note
+t4ce277c4 = Заметка без названия
+
 # Hosts
 tcf9aefb4 = Хосты
 
@@ -993,6 +1068,9 @@ t273b1ccb = Окружения
 
 # Config files
 t16261310 = Файлы конфигурации
+
+# Notes
+t0ff01b6a = Заметки
 
 # Actions
 te65fb504 = Действия
@@ -1260,9 +1338,6 @@ t44bdb829 = Акцентный цвет приложения из темы
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = Логотип, выбранные элементы и основные кнопки получают акцентный цвет темы вместо синего цвета приложения. Слишком близкий к фону приложения цвет не используется.
-
-# Preview
-tfdda4cf7 = Предпросмотр
 
 # {k} k
 t450902df = { $k } тыс.
@@ -1648,9 +1723,6 @@ t87553579 = не удалось подключиться
 # closed
 tebee50c5 = закрыто
 
-# Edit
-tc2c76cb1 = Изменить
-
 # No hosts yet
 ta58f36ff = Хостов пока нет
 
@@ -1705,9 +1777,6 @@ t0038f509 = Куда он попадёт: путь к файлу, а не к п�
 # Permissions: three octal digits, such as 600.
 t5dde13fd = Права доступа: три восьмеричные цифры, например 600.
 
-# No category
-t44662d06 = Без категории
-
 # {size}, not text
 t5956f56a = { $size }, не текст
 
@@ -1743,15 +1812,6 @@ t56c9aeed = Изменить файл конфигурации
 
 # Category
 tafb3e591 = Категория
-
-# The vault's passphrase
-tb66334ea = Парольная фраза хранилища
-
-# Wrong passphrase.
-t2ebec270 = Неверная парольная фраза.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Подтвердите, что это вы, в окне системы…
 
 # The vault's passphrase, to show the values
 teecb1d4f = Парольная фраза хранилища, чтобы показать значения
@@ -1816,6 +1876,9 @@ tf3955dbc = Новое окружение
 # Edit environment
 t79646cbc = Изменить окружение
 
+# sensitive
+ta2bd2f4f = конфиденциально
+
 # What it does, to find it in the palette
 td9b8e02f = Что он делает, чтобы найти его в палитре
 
@@ -1842,12 +1905,6 @@ tbafebe63 = Доступен для
 
 # No groups yet: make one in the host list.
 t31c54e54 = Групп пока нет: создайте её в списке хостов.
-
-# No hosts yet.
-t71734b03 = Хостов пока нет.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
@@ -1900,11 +1957,17 @@ t0c42d278 = Новое окружение…
 # New config file…
 t58dfdc93 = Новый файл конфигурации…
 
+# New note…
+tdad71f9d = Новая заметка…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = Переменные для оболочки, например ключи API, хранятся в хранилище в зашифрованном виде и синхронизируются вместе с ним. Загрузите набор в панель из палитры ({ $chord }, раздел «Окружения») или из меню панели и выгрузите, когда закончите; или дайте его только сниппету, которому он нужен.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Команды, которые вы часто выполняете. Запускайте из палитры ({ $chord }, затем введите имя): Enter выполняет в панели, { $alt } — во всех панелях вкладки. Хранятся в хранилище, поэтому синхронизируются вместе с хостами.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = Свободный текст, зашифрованный в хранилище и синхронизируемый с ним: для чего сервер, как его перезапустить, коды, которые надо сохранить. Каждая открывается в своём окне, отсюда или из палитры ({ $chord }, раздел «Заметки»); обычный текст или Markdown, сохраняется по мере ввода.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Файлы для размещения на хостах, например ~/.kube/config или ~/.aws/credentials, хранятся в хранилище в зашифрованном виде и синхронизируются вместе с ним. Разместите файл из палитры ({ $chord }, раздел «Файлы конфигурации») или из меню панели: до закрытия вкладки или насовсем.
@@ -2353,9 +2416,6 @@ t59edc3e9 = Файлы конфигурации · { $category }
 # placed: Enter places it again
 taf8f6d41 = размещён: Enter разместит его снова
 
-# It is not in the vault any more.
-td11af590 = Его больше нет в хранилище.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · права { $mode }
 
@@ -2442,6 +2502,12 @@ tc12e4203 = Не сохранено: { $e }
 
 # Removing the config files placed…
 tbd123099 = Удаление размещённых файлов конфигурации…
+
+# Notes for {host}
+ta77bd589 = Заметки для { $host }
+
+# Notes · {category}
+tbb112cdf = Заметки · { $category }
 
 # Open a tab first
 t6460fddf = Сначала откройте вкладку
@@ -2931,9 +2997,6 @@ t0cf7277a = хранилище ещё открывается
 
 # No saved passwords: {why}.
 tf97d3647 = Нет сохранённых паролей: { $why }.
-
-# Saved
-t8a6979e4 = Сохранено
 
 # Password for {target}
 t2cd4c302 = Пароль для { $target }

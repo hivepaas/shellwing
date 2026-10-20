@@ -92,6 +92,11 @@ pub fn said_oversize(o: &Oversize) -> String {
             size = kb(*n),
             max = kb(limits::FILE)
         ),
+        Oversize::Note(n) => tr!(
+            "The note is {size} KB; {max} KB at most.",
+            size = kb(*n),
+            max = kb(limits::NOTE)
+        ),
     }
 }
 

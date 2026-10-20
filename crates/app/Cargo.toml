@@ -29,6 +29,7 @@ shellwing-i18n.workspace = true
 # Values of environments, wiped from memory when dropped.
 zeroize = "1"
 sha2 = "0.10"
+pulldown-cmark = { version = "0.13", default-features = false }
 gpui.workspace = true
 # Only to hand GPUI a rendered gradient; the same version GPUI uses.
 image = { version = "0.25", default-features = false }

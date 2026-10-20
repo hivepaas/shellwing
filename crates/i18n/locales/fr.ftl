@@ -35,6 +35,9 @@ tdbf76954 = Les variables font { $size } Ko ; { $max } Ko au maximum.
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = Le fichier fait { $size } Ko ; { $max } Ko au maximum.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = La note fait { $size } Ko ; { $max } Ko au maximum.
+
 # Name
 t0fe07306 = Nom
 
@@ -969,6 +972,78 @@ tdd571ace = Clair, chaud
 # Your themes
 tb2e83d5c = Vos thèmes
 
+# New note
+t788c7123 = Nouvelle note
+
+# Title
+t24d471a9 = Titre
+
+# No category
+t44662d06 = Sans catégorie
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = Écrivez ici ; le Markdown s'affiche en aperçu.
+
+# It is not in the vault any more.
+td11af590 = Il n'est plus dans le coffre.
+
+# this note
+t4545c373 = cette note
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
+
+# The vault's passphrase
+tb66334ea = Phrase secrète du coffre
+
+# Wrong passphrase.
+t2ebec270 = Phrase secrète incorrecte.
+
+# For a host ▾
+tfa622581 = Pour un serveur ▾
+
+# No hosts yet.
+t71734b03 = Aucun serveur pour l'instant.
+
+# Plain text
+tb7fc0ade = Texte brut
+
+# Edit
+tc2c76cb1 = Modifier
+
+# Preview
+tfdda4cf7 = Aperçu
+
+# Sensitive
+tf603feef = Sensible
+
+# Saved
+t8a6979e4 = Enregistrés
+
+# Editing…
+t1f2b8dc9 = Modification…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Le coffre est verrouillé : déverrouillez-le dans la fenêtre principale.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = Sensible : son texte s'affiche une fois confirmé que c'est vous.
+
+# Show the text
+t0ff690fe = Afficher le texte
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = Aucune phrase secrète ne protège le coffre : toute personne devant cet appareil peut l'afficher.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = Rien d'écrit pour l'instant : Modifier pour écrire.
+
+# Untitled note
+t4ce277c4 = Note sans titre
+
 # Hosts
 tcf9aefb4 = Serveurs
 
@@ -983,6 +1058,9 @@ t273b1ccb = Environnements
 
 # Config files
 t16261310 = Fichiers de configuration
+
+# Notes
+t0ff01b6a = Notes
 
 # Actions
 te65fb504 = Actions
@@ -1250,9 +1328,6 @@ t44bdb829 = L'accent de l'application d'après le thème
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = Le logo, la sélection et les boutons principaux prennent la couleur d'accent du thème, au lieu du bleu de l'application. Une couleur trop proche du fond de l'application n'est pas retenue.
-
-# Preview
-tfdda4cf7 = Aperçu
 
 # {k} k
 t450902df = { $k } k
@@ -1636,9 +1711,6 @@ t87553579 = connexion impossible
 # closed
 tebee50c5 = fermé
 
-# Edit
-tc2c76cb1 = Modifier
-
 # No hosts yet
 ta58f36ff = Aucun serveur pour l'instant
 
@@ -1691,9 +1763,6 @@ t0038f509 = Où il va : le chemin d'un fichier, pas d'un dossier.
 # Permissions: three octal digits, such as 600.
 t5dde13fd = Permissions : trois chiffres octaux, par exemple 600.
 
-# No category
-t44662d06 = Sans catégorie
-
 # {size}, not text
 t5956f56a = { $size }, pas du texte
 
@@ -1729,15 +1798,6 @@ t56c9aeed = Modifier le fichier de configuration
 
 # Category
 tafb3e591 = Catégorie
-
-# The vault's passphrase
-tb66334ea = Phrase secrète du coffre
-
-# Wrong passphrase.
-t2ebec270 = Phrase secrète incorrecte.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
 
 # The vault's passphrase, to show the values
 teecb1d4f = Phrase secrète du coffre, pour afficher les valeurs
@@ -1800,6 +1860,9 @@ tf3955dbc = Nouvel environnement
 # Edit environment
 t79646cbc = Modifier l'environnement
 
+# sensitive
+ta2bd2f4f = sensible
+
 # What it does, to find it in the palette
 td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
 
@@ -1826,12 +1889,6 @@ tbafebe63 = Proposé pour
 
 # No groups yet: make one in the host list.
 t31c54e54 = Aucun groupe pour l'instant : créez-en un dans la liste des serveurs.
-
-# No hosts yet.
-t71734b03 = Aucun serveur pour l'instant.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
@@ -1884,11 +1941,17 @@ t0c42d278 = Nouvel environnement…
 # New config file…
 t58dfdc93 = Nouveau fichier de configuration…
 
+# New note…
+tdad71f9d = Nouvelle note…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = Des variables pour le shell, comme les clés d'une API, conservées chiffrées dans le coffre et synchronisées avec lui. Chargez-en une dans un volet depuis la palette ({ $chord }, sous Environnements) ou le menu du volet, et déchargez-la quand vous avez fini ; ou laissez un extrait qui en a besoin l'avoir pour lui seul.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Les commandes que vous exécutez souvent. Exécutez-en une depuis la palette ({ $chord }, puis saisissez son nom) : Enter l'exécute dans le volet, { $alt } dans chaque volet de l'onglet. Conservés dans le coffre, les extraits se synchronisent avec vos serveurs.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = Du texte libre, chiffré dans le coffre et synchronisé avec lui : à quoi sert un serveur, comment le redémarrer, des codes à garder. Chaque note s'ouvre dans sa propre fenêtre, d'ici ou depuis la palette ({ $chord }, sous Notes) ; texte brut ou Markdown, enregistré au fil de la frappe.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Des fichiers à déposer sur les serveurs, comme ~/.kube/config ou ~/.aws/credentials, conservés chiffrés dans le coffre et synchronisés avec lui. Déposez-en un depuis la palette ({ $chord }, sous Fichiers de configuration) ou le menu du volet : jusqu'à la fermeture de l'onglet, ou pour qu'il reste.
@@ -2315,9 +2378,6 @@ t59edc3e9 = Fichiers de configuration · { $category }
 # placed: Enter places it again
 taf8f6d41 = déposé : Enter le dépose de nouveau
 
-# It is not in the vault any more.
-td11af590 = Il n'est plus dans le coffre.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · permissions { $mode }
 
@@ -2402,6 +2462,12 @@ tc12e4203 = Non conservée : { $e }
 
 # Removing the config files placed…
 tbd123099 = Suppression des fichiers de configuration déposés…
+
+# Notes for {host}
+ta77bd589 = Notes pour { $host }
+
+# Notes · {category}
+tbb112cdf = Notes · { $category }
 
 # Open a tab first
 t6460fddf = Ouvrez d'abord un onglet
@@ -2881,9 +2947,6 @@ t0cf7277a = le coffre est encore en cours d'ouverture
 
 # No saved passwords: {why}.
 tf97d3647 = Aucun mot de passe enregistré : { $why }.
-
-# Saved
-t8a6979e4 = Enregistrés
 
 # Password for {target}
 t2cd4c302 = Mot de passe de { $target }

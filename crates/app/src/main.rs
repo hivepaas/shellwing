@@ -24,6 +24,8 @@ mod input;
 mod keys_view;
 mod known_hosts_view;
 mod look;
+mod markdown;
+mod note_window;
 mod palette;
 mod pane;
 mod placement;
@@ -273,8 +275,13 @@ fn main() -> anyhow::Result<()> {
             });
             // One window: closing it quits, on macOS too, where apps otherwise stay
             // in the Dock with no window and no way to open one.
+            // Note windows go with the main one.
             cx.on_window_closed(|cx, _| {
-                if cx.windows().is_empty() {
+                let main = cx
+                    .windows()
+                    .iter()
+                    .any(|w| w.downcast::<workspace::Workspace>().is_some());
+                if !main {
                     cx.quit();
                 }
             })

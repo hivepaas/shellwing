@@ -34,6 +34,7 @@ use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
 mod config_files;
+mod notes;
 
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
@@ -1430,6 +1431,7 @@ impl Workspace {
         entries.extend(self.snippet_entries(cx));
         entries.extend(self.env_entries(cx));
         entries.extend(self.file_entries(cx));
+        entries.extend(self.note_entries(cx));
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
@@ -3249,6 +3251,11 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.load_env(&id, cx);
             }
+            PaletteEvent::OpenNote(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.open_note_id(&id, cx);
+            }
             PaletteEvent::PlaceFile(id) => {
                 let id = id.clone();
                 self.close_palette(window, cx);
@@ -3389,6 +3396,7 @@ impl Workspace {
             Action::CloseTab => self.request_close_tab(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
+            Action::NewNote => self.open_note(None, cx),
             Action::UnloadEnv => {
                 if let Some(view) = self.active_tab().cloned()
                     && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))
@@ -3493,6 +3501,7 @@ impl Workspace {
                 .detach();
             }
             Action::LockVault => {
+                crate::note_window::before_lock(cx);
                 if self.vault.lock() {
                     self.say(tr!("The vault is locked."), THEME_NOTICE, cx);
                 } else {
@@ -3660,10 +3669,14 @@ impl Workspace {
     /// Called periodically: picks up edits to the config files.
     pub fn poll_config(&mut self, cx: &mut Context<Self>) {
         let idle = self.live.settings().vault.lock_after.unwrap_or(0);
-        if idle > 0
+        let idle_now = idle > 0
             && self.last_input.elapsed() >= std::time::Duration::from_secs(u64::from(idle) * 60)
-            && self.vault.lock()
-        {
+            && self.vault.locked().is_none()
+            && self.vault.can_lock();
+        if idle_now && {
+            crate::note_window::before_lock(cx);
+            self.vault.lock()
+        } {
             self.say(
                 tr_n!(
                     idle,
@@ -4807,6 +4820,19 @@ impl Render for Workspace {
         // The UI font: every rem-sized text follows its size; the terminal has its own.
         let ui_font = self.live.settings().appearance.ui_font.clone();
         window.set_rem_size(look::rem_for(ui_font.size));
+        // Note windows are drawn in the same font.
+        let family = ui_font.family.clone().map(SharedString::from);
+        if cx
+            .try_global::<crate::note_window::NoteLook>()
+            .is_none_or(|l| l.size != ui_font.size || l.family != family)
+        {
+            let mono = TermView::default_font(window).into();
+            cx.set_global(crate::note_window::NoteLook {
+                size: ui_font.size,
+                family,
+                mono,
+            });
+        }
         let look = match self.active_tab() {
             Some(t) => t.read(cx).look().clone(),
             None => self.live.look_for(None).0,
