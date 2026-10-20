@@ -125,7 +125,7 @@ counter and the device id.
 | Backend | For | Setup | Conflict guard | Build cost |
 | --- | --- | --- | --- | --- |
 | Local folder (iCloud Drive, Syncthing, Dropbox/OneDrive desktop apps, NAS) | Everyone | Pick a folder | None. The merge also reads "conflicted copy" files the sync tool leaves. | Very low |
-| Git (GitHub, GitLab, Gitea, any host) | Developers | Private repo URL + token | Rejected push | Medium (`git2`) |
+| Git (GitHub, GitLab, Gitea, any host) | Developers | Private repo URL; git signs in (token optional) | Rejected push | Medium (the system's `git`) |
 | S3-compatible (AWS, R2, B2, MinIO, Wasabi) | Self-hosters | Endpoint, bucket, keys | `If-Match` | Low ([OpenDAL](https://opendal.apache.org)) |
 | WebDAV (Nextcloud, Synology, Koofr) | Self-hosters | URL, user, password | ETag | Low (OpenDAL) |
 | Google Drive, OneDrive, Dropbox | Everyone | OAuth sign-in | Weak | Medium: shellwing must register an OAuth app with each |
@@ -150,8 +150,8 @@ Build order:
    Syncthing for free.
 2. S3 and WebDAV, through OpenDAL (built: `crates/remote`). Moved ahead of
    the cloud: no server of ours is needed.
-3. shellwing cloud and the portal.
-4. Git.
+3. Git, through the system's `git` (built: `crates/remote/src/git.rs`).
+4. shellwing cloud and the portal.
 5. Drive, OneDrive and Dropbox.
 
 **S3 and WebDAV as built.**
@@ -183,3 +183,30 @@ Build order:
   where there is no keychain too. The vault opens before syncing anyway.
 - Calls that the app makes against the place (starting, joining) run off
   the UI thread: a server may take seconds to answer.
+
+**Git as built.**
+
+- **The system's git**, not libgit2: it signs in as the user's git does
+  (credential managers, SSH keys and agent), and adds no C library. Found on
+  `PATH` and where installers put it (an app started from the desktop has no
+  shell `PATH`); `/usr/bin/git` on macOS only with the Command Line Tools, as
+  without them it is a stub that opens Apple's install dialog. 2.31 or newer,
+  for `GIT_CONFIG_COUNT`: a token goes as an `http.extraHeader` from the
+  environment, never on a command line.
+- **Installing it** is offered, never done unasked: `xcode-select --install`
+  on macOS, winget on Windows (with its UAC prompt), the distribution's
+  command on Linux, to run by hand (it needs sudo).
+- **Commands** run with no terminal to prompt on (`GIT_TERMINAL_PROMPT=0`,
+  SSH `BatchMode` unless the user set `GIT_SSH_COMMAND` or
+  `core.sshCommand`), `LC_ALL=C` to tell errors apart, no console window on
+  Windows, and a time limit.
+- **The clone** (in the cache folder, per repository and branch) is a cache:
+  `git init` with the remote, then each round `fetch --depth 1`, `reset
+  --hard` to the remote branch, the engine over its `shellwing/` folder,
+  `add`, `commit --no-verify` (no signing, as `shellwing`), `push`. Never a
+  Git merge: a refused push starts the round again over the new commits
+  (`Backend::refresh` / `publish`, run by `transact`).
+- An empty repository, or one without the branch, starts at the first push.
+  A refresh within 2 s of the last with nothing written fetches nothing, as
+  pairing and the sync look several times a minute; pairing looks every 5 s
+  over Git instead of 2.

@@ -38,6 +38,37 @@ pub trait Backend: Send + Sync {
     fn replace(&self, name: &str, data: &[u8]) -> io::Result<bool> {
         self.write(name, data).map(|()| true)
     }
+    /// Takes in what other devices published (a Git fetch), dropping what
+    /// this one wrote and did not publish. A folder or a server has nothing
+    /// to do: what is written there is published.
+    fn refresh(&self) -> io::Result<()> {
+        Ok(())
+    }
+    /// Publishes what this device wrote since the last refresh (a Git commit
+    /// and push). `Ok(false)`: another device published first; refresh and
+    /// do it again.
+    fn publish(&self) -> io::Result<bool> {
+        Ok(true)
+    }
+}
+
+/// Tries at publishing, each over what the others published just before.
+const PUBLISH_TRIES: usize = 3;
+
+/// Runs `op` against `b` as one change: over what others published, and
+/// published at the end; done again over theirs if they published first.
+/// Not nested: an inner one's refresh would drop the outer one's writes.
+pub fn transact<T>(b: &dyn Backend, mut op: impl FnMut(&dyn Backend) -> Result<T>) -> Result<T> {
+    for _ in 0..PUBLISH_TRIES {
+        b.refresh()?;
+        let done = op(b)?;
+        if b.publish()? {
+            return Ok(done);
+        }
+    }
+    Err(Error::Io(io::Error::other(
+        "other devices kept publishing first; trying again at the next sync",
+    )))
 }
 
 /// Tries at writing a record that others keep writing meanwhile, in one
@@ -424,6 +455,11 @@ impl Vault {
 
     /// Merges this vault with the store, both ways.
     pub fn sync(&self, b: &dyn Backend) -> Result<SyncReport> {
+        transact(b, |b| self.sync_round(b))
+    }
+
+    /// One sync, over the files as they are now.
+    fn sync_round(&self, b: &dyn Backend) -> Result<SyncReport> {
         match self.folder_state(b)? {
             FolderState::Ours => {}
             FolderState::Empty => return Err(Error::NotSynced),

@@ -115,6 +115,7 @@ impl Live {
             ),
             SyncPlace::WebDav(w) => SyncPlaceText::WebDav(w.clone()),
             SyncPlace::S3(s) => SyncPlaceText::S3(s.clone()),
+            SyncPlace::Git(g) => SyncPlaceText::Git(g.clone()),
         });
         store
             .set_sync_place(text.as_ref())

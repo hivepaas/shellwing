@@ -17,6 +17,7 @@ pub enum SyncPlaceText {
     Folder(String),
     WebDav(crate::WebDavSync),
     S3(crate::S3Sync),
+    Git(crate::GitSync),
 }
 
 const SETTINGS: &str = "config.toml";
@@ -293,7 +294,7 @@ impl Store {
                 .or_insert_with(toml_edit::table)
                 .as_table_like_mut()
                 .ok_or("`sync` is not a table")?;
-            for key in ["folder", "webdav", "s3"] {
+            for key in ["folder", "webdav", "s3", "git"] {
                 sync.remove(key);
             }
             let inline = |pairs: &[(&str, &str)]| {
@@ -312,6 +313,12 @@ impl Store {
                 }
                 Some(SyncPlaceText::WebDav(w)) => {
                     sync.insert("webdav", inline(&[("url", &w.url), ("user", &w.user)]));
+                }
+                Some(SyncPlaceText::Git(g)) => {
+                    sync.insert(
+                        "git",
+                        inline(&[("url", &g.url), ("branch", &g.branch), ("user", &g.user)]),
+                    );
                 }
                 Some(SyncPlaceText::S3(s3)) => {
                     sync.insert(
@@ -773,6 +780,15 @@ mod tests {
         let sync = s.settings().expect("load").sync;
         assert!(sync.webdav.is_none());
         assert_eq!(sync.place(), Some(crate::SyncPlace::S3(s3)));
+        let git = crate::GitSync {
+            url: "git@github.com:me/vault.git".into(),
+            ..Default::default()
+        };
+        s.set_sync_place(Some(&SyncPlaceText::Git(git.clone())))
+            .expect("git");
+        let sync = s.settings().expect("load").sync;
+        assert!(sync.s3.is_none());
+        assert_eq!(sync.place(), Some(crate::SyncPlace::Git(git)));
         s.set_sync_place(None).expect("remove");
         assert_eq!(s.settings().expect("load").sync.place(), None);
     }
