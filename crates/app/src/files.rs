@@ -326,6 +326,17 @@ fn when(t: SystemTime) -> String {
 }
 
 fn button(id: impl Into<ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
+    button_in(id, label, rgb(colors().button), rgb(colors().button_hover))
+}
+
+/// A button in other colors, such as a red Delete. (A second `hover` on a
+/// [`button`] would not do: GPUI takes one.)
+fn button_in(
+    id: impl Into<ElementId>,
+    label: &str,
+    bg: gpui::Rgba,
+    hover: gpui::Rgba,
+) -> gpui::Stateful<gpui::Div> {
     div()
         .id(id.into())
         .px_2()
@@ -333,9 +344,9 @@ fn button(id: impl Into<ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
         .rounded_md()
         .text_xs()
         .text_color(rgb(colors().text))
-        .bg(rgb(colors().button))
+        .bg(bg)
         .cursor_pointer()
-        .hover(|s| s.bg(rgb(colors().button_hover)))
+        .hover(move |s| s.bg(hover))
         .child(label.to_string())
 }
 
@@ -382,6 +393,55 @@ impl FilesPanel {
 
     /// Opens SFTP on the connection (again, after a reconnect), staying in the
     /// folder shown.
+    /// What the panel shows: the folder, its entries (folders end in `/`),
+    /// and "opening", "loading", "ready" or the failure: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn shown(&self) -> (Option<String>, Vec<String>, String) {
+        let state = match &self.state {
+            State::Opening => "opening".to_string(),
+            State::Loading => "loading".to_string(),
+            State::Ready => "ready".to_string(),
+            State::Failed(why) => format!("failed: {why}"),
+        };
+        let names = self
+            .entries
+            .iter()
+            .map(|e| {
+                if e.is_dir() {
+                    format!("{}/", e.name)
+                } else {
+                    e.name.clone()
+                }
+            })
+            .collect();
+        (self.dir.clone(), names, state)
+    }
+
+    /// Selects the entry named `name`: for the UI tests, in place of the
+    /// arrow keys or a click.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn select_named(&mut self, name: &str, cx: &mut Context<Self>) -> bool {
+        let found = self.entries.iter().position(|e| e.name == name);
+        if found.is_some() {
+            self.selected = found;
+            cx.notify();
+        }
+        found.is_some()
+    }
+
+    /// Downloads go here instead of the user's Downloads: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn set_downloads(&mut self, dir: PathBuf) {
+        self.downloads = dir;
+    }
+
+    /// Starts typing a new folder's name, as the header's button does: for
+    /// the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn new_folder(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.start_edit(Edit::NewFolder, window, cx);
+    }
+
     pub fn connect(&mut self, cx: &mut Context<Self>) {
         self.era += 1;
         let era = self.era;
@@ -1942,10 +2002,13 @@ impl Render for FilesPanel {
                             .flex()
                             .gap_1()
                             .child(
-                                button("files-delete-yes", &tr!("Delete"))
-                                    .bg(rgb(colors().bad_edge))
-                                    .hover(|s| s.bg(rgb(colors().bad_hover)))
-                                    .on_click(cx.listener(|p, _, _, cx| p.confirm_delete(cx))),
+                                button_in(
+                                    "files-delete-yes",
+                                    &tr!("Delete"),
+                                    rgb(colors().bad_edge),
+                                    rgb(colors().bad_hover),
+                                )
+                                .on_click(cx.listener(|p, _, _, cx| p.confirm_delete(cx))),
                             )
                             .child(button("files-delete-no", &tr!("Cancel")).on_click(
                                 cx.listener(|p, _, _, cx| {

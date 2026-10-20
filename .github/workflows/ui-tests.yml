@@ -1,0 +1,82 @@
+name: UI tests
+
+# The UI scenarios (crates/app/src/ui_tests): the real workspace in GPUI's
+# test window, driven by keystrokes against an SSH server in the test process.
+# They take longer than CI's tests, so they run daily and when started by hand
+# (Actions > UI tests > Run workflow), not on pushes or pull requests.
+
+on:
+  # TEMPORARY: runs the new workflow on this branch before it is on main
+  # (a workflow_dispatch needs it there). Removed before merging.
+  push:
+    branches: [test/ui-e2e-pilot]
+  schedule:
+    # 02:00 in Vietnam.
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Platforms to run on
+        type: choice
+        options: [all, linux, macos, windows]
+        default: all
+      filter:
+        description: Only scenarios whose path contains this (e.g. "connect::" or "sftp")
+        type: string
+        default: ""
+
+concurrency:
+  group: ui-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ui:
+    name: ui-${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        name: >-
+          ${{ fromJSON(
+          (github.event_name != 'workflow_dispatch' || inputs.platforms == 'all') && '["linux-x86_64","macos-arm64","windows-x86_64"]' ||
+          inputs.platforms == 'macos' && '["macos-arm64"]' ||
+          inputs.platforms == 'windows' && '["windows-x86_64"]' ||
+          '["linux-x86_64"]') }}
+    runs-on: >-
+      ${{ startsWith(matrix.name, 'macos') && 'macos-latest' ||
+      startsWith(matrix.name, 'windows') && 'windows-latest' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Linux packages (GPUI: Wayland, X11, Vulkan, fonts; sftp-server)"
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libfontconfig-dev libfreetype-dev \
+            libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libvulkan-dev libdbus-1-dev libzstd-dev \
+            openssh-sftp-server   # the SFTP scenarios talk to OpenSSH's sftp-server
+
+      # libghostty-vt is built from source with Zig.
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ui-${{ matrix.name }}
+
+      - name: Clippy (with the UI tests)
+        run: cargo clippy -p shellwing --features ui-tests --all-targets -- -D warnings
+
+      - name: UI scenarios
+        shell: bash
+        run: cargo test -p shellwing --features ui-tests "ui_tests::${{ inputs.filter }}"
