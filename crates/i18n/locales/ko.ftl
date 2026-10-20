@@ -991,6 +991,9 @@ t699a801a = SSH 및 보안
 # Snippets
 t648fcbf7 = 스니펫
 
+# Environments
+t273b1ccb = 환경
+
 # Vault
 td432914f = 보관함
 
@@ -1606,29 +1609,104 @@ t0d325d34 = 호스트
 # every host
 t444612de = 모든 호스트
 
+# value
+t425ed3ca = 값
+
+# What they are for, such as AWS production
+tb620b1e5 = 용도, 예: AWS 프로덕션
+
+# {name} is not a variable's name.
+tdd2c4c4b = { $name }은(는) 올바른 변수 이름이 아닙니다.
+
+# {name} is there twice.
+te1458d84 = { $name }이(가) 두 번 있습니다.
+
+# {name} has no value.
+t387a8908 = { $name }에 값이 없습니다.
+
+# Add a variable: a name and its value.
+t6150163b = 변수를 추가하세요: 이름과 값.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = 클립보드에 NAME=value 줄이 없습니다.
+
+# Not NAME=value: {e}
+t65a67e1e = NAME=value 형식이 아닙니다: { $e }
+
+# The vault's passphrase
+tb66334ea = 보관함 암호 문구
+
+# Wrong passphrase.
+t2ebec270 = 암호 문구가 틀렸습니다.
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+       *[other] 스니펫 { $n }개에서 필요로 함
+    }
+
+# Edit…
+t8e7efcd7 = 편집…
+
+# Change
+ta1de2fdd = 변경
+
+# Show values
+t68f568ba = 값 표시
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = 보관함에 저장된 값은 가려져 있으며, 표시하려면 본인 확인이 필요합니다.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
+
+# Hide values
+tab6d76ed = 값 숨기기
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = 화면에 표시됩니다: 화면 공유에 주의하세요. 1분 후 다시 가려집니다.
+
+# The vault's passphrase, to show the values
+teecb1d4f = 값을 표시하기 위한 보관함 암호 문구
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 표시할 수 있습니다. 값을 표시할까요?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = 팔레트는 이 호스트들의 창에서만 불러오도록 제안합니다.
+
+# Variables
+t7996f062 = 변수
+
+# Add a variable
+tf53dee25 = 변수 추가
+
+# Paste a .env file
+tf0c57252 = .env 파일 붙여넣기
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = 값은 여러 줄일 수 있습니다: Enter로 줄을 바꾸고, { $save }로 저장합니다.
+
+# New environment
+tf3955dbc = 새 환경
+
+# Edit environment
+t79646cbc = 환경 편집
+
 # What it does, to find it in the palette
 td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
 
 # A name and a command are needed.
 t7f4c69bb = 이름과 명령이 필요합니다.
 
+# No category
+t44662d06 = 카테고리 없음
+
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음
 
-# Edit…
-t8e7efcd7 = 편집…
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
-
-# Asked for when it runs:
-t2d8c5e6d = 실행할 때 묻는 항목:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니다. { $save }로 저장합니다.
+# with {envs}
+tba31f3bb = { $envs } 사용
 
 # Every host
 t77846bfe = 모든 호스트
@@ -1648,8 +1726,35 @@ t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
 # No hosts yet.
 t71734b03 = 아직 호스트가 없습니다.
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
+
+# Asked for when it runs:
+t2d8c5e6d = 실행할 때 묻는 항목:
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니다. { $save }로 저장합니다.
+
 # The palette lists it in panes of those hosts only.
 t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
+
+# Category
+tafb3e591 = 카테고리
+
+# Environments it needs
+tebd9fda9 = 필요한 환경
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 해당 변수가 있는 서브셸에서 실행되며, 끝나면 변수도 사라집니다.
 
 # New snippet
 tff3f7838 = 새 스니펫
@@ -1666,11 +1771,26 @@ t32122ee4 = 실행: 입력 후 Enter 누르기
 # None yet.
 t786bc275 = 아직 없습니다.
 
+# New environment…
+t0c42d278 = 새 환경…
+
 # New snippet…
 tec3111a4 = 새 스니펫…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = API 키 같은 셸용 변수로, 암호화되어 보관함에 저장되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 환경 불러오기…)에서 창에 불러오고 끝나면 해제하거나, 필요로 하는 스니펫만 단독으로 사용하게 할 수 있습니다.
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 자주 실행하는 명령입니다. 팔레트({ $chord }을(를) 누른 뒤 이름 입력)에서 실행하세요. Enter는 현재 창에서, { $alt }는 탭의 모든 창에서 실행합니다. 보관함에 보관되므로 호스트와 함께 동기화됩니다.
+
+# While loaded, the server can read them
+te60c8275 = 불러온 동안 서버에서 읽을 수 있습니다
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = 값은 에코를 끈 상태로 전송되고 셸 기록에도 남지 않지만, 변수를 가진 셸은 메모리에 보관합니다. 해당 서버의 root 권한을 가진 사람이나 그곳에서 사용자 계정으로 실행되는 프로세스는 불러오기를 해제하거나 셸이 끝날 때까지 읽을 수 있습니다.
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = 신뢰하는 서버에만 불러오고, 끝나면 해제하세요. 만료되는 키나 권한이 작은 키, 예를 들어 단기 토큰이나 작업에 필요한 권한만 가진 역할을 사용하는 것이 좋습니다.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 창의 호스트에 맞게 채워지며, 그 밖의 {"{{"}name{"}}"}은 스니펫을 실행할 때 묻습니다.
@@ -1812,6 +1932,18 @@ t6246d272 = Cmd+W 닫기
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 닫기
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = 이 창에서 전체 화면 프로그램이 실행 중입니다. 종료한 뒤 다시 시도하세요.
+
+# It has no variables.
+t0993a534 = 변수가 없습니다.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = 셸이 변수를 받지 않았습니다. 프롬프트 상태가 아니거나 POSIX 셸(sh, bash, zsh)이 아닙니다.
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name }을(를) 이 셸에 불러왔습니다.
 
 # Log saved: {path}
 tcc43a8d9 = 로그 저장됨: { $path }
@@ -1996,6 +2128,9 @@ t21a947cf = 창 닫기
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 맨 아래로 (Shift+End)
 
+# Snippets · {category}
+t85f58d76 = 스니펫 · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: 창 { $n }개
 
@@ -2010,6 +2145,18 @@ t6748f755 = { $snippet } · { $panes } · { $name } ({ $at }/{ $total })
 
 # Will run
 teaaf5750 = 실행할 명령
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = 이 스니펫이 필요로 하는 환경이 삭제되었습니다. 스니펫을 편집하세요.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = 이 호스트용 환경이 없습니다: 설정 › 환경에서 추가하세요.
+
+# loaded: Enter loads it again
+t1a97d76a = 불러옴: Enter를 누르면 다시 불러옵니다
+
+# Load an environment into this shell…
+td1cfd29b = 이 셸에 환경 불러오기…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 먼저 탭을 분할하세요. 입력할 창이 하나뿐입니다.
@@ -2094,6 +2241,12 @@ t13c5bc91 = { $title }의 파일
 
 # Forward a port through {title}…
 t9f033387 = { $title }을(를) 통해 포트 포워딩…
+
+# Load environment…
+ta3f75e60 = 환경 불러오기…
+
+# Unload environment: {names}
+tbe80f7b5 = 환경 해제: { $names }
 
 # Change theme…
 t85a401b4 = 테마 변경…

@@ -1011,6 +1011,9 @@ t699a801a = SSH y seguridad
 # Snippets
 t648fcbf7 = Fragmentos
 
+# Environments
+t273b1ccb = Entornos
+
 # Vault
 td432914f = Bóveda
 
@@ -1630,29 +1633,105 @@ t0d325d34 = SERVIDORES
 # every host
 t444612de = todos los servidores
 
+# value
+t425ed3ca = valor
+
+# What they are for, such as AWS production
+tb620b1e5 = Para qué sirven, por ejemplo AWS producción
+
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } no es un nombre de variable válido.
+
+# {name} is there twice.
+te1458d84 = { $name } aparece dos veces.
+
+# {name} has no value.
+t387a8908 = { $name } no tiene valor.
+
+# Add a variable: a name and its value.
+t6150163b = Añade una variable: un nombre y su valor.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = El portapapeles no tiene líneas NAME=value.
+
+# Not NAME=value: {e}
+t65a67e1e = No es NAME=value: { $e }
+
+# The vault's passphrase
+tb66334ea = Frase de contraseña de la bóveda
+
+# Wrong passphrase.
+t2ebec270 = Frase de contraseña incorrecta.
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+        [one] necesario para { $n } fragmento
+       *[other] necesario para { $n } fragmentos
+    }
+
+# Edit…
+t8e7efcd7 = Editar…
+
+# Change
+ta1de2fdd = Cambiar
+
+# Show values
+t68f568ba = Mostrar valores
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Los valores guardados en la bóveda están ocultos; para mostrarlos se confirma que eres tú.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirma que eres tú en el diálogo del sistema…
+
+# Hide values
+tab6d76ed = Ocultar valores
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Se ven en pantalla: cuidado al compartir pantalla. Se ocultan de nuevo en un minuto.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Frase de contraseña de la bóveda, para mostrar los valores
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Ninguna frase de contraseña protege la bóveda, así que cualquiera en este dispositivo puede mostrarlos. ¿Mostrar los valores?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = La paleta ofrece cargarlo solo en los paneles de esos servidores.
+
+# Variables
+t7996f062 = Variables
+
+# Add a variable
+tf53dee25 = Añadir variable
+
+# Paste a .env file
+tf0c57252 = Pegar un archivo .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Un valor puede tener varias líneas: Enter empieza otra, { $save } guarda.
+
+# New environment
+tf3955dbc = Nuevo entorno
+
+# Edit environment
+t79646cbc = Editar entorno
+
 # What it does, to find it in the palette
 td9b8e02f = Qué hace, para encontrarlo en la paleta
 
 # A name and a command are needed.
 t7f4c69bb = Se necesitan un nombre y un comando.
 
+# No category
+t44662d06 = Sin categoría
+
 # typed, not run
 td4e41905 = se escribe, no se ejecuta
 
-# Edit…
-t8e7efcd7 = Editar…
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan; cualquier otro {"{{"}name{"}}"} se pide al ejecutarlo.
-
-# Asked for when it runs:
-t2d8c5e6d = Se pide al ejecutarlo:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter empieza otra línea; las líneas se ejecutan una tras otra. { $save } guarda.
+# with {envs}
+tba31f3bb = con { $envs }
 
 # Every host
 t77846bfe = Todos los servidores
@@ -1672,8 +1751,35 @@ t31c54e54 = Aún no hay grupos: crea uno en la lista de servidores.
 # No hosts yet.
 t71734b03 = Aún no hay servidores.
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen.
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Sus variables se eliminan de la bóveda, y de tus otros dispositivos cuando se sincronicen. Las shells en las que está cargado las conservan hasta que se descargue.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan; cualquier otro {"{{"}name{"}}"} se pide al ejecutarlo.
+
+# Asked for when it runs:
+t2d8c5e6d = Se pide al ejecutarlo:
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter empieza otra línea; las líneas se ejecutan una tras otra. { $save } guarda.
+
 # The palette lists it in panes of those hosts only.
 t66336218 = La paleta lo muestra solo en paneles de esos servidores.
+
+# Category
+tafb3e591 = Categoría
+
+# Environments it needs
+tebd9fda9 = Entornos que necesita
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Ninguno todavía: añade uno en Ajustes › Entornos.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Se ejecuta en una subshell que tiene sus variables; desaparecen cuando termina.
 
 # New snippet
 tff3f7838 = Nuevo fragmento
@@ -1690,11 +1796,26 @@ t32122ee4 = Ejecutarlo: pulsar Enter después de escribirlo
 # None yet.
 t786bc275 = Aún no hay ninguno.
 
+# New environment…
+t0c42d278 = Nuevo entorno…
+
 # New snippet…
 tec3111a4 = Nuevo fragmento…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = Variables para la shell, como las claves de una API, guardadas cifradas en la bóveda y sincronizadas con ella. Carga una en un panel desde la paleta ({ $chord }, Cargar entorno…) y descárgala al terminar, o deja que un fragmento que la necesita la tenga solo para él.
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Comandos que ejecutas a menudo. Ejecuta uno desde la paleta ({ $chord } y escribe su nombre): Enter lo ejecuta en el panel, { $alt } en todos los paneles de la pestaña. Se guardan en la bóveda, así que se sincronizan con tus servidores.
+
+# While loaded, the server can read them
+te60c8275 = Mientras están cargadas, el servidor puede leerlas
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = Los valores se envían con el eco desactivado y no quedan en el historial de la shell, pero una shell que las tiene las guarda en su memoria: quien tenga root en ese servidor, o se ejecute como tu usuario allí, puede leerlas hasta que se descarguen o termine la shell.
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = Cárgalas en servidores de confianza, descárgalas al terminar y prefiere claves que caduquen o que puedan hacer poco, como tokens de corta duración o un rol con solo lo que el trabajo necesita.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan con los del servidor del panel; cualquier otro {"{{"}name{"}}"} se pide cuando se ejecuta el fragmento.
@@ -1872,6 +1993,18 @@ t6246d272 = Cmd+W cerrarla
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W cerrarla
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = Hay un programa de pantalla completa en este panel: sal de él y vuelve a intentarlo.
+
+# It has no variables.
+t0993a534 = No tiene variables.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = La shell no aceptó las variables: no está en su prompt o no es una shell POSIX (sh, bash, zsh).
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name } está cargado en esta shell.
 
 # Log saved: {path}
 tcc43a8d9 = Registro guardado: { $path }
@@ -2060,6 +2193,9 @@ t21a947cf = Cerrar panel
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Volver al final (Shift+End)
 
+# Snippets · {category}
+t85f58d76 = Fragmentos · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc =
     { $n ->
@@ -2082,6 +2218,18 @@ t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } de { $total })
 
 # Will run
 teaaf5750 = Se ejecutará
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = Se eliminó un entorno que esto necesita: edita el fragmento.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = No hay ningún entorno para este servidor: añade uno en Ajustes › Entornos.
+
+# loaded: Enter loads it again
+t1a97d76a = cargado: Enter lo carga de nuevo
+
+# Load an environment into this shell…
+td1cfd29b = Cargar un entorno en esta shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Divide primero la pestaña: solo hay un panel en el que escribir.
@@ -2174,6 +2322,12 @@ t13c5bc91 = Archivos en { $title }
 
 # Forward a port through {title}…
 t9f033387 = Reenviar un puerto a través de { $title }…
+
+# Load environment…
+ta3f75e60 = Cargar entorno…
+
+# Unload environment: {names}
+tbe80f7b5 = Descargar entorno: { $names }
 
 # Change theme…
 t85a401b4 = Cambiar tema…

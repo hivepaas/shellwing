@@ -991,6 +991,9 @@ t699a801a = SSH và bảo mật
 # Snippets
 t648fcbf7 = Đoạn lệnh
 
+# Environments
+t273b1ccb = Biến môi trường
+
 # Vault
 td432914f = Kho
 
@@ -1606,29 +1609,104 @@ t0d325d34 = MÁY CHỦ
 # every host
 t444612de = mọi máy chủ
 
+# value
+t425ed3ca = giá trị
+
+# What they are for, such as AWS production
+tb620b1e5 = Dùng cho việc gì, ví dụ AWS production
+
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } không phải tên biến hợp lệ.
+
+# {name} is there twice.
+te1458d84 = { $name } bị trùng.
+
+# {name} has no value.
+t387a8908 = { $name } chưa có giá trị.
+
+# Add a variable: a name and its value.
+t6150163b = Thêm một biến: tên và giá trị của nó.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = Clipboard không có dòng NAME=value nào.
+
+# Not NAME=value: {e}
+t65a67e1e = Không đúng dạng NAME=value: { $e }
+
+# The vault's passphrase
+tb66334ea = Passphrase của kho
+
+# Wrong passphrase.
+t2ebec270 = Sai passphrase.
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+       *[other] { $n } đoạn lệnh cần dùng
+    }
+
+# Edit…
+t8e7efcd7 = Sửa…
+
+# Change
+ta1de2fdd = Đổi
+
+# Show values
+t68f568ba = Hiện giá trị
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Giá trị lưu trong kho được che; muốn hiện sẽ phải xác nhận là bạn.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
+
+# Hide values
+tab6d76ed = Ẩn giá trị
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Giá trị đang hiện trên màn hình: cẩn thận khi chia sẻ màn hình. Một phút nữa sẽ tự che lại.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Passphrase của kho, để hiện giá trị
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng hiện được. Hiện giá trị?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = Bảng lệnh chỉ đề nghị nạp nó trong các pane của những máy chủ đó.
+
+# Variables
+t7996f062 = Biến
+
+# Add a variable
+tf53dee25 = Thêm biến
+
+# Paste a .env file
+tf0c57252 = Dán tệp .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Giá trị có thể nhiều dòng: Enter để xuống dòng, { $save } để lưu.
+
+# New environment
+tf3955dbc = Bộ biến mới
+
+# Edit environment
+t79646cbc = Sửa bộ biến
+
 # What it does, to find it in the palette
 td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
 
 # A name and a command are needed.
 t7f4c69bb = Cần có tên và lệnh.
 
+# No category
+t44662d06 = Chưa phân loại
+
 # typed, not run
 td4e41905 = chỉ gõ, không chạy
 
-# Edit…
-t8e7efcd7 = Sửa…
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác của bạn khi chúng đồng bộ.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
-
-# Asked for when it runs:
-t2d8c5e6d = Được hỏi khi chạy:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter để xuống dòng; các dòng chạy lần lượt. { $save } để lưu.
+# with {envs}
+tba31f3bb = kèm { $envs }
 
 # Every host
 t77846bfe = Mọi máy chủ
@@ -1648,8 +1726,35 @@ t31c54e54 = Chưa có nhóm: hãy tạo trong danh sách máy chủ.
 # No hosts yet.
 t71734b03 = Chưa có máy chủ.
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác của bạn khi chúng đồng bộ.
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
+
+# Asked for when it runs:
+t2d8c5e6d = Được hỏi khi chạy:
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter để xuống dòng; các dòng chạy lần lượt. { $save } để lưu.
+
 # The palette lists it in panes of those hosts only.
 t66336218 = Bảng lệnh chỉ hiện nó trong khung của những máy chủ đó.
+
+# Category
+tafb3e591 = Phân loại
+
+# Environments it needs
+tebd9fda9 = Bộ biến cần dùng
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Nó chạy trong một subshell có các biến này; chạy xong là biến mất.
 
 # New snippet
 tff3f7838 = Đoạn lệnh mới
@@ -1666,11 +1771,26 @@ t32122ee4 = Chạy luôn: nhấn Enter sau khi gõ
 # None yet.
 t786bc275 = Chưa có.
 
+# New environment…
+t0c42d278 = Bộ biến mới…
+
 # New snippet…
 tec3111a4 = Đoạn lệnh mới…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = Biến cho shell, như khoá của một API, được mã hoá trong kho và đồng bộ cùng kho. Nạp vào một pane từ bảng lệnh ({ $chord }, Nạp biến môi trường…) rồi gỡ ra khi xong, hoặc để một đoạn lệnh cần nó dùng riêng.
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Các lệnh bạn hay chạy. Chạy từ bảng lệnh ({ $chord }, rồi gõ tên của nó): Enter chạy trong khung, { $alt } chạy trong mọi khung của tab. Giữ trong kho, nên được đồng bộ cùng máy chủ của bạn.
+
+# While loaded, the server can read them
+te60c8275 = Khi đang nạp, máy chủ có thể đọc được
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = Giá trị được gửi khi đã tắt echo và không vào lịch sử của shell, nhưng shell đang giữ chúng trong bộ nhớ: ai có root trên máy chủ đó, hoặc chạy dưới user của bạn ở đó, đều đọc được cho tới khi gỡ ra hoặc shell kết thúc.
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = Chỉ nạp trên máy chủ bạn tin cậy, gỡ ra khi xong, và nên dùng khoá có hạn hoặc ít quyền, như token ngắn hạn hay một role chỉ có đúng quyền công việc cần.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền theo máy chủ của khung; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi đoạn lệnh chạy.
@@ -1812,6 +1932,18 @@ t6246d272 = Cmd+W để đóng
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W để đóng
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = Một chương trình toàn màn hình đang chạy trong pane này: thoát nó rồi thử lại.
+
+# It has no variables.
+t0993a534 = Nó không có biến nào.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).
+
+# {name} is loaded into this shell.
+t5bc879d1 = Đã nạp { $name } vào shell này.
 
 # Log saved: {path}
 tcc43a8d9 = Đã lưu nhật ký: { $path }
@@ -1996,6 +2128,9 @@ t21a947cf = Đóng khung
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Về cuối (Shift+End)
 
+# Snippets · {category}
+t85f58d76 = Đoạn lệnh · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: { $n } khung
 
@@ -2010,6 +2145,18 @@ t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } / { $total })
 
 # Will run
 teaaf5750 = Sẽ chạy
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = Một bộ biến mà đoạn lệnh này cần đã bị xoá: hãy sửa đoạn lệnh.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Không có bộ biến nào cho máy chủ này: thêm trong Cài đặt › Biến môi trường.
+
+# loaded: Enter loads it again
+t1a97d76a = đã nạp: Enter để nạp lại
+
+# Load an environment into this shell…
+td1cfd29b = Nạp một bộ biến vào shell này…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Hãy chia tab trước: chỉ có một khung để gõ.
@@ -2094,6 +2241,12 @@ t13c5bc91 = Tệp trên { $title }
 
 # Forward a port through {title}…
 t9f033387 = Chuyển tiếp một cổng qua { $title }…
+
+# Load environment…
+ta3f75e60 = Nạp biến môi trường…
+
+# Unload environment: {names}
+tbe80f7b5 = Gỡ biến môi trường: { $names }
 
 # Change theme…
 t85a401b4 = Đổi chủ đề…

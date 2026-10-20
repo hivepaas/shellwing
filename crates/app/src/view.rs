@@ -221,6 +221,43 @@ fn gradient_image(
 /// The session's status changed (connected, closed, failed).
 pub struct StatusChanged;
 
+/// An environment loaded into a pane's shell.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoadedEnv {
+    pub id: String,
+    pub name: String,
+    pub names: Vec<String>,
+}
+
+/// Values waiting to go to the shell: when it signals `ready` (its echo
+/// off), and, for one loaded into the shell, `done`.
+struct EnvLoad {
+    ready: String,
+    done: Option<String>,
+    values: Vec<zeroize::Zeroizing<String>>,
+    env: Option<LoadedEnv>,
+}
+
+/// How long the shell has to say it is ready before a load is given up:
+/// not a POSIX shell (fish), or not at its prompt.
+const ENV_WAIT: Duration = Duration::from_secs(15);
+
+/// A word for one load's signals, unlike any other in the pane.
+/// The lines that carry `sent`'s values, in turn.
+fn lines(sent: Vec<crate::environment::Sent>) -> Vec<zeroize::Zeroizing<String>> {
+    sent.into_iter().flat_map(|s| s.lines).collect()
+}
+
+fn env_nonce() -> String {
+    static N: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let t = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
+    format!("{t:x}{n:x}")
+}
+
 /// The session ended and the settings say to close the pane.
 pub struct CloseRequested;
 
@@ -280,6 +317,11 @@ pub struct TermView {
     marked: Option<String>,
     /// A paste the terminal refused as unsafe, waiting for confirmation.
     pending_paste: Option<(String, Instant)>,
+    /// Environments typed for, waiting for the shell to say its echo is
+    /// off before their values go.
+    env_pending: Vec<EnvLoad>,
+    /// Environments loaded into this pane's shell.
+    env_loaded: Vec<LoadedEnv>,
     notice: Option<SharedString>,
     /// Last pointer position over the grid, to show links when the modifier goes down.
     last_mouse: Option<(f32, f32)>,
@@ -425,6 +467,8 @@ impl TermView {
             area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
+            env_pending: vec![],
+            env_loaded: vec![],
             notice: None,
             last_mouse: None,
             font_family: FONT_FAMILIES[0].into(),
@@ -505,6 +549,178 @@ impl TermView {
         }
     }
 
+    /// Why nothing can be typed into the shell now, if so: not connected,
+    /// or a full-screen program has the keys.
+    pub fn shell_unready(&self) -> Option<String> {
+        if self.session.status() != Status::Connected {
+            return Some(tr!("Not connected."));
+        }
+        self.frame.alternate.then(|| {
+            tr!("A full-screen program is running in this pane: leave it, then try again.")
+        })
+    }
+
+    /// The environments loaded into this pane's shell.
+    pub fn loaded_envs(&self) -> &[LoadedEnv] {
+        &self.env_loaded
+    }
+
+    /// Loads `env` (its `values`) into the shell: a command that reads them
+    /// with the echo off is typed, and they go once it is ready.
+    pub fn load_env(
+        &mut self,
+        env: LoadedEnv,
+        values: shellwing_vault::EnvValues,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        if let Some(why) = self.shell_unready() {
+            return Err(why);
+        }
+        let (names, sent) = Self::env_values(values)?;
+        let (ready, done) = (
+            format!("ready-{}", env_nonce()),
+            format!("done-{}", env_nonce()),
+        );
+        self.term
+            .text(crate::environment::load(&sent, &ready, &done));
+        self.term.key(NamedKey::Enter, Mods::default());
+        self.wait_for(
+            EnvLoad {
+                ready,
+                done: Some(done),
+                values: lines(sent),
+                env: Some(LoadedEnv { names, ..env }),
+            },
+            cx,
+        );
+        Ok(())
+    }
+
+    /// Runs `command` in a subshell that has `values` (a snippet that needs
+    /// them): they go when it ends.
+    pub fn run_with_env(
+        &mut self,
+        values: shellwing_vault::EnvValues,
+        command: &str,
+        enter: bool,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        if let Some(why) = self.shell_unready() {
+            return Err(why);
+        }
+        let (_, sent) = Self::env_values(values)?;
+        let ready = format!("ready-{}", env_nonce());
+        let text = crate::environment::wrapped(&sent, &ready, command.trim_end_matches('\n'));
+        // Several lines: one paste, so it runs whole at the Enter.
+        self.term.paste(text, true);
+        if enter {
+            self.term.key(NamedKey::Enter, Mods::default());
+        }
+        self.wait_for(
+            EnvLoad {
+                ready,
+                done: None,
+                values: lines(sent),
+                env: None,
+            },
+            cx,
+        );
+        Ok(())
+    }
+
+    /// Unloads the environment `id` from the shell (None: all of them).
+    pub fn unload_env(&mut self, id: Option<&str>, cx: &mut Context<Self>) -> Result<(), String> {
+        if let Some(why) = self.shell_unready() {
+            return Err(why);
+        }
+        let (gone, kept): (Vec<_>, Vec<_>) = std::mem::take(&mut self.env_loaded)
+            .into_iter()
+            .partition(|e| id.is_none_or(|id| e.id == id));
+        self.env_loaded = kept;
+        let names: Vec<String> = gone.iter().flat_map(|e| e.names.clone()).collect();
+        if !names.is_empty() {
+            self.term.text(crate::environment::unload(&names));
+            self.term.key(NamedKey::Enter, Mods::default());
+        }
+        cx.notify();
+        Ok(())
+    }
+
+    /// The variables to send, each value as its lines; the names too.
+    fn env_values(
+        values: shellwing_vault::EnvValues,
+    ) -> Result<(Vec<String>, Vec<crate::environment::Sent>), String> {
+        if values.is_empty() {
+            return Err(tr!("It has no variables."));
+        }
+        if let Some((n, _)) = values
+            .iter()
+            .find(|(n, _)| !crate::environment::valid_name(n))
+        {
+            return Err(tr!("{name} is not a variable's name.", name = n.clone()));
+        }
+        let names = values.iter().map(|(n, _)| n.clone()).collect();
+        let sent = values
+            .iter()
+            .map(|(n, v)| crate::environment::encode(n, v))
+            .collect();
+        Ok((names, sent))
+    }
+
+    /// Keeps `load` until the shell signals, or gives it up after a while.
+    fn wait_for(&mut self, load: EnvLoad, cx: &mut Context<Self>) {
+        let ready = load.ready.clone();
+        self.env_pending.push(load);
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(ENV_WAIT).await;
+            let _ = this.update(cx, |v, cx| {
+                let before = v.env_pending.len();
+                v.env_pending.retain(|p| p.ready != ready);
+                if v.env_pending.len() < before {
+                    v.show_notice(
+                        tr!("The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh)."),
+                        LOG_NOTICE,
+                        cx,
+                    );
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// A signal from a command shellwing typed: the shell is ready for the
+    /// values, or has them.
+    fn env_signal(&mut self, signal: &str, cx: &mut Context<Self>) {
+        if let Some(i) = self.env_pending.iter().position(|p| p.ready == signal) {
+            for value in std::mem::take(&mut self.env_pending[i].values) {
+                self.term.text(value.to_string());
+                self.term.key(NamedKey::Enter, Mods::default());
+            }
+            if self.env_pending[i].done.is_none() {
+                self.env_pending.remove(i);
+            }
+            return;
+        }
+        if let Some(i) = self
+            .env_pending
+            .iter()
+            .position(|p| p.done.as_deref() == Some(signal))
+        {
+            let load = self.env_pending.remove(i);
+            if let Some(env) = load.env {
+                let name = env.name.clone();
+                self.env_loaded.retain(|e| e.id != env.id);
+                self.env_loaded.push(env);
+                self.show_notice(
+                    tr!("{name} is loaded into this shell.", name = name),
+                    LOG_NOTICE,
+                    cx,
+                );
+            }
+            cx.notify();
+        }
+    }
+
     /// Starts logging the pane to a new file, or stops, and says where.
     pub fn toggle_log(&mut self, settings: &shellwing_config::Log, cx: &mut Context<Self>) {
         let said = match self.session.stop_log() {
@@ -571,7 +787,8 @@ impl TermView {
     /// The badges at the pane's top right: logging, and typing in every pane.
     fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
         let (log, listen) = (self.log_badge(cx), self.listen_badge(cx));
-        if log.is_none() && listen.is_none() {
+        let envs = self.env_badges(cx);
+        if log.is_none() && listen.is_none() && envs.is_empty() {
             return None;
         }
         let top = if self.find.is_some() {
@@ -586,10 +803,47 @@ impl TermView {
                 .right(px(SCROLLBAR_ZONE + 6.))
                 .flex()
                 .gap(px(6.))
+                // Faint over the text they cover; whole under the pointer.
+                .opacity(0.45)
+                .hover(|s| s.opacity(1.))
+                .children(envs)
                 .children(log)
                 .children(listen)
                 .into_any_element(),
         )
+    }
+
+    /// An environment loaded into the shell: its name; a click unloads it.
+    fn env_badges(&self, cx: &mut Context<Self>) -> Vec<gpui::Stateful<gpui::Div>> {
+        self.env_loaded
+            .iter()
+            .map(|e| {
+                let id = e.id.clone();
+                div()
+                    .id(SharedString::from(format!("env-badge-{}", e.id)))
+                    .flex()
+                    .items_center()
+                    .gap(px(6.))
+                    .h(px(22.))
+                    .px(px(8.))
+                    .rounded_full()
+                    .border_1()
+                    .border_color(rgb(colors().warn_edge))
+                    .bg(rgb(colors().warn_bg))
+                    .text_xs()
+                    .text_color(rgb(colors().warn_text))
+                    .cursor_pointer()
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        if let Err(e) = v.unload_env(Some(&id), cx) {
+                            v.show_notice(e, LOG_NOTICE, cx);
+                        }
+                    }))
+                    .child(div().size(px(6.)).rounded_full().bg(rgb(colors().amber)))
+                    .child(e.name.clone())
+                    .child("✕")
+            })
+            .collect()
     }
 
     /// While the pane is logged; a click opens the log.
@@ -1084,6 +1338,11 @@ impl TermView {
     }
 
     fn status_changed(&mut self, status: Status, cx: &mut Context<Self>) {
+        // A shell that ended took its variables with it.
+        if status != Status::Connected {
+            self.env_pending.clear();
+            self.env_loaded.clear();
+        }
         match status {
             Status::Connected => {
                 self.retries = 0;
@@ -1565,6 +1824,7 @@ impl TermView {
                 }
                 cx.notify();
             }
+            TermEvent::Signal(s) => self.env_signal(&s, cx),
             TermEvent::LogFailed(e) => {
                 self.session.stop_log();
                 self.show_notice(

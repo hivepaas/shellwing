@@ -229,6 +229,27 @@ pub struct Snippet {
     pub scope: String,
     /// Enter is pressed after it is typed.
     pub enter: bool,
+    /// What it is filed under, to find it among many; empty: none.
+    pub category: String,
+    /// The environments (their ids) loaded for it alone: it runs in a
+    /// subshell that has them, and they go when it ends.
+    pub needs: Vec<String>,
+}
+
+/// An environment's variables: names and their values.
+pub type EnvValues = Vec<(String, Zeroizing<String>)>;
+
+/// Variables for the shell, kept in the vault, to load into a pane or
+/// for a snippet: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    /// Where it is offered, as a snippet's scope.
+    pub scope: String,
+    /// The variables' names; their values only through
+    /// [`Vault::environment_values`].
+    pub names: Vec<String>,
 }
 
 /// A field and when it was set (a clock stamp), for merging edits.
@@ -349,43 +370,12 @@ impl Vault {
     pub fn unlock(path: &Path, keys: &dyn KeyStore, how: Unlock) -> Result<Vault> {
         let o = Self::open_db(path)?;
         let account = match how {
-            Unlock::Passphrase(p) => {
-                let (Some(wrapped), Some(kdf)) = (
-                    Self::wrapped_account(&o.db, "passphrase")?,
-                    Self::kdf(&o.db)?,
-                ) else {
-                    return Err(Error::WrongPassphrase);
-                };
-                let key = kdf.key(p)?;
-                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
-                    .map_err(|_| Error::WrongPassphrase)?;
-                Self::account_from(&a)?
-            }
-            Unlock::RecoveryKey(text) => {
-                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
-                let wrapped =
-                    Self::wrapped_account(&o.db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
-                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
-                    .map_err(|_| Error::WrongRecoveryKey)?;
-                let a = Self::account_from(&a)?;
+            Unlock::RecoveryKey(_) => {
+                let a = Self::account_by(&o.db, &how)?;
                 let _ = keys.save(&a[..]);
                 a
             }
-            Unlock::Presence(p) => {
-                let (Some(wrapped), Some(id)) = (
-                    Self::wrapped_account(&o.db, "presence")?,
-                    Self::presence_id(&o.db)?,
-                ) else {
-                    return Err(Error::Locked(Lock::Passphrase));
-                };
-                let secret = p
-                    .secret(&id, PRESENCE_REASON)
-                    .map_err(Error::Keychain)?
-                    .ok_or(Error::NotPresent)?;
-                let (a, _) =
-                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
-                Self::account_from(&a)?
-            }
+            Unlock::Passphrase(_) | Unlock::Presence(_) => Self::account_by(&o.db, &how)?,
             Unlock::NewPassphrase(p) => {
                 if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() {
                     return Err(Error::Locked(Lock::Passphrase));
@@ -396,6 +386,66 @@ impl Vault {
             }
         };
         Self::finish(o, account)
+    }
+
+    /// The account key, as the passphrase, recovery key or presence `how`
+    /// unwraps it.
+    fn account_by(db: &Connection, how: &Unlock) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        match how {
+            Unlock::Passphrase(p) => {
+                let (Some(wrapped), Some(kdf)) =
+                    (Self::wrapped_account(db, "passphrase")?, Self::kdf(db)?)
+                else {
+                    return Err(Error::WrongPassphrase);
+                };
+                let key = kdf.key(p)?;
+                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
+                    .map_err(|_| Error::WrongPassphrase)?;
+                Self::account_from(&a)
+            }
+            Unlock::RecoveryKey(text) => {
+                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
+                let wrapped =
+                    Self::wrapped_account(db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
+                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
+                    .map_err(|_| Error::WrongRecoveryKey)?;
+                Self::account_from(&a)
+            }
+            Unlock::Presence(p) => {
+                let (Some(wrapped), Some(id)) = (
+                    Self::wrapped_account(db, "presence")?,
+                    Self::presence_id(db)?,
+                ) else {
+                    return Err(Error::Locked(Lock::Passphrase));
+                };
+                let secret = p
+                    .secret(&id, PRESENCE_REASON)
+                    .map_err(Error::Keychain)?
+                    .ok_or(Error::NotPresent)?;
+                let (a, _) =
+                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
+                Self::account_from(&a)
+            }
+            Unlock::NewPassphrase(_) => Err(Error::Locked(Lock::Passphrase)),
+        }
+    }
+
+    /// Checks it is the user, at an open vault, before something shows a
+    /// secret: their passphrase, recovery key or presence opens its key.
+    pub fn confirm(&self, how: Unlock) -> Result<()> {
+        let a = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            Self::account_by(&db, &how)?
+        };
+        if a[..] == self.account[..] {
+            Ok(())
+        } else {
+            Err(match how {
+                Unlock::Presence(_) => Error::NotPresent,
+                Unlock::RecoveryKey(_) => Error::WrongRecoveryKey,
+                _ => Error::WrongPassphrase,
+            })
+        }
     }
 
     fn account_from(plain: &[u8]) -> Result<Zeroizing<[u8; KEY_LEN]>> {
@@ -1024,6 +1074,13 @@ impl Vault {
                     scope: get("scope"),
                     // Unset means yes: running is what a snippet is for.
                     enter: get("enter") != "no",
+                    category: get("category"),
+                    needs: get("needs")
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|n| !n.is_empty())
+                        .map(str::to_string)
+                        .collect(),
                     id,
                 }
             })
@@ -1045,8 +1102,88 @@ impl Vault {
                 "enter".to_string(),
                 if s.enter { "yes" } else { "no" }.to_string(),
             ),
+            ("category".to_string(), s.category.clone()),
+            ("needs".to_string(), s.needs.join(",")),
         ]);
         self.update(&id, "snippet", &s.name, &values)?;
+        Ok(id)
+    }
+
+    /// The environments kept here, oldest first, without their values.
+    pub fn environments(&self) -> Result<Vec<Environment>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "environment")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                Environment {
+                    name: get("name"),
+                    scope: get("scope"),
+                    names: r
+                        .f
+                        .iter()
+                        .filter(|(_, f)| !f.val.is_empty())
+                        .filter_map(|(k, _)| k.strip_prefix("var:").map(str::to_string))
+                        .collect(),
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// An environment's variables, with their values, in name order.
+    pub fn environment_values(&self, id: &str) -> Result<Option<EnvValues>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "environment")
+            .map(|(_, r)| {
+                r.f.iter()
+                    .filter(|(_, f)| !f.val.is_empty())
+                    .filter_map(|(k, f)| {
+                        k.strip_prefix("var:")
+                            .map(|n| (n.to_string(), Zeroizing::new(f.val.clone())))
+                    })
+                    .collect()
+            }))
+    }
+
+    /// Keeps an environment, new when `id` is empty; returns its id. Each
+    /// variable is its own field, so edits on two devices to two variables
+    /// both stay. A variable given None keeps the value it had; one left
+    /// out is removed.
+    pub fn save_environment(
+        &self,
+        id: &str,
+        name: &str,
+        scope: &str,
+        vars: &[(String, Option<String>)],
+    ) -> Result<String> {
+        let id = if id.is_empty() {
+            new_id()?
+        } else {
+            id.to_string()
+        };
+        let old = self.environment_values(&id)?.unwrap_or_default();
+        let mut values = BTreeMap::from([
+            ("name".to_string(), name.to_string()),
+            ("scope".to_string(), scope.to_string()),
+        ]);
+        for (var, value) in vars {
+            let value = match value {
+                Some(v) => v.clone(),
+                None => old
+                    .iter()
+                    .find(|(n, _)| n == var)
+                    .map(|(_, v)| v.to_string())
+                    .unwrap_or_default(),
+            };
+            if !value.is_empty() {
+                values.insert(format!("var:{var}"), value);
+            }
+        }
+        self.update(&id, "environment", name, &values)?;
         Ok(id)
     }
 
@@ -1180,6 +1317,8 @@ mod tests {
             command: "df -h /".into(),
             scope: String::new(),
             enter: true,
+            category: "Checks".into(),
+            needs: vec!["e1".into(), "e2".into()],
         };
         s.id = v.save_snippet(&s).expect("save");
         s.command = "df -h / && free -h".into();
@@ -1697,6 +1836,77 @@ mod tests {
         ));
         Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
             .expect("the passphrase still opens it");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_open_vault_confirms_its_passphrase_only() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-confirm-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("anything at all")),
+            Err(Error::WrongPassphrase)
+        ));
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.confirm(Unlock::Passphrase("correct horse battery"))
+            .expect("confirmed");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("wrong horse battery")),
+            Err(Error::WrongPassphrase)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn environments_keep_values_apart_from_their_names() {
+        let dir = std::env::temp_dir().join(format!("shellwing-vault-env-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let id = v
+            .save_environment(
+                "",
+                "aws-prod",
+                "group:prod",
+                &[
+                    ("AWS_ACCESS_KEY_ID".into(), Some("AKIA1".into())),
+                    ("AWS_SECRET_ACCESS_KEY".into(), Some("s3cret".into())),
+                ],
+            )
+            .expect("save");
+        let listed = v.environments().expect("list");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            listed[0].names,
+            ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+        );
+        assert_eq!(listed[0].scope, "group:prod");
+        // None keeps a value; a name left out goes.
+        v.save_environment(
+            &id,
+            "aws-prod",
+            "",
+            &[
+                ("AWS_SECRET_ACCESS_KEY".into(), None),
+                ("AWS_REGION".into(), Some("eu-west-1".into())),
+            ],
+        )
+        .expect("edit");
+        let values = v.environment_values(&id).expect("read").expect("there");
+        let said: Vec<(String, String)> = values
+            .into_iter()
+            .map(|(n, x)| (n, x.to_string()))
+            .collect();
+        assert_eq!(
+            said,
+            [
+                ("AWS_REGION".to_string(), "eu-west-1".to_string()),
+                ("AWS_SECRET_ACCESS_KEY".to_string(), "s3cret".to_string())
+            ]
+        );
+        assert!(v.items().expect("items").is_empty(), "not a password");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

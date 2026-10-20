@@ -16,6 +16,7 @@ mod chrome;
 mod colors;
 mod copies;
 mod editors;
+mod environment;
 mod files;
 mod group_editor;
 mod host_editor;

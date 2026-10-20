@@ -1011,6 +1011,9 @@ t699a801a = SSH et sécurité
 # Snippets
 t648fcbf7 = Extraits
 
+# Environments
+t273b1ccb = Environnements
+
 # Vault
 td432914f = Coffre
 
@@ -1630,29 +1633,105 @@ t0d325d34 = SERVEURS
 # every host
 t444612de = tous les serveurs
 
+# value
+t425ed3ca = valeur
+
+# What they are for, such as AWS production
+tb620b1e5 = À quoi ils servent, par exemple AWS production
+
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } n'est pas un nom de variable valide.
+
+# {name} is there twice.
+te1458d84 = { $name } apparaît deux fois.
+
+# {name} has no value.
+t387a8908 = { $name } n'a pas de valeur.
+
+# Add a variable: a name and its value.
+t6150163b = Ajoutez une variable : un nom et sa valeur.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = Le presse-papiers ne contient aucune ligne NAME=value.
+
+# Not NAME=value: {e}
+t65a67e1e = Pas de la forme NAME=value : { $e }
+
+# The vault's passphrase
+tb66334ea = Phrase secrète du coffre
+
+# Wrong passphrase.
+t2ebec270 = Phrase secrète incorrecte.
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+        [one] requis par { $n } extrait
+       *[other] requis par { $n } extraits
+    }
+
+# Edit…
+t8e7efcd7 = Modifier…
+
+# Change
+ta1de2fdd = Modifier
+
+# Show values
+t68f568ba = Afficher les valeurs
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Les valeurs gardées dans le coffre sont masquées ; les afficher demande de confirmer que c'est vous.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
+
+# Hide values
+tab6d76ed = Masquer les valeurs
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Elles s'affichent à l'écran : attention au partage d'écran. Elles sont masquées à nouveau dans une minute.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Phrase secrète du coffre, pour afficher les valeurs
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Aucune phrase secrète ne protège le coffre : toute personne devant cet appareil peut les afficher. Afficher les valeurs ?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = La palette propose de le charger uniquement dans les panneaux de ces serveurs.
+
+# Variables
+t7996f062 = Variables
+
+# Add a variable
+tf53dee25 = Ajouter une variable
+
+# Paste a .env file
+tf0c57252 = Coller un fichier .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Une valeur peut tenir sur plusieurs lignes : Entrée en commence une autre, { $save } enregistre.
+
+# New environment
+tf3955dbc = Nouvel environnement
+
+# Edit environment
+t79646cbc = Modifier l'environnement
+
 # What it does, to find it in the palette
 td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
 
 # A name and a command are needed.
 t7f4c69bb = Un nom et une commande sont requis.
 
+# No category
+t44662d06 = Sans catégorie
+
 # typed, not run
 td4e41905 = saisi, non exécuté
 
-# Edit…
-t8e7efcd7 = Modifier…
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
-
-# Asked for when it runs:
-t2d8c5e6d = Demandé à l'exécution :
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter commence une autre ligne ; les lignes s’exécutent l’une après l’autre. { $save } enregistre.
+# with {envs}
+tba31f3bb = avec { $envs }
 
 # Every host
 t77846bfe = Tous les serveurs
@@ -1672,8 +1751,35 @@ t31c54e54 = Aucun groupe pour l'instant : créez-en un dans la liste des serveur
 # No hosts yet.
 t71734b03 = Aucun serveur pour l'instant.
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
+
+# Asked for when it runs:
+t2d8c5e6d = Demandé à l'exécution :
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter commence une autre ligne ; les lignes s’exécutent l’une après l’autre. { $save } enregistre.
+
 # The palette lists it in panes of those hosts only.
 t66336218 = La palette le propose uniquement dans les volets de ces serveurs.
+
+# Category
+tafb3e591 = Catégorie
+
+# Environments it needs
+tebd9fda9 = Environnements requis
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Aucun pour l'instant : ajoutez-en un dans Réglages › Environnements.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Il s'exécute dans un sous-shell qui a leurs variables ; elles disparaissent à la fin.
 
 # New snippet
 tff3f7838 = Nouvel extrait
@@ -1690,11 +1796,26 @@ t32122ee4 = L'exécuter : appuyer sur Enter après l'avoir saisi
 # None yet.
 t786bc275 = Aucun pour l'instant.
 
+# New environment…
+t0c42d278 = Nouvel environnement…
+
 # New snippet…
 tec3111a4 = Nouvel extrait…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = Des variables pour le shell, comme les clés d'une API, conservées chiffrées dans le coffre et synchronisées avec lui. Chargez-en un dans un panneau depuis la palette ({ $chord }, Charger un environnement…) et déchargez-le ensuite, ou laissez un extrait qui en a besoin l'avoir pour lui seul.
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Les commandes que vous exécutez souvent. Exécutez-en une depuis la palette ({ $chord }, puis saisissez son nom) : Enter l'exécute dans le volet, { $alt } dans chaque volet de l'onglet. Conservés dans le coffre, les extraits se synchronisent avec vos serveurs.
+
+# While loaded, the server can read them
+te60c8275 = Tant qu'ils sont chargés, le serveur peut les lire
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = Les valeurs sont envoyées avec l'écho désactivé et ne sont pas gardées dans l'historique du shell, mais un shell qui les a les conserve en mémoire : quiconque a root sur ce serveur, ou s'y exécute sous votre utilisateur, peut les lire jusqu'à leur déchargement ou la fin du shell.
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = Chargez-les sur des serveurs de confiance, déchargez-les ensuite et préférez des clés qui expirent ou qui permettent peu, comme des jetons de courte durée ou un rôle limité à ce que le travail exige.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis pour le serveur du volet ; tout autre {"{{"}name{"}}"} est demandé à l'exécution de l'extrait.
@@ -1872,6 +1993,18 @@ t6246d272 = Cmd+W le fermer
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W le fermer
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = Un programme plein écran s'exécute dans ce panneau : quittez-le, puis réessayez.
+
+# It has no variables.
+t0993a534 = Il n'a pas de variables.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = Le shell n'a pas pris les variables : il n'est pas à son invite, ou n'est pas un shell POSIX (sh, bash, zsh).
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name } est chargé dans ce shell.
 
 # Log saved: {path}
 tcc43a8d9 = Journal enregistré : { $path }
@@ -2060,6 +2193,9 @@ t21a947cf = Fermer le volet
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Revenir en bas (Shift+End)
 
+# Snippets · {category}
+t85f58d76 = Extraits · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc =
     { $n ->
@@ -2082,6 +2218,18 @@ t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } sur { $total })
 
 # Will run
 teaaf5750 = Sera exécuté
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = Un environnement requis par celui-ci a été supprimé : modifiez l'extrait.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Aucun environnement pour ce serveur : ajoutez-en un dans Réglages › Environnements.
+
+# loaded: Enter loads it again
+t1a97d76a = chargé : Entrée le recharge
+
+# Load an environment into this shell…
+td1cfd29b = Charger un environnement dans ce shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Divisez d'abord l'onglet : il n'y a qu'un volet où saisir.
@@ -2174,6 +2322,12 @@ t13c5bc91 = Fichiers sur { $title }
 
 # Forward a port through {title}…
 t9f033387 = Rediriger un port via { $title }…
+
+# Load environment…
+ta3f75e60 = Charger un environnement…
+
+# Unload environment: {names}
+tbe80f7b5 = Décharger l'environnement : { $names }
 
 # Change theme…
 t85a401b4 = Changer de thème…

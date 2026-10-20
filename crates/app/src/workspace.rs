@@ -224,6 +224,8 @@ enum Asking {
     Forward,
     /// A value a snippet needs before it runs.
     Snippet(SnippetRun),
+    /// An environment to load into the focused pane.
+    LoadEnv,
 }
 
 /// A snippet on its way to running.
@@ -463,29 +465,62 @@ impl Workspace {
             .collect()
     }
 
-    /// The snippets the palette offers for the focused pane's host.
-    fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some(view) = self.active_tab() else {
-            return vec![];
-        };
-        let s = view.read(cx).session();
+    /// The focused pane's host and its group, which snippets and
+    /// environments are offered for.
+    fn pane_scope(&self, cx: &Context<Self>) -> Option<(String, Option<String>)> {
+        let s = self.active_tab()?.read(cx).session();
         let host = s.entry.clone().unwrap_or_else(|| s.spec.clone());
         let group = s
             .entry
             .as_deref()
             .and_then(|n| self.live.hosts().find(n))
             .and_then(|h| h.group.clone());
+        Some((host, group))
+    }
+
+    /// The environments that can be loaded in the focused pane.
+    fn pane_envs(&self, cx: &Context<Self>) -> Vec<shellwing_vault::Environment> {
+        let Some((host, group)) = self.pane_scope(cx) else {
+            return vec![];
+        };
+        let mut envs: Vec<_> = self
+            .vault
+            .ready()
+            .and_then(|v| v.environments().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|e| snippets::Scope::parse(&e.scope).fits(Some(&host), group.as_deref()))
+            .collect();
+        envs.sort_by_key(|e| e.name.to_lowercase());
+        envs
+    }
+
+    /// The snippets the palette offers for the focused pane's host.
+    fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
+        let Some((host, group)) = self.pane_scope(cx) else {
+            return vec![];
+        };
         let panes = self.snippet_targets(true).len();
-        self.vault
+        let mut list: Vec<_> = self
+            .vault
             .ready()
             .and_then(|v| v.snippets().ok())
             .unwrap_or_default()
             .into_iter()
             .filter(|sn| snippets::Scope::parse(&sn.scope).fits(Some(&host), group.as_deref()))
+            .collect();
+        // By category, those without first, as in Settings.
+        list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
+        list.into_iter()
             .map(|sn| {
+                let category = sn.category.trim();
                 Entry::new(
                     Kind::Snippet(sn.id.clone()),
-                    tr!("Snippets"),
+                    if category.is_empty() {
+                        tr!("Snippets")
+                    } else {
+                        tr!("Snippets · {category}", category = category)
+                    },
                     sn.name.clone(),
                 )
                 .detail(snippets::one_line(&sn.command))
@@ -544,7 +579,19 @@ impl Workspace {
                     }
                     snippets::fill(&run.snippet.command, &values)
                 };
-                v.update(cx, |v, _| v.type_text(&text, run.snippet.enter));
+                if run.snippet.needs.is_empty() {
+                    v.update(cx, |v, _| v.type_text(&text, run.snippet.enter));
+                    continue;
+                }
+                // In a subshell that has the environments, run at once: it
+                // waits for their values, sent once it is ready.
+                let values = match self.env_values(&run.snippet.needs) {
+                    Ok(values) => values,
+                    Err(e) => return self.say(e, CONFIG_NOTICE, cx),
+                };
+                if let Err(e) = v.update(cx, |v, cx| v.run_with_env(values, &text, true, cx)) {
+                    v.update(cx, |v, cx| v.show_notice(e, CONFIG_NOTICE, cx));
+                }
             }
             return;
         };
@@ -574,6 +621,96 @@ impl Workspace {
         self.asking = Some(Asking::Snippet(run));
         let palette = cx.new(|cx| Palette::ask(&name, notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    /// The variables of the environments `ids`, together (a later one's
+    /// value wins).
+    fn env_values(&self, ids: &[String]) -> Result<shellwing_vault::EnvValues, String> {
+        let vault = self
+            .vault
+            .ready()
+            .ok_or_else(|| tr!("The vault is not open."))?;
+        let mut all: shellwing_vault::EnvValues = vec![];
+        for id in ids {
+            let values = vault
+                .environment_values(id)
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| tr!("An environment this needs was deleted: edit the snippet."))?;
+            for (name, value) in values {
+                all.retain(|(n, _)| *n != name);
+                all.push((name, value));
+            }
+        }
+        Ok(all)
+    }
+
+    /// Offers the environments to load into the focused pane.
+    fn ask_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(view) = self.active_tab().cloned() else {
+            return;
+        };
+        if let Some(why) = view.read(cx).shell_unready() {
+            return self.say(why, CONFIG_NOTICE, cx);
+        }
+        let envs = self.pane_envs(cx);
+        if envs.is_empty() {
+            return self.say(
+                tr!("No environment for this host: add one in Settings › Environments."),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
+        let loaded: Vec<String> = view
+            .read(cx)
+            .loaded_envs()
+            .iter()
+            .map(|e| e.id.clone())
+            .collect();
+        let entries = envs
+            .into_iter()
+            .map(|e| {
+                let on = loaded.contains(&e.id);
+                Entry::new(Kind::Choice(e.id.clone()), "", e.name.clone())
+                    .detail(e.names.join(" "))
+                    .hint(if on {
+                        tr!("loaded: Enter loads it again")
+                    } else {
+                        "Enter".into()
+                    })
+            })
+            .collect();
+        self.asking = Some(Asking::LoadEnv);
+        let palette = cx
+            .new(|cx| Palette::chooser(&tr!("Load an environment into this shell…"), entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Loads environment `id` into the focused pane.
+    fn load_env(&mut self, id: &str, cx: &mut Context<Self>) {
+        let Some(view) = self.active_tab().cloned() else {
+            return;
+        };
+        let Some(env) = self.pane_envs(cx).into_iter().find(|e| e.id == id) else {
+            return;
+        };
+        let done = self
+            .env_values(std::slice::from_ref(&env.id))
+            .and_then(|values| {
+                view.update(cx, |v, cx| {
+                    v.load_env(
+                        crate::view::LoadedEnv {
+                            id: env.id.clone(),
+                            name: env.name.clone(),
+                            names: vec![],
+                        },
+                        values,
+                        cx,
+                    )
+                })
+            });
+        if let Err(e) = done {
+            self.say(e, CONFIG_NOTICE, cx);
+        }
     }
 
     /// Types in every pane of the active tab, or stops.
@@ -1314,6 +1451,22 @@ impl Workspace {
                     tr!("Forward a port through {title}…", title = title.clone()),
                     "-L / -R / -D".into(),
                 );
+                if !self.pane_envs(cx).is_empty() {
+                    action(Action::LoadEnv, tr!("Load environment…"), String::new());
+                }
+                let loaded: Vec<String> = t
+                    .read(cx)
+                    .loaded_envs()
+                    .iter()
+                    .map(|e| e.name.clone())
+                    .collect();
+                if !loaded.is_empty() {
+                    action(
+                        Action::UnloadEnv,
+                        tr!("Unload environment: {names}", names = loaded.join(", ")),
+                        String::new(),
+                    );
+                }
             }
         }
         action(
@@ -2984,6 +3137,12 @@ impl Workspace {
                     self.ask_recovery_key(false, window, cx);
                 }
             }
+            PaletteEvent::Chose(id) if matches!(self.asking, Some(Asking::LoadEnv)) => {
+                let id = id.clone();
+                self.asking = None;
+                self.close_palette(window, cx);
+                self.load_env(&id, cx);
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -3030,7 +3189,7 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::LoadEnv) | None => {
                         return self.close_palette(window, cx);
                     }
                 };
@@ -3108,6 +3267,14 @@ impl Workspace {
             Action::CloseTab => self.request_close_tab(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
+            Action::LoadEnv => self.ask_env(window, cx),
+            Action::UnloadEnv => {
+                if let Some(view) = self.active_tab().cloned()
+                    && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))
+                {
+                    self.say(e, CONFIG_NOTICE, cx);
+                }
+            }
             Action::Files => self.toggle_files(window, cx),
             Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
