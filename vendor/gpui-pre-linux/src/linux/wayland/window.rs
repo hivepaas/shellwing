@@ -1822,7 +1822,15 @@ impl PlatformWindow for WaylandWindow {
             let serial = state.client.get_serial(SerialKind::MousePress);
             token.set_app_id(app_id);
             token.set_serial(serial.as_raw(), &state.globals.seat);
-            token.set_surface(&state.surface);
+            // shellwing: the token is asked from the surface that has the
+            // keyboard (the window the user is in, which got the serial),
+            // as compositors want; asked from the window to bring forward,
+            // it was refused, and the window stayed behind.
+            let from = state
+                .client
+                .keyboard_focused_surface()
+                .unwrap_or_else(|| state.surface.clone());
+            token.set_surface(&from);
             token.commit();
         }
     }
