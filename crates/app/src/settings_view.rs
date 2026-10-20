@@ -463,6 +463,13 @@ impl SettingsView {
     }
 
     /// A note changed in its window: the Notes page lists it again.
+    /// A snippet saved or deleted in its window: the list shows it.
+    pub fn snippets_changed(&mut self, cx: &mut Context<Self>) {
+        if let Some(n) = &self.snippets {
+            n.update(cx, |n, cx| n.refresh(cx));
+        }
+    }
+
     pub fn notes_changed(&mut self, cx: &mut Context<Self>) {
         if let Some(n) = &self.notes {
             n.update(cx, |n, cx| n.refresh(cx));

@@ -1038,6 +1038,127 @@ tc219ff12 =
        *[other] { $n } Schlüssel
     }
 
+# Snippet library
+t1212f75d = Snippet-Bibliothek
+
+# Its tool (PostgreSQL)
+tff6e50ee = Sein Tool (PostgreSQL)
+
+# Its task (Backup)
+t301e1817 = Seine Aufgabe (Backup)
+
+# Both (PostgreSQL · Backup)
+t116d70a6 = Beides (PostgreSQL · Backup)
+
+# Find a command: a tool, a task, a word…
+tc13a8368 = Befehl suchen: ein Tool, eine Aufgabe, ein Wort…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Der Tresor ist gesperrt: Entsperre ihn im Hauptfenster.
+
+# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
+t10cc86d5 =
+    { $n ->
+        [one] { $n } Snippet hinzugefügt: Führe es aus der Palette aus.
+       *[other] { $n } Snippets hinzugefügt: Führe sie aus der Palette aus.
+    }
+
+# Every task
+t27417099 = Alle Aufgaben
+
+# Not added yet
+t18e34a9e = Noch nicht hinzugefügt
+
+# Every tool
+t72ff8f76 = Alle Tools
+
+# Added
+tb35c3185 = Hinzugefügt
+
+# Nothing here: try other words, or every task.
+ta46c06a7 = Nichts gefunden: Versuche andere Wörter oder alle Aufgaben.
+
+# Changes data
+t97d1419e = Ändert Daten
+
+# Added ✓
+t27d1ed36 = Hinzugefügt ✓
+
+# Added ×{n}
+t9e411fdf = Hinzugefügt ×{ $n }
+
+# Click a command to see it, and adjust it before adding. Tick those to add.
+t72e679a1 = Klicke auf einen Befehl, um ihn anzusehen und vor dem Hinzufügen anzupassen. Hake die an, die du hinzufügen willst.
+
+# Docs ↗
+tffd1857b = Doku ↗
+
+# Options
+t353e0d45 = Optionen
+
+# Runs
+t9a5f395b = Ausführung
+
+# On the host
+t1842b6cb = Auf dem Host
+
+# In a Docker container: asks which
+te04a8531 = In einem Docker-Container: fragt, in welchem
+
+# The files it reads or writes are the container's.
+t33082a7c = Die Dateien, die er liest oder schreibt, sind die des Containers.
+
+# None: it asks, or goes without
+tfc99399b = Keine: Es fragt selbst oder kommt ohne aus
+
+# It reads {var}: give it an environment that has it.
+t1a1c7252 = Er liest { $var }: Gib ihm eine Umgebung, die { $var } enthält.
+
+# has {var}
+t4d81af7a = enthält { $var }
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Noch keine: Füge in Einstellungen › Umgebungen eine hinzu.
+
+# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
+tfc64bf52 = Beim Ausführen gefragt: { $names }. Nach dem Hinzufügen gehört es dir: Bearbeite es in seinem Fenster.
+
+# It changes data: added, it is typed and waits for you to press Enter.
+t0fe19331 = Er ändert Daten: Hinzugefügt wird er nur eingetippt und wartet, bis du Enter drückst.
+
+# In your snippets once. | In your snippets {n} times.
+t028f555a =
+    { $n ->
+        [one] { $n }-mal in deinen Snippets.
+       *[other] { $n }-mal in deinen Snippets.
+    }
+
+# {n} picked | {n} picked
+tf375b5ad =
+    { $n ->
+        [one] { $n } ausgewählt
+       *[other] { $n } ausgewählt
+    }
+
+# Clear
+t04a57fc2 = Abwählen
+
+# Tick the commands to add; each becomes a snippet of your own.
+t71ce4a51 = Hake die Befehle an, die du hinzufügen willst; jeder wird zu einem eigenen Snippet.
+
+# Add {n} to my snippets | Add {n} to my snippets
+t9489b24d =
+    { $n ->
+        [one] { $n } zu meinen Snippets hinzufügen
+       *[other] { $n } zu meinen Snippets hinzufügen
+    }
+
+# Add to my snippets
+tacccc61d = Zu meinen Snippets hinzufügen
+
+# File under
+t7be2ad59 = Einordnen unter
+
 # No config directory to save to.
 ta5f37ee4 = Kein Konfigurationsverzeichnis zum Speichern.
 
@@ -1130,9 +1251,6 @@ tfdda4cf7 = Vorschau
 
 # Sensitive
 tf603feef = Vertraulich
-
-# The vault is locked: unlock it in the main window.
-te327c98e = Der Tresor ist gesperrt: Entsperre ihn im Hauptfenster.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Vertraulich: Der Text erscheint, sobald bestätigt ist, dass du es bist.
@@ -1707,9 +1825,6 @@ t59fdbd70 = Synchronisierung beenden
 # Your place
 t63cb5f41 = Dein Ort
 
-# Options
-t353e0d45 = Optionen
-
 # A folder
 te84ceb50 = Ein Ordner
 
@@ -1918,6 +2033,86 @@ t9585c651 = + Gruppe
 # HOSTS
 t0d325d34 = HOSTS
 
+# New snippet
+tff3f7838 = Neues Snippet
+
+# What it does, to find it in the palette
+td9b8e02f = Was es tut, um es in der Palette zu finden
+
+# A name and a command are needed.
+t7f4c69bb = Name und Befehl sind erforderlich.
+
+# this snippet
+t155d1e08 = dieses Snippet
+
+# Every host
+t77846bfe = Alle Hosts
+
+# A group ▾
+tcd864ec5 = Eine Gruppe ▾
+
+# One host ▾
+t1864f915 = Ein Host ▾
+
+# Offered for
+tbafebe63 = Angeboten für
+
+# No groups yet: make one in the host list.
+t31c54e54 = Noch keine Gruppen: erstelle eine in der Hostliste.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = Die Palette zeigt es nur in Bereichen dieser Hosts.
+
+# (deleted)
+tb7bba50b = (gelöscht)
+
+# + Add
+ta0ef59dd = + Hinzufügen
+
+# Environments it needs
+tebd9fda9 = Benötigte Umgebungen
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+        [one] { $n } Variable
+       *[other] { $n } Variablen
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Es läuft in einer Subshell, die ihre Variablen hat; sie verschwinden, wenn sie endet.
+
+# Values
+t8d4d225b = Werte
+
+# from the pane's host
+t0607dcd8 = vom Host des Bereichs
+
+# asked when it runs
+t8ee70b94 = wird beim Ausführen gefragt
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen abgefragt.
+
+# Run it: press Enter after typing it
+t32122ee4 = Ausführen: nach dem Eingeben Enter drücken
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = Aus: Es wird nur eingetippt und wartet, bis du es gelesen hast.
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+        [one] { $n } Zeile
+       *[other] { $n } Zeilen
+    }
+
+# Run in {pane}
+t27e0e0f9 = In { $pane } ausführen
+
+# Connect a tab in the main window to run it there.
+tc580324f = Verbinde einen Tab im Hauptfenster, um es dort auszuführen.
+
 # every host
 t444612de = alle Hosts
 
@@ -2052,11 +2247,17 @@ t79646cbc = Umgebung bearbeiten
 # sensitive
 ta2bd2f4f = vertraulich
 
-# What it does, to find it in the palette
-td9b8e02f = Was es tut, um es in der Palette zu finden
+# Start from the library
+t401f9cb9 = Starte mit der Bibliothek
 
-# A name and a command are needed.
-t7f4c69bb = Name und Befehl sind erforderlich.
+# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+tffb7b170 = { $n } fertige Befehle für { $tools } und mehr: einen Server prüfen, sichern, aufräumen, testen. Wähle die aus, die du willst; sie werden zu deinen eigenen Snippets, die du nach Belieben bearbeiten kannst.
+
+# Open the library
+t79d7b3ad = Bibliothek öffnen
+
+# from the library
+td908f0d1 = aus der Bibliothek
 
 # typed, not run
 td4e41905 = eingegeben, nicht ausgeführt
@@ -2064,62 +2265,17 @@ td4e41905 = eingegeben, nicht ausgeführt
 # with {envs}
 tba31f3bb = mit { $envs }
 
-# Every host
-t77846bfe = Alle Hosts
-
-# A group ▾
-tcd864ec5 = Eine Gruppe ▾
-
-# One host ▾
-t1864f915 = Ein Host ▾
-
-# Offered for
-tbafebe63 = Angeboten für
-
-# No groups yet: make one in the host list.
-t31c54e54 = Noch keine Gruppen: erstelle eine in der Hostliste.
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Seine Variablen werden aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Shells, in die es geladen ist, behalten sie, bis es entladen wird.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = Sie wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Wo sie abgelegt wurde, bleibt sie.
 
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen abgefragt.
-
-# Asked for when it runs:
-t2d8c5e6d = Beim Ausführen abgefragt:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter beginnt eine neue Zeile; die Zeilen laufen nacheinander. { $save } speichert.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = Die Palette zeigt es nur in Bereichen dieser Hosts.
-
-# Environments it needs
-tebd9fda9 = Benötigte Umgebungen
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Noch keine: Füge in Einstellungen › Umgebungen eine hinzu.
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = Es läuft in einer Subshell, die ihre Variablen hat; sie verschwinden, wenn sie endet.
-
-# New snippet
-tff3f7838 = Neues Snippet
-
-# Edit snippet
-t9eab9738 = Snippet bearbeiten
-
-# Command
-tc67c8f52 = Befehl
-
-# Run it: press Enter after typing it
-t32122ee4 = Ausführen: nach dem Eingeben Enter drücken
-
 # None yet.
 t786bc275 = Noch keine.
+
+# Library…
+t3d769c8c = Bibliothek…
 
 # New snippet…
 tec3111a4 = Neues Snippet…
@@ -2144,6 +2300,13 @@ t5a3830ee = Freier Text, verschlüsselt im Tresor und mit ihm synchronisiert: wo
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Dateien, die auf Hosts abgelegt werden, z. B. ~/.kube/config oder ~/.aws/credentials, verschlüsselt im Tresor gespeichert und mit ihm synchronisiert. Lege eine über die Palette ({ $chord }, unter Konfigurationsdateien) oder das Menü des Panes ab: bis der Tab geschlossen wird oder dauerhaft.
+
+# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
+tf7e18b27 =
+    { $n ->
+        [one] Mehr in der Bibliothek: { $n } noch nicht hinzugefügt ›
+       *[other] Mehr in der Bibliothek: { $n } noch nicht hinzugefügt ›
+    }
 
 # While loaded, the server can read them
 te60c8275 = Solange sie geladen sind, kann der Server sie lesen
@@ -2705,6 +2868,16 @@ t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter: { $n } Bereich
        *[other] Enter · Alt+Enter: { $n } Bereiche
+    }
+
+# Snippet library…
+tff254ce3 = Snippet-Bibliothek…
+
+# {n} ready command to add | {n} ready commands to add
+t134e12f0 =
+    { $n ->
+        [one] { $n } fertiger Befehl zum Hinzufügen
+       *[other] { $n } fertige Befehle zum Hinzufügen
     }
 
 # Open a tab first: a snippet runs in the focused pane.
