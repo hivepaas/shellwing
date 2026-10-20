@@ -1134,13 +1134,7 @@ impl Render for SnippetWindow {
                     .child(self.side(mono, cx)),
             )
             .child(self.footer(cx));
-        let bar = div()
-            .h_full()
-            .flex()
-            .items_center()
-            .px(px(14.))
-            .text_size(ui(13.))
-            .child(shown_name);
+        let bar = chrome::title_bar(shown_name);
         let content = div().flex_1().min_h_0().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
