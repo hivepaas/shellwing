@@ -1057,8 +1057,8 @@ tb35c3185 = Đã thêm
 # Nothing here: try other words, or every task.
 ta46c06a7 = Không có gì: thử từ khác, hoặc chọn mọi việc.
 
-# Changes data
-t97d1419e = Thay đổi dữ liệu
+# Makes changes
+te471188d = Có thay đổi
 
 # Added ✓
 t27d1ed36 = Đã thêm ✓
@@ -1074,6 +1074,12 @@ tffd1857b = Tài liệu ↗
 
 # Options
 t353e0d45 = Tuỳ chọn
+
+# Run with sudo
+tf1d67ebb = Chạy với sudo
+
+# it needs root
+t992a8383 = cần quyền root
 
 # Runs
 t9a5f395b = Chạy ở đâu
@@ -1102,8 +1108,8 @@ t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = Hỏi khi chạy: { $names }. Thêm rồi là của bạn: sửa trong cửa sổ của nó.
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = Lệnh này thay đổi dữ liệu: khi thêm, nó chỉ được gõ vào và chờ bạn nhấn Enter.
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = Lệnh này thay đổi hệ thống: khi thêm, nó chỉ được gõ vào và chờ bạn nhấn Enter.
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =

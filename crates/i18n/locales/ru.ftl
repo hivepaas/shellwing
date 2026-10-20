@@ -1090,8 +1090,8 @@ tb35c3185 = Добавленные
 # Nothing here: try other words, or every task.
 ta46c06a7 = Ничего не найдено: попробуйте другие слова или все задачи.
 
-# Changes data
-t97d1419e = Меняет данные
+# Makes changes
+te471188d = Вносит изменения
 
 # Added ✓
 t27d1ed36 = Добавлено ✓
@@ -1107,6 +1107,12 @@ tffd1857b = Документация ↗
 
 # Options
 t353e0d45 = Параметры
+
+# Run with sudo
+tf1d67ebb = Запускать через sudo
+
+# it needs root
+t992a8383 = нужен root
 
 # Runs
 t9a5f395b = Где выполняется
@@ -1135,8 +1141,8 @@ t769ef9f6 = Пока нет: добавьте в Настройки › Окру
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = Спрашивается при запуске: { $names }. После добавления он ваш: меняйте его в окне сниппета.
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = Меняет данные: после добавления команда только вводится и ждёт, пока вы нажмёте Enter.
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = Вносит изменения: после добавления команда только вводится и ждёт, пока вы нажмёте Enter.
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =

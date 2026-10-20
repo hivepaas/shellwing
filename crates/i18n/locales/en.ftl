@@ -376,12 +376,14 @@ t18e34a9e = Not added yet
 t72ff8f76 = Every tool
 tb35c3185 = Added
 ta46c06a7 = Nothing here: try other words, or every task.
-t97d1419e = Changes data
+te471188d = Makes changes
 t27d1ed36 = Added ✓
 t9e411fdf = Added ×{ $n }
 t72e679a1 = Click a command to see it, and adjust it before adding. Tick those to add.
 tffd1857b = Docs ↗
 t353e0d45 = Options
+tf1d67ebb = Run with sudo
+t992a8383 = it needs root
 t9a5f395b = Runs
 t1842b6cb = On the host
 te04a8531 = In a Docker container: asks which
@@ -391,7 +393,7 @@ t1a1c7252 = It reads { $var }: give it an environment that has it.
 t4d81af7a = has { $var }
 t769ef9f6 = None yet: add one in Settings › Environments.
 tfc64bf52 = Asked when it runs: { $names }. Once added, it is yours: edit it in its window.
-t0fe19331 = It changes data: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = It makes changes: added, it is typed and waits for you to press Enter.
 t028f555a =
     { $n ->
         [one] In your snippets once.

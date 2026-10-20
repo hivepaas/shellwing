@@ -1,0 +1,1454 @@
+# The snippet library's own items: for the system, services, the network,
+# files, security, packages, containers and the like (those for databases come
+# from HivePaaS, in items.json). See crates/app/src/library.rs.
+#
+# An item: id (`<group>/<name>`, never changed: added snippets keep it), tool,
+# task (one of library::TASKS), name, about, command; and, when it has them,
+# options (put in at `<options>`), password (the variable the tool reads it
+# from), changes_data (typed, not run), sudo (it needs root; `<sudo>` marks
+# each command of it sudo goes before, when not only the first), docs.
+# `{{name}}` values are asked when it runs; never `{{host}}`, `{{user}}` or
+# `{{address}}`, the pane's own.
+
+# The tools, in the library's order; those not named come after.
+tools = [
+    "System", "systemd", "Network", "Files", "Security", "Packages", "Performance",
+    "Docker", "Docker Compose", "Docker Swarm", "Kubernetes", "Web servers",
+    "PostgreSQL", "MySQL", "MariaDB", "Redis", "MongoDB", "ClickHouse",
+    "Elasticsearch", "InfluxDB", "SQLite", "SQL Server", "Dolt", "Migrations",
+    "RabbitMQ", "Kafka", "restic", "Borg", "Git", "AWS", "Google Cloud", "Azure",
+    "Load tests",
+]
+
+# ── System ──────────────────────────────────────────────────────────────
+
+[[item]]
+id = "system/overview"
+tool = "System"
+task = "Diagnostics"
+name = "At a glance"
+about = "Host, OS, uptime and load, memory and disks, in one look"
+command = 'hostnamectl 2>/dev/null || uname -a; uptime; free -h; df -h -x tmpfs -x devtmpfs -x overlay'
+
+[[item]]
+id = "system/disk_space"
+tool = "System"
+task = "Diagnostics"
+name = "Disk space"
+about = "Free and used space on each mounted filesystem"
+command = 'df -h -x tmpfs -x devtmpfs -x overlay<options>'
+options = ["-T", "-i"]
+
+[[item]]
+id = "system/biggest_folders"
+tool = "System"
+task = "Diagnostics"
+name = "Biggest folders"
+about = "The 20 biggest folders under a path, on its filesystem only"
+command = 'du -xh --max-depth=1 {{path}} 2>/dev/null | sort -rh | head -20'
+sudo = true
+
+[[item]]
+id = "system/memory"
+tool = "System"
+task = "Diagnostics"
+name = "Memory"
+about = "Used, free and cached memory, and swap"
+command = 'free -h<options>'
+options = ["-w", "-t"]
+
+[[item]]
+id = "system/top_cpu"
+tool = "System"
+task = "Diagnostics"
+name = "Top processes by CPU"
+about = "The 15 processes using the most CPU"
+command = 'ps -eo pid,user,%cpu,%mem,etime,cmd --sort=-%cpu | head -16'
+
+[[item]]
+id = "system/top_memory"
+tool = "System"
+task = "Diagnostics"
+name = "Top processes by memory"
+about = "The 15 processes using the most memory"
+command = 'ps -eo pid,user,%mem,rss,etime,cmd --sort=-%mem | head -16'
+
+[[item]]
+id = "system/os"
+tool = "System"
+task = "Diagnostics"
+name = "OS and kernel"
+about = "The distribution, its version, and the kernel"
+command = 'cat /etc/os-release; uname -srm'
+
+[[item]]
+id = "system/kernel_errors"
+tool = "System"
+task = "Logs"
+name = "Kernel errors and warnings"
+about = "The last 50 errors and warnings of the kernel, with their times"
+command = 'dmesg -T --level=err,warn | tail -50'
+sudo = true
+
+[[item]]
+id = "system/oom_kills"
+tool = "System"
+task = "Logs"
+name = "Out-of-memory kills"
+about = "Processes the kernel killed for memory, in the last week"
+command = '''journalctl -k --since "7 days ago" --no-pager | grep -iE "out of memory|oom-kill|killed process"'''
+sudo = true
+
+[[item]]
+id = "system/who"
+tool = "System"
+task = "Diagnostics"
+name = "Who is logged in"
+about = "Users logged in now, and what they run"
+command = 'w'
+
+[[item]]
+id = "system/last_logins"
+tool = "System"
+task = "Diagnostics"
+name = "Last logins"
+about = "The last 20 logins, and reboots"
+command = 'last -n 20 -a'
+
+[[item]]
+id = "system/reboot"
+tool = "System"
+task = "Maintenance"
+name = "Reboot"
+about = "Restart the machine (the connection drops)"
+command = 'systemctl reboot'
+sudo = true
+changes_data = true
+
+# ── systemd ─────────────────────────────────────────────────────────────
+
+[[item]]
+id = "systemd/status"
+tool = "systemd"
+task = "Diagnostics"
+name = "Status of a service"
+about = "Whether a service runs, since when, and its last log lines"
+command = 'systemctl status {{service}} --no-pager -l'
+
+[[item]]
+id = "systemd/failed"
+tool = "systemd"
+task = "Diagnostics"
+name = "Failed services"
+about = "Units that failed"
+command = 'systemctl --failed --no-pager'
+
+[[item]]
+id = "systemd/running"
+tool = "systemd"
+task = "Diagnostics"
+name = "Running services"
+about = "Services running now"
+command = 'systemctl list-units --type=service --state=running --no-pager'
+
+[[item]]
+id = "systemd/timers"
+tool = "systemd"
+task = "Diagnostics"
+name = "Timers"
+about = "Scheduled timers: when each ran, and when it runs next"
+command = 'systemctl list-timers --all --no-pager'
+
+[[item]]
+id = "systemd/cron"
+tool = "systemd"
+task = "Diagnostics"
+name = "Cron jobs"
+about = "This user's crontab, and the system's cron folders"
+command = 'crontab -l 2>/dev/null; ls -l /etc/cron.d /etc/cron.daily 2>/dev/null'
+
+[[item]]
+id = "systemd/unit_file"
+tool = "systemd"
+task = "Diagnostics"
+name = "Unit file of a service"
+about = "How a service is set up: its unit file and drop-ins"
+command = 'systemctl cat {{service}}'
+
+[[item]]
+id = "systemd/restart"
+tool = "systemd"
+task = "Maintenance"
+name = "Restart a service"
+about = "Restart a service, then show how it stands"
+command = '<sudo>systemctl restart {{service}} && systemctl status {{service}} --no-pager'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "systemd/reload"
+tool = "systemd"
+task = "Maintenance"
+name = "Reload a service"
+about = "Make a service read its configuration again, without stopping it"
+command = 'systemctl reload {{service}}'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "systemd/enable_now"
+tool = "systemd"
+task = "Maintenance"
+name = "Enable and start a service"
+about = "Start a service now and at every boot"
+command = 'systemctl enable --now {{service}}'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "systemd/daemon_reload"
+tool = "systemd"
+task = "Maintenance"
+name = "Reload unit files"
+about = "Read unit files again after editing them"
+command = 'systemctl daemon-reload'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "systemd/follow_log"
+tool = "systemd"
+task = "Logs"
+name = "Follow a service's log"
+about = "The last 100 lines of a service's log, then each new one"
+command = 'journalctl -u {{service}} -n 100 -f<options>'
+options = ["-o short-iso", "-p warning"]
+
+[[item]]
+id = "systemd/log_since"
+tool = "systemd"
+task = "Logs"
+name = "A service's log since…"
+about = "A service's log since a time: \"1 hour ago\", \"today\", \"2026-01-31 08:00\""
+command = '''journalctl -u {{service}} --since "{{since}}" --no-pager'''
+
+[[item]]
+id = "systemd/errors_since_boot"
+tool = "systemd"
+task = "Logs"
+name = "Errors since boot"
+about = "Everything logged as an error or worse since the machine started"
+command = 'journalctl -b -p err --no-pager'
+
+[[item]]
+id = "systemd/previous_boot"
+tool = "systemd"
+task = "Logs"
+name = "The end of the last boot"
+about = "The last 200 lines logged before the previous shutdown or crash"
+command = 'journalctl -b -1 -n 200 --no-pager'
+
+[[item]]
+id = "systemd/journal_size"
+tool = "systemd"
+task = "Diagnostics"
+name = "Journal disk use"
+about = "How much disk the journal takes"
+command = 'journalctl --disk-usage'
+
+[[item]]
+id = "systemd/journal_vacuum"
+tool = "systemd"
+task = "Maintenance"
+name = "Shrink the journal"
+about = "Delete the oldest journal files until it takes 500 MB at most"
+command = 'journalctl --vacuum-size=500M'
+sudo = true
+changes_data = true
+
+# ── Network ─────────────────────────────────────────────────────────────
+
+[[item]]
+id = "network/listening"
+tool = "Network"
+task = "Diagnostics"
+name = "Listening ports"
+about = "TCP and UDP ports open for connections, and the process of each"
+command = 'ss -tulpn'
+sudo = true
+
+[[item]]
+id = "network/connections_by_ip"
+tool = "Network"
+task = "Diagnostics"
+name = "Connections by remote address"
+about = "Established TCP connections, counted by remote address"
+command = '''ss -Htn state established | awk '{print $4}' | sed -E 's/:[0-9]+$//' | sort | uniq -c | sort -rn | head -20'''
+
+[[item]]
+id = "network/addresses"
+tool = "Network"
+task = "Diagnostics"
+name = "Addresses and routes"
+about = "Each interface's addresses, and the routing table"
+command = 'ip -br addr; ip route'
+
+[[item]]
+id = "network/public_ip"
+tool = "Network"
+task = "Diagnostics"
+name = "Public IP address"
+about = "The address the internet sees this machine at (asks ifconfig.me)"
+command = 'curl -fsS https://ifconfig.me; echo'
+
+[[item]]
+id = "network/dns"
+tool = "Network"
+task = "Diagnostics"
+name = "DNS lookup"
+about = "What a name resolves to (dig)"
+command = 'dig +short {{domain}}<options>'
+options = ["AAAA", "MX", "TXT", "NS", "CNAME"]
+
+[[item]]
+id = "network/port_open"
+tool = "Network"
+task = "Diagnostics"
+name = "Is a port open?"
+about = "Whether a TCP port on another machine answers (3 s at most)"
+command = 'nc -zv -w 3 {{target_host}} {{port}}'
+
+[[item]]
+id = "network/http_timing"
+tool = "Network"
+task = "Diagnostics"
+name = "HTTP timing"
+about = "How long a request takes, step by step: DNS, connect, TLS, first byte, total"
+command = '''curl -o /dev/null -sS -w 'dns %{time_namelookup}s  connect %{time_connect}s  tls %{time_appconnect}s  first byte %{time_starttransfer}s  total %{time_total}s  status %{http_code}\n' {{url}}'''
+
+[[item]]
+id = "network/route"
+tool = "Network"
+task = "Diagnostics"
+name = "Route to a host"
+about = "Each hop to another machine, with its loss and latency (mtr)"
+command = 'mtr -rwc 10 {{target_host}}'
+
+[[item]]
+id = "network/ufw"
+tool = "Network"
+task = "Diagnostics"
+name = "Firewall rules (ufw)"
+about = "Whether ufw is on, and its rules"
+command = 'ufw status verbose'
+sudo = true
+
+[[item]]
+id = "network/firewalld"
+tool = "Network"
+task = "Diagnostics"
+name = "Firewall rules (firewalld)"
+about = "The default zone's services, ports and rules"
+command = 'firewall-cmd --list-all'
+sudo = true
+
+[[item]]
+id = "network/nftables"
+tool = "Network"
+task = "Diagnostics"
+name = "Firewall rules (nftables)"
+about = "Every nftables table and rule"
+command = 'nft list ruleset'
+sudo = true
+
+[[item]]
+id = "network/ufw_allow"
+tool = "Network"
+task = "Maintenance"
+name = "Open a port (ufw)"
+about = "Let connections in on a TCP port"
+command = 'ufw allow {{port}}/tcp'
+sudo = true
+changes_data = true
+
+# ── Files ───────────────────────────────────────────────────────────────
+
+[[item]]
+id = "files/largest"
+tool = "Files"
+task = "Diagnostics"
+name = "Largest files"
+about = "The 20 largest files over 100 MB under a path, on its filesystem only"
+command = '''find {{path}} -xdev -type f -size +100M -printf '%s\t%p\n' 2>/dev/null | sort -rn | head -20 | numfmt --field=1 --to=iec'''
+sudo = true
+
+[[item]]
+id = "files/recent"
+tool = "Files"
+task = "Diagnostics"
+name = "Changed in the last day"
+about = "Files under a path changed in the last 24 hours, newest first"
+command = '''find {{path}} -xdev -type f -mtime -1 -printf '%TY-%Tm-%Td %TH:%TM  %p\n' 2>/dev/null | sort -r | head -50'''
+
+[[item]]
+id = "files/deleted_open"
+tool = "Files"
+task = "Diagnostics"
+name = "Deleted but still open"
+about = "Files deleted while a process keeps them open: their space is not free yet"
+command = 'lsof -nP +L1'
+sudo = true
+
+[[item]]
+id = "files/pack"
+tool = "Files"
+task = "Backup"
+name = "Pack a folder (tar.gz)"
+about = "A compressed archive of a folder"
+command = 'tar -czf {{archive}}.tar.gz {{path}}'
+
+[[item]]
+id = "files/unpack"
+tool = "Files"
+task = "Backup"
+name = "Unpack a tar.gz"
+about = "Unpack an archive into a folder"
+command = 'tar -xzf {{archive}} -C {{target_path}}'
+changes_data = true
+
+[[item]]
+id = "files/rsync_to"
+tool = "Files"
+task = "Backup"
+name = "Copy a folder to another machine (rsync)"
+about = "Copy what changed in a folder to another machine, over SSH"
+command = 'rsync -avh --progress<options> {{path}} {{target_host}}:{{target_path}}'
+options = ["--dry-run", "--delete", "--compress"]
+changes_data = true
+
+[[item]]
+id = "files/old_logs"
+tool = "Files"
+task = "Maintenance"
+name = "Delete old rotated logs"
+about = "Delete compressed logs in /var/log older than a number of days"
+command = "find /var/log -type f -name '*.gz' -mtime +{{days}} -print -delete"
+sudo = true
+changes_data = true
+
+# ── Security ────────────────────────────────────────────────────────────
+
+[[item]]
+id = "security/ssh_failures"
+tool = "Security"
+task = "Logs"
+name = "Failed SSH logins"
+about = "Today's failed SSH logins and unknown users"
+command = '''journalctl -u ssh -u sshd --since today --no-pager | grep -E "Failed|Invalid user" | tail -50'''
+sudo = true
+
+[[item]]
+id = "security/ssh_failures_by_ip"
+tool = "Security"
+task = "Logs"
+name = "Failed SSH logins by address"
+about = "Where failed SSH logins came from in the last week, counted"
+command = '''journalctl -u ssh -u sshd --since "7 days ago" --no-pager | grep -E "Failed|Invalid user" | grep -oE "from [0-9a-fA-F.:]+" | sort | uniq -c | sort -rn | head -20'''
+sudo = true
+
+[[item]]
+id = "security/fail2ban"
+tool = "Security"
+task = "Diagnostics"
+name = "fail2ban status"
+about = "fail2ban's jails, and the addresses banned in one"
+command = 'fail2ban-client status<options>'
+options = ["sshd"]
+sudo = true
+
+[[item]]
+id = "security/authorized_keys"
+tool = "Security"
+task = "Diagnostics"
+name = "Keys that may log in"
+about = "The fingerprints of this user's authorized SSH keys"
+command = 'ssh-keygen -lf ~/.ssh/authorized_keys'
+
+[[item]]
+id = "security/sudoers"
+tool = "Security"
+task = "Diagnostics"
+name = "Who can use sudo"
+about = "The members of the sudo and wheel groups"
+command = 'getent group sudo wheel'
+
+[[item]]
+id = "security/site_certificate"
+tool = "Security"
+task = "Diagnostics"
+name = "A site's certificate"
+about = "Who a site's TLS certificate is for, who issued it, and when it expires"
+command = 'echo | openssl s_client -servername {{domain}} -connect {{domain}}:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates'
+
+[[item]]
+id = "security/certificate_file"
+tool = "Security"
+task = "Diagnostics"
+name = "A certificate file"
+about = "A PEM certificate's subject, issuer, dates and names"
+command = 'openssl x509 -in {{cert_file}} -noout -subject -issuer -dates -ext subjectAltName'
+
+[[item]]
+id = "security/certbot_list"
+tool = "Security"
+task = "Diagnostics"
+name = "Certificates (certbot)"
+about = "The certificates certbot keeps, their names and expiry"
+command = 'certbot certificates'
+sudo = true
+
+[[item]]
+id = "security/certbot_renew_dry"
+tool = "Security"
+task = "Maintenance"
+name = "Try renewing certificates (certbot)"
+about = "Renew every certificate as a test, changing nothing"
+command = 'certbot renew --dry-run'
+sudo = true
+
+# ── Packages ────────────────────────────────────────────────────────────
+
+[[item]]
+id = "packages/apt_upgradable"
+tool = "Packages"
+task = "Diagnostics"
+name = "Upgradable packages (apt)"
+about = "Refresh the package lists, then show what can be upgraded"
+command = '<sudo>apt-get update -qq && apt list --upgradable 2>/dev/null'
+sudo = true
+
+[[item]]
+id = "packages/apt_upgrade"
+tool = "Packages"
+task = "Maintenance"
+name = "Upgrade packages (apt)"
+about = "Refresh the package lists, then upgrade every package"
+command = '<sudo>apt-get update && <sudo>apt-get upgrade -y'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "packages/apt_clean"
+tool = "Packages"
+task = "Maintenance"
+name = "Clean up packages (apt)"
+about = "Remove packages nothing needs, and the downloaded package files"
+command = '<sudo>apt-get autoremove -y && <sudo>apt-get clean'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "packages/apt_reboot_required"
+tool = "Packages"
+task = "Diagnostics"
+name = "Reboot needed? (Debian, Ubuntu)"
+about = "Whether updates wait for a reboot, and for which packages"
+command = 'cat /var/run/reboot-required /var/run/reboot-required.pkgs 2>/dev/null || echo "No reboot needed."'
+
+[[item]]
+id = "packages/unattended_log"
+tool = "Packages"
+task = "Logs"
+name = "Automatic updates (apt)"
+about = "The last 50 lines of unattended-upgrades' log"
+command = 'tail -n 50 /var/log/unattended-upgrades/unattended-upgrades.log'
+sudo = true
+
+[[item]]
+id = "packages/dnf_upgradable"
+tool = "Packages"
+task = "Diagnostics"
+name = "Upgradable packages (dnf)"
+about = "What can be upgraded"
+command = 'dnf check-update'
+
+[[item]]
+id = "packages/dnf_upgrade"
+tool = "Packages"
+task = "Maintenance"
+name = "Upgrade packages (dnf)"
+about = "Upgrade every package"
+command = 'dnf upgrade -y'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "packages/dnf_reboot_required"
+tool = "Packages"
+task = "Diagnostics"
+name = "Reboot needed? (dnf)"
+about = "Whether updates wait for a reboot"
+command = 'needs-restarting -r'
+sudo = true
+
+[[item]]
+id = "packages/installed"
+tool = "Packages"
+task = "Diagnostics"
+name = "Is a package installed?"
+about = "Installed packages whose name has a word, with their versions"
+command = '(dpkg -l 2>/dev/null || rpm -qa) | grep -i {{package}}'
+
+# ── Performance ─────────────────────────────────────────────────────────
+
+[[item]]
+id = "performance/vmstat"
+tool = "Performance"
+task = "Diagnostics"
+name = "CPU, memory and I/O, each second"
+about = "vmstat every second, ten times: run queue, swap, I/O wait"
+command = 'vmstat -w 1 10'
+
+[[item]]
+id = "performance/iostat"
+tool = "Performance"
+task = "Diagnostics"
+name = "Disk load"
+about = "Each disk's use, queue and latency, five times a second apart (sysstat)"
+command = 'iostat -xz 1 5'
+
+[[item]]
+id = "performance/iotop"
+tool = "Performance"
+task = "Diagnostics"
+name = "Processes by disk I/O"
+about = "The processes reading and writing the most, three times"
+command = 'iotop -oPb -n 3'
+sudo = true
+
+[[item]]
+id = "performance/pidstat"
+tool = "Performance"
+task = "Diagnostics"
+name = "CPU by process, each second"
+about = "Each busy process's CPU every second, five times (sysstat)"
+command = 'pidstat 1 5'
+
+[[item]]
+id = "performance/process_files"
+tool = "Performance"
+task = "Diagnostics"
+name = "Files a process has open"
+about = "Every file, socket and pipe a process has open"
+command = 'lsof -nP -p {{pid}}'
+sudo = true
+
+[[item]]
+id = "performance/process_tree"
+tool = "Performance"
+task = "Diagnostics"
+name = "Process tree"
+about = "Every process, under the one that started it"
+command = 'ps -ef --forest'
+
+[[item]]
+id = "performance/cpu"
+tool = "Performance"
+task = "Diagnostics"
+name = "CPU"
+about = "The processor: model, cores, threads, caches"
+command = 'lscpu'
+
+# ── Docker ──────────────────────────────────────────────────────────────
+
+[[item]]
+id = "docker/containers"
+tool = "Docker"
+task = "Diagnostics"
+name = "Containers"
+about = "Every container, running or not: its image, state and ports"
+command = '''docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' '''
+
+[[item]]
+id = "docker/stats"
+tool = "Docker"
+task = "Diagnostics"
+name = "Resources by container"
+about = "Each running container's CPU, memory, network and disk I/O, once"
+command = '''docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}' '''
+
+[[item]]
+id = "docker/disk"
+tool = "Docker"
+task = "Diagnostics"
+name = "Disk use"
+about = "Space taken by images, containers, volumes and the build cache"
+command = 'docker system df<options>'
+options = ["-v"]
+
+[[item]]
+id = "docker/health"
+tool = "Docker"
+task = "Diagnostics"
+name = "Health of a container"
+about = "A container's state and health checks, as JSON"
+command = '''docker inspect --format '{{json .State}}' {{container}}'''
+
+[[item]]
+id = "docker/logs"
+tool = "Docker"
+task = "Logs"
+name = "Follow a container's log"
+about = "The last 200 lines of a container's log, then each new one"
+command = 'docker logs -f --tail 200<options> {{container}}'
+options = ["--timestamps", "--since=1h"]
+
+[[item]]
+id = "docker/shell"
+tool = "Docker"
+task = "Diagnostics"
+name = "Shell in a container"
+about = "A shell in a running container: bash if it has one, else sh"
+command = '''docker exec -it {{container}} sh -c 'command -v bash >/dev/null && exec bash || exec sh' '''
+
+[[item]]
+id = "docker/restart"
+tool = "Docker"
+task = "Maintenance"
+name = "Restart a container"
+about = "Stop a container and start it again"
+command = 'docker restart {{container}}'
+changes_data = true
+
+[[item]]
+id = "docker/prune_images"
+tool = "Docker"
+task = "Maintenance"
+name = "Remove unused images"
+about = "Remove dangling images; with -a, every image no container uses"
+command = 'docker image prune -f<options>'
+options = ["-a"]
+changes_data = true
+
+[[item]]
+id = "docker/prune_build_cache"
+tool = "Docker"
+task = "Maintenance"
+name = "Remove the build cache"
+about = "Free the space builds keep for their layers"
+command = 'docker builder prune -f'
+changes_data = true
+
+# ── Docker Compose ──────────────────────────────────────────────────────
+# Run in the project's folder, or with --project-directory.
+
+[[item]]
+id = "compose/services"
+tool = "Docker Compose"
+task = "Diagnostics"
+name = "Services"
+about = "The project's services and their state"
+command = 'docker compose<options> ps -a'
+options = ["--project-directory={{project_dir}}"]
+
+[[item]]
+id = "compose/logs"
+tool = "Docker Compose"
+task = "Logs"
+name = "Follow the logs"
+about = "The last 100 lines of each service's log, then each new one"
+command = 'docker compose<options> logs -f --tail 100'
+options = ["--project-directory={{project_dir}}"]
+
+[[item]]
+id = "compose/pull_up"
+tool = "Docker Compose"
+task = "Deploy"
+name = "Pull and start again"
+about = "Pull the services' images, then start what changed"
+command = 'docker compose<options> pull && docker compose<options> up -d --remove-orphans'
+options = ["--project-directory={{project_dir}}"]
+changes_data = true
+
+[[item]]
+id = "compose/restart"
+tool = "Docker Compose"
+task = "Maintenance"
+name = "Restart a service"
+about = "Restart one service of the project"
+command = 'docker compose<options> restart {{service}}'
+options = ["--project-directory={{project_dir}}"]
+changes_data = true
+
+[[item]]
+id = "compose/down"
+tool = "Docker Compose"
+task = "Maintenance"
+name = "Stop and remove"
+about = "Stop the project's containers and remove them, and its networks"
+command = 'docker compose<options> down'
+options = ["--project-directory={{project_dir}}", "--volumes", "--remove-orphans"]
+changes_data = true
+
+# ── Docker Swarm ────────────────────────────────────────────────────────
+
+[[item]]
+id = "swarm/nodes"
+tool = "Docker Swarm"
+task = "Diagnostics"
+name = "Nodes"
+about = "The swarm's nodes: their state, availability and role"
+command = 'docker node ls'
+
+[[item]]
+id = "swarm/services"
+tool = "Docker Swarm"
+task = "Diagnostics"
+name = "Services"
+about = "Every service, its mode and replicas, and its image"
+command = 'docker service ls'
+
+[[item]]
+id = "swarm/service_tasks"
+tool = "Docker Swarm"
+task = "Diagnostics"
+name = "Tasks of a service"
+about = "Where a service's tasks run, their state, and why they failed"
+command = '''docker service ps {{service}} --format 'table {{.Name}}\t{{.Node}}\t{{.CurrentState}}\t{{.Error}}'<options>'''
+options = ["--no-trunc", "--filter=desired-state=running"]
+
+[[item]]
+id = "swarm/stack_tasks"
+tool = "Docker Swarm"
+task = "Diagnostics"
+name = "Tasks of a stack"
+about = "Every task of a stack's services, and their state"
+command = 'docker stack ps {{stack}}<options>'
+options = ["--no-trunc", "--filter=desired-state=running"]
+
+[[item]]
+id = "swarm/service_logs"
+tool = "Docker Swarm"
+task = "Logs"
+name = "Follow a service's log"
+about = "The last 200 lines of every task of a service, then each new one"
+command = 'docker service logs -f --tail 200<options> {{service}}'
+options = ["--timestamps", "--since=1h", "--no-task-ids"]
+
+[[item]]
+id = "swarm/force_update"
+tool = "Docker Swarm"
+task = "Deploy"
+name = "Restart a service's tasks"
+about = "Replace every task of a service, as its update policy says"
+command = 'docker service update --force {{service}}'
+changes_data = true
+
+[[item]]
+id = "swarm/scale"
+tool = "Docker Swarm"
+task = "Deploy"
+name = "Scale a service"
+about = "Run a number of replicas of a service"
+command = 'docker service scale {{service}}={{replicas}}'
+changes_data = true
+
+[[item]]
+id = "swarm/rollback"
+tool = "Docker Swarm"
+task = "Deploy"
+name = "Roll a service back"
+about = "Go back to a service's previous settings"
+command = 'docker service rollback {{service}}'
+changes_data = true
+
+[[item]]
+id = "swarm/stack_deploy"
+tool = "Docker Swarm"
+task = "Deploy"
+name = "Deploy a stack"
+about = "Create or update a stack from a compose file"
+command = 'docker stack deploy --with-registry-auth -c {{compose_file}} {{stack}}'
+changes_data = true
+
+[[item]]
+id = "swarm/drain"
+tool = "Docker Swarm"
+task = "Maintenance"
+name = "Drain a node"
+about = "Move a node's tasks elsewhere and give it no more"
+command = 'docker node update --availability drain {{node}}'
+changes_data = true
+
+[[item]]
+id = "swarm/activate"
+tool = "Docker Swarm"
+task = "Maintenance"
+name = "Make a node active again"
+about = "Let a drained node take tasks again"
+command = 'docker node update --availability active {{node}}'
+changes_data = true
+
+[[item]]
+id = "swarm/join_token"
+tool = "Docker Swarm"
+task = "Maintenance"
+name = "Join command for a worker"
+about = "The command a new worker runs to join this swarm"
+command = 'docker swarm join-token worker'
+
+# ── Kubernetes ──────────────────────────────────────────────────────────
+
+[[item]]
+id = "k8s/contexts"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Contexts"
+about = "The clusters kubectl knows, and which it uses"
+command = 'kubectl config get-contexts'
+
+[[item]]
+id = "k8s/pods_all"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Pods, every namespace"
+about = "Every pod: its state, restarts, age and node"
+command = 'kubectl get pods -A -o wide'
+
+[[item]]
+id = "k8s/pods_not_running"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Pods not running"
+about = "Pods neither running nor done, in every namespace"
+command = 'kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded'
+
+[[item]]
+id = "k8s/pods"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Pods of a namespace"
+about = "A namespace's pods: their state, restarts, age and node"
+command = 'kubectl get pods -n {{namespace}} -o wide'
+
+[[item]]
+id = "k8s/describe_pod"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Describe a pod"
+about = "A pod's containers, conditions and recent events"
+command = 'kubectl describe pod {{pod}} -n {{namespace}}'
+
+[[item]]
+id = "k8s/events"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Recent events"
+about = "The last 40 events of every namespace, newest last"
+command = 'kubectl get events -A --sort-by=.lastTimestamp | tail -40'
+
+[[item]]
+id = "k8s/top_nodes"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Nodes by resources"
+about = "Each node's CPU and memory in use (metrics-server)"
+command = 'kubectl top nodes'
+
+[[item]]
+id = "k8s/top_pods"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Pods by memory"
+about = "The 25 pods using the most memory (metrics-server)"
+command = 'kubectl top pods -A --sort-by=memory | head -26'
+
+[[item]]
+id = "k8s/logs"
+tool = "Kubernetes"
+task = "Logs"
+name = "Follow a pod's log"
+about = "The last 200 lines of a pod's log, then each new one"
+command = 'kubectl logs -f --tail=200 {{pod}} -n {{namespace}}<options>'
+options = ["--previous", "--all-containers", "--timestamps"]
+
+[[item]]
+id = "k8s/shell"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Shell in a pod"
+about = "A shell in a pod: bash if it has one, else sh"
+command = '''kubectl exec -it {{pod}} -n {{namespace}} -- sh -c 'command -v bash >/dev/null && exec bash || exec sh' '''
+
+[[item]]
+id = "k8s/port_forward"
+tool = "Kubernetes"
+task = "Diagnostics"
+name = "Forward a service's port here"
+about = "Reach a service of the cluster on a port of this machine"
+command = 'kubectl port-forward -n {{namespace}} svc/{{service}} {{local_port}}:{{port}}'
+
+[[item]]
+id = "k8s/apply"
+tool = "Kubernetes"
+task = "Deploy"
+name = "Apply a manifest"
+about = "Create or update what a file or folder of manifests describes"
+command = 'kubectl apply -f {{file}}<options>'
+options = ["--dry-run=server", "--prune"]
+changes_data = true
+
+[[item]]
+id = "k8s/rollout_restart"
+tool = "Kubernetes"
+task = "Deploy"
+name = "Restart a deployment"
+about = "Replace a deployment's pods, a few at a time"
+command = 'kubectl rollout restart deployment/{{deployment}} -n {{namespace}}'
+changes_data = true
+
+[[item]]
+id = "k8s/rollout_status"
+tool = "Kubernetes"
+task = "Deploy"
+name = "Rollout status"
+about = "Wait for a deployment's rollout, and say how it went"
+command = 'kubectl rollout status deployment/{{deployment}} -n {{namespace}}'
+
+[[item]]
+id = "k8s/rollout_undo"
+tool = "Kubernetes"
+task = "Deploy"
+name = "Roll a deployment back"
+about = "Go back to a deployment's previous version"
+command = 'kubectl rollout undo deployment/{{deployment}} -n {{namespace}}'
+changes_data = true
+
+[[item]]
+id = "k8s/scale"
+tool = "Kubernetes"
+task = "Deploy"
+name = "Scale a deployment"
+about = "Run a number of replicas of a deployment"
+command = 'kubectl scale deployment/{{deployment}} -n {{namespace}} --replicas={{replicas}}'
+changes_data = true
+
+[[item]]
+id = "k8s/drain"
+tool = "Kubernetes"
+task = "Maintenance"
+name = "Drain a node"
+about = "Move a node's pods elsewhere and give it no more"
+command = 'kubectl drain {{node}} --ignore-daemonsets --delete-emptydir-data'
+changes_data = true
+
+[[item]]
+id = "k8s/uncordon"
+tool = "Kubernetes"
+task = "Maintenance"
+name = "Make a node schedulable again"
+about = "Let a drained node take pods again"
+command = 'kubectl uncordon {{node}}'
+changes_data = true
+
+# ── Web servers ─────────────────────────────────────────────────────────
+
+[[item]]
+id = "web/nginx_test"
+tool = "Web servers"
+task = "Diagnostics"
+name = "nginx: check the configuration"
+about = "Whether nginx's configuration reads, without reloading it"
+command = 'nginx -t'
+sudo = true
+
+[[item]]
+id = "web/nginx_test_reload"
+tool = "Web servers"
+task = "Maintenance"
+name = "nginx: check, then reload"
+about = "Reload nginx's configuration, only if it reads"
+command = '<sudo>nginx -t && <sudo>systemctl reload nginx'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "web/nginx_top_ips"
+tool = "Web servers"
+task = "Logs"
+name = "nginx: top client addresses"
+about = "The 20 addresses that sent the most requests, from the access log"
+command = '''awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -20'''
+sudo = true
+
+[[item]]
+id = "web/nginx_top_paths"
+tool = "Web servers"
+task = "Logs"
+name = "nginx: top requested paths"
+about = "The 20 paths asked for the most, from the access log"
+command = '''awk '{print $7}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -20'''
+sudo = true
+
+[[item]]
+id = "web/nginx_5xx"
+tool = "Web servers"
+task = "Logs"
+name = "nginx: recent server errors"
+about = "The last 50 requests answered with a 5xx status"
+command = '''awk '$9 ~ /^5/' /var/log/nginx/access.log | tail -50'''
+sudo = true
+
+[[item]]
+id = "web/nginx_error_log"
+tool = "Web servers"
+task = "Logs"
+name = "nginx: follow the error log"
+about = "The last 100 lines of nginx's error log, then each new one"
+command = 'tail -n 100 -f /var/log/nginx/error.log'
+sudo = true
+
+[[item]]
+id = "web/apache_test_reload"
+tool = "Web servers"
+task = "Maintenance"
+name = "Apache: check, then reload (Debian, Ubuntu)"
+about = "Reload Apache's configuration, only if it reads"
+command = '<sudo>apachectl configtest && <sudo>systemctl reload apache2'
+sudo = true
+changes_data = true
+
+[[item]]
+id = "web/caddy_validate"
+tool = "Web servers"
+task = "Diagnostics"
+name = "Caddy: check the configuration"
+about = "Whether the Caddyfile reads, without reloading it"
+command = 'caddy validate --config /etc/caddy/Caddyfile'
+
+[[item]]
+id = "web/caddy_reload"
+tool = "Web servers"
+task = "Maintenance"
+name = "Caddy: reload"
+about = "Load the Caddyfile again, without stopping"
+command = 'caddy reload --config /etc/caddy/Caddyfile'
+sudo = true
+changes_data = true
+
+# ── RabbitMQ ────────────────────────────────────────────────────────────
+
+[[item]]
+id = "rabbitmq/status"
+tool = "RabbitMQ"
+task = "Diagnostics"
+name = "Status"
+about = "The node's version, memory, disk and listeners"
+command = 'rabbitmqctl status'
+sudo = true
+
+[[item]]
+id = "rabbitmq/queues"
+tool = "RabbitMQ"
+task = "Diagnostics"
+name = "Queues"
+about = "Each queue's messages and consumers"
+command = 'rabbitmqctl list_queues name messages messages_unacknowledged consumers'
+sudo = true
+
+[[item]]
+id = "rabbitmq/connections"
+tool = "RabbitMQ"
+task = "Diagnostics"
+name = "Connections"
+about = "Who is connected, from where, and how"
+command = 'rabbitmqctl list_connections user peer_host peer_port state'
+sudo = true
+
+[[item]]
+id = "rabbitmq/cluster"
+tool = "RabbitMQ"
+task = "Diagnostics"
+name = "Cluster status"
+about = "The cluster's nodes, and those running"
+command = 'rabbitmqctl cluster_status'
+sudo = true
+
+[[item]]
+id = "rabbitmq/purge"
+tool = "RabbitMQ"
+task = "Maintenance"
+name = "Empty a queue"
+about = "Delete every message waiting in a queue"
+command = 'rabbitmqctl purge_queue {{queue}}'
+sudo = true
+changes_data = true
+
+# ── Kafka ───────────────────────────────────────────────────────────────
+
+[[item]]
+id = "kafka/topics"
+tool = "Kafka"
+task = "Diagnostics"
+name = "Topics"
+about = "Every topic"
+command = 'kafka-topics.sh --bootstrap-server localhost:9092 --list'
+
+[[item]]
+id = "kafka/topic"
+tool = "Kafka"
+task = "Diagnostics"
+name = "Describe a topic"
+about = "A topic's partitions, leaders and replicas"
+command = 'kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic {{topic}}'
+
+[[item]]
+id = "kafka/groups"
+tool = "Kafka"
+task = "Diagnostics"
+name = "Consumer groups"
+about = "Every consumer group"
+command = 'kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list'
+
+[[item]]
+id = "kafka/lag"
+tool = "Kafka"
+task = "Diagnostics"
+name = "A group's lag"
+about = "How far a consumer group is behind, by partition"
+command = 'kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group {{group}}'
+
+[[item]]
+id = "kafka/read"
+tool = "Kafka"
+task = "Data"
+name = "Read a topic's first messages"
+about = "The first 20 messages of a topic, from its beginning"
+command = 'kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic {{topic}} --from-beginning --max-messages 20'
+
+# ── restic ──────────────────────────────────────────────────────────────
+# The repository from RESTIC_REPOSITORY, its password from RESTIC_PASSWORD:
+# an environment with both.
+
+[[item]]
+id = "restic/snapshots"
+tool = "restic"
+task = "Backup"
+name = "Snapshots"
+about = "The repository's snapshots (RESTIC_REPOSITORY)"
+command = 'restic snapshots'
+password = "RESTIC_PASSWORD"
+
+[[item]]
+id = "restic/backup"
+tool = "restic"
+task = "Backup"
+name = "Back up a folder"
+about = "A new snapshot of a folder in the repository (RESTIC_REPOSITORY)"
+command = 'restic backup {{path}}<options>'
+options = ["--exclude-caches", "--one-file-system", "--tag={{tag}}"]
+password = "RESTIC_PASSWORD"
+sudo = true
+
+[[item]]
+id = "restic/check"
+tool = "restic"
+task = "Backup"
+name = "Check the repository"
+about = "Whether the repository is whole and sound"
+command = 'restic check'
+password = "RESTIC_PASSWORD"
+
+[[item]]
+id = "restic/forget_prune"
+tool = "restic"
+task = "Maintenance"
+name = "Keep recent snapshots only"
+about = "Keep 7 daily, 4 weekly and 6 monthly snapshots; delete the others' data"
+command = 'restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune'
+password = "RESTIC_PASSWORD"
+changes_data = true
+
+[[item]]
+id = "restic/restore"
+tool = "restic"
+task = "Backup"
+name = "Restore the latest snapshot"
+about = "Restore the latest snapshot into a folder"
+command = 'restic restore latest --target {{target_path}}'
+password = "RESTIC_PASSWORD"
+changes_data = true
+
+# ── Borg ────────────────────────────────────────────────────────────────
+# The repository from BORG_REPO, its passphrase from BORG_PASSPHRASE.
+
+[[item]]
+id = "borg/list"
+tool = "Borg"
+task = "Backup"
+name = "Archives"
+about = "The repository's archives (BORG_REPO)"
+command = 'borg list'
+password = "BORG_PASSPHRASE"
+
+[[item]]
+id = "borg/create"
+tool = "Borg"
+task = "Backup"
+name = "Back up a folder"
+about = "A new archive of a folder, named by the date and time"
+command = 'borg create --stats --compression zstd ::{now} {{path}}'
+password = "BORG_PASSPHRASE"
+sudo = true
+
+[[item]]
+id = "borg/check"
+tool = "Borg"
+task = "Backup"
+name = "Check the repository"
+about = "Whether the repository and its archives are whole"
+command = 'borg check'
+password = "BORG_PASSPHRASE"
+
+[[item]]
+id = "borg/prune"
+tool = "Borg"
+task = "Maintenance"
+name = "Keep recent archives only"
+about = "Keep 7 daily, 4 weekly and 6 monthly archives; free the others' space"
+command = 'borg prune --keep-daily 7 --keep-weekly 4 --keep-monthly 6 && borg compact'
+password = "BORG_PASSPHRASE"
+changes_data = true
+
+[[item]]
+id = "borg/extract"
+tool = "Borg"
+task = "Backup"
+name = "Restore an archive here"
+about = "Extract an archive into the current folder"
+command = 'borg extract ::{{archive}}'
+password = "BORG_PASSPHRASE"
+changes_data = true
+
+# ── Git ─────────────────────────────────────────────────────────────────
+
+[[item]]
+id = "git/status"
+tool = "Git"
+task = "Diagnostics"
+name = "Status of a checkout"
+about = "A checkout's branch, how far it is from upstream, and what changed"
+command = 'git -C {{path}} status -sb'
+
+[[item]]
+id = "git/here"
+tool = "Git"
+task = "Deploy"
+name = "Which commit is here"
+about = "The commit a checkout is at: its hash, title, author and age"
+command = "git -C {{path}} log -1 --format='%h %s (%an, %ar)'"
+
+[[item]]
+id = "git/incoming"
+tool = "Git"
+task = "Deploy"
+name = "What a pull would bring"
+about = "Fetch, then show the commits a pull would bring in"
+command = 'git -C {{path}} fetch && git -C {{path}} log --oneline HEAD..@{u}'
+
+[[item]]
+id = "git/pull"
+tool = "Git"
+task = "Deploy"
+name = "Pull"
+about = "Bring a checkout up to date, only if it moves straight ahead"
+command = 'git -C {{path}} pull --ff-only'
+changes_data = true
+
+[[item]]
+id = "git/log"
+tool = "Git"
+task = "Diagnostics"
+name = "Recent commits"
+about = "A checkout's last 20 commits"
+command = 'git -C {{path}} log --oneline --decorate -n 20'
+
+# ── AWS ─────────────────────────────────────────────────────────────────
+
+[[item]]
+id = "aws/whoami"
+tool = "AWS"
+task = "Diagnostics"
+name = "Who am I"
+about = "The account and identity the AWS CLI acts as"
+command = 'aws sts get-caller-identity'
+
+[[item]]
+id = "aws/s3_ls"
+tool = "AWS"
+task = "Diagnostics"
+name = "List a bucket"
+about = "What a bucket holds at its top"
+command = 'aws s3 ls s3://{{bucket}}/'
+
+[[item]]
+id = "aws/s3_sync"
+tool = "AWS"
+task = "Backup"
+name = "Sync a folder to a bucket"
+about = "Upload what changed in a folder to a bucket"
+command = 'aws s3 sync {{path}} s3://{{bucket}}/{{prefix}}<options>'
+options = ["--dryrun", "--delete"]
+changes_data = true
+
+[[item]]
+id = "aws/instances"
+tool = "AWS"
+task = "Diagnostics"
+name = "EC2 instances"
+about = "Each instance's id, state, type, private address and name"
+command = '''aws ec2 describe-instances --query 'Reservations[].Instances[].[InstanceId,State.Name,InstanceType,PrivateIpAddress,Tags[?Key==`Name`]|[0].Value]' --output table'''
+
+# ── Google Cloud ────────────────────────────────────────────────────────
+
+[[item]]
+id = "gcloud/whoami"
+tool = "Google Cloud"
+task = "Diagnostics"
+name = "Who am I"
+about = "The accounts gcloud has, and its project and settings"
+command = 'gcloud auth list; gcloud config list'
+
+[[item]]
+id = "gcloud/instances"
+tool = "Google Cloud"
+task = "Diagnostics"
+name = "Compute instances"
+about = "The project's instances, their zones and addresses"
+command = 'gcloud compute instances list'
+
+[[item]]
+id = "gcloud/bucket"
+tool = "Google Cloud"
+task = "Diagnostics"
+name = "List a bucket"
+about = "What a Cloud Storage bucket holds at its top"
+command = 'gcloud storage ls gs://{{bucket}}'
+
+# ── Azure ───────────────────────────────────────────────────────────────
+
+[[item]]
+id = "azure/whoami"
+tool = "Azure"
+task = "Diagnostics"
+name = "Who am I"
+about = "The subscription and account the Azure CLI uses"
+command = 'az account show -o table'
+
+[[item]]
+id = "azure/vms"
+tool = "Azure"
+task = "Diagnostics"
+name = "Virtual machines"
+about = "Each VM, its state and addresses"
+command = 'az vm list -d -o table'

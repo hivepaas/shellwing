@@ -1078,8 +1078,8 @@ tb35c3185 = Ajoutées
 # Nothing here: try other words, or every task.
 ta46c06a7 = Rien ici : essayez d'autres mots, ou toutes les tâches.
 
-# Changes data
-t97d1419e = Modifie des données
+# Makes changes
+te471188d = Apporte des changements
 
 # Added ✓
 t27d1ed36 = Ajoutée ✓
@@ -1095,6 +1095,12 @@ tffd1857b = Documentation ↗
 
 # Options
 t353e0d45 = Options
+
+# Run with sudo
+tf1d67ebb = Exécuter avec sudo
+
+# it needs root
+t992a8383 = nécessite root
 
 # Runs
 t9a5f395b = Exécution
@@ -1123,8 +1129,8 @@ t769ef9f6 = Aucun pour l'instant : ajoutez-en un dans Réglages › Environnemen
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = Demandé à l'exécution : { $names }. Une fois ajoutée, elle est à vous : modifiez-la dans sa fenêtre.
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = Elle modifie des données : une fois ajoutée, elle est seulement saisie et attend que vous appuyiez sur Enter.
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = Elle apporte des changements : une fois ajoutée, elle est seulement saisie et attend que vous appuyiez sur Enter.
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =

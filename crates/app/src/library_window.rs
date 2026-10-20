@@ -627,7 +627,7 @@ impl LibraryWindow {
                     )
                     .when(i.changes_data, |d| {
                         d.child(Self::badge(
-                            tr!("Changes data"),
+                            tr!("Makes changes"),
                             colors().warn_bg,
                             colors().warn_text,
                         ))
@@ -784,6 +784,31 @@ impl LibraryWindow {
                     .child(grid),
             );
         }
+        let sudo = i.sudo(&choice);
+        b = b.child(
+            div()
+                .id("library-sudo")
+                .flex()
+                .items_center()
+                .gap(px(8.))
+                .cursor_pointer()
+                .text_size(ui(12.5))
+                .on_click(cx.listener(move |v, _, _, cx| {
+                    let c = v.choices.entry(n).or_default();
+                    c.sudo = Some(!sudo);
+                    cx.notify();
+                }))
+                .child(checkbox(sudo))
+                .child(tr!("Run with sudo"))
+                .when(i.sudo, |d| {
+                    d.child(
+                        div()
+                            .text_size(ui(11.5))
+                            .text_color(rgb(colors().muted))
+                            .child(tr!("it needs root")),
+                    )
+                }),
+        );
         if i.can_contain() {
             let radio = |id: &'static str, label: String, on: bool, container: bool| {
                 div()
@@ -911,7 +936,7 @@ impl LibraryWindow {
         }
         if i.changes_data {
             b = b.child(hint_text(&tr!(
-                "It changes data: added, it is typed and waits for you to press Enter."
+                "It makes changes: added, it is typed and waits for you to press Enter."
             )));
         }
         let mine = self.added.get(&i.origin()).cloned().unwrap_or_default();

@@ -1057,8 +1057,8 @@ tb35c3185 = 追加済み
 # Nothing here: try other words, or every task.
 ta46c06a7 = 見つかりません：別の言葉を試すか、すべてのタスクから探してください。
 
-# Changes data
-t97d1419e = データを変更
+# Makes changes
+te471188d = 変更を伴う
 
 # Added ✓
 t27d1ed36 = 追加済み ✓
@@ -1074,6 +1074,12 @@ tffd1857b = ドキュメント ↗
 
 # Options
 t353e0d45 = オプション
+
+# Run with sudo
+tf1d67ebb = sudo で実行
+
+# it needs root
+t992a8383 = root 権限が必要
 
 # Runs
 t9a5f395b = 実行場所
@@ -1102,8 +1108,8 @@ t769ef9f6 = まだありません: 設定 › 環境 で追加してください
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = 実行時に入力：{ $names }。追加すると自分のスニペットになり、そのウィンドウで編集できます。
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = データを変更します：追加後は入力されるだけで、Enter を押すまで待ちます。
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = 変更を伴います：追加後は入力されるだけで、Enter を押すまで待ちます。
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =

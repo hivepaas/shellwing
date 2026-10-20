@@ -1057,8 +1057,8 @@ tb35c3185 = 추가됨
 # Nothing here: try other words, or every task.
 ta46c06a7 = 결과 없음: 다른 단어를 입력하거나 모든 작업에서 찾아보세요.
 
-# Changes data
-t97d1419e = 데이터 변경
+# Makes changes
+te471188d = 변경 작업
 
 # Added ✓
 t27d1ed36 = 추가됨 ✓
@@ -1074,6 +1074,12 @@ tffd1857b = 문서 ↗
 
 # Options
 t353e0d45 = 옵션
+
+# Run with sudo
+tf1d67ebb = sudo로 실행
+
+# it needs root
+t992a8383 = root 권한 필요
 
 # Runs
 t9a5f395b = 실행 위치
@@ -1102,8 +1108,8 @@ t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = 실행할 때 묻기: { $names }. 추가하면 내 스니펫이 되므로 해당 창에서 편집할 수 있습니다.
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = 데이터를 변경합니다. 추가하면 입력만 되고 Enter를 누를 때까지 기다립니다.
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = 변경 작업입니다. 추가하면 입력만 되고 Enter를 누를 때까지 기다립니다.
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =
