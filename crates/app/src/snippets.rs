@@ -62,7 +62,7 @@ fn var_char(c: char) -> bool {
 }
 
 /// Each `{{name}}` in `command`: where it is (the braces included), and the name.
-fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
+pub fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
     let mut out = vec![];
     let mut from = 0;
     while let Some(open) = command[from..].find("{{").map(|i| from + i) {

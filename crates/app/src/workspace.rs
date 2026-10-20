@@ -37,6 +37,7 @@ use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
 mod config_files;
 mod notes;
+mod snippet_windows;
 
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
@@ -1362,11 +1363,13 @@ impl Workspace {
         false
     }
 
-    /// Quits once the notes open in their windows are saved and, when any
-    /// changed, synced (10 s at most: a place that does not answer does not
-    /// hold the app).
+    /// Quits once the notes and snippets open in their windows are saved
+    /// and, when any changed, synced (10 s at most: a place that does not
+    /// answer does not hold the app).
     fn finish_then_quit(&mut self, cx: &mut Context<Self>) {
-        if !crate::note_window::finish_all(cx) || self.sync.place().is_none() {
+        let notes = crate::note_window::finish_all(cx);
+        let snippets = crate::snippet_window::finish_all(cx);
+        if !(notes || snippets) || self.sync.place().is_none() {
             return cx.quit();
         }
         self.say(tr!("Syncing the notes before quitting…"), THEME_NOTICE, cx);
@@ -3519,6 +3522,7 @@ impl Workspace {
             }
             Action::LockVault => {
                 crate::note_window::before_lock(cx);
+                crate::snippet_window::before_lock(cx);
                 if self.vault.lock() {
                     self.say(tr!("The vault is locked."), THEME_NOTICE, cx);
                 } else {
@@ -3692,6 +3696,7 @@ impl Workspace {
             && self.vault.can_lock();
         if idle_now && {
             crate::note_window::before_lock(cx);
+            crate::snippet_window::before_lock(cx);
             self.vault.lock()
         } {
             self.say(

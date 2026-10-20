@@ -1894,6 +1894,87 @@ t9585c651 = + グループ
 # HOSTS
 t0d325d34 = ホスト
 
+# New snippet
+tff3f7838 = 新しいスニペット
+
+# What it does, to find it in the palette
+td9b8e02f = パレットで探すための説明
+
+# A name and a command are needed.
+t7f4c69bb = 名前とコマンドが必要です。
+
+# this snippet
+t155d1e08 = このスニペット
+
+# Every host
+t77846bfe = すべてのホスト
+
+# A group ▾
+tcd864ec5 = グループを指定 ▾
+
+# One host ▾
+t1864f915 = ホストを指定 ▾
+
+# Offered for
+tbafebe63 = 対象
+
+# No groups yet: make one in the host list.
+t31c54e54 = まだグループはありません。ホスト一覧で作成してください。
+
+# The palette lists it in panes of those hosts only.
+t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
+
+# (deleted)
+tb7bba50b = （削除済み）
+
+# + Add
+ta0ef59dd = + 追加
+
+# Environments it needs
+tebd9fda9 = 必要な環境
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = まだありません: 設定 › 環境 で追加してください。
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+       *[other] 変数 { $n } 個
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 変数を持つサブシェルで実行され、終了すると変数は消えます。
+
+# Values
+t8d4d225b = 値
+
+# from the pane's host
+t0607dcd8 = ペインのホストから
+
+# asked when it runs
+t8ee70b94 = 実行時に入力
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
+
+# Run it: press Enter after typing it
+t32122ee4 = 実行する：入力後に Enter を押す
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = オフ：入力されるだけで、読んで確認するのを待ちます。
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+       *[other] { $n } 行
+    }
+
+# Run in {pane}
+t27e0e0f9 = { $pane } で実行
+
+# Connect a tab in the main window to run it there.
+tc580324f = メインウィンドウでタブを接続すると、そこで実行できます。
+
 # every host
 t444612de = すべてのホスト
 
@@ -2026,71 +2107,17 @@ t79646cbc = 環境を編集
 # sensitive
 ta2bd2f4f = 機密
 
-# What it does, to find it in the palette
-td9b8e02f = パレットで探すための説明
-
-# A name and a command are needed.
-t7f4c69bb = 名前とコマンドが必要です。
-
 # typed, not run
 td4e41905 = 入力のみ（実行しない）
 
 # with {envs}
 tba31f3bb = { $envs } を使用
 
-# Every host
-t77846bfe = すべてのホスト
-
-# A group ▾
-tcd864ec5 = グループを指定 ▾
-
-# One host ▾
-t1864f915 = ホストを指定 ▾
-
-# Offered for
-tbafebe63 = 対象
-
-# No groups yet: make one in the host list.
-t31c54e54 = まだグループはありません。ホスト一覧で作成してください。
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = 保管庫から削除され、同期後は他のデバイスからも削除されます。配置済みの場所にはそのまま残ります。
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
-
-# Asked for when it runs:
-t2d8c5e6d = 実行時に尋ねられる項目：
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter で改行します。各行は順に実行されます。{ $save } で保存します。
-
-# The palette lists it in panes of those hosts only.
-t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
-
-# Environments it needs
-tebd9fda9 = 必要な環境
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = まだありません: 設定 › 環境 で追加してください。
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = 変数を持つサブシェルで実行され、終了すると変数は消えます。
-
-# New snippet
-tff3f7838 = 新しいスニペット
-
-# Edit snippet
-t9eab9738 = スニペットを編集
-
-# Command
-tc67c8f52 = コマンド
-
-# Run it: press Enter after typing it
-t32122ee4 = 実行する：入力後に Enter を押す
 
 # None yet.
 t786bc275 = まだありません。

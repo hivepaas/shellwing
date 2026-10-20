@@ -1894,6 +1894,87 @@ t9585c651 = + 그룹
 # HOSTS
 t0d325d34 = 호스트
 
+# New snippet
+tff3f7838 = 새 스니펫
+
+# What it does, to find it in the palette
+td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
+
+# A name and a command are needed.
+t7f4c69bb = 이름과 명령이 필요합니다.
+
+# this snippet
+t155d1e08 = 이 스니펫
+
+# Every host
+t77846bfe = 모든 호스트
+
+# A group ▾
+tcd864ec5 = 그룹 ▾
+
+# One host ▾
+t1864f915 = 호스트 하나 ▾
+
+# Offered for
+tbafebe63 = 사용 대상
+
+# No groups yet: make one in the host list.
+t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
+
+# (deleted)
+tb7bba50b = (삭제됨)
+
+# + Add
+ta0ef59dd = + 추가
+
+# Environments it needs
+tebd9fda9 = 필요한 환경
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+       *[other] 변수 { $n }개
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 해당 변수가 있는 서브셸에서 실행되며, 끝나면 변수도 사라집니다.
+
+# Values
+t8d4d225b = 값
+
+# from the pane's host
+t0607dcd8 = 창의 호스트에서
+
+# asked when it runs
+t8ee70b94 = 실행할 때 묻기
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
+
+# Run it: press Enter after typing it
+t32122ee4 = 실행: 입력 후 Enter 누르기
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = 끄면: 입력만 되고, 읽어 볼 때까지 기다립니다.
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+       *[other] { $n }줄
+    }
+
+# Run in {pane}
+t27e0e0f9 = { $pane }에서 실행
+
+# Connect a tab in the main window to run it there.
+tc580324f = 기본 창에서 탭을 연결하면 그곳에서 실행할 수 있습니다.
+
 # every host
 t444612de = 모든 호스트
 
@@ -2026,71 +2107,17 @@ t79646cbc = 환경 편집
 # sensitive
 ta2bd2f4f = 민감 정보
 
-# What it does, to find it in the palette
-td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
-
-# A name and a command are needed.
-t7f4c69bb = 이름과 명령이 필요합니다.
-
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음
 
 # with {envs}
 tba31f3bb = { $envs } 사용
 
-# Every host
-t77846bfe = 모든 호스트
-
-# A group ▾
-tcd864ec5 = 그룹 ▾
-
-# One host ▾
-t1864f915 = 호스트 하나 ▾
-
-# Offered for
-tbafebe63 = 사용 대상
-
-# No groups yet: make one in the host list.
-t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 이미 배치된 곳에는 그대로 남습니다.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
-
-# Asked for when it runs:
-t2d8c5e6d = 실행할 때 묻는 항목:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니다. { $save }로 저장합니다.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
-
-# Environments it needs
-tebd9fda9 = 필요한 환경
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = 해당 변수가 있는 서브셸에서 실행되며, 끝나면 변수도 사라집니다.
-
-# New snippet
-tff3f7838 = 새 스니펫
-
-# Edit snippet
-t9eab9738 = 스니펫 편집
-
-# Command
-tc67c8f52 = 명령
-
-# Run it: press Enter after typing it
-t32122ee4 = 실행: 입력 후 Enter 누르기
 
 # None yet.
 t786bc275 = 아직 없습니다.
