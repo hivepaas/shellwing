@@ -1000,6 +1000,15 @@ tfa622581 = 用于主机 ▾
 # No hosts yet.
 t71734b03 = 还没有主机。
 
+# Saving…
+tbd79b37d = 正在保存…
+
+# Click the text to edit it
+t63928671 = 点击文本即可编辑
+
+# Saved
+t8a6979e4 = 已保存
+
 # Plain text
 tb7fc0ade = 纯文本
 
@@ -1011,12 +1020,6 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
-
-# Saved
-t8a6979e4 = 已保存
-
-# Editing…
-t1f2b8dc9 = 编辑中…
 
 # Edit in another app…
 t1c6d0a34 = 在其他应用中编辑…

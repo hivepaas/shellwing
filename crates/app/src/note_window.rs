@@ -19,7 +19,7 @@ use shellwing_vault::{Error as VaultError, Note, NoteFormat};
 
 use crate::chrome;
 use crate::colors::colors;
-use crate::host_editor::{checkbox, hint_text, outline_button, primary_button, problem_text};
+use crate::host_editor::{checkbox, hint_text, primary_button, problem_text};
 use crate::input::{Changed, TextInput};
 use crate::look::{self, ui};
 use crate::secrets::VaultSlot;
@@ -156,6 +156,9 @@ pub struct NoteWindow {
     /// The copy an editor of the user's own has open, and how it was when
     /// last read.
     external: Option<(std::path::PathBuf, Option<crate::copies::Stamp>)>,
+    /// How high the room for the text was when last laid out: the editor
+    /// takes as many rows as fit.
+    body_h: Rc<std::cell::Cell<gpui::Pixels>>,
     _subs: Vec<Subscription>,
 }
 
@@ -241,6 +244,7 @@ impl NoteWindow {
             saved_at: 0,
             problem: None,
             external: None,
+            body_h: Rc::new(std::cell::Cell::new(px(0.))),
             _subs: subs,
         };
         v.load(cx);
@@ -357,6 +361,8 @@ impl NoteWindow {
         let note = self.current(cx);
         let text = self.loaded.then(|| self.text.read(cx).text().to_string());
         if note.id.is_empty() && note.title.is_empty() && text.as_deref().unwrap_or("").is_empty() {
+            // Nothing yet: nothing to keep.
+            self.saved_at = self.edits;
             return;
         }
         match vault.save_note(&note, text.as_deref()) {
@@ -771,87 +777,99 @@ impl NoteWindow {
                 d.child(deferred(anchored().child(div().mt(px(30.)).child(list))).with_priority(2))
             });
         let _ = window;
-        div()
+        let status = if self.external.is_some() {
+            None
+        } else if self.saved_at != self.edits {
+            Some(tr!("Saving…"))
+        } else if self.preview && md {
+            Some(tr!("Click the text to edit it"))
+        } else if !self.note.id.is_empty() {
+            Some(tr!("Saved"))
+        } else {
+            None
+        };
+        let left =
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap(px(8.))
+                .child(
+                    div()
+                        .flex()
+                        .rounded(px(6.))
+                        .overflow_hidden()
+                        .child(Self::chip("note-plain", tr!("Plain text"), !md).on_click(
+                            cx.listener(|v, _, w, cx| {
+                                v.note.format = NoteFormat::Plain;
+                                v.preview = false;
+                                v.changed_meta(w, cx);
+                            }),
+                        ))
+                        .child(Self::chip("note-md", "Markdown".to_string(), md).on_click(
+                            cx.listener(|v, _, w, cx| {
+                                v.note.format = NoteFormat::Markdown;
+                                v.changed_meta(w, cx);
+                            }),
+                        )),
+                )
+                .when(md, |d| {
+                    d.child(
+                        Self::chip(
+                            "note-preview",
+                            if self.preview {
+                                tr!("Edit")
+                            } else {
+                                tr!("Preview")
+                            },
+                            false,
+                        )
+                        .on_click(cx.listener(|v, _, w, cx| {
+                            v.preview = !v.preview;
+                            if !v.preview {
+                                let f = v.text.read(cx).focus_handle(cx);
+                                w.focus(&f, cx);
+                            }
+                            cx.notify();
+                        })),
+                    )
+                })
+                .child(
+                    div()
+                        .id("note-sensitive")
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .cursor_pointer()
+                        .text_size(ui(12.5))
+                        .on_click(cx.listener(|v, _, w, cx| {
+                            v.note.sensitive = !v.note.sensitive;
+                            // Who turns it on sees the text already; no copy
+                            // of it stays on the disk.
+                            v.shown = true;
+                            if v.note.sensitive {
+                                v.end_external(cx);
+                            }
+                            v.changed_meta(w, cx);
+                        }))
+                        .child(checkbox(self.note.sensitive))
+                        .child(tr!("Sensitive")),
+                )
+                .child(hosts)
+                .child(picker);
+        let right = div()
             .flex()
             .flex_wrap()
             .items_center()
             .gap(px(8.))
-            .child(
-                div()
-                    .flex()
-                    .rounded(px(6.))
-                    .overflow_hidden()
-                    .child(
-                        Self::chip("note-plain", tr!("Plain text"), !md).on_click(cx.listener(
-                            |v, _, w, cx| {
-                                v.note.format = NoteFormat::Plain;
-                                v.preview = false;
-                                v.changed_meta(w, cx);
-                            },
-                        )),
-                    )
-                    .child(Self::chip("note-md", "Markdown".to_string(), md).on_click(
-                        cx.listener(|v, _, w, cx| {
-                            v.note.format = NoteFormat::Markdown;
-                            v.changed_meta(w, cx);
-                        }),
-                    )),
-            )
-            .when(md, |d| {
+            .when_some(status, |d, s| {
                 d.child(
-                    Self::chip(
-                        "note-preview",
-                        if self.preview {
-                            tr!("Edit")
-                        } else {
-                            tr!("Preview")
-                        },
-                        false,
-                    )
-                    .on_click(cx.listener(|v, _, w, cx| {
-                        v.preview = !v.preview;
-                        if !v.preview {
-                            let f = v.text.read(cx).focus_handle(cx);
-                            w.focus(&f, cx);
-                        }
-                        cx.notify();
-                    })),
+                    div()
+                        .text_size(ui(11.5))
+                        .text_color(rgb(colors().muted))
+                        .child(s),
                 )
             })
-            .child(
-                div()
-                    .id("note-sensitive")
-                    .flex()
-                    .items_center()
-                    .gap(px(6.))
-                    .cursor_pointer()
-                    .text_size(ui(12.5))
-                    .on_click(cx.listener(|v, _, w, cx| {
-                        v.note.sensitive = !v.note.sensitive;
-                        // Who turns it on sees the text already; no copy
-                        // of it stays on the disk.
-                        v.shown = true;
-                        if v.note.sensitive {
-                            v.end_external(cx);
-                        }
-                        v.changed_meta(w, cx);
-                    }))
-                    .child(checkbox(self.note.sensitive))
-                    .child(tr!("Sensitive")),
-            )
-            .child(hosts)
-            .child(picker)
-            .child(div().flex_1())
-            .child(
-                div()
-                    .text_size(ui(11.5))
-                    .text_color(rgb(colors().muted))
-                    .child(if self.saved_at == self.edits {
-                        tr!("Saved")
-                    } else {
-                        tr!("Editing…")
-                    }),
-            )
             .when(
                 !self.note.sensitive && self.loaded && self.external.is_none(),
                 |d| {
@@ -862,10 +880,18 @@ impl NoteWindow {
                 },
             )
             .child(
-                outline_button("note-delete", &tr!("Delete"))
+                Self::chip("note-delete", tr!("Delete"), false)
                     .text_color(rgb(colors().bad))
                     .on_click(cx.listener(|v, _, w, cx| v.delete(w, cx))),
-            )
+            );
+        div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .justify_between()
+            .gap(px(8.))
+            .child(left)
+            .child(right)
     }
 
     /// The text: edited, drawn as Markdown, or held back (locked, or
@@ -946,8 +972,22 @@ impl NoteWindow {
             ));
             let view = cx.entity().downgrade();
             // Ticking a task in the reading view changes the text, as typing does.
-            let toggle: zorite_markdown::TaskToggleHandler = std::rc::Rc::new(move |at, _, cx| {
-                let _ = view.update(cx, |v, cx| v.toggle_task(at, cx));
+            let toggle: zorite_markdown::TaskToggleHandler = {
+                let view = view.clone();
+                Rc::new(move |at, _, cx| {
+                    let _ = view.update(cx, |v, cx| v.toggle_task(at, cx));
+                })
+            };
+            // A click on the text edits it there: the reading view selects
+            // nothing; the editor does.
+            let edit_at: zorite_markdown::ClickSourceHandler = Rc::new(move |at, _, window, cx| {
+                let _ = view.update(cx, |v, cx| {
+                    v.preview = false;
+                    v.text.update(cx, |i, cx| i.place_cursor(at, cx));
+                    let f = v.text.read(cx).focus_handle(cx);
+                    window.focus(&f, cx);
+                    cx.notify();
+                });
             });
             return div()
                 .id("note-preview")
@@ -964,6 +1004,10 @@ impl NoteWindow {
                     zorite_markdown::MarkdownView::new("note-md", text)
                         .style(reading_style(px(rem * 13.5 / 16.), mono))
                         .on_task_toggle(toggle)
+                        .on_click_source(edit_at)
+                        .set_labels(zorite_markdown::Labels {
+                            code_copy: tr!("Copy").into(),
+                        })
                         .into_any_element()
                 })
                 .into_any_element();
@@ -973,6 +1017,7 @@ impl NoteWindow {
         Self::field_box(&self.text, on)
             .font_family(mono)
             .items_start()
+            .flex_shrink_0()
             .into_any_element()
     }
 }
@@ -1018,10 +1063,20 @@ impl Render for NoteWindow {
             title
         };
         window.set_window_title(&shown_title);
-        // The editor's rows: what is left of the window under the bars.
-        let line = ui_size * 1.6;
-        let left = f32::from(window.viewport_size().height) - chrome::TITLEBAR_H - 150.;
-        let rows = ((left / line).floor() as usize).max(4);
+        // The editor's rows: as many as fit the room measured last time
+        // (its box adds 14 px of padding and border).
+        let line = f32::from(
+            self.text
+                .read(cx)
+                .line_height()
+                .unwrap_or(px(ui_size * 1.6)),
+        );
+        let room = f32::from(self.body_h.get());
+        let rows = if room > 0. {
+            (((room - 14.) / line).floor() as usize).max(3)
+        } else {
+            8
+        };
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
         let content = div()
@@ -1038,6 +1093,7 @@ impl Render for NoteWindow {
             .flex_col()
             .gap(px(12.))
             .p(px(16.))
+            .text_size(ui(13.))
             .text_color(rgb(colors().text))
             .child(
                 div()
@@ -1053,7 +1109,32 @@ impl Render for NoteWindow {
             )
             .child(self.toolbar(window, cx))
             .when_some(self.problem.clone(), |d, p| d.child(problem_text(&p)))
-            .child(self.body(rows, window, cx));
+            .child({
+                // The room left for the text, measured as laid out; a change
+                // draws again with the rows that fit.
+                let cell = self.body_h.clone();
+                div()
+                    .relative()
+                    .flex_1()
+                    .min_h_0()
+                    .flex()
+                    .flex_col()
+                    .child(
+                        gpui::canvas(
+                            move |bounds, window, _| {
+                                let h = bounds.size.height;
+                                if (f32::from(h) - f32::from(cell.get())).abs() > 0.5 {
+                                    cell.set(h);
+                                    window.refresh();
+                                }
+                            },
+                            |_, _, _, _| {},
+                        )
+                        .absolute()
+                        .size_full(),
+                    )
+                    .child(self.body(rows, window, cx))
+            });
         let bar = div()
             .h_full()
             .flex()

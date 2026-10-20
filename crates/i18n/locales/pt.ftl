@@ -1020,6 +1020,15 @@ tfa622581 = Para um servidor ▾
 # No hosts yet.
 t71734b03 = Nenhum servidor ainda.
 
+# Saving…
+tbd79b37d = Salvando…
+
+# Click the text to edit it
+t63928671 = Clique no texto para editá-lo
+
+# Saved
+t8a6979e4 = Salvas
+
 # Plain text
 tb7fc0ade = Texto simples
 
@@ -1031,12 +1040,6 @@ tfdda4cf7 = Prévia
 
 # Sensitive
 tf603feef = Confidencial
-
-# Saved
-t8a6979e4 = Salvas
-
-# Editing…
-t1f2b8dc9 = Editando…
 
 # Edit in another app…
 t1c6d0a34 = Editar em outro aplicativo…

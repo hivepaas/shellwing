@@ -1030,6 +1030,15 @@ tfa622581 = Для хоста ▾
 # No hosts yet.
 t71734b03 = Хостов пока нет.
 
+# Saving…
+tbd79b37d = Сохранение…
+
+# Click the text to edit it
+t63928671 = Нажмите на текст, чтобы изменить его
+
+# Saved
+t8a6979e4 = Сохранено
+
 # Plain text
 tb7fc0ade = Обычный текст
 
@@ -1041,12 +1050,6 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
-
-# Saved
-t8a6979e4 = Сохранено
-
-# Editing…
-t1f2b8dc9 = Редактируется…
 
 # Edit in another app…
 t1c6d0a34 = Редактировать в другом приложении…

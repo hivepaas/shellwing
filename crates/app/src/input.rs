@@ -145,6 +145,24 @@ impl TextInput {
         self
     }
 
+    /// A field of several lines' row height, once it was drawn.
+    pub fn line_height(&self) -> Option<Pixels> {
+        self.lines
+            .as_ref()
+            .map(|l| l.line_height)
+            .filter(|h| *h > px(0.))
+    }
+
+    /// Puts the caret at `offset` (a byte of the text, or its end).
+    pub fn place_cursor(&mut self, offset: usize, cx: &mut Context<Self>) {
+        let at = offset.min(self.content.len());
+        let at = (0..=at)
+            .rev()
+            .find(|i| self.content.is_char_boundary(*i))
+            .unwrap_or(0);
+        self.move_to(at, cx);
+    }
+
     /// A field of several lines shows `min` to `max` rows from now on.
     pub fn set_rows(&mut self, min: usize, max: usize, cx: &mut Context<Self>) {
         if let Some(l) = self.lines.as_mut() {

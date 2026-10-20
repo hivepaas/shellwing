@@ -1020,6 +1020,15 @@ tfa622581 = Für einen Host ▾
 # No hosts yet.
 t71734b03 = Noch keine Hosts.
 
+# Saving…
+tbd79b37d = Wird gespeichert…
+
+# Click the text to edit it
+t63928671 = Zum Bearbeiten auf den Text klicken
+
+# Saved
+t8a6979e4 = Gespeichert
+
 # Plain text
 tb7fc0ade = Reiner Text
 
@@ -1031,12 +1040,6 @@ tfdda4cf7 = Vorschau
 
 # Sensitive
 tf603feef = Vertraulich
-
-# Saved
-t8a6979e4 = Gespeichert
-
-# Editing…
-t1f2b8dc9 = Wird bearbeitet…
 
 # Edit in another app…
 t1c6d0a34 = In einer anderen App bearbeiten…

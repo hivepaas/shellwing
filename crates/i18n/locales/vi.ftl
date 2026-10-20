@@ -1000,6 +1000,15 @@ tfa622581 = Cho máy chủ ▾
 # No hosts yet.
 t71734b03 = Chưa có máy chủ.
 
+# Saving…
+tbd79b37d = Đang lưu…
+
+# Click the text to edit it
+t63928671 = Bấm vào chữ để sửa
+
+# Saved
+t8a6979e4 = Đã lưu
+
 # Plain text
 tb7fc0ade = Văn bản thường
 
@@ -1011,12 +1020,6 @@ tfdda4cf7 = Xem trước
 
 # Sensitive
 tf603feef = Nhạy cảm
-
-# Saved
-t8a6979e4 = Đã lưu
-
-# Editing…
-t1f2b8dc9 = Đang sửa…
 
 # Edit in another app…
 t1c6d0a34 = Sửa trong ứng dụng khác…

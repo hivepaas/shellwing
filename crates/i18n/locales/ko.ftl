@@ -1000,6 +1000,15 @@ tfa622581 = 호스트 지정 ▾
 # No hosts yet.
 t71734b03 = 아직 호스트가 없습니다.
 
+# Saving…
+tbd79b37d = 저장 중…
+
+# Click the text to edit it
+t63928671 = 텍스트를 클릭해 편집
+
+# Saved
+t8a6979e4 = 저장됨
+
 # Plain text
 tb7fc0ade = 일반 텍스트
 
@@ -1011,12 +1020,6 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
-
-# Saved
-t8a6979e4 = 저장됨
-
-# Editing…
-t1f2b8dc9 = 편집 중…
 
 # Edit in another app…
 t1c6d0a34 = 다른 앱에서 편집…

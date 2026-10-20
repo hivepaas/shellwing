@@ -1000,6 +1000,15 @@ tfa622581 = ホストを指定 ▾
 # No hosts yet.
 t71734b03 = まだホストはありません。
 
+# Saving…
+tbd79b37d = 保存中…
+
+# Click the text to edit it
+t63928671 = テキストをクリックして編集
+
+# Saved
+t8a6979e4 = 保存済み
+
 # Plain text
 tb7fc0ade = プレーンテキスト
 
@@ -1011,12 +1020,6 @@ tfdda4cf7 = プレビュー
 
 # Sensitive
 tf603feef = 機密
-
-# Saved
-t8a6979e4 = 保存済み
-
-# Editing…
-t1f2b8dc9 = 編集中…
 
 # Edit in another app…
 t1c6d0a34 = 別のアプリで編集…
