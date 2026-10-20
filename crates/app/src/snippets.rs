@@ -4,6 +4,8 @@
 
 use std::collections::BTreeMap;
 
+use shellwing_i18n::tr;
+
 pub use shellwing_vault::Snippet;
 
 /// Filled in from the pane's host.
@@ -39,7 +41,7 @@ impl Scope {
 
     pub fn label(&self) -> String {
         match self {
-            Scope::Every => "every host".into(),
+            Scope::Every => tr!("every host"),
             Scope::Group(g) | Scope::Host(g) => g.clone(),
         }
     }

@@ -213,11 +213,17 @@ pub enum SyncPlace {
 pub struct General {
     /// Open the tabs of the last run when started without a host.
     pub restore_tabs: bool,
+    /// The app's language, a tag (`en`, `vi`); None or `auto`: the
+    /// system's. This device's own: it does not sync.
+    pub language: Option<String>,
 }
 
 impl Default for General {
     fn default() -> Self {
-        General { restore_tabs: true }
+        General {
+            restore_tabs: true,
+            language: None,
+        }
     }
 }
 

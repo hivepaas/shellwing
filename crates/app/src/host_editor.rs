@@ -12,6 +12,7 @@ use gpui::{
     Render, SharedString, Window, div, prelude::*, px, rgb,
 };
 use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, Hosts, Store};
+use shellwing_i18n::tr;
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
 use crate::colors::colors;
@@ -157,34 +158,38 @@ fn tilde(path: &std::path::Path) -> String {
     }
 }
 
-fn method_label(m: AuthMethod) -> &'static str {
+fn method_label(m: AuthMethod) -> String {
     match m {
-        AuthMethod::Auto => "Automatic",
-        AuthMethod::Key => "Key file",
-        AuthMethod::Password => "Password",
-        AuthMethod::Agent => "Agent only",
+        AuthMethod::Auto => tr!("Automatic"),
+        AuthMethod::Key => tr!("Key file"),
+        AuthMethod::Password => tr!("Password"),
+        AuthMethod::Agent => tr!("Agent only"),
     }
 }
 
 impl HostEditor {
     fn blank(ctx: EditorContext, mode: Mode, cx: &mut Context<Self>) -> Self {
-        let input = |cx: &mut Context<Self>, hint: &str| {
-            let hint = hint.to_string();
-            cx.new(|cx| TextInput::new(hint, cx))
-        };
+        // Placeholders said again when drawn: they follow the language.
+        fn input(
+            cx: &mut Context<HostEditor>,
+            hint: impl Fn() -> String + 'static,
+        ) -> gpui::Entity<TextInput> {
+            crate::input::said(cx, hint)
+        }
+        let keepalive = ctx.app_ssh.keepalive.to_string();
         let inputs = Inputs {
-            name: input(cx, "web-1"),
-            alias: input(cx, "optional"),
-            address: input(cx, "10.0.0.5 or host.example.com"),
-            port: input(cx, "22"),
-            user: input(cx, "your login name"),
-            key: input(cx, "~/.ssh/id_ed25519"),
-            tags: input(cx, "api, docker"),
-            jump: input(cx, "a host here, an ssh alias, or user@host"),
-            forward: input(cx, "-L 8080:localhost:80"),
-            keepalive: input(cx, &ctx.app_ssh.keepalive.to_string()),
-            run: input(cx, "cd ~/apps && exec $SHELL -l"),
-            new_group: input(cx, "Staging"),
+            name: input(cx, || "web-1".to_string()),
+            alias: input(cx, || tr!("optional")),
+            address: input(cx, || tr!("10.0.0.5 or host.example.com")),
+            port: input(cx, || "22".to_string()),
+            user: input(cx, || tr!("your login name")),
+            key: input(cx, || "~/.ssh/id_ed25519".to_string()),
+            tags: input(cx, || "api, docker".to_string()),
+            jump: input(cx, || tr!("a host here, an ssh alias, or user@host")),
+            forward: input(cx, || "-L 8080:localhost:80".to_string()),
+            keepalive: input(cx, move || keepalive.clone()),
+            run: input(cx, || "cd ~/apps && exec $SHELL -l".to_string()),
+            new_group: input(cx, || tr!("Staging")),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -358,38 +363,38 @@ impl HostEditor {
         let mut problems = vec![];
         let spaced = |s: &str| s.chars().any(char::is_whitespace);
         if host.name.is_empty() {
-            problems.push((Field::Name, "A name is needed.".into()));
+            problems.push((Field::Name, tr!("A name is needed.")));
         } else if self.taken(&host.name) {
-            problems.push((Field::Name, "Another host has this name.".into()));
+            problems.push((Field::Name, tr!("Another host has this name.")));
         }
         if let Some(a) = &host.alias {
             if spaced(a) {
-                problems.push((Field::Alias, "No spaces.".into()));
+                problems.push((Field::Alias, tr!("No spaces.")));
             } else if self.taken(a) {
-                problems.push((Field::Alias, "Another host uses this.".into()));
+                problems.push((Field::Alias, tr!("Another host uses this.")));
             }
         }
         if host.address.is_empty() {
-            problems.push((Field::Address, "An address is needed.".into()));
+            problems.push((Field::Address, tr!("An address is needed.")));
         } else if spaced(&host.address) {
-            problems.push((Field::Address, "No spaces.".into()));
+            problems.push((Field::Address, tr!("No spaces.")));
         }
         let port = self.text(&i.port, cx);
         if !port.is_empty() && port.parse::<u16>().map_or(true, |p| p == 0) {
-            problems.push((Field::Port, "1 to 65535.".into()));
+            problems.push((Field::Port, tr!("1 to 65535.")));
         }
         if host.user.as_deref().is_some_and(spaced) {
-            problems.push((Field::User, "No spaces.".into()));
+            problems.push((Field::User, tr!("No spaces.")));
         }
         if self.method == AuthMethod::Key && host.auth.key.is_none() {
-            problems.push((Field::Key, "Choose a key.".into()));
+            problems.push((Field::Key, tr!("Choose a key.")));
         }
         let keepalive = self.text(&i.keepalive, cx);
         if !keepalive.is_empty() && keepalive.parse::<u64>().map_or(true, |k| k > 3600) {
-            problems.push((Field::Keepalive, "Seconds, 0 to 3600 (0: none).".into()));
+            problems.push((Field::Keepalive, tr!("Seconds, 0 to 3600 (0: none).")));
         }
         if host.jump.contains(&host.name) {
-            problems.push((Field::Jump, "A host cannot jump through itself.".into()));
+            problems.push((Field::Jump, tr!("A host cannot jump through itself.")));
         }
         self.problems = problems;
         self.problems.is_empty().then_some(host)
@@ -412,7 +417,7 @@ impl HostEditor {
         use shellwing_ssh::keys;
         let host = self.text(&self.inputs.name, cx);
         let name = if host.is_empty() {
-            "new key".to_string()
+            tr!("new key")
         } else {
             host
         };
@@ -430,7 +435,7 @@ impl HostEditor {
                     .ctx
                     .vault
                     .get()
-                    .ok_or_else(|| "the vault is not open".to_string())?;
+                    .ok_or_else(|| tr!("the vault is not open"))?;
                 let id = vault
                     .add_ssh_key(&name, &info.public, &pem)
                     .map_err(|e| e.to_string())?;
@@ -459,7 +464,7 @@ impl HostEditor {
             }
             Err(e) => self
                 .problems
-                .push((Field::Key, format!("No key made: {e}"))),
+                .push((Field::Key, tr!("No key made: {e}", e = e))),
         }
         cx.notify();
     }
@@ -476,7 +481,7 @@ impl HostEditor {
             return cx.notify();
         };
         let Some(store) = &self.ctx.store else {
-            self.save_problem = Some("There is no config directory to save in.".into());
+            self.save_problem = Some(tr!("There is no config directory to save in."));
             return cx.notify();
         };
         match store.save_host(&host) {
@@ -502,7 +507,7 @@ impl HostEditor {
         }
         let result = match (&self.ctx.store, &original.id) {
             (Some(store), Some(id)) => store.delete_host(id).map_err(|e| e.to_string()),
-            _ => Err("This host cannot be found in hosts.toml.".into()),
+            _ => Err(tr!("This host cannot be found in hosts.toml.")),
         };
         match result {
             Ok(()) => cx.emit(EditorEvent::Deleted {
@@ -537,7 +542,7 @@ impl HostEditor {
     /// The same host, as a new one not saved yet.
     fn duplicate(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let name = self.text(&self.inputs.name, cx);
-        let copy = self.free_name(&format!("{name} copy"));
+        let copy = self.free_name(&tr!("{name} copy", name = &name));
         self.original = None;
         self.confirm_delete = false;
         self.set(&self.inputs.name.clone(), &copy, cx);
@@ -610,7 +615,7 @@ impl HostEditor {
             files: true,
             directories: false,
             multiple: false,
-            prompt: Some("Choose".into()),
+            prompt: Some(tr!("Choose").into()),
         });
         cx.spawn(async move |this, cx| {
             if let Ok(Ok(Some(paths))) = picked.await
@@ -946,7 +951,7 @@ impl HostEditor {
         } else if self.ctx.ssh_aliases.iter().any(|a| a == name) {
             "~/.ssh/config".into()
         } else {
-            "host name".into()
+            tr!("host name")
         }
     }
 
@@ -959,41 +964,41 @@ impl HostEditor {
         let mut facts = div().flex().flex_col().gap_1();
         match resolved {
             Some(r) => {
-                facts = facts.child(fact("Reaches", r.target.to_string()));
+                facts = facts.child(fact(&tr!("Reaches"), r.target.to_string()));
                 if let Some(k) = r.identity_files.first() {
-                    facts = facts.child(fact("Key", tilde(k)));
+                    facts = facts.child(fact(&tr!("Key"), tilde(k)));
                 }
                 if !r.jumps.is_empty() {
                     let via: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
-                    facts = facts.child(fact("Through", via.join(" → ")));
+                    facts = facts.child(fact(&tr!("Through"), via.join(" → ")));
                 }
                 if !r.forwards.is_empty() {
-                    facts = facts.child(fact("Forwards", r.forwards.join(", ")));
+                    facts = facts.child(fact(&tr!("Forwards"), r.forwards.join(", ")));
                 }
             }
-            None => facts = facts.child(hint_text("It could not be read.")),
+            None => facts = facts.child(hint_text(&tr!("It could not be read."))),
         }
         div()
             .flex()
             .flex_col()
             .size_full()
-            .child(header(alias, "From ~/.ssh/config", None, cx))
+            .child(header(alias, &tr!("From ~/.ssh/config"), None, cx))
             .child(
-                section("Host from ~/.ssh/config")
-                    .child(hint_text(
-                        "shellwing reads this file but never writes to it. Edit it in your editor, or make a copy here to add a group, a theme, forwards or a saved password.",
-                    ))
+                section(&tr!("Host from ~/.ssh/config"))
+                    .child(hint_text(&tr!(
+                        "shellwing reads this file but never writes to it. Edit it in your editor, or make a copy here to add a group, a theme, forwards or a saved password."
+                    )))
                     .child(facts)
                     .child(
                         div()
                             .flex()
                             .gap_2()
                             .child(
-                                outline_button("ssh-open", "Open config file").on_click(
+                                outline_button("ssh-open", &tr!("Open config file")).on_click(
                                     cx.listener(|_, _, _, cx| cx.emit(EditorEvent::OpenSshConfig)),
                                 ),
                             )
-                            .child(primary_button("ssh-copy", "Copy to my hosts").on_click(
+                            .child(primary_button("ssh-copy", &tr!("Copy to my hosts")).on_click(
                                 cx.listener(|e, _, window, cx| e.copy_from_ssh(window, cx)),
                             )),
                     ),
@@ -1238,13 +1243,13 @@ impl Render for HostEditor {
 
         let i = &self.inputs;
         let title = match self.text(&i.name, cx) {
-            n if n.is_empty() => "New host".to_string(),
+            n if n.is_empty() => tr!("New host"),
             n => n,
         };
         let note = if self.original.is_some() {
-            "Saved in hosts.toml"
+            tr!("Saved in hosts.toml")
         } else {
-            "Not saved yet"
+            tr!("Not saved yet")
         };
         // The host's own color, else its group's.
         let color = self.current(cx).color_rgb().or_else(|| {
@@ -1254,12 +1259,12 @@ impl Render for HostEditor {
                 .and_then(|g| g.color_rgb())
         });
 
-        let connection = section("Connection")
+        let connection = section(&tr!("Connection"))
             .child(
                 row()
-                    .child(self.field("Name", &i.name, Field::Name, window, cx))
+                    .child(self.field(&tr!("Name"), &i.name, Field::Name, window, cx))
                     .child(self.field(
-                        "Alias for the command line",
+                        &tr!("Alias for the command line"),
                         &i.alias,
                         Field::Alias,
                         window,
@@ -1269,15 +1274,15 @@ impl Render for HostEditor {
             .child(
                 row()
                     .child(
-                        self.field("Address", &i.address, Field::Address, window, cx)
+                        self.field(&tr!("Address"), &i.address, Field::Address, window, cx)
                             .flex_grow(3.),
                     )
                     .child(
-                        self.field("Port", &i.port, Field::Port, window, cx)
+                        self.field(&tr!("Port"), &i.port, Field::Port, window, cx)
                             .flex_grow(1.),
                     )
                     .child(
-                        self.field("User", &i.user, Field::User, window, cx)
+                        self.field(&tr!("User"), &i.user, Field::User, window, cx)
                             .flex_grow(2.),
                     ),
             );
@@ -1326,18 +1331,27 @@ impl Render for HostEditor {
                     .child(method_label(m)),
             );
         }
-        let mut sign_in = section("Sign in").child(seg);
+        let mut sign_in = section(&tr!("Sign in")).child(seg);
         let key_text = self.text(&i.key, cx);
         let chosen_key = self.ctx.keys.iter().find(|k| k.value == key_text);
         if self.method == AuthMethod::Key {
             let shown = match chosen_key {
-                Some(k) if k.vault => format!("{} · in the vault · {}", k.name, k.kind),
+                Some(k) if k.vault => tr!(
+                    "{name} · in the vault · {kind}",
+                    name = &k.name,
+                    kind = &k.kind
+                ),
                 Some(k) => format!("{} · {}", k.value, k.kind),
-                None if key_text.is_empty() => "Choose a key".to_string(),
+                None if key_text.is_empty() => tr!("Choose a key"),
                 None => key_text.clone(),
             };
-            sign_in =
-                sign_in.child(row().child(self.select("key-select", "Key", shown, Menu::Key, cx)));
+            sign_in = sign_in.child(row().child(self.select(
+                "key-select",
+                &tr!("Key"),
+                shown,
+                Menu::Key,
+                cx,
+            )));
             if self.menu == Some(Menu::Key) {
                 let mut choices: Vec<(Option<String>, String)> = self
                     .ctx
@@ -1345,21 +1359,25 @@ impl Render for HostEditor {
                     .iter()
                     .map(|k| {
                         let label = if k.vault {
-                            format!("{}   in the vault · {}", k.name, k.kind)
+                            tr!(
+                                "{name}   in the vault · {kind}",
+                                name = &k.name,
+                                kind = &k.kind
+                            )
                         } else {
                             format!("{}   {}", k.value, k.kind)
                         };
                         (Some(k.value.clone()), label)
                     })
                     .collect();
-                choices.push((None, "Another key file…".to_string()));
+                choices.push((None, tr!("Another key file…")));
                 let host = self.text(&i.name, cx);
                 choices.push((
                     Some(GENERATE.to_string()),
                     if host.is_empty() {
-                        "+ Generate a key for this host".to_string()
+                        tr!("+ Generate a key for this host")
                     } else {
-                        format!("+ Generate a key for {host}")
+                        tr!("+ Generate a key for {host}", host = &host)
                     },
                 ));
                 sign_in = sign_in.child(self.menu_list(Menu::Key, choices, cx));
@@ -1372,7 +1390,7 @@ impl Render for HostEditor {
             {
                 let host = self.text(&i.name, cx);
                 let host = if host.is_empty() {
-                    "the host".to_string()
+                    tr!("the host")
                 } else {
                     host
                 };
@@ -1381,12 +1399,13 @@ impl Render for HostEditor {
                         .flex()
                         .items_center()
                         .gap(px(10.))
-                        .child(div().flex_1().min_w_0().child(hint_text(&format!(
-                            "{} is new: {host} does not have it yet. Saving and installing signs in once another way (a password, say), then adds it.",
-                            k.name
+                        .child(div().flex_1().min_w_0().child(hint_text(&tr!(
+                            "{name} is new: {host} does not have it yet. Saving and installing signs in once another way (a password, say), then adds it.",
+                            name = &k.name,
+                            host = &host
                         ))))
                         .child(
-                            primary_button("save-install", &format!("Save and install on {host}"))
+                            primary_button("save-install", &tr!("Save and install on {host}", host = &host))
                                 .flex_shrink_0()
                                 .on_click(cx.listener(move |e, _, _, cx| {
                                     let key = e.new_key.clone();
@@ -1399,16 +1418,20 @@ impl Render for HostEditor {
                 sign_in = sign_in.child(problem_text(p));
             }
         }
-        sign_in = sign_in.child(hint_text(match self.method {
+        sign_in = sign_in.child(hint_text(&match self.method {
             AuthMethod::Auto => {
-                "Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh."
+                tr!("Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.")
             }
             AuthMethod::Key if chosen_key.is_some_and(|k| k.vault) => {
-                "Kept in the vault: no passphrase to ask for."
+                tr!("Kept in the vault: no passphrase to ask for.")
             }
-            AuthMethod::Key => "Passphrase: asked for when needed, and can be saved in the vault.",
-            AuthMethod::Password => "Asked for when connecting, and can be saved in the vault.",
-            AuthMethod::Agent => "Uses the keys in your ssh-agent.",
+            AuthMethod::Key => {
+                tr!("Passphrase: asked for when needed, and can be saved in the vault.")
+            }
+            AuthMethod::Password => {
+                tr!("Asked for when connecting, and can be saved in the vault.")
+            }
+            AuthMethod::Agent => tr!("Uses the keys in your ssh-agent."),
         }));
 
         // Route: the jump hosts, in order, then this host.
@@ -1432,18 +1455,16 @@ impl Render for HostEditor {
                 .child(title.clone()),
         );
         if !self.adding_jump {
-            chain = chain.child(
-                dashed("add-jump", "+ Add jump")
-                    .ml_1()
-                    .on_click(cx.listener(|e, _, window, cx| {
-                        e.adding_jump = true;
-                        window.focus(&e.inputs.jump.focus_handle(cx), cx);
-                        cx.notify();
-                    })),
-            );
+            chain = chain.child(dashed("add-jump", &tr!("+ Add jump")).ml_1().on_click(
+                cx.listener(|e, _, window, cx| {
+                    e.adding_jump = true;
+                    window.focus(&e.inputs.jump.focus_handle(cx), cx);
+                    cx.notify();
+                }),
+            ));
         }
-        let mut route = section("Route")
-            .child(label_text("Jump through, in order"))
+        let mut route = section(&tr!("Route"))
+            .child(label_text(&tr!("Jump through, in order")))
             .child(chain);
         if self.adding_jump {
             let typed = self.text(&i.jump, cx).to_lowercase();
@@ -1476,7 +1497,9 @@ impl Render for HostEditor {
             route = route
                 .child(self.input_box(&i.jump, self.problem(Field::Jump).is_some(), window, cx))
                 .child(picks)
-                .child(hint_text("Enter adds what you typed · Esc stops adding"));
+                .child(hint_text(&tr!(
+                    "Enter adds what you typed · Esc stops adding"
+                )));
         }
         if let Some(p) = self.problem(Field::Jump) {
             route = route.child(problem_text(p));
@@ -1494,7 +1517,7 @@ impl Render for HostEditor {
             ));
         }
         if !self.adding_forward {
-            forwards = forwards.child(dashed("add-forward", "+ Add forward").on_click(
+            forwards = forwards.child(dashed("add-forward", &tr!("+ Add forward")).on_click(
                 cx.listener(|e, _, window, cx| {
                     e.adding_forward = true;
                     window.focus(&e.inputs.forward.focus_handle(cx), cx);
@@ -1502,7 +1525,7 @@ impl Render for HostEditor {
                 }),
             ));
         }
-        let mut forwarding = section("Port forwarding").child(forwards);
+        let mut forwarding = section(&tr!("Port forwarding")).child(forwards);
         if self.adding_forward {
             forwarding = forwarding
                 .child(self.input_box(
@@ -1518,9 +1541,9 @@ impl Render for HostEditor {
         if let Some(p) = self.problem(Field::Forward) {
             forwarding = forwarding.child(problem_text(p));
         }
-        forwarding = forwarding.child(hint_text("Set up every time this host connects."));
+        forwarding = forwarding.child(hint_text(&tr!("Set up every time this host connects.")));
 
-        let sync = section("Sync")
+        let sync = section(&tr!("Sync"))
             .child(
                 div()
                     .id("local-only")
@@ -1533,18 +1556,18 @@ impl Render for HostEditor {
                         cx.notify();
                     }))
                     .child(checkbox(self.local_only))
-                    .child(label_text("Keep on this device only")),
+                    .child(label_text(&tr!("Keep on this device only"))),
             )
-            .child(hint_text(if self.local_only {
-                "Not synced: other devices do not see this host."
+            .child(hint_text(&if self.local_only {
+                tr!("Not synced: other devices do not see this host.")
             } else {
-                "Synced with your other devices when sync is on."
+                tr!("Synced with your other devices when sync is on.")
             }));
 
         let group_label = if self.naming_group {
-            "New group".into()
+            tr!("New group")
         } else {
-            self.group.clone().unwrap_or_else(|| "None".into())
+            self.group.clone().unwrap_or_else(|| tr!("None"))
         };
         let theme_label = self
             .theme
@@ -1554,13 +1577,13 @@ impl Render for HostEditor {
                     .themes
                     .iter()
                     .find(|(id, _)| id == t)
-                    .map(|(_, n)| format!("{n} (this host only)"))
+                    .map(|(_, n)| tr!("{n} (this host only)", n = n))
                     .unwrap_or_else(|| t.clone())
             })
-            .unwrap_or_else(|| "Same as the app".into());
-        let mut organize = section("Organize").child(
+            .unwrap_or_else(|| tr!("Same as the app"));
+        let mut organize = section(&tr!("Organize")).child(
             row()
-                .child(self.select("group-select", "Group", group_label, Menu::Group, cx))
+                .child(self.select("group-select", &tr!("Group"), group_label, Menu::Group, cx))
                 .child(
                     div()
                         .flex()
@@ -1568,12 +1591,12 @@ impl Render for HostEditor {
                         .gap(px(4.))
                         .flex_1()
                         .min_w_0()
-                        .child(label_text("Tags"))
+                        .child(label_text(&tr!("Tags")))
                         .child(self.input_box(&i.tags, false, window, cx)),
                 ),
         );
         if self.menu == Some(Menu::Group) {
-            let mut choices = vec![(None, "None".to_string())];
+            let mut choices = vec![(None, tr!("None"))];
             choices.extend(
                 self.ctx
                     .hosts
@@ -1588,14 +1611,16 @@ impl Render for HostEditor {
             }
             organize = organize
                 .child(self.menu_list(Menu::Group, choices, cx))
-                .child(dashed("new-group", "+ New group…").on_click(cx.listener(
-                    |e, _, window, cx| {
-                        e.menu = None;
-                        e.naming_group = true;
-                        window.focus(&e.inputs.new_group.focus_handle(cx), cx);
-                        cx.notify();
-                    },
-                )));
+                .child(
+                    dashed("new-group", &tr!("+ New group…")).on_click(cx.listener(
+                        |e, _, window, cx| {
+                            e.menu = None;
+                            e.naming_group = true;
+                            window.focus(&e.inputs.new_group.focus_handle(cx), cx);
+                            cx.notify();
+                        },
+                    )),
+                );
         }
         if self.naming_group {
             organize = organize
@@ -1604,17 +1629,17 @@ impl Render for HostEditor {
                         .flex()
                         .flex_col()
                         .gap(px(4.))
-                        .child(label_text("New group's name"))
+                        .child(label_text(&tr!("New group's name")))
                         .child(self.input_box(&i.new_group, false, window, cx)),
                 )
-                .child(hint_text("Made when you save this host."));
+                .child(hint_text(&tr!("Made when you save this host.")));
         }
         // The colors, as round swatches; the chosen one ringed.
         let mut swatches = div()
             .flex()
             .items_center()
             .gap(px(8.))
-            .child(div().mr(px(6.)).child(label_text("Color")));
+            .child(div().mr(px(6.)).child(label_text(&tr!("Color"))));
         let none_on = self.color.is_none();
         swatches = swatches.child(
             div()
@@ -1658,7 +1683,8 @@ impl Render for HostEditor {
                     })),
             );
         }
-        swatches = swatches.child(hint_text("Shown on the tab and the pane border").ml(px(8.)));
+        swatches =
+            swatches.child(hint_text(&tr!("Shown on the tab and the pane border")).ml(px(8.)));
         organize = organize.child(swatches).child(
             div()
                 .id("favorite")
@@ -1671,18 +1697,18 @@ impl Render for HostEditor {
                     cx.notify();
                 }))
                 .child(checkbox(self.favorite))
-                .child(label_text("Favorite: listed first in the host list")),
+                .child(label_text(&tr!("Favorite: listed first in the host list"))),
         );
 
-        let mut terminal = section("Terminal").child(row().child(self.select(
+        let mut terminal = section(&tr!("Terminal")).child(row().child(self.select(
             "theme-select",
-            "Theme",
+            &tr!("Theme"),
             theme_label,
             Menu::Theme,
             cx,
         )));
         if self.menu == Some(Menu::Theme) {
-            let mut choices = vec![(None, "Same as the app".to_string())];
+            let mut choices = vec![(None, tr!("Same as the app"))];
             choices.extend(
                 self.ctx
                     .themes
@@ -1697,20 +1723,20 @@ impl Render for HostEditor {
                     .flex()
                     .flex_col()
                     .gap(px(4.))
-                    .child(label_text("Run after connecting"))
+                    .child(label_text(&tr!("Run after connecting")))
                     .child(self.input_box(&i.run, false, window, cx)),
             )
-            .child(hint_text(
-                "Typed into the shell once it is ready, after every connect and reconnect.",
-            ));
+            .child(hint_text(&tr!(
+                "Typed into the shell once it is ready, after every connect and reconnect."
+            )));
 
         let keys = Self::segments(
             "host-key",
             &[
-                (None, "App setting"),
-                (Some(HostKey::Ask), "Ask"),
-                (Some(HostKey::AcceptNew), "Accept new"),
-                (Some(HostKey::Strict), "Strict"),
+                (None, tr!("App setting").as_str()),
+                (Some(HostKey::Ask), tr!("Ask").as_str()),
+                (Some(HostKey::AcceptNew), tr!("Accept new").as_str()),
+                (Some(HostKey::Strict), tr!("Strict").as_str()),
             ],
             self.host_key,
             |e, v| e.host_key = v,
@@ -1719,9 +1745,9 @@ impl Render for HostEditor {
         let logs = Self::segments(
             "host-log",
             &[
-                (None, "App setting"),
-                (Some(true), "Always"),
-                (Some(false), "Never"),
+                (None, tr!("App setting").as_str()),
+                (Some(true), tr!("Always").as_str()),
+                (Some(false), tr!("Never").as_str()),
             ],
             self.log,
             |e, v| e.log = v,
@@ -1729,25 +1755,26 @@ impl Render for HostEditor {
         );
         let app = &self.ctx.app_ssh;
         let app_key = match app.host_key {
-            HostKey::Ask => "Ask",
-            HostKey::AcceptNew => "Accept new",
-            HostKey::Strict => "Strict",
+            HostKey::Ask => tr!("Ask"),
+            HostKey::AcceptNew => tr!("Accept new"),
+            HostKey::Strict => tr!("Strict"),
         };
         let app_alive = match app.keepalive {
-            0 => "none".to_string(),
-            s => format!("{s} s"),
+            0 => tr!("none"),
+            s => tr!("{s} s", s = s),
         };
-        let mut advanced = section("Advanced")
+        let mut advanced = section(&tr!("Advanced"))
             .border_b_0()
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap(px(4.))
-                    .child(label_text("Unknown host key"))
+                    .child(label_text(&tr!("Unknown host key")))
                     .child(keys)
-                    .child(hint_text(&format!(
-                        "The app's setting is {app_key} now. A changed key is always refused."
+                    .child(hint_text(&tr!(
+                        "The app's setting is {app_key} now. A changed key is always refused.",
+                        app_key = &app_key
                     ))),
             )
             .child(
@@ -1755,11 +1782,15 @@ impl Render for HostEditor {
                     .flex()
                     .flex_col()
                     .gap(px(4.))
-                    .child(label_text("Session log"))
+                    .child(label_text(&tr!("Session log")))
                     .child(logs)
-                    .child(hint_text(&format!(
-                        "Always: each session is logged to a file from its start. Never: not even when the app logs every session. The app logs {} now.",
-                        if self.ctx.app_logs { "every session" } else { "none" }
+                    .child(hint_text(&tr!(
+                        "Always: each session is logged to a file from its start. Never: not even when the app logs every session. The app logs {logs} now.",
+                        logs = if self.ctx.app_logs {
+                            tr!("every session")
+                        } else {
+                            tr!("none")
+                        }
                     ))),
             )
             .child(
@@ -1774,7 +1805,7 @@ impl Render for HostEditor {
                             .flex()
                             .flex_col()
                             .gap(px(4.))
-                            .child(label_text("Keepalive"))
+                            .child(label_text(&tr!("Keepalive")))
                             .child(self.input_box(
                                 &i.keepalive,
                                 self.problem(Field::Keepalive).is_some(),
@@ -1783,8 +1814,9 @@ impl Render for HostEditor {
                             )),
                     )
                     .child(
-                        hint_text(&format!(
-                            "Seconds between checks; 0: none. Empty: the app's setting ({app_alive})."
+                        hint_text(&tr!(
+                            "Seconds between checks; 0: none. Empty: the app's setting ({app_alive}).",
+                            app_alive = &app_alive
                         ))
                         .pb(px(7.)),
                     ),
@@ -1805,12 +1837,12 @@ impl Render for HostEditor {
                         cx.notify();
                     }))
                     .child(checkbox(self.forward_agent))
-                    .child(label_text("Forward my agent to this host")),
+                    .child(label_text(&tr!("Forward my agent to this host"))),
             )
-            .child(hint_text(if self.forward_agent {
-                "While you are connected, whoever is root on this host can sign in elsewhere with your keys too. Only for hosts you trust."
+            .child(hint_text(&if self.forward_agent {
+                tr!("While you are connected, whoever is root on this host can sign in elsewhere with your keys too. Only for hosts you trust.")
             } else {
-                "From this host you could then git push or ssh further with the keys on this computer; they are never copied there."
+                tr!("From this host you could then git push or ssh further with the keys on this computer; they are never copied there.")
             }));
 
         let mut footer = div()
@@ -1828,52 +1860,53 @@ impl Render for HostEditor {
             footer = footer.child(problem_text(p));
         }
         if !self.problems.is_empty() {
-            footer = footer.child(problem_text("Some fields need a look."));
+            footer = footer.child(problem_text(&tr!("Some fields need a look.")));
         }
         let mut buttons = div().flex().items_center().gap_2();
         if self.confirm_delete {
-            buttons =
-                buttons
-                    .child(
-                        div()
-                            .text_size(ui(12.5))
-                            .child(format!("Delete {title} from hosts.toml?")),
-                    )
-                    .child(
-                        text_button("delete-yes", "Delete", colors().bad)
-                            .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
-                    )
-                    .child(text_button("delete-no", "Cancel", colors().label).on_click(
-                        cx.listener(|e, _, _, cx| {
-                            e.confirm_delete = false;
-                            cx.notify();
-                        }),
-                    ));
-        } else if self.original.is_some() {
             buttons = buttons
                 .child(
-                    text_button("delete", "Delete", colors().bad)
+                    div()
+                        .text_size(ui(12.5))
+                        .child(tr!("Delete {title} from hosts.toml?", title = &title)),
+                )
+                .child(
+                    text_button("delete-yes", &tr!("Delete"), colors().bad)
                         .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
                 )
                 .child(
-                    text_button("duplicate", "Duplicate", colors().label)
+                    text_button("delete-no", &tr!("Cancel"), colors().label).on_click(cx.listener(
+                        |e, _, _, cx| {
+                            e.confirm_delete = false;
+                            cx.notify();
+                        },
+                    )),
+                );
+        } else if self.original.is_some() {
+            buttons = buttons
+                .child(
+                    text_button("delete", &tr!("Delete"), colors().bad)
+                        .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                )
+                .child(
+                    text_button("duplicate", &tr!("Duplicate"), colors().label)
                         .on_click(cx.listener(|e, _, window, cx| e.duplicate(window, cx))),
                 );
         }
         buttons = buttons
             .child(div().flex_1())
             .child(
-                outline_button("save", "Save")
+                outline_button("save", &tr!("Save"))
                     .on_click(cx.listener(|e, _, _, cx| e.save(false, cx))),
             )
             .child(
-                primary_button("save-connect", "Save and connect")
+                primary_button("save-connect", &tr!("Save and connect"))
                     .on_click(cx.listener(|e, _, _, cx| e.save(true, cx))),
             );
         footer = footer.child(buttons);
 
         shell
-            .child(header(&title, note, color, cx))
+            .child(header(&title, &note, color, cx))
             .child(
                 div()
                     .id("editor-body")

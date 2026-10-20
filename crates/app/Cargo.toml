@@ -25,6 +25,7 @@ shellwing-config.workspace = true
 shellwing-vault.workspace = true
 shellwing-core.workspace = true
 shellwing-remote.workspace = true
+shellwing-i18n.workspace = true
 gpui.workspace = true
 # Only to hand GPUI a rendered gradient; the same version GPUI uses.
 image = { version = "0.25", default-features = false }

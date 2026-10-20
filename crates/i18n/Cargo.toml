@@ -1,0 +1,16 @@
+[package]
+name = "shellwing-i18n"
+description = "shellwing's words in the user's language"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+fluent-bundle = "0.16"
+unic-langid = "0.9"
+sys-locale = "0.3"
+
+[lints]
+workspace = true

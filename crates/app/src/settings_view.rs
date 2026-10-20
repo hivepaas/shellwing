@@ -15,6 +15,8 @@ use shellwing_config::{
     SettingValue, Settings, SyncPlace, Theme, WebDavSync,
 };
 
+use shellwing_i18n::{tr, tr_n};
+
 use crate::colors::colors;
 use crate::input::TextInput;
 use crate::keys_view::KeysView;
@@ -43,19 +45,38 @@ pub enum Page {
     About,
 }
 
-const PAGES: [(Page, &str); 11] = [
-    (Page::General, "General"),
-    (Page::Appearance, "Appearance"),
-    (Page::Terminal, "Terminal"),
-    (Page::Keyboard, "Keyboard"),
-    (Page::Ssh, "SSH and security"),
-    (Page::Keys, "Keys"),
-    (Page::KnownHosts, "Known hosts"),
-    (Page::Snippets, "Snippets"),
-    (Page::Sync, "Sync"),
-    (Page::Vault, "Vault"),
-    (Page::About, "About"),
+const PAGES: [Page; 11] = [
+    Page::General,
+    Page::Appearance,
+    Page::Terminal,
+    Page::Keyboard,
+    Page::Ssh,
+    Page::Keys,
+    Page::KnownHosts,
+    Page::Snippets,
+    Page::Sync,
+    Page::Vault,
+    Page::About,
 ];
+
+impl Page {
+    /// The page's name, as the list on the left shows it.
+    fn title(self) -> String {
+        match self {
+            Page::General => tr!("General"),
+            Page::Appearance => tr!("Appearance"),
+            Page::Terminal => tr!("Terminal"),
+            Page::Keyboard => tr!("Keyboard"),
+            Page::Ssh => tr!("SSH and security"),
+            Page::Keys => tr!("Keys"),
+            Page::KnownHosts => tr!("Known hosts"),
+            Page::Snippets => tr!("Snippets"),
+            Page::Sync => tr!("Sync"),
+            Page::Vault => tr!("Vault"),
+            Page::About => tr!("About"),
+        }
+    }
+}
 
 /// What the page shows, taken from the workspace.
 #[derive(Clone)]
@@ -147,16 +168,22 @@ enum SyncKind {
 
 impl SyncForm {
     fn new(sync: &shellwing_config::Sync, cx: &mut Context<SettingsView>) -> SyncForm {
-        let field = |hint: &str, text: &str, masked: bool, cx: &mut Context<SettingsView>| {
+        // Placeholders said again when drawn: they follow the language.
+        fn field(
+            hint: impl Fn() -> String + 'static,
+            text: &str,
+            masked: bool,
+            cx: &mut Context<SettingsView>,
+        ) -> Entity<TextInput> {
             cx.new(|cx| {
-                let mut i = TextInput::new(hint.to_string(), cx);
+                let mut i = TextInput::said(hint, cx);
                 if masked {
                     i = i.masked();
                 }
                 i.set_text(text, text.len()..text.len(), cx);
                 i
             })
-        };
+        }
         let dav = sync.webdav.clone().unwrap_or_default();
         let s3 = sync.s3.clone().unwrap_or_default();
         let git = sync.git.clone().unwrap_or_default();
@@ -172,14 +199,14 @@ impl SyncForm {
             },
             dav: [
                 field(
-                    "https://cloud.example.com/remote.php/dav/files/you/",
+                    || "https://cloud.example.com/remote.php/dav/files/you/".to_string(),
                     &dav.url,
                     false,
                     cx,
                 ),
-                field("you", &dav.user, false, cx),
+                field(|| "you".to_string(), &dav.user, false, cx),
                 field(
-                    "Its password (an app password, where it has them)",
+                    || tr!("Its password (an app password, where it has them)"),
                     "",
                     true,
                     cx,
@@ -187,27 +214,32 @@ impl SyncForm {
             ],
             s3: [
                 field(
-                    "https://s3.eu-west-1.amazonaws.com",
+                    || "https://s3.eu-west-1.amazonaws.com".to_string(),
                     &s3.endpoint,
                     false,
                     cx,
                 ),
-                field("auto", &s3.region, false, cx),
-                field("my-bucket", &s3.bucket, false, cx),
-                field("none: the top of the bucket", &s3.prefix, false, cx),
-                field("AKIA…", &s3.access_key, false, cx),
-                field("Its secret", "", true, cx),
+                field(|| "auto".to_string(), &s3.region, false, cx),
+                field(|| "my-bucket".to_string(), &s3.bucket, false, cx),
+                field(|| tr!("none: the top of the bucket"), &s3.prefix, false, cx),
+                field(|| "AKIA…".to_string(), &s3.access_key, false, cx),
+                field(|| tr!("Its secret"), "", true, cx),
             ],
             git: [
                 field(
-                    "https://github.com/you/vault.git, or git@github.com:you/vault.git",
+                    || tr!("https://github.com/you/vault.git, or git@github.com:you/vault.git"),
                     &git.url,
                     false,
                     cx,
                 ),
-                field("its default", &git.branch, false, cx),
-                field("none: git signs in as it does for you", "", true, cx),
-                field("any (Gitea: yours)", &git.user, false, cx),
+                field(|| tr!("its default"), &git.branch, false, cx),
+                field(
+                    || tr!("none: git signs in as it does for you"),
+                    "",
+                    true,
+                    cx,
+                ),
+                field(|| tr!("any (Gitea: yours)"), &git.user, false, cx),
             ],
             problem: None,
             no_git: None,
@@ -230,16 +262,16 @@ impl SyncForm {
     fn place(&self, cx: &gpui::App) -> Result<(SyncPlace, Option<String>), String> {
         let text = |i: &Entity<TextInput>| i.read(cx).text().trim().to_string();
         match self.kind {
-            SyncKind::Folder => Err("choose a folder".into()),
+            SyncKind::Folder => Err(tr!("choose a folder")),
             SyncKind::WebDav => {
                 let [url, user, password] = &self.dav;
                 let (url, user) = (text(url), text(user));
                 let password = password.read(cx).text().to_string();
                 if url.is_empty() || user.is_empty() || password.is_empty() {
-                    return Err("Fill in the address, the user and the password.".into());
+                    return Err(tr!("Fill in the address, the user and the password."));
                 }
                 if !url.starts_with("https://") && !url.starts_with("http://") {
-                    return Err("The address starts with https://.".into());
+                    return Err(tr!("The address starts with https://."));
                 }
                 Ok((SyncPlace::WebDav(WebDavSync { url, user }), Some(password)))
             }
@@ -258,13 +290,13 @@ impl SyncForm {
                     || place.access_key.is_empty()
                     || secret.is_empty()
                 {
-                    return Err(
-                        "Fill in the endpoint, the bucket, the access key and its secret.".into(),
-                    );
+                    return Err(tr!(
+                        "Fill in the endpoint, the bucket, the access key and its secret."
+                    ));
                 }
                 if !place.endpoint.starts_with("https://") && !place.endpoint.starts_with("http://")
                 {
-                    return Err("The endpoint starts with https://.".into());
+                    return Err(tr!("The endpoint starts with https://."));
                 }
                 Ok((SyncPlace::S3(place), Some(secret)))
             }
@@ -276,7 +308,7 @@ impl SyncForm {
                     user: text(user),
                 };
                 if place.url.is_empty() {
-                    return Err("Fill in the repository's address.".into());
+                    return Err(tr!("Fill in the repository's address."));
                 }
                 let token = token.read(cx).text().trim().to_string();
                 Ok((SyncPlace::Git(place), (!token.is_empty()).then_some(token)))
@@ -363,15 +395,13 @@ impl SettingsView {
             .clone()
             .unwrap_or_default();
         let shell_input = cx.new(|cx| {
-            let mut i = TextInput::new(
-                format!("{} (yours)", crate::local::shell(None).join(" ")),
-                cx,
-            );
+            let yours = crate::local::shell(None).join(" ");
+            let mut i = TextInput::said(move || tr!("{shell} (yours)", shell = &yours), cx);
             i.set_text(&shell, shell.len()..shell.len(), cx);
             i
         });
         let editor_input = cx.new(|cx| {
-            let mut i = TextInput::new("e.g. code -n, or /path/to/editor --flag", cx);
+            let mut i = TextInput::said(|| tr!("e.g. code -n, or /path/to/editor --flag"), cx);
             i.set_text(&text, text.len()..text.len(), cx);
             i
         });
@@ -454,7 +484,7 @@ impl SettingsView {
             files: false,
             directories: true,
             multiple: false,
-            prompt: Some("Keep logs here".into()),
+            prompt: Some(tr!("Keep logs here").into()),
         });
         cx.spawn(async move |this, cx| {
             if let Ok(Ok(Some(paths))) = picked.await
@@ -519,17 +549,21 @@ impl SettingsView {
                         form.no_git = None;
                         form.problem = None;
                         v.say(
-                            format!("git {} is installed: Connect again.", git.version()),
+                            tr!(
+                                "git {version} is installed: Connect again.",
+                                version = git.version()
+                            ),
                             cx,
                         );
                     }
                     // Apple's dialog goes on by itself after this returns.
                     Ok(Err(_)) if cfg!(target_os = "macos") => {
-                        form.problem =
-                            Some("When Apple's installer is done, Connect again.".into());
+                        form.problem = Some(tr!("When Apple's installer is done, Connect again."));
                     }
                     Ok(Err(e)) => form.no_git = Some(e),
-                    Err(e) => form.problem = Some(format!("git was not installed: {e}")),
+                    Err(e) => {
+                        form.problem = Some(tr!("git was not installed: {e}", e = e.to_string()))
+                    }
                 }
                 cx.notify();
             });
@@ -586,8 +620,8 @@ impl SettingsView {
             return cx.stop_propagation();
         }
         let step = |by: isize, v: &mut Self| {
-            let at = PAGES.iter().position(|(p, _)| *p == v.page).unwrap_or(0) as isize;
-            v.page = PAGES[(at + by).rem_euclid(PAGES.len() as isize) as usize].0;
+            let at = PAGES.iter().position(|p| *p == v.page).unwrap_or(0) as isize;
+            v.page = PAGES[(at + by).rem_euclid(PAGES.len() as isize) as usize];
         };
         match k.key.as_str() {
             "escape" if self.fonts_open.is_some() => self.fonts_open = None,
@@ -645,10 +679,10 @@ impl SettingsView {
     fn font_choices(&self, which: Fonts) -> Vec<(Option<String>, String)> {
         let (default, list) = match which {
             Fonts::Terminal => (
-                format!("Default ({})", self.snap.default_font),
+                tr!("Default ({font})", font = &self.snap.default_font),
                 &self.snap.fonts,
             ),
-            Fonts::Ui => ("Default (the system's)".to_string(), &self.snap.all_fonts),
+            Fonts::Ui => (tr!("Default (the system's)"), &self.snap.all_fonts),
         };
         let mut choices = vec![(None, default)];
         choices.extend(list.iter().map(|f| (Some(f.clone()), f.clone())));
@@ -681,7 +715,7 @@ impl SettingsView {
             .gap(px(4.))
             .flex_1()
             .min_w(px(200.))
-            .child(label("Font"))
+            .child(label(&tr!("Font")))
             .child(
                 div()
                     .id(match which {
@@ -791,10 +825,10 @@ impl SettingsView {
                     .flex()
                     .items_baseline()
                     .gap_3()
-                    .child(heading2("App text"))
-                    .child(label(
-                        "Tabs, the host list, the palette, panels and this page.",
-                    )),
+                    .child(heading2(&tr!("App text")))
+                    .child(label(&tr!(
+                        "Tabs, the host list, the palette, panels and this page."
+                    ))),
             )
             .child(
                 div()
@@ -804,7 +838,7 @@ impl SettingsView {
                     .items_start()
                     .child(self.font_picker(Fonts::Ui, cx))
                     .child(labelled(
-                        "Size",
+                        &tr!("Size"),
                         self.pills(
                             "ui-size",
                             sizes,
@@ -832,12 +866,12 @@ impl SettingsView {
             .editor
             .clone()
             .filter(|e| !e.trim().is_empty());
-        let mut choices: Vec<(usize, String)> = vec![(0, "The system's".to_string())];
+        let mut choices: Vec<(usize, String)> = vec![(0, tr!("The system's"))];
         for (n, (name, _)) in self.snap.editors.iter().enumerate() {
             choices.push((n + 1, name.clone()));
         }
         let custom_at = choices.len();
-        choices.push((custom_at, "Custom…".to_string()));
+        choices.push((custom_at, tr!("Custom…")));
         let current = if self.custom_editor {
             custom_at
         } else {
@@ -889,20 +923,58 @@ impl SettingsView {
                     div()
                         .text_size(ui(11.5))
                         .text_color(rgb(colors().muted))
-                        .child("The file's path is added at the end. Enter saves."),
+                        .child(tr!("The file's path is added at the end. Enter saves.")),
                 );
         }
-        let mut page = page("General")
+        // The language: the system's (0), or one of those there are (1…),
+        // each named in itself.
+        let chosen = self.snap.settings.general.language.clone();
+        let current = shellwing_i18n::LANGUAGES
+            .iter()
+            .position(|(t, _)| chosen.as_deref().map(str::trim) == Some(*t))
+            .map_or(0, |i| i + 1);
+        let system = shellwing_i18n::system_language();
+        let system_name = shellwing_i18n::LANGUAGES
+            .iter()
+            .find(|(t, _)| *t == system)
+            .map_or(system, |(_, n)| *n);
+        let mut languages: Vec<(usize, String)> =
+            vec![(0, tr!("As the system ({language})", language = system_name))];
+        languages.extend(
+            shellwing_i18n::LANGUAGES
+                .iter()
+                .enumerate()
+                .map(|(i, (_, n))| (i + 1, (*n).to_string())),
+        );
+        let language = self.pills(
+            "language",
+            languages,
+            current,
+            |v, i, cx| {
+                let tag = i
+                    .checked_sub(1)
+                    .and_then(|i| shellwing_i18n::LANGUAGES.get(i))
+                    .map(|(t, _)| SettingValue::Str((*t).to_string()));
+                v.change(&["general", "language"], tag, cx)
+            },
+            cx,
+        );
+        let mut page = page(&tr!("General"))
             .child(setting(
-                "Text editor for remote files",
-                "Edit in text editor, in the Files panel, opens a copy with it and writes the file back each time you save. The system's is the desktop's app for plain text.",
+                &tr!("Language"),
+                &tr!("shellwing's own words: menus, Settings, questions and notices. What the terminal shows is the server's. This device's own: it does not sync."),
+                language,
+            ))
+            .child(setting(
+                &tr!("Text editor for remote files"),
+                &tr!("Edit in text editor, in the Files panel, opens a copy with it and writes the file back each time you save. The system's is the desktop's app for plain text."),
                 editor_box,
             ))
             .child(toggle(
             "restore-tabs",
             restore,
-            "Open the last tabs at start",
-            "When shellwing starts without a host, it opens the tabs and splits it had.",
+            &tr!("Open the last tabs at start"),
+            &tr!("When shellwing starts without a host, it opens the tabs and splits it had."),
             cx.listener(move |v, _, _, cx| {
                 v.change(
                     &["general", "restore_tabs"],
@@ -912,15 +984,21 @@ impl SettingsView {
             }),
         ));
         if let Some(dir) = self.snap.config_dir.clone() {
-            let files = [
+            let files: [(String, String); 5] = [
                 (
-                    "config.toml",
-                    "These settings, for this device. Edits in the file apply at once.",
+                    "config.toml".into(),
+                    tr!("These settings, for this device. Edits in the file apply at once."),
                 ),
-                ("hosts.toml", "Hosts and groups. Synced. No secrets."),
-                ("themes/*.toml", "Your own themes."),
-                ("vault.db", "Passwords and passphrases, encrypted."),
-                ("System keychain", "The vault's unlock key."),
+                (
+                    "hosts.toml".into(),
+                    tr!("Hosts and groups. Synced. No secrets."),
+                ),
+                ("themes/*.toml".into(), tr!("Your own themes.")),
+                (
+                    "vault.db".into(),
+                    tr!("Passwords and passphrases, encrypted."),
+                ),
+                (tr!("System keychain"), tr!("The vault's unlock key.")),
             ];
             let mut list = div().flex().flex_col().gap(px(6.));
             for (name, what) in files {
@@ -935,7 +1013,7 @@ impl SettingsView {
             }
             page = page
                 .child(rule())
-                .child(heading("Where settings live"))
+                .child(heading(&tr!("Where settings live")))
                 .child(
                     div()
                         .flex()
@@ -948,7 +1026,7 @@ impl SettingsView {
                                 .child(shown_path(&dir)),
                         )
                         .child(
-                            small_button("open-config-dir", "Open folder")
+                            small_button("open-config-dir", &tr!("Open folder"))
                                 .on_click(cx.listener(move |v, _, _, cx| v.open(&dir, cx))),
                         ),
                 )
@@ -962,9 +1040,9 @@ impl SettingsView {
         let light = self.snap.light;
         let current = a.app_theme(light).to_string();
         let modes = vec![
-            (ColorMode::System, "System".to_string()),
-            (ColorMode::Dark, "Dark".to_string()),
-            (ColorMode::Light, "Light".to_string()),
+            (ColorMode::System, tr!("System")),
+            (ColorMode::Dark, tr!("Dark")),
+            (ColorMode::Light, tr!("Light")),
         ];
         let tile = |t: &Arc<Theme>, cx: &mut Context<Self>| {
             let on = t.id == current;
@@ -998,14 +1076,14 @@ impl SettingsView {
                 )
         };
         // By group; while light, the light ones first. The user's own last.
-        let mut order: Vec<(Option<&str>, &str)> = shellwing_config::GROUPS
+        let mut order: Vec<(Option<&str>, String)> = shellwing_config::GROUPS
             .iter()
-            .map(|(id, title)| (Some(*id), *title))
+            .map(|(id, _)| (Some(*id), crate::look::group_title(Some(id))))
             .collect();
         if light {
             order.sort_by_key(|(id, _)| !id.is_some_and(|g| g.contains("light")));
         }
-        order.push((None, "Your themes"));
+        order.push((None, crate::look::group_title(None)));
         let mut groups = div().flex().flex_col().gap(px(14.));
         for (id, title) in order {
             let members: Vec<&Arc<Theme>> = self
@@ -1032,7 +1110,7 @@ impl SettingsView {
                     .flex()
                     .flex_col()
                     .gap(px(8.))
-                    .child(heading(title))
+                    .child(heading(&title))
                     .child(grid),
             );
         }
@@ -1051,14 +1129,14 @@ impl SettingsView {
             .map(|l| (l, format!("{:.1}", l as f32 / 10.)))
             .collect();
         let cursors = vec![
-            (CursorStyle::Block, "Block".to_string()),
-            (CursorStyle::Bar, "Bar".to_string()),
-            (CursorStyle::Underline, "Underline".to_string()),
+            (CursorStyle::Block, tr!("Block")),
+            (CursorStyle::Bar, tr!("Bar")),
+            (CursorStyle::Underline, tr!("Underline")),
         ];
         let bars = vec![
-            (Scrollbar::Auto, "When scrolling".to_string()),
-            (Scrollbar::Always, "Always".to_string()),
-            (Scrollbar::Never, "Never".to_string()),
+            (Scrollbar::Auto, tr!("When scrolling")),
+            (Scrollbar::Always, tr!("Always")),
+            (Scrollbar::Never, tr!("Never")),
         ];
         let pads: Vec<(u32, String)> = [0, 2, 4, 8, 12]
             .into_iter()
@@ -1068,7 +1146,7 @@ impl SettingsView {
             .flex()
             .flex_col()
             .gap(px(14.))
-            .child(heading2("Terminal text"))
+            .child(heading2(&tr!("Terminal text")))
             .child(
                 div()
                     .flex()
@@ -1077,7 +1155,7 @@ impl SettingsView {
                     .items_start()
                     .child(font_box)
                     .child(labelled(
-                        "Size",
+                        &tr!("Size"),
                         self.pills(
                             "size",
                             sizes,
@@ -1099,7 +1177,7 @@ impl SettingsView {
                     .flex_wrap()
                     .gap(px(14.))
                     .child(labelled(
-                        "Line height",
+                        &tr!("Line height"),
                         self.pills(
                             "line",
                             lines,
@@ -1115,7 +1193,7 @@ impl SettingsView {
                         ),
                     ))
                     .child(labelled(
-                        "Cursor",
+                        &tr!("Cursor"),
                         self.pills(
                             "cursor",
                             cursors,
@@ -1142,7 +1220,7 @@ impl SettingsView {
                     .flex_wrap()
                     .gap(px(14.))
                     .child(labelled(
-                        "Scrollbar",
+                        &tr!("Scrollbar"),
                         self.pills(
                             "scrollbar",
                             bars,
@@ -1163,7 +1241,7 @@ impl SettingsView {
                         ),
                     ))
                     .child(labelled(
-                        "Padding at the sides",
+                        &tr!("Padding at the sides"),
                         self.pills(
                             "pad-x",
                             pads.clone(),
@@ -1179,7 +1257,7 @@ impl SettingsView {
                         ),
                     ))
                     .child(labelled(
-                        "Top and bottom",
+                        &tr!("Top and bottom"),
                         self.pills(
                             "pad-y",
                             pads,
@@ -1211,7 +1289,7 @@ impl SettingsView {
                         div()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Mode"),
+                            .child(tr!("Mode")),
                     )
                     .child(self.pills(
                         "color-mode",
@@ -1227,10 +1305,10 @@ impl SettingsView {
                         },
                         cx,
                     ))
-                    .child(label(match a.mode {
-                        ColorMode::System if light => "The system is light now.",
-                        ColorMode::System => "The system is dark now.",
-                        _ => "",
+                    .child(label(&match a.mode {
+                        ColorMode::System if light => tr!("The system is light now."),
+                        ColorMode::System => tr!("The system is dark now."),
+                        _ => String::new(),
                     })),
             )
             .child(
@@ -1242,12 +1320,12 @@ impl SettingsView {
                         div()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child(if light { "Light theme" } else { "Dark theme" }),
+                            .child(if light { tr!("Light theme") } else { tr!("Dark theme") }),
                     )
-                    .child(label(if light {
-                        "The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor."
+                    .child(label(&if light {
+                        tr!("The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.")
                     } else {
-                        "The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor."
+                        tr!("The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor.")
                     })),
             )
             .child(groups)
@@ -1257,20 +1335,20 @@ impl SettingsView {
                         .flex()
                         .items_center()
                         .gap_2()
-                        .child(small_button("themes-dir", "Open themes folder").on_click(
+                        .child(small_button("themes-dir", &tr!("Open themes folder")).on_click(
                             cx.listener(move |v, _, _, cx| {
                                 let _ = std::fs::create_dir_all(&dir);
                                 v.open(&dir, cx)
                             }),
                         ))
-                        .child(label("A .toml file there is a theme of your own.")),
+                        .child(label(&tr!("A .toml file there is a theme of your own."))),
                 )
             })
             .child(toggle(
                 "theme-accent",
                 a.theme_accent,
-                "The app's accent from the theme",
-                "The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.",
+                &tr!("The app's accent from the theme"),
+                &tr!("The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken."),
                 {
                     let on = a.theme_accent;
                     cx.listener(move |v, _, _, cx| {
@@ -1393,7 +1471,7 @@ impl SettingsView {
             .flex()
             .flex_col()
             .gap(px(10.))
-            .child(heading("Preview"))
+            .child(heading(&tr!("Preview")))
             .child(screen)
             .child(
                 div()
@@ -1422,24 +1500,24 @@ impl SettingsView {
         let t = &self.snap.settings.terminal;
         let lines: Vec<(usize, String)> = [1_000, 10_000, 50_000, 100_000]
             .into_iter()
-            .map(|n| (n, format!("{} k", n / 1000)))
+            .map(|n| (n, tr!("{k} k", k = n / 1000)))
             .collect();
         let drops = vec![
-            (OnDisconnect::Reconnect, "Reconnect".to_string()),
-            (OnDisconnect::Ask, "Ask".to_string()),
-            (OnDisconnect::Close, "Close".to_string()),
+            (OnDisconnect::Reconnect, tr!("Reconnect")),
+            (OnDisconnect::Ask, tr!("Ask")),
+            (OnDisconnect::Close, tr!("Close")),
         ];
-        page("Terminal")
+        page(&tr!("Terminal"))
             .child(setting(
-                "Scrollback",
-                &format!("Lines kept per pane, now {}. More uses more memory; new tabs get it.", t.scrollback),
+                &tr!("Scrollback"),
+                &tr!("Lines kept per pane, now {lines}. More uses more memory; new tabs get it.", lines = t.scrollback),
                 self.pills("scrollback", lines, t.scrollback, |v, n, cx| {
                     v.change(&["terminal", "scrollback"], Some(SettingValue::Int(n as i64)), cx)
                 }, cx),
             ))
             .child(setting(
-                "When a connection drops",
-                "Reconnect tries again by itself, waiting longer each time. After exit, Enter connects again.",
+                &tr!("When a connection drops"),
+                &tr!("Reconnect tries again by itself, waiting longer each time. After exit, Enter connects again."),
                 self.pills("on-disconnect", drops, t.on_disconnect, |v, d, cx| {
                     let name = match d {
                         OnDisconnect::Reconnect => "reconnect",
@@ -1450,8 +1528,8 @@ impl SettingsView {
                 }, cx),
             ))
             .child(setting(
-                "Local shell",
-                "What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.",
+                &tr!("Local shell"),
+                &tr!("What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it."),
                 div().w(px(320.)).child(
                     div()
                         .h(px(30.))
@@ -1474,16 +1552,13 @@ impl SettingsView {
         let always = l.always;
         let timestamps = l.timestamps;
         let folder = shellwing_core::logs::folder(l);
-        let formats = vec![
-            (LogFormat::Text, "Text".to_string()),
-            (LogFormat::Raw, "Raw".to_string()),
-        ];
+        let formats = vec![(LogFormat::Text, tr!("Text")), (LogFormat::Raw, tr!("Raw"))];
         let mut buttons = div().flex().flex_wrap().gap(px(6.)).child(
-            small_button("log-folder", "Change…")
+            small_button("log-folder", &tr!("Change…"))
                 .on_click(cx.listener(|v, _, _, cx| v.choose_log_folder(cx))),
         );
         if let Some(dir) = folder.clone() {
-            buttons = buttons.child(small_button("log-open", "Open").on_click(cx.listener(
+            buttons = buttons.child(small_button("log-open", &tr!("Open")).on_click(cx.listener(
                 move |v, _, _, cx| {
                     // Made first, as no log may have been written yet; if it
                     // cannot be, the file manager says what is wrong.
@@ -1494,7 +1569,7 @@ impl SettingsView {
         }
         if l.folder.is_some() {
             buttons = buttons.child(
-                small_button("log-default", "Use the default")
+                small_button("log-default", &tr!("Use the default"))
                     .on_click(cx.listener(|v, _, _, cx| v.change(&["log", "folder"], None, cx))),
             );
         }
@@ -1503,19 +1578,19 @@ impl SettingsView {
             .flex_col()
             .gap(px(16.))
             .pt(px(8.))
-            .child(heading("Session logs"))
+            .child(heading(&tr!("Session logs")))
             .child(div().flex().flex_col().child(toggle(
                 "log-always",
                 always,
-                "Log every session",
-                "From its start, to a file of its own. A host can say otherwise in its editor, and Start Logging in a pane's menu logs it from then on.",
+                &tr!("Log every session"),
+                &tr!("From its start, to a file of its own. A host can say otherwise in its editor, and Start Logging in a pane's menu logs it from then on."),
                 cx.listener(move |v, _, _, cx| {
                     v.change(&["log", "always"], Some(SettingValue::Bool(!always)), cx)
                 }),
             ))
             .child(setting(
-                "Format",
-                "Text: the lines as they were left, colors gone; what full-screen programs (vim, htop) draw is left out. Raw: every byte as it came, which cat or less -R shows in color.",
+                &tr!("Format"),
+                &tr!("Text: the lines as they were left, colors gone; what full-screen programs (vim, htop) draw is left out. Raw: every byte as it came, which cat or less -R shows in color."),
                 self.pills("log-format", formats, l.format, |v, f, cx| {
                     let name = match f {
                         LogFormat::Text => "text",
@@ -1528,21 +1603,21 @@ impl SettingsView {
                 d.child(toggle(
                     "log-timestamps",
                     timestamps,
-                    "The time on each line",
-                    "Each line of a text log starts with the date and time it was written.",
+                    &tr!("The time on each line"),
+                    &tr!("Each line of a text log starts with the date and time it was written."),
                     cx.listener(move |v, _, _, cx| {
                         v.change(&["log", "timestamps"], Some(SettingValue::Bool(!timestamps)), cx)
                     }),
                 ))
             })
             .child(setting(
-                "Folder",
+                &tr!("Folder"),
                 &match &folder {
-                    Some(dir) => format!(
-                        "Logs go to {}. Only you can read them: they hold whatever the sessions showed.",
-                        dir.display()
+                    Some(dir) => tr!(
+                        "Logs go to {folder}. Only you can read them: they hold whatever the sessions showed.",
+                        folder = dir.display().to_string()
                     ),
-                    None => "No folder for logs: choose one.".to_string(),
+                    None => tr!("No folder for logs: choose one."),
                 },
                 buttons,
             )))
@@ -1555,23 +1630,26 @@ impl SettingsView {
         } else {
             ("Ctrl+Shift", "Alt")
         };
-        let keys: Vec<(&str, String)> = vec![
-            ("Command palette", format!("{chord}+K")),
-            ("New tab", format!("{chord}+T")),
-            ("Close the pane", format!("{chord}+W")),
-            ("Split right", format!("{chord}+D")),
+        let keys: Vec<(String, String)> = vec![
+            (tr!("Command palette"), format!("{chord}+K")),
+            (tr!("New tab"), format!("{chord}+T")),
+            (tr!("Close the pane"), format!("{chord}+W")),
+            (tr!("Split right"), format!("{chord}+D")),
             (
-                "Split down",
+                tr!("Split down"),
                 if mac {
                     "Cmd+Shift+D".into()
                 } else {
                     "Ctrl+Shift+E".into()
                 },
             ),
-            ("Move between panes", format!("{pane}+arrows")),
-            ("Next and previous tab", "Ctrl+Tab, Ctrl+Shift+Tab".into()),
+            (tr!("Move between panes"), tr!("{pane}+arrows", pane = pane)),
             (
-                "Every tab, by host",
+                tr!("Next and previous tab"),
+                "Ctrl+Tab, Ctrl+Shift+Tab".into(),
+            ),
+            (
+                tr!("Every tab, by host"),
                 if mac {
                     "Cmd+Shift+A".into()
                 } else {
@@ -1579,29 +1657,32 @@ impl SettingsView {
                 },
             ),
             (
-                "Go to tab 1–9",
+                tr!("Go to tab 1–9"),
                 if mac {
                     "Cmd+1…9".into()
                 } else {
                     "Alt+1…9".into()
                 },
             ),
-            ("Host list", format!("{chord}+B")),
-            ("Files", format!("{chord}+O")),
+            (tr!("Host list"), format!("{chord}+B")),
+            (tr!("Files"), format!("{chord}+O")),
             (
-                "Settings",
+                tr!("Settings"),
                 if mac { "Cmd+,".into() } else { "Ctrl+,".into() },
             ),
-            ("Next and previous theme", format!("{chord}+] and [")),
             (
-                "Copy and paste",
+                tr!("Next and previous theme"),
+                tr!("{chord}+] and [", chord = chord),
+            ),
+            (
+                tr!("Copy and paste"),
                 if mac {
                     "Cmd+C, Cmd+V".into()
                 } else {
                     "Ctrl+Shift+C, Ctrl+Shift+V".into()
                 },
             ),
-            ("Back to the bottom", "Shift+End".into()),
+            (tr!("Back to the bottom"), "Shift+End".into()),
         ];
         let mut list = div().flex().flex_col().gap(px(8.));
         for (what, key) in keys {
@@ -1623,18 +1704,18 @@ impl SettingsView {
                     ),
             );
         }
-        page("Keyboard")
-            .child(label(
-                "Window shortcuts never reach the remote host. They cannot be changed yet.",
-            ))
+        page(&tr!("Keyboard"))
+            .child(label(&tr!(
+                "Window shortcuts never reach the remote host. They cannot be changed yet."
+            )))
             .child(div().max_w(px(520.)).child(list))
     }
 
     fn ssh(&self, cx: &mut Context<Self>) -> gpui::Div {
         let agent = if std::env::var_os("SSH_AUTH_SOCK").is_some() || cfg!(windows) {
-            "Found. Its keys are tried first."
+            tr!("Found. Its keys are tried first.")
         } else {
-            "Not found (SSH_AUTH_SOCK is not set)."
+            tr!("Not found (SSH_AUTH_SOCK is not set).")
         };
         let file_row = |id: &'static str,
                         what: &str,
@@ -1644,7 +1725,7 @@ impl SettingsView {
             let shown = path
                 .as_deref()
                 .map(shown_path)
-                .unwrap_or_else(|| "none".into());
+                .unwrap_or_else(|| tr!("none"));
             setting(
                 what,
                 note,
@@ -1660,7 +1741,7 @@ impl SettingsView {
                     )
                     .when_some(path.filter(|p| p.exists()), |d, p| {
                         d.child(
-                            small_button(id, "Open")
+                            small_button(id, &tr!("Open"))
                                 .on_click(cx.listener(move |v, _, _, cx| v.open(&p, cx))),
                         )
                     }),
@@ -1668,9 +1749,9 @@ impl SettingsView {
         };
         let ssh = &self.snap.settings.ssh;
         let keys = vec![
-            (HostKey::Ask, "Ask".to_string()),
-            (HostKey::AcceptNew, "Accept new".to_string()),
-            (HostKey::Strict, "Refuse".to_string()),
+            (HostKey::Ask, tr!("Ask")),
+            (HostKey::AcceptNew, tr!("Accept new")),
+            (HostKey::Strict, tr!("Refuse")),
         ];
         let alive: Vec<(u64, String)> = [0, 15, 30, 60]
             .into_iter()
@@ -1678,26 +1759,26 @@ impl SettingsView {
                 (
                     s,
                     if s == 0 {
-                        "Off".into()
+                        tr!("Off")
                     } else {
-                        format!("{s} s")
+                        tr!("{s} s", s = s)
                     },
                 )
             })
             .collect();
-        page("SSH and security")
+        page(&tr!("SSH and security"))
             .child(setting(
-                "Unknown host keys",
-                "Ask shows the fingerprint and sends nothing until you accept it. Accept new records it and goes on; Refuse turns it away. A changed key is always refused. A host can have its own in its editor.",
+                &tr!("Unknown host keys"),
+                &tr!("Ask shows the fingerprint and sends nothing until you accept it. Accept new records it and goes on; Refuse turns it away. A changed key is always refused. A host can have its own in its editor."),
                 self.pills("host-key", keys, ssh.host_key, |v, k, cx| {
                     v.change(&["ssh", "host_key"], Some(SettingValue::Str(k.name().into())), cx)
                 }, cx),
             ))
             .child(setting(
-                "Keepalive",
-                &format!(
-                    "A check every so often, so idle connections are not dropped and dead ones are noticed after 3 misses. Now {}. A host's own (or its ServerAliveInterval) wins.",
-                    if ssh.keepalive == 0 { "off".to_string() } else { format!("{} s", ssh.keepalive) }
+                &tr!("Keepalive"),
+                &tr!(
+                    "A check every so often, so idle connections are not dropped and dead ones are noticed after 3 misses. Now {now}. A host's own (or its ServerAliveInterval) wins.",
+                    now = if ssh.keepalive == 0 { tr!("off") } else { tr!("{s} s", s = ssh.keepalive) }
                 ),
                 self.pills("keepalive", alive, ssh.keepalive, |v, s, cx| {
                     v.change(&["ssh", "keepalive"], Some(SettingValue::Int(s as i64)), cx)
@@ -1705,19 +1786,19 @@ impl SettingsView {
             ))
             .child(file_row(
                 "known-hosts",
-                "known_hosts file",
-                "Shared with ssh. shellwing adds the keys you trust.",
+                &tr!("known_hosts file"),
+                &tr!("Shared with ssh. shellwing adds the keys you trust."),
                 self.snap.known_hosts.clone(),
                 cx,
             ))
             .child(file_row(
                 "ssh-config",
-                "ssh config file",
-                "Read only. Its hosts show in the host list.",
+                &tr!("ssh config file"),
+                &tr!("Read only. Its hosts show in the host list."),
                 self.snap.ssh_config.clone(),
                 cx,
             ))
-            .child(setting("Agent", "Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).", div().text_size(ui(12.5)).child(agent)))
+            .child(setting(&tr!("Agent"), &tr!("Keys in ssh-agent (Pageant or the OpenSSH agent on Windows)."), div().text_size(ui(12.5)).child(agent)))
     }
 
     fn sync(&self, cx: &mut Context<Self>) -> gpui::Div {
@@ -1726,16 +1807,16 @@ impl SettingsView {
             Some(p) => {
                 buttons = buttons
                     .child(
-                        small_button("sync-now", "Sync now")
+                        small_button("sync-now", &tr!("Sync now"))
                             .on_click(cx.listener(|v, _, w, cx| v.run(Action::SyncNow, w, cx))),
                     )
                     .child(
-                        small_button("sync-key", "Show the recovery key").on_click(
+                        small_button("sync-key", &tr!("Show the recovery key")).on_click(
                             cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx)),
                         ),
                     )
                     .child(
-                        small_button("sync-stop", "Stop syncing")
+                        small_button("sync-stop", &tr!("Stop syncing"))
                             .on_click(cx.listener(|v, _, w, cx| v.run(Action::StopSync, w, cx))),
                     );
                 let shown = match p {
@@ -1746,23 +1827,27 @@ impl SettingsView {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .child(div().text_size(ui(12.5)).child(format!("With {shown}")))
+                    .child(
+                        div()
+                            .text_size(ui(12.5))
+                            .child(tr!("With {shown}", shown = shown)),
+                    )
                     .child(buttons)
             }
             None => self.sync_choice(cx),
         };
         let settings_on = self.snap.settings.sync.settings;
-        page("Sync")
+        page(&tr!("Sync"))
             .child(setting(
-                "Sync with a folder or a server",
-                "Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.",
+                &tr!("Sync with a folder or a server"),
+                &tr!("Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret."),
                 place,
             ))
             .child(toggle(
                 "sync-settings",
                 settings_on,
-                "Sync settings too",
-                "The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.",
+                &tr!("Sync settings too"),
+                &tr!("The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor."),
                 cx.listener(move |v, _, _, cx| {
                     v.change(&["sync", "settings"], Some(SettingValue::Bool(!settings_on)), cx)
                 }),
@@ -1771,8 +1856,8 @@ impl SettingsView {
                 d.child(toggle(
                     "sync-passphrase",
                     joins,
-                    "Let a passphrase join new devices",
-                    "A new device that syncs the same place types it instead of the recovery key or being approved here. It is kept there, sealed by the passphrase: anyone who can read the place can try to guess it, so it has to be hard to guess.",
+                    &tr!("Let a passphrase join new devices"),
+                    &tr!("A new device that syncs the same place types it instead of the recovery key or being approved here. It is kept there, sealed by the passphrase: anyone who can read the place can try to guess it, so it has to be hard to guess."),
                     cx.listener(move |v, _, w, cx| {
                         let a = if joins {
                             Action::StopPassphraseJoin
@@ -1783,7 +1868,7 @@ impl SettingsView {
                     }),
                 ))
             })
-            .child(label("Hosts kept on this device only (in their editor) stay out of it."))
+            .child(label(&tr!("Hosts kept on this device only (in their editor) stay out of it.")))
     }
 
     /// Where to sync, while not syncing: a folder, or a server's address
@@ -1791,9 +1876,9 @@ impl SettingsView {
     fn sync_choice(&self, cx: &mut Context<Self>) -> gpui::Div {
         let form = &self.sync_form;
         let kinds = vec![
-            (SyncKind::Folder, "A folder".to_string()),
+            (SyncKind::Folder, tr!("A folder")),
             (SyncKind::WebDav, "WebDAV".to_string()),
-            (SyncKind::S3, "S3-compatible".to_string()),
+            (SyncKind::S3, tr!("S3-compatible")),
             (SyncKind::Git, "Git".to_string()),
         ];
         let pick = self.pills(
@@ -1824,17 +1909,17 @@ impl SettingsView {
                     .child(input.clone()),
             )
         };
-        let connect = small_button("sync-connect", "Connect")
+        let connect = small_button("sync-connect", &tr!("Connect"))
             .on_click(cx.listener(|v, _, w, cx| v.connect_sync(w, cx)));
         let body = match form.kind {
             SyncKind::Folder => div()
                 .flex()
                 .flex_col()
                 .gap_2()
-                .child(label("iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share."))
+                .child(label(&tr!("iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.")))
                 .child(
                     div().flex().child(
-                        small_button("sync-folder", "Choose a folder…").on_click(
+                        small_button("sync-folder", &tr!("Choose a folder…")).on_click(
                             cx.listener(|v, _, w, cx| v.run(Action::SyncFolder, w, cx)),
                         ),
                     ),
@@ -1843,30 +1928,30 @@ impl SettingsView {
                 .flex()
                 .flex_col()
                 .gap(px(10.))
-                .child(label("Nextcloud, ownCloud, Synology, Koofr, Fastmail: the address of a folder there."))
-                .child(field("Address", &form.dav[0]))
-                .child(field("User", &form.dav[1]))
-                .child(field("Password", &form.dav[2])),
+                .child(label(&tr!("Nextcloud, ownCloud, Synology, Koofr, Fastmail: the address of a folder there.")))
+                .child(field(&tr!("Address"), &form.dav[0]))
+                .child(field(&tr!("User"), &form.dav[1]))
+                .child(field(&tr!("Password"), &form.dav[2])),
             SyncKind::S3 => div()
                 .flex()
                 .flex_col()
                 .gap(px(10.))
-                .child(label("AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi: a bucket, and a key that can read and write it."))
-                .child(field("Endpoint", &form.s3[0]))
-                .child(field("Region (if it asks for one)", &form.s3[1]))
-                .child(field("Bucket", &form.s3[2]))
-                .child(field("Folder in the bucket", &form.s3[3]))
-                .child(field("Access key", &form.s3[4]))
-                .child(field("Secret key", &form.s3[5])),
+                .child(label(&tr!("AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi: a bucket, and a key that can read and write it.")))
+                .child(field(&tr!("Endpoint"), &form.s3[0]))
+                .child(field(&tr!("Region (if it asks for one)"), &form.s3[1]))
+                .child(field(&tr!("Bucket"), &form.s3[2]))
+                .child(field(&tr!("Folder in the bucket"), &form.s3[3]))
+                .child(field(&tr!("Access key"), &form.s3[4]))
+                .child(field(&tr!("Secret key"), &form.s3[5])),
             SyncKind::Git => div()
                 .flex()
                 .flex_col()
                 .gap(px(10.))
-                .child(label("A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit."))
-                .child(field("Repository", &form.git[0]))
-                .child(field("Branch", &form.git[1]))
-                .child(field("Token (if git cannot sign in by itself)", &form.git[2]))
-                .child(field("The token's user", &form.git[3]))
+                .child(label(&tr!("A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.")))
+                .child(field(&tr!("Repository"), &form.git[0]))
+                .child(field(&tr!("Branch"), &form.git[1]))
+                .child(field(&tr!("Token (if git cannot sign in by itself)"), &form.git[2]))
+                .child(field(&tr!("The token's user"), &form.git[3]))
                 .when_some(form.no_git.clone(), |d, no| d.child(self.no_git(no, cx))),
         };
         let remote = form.kind != SyncKind::Folder;
@@ -1877,9 +1962,9 @@ impl SettingsView {
             .child(pick)
             .child(body)
             .when(remote, |d| {
-                d.child(label(
-                    "The password, secret key or token stays on this device, in the vault; other devices sign in with their own.",
-                ))
+                d.child(label(&tr!(
+                    "The password, secret key or token stays on this device, in the vault; other devices sign in with their own."
+                )))
                 .child(
                     div()
                         .flex()
@@ -1887,7 +1972,7 @@ impl SettingsView {
                         .gap_3()
                         .child(connect)
                         .when(form.installing, |d| {
-                            d.child(div().text_size(ui(12.5)).child("Installing git…"))
+                            d.child(div().text_size(ui(12.5)).child(tr!("Installing git…")))
                         })
                         .when_some(form.problem.clone(), |d, p| {
                             d.child(div().text_size(ui(12.5)).text_color(rgb(colors().bad)).child(p))
@@ -1918,75 +2003,72 @@ impl SettingsView {
                     .text_color(rgb(colors().warn_text))
                     .child(format!("{no}.")),
             );
-        what = match how {
-            Some(Install::CommandLineTools) => {
-                what.child(label(
-                    "macOS installs it with Apple's Command Line Tools, in a dialog of its own.",
-                ))
-                .child(div().flex().child(
-                    small_button("git-install", "Install git…").on_click(
-                        cx.listener(|v, _, _, cx| v.install_git(Install::CommandLineTools, cx)),
-                    ),
-                ))
-            }
-            Some(Install::Winget) => what
-                .child(label(
-                    "Windows installs it with winget, and asks to allow it.",
-                ))
-                .child(
-                    div().flex().child(
-                        small_button("git-install", "Install git…").on_click(
+        what =
+            match how {
+                Some(Install::CommandLineTools) => what
+                    .child(label(&tr!(
+                        "macOS installs it with Apple's Command Line Tools, in a dialog of its own."
+                    )))
+                    .child(div().flex().child(
+                        small_button("git-install", &tr!("Install git…")).on_click(
+                            cx.listener(|v, _, _, cx| v.install_git(Install::CommandLineTools, cx)),
+                        ),
+                    )),
+                Some(Install::Winget) => what
+                    .child(label(&tr!(
+                        "Windows installs it with winget, and asks to allow it."
+                    )))
+                    .child(div().flex().child(
+                        small_button("git-install", &tr!("Install git…")).on_click(
                             cx.listener(|v, _, _, cx| v.install_git(Install::Winget, cx)),
                         ),
+                    )),
+                Some(Install::Download(url)) => what.child(
+                    div().flex().child(
+                        small_button("git-download", &tr!("Download git"))
+                            .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url))),
                     ),
                 ),
-            Some(Install::Download(url)) => what.child(
-                div().flex().child(
-                    small_button("git-download", "Download git")
-                        .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url))),
-                ),
-            ),
-            Some(Install::Command(cmd)) => {
-                let copied = cmd.clone();
-                what.child(label("Install it in a terminal, then Connect again:"))
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap_2()
-                            .child(
-                                div()
-                                    .px(px(8.))
-                                    .py(px(4.))
-                                    .rounded(px(5.))
-                                    .bg(rgb(colors().field))
-                                    .font_family("monospace")
-                                    .child(cmd),
-                            )
-                            .child(small_button("git-copy", "Copy").on_click(cx.listener(
-                                move |v, _, _, cx| {
-                                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(
-                                        copied.clone(),
-                                    ));
-                                    v.say("Copied.".into(), cx);
-                                },
-                            ))),
-                    )
-            }
-            // Too old, or failing: what it said is above.
-            None => what.child(label(
-                "Install a newer git (git-scm.com), then Connect again.",
-            )),
-        };
+                Some(Install::Command(cmd)) => {
+                    let copied = cmd.clone();
+                    what.child(label(&tr!("Install it in a terminal, then Connect again:")))
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_2()
+                                .child(
+                                    div()
+                                        .px(px(8.))
+                                        .py(px(4.))
+                                        .rounded(px(5.))
+                                        .bg(rgb(colors().field))
+                                        .font_family("monospace")
+                                        .child(cmd),
+                                )
+                                .child(small_button("git-copy", &tr!("Copy")).on_click(
+                                    cx.listener(move |v, _, _, cx| {
+                                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(
+                                            copied.clone(),
+                                        ));
+                                        v.say(tr!("Copied."), cx);
+                                    }),
+                                )),
+                        )
+                }
+                // Too old, or failing: what it said is above.
+                None => what.child(label(&tr!(
+                    "Install a newer git (git-scm.com), then Connect again."
+                ))),
+            };
         what
     }
 
     fn vault(&self, cx: &mut Context<Self>) -> gpui::Div {
         let count = match self.snap.secrets {
-            Some(0) => "None saved yet.".to_string(),
-            Some(1) => "1 saved.".to_string(),
-            Some(n) => format!("{n} saved."),
-            None => "The vault is not open.".to_string(),
+            Some(0) => tr!("None saved yet."),
+            Some(n) => tr_n!(n, "{n} saved.", "{n} saved."),
+            None => tr!("The vault is not open."),
         };
         // Where the vault's key is kept, and what to change about it.
         let (state, mut buttons) = (
@@ -1995,77 +2077,82 @@ impl SettingsView {
                 self.snap.vault_passphrase,
                 self.snap.vault_keychain,
             ) {
-                (true, _, _) => "Locked: its passphrase or recovery key opens it.",
-                (_, None, _) => "Not open.",
-                (_, Some(true), true) => "In the system keychain, and kept by a passphrase too.",
-                (_, Some(true), false) => "Kept by its passphrase: typed when shellwing starts.",
-                (_, Some(false), true) => "In the system keychain.",
-                (_, Some(false), false) => "Open, but nothing keeps its key: set a passphrase.",
+                (true, _, _) => tr!("Locked: its passphrase or recovery key opens it."),
+                (_, None, _) => tr!("Not open."),
+                (_, Some(true), true) => {
+                    tr!("In the system keychain, and kept by a passphrase too.")
+                }
+                (_, Some(true), false) => {
+                    tr!("Kept by its passphrase: typed when shellwing starts.")
+                }
+                (_, Some(false), true) => tr!("In the system keychain."),
+                (_, Some(false), false) => {
+                    tr!("Open, but nothing keeps its key: set a passphrase.")
+                }
             },
             div().flex().flex_wrap().gap_2(),
         );
         if self.snap.vault_locked {
             buttons = buttons.child(
-                small_button("vault-unlock", "Unlock…")
+                small_button("vault-unlock", &tr!("Unlock…"))
                     .on_click(cx.listener(|v, _, w, cx| v.run(Action::UnlockVault, w, cx))),
             );
         } else if let Some(has) = self.snap.vault_passphrase {
             buttons = buttons.child(
                 small_button(
                     "vault-pass",
-                    if has {
-                        "Change the passphrase…"
+                    &if has {
+                        tr!("Change the passphrase…")
                     } else {
-                        "Set a passphrase…"
+                        tr!("Set a passphrase…")
                     },
                 )
                 .on_click(cx.listener(|v, _, w, cx| v.run(Action::SetVaultPassphrase, w, cx))),
             );
             if self.snap.vault_can_lock {
                 buttons = buttons.child(
-                    small_button("vault-lock", "Lock now")
+                    small_button("vault-lock", &tr!("Lock now"))
                         .on_click(cx.listener(|v, _, w, cx| v.run(Action::LockVault, w, cx))),
                 );
             }
             if has && self.snap.vault_keychain {
                 buttons = buttons
                     .child(
-                        small_button("vault-leave", "Ask for it at every start").on_click(
+                        small_button("vault-leave", &tr!("Ask for it at every start")).on_click(
                             cx.listener(|v, _, w, cx| v.run(Action::LeaveKeychain, w, cx)),
                         ),
                     )
                     .child(
-                        small_button("vault-pass-off", "Remove the passphrase").on_click(
+                        small_button("vault-pass-off", &tr!("Remove the passphrase")).on_click(
                             cx.listener(|v, _, w, cx| v.run(Action::RemoveVaultPassphrase, w, cx)),
                         ),
                     );
             }
             if !self.snap.vault_keychain {
                 buttons = buttons.child(
-                    small_button("vault-keep", "Keep it in the system keychain")
+                    small_button("vault-keep", &tr!("Keep it in the system keychain"))
                         .on_click(cx.listener(|v, _, w, cx| v.run(Action::KeepVaultKey, w, cx))),
                 );
             }
-            buttons =
-                buttons
-                    .child(small_button("vault-rk", "Show the recovery key").on_click(
-                        cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx)),
-                    ));
+            buttons = buttons.child(
+                small_button("vault-rk", &tr!("Show the recovery key"))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx))),
+            );
         }
-        page("Vault")
+        page(&tr!("Vault"))
             .child(setting(
-                "Saved passwords and passphrases",
-                "Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted.",
+                &tr!("Saved passwords and passphrases"),
+                &tr!("Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted."),
                 div()
                     .flex()
                     .items_center()
                     .gap_3()
                     .child(div().text_size(ui(12.5)).child(count))
-                    .child(small_button("vault-manage", "Manage…").on_click(cx.listener(|v, _, w, cx| v.run(Action::ManageSecrets, w, cx)))),
+                    .child(small_button("vault-manage", &tr!("Manage…")).on_click(cx.listener(|v, _, w, cx| v.run(Action::ManageSecrets, w, cx)))),
             ))
             .child(setting(
-                "The vault's key",
-                "What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.",
+                &tr!("The vault's key"),
+                &tr!("What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it."),
                 div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
             ))
             .when_some(
@@ -2074,14 +2161,14 @@ impl SettingsView {
                     .filter(|_| self.snap.vault_passphrase == Some(true)),
                 |d, (name, on)| {
                     let what = if cfg!(target_os = "macos") {
-                        format!("When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.")
+                        tr!("When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.", name = name)
                     } else {
-                        format!("When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.")
+                        tr!("When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.", name = name)
                     };
                     d.child(toggle(
                         "vault-presence",
                         on,
-                        &format!("Unlock with {name}"),
+                        &tr!("Unlock with {name}", name = name),
                         &what,
                         cx.listener(|v, _, w, cx| v.run(Action::TogglePresence, w, cx)),
                     ))
@@ -2093,16 +2180,16 @@ impl SettingsView {
                     .into_iter()
                     .map(|m| {
                         let label = match m {
-                            0 => "Never".to_string(),
-                            60 => "1 hour".to_string(),
-                            m => format!("{m} min"),
+                            0 => tr!("Never"),
+                            60 => tr!("1 hour"),
+                            m => tr!("{m} min", m = m),
                         };
                         (m, label)
                     })
                     .collect();
                 d.child(setting(
-                    "Lock when idle",
-                    "After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.",
+                    &tr!("Lock when idle"),
+                    &tr!("After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then."),
                     self.pills(
                         "vault-lock-after",
                         options,
@@ -2124,7 +2211,7 @@ impl SettingsView {
             None => {
                 let Some((vault, rt)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
                 else {
-                    return page("Keys");
+                    return page(&tr!("Keys"));
                 };
                 let ws = self.workspace.clone();
                 let k = cx.new(|cx| KeysView::new(ws, vault, rt, cx));
@@ -2142,7 +2229,7 @@ impl SettingsView {
             None => {
                 let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
                 else {
-                    return page("Snippets");
+                    return page(&tr!("Snippets"));
                 };
                 let ws = self.workspace.clone();
                 let s = cx.new(|cx| SnippetsView::new(ws, vault, cx));
@@ -2154,13 +2241,13 @@ impl SettingsView {
     }
 
     fn about(&self) -> gpui::Div {
-        page("About")
+        page(&tr!("About"))
             .child(
                 div()
                     .text_size(ui(15.))
                     .child(format!("shellwing {}", env!("CARGO_PKG_VERSION"))),
             )
-            .child(label("A native SSH client."))
+            .child(label(&tr!("A native SSH client.")))
     }
 }
 
@@ -2313,46 +2400,51 @@ impl Focusable for SettingsView {
 
 impl Render for SettingsView {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let header =
-            div()
-                .h(px(40.))
-                .flex_shrink_0()
-                .flex()
-                .items_center()
-                .gap(px(10.))
-                .pl(px(14.))
-                .pr(px(6.))
-                .bg(rgb(colors().surface))
-                .border_b_1()
-                .border_color(rgb(colors().line))
-                .child(
-                    gpui::svg()
-                        .path("icons/logo.svg")
-                        .size(px(16.))
-                        .text_color(rgb(colors().accent)),
-                )
-                .child(div().font_weight(FontWeight::SEMIBOLD).child("Settings"))
-                .child(div().flex_1())
-                .when_some(self.snap.config_dir.clone(), |d, dir| {
-                    d.child(small_button("open-config", "Open config.toml").on_click(
+        let header = div()
+            .h(px(40.))
+            .flex_shrink_0()
+            .flex()
+            .items_center()
+            .gap(px(10.))
+            .pl(px(14.))
+            .pr(px(6.))
+            .bg(rgb(colors().surface))
+            .border_b_1()
+            .border_color(rgb(colors().line))
+            .child(
+                gpui::svg()
+                    .path("icons/logo.svg")
+                    .size(px(16.))
+                    .text_color(rgb(colors().accent)),
+            )
+            .child(
+                div()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child(tr!("Settings")),
+            )
+            .child(div().flex_1())
+            .when_some(self.snap.config_dir.clone(), |d, dir| {
+                d.child(
+                    small_button("open-config", &tr!("Open config.toml")).on_click(
                         cx.listener(move |v, _, _, cx| v.open(&dir.join("config.toml"), cx)),
-                    ))
-                })
-                .child(
-                    div()
-                        .id("settings-close")
-                        .w(px(34.))
-                        .h(px(28.))
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .rounded(px(6.))
-                        .text_color(rgb(colors().soft))
-                        .cursor_pointer()
-                        .hover(|s| s.bg(rgb(colors().hover)))
-                        .on_click(cx.listener(|_, _, _, cx| cx.emit(SettingsEvent::Close)))
-                        .child("✕"),
-                );
+                    ),
+                )
+            })
+            .child(
+                div()
+                    .id("settings-close")
+                    .w(px(34.))
+                    .h(px(28.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(6.))
+                    .text_color(rgb(colors().soft))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().hover)))
+                    .on_click(cx.listener(|_, _, _, cx| cx.emit(SettingsEvent::Close)))
+                    .child("✕"),
+            );
         // Settings fills the window's body, its bottom corners too.
         let corners = crate::chrome::BottomCorners::current(cx);
         let mut nav = div()
@@ -2367,7 +2459,7 @@ impl Render for SettingsView {
             .bg(rgb(colors().panel))
             .border_r_1()
             .border_color(rgb(colors().line));
-        for (n, (p, name)) in PAGES.iter().enumerate() {
+        for (n, p) in PAGES.iter().enumerate() {
             let (p, on) = (*p, *p == self.page);
             nav = nav.child(
                 div()
@@ -2405,7 +2497,7 @@ impl Render for SettingsView {
                         }
                         cx.notify();
                     }))
-                    .child(*name),
+                    .child(p.title()),
             );
         }
         let content = match self.page {

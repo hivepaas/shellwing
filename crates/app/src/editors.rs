@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use shellwing_core::command::{which, words};
+use shellwing_i18n::tr;
 
 /// Editors worth offering, by the name shown and the command that starts one.
 #[cfg(target_os = "macos")]
@@ -138,7 +139,7 @@ fn spawn(program: &str, args: &[&std::ffi::OsStr]) -> std::io::Result<()> {
 pub fn open_with(cmd: &str, path: &Path) -> std::io::Result<()> {
     let w = words(cmd);
     let Some((program, rest)) = w.split_first() else {
-        return Err(std::io::Error::other("no editor command"));
+        return Err(std::io::Error::other(tr!("no editor command")));
     };
     let mut args: Vec<&std::ffi::OsStr> = rest.iter().map(|a| a.as_ref()).collect();
     args.push(path.as_os_str());
@@ -162,7 +163,7 @@ pub fn open_text(path: &Path) -> std::io::Result<()> {
     }
     match installed().first() {
         Some((_, cmd)) => open_with(cmd, path),
-        None => Err(std::io::Error::other("no text editor found")),
+        None => Err(std::io::Error::other(tr!("no text editor found"))),
     }
 }
 

@@ -1,0 +1,2650 @@
+# shellwing in fr. Each message is found by its English, the
+# comment above it; scripts/i18n.py keeps this file in step with the code.
+
+# An edit of {remote} was not written back to the server; the file is kept as {path}.
+t62769e5b = Une modification de { $remote } n'a pas été renvoyée au serveur ; le fichier est conservé sous { $path }.
+
+# {n} edited file was not written back to the server; it is kept in Downloads: {files}. | {n} edited files were not written back to the server; they are kept in Downloads: {files}.
+td8a345bd =
+    { $n ->
+        [one] { $n } fichier modifié n'a pas été renvoyé au serveur ; il est conservé dans Downloads : { $files }.
+       *[other] { $n } fichiers modifiés n'ont pas été renvoyés au serveur ; ils sont conservés dans Downloads : { $files }.
+    }
+
+# no editor command
+tbf2a5d3a = aucune commande d'éditeur
+
+# no text editor found
+t6256b3da = aucun éditeur de texte trouvé
+
+# Name
+t0fe07306 = Nom
+
+# The connection ended.
+tc85117e2 = La connexion s'est terminée.
+
+# The connection ended while writing back.
+t424caf2a = La connexion s'est terminée pendant le renvoi.
+
+# Not connected.
+tc9ec8929 = Non connecté.
+
+# Cannot make a folder to edit in: {err}
+t4d82727e = Impossible de créer un dossier de modification : { $err }
+
+# the text editor
+t91cdab0c = l'éditeur de texte
+
+# Cannot start {who}: {e}
+tc39185d1 = Impossible de lancer { $who } : { $e }
+
+# Not connected: written back once it is.
+t8345869d = Non connecté : renvoyé dès que la connexion revient.
+
+# Not written back: {e}
+t6b172035 = Non renvoyé : { $e }
+
+# Cannot move it to Downloads: {e}
+t33407575 = Impossible de le déplacer dans Downloads : { $e }
+
+# not written back to the server: discard your changes?
+t1adcdad0 = non renvoyé au serveur : abandonner vos modifications ?
+
+# opening…
+t185c4e41 = ouverture…
+
+# in the editor; each save is written back
+tcf8122af = dans l'éditeur ; chaque enregistrement est renvoyé
+
+# written back at {t}
+t4a0a44e2 = renvoyé à { $t }
+
+# writing back…
+ta2088cca = renvoi…
+
+# changed on the server since you opened it
+tf8056821 = modifié sur le serveur depuis son ouverture
+
+# not on the server; moved to Downloads as {name}
+tbc889b90 = absent du serveur ; déplacé dans Downloads sous le nom { $name }
+
+# Open
+t538b10e9 = Ouvrir
+
+# Stop
+t4b7f7705 = Arrêter
+
+# Discard
+t1e706c21 = Abandonner
+
+# Keep in Downloads
+t3052af2e = Garder dans Downloads
+
+# Cancel
+t35afca3b = Annuler
+
+# Show
+t29742e5c = Afficher
+
+# Overwrite
+t78ff0e92 = Écraser
+
+# Retry
+t8036af59 = Réessayer
+
+# Upload
+t826f7f7c = Téléverser
+
+# Not deleted: {err}
+t74196840 = Non supprimé : { $err }
+
+# Edit in text editor
+td8d39fb8 = Modifier dans l'éditeur de texte
+
+# Edit in {editor}
+te44cd57b = Modifier dans { $editor }
+
+# Open with default app
+t5ef80ec5 = Ouvrir avec l'application par défaut
+
+# Download
+t6964bb19 = Télécharger
+
+# Download As…
+t955e4fd1 = Télécharger sous…
+
+# New folder…
+t4f4860f1 = Nouveau dossier…
+
+# Upload…
+tb19d9b38 = Téléverser…
+
+# Refresh
+t0815aad4 = Actualiser
+
+# Copy path
+tf165cb2b = Copier le chemin
+
+# Rename…
+t8628af0d = Renommer…
+
+# Delete…
+t2fed07aa = Supprimer…
+
+# link
+t0ddb0669 = lien
+
+# {percent}% · {rate}/s
+td8a3a0d4 = { $percent } % · { $rate }/s
+
+# starting…
+t1a0ebe8f = démarrage…
+
+# already there
+te2f6c72d = déjà présent
+
+# Merge
+t8b725bc7 = Fusionner
+
+# Replace
+te4d54f63 = Remplacer
+
+# Skip
+tc197c7e2 = Ignorer
+
+# done · {size}
+t38ca2d3b = terminé · { $size }
+
+# Files
+te71d1b30 = Fichiers
+
+# Home
+t52f50eae = Dossier personnel
+
+# New folder
+t1926d127 = Nouveau dossier
+
+# Rename {old}
+t2a3708da = Renommer { $old }
+
+# Enter to save · Esc to cancel
+t9abaa44e = Enter pour enregistrer · Esc pour annuler
+
+# Delete the folder {name} and everything in it?
+t219d4be7 = Supprimer le dossier { $name } et tout son contenu ?
+
+# Delete {name}?
+t4397aaa4 = Supprimer { $name } ?
+
+# Delete
+t5797ea6a = Supprimer
+
+# Opening SFTP…
+t6c4d75a4 = Ouverture de SFTP…
+
+# Loading…
+tc4e2f181 = Chargement…
+
+# Try again
+t213e90fa = Réessayer
+
+# Empty folder.
+t56515154 = Dossier vide.
+
+# Right-click a file or folder for its actions; drop files here to upload them.
+t1377d961 = Clic droit sur un fichier ou un dossier pour ses actions ; déposez des fichiers ici pour les téléverser.
+
+# Production
+t89cb4f3a = Production
+
+# A name is needed.
+tad1c356c = Un nom est requis.
+
+# Another group has this name.
+tc0f2f206 = Un autre groupe porte ce nom.
+
+# There is no config directory to save in.
+t24dff34a = Il n'y a aucun dossier de configuration où enregistrer.
+
+# This group cannot be found in hosts.toml.
+tbc9872ca = Ce groupe est introuvable dans hosts.toml.
+
+# New group
+tb7b3f75a = Nouveau groupe
+
+# Group in hosts.toml
+tfc009326 = Groupe dans hosts.toml
+
+# Not saved yet
+t8662a2eb = Pas encore enregistré
+
+# Same as the app
+tf3e994b9 = Comme l'application
+
+# Theme for its hosts
+t9d045818 = Thème de ses serveurs
+
+# No hosts yet. Choose this group in a host's editor.
+t73e08796 = Aucun serveur pour l'instant. Choisissez ce groupe dans l'éditeur d'un serveur.
+
+# Choose the group in a host's editor to put the host in it.
+t880fbefc = Choisissez le groupe dans l'éditeur d'un serveur pour y placer ce serveur.
+
+# {n} host: {names} | {n} hosts: {names}
+t79084a5c =
+    { $n ->
+        [one] { $n } serveur : { $names }
+       *[other] { $n } serveurs : { $names }
+    }
+
+# Group
+t0574902c = Groupe
+
+# Color
+te5b43cf8 = Couleur
+
+# A host's own theme wins over its group's.
+tad991bdd = Le thème propre d'un serveur l'emporte sur celui de son groupe.
+
+# Delete {title}?
+ta14ea5b3 = Supprimer { $title } ?
+
+# Delete {title}? Its {n} host stay. | Delete {title}? Its {n} hosts stay.
+t7eb2e426 =
+    { $n ->
+        [one] Supprimer { $title } ? Son serveur ({ $n }) est conservé.
+       *[other] Supprimer { $title } ? Ses { $n } serveurs sont conservés.
+    }
+
+# Save
+t4d2d5d68 = Enregistrer
+
+# Automatic
+t616a6784 = Automatique
+
+# Key file
+t6ed7c612 = Fichier de clé
+
+# Password
+t2cc30838 = Mot de passe
+
+# Agent only
+t80e1a754 = Agent uniquement
+
+# optional
+t49c5d8f9 = facultatif
+
+# 10.0.0.5 or host.example.com
+t685963cf = 10.0.0.5 ou host.example.com
+
+# your login name
+t62d0236a = votre nom d'utilisateur
+
+# a host here, an ssh alias, or user@host
+tdcf5544b = un serveur d'ici, un alias ssh ou user@host
+
+# Staging
+tcb81d7c6 = Préproduction
+
+# Another host has this name.
+te27e50cd = Un autre serveur porte ce nom.
+
+# No spaces.
+t02933ecd = Pas d'espaces.
+
+# Another host uses this.
+t946bf8e8 = Un autre serveur l'utilise.
+
+# An address is needed.
+t140a0aeb = Une adresse est requise.
+
+# 1 to 65535.
+t1bbc0d91 = De 1 à 65535.
+
+# Choose a key.
+t6e8ece2a = Choisissez une clé.
+
+# Seconds, 0 to 3600 (0: none).
+tc0567af7 = Secondes, de 0 à 3600 (0 : aucun).
+
+# A host cannot jump through itself.
+t272071b9 = Un serveur ne peut pas passer par lui-même.
+
+# new key
+t2aaac45a = nouvelle clé
+
+# the vault is not open
+t97a4b927 = le coffre n'est pas ouvert
+
+# No key made: {e}
+t4e14e42b = Aucune clé créée : { $e }
+
+# This host cannot be found in hosts.toml.
+ta0e18527 = Ce serveur est introuvable dans hosts.toml.
+
+# {name} copy
+t0d616a81 = copie de { $name }
+
+# Choose
+t73c66160 = Choisir
+
+# host name
+t8465975e = nom du serveur
+
+# Reaches
+t9a71395c = Atteint
+
+# Key
+tcd1ac90c = Clé
+
+# Through
+t2e38a41a = Via
+
+# Forwards
+t5567756b = Redirections
+
+# It could not be read.
+t54886f1b = Impossible de le lire.
+
+# From ~/.ssh/config
+t85f5968b = Depuis ~/.ssh/config
+
+# Host from ~/.ssh/config
+t6a7dc843 = Serveur de ~/.ssh/config
+
+# shellwing reads this file but never writes to it. Edit it in your editor, or make a copy here to add a group, a theme, forwards or a saved password.
+t509e342f = shellwing lit ce fichier mais n'y écrit jamais. Modifiez-le dans votre éditeur, ou faites-en une copie ici pour ajouter un groupe, un thème, des redirections ou un mot de passe enregistré.
+
+# Open config file
+t54ea8995 = Ouvrir le fichier de configuration
+
+# Copy to my hosts
+t72c32fa6 = Copier dans mes serveurs
+
+# New host
+t5c18d08d = Nouveau serveur
+
+# Saved in hosts.toml
+teae7befe = Enregistré dans hosts.toml
+
+# Connection
+t09ea4ff9 = Connexion
+
+# Alias for the command line
+ted5013c8 = Alias pour la ligne de commande
+
+# Address
+t700560f3 = Adresse
+
+# Port
+te2c53cc6 = Port
+
+# User
+te0a63e12 = Utilisateur
+
+# Sign in
+t744be623 = Authentification
+
+# {name} · in the vault · {kind}
+tbf1c044e = { $name } · dans le coffre · { $kind }
+
+# Choose a key
+t32d1fb40 = Choisir une clé
+
+# {name}   in the vault · {kind}
+ta6d50f9b = { $name }   dans le coffre · { $kind }
+
+# Another key file…
+t6f4497c1 = Autre fichier de clé…
+
+# + Generate a key for this host
+ta1a39e38 = + Générer une clé pour ce serveur
+
+# + Generate a key for {host}
+t2065d130 = + Générer une clé pour { $host }
+
+# the host
+t39dac2c6 = le serveur
+
+# {name} is new: {host} does not have it yet. Saving and installing signs in once another way (a password, say), then adds it.
+t7ecf0d6d = { $name } est nouvelle : { $host } ne l'a pas encore. Enregistrer et installer se connecte une fois autrement (par mot de passe, par exemple), puis l'ajoute.
+
+# Save and install on {host}
+t1707b1d3 = Enregistrer et installer sur { $host }
+
+# Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
+t786a9bff = Essaie l'agent, puis vos clés dans ~/.ssh et le coffre, puis demande un mot de passe, comme ssh.
+
+# Kept in the vault: no passphrase to ask for.
+t74ee0f69 = Conservée dans le coffre : aucune phrase secrète à demander.
+
+# Passphrase: asked for when needed, and can be saved in the vault.
+tbdfc0bf6 = Phrase secrète : demandée si nécessaire, et peut être enregistrée dans le coffre.
+
+# Asked for when connecting, and can be saved in the vault.
+ta6140863 = Demandé à la connexion, et peut être enregistré dans le coffre.
+
+# Uses the keys in your ssh-agent.
+t3a4ba988 = Utilise les clés de votre ssh-agent.
+
+# + Add jump
+t3f09cb93 = + Ajouter un rebond
+
+# Route
+td7d630be = Itinéraire
+
+# Jump through, in order
+tfc8a9b1f = Passer par, dans l'ordre
+
+# Enter adds what you typed · Esc stops adding
+ta13c2c20 = Enter ajoute ce que vous avez saisi · Esc arrête l'ajout
+
+# + Add forward
+tcfdf6ef4 = + Ajouter une redirection
+
+# Port forwarding
+tb033f949 = Redirection de port
+
+# Set up every time this host connects.
+t0d74aaf9 = Mise en place à chaque connexion de ce serveur.
+
+# Sync
+t89a71bba = Synchronisation
+
+# Keep on this device only
+t20b0191f = Garder sur cet appareil uniquement
+
+# Not synced: other devices do not see this host.
+t657130a6 = Non synchronisé : les autres appareils ne voient pas ce serveur.
+
+# Synced with your other devices when sync is on.
+tb80f1c8f = Synchronisé avec vos autres appareils quand la synchronisation est active.
+
+# None
+t304ff7fb = Aucun
+
+# {n} (this host only)
+tb6562d26 = { $n } (ce serveur uniquement)
+
+# Organize
+t6ddb17ec = Organisation
+
+# Tags
+t76bda0c0 = Étiquettes
+
+# + New group…
+t9d11ac85 = + Nouveau groupe…
+
+# New group's name
+t2e4cb82f = Nom du nouveau groupe
+
+# Made when you save this host.
+taf695c2c = Créé lorsque vous enregistrez ce serveur.
+
+# Shown on the tab and the pane border
+t090fc8f1 = Affichée sur l'onglet et la bordure du volet
+
+# Favorite: listed first in the host list
+t527b0c5e = Favori : listé en premier dans la liste des serveurs
+
+# Terminal
+t93c562d1 = Terminal
+
+# Theme
+t4eaf7c92 = Thème
+
+# Run after connecting
+t2b3c50ce = Exécuter après la connexion
+
+# Typed into the shell once it is ready, after every connect and reconnect.
+t2ac048fc = Saisi dans le shell dès qu'il est prêt, après chaque connexion et reconnexion.
+
+# App setting
+t4e528c40 = Réglage de l'application
+
+# Ask
+t7cfd61b2 = Demander
+
+# Accept new
+ta6e1de9b = Accepter les nouvelles
+
+# Strict
+t6d561894 = Strict
+
+# Always
+tad4bbd04 = Toujours
+
+# Never
+tb2ff2b29 = Jamais
+
+# none
+tada7afdb = aucun
+
+# {s} s
+te78896af = { $s } s
+
+# Advanced
+t60f3de7b = Avancé
+
+# Unknown host key
+t57114866 = Clé du serveur inconnue
+
+# The app's setting is {app_key} now. A changed key is always refused.
+t6669805b = Le réglage de l'application est actuellement { $app_key }. Une clé modifiée est toujours refusée.
+
+# Session log
+t54c8d181 = Journal de session
+
+# Always: each session is logged to a file from its start. Never: not even when the app logs every session. The app logs {logs} now.
+t9ccf92c6 = Toujours : chaque session est journalisée dans un fichier dès son début. Jamais : pas même quand l'application journalise toutes les sessions. L'application journalise actuellement { $logs }.
+
+# every session
+t4dbfb628 = toutes les sessions
+
+# Keepalive
+t3d5b35a9 = Maintien de connexion
+
+# Seconds between checks; 0: none. Empty: the app's setting ({app_alive}).
+t66f5835d = Secondes entre les vérifications ; 0 : aucune. Vide : le réglage de l'application ({ $app_alive }).
+
+# Forward my agent to this host
+t80664148 = Transférer mon agent vers ce serveur
+
+# While you are connected, whoever is root on this host can sign in elsewhere with your keys too. Only for hosts you trust.
+t741afb89 = Tant que vous êtes connecté, quiconque est root sur ce serveur peut aussi se connecter ailleurs avec vos clés. Uniquement pour les serveurs de confiance.
+
+# From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
+t01f5f399 = Depuis ce serveur, vous pourriez alors faire git push ou ssh plus loin avec les clés de cet ordinateur ; elles n'y sont jamais copiées.
+
+# Some fields need a look.
+teaa35f1a = Certains champs sont à vérifier.
+
+# Delete {title} from hosts.toml?
+t596a83da = Supprimer { $title } de hosts.toml ?
+
+# Duplicate
+tfc330336 = Dupliquer
+
+# Save and connect
+t83731197 = Enregistrer et se connecter
+
+# Ed25519 (recommended)
+t7294b934 = Ed25519 (recommandé)
+
+# A name, to tell your keys apart
+t6c2bbece = Un nom, pour distinguer vos clés
+
+# Copied the public key.
+t66ef7116 = Clé publique copiée.
+
+# Not renamed: {e}
+t836adf69 = Non renommée : { $e }
+
+# Deleted {name}.
+t0c7abd07 = { $name } supprimée.
+
+# Not deleted: {e}
+t12e9b880 = Non supprimée : { $e }
+
+# The two passphrases differ.
+teb0402b1 = Les deux phrases secrètes diffèrent.
+
+# the key is not in the vault
+t7ab0b044 = la clé n'est pas dans le coffre
+
+# the key does not read
+t25447ed3 = la clé est illisible
+
+# Written to {path} and its .pub.
+td30d7d74 = Écrite dans { $path } et son .pub.
+
+# Not written: {e}
+t3ccd278a = Non écrite : { $e }
+
+# Cannot read {path}: {e}
+t7b24cd24 = Impossible de lire { $path } : { $e }
+
+# Its passphrase
+t279e8bbb = Sa phrase secrète
+
+# That passphrase does not open it.
+t05c6a9c1 = Cette phrase secrète ne l'ouvre pas.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } n'est pas une clé privée OpenSSH.
+
+# Saved the passphrase of {file_name}: it is not asked for again.
+t181d393f = Phrase secrète de { $file_name } enregistrée : elle ne sera plus demandée.
+
+# Not saved: {e}
+ta9354472 = Non enregistrée : { $e }
+
+# {name} is in the vault now, and syncs to your other devices.
+td3d8b162 = { $name } est maintenant dans le coffre et se synchronise avec vos autres appareils.
+
+# Not copied: {e}
+t03370a6b = Non copiée : { $e }
+
+# {name} is in the ssh-agent now, until it stops.
+tf6d081d4 = { $name } est maintenant dans le ssh-agent, jusqu'à son arrêt.
+
+# Not added: {e}
+t6ff07db9 = Non ajoutée : { $e }
+
+# {name} is out of the ssh-agent.
+t5ed55b5e = { $name } est retirée du ssh-agent.
+
+# Not removed: {e}
+t7b4feb23 = Non retirée : { $e }
+
+# The key is not in the vault.
+t16ca2ffe = La clé n'est pas dans le coffre.
+
+# Forgot the passphrase of {path}: it is asked for again.
+t4b242af5 = Phrase secrète de { $path } oubliée : elle sera de nouveau demandée.
+
+# Not forgotten: {e}
+t0e3fb3a1 = Non oubliée : { $e }
+
+# Import
+t573e0af4 = Importer
+
+# not used by a host yet
+t7a67a5ad = pas encore utilisée par un serveur
+
+# used by {one}
+tefe52e8f = utilisée par { $one }
+
+# used by {a}, {b}
+t72e17f0a = utilisée par { $a }, { $b }
+
+# used by {n} host | used by {n} hosts
+tb629858a =
+    { $n ->
+        [one] utilisée par { $n } serveur
+       *[other] utilisée par { $n } serveurs
+    }
+
+# Copy public key
+tccf653ee = Copier la clé publique
+
+# Install on…
+t0dfc84df = Installer sur…
+
+# no passphrase
+ta9025922 = aucune phrase secrète
+
+# passphrase saved in the vault
+t2c083e8e = phrase secrète enregistrée dans le coffre
+
+# passphrase
+t643fc8a5 = phrase secrète
+
+# also in the vault
+t867e5d66 = aussi dans le coffre
+
+# the same key as {path}
+t0e1c7d80 = la même clé que { $path }
+
+# the same key as {name} in the vault
+tdfa4ba60 = la même clé que { $name } dans le coffre
+
+# only in the agent
+t3c2bc198 = uniquement dans l'agent
+
+# the agent's key
+t7e7cc13c = la clé de l'agent
+
+# (no comment)
+t786863d8 = (sans commentaire)
+
+# Export to file…
+t7b929ace = Exporter vers un fichier…
+
+# A passphrase, or none
+t79f95085 = Une phrase secrète, ou aucune
+
+# The passphrase again
+tc3b3d2cc = La phrase secrète, de nouveau
+
+# Remove from ssh-agent
+td745f8e9 = Retirer du ssh-agent
+
+# Add to ssh-agent
+t44341cdb = Ajouter au ssh-agent
+
+# Copy to vault
+t7ac5f049 = Copier dans le coffre
+
+# Save its passphrase…
+tf91e6d9a = Enregistrer sa phrase secrète…
+
+# Forget its saved passphrase
+tc70cfa3b = Oublier sa phrase secrète enregistrée
+
+# Generate a key
+t1824e4f6 = Générer une clé
+
+# Only for you, to tell your keys apart.
+te5c40fac = Pour vous uniquement, pour distinguer vos clés.
+
+# Type
+td155d06d = Type
+
+# Ed25519 is short, fast and taken by OpenSSH 6.5 and later. RSA for very old servers.
+t4146388b = Ed25519 est court, rapide et accepté par OpenSSH 6.5 et versions ultérieures. RSA pour les très anciens serveurs.
+
+# Comment
+t984f9ffe = Commentaire
+
+# Written at the end of the public key: what a server's authorized_keys shows.
+t2a1f71fd = Écrit à la fin de la clé publique : ce qu'affiche le fichier authorized_keys d'un serveur.
+
+# Kept in the vault, encrypted, and synced to your other devices, so it needs no passphrase. To use it with ssh or git too, export it to a file, with a passphrase if you like.
+t504dc243 = Conservée dans le coffre, chiffrée et synchronisée avec vos autres appareils, elle n'a donc pas besoin de phrase secrète. Pour l'utiliser aussi avec ssh ou git, exportez-la dans un fichier, avec une phrase secrète si vous le souhaitez.
+
+# Generating…
+t12235a6b = Génération…
+
+# Generate
+tc75562b2 = Générer
+
+# {name} is ready
+t17060a6b = { $name } est prête
+
+# A server lets this key in once its public key is in the server's ~/.ssh/authorized_keys. Install it on a host from here, or copy it into a web console (GitHub, GitLab, a cloud provider).
+tb989d6aa = Un serveur accepte cette clé dès que sa clé publique figure dans le fichier ~/.ssh/authorized_keys du serveur. Installez-la sur un serveur d'ici, ou copiez-la dans une console web (GitHub, GitLab, un fournisseur cloud).
+
+# Public key
+t9981f45f = Clé publique
+
+# Copy
+t658f3664 = Copier
+
+# Done
+t8dd31791 = Terminé
+
+# Install on a host…
+ta8313af0 = Installer sur un serveur…
+
+# Rename the key
+t2c552c07 = Renommer la clé
+
+# Rename
+tc80631f3 = Renommer
+
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Les serveurs qui ont sa clé publique ne l'accepteront plus depuis ici, depuis aucun de vos appareils.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } se connectent avec elle : ils essaieront plutôt les autres moyens (l'agent, ~/.ssh, un mot de passe). Les serveurs qui ont sa clé publique la conservent jusqu'à ce que vous l'y retiriez.
+
+# Export {name}
+t78124df8 = Exporter { $name }
+
+# Written as an OpenSSH key file, for ssh, git and other tools, with its .pub beside it. A passphrase locks the file; the key in the vault stays as it is.
+teb4d5edb = Écrite sous forme de fichier de clé OpenSSH, pour ssh, git et d'autres outils, avec son .pub à côté. Une phrase secrète verrouille le fichier ; la clé du coffre reste inchangée.
+
+# Passphrase
+t191a2dc5 = Phrase secrète
+
+# Again
+t58fb56ef = Confirmation
+
+# Choose where…
+t65990425 = Choisir l'emplacement…
+
+# Unlock {path}
+ta8940d72 = Déverrouiller { $path }
+
+# This key file has a passphrase. Type it to copy the key into the vault, where it needs none; the file stays as it is.
+tc1aba63d = Ce fichier de clé a une phrase secrète. Saisissez-la pour copier la clé dans le coffre, où elle n'en a pas besoin ; le fichier reste inchangé.
+
+# This key file has a passphrase. Type it to hand the key to the ssh-agent; the file stays as it is.
+td51093f3 = Ce fichier de clé a une phrase secrète. Saisissez-la pour confier la clé au ssh-agent ; le fichier reste inchangé.
+
+# Save the passphrase of {path}
+ta6e38b23 = Enregistrer la phrase secrète de { $path }
+
+# Kept in the vault, encrypted, and synced: shellwing then signs in with this key without asking, here and on your other devices.
+tf45d84f1 = Conservée dans le coffre, chiffrée et synchronisée : shellwing se connecte alors avec cette clé sans demander, ici et sur vos autres appareils.
+
+# Asking the agent…
+tabb2eee4 = Interrogation de l'agent…
+
+# No agent, or it holds no keys.
+tcad7e01e = Aucun agent, ou il ne contient aucune clé.
+
+# Keys
+t602b32ed = Clés
+
+# Import key file…
+t68acce01 = Importer un fichier de clé…
+
+# Generate key…
+t0d000853 = Générer une clé…
+
+# Keys for signing in to servers. Keys you generate or import here are kept in the vault, encrypted, and sync to your other devices.
+t9da1da72 = Clés pour se connecter aux serveurs. Les clés générées ou importées ici sont conservées dans le coffre, chiffrées, et se synchronisent avec vos autres appareils.
+
+# The vault cannot be read: {p}
+t650c9448 = Le coffre est illisible : { $p }
+
+# In the vault
+ta13ebcfd = Dans le coffre
+
+# synced · used only by shellwing
+t0714e99d = synchronisées · utilisées uniquement par shellwing
+
+# None yet: generate one, or copy one of your key files here.
+t95a0c0ba = Aucune pour l'instant : générez-en une, ou copiez ici l'un de vos fichiers de clé.
+
+# In ~/.ssh
+t6420c141 = Dans ~/.ssh
+
+# key files on this computer, shared with ssh and git
+t77dbc96f = fichiers de clé sur cet ordinateur, partagés avec ssh et git
+
+# No key files.
+t4c7991a8 = Aucun fichier de clé.
+
+# In ssh-agent
+t98288f7c = Dans ssh-agent
+
+# offered first when connecting
+tc83ab408 = proposées en premier à la connexion
+
+# Hosts set to Automatic try the agent, then ~/.ssh, then the vault, then ask for a password.
+t0d28103e = Les serveurs réglés sur Automatique essaient l'agent, puis ~/.ssh, puis le coffre, puis demandent un mot de passe.
+
+# Find a host, or type one to find hashed lines
+te7877ac6 = Cherchez un serveur, ou saisissez-en un pour trouver les lignes hachées
+
+# Cannot read known_hosts: {e}
+t57b65f0a = Impossible de lire known_hosts : { $e }
+
+# Removed line {line}: the next connection to it asks about its key. The file as it was is known_hosts.old.
+tcea0bcc6 = Ligne { $line } retirée : la prochaine connexion à ce serveur demandera quoi faire de sa clé. Le fichier d'origine est known_hosts.old.
+
+# No hosts yet: each one you trust is added here.
+t72b46d71 = Aucun serveur pour l'instant : chaque serveur que vous approuvez est ajouté ici.
+
+# None matches.
+tc9b5b29c = Aucun résultat.
+
+# a hashed name
+t87a3980c = un nom haché
+
+# {typed} (hashed)
+t63339ce3 = { $typed } (haché)
+
+# {names} and {hashed} hashed
+ta6fa2480 = { $names } et { $hashed } hachés
+
+# revoked
+tb4e706f5 = révoquée
+
+# certificate authority
+t5299ff65 = autorité de certification
+
+# {fingerprint} · line {line}
+t25339948 = { $fingerprint } · ligne { $line }
+
+# Remove
+t21a5901d = Retirer
+
+# Known hosts
+tc951355f = Serveurs connus
+
+# Open known_hosts
+t61ed7186 = Ouvrir known_hosts
+
+# The servers you trust, and their keys, from {path}: the same file ssh reads. A server showing another key is refused, and its pane says what changed. Removing one makes the next connection ask about it again.
+tfb280692 = Les serveurs que vous approuvez, et leurs clés, depuis { $path } : le même fichier que lit ssh. Un serveur qui présente une autre clé est refusé, et son volet indique ce qui a changé. En retirer un fait que la prochaine connexion pose de nouveau la question.
+
+# {n} key | {n} keys
+tc219ff12 =
+    { $n ->
+        [one] { $n } clé
+       *[other] { $n } clés
+    }
+
+# No config directory to save to.
+ta5f37ee4 = Aucun dossier de configuration où enregistrer.
+
+# Theme `{want}` not found; using the default.
+t1cda442a = Thème `{ $want }` introuvable ; thème par défaut utilisé.
+
+# {host} sets its own theme in hosts.toml; change it there.
+tec1b7d01 = { $host } définit son propre thème dans hosts.toml ; modifiez-le là.
+
+# Theme `{id}` not found.
+tbae3cb18 = Thème `{ $id }` introuvable.
+
+# Blue and slate
+t35054fdd = Bleu et ardoise
+
+# Purple and pink
+t6bae17ce = Violet et rose
+
+# Green and teal
+tfc91f0a1 = Vert et sarcelle
+
+# Warm
+t04a11b58 = Chaud
+
+# Neutral
+te9330778 = Neutre
+
+# Gradient
+t993c73c5 = Dégradé
+
+# Gradient, light
+td685ec1b = Dégradé, clair
+
+# Light, cool
+tf5e42e16 = Clair, froid
+
+# Light, warm
+tdd571ace = Clair, chaud
+
+# Your themes
+tb2e83d5c = Vos thèmes
+
+# Find a host, or type user@host
+t18f005c7 = Cherchez un serveur, ou saisissez user@host
+
+# Find a saved password or passphrase
+t8452d3bc = Cherchez un mot de passe ou une phrase secrète enregistrés
+
+# Find a theme
+ta5e61028 = Cherchez un thème
+
+# Connect
+tdb89a899 = Se connecter
+
+# Connect to {typed}
+t51c5c888 = Se connecter à { $typed }
+
+# a new address; a Host block in ~/.ssh/config applies
+t69b58e6c = une nouvelle adresse ; un bloc Host de ~/.ssh/config s'applique
+
+# Enter again to forget
+t850e9777 = Enter de nouveau pour oublier
+
+# Nothing matches.
+tf8e003c3 = Aucun résultat.
+
+# ↑↓ move   Enter open   Esc close   type > for actions only
+taeac962d = ↑↓ déplacer   Enter ouvrir   Esc fermer   saisissez > pour les actions uniquement
+
+# ↑↓ preview   Enter keep   Esc go back
+t60259b3c = ↑↓ aperçu   Enter garder   Esc revenir
+
+# ↑↓ move   Enter twice forget   Esc close   secrets are never shown
+tbc202ae0 = ↑↓ déplacer   Enter deux fois oublier   Esc fermer   les secrets ne sont jamais affichés
+
+# Enter copies   Esc close
+t39061ccf = Enter copie   Esc ferme
+
+# Enter answers   Esc cancels
+tbfdc091c = Enter répond   Esc annule
+
+# ↑↓ move   Enter choose   Esc cancel
+te39c67c2 = ↑↓ déplacer   Enter choisir   Esc annuler
+
+# Hosts
+tcf9aefb4 = Serveurs
+
+# General
+t5561fd0b = Général
+
+# Appearance
+t31018b9f = Apparence
+
+# Keyboard
+t27d1a714 = Clavier
+
+# SSH and security
+t699a801a = SSH et sécurité
+
+# Snippets
+t648fcbf7 = Extraits
+
+# Vault
+td432914f = Coffre
+
+# About
+t58e096de = À propos
+
+# Its password (an app password, where it has them)
+t22e462e2 = Son mot de passe (un mot de passe d'application, s'il en propose)
+
+# none: the top of the bucket
+t863402f7 = aucun : la racine du bucket
+
+# Its secret
+t5709e2db = Son secret
+
+# https://github.com/you/vault.git, or git@github.com:you/vault.git
+t367f2cde = https://github.com/you/vault.git, ou git@github.com:you/vault.git
+
+# its default
+t7a9ad2ec = sa valeur par défaut
+
+# none: git signs in as it does for you
+ta76cffea = aucun : git s'authentifie comme il le fait pour vous
+
+# any (Gitea: yours)
+t97f35ca8 = n'importe lequel (Gitea : le vôtre)
+
+# choose a folder
+tcaf5dc69 = choisissez un dossier
+
+# Fill in the address, the user and the password.
+t164fba4d = Renseignez l'adresse, l'utilisateur et le mot de passe.
+
+# The address starts with https://.
+t2ed84724 = L'adresse commence par https://.
+
+# Fill in the endpoint, the bucket, the access key and its secret.
+t03a28947 = Renseignez l'endpoint, le bucket, la clé d'accès et son secret.
+
+# The endpoint starts with https://.
+t64b883b1 = L'endpoint commence par https://.
+
+# Fill in the repository's address.
+t5a34e5a8 = Renseignez l'adresse du dépôt.
+
+# {shell} (yours)
+tb016dc00 = { $shell } (le vôtre)
+
+# e.g. code -n, or /path/to/editor --flag
+t455dc834 = p. ex. code -n, ou /path/to/editor --flag
+
+# Keep logs here
+t18df5c77 = Conserver les journaux ici
+
+# git {version} is installed: Connect again.
+t92082827 = git { $version } est installé : cliquez de nouveau sur Se connecter.
+
+# When Apple's installer is done, Connect again.
+t2a710b03 = Une fois le programme d'installation d'Apple terminé, cliquez de nouveau sur Se connecter.
+
+# git was not installed: {e}
+t7a63a93e = git n'a pas été installé : { $e }
+
+# Default ({font})
+ta4f51a30 = Par défaut ({ $font })
+
+# Default (the system's)
+te8f5418b = Par défaut (celle du système)
+
+# Font
+ta77a5eb0 = Police
+
+# App text
+t3b9aa6d3 = Texte de l'application
+
+# Tabs, the host list, the palette, panels and this page.
+t494aba4f = Les onglets, la liste des serveurs, la palette, les panneaux et cette page.
+
+# Size
+ta6478e7c = Taille
+
+# The system's
+t520575b7 = Celui du système
+
+# Custom…
+ta391dade = Personnalisé…
+
+# The file's path is added at the end. Enter saves.
+tdd20b80e = Le chemin du fichier est ajouté à la fin. Enter enregistre.
+
+# As the system ({language})
+t4956cc50 = Comme le système ({ $language })
+
+# Language
+t9a73db9b = Langue
+
+# shellwing's own words: menus, Settings, questions and notices. What the terminal shows is the server's. This device's own: it does not sync.
+t74b71048 = Les textes propres à shellwing : menus, Réglages, questions et notifications. Ce qu'affiche le terminal vient du serveur. Propre à cet appareil : ne se synchronise pas.
+
+# Text editor for remote files
+tdc31a941 = Éditeur de texte pour les fichiers distants
+
+# Edit in text editor, in the Files panel, opens a copy with it and writes the file back each time you save. The system's is the desktop's app for plain text.
+t3110b5e8 = Modifier dans l'éditeur de texte, dans le panneau Fichiers, ouvre une copie avec celui-ci et renvoie le fichier au serveur à chaque enregistrement. Celui du système est l'application du bureau pour le texte brut.
+
+# Open the last tabs at start
+tf7087aa7 = Rouvrir les derniers onglets au démarrage
+
+# When shellwing starts without a host, it opens the tabs and splits it had.
+t2b27326b = Quand shellwing démarre sans serveur, il rouvre les onglets et divisions qu'il avait.
+
+# These settings, for this device. Edits in the file apply at once.
+ta0344de9 = Ces réglages, pour cet appareil. Les modifications dans le fichier s'appliquent immédiatement.
+
+# Hosts and groups. Synced. No secrets.
+t4f70346f = Serveurs et groupes. Synchronisé. Aucun secret.
+
+# Your own themes.
+t69ba4c4a = Vos propres thèmes.
+
+# Passwords and passphrases, encrypted.
+te7f92b47 = Mots de passe et phrases secrètes, chiffrés.
+
+# System keychain
+t6e83d178 = Trousseau du système
+
+# The vault's unlock key.
+tdda85be9 = La clé de déverrouillage du coffre.
+
+# Where settings live
+tf63ebef5 = Emplacement des réglages
+
+# Open folder
+t713a842f = Ouvrir le dossier
+
+# System
+t8f3184bc = Système
+
+# Dark
+t45570065 = Sombre
+
+# Light
+t8ad2f8cf = Clair
+
+# Block
+tbd074002 = Bloc
+
+# Bar
+tdbbc7dba = Barre
+
+# Underline
+t9a85011f = Souligné
+
+# When scrolling
+t3d08a81e = Pendant le défilement
+
+# Terminal text
+t77332e04 = Texte du terminal
+
+# Line height
+t64697aa2 = Hauteur de ligne
+
+# Cursor
+t558a502f = Curseur
+
+# Scrollbar
+ta18bd919 = Barre de défilement
+
+# Padding at the sides
+tb8eb2bd4 = Marge sur les côtés
+
+# Top and bottom
+t56cbbc10 = En haut et en bas
+
+# Mode
+t534e7732 = Mode
+
+# The system is light now.
+t50316f27 = Le système est actuellement en mode clair.
+
+# The system is dark now.
+t03050ee1 = Le système est actuellement en mode sombre.
+
+# Light theme
+tf8e348fa = Thème clair
+
+# Dark theme
+t5a026490 = Thème sombre
+
+# The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
+t0b71dd99 = Celui du terminal, quand l'application est claire ; le mode sombre garde le sien. Un serveur peut avoir le sien dans son éditeur.
+
+# The terminal's, while the app is dark; the light mode keeps its own. A host can have its own in its editor.
+te0303bcd = Celui du terminal, quand l'application est sombre ; le mode clair garde le sien. Un serveur peut avoir le sien dans son éditeur.
+
+# Open themes folder
+t64678e0b = Ouvrir le dossier des thèmes
+
+# A .toml file there is a theme of your own.
+t39d886ba = Un fichier .toml placé là est un thème personnel.
+
+# The app's accent from the theme
+t44bdb829 = L'accent de l'application d'après le thème
+
+# The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
+tb5bd008b = Le logo, la sélection et les boutons principaux prennent la couleur d'accent du thème, au lieu du bleu de l'application. Une couleur trop proche du fond de l'application n'est pas retenue.
+
+# Preview
+tfdda4cf7 = Aperçu
+
+# {k} k
+t450902df = { $k } k
+
+# Reconnect
+tcf289b06 = Reconnecter
+
+# Close
+tcd86acc3 = Fermer
+
+# Scrollback
+tc94c2be7 = Historique de défilement
+
+# Lines kept per pane, now {lines}. More uses more memory; new tabs get it.
+tc5513217 = Lignes conservées par volet, actuellement { $lines }. Davantage utilise plus de mémoire ; les nouveaux onglets en bénéficient.
+
+# When a connection drops
+ted68d834 = Quand une connexion est coupée
+
+# Reconnect tries again by itself, waiting longer each time. After exit, Enter connects again.
+t0b750ede = Reconnecter réessaie automatiquement, en attendant plus longtemps à chaque fois. Après exit, Enter reconnecte.
+
+# Local shell
+tef7cec6a = Shell local
+
+# What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
+t235223ca = Ce qu'exécute un terminal local (Cet ordinateur, dans la liste des serveurs), avec ses arguments. Vide : votre propre shell. Enter enregistre ; les nouveaux onglets locaux en bénéficient.
+
+# Text
+t3e142d5e = Texte
+
+# Raw
+ta689aa91 = Brut
+
+# Change…
+t16f90b63 = Modifier…
+
+# Use the default
+tb4d20336 = Utiliser la valeur par défaut
+
+# Session logs
+t6a227ff6 = Journaux de session
+
+# Log every session
+t31c190d6 = Journaliser chaque session
+
+# From its start, to a file of its own. A host can say otherwise in its editor, and Start Logging in a pane's menu logs it from then on.
+t8375a4d9 = Dès son début, dans un fichier dédié. Un serveur peut en décider autrement dans son éditeur, et Démarrer la journalisation dans le menu d'un volet la journalise à partir de ce moment.
+
+# Format
+tffb0ff72 = Format
+
+# Text: the lines as they were left, colors gone; what full-screen programs (vim, htop) draw is left out. Raw: every byte as it came, which cat or less -R shows in color.
+taebfec38 = Texte : les lignes telles qu'elles ont été laissées, sans couleurs ; ce que dessinent les programmes plein écran (vim, htop) est omis. Brut : chaque octet tel qu'il est arrivé, que cat ou less -R affiche en couleur.
+
+# The time on each line
+t2324a143 = L'heure sur chaque ligne
+
+# Each line of a text log starts with the date and time it was written.
+taf5ab76c = Chaque ligne d'un journal texte commence par la date et l'heure de son écriture.
+
+# Folder
+t06357afd = Dossier
+
+# Logs go to {folder}. Only you can read them: they hold whatever the sessions showed.
+t6395d795 = Les journaux vont dans { $folder }. Vous seul pouvez les lire : ils contiennent tout ce qu'ont affiché les sessions.
+
+# No folder for logs: choose one.
+tc4affc27 = Aucun dossier pour les journaux : choisissez-en un.
+
+# Command palette
+td54729b1 = Palette de commandes
+
+# New tab
+td3a5555a = Nouvel onglet
+
+# Close the pane
+tc4b0686e = Fermer le volet
+
+# Split right
+t7c661b21 = Diviser à droite
+
+# Split down
+t8ebf2909 = Diviser vers le bas
+
+# Move between panes
+td5a160e3 = Se déplacer entre les volets
+
+# {pane}+arrows
+tf3ff453e = { $pane }+flèches
+
+# Next and previous tab
+tdbe14691 = Onglet suivant et précédent
+
+# Every tab, by host
+td3226d58 = Tous les onglets, par serveur
+
+# Go to tab 1–9
+t412f3292 = Aller à l'onglet 1–9
+
+# Host list
+t2c78c1d9 = Liste des serveurs
+
+# Settings
+t4b058728 = Réglages
+
+# Next and previous theme
+t94e69c03 = Thème suivant et précédent
+
+# {chord}+] and [
+tcf6edce3 = { $chord }+] et [
+
+# Copy and paste
+t2f23e09a = Copier et coller
+
+# Back to the bottom
+t8f497cc3 = Revenir en bas
+
+# Window shortcuts never reach the remote host. They cannot be changed yet.
+t95c4a480 = Les raccourcis de la fenêtre n'atteignent jamais le serveur distant. Ils ne peuvent pas encore être modifiés.
+
+# Found. Its keys are tried first.
+tc1d15743 = Trouvé. Ses clés sont essayées en premier.
+
+# Not found (SSH_AUTH_SOCK is not set).
+tb9e9f472 = Introuvable (SSH_AUTH_SOCK n'est pas défini).
+
+# Refuse
+t9bcada35 = Refuser
+
+# Off
+t0dc6b4aa = Désactivé
+
+# Unknown host keys
+t2534790f = Clés de serveur inconnues
+
+# Ask shows the fingerprint and sends nothing until you accept it. Accept new records it and goes on; Refuse turns it away. A changed key is always refused. A host can have its own in its editor.
+t2abc37ff = Demander affiche l'empreinte et n'envoie rien tant que vous ne l'acceptez pas. Accepter les nouvelles l'enregistre et continue ; Refuser la rejette. Une clé modifiée est toujours refusée. Un serveur peut avoir son propre réglage dans son éditeur.
+
+# A check every so often, so idle connections are not dropped and dead ones are noticed after 3 misses. Now {now}. A host's own (or its ServerAliveInterval) wins.
+t1b853e51 = Une vérification de temps en temps, pour que les connexions inactives ne soient pas coupées et que les connexions mortes soient détectées après 3 échecs. Actuellement { $now }. Le réglage propre d'un serveur (ou son ServerAliveInterval) l'emporte.
+
+# off
+tab3a8a0a = désactivé
+
+# known_hosts file
+t2e38efc6 = Fichier known_hosts
+
+# Shared with ssh. shellwing adds the keys you trust.
+t43d70395 = Partagé avec ssh. shellwing y ajoute les clés que vous approuvez.
+
+# ssh config file
+t70767f0d = Fichier de configuration ssh
+
+# Read only. Its hosts show in the host list.
+tc5c7d789 = Lecture seule. Ses serveurs apparaissent dans la liste des serveurs.
+
+# Agent
+tf5a4f646 = Agent
+
+# Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
+t28b5b26a = Clés dans ssh-agent (Pageant ou l'agent OpenSSH sous Windows).
+
+# Sync now
+ta34dd8fe = Synchroniser maintenant
+
+# Show the recovery key
+t16f62979 = Afficher la clé de récupération
+
+# Stop syncing
+t59fdbd70 = Arrêter la synchronisation
+
+# With {shown}
+tabf6bc68 = Avec { $shown }
+
+# Sync with a folder or a server
+t6c2be41e = Synchroniser avec un dossier ou un serveur
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
+tb88756e2 = Les serveurs, mots de passe enregistrés, clés et extraits transitent par un dossier qu'une autre application synchronise (iCloud Drive, Syncthing, Dropbox), un serveur WebDAV ou un stockage compatible S3. Tout y est chiffré avec votre clé de récupération ; le serveur ne voit jamais aucun secret.
+
+# Sync settings too
+ta578f67d = Synchroniser aussi les réglages
+
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
+t12b4e6d2 = L'apparence (sombre ou clair, thèmes, polices), les valeurs par défaut du terminal et de SSH, et la journalisation. Chaque appareil garde son propre dossier de synchronisation, dossier de journaux, shell local et éditeur.
+
+# Let a passphrase join new devices
+t6906cf2c = Permettre à une phrase secrète d'ajouter de nouveaux appareils
+
+# A new device that syncs the same place types it instead of the recovery key or being approved here. It is kept there, sealed by the passphrase: anyone who can read the place can try to guess it, so it has to be hard to guess.
+t637858c5 = Un nouvel appareil qui synchronise le même emplacement la saisit au lieu de la clé de récupération ou d'une approbation ici. La clé y est conservée, scellée par la phrase secrète : quiconque peut lire l'emplacement peut tenter de deviner celle-ci, elle doit donc être difficile à deviner.
+
+# Hosts kept on this device only (in their editor) stay out of it.
+t06079f7b = Les serveurs conservés sur cet appareil uniquement (dans leur éditeur) en sont exclus.
+
+# A folder
+te84ceb50 = Un dossier
+
+# S3-compatible
+tdfb04144 = Compatible S3
+
+# iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
+tc7eed334 = iCloud Drive, Syncthing, un dossier Dropbox ou OneDrive, un partage réseau.
+
+# Choose a folder…
+t6268d49f = Choisir un dossier…
+
+# Nextcloud, ownCloud, Synology, Koofr, Fastmail: the address of a folder there.
+t5f763441 = Nextcloud, ownCloud, Synology, Koofr, Fastmail : l'adresse d'un dossier sur ce service.
+
+# AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi: a bucket, and a key that can read and write it.
+t179167f5 = AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi : un bucket, et une clé qui peut le lire et y écrire.
+
+# Endpoint
+t27e7d69c = Endpoint
+
+# Region (if it asks for one)
+t23e4c7d3 = Région (si elle est demandée)
+
+# Bucket
+te34e3557 = Bucket
+
+# Folder in the bucket
+t4c3f6707 = Dossier dans le bucket
+
+# Access key
+t837b43b8 = Clé d'accès
+
+# Secret key
+t47252d7a = Clé secrète
+
+# A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
+t33e11efe = Un dépôt privé sur GitHub, GitLab, Gitea ou votre propre serveur, via le git de ce système : il s'authentifie comme il le fait pour vous (son gestionnaire d'identifiants, vos clés SSH et votre agent). Chaque modification est un commit.
+
+# Repository
+te763c8b5 = Dépôt
+
+# Branch
+ta3e27665 = Branche
+
+# Token (if git cannot sign in by itself)
+t7919b94b = Token (si git ne peut pas s'authentifier seul)
+
+# The token's user
+tb1ad1226 = L'utilisateur du token
+
+# The password, secret key or token stays on this device, in the vault; other devices sign in with their own.
+t2527393b = Le mot de passe, la clé secrète ou le token reste sur cet appareil, dans le coffre ; les autres appareils s'authentifient avec les leurs.
+
+# Installing git…
+t77685894 = Installation de git…
+
+# macOS installs it with Apple's Command Line Tools, in a dialog of its own.
+t4d2669ba = macOS l'installe avec les Command Line Tools d'Apple, dans une fenêtre dédiée.
+
+# Install git…
+te826846c = Installer git…
+
+# Windows installs it with winget, and asks to allow it.
+t1f4d87c1 = Windows l'installe avec winget, et demande l'autorisation.
+
+# Download git
+te5143d09 = Télécharger git
+
+# Install it in a terminal, then Connect again:
+t6e62c13a = Installez-le dans un terminal, puis cliquez de nouveau sur Se connecter :
+
+# Copied.
+t53842cb1 = Copié.
+
+# Install a newer git (git-scm.com), then Connect again.
+t9a84a209 = Installez une version plus récente de git (git-scm.com), puis cliquez de nouveau sur Se connecter.
+
+# None saved yet.
+t0c60ecfc = Aucun enregistré pour l'instant.
+
+# {n} saved. | {n} saved.
+t2764bcb7 =
+    { $n ->
+        [one] { $n } enregistré.
+       *[other] { $n } enregistrés.
+    }
+
+# The vault is not open.
+t3636924b = Le coffre n'est pas ouvert.
+
+# Locked: its passphrase or recovery key opens it.
+t351c2ed0 = Verrouillé : sa phrase secrète ou la clé de récupération l'ouvre.
+
+# Not open.
+tcd6d61d0 = Non ouvert.
+
+# In the system keychain, and kept by a passphrase too.
+tc986f88d = Dans le trousseau du système, et protégé aussi par une phrase secrète.
+
+# Kept by its passphrase: typed when shellwing starts.
+t31c62b2e = Protégé par sa phrase secrète : saisie au démarrage de shellwing.
+
+# In the system keychain.
+te1cb09c0 = Dans le trousseau du système.
+
+# Open, but nothing keeps its key: set a passphrase.
+teba6e9a1 = Ouvert, mais rien ne conserve sa clé : définissez une phrase secrète.
+
+# Unlock…
+tc671ed6b = Déverrouiller…
+
+# Change the passphrase…
+t9653b30a = Changer la phrase secrète…
+
+# Set a passphrase…
+tc40202f8 = Définir une phrase secrète…
+
+# Lock now
+t1aa78686 = Verrouiller maintenant
+
+# Ask for it at every start
+t1535bdfc = La demander à chaque démarrage
+
+# Remove the passphrase
+tc153db4a = Supprimer la phrase secrète
+
+# Keep it in the system keychain
+tc01bbcf0 = La conserver dans le trousseau du système
+
+# Saved passwords and passphrases
+t4b07c4a2 = Mots de passe et phrases secrètes enregistrés
+
+# Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted.
+ta9eeda13 = Proposés à l'enregistrement dès que vous en saisissez un qui fonctionne, et essayés avant de demander la fois suivante. Conservés dans vault.db, chiffrés.
+
+# Manage…
+t4f2e18b6 = Gérer…
+
+# The vault's key
+td09ac71d = La clé du coffre
+
+# What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
+t6a54a5a7 = Ce qui ouvre vault.db. Une phrase secrète la conserve là où il n'y a pas de trousseau du système (ou en plus de celui-ci) ; la clé de récupération l'ouvre toujours, si la phrase secrète est oubliée ou si le trousseau la perd.
+
+# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
+t056f7fb9 = Quand le coffre est verrouillé, { $name } l'ouvre, comme sa phrase secrète (qui fonctionne toujours). Seuls les doigts enregistrés actuellement : en ajouter un le désactive, jusqu'à ce qu'il soit réactivé. Nécessite une version signée de shellwing.
+
+# When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
+t0baa8f35 = Quand le coffre est verrouillé, { $name } (une empreinte digitale, le visage ou le code PIN de cet appareil) l'ouvre, comme sa phrase secrète (qui fonctionne toujours). La clé est conservée par la puce de sécurité de cet appareil.
+
+# Unlock with {name}
+t7c964cc4 = Déverrouiller avec { $name }
+
+# 1 hour
+t0c43fb4a = 1 heure
+
+# {m} min
+t7eebb6a4 = { $m } min
+
+# Lock when idle
+ta18da274 = Verrouiller en cas d'inactivité
+
+# After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
+tf6c5f76d = Après ce délai sans touche pressée ni clic, le coffre se verrouille jusqu'à ce que sa phrase secrète soit saisie. Uniquement tant que le trousseau du système ne contient pas sa clé : chaque démarrage demande alors la phrase secrète.
+
+# A native SSH client.
+tdb654976 = Un client SSH natif.
+
+# Open config.toml
+t07a52335 = Ouvrir config.toml
+
+# Filter by name, tag or address
+t84bd523e = Filtrer par nom, étiquette ou adresse
+
+# connected
+t54eed4d0 = connecté
+
+# connecting
+t5fb60aa7 = connexion en cours
+
+# connection lost
+te76d62e9 = connexion perdue
+
+# could not connect
+t87553579 = connexion impossible
+
+# closed
+tebee50c5 = fermé
+
+# Edit
+tc2c76cb1 = Modifier
+
+# No hosts yet
+ta58f36ff = Aucun serveur pour l'instant
+
+# No host matches.
+t2a8f8871 = Aucun serveur ne correspond.
+
+# No hosts yet. Add one, or Host blocks to ~/.ssh/config.
+tbbe50baa = Aucun serveur pour l'instant. Ajoutez-en un, ou ajoutez des blocs Host à ~/.ssh/config.
+
+# + New host
+tc7a909aa = + Nouveau serveur
+
+# + Group
+t9585c651 = + Groupe
+
+# HOSTS
+t0d325d34 = SERVEURS
+
+# every host
+t444612de = tous les serveurs
+
+# What it does, to find it in the palette
+td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
+
+# A name and a command are needed.
+t7f4c69bb = Un nom et une commande sont requis.
+
+# typed, not run
+td4e41905 = saisi, non exécuté
+
+# Edit…
+t8e7efcd7 = Modifier…
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
+
+# Asked for when it runs:
+t2d8c5e6d = Demandé à l'exécution :
+
+# Chain commands with && or ; on one line.
+tf31eecd5 = Enchaînez les commandes avec && ou ; sur une seule ligne.
+
+# Every host
+t77846bfe = Tous les serveurs
+
+# A group ▾
+tcd864ec5 = Un groupe ▾
+
+# One host ▾
+t1864f915 = Un serveur ▾
+
+# Offered for
+tbafebe63 = Proposé pour
+
+# No groups yet: make one in the host list.
+t31c54e54 = Aucun groupe pour l'instant : créez-en un dans la liste des serveurs.
+
+# No hosts yet.
+t71734b03 = Aucun serveur pour l'instant.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = La palette le propose uniquement dans les volets de ces serveurs.
+
+# New snippet
+tff3f7838 = Nouvel extrait
+
+# Edit snippet
+t9eab9738 = Modifier l'extrait
+
+# Command
+tc67c8f52 = Commande
+
+# Run it: press Enter after typing it
+t32122ee4 = L'exécuter : appuyer sur Enter après l'avoir saisi
+
+# None yet.
+t786bc275 = Aucun pour l'instant.
+
+# New snippet…
+tec3111a4 = Nouvel extrait…
+
+# Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
+tb1ca142d = Les commandes que vous exécutez souvent. Exécutez-en une depuis la palette ({ $chord }, puis saisissez son nom) : Enter l'exécute dans le volet, { $alt } dans chaque volet de l'onglet. Conservés dans le coffre, les extraits se synchronisent avec vos serveurs.
+
+# {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
+t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis pour le serveur du volet ; tout autre {"{{"}name{"}}"} est demandé à l'exécution de l'extrait.
+
+# Your hosts on every device. Just sign in.
+t88dd5f11 = Vos serveurs sur chaque appareil. Il suffit de vous connecter.
+
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = Serveurs, mots de passe enregistrés, clés et extraits vous suivent sur chaque ordinateur.
+
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = Rien à configurer : aucun dossier, aucun serveur, aucune clé à saisir sur un nouvel appareil.
+
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = Chiffré sur vos appareils : shellwing ne voit jamais vos secrets.
+
+# Create an account
+td7f6c093 = Créer un compte
+
+# or continue with
+t2f60c9bf = ou continuer avec
+
+# Synced · {when}
+ta250b3ba = Synchronisé · { $when }
+
+# With {place}
+t6c9fa51a = Avec { $place }
+
+# Set up
+t43c06abc = Configurer
+
+# Syncing…
+t8ad2ae06 = Synchronisation…
+
+# Not synced
+t4d1a6724 = Non synchronisé
+
+# Paused: the vault is locked
+tfff0fb2a = En pause : le coffre est verrouillé
+
+# With {place}, once it is open
+tf75bc464 = Avec { $place }, une fois le coffre ouvert
+
+# {hosts}, {passwords}, {keys} and {snippets}.
+t668619a5 = { $hosts }, { $passwords }, { $keys } et { $snippets }.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } serveur
+       *[other] { $n } serveurs
+    }
+
+# {n} password | {n} passwords
+tf07ec59c =
+    { $n ->
+        [one] { $n } mot de passe
+       *[other] { $n } mots de passe
+    }
+
+# {n} snippet | {n} snippets
+t4a5f7c7a =
+    { $n ->
+        [one] { $n } extrait
+       *[other] { $n } extraits
+    }
+
+# SYNC
+t476c685a = SYNCHRONISATION
+
+# Rather not keep it yourself?
+t616f184a = Vous préférez ne pas l'héberger vous-même ?
+
+# shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.
+t81dee99e = shellwing cloud s'en charge pour vous : connectez-vous sur chaque appareil, c'est tout. Toujours chiffré de bout en bout.
+
+# shellwing cloud is coming: signing in opens with it.
+t8de35792 = shellwing cloud arrive bientôt : la connexion au compte ouvrira avec lui.
+
+# {n} host · $2.99/mo | {n} hosts · $2.99/mo
+t6036c21e =
+    { $n ->
+        [one] { $n } serveur · 2,99 $/mois
+       *[other] { $n } serveurs · 2,99 $/mois
+    }
+
+# unlimited · $5.99/mo
+td7d2332f = illimité · 5,99 $/mois
+
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = Un dossier, WebDAV, S3 ou Git à vous :
+
+# Settings › Sync
+t6790eaeb = Réglages › Synchronisation
+
+# just now
+ta715ef0f = à l'instant
+
+# a minute ago
+t85ac693d = il y a une minute
+
+# {n} minute ago | {n} minutes ago
+t6c7302d6 =
+    { $n ->
+        [one] il y a { $n } minute
+       *[other] il y a { $n } minutes
+    }
+
+# an hour ago
+t84377069 = il y a une heure
+
+# {n} hour ago | {n} hours ago
+t137b052e =
+    { $n ->
+        [one] il y a { $n } heure
+       *[other] il y a { $n } heures
+    }
+
+# {n} day ago | {n} days ago
+tb9fa7744 =
+    { $n ->
+        [one] il y a { $n } jour
+       *[other] il y a { $n } jours
+    }
+
+# its password is not saved on this device: connect again in Settings › Sync
+td2fdfc60 = son mot de passe n'est pas enregistré sur cet appareil : reconnectez-vous dans Réglages › Synchronisation
+
+# hosts not synced: {e}
+te7d5212e = serveurs non synchronisés : { $e }
+
+# settings not synced: {e}
+tf8592ea2 = réglages non synchronisés : { $e }
+
+# settings not written: {e}
+t60f438b7 = réglages non écrits : { $e }
+
+# hosts not written: {e}
+t00f3a4eb = serveurs non écrits : { $e }
+
+# Find a tab: host, user, title
+t187bd0b5 = Cherchez un onglet : serveur, utilisateur, titre
+
+# {n} tab | {n} tabs
+t09a24eca =
+    { $n ->
+        [one] { $n } onglet
+       *[other] { $n } onglets
+    }
+
+# {n} pane | {n} panes
+tb53e7b62 =
+    { $n ->
+        [one] { $n } volet
+       *[other] { $n } volets
+    }
+
+# this tab
+tfd01d10a = cet onglet
+
+# Tab {number}
+te154cf6f = Onglet { $number }
+
+# No tab matches.
+t9b01e94e = Aucun onglet ne correspond.
+
+# ↑↓ choose
+t983339a6 = ↑↓ choisir
+
+# Enter go to it
+td90b12ab = Enter y aller
+
+# Cmd+W close it
+t6246d272 = Cmd+W le fermer
+
+# Ctrl+W close it
+t82a6adaf = Ctrl+W le fermer
+
+# Log saved: {path}
+tcc43a8d9 = Journal enregistré : { $path }
+
+# Logging to {path}
+td2342a94 = Journalisation dans { $path }
+
+# Cannot log: {e}
+tb673f869 = Journalisation impossible : { $e }
+
+# Saved as HTML: {path}
+t21558f46 = Enregistré en HTML : { $path }
+
+# Saved as text: {path}
+t17977298 = Enregistré en texte : { $path }
+
+# logging
+t897ecb9e = journalisation
+
+# listening
+t77104bea = en écoute
+
+# left out
+t73aeedd4 = omis
+
+# Installing {key} on {host}…
+t9e6d8462 = Installation de { $key } sur { $host }…
+
+# the connection ended
+t36d02558 = la connexion s'est terminée
+
+# {key} is installed on {host}.
+t4ae79143 = { $key } est installée sur { $host }.
+
+# {host} has {key} already.
+t12a2b3c2 = { $host } a déjà { $key }.
+
+# {key} was not installed on {host}: {why}
+t25610553 = { $key } n'a pas été installée sur { $host } : { $why }
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } est installée sur { $host }. Se connecter désormais à { $host } avec elle ?
+
+# Not now
+t2c3d6fce = Pas maintenant
+
+# Use it for {host}
+t704df588 = L'utiliser pour { $host }
+
+# Find
+t3e1cd17a = Rechercher
+
+# Invalid pattern
+t5b9dcaca = Motif non valide
+
+# No results
+tdd4785bc = Aucun résultat
+
+# {current} of {total}{more}
+ta6206114 = { $current } sur { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = Résultats : { $total }{ $more }
+
+# Match case (Alt+C)
+t692d685e = Respecter la casse (Alt+C)
+
+# Regular expression (Alt+R)
+tc1b10302 = Expression régulière (Alt+R)
+
+# The Files panel browses a server over SFTP; this pane is a shell on this computer.
+t0e83f1c9 = Le panneau Fichiers parcourt un serveur via SFTP ; ce volet est un shell sur cet ordinateur.
+
+# Save the password for {target} in the vault?
+tceb19137 = Enregistrer le mot de passe de { $target } dans le coffre ?
+
+# Save the passphrase of {key_path} in the vault?
+tc75d3456 = Enregistrer la phrase secrète de { $key_path } dans le coffre ?
+
+# Saved in the vault.
+t0d69c4e6 = Enregistré dans le coffre.
+
+# The host key for {host} has changed.
+t1e510d66 = La clé du serveur { $host } a changé.
+
+# If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send.
+t26f8b8a1 = Si le serveur a été réinstallé ou sa clé remplacée, faites confiance à la nouvelle clé. Si vous ne savez pas pourquoi elle a changé, ne le faites pas : quelqu'un pourrait se trouver entre vous et le serveur et lire ce que vous envoyez.
+
+# Known
+t3f42d62c = Connue
+
+# {old}  (known_hosts line {line})
+t8797a1b8 = { $old }  (ligne { $line } de known_hosts)
+
+# Now
+t8b3dc597 = Actuelle
+
+# Trust the new key and connect
+t48aebd90 = Faire confiance à la nouvelle clé et se connecter
+
+# Not trusted: {e}
+tdfcff622 = Non approuvée : { $e }
+
+# Connection lost. Trying again in {seconds} s (attempt {attempt} of {attempts}).
+t63f1b6c3 = Connexion perdue. Nouvelle tentative dans { $seconds } s (tentative { $attempt } sur { $attempts }).
+
+# Gave up after {n} attempt. Enter tries again. | Gave up after {n} attempts. Enter tries again.
+t446dfb2c =
+    { $n ->
+        [one] Abandon après { $n } tentative. Enter réessaie.
+       *[other] Abandon après { $n } tentatives. Enter réessaie.
+    }
+
+# Connection lost. Enter tries again.
+t1ca41f48 = Connexion perdue. Enter réessaie.
+
+# {why}. Enter starts it again.
+tcad1f44f = { $why }. Enter le relance.
+
+# {why}. Enter reconnects.
+t9788f089 = { $why }. Enter reconnecte.
+
+# Could not connect. Enter tries again.
+tfbba91f8 = Connexion impossible. Enter réessaie.
+
+# Stop (Esc)
+t47aaed65 = Arrêter (Esc)
+
+# Start again (Enter)
+tbfd489be = Relancer (Enter)
+
+# Reconnect (Enter)
+t06029ac3 = Reconnecter (Enter)
+
+# Font size {size}
+t3fc7bcbc = Taille de police { $size }
+
+# The pasted text could run commands. Paste again within 5 s to send it anyway.
+t6e9aeddb = Le texte collé pourrait exécuter des commandes. Collez de nouveau dans les 5 s pour l'envoyer quand même.
+
+# Logging stopped: {e}
+t435e7ac0 = Journalisation arrêtée : { $e }
+
+# Command Palette…
+t14aa6ff7 = Palette de commandes…
+
+# Paste
+tb34a0288 = Coller
+
+# Find…
+t1ecb565a = Rechercher…
+
+# Hide Files
+t55bc30ae = Masquer les fichiers
+
+# Browse Files (SFTP)
+tf41b1da0 = Parcourir les fichiers (SFTP)
+
+# Forward a Port…
+te7550adc = Rediriger un port…
+
+# Save Output as Text…
+tffbf1682 = Enregistrer la sortie en texte…
+
+# Save Output as HTML…
+t30c151b0 = Enregistrer la sortie en HTML…
+
+# with colors
+te0d866bb = avec les couleurs
+
+# Stop Logging
+td281e470 = Arrêter la journalisation
+
+# Start Logging
+t72c41b76 = Démarrer la journalisation
+
+# Split Right
+t50db06c1 = Diviser à droite
+
+# Split Down
+t1165de29 = Diviser vers le bas
+
+# Close Pane
+t21a947cf = Fermer le volet
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Revenir en bas (Shift+End)
+
+# Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
+t3bbceccc =
+    { $n ->
+        [one] Enter · Alt+Enter : { $n } volet
+       *[other] Enter · Alt+Enter : { $n } volets
+    }
+
+# in this pane
+t57139bb8 = dans ce volet
+
+# in {n} pane | in {n} panes
+tca97c422 =
+    { $n ->
+        [one] dans { $n } volet
+       *[other] dans { $n } volets
+    }
+
+# {snippet} · {panes} · {name} ({at} of {total})
+t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } sur { $total })
+
+# Will run
+teaaf5750 = Sera exécuté
+
+# Split the tab first: there is one pane to type in.
+t72699bd1 = Divisez d'abord l'onglet : il n'y a qu'un volet où saisir.
+
+# Close the tab?
+tc626ae98 = Fermer l'onglet ?
+
+# Close the pane?
+tf2b43783 = Fermer le volet ?
+
+# The connection to {one} is open; closing ends it.
+t7958d376 = La connexion à { $one } est ouverte ; fermer y met fin.
+
+# {n} connection is open; closing ends it. | {n} connections are open; closing ends them.
+tbac763bb =
+    { $n ->
+        [one] { $n } connexion est ouverte ; fermer y met fin.
+       *[other] { $n } connexions sont ouvertes ; fermer y met fin.
+    }
+
+# Cannot open a terminal: {e}
+t3ffc1c98 = Impossible d'ouvrir un terminal : { $e }
+
+# A connection is open; quitting closes it.
+tf3732b18 = Une connexion est ouverte ; quitter la ferme.
+
+# {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
+td41065cb =
+    { $n ->
+        [one] { $n } connexion est ouverte ; quitter la ferme.
+       *[other] { $n } connexions sont ouvertes ; quitter les ferme.
+    }
+
+# Quit
+tc7b3d356 = Quitter
+
+# Quit shellwing?
+tfa31f588 = Quitter shellwing ?
+
+# Choose a host on the left to connect.
+tf7759ebb = Choisissez un serveur à gauche pour vous connecter.
+
+# Recent
+t50e888fe = Récents
+
+# Actions
+te65fb504 = Actions
+
+# Another tab to {title}
+ta46c00f0 = Un autre onglet vers { $title }
+
+# Split right, to {title}
+tef0930dc = Diviser à droite, vers { $title }
+
+# Split down, to {title}
+tfe6ae2e4 = Diviser vers le bas, vers { $title }
+
+# Close the tab
+t1c6c1637 = Fermer l'onglet
+
+# Stop typing in every pane
+tfa86f71a = Arrêter la saisie dans tous les volets
+
+# Type in every pane of this tab
+t047bdf97 = Saisir dans tous les volets de cet onglet
+
+# All {count} tabs, by host…
+t4780291e = Les { $count } onglets, par serveur…
+
+# Find in {title}…
+t9f86553f = Rechercher dans { $title }…
+
+# Save the output of {title} as text…
+t8947128e = Enregistrer la sortie de { $title } en texte…
+
+# Save the output of {title} as HTML, with colors…
+t1c2d8b8c = Enregistrer la sortie de { $title } en HTML, avec les couleurs…
+
+# Stop logging {title}
+t87730020 = Arrêter la journalisation de { $title }
+
+# Log {title} to a file
+t2f1b2b25 = Journaliser { $title } dans un fichier
+
+# Hide the files
+td567c539 = Masquer les fichiers
+
+# Files on {title}
+t13c5bc91 = Fichiers sur { $title }
+
+# Forward a port through {title}…
+t9f033387 = Rediriger un port via { $title }…
+
+# Change theme…
+t85a401b4 = Changer de thème…
+
+# Hide the host list
+td7560c88 = Masquer la liste des serveurs
+
+# Show the host list
+t4754a8f9 = Afficher la liste des serveurs
+
+# Saved passwords and passphrases…
+tdfc17c92 = Mots de passe et phrases secrètes enregistrés…
+
+# Unlock the vault…
+tdf659182 = Déverrouiller le coffre…
+
+# Lock the vault
+tc05449a1 = Verrouiller le coffre
+
+# Sync now with {place}
+t8aad97ad = Synchroniser maintenant avec { $place }
+
+# Sync passwords with a folder…
+t74de6b57 = Synchroniser les mots de passe avec un dossier…
+
+# Sync passwords with a server…
+tc73a9bf6 = Synchroniser les mots de passe avec un serveur…
+
+# Settings…
+t64d0d0b4 = Réglages…
+
+# New host…
+t13806b73 = Nouveau serveur…
+
+# New group…
+t2c0113fa = Nouveau groupe…
+
+# Edit host {name}…
+te6b404e6 = Modifier le serveur { $name }…
+
+# Edit hosts.toml
+tbfa1762c = Modifier hosts.toml
+
+# Edit config.toml
+tf108a14d = Modifier config.toml
+
+# This host uses the theme `{t}` from hosts.toml; change it there.
+td55512c8 = Ce serveur utilise le thème `{ $t }` de hosts.toml ; modifiez-le là.
+
+# Synced {n} change from other devices. | Synced {n} changes from other devices.
+tffe9e6a0 =
+    { $n ->
+        [one] { $n } modification synchronisée depuis d'autres appareils.
+       *[other] { $n } modifications synchronisées depuis d'autres appareils.
+    }
+
+# Sync: {e}
+t8cb8c8c3 = Synchronisation : { $e }
+
+# The other device refused to let this one in.
+t1d4ed983 = L'autre appareil a refusé l'ajout de celui-ci.
+
+# No device let this one in within 10 minutes. Ask again, or use the recovery key.
+t410f845d = Aucun appareil n'a accepté celui-ci dans les 10 minutes. Redemandez, ou utilisez la clé de récupération.
+
+# Pairing: {e}
+te7df26f8 = Association : { $e }
+
+# Let {device} into this vault?
+tfab743ab = Ajouter { $device } à ce coffre ?
+
+# It gets everything the vault holds: passwords, keys, snippets and hosts. Approve only if {device} shows the code {code}.
+tc6029096 = Il obtient tout ce que contient le coffre : mots de passe, clés, extraits et serveurs. N'approuvez que si { $device } affiche le code { $code }.
+
+# Approve
+te6edf55a = Approuver
+
+# The vault is locked
+t78b7a6ee = Le coffre est verrouillé
+
+# Its passphrase opens it, or its recovery key (13 groups of four). Esc leaves it locked: Unlock the vault, in the palette, asks again.
+t5eb207c8 = Sa phrase secrète l'ouvre, ou sa clé de récupération (13 groupes de quatre). Esc le laisse verrouillé : Déverrouiller le coffre, dans la palette, redemande.
+
+# The system keychain lost the vault's key
+t444b9525 = Le trousseau du système a perdu la clé du coffre
+
+# Its recovery key (13 groups of four) opens it, and puts the key back in the keychain.
+ta628efeb = Sa clé de récupération (13 groupes de quatre) l'ouvre, et remet la clé dans le trousseau.
+
+# {name} is asking
+ta753cd6b = { $name } demande
+
+# Or type the passphrase here.
+tb78be92d = Ou saisissez la phrase secrète ici.
+
+# The vault's passphrase, or its recovery key
+t81044cdb = La phrase secrète du coffre, ou sa clé de récupération
+
+# The recovery key
+tbaa8dc18 = La clé de récupération
+
+# The vault is open.
+t3773d56a = Le coffre est ouvert.
+
+# Not opened that way: {e}
+t7693053c = Non ouvert de cette façon : { $e }
+
+# Type it again
+ta4c19926 = Saisissez-la de nouveau
+
+# To be sure of it.
+te7d01782 = Pour en être sûr.
+
+# There is no system keychain to keep the vault's key
+t04970b55 = Il n'y a pas de trousseau du système pour conserver la clé du coffre
+
+# A passphrase keeps it instead: you type it when shellwing starts. At least {min} characters. Esc: no saved passwords, keys or sync this time.
+t2fd0f1b3 = Une phrase secrète la conserve à la place : vous la saisissez au démarrage de shellwing. Au moins { $min } caractères. Esc : pas de mots de passe enregistrés, de clés ni de synchronisation cette fois.
+
+# A passphrase for the vault
+t25841dd8 = Une phrase secrète pour le coffre
+
+# It opens the vault where the system keychain cannot. At least {min} characters.
+tf7ebf632 = Elle ouvre le coffre là où le trousseau du système ne le peut pas. Au moins { $min } caractères.
+
+# A passphrase
+tf2500b30 = Une phrase secrète
+
+# That does not open it: {e}.
+tdcd34ef8 = Cela ne l'ouvre pas : { $e }.
+
+# The vault stays locked: {e}
+t05ea3b39 = Le coffre reste verrouillé : { $e }
+
+# Too short: at least {min} characters.
+tff7b3675 = Trop courte : au moins { $min } caractères.
+
+# The two were not the same.
+t60aece29 = Les deux ne sont pas identiques.
+
+# Recovery key
+t02904a59 = Clé de récupération
+
+# Enter copies
+t4cc7b1ae = Enter copie
+
+# Write this key down and keep it safe.
+t86925e9b = Notez cette clé et conservez-la en lieu sûr.
+
+# It opens the vault if the passphrase is forgotten; Settings › Vault shows it again.
+t1de04861 = Elle ouvre le coffre si la phrase secrète est oubliée ; Réglages › Coffre l'affiche de nouveau.
+
+# The vault is ready; its passphrase keeps it.
+t41eb3235 = Le coffre est prêt ; sa phrase secrète le protège.
+
+# The passphrase opens the vault too now.
+tb612b2c2 = La phrase secrète ouvre désormais aussi le coffre.
+
+# No passphrase set: {e}
+t41c038bf = Aucune phrase secrète définie : { $e }
+
+# A passphrase that joins new devices
+tde75a705 = Une phrase secrète pour ajouter de nouveaux appareils
+
+# Typed on a new device that syncs the same folder, instead of the recovery key. Anyone who can read the folder can try to guess it: four or more unrelated words, at least {min} characters.
+t703339bb = Saisie sur un nouvel appareil qui synchronise le même dossier, au lieu de la clé de récupération. Quiconque peut lire le dossier peut tenter de la deviner : quatre mots sans rapport ou plus, au moins { $min } caractères.
+
+# A sync passphrase
+ta0a73805 = Une phrase secrète de synchronisation
+
+# {place} lets a passphrase join its vault
+t2ac4c55f = { $place } permet d'ajouter des appareils à son coffre avec une phrase secrète
+
+# The one set on a device that syncs (Settings › Sync). Secrets saved here are kept and merged.
+t14a40721 = Celle définie sur un appareil qui synchronise (Réglages › Synchronisation). Les secrets enregistrés ici sont conservés et fusionnés.
+
+# The sync passphrase
+t9fb2f5f5 = La phrase secrète de synchronisation
+
+# Too easy to guess (strength {strength} of 4; 3 is needed). Several unrelated words work well.
+tb51562c6 = Trop facile à deviner (force { $strength } sur 4 ; 3 est requis). Plusieurs mots sans rapport conviennent bien.
+
+# Not set: this device does not sync.
+t3aadb1e5 = Non définie : cet appareil ne synchronise pas.
+
+# Setting the sync passphrase…
+tbf6d3ccf = Définition de la phrase secrète de synchronisation…
+
+# New devices can join with the sync passphrase now.
+t2bd178bc = Les nouveaux appareils peuvent désormais être ajoutés avec la phrase secrète de synchronisation.
+
+# Not set: {e}
+t8229a0e7 = Non définie : { $e }
+
+# Joining…
+taa884c51 = Ajout de l'appareil…
+
+# Cannot join: {e}
+t6d9d6813 = Ajout impossible : { $e }
+
+# Approve it on a device that syncs
+t70c052c8 = L'approuver sur un appareil qui synchronise
+
+# That device asks whether to let this one in; you check both show the same code.
+tb533a5e4 = Cet appareil demande s'il faut ajouter celui-ci ; vous vérifiez que les deux affichent le même code.
+
+# Type the recovery key
+te9ca27fa = Saisir la clé de récupération
+
+# The 13 groups of four from when syncing started.
+t23f96b77 = Les 13 groupes de quatre fournis au début de la synchronisation.
+
+# Type the sync passphrase
+t8cd53b17 = Saisir la phrase secrète de synchronisation
+
+# The one a device that syncs set to let new devices join.
+taf23bf2b = Celle qu'un appareil qui synchronise a définie pour permettre l'ajout de nouveaux appareils.
+
+# {folder} holds a vault from another device: join it
+t3ef84906 = { $folder } contient un coffre d'un autre appareil : le rejoindre
+
+# Code {code}
+t0e7c074b = Code { $code }
+
+# {device} asks whether to let this device in. Approve there if it shows this same code.
+t24c15ff5 = { $device } demande s'il faut ajouter cet appareil. Approuvez là-bas s'il affiche ce même code.
+
+# Waiting for a device that syncs
+t6e41520f = En attente d'un appareil qui synchronise
+
+# Open shellwing on a device that syncs this folder: it asks whether to let this one in. Esc cancels.
+ted2b04ee = Ouvrez shellwing sur un appareil qui synchronise ce dossier : il demande s'il faut ajouter celui-ci. Esc annule.
+
+# Sync with this folder
+t8eb0599a = Synchroniser avec ce dossier
+
+# it is still opening
+tdc19bf2a = il est encore en cours d'ouverture
+
+# Cannot sync: the vault: {why}.
+tad5847da = Synchronisation impossible : le coffre : { $why }.
+
+# Cannot keep the password: {e}
+tcf7fa2ce = Impossible de conserver le mot de passe : { $e }
+
+# Connecting to {place}…
+tea99befd = Connexion à { $place }…
+
+# Cannot sync: {e}
+td3aecb42 = Synchronisation impossible : { $e }
+
+# The vault: {why}.
+t775cecf8 = Le coffre : { $why }.
+
+# Joined: this device syncs with {place}.
+t8992145b = Appareil ajouté : il se synchronise avec { $place }.
+
+# Cannot save where the vault syncs: {e}
+t7eec807c = Impossible d'enregistrer là où le coffre se synchronise : { $e }
+
+# {folder} holds a vault from another device.
+tccddb8cb = { $folder } contient un coffre d'un autre appareil.
+
+# Type its recovery key to share it. Secrets saved here are kept and merged.
+t7915bff9 = Saisissez sa clé de récupération pour le partager. Les secrets enregistrés ici sont conservés et fusionnés.
+
+# That recovery key does not open it.
+t2418fa69 = Cette clé de récupération ne l'ouvre pas.
+
+# Check each group of four; letters and case do not need to be exact.
+t6a984230 = Vérifiez chaque groupe de quatre ; les lettres et la casse n'ont pas besoin d'être exactes.
+
+# Recovery key: XXXX-XXXX-…
+t931d6f73 = Clé de récupération : XXXX-XXXX-…
+
+# Connected
+t7bf69370 = Connectés
+
+# Other hosts · connected first
+t63758b2c = Autres serveurs · connectés en premier
+
+# Install {key} on…
+t80b2a794 = Installer { $key } sur…
+
+# {key} goes on here once connected.
+t02f786c3 = { $key } est installée ici une fois connecté.
+
+# no config directory
+t33e2c7cb = aucun dossier de configuration
+
+# {host} signs in with {key} from now on.
+t054dfae0 = { $host } se connecte désormais avec { $key }.
+
+# Cannot edit hosts.toml: {e}
+t917924da = Impossible de modifier hosts.toml : { $e }
+
+# Saved {name}.
+t966c9f6d = { $name } enregistré.
+
+# Saved the group {name}.
+t58507cbd = Groupe { $name } enregistré.
+
+# Deleted the group {name}.
+t2dbe70db = Groupe { $name } supprimé.
+
+# Port 8080 here reaches localhost:80 as the server sees it.
+t51796bc3 = Le port 8080 ici atteint localhost:80 tel que le serveur le voit.
+
+# Port 9000 on the server reaches localhost:3000 here.
+t79226dc9 = Le port 9000 du serveur atteint localhost:3000 ici.
+
+# A SOCKS proxy on port 1080 here; connections go out from the server.
+t8be5905e = Un proxy SOCKS sur le port 1080 ici ; les connexions sortent depuis le serveur.
+
+# For this tab, until it is closed
+tfe049b9e = Pour cet onglet, jusqu'à sa fermeture
+
+# To forward on every connection, add it to the host's forward list in hosts.toml.
+te97c1f00 = Pour rediriger à chaque connexion, ajoutez-la à la liste des redirections du serveur dans hosts.toml.
+
+# Syncing. Write this key down and keep it safe.
+t967ce868 = Synchronisation en cours. Notez cette clé et conservez-la en lieu sûr.
+
+# The key of the synced vault.
+te0a56fe7 = La clé du coffre synchronisé.
+
+# Another device needs it to join; it also opens the vault if this device is lost.
+ta32e11fd = Un autre appareil en a besoin pour être ajouté ; elle ouvre aussi le coffre si cet appareil est perdu.
+
+# the vault is still opening
+t0cf7277a = le coffre est encore en cours d'ouverture
+
+# No saved passwords: {why}.
+tf97d3647 = Aucun mot de passe enregistré : { $why }.
+
+# Saved
+t8a6979e4 = Enregistrés
+
+# Password for {target}
+t2cd4c302 = Mot de passe de { $target }
+
+# Enter to forget
+t7512451f = Enter pour oublier
+
+# Passphrase of {key_path}
+t328fcceb = Phrase secrète de { $key_path }
+
+# Cannot read the vault: {e}
+taee646ba = Impossible de lire le coffre : { $e }
+
+# Nothing saved yet: after a password works, the pane offers to save it.
+t586cd916 = Rien d'enregistré pour l'instant : quand un mot de passe fonctionne, le volet propose de l'enregistrer.
+
+# Pairing cancelled.
+t9bf01ace = Association annulée.
+
+# Forgotten.
+te8ff7bb9 = Oublié.
+
+# Theme: {name}
+ted8446cd = Thème : { $name }
+
+# Cannot read the key: {e}
+t744465b3 = Impossible de lire la clé : { $e }
+
+# the system keychain does not hold the vault's key: without a passphrase, only the recovery key would open it
+td554dbfe = le trousseau du système ne contient pas la clé du coffre : sans phrase secrète, seule la clé de récupération pourrait l'ouvrir
+
+# The vault opens with the system keychain alone now.
+t5426fdee = Le coffre s'ouvre désormais avec le trousseau du système seul.
+
+# Passphrase kept: {e}.
+tcc4fe4d2 = Phrase secrète conservée : { $e }.
+
+# Presence
+t834965a4 = Présence
+
+# {name} opens the vault now, as its passphrase does.
+t30f109d1 = { $name } ouvre désormais le coffre, comme sa phrase secrète.
+
+# {name} no longer opens the vault.
+t92f8fdac = { $name } n'ouvre plus le coffre.
+
+# The vault is locked.
+tc91b8040 = Le coffre est verrouillé.
+
+# The vault cannot lock: the system keychain opens it, or it has no passphrase.
+t2e6801fd = Le coffre ne peut pas se verrouiller : le trousseau du système l'ouvre, ou il n'a pas de phrase secrète.
+
+# The vault's key is out of the system keychain: each start asks for the passphrase.
+tc8dd0fb9 = La clé du coffre est retirée du trousseau du système : chaque démarrage demande la phrase secrète.
+
+# The key stays in the keychain: {e}.
+tdbb24cfc = La clé reste dans le trousseau : { $e }.
+
+# New devices join with the recovery key, or by approving them.
+t4b5eba19 = Les nouveaux appareils sont ajoutés avec la clé de récupération, ou en les approuvant.
+
+# Not stopped: {e}
+t3ea0b584 = Non arrêté : { $e }
+
+# The system keychain keeps the vault's key now.
+tbdfd4327 = Le trousseau du système conserve désormais la clé du coffre.
+
+# Not kept: {e}
+tc12e4203 = Non conservée : { $e }
+
+# Stopped syncing. What is there and the secrets here are kept.
+t4ba0ed42 = Synchronisation arrêtée. Ce qui s'y trouve et les secrets d'ici sont conservés.
+
+# Cannot create the file: {e}
+te92446ce = Impossible de créer le fichier : { $e }
+
+# No config directory.
+t16df9b1f = Aucun dossier de configuration.
+
+# The vault locked: {n} minute without use. | The vault locked: {n} minutes without use.
+t9abc648a =
+    { $n ->
+        [one] Le coffre s'est verrouillé : { $n } minute sans utilisation.
+       *[other] Le coffre s'est verrouillé : { $n } minutes sans utilisation.
+    }
+
+# Passwords cannot be saved: {p}
+t1ce3459e = Les mots de passe ne peuvent pas être enregistrés : { $p }
+
+# this computer
+t7d16e2ca = cet ordinateur
+
+# Local terminal
+t50537e20 = Terminal local
+
+# Typing goes to {listening} of {n} pane. Click a pane's badge to leave it out or bring it back. | Typing goes to {listening} of {n} panes. Click a pane's badge to leave it out or bring it back.
+t3023d2ae =
+    { $n ->
+        [one] La saisie va à { $listening } volet sur { $n }. Cliquez sur le badge d'un volet pour l'exclure ou le réintégrer.
+       *[other] La saisie va à { $listening } volets sur { $n }. Cliquez sur le badge d'un volet pour l'exclure ou le réintégrer.
+    }
+
+# Stop ({keys})
+t6ae11828 = Arrêter ({ $keys })
+
+# This computer
+tfa0d176a = Cet ordinateur
+
+# Favorites
+t7c2c53ba = Favoris
+
+# read only
+t0d7ec241 = lecture seule
+
+# Choose a host on the left to connect
+t8354c717 = Choisissez un serveur à gauche pour vous connecter
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = ou appuyez sur { $keys } pour en trouver un, ou pour vous connecter à user@host
+
+# find a host, connect, run an action
+t4b795631 = trouver un serveur, se connecter, lancer une action
+
+# a new tab
+t8ed35e75 = un nouvel onglet
+
+# close the tab
+teb891a97 = fermer l'onglet
+
+# next tab
+ta7702de7 = onglet suivant
+
+# go to a tab
+tf70ede40 = aller à un onglet
+
+# show or hide the host list
+t9489dcc2 = afficher ou masquer la liste des serveurs

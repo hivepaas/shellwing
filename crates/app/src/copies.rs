@@ -22,6 +22,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use shellwing_i18n::{tr, tr_n};
 use shellwing_ssh::sftp;
 
 /// A file's size and mtime: what tells one save from another.
@@ -255,15 +256,17 @@ fn sweep_in(base: &Path, into: &Path) -> Vec<Kept> {
 pub fn kept_notice(kept: &[Kept]) -> Option<String> {
     match kept {
         [] => None,
-        [k] => Some(format!(
-            "An edit of {} was not written back to the server; the file is kept as {}.",
-            k.remote,
-            k.path.display()
+        [k] => Some(tr!(
+            "An edit of {remote} was not written back to the server; the file is kept as {path}.",
+            remote = k.remote.as_str(),
+            path = k.path.display().to_string()
         )),
-        _ => Some(format!(
-            "{} edited files were not written back to the server; they are kept in Downloads: {}.",
+        _ => Some(tr_n!(
             kept.len(),
-            kept.iter()
+            "{n} edited file was not written back to the server; it is kept in Downloads: {files}.",
+            "{n} edited files were not written back to the server; they are kept in Downloads: {files}.",
+            files = kept
+                .iter()
                 .map(|k| k.remote.as_str())
                 .collect::<Vec<_>>()
                 .join(", ")

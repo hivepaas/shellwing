@@ -24,14 +24,33 @@ pub struct Changed;
 pub struct TextInput {
     focus: FocusHandle,
     content: SharedString,
-    placeholder: SharedString,
+    placeholder: Placeholder,
     selected: Range<usize>,
     reversed: bool,
     marked: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
+    /// How far the text is scrolled left, so the cursor stays in the field
+    /// when the text is wider than it.
+    scroll_x: Pixels,
     selecting: bool,
     masked: bool,
+}
+
+/// What an empty field shows.
+enum Placeholder {
+    Text(SharedString),
+    /// Said again each time it is drawn: in the language in use now.
+    Said(Box<dyn Fn() -> String>),
+}
+
+/// A field whose placeholder is said in the language in use when drawn,
+/// so it follows a change of language: `said(cx, || tr!("Find"))`.
+pub fn said<V: 'static>(
+    cx: &mut Context<V>,
+    placeholder: impl Fn() -> String + 'static,
+) -> gpui::Entity<TextInput> {
+    cx.new(|cx| TextInput::said(placeholder, cx))
 }
 
 /// What a masked field shows for each character.
@@ -41,17 +60,34 @@ impl gpui::EventEmitter<Changed> for TextInput {}
 
 impl TextInput {
     pub fn new(placeholder: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+        Self::with(Placeholder::Text(placeholder.into()), cx)
+    }
+
+    /// See [`said`].
+    pub fn said(placeholder: impl Fn() -> String + 'static, cx: &mut Context<Self>) -> Self {
+        Self::with(Placeholder::Said(Box::new(placeholder)), cx)
+    }
+
+    fn with(placeholder: Placeholder, cx: &mut Context<Self>) -> Self {
         TextInput {
             focus: cx.focus_handle(),
             content: SharedString::default(),
-            placeholder: placeholder.into(),
+            placeholder,
             selected: 0..0,
             reversed: false,
             marked: None,
             last_layout: None,
             last_bounds: None,
+            scroll_x: px(0.),
             selecting: false,
             masked: false,
+        }
+    }
+
+    fn placeholder_text(&self) -> SharedString {
+        match &self.placeholder {
+            Placeholder::Text(t) => t.clone(),
+            Placeholder::Said(f) => f().into(),
         }
     }
 
@@ -245,7 +281,7 @@ impl TextInput {
         if position.y > bounds.bottom() {
             return self.content.len();
         }
-        self.text_offset(line.closest_index_for_x(position.x - bounds.left()))
+        self.text_offset(line.closest_index_for_x(position.x - bounds.left() + self.scroll_x))
     }
 
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -384,13 +420,14 @@ impl EntityInputHandler for TextInput {
     ) -> Option<Bounds<Pixels>> {
         let layout = self.last_layout.as_ref()?;
         let range = self.range_from_utf16(&range_utf16);
+        let left = bounds.left() - self.scroll_x;
         Some(Bounds::from_corners(
             point(
-                bounds.left() + layout.x_for_index(self.shown_offset(range.start)),
+                left + layout.x_for_index(self.shown_offset(range.start)),
                 bounds.top(),
             ),
             point(
-                bounds.left() + layout.x_for_index(self.shown_offset(range.end)),
+                left + layout.x_for_index(self.shown_offset(range.end)),
                 bounds.bottom(),
             ),
         ))
@@ -418,6 +455,7 @@ struct Prepainted {
     line: Option<ShapedLine>,
     cursor: Option<PaintQuad>,
     selection: Option<PaintQuad>,
+    scroll_x: Pixels,
 }
 
 impl IntoElement for TextElement {
@@ -465,7 +503,7 @@ impl Element for TextElement {
         let input = self.input.read(cx);
         let style = window.text_style();
         let (text, color) = if input.content.is_empty() {
-            (input.placeholder.clone(), rgb(colors().faint).into())
+            (input.placeholder_text(), rgb(colors().faint).into())
         } else {
             (input.shown(), style.color)
         };
@@ -515,12 +553,28 @@ impl Element for TextElement {
         } else {
             line.x_for_index(input.shown_offset(input.cursor()))
         };
+        // Scrolled just enough to show the cursor; none for what fits (and
+        // a placeholder, which is cut at the edge instead).
+        let room = (bounds.size.width - px(2.)).max(px(0.));
+        let scroll_x = if input.content.is_empty() || line.width <= room {
+            px(0.)
+        } else {
+            let mut x = input.scroll_x;
+            if caret_at - x > room {
+                x = caret_at - room;
+            }
+            if caret_at < x {
+                x = caret_at;
+            }
+            x.min(line.width - room).max(px(0.))
+        };
+        let left = bounds.left() - scroll_x;
         let (selection, cursor) = if input.selected.is_empty() {
             (
                 None,
                 Some(fill(
                     Bounds::new(
-                        point(bounds.left() + caret_at, bounds.top()),
+                        point(left + caret_at, bounds.top()),
                         size(px(2.), bounds.size.height),
                     ),
                     rgb(colors().accent),
@@ -531,13 +585,11 @@ impl Element for TextElement {
                 Some(fill(
                     Bounds::from_corners(
                         point(
-                            bounds.left()
-                                + line.x_for_index(input.shown_offset(input.selected.start)),
+                            left + line.x_for_index(input.shown_offset(input.selected.start)),
                             bounds.top(),
                         ),
                         point(
-                            bounds.left()
-                                + line.x_for_index(input.shown_offset(input.selected.end)),
+                            left + line.x_for_index(input.shown_offset(input.selected.end)),
                             bounds.bottom(),
                         ),
                     ),
@@ -550,6 +602,7 @@ impl Element for TextElement {
             line: Some(line),
             cursor,
             selection,
+            scroll_x,
         }
     }
 
@@ -569,28 +622,32 @@ impl Element for TextElement {
             ElementInputHandler::new(bounds, self.input.clone()),
             cx,
         );
-        if let Some(sel) = pre.selection.take() {
-            window.paint_quad(sel);
-        }
         let Some(line) = pre.line.take() else {
             return;
         };
-        let _ = line.paint(
-            bounds.origin,
-            window.line_height(),
-            gpui::TextAlign::Left,
-            None,
-            window,
-            cx,
-        );
-        if focus.is_focused(window)
-            && let Some(c) = pre.cursor.take()
-        {
-            window.paint_quad(c);
-        }
+        let scroll_x = pre.scroll_x;
+        // Cut at the field's edges: a long text or placeholder stays inside.
+        let focused = focus.is_focused(window);
+        window.with_content_mask(Some(gpui::ContentMask { bounds }), |window| {
+            if let Some(sel) = pre.selection.take() {
+                window.paint_quad(sel);
+            }
+            let _ = line.paint(
+                point(bounds.left() - scroll_x, bounds.top()),
+                window.line_height(),
+                gpui::TextAlign::Left,
+                None,
+                window,
+                cx,
+            );
+            if focused && let Some(c) = pre.cursor.take() {
+                window.paint_quad(c);
+            }
+        });
         self.input.update(cx, |input, _| {
             input.last_layout = Some(line);
             input.last_bounds = Some(bounds);
+            input.scroll_x = scroll_x;
         });
     }
 }

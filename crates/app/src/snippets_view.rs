@@ -5,6 +5,7 @@ use gpui::{
     Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
     SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*, px, rgb,
 };
+use shellwing_i18n::tr;
 
 use crate::colors::colors;
 use crate::host_editor::{
@@ -75,7 +76,7 @@ impl SnippetsView {
             let _ = this.update(cx, |v, cx| {
                 match list {
                     Some(l) => v.list = l,
-                    None => v.notice = Some(("The vault is not open.".into(), true)),
+                    None => v.notice = Some((tr!("The vault is not open.").into(), true)),
                 }
                 cx.notify();
             });
@@ -83,9 +84,13 @@ impl SnippetsView {
         .detach();
     }
 
-    fn input(placeholder: &str, text: &str, cx: &mut Context<Self>) -> Entity<TextInput> {
+    fn input(
+        placeholder: impl Fn() -> String + 'static,
+        text: &str,
+        cx: &mut Context<Self>,
+    ) -> Entity<TextInput> {
         cx.new(|cx| {
-            let mut i = TextInput::new(placeholder.to_string(), cx);
+            let mut i = TextInput::said(placeholder, cx);
             i.set_text(text, text.len()..text.len(), cx);
             i
         })
@@ -99,8 +104,12 @@ impl SnippetsView {
             scope: String::new(),
             enter: true,
         });
-        let name = Self::input("What it does, to find it in the palette", &s.name, cx);
-        let command = Self::input("df -h / && free -h", &s.command, cx);
+        let name = Self::input(
+            || tr!("What it does, to find it in the palette"),
+            &s.name,
+            cx,
+        );
+        let command = Self::input(|| "df -h / && free -h".to_string(), &s.command, cx);
         // The names asked for show as the command is typed.
         let changed = cx.subscribe(&command, |_, _, _: &Changed, cx| cx.notify());
         let first = if s.name.is_empty() {
@@ -153,7 +162,7 @@ impl SnippetsView {
             command.read(cx).text().trim().to_string(),
         );
         if n.is_empty() || c.is_empty() {
-            *problem = Some("A name and a command are needed.".into());
+            *problem = Some(tr!("A name and a command are needed."));
             return cx.notify();
         }
         let s = Snippet {
@@ -166,7 +175,7 @@ impl SnippetsView {
         match self
             .vault
             .get()
-            .ok_or_else(|| "the vault is not open".to_string())
+            .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| v.save_snippet(&s).map_err(|e| e.to_string()))
         {
             Ok(_) => {
@@ -176,7 +185,7 @@ impl SnippetsView {
             }
             Err(e) => {
                 if let Some(Dialog::Edit { problem, .. }) = &mut self.dialog {
-                    *problem = Some(format!("Not saved: {e}"));
+                    *problem = Some(tr!("Not saved: {e}", e = e));
                 }
                 cx.notify();
             }
@@ -191,16 +200,16 @@ impl SnippetsView {
         let done = self
             .vault
             .get()
-            .ok_or_else(|| "the vault is not open".to_string())
+            .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
         self.close(window, cx);
         match done {
             Ok(()) => {
-                self.notice = Some((format!("Deleted {name}.").into(), false));
+                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
-            Err(e) => self.notice = Some((format!("Not deleted: {e}").into(), true)),
+            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
         }
     }
 
@@ -313,7 +322,7 @@ impl SnippetsView {
                                             div()
                                                 .text_size(ui(11.))
                                                 .text_color(rgb(colors().muted))
-                                                .child("typed, not run"),
+                                                .child(tr!("typed, not run")),
                                         )
                                     }),
                             )
@@ -328,11 +337,11 @@ impl SnippetsView {
                                     .child(s.command.clone()),
                             ),
                     )
-                    .child(Self::small(("snippet-edit", i), "Edit…").on_click(
+                    .child(Self::small(("snippet-edit", i), &tr!("Edit…")).on_click(
                         cx.listener(move |v, _, w, cx| v.edit(Some(edit.clone()), w, cx)),
                     ))
                     .child(
-                        Self::small(("snippet-delete", i), "Delete")
+                        Self::small(("snippet-delete", i), &tr!("Delete"))
                             .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
                                 v.dialog = Some(Dialog::Delete {
@@ -381,7 +390,7 @@ impl SnippetsView {
                 .gap(px(8.))
                 .pt(px(2.))
                 .child(
-                    outline_button("snippet-cancel", "Cancel")
+                    outline_button("snippet-cancel", &tr!("Cancel"))
                         .on_click(cx.listener(|v, _, w, cx| v.close(w, cx))),
                 )
                 .child(
@@ -396,16 +405,16 @@ impl SnippetsView {
         };
         Some(match d {
             Dialog::Delete { snippet } => card
-                .child(title(&format!("Delete {}?", snippet.name)))
+                .child(title(&tr!("Delete {name}?", name = snippet.name.as_str())))
                 .child(
                     div()
                         .text_size(ui(12.5))
                         .text_color(rgb(colors().label))
-                        .child(
-                            "It goes from the vault, and from your other devices once they sync.",
-                        ),
+                        .child(tr!(
+                            "It goes from the vault, and from your other devices once they sync."
+                        )),
                 )
-                .child(buttons("Delete", cx)),
+                .child(buttons(&tr!("Delete"), cx)),
             Dialog::Edit {
                 id,
                 name,
@@ -427,9 +436,9 @@ impl SnippetsView {
                     .text_size(ui(11.5))
                     .text_color(rgb(colors().muted));
                 if asked.is_empty() {
-                    vars = vars.child("{{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.");
+                    vars = vars.child(tr!("{{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs."));
                 } else {
-                    vars = vars.child("Asked for when it runs:");
+                    vars = vars.child(tr!("Asked for when it runs:"));
                     for a in asked {
                         vars = vars.child(
                             div()
@@ -446,7 +455,7 @@ impl SnippetsView {
                 vars = vars.child(
                     div()
                         .ml(px(6.))
-                        .child("Chain commands with && or ; on one line."),
+                        .child(tr!("Chain commands with && or ; on one line.")),
                 );
 
                 let (groups, hosts) = self
@@ -461,16 +470,12 @@ impl SnippetsView {
                     .border_color(rgb(colors().field_edge))
                     .overflow_hidden();
                 let choices = [
-                    (
-                        0usize,
-                        "Every host".to_string(),
-                        matches!(scope, Scope::Every),
-                    ),
+                    (0usize, tr!("Every host"), matches!(scope, Scope::Every)),
                     (
                         1,
                         match scope {
                             Scope::Group(g) => format!("{g} ▾"),
-                            _ => "A group ▾".into(),
+                            _ => tr!("A group ▾"),
                         },
                         matches!(scope, Scope::Group(_)),
                     ),
@@ -478,7 +483,7 @@ impl SnippetsView {
                         2,
                         match scope {
                             Scope::Host(h) => format!("{h} ▾"),
-                            _ => "One host ▾".into(),
+                            _ => tr!("One host ▾"),
                         },
                         matches!(scope, Scope::Host(_)),
                     ),
@@ -530,12 +535,12 @@ impl SnippetsView {
                     .flex()
                     .flex_col()
                     .gap(px(5.))
-                    .child(label_text("Offered for"))
+                    .child(label_text(&tr!("Offered for")))
                     .child(seg);
                 if let Some(p) = pick {
                     let (names, empty) = match p {
-                        Pick::Group => (groups, "No groups yet: make one in the host list."),
-                        Pick::Host => (hosts, "No hosts yet."),
+                        Pick::Group => (groups, tr!("No groups yet: make one in the host list.")),
+                        Pick::Host => (hosts, tr!("No hosts yet.")),
                     };
                     let mut list = div()
                         .id("scope-list")
@@ -592,21 +597,21 @@ impl SnippetsView {
                     }
                     scope_box = scope_box.child(list);
                 }
-                scope_box = scope_box.child(hint_text(
-                    "The palette lists it in panes of those hosts only.",
-                ));
+                scope_box = scope_box.child(hint_text(&tr!(
+                    "The palette lists it in panes of those hosts only."
+                )));
 
                 let enter_on = *enter;
                 let mut b = card
-                    .child(title(if id.is_empty() {
-                        "New snippet"
+                    .child(title(&if id.is_empty() {
+                        tr!("New snippet")
                     } else {
-                        "Edit snippet"
+                        tr!("Edit snippet")
                     }))
-                    .child(Self::field("Name", name, focused(name), None))
+                    .child(Self::field(&tr!("Name"), name, focused(name), None))
                     .child(
                         Self::field(
-                            "Command",
+                            &tr!("Command"),
                             command,
                             focused(command),
                             Some(self.mono.clone()),
@@ -628,12 +633,12 @@ impl SnippetsView {
                                 cx.notify();
                             }))
                             .child(checkbox(enter_on))
-                            .child(label_text("Run it: press Enter after typing it")),
+                            .child(label_text(&tr!("Run it: press Enter after typing it"))),
                     );
                 if let Some(p) = problem {
                     b = b.child(problem_text(p));
                 }
-                b.child(buttons("Save", cx))
+                b.child(buttons(&tr!("Save"), cx))
             }
         })
     }
@@ -667,7 +672,7 @@ impl Render for SnippetsView {
                     .py(px(10.))
                     .text_size(ui(12.))
                     .text_color(rgb(colors().muted))
-                    .child("None yet."),
+                    .child(tr!("None yet.")),
             );
         }
         for r in rows {
@@ -691,15 +696,17 @@ impl Render for SnippetsView {
                             .flex_1()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Snippets"),
+                            .child(tr!("Snippets")),
                     )
                     .child(
-                        primary_button("snippet-new", "New snippet…")
+                        primary_button("snippet-new", &tr!("New snippet…"))
                             .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx))),
                     ),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(format!(
-                "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts."
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
+                "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.",
+                chord = chord,
+                alt = alt
             )));
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
@@ -713,7 +720,7 @@ impl Render for SnippetsView {
             div()
                 .text_size(ui(12.))
                 .text_color(rgb(colors().muted))
-                .child("{{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs."),
+                .child(tr!("{{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.")),
         );
         if let Some(card) = self.dialog_card(window, cx) {
             let (at, shade) = crate::chrome::shade(window);
