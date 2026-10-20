@@ -2130,11 +2130,15 @@ mod tests {
         f.name = "kube".into();
         v.save_config_file(&f, None).expect("renamed");
         assert_eq!(
-            v.config_file_content(&id).expect("read").as_deref().map(|c| &c[..]),
+            v.config_file_content(&id)
+                .expect("read")
+                .as_deref()
+                .map(|c| &c[..]),
             Some(&b"apiVersion: v1\n"[..])
         );
         // Bytes that are not text.
-        v.save_config_file(&f, Some(&[0x30, 0x82, 0, 1])).expect("binary");
+        v.save_config_file(&f, Some(&[0x30, 0x82, 0, 1]))
+            .expect("binary");
         assert!(v.config_files().expect("listed")[0].binary);
         let big = vec![b'x'; limits::FILE + 1];
         assert!(matches!(

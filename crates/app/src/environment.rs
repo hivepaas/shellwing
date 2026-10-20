@@ -87,6 +87,11 @@ pub fn said_oversize(o: &Oversize) -> String {
             size = kb(*n),
             max = kb(limits::ENVIRONMENT)
         ),
+        Oversize::File(n) => tr!(
+            "The file is {size} KB; {max} KB at most.",
+            size = kb(*n),
+            max = kb(limits::FILE)
+        ),
     }
 }
 

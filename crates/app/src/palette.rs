@@ -36,6 +36,8 @@ pub enum PaletteEvent {
     },
     /// Load an environment (by id) into the focused pane.
     LoadEnv(String),
+    /// Place a config file (by id) on the focused pane's host.
+    PlaceFile(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -112,6 +114,8 @@ pub enum Kind {
     Snippet(String),
     /// An environment to load into the focused pane, by id.
     Env(String),
+    /// A config file to place on the focused pane's host, by id.
+    File(String),
 }
 
 /// What part of the palette an entry is in, to jump to from the row of
@@ -123,6 +127,7 @@ pub enum Part {
     Recent,
     Snippets,
     Environments,
+    ConfigFiles,
     Actions,
     Settings,
     /// No badge.
@@ -136,6 +141,7 @@ impl Part {
             Part::Recent => tr!("Recent"),
             Part::Snippets => tr!("Snippets"),
             Part::Environments => tr!("Environments"),
+            Part::ConfigFiles => tr!("Config files"),
             Part::Actions => tr!("Actions"),
             Part::Settings => tr!("Settings"),
             Part::Other => String::new(),
@@ -311,6 +317,20 @@ impl Palette {
         Self::build(Mode::Ask, notes, 0, placeholder, cx)
     }
 
+    /// Like [`Palette::ask`], with `text` typed already (all of it chosen,
+    /// to type over).
+    pub fn ask_with(
+        placeholder: &str,
+        text: &str,
+        notes: Vec<Entry>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
+        p.input
+            .update(cx, |i, cx| i.set_text(text, text.len()..text.len(), cx));
+        p
+    }
+
     /// Like [`Palette::ask`], typing a secret: the field shows dots.
     pub fn ask_secret(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
         let mut p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
@@ -473,6 +493,7 @@ impl Palette {
                 all,
             },
             Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
+            Kind::File(id) => PaletteEvent::PlaceFile(id.clone()),
             Kind::Note => return,
         });
     }

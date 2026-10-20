@@ -28,6 +28,7 @@ const STATE: &str = "state";
 const WINDOW: &str = "window.json";
 const RECENT: &str = "recent.json";
 const SESSION: &str = "session.json";
+const PLACED: &str = "placed.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -456,6 +457,16 @@ impl Store {
 
     pub fn save_session_state(&self, state: &SessionState) -> io::Result<()> {
         self.save_state(SESSION, state)
+    }
+
+    /// Config files placed until their tab closed, that may still be on
+    /// their hosts (`state/placed.json`).
+    pub fn placed(&self) -> Vec<crate::PlacedFile> {
+        self.load_state(PLACED).unwrap_or_default()
+    }
+
+    pub fn save_placed(&self, placed: &[crate::PlacedFile]) -> io::Result<()> {
+        self.save_state(PLACED, &placed)
     }
 
     /// Hosts opened lately, most recent first (`state/recent.json`).

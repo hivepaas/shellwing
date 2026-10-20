@@ -7655,6 +7655,7 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "sha2 0.10.9",
  "shellwing-config",
  "shellwing-core",
  "shellwing-i18n",

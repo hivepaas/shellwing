@@ -14,6 +14,7 @@ t190cce46 = { $name }: a name takes { $max } characters at most.
 t8a0064ca = { $name } is { $size } KB; a value takes { $max } KB at most.
 t1c9f770c = { $count } variables; { $max } at most.
 tdbf76954 = The variables come to { $size } KB; { $max } KB at most.
+tf2bc7ef2 = The file is { $size } KB; { $max } KB at most.
 t0fe07306 = Name
 tc85117e2 = The connection ended.
 t424caf2a = The connection ended while writing back.
@@ -340,6 +341,7 @@ tcf9aefb4 = Hosts
 t50e888fe = Recent
 t648fcbf7 = Snippets
 t273b1ccb = Environments
+t16261310 = Config files
 te65fb504 = Actions
 t4b058728 = Settings
 t18f005c7 = Find a host, or type user@host
@@ -568,6 +570,36 @@ tc7a909aa = + New host
 t9585c651 = + Group
 t0d325d34 = HOSTS
 t444612de = every host
+te8f231ba =
+    { $n ->
+        [one] { $n } byte
+       *[other] { $n } bytes
+    }
+te253ff0c = { $n } KB
+t7fb1322b = The file's text
+t2c4b7067 = What it is, such as kube prod
+t70f95162 = It is not text, or longer than { $max } KB: replace it from a file instead.
+t2b706ff4 = Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t0038f509 = Where it goes: a file's path, not a folder's.
+t5dde13fd = Permissions: three octal digits, such as 600.
+t44662d06 = No category
+t5956f56a = { $size }, not text
+t8e7efcd7 = Edit…
+t28a576c9 = Choose a file…
+t9e564235 = { $file }: { $size }, kept as it is
+tc1679f62 = Content
+tc4ae4e2a = Text up to { $edited } KB is edited here; any file up to { $max } KB can be taken from this computer.
+tdc9acac2 = The palette offers to place it in panes of those hosts only.
+taf38972d = Where it goes on the host
+t8700fd83 = Permissions
+td0fa9fed = New config file
+t56c9aeed = Edit config file
+tafb3e591 = Category
+tb66334ea = The vault's passphrase
+t2ebec270 = Wrong passphrase.
+t3ab56316 = Confirm it is you in the system's prompt…
+teecb1d4f = The vault's passphrase, to show the values
+tc7928fa4 = No passphrase guards the vault, so anyone at this device can show them. Show the values?
 t425ed3ca = value
 tb620b1e5 = What they are for, such as AWS production
 tdd2c4c4b = { $name } is not a variable's name.
@@ -576,18 +608,12 @@ t387a8908 = { $name } has no value.
 t6150163b = Add a variable: a name and its value.
 tbf497c49 = The clipboard holds no NAME=value lines.
 t65a67e1e = Not NAME=value: { $e }
-tb66334ea = The vault's passphrase
-t2ebec270 = Wrong passphrase.
 t79d75da2 =
     { $n ->
         [one] needed by { $n } snippet
        *[other] needed by { $n } snippets
     }
-t8e7efcd7 = Edit…
 ta1de2fdd = Change
-t3ab56316 = Confirm it is you in the system's prompt…
-teecb1d4f = The vault's passphrase, to show the values
-tc7928fa4 = No passphrase guards the vault, so anyone at this device can show them. Show the values?
 t67715aad = The palette offers to load it in panes of those hosts only.
 t7996f062 = Variables
 tf53dee25 = Add a variable
@@ -597,7 +623,6 @@ tf3955dbc = New environment
 t79646cbc = Edit environment
 td9b8e02f = What it does, to find it in the palette
 t7f4c69bb = A name and a command are needed.
-t44662d06 = No category
 td4e41905 = typed, not run
 tba31f3bb = with { $envs }
 t77846bfe = Every host
@@ -608,11 +633,11 @@ t31c54e54 = No groups yet: make one in the host list.
 t71734b03 = No hosts yet.
 t3c6666da = It goes from the vault, and from your other devices once they sync.
 td2d90383 = Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+t9903435f = It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
 t2d8c5e6d = Asked for when it runs:
 t883a11f4 = Enter starts another line; the lines run in turn. { $save } saves.
 t66336218 = The palette lists it in panes of those hosts only.
-tafb3e591 = Category
 tebd9fda9 = Environments it needs
 t769ef9f6 = None yet: add one in Settings › Environments.
 td5ccd9da = It runs in a subshell that has their variables; they go when it ends.
@@ -621,13 +646,16 @@ t9eab9738 = Edit snippet
 tc67c8f52 = Command
 t32122ee4 = Run it: press Enter after typing it
 t786bc275 = None yet.
-t0c42d278 = New environment…
 tec3111a4 = New snippet…
-t45b0673b = Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({ $chord }, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t0c42d278 = New environment…
+t58dfdc93 = New config file…
+t7baa8160 = Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({ $chord }, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 tb1ca142d = Commands you run often. Run one from the palette ({ $chord }, then type its name): Enter runs it in the pane, { $alt } in every pane of the tab. Kept in the vault, so they sync with your hosts.
+ta84c0f04 = Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({ $chord }, under Config files) or the pane's menu: until the tab closes, or to stay.
 te60c8275 = While loaded, the server can read them
 t87b5db80 = Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
 t16991c40 = Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t1d5d16cc = A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in for the pane's host; any other {"{{"}name{"}}"} is asked for when the snippet runs.
 t88dd5f11 = Your hosts on every device. Just sign in.
 t025d99af = Hosts, saved passwords, keys and snippets follow you to every computer.
@@ -712,6 +740,11 @@ td90b12ab = Enter go to it
 t6246d272 = Cmd+W close it
 t82a6adaf = Ctrl+W close it
 t20301272 = A full-screen program is running in this pane: leave it, then try again.
+t0f179fa4 =
+    { $n ->
+        [one] Removed { $n } file.
+       *[other] Removed { $n } files.
+    }
 t0993a534 = It has no variables.
 t3883bd87 = With the ones loaded, that comes to { $size } KB; a shell takes { $max } KB at most: unload one first.
 ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
@@ -769,6 +802,9 @@ t435e7ac0 = Logging stopped: { $e }
 t14aa6ff7 = Command Palette…
 t2b3c5b61 = Snippets…
 td34b2cc0 = Load Environment…
+t49f82f0c = Place Config File…
+t25c07703 = Keep a File in the Vault…
+t4efeb00b = Remove { $names }
 t362b9a48 = Unload { $names }
 tb34a0288 = Paste
 t1ecb565a = Find…
@@ -784,6 +820,40 @@ t50db06c1 = Split Right
 t1165de29 = Split Down
 t21a947cf = Close Pane
 t5a2b7304 = ↓ Back to bottom (Shift+End)
+t59edc3e9 = Config files · { $category }
+taf8f6d41 = placed: Enter places it again
+td11af590 = It is not in the vault any more.
+ta22bb64e = { $name } · { $size } · permissions { $mode }
+t0f76d445 = Where on { $host }
+t1383f29b = Cannot place { $name }: { $e }
+t5ca1c37e = Replace the one placed here until the tab closes
+t55130ddc = What was there before still comes back when the tab closes.
+t3ec4172b = { $path } holds it already.
+t19537c52 = Place it until the tab closes
+t1302797a = Then it is taken away.
+t698a38cf = Place it to stay
+tb2bc8f3b = It stays when the tab closes.
+t7e646019 = Replace the file there until the tab closes
+t8c121382 = The one there now is set aside, and comes back when the tab closes.
+tc95f7291 = Replace it, keeping the old one
+tfb10a76a = As { $path }
+t1e17fc0c = Replace it
+t7fa127b9 = The one there now is gone.
+td716b366 = { $path } is there already…
+tdcc97a76 = Place at { $path }…
+t59328aae = Placed { $name } at { $path } until the tab closes.
+tfce33e2b = Placed { $name } at { $path }.
+ta674430e =
+    { $n ->
+        [one] Took away { $n } config file left here from before.
+       *[other] Took away { $n } config files left here from before.
+    }
+tccbb9d92 = Left { $path } as it is: it changed since it was placed.
+tf7742770 = Kept encrypted as a config file, for this host, up to { $max } KB.
+t63904f7b = A file on { $host } to keep in the vault
+t8589664d = Kept { $path } in the vault: see Settings › Config files.
+tc12e4203 = Not kept: { $e }
+tbd123099 = Removing the config files placed…
 t85f58d76 = Snippets · { $category }
 t3bbceccc =
     { $n ->
@@ -851,6 +921,7 @@ te6b404e6 = Edit host { $name }…
 tbfa1762c = Edit hosts.toml
 tf108a14d = Edit config.toml
 tdd2847bb = No snippet for this host: add one in Settings › Snippets.
+t4b38a37d = No config file for this host: add one in Settings › Config files.
 t1b95315b = No environment for this host: add one in Settings › Environments.
 td55512c8 = This host uses the theme `{ $t }` from hosts.toml; change it there.
 tffe9e6a0 =
@@ -974,7 +1045,6 @@ tdbb24cfc = The key stays in the keychain: { $e }.
 t4b5eba19 = New devices join with the recovery key, or by approving them.
 t3ea0b584 = Not stopped: { $e }
 tbdfd4327 = The system keychain keeps the vault's key now.
-tc12e4203 = Not kept: { $e }
 t4ba0ed42 = Stopped syncing. What is there and the secrets here are kept.
 te92446ce = Cannot create the file: { $e }
 t16df9b1f = No config directory.

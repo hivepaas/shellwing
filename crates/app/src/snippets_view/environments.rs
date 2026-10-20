@@ -5,10 +5,11 @@
 
 use std::time::Duration;
 
+use super::confirm::Then;
 use super::*;
 use crate::environment;
 use gpui::{App, svg};
-use shellwing_vault::{EnvValues, Error as VaultError};
+use shellwing_vault::EnvValues;
 
 /// How long values stay shown.
 const SHOWN_FOR: Duration = Duration::from_secs(60);
@@ -27,17 +28,8 @@ pub(super) struct VarRow {
 /// Where showing the values stands.
 pub(super) enum Reveal {
     Hidden,
-    /// Asking first, to show row `row`: for the vault's passphrase, or
-    /// (None: none guards the vault) for a yes.
-    Asking {
-        passphrase: Option<Entity<TextInput>>,
-        problem: Option<String>,
-        row: usize,
-    },
-    /// Windows Hello or Touch ID is asking.
-    Waiting,
-    /// Asked: the values as they are in the vault, for the eyes to show
-    /// at once, for a while.
+    /// Asked (see [`confirm`](super::confirm)): the values as they are in
+    /// the vault, for the eyes to show at once, for a while.
     Open(EnvValues),
 }
 
@@ -124,12 +116,8 @@ impl SnippetsView {
     /// Enter in the dialog: answers the question to show the values, if it
     /// is being asked, else saves.
     pub(super) fn env_enter(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(EnvEdit {
-            reveal: Reveal::Asking { .. },
-            ..
-        }) = self.env_edit()
-        {
-            return self.confirm_reveal(cx);
+        if self.confirm.is_some() {
+            return self.confirm_answer(cx);
         }
         self.save_env(window, cx);
     }
@@ -276,110 +264,12 @@ impl SnippetsView {
         {
             return self.reveal_row(i, cx);
         }
-        self.start_reveal(i, window, cx);
-    }
-
-    /// Asks it is the user before row `row`'s value shows: Windows Hello
-    /// or Touch ID where it opens the vault, else its passphrase, else a yes.
-    fn start_reveal(&mut self, row: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let slot = self.vault.clone();
-        let Some(vault) = slot.ready() else {
-            return;
-        };
-        let presence = slot.presence().is_some() && vault.has_presence().unwrap_or(false);
-        let passphrase = vault.has_vault_passphrase().unwrap_or(false);
-        if !presence {
-            return self.ask_passphrase(passphrase, None, row, window, cx);
-        }
-        if let Some(e) = self.env_edit() {
-            e.reveal = Reveal::Waiting;
-        }
-        cx.notify();
-        let job = cx.background_spawn(async move { slot.confirm(None) });
-        cx.spawn_in(window, async move |this, cx| {
-            let done = job.await;
-            let _ = this.update_in(cx, |v, window, cx| match done {
-                Ok(()) => v.open_values(row, cx),
-                Err(err) => {
-                    // Not there, or cancelled: the passphrase instead.
-                    let problem = (!matches!(err, VaultError::NotPresent)).then(|| err.to_string());
-                    v.ask_passphrase(passphrase, problem, row, window, cx);
-                }
-            });
-        })
-        .detach();
-    }
-
-    fn ask_passphrase(
-        &mut self,
-        passphrase: bool,
-        problem: Option<String>,
-        row: usize,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let input = passphrase
-            .then(|| cx.new(|cx| TextInput::said(|| tr!("The vault's passphrase"), cx).masked()));
-        let focus = input.as_ref().map(|i| i.read(cx).focus_handle(cx));
-        if let Some(e) = self.env_edit() {
-            e.reveal = Reveal::Asking {
-                passphrase: input,
-                problem,
-                row,
-            };
-        }
-        match focus {
-            Some(f) => window.focus(&f, cx),
-            None => window.focus(&self.focus, cx),
-        }
-        cx.notify();
-    }
-
-    /// The answer to the question: the passphrase checked (away from the
-    /// window: its KDF takes a moment), or the yes.
-    fn confirm_reveal(&mut self, cx: &mut Context<Self>) {
-        let Some(EnvEdit {
-            reveal: Reveal::Asking {
-                passphrase, row, ..
-            },
-            ..
-        }) = self.env_edit()
-        else {
-            return;
-        };
-        let row = *row;
-        let Some(input) = passphrase.clone() else {
-            return self.open_values(row, cx);
-        };
-        let typed = zeroize::Zeroizing::new(input.read(cx).text().to_string());
-        input.update(cx, |i, cx| i.set_text("", 0..0, cx));
-        let slot = self.vault.clone();
-        let job = cx.background_spawn(async move { slot.confirm(Some(typed.as_str())) });
-        cx.spawn(async move |this, cx| {
-            let done = job.await;
-            let _ = this.update(cx, |v, cx| match done {
-                Ok(()) => v.open_values(row, cx),
-                Err(err) => {
-                    if let Some(EnvEdit {
-                        reveal: Reveal::Asking { problem, .. },
-                        ..
-                    }) = v.env_edit()
-                    {
-                        *problem = Some(match err {
-                            VaultError::WrongPassphrase => tr!("Wrong passphrase."),
-                            e => e.to_string(),
-                        });
-                    }
-                    cx.notify();
-                }
-            });
-        })
-        .detach();
+        self.ask_confirm(Then::EnvRow(i), window, cx);
     }
 
     /// Asked: the values from the vault, row `row`'s shown, and the eyes
     /// open at once for a while.
-    fn open_values(&mut self, row: usize, cx: &mut Context<Self>) {
+    pub(super) fn open_values(&mut self, row: usize, cx: &mut Context<Self>) {
         let vault = self.vault.clone();
         let Some(e) = self.env_edit() else {
             return;
@@ -679,76 +569,18 @@ impl SnippetsView {
                             && i < e.rows.len()
                         {
                             e.rows.remove(i);
-                            // Indices moved: a question about a row is moot.
-                            if matches!(e.reveal, Reveal::Asking { .. } | Reveal::Waiting) {
-                                e.reveal = Reveal::Hidden;
-                            }
+                        }
+                        // Indices moved: a question about a row is moot.
+                        if v.confirm
+                            .as_ref()
+                            .is_some_and(|c| c.then != Then::FileContent)
+                        {
+                            v.confirm = None;
                         }
                         cx.notify();
                     }))
                     .child("✕"),
             )
-    }
-
-    /// The question before a value shows, or the wait for the system's
-    /// prompt; nothing otherwise.
-    fn reveal_line(
-        &self,
-        e: &EnvEdit,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) -> Option<gpui::Div> {
-        match &e.reveal {
-            Reveal::Hidden | Reveal::Open(_) => None,
-            Reveal::Waiting => {
-                Some(div().child(hint_text(&tr!("Confirm it is you in the system's prompt…"))))
-            }
-            Reveal::Asking {
-                passphrase,
-                problem,
-                ..
-            } => {
-                let mut ask = div().flex().flex_col().gap(px(6.));
-                match passphrase {
-                    Some(input) => {
-                        let focused = input.read(cx).focus_handle(cx).is_focused(window);
-                        ask = ask
-                            .child(label_text(&tr!(
-                                "The vault's passphrase, to show the values"
-                            )))
-                            .child(
-                                div()
-                                    .flex()
-                                    .gap(px(8.))
-                                    .child(Self::field_box(input, focused, None).flex_1())
-                                    .child(
-                                        Self::small("env-confirm", &tr!("Show"))
-                                            .h(px(32.))
-                                            .on_click(
-                                                cx.listener(|v, _, _, cx| v.confirm_reveal(cx)),
-                                            ),
-                                    ),
-                            );
-                    }
-                    None => {
-                        ask = ask.child(
-                            div()
-                                .flex()
-                                .items_center()
-                                .gap(px(8.))
-                                .child(hint_text(&tr!("No passphrase guards the vault, so anyone at this device can show them. Show the values?")).flex_1())
-                                .child(Self::small("env-confirm", &tr!("Show")).on_click(
-                                    cx.listener(|v, _, _, cx| v.confirm_reveal(cx)),
-                                )),
-                        );
-                    }
-                }
-                if let Some(p) = problem {
-                    ask = ask.child(problem_text(p));
-                }
-                Some(ask)
-            }
-        }
     }
 
     pub(super) fn env_card(
@@ -797,7 +629,7 @@ impl SnippetsView {
                         .on_click(cx.listener(|v, _, w, cx| v.paste_dotenv(w, cx))),
                 ),
         );
-        if let Some(line) = self.reveal_line(e, window, cx) {
+        if let Some(line) = self.confirm_line(window, cx) {
             vars = vars.child(line);
         }
         let save = if cfg!(target_os = "macos") {

@@ -28,6 +28,9 @@ t1c9f770c = 변수가 { $count }개입니다. 최대 { $max }개입니다.
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = 변수 합계가 { $size }KB입니다. 최대 { $max }KB입니다.
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = 파일이 { $size }KB입니다. 최대 { $max }KB입니다.
+
 # Name
 t0fe07306 = 이름
 
@@ -958,6 +961,9 @@ t648fcbf7 = 스니펫
 # Environments
 t273b1ccb = 환경
 
+# Config files
+t16261310 = 설정 파일
+
 # Actions
 te65fb504 = 작업
 
@@ -1630,6 +1636,87 @@ t0d325d34 = 호스트
 # every host
 t444612de = 모든 호스트
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+       *[other] { $n }바이트
+    }
+
+# {n} KB
+te253ff0c = { $n }KB
+
+# The file's text
+t7fb1322b = 파일의 텍스트
+
+# What it is, such as kube prod
+t2c4b7067 = 무엇인지, 예: kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = 텍스트가 아니거나 { $max }KB보다 큽니다. 대신 파일로 바꾸세요.
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = 놓을 위치: /로 시작하거나 ~/로 시작하는 경로, 예: ~/.kube/config.
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = 놓을 위치: 폴더가 아닌 파일의 경로.
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = 권한: 8진수 세 자리, 예: 600.
+
+# No category
+t44662d06 = 카테고리 없음
+
+# {size}, not text
+t5956f56a = { $size }, 텍스트 아님
+
+# Edit…
+t8e7efcd7 = 편집…
+
+# Choose a file…
+t28a576c9 = 파일 선택…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }: { $size }, 그대로 가져옴
+
+# Content
+tc1679f62 = 내용
+
+# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
+tc4ae4e2a = { $edited }KB까지의 텍스트는 여기서 편집하며, { $max }KB까지의 파일은 이 컴퓨터에서 가져올 수 있습니다.
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = 팔레트는 이 호스트들의 창에서만 배치하도록 제안합니다.
+
+# Where it goes on the host
+taf38972d = 호스트에서 놓을 위치
+
+# Permissions
+t8700fd83 = 권한
+
+# New config file
+td0fa9fed = 새 설정 파일
+
+# Edit config file
+t56c9aeed = 설정 파일 편집
+
+# Category
+tafb3e591 = 카테고리
+
+# The vault's passphrase
+tb66334ea = 보관함 암호 문구
+
+# Wrong passphrase.
+t2ebec270 = 암호 문구가 틀렸습니다.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
+
+# The vault's passphrase, to show the values
+teecb1d4f = 값을 표시하기 위한 보관함 암호 문구
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 표시할 수 있습니다. 값을 표시할까요?
+
 # value
 t425ed3ca = 값
 
@@ -1654,32 +1741,14 @@ tbf497c49 = 클립보드에 NAME=value 줄이 없습니다.
 # Not NAME=value: {e}
 t65a67e1e = NAME=value 형식이 아닙니다: { $e }
 
-# The vault's passphrase
-tb66334ea = 보관함 암호 문구
-
-# Wrong passphrase.
-t2ebec270 = 암호 문구가 틀렸습니다.
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
        *[other] 스니펫 { $n }개에서 필요로 함
     }
 
-# Edit…
-t8e7efcd7 = 편집…
-
 # Change
 ta1de2fdd = 변경
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
-
-# The vault's passphrase, to show the values
-teecb1d4f = 값을 표시하기 위한 보관함 암호 문구
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 표시할 수 있습니다. 값을 표시할까요?
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = 팔레트는 이 호스트들의 창에서만 불러오도록 제안합니다.
@@ -1707,9 +1776,6 @@ td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
 
 # A name and a command are needed.
 t7f4c69bb = 이름과 명령이 필요합니다.
-
-# No category
-t44662d06 = 카테고리 없음
 
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음
@@ -1741,6 +1807,9 @@ t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 이미 배치된 곳에는 그대로 남습니다.
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
 
@@ -1752,9 +1821,6 @@ t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니�
 
 # The palette lists it in panes of those hosts only.
 t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
-
-# Category
-tafb3e591 = 카테고리
 
 # Environments it needs
 tebd9fda9 = 필요한 환경
@@ -1780,17 +1846,23 @@ t32122ee4 = 실행: 입력 후 Enter 누르기
 # None yet.
 t786bc275 = 아직 없습니다.
 
-# New environment…
-t0c42d278 = 새 환경…
-
 # New snippet…
 tec3111a4 = 새 스니펫…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = API 키 같은 셸용 변수로, 암호화되어 보관함에 저장되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 환경 불러오기…)에서 창에 불러오고 끝나면 해제하거나, 필요로 하는 스니펫만 단독으로 사용하게 할 수 있습니다.
+# New environment…
+t0c42d278 = 새 환경…
+
+# New config file…
+t58dfdc93 = 새 설정 파일…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = API 키처럼 셸에서 쓰는 변수로, 보관함에 암호화되어 보관되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 환경 항목) 또는 창의 메뉴에서 창에 불러오고, 다 쓰면 해제하세요. 필요로 하는 스니펫에만 따로 쓰게 할 수도 있습니다.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 자주 실행하는 명령입니다. 팔레트({ $chord }을(를) 누른 뒤 이름 입력)에서 실행하세요. Enter는 현재 창에서, { $alt }는 탭의 모든 창에서 실행합니다. 보관함에 보관되므로 호스트와 함께 동기화됩니다.
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = ~/.kube/config나 ~/.aws/credentials처럼 호스트에 배치할 파일로, 보관함에 암호화되어 보관되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 설정 파일 항목) 또는 창의 메뉴에서 배치하세요. 탭을 닫을 때까지만 두거나 계속 남겨 둘 수 있습니다.
 
 # While loaded, the server can read them
 te60c8275 = 불러온 동안 서버에서 읽을 수 있습니다
@@ -1800,6 +1872,9 @@ t87b5db80 = 값은 에코를 끈 상태로 전송되고 셸 기록에도 남지 
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = 신뢰하는 서버에만 불러오고, 끝나면 해제하세요. 만료되는 키나 권한이 작은 키, 예를 들어 단기 토큰이나 작업에 필요한 권한만 가진 역할을 사용하는 것이 좋습니다.
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = 배치된 파일은 권한과 함께 서버 디스크에 있으며, 삭제될 때까지 그 서버의 root 권한이 있는 사람은 읽을 수 있습니다. 비밀 정보는 신뢰할 수 있는 서버에만, 탭을 닫을 때까지만 배치하세요.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 창의 호스트에 맞게 채워지며, 그 밖의 {"{{"}name{"}}"}은 스니펫을 실행할 때 묻습니다.
@@ -1944,6 +2019,12 @@ t82a6adaf = Ctrl+W 닫기
 
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = 이 창에서 전체 화면 프로그램이 실행 중입니다. 종료한 뒤 다시 시도하세요.
+
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+       *[other] 파일 { $n }개를 삭제했습니다.
+    }
 
 # It has no variables.
 t0993a534 = 변수가 없습니다.
@@ -2104,6 +2185,15 @@ t2b3c5b61 = 스니펫…
 # Load Environment…
 td34b2cc0 = 환경 불러오기…
 
+# Place Config File…
+t49f82f0c = 설정 파일 배치…
+
+# Keep a File in the Vault…
+t25c07703 = 보관함에 파일 보관…
+
+# Remove {names}
+t4efeb00b = { $names } 삭제
+
 # Unload {names}
 t362b9a48 = { $names } 해제
 
@@ -2148,6 +2238,99 @@ t21a947cf = 창 닫기
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 맨 아래로 (Shift+End)
+
+# Config files · {category}
+t59edc3e9 = 설정 파일 · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = 배치됨: Enter를 누르면 다시 배치합니다
+
+# It is not in the vault any more.
+td11af590 = 더 이상 보관함에 없습니다.
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · 권한 { $mode }
+
+# Where on {host}
+t0f76d445 = { $host }의 위치
+
+# Cannot place {name}: {e}
+t1383f29b = { $name }을(를) 배치할 수 없습니다: { $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = 탭을 닫을 때까지 여기에 배치된 파일 교체
+
+# What was there before still comes back when the tab closes.
+t55130ddc = 이전에 있던 파일은 탭을 닫으면 돌아옵니다.
+
+# {path} holds it already.
+t3ec4172b = { $path }에 이미 있습니다.
+
+# Place it until the tab closes
+t19537c52 = 탭을 닫을 때까지 배치
+
+# Then it is taken away.
+t1302797a = 그다음 제거됩니다.
+
+# Place it to stay
+t698a38cf = 계속 남도록 배치
+
+# It stays when the tab closes.
+tb2bc8f3b = 탭을 닫아도 남습니다.
+
+# Replace the file there until the tab closes
+t7e646019 = 탭을 닫을 때까지 그곳의 파일 교체
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 지금 있는 파일은 따로 옮겨 두었다가 탭을 닫으면 돌아옵니다.
+
+# Replace it, keeping the old one
+tc95f7291 = 교체하고 기존 파일 보관
+
+# As {path}
+tfb10a76a = { $path }(으)로
+
+# Replace it
+t1e17fc0c = 교체
+
+# The one there now is gone.
+t7fa127b9 = 지금 있는 파일은 사라집니다.
+
+# {path} is there already…
+td716b366 = { $path }이(가) 이미 있습니다…
+
+# Place at {path}…
+tdcc97a76 = { $path }에 배치…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = { $name }을(를) 탭을 닫을 때까지 { $path }에 배치했습니다.
+
+# Placed {name} at {path}.
+tfce33e2b = { $name }을(를) { $path }에 배치했습니다.
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+       *[other] 이전 세션에서 남은 설정 파일 { $n }개를 제거했습니다.
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path }은(는) 그대로 두었습니다: 배치한 뒤 변경되었습니다.
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = 이 호스트용 설정 파일로 암호화하여 보관합니다(최대 { $max }KB).
+
+# A file on {host} to keep in the vault
+t63904f7b = 보관함에 보관할 { $host }의 파일
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = { $path }을(를) 보관함에 보관했습니다: 설정 › 설정 파일을 확인하세요.
+
+# Not kept: {e}
+tc12e4203 = 보관되지 않음: { $e }
+
+# Removing the config files placed…
+tbd123099 = 배치된 설정 파일을 삭제하는 중…
 
 # Snippets · {category}
 t85f58d76 = 스니펫 · { $category }
@@ -2301,6 +2484,9 @@ tf108a14d = config.toml 편집
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = 이 호스트용 스니펫이 없습니다: 설정 › 스니펫에서 추가하세요.
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = 이 호스트용 설정 파일이 없습니다: 설정 › 설정 파일에서 추가하세요.
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = 이 호스트용 환경이 없습니다: 설정 › 환경에서 추가하세요.
@@ -2658,9 +2844,6 @@ t3ea0b584 = 중지되지 않음: { $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = 이제 시스템 키체인에 보관함 키가 보관됩니다.
-
-# Not kept: {e}
-tc12e4203 = 보관되지 않음: { $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = 동기화를 중지했습니다. 동기화 위치의 데이터와 이 기기의 비밀 정보는 그대로 유지됩니다.

@@ -32,6 +32,9 @@ t1c9f770c = { $count } Variablen; höchstens { $max }.
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = Die Variablen ergeben { $size } KB; höchstens { $max } KB.
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = Die Datei hat { $size } KB; höchstens { $max } KB.
+
 # Name
 t0fe07306 = Name
 
@@ -978,6 +981,9 @@ t648fcbf7 = Snippets
 # Environments
 t273b1ccb = Umgebungen
 
+# Config files
+t16261310 = Konfigurationsdateien
+
 # Actions
 te65fb504 = Aktionen
 
@@ -1654,6 +1660,88 @@ t0d325d34 = HOSTS
 # every host
 t444612de = alle Hosts
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+        [one] { $n } Byte
+       *[other] { $n } Bytes
+    }
+
+# {n} KB
+te253ff0c = { $n } KB
+
+# The file's text
+t7fb1322b = Der Text der Datei
+
+# What it is, such as kube prod
+t2c4b7067 = Was es ist, z. B. kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = Sie ist kein Text oder länger als { $max } KB: ersetze sie stattdessen durch eine Datei.
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = Wohin sie kommt: ein Pfad ab / oder ab ~/, z. B. ~/.kube/config.
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = Wohin sie kommt: der Pfad einer Datei, nicht eines Ordners.
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = Berechtigungen: drei Oktalziffern, z. B. 600.
+
+# No category
+t44662d06 = Keine Kategorie
+
+# {size}, not text
+t5956f56a = { $size }, kein Text
+
+# Edit…
+t8e7efcd7 = Bearbeiten…
+
+# Choose a file…
+t28a576c9 = Datei auswählen…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }: { $size }, unverändert übernommen
+
+# Content
+tc1679f62 = Inhalt
+
+# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
+tc4ae4e2a = Text bis { $edited } KB wird hier bearbeitet; jede Datei bis { $max } KB kann von diesem Computer übernommen werden.
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = Die Palette bietet sie nur in Panes dieser Hosts an.
+
+# Where it goes on the host
+taf38972d = Wohin sie auf dem Host kommt
+
+# Permissions
+t8700fd83 = Berechtigungen
+
+# New config file
+td0fa9fed = Neue Konfigurationsdatei
+
+# Edit config file
+t56c9aeed = Konfigurationsdatei bearbeiten
+
+# Category
+tafb3e591 = Kategorie
+
+# The vault's passphrase
+tb66334ea = Passphrase des Tresors
+
+# Wrong passphrase.
+t2ebec270 = Falsche Passphrase.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
+
+# The vault's passphrase, to show the values
+teecb1d4f = Passphrase des Tresors, um die Werte anzuzeigen
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Gerät sie anzeigen. Werte anzeigen?
+
 # value
 t425ed3ca = Wert
 
@@ -1678,12 +1766,6 @@ tbf497c49 = In der Zwischenablage stehen keine NAME=value-Zeilen.
 # Not NAME=value: {e}
 t65a67e1e = Kein NAME=value: { $e }
 
-# The vault's passphrase
-tb66334ea = Passphrase des Tresors
-
-# Wrong passphrase.
-t2ebec270 = Falsche Passphrase.
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
@@ -1691,20 +1773,8 @@ t79d75da2 =
        *[other] von { $n } Snippets benötigt
     }
 
-# Edit…
-t8e7efcd7 = Bearbeiten…
-
 # Change
 ta1de2fdd = Ändern
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
-
-# The vault's passphrase, to show the values
-teecb1d4f = Passphrase des Tresors, um die Werte anzuzeigen
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Gerät sie anzeigen. Werte anzeigen?
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Die Palette bietet an, sie nur in Panes dieser Hosts zu laden.
@@ -1732,9 +1802,6 @@ td9b8e02f = Was es tut, um es in der Palette zu finden
 
 # A name and a command are needed.
 t7f4c69bb = Name und Befehl sind erforderlich.
-
-# No category
-t44662d06 = Keine Kategorie
 
 # typed, not run
 td4e41905 = eingegeben, nicht ausgeführt
@@ -1766,6 +1833,9 @@ t3c6666da = Es wird aus dem Tresor entfernt und von deinen anderen Geräten, sob
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Seine Variablen werden aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Shells, in die es geladen ist, behalten sie, bis es entladen wird.
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Sie wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Wo sie abgelegt wurde, bleibt sie.
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen abgefragt.
 
@@ -1777,9 +1847,6 @@ t883a11f4 = Enter beginnt eine neue Zeile; die Zeilen laufen nacheinander. { $sa
 
 # The palette lists it in panes of those hosts only.
 t66336218 = Die Palette zeigt es nur in Bereichen dieser Hosts.
-
-# Category
-tafb3e591 = Kategorie
 
 # Environments it needs
 tebd9fda9 = Benötigte Umgebungen
@@ -1805,17 +1872,23 @@ t32122ee4 = Ausführen: nach dem Eingeben Enter drücken
 # None yet.
 t786bc275 = Noch keine.
 
-# New environment…
-t0c42d278 = Neue Umgebung…
-
 # New snippet…
 tec3111a4 = Neues Snippet…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = Variablen für die Shell, z. B. die Schlüssel einer API, verschlüsselt im Tresor aufbewahrt und mit ihm synchronisiert. Lade eine über die Palette ({ $chord }, Umgebung laden…) in ein Pane und entlade sie wieder, wenn du fertig bist, oder lass ein Snippet, das sie braucht, sie nur für sich allein haben.
+# New environment…
+t0c42d278 = Neue Umgebung…
+
+# New config file…
+t58dfdc93 = Neue Konfigurationsdatei…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = Variablen für die Shell, z. B. die Schlüssel einer API, verschlüsselt im Tresor gespeichert und mit ihm synchronisiert. Lade eine über die Palette ({ $chord }, unter Umgebungen) oder das Menü des Panes in ein Pane und entlade sie wieder, wenn du fertig bist; oder gib sie einem Snippet, das sie braucht, nur für sich allein.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Befehle, die du oft ausführst. Führe eines aus der Palette aus ({ $chord }, dann seinen Namen eingeben): Enter führt es im Bereich aus, { $alt } in jedem Bereich des Tabs. Im Tresor gespeichert, daher mit deinen Hosts synchronisiert.
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = Dateien, die auf Hosts abgelegt werden, z. B. ~/.kube/config oder ~/.aws/credentials, verschlüsselt im Tresor gespeichert und mit ihm synchronisiert. Lege eine über die Palette ({ $chord }, unter Konfigurationsdateien) oder das Menü des Panes ab: bis der Tab geschlossen wird oder dauerhaft.
 
 # While loaded, the server can read them
 te60c8275 = Solange sie geladen sind, kann der Server sie lesen
@@ -1825,6 +1898,9 @@ t87b5db80 = Werte werden mit ausgeschaltetem Echo gesendet und nicht im Verlauf 
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = Lade sie nur auf Servern, denen du vertraust, entlade sie, wenn du fertig bist, und bevorzuge Schlüssel, die ablaufen oder wenig können, z. B. kurzlebige Tokens oder eine Rolle mit nur dem, was die Arbeit braucht.
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = Eine abgelegte Datei liegt auf der Festplatte des Servers, mit ihren Berechtigungen: Wer dort root ist, kann sie lesen, bis sie entfernt wird. Lege Geheimnisse nur auf vertrauenswürdigen Servern ab, und nur bis der Tab geschlossen wird.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden für den Host des Bereichs ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen des Snippets abgefragt.
@@ -2006,6 +2082,13 @@ t82a6adaf = Ctrl+W schließen
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = In diesem Pane läuft ein Vollbildprogramm: Beende es und versuche es dann erneut.
 
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+        [one] { $n } Datei entfernt.
+       *[other] { $n } Dateien entfernt.
+    }
+
 # It has no variables.
 t0993a534 = Sie hat keine Variablen.
 
@@ -2169,6 +2252,15 @@ t2b3c5b61 = Snippets…
 # Load Environment…
 td34b2cc0 = Umgebung laden…
 
+# Place Config File…
+t49f82f0c = Konfigurationsdatei ablegen…
+
+# Keep a File in the Vault…
+t25c07703 = Datei im Tresor speichern…
+
+# Remove {names}
+t4efeb00b = { $names } entfernen
+
 # Unload {names}
 t362b9a48 = { $names } entladen
 
@@ -2213,6 +2305,100 @@ t21a947cf = Bereich schließen
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Zurück nach unten (Shift+End)
+
+# Config files · {category}
+t59edc3e9 = Konfigurationsdateien · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = abgelegt: Enter legt sie erneut ab
+
+# It is not in the vault any more.
+td11af590 = Sie ist nicht mehr im Tresor.
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · Berechtigungen { $mode }
+
+# Where on {host}
+t0f76d445 = Wohin auf { $host }
+
+# Cannot place {name}: {e}
+t1383f29b = { $name } kann nicht abgelegt werden: { $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = Die hier abgelegte ersetzen, bis der Tab geschlossen wird
+
+# What was there before still comes back when the tab closes.
+t55130ddc = Was vorher dort war, kommt beim Schließen des Tabs zurück.
+
+# {path} holds it already.
+t3ec4172b = { $path } enthält sie bereits.
+
+# Place it until the tab closes
+t19537c52 = Ablegen, bis der Tab geschlossen wird
+
+# Then it is taken away.
+t1302797a = Danach wird sie entfernt.
+
+# Place it to stay
+t698a38cf = Dauerhaft ablegen
+
+# It stays when the tab closes.
+tb2bc8f3b = Sie bleibt, wenn der Tab geschlossen wird.
+
+# Replace the file there until the tab closes
+t7e646019 = Die Datei dort ersetzen, bis der Tab geschlossen wird
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Die jetzige wird beiseitegelegt und kommt beim Schließen des Tabs zurück.
+
+# Replace it, keeping the old one
+tc95f7291 = Ersetzen und die alte behalten
+
+# As {path}
+tfb10a76a = Als { $path }
+
+# Replace it
+t1e17fc0c = Ersetzen
+
+# The one there now is gone.
+t7fa127b9 = Die jetzige ist dann weg.
+
+# {path} is there already…
+td716b366 = { $path } existiert bereits…
+
+# Place at {path}…
+tdcc97a76 = Unter { $path } ablegen…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = { $name } unter { $path } abgelegt, bis der Tab geschlossen wird.
+
+# Placed {name} at {path}.
+tfce33e2b = { $name } unter { $path } abgelegt.
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+        [one] { $n } Konfigurationsdatei entfernt, die von früher übrig war.
+       *[other] { $n } Konfigurationsdateien entfernt, die von früher übrig waren.
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path } unverändert gelassen: Sie wurde seit dem Ablegen geändert.
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = Verschlüsselt als Konfigurationsdatei für diesen Host gespeichert, bis zu { $max } KB.
+
+# A file on {host} to keep in the vault
+t63904f7b = Eine Datei auf { $host }, die im Tresor gespeichert werden soll
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = { $path } im Tresor gespeichert: siehe Einstellungen › Konfigurationsdateien.
+
+# Not kept: {e}
+tc12e4203 = Nicht abgelegt: { $e }
+
+# Removing the config files placed…
+tbd123099 = Die abgelegten Konfigurationsdateien werden entfernt…
 
 # Snippets · {category}
 t85f58d76 = Snippets · { $category }
@@ -2382,6 +2568,9 @@ tf108a14d = config.toml bearbeiten
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = Kein Snippet für diesen Host: Füge in Einstellungen › Snippets eines hinzu.
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = Keine Konfigurationsdatei für diesen Host: Füge in Einstellungen › Konfigurationsdateien eine hinzu.
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = Keine Umgebung für diesen Host: Füge in Einstellungen › Umgebungen eine hinzu.
@@ -2743,9 +2932,6 @@ t3ea0b584 = Nicht beendet: { $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = Der Schlüsselbund des Systems bewahrt jetzt den Schlüssel des Tresors.
-
-# Not kept: {e}
-tc12e4203 = Nicht abgelegt: { $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = Synchronisierung beendet. Was dort liegt und die Geheimnisse hier bleiben erhalten.

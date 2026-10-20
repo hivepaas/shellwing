@@ -33,9 +33,11 @@ use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
+mod config_files;
+
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
-    TitleChanged, UseKey, VaultChanged, hsla,
+    TitleChanged, Unplaced, UseKey, VaultChanged, hsla,
 };
 use shellwing_config::SyncPlace;
 use shellwing_i18n::{tr, tr_n};
@@ -224,6 +226,16 @@ enum Asking {
     Forward,
     /// A value a snippet needs before it runs.
     Snippet(SnippetRun),
+    /// Where on the host to place a config file.
+    PlacePath(shellwing_vault::ConfigFile),
+    /// How to place it there (`full`), in `view`'s host.
+    PlaceHow {
+        file: shellwing_vault::ConfigFile,
+        full: String,
+        view: gpui::WeakEntity<TermView>,
+    },
+    /// A file of the host to keep in the vault.
+    SaveFile,
 }
 
 /// A snippet on its way to running.
@@ -846,8 +858,10 @@ impl Workspace {
             .filter(|s| s.status() == Status::Connected)
             .map(|s| s.title.clone())
             .collect();
+        // The files placed until the tab closes go first.
+        let views = views.to_vec();
         if open.is_empty() {
-            return close(self, window, cx);
+            return self.take_down_then(views, window, cx, close);
         }
         if self.prompting {
             return;
@@ -877,7 +891,7 @@ impl Workspace {
             let _ = this.update_in(cx, |ws, window, cx| {
                 ws.prompting = false;
                 if yes {
-                    close(ws, window, cx);
+                    ws.take_down_then(views, window, cx, close);
                 }
             });
         })
@@ -1016,9 +1030,17 @@ impl Workspace {
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
         // Tab and host list dots follow the session's status; a key waiting
         // for the connection is installed once it is up.
-        cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| {
+        cx.subscribe(&view, |ws, view, _: &StatusChanged, cx| {
             ws.refresh_sidebar(cx);
             ws.run_installs(cx);
+            if view.read(cx).session().status() == Status::Connected {
+                ws.tidy_placed(&view, cx);
+            }
+        })
+        .detach();
+        cx.subscribe(&view, |ws, view, ev: &Unplaced, cx| {
+            let spec = view.read(cx).session().spec.clone();
+            ws.forget_placed(&spec, &ev.0);
         })
         .detach();
         cx.subscribe(&view, |ws, _, ev: &UseKey, cx| ws.use_key(ev, cx))
@@ -1054,6 +1076,8 @@ impl Workspace {
                 PaneCommand::Environments => {
                     ws.open_palette_at(Some(Part::Environments), window, cx)
                 }
+                PaneCommand::ConfigFiles => ws.open_palette_at(Some(Part::ConfigFiles), window, cx),
+                PaneCommand::SaveFile => ws.ask_save_file(window, cx),
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Log => ws.toggle_log(cx),
@@ -1285,12 +1309,14 @@ impl Workspace {
                 &[quit_label.as_str(), cancel_label.as_str()],
                 cx,
             );
-            cx.spawn(async move |this, cx| {
+            cx.spawn_in(window, async move |this, cx| {
                 let quit = matches!(answer.await, Ok(0));
-                let _ = this.update(cx, |ws, cx| {
+                let _ = this.update_in(cx, |ws, window, cx| {
                     ws.prompting = false;
                     if quit {
-                        cx.quit();
+                        // The files placed until their tab closes go first.
+                        let views = ws.tabs.iter().flat_map(|t| t.views()).collect();
+                        ws.take_down_then(views, window, cx, |_, _, cx| cx.quit());
                     }
                 });
             })
@@ -1358,6 +1384,7 @@ impl Workspace {
         }
         entries.extend(self.snippet_entries(cx));
         entries.extend(self.env_entries(cx));
+        entries.extend(self.file_entries(cx));
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
@@ -1588,6 +1615,9 @@ impl Workspace {
             let said = match s {
                 Part::Snippets => {
                     tr!("No snippet for this host: add one in Settings › Snippets.")
+                }
+                Part::ConfigFiles => {
+                    tr!("No config file for this host: add one in Settings › Config files.")
                 }
                 _ => tr!("No environment for this host: add one in Settings › Environments."),
             };
@@ -3174,6 +3204,15 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.load_env(&id, cx);
             }
+            PaletteEvent::PlaceFile(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.ask_place(&id, window, cx);
+            }
+            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::PlaceHow { .. })) => {
+                let how = how.clone();
+                self.chose_place(&how, window, cx);
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -3205,6 +3244,12 @@ impl Workspace {
             PaletteEvent::Answer(text) => {
                 let folder = match self.asking.clone() {
                     Some(Asking::Forward) => return self.answer_forward(text, window, cx),
+                    Some(Asking::PlacePath(_)) => {
+                        return self.answer_place_path(text.clone(), window, cx);
+                    }
+                    Some(Asking::SaveFile) => {
+                        return self.answer_save_file(text.clone(), window, cx);
+                    }
                     Some(Asking::Snippet(mut run)) => {
                         if !run.left.is_empty() {
                             let name = run.left.remove(0);
@@ -3220,7 +3265,8 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::PlaceHow { .. })
+                    | None => {
                         return self.close_palette(window, cx);
                     }
                 };

@@ -606,6 +606,45 @@ program made). Load them on servers you trust, unload them when done, and
 prefer credentials that expire or can do little: short-lived tokens, or a role
 with only what the work needs.
 
+## Config files
+
+Config files are files to place on hosts, such as `~/.kube/config`,
+`~/.aws/credentials` or `~/.npmrc`. They are kept in the vault, encrypted, and
+sync with it; one holds 1 MB at most, text or not. Make them in *Settings ›
+Config files*: a name, a category, where the file goes on the host (from `/` or
+`~/`), its permissions (`600` by default), the hosts it is offered for, and its
+content. Text up to 64 KB is edited there; **Choose a file…** takes any file up
+to 1 MB from this computer (one under your home folder goes to the same place
+under the host's). *Keep a File in the Vault…* in the pane's right-click menu
+takes one from the host instead.
+
+Once saved, the content is masked: the eye shows it, after asking it is you, as
+for an environment's values.
+
+**Placing one.** The palette lists the focused pane's host's under *Config
+files*, while it is connected (*Place Config File…* in the pane's right-click
+menu opens it there). Enter asks where (the file's own path, to change if
+need be), then how:
+
+- **Until the tab closes** (the default): the pane shows a badge; closing the
+  tab, the pane or the app takes the file away, as does the badge's ✕ or
+  *Remove …* in the menu.
+- **To stay**: it is left there.
+
+If a file is there already (and differs), it asks: replace it until the tab
+closes (the one there is set aside beside it, as `….shellwing-saved`, and comes
+back), replace it and keep the old one as `….bak`, or replace it.
+
+The file is written whole: to a file beside it first, with its permissions from
+the start, then renamed over the target; folders missing on the way are made
+with `700`. If the connection drops, or the app is killed, before a file placed
+until the tab closes is taken away, it is taken away the next time the host
+connects (and what it set aside put back), unless it changed since: then it is
+left as it is, and said so.
+
+A placed file is on the server's disk: whoever has root there can read it until
+it is removed. Place secrets on servers you trust, until the tab closes.
+
 ## Typing in every pane
 
 **Ctrl+Shift+I** (**Cmd+Shift+I**) types what you type in one pane into every

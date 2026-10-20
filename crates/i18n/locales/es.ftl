@@ -32,6 +32,9 @@ t1c9f770c = { $count } variables; { $max } como máximo.
 # The variables come to {size} KB; {max} KB at most.
 tdbf76954 = Las variables suman { $size } KB; { $max } KB como máximo.
 
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = El archivo ocupa { $size } KB; { $max } KB como máximo.
+
 # Name
 t0fe07306 = Nombre
 
@@ -978,6 +981,9 @@ t648fcbf7 = Fragmentos
 # Environments
 t273b1ccb = Entornos
 
+# Config files
+t16261310 = Archivos de configuración
+
 # Actions
 te65fb504 = Acciones
 
@@ -1654,6 +1660,88 @@ t0d325d34 = SERVIDORES
 # every host
 t444612de = todos los servidores
 
+# {n} byte | {n} bytes
+te8f231ba =
+    { $n ->
+        [one] { $n } byte
+       *[other] { $n } bytes
+    }
+
+# {n} KB
+te253ff0c = { $n } KB
+
+# The file's text
+t7fb1322b = El texto del archivo
+
+# What it is, such as kube prod
+t2c4b7067 = Qué es, por ejemplo kube prod
+
+# It is not text, or longer than {max} KB: replace it from a file instead.
+t70f95162 = No es texto, o supera los { $max } KB: reemplázalo con un archivo.
+
+# Where it goes: a path from / or from ~/, such as ~/.kube/config.
+t2b706ff4 = Dónde va: una ruta que empiece por / o por ~/, por ejemplo ~/.kube/config.
+
+# Where it goes: a file's path, not a folder's.
+t0038f509 = Dónde va: la ruta de un archivo, no de una carpeta.
+
+# Permissions: three octal digits, such as 600.
+t5dde13fd = Permisos: tres dígitos octales, por ejemplo 600.
+
+# No category
+t44662d06 = Sin categoría
+
+# {size}, not text
+t5956f56a = { $size }, no es texto
+
+# Edit…
+t8e7efcd7 = Editar…
+
+# Choose a file…
+t28a576c9 = Elegir un archivo…
+
+# {file}: {size}, kept as it is
+t9e564235 = { $file }: { $size }, tal cual
+
+# Content
+tc1679f62 = Contenido
+
+# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
+tc4ae4e2a = El texto de hasta { $edited } KB se edita aquí; cualquier archivo de hasta { $max } KB puede tomarse de este equipo.
+
+# The palette offers to place it in panes of those hosts only.
+tdc9acac2 = La paleta solo lo ofrece en los paneles de esos servidores.
+
+# Where it goes on the host
+taf38972d = Dónde va en el servidor
+
+# Permissions
+t8700fd83 = Permisos
+
+# New config file
+td0fa9fed = Nuevo archivo de configuración
+
+# Edit config file
+t56c9aeed = Editar archivo de configuración
+
+# Category
+tafb3e591 = Categoría
+
+# The vault's passphrase
+tb66334ea = Frase de contraseña de la bóveda
+
+# Wrong passphrase.
+t2ebec270 = Frase de contraseña incorrecta.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirma que eres tú en el diálogo del sistema…
+
+# The vault's passphrase, to show the values
+teecb1d4f = Frase de contraseña de la bóveda, para mostrar los valores
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Ninguna frase de contraseña protege la bóveda, así que cualquiera en este dispositivo puede mostrarlos. ¿Mostrar los valores?
+
 # value
 t425ed3ca = valor
 
@@ -1678,12 +1766,6 @@ tbf497c49 = El portapapeles no tiene líneas NAME=value.
 # Not NAME=value: {e}
 t65a67e1e = No es NAME=value: { $e }
 
-# The vault's passphrase
-tb66334ea = Frase de contraseña de la bóveda
-
-# Wrong passphrase.
-t2ebec270 = Frase de contraseña incorrecta.
-
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
     { $n ->
@@ -1691,20 +1773,8 @@ t79d75da2 =
        *[other] necesario para { $n } fragmentos
     }
 
-# Edit…
-t8e7efcd7 = Editar…
-
 # Change
 ta1de2fdd = Cambiar
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Confirma que eres tú en el diálogo del sistema…
-
-# The vault's passphrase, to show the values
-teecb1d4f = Frase de contraseña de la bóveda, para mostrar los valores
-
-# No passphrase guards the vault, so anyone at this device can show them. Show the values?
-tc7928fa4 = Ninguna frase de contraseña protege la bóveda, así que cualquiera en este dispositivo puede mostrarlos. ¿Mostrar los valores?
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = La paleta ofrece cargarlo solo en los paneles de esos servidores.
@@ -1732,9 +1802,6 @@ td9b8e02f = Qué hace, para encontrarlo en la paleta
 
 # A name and a command are needed.
 t7f4c69bb = Se necesitan un nombre y un comando.
-
-# No category
-t44662d06 = Sin categoría
 
 # typed, not run
 td4e41905 = se escribe, no se ejecuta
@@ -1766,6 +1833,9 @@ t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sinc
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Sus variables se eliminan de la bóveda, y de tus otros dispositivos cuando se sincronicen. Las shells en las que está cargado las conservan hasta que se descargue.
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen. Donde ya se colocó, se queda.
+
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan; cualquier otro {"{{"}name{"}}"} se pide al ejecutarlo.
 
@@ -1777,9 +1847,6 @@ t883a11f4 = Enter empieza otra línea; las líneas se ejecutan una tras otra. { 
 
 # The palette lists it in panes of those hosts only.
 t66336218 = La paleta lo muestra solo en paneles de esos servidores.
-
-# Category
-tafb3e591 = Categoría
 
 # Environments it needs
 tebd9fda9 = Entornos que necesita
@@ -1805,17 +1872,23 @@ t32122ee4 = Ejecutarlo: pulsar Enter después de escribirlo
 # None yet.
 t786bc275 = Aún no hay ninguno.
 
-# New environment…
-t0c42d278 = Nuevo entorno…
-
 # New snippet…
 tec3111a4 = Nuevo fragmento…
 
-# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
-t45b0673b = Variables para la shell, como las claves de una API, guardadas cifradas en la bóveda y sincronizadas con ella. Carga una en un panel desde la paleta ({ $chord }, Cargar entorno…) y descárgala al terminar, o deja que un fragmento que la necesita la tenga solo para él.
+# New environment…
+t0c42d278 = Nuevo entorno…
+
+# New config file…
+t58dfdc93 = Nuevo archivo de configuración…
+
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
+t7baa8160 = Variables para el shell, como las claves de una API, guardadas cifradas en la bóveda y sincronizadas con ella. Carga una en un panel desde la paleta ({ $chord }, en Entornos) o desde el menú del panel, y descárgala cuando termines; o deja que un fragmento que la necesite la tenga solo para él.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Comandos que ejecutas a menudo. Ejecuta uno desde la paleta ({ $chord } y escribe su nombre): Enter lo ejecuta en el panel, { $alt } en todos los paneles de la pestaña. Se guardan en la bóveda, así que se sincronizan con tus servidores.
+
+# Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
+ta84c0f04 = Archivos para colocar en servidores, como ~/.kube/config o ~/.aws/credentials, guardados cifrados en la bóveda y sincronizados con ella. Coloca uno desde la paleta ({ $chord }, en Archivos de configuración) o desde el menú del panel: hasta que se cierre la pestaña, o para que se quede.
 
 # While loaded, the server can read them
 te60c8275 = Mientras están cargadas, el servidor puede leerlas
@@ -1825,6 +1898,9 @@ t87b5db80 = Los valores se envían con el eco desactivado y no quedan en el hist
 
 # Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t16991c40 = Cárgalas en servidores de confianza, descárgalas al terminar y prefiere claves que caduquen o que puedan hacer poco, como tokens de corta duración o un rol con solo lo que el trabajo necesita.
+
+# A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
+t1d5d16cc = Un archivo colocado está en el disco del servidor, con sus permisos: quien tenga root allí puede leerlo hasta que se elimine. Coloca los secretos solo en servidores de confianza, y hasta que se cierre la pestaña.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan con los del servidor del panel; cualquier otro {"{{"}name{"}}"} se pide cuando se ejecuta el fragmento.
@@ -2006,6 +2082,13 @@ t82a6adaf = Ctrl+W cerrarla
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = Hay un programa de pantalla completa en este panel: sal de él y vuelve a intentarlo.
 
+# Removed {n} file. | Removed {n} files.
+t0f179fa4 =
+    { $n ->
+        [one] Se eliminó { $n } archivo.
+       *[other] Se eliminaron { $n } archivos.
+    }
+
 # It has no variables.
 t0993a534 = No tiene variables.
 
@@ -2169,6 +2252,15 @@ t2b3c5b61 = Fragmentos…
 # Load Environment…
 td34b2cc0 = Cargar entorno…
 
+# Place Config File…
+t49f82f0c = Colocar archivo de configuración…
+
+# Keep a File in the Vault…
+t25c07703 = Guardar un archivo en la bóveda…
+
+# Remove {names}
+t4efeb00b = Eliminar { $names }
+
 # Unload {names}
 t362b9a48 = Descargar { $names }
 
@@ -2213,6 +2305,100 @@ t21a947cf = Cerrar panel
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Volver al final (Shift+End)
+
+# Config files · {category}
+t59edc3e9 = Archivos de configuración · { $category }
+
+# placed: Enter places it again
+taf8f6d41 = colocado: Enter lo coloca de nuevo
+
+# It is not in the vault any more.
+td11af590 = Ya no está en la bóveda.
+
+# {name} · {size} · permissions {mode}
+ta22bb64e = { $name } · { $size } · permisos { $mode }
+
+# Where on {host}
+t0f76d445 = Dónde en { $host }
+
+# Cannot place {name}: {e}
+t1383f29b = No se puede colocar { $name }: { $e }
+
+# Replace the one placed here until the tab closes
+t5ca1c37e = Reemplazar el colocado aquí hasta que se cierre la pestaña
+
+# What was there before still comes back when the tab closes.
+t55130ddc = Lo que había antes vuelve al cerrar la pestaña.
+
+# {path} holds it already.
+t3ec4172b = { $path } ya lo contiene.
+
+# Place it until the tab closes
+t19537c52 = Colocarlo hasta que se cierre la pestaña
+
+# Then it is taken away.
+t1302797a = Después se quita.
+
+# Place it to stay
+t698a38cf = Colocarlo para que se quede
+
+# It stays when the tab closes.
+tb2bc8f3b = Se queda al cerrar la pestaña.
+
+# Replace the file there until the tab closes
+t7e646019 = Reemplazar el archivo de allí hasta que se cierre la pestaña
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = El actual se aparta y vuelve al cerrar la pestaña.
+
+# Replace it, keeping the old one
+tc95f7291 = Reemplazarlo, conservando el anterior
+
+# As {path}
+tfb10a76a = Como { $path }
+
+# Replace it
+t1e17fc0c = Reemplazarlo
+
+# The one there now is gone.
+t7fa127b9 = El actual desaparece.
+
+# {path} is there already…
+td716b366 = { $path } ya existe…
+
+# Place at {path}…
+tdcc97a76 = Colocar en { $path }…
+
+# Placed {name} at {path} until the tab closes.
+t59328aae = { $name } colocado en { $path } hasta que se cierre la pestaña.
+
+# Placed {name} at {path}.
+tfce33e2b = { $name } colocado en { $path }.
+
+# Took away {n} config file left here from before. | Took away {n} config files left here from before.
+ta674430e =
+    { $n ->
+        [one] Se quitó { $n } archivo de configuración que quedó de antes.
+       *[other] Se quitaron { $n } archivos de configuración que quedaron de antes.
+    }
+
+# Left {path} as it is: it changed since it was placed.
+tccbb9d92 = { $path } se dejó como está: cambió desde que se colocó.
+
+# Kept encrypted as a config file, for this host, up to {max} KB.
+tf7742770 = Guardado cifrado como archivo de configuración, para este servidor, hasta { $max } KB.
+
+# A file on {host} to keep in the vault
+t63904f7b = Un archivo de { $host } para guardar en la bóveda
+
+# Kept {path} in the vault: see Settings › Config files.
+t8589664d = { $path } guardado en la bóveda: consulta Ajustes › Archivos de configuración.
+
+# Not kept: {e}
+tc12e4203 = No se guardó: { $e }
+
+# Removing the config files placed…
+tbd123099 = Quitando los archivos de configuración colocados…
 
 # Snippets · {category}
 t85f58d76 = Fragmentos · { $category }
@@ -2382,6 +2568,9 @@ tf108a14d = Editar config.toml
 
 # No snippet for this host: add one in Settings › Snippets.
 tdd2847bb = No hay ningún fragmento para este servidor: añade uno en Ajustes › Fragmentos.
+
+# No config file for this host: add one in Settings › Config files.
+t4b38a37d = Ningún archivo de configuración para este servidor: añade uno en Ajustes › Archivos de configuración.
 
 # No environment for this host: add one in Settings › Environments.
 t1b95315b = No hay ningún entorno para este servidor: añade uno en Ajustes › Entornos.
@@ -2743,9 +2932,6 @@ t3ea0b584 = No se detuvo: { $e }
 
 # The system keychain keeps the vault's key now.
 tbdfd4327 = Ahora el llavero del sistema guarda la clave de la bóveda.
-
-# Not kept: {e}
-tc12e4203 = No se guardó: { $e }
 
 # Stopped syncing. What is there and the secrets here are kept.
 t4ba0ed42 = Se dejó de sincronizar. Se conservan lo que hay allí y los secretos de aquí.
