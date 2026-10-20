@@ -1963,8 +1963,56 @@ ta18da274 = 空闲时锁定
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 超过这段时间没有按键或点击，保险库会锁定，直到输入其密码短语。仅在系统钥匙串未保存其密钥时生效：此时每次启动都会询问密码短语。
 
+# Looking for a newer version…
+tf1905fe9 = 正在检查新版本…
+
+# How to update
+t3603428f = 如何更新
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 已发布
+
+# {by} updates it: {command}
+tdf2cab9c = 通过 { $by } 更新：{ $command }
+
+# {by} updates it.
+t84b27295 = 通过 { $by } 更新。
+
+# Download it, and install it in place of this one.
+t39312eae = 下载后安装，替换当前版本。
+
+# Skip this version
+t2c33d756 = 跳过此版本
+
+# The last look failed: {why}
+td122a092 = 上次检查失败：{ $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 已是最新版本（上次检查：{ $when }）。
+
+# Not looked yet.
+t5a3ba058 = 尚未检查。
+
 # A native SSH client.
 tdb654976 = 原生 SSH 客户端。
+
+# Updates
+t483075a5 = 更新
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = 这是测试版：会通知你更新的测试版，以及其后的正式版。
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = 这是正式版：会通知你更新的正式版，但不通知测试版。
+
+# Check now
+t4f0e0677 = 立即检查
+
+# Look for updates once a day
+tcc27ace1 = 每天检查一次更新
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = 从 GitHub 读取版本列表，仅在签名验证通过时才予以采信。未经你的同意，不会安装任何内容。
 
 # Open config.toml
 t07a52335 = 打开 config.toml
@@ -2779,6 +2827,21 @@ ta77bd589 = { $host } 的笔记
 # Notes · {category}
 tbb112cdf = 笔记 · { $category }
 
+# the system's package manager
+t11465c20 = 系统包管理器
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } 已发布：通过 { $by } 更新（{ $command }）。
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } 已发布：通过 { $by } 更新。
+
 # Over SSH only
 t14e43465 = 仅限 SSH
 
@@ -2931,6 +2994,12 @@ tc73a9bf6 = 与服务器同步密码…
 
 # Settings…
 t64d0d0b4 = 设置…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } 已发布…
+
+# Check for updates
+t70ad7706 = 检查更新
 
 # New host…
 t13806b73 = 新建主机…

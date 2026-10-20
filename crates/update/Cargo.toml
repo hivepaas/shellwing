@@ -1,0 +1,25 @@
+[package]
+name = "shellwing-update"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+sha2 = "0.10"
+# Ed25519ctx, verified by hand on the curve (ed25519-dalek has Ed25519ph only).
+curve25519-dalek = "5"
+# ML-DSA-65 (FIPS 204), with its context string.
+fips204 = "0.4"
+thiserror.workspace = true
+# Reading the list: reqwest on rustls with ring, as crates/remote has them.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

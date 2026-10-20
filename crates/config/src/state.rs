@@ -1,5 +1,19 @@
 use serde::{Deserialize, Serialize};
 
+/// What the last look for a newer shellwing found (`state/updates.json`).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct UpdateState {
+    /// When it looked, in seconds since 1970.
+    #[serde(default)]
+    pub checked_at: Option<u64>,
+    /// The release it was offered, if any (`v0.2.0`).
+    #[serde(default)]
+    pub offered: Option<String>,
+    /// A release the user said to skip.
+    #[serde(default)]
+    pub skipped: Option<String>,
+}
+
 /// A note's window's size when one last closed, in logical pixels: the
 /// next opens so.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

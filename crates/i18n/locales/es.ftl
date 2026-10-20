@@ -1991,8 +1991,56 @@ ta18da274 = Bloquear por inactividad
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Tras este tiempo sin pulsar una tecla ni hacer clic, la bóveda se bloquea hasta que se escriba su frase de contraseña. Solo mientras el llavero del sistema no guarde su clave: en ese caso, cada inicio pide la frase de contraseña.
 
+# Looking for a newer version…
+tf1905fe9 = Buscando una versión más reciente…
+
+# How to update
+t3603428f = Cómo actualizar
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } está disponible
+
+# {by} updates it: {command}
+tdf2cab9c = Se actualiza con { $by }: { $command }
+
+# {by} updates it.
+t84b27295 = Se actualiza con { $by }.
+
+# Download it, and install it in place of this one.
+t39312eae = Descárgala e instálala en lugar de esta.
+
+# Skip this version
+t2c33d756 = Omitir esta versión
+
+# The last look failed: {why}
+td122a092 = La última comprobación falló: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Al día (comprobado { $when }).
+
+# Not looked yet.
+t5a3ba058 = Aún no se ha comprobado.
+
 # A native SSH client.
 tdb654976 = Un cliente SSH nativo.
+
+# Updates
+t483075a5 = Actualizaciones
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Esta es una beta: se te avisa de las betas más recientes y de la versión estable que las sigue.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Esta es una versión estable: se te avisa de las versiones estables más recientes, no de las betas.
+
+# Check now
+t4f0e0677 = Comprobar ahora
+
+# Look for updates once a day
+tcc27ace1 = Buscar actualizaciones una vez al día
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = Lee la lista de versiones de GitHub y solo la acepta si sus firmas son válidas. Nada se instala sin ti.
 
 # Open config.toml
 t07a52335 = Abrir config.toml
@@ -2857,6 +2905,21 @@ ta77bd589 = Notas para { $host }
 # Notes · {category}
 tbb112cdf = Notas · { $category }
 
+# the system's package manager
+t11465c20 = el gestor de paquetes del sistema
+
+# the App Store
+ta8cbd72e = la App Store
+
+# the Microsoft Store
+t1df799a1 = la Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } está disponible: se actualiza con { $by } ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } está disponible: se actualiza con { $by }.
+
 # Over SSH only
 t14e43465 = Solo por SSH
 
@@ -3026,6 +3089,12 @@ tc73a9bf6 = Sincronizar contraseñas con un servidor…
 
 # Settings…
 t64d0d0b4 = Ajustes…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } está disponible…
+
+# Check for updates
+t70ad7706 = Buscar actualizaciones
 
 # New host…
 t13806b73 = Nuevo servidor…

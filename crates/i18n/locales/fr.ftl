@@ -1991,8 +1991,56 @@ ta18da274 = Verrouiller en cas d'inactivité
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Après ce délai sans touche pressée ni clic, le coffre se verrouille jusqu'à ce que sa phrase secrète soit saisie. Uniquement tant que le trousseau du système ne contient pas sa clé : chaque démarrage demande alors la phrase secrète.
 
+# Looking for a newer version…
+tf1905fe9 = Recherche d'une version plus récente…
+
+# How to update
+t3603428f = Comment mettre à jour
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } est disponible
+
+# {by} updates it: {command}
+tdf2cab9c = Mise à jour via { $by } : { $command }
+
+# {by} updates it.
+t84b27295 = Mise à jour via { $by }.
+
+# Download it, and install it in place of this one.
+t39312eae = Téléchargez-la, puis installez-la à la place de celle-ci.
+
+# Skip this version
+t2c33d756 = Ignorer cette version
+
+# The last look failed: {why}
+td122a092 = La dernière vérification a échoué : { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = À jour (vérifié { $when }).
+
+# Not looked yet.
+t5a3ba058 = Pas encore vérifié.
+
 # A native SSH client.
 tdb654976 = Un client SSH natif.
+
+# Updates
+t483075a5 = Mises à jour
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Ceci est une bêta : les bêtas plus récentes vous sont signalées, ainsi que la version stable qui les suit.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Ceci est une version stable : les versions stables plus récentes vous sont signalées, pas les bêtas.
+
+# Check now
+t4f0e0677 = Vérifier maintenant
+
+# Look for updates once a day
+tcc27ace1 = Rechercher les mises à jour une fois par jour
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = La liste des versions est lue sur GitHub, et n'est retenue que si ses signatures sont valides. Rien n'est installé sans vous.
 
 # Open config.toml
 t07a52335 = Ouvrir config.toml
@@ -2857,6 +2905,21 @@ ta77bd589 = Notes pour { $host }
 # Notes · {category}
 tbb112cdf = Notes · { $category }
 
+# the system's package manager
+t11465c20 = le gestionnaire de paquets du système
+
+# the App Store
+ta8cbd72e = l'App Store
+
+# the Microsoft Store
+t1df799a1 = le Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } est disponible : mise à jour via { $by } ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } est disponible : mise à jour via { $by }.
+
 # Over SSH only
 t14e43465 = Par SSH uniquement
 
@@ -3026,6 +3089,12 @@ tc73a9bf6 = Synchroniser les mots de passe avec un serveur…
 
 # Settings…
 t64d0d0b4 = Réglages…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } est disponible…
+
+# Check for updates
+t70ad7706 = Rechercher des mises à jour
 
 # New host…
 t13806b73 = Nouveau serveur…

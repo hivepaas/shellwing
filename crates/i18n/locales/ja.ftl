@@ -1963,8 +1963,56 @@ ta18da274 = アイドル時にロック
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = キー入力やクリックがないままこの時間が経過すると、パスフレーズを入力するまで保管庫がロックされます。システムのキーチェーンに鍵が保存されていない場合のみ有効です（その場合は起動のたびにパスフレーズを尋ねます）。
 
+# Looking for a newer version…
+tf1905fe9 = 新しいバージョンを確認しています…
+
+# How to update
+t3603428f = アップデート方法
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } が公開されました
+
+# {by} updates it: {command}
+tdf2cab9c = { $by } でアップデートします：{ $command }
+
+# {by} updates it.
+t84b27295 = { $by } でアップデートします。
+
+# Download it, and install it in place of this one.
+t39312eae = ダウンロードして、このバージョンの代わりにインストールしてください。
+
+# Skip this version
+t2c33d756 = このバージョンをスキップ
+
+# The last look failed: {why}
+td122a092 = 前回の確認に失敗しました：{ $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 最新です（確認：{ $when }）。
+
+# Not looked yet.
+t5a3ba058 = まだ確認していません。
+
 # A native SSH client.
 tdb654976 = ネイティブの SSH クライアント。
+
+# Updates
+t483075a5 = アップデート
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = これはベータ版です：新しいベータ版と、それに続く安定版をお知らせします。
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = これは安定版です：新しい安定版をお知らせします。ベータ版はお知らせしません。
+
+# Check now
+t4f0e0677 = 今すぐ確認
+
+# Look for updates once a day
+tcc27ace1 = 1 日 1 回アップデートを確認
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = GitHub からリリースの一覧を読み込み、署名を検証できた場合にのみ信頼します。勝手に何かがインストールされることはありません。
 
 # Open config.toml
 t07a52335 = config.toml を開く
@@ -2779,6 +2827,21 @@ ta77bd589 = { $host } のノート
 # Notes · {category}
 tbb112cdf = ノート · { $category }
 
+# the system's package manager
+t11465c20 = システムのパッケージマネージャー
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } が公開されました：{ $by } でアップデートします（{ $command }）。
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } が公開されました：{ $by } でアップデートします。
+
 # Over SSH only
 t14e43465 = SSH のみ
 
@@ -2931,6 +2994,12 @@ tc73a9bf6 = サーバーとパスワードを同期…
 
 # Settings…
 t64d0d0b4 = 設定…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } が公開されました…
+
+# Check for updates
+t70ad7706 = アップデートを確認
 
 # New host…
 t13806b73 = 新しいホスト…
