@@ -293,6 +293,17 @@ struct DiagMenu {
     turn_into: bool,
 }
 
+/// shellwing: an item of the host's at the top of the editor's menu.
+/// (UPSTREAM.md, change 5.)
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HostItem {
+    /// What [`EditorEvent::HostItem`] says when it is chosen.
+    pub id: SharedString,
+    pub label: SharedString,
+    /// Shown faint, choosing nothing, when not.
+    pub enabled: bool,
+}
+
 /// shellwing: an inline format of [`EditorState::toggle_inline`].
 /// (UPSTREAM.md, change 4.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -533,6 +544,9 @@ pub enum EditorEvent {
     /// The document text changed via a user edit (typing, delete, paste, IME,
     /// applying a suggestion). Not emitted for programmatic `set_text`.
     Changed,
+    /// shellwing: one of the host's items at the top of the menu was chosen
+    /// (its id; see [`EditorState::set_host_items`]). (UPSTREAM.md, change 5.)
+    HostItem(SharedString),
     /// A file chip (e.g. a PDF embed) or an inline `[text](url)` link was
     /// left-clicked — the host opens the `src`/url (http externally, files
     /// via its own resolution). A navigation hint; the text is untouched.
@@ -907,6 +921,10 @@ pub struct EditorState {
     labels: Labels,
     /// The open right-click suggestions menu, if any.
     menu: Option<DiagMenu>,
+    /// shellwing: the host's items at the top of the menu, and whether a
+    /// selection made with the mouse opens the menu. (UPSTREAM.md, change 5.)
+    host_items: Vec<HostItem>,
+    menu_on_select: bool,
     /// The open table right-click menu's anchor (window space), if any. Its actions
     /// operate on the caret's table cell.
     table_menu: Option<Point<Pixels>>,
@@ -1147,6 +1165,8 @@ impl EditorState {
             markdown_style: None,
             labels: Labels::default(),
             menu: None,
+            host_items: Vec::new(),
+            menu_on_select: false,
             table_menu: None,
             table_menu_scroll: ScrollHandle::new(),
             image_menu: None,
@@ -3629,7 +3649,7 @@ impl EditorState {
         }
     }
 
-    fn on_mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
+    fn on_mouse_up(&mut self, event: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
         // End a gutter block drag: splice the block at the drop boundary.
         if let Some((bs, be, t)) = self.line_drag.take() {
             self.apply_line_drag(bs, be, t, cx);
@@ -3656,6 +3676,22 @@ impl EditorState {
             self.commit_table_col_widths(resize, cx);
             cx.notify();
             return;
+        }
+        // shellwing: a selection made with the mouse opens the menu, as a
+        // right click in it does (UPSTREAM.md, change 5).
+        if self.menu_on_select
+            && self.is_selecting
+            && !self.selected_range.is_empty()
+            && self.menu.is_none()
+        {
+            self.menu = Some(DiagMenu {
+                anchor: event.position + point(px(0.), px(10.)),
+                range: self.selected_range.end..self.selected_range.end,
+                suggestions: Vec::new(),
+                scroll: ScrollHandle::new(),
+                turn_into: false,
+            });
+            cx.notify();
         }
         self.is_selecting = false;
     }
@@ -4166,6 +4202,20 @@ impl EditorState {
         TurnKind::Text
     }
 
+    /// shellwing: the host's items at the top of the menu (above the format
+    /// bar), for the selection. (UPSTREAM.md, change 5.)
+    pub fn set_host_items(&mut self, items: Vec<HostItem>, cx: &mut Context<Self>) {
+        self.host_items = items;
+        cx.notify();
+    }
+
+    /// shellwing: a selection made with the mouse (a drag, a double or triple
+    /// click) opens the menu where the button was let go, as a right click
+    /// in it does. (UPSTREAM.md, change 5.)
+    pub fn set_menu_on_select(&mut self, on: bool) {
+        self.menu_on_select = on;
+    }
+
     /// shellwing: toggles an inline format on the selection, as the editor's
     /// own keys do (`**`, `*`, `~~`, `<u>`, `` ` ``, `==`): for the host's bar
     /// over the selection. (UPSTREAM.md, change 4.)
@@ -4468,6 +4518,9 @@ impl EditorState {
     // --- Selection helpers ---------------------------------------------------
 
     fn move_to(&mut self, offset: usize, cx: &mut Context<Self>) {
+        // shellwing: a caret moved: the menu a selection opened goes
+        // (UPSTREAM.md, change 5).
+        self.menu = None;
         self.selected_range = offset..offset;
         // A deliberate caret move ends the current typing/deleting run and the
         // vertical-movement goal column.
@@ -5233,6 +5286,9 @@ impl EntityInputHandler for EditorState {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // shellwing: typing closes the menu (a selection opened it, and the
+        // keys type over the selection) (UPSTREAM.md, change 5).
+        self.menu = None;
         let range = range_utf16
             .as_ref()
             .map(|r| self.range_from_utf16(r))
@@ -5432,6 +5488,7 @@ impl Render for EditorState {
                 let menu_border = st.map_or(rgb(0x45454c).into(), |s| s.popover_border);
                 let menu_fg = st.map_or(rgb(0xe6e6e6).into(), |s| s.popover_fg);
                 let hover = st.map_or(rgba(0x2f6fd628).into(), |s| s.popover_hover);
+                let link_c: Hsla = st.map_or(rgb(0x4c9eff).into(), |s| s.link);
                 let mut thumb_c = st.map_or(rgba(0xffffff66).into(), |s| s.marker);
                 thumb_c.a = 0.5;
                 // Collected eagerly (not a lazy iterator) so `cx` is only
@@ -5507,6 +5564,41 @@ impl Render for EditorState {
                         .hover(move |s| s.bg(hover))
                         .child(label)
                 };
+                // shellwing: the host's items, for a selection (UPSTREAM.md,
+                // change 5).
+                let host_rows = (has_sel && !self.host_items.is_empty()).then(|| {
+                    let mut rows = div().flex().flex_col().py(px(4.));
+                    for (i, item) in self.host_items.iter().enumerate() {
+                        let id = item.id.clone();
+                        let row = div()
+                            .id(("host-item", i))
+                            .flex_shrink_0()
+                            .px(px(10.))
+                            .py(px(3.))
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(item.label.clone());
+                        rows = rows.child(if item.enabled {
+                            row.text_color(link_c)
+                                .hover(move |s| s.bg(hover))
+                                .on_mouse_down(
+                                    MouseButton::Left,
+                                    cx.listener(move |editor, _: &MouseDownEvent, _, cx| {
+                                        cx.stop_propagation();
+                                        editor.menu = None;
+                                        cx.emit(EditorEvent::HostItem(id.clone()));
+                                        cx.notify();
+                                    }),
+                                )
+                        } else {
+                            row.opacity(0.5)
+                        });
+                    }
+                    div()
+                        .flex()
+                        .flex_col()
+                        .child(rows)
+                        .child(div().h(px(1.)).bg(menu_border))
+                });
                 let mut clipboard = div().flex().flex_col().py(px(4.));
                 if has_sel {
                     clipboard = clipboard
@@ -5570,7 +5662,10 @@ impl Render for EditorState {
                         .justify_center()
                         .hover(move |s| s.bg(hover))
                 };
-                let format_bar = has_sel.then(|| {
+                // shellwing: Markdown's bar, colors and "Turn into" only in
+                // Markdown; plain text has none of it (UPSTREAM.md, change 5).
+                let markdown = st.is_some();
+                let format_bar = (has_sel && markdown).then(|| {
                     div()
                         .flex()
                         .flex_row()
@@ -5654,7 +5749,7 @@ impl Render for EditorState {
                 // Color swatches under the format bar: text colors, then
                 // highlights (theme tint first, then colored `<mark>`s).
                 let mark_bg = st.map_or(rgba(0xFFD60066).into(), |s| s.mark_bg);
-                let color_rows = has_sel.then(|| {
+                let color_rows = (has_sel && markdown).then(|| {
                     div()
                         .flex()
                         .flex_col()
@@ -5789,9 +5884,14 @@ impl Render for EditorState {
                                         cx.notify();
                                     },
                                 ))
+                                // shellwing: the host's items first, easy to find
+                                // (UPSTREAM.md, change 5).
+                                .children(host_rows)
                                 .children(format_bar)
                                 .children(color_rows)
-                                .children(has_sel.then(|| div().h(px(1.)).bg(menu_border)))
+                                .children(
+                                    (has_sel && markdown).then(|| div().h(px(1.)).bg(menu_border)),
+                                )
                                 .children((count > 0).then(|| {
                                     // The scroll viewport: shows ~6 rows, the rest scroll.
                                     div()
@@ -5806,8 +5906,12 @@ impl Render for EditorState {
                                 }))
                                 .children((count > 0).then(|| div().h(px(1.)).bg(menu_border)))
                                 .child(clipboard)
-                                .child(div().h(px(1.)).bg(menu_border))
-                                .child(div().flex().flex_col().py(px(4.)).child(turn_row))
+                                .children(markdown.then(|| div().h(px(1.)).bg(menu_border)))
+                                .children(
+                                    markdown.then(|| {
+                                        div().flex().flex_col().py(px(4.)).child(turn_row)
+                                    }),
+                                )
                                 .children(thumb),
                         ),
                     ),

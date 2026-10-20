@@ -156,6 +156,8 @@ pub struct NoteWindow {
     drag: crate::scrollbar::Drag,
     /// Frames left in which the view brings the caret into sight (it moved).
     reveal: u8,
+    /// The pane "Insert into" names in the editor's menu, as last set.
+    insert_into: Option<Option<String>>,
     /// The text is in the field (not while locked, nor a sensitive note's
     /// before it is shown).
     loaded: bool,
@@ -208,6 +210,9 @@ impl NoteWindow {
             let mut e = EditorState::new(window, cx)
                 .with_placeholder(tr!("Write here; Markdown shows as you type."));
             e.set_labels(editor_labels(), cx);
+            // A selection made with the mouse opens the menu, with the
+            // app's items first.
+            e.set_menu_on_select(true);
             e
         });
         let mut subs = vec![];
@@ -223,6 +228,7 @@ impl NoteWindow {
                 v.reveal = 2;
                 cx.notify();
             }
+            EditorEvent::HostItem(id) if id.as_ref() == "insert" => v.insert(cx),
             EditorEvent::OpenLink(url) if zorite_markdown::syntax::is_safe_external_url(url) => {
                 cx.open_url(url)
             }
@@ -277,6 +283,7 @@ impl NoteWindow {
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
             reveal: 0,
+            insert_into: None,
             _subs: subs,
         };
         v.load(cx);
@@ -616,128 +623,6 @@ impl NoteWindow {
             Err(e) => self.problem = Some(e),
         }
         cx.notify();
-    }
-
-    /// Over the selection: formats (Markdown), copy, and into the shell.
-    fn selection_bar(&self, window: &Window, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
-        let input = self.text.read(cx);
-        let focused = input.focus_handle(cx).is_focused(window);
-        let sel = input.selected_range();
-        if !focused || sel.is_empty() || input.is_selecting() {
-            return None;
-        }
-        let at = input.bounds_for_offset(sel.start)?.origin;
-        let md = self.note.format == NoteFormat::Markdown;
-        let tool = |id: &'static str, label: SharedString| {
-            div()
-                .id(id)
-                .h(px(26.))
-                .min_w(px(26.))
-                .px(px(7.))
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(px(5.))
-                .text_size(ui(12.5))
-                .text_color(rgb(colors().text))
-                .cursor_pointer()
-                .hover(|s| s.bg(rgb(colors().hover)))
-                // Pressing it must not take the focus from the text.
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .child(label)
-        };
-        let gap = || div().w(px(1.)).h(px(16.)).mx(px(3.)).bg(rgb(colors().line));
-        let mut bar = div()
-            .flex()
-            .items_center()
-            .gap(px(2.))
-            .p(px(3.))
-            .rounded(px(7.))
-            .border_1()
-            .border_color(rgb(colors().edge))
-            .bg(rgb(colors().raised))
-            .shadow_lg();
-        if md {
-            // As the editor's own keys and its "Turn into" menu do them.
-            use shellwing_note_editor::{BlockKind, InlineFormat};
-            let marks: [(&'static str, &'static str, InlineFormat); 6] = [
-                ("fmt-bold", "B", InlineFormat::Bold),
-                ("fmt-italic", "I", InlineFormat::Italic),
-                ("fmt-strike", "S", InlineFormat::Strike),
-                ("fmt-underline", "U", InlineFormat::Underline),
-                ("fmt-code", "</>", InlineFormat::Code),
-                ("fmt-mark", "ab", InlineFormat::Highlight),
-            ];
-            for (id, label, f) in marks {
-                let t = tool(id, label.into())
-                    .when(f == InlineFormat::Bold, |d| d.font_weight(FontWeight::BOLD))
-                    .when(f == InlineFormat::Italic, |d| d.italic())
-                    .when(f == InlineFormat::Strike, |d| d.line_through())
-                    .when(f == InlineFormat::Underline, |d| d.underline())
-                    .when(f == InlineFormat::Highlight, |d| {
-                        d.bg(rgb(colors().warn_bg))
-                    })
-                    .on_click(cx.listener(move |v, _, _, cx| {
-                        v.text.update(cx, |e, cx| e.toggle_inline(f, cx))
-                    }));
-                bar = bar.child(t);
-            }
-            bar = bar.child(
-                tool("fmt-link", "[ ]( )".into()).on_click(cx.listener(|v, _, _, cx| v.link(cx))),
-            );
-            bar = bar.child(gap());
-            let now = input.block_at_caret();
-            let blocks: [(&'static str, &'static str, BlockKind); 7] = [
-                ("blk-h1", "H1", BlockKind::H1),
-                ("blk-h2", "H2", BlockKind::H2),
-                ("blk-bullet", "•", BlockKind::Bullet),
-                ("blk-numbered", "1.", BlockKind::Numbered),
-                ("blk-todo", "☐", BlockKind::Todo),
-                ("blk-quote", "❝", BlockKind::Quote),
-                ("blk-code", "{ }", BlockKind::Code),
-            ];
-            for (id, label, k) in blocks {
-                let t = tool(id, label.into())
-                    .when(k == now, |d| d.bg(rgb(colors().selected)))
-                    .on_click(cx.listener(move |v, _, w, cx| {
-                        v.text.update(cx, |e, cx| e.turn_block(k, w, cx))
-                    }));
-                bar = bar.child(t);
-            }
-            bar = bar.child(gap());
-        }
-        bar = bar.child(tool("sel-copy", tr!("Copy").into()).on_click(cx.listener(
-            |v, _, _, cx| {
-                let text = v.selected_text(cx);
-                cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
-            },
-        )));
-        bar = match (self.hooks.pane)(cx) {
-            Some(pane) => bar.child(
-                tool("sel-insert", tr!("Insert into {pane}", pane = pane).into())
-                    .text_color(rgb(colors().accent))
-                    .on_click(cx.listener(|v, _, _, cx| v.insert(cx))),
-            ),
-            None => bar.child(
-                div()
-                    .px(px(7.))
-                    .text_size(ui(12.))
-                    .text_color(rgb(colors().faint))
-                    .child(tr!("No shell to insert into")),
-            ),
-        };
-        Some(
-            deferred(
-                anchored()
-                    .anchor(gpui::Anchor::BottomLeft)
-                    .position(gpui::point(at.x, at.y - px(6.)))
-                    // Within the window, however near its edge the text is.
-                    .snap_to_window_with_margin(px(8.))
-                    .child(bar),
-            )
-            .with_priority(3)
-            .into_any_element(),
-        )
     }
 
     /// A sensitive note's eye: asks it is the user.
@@ -1268,8 +1153,27 @@ impl NoteWindow {
                 self.scroll.clone(),
                 self.drag.clone(),
             ))
-            .children(self.selection_bar(window, cx))
             .into_any_element()
+    }
+
+    /// The app's item in the editor's menu: Insert into the main window's
+    /// pane, named; set again only when that changes.
+    fn menu_items(&mut self, cx: &mut Context<Self>) {
+        let pane = (self.hooks.pane)(cx);
+        if self.insert_into.as_ref() == Some(&pane) {
+            return;
+        }
+        let item = shellwing_note_editor::HostItem {
+            id: "insert".into(),
+            label: match &pane {
+                Some(p) => tr!("Insert into {pane}", pane = p.clone()).into(),
+                None => tr!("No shell to insert into").into(),
+            },
+            enabled: pane.is_some(),
+        };
+        self.insert_into = Some(pane);
+        self.text
+            .update(cx, |e, cx| e.set_host_items(vec![item], cx));
     }
 
     /// The caret back in sight after it moved (the editor grows; the view
@@ -1421,6 +1325,7 @@ impl Render for NoteWindow {
         };
         window.set_window_title(&shown_title);
         self.reveal_caret(cx);
+        self.menu_items(cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
         let content = div()

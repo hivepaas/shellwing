@@ -87,6 +87,22 @@ Test: `the_hosts_formats_go_on_and_come_off` in `lib.rs`'s tests.
 menu do, rather than with rules of its own that disagreed (`_` against `*`, a
 fenced block of the selection against the caret's block).
 
+### 5. The host's items in the menu, and the menu on a selection
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, `enum EditorEvent` | Added `HostItem(SharedString)`: one of the host's items was chosen. |
+| `src/lib.rs`, before `InlineFormat` | Added `pub struct HostItem { id, label, enabled }`. |
+| `src/lib.rs`, `struct EditorState` and `new` | Added the fields `host_items` and `menu_on_select`. |
+| `src/lib.rs`, `impl EditorState` | Added `set_host_items(items, cx)` and `set_menu_on_select(on)`. |
+| `src/lib.rs`, `on_mouse_up` | With `menu_on_select`, a selection made with the mouse (a drag, a double or triple click) opens the menu 10 px under where the button was let go, as a right click in it does. The parameter `_` became `event`. |
+| `src/lib.rs`, `move_to` and `replace_text_in_range` (the input handler's) | Close the menu: a caret moved, or typing over the selection. |
+| `src/lib.rs`, `render`, the menu (`self.menu`) | `host_rows` (the host's items, the link color, faint when not enabled; a press emits `HostItem`) before `format_bar`, with a divider; `link_c` taken from the style beside `hover`. The format bar, the color rows and "Turn into" show only with a Markdown style (`markdown`): plain text has none of it. |
+
+**Why:** one menu over a selection, not the editor's and shellwing's own:
+shellwing puts *Insert into …* (the shell) first, and the menu shows on
+selecting, not only on a right click.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.
