@@ -1642,6 +1642,9 @@ te8f231ba =
        *[other] { $n } バイト
     }
 
+# {n} MB
+t3258fa2a = { $n } MB
+
 # {n} KB
 te253ff0c = { $n } KB
 
@@ -1681,8 +1684,8 @@ t9e564235 = { $file }：{ $size }、そのまま取り込みました
 # Content
 tc1679f62 = 内容
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = { $edited } KB までのテキストはここで編集できます。{ $max } KB までのファイルはこのコンピューターから取り込めます。
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = { $edited } までのテキストはここで編集できます。{ $max } までの任意のファイルをこのコンピューターから取り込めます。
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = パレットには、これらのホストのペインにのみ配置の候補が表示されます。

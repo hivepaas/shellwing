@@ -1642,6 +1642,9 @@ te8f231ba =
        *[other] { $n } byte
     }
 
+# {n} MB
+t3258fa2a = { $n } MB
+
 # {n} KB
 te253ff0c = { $n } KB
 
@@ -1681,8 +1684,8 @@ t9e564235 = { $file }: { $size }, giữ nguyên
 # Content
 tc1679f62 = Nội dung
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = Văn bản tới { $edited } KB sửa được ngay ở đây; mọi tệp tới { $max } KB đều lấy được từ máy này.
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = Văn bản tới { $edited } sửa được ngay ở đây; mọi tệp tới { $max } đều lấy được từ máy này.
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = Bảng lệnh chỉ đề nghị đặt nó trong các pane của những máy chủ đó.

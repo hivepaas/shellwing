@@ -1642,6 +1642,9 @@ te8f231ba =
        *[other] { $n } 字节
     }
 
+# {n} MB
+t3258fa2a = { $n } MB
+
 # {n} KB
 te253ff0c = { $n } KB
 
@@ -1681,8 +1684,8 @@ t9e564235 = { $file }：{ $size }，按原样读取
 # Content
 tc1679f62 = 内容
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = 最多 { $edited } KB 的文本可在此编辑；最多 { $max } KB 的任何文件都可从这台电脑读取。
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = 不超过 { $edited } 的文本可在此编辑；不超过 { $max } 的任何文件都可从这台电脑导入。
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = 命令面板只会在这些主机的窗格中提供放置它。

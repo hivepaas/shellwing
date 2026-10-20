@@ -1642,6 +1642,9 @@ te8f231ba =
        *[other] { $n }바이트
     }
 
+# {n} MB
+t3258fa2a = { $n }MB
+
 # {n} KB
 te253ff0c = { $n }KB
 
@@ -1681,8 +1684,8 @@ t9e564235 = { $file }: { $size }, 그대로 가져옴
 # Content
 tc1679f62 = 내용
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = { $edited }KB까지의 텍스트는 여기서 편집하며, { $max }KB까지의 파일은 이 컴퓨터에서 가져올 수 있습니다.
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = { $edited }까지의 텍스트는 여기서 편집합니다. { $max }까지의 파일은 이 컴퓨터에서 가져올 수 있습니다.
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = 팔레트는 이 호스트들의 창에서만 배치하도록 제안합니다.

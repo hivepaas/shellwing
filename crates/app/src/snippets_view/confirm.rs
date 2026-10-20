@@ -160,7 +160,7 @@ impl SnippetsView {
                         .flex()
                         .items_center()
                         .gap(px(8.))
-                        .child(hint_text(&tr!("No passphrase guards the vault, so anyone at this device can show them. Show the values?")).flex_1())
+                        .child(hint_text(&tr!("No passphrase guards the vault, so anyone at this device can show them. Show the values?")).flex_1().min_w_0())
                         .child(
                             Self::small("confirm-show", &tr!("Show"))
                                 .on_click(cx.listener(|v, _, _, cx| v.confirm_answer(cx))),

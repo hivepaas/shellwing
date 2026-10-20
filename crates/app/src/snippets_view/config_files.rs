@@ -43,8 +43,11 @@ pub(super) struct FileEdit {
 
 /// `n` bytes, said short.
 pub fn size_said(n: usize) -> String {
+    const MB: usize = 1024 * 1024;
     if n < 1024 {
         tr_n!(n, "{n} byte", "{n} bytes")
+    } else if n >= MB && n.is_multiple_of(MB) {
+        tr!("{n} MB", n = n / MB)
     } else {
         tr!("{n} KB", n = n.div_ceil(1024))
     }
@@ -488,11 +491,16 @@ impl SnippetsView {
                     .items_center()
                     .gap(px(8.))
                     .child(choose)
-                    .child(hint_text(&tr!(
-                        "Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.",
-                        edited = EDITED / 1024,
-                        max = limits::FILE / 1024
-                    ))),
+                    // Wraps beside the button, within the dialog.
+                    .child(
+                        hint_text(&tr!(
+                            "Text up to {edited} is edited here; any file up to {max} can be taken from this computer.",
+                            edited = size_said(EDITED),
+                            max = size_said(limits::FILE)
+                        ))
+                        .flex_1()
+                        .min_w_0(),
+                    ),
             )
     }
 

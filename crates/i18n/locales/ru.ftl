@@ -1681,6 +1681,9 @@ te8f231ba =
        *[other] { $n } байта
     }
 
+# {n} MB
+t3258fa2a = { $n } МБ
+
 # {n} KB
 te253ff0c = { $n } КБ
 
@@ -1720,8 +1723,8 @@ t9e564235 = { $file }: { $size }, взят как есть
 # Content
 tc1679f62 = Содержимое
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = Текст до { $edited } КБ редактируется здесь; любой файл до { $max } КБ можно взять с этого компьютера.
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = Текст до { $edited } редактируется здесь; любой файл до { $max } можно взять с этого компьютера.
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = Палитра предлагает разместить его только в панелях этих хостов.

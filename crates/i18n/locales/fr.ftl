@@ -1667,6 +1667,9 @@ te8f231ba =
        *[other] { $n } octets
     }
 
+# {n} MB
+t3258fa2a = { $n } Mo
+
 # {n} KB
 te253ff0c = { $n } Ko
 
@@ -1706,8 +1709,8 @@ t9e564235 = { $file } : { $size }, pris tel quel
 # Content
 tc1679f62 = Contenu
 
-# Text up to {edited} KB is edited here; any file up to {max} KB can be taken from this computer.
-tc4ae4e2a = Le texte jusqu'à { $edited } Ko se modifie ici ; tout fichier jusqu'à { $max } Ko peut être pris sur cet ordinateur.
+# Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
+t992520da = Un texte jusqu'à { $edited } se modifie ici ; tout fichier jusqu'à { $max } peut être pris sur cet ordinateur.
 
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = La palette ne le propose que dans les volets de ces serveurs.

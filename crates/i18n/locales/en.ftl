@@ -575,6 +575,7 @@ te8f231ba =
         [one] { $n } byte
        *[other] { $n } bytes
     }
+t3258fa2a = { $n } MB
 te253ff0c = { $n } KB
 t7fb1322b = The file's text
 t2c4b7067 = What it is, such as kube prod
@@ -588,7 +589,7 @@ t8e7efcd7 = Edit…
 t28a576c9 = Choose a file…
 t9e564235 = { $file }: { $size }, kept as it is
 tc1679f62 = Content
-tc4ae4e2a = Text up to { $edited } KB is edited here; any file up to { $max } KB can be taken from this computer.
+t992520da = Text up to { $edited } is edited here; any file up to { $max } can be taken from this computer.
 tdc9acac2 = The palette offers to place it in panes of those hosts only.
 taf38972d = Where it goes on the host
 t8700fd83 = Permissions
