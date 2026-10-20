@@ -981,8 +981,8 @@ t24d471a9 = Titel
 # No category
 t44662d06 = Keine Kategorie
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Hier schreiben; Markdown erscheint in der Vorschau.
+# Write here; Markdown shows as you type.
+t117b6c23 = Hier schreiben; Markdown erscheint beim Tippen.
 
 # It is not in the vault any more.
 td11af590 = Sie ist nicht mehr im Tresor.
@@ -1070,6 +1070,93 @@ t340e0631 = In einer anderen App geöffnet: Was sie speichert, kommt hierher und
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Noch nichts geschrieben: Zum Schreiben auf Bearbeiten.
+
+# Cut
+t58e25863 = Ausschneiden
+
+# Copy as Markdown
+t944799cd = Als Markdown kopieren
+
+# Paste
+tb34a0288 = Einfügen
+
+# Turn into
+t10726570 = Umwandeln in
+
+# Text
+t3e142d5e = Text
+
+# Heading 1
+ta590c41a = Überschrift 1
+
+# Heading 2
+ta490c287 = Überschrift 2
+
+# Heading 3
+ta390c0f4 = Überschrift 3
+
+# Bulleted list
+t1721be78 = Aufzählung
+
+# Numbered list
+t910847bb = Nummerierte Liste
+
+# To-do
+t082e6fd6 = Aufgabe
+
+# Quote
+t5abe5677 = Zitat
+
+# Callout
+t10591ec3 = Hinweis
+
+# Code block
+t3026e515 = Codeblock
+
+# Insert row above
+t2f1931cd = Zeile darüber einfügen
+
+# Insert row below
+t870e8f41 = Zeile darunter einfügen
+
+# Duplicate row
+te898fcce = Zeile duplizieren
+
+# Insert column left
+tb49d3fc3 = Spalte links einfügen
+
+# Insert column right
+t60f12dcc = Spalte rechts einfügen
+
+# Align left
+tbdd22217 = Linksbündig
+
+# Align center
+t76127b0f = Zentriert
+
+# Align right
+t1a76ce88 = Rechtsbündig
+
+# Grid style
+t531d1674 = Gitter
+
+# Striped style
+t10b52f0d = Gestreift
+
+# Header style
+te7eb6c45 = Mit Kopfzeile
+
+# Minimal style
+t70f1e7d5 = Minimal
+
+# Delete row
+t33de1b52 = Zeile löschen
+
+# Delete column
+tea682d34 = Spalte löschen
+
+# Delete table
+t29ccb392 = Tabelle löschen
 
 # Untitled note
 t4ce277c4 = Notiz ohne Titel
@@ -1385,9 +1472,6 @@ tef7cec6a = Lokale Shell
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = Was ein lokales Terminal (Dieser Computer, in der Hostliste) mit seinen Argumenten ausführt. Leer: deine eigene Shell. Enter speichert; gilt für neue lokale Tabs.
-
-# Text
-t3e142d5e = Text
 
 # Raw
 ta689aa91 = Roh
@@ -2359,9 +2443,6 @@ t4efeb00b = { $names } entfernen
 
 # Unload {names}
 t362b9a48 = { $names } entladen
-
-# Paste
-tb34a0288 = Einfügen
 
 # Find…
 t1ecb565a = Suchen…

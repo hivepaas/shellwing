@@ -961,8 +961,8 @@ t24d471a9 = タイトル
 # No category
 t44662d06 = カテゴリなし
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = ここに書きます。Markdown はプレビューで表示されます。
+# Write here; Markdown shows as you type.
+t117b6c23 = ここに書きます。Markdown は入力しながら表示されます。
 
 # It is not in the vault any more.
 td11af590 = 保管庫にはもうありません。
@@ -1050,6 +1050,93 @@ t340e0631 = 別のアプリで開いています。そこで保存した内容�
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = まだ何も書かれていません。編集で書き始めます。
+
+# Cut
+t58e25863 = 切り取り
+
+# Copy as Markdown
+t944799cd = Markdown としてコピー
+
+# Paste
+tb34a0288 = 貼り付け
+
+# Turn into
+t10726570 = 変換
+
+# Text
+t3e142d5e = テキスト
+
+# Heading 1
+ta590c41a = 見出し 1
+
+# Heading 2
+ta490c287 = 見出し 2
+
+# Heading 3
+ta390c0f4 = 見出し 3
+
+# Bulleted list
+t1721be78 = 箇条書き
+
+# Numbered list
+t910847bb = 番号付きリスト
+
+# To-do
+t082e6fd6 = ToDo
+
+# Quote
+t5abe5677 = 引用
+
+# Callout
+t10591ec3 = コールアウト
+
+# Code block
+t3026e515 = コードブロック
+
+# Insert row above
+t2f1931cd = 上に行を挿入
+
+# Insert row below
+t870e8f41 = 下に行を挿入
+
+# Duplicate row
+te898fcce = 行を複製
+
+# Insert column left
+tb49d3fc3 = 左に列を挿入
+
+# Insert column right
+t60f12dcc = 右に列を挿入
+
+# Align left
+tbdd22217 = 左揃え
+
+# Align center
+t76127b0f = 中央揃え
+
+# Align right
+t1a76ce88 = 右揃え
+
+# Grid style
+t531d1674 = グリッド
+
+# Striped style
+t10b52f0d = ストライプ
+
+# Header style
+te7eb6c45 = ヘッダー
+
+# Minimal style
+t70f1e7d5 = ミニマル
+
+# Delete row
+t33de1b52 = 行を削除
+
+# Delete column
+tea682d34 = 列を削除
+
+# Delete table
+t29ccb392 = 表を削除
 
 # Untitled note
 t4ce277c4 = 無題のノート
@@ -1365,9 +1452,6 @@ tef7cec6a = ローカルシェル
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = ローカルターミナル（ホスト一覧の「このコンピュータ」）で実行するコマンドと引数です。空欄：自分のシェル。Enter で保存します。新しいローカルタブから適用されます。
-
-# Text
-t3e142d5e = テキスト
 
 # Raw
 ta689aa91 = 生データ
@@ -2292,9 +2376,6 @@ t4efeb00b = { $names } を削除
 
 # Unload {names}
 t362b9a48 = { $names } の読み込みを解除
-
-# Paste
-tb34a0288 = 貼り付け
 
 # Find…
 t1ecb565a = 検索…

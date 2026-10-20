@@ -31,6 +31,8 @@ zeroize = "1"
 sha2 = "0.10"
 # The reading view of Markdown notes. Pinned: moves with gpui-pre, reviewed on each bump.
 zorite-markdown = "=0.10.0"
+# The notes' editor: zorite-editor, taken in (crates/note-editor/UPSTREAM.md).
+shellwing-note-editor = { path = "../note-editor" }
 gpui.workspace = true
 # Only to hand GPUI a rendered gradient; the same version GPUI uses.
 image = { version = "0.25", default-features = false }

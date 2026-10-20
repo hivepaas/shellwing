@@ -981,8 +981,8 @@ t24d471a9 = Título
 # No category
 t44662d06 = Sem categoria
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Escreva aqui; o Markdown aparece na pré-visualização.
+# Write here; Markdown shows as you type.
+t117b6c23 = Escreva aqui; o Markdown aparece enquanto você digita.
 
 # It is not in the vault any more.
 td11af590 = Ele não está mais no cofre.
@@ -1070,6 +1070,93 @@ t340e0631 = Aberta em outro aplicativo: o que ele salvar chega aqui e é mantido
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Nada escrito ainda: clique em Editar para escrever.
+
+# Cut
+t58e25863 = Recortar
+
+# Copy as Markdown
+t944799cd = Copiar como Markdown
+
+# Paste
+tb34a0288 = Colar
+
+# Turn into
+t10726570 = Transformar em
+
+# Text
+t3e142d5e = Texto
+
+# Heading 1
+ta590c41a = Título 1
+
+# Heading 2
+ta490c287 = Título 2
+
+# Heading 3
+ta390c0f4 = Título 3
+
+# Bulleted list
+t1721be78 = Lista com marcadores
+
+# Numbered list
+t910847bb = Lista numerada
+
+# To-do
+t082e6fd6 = Tarefa
+
+# Quote
+t5abe5677 = Citação
+
+# Callout
+t10591ec3 = Destaque
+
+# Code block
+t3026e515 = Bloco de código
+
+# Insert row above
+t2f1931cd = Inserir linha acima
+
+# Insert row below
+t870e8f41 = Inserir linha abaixo
+
+# Duplicate row
+te898fcce = Duplicar linha
+
+# Insert column left
+tb49d3fc3 = Inserir coluna à esquerda
+
+# Insert column right
+t60f12dcc = Inserir coluna à direita
+
+# Align left
+tbdd22217 = Alinhar à esquerda
+
+# Align center
+t76127b0f = Centralizar
+
+# Align right
+t1a76ce88 = Alinhar à direita
+
+# Grid style
+t531d1674 = Estilo grade
+
+# Striped style
+t10b52f0d = Estilo listrado
+
+# Header style
+te7eb6c45 = Estilo com cabeçalho
+
+# Minimal style
+t70f1e7d5 = Estilo mínimo
+
+# Delete row
+t33de1b52 = Excluir linha
+
+# Delete column
+tea682d34 = Excluir coluna
+
+# Delete table
+t29ccb392 = Excluir tabela
 
 # Untitled note
 t4ce277c4 = Nota sem título
@@ -1385,9 +1472,6 @@ tef7cec6a = Shell local
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = O que um terminal local executa (Este computador, na lista de servidores), com os argumentos. Vazio: o seu próprio shell. Enter salva; novas abas locais recebem o valor.
-
-# Text
-t3e142d5e = Texto
 
 # Raw
 ta689aa91 = Bruto
@@ -2359,9 +2443,6 @@ t4efeb00b = Remover { $names }
 
 # Unload {names}
 t362b9a48 = Descarregar { $names }
-
-# Paste
-tb34a0288 = Colar
 
 # Find…
 t1ecb565a = Localizar…

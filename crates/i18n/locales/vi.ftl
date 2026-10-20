@@ -961,8 +961,8 @@ t24d471a9 = Tiêu đề
 # No category
 t44662d06 = Chưa phân loại
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = Viết ở đây; Markdown hiện khi xem trước.
+# Write here; Markdown shows as you type.
+t117b6c23 = Viết ở đây; Markdown hiện ngay khi gõ.
 
 # It is not in the vault any more.
 td11af590 = Tệp không còn trong kho.
@@ -1050,6 +1050,93 @@ t340e0631 = Đang mở ở ứng dụng khác: những gì nó lưu sẽ về đ
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Chưa viết gì: bấm Sửa để viết.
+
+# Cut
+t58e25863 = Cắt
+
+# Copy as Markdown
+t944799cd = Sao chép dạng Markdown
+
+# Paste
+tb34a0288 = Dán
+
+# Turn into
+t10726570 = Chuyển thành
+
+# Text
+t3e142d5e = Văn bản
+
+# Heading 1
+ta590c41a = Tiêu đề 1
+
+# Heading 2
+ta490c287 = Tiêu đề 2
+
+# Heading 3
+ta390c0f4 = Tiêu đề 3
+
+# Bulleted list
+t1721be78 = Danh sách gạch đầu dòng
+
+# Numbered list
+t910847bb = Danh sách đánh số
+
+# To-do
+t082e6fd6 = Việc cần làm
+
+# Quote
+t5abe5677 = Trích dẫn
+
+# Callout
+t10591ec3 = Khung chú thích
+
+# Code block
+t3026e515 = Khối code
+
+# Insert row above
+t2f1931cd = Chèn hàng phía trên
+
+# Insert row below
+t870e8f41 = Chèn hàng phía dưới
+
+# Duplicate row
+te898fcce = Nhân đôi hàng
+
+# Insert column left
+tb49d3fc3 = Chèn cột bên trái
+
+# Insert column right
+t60f12dcc = Chèn cột bên phải
+
+# Align left
+tbdd22217 = Căn trái
+
+# Align center
+t76127b0f = Căn giữa
+
+# Align right
+t1a76ce88 = Căn phải
+
+# Grid style
+t531d1674 = Kiểu lưới
+
+# Striped style
+t10b52f0d = Kiểu sọc
+
+# Header style
+te7eb6c45 = Kiểu tiêu đề
+
+# Minimal style
+t70f1e7d5 = Kiểu tối giản
+
+# Delete row
+t33de1b52 = Xoá hàng
+
+# Delete column
+tea682d34 = Xoá cột
+
+# Delete table
+t29ccb392 = Xoá bảng
 
 # Untitled note
 t4ce277c4 = Ghi chú chưa đặt tên
@@ -1365,9 +1452,6 @@ tef7cec6a = Shell cục bộ
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = Lệnh mà terminal cục bộ chạy (Máy tính này, trong danh sách máy chủ), kèm tham số. Để trống: shell của bạn. Enter để lưu; tab cục bộ mới sẽ dùng nó.
-
-# Text
-t3e142d5e = Văn bản
 
 # Raw
 ta689aa91 = Thô
@@ -2292,9 +2376,6 @@ t4efeb00b = Gỡ { $names }
 
 # Unload {names}
 t362b9a48 = Gỡ { $names }
-
-# Paste
-tb34a0288 = Dán
 
 # Find…
 t1ecb565a = Tìm…

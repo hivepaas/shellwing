@@ -7791,6 +7791,7 @@ dependencies = [
  "shellwing-config",
  "shellwing-core",
  "shellwing-i18n",
+ "shellwing-note-editor",
  "shellwing-remote",
  "shellwing-ssh",
  "shellwing-term",

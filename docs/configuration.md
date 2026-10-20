@@ -656,16 +656,23 @@ about the focused pane's host.
 In its window, a note has a title, a category, a format and the hosts it is
 about (*For a host ▾*):
 
-- **Plain text** is edited as it is.
-- **Markdown** opens as it shows (headings, emphasis, `code`, code blocks,
-  lists and task lists, quotes, GitHub alerts, rules, tables, footnotes, links
-  that open in the browser); a task's box ticks there too. *Edit* switches to
-  its text, *Preview* back. The reading view is
-  [zorite-markdown](https://crates.io/crates/zorite-markdown), which only reads
-  the text: it never changes it.
+- **Plain text** is edited as it is, in the terminal's font.
+- **Markdown** shows as it is typed: headings, emphasis, `code`, code blocks,
+  lists and task lists, quotes, GitHub alerts, rules, tables; the marks
+  (`**`, `#`) show on the caret's line only. Enter carries a list on (an empty
+  item ends it), Tab and Shift+Tab indent; a table is edited in its cells; a
+  task's box ticks on a click. The right-click menu cuts, copies (also as
+  Markdown), pastes, turns a line into another kind of block, and edits a
+  table. *Preview* shows it read-only (a click on the text edits it there).
 
-Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z) redoes, in a
-note as in every field of the app.
+The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
+into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as
+it is, and Obsidian's constructs (`[[links]]`, `#tags`, `key:: value`) and
+math (`$`, `$$`) are plain text, as commands and paths are. The read-only view
+is [zorite-markdown](https://crates.io/crates/zorite-markdown).
+
+Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z (Cmd+Shift+Z) redoes. A long note scrolls,
+with a bar to drag.
 
 **Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
 it into the main window's focused pane (connected), without Enter, and brings

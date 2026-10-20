@@ -23,6 +23,7 @@ use crate::host_editor::{checkbox, hint_text, primary_button, problem_text};
 use crate::input::{Changed, TextInput};
 use crate::look::{self, ui};
 use crate::secrets::VaultSlot;
+use shellwing_note_editor::{EditorEvent, EditorState, SyntaxStyle};
 
 /// How long after the last key a note is saved.
 const SAVE_AFTER: Duration = Duration::from_secs(1);
@@ -148,7 +149,13 @@ pub struct NoteWindow {
     focus: FocusHandle,
     title: Entity<TextInput>,
     category: Entity<TextInput>,
-    text: Entity<TextInput>,
+    /// The text's editor (shellwing-note-editor: zorite-editor, taken in).
+    text: Entity<EditorState>,
+    /// The editor auto-grows: it scrolls in here, with a bar.
+    scroll: gpui::ScrollHandle,
+    drag: crate::scrollbar::Drag,
+    /// Frames left in which the view brings the caret into sight (it moved).
+    reveal: u8,
     /// The text is in the field (not while locked, nor a sensitive note's
     /// before it is shown).
     loaded: bool,
@@ -166,9 +173,6 @@ pub struct NoteWindow {
     /// The copy an editor of the user's own has open, and how it was when
     /// last read.
     external: Option<(std::path::PathBuf, Option<crate::copies::Stamp>)>,
-    /// How high the room for the text was when last laid out: the editor
-    /// takes as many rows as fit.
-    body_h: Rc<std::cell::Cell<gpui::Pixels>>,
     _subs: Vec<Subscription>,
 }
 
@@ -201,13 +205,29 @@ impl NoteWindow {
         let title = field(|| tr!("Title"), &note.title, cx);
         let category = field(|| tr!("No category"), &note.category, cx);
         let text = cx.new(|cx| {
-            TextInput::said(|| tr!("Write here; Markdown shows when previewed."), cx)
-                .multiline(10, 10)
+            let mut e = EditorState::new(window, cx)
+                .with_placeholder(tr!("Write here; Markdown shows as you type."));
+            e.set_labels(editor_labels(), cx);
+            e
         });
         let mut subs = vec![];
-        for i in [&title, &category, &text] {
+        for i in [&title, &category] {
             subs.push(cx.subscribe(i, |v, _, _: &Changed, cx| v.edited(cx)));
         }
+        subs.push(cx.subscribe(&text, |v, _, e: &EditorEvent, cx| match e {
+            EditorEvent::Changed => {
+                v.reveal = 2;
+                v.edited(cx);
+            }
+            EditorEvent::SelectionChanged => {
+                v.reveal = 2;
+                cx.notify();
+            }
+            EditorEvent::OpenLink(url) if zorite_markdown::syntax::is_safe_external_url(url) => {
+                cx.open_url(url)
+            }
+            _ => {}
+        }));
         // Saved as it goes, so leaving keeps the last of it.
         cx.on_release(|v, cx| {
             v.end_external(cx);
@@ -254,12 +274,17 @@ impl NoteWindow {
             saved_at: 0,
             problem: None,
             external: None,
-            body_h: Rc::new(std::cell::Cell::new(px(0.))),
+            scroll: gpui::ScrollHandle::new(),
+            drag: Default::default(),
+            reveal: 0,
             _subs: subs,
         };
         v.load(cx);
-        let first = if new { &v.title } else { &v.text };
-        let f = first.read(cx).focus_handle(cx);
+        let f = if new {
+            v.title.read(cx).focus_handle(cx)
+        } else {
+            v.text.read(cx).focus_handle(cx)
+        };
         window.focus(&f, cx);
         v
     }
@@ -287,7 +312,11 @@ impl NoteWindow {
                 }
             }
         };
-        self.text.update(cx, |i, cx| i.set_text(&text, 0..0, cx));
+        let md = self.note.format == NoteFormat::Markdown;
+        self.text.update(cx, |e, cx| {
+            e.set_text(text.to_string(), cx);
+            style_editor(e, md, cx);
+        });
         // Loading is not an edit.
         self.saved_at = self.edits + 1;
         self.edits += 1;
@@ -311,7 +340,7 @@ impl NoteWindow {
         if !self.loaded {
             return;
         }
-        self.text.update(cx, |i, cx| i.set_text("", 0..0, cx));
+        self.text.update(cx, |e, cx| e.set_text(String::new(), cx));
         self.edits += 1;
         self.saved_at = self.edits;
         self.loaded = false;
@@ -528,7 +557,7 @@ impl NoteWindow {
             .and_then(|b| String::from_utf8(b).map_err(|_| tr!("It is not text any more.")));
         match read {
             Ok(text) if text != self.text.read(cx).text() => {
-                self.text.update(cx, |i, cx| i.set_text(&text, 0..0, cx));
+                self.text.update(cx, |e, cx| e.set_text(text, cx));
                 // An edit even when the window is closing (no event then).
                 self.edits += 1;
             }
@@ -554,8 +583,12 @@ impl NoteWindow {
         let sel = self.text.read(cx).selected_range();
         let (new, select) = crate::md_format::apply(&text, sel, f);
         let len = text.len();
-        self.text
-            .update(cx, |i, cx| i.edit(0..len, &new, select, cx));
+        self.text.update(cx, |e, cx| {
+            e.replace_range(0..len, &new, cx);
+            e.select(select, cx);
+        });
+        // A replace says nothing: an edit all the same.
+        self.edited(cx);
     }
 
     fn selected_text(&self, cx: &App) -> String {
@@ -583,10 +616,11 @@ impl NoteWindow {
     fn selection_bar(&self, window: &Window, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
         let input = self.text.read(cx);
         let focused = input.focus_handle(cx).is_focused(window);
-        if !focused || input.selected_range().is_empty() || input.dragging() {
+        let sel = input.selected_range();
+        if !focused || sel.is_empty() || input.is_selecting() {
             return None;
         }
-        let at = input.selection_origin()?;
+        let at = input.bounds_for_offset(sel.start)?.origin;
         let md = self.note.format == NoteFormat::Markdown;
         let tool = |id: &'static str, label: SharedString| {
             div()
@@ -748,7 +782,10 @@ impl NoteWindow {
     fn toggle_task(&mut self, at: usize, cx: &mut Context<Self>) {
         let text = self.text.read(cx).text().to_string();
         if let Some(new) = zorite_markdown::toggle_task_at(&text, at) {
-            self.text.update(cx, |i, cx| i.set_text(&new, 0..0, cx));
+            let len = text.len();
+            self.text
+                .update(cx, |e, cx| e.replace_range(0..len, &new, cx));
+            self.edited(cx);
         }
     }
 
@@ -768,16 +805,8 @@ impl NoteWindow {
         };
         let md = self.note.format == NoteFormat::Markdown
             && self.text.read(cx).focus_handle(cx).is_focused(window);
-        let format = |key: &str| {
-            use crate::md_format::Format;
-            match key {
-                "b" => Some(Format::Bold),
-                "i" => Some(Format::Italic),
-                "e" => Some(Format::Code),
-                "k" => Some(Format::Link),
-                _ => None,
-            }
-        };
+        // The editor binds B, I, E and the like itself; K (a link) is ours.
+        let format = |key: &str| (key == "k").then_some(crate::md_format::Format::Link);
         if md
             && cmd
             && !k.modifiers.shift
@@ -959,12 +988,14 @@ impl NoteWindow {
                             cx.listener(|v, _, w, cx| {
                                 v.note.format = NoteFormat::Plain;
                                 v.preview = false;
+                                v.text.update(cx, |e, cx| style_editor(e, false, cx));
                                 v.changed_meta(w, cx);
                             }),
                         ))
                         .child(Self::chip("note-md", "Markdown".to_string(), md).on_click(
                             cx.listener(|v, _, w, cx| {
                                 v.note.format = NoteFormat::Markdown;
+                                v.text.update(cx, |e, cx| style_editor(e, true, cx));
                                 v.changed_meta(w, cx);
                             }),
                         )),
@@ -1052,9 +1083,12 @@ impl NoteWindow {
 
     /// The text: edited, drawn as Markdown, or held back (locked, or
     /// sensitive and not shown).
-    fn body(&self, rows: usize, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn body(&self, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
         let look = cx.try_global::<NoteLook>().cloned();
-        let mono = look.map(|l| l.mono).unwrap_or_else(|| "monospace".into());
+        let mono = look
+            .as_ref()
+            .map(|l| l.mono.clone())
+            .unwrap_or_else(|| "monospace".into());
         let panel = |msg: String| {
             div()
                 .flex_1()
@@ -1139,7 +1173,7 @@ impl NoteWindow {
             let edit_at: zorite_markdown::ClickSourceHandler = Rc::new(move |at, _, window, cx| {
                 let _ = view.update(cx, |v, cx| {
                     v.preview = false;
-                    v.text.update(cx, |i, cx| i.place_cursor(at, cx));
+                    v.text.update(cx, |e, cx| e.set_cursor(at, cx));
                     let f = v.text.read(cx).focus_handle(cx);
                     window.focus(&f, cx);
                     cx.notify();
@@ -1168,14 +1202,153 @@ impl NoteWindow {
                 })
                 .into_any_element();
         }
-        self.text.update(cx, |i, cx| i.set_rows(rows, rows, cx));
         let on = self.text.read(cx).focus_handle(cx).is_focused(window);
-        Self::field_box(&self.text, on)
-            .font_family(mono)
-            .items_start()
-            .flex_shrink_0()
+        let md = self.note.format == NoteFormat::Markdown;
+        let family = look.and_then(|l| l.family);
+        div()
+            .relative()
+            .flex_1()
+            .min_h_0()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(if on {
+                colors().accent
+            } else {
+                colors().field_edge
+            }))
+            .bg(rgb(colors().field))
+            .overflow_hidden()
+            .child(
+                div()
+                    .id("note-scroll")
+                    .size_full()
+                    .overflow_y_scroll()
+                    .track_scroll(&self.scroll)
+                    .child(
+                        div()
+                            .px(px(12.))
+                            .py(px(10.))
+                            .text_size(ui(13.5))
+                            .text_color(rgb(colors().text))
+                            // Markdown in the app's font (code in the terminal's);
+                            // plain text in the terminal's.
+                            .when(!md, |d| d.font_family(mono.clone()))
+                            .when_some(family.filter(|_| md), |d, f| d.font_family(f))
+                            .child(self.text.clone()),
+                    ),
+            )
+            .child(crate::scrollbar::overlay(
+                self.scroll.clone(),
+                self.drag.clone(),
+            ))
             .children(self.selection_bar(window, cx))
             .into_any_element()
+    }
+
+    /// The caret back in sight after it moved (the editor grows; the view
+    /// around it scrolls): from where it was drawn last.
+    fn reveal_caret(&mut self, cx: &mut Context<Self>) {
+        if self.reveal == 0 {
+            return;
+        }
+        self.reveal -= 1;
+        let Some(caret) = self.text.read(cx).caret_screen_bounds() else {
+            return;
+        };
+        let view = self.scroll.bounds();
+        let mut off = self.scroll.offset();
+        let margin = px(8.);
+        if caret.top() < view.top() + margin {
+            off.y += view.top() + margin - caret.top();
+        } else if caret.bottom() > view.bottom() - margin {
+            off.y -= caret.bottom() - (view.bottom() - margin);
+        } else {
+            return;
+        }
+        off.y = off.y.min(px(0.)).max(-self.scroll.max_offset().y);
+        self.scroll.set_offset(off);
+        cx.notify();
+    }
+}
+
+/// The editor in the app's colors: Markdown shown as it is typed, or plain
+/// text.
+fn style_editor(e: &mut EditorState, markdown: bool, cx: &mut Context<EditorState>) {
+    if !markdown {
+        return e.clear_markdown_style(cx);
+    }
+    let c = colors();
+    let hsla = |v: u32| -> gpui::Hsla { rgb(v).into() };
+    let mono = cx
+        .try_global::<NoteLook>()
+        .map_or_else(|| SharedString::from("monospace"), |l| l.mono.clone());
+    e.set_markdown_style(
+        SyntaxStyle {
+            marker: hsla(c.faint),
+            code: hsla(c.accent),
+            code_bg: hsla(c.chip),
+            link: hsla(c.accent),
+            tag: hsla(c.accent),
+            quote: hsla(c.soft),
+            alert_note: hsla(c.accent),
+            alert_tip: hsla(c.good),
+            alert_important: hsla(c.accent),
+            alert_warning: hsla(c.warn),
+            alert_caution: hsla(c.bad),
+            alert_icons: None,
+            rule: hsla(c.line),
+            mark_bg: hsla(c.warn_bg),
+            block_label: None,
+            block_label_gen: 0,
+            block_ref_count: None,
+            popover_bg: hsla(c.raised),
+            popover_border: hsla(c.edge),
+            popover_fg: hsla(c.text),
+            popover_hover: hsla(c.hover),
+            popover_divider: hsla(c.line),
+            popover_danger: hsla(c.bad),
+            mono: gpui::font(mono),
+            property_icon: None,
+        },
+        cx,
+    );
+}
+
+/// The editor's menus, in the app's language.
+fn editor_labels() -> shellwing_note_editor::Labels {
+    shellwing_note_editor::Labels {
+        cut: tr!("Cut").into(),
+        copy: tr!("Copy").into(),
+        copy_as_markdown: tr!("Copy as Markdown").into(),
+        paste: tr!("Paste").into(),
+        code_copy: tr!("Copy").into(),
+        turn_into: tr!("Turn into").into(),
+        text: tr!("Text").into(),
+        heading_1: tr!("Heading 1").into(),
+        heading_2: tr!("Heading 2").into(),
+        heading_3: tr!("Heading 3").into(),
+        bulleted_list: tr!("Bulleted list").into(),
+        numbered_list: tr!("Numbered list").into(),
+        todo: tr!("To-do").into(),
+        quote: tr!("Quote").into(),
+        callout: tr!("Callout").into(),
+        code_block: tr!("Code block").into(),
+        insert_row_above: tr!("Insert row above").into(),
+        insert_row_below: tr!("Insert row below").into(),
+        duplicate_row: tr!("Duplicate row").into(),
+        insert_column_left: tr!("Insert column left").into(),
+        insert_column_right: tr!("Insert column right").into(),
+        align_left: tr!("Align left").into(),
+        align_center: tr!("Align center").into(),
+        align_right: tr!("Align right").into(),
+        grid_style: tr!("Grid style").into(),
+        striped_style: tr!("Striped style").into(),
+        header_style: tr!("Header style").into(),
+        minimal_style: tr!("Minimal style").into(),
+        delete_row: tr!("Delete row").into(),
+        delete_column: tr!("Delete column").into(),
+        delete_table: tr!("Delete table").into(),
+        ..Default::default()
     }
 }
 
@@ -1220,20 +1393,7 @@ impl Render for NoteWindow {
             title
         };
         window.set_window_title(&shown_title);
-        // The editor's rows: as many as fit the room measured last time
-        // (its box adds 14 px of padding and border).
-        let line = f32::from(
-            self.text
-                .read(cx)
-                .line_height()
-                .unwrap_or(px(ui_size * 1.6)),
-        );
-        let room = f32::from(self.body_h.get());
-        let rows = if room > 0. {
-            (((room - 14.) / line).floor() as usize).max(3)
-        } else {
-            8
-        };
+        self.reveal_caret(cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
         let content = div()
@@ -1266,32 +1426,14 @@ impl Render for NoteWindow {
             )
             .child(self.toolbar(window, cx))
             .when_some(self.problem.clone(), |d, p| d.child(problem_text(&p)))
-            .child({
-                // The room left for the text, measured as laid out; a change
-                // draws again with the rows that fit.
-                let cell = self.body_h.clone();
+            .child(
                 div()
-                    .relative()
                     .flex_1()
                     .min_h_0()
                     .flex()
                     .flex_col()
-                    .child(
-                        gpui::canvas(
-                            move |bounds, window, _| {
-                                let h = bounds.size.height;
-                                if (f32::from(h) - f32::from(cell.get())).abs() > 0.5 {
-                                    cell.set(h);
-                                    window.refresh();
-                                }
-                            },
-                            |_, _, _, _| {},
-                        )
-                        .absolute()
-                        .size_full(),
-                    )
-                    .child(self.body(rows, window, cx))
-            });
+                    .child(self.body(window, cx)),
+            );
         let bar = div()
             .h_full()
             .flex()

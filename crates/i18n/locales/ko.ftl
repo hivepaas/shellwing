@@ -961,8 +961,8 @@ t24d471a9 = 제목
 # No category
 t44662d06 = 카테고리 없음
 
-# Write here; Markdown shows when previewed.
-t05ddff4f = 여기에 작성하세요. Markdown은 미리 보기에서 표시됩니다.
+# Write here; Markdown shows as you type.
+t117b6c23 = 여기에 작성하세요. Markdown은 입력하는 대로 표시됩니다.
 
 # It is not in the vault any more.
 td11af590 = 더 이상 보관함에 없습니다.
@@ -1050,6 +1050,93 @@ t340e0631 = 다른 앱에서 열려 있음: 그 앱에서 저장한 내용이 �
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = 아직 작성된 내용이 없습니다. 편집을 눌러 작성하세요.
+
+# Cut
+t58e25863 = 잘라내기
+
+# Copy as Markdown
+t944799cd = Markdown으로 복사
+
+# Paste
+tb34a0288 = 붙여넣기
+
+# Turn into
+t10726570 = 변환
+
+# Text
+t3e142d5e = 텍스트
+
+# Heading 1
+ta590c41a = 제목 1
+
+# Heading 2
+ta490c287 = 제목 2
+
+# Heading 3
+ta390c0f4 = 제목 3
+
+# Bulleted list
+t1721be78 = 글머리 기호 목록
+
+# Numbered list
+t910847bb = 번호 목록
+
+# To-do
+t082e6fd6 = 할 일
+
+# Quote
+t5abe5677 = 인용
+
+# Callout
+t10591ec3 = 콜아웃
+
+# Code block
+t3026e515 = 코드 블록
+
+# Insert row above
+t2f1931cd = 위에 행 삽입
+
+# Insert row below
+t870e8f41 = 아래에 행 삽입
+
+# Duplicate row
+te898fcce = 행 복제
+
+# Insert column left
+tb49d3fc3 = 왼쪽에 열 삽입
+
+# Insert column right
+t60f12dcc = 오른쪽에 열 삽입
+
+# Align left
+tbdd22217 = 왼쪽 정렬
+
+# Align center
+t76127b0f = 가운데 정렬
+
+# Align right
+t1a76ce88 = 오른쪽 정렬
+
+# Grid style
+t531d1674 = 격자 스타일
+
+# Striped style
+t10b52f0d = 줄무늬 스타일
+
+# Header style
+te7eb6c45 = 머리글 스타일
+
+# Minimal style
+t70f1e7d5 = 최소 스타일
+
+# Delete row
+t33de1b52 = 행 삭제
+
+# Delete column
+tea682d34 = 열 삭제
+
+# Delete table
+t29ccb392 = 표 삭제
 
 # Untitled note
 t4ce277c4 = 제목 없는 노트
@@ -1365,9 +1452,6 @@ tef7cec6a = 로컬 셸
 
 # What a local terminal runs (This computer, in the host list), with its arguments. Empty: your own shell. Enter saves; new local tabs get it.
 t235223ca = 로컬 터미널(호스트 목록의 이 컴퓨터)에서 실행할 명령과 인수입니다. 비워 두면 내 셸을 사용합니다. Enter를 누르면 저장되며, 새 로컬 탭부터 적용됩니다.
-
-# Text
-t3e142d5e = 텍스트
 
 # Raw
 ta689aa91 = 원시
@@ -2292,9 +2376,6 @@ t4efeb00b = { $names } 삭제
 
 # Unload {names}
 t362b9a48 = { $names } 해제
-
-# Paste
-tb34a0288 = 붙여넣기
 
 # Find…
 t1ecb565a = 찾기…
