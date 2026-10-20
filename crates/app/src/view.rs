@@ -796,6 +796,9 @@ impl TermView {
                 .right(px(SCROLLBAR_ZONE + 6.))
                 .flex()
                 .gap(px(6.))
+                // Faint over the text they cover; whole under the pointer.
+                .opacity(0.45)
+                .hover(|s| s.opacity(1.))
                 .children(envs)
                 .children(log)
                 .children(listen)
