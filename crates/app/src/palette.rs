@@ -72,8 +72,6 @@ pub enum Action {
     UnloadEnv,
     /// A new note, in a window of its own.
     NewNote,
-    /// The snippet library's window.
-    SnippetLibrary,
     ToggleHosts,
     /// Type in every pane of the tab, or stop.
     Broadcast,

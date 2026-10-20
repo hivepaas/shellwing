@@ -30,7 +30,6 @@ const RECENT: &str = "recent.json";
 const SESSION: &str = "session.json";
 const PLACED: &str = "placed.json";
 const NOTE_WINDOW: &str = "note-window.json";
-const SNIPPET_WINDOW: &str = "snippet-window.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -479,16 +478,6 @@ impl Store {
 
     pub fn save_note_window(&self, state: &crate::NoteWindowState) -> io::Result<()> {
         self.save_state(NOTE_WINDOW, state)
-    }
-
-    /// A snippet's window's size when one last closed
-    /// (`state/snippet-window.json`).
-    pub fn snippet_window(&self) -> Option<crate::NoteWindowState> {
-        self.load_state(SNIPPET_WINDOW)
-    }
-
-    pub fn save_snippet_window(&self, state: &crate::NoteWindowState) -> io::Result<()> {
-        self.save_state(SNIPPET_WINDOW, state)
     }
 
     /// Config files placed until their tab closed, that may still be on

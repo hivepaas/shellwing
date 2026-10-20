@@ -1018,123 +1018,6 @@ tfb280692 = 信頼しているサーバーとその鍵です（{ $path } から�
 # {n} key | {n} keys
 tc219ff12 = 鍵 { $n } 個
 
-# Snippet library
-t1212f75d = スニペットライブラリ
-
-# Its tool (PostgreSQL)
-tff6e50ee = ツール（PostgreSQL）
-
-# Its task (Backup)
-t301e1817 = タスク（バックアップ）
-
-# Both (PostgreSQL · Backup)
-t116d70a6 = 両方（PostgreSQL · バックアップ）
-
-# Find a command: a tool, a task, a word…
-tc13a8368 = コマンドを検索：ツール、タスク、キーワード…
-
-# The vault is locked: unlock it in the main window.
-te327c98e = 保管庫はロックされています。メインウィンドウでロックを解除してください。
-
-# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
-t10cc86d5 =
-    { $n ->
-       *[other] { $n } 件のスニペットを追加しました：パレットから実行できます。
-    }
-
-# Every task
-t27417099 = すべてのタスク
-
-# Not added yet
-t18e34a9e = 未追加
-
-# Every tool
-t72ff8f76 = すべてのツール
-
-# Added
-tb35c3185 = 追加済み
-
-# Nothing here: try other words, or every task.
-ta46c06a7 = 見つかりません：別の言葉を試すか、すべてのタスクから探してください。
-
-# Changes data
-t97d1419e = データを変更
-
-# Added ✓
-t27d1ed36 = 追加済み ✓
-
-# Added ×{n}
-t9e411fdf = 追加済み ×{ $n }
-
-# Click a command to see it, and adjust it before adding. Tick those to add.
-t72e679a1 = コマンドをクリックすると内容を確認でき、追加前に調整できます。追加するものにチェックを入れてください。
-
-# Docs ↗
-tffd1857b = ドキュメント ↗
-
-# Options
-t353e0d45 = オプション
-
-# Runs
-t9a5f395b = 実行場所
-
-# On the host
-t1842b6cb = ホスト上
-
-# In a Docker container: asks which
-te04a8531 = Docker コンテナ内：どのコンテナか尋ねる
-
-# The files it reads or writes are the container's.
-t33082a7c = 読み書きするファイルはコンテナ内のものです。
-
-# None: it asks, or goes without
-tfc99399b = なし：ツールが尋ねるか、なしで進める
-
-# It reads {var}: give it an environment that has it.
-t1a1c7252 = { $var } を読み取ります：{ $var } を含む環境を指定してください。
-
-# has {var}
-t4d81af7a = { $var } あり
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = まだありません: 設定 › 環境 で追加してください。
-
-# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
-tfc64bf52 = 実行時に入力：{ $names }。追加すると自分のスニペットになり、そのウィンドウで編集できます。
-
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = データを変更します：追加後は入力されるだけで、Enter を押すまで待ちます。
-
-# In your snippets once. | In your snippets {n} times.
-t028f555a =
-    { $n ->
-       *[other] スニペットに { $n } 回追加済みです。
-    }
-
-# {n} picked | {n} picked
-tf375b5ad =
-    { $n ->
-       *[other] { $n } 件選択中
-    }
-
-# Clear
-t04a57fc2 = クリア
-
-# Tick the commands to add; each becomes a snippet of your own.
-t71ce4a51 = 追加するコマンドにチェックを入れてください。それぞれが自分のスニペットになります。
-
-# Add {n} to my snippets | Add {n} to my snippets
-t9489b24d =
-    { $n ->
-       *[other] { $n } 件をスニペットに追加
-    }
-
-# Add to my snippets
-tacccc61d = スニペットに追加
-
-# File under
-t7be2ad59 = 分類
-
 # No config directory to save to.
 ta5f37ee4 = 保存先の設定ディレクトリがありません。
 
@@ -1227,6 +1110,9 @@ tfdda4cf7 = プレビュー
 
 # Sensitive
 tf603feef = 機密
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 保管庫はロックされています。メインウィンドウでロックを解除してください。
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 機密: 本人確認後にテキストが表示されます。
@@ -1801,6 +1687,9 @@ t59fdbd70 = 同期を停止
 # Your place
 t63cb5f41 = 同期先
 
+# Options
+t353e0d45 = オプション
+
 # A folder
 te84ceb50 = フォルダ
 
@@ -2005,84 +1894,6 @@ t9585c651 = + グループ
 # HOSTS
 t0d325d34 = ホスト
 
-# New snippet
-tff3f7838 = 新しいスニペット
-
-# What it does, to find it in the palette
-td9b8e02f = パレットで探すための説明
-
-# A name and a command are needed.
-t7f4c69bb = 名前とコマンドが必要です。
-
-# this snippet
-t155d1e08 = このスニペット
-
-# Every host
-t77846bfe = すべてのホスト
-
-# A group ▾
-tcd864ec5 = グループを指定 ▾
-
-# One host ▾
-t1864f915 = ホストを指定 ▾
-
-# Offered for
-tbafebe63 = 対象
-
-# No groups yet: make one in the host list.
-t31c54e54 = まだグループはありません。ホスト一覧で作成してください。
-
-# The palette lists it in panes of those hosts only.
-t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
-
-# (deleted)
-tb7bba50b = （削除済み）
-
-# + Add
-ta0ef59dd = + 追加
-
-# Environments it needs
-tebd9fda9 = 必要な環境
-
-# {n} variable | {n} variables
-te4598f62 =
-    { $n ->
-       *[other] 変数 { $n } 個
-    }
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = 変数を持つサブシェルで実行され、終了すると変数は消えます。
-
-# Values
-t8d4d225b = 値
-
-# from the pane's host
-t0607dcd8 = ペインのホストから
-
-# asked when it runs
-t8ee70b94 = 実行時に入力
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
-
-# Run it: press Enter after typing it
-t32122ee4 = 実行する：入力後に Enter を押す
-
-# Off: it is typed, and waits for you to read it.
-t2ccc04b4 = オフ：入力されるだけで、読んで確認するのを待ちます。
-
-# {n} line | {n} lines
-t5c4bb67a =
-    { $n ->
-       *[other] { $n } 行
-    }
-
-# Run in {pane}
-t27e0e0f9 = { $pane } で実行
-
-# Connect a tab in the main window to run it there.
-tc580324f = メインウィンドウでタブを接続すると、そこで実行できます。
-
 # every host
 t444612de = すべてのホスト
 
@@ -2215,17 +2026,11 @@ t79646cbc = 環境を編集
 # sensitive
 ta2bd2f4f = 機密
 
-# Start from the library
-t401f9cb9 = ライブラリから始める
+# What it does, to find it in the palette
+td9b8e02f = パレットで探すための説明
 
-# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
-tffb7b170 = { $tools } などに使える { $n } 件のコマンドを用意しています：サーバーの確認、バックアップ、クリーンアップ、テスト。必要なものを選ぶと自分のスニペットになり、自由に編集できます。
-
-# Open the library
-t79d7b3ad = ライブラリを開く
-
-# from the library
-td908f0d1 = ライブラリから
+# A name and a command are needed.
+t7f4c69bb = 名前とコマンドが必要です。
 
 # typed, not run
 td4e41905 = 入力のみ（実行しない）
@@ -2233,17 +2038,62 @@ td4e41905 = 入力のみ（実行しない）
 # with {envs}
 tba31f3bb = { $envs } を使用
 
+# Every host
+t77846bfe = すべてのホスト
+
+# A group ▾
+tcd864ec5 = グループを指定 ▾
+
+# One host ▾
+t1864f915 = ホストを指定 ▾
+
+# Offered for
+tbafebe63 = 対象
+
+# No groups yet: make one in the host list.
+t31c54e54 = まだグループはありません。ホスト一覧で作成してください。
+
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = 保管庫から削除され、同期後は他のデバイスからも削除されます。配置済みの場所にはそのまま残ります。
 
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
+
+# Asked for when it runs:
+t2d8c5e6d = 実行時に尋ねられる項目：
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter で改行します。各行は順に実行されます。{ $save } で保存します。
+
+# The palette lists it in panes of those hosts only.
+t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
+
+# Environments it needs
+tebd9fda9 = 必要な環境
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = まだありません: 設定 › 環境 で追加してください。
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 変数を持つサブシェルで実行され、終了すると変数は消えます。
+
+# New snippet
+tff3f7838 = 新しいスニペット
+
+# Edit snippet
+t9eab9738 = スニペットを編集
+
+# Command
+tc67c8f52 = コマンド
+
+# Run it: press Enter after typing it
+t32122ee4 = 実行する：入力後に Enter を押す
+
 # None yet.
 t786bc275 = まだありません。
-
-# Library…
-t3d769c8c = ライブラリ…
 
 # New snippet…
 tec3111a4 = 新しいスニペット…
@@ -2268,12 +2118,6 @@ t5a3830ee = 自由なテキスト。保管庫に暗号化して保存され、�
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = ~/.kube/config や ~/.aws/credentials など、ホストに配置するファイルです。保管庫に暗号化して保存され、保管庫と一緒に同期されます。パレット（{ $chord }、設定ファイルの項目）またはペインのメニューから配置します。タブを閉じるまでの一時配置も、そのまま残す配置もできます。
-
-# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
-tf7e18b27 =
-    { $n ->
-       *[other] ライブラリには未追加のコマンドがあと { $n } 件あります ›
-    }
 
 # While loaded, the server can read them
 te60c8275 = 読み込み中は、サーバーから読み取れます
@@ -2787,15 +2631,6 @@ t85f58d76 = スニペット · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 個のペイン
-
-# Snippet library…
-tff254ce3 = スニペットライブラリ…
-
-# {n} ready command to add | {n} ready commands to add
-t134e12f0 =
-    { $n ->
-       *[other] 追加できるコマンド { $n } 件
-    }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 先にタブを開いてください。スニペットは選択中のペインで実行されます。

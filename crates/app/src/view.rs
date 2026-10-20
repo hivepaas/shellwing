@@ -2087,11 +2087,6 @@ impl TermView {
             .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_sm()
-            // A press on it is its own: the terminal under it would take it as
-            // a click, which ends the selection before Copy copies it.
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-            .on_mouse_down(MouseButton::Middle, |_, _, cx| cx.stop_propagation())
-            .on_mouse_up(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             // Another click anywhere closes it (a right click opens the next one).
             .on_mouse_down_out(cx.listener(|v, e: &MouseDownEvent, _, cx| {
                 if e.button != MouseButton::Right {

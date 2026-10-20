@@ -1357,8 +1357,6 @@ impl FilesPanel {
             .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_sm()
-            // A press on it is its own, not the list's under it.
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             // Another click anywhere closes it (a right click opens the next one).
             .on_mouse_down_out(cx.listener(|p, e: &gpui::MouseDownEvent, _, cx| {
                 if e.button != MouseButton::Right {

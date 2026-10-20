@@ -340,9 +340,6 @@ pub struct Snippet {
     /// The environments (their ids) loaded for it alone: it runs in a
     /// subshell that has them, and they go when it ends.
     pub needs: Vec<String>,
-    /// Where it came from, when not typed here: `library:<item>` for one
-    /// added from the snippet library. Empty: made here.
-    pub origin: String,
 }
 
 /// A file kept in the vault to place on hosts, such as `~/.kube/config`:
@@ -1243,7 +1240,6 @@ impl Vault {
                         .filter(|n| !n.is_empty())
                         .map(str::to_string)
                         .collect(),
-                    origin: get("origin"),
                     id,
                 }
             })
@@ -1270,7 +1266,6 @@ impl Vault {
             ),
             ("category".to_string(), s.category.clone()),
             ("needs".to_string(), s.needs.join(",")),
-            ("origin".to_string(), s.origin.clone()),
         ]);
         self.update(&id, "snippet", &s.name, &values)?;
         Ok(id)
@@ -1661,7 +1656,6 @@ mod tests {
             enter: true,
             category: "Checks".into(),
             needs: vec!["e1".into(), "e2".into()],
-            origin: "library:diagnostics/pg_ping".into(),
         };
         s.id = v.save_snippet(&s).expect("save");
         s.command = "df -h / && free -h".into();
@@ -2196,7 +2190,6 @@ mod tests {
             enter: true,
             category: String::new(),
             needs: vec![],
-            origin: String::new(),
         };
         assert!(matches!(
             v.save_snippet(&s),

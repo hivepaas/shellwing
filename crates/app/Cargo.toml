@@ -29,9 +29,6 @@ shellwing-i18n.workspace = true
 # Values of environments, wiped from memory when dropped.
 zeroize = "1"
 sha2 = "0.10"
-# The snippet library's items (src/library/items.json).
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 # What a link may open (its syntax module only; pinned with the notes' editor).
 zorite-markdown = { version = "=0.10.0", default-features = false }
 # The notes' editor: zorite-editor, taken in (crates/note-editor/UPSTREAM.md).

@@ -1038,127 +1038,6 @@ tc219ff12 =
        *[other] { $n } clés
     }
 
-# Snippet library
-t1212f75d = Bibliothèque d'extraits
-
-# Its tool (PostgreSQL)
-tff6e50ee = Son outil (PostgreSQL)
-
-# Its task (Backup)
-t301e1817 = Sa tâche (Sauvegarde)
-
-# Both (PostgreSQL · Backup)
-t116d70a6 = Les deux (PostgreSQL · Sauvegarde)
-
-# Find a command: a tool, a task, a word…
-tc13a8368 = Cherchez une commande : un outil, une tâche, un mot…
-
-# The vault is locked: unlock it in the main window.
-te327c98e = Le coffre est verrouillé : déverrouillez-le dans la fenêtre principale.
-
-# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
-t10cc86d5 =
-    { $n ->
-        [one] { $n } extrait ajouté : exécutez-le depuis la palette.
-       *[other] { $n } extraits ajoutés : exécutez-les depuis la palette.
-    }
-
-# Every task
-t27417099 = Toutes les tâches
-
-# Not added yet
-t18e34a9e = Pas encore ajoutées
-
-# Every tool
-t72ff8f76 = Tous les outils
-
-# Added
-tb35c3185 = Ajoutées
-
-# Nothing here: try other words, or every task.
-ta46c06a7 = Rien ici : essayez d'autres mots, ou toutes les tâches.
-
-# Changes data
-t97d1419e = Modifie des données
-
-# Added ✓
-t27d1ed36 = Ajoutée ✓
-
-# Added ×{n}
-t9e411fdf = Ajoutée ×{ $n }
-
-# Click a command to see it, and adjust it before adding. Tick those to add.
-t72e679a1 = Cliquez sur une commande pour la voir et l'ajuster avant de l'ajouter. Cochez celles à ajouter.
-
-# Docs ↗
-tffd1857b = Documentation ↗
-
-# Options
-t353e0d45 = Options
-
-# Runs
-t9a5f395b = Exécution
-
-# On the host
-t1842b6cb = Sur le serveur
-
-# In a Docker container: asks which
-te04a8531 = Dans un conteneur Docker : demande lequel
-
-# The files it reads or writes are the container's.
-t33082a7c = Les fichiers qu'elle lit ou écrit sont ceux du conteneur.
-
-# None: it asks, or goes without
-tfc99399b = Aucun : demande le mot de passe, ou s'en passe
-
-# It reads {var}: give it an environment that has it.
-t1a1c7252 = Elle lit { $var } : donnez-lui un environnement qui la contient.
-
-# has {var}
-t4d81af7a = contient { $var }
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Aucun pour l'instant : ajoutez-en un dans Réglages › Environnements.
-
-# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
-tfc64bf52 = Demandé à l'exécution : { $names }. Une fois ajoutée, elle est à vous : modifiez-la dans sa fenêtre.
-
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = Elle modifie des données : une fois ajoutée, elle est seulement saisie et attend que vous appuyiez sur Enter.
-
-# In your snippets once. | In your snippets {n} times.
-t028f555a =
-    { $n ->
-        [one] { $n } fois dans vos extraits.
-       *[other] { $n } fois dans vos extraits.
-    }
-
-# {n} picked | {n} picked
-tf375b5ad =
-    { $n ->
-        [one] { $n } sélectionnée
-       *[other] { $n } sélectionnées
-    }
-
-# Clear
-t04a57fc2 = Désélectionner
-
-# Tick the commands to add; each becomes a snippet of your own.
-t71ce4a51 = Cochez les commandes à ajouter ; chacune devient un extrait à vous.
-
-# Add {n} to my snippets | Add {n} to my snippets
-t9489b24d =
-    { $n ->
-        [one] Ajouter { $n } à mes extraits
-       *[other] Ajouter { $n } à mes extraits
-    }
-
-# Add to my snippets
-tacccc61d = Ajouter à mes extraits
-
-# File under
-t7be2ad59 = Classer sous
-
 # No config directory to save to.
 ta5f37ee4 = Aucun dossier de configuration où enregistrer.
 
@@ -1251,6 +1130,9 @@ tfdda4cf7 = Aperçu
 
 # Sensitive
 tf603feef = Sensible
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Le coffre est verrouillé : déverrouillez-le dans la fenêtre principale.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Sensible : son texte s'affiche une fois confirmé que c'est vous.
@@ -1825,6 +1707,9 @@ t59fdbd70 = Arrêter la synchronisation
 # Your place
 t63cb5f41 = Votre emplacement
 
+# Options
+t353e0d45 = Options
+
 # A folder
 te84ceb50 = Un dossier
 
@@ -2033,86 +1918,6 @@ t9585c651 = + Groupe
 # HOSTS
 t0d325d34 = SERVEURS
 
-# New snippet
-tff3f7838 = Nouvel extrait
-
-# What it does, to find it in the palette
-td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
-
-# A name and a command are needed.
-t7f4c69bb = Un nom et une commande sont requis.
-
-# this snippet
-t155d1e08 = cet extrait
-
-# Every host
-t77846bfe = Tous les serveurs
-
-# A group ▾
-tcd864ec5 = Un groupe ▾
-
-# One host ▾
-t1864f915 = Un serveur ▾
-
-# Offered for
-tbafebe63 = Proposé pour
-
-# No groups yet: make one in the host list.
-t31c54e54 = Aucun groupe pour l'instant : créez-en un dans la liste des serveurs.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = La palette le propose uniquement dans les volets de ces serveurs.
-
-# (deleted)
-tb7bba50b = (supprimé)
-
-# + Add
-ta0ef59dd = + Ajouter
-
-# Environments it needs
-tebd9fda9 = Environnements requis
-
-# {n} variable | {n} variables
-te4598f62 =
-    { $n ->
-        [one] { $n } variable
-       *[other] { $n } variables
-    }
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = Il s'exécute dans un sous-shell qui a leurs variables ; elles disparaissent à la fin.
-
-# Values
-t8d4d225b = Valeurs
-
-# from the pane's host
-t0607dcd8 = du serveur du volet
-
-# asked when it runs
-t8ee70b94 = demandée à l'exécution
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
-
-# Run it: press Enter after typing it
-t32122ee4 = L'exécuter : appuyer sur Enter après l'avoir saisi
-
-# Off: it is typed, and waits for you to read it.
-t2ccc04b4 = Désactivé : il est seulement saisi, et attend que vous le relisiez.
-
-# {n} line | {n} lines
-t5c4bb67a =
-    { $n ->
-        [one] { $n } ligne
-       *[other] { $n } lignes
-    }
-
-# Run in {pane}
-t27e0e0f9 = Exécuter dans { $pane }
-
-# Connect a tab in the main window to run it there.
-tc580324f = Connectez un onglet dans la fenêtre principale pour l'y exécuter.
-
 # every host
 t444612de = tous les serveurs
 
@@ -2247,17 +2052,11 @@ t79646cbc = Modifier l'environnement
 # sensitive
 ta2bd2f4f = sensible
 
-# Start from the library
-t401f9cb9 = Partez de la bibliothèque
+# What it does, to find it in the palette
+td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
 
-# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
-tffb7b170 = { $n } commandes prêtes pour { $tools } et d'autres : vérifier un serveur, le sauvegarder, le nettoyer, le tester. Choisissez celles que vous voulez ; elles deviennent vos propres extraits, à modifier à votre guise.
-
-# Open the library
-t79d7b3ad = Ouvrir la bibliothèque
-
-# from the library
-td908f0d1 = de la bibliothèque
+# A name and a command are needed.
+t7f4c69bb = Un nom et une commande sont requis.
 
 # typed, not run
 td4e41905 = saisi, non exécuté
@@ -2265,17 +2064,62 @@ td4e41905 = saisi, non exécuté
 # with {envs}
 tba31f3bb = avec { $envs }
 
+# Every host
+t77846bfe = Tous les serveurs
+
+# A group ▾
+tcd864ec5 = Un groupe ▾
+
+# One host ▾
+t1864f915 = Un serveur ▾
+
+# Offered for
+tbafebe63 = Proposé pour
+
+# No groups yet: make one in the host list.
+t31c54e54 = Aucun groupe pour l'instant : créez-en un dans la liste des serveurs.
+
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation. Là où il a été déposé, il reste.
 
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
+
+# Asked for when it runs:
+t2d8c5e6d = Demandé à l'exécution :
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter commence une autre ligne ; les lignes s’exécutent l’une après l’autre. { $save } enregistre.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = La palette le propose uniquement dans les volets de ces serveurs.
+
+# Environments it needs
+tebd9fda9 = Environnements requis
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Aucun pour l'instant : ajoutez-en un dans Réglages › Environnements.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Il s'exécute dans un sous-shell qui a leurs variables ; elles disparaissent à la fin.
+
+# New snippet
+tff3f7838 = Nouvel extrait
+
+# Edit snippet
+t9eab9738 = Modifier l'extrait
+
+# Command
+tc67c8f52 = Commande
+
+# Run it: press Enter after typing it
+t32122ee4 = L'exécuter : appuyer sur Enter après l'avoir saisi
+
 # None yet.
 t786bc275 = Aucun pour l'instant.
-
-# Library…
-t3d769c8c = Bibliothèque…
 
 # New snippet…
 tec3111a4 = Nouvel extrait…
@@ -2300,13 +2144,6 @@ t5a3830ee = Du texte libre, chiffré dans le coffre et synchronisé avec lui : �
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Des fichiers à déposer sur les serveurs, comme ~/.kube/config ou ~/.aws/credentials, conservés chiffrés dans le coffre et synchronisés avec lui. Déposez-en un depuis la palette ({ $chord }, sous Fichiers de configuration) ou le menu du volet : jusqu'à la fermeture de l'onglet, ou pour qu'il reste.
-
-# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
-tf7e18b27 =
-    { $n ->
-        [one] Encore { $n } dans la bibliothèque, pas encore ajoutée ›
-       *[other] Encore { $n } dans la bibliothèque, pas encore ajoutées ›
-    }
 
 # While loaded, the server can read them
 te60c8275 = Tant qu'ils sont chargés, le serveur peut les lire
@@ -2868,16 +2705,6 @@ t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter : { $n } volet
        *[other] Enter · Alt+Enter : { $n } volets
-    }
-
-# Snippet library…
-tff254ce3 = Bibliothèque d'extraits…
-
-# {n} ready command to add | {n} ready commands to add
-t134e12f0 =
-    { $n ->
-        [one] { $n } commande prête à ajouter
-       *[other] { $n } commandes prêtes à ajouter
     }
 
 # Open a tab first: a snippet runs in the focused pane.

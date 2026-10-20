@@ -1018,123 +1018,6 @@ tfb280692 = 신뢰하는 서버와 그 키 목록이며, ssh가 읽는 파일과
 # {n} key | {n} keys
 tc219ff12 = 키 { $n }개
 
-# Snippet library
-t1212f75d = 스니펫 라이브러리
-
-# Its tool (PostgreSQL)
-tff6e50ee = 도구 (PostgreSQL)
-
-# Its task (Backup)
-t301e1817 = 작업 (백업)
-
-# Both (PostgreSQL · Backup)
-t116d70a6 = 둘 다 (PostgreSQL · 백업)
-
-# Find a command: a tool, a task, a word…
-tc13a8368 = 명령 찾기: 도구, 작업, 단어…
-
-# The vault is locked: unlock it in the main window.
-te327c98e = 보관함이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
-
-# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
-t10cc86d5 =
-    { $n ->
-       *[other] 스니펫 { $n }개를 추가했습니다. 팔레트에서 실행하세요.
-    }
-
-# Every task
-t27417099 = 모든 작업
-
-# Not added yet
-t18e34a9e = 아직 추가하지 않음
-
-# Every tool
-t72ff8f76 = 모든 도구
-
-# Added
-tb35c3185 = 추가됨
-
-# Nothing here: try other words, or every task.
-ta46c06a7 = 결과 없음: 다른 단어를 입력하거나 모든 작업에서 찾아보세요.
-
-# Changes data
-t97d1419e = 데이터 변경
-
-# Added ✓
-t27d1ed36 = 추가됨 ✓
-
-# Added ×{n}
-t9e411fdf = 추가됨 ×{ $n }
-
-# Click a command to see it, and adjust it before adding. Tick those to add.
-t72e679a1 = 명령을 클릭하면 내용을 보고 추가하기 전에 조정할 수 있습니다. 추가할 명령에 체크하세요.
-
-# Docs ↗
-tffd1857b = 문서 ↗
-
-# Options
-t353e0d45 = 옵션
-
-# Runs
-t9a5f395b = 실행 위치
-
-# On the host
-t1842b6cb = 호스트에서
-
-# In a Docker container: asks which
-te04a8531 = Docker 컨테이너에서: 어느 컨테이너인지 묻기
-
-# The files it reads or writes are the container's.
-t33082a7c = 읽거나 쓰는 파일은 컨테이너의 파일입니다.
-
-# None: it asks, or goes without
-tfc99399b = 없음: 직접 묻거나 비밀번호 없이 진행
-
-# It reads {var}: give it an environment that has it.
-t1a1c7252 = { $var }을(를) 읽습니다. { $var }이(가) 있는 환경을 지정하세요.
-
-# has {var}
-t4d81af7a = { $var } 있음
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
-
-# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
-tfc64bf52 = 실행할 때 묻기: { $names }. 추가하면 내 스니펫이 되므로 해당 창에서 편집할 수 있습니다.
-
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = 데이터를 변경합니다. 추가하면 입력만 되고 Enter를 누를 때까지 기다립니다.
-
-# In your snippets once. | In your snippets {n} times.
-t028f555a =
-    { $n ->
-       *[other] 내 스니펫에 { $n }번 추가됨.
-    }
-
-# {n} picked | {n} picked
-tf375b5ad =
-    { $n ->
-       *[other] { $n }개 선택됨
-    }
-
-# Clear
-t04a57fc2 = 선택 해제
-
-# Tick the commands to add; each becomes a snippet of your own.
-t71ce4a51 = 추가할 명령에 체크하세요. 각 명령은 내 스니펫이 됩니다.
-
-# Add {n} to my snippets | Add {n} to my snippets
-t9489b24d =
-    { $n ->
-       *[other] 내 스니펫에 { $n }개 추가
-    }
-
-# Add to my snippets
-tacccc61d = 내 스니펫에 추가
-
-# File under
-t7be2ad59 = 분류 기준
-
 # No config directory to save to.
 ta5f37ee4 = 저장할 설정 디렉터리가 없습니다.
 
@@ -1227,6 +1110,9 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 보관함이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 민감 정보: 본인 확인 후 텍스트가 표시됩니다.
@@ -1801,6 +1687,9 @@ t59fdbd70 = 동기화 중지
 # Your place
 t63cb5f41 = 내 저장소
 
+# Options
+t353e0d45 = 옵션
+
 # A folder
 te84ceb50 = 폴더
 
@@ -2005,84 +1894,6 @@ t9585c651 = + 그룹
 # HOSTS
 t0d325d34 = 호스트
 
-# New snippet
-tff3f7838 = 새 스니펫
-
-# What it does, to find it in the palette
-td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
-
-# A name and a command are needed.
-t7f4c69bb = 이름과 명령이 필요합니다.
-
-# this snippet
-t155d1e08 = 이 스니펫
-
-# Every host
-t77846bfe = 모든 호스트
-
-# A group ▾
-tcd864ec5 = 그룹 ▾
-
-# One host ▾
-t1864f915 = 호스트 하나 ▾
-
-# Offered for
-tbafebe63 = 사용 대상
-
-# No groups yet: make one in the host list.
-t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
-
-# (deleted)
-tb7bba50b = (삭제됨)
-
-# + Add
-ta0ef59dd = + 추가
-
-# Environments it needs
-tebd9fda9 = 필요한 환경
-
-# {n} variable | {n} variables
-te4598f62 =
-    { $n ->
-       *[other] 변수 { $n }개
-    }
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = 해당 변수가 있는 서브셸에서 실행되며, 끝나면 변수도 사라집니다.
-
-# Values
-t8d4d225b = 값
-
-# from the pane's host
-t0607dcd8 = 창의 호스트에서
-
-# asked when it runs
-t8ee70b94 = 실행할 때 묻기
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
-
-# Run it: press Enter after typing it
-t32122ee4 = 실행: 입력 후 Enter 누르기
-
-# Off: it is typed, and waits for you to read it.
-t2ccc04b4 = 끄면: 입력만 되고, 읽어 볼 때까지 기다립니다.
-
-# {n} line | {n} lines
-t5c4bb67a =
-    { $n ->
-       *[other] { $n }줄
-    }
-
-# Run in {pane}
-t27e0e0f9 = { $pane }에서 실행
-
-# Connect a tab in the main window to run it there.
-tc580324f = 기본 창에서 탭을 연결하면 그곳에서 실행할 수 있습니다.
-
 # every host
 t444612de = 모든 호스트
 
@@ -2215,17 +2026,11 @@ t79646cbc = 환경 편집
 # sensitive
 ta2bd2f4f = 민감 정보
 
-# Start from the library
-t401f9cb9 = 라이브러리에서 시작하기
+# What it does, to find it in the palette
+td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
 
-# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
-tffb7b170 = { $tools } 등을 위한 바로 쓸 수 있는 명령 { $n }개: 서버 점검, 백업, 정리, 테스트. 원하는 명령을 고르면 내 스니펫이 되어 마음대로 편집할 수 있습니다.
-
-# Open the library
-t79d7b3ad = 라이브러리 열기
-
-# from the library
-td908f0d1 = 라이브러리에서 가져옴
+# A name and a command are needed.
+t7f4c69bb = 이름과 명령이 필요합니다.
 
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음
@@ -2233,17 +2038,62 @@ td4e41905 = 입력만 하고 실행하지 않음
 # with {envs}
 tba31f3bb = { $envs } 사용
 
+# Every host
+t77846bfe = 모든 호스트
+
+# A group ▾
+tcd864ec5 = 그룹 ▾
+
+# One host ▾
+t1864f915 = 호스트 하나 ▾
+
+# Offered for
+tbafebe63 = 사용 대상
+
+# No groups yet: make one in the host list.
+t31c54e54 = 아직 그룹이 없습니다. 호스트 목록에서 만드세요.
+
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 이미 배치된 곳에는 그대로 남습니다.
 
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
+
+# Asked for when it runs:
+t2d8c5e6d = 실행할 때 묻는 항목:
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니다. { $save }로 저장합니다.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = 해당 호스트의 창에서만 팔레트에 표시됩니다.
+
+# Environments it needs
+tebd9fda9 = 필요한 환경
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 아직 없음: 설정 › 환경에서 추가하세요.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 해당 변수가 있는 서브셸에서 실행되며, 끝나면 변수도 사라집니다.
+
+# New snippet
+tff3f7838 = 새 스니펫
+
+# Edit snippet
+t9eab9738 = 스니펫 편집
+
+# Command
+tc67c8f52 = 명령
+
+# Run it: press Enter after typing it
+t32122ee4 = 실행: 입력 후 Enter 누르기
+
 # None yet.
 t786bc275 = 아직 없습니다.
-
-# Library…
-t3d769c8c = 라이브러리…
 
 # New snippet…
 tec3111a4 = 새 스니펫…
@@ -2268,12 +2118,6 @@ t5a3830ee = 자유 텍스트. 보관함에 암호화되어 저장되고 함께 �
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = ~/.kube/config나 ~/.aws/credentials처럼 호스트에 배치할 파일로, 보관함에 암호화되어 보관되고 보관함과 함께 동기화됩니다. 팔레트({ $chord }, 설정 파일 항목) 또는 창의 메뉴에서 배치하세요. 탭을 닫을 때까지만 두거나 계속 남겨 둘 수 있습니다.
-
-# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
-tf7e18b27 =
-    { $n ->
-       *[other] 라이브러리에 아직 추가하지 않은 명령 { $n }개 ›
-    }
 
 # While loaded, the server can read them
 te60c8275 = 불러온 동안 서버에서 읽을 수 있습니다
@@ -2787,15 +2631,6 @@ t85f58d76 = 스니펫 · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: 창 { $n }개
-
-# Snippet library…
-tff254ce3 = 스니펫 라이브러리…
-
-# {n} ready command to add | {n} ready commands to add
-t134e12f0 =
-    { $n ->
-       *[other] 추가할 수 있는 명령 { $n }개
-    }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 먼저 탭을 여세요. 스니펫은 선택된 창에서 실행됩니다.

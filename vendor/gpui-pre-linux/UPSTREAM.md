@@ -2,12 +2,12 @@
 
 GPUI's Linux platform (X11 and Wayland), as published on crates.io.
 
-- **Upstream:** `gpui-pre-linux` 0.3.8 on crates.io, "Zed's `gpui_linux` crate
-  (gpui-pre snapshot of zed@279fe07)", <https://github.com/zed-industries/zed>
+- **Upstream:** `gpui-pre-linux` 0.3.9 on crates.io, "Zed's `gpui_linux` crate
+  (gpui-pre snapshot of zed@93d7456)", <https://github.com/zed-industries/zed>
   (`crates/gpui_linux`). License: Apache-2.0 (`LICENSE-APACHE`).
-- **As published:** commit `d251fc3` ("Take in gpui-pre-linux 0.3.8 as published,
-  unchanged") holds the crate exactly as crates.io serves it (`.cargo-ok` left
-  out). Diff against it to see every change: `git diff d251fc3 -- vendor/gpui-pre-linux`.
+- **As published:** `scripts/upstream_diff.sh gpui-pre-linux 0.3.9 vendor/gpui-pre-linux`
+  fetches the 0.3.9 crate from crates.io and shows everything shellwing changed
+  in `src/` (the rest of the folder is as published, `.cargo-ok` left out).
 - **How it is used:** the workspace's `Cargo.toml` puts it in place of the
   crates.io one (`[patch.crates-io]`) and keeps it out of the workspace
   (`exclude = ["vendor"]`), so our lints and `cargo fmt` leave it as it is.
@@ -31,11 +31,13 @@ GPUI's Linux platform (X11 and Wayland), as published on crates.io.
 
 1. Check whether upstream fixed what a change here works around (the comment
    in `activate` above the token says it expects to be refused); drop the
-   change if so. As of 0.3.9 it is the same.
+   change if so. As of 0.3.9 it was the same.
 2. Replace the folder with the new crate as published (from
-   `~/.cargo/registry/src/*/gpui-pre-linux-<version>`, without `.cargo-ok`),
-   commit that alone, and note its commit above.
+   `~/.cargo/registry/src/*/gpui-pre-linux-<version>`, or
+   `https://static.crates.io/crates/gpui-pre-linux/gpui-pre-linux-<version>.crate`;
+   without `.cargo-ok`), and commit that alone.
 3. Make each change again where its `shellwing:` comment was, and update
-   this file: the version, the commit, and each change.
+   this file: the version, and each change. `scripts/upstream_diff.sh` with
+   the new version shows them all.
 4. Keep its version the one `gpui-pre` (the workspace's `gpui`) wants:
    `[patch.crates-io]` only replaces the same version.
