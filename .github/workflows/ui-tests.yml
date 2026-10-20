@@ -77,6 +77,8 @@ jobs:
       - name: Clippy (with the UI tests)
         run: cargo clippy -p shellwing --features ui-tests --all-targets -- -D warnings
 
+      # Release, as CI's tests: debug builds of libghostty parse too slowly for
+      # the flood scenario on CI machines.
       - name: UI scenarios
         shell: bash
-        run: cargo test -p shellwing --features ui-tests "ui_tests::${{ inputs.filter }}"
+        run: cargo test --release -p shellwing --features ui-tests "ui_tests::${{ inputs.filter }}"

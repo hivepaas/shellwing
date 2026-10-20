@@ -5,7 +5,8 @@
 //!
 //! Built only with the `ui-tests` feature: they take longer than the unit
 //! tests, so CI runs them daily and by hand (`.github/workflows/ui-tests.yml`).
-//! Locally: `cargo test -p shellwing --features ui-tests ui_tests`.
+//! Locally: `cargo test -p shellwing --features ui-tests ui_tests` (add
+//! `--release` on a slow machine: debug builds of libghostty parse slowly).
 //!
 //! Each scenario runs in a child process of the test binary, with its own
 //! environment: known_hosts, the ssh config and `HOME` point into a scratch
