@@ -597,8 +597,41 @@ s3 = { endpoint = "https://<account>.r2.cloudflarestorage.com", bucket = "vault"
 - Each sync lists the records and fetches only those that changed since
   (by their ETag), so a minute's sync with nothing new is a few small
   requests.
+- A record another device wrote a moment ago is not written over: the
+  server refuses the write (`If-Match`), and shellwing merges theirs in
+  and writes again.
 - Joining from another device works as with a folder: pairing, the recovery
   key, or the sync passphrase.
+
+**A Git repository:** *Settings › Sync › Git* takes a private repository on
+GitHub, GitLab, Gitea or a server of your own:
+
+```toml
+[sync]
+git = { url = "git@github.com:me/vault.git" }   # or https://…; branch = "…" if not the default
+```
+
+- It goes through **this system's git** (2.31 or newer), which signs in as it
+  does for you: Git Credential Manager, the keychain, `gh auth`, your SSH keys
+  and agent. Where git cannot sign in by itself, a token (with access to that
+  repository only) can be set; it is kept in the vault like a password, and
+  given to git in its environment, not on its command line. Gitea needs the
+  token's user too.
+- **No git yet?** Connect says so and offers to install it: Apple's Command
+  Line Tools on macOS (in Apple's own dialog), winget on Windows (which asks to
+  allow it), or the command for your distribution on Linux, to run in a
+  terminal. A git that is too old or does not work is said too.
+- shellwing keeps a clone of its own in the cache folder and never merges with
+  Git: each sync fetches, sets the clone to what the repository has, merges
+  field by field as with a folder, then commits (`Sync from <device>`, as
+  `shellwing`) and pushes. A push refused because another device pushed first
+  is done again over theirs.
+- git never waits for a password where nobody can type it: SSH runs with
+  `BatchMode` (unless you set how SSH runs for git), so a server whose key SSH
+  does not know yet is said; connect to it once with ssh to accept it. Your
+  own hooks and commit signing are left out of these commits.
+- Each change is a small commit. The history grows by a few KB a change, which
+  is fine for years.
 
 - **The first device** creates a **recovery key** (13 groups of 4 characters) and
   shows it: write it down. *Show the recovery key* shows it again.

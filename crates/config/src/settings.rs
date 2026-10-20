@@ -121,6 +121,9 @@ pub struct Sync {
     /// S3-compatible storage instead (AWS, R2, B2, MinIO, Wasabi). Its secret
     /// key is in the vault, this device's own.
     pub s3: Option<S3Sync>,
+    /// A Git repository instead, through the system's git. A token, if one
+    /// is used, is in the vault, this device's own.
+    pub git: Option<GitSync>,
     /// The settings that are not this device's own sync too
     /// ([`crate::settings_sync::SYNCED`]).
     pub settings: bool,
@@ -132,6 +135,7 @@ impl Default for Sync {
             folder: None,
             webdav: None,
             s3: None,
+            git: None,
             settings: true,
         }
     }
@@ -152,7 +156,10 @@ impl Sync {
         if let Some(w) = &self.webdav {
             return Some(SyncPlace::WebDav(w.clone()));
         }
-        self.s3.clone().map(SyncPlace::S3)
+        if let Some(s3) = &self.s3 {
+            return Some(SyncPlace::S3(s3.clone()));
+        }
+        self.git.clone().map(SyncPlace::Git)
     }
 }
 
@@ -179,12 +186,26 @@ pub struct S3Sync {
     pub access_key: String,
 }
 
+/// `[sync] git`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct GitSync {
+    /// `https://github.com/you/vault.git` or `git@github.com:you/vault.git`.
+    pub url: String,
+    /// Empty: the repository's default.
+    pub branch: String,
+    /// Who a token signs in as, where the host needs it (Gitea); empty:
+    /// any, as GitHub and GitLab take.
+    pub user: String,
+}
+
 /// Where the vault syncs, as `[sync]` says; secrets are not in it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SyncPlace {
     Folder(std::path::PathBuf),
     WebDav(WebDavSync),
     S3(S3Sync),
+    Git(GitSync),
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]

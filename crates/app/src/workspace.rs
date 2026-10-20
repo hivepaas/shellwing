@@ -1319,7 +1319,7 @@ impl Workspace {
                 action(
                     Action::SyncServer,
                     "Sync passwords with a server…".into(),
-                    "WebDAV (Nextcloud, Synology), S3 (AWS, R2, B2, MinIO)".into(),
+                    "WebDAV (Nextcloud, Synology), S3 (AWS, R2, B2), Git".into(),
                 );
             }
         }
@@ -1905,7 +1905,7 @@ impl Workspace {
     pub fn connect_sync(
         &mut self,
         place: SyncPlace,
-        secret: String,
+        secret: Option<String>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -1916,7 +1916,9 @@ impl Workspace {
                 .unwrap_or_else(|| "it is still opening".into());
             return self.say(format!("Cannot sync: the vault: {why}."), CONFIG_NOTICE, cx);
         };
-        if let Err(e) = vault.set_device_secret(crate::syncing::PLACE_SECRET, Some(&secret)) {
+        // None: none (a Git repository git signs in to by itself), not the
+        // last place's.
+        if let Err(e) = vault.set_device_secret(crate::syncing::PLACE_SECRET, secret.as_deref()) {
             return self.say(format!("Cannot keep the password: {e}"), CONFIG_NOTICE, cx);
         }
         self.sync_with(place, window, cx);
@@ -1970,7 +1972,7 @@ impl Workspace {
     fn at_place<T: Send + 'static>(
         &mut self,
         place: SyncPlace,
-        work: impl FnOnce(
+        work: impl FnMut(
             &shellwing_vault::Vault,
             &dyn shellwing_vault::Backend,
         ) -> shellwing_vault::Result<T>
@@ -1990,7 +1992,10 @@ impl Workspace {
         };
         let job = cx.background_spawn(async move {
             let backend = crate::syncing::open(&place, &vault)?;
-            work(&vault, backend.as_ref())
+            // Over what others published, and published after (Git); done
+            // again over theirs if they published first.
+            let mut work = work;
+            shellwing_vault::transact(backend.as_ref(), |b| work(&vault, b))
         });
         cx.spawn_in(window, async move |this, cx| {
             let done = job.await;
@@ -3032,6 +3037,11 @@ impl Workspace {
             return;
         }
         self.say(problems.join("\n"), CONFIG_NOTICE, cx);
+    }
+
+    /// A notice, from a view of its own (the Settings page).
+    pub fn notice(&mut self, msg: String, cx: &mut Context<Self>) {
+        self.say(msg, CONFIG_NOTICE, cx);
     }
 
     fn say(&mut self, msg: String, shown: Duration, cx: &mut Context<Self>) {

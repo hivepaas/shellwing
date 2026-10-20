@@ -36,7 +36,7 @@ pub use keychain::OsKeychain;
 pub use keychain::{KeyStore, MemoryKeys};
 pub use pairing::{Answerer, Ask, AskState, Request};
 pub use recovery::RecoveryKey;
-pub use sync::{Backend, Folder, FolderState, SyncReport};
+pub use sync::{Backend, Folder, FolderState, SyncReport, transact};
 
 const KEY_LEN: usize = 32;
 const SPACE: &str = "personal";

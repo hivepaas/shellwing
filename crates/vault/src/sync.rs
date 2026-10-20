@@ -31,7 +31,49 @@ pub trait Backend: Send + Sync {
     fn read(&self, name: &str) -> io::Result<Option<Vec<u8>>>;
     fn write(&self, name: &str, data: &[u8]) -> io::Result<()>;
     fn remove(&self, name: &str) -> io::Result<()>;
+    /// Writes `name` only if it is still as this backend last saw it (in a
+    /// listing or a read): unchanged since, or still absent. `Ok(false)`:
+    /// another device wrote it meanwhile, and reading it now gives theirs.
+    /// A backend that cannot tell (a folder) just writes.
+    fn replace(&self, name: &str, data: &[u8]) -> io::Result<bool> {
+        self.write(name, data).map(|()| true)
+    }
+    /// Takes in what other devices published (a Git fetch), dropping what
+    /// this one wrote and did not publish. A folder or a server has nothing
+    /// to do: what is written there is published.
+    fn refresh(&self) -> io::Result<()> {
+        Ok(())
+    }
+    /// Publishes what this device wrote since the last refresh (a Git commit
+    /// and push). `Ok(false)`: another device published first; refresh and
+    /// do it again.
+    fn publish(&self) -> io::Result<bool> {
+        Ok(true)
+    }
 }
+
+/// Tries at publishing, each over what the others published just before.
+const PUBLISH_TRIES: usize = 3;
+
+/// Runs `op` against `b` as one change: over what others published, and
+/// published at the end; done again over theirs if they published first.
+/// Not nested: an inner one's refresh would drop the outer one's writes.
+pub fn transact<T>(b: &dyn Backend, mut op: impl FnMut(&dyn Backend) -> Result<T>) -> Result<T> {
+    for _ in 0..PUBLISH_TRIES {
+        b.refresh()?;
+        let done = op(b)?;
+        if b.publish()? {
+            return Ok(done);
+        }
+    }
+    Err(Error::Io(io::Error::other(
+        "other devices kept publishing first; trying again at the next sync",
+    )))
+}
+
+/// Tries at writing a record that others keep writing meanwhile, in one
+/// sync; the next one tries again.
+const REPLACE_TRIES: usize = 3;
 
 /// A folder on disk: iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a
 /// network share. Files go in `<folder>/shellwing/`.
@@ -413,6 +455,11 @@ impl Vault {
 
     /// Merges this vault with the store, both ways.
     pub fn sync(&self, b: &dyn Backend) -> Result<SyncReport> {
+        transact(b, |b| self.sync_round(b))
+    }
+
+    /// One sync, over the files as they are now.
+    fn sync_round(&self, b: &dyn Backend) -> Result<SyncReport> {
         match self.folder_state(b)? {
             FolderState::Ours => {}
             FolderState::Empty => return Err(Error::NotSynced),
@@ -429,22 +476,10 @@ impl Vault {
             let Some(bytes) = b.read(&format!("{RECORDS}/{name}"))? else {
                 continue;
             };
-            let env: Envelope = serde_json::from_slice(&bytes)?;
-            if env.id != id || env.space != SPACE || !matches!(env.kind.as_str(), "host" | "other")
-            {
+            let Some((kind, version)) = self.version_in(&id, &bytes)? else {
                 continue;
-            }
-            kinds.entry(id.clone()).or_insert_with(|| env.kind.clone());
-            let version = match env.data {
-                Some(d) => {
-                    let sealed = B64.decode(d).map_err(|_| Error::Decrypt)?;
-                    let (plain, _) =
-                        cipher::open(&self.sk(), &sealed, &crate::record_aad(&id, &env.kind))?;
-                    Version::Live(serde_json::from_slice(&plain)?)
-                }
-                None => Version::Gone(env.hlc.clone()),
             };
-            self.clock.observe(version.newest());
+            kinds.entry(id.clone()).or_insert(kind);
             remote.entry(id).or_default().push((name, version));
         }
         let mut local: BTreeMap<String, Version> = BTreeMap::new();
@@ -490,10 +525,22 @@ impl Vault {
             let up_to_date =
                 there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
             if !up_to_date {
-                b.write(
-                    &format!("{RECORDS}/{canonical}"),
-                    &self.envelope(&id, &kind, &merged)?,
-                )?;
+                let path = format!("{RECORDS}/{canonical}");
+                let mut merged = merged;
+                for _ in 0..REPLACE_TRIES {
+                    if b.replace(&path, &self.envelope(&id, &kind, &merged)?)? {
+                        break;
+                    }
+                    // Another device wrote it since the listing: theirs
+                    // goes in, and the write is tried again.
+                    if let Some(bytes) = b.read(&path)?
+                        && let Some((_, theirs)) = self.version_in(&id, &bytes)?
+                    {
+                        merged = merge(merged, theirs);
+                        self.store_version(&id, &kind, &merged)?;
+                        report.pulled += 1;
+                    }
+                }
                 for (name, _) in &there {
                     if *name != canonical {
                         b.remove(&format!("{RECORDS}/{name}"))?;
@@ -503,6 +550,26 @@ impl Vault {
             }
         }
         Ok(report)
+    }
+
+    /// The record `id` in a synced file's `bytes`, with its clear kind; None
+    /// for a file that is not one of this space's records.
+    fn version_in(&self, id: &str, bytes: &[u8]) -> Result<Option<(String, Version)>> {
+        let env: Envelope = serde_json::from_slice(bytes)?;
+        if env.id != id || env.space != SPACE || !matches!(env.kind.as_str(), "host" | "other") {
+            return Ok(None);
+        }
+        let version = match env.data {
+            Some(d) => {
+                let sealed = B64.decode(d).map_err(|_| Error::Decrypt)?;
+                let (plain, _) =
+                    cipher::open(&self.sk(), &sealed, &crate::record_aad(id, &env.kind))?;
+                Version::Live(serde_json::from_slice(&plain)?)
+            }
+            None => Version::Gone(env.hlc.clone()),
+        };
+        self.clock.observe(version.newest());
+        Ok(Some((env.kind, version)))
     }
 
     fn envelope(&self, id: &str, kind: &str, v: &Version) -> Result<Vec<u8>> {
@@ -722,6 +789,79 @@ mod tests {
         a.let_passphrase_join(&folder, None).expect("stop");
         a.sync(&folder).expect("sync");
         assert!(!b.passphrase_joins(&folder).expect("read"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A folder where another device writes between this one's listing and
+    /// its write, as a server's conditional write would report.
+    struct Racing<'a> {
+        inner: Folder,
+        meanwhile: std::sync::Mutex<Option<Box<dyn FnOnce() + Send + 'a>>>,
+    }
+
+    impl Backend for Racing<'_> {
+        fn list(&self, dir: &str) -> io::Result<Vec<String>> {
+            self.inner.list(dir)
+        }
+        fn read(&self, name: &str) -> io::Result<Option<Vec<u8>>> {
+            self.inner.read(name)
+        }
+        fn write(&self, name: &str, data: &[u8]) -> io::Result<()> {
+            self.inner.write(name, data)
+        }
+        fn remove(&self, name: &str) -> io::Result<()> {
+            self.inner.remove(name)
+        }
+        fn replace(&self, name: &str, data: &[u8]) -> io::Result<bool> {
+            let other = name
+                .starts_with("records/")
+                .then(|| self.meanwhile.lock().expect("lock").take())
+                .flatten();
+            match other {
+                Some(write_theirs) => {
+                    write_theirs();
+                    Ok(false)
+                }
+                None => self.inner.replace(name, data),
+            }
+        }
+    }
+
+    #[test]
+    fn a_record_written_meanwhile_is_taken_in_before_writing_again() {
+        let dir = temp("racing");
+        let folder = Folder::new(&dir.join("shared"));
+        let (keys_a, keys_b) = (MemoryKeys::default(), MemoryKeys::default());
+        let a = Vault::open(&dir.join("a.db"), &keys_a).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &keys_b).expect("b");
+        a.set_password("deploy@web", "first").expect("save");
+        let rk = a.start_sync(&folder).expect("start").to_string();
+        a.sync(&folder).expect("sync a");
+        b.join(&folder, &rk).expect("join");
+        b.sync(&folder).expect("sync b");
+
+        // A changes it; B changes it later, and writes it while A syncs.
+        a.set_password("deploy@web", "from-a").expect("edit a");
+        // Later by the clock: B's edit is the newer.
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        b.set_password("deploy@web", "from-b").expect("edit b");
+        let racing = Racing {
+            inner: Folder::new(&dir.join("shared")),
+            meanwhile: std::sync::Mutex::new(Some(Box::new(|| {
+                b.sync(&Folder::new(&dir.join("shared")))
+                    .expect("b meanwhile");
+            }))),
+        };
+        let report = a.sync(&racing).expect("sync a");
+        assert!(report.pulled >= 1, "B's write was taken in: {report:?}");
+        let pw = |v: &Vault| {
+            v.password("deploy@web")
+                .expect("read")
+                .map(|p| p.to_string())
+        };
+        assert_eq!(pw(&a).as_deref(), Some("from-b"), "the newer edit, at once");
+        b.sync(&folder).expect("sync b");
+        assert_eq!(pw(&b).as_deref(), Some("from-b"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

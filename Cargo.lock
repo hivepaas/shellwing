@@ -7647,11 +7647,14 @@ dependencies = [
 name = "shellwing-remote"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "dav-server",
+ "dirs 7.0.0",
  "hyper",
  "hyper-util",
  "opendal",
  "opendal-http-transport-reqwest",
+ "reqwest",
  "rustls",
  "s3s",
  "s3s-fs",
