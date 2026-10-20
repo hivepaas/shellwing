@@ -243,6 +243,11 @@ struct EnvLoad {
 const ENV_WAIT: Duration = Duration::from_secs(15);
 
 /// A word for one load's signals, unlike any other in the pane.
+/// The lines that carry `sent`'s values, in turn.
+fn lines(sent: Vec<crate::environment::Sent>) -> Vec<zeroize::Zeroizing<String>> {
+    sent.into_iter().flat_map(|s| s.lines).collect()
+}
+
 fn env_nonce() -> String {
     static N: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -571,19 +576,19 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (names, values) = Self::env_values(values)?;
+        let (names, sent) = Self::env_values(values)?;
         let (ready, done) = (
             format!("ready-{}", env_nonce()),
             format!("done-{}", env_nonce()),
         );
         self.term
-            .text(crate::environment::load(&names, &ready, &done));
+            .text(crate::environment::load(&sent, &ready, &done));
         self.term.key(NamedKey::Enter, Mods::default());
         self.wait_for(
             EnvLoad {
                 ready,
                 done: Some(done),
-                values,
+                values: lines(sent),
                 env: Some(LoadedEnv { names, ..env }),
             },
             cx,
@@ -603,9 +608,9 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (names, values) = Self::env_values(values)?;
+        let (_, sent) = Self::env_values(values)?;
         let ready = format!("ready-{}", env_nonce());
-        let text = crate::environment::wrapped(&names, &ready, command.trim_end_matches('\n'));
+        let text = crate::environment::wrapped(&sent, &ready, command.trim_end_matches('\n'));
         // Several lines: one paste, so it runs whole at the Enter.
         self.term.paste(text, true);
         if enter {
@@ -615,7 +620,7 @@ impl TermView {
             EnvLoad {
                 ready,
                 done: None,
-                values,
+                values: lines(sent),
                 env: None,
             },
             cx,
@@ -641,23 +646,25 @@ impl TermView {
         Ok(())
     }
 
-    /// The names and values to send, each value one line.
+    /// The variables to send, each value as its lines; the names too.
     fn env_values(
         values: shellwing_vault::EnvValues,
-    ) -> Result<(Vec<String>, Vec<zeroize::Zeroizing<String>>), String> {
+    ) -> Result<(Vec<String>, Vec<crate::environment::Sent>), String> {
         if values.is_empty() {
             return Err(tr!("It has no variables."));
         }
         if let Some((n, _)) = values
             .iter()
-            .find(|(n, v)| !crate::environment::valid_name(n) || !crate::environment::sendable(v))
+            .find(|(n, _)| !crate::environment::valid_name(n))
         {
-            return Err(tr!(
-                "{name} cannot be loaded: a value of one line is needed.",
-                name = n.clone()
-            ));
+            return Err(tr!("{name} is not a variable's name.", name = n.clone()));
         }
-        Ok(values.into_iter().unzip())
+        let names = values.iter().map(|(n, _)| n.clone()).collect();
+        let sent = values
+            .iter()
+            .map(|(n, v)| crate::environment::encode(n, v))
+            .collect();
+        Ok((names, sent))
     }
 
     /// Keeps `load` until the shell signals, or gives it up after a while.

@@ -8,7 +8,6 @@ use gpui::{
 use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
-use crate::environment;
 use crate::host_editor::{
     checkbox, hint_text, label_text, outline_button, primary_button, problem_text,
 };
@@ -18,6 +17,8 @@ use crate::secrets::VaultSlot;
 use crate::snippets::{self, Scope, Snippet};
 use crate::workspace::Workspace;
 use shellwing_vault::Environment;
+
+mod environments;
 
 /// Which list of the scope is open.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -30,9 +31,8 @@ impl Dialog {
     /// The scope being chosen, and which of its lists is open.
     fn scope(&mut self) -> Option<(&mut Scope, &mut Option<Pick>)> {
         match self {
-            Dialog::Edit { scope, pick, .. } | Dialog::EditEnv { scope, pick, .. } => {
-                Some((scope, pick))
-            }
+            Dialog::Edit { scope, pick, .. } => Some((scope, pick)),
+            Dialog::EditEnv(e) => Some((&mut e.scope, &mut e.pick)),
             _ => None,
         }
     }
@@ -55,17 +55,7 @@ enum Dialog {
     Delete {
         snippet: Snippet,
     },
-    EditEnv {
-        id: String,
-        name: Entity<TextInput>,
-        /// `NAME=value` lines; a value left empty keeps the one it had.
-        vars: Entity<TextInput>,
-        scope: Scope,
-        pick: Option<Pick>,
-        /// The names it had, which keep their values when left empty.
-        had: Vec<String>,
-        problem: Option<String>,
-    },
+    EditEnv(Box<environments::EnvEdit>),
     DeleteEnv {
         env: Environment,
     },
@@ -300,125 +290,6 @@ impl SnippetsView {
         }
     }
 
-    fn edit_env(&mut self, e: Option<Environment>, window: &mut Window, cx: &mut Context<Self>) {
-        let e = e.unwrap_or(Environment {
-            id: String::new(),
-            name: String::new(),
-            scope: String::new(),
-            names: vec![],
-        });
-        let name = Self::input(
-            || tr!("What they are for, such as AWS production"),
-            &e.name,
-            cx,
-        );
-        let text = environment::names_as_dotenv(&e.names);
-        let vars = cx.new(|cx| {
-            let mut i =
-                TextInput::said(|| "AWS_ACCESS_KEY_ID=AKIA…".to_string(), cx).multiline(3, 10);
-            i.set_text(&text, text.len()..text.len(), cx);
-            i
-        });
-        let first = if e.name.is_empty() {
-            name.clone()
-        } else {
-            vars.clone()
-        };
-        self.dialog = Some(Dialog::EditEnv {
-            id: e.id,
-            name,
-            vars,
-            scope: Scope::parse(&e.scope),
-            pick: None,
-            had: e.names,
-            problem: None,
-        });
-        let f = first.read(cx).focus_handle(cx);
-        window.focus(&f, cx);
-        cx.notify();
-    }
-
-    fn save_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::EditEnv {
-            id,
-            name,
-            vars,
-            scope,
-            had,
-            problem,
-            ..
-        }) = &mut self.dialog
-        else {
-            return;
-        };
-        let n = name.read(cx).text().trim().to_string();
-        let parsed = environment::parse_dotenv(vars.read(cx).text());
-        let said = match parsed {
-            _ if n.is_empty() => Err(tr!("A name is needed.")),
-            Err(e) => Err(tr!("Not NAME=value: {e}", e = e)),
-            Ok(v) if v.is_empty() => Err(tr!("Add a variable: NAME=value, one a line.")),
-            // Left empty keeps a value; a new name has none to keep.
-            Ok(v) => match v.iter().find(|(k, val)| val.is_none() && !had.contains(k)) {
-                Some((k, _)) => Err(tr!("{name} has no value.", name = k.as_str())),
-                None => Ok(v),
-            },
-        };
-        let vars = match said {
-            Ok(v) => v,
-            Err(e) => {
-                *problem = Some(e);
-                return cx.notify();
-            }
-        };
-        let (id, scope) = (id.clone(), scope.field());
-        let saved = self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| {
-                v.save_environment(&id, &n, &scope, &vars)
-                    .map_err(|e| e.to_string())
-            });
-        // What was typed goes from memory with the field.
-        if let Some(Dialog::EditEnv { vars, .. }) = &self.dialog {
-            vars.update(cx, |i, cx| i.set_text("", 0..0, cx));
-        }
-        match saved {
-            Ok(_) => {
-                self.close(window, cx);
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => {
-                if let Some(Dialog::EditEnv { problem, .. }) = &mut self.dialog {
-                    *problem = Some(tr!("Not saved: {e}", e = e));
-                }
-                cx.notify();
-            }
-        }
-    }
-
-    fn delete_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::DeleteEnv { env }) = &self.dialog else {
-            return;
-        };
-        let (id, name) = (env.id.clone(), env.name.clone());
-        let done = self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
-        match done {
-            Ok(()) => {
-                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
-        }
-    }
-
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         if self.dialog.is_none() {
             return;
@@ -428,7 +299,7 @@ impl SnippetsView {
             "enter" => match &self.dialog {
                 Some(Dialog::Edit { .. }) => self.save(window, cx),
                 Some(Dialog::Delete { .. }) => self.delete(window, cx),
-                Some(Dialog::EditEnv { .. }) => self.save_env(window, cx),
+                Some(Dialog::EditEnv(_)) => self.env_enter(window, cx),
                 Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
                 None => {}
             },
@@ -488,26 +359,33 @@ impl SnippetsView {
             .flex_col()
             .gap(px(5.))
             .child(label_text(title))
-            .child(
-                div()
-                    // One line high, or as many as a field of several lines has.
-                    .min_h(px(32.))
-                    .py(px(6.))
-                    .px(px(10.))
-                    .flex()
-                    .items_center()
-                    .rounded(px(6.))
-                    .border_1()
-                    .border_color(rgb(if focused {
-                        colors().accent
-                    } else {
-                        colors().field_edge
-                    }))
-                    .bg(rgb(colors().field))
-                    .text_size(ui(13.))
-                    .when_some(mono, |d, f| d.font_family(f))
-                    .child(input.clone()),
-            )
+            .child(Self::field_box(input, focused, mono))
+    }
+
+    /// A field's box, without its title.
+    fn field_box(
+        input: &Entity<TextInput>,
+        focused: bool,
+        mono: Option<SharedString>,
+    ) -> gpui::Div {
+        div()
+            // One line high, or as many as a field of several lines has.
+            .min_h(px(32.))
+            .py(px(6.))
+            .px(px(10.))
+            .flex()
+            .items_center()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(if focused {
+                colors().accent
+            } else {
+                colors().field_edge
+            }))
+            .bg(rgb(colors().field))
+            .text_size(ui(13.))
+            .when_some(mono, |d, f| d.font_family(f))
+            .child(input.clone())
     }
 
     fn rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
@@ -546,89 +424,6 @@ impl SnippetsView {
             out.push(self.row(i, s, first && filed, needs, cx));
         }
         out
-    }
-
-    fn env_rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        self.envs
-            .iter()
-            .enumerate()
-            .map(|(i, e)| {
-                let scope = Scope::parse(&e.scope);
-                let (edit, del) = (e.clone(), e.clone());
-                let used = self.list.iter().filter(|s| s.needs.contains(&e.id)).count();
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(12.))
-                    .px(px(12.))
-                    .py(px(10.))
-                    .when(i > 0, |d| d.border_t_1().border_color(rgb(colors().line)))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .flex()
-                            .flex_col()
-                            .gap(px(4.))
-                            .child(
-                                div()
-                                    .flex()
-                                    .items_center()
-                                    .gap(px(8.))
-                                    .child(
-                                        div().font_weight(FontWeight::MEDIUM).child(e.name.clone()),
-                                    )
-                                    .child(
-                                        div()
-                                            .px(px(6.))
-                                            .py(px(1.))
-                                            .rounded(px(4.))
-                                            .border_1()
-                                            .border_color(rgb(colors().field_edge))
-                                            .bg(rgb(colors().chip))
-                                            .text_size(ui(10.5))
-                                            .text_color(rgb(colors().soft))
-                                            .child(scope.label()),
-                                    )
-                                    .when(used > 0, |d| {
-                                        d.child(
-                                            div()
-                                                .text_size(ui(11.))
-                                                .text_color(rgb(colors().muted))
-                                                .child(tr_n!(
-                                                    used,
-                                                    "needed by {n} snippet",
-                                                    "needed by {n} snippets"
-                                                )),
-                                        )
-                                    }),
-                            )
-                            .child(
-                                div()
-                                    .font_family(self.mono.clone())
-                                    .text_size(ui(12.))
-                                    .text_color(rgb(colors().soft))
-                                    .overflow_hidden()
-                                    .text_ellipsis()
-                                    .whitespace_nowrap()
-                                    .child(e.names.join("  ")),
-                            ),
-                    )
-                    .child(Self::small(("env-edit", i), &tr!("Edit…")).on_click(
-                        cx.listener(move |v, _, w, cx| v.edit_env(Some(edit.clone()), w, cx)),
-                    ))
-                    .child(
-                        Self::small(("env-delete", i), &tr!("Delete"))
-                            .text_color(rgb(colors().bad))
-                            .on_click(cx.listener(move |v, _, w, cx| {
-                                v.dialog = Some(Dialog::DeleteEnv { env: del.clone() });
-                                window_focus(&v.focus, w, cx);
-                                cx.notify();
-                            })),
-                    )
-                    .into_any_element()
-            })
-            .collect()
     }
 
     fn row(
@@ -857,6 +652,30 @@ impl SnippetsView {
         scope_box
     }
 
+    /// Cancel, and `ok` for what the dialog is for.
+    fn buttons(ok: &str, cx: &mut Context<Self>) -> gpui::Div {
+        div()
+            .flex()
+            .justify_end()
+            .gap(px(8.))
+            .pt(px(2.))
+            .child(
+                outline_button("snippet-cancel", &tr!("Cancel"))
+                    .on_click(cx.listener(|v, _, w, cx| v.close(w, cx))),
+            )
+            .child(
+                primary_button("snippet-ok", ok).on_click(cx.listener(
+                    |v, _, w, cx| match &v.dialog {
+                        Some(Dialog::Edit { .. }) => v.save(w, cx),
+                        Some(Dialog::Delete { .. }) => v.delete(w, cx),
+                        Some(Dialog::EditEnv(_)) => v.save_env(w, cx),
+                        Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
+                        None => {}
+                    },
+                )),
+            )
+    }
+
     fn dialog_card(
         &self,
         window: &mut Window,
@@ -880,34 +699,8 @@ impl SnippetsView {
             .shadow_lg()
             .text_color(rgb(colors().text))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation());
-        let title = |s: &str| {
-            div()
-                .text_size(ui(16.))
-                .font_weight(FontWeight::SEMIBOLD)
-                .child(s.to_string())
-        };
-        let buttons = |ok: &str, cx: &mut Context<Self>| {
-            div()
-                .flex()
-                .justify_end()
-                .gap(px(8.))
-                .pt(px(2.))
-                .child(
-                    outline_button("snippet-cancel", &tr!("Cancel"))
-                        .on_click(cx.listener(|v, _, w, cx| v.close(w, cx))),
-                )
-                .child(
-                    primary_button("snippet-ok", ok).on_click(cx.listener(|v, _, w, cx| {
-                        match &v.dialog {
-                            Some(Dialog::Edit { .. }) => v.save(w, cx),
-                            Some(Dialog::Delete { .. }) => v.delete(w, cx),
-                            Some(Dialog::EditEnv { .. }) => v.save_env(w, cx),
-                            Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
-                            None => {}
-                        }
-                    })),
-                )
-        };
+        let title = dialog_title;
+        let buttons = Self::buttons;
         Some(match d {
             Dialog::Delete { snippet } => card
                 .child(title(&tr!("Delete {name}?", name = snippet.name.as_str())))
@@ -931,57 +724,7 @@ impl SnippetsView {
                         )),
                 )
                 .child(buttons(&tr!("Delete"), cx)),
-            Dialog::EditEnv {
-                id,
-                name,
-                vars,
-                scope,
-                pick,
-                problem,
-                ..
-            } => {
-                let save = if cfg!(target_os = "macos") {
-                    "Cmd+Enter"
-                } else {
-                    "Ctrl+Enter"
-                };
-                let scope_box = self.scope_box(scope, pick, cx).child(hint_text(&tr!(
-                    "The palette offers to load it in panes of those hosts only."
-                )));
-                let focused =
-                    |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
-                let mut b = card
-                    .child(title(&if id.is_empty() {
-                        tr!("New environment")
-                    } else {
-                        tr!("Edit environment")
-                    }))
-                    .child(Self::field(&tr!("Name"), name, focused(name), None))
-                    .child(
-                        Self::field(
-                            &tr!("Variables"),
-                            vars,
-                            focused(vars),
-                            Some(self.mono.clone()),
-                        )
-                        .child(hint_text(&if id.is_empty() {
-                            tr!(
-                                "NAME=value, one a line, or paste a .env file. {save} saves.",
-                                save = save
-                            )
-                        } else {
-                            tr!(
-                                "Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.",
-                                save = save
-                            )
-                        })),
-                    )
-                    .child(scope_box);
-                if let Some(p) = problem {
-                    b = b.child(problem_text(p));
-                }
-                b.child(buttons(&tr!("Save"), cx))
-            }
+            Dialog::EditEnv(e) => self.env_card(e, card, window, cx),
             Dialog::Edit {
                 id,
                 name,
@@ -1143,6 +886,13 @@ impl SnippetsView {
             }
         })
     }
+}
+
+fn dialog_title(s: &str) -> gpui::Div {
+    div()
+        .text_size(ui(16.))
+        .font_weight(FontWeight::SEMIBOLD)
+        .child(s.to_string())
 }
 
 fn window_focus(f: &FocusHandle, window: &mut Window, cx: &mut Context<SnippetsView>) {

@@ -1609,26 +1609,35 @@ t0d325d34 = ホスト
 # every host
 t444612de = すべてのホスト
 
-# What it does, to find it in the palette
-td9b8e02f = パレットで探すための説明
-
-# A name and a command are needed.
-t7f4c69bb = 名前とコマンドが必要です。
+# value
+t425ed3ca = 値
 
 # What they are for, such as AWS production
 tb620b1e5 = 用途、たとえば AWS 本番
 
-# Not NAME=value: {e}
-t65a67e1e = NAME=value の形式ではありません: { $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } は変数名として使えません。
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = 変数を追加します: NAME=value を 1 行に 1 つ。
+# {name} is there twice.
+te1458d84 = { $name } が重複しています。
 
 # {name} has no value.
 t387a8908 = { $name } には値がありません。
 
-# No category
-t44662d06 = カテゴリなし
+# Add a variable: a name and its value.
+t6150163b = 変数を追加してください：名前と値。
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = クリップボードに NAME=value の行がありません。
+
+# Not NAME=value: {e}
+t65a67e1e = NAME=value の形式ではありません: { $e }
+
+# The vault's passphrase
+tb66334ea = 保管庫のパスフレーズ
+
+# Wrong passphrase.
+t2ebec270 = パスフレーズが違います。
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1638,6 +1647,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = 編集…
+
+# Change
+ta1de2fdd = 変更
+
+# Show values
+t68f568ba = 値を表示
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = 保管庫の値はマスクされています。表示するには本人確認が必要です。
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = システムのダイアログで本人確認してください…
+
+# Hide values
+tab6d76ed = 値を隠す
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = 画面に表示されています。画面共有に注意してください。1 分後に再びマスクされます。
+
+# The vault's passphrase, to show the values
+teecb1d4f = 値を表示するための保管庫のパスフレーズ
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 保管庫はパスフレーズで保護されていないため、このデバイスを使う人なら誰でも表示できます。値を表示しますか？
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = パレットでは、これらのホストのペインにのみ読み込みを提案します。
+
+# Variables
+t7996f062 = 変数
+
+# Add a variable
+tf53dee25 = 変数を追加
+
+# Paste a .env file
+tf0c57252 = .env ファイルを貼り付け
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = 値は複数行にできます：Enter で改行、{ $save } で保存。
+
+# New environment
+tf3955dbc = 新しい環境
+
+# Edit environment
+t79646cbc = 環境を編集
+
+# What it does, to find it in the palette
+td9b8e02f = パレットで探すための説明
+
+# A name and a command are needed.
+t7f4c69bb = 名前とコマンドが必要です。
+
+# No category
+t44662d06 = カテゴリなし
 
 # typed, not run
 td4e41905 = 入力のみ（実行しない）
@@ -1668,24 +1731,6 @@ t3c6666da = 保管庫から削除され、同期後は他のデバイスから�
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = パレットでは、これらのホストのペインにのみ読み込みを提案します。
-
-# New environment
-tf3955dbc = 新しい環境
-
-# Edit environment
-t79646cbc = 環境を編集
-
-# Variables
-t7996f062 = 変数
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value を 1 行に 1 つ入力するか、.env ファイルを貼り付けます。{ $save } で保存します。
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = 値は表示されません。空のままにすると現在の値を保持し、入力すると変更します。行を削除すると、その変数も削除されます。{ $save } で保存します。
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
@@ -1893,9 +1938,6 @@ t20301272 = このペインではフルスクリーンのプログラムが動�
 
 # It has no variables.
 t0993a534 = 変数がありません。
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = { $name } を読み込めません: 1 行の値が必要です。
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = シェルが変数を受け取りませんでした。プロンプトの状態でないか、POSIX シェル（sh、bash、zsh）ではありません。

@@ -560,10 +560,15 @@ it will run.
 Environments are named sets of variables for the shell, such as an API's
 keys: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. They are kept in the vault,
 encrypted, and sync with it. Make them in *Settings › Environments*: a name, the
-hosts they are offered for, and the variables as `.env` text (`NAME=value` a
-line; `export`, `#` comments and quotes are taken; paste a `.env` file as is).
-Once saved, values are never shown: editing lists the names, and a value left
-empty keeps the one it had.
+hosts they are offered for, and the variables, a name and a value a row. A value
+can take several lines (a PEM key, say): Enter starts another, Ctrl+Enter
+(Cmd+Enter on macOS) saves. **Paste a .env file** fills the rows from `.env`
+text on the clipboard (`export`, `#` comments and quotes are taken).
+
+Once saved, values are masked: editing shows the names, and a masked value is
+kept unless you change it. **Show values** shows them, after asking it is you:
+Windows Hello or Touch ID where it opens the vault, else the vault's
+passphrase; with neither, a yes. They are masked again a minute later.
 
 Nothing is loaded by itself. You choose when, and what:
 
@@ -575,12 +580,12 @@ Nothing is loaded by itself. You choose when, and what:
 
 To load, shellwing types a command that turns the terminal's echo off, says it
 is ready (with an escape sequence its terminal reads and never shows), and only
-then sends the values, one a line, for `read` to take. The command holds the
-names only, and starts with a space, which keeps it out of the history of
+then sends the values for `read` to take: as lines of printable ASCII, with a
+newline, a control character or a byte past ASCII written `\0ooo` for the
+shell's `printf %b` to turn back. The command holds the names only, and starts with a space, which keeps it out of the history of
 bash (with `HISTCONTROL=ignorespace`, the default on most systems) and zsh
 (with `HIST_IGNORE_SPACE`). A POSIX shell (sh, bash, zsh) at its prompt is
-needed; not while a full-screen program runs; fish is not supported yet. A
-value takes one line.
+needed; not while a full-screen program runs; fish is not supported yet.
 
 While loaded, the variables are in the shell's memory on the server: whoever
 has root there, or runs as your user, can read them, until they are unloaded or

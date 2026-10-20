@@ -224,6 +224,24 @@ impl VaultSlot {
         self.unlock(Unlock::Presence(&p))
     }
 
+    /// Checks it is the user before a secret shows: with Windows Hello or
+    /// Touch ID where it opens the vault (`passphrase` None), else with the
+    /// vault's passphrase. Blocks on the system's prompt or the KDF.
+    pub fn confirm(&self, passphrase: Option<&str>) -> Result<(), shellwing_vault::Error> {
+        let vault = self
+            .ready()
+            .ok_or(shellwing_vault::Error::Locked(Lock::Passphrase))?;
+        match passphrase {
+            Some(p) => vault.confirm(Unlock::Passphrase(p)),
+            None => {
+                let p = self
+                    .presence()
+                    .ok_or(shellwing_vault::Error::Locked(Lock::Passphrase))?;
+                vault.confirm(Unlock::Presence(&p))
+            }
+        }
+    }
+
     /// Lets the user's presence open the vault on this device, or (`false`)
     /// stops it: blocks on the system's prompt.
     pub fn set_presence(&self, on: bool) -> Result<(), String> {

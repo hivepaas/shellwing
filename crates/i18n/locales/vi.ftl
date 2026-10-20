@@ -1609,26 +1609,35 @@ t0d325d34 = MÁY CHỦ
 # every host
 t444612de = mọi máy chủ
 
-# What it does, to find it in the palette
-td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
-
-# A name and a command are needed.
-t7f4c69bb = Cần có tên và lệnh.
+# value
+t425ed3ca = giá trị
 
 # What they are for, such as AWS production
 tb620b1e5 = Dùng cho việc gì, ví dụ AWS production
 
-# Not NAME=value: {e}
-t65a67e1e = Không đúng dạng NAME=value: { $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } không phải tên biến hợp lệ.
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = Thêm một biến: NAME=value, mỗi dòng một biến.
+# {name} is there twice.
+te1458d84 = { $name } bị trùng.
 
 # {name} has no value.
 t387a8908 = { $name } chưa có giá trị.
 
-# No category
-t44662d06 = Chưa phân loại
+# Add a variable: a name and its value.
+t6150163b = Thêm một biến: tên và giá trị của nó.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = Clipboard không có dòng NAME=value nào.
+
+# Not NAME=value: {e}
+t65a67e1e = Không đúng dạng NAME=value: { $e }
+
+# The vault's passphrase
+tb66334ea = Passphrase của kho
+
+# Wrong passphrase.
+t2ebec270 = Sai passphrase.
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1638,6 +1647,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = Sửa…
+
+# Change
+ta1de2fdd = Đổi
+
+# Show values
+t68f568ba = Hiện giá trị
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Giá trị lưu trong kho được che; muốn hiện sẽ phải xác nhận là bạn.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
+
+# Hide values
+tab6d76ed = Ẩn giá trị
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Giá trị đang hiện trên màn hình: cẩn thận khi chia sẻ màn hình. Một phút nữa sẽ tự che lại.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Passphrase của kho, để hiện giá trị
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng hiện được. Hiện giá trị?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = Bảng lệnh chỉ đề nghị nạp nó trong các pane của những máy chủ đó.
+
+# Variables
+t7996f062 = Biến
+
+# Add a variable
+tf53dee25 = Thêm biến
+
+# Paste a .env file
+tf0c57252 = Dán tệp .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Giá trị có thể nhiều dòng: Enter để xuống dòng, { $save } để lưu.
+
+# New environment
+tf3955dbc = Bộ biến mới
+
+# Edit environment
+t79646cbc = Sửa bộ biến
+
+# What it does, to find it in the palette
+td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
+
+# A name and a command are needed.
+t7f4c69bb = Cần có tên và lệnh.
+
+# No category
+t44662d06 = Chưa phân loại
 
 # typed, not run
 td4e41905 = chỉ gõ, không chạy
@@ -1668,24 +1731,6 @@ t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác c�
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = Bảng lệnh chỉ đề nghị nạp nó trong các pane của những máy chủ đó.
-
-# New environment
-tf3955dbc = Bộ biến mới
-
-# Edit environment
-t79646cbc = Sửa bộ biến
-
-# Variables
-t7996f062 = Biến
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value, mỗi dòng một biến, hoặc dán tệp .env. { $save } để lưu.
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = Giá trị không bao giờ được hiện: để trống thì giữ giá trị cũ; gõ giá trị mới để thay. Xoá một dòng là xoá biến đó. { $save } để lưu.
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
@@ -1893,9 +1938,6 @@ t20301272 = Một chương trình toàn màn hình đang chạy trong pane này:
 
 # It has no variables.
 t0993a534 = Nó không có biến nào.
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = Không nạp được { $name }: giá trị phải nằm trên một dòng.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).

@@ -561,19 +561,40 @@ tc7a909aa = + New host
 t9585c651 = + Group
 t0d325d34 = HOSTS
 t444612de = every host
-td9b8e02f = What it does, to find it in the palette
-t7f4c69bb = A name and a command are needed.
+t425ed3ca = value
 tb620b1e5 = What they are for, such as AWS production
-t65a67e1e = Not NAME=value: { $e }
-tbff2467f = Add a variable: NAME=value, one a line.
+tdd2c4c4b = { $name } is not a variable's name.
+te1458d84 = { $name } is there twice.
 t387a8908 = { $name } has no value.
-t44662d06 = No category
+t6150163b = Add a variable: a name and its value.
+tbf497c49 = The clipboard holds no NAME=value lines.
+t65a67e1e = Not NAME=value: { $e }
+tb66334ea = The vault's passphrase
+t2ebec270 = Wrong passphrase.
 t79d75da2 =
     { $n ->
         [one] needed by { $n } snippet
        *[other] needed by { $n } snippets
     }
 t8e7efcd7 = Edit…
+ta1de2fdd = Change
+t68f568ba = Show values
+tf0365fc2 = Values kept in the vault are masked; showing them asks it is you.
+t3ab56316 = Confirm it is you in the system's prompt…
+tab6d76ed = Hide values
+td45dba68 = They show on screen: mind screen sharing. They are masked again in a minute.
+teecb1d4f = The vault's passphrase, to show the values
+tc7928fa4 = No passphrase guards the vault, so anyone at this device can show them. Show the values?
+t67715aad = The palette offers to load it in panes of those hosts only.
+t7996f062 = Variables
+tf53dee25 = Add a variable
+tf0c57252 = Paste a .env file
+ta46f6540 = A value can take several lines: Enter starts another, { $save } saves.
+tf3955dbc = New environment
+t79646cbc = Edit environment
+td9b8e02f = What it does, to find it in the palette
+t7f4c69bb = A name and a command are needed.
+t44662d06 = No category
 td4e41905 = typed, not run
 tba31f3bb = with { $envs }
 t77846bfe = Every host
@@ -584,12 +605,6 @@ t31c54e54 = No groups yet: make one in the host list.
 t71734b03 = No hosts yet.
 t3c6666da = It goes from the vault, and from your other devices once they sync.
 td2d90383 = Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-t67715aad = The palette offers to load it in panes of those hosts only.
-tf3955dbc = New environment
-t79646cbc = Edit environment
-t7996f062 = Variables
-tc682ceb0 = NAME=value, one a line, or paste a .env file. { $save } saves.
-t2aa2ecec = Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. { $save } saves.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
 t2d8c5e6d = Asked for when it runs:
 t883a11f4 = Enter starts another line; the lines run in turn. { $save } saves.
@@ -695,7 +710,6 @@ t6246d272 = Cmd+W close it
 t82a6adaf = Ctrl+W close it
 t20301272 = A full-screen program is running in this pane: leave it, then try again.
 t0993a534 = It has no variables.
-tc2bbea4b = { $name } cannot be loaded: a value of one line is needed.
 ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 t5bc879d1 = { $name } is loaded into this shell.
 tcc43a8d9 = Log saved: { $path }

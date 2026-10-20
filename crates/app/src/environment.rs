@@ -3,11 +3,12 @@
 //!
 //! A value never shows: shellwing types a command that turns the
 //! terminal's echo off and signals it is ready (an `OSC 777` shellwing's
-//! terminal reads and never draws), and only then sends the values, one
-//! per line, for `read` to take. The command itself holds the names only,
+//! terminal reads and never draws), and only then sends the values, as
+//! lines of printable ASCII for `read` to take (see [`encode`]). The command itself holds the names only,
 //! and starts with a space, which keeps it out of a bash history.
 
 use shellwing_term::signal_sequence;
+use zeroize::Zeroizing;
 
 /// A variable's name, as a POSIX shell takes it.
 pub fn valid_name(name: &str) -> bool {
@@ -54,51 +55,97 @@ pub fn parse_dotenv(text: &str) -> Result<Parsed, String> {
     Ok(vars)
 }
 
-/// What a set of names reads as `.env` text, for editing: the values left
-/// out (they are kept unless one is typed).
-pub fn names_as_dotenv(names: &[String]) -> String {
-    names.iter().map(|n| format!("{n}=\n")).collect()
+/// A variable as sent: its name, and the lines its value goes in.
+pub struct Sent {
+    pub name: String,
+    pub lines: Vec<Zeroizing<String>>,
 }
 
-/// The command that reads `names` with the echo off, signals `ready`, and
+/// The longest line a value is sent in: well under what a terminal's
+/// line discipline takes (4095 bytes on Linux).
+const LINE: usize = 512;
+
+/// `value` as lines of printable ASCII for `read` to take: a newline, a
+/// control character, a backslash or a byte past ASCII as `\0ooo`, which
+/// the shell's `printf %b` turns back. Each line starts with `>`; a `.`
+/// ends the value. Any value goes, of any length.
+pub fn encode(name: &str, value: &str) -> Sent {
+    let mut lines = vec![Zeroizing::new(String::new())];
+    for b in value.bytes() {
+        let piece = if (0x20..0x7f).contains(&b) && b != b'\\' {
+            (b as char).to_string()
+        } else {
+            format!("\\0{b:03o}")
+        };
+        if lines.last().is_some_and(|l| l.len() + piece.len() > LINE) {
+            lines.push(Zeroizing::new(String::new()));
+        }
+        if let Some(l) = lines.last_mut() {
+            l.push_str(&piece);
+        }
+    }
+    for l in &mut lines {
+        l.insert(0, '>');
+    }
+    lines.push(Zeroizing::new(".".to_string()));
+    Sent {
+        name: name.to_string(),
+        lines,
+    }
+}
+
+/// The command that reads `vars` with the echo off, signals `ready`, and
 /// exports them; then `done`. Typed into the pane, it waits for the values.
-pub fn load(names: &[String], ready: &str, done: &str) -> String {
-    format!(" {}; {}", reading(names, ready), finish(names, done))
+pub fn load(vars: &[Sent], ready: &str, done: &str) -> String {
+    format!(" {}; {}", reading(vars, ready), finish(vars, done))
 }
 
-/// A snippet's `command` in a subshell that has `names` first: they are
+/// A snippet's `command` in a subshell that has `vars` first: they are
 /// gone when it ends.
-pub fn wrapped(names: &[String], ready: &str, command: &str) -> String {
-    let export = format!("export {}", names.join(" "));
-    format!(" ( {}; {export}\n{command}\n)", reading(names, ready))
+pub fn wrapped(vars: &[Sent], ready: &str, command: &str) -> String {
+    format!(
+        " ( {}; export {}\n{command}\n)",
+        reading(vars, ready),
+        names(vars)
+    )
 }
 
-fn reading(names: &[String], ready: &str) -> String {
-    let reads: Vec<String> = names.iter().map(|n| format!("IFS= read -r {n}")).collect();
+fn names(vars: &[Sent]) -> String {
+    vars.iter()
+        .map(|v| v.name.as_str())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Each value's lines read up to its `.` and joined, then decoded: `X`
+/// after it keeps the newlines it ends in from `$(…)`. A loop, so the
+/// command is as long whatever the value's (busybox edits 1 KB at most).
+fn reading(vars: &[Sent], ready: &str) -> String {
+    let mut steps = vec![];
+    for v in vars {
+        steps.push(
+            "__sw_v=; while IFS= read -r __sw_l && [ \"$__sw_l\" != . ]; do __sw_v=$__sw_v${__sw_l#>}; done"
+                .to_string(),
+        );
+        steps.push(format!(
+            "{n}=$(printf '%bX' \"$__sw_v\"); {n}=${{{n}%X}}",
+            n = v.name
+        ));
+    }
     format!(
-        "stty -echo; printf '{}'; {}; stty echo",
+        "stty -echo; printf '{}'; {}; stty echo; unset __sw_v __sw_l",
         signal_sequence(ready),
-        reads.join("; ")
+        steps.join("; ")
     )
 }
 
-fn finish(names: &[String], done: &str) -> String {
-    format!(
-        "export {}; printf '{}'",
-        names.join(" "),
-        signal_sequence(done)
-    )
+fn finish(vars: &[Sent], done: &str) -> String {
+    format!("export {}; printf '{}'", names(vars), signal_sequence(done))
 }
 
 /// The command that unloads `names` from the shell.
 pub fn unload(names: &[String]) -> String {
     format!(" unset {}", names.join(" "))
-}
-
-/// A value as `read` takes it: one line. A value of several lines cannot
-/// be one.
-pub fn sendable(value: &str) -> bool {
-    !value.contains(['\n', '\r'])
 }
 
 #[cfg(test)]
@@ -124,29 +171,48 @@ mod tests {
         assert!(parse_dotenv("just words").is_err());
         assert!(parse_dotenv("2BAD=x").is_err());
         assert!(valid_name("_A1") && !valid_name("A-B") && !valid_name(""));
-        assert_eq!(names_as_dotenv(&["A".into(), "B".into()]), "A=\nB=\n");
+    }
+
+    #[test]
+    fn values_go_as_printable_lines() {
+        let shown = |s: Sent| s.lines.iter().map(|l| l.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            shown(encode("K", "a\\b\nc\u{e9}")),
+            [">a\\0134b\\0012c\\0303\\0251", "."]
+        );
+        let long = encode("K", &"x".repeat(1200));
+        assert_eq!(
+            long.lines.iter().map(|l| l.len()).collect::<Vec<_>>(),
+            [513, 513, 177, 1]
+        );
+        assert_eq!(shown(encode("K", "")), [">", "."]);
     }
 
     #[test]
     fn commands_hold_names_never_values() {
-        let names = vec!["A".to_string(), "B".to_string()];
-        let l = load(&names, "r1", "d1");
+        let vars = vec![encode("A", "secret one"), encode("B", &"y".repeat(600))];
+        let l = load(&vars, "r1", "d1");
         assert!(
             l.starts_with(" stty -echo; printf '\\033]777;shellwing;r1\\007';"),
             "{l}"
         );
+        assert!(!l.contains("secret") && !l.contains("yyy"), "{l}");
+        assert_eq!(
+            l.matches("IFS= read -r").count(),
+            2,
+            "one loop a variable: {l}"
+        );
+        assert!(l.contains("A=$(printf '%bX' \"$__sw_v\"); A=${A%X}"), "{l}");
         assert!(
-            l.contains("IFS= read -r A; IFS= read -r B; stty echo; export A B;"),
+            l.ends_with("export A B; printf '\\033]777;shellwing;d1\\007'"),
             "{l}"
         );
-        assert!(l.ends_with("printf '\\033]777;shellwing;d1\\007'"), "{l}");
-        let w = wrapped(&names, "r2", "aws s3 ls\naws sts get-caller-identity");
+        let w = wrapped(&vars, "r2", "aws s3 ls\naws sts get-caller-identity");
         assert!(w.starts_with(" ( stty -echo;"), "{w}");
         assert!(
             w.ends_with("export A B\naws s3 ls\naws sts get-caller-identity\n)"),
             "{w}"
         );
-        assert_eq!(unload(&names), " unset A B");
-        assert!(sendable("abc") && !sendable("a\nb"));
+        assert_eq!(unload(&["A".into(), "B".into()]), " unset A B");
     }
 }

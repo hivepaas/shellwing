@@ -370,43 +370,12 @@ impl Vault {
     pub fn unlock(path: &Path, keys: &dyn KeyStore, how: Unlock) -> Result<Vault> {
         let o = Self::open_db(path)?;
         let account = match how {
-            Unlock::Passphrase(p) => {
-                let (Some(wrapped), Some(kdf)) = (
-                    Self::wrapped_account(&o.db, "passphrase")?,
-                    Self::kdf(&o.db)?,
-                ) else {
-                    return Err(Error::WrongPassphrase);
-                };
-                let key = kdf.key(p)?;
-                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
-                    .map_err(|_| Error::WrongPassphrase)?;
-                Self::account_from(&a)?
-            }
-            Unlock::RecoveryKey(text) => {
-                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
-                let wrapped =
-                    Self::wrapped_account(&o.db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
-                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
-                    .map_err(|_| Error::WrongRecoveryKey)?;
-                let a = Self::account_from(&a)?;
+            Unlock::RecoveryKey(_) => {
+                let a = Self::account_by(&o.db, &how)?;
                 let _ = keys.save(&a[..]);
                 a
             }
-            Unlock::Presence(p) => {
-                let (Some(wrapped), Some(id)) = (
-                    Self::wrapped_account(&o.db, "presence")?,
-                    Self::presence_id(&o.db)?,
-                ) else {
-                    return Err(Error::Locked(Lock::Passphrase));
-                };
-                let secret = p
-                    .secret(&id, PRESENCE_REASON)
-                    .map_err(Error::Keychain)?
-                    .ok_or(Error::NotPresent)?;
-                let (a, _) =
-                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
-                Self::account_from(&a)?
-            }
+            Unlock::Passphrase(_) | Unlock::Presence(_) => Self::account_by(&o.db, &how)?,
             Unlock::NewPassphrase(p) => {
                 if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() {
                     return Err(Error::Locked(Lock::Passphrase));
@@ -417,6 +386,66 @@ impl Vault {
             }
         };
         Self::finish(o, account)
+    }
+
+    /// The account key, as the passphrase, recovery key or presence `how`
+    /// unwraps it.
+    fn account_by(db: &Connection, how: &Unlock) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        match how {
+            Unlock::Passphrase(p) => {
+                let (Some(wrapped), Some(kdf)) =
+                    (Self::wrapped_account(db, "passphrase")?, Self::kdf(db)?)
+                else {
+                    return Err(Error::WrongPassphrase);
+                };
+                let key = kdf.key(p)?;
+                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
+                    .map_err(|_| Error::WrongPassphrase)?;
+                Self::account_from(&a)
+            }
+            Unlock::RecoveryKey(text) => {
+                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
+                let wrapped =
+                    Self::wrapped_account(db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
+                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
+                    .map_err(|_| Error::WrongRecoveryKey)?;
+                Self::account_from(&a)
+            }
+            Unlock::Presence(p) => {
+                let (Some(wrapped), Some(id)) = (
+                    Self::wrapped_account(db, "presence")?,
+                    Self::presence_id(db)?,
+                ) else {
+                    return Err(Error::Locked(Lock::Passphrase));
+                };
+                let secret = p
+                    .secret(&id, PRESENCE_REASON)
+                    .map_err(Error::Keychain)?
+                    .ok_or(Error::NotPresent)?;
+                let (a, _) =
+                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
+                Self::account_from(&a)
+            }
+            Unlock::NewPassphrase(_) => Err(Error::Locked(Lock::Passphrase)),
+        }
+    }
+
+    /// Checks it is the user, at an open vault, before something shows a
+    /// secret: their passphrase, recovery key or presence opens its key.
+    pub fn confirm(&self, how: Unlock) -> Result<()> {
+        let a = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            Self::account_by(&db, &how)?
+        };
+        if a[..] == self.account[..] {
+            Ok(())
+        } else {
+            Err(match how {
+                Unlock::Presence(_) => Error::NotPresent,
+                Unlock::RecoveryKey(_) => Error::WrongRecoveryKey,
+                _ => Error::WrongPassphrase,
+            })
+        }
     }
 
     fn account_from(plain: &[u8]) -> Result<Zeroizing<[u8; KEY_LEN]>> {
@@ -1807,6 +1836,27 @@ mod tests {
         ));
         Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
             .expect("the passphrase still opens it");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_open_vault_confirms_its_passphrase_only() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-confirm-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("anything at all")),
+            Err(Error::WrongPassphrase)
+        ));
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.confirm(Unlock::Passphrase("correct horse battery"))
+            .expect("confirmed");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("wrong horse battery")),
+            Err(Error::WrongPassphrase)
+        ));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

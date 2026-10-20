@@ -1609,26 +1609,35 @@ t0d325d34 = 호스트
 # every host
 t444612de = 모든 호스트
 
-# What it does, to find it in the palette
-td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
-
-# A name and a command are needed.
-t7f4c69bb = 이름과 명령이 필요합니다.
+# value
+t425ed3ca = 값
 
 # What they are for, such as AWS production
 tb620b1e5 = 용도, 예: AWS 프로덕션
 
-# Not NAME=value: {e}
-t65a67e1e = NAME=value 형식이 아닙니다: { $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name }은(는) 올바른 변수 이름이 아닙니다.
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = 변수를 추가하세요: NAME=value, 한 줄에 하나씩.
+# {name} is there twice.
+te1458d84 = { $name }이(가) 두 번 있습니다.
 
 # {name} has no value.
 t387a8908 = { $name }에 값이 없습니다.
 
-# No category
-t44662d06 = 카테고리 없음
+# Add a variable: a name and its value.
+t6150163b = 변수를 추가하세요: 이름과 값.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = 클립보드에 NAME=value 줄이 없습니다.
+
+# Not NAME=value: {e}
+t65a67e1e = NAME=value 형식이 아닙니다: { $e }
+
+# The vault's passphrase
+tb66334ea = 보관함 암호 문구
+
+# Wrong passphrase.
+t2ebec270 = 암호 문구가 틀렸습니다.
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1638,6 +1647,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = 편집…
+
+# Change
+ta1de2fdd = 변경
+
+# Show values
+t68f568ba = 값 표시
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = 보관함에 저장된 값은 가려져 있으며, 표시하려면 본인 확인이 필요합니다.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
+
+# Hide values
+tab6d76ed = 값 숨기기
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = 화면에 표시됩니다: 화면 공유에 주의하세요. 1분 후 다시 가려집니다.
+
+# The vault's passphrase, to show the values
+teecb1d4f = 값을 표시하기 위한 보관함 암호 문구
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 표시할 수 있습니다. 값을 표시할까요?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = 팔레트는 이 호스트들의 창에서만 불러오도록 제안합니다.
+
+# Variables
+t7996f062 = 변수
+
+# Add a variable
+tf53dee25 = 변수 추가
+
+# Paste a .env file
+tf0c57252 = .env 파일 붙여넣기
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = 값은 여러 줄일 수 있습니다: Enter로 줄을 바꾸고, { $save }로 저장합니다.
+
+# New environment
+tf3955dbc = 새 환경
+
+# Edit environment
+t79646cbc = 환경 편집
+
+# What it does, to find it in the palette
+td9b8e02f = 용도 (팔레트에서 찾을 때 사용)
+
+# A name and a command are needed.
+t7f4c69bb = 이름과 명령이 필요합니다.
+
+# No category
+t44662d06 = 카테고리 없음
 
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음
@@ -1668,24 +1731,6 @@ t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = 팔레트는 이 호스트들의 창에서만 불러오도록 제안합니다.
-
-# New environment
-tf3955dbc = 새 환경
-
-# Edit environment
-t79646cbc = 환경 편집
-
-# Variables
-t7996f062 = 변수
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value를 한 줄에 하나씩 입력하거나 .env 파일을 붙여넣으세요. { $save }로 저장합니다.
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = 값은 표시되지 않습니다. 비워 두면 기존 값을 유지하고, 입력하면 변경됩니다. 줄을 지우면 해당 변수도 삭제됩니다. { $save }로 저장합니다.
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으로 채워지며, 그 밖의 {"{{"}name{"}}"}은 실행할 때 묻습니다.
@@ -1893,9 +1938,6 @@ t20301272 = 이 창에서 전체 화면 프로그램이 실행 중입니다. 종
 
 # It has no variables.
 t0993a534 = 변수가 없습니다.
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = { $name }을(를) 불러올 수 없습니다: 한 줄짜리 값이 필요합니다.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = 셸이 변수를 받지 않았습니다. 프롬프트 상태가 아니거나 POSIX 셸(sh, bash, zsh)이 아닙니다.

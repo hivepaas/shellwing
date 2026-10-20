@@ -1633,26 +1633,35 @@ t0d325d34 = SERVEURS
 # every host
 t444612de = tous les serveurs
 
-# What it does, to find it in the palette
-td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
-
-# A name and a command are needed.
-t7f4c69bb = Un nom et une commande sont requis.
+# value
+t425ed3ca = valeur
 
 # What they are for, such as AWS production
 tb620b1e5 = À quoi ils servent, par exemple AWS production
 
-# Not NAME=value: {e}
-t65a67e1e = Pas de la forme NAME=value : { $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } n'est pas un nom de variable valide.
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = Ajoutez une variable : NAME=value, une par ligne.
+# {name} is there twice.
+te1458d84 = { $name } apparaît deux fois.
 
 # {name} has no value.
 t387a8908 = { $name } n'a pas de valeur.
 
-# No category
-t44662d06 = Sans catégorie
+# Add a variable: a name and its value.
+t6150163b = Ajoutez une variable : un nom et sa valeur.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = Le presse-papiers ne contient aucune ligne NAME=value.
+
+# Not NAME=value: {e}
+t65a67e1e = Pas de la forme NAME=value : { $e }
+
+# The vault's passphrase
+tb66334ea = Phrase secrète du coffre
+
+# Wrong passphrase.
+t2ebec270 = Phrase secrète incorrecte.
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1663,6 +1672,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = Modifier…
+
+# Change
+ta1de2fdd = Modifier
+
+# Show values
+t68f568ba = Afficher les valeurs
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Les valeurs gardées dans le coffre sont masquées ; les afficher demande de confirmer que c'est vous.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
+
+# Hide values
+tab6d76ed = Masquer les valeurs
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Elles s'affichent à l'écran : attention au partage d'écran. Elles sont masquées à nouveau dans une minute.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Phrase secrète du coffre, pour afficher les valeurs
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Aucune phrase secrète ne protège le coffre : toute personne devant cet appareil peut les afficher. Afficher les valeurs ?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = La palette propose de le charger uniquement dans les panneaux de ces serveurs.
+
+# Variables
+t7996f062 = Variables
+
+# Add a variable
+tf53dee25 = Ajouter une variable
+
+# Paste a .env file
+tf0c57252 = Coller un fichier .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Une valeur peut tenir sur plusieurs lignes : Entrée en commence une autre, { $save } enregistre.
+
+# New environment
+tf3955dbc = Nouvel environnement
+
+# Edit environment
+t79646cbc = Modifier l'environnement
+
+# What it does, to find it in the palette
+td9b8e02f = Ce qu'il fait, pour le trouver dans la palette
+
+# A name and a command are needed.
+t7f4c69bb = Un nom et une commande sont requis.
+
+# No category
+t44662d06 = Sans catégorie
 
 # typed, not run
 td4e41905 = saisi, non exécuté
@@ -1693,24 +1756,6 @@ t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synch
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = La palette propose de le charger uniquement dans les panneaux de ces serveurs.
-
-# New environment
-tf3955dbc = Nouvel environnement
-
-# Edit environment
-t79646cbc = Modifier l'environnement
-
-# Variables
-t7996f062 = Variables
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value, une par ligne, ou collez un fichier .env. { $save } enregistre.
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = Les valeurs ne sont jamais affichées : une valeur laissée vide conserve l'actuelle ; saisissez-en une pour la changer. Une ligne retirée retire sa variable. { $save } enregistre.
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis ; tout autre {"{{"}name{"}}"} est demandé à l'exécution.
@@ -1954,9 +1999,6 @@ t20301272 = Un programme plein écran s'exécute dans ce panneau : quittez-le, p
 
 # It has no variables.
 t0993a534 = Il n'a pas de variables.
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = { $name } ne peut pas être chargé : une valeur d'une seule ligne est requise.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Le shell n'a pas pris les variables : il n'est pas à son invite, ou n'est pas un shell POSIX (sh, bash, zsh).

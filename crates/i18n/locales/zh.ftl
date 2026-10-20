@@ -1609,26 +1609,35 @@ t0d325d34 = 主机
 # every host
 t444612de = 所有主机
 
-# What it does, to find it in the palette
-td9b8e02f = 用途说明，便于在命令面板中查找
-
-# A name and a command are needed.
-t7f4c69bb = 需要填写名称和命令。
+# value
+t425ed3ca = 值
 
 # What they are for, such as AWS production
 tb620b1e5 = 用途，例如 AWS 生产环境
 
-# Not NAME=value: {e}
-t65a67e1e = 不是 NAME=value 格式：{ $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } 不是有效的变量名。
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = 添加变量：NAME=value，每行一个。
+# {name} is there twice.
+te1458d84 = { $name } 重复了。
 
 # {name} has no value.
 t387a8908 = { $name } 没有值。
 
-# No category
-t44662d06 = 无分类
+# Add a variable: a name and its value.
+t6150163b = 添加一个变量：名称和值。
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = 剪贴板中没有 NAME=value 行。
+
+# Not NAME=value: {e}
+t65a67e1e = 不是 NAME=value 格式：{ $e }
+
+# The vault's passphrase
+tb66334ea = 保险库的密码短语
+
+# Wrong passphrase.
+t2ebec270 = 密码短语错误。
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1638,6 +1647,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = 编辑…
+
+# Change
+ta1de2fdd = 更改
+
+# Show values
+t68f568ba = 显示值
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = 保险库中的值已遮盖；显示前需要确认是你本人。
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 请在系统对话框中确认是你本人…
+
+# Hide values
+tab6d76ed = 隐藏值
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = 值正显示在屏幕上：共享屏幕时请注意。一分钟后会再次遮盖。
+
+# The vault's passphrase, to show the values
+teecb1d4f = 保险库的密码短语，用于显示值
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它们。要显示值吗？
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = 命令面板只会在这些主机的窗格中提供加载它。
+
+# Variables
+t7996f062 = 变量
+
+# Add a variable
+tf53dee25 = 添加变量
+
+# Paste a .env file
+tf0c57252 = 粘贴 .env 文件
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = 值可以有多行：Enter 换行，{ $save } 保存。
+
+# New environment
+tf3955dbc = 新建环境
+
+# Edit environment
+t79646cbc = 编辑环境
+
+# What it does, to find it in the palette
+td9b8e02f = 用途说明，便于在命令面板中查找
+
+# A name and a command are needed.
+t7f4c69bb = 需要填写名称和命令。
+
+# No category
+t44662d06 = 无分类
 
 # typed, not run
 td4e41905 = 仅输入，不运行
@@ -1668,24 +1731,6 @@ t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删�
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = 命令面板只会在这些主机的窗格中提供加载它。
-
-# New environment
-tf3955dbc = 新建环境
-
-# Edit environment
-t79646cbc = 编辑环境
-
-# Variables
-t7996f062 = 变量
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value，每行一个，或粘贴 .env 文件。{ $save } 保存。
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = 值不会显示：留空则保留现有值；输入内容则会更改。删除一行会同时删除对应变量。{ $save } 保存。
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
@@ -1893,9 +1938,6 @@ t20301272 = 此窗格中正在运行全屏程序：请先退出，然后重试�
 
 # It has no variables.
 t0993a534 = 它没有变量。
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = 无法加载 { $name }：需要单行的值。
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = shell 未接受这些变量：它不在提示符处，或不是 POSIX shell（sh、bash、zsh）。

@@ -1645,26 +1645,35 @@ t0d325d34 = ХОСТЫ
 # every host
 t444612de = все хосты
 
-# What it does, to find it in the palette
-td9b8e02f = Что он делает, чтобы найти его в палитре
-
-# A name and a command are needed.
-t7f4c69bb = Нужны имя и команда.
+# value
+t425ed3ca = значение
 
 # What they are for, such as AWS production
 tb620b1e5 = Для чего они нужны, например AWS production
 
-# Not NAME=value: {e}
-t65a67e1e = Не NAME=value: { $e }
+# {name} is not a variable's name.
+tdd2c4c4b = { $name } — недопустимое имя переменной.
 
-# Add a variable: NAME=value, one a line.
-tbff2467f = Добавьте переменную: NAME=value, по одной в строке.
+# {name} is there twice.
+te1458d84 = { $name } встречается дважды.
 
 # {name} has no value.
 t387a8908 = У { $name } нет значения.
 
-# No category
-t44662d06 = Без категории
+# Add a variable: a name and its value.
+t6150163b = Добавьте переменную: имя и значение.
+
+# The clipboard holds no NAME=value lines.
+tbf497c49 = В буфере обмена нет строк NAME=value.
+
+# Not NAME=value: {e}
+t65a67e1e = Не NAME=value: { $e }
+
+# The vault's passphrase
+tb66334ea = Парольная фраза хранилища
+
+# Wrong passphrase.
+t2ebec270 = Неверная парольная фраза.
 
 # needed by {n} snippet | needed by {n} snippets
 t79d75da2 =
@@ -1677,6 +1686,60 @@ t79d75da2 =
 
 # Edit…
 t8e7efcd7 = Изменить…
+
+# Change
+ta1de2fdd = Изменить
+
+# Show values
+t68f568ba = Показать значения
+
+# Values kept in the vault are masked; showing them asks it is you.
+tf0365fc2 = Значения из хранилища скрыты; чтобы показать их, нужно подтвердить, что это вы.
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Подтвердите, что это вы, в окне системы…
+
+# Hide values
+tab6d76ed = Скрыть значения
+
+# They show on screen: mind screen sharing. They are masked again in a minute.
+td45dba68 = Они видны на экране: осторожно при демонстрации экрана. Через минуту они снова будут скрыты.
+
+# The vault's passphrase, to show the values
+teecb1d4f = Парольная фраза хранилища, чтобы показать значения
+
+# No passphrase guards the vault, so anyone at this device can show them. Show the values?
+tc7928fa4 = Хранилище не защищено парольной фразой, поэтому показать их может любой, кто сидит за этим устройством. Показать значения?
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = Палитра предлагает загрузить его только в панели этих хостов.
+
+# Variables
+t7996f062 = Переменные
+
+# Add a variable
+tf53dee25 = Добавить переменную
+
+# Paste a .env file
+tf0c57252 = Вставить файл .env
+
+# A value can take several lines: Enter starts another, {save} saves.
+ta46f6540 = Значение может занимать несколько строк: Enter начинает новую, { $save } сохраняет.
+
+# New environment
+tf3955dbc = Новое окружение
+
+# Edit environment
+t79646cbc = Изменить окружение
+
+# What it does, to find it in the palette
+td9b8e02f = Что он делает, чтобы найти его в палитре
+
+# A name and a command are needed.
+t7f4c69bb = Нужны имя и команда.
+
+# No category
+t44662d06 = Без категории
 
 # typed, not run
 td4e41905 = вводится, но не выполняется
@@ -1707,24 +1770,6 @@ t3c6666da = Он будет удалён из хранилища и с друг�
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
-
-# The palette offers to load it in panes of those hosts only.
-t67715aad = Палитра предлагает загрузить его только в панели этих хостов.
-
-# New environment
-tf3955dbc = Новое окружение
-
-# Edit environment
-t79646cbc = Изменить окружение
-
-# Variables
-t7996f062 = Переменные
-
-# NAME=value, one a line, or paste a .env file. {save} saves.
-tc682ceb0 = NAME=value, по одной в строке, или вставьте файл .env. { $save } сохраняет.
-
-# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
-t2aa2ecec = Значения никогда не показываются: оставленное пустым сохраняет прежнее; введите значение, чтобы изменить. Удалённая строка удаляет свою переменную. { $save } сохраняет.
 
 # {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
 t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
@@ -1986,9 +2031,6 @@ t20301272 = В этой панели запущена полноэкранная
 
 # It has no variables.
 t0993a534 = В нём нет переменных.
-
-# {name} cannot be loaded: a value of one line is needed.
-tc2bbea4b = { $name } нельзя загрузить: нужно значение в одну строку.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Оболочка не приняла переменные: она не на приглашении или это не POSIX-оболочка (sh, bash, zsh).
