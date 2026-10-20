@@ -115,6 +115,16 @@ pub struct Palette {
     /// The window's and menus' shadow.
     pub shadow: u32,
 
+    // The sync button's cloud.
+    /// Nothing set up: an invitation, not a warning.
+    pub sync_off: u32,
+    /// Synced, or syncing.
+    pub sync_ok: u32,
+    /// The last sync failed.
+    pub sync_bad: u32,
+    /// Waiting: the vault is locked.
+    pub sync_paused: u32,
+
     // The Files panel.
     pub folder: u32,
     /// A transfer's progress.
@@ -190,6 +200,10 @@ pub const DUSK: Palette = Palette {
     tint: 0xffffff0d,
     shadow: 0x00000073,
 
+    sync_off: 0xf6c08a,
+    sync_ok: 0x4ade80,
+    sync_bad: 0xfb923c,
+    sync_paused: 0x8b95a5,
     folder: 0x7aa2f7,
     progress: 0x3b82f6,
     drop: 0x2a3a55,
@@ -259,6 +273,10 @@ pub const LIGHT: Palette = Palette {
     tint: 0x0000000d,
     shadow: 0x0f172a33,
 
+    sync_off: 0xc77a2c,
+    sync_ok: 0x16a34a,
+    sync_bad: 0xea580c,
+    sync_paused: 0x6b7280,
     folder: 0x2563eb,
     progress: 0x2563eb,
     drop: 0xdbeafe,
