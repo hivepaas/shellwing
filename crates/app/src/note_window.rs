@@ -25,6 +25,10 @@ use crate::look::{self, ui};
 use crate::secrets::VaultSlot;
 use shellwing_note_editor::{EditorEvent, EditorState, SyntaxStyle};
 
+/// A note's window when none was opened before, and the least it opens at.
+const DEFAULT_SIZE: (f32, f32) = (800., 700.);
+const LEAST_SIZE: (f32, f32) = (600., 500.);
+
 /// How long after the last key a note is saved.
 const SAVE_AFTER: Duration = Duration::from_secs(3);
 /// How often a window looks whether the vault locked or opened.
@@ -60,7 +64,12 @@ pub struct Hooks {
     pub pane: PaneTitle,
     /// Types text into that pane, without Enter.
     pub insert: Insert,
+    /// The window's size as it closes, for the next to open so.
+    pub sized: SizeKept,
 }
+
+/// See [`Hooks::sized`].
+pub type SizeKept = Rc<dyn Fn(f32, f32, &mut App)>;
 
 /// See [`Hooks::hold`].
 pub type Hold = Rc<dyn Fn(&str, &mut App)>;
@@ -82,7 +91,20 @@ impl gpui::Global for Opened {}
 
 /// Opens `note` (None: a new one) in a window, or brings forward the one
 /// it is open in.
-pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
+/// The size a note's window opens at: the last one's (`last`), never less
+/// than 600 × 500; 800 × 700 the first time.
+pub fn opening_size(last: Option<(f32, f32)>) -> (f32, f32) {
+    let (w, h) = last.unwrap_or(DEFAULT_SIZE);
+    (w.max(LEAST_SIZE.0), h.max(LEAST_SIZE.1))
+}
+
+pub fn open(
+    note: Option<Note>,
+    vault: VaultSlot,
+    hooks: Hooks,
+    last: Option<(f32, f32)>,
+    cx: &mut App,
+) {
     if let Some(id) = note.as_ref().map(|n| n.id.clone())
         && let Some(h) = cx.default_global::<Opened>().0.get(&id).copied()
         && h.update(cx, |_, window, _| window.activate_window())
@@ -99,7 +121,10 @@ pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
     let options = WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(Bounds::centered(
             None,
-            size(px(800.), px(700.)),
+            {
+                let (w, h) = opening_size(last);
+                size(px(w), px(h))
+            },
             cx,
         ))),
         window_decorations: client_side.then_some(WindowDecorations::Client),
@@ -179,6 +204,8 @@ pub struct NoteWindow {
     drag: crate::scrollbar::Drag,
     /// Frames left in which the view brings the caret into sight (it moved).
     reveal: u8,
+    /// The window's size, not maximized, as last drawn: kept as it closes.
+    size: Option<(f32, f32)>,
     /// The pane "Insert into" names in the editor's menu, as last set.
     insert_into: Option<Option<String>>,
     /// The text is in the field (not while locked, nor a sensitive note's
@@ -263,6 +290,9 @@ impl NoteWindow {
         cx.on_release(|v, cx| {
             v.save(cx);
             v.let_go(cx);
+            if let Some((w, h)) = v.size {
+                (v.hooks.sized)(w, h, cx);
+            }
             let id = v.note.id.clone();
             let opened = &mut cx.default_global::<Opened>().0;
             if opened.get(&id).is_some_and(|h| Some(*h) == v.handle) {
@@ -308,6 +338,7 @@ impl NoteWindow {
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
             reveal: 0,
+            size: None,
             insert_into: None,
             _subs: subs,
         };
@@ -1213,6 +1244,9 @@ impl Render for NoteWindow {
         };
         window.set_window_title(&shown_title);
         self.reveal_caret(cx);
+        // Its size as it would be restored (a maximized window's too).
+        let b = window.window_bounds().get_bounds().size;
+        self.size = Some((f32::from(b.width), f32::from(b.height)));
         self.menu_items(cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
@@ -1269,6 +1303,15 @@ impl Render for NoteWindow {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_note_window_opens_as_the_last_one_closed_but_not_smaller() {
+        use super::opening_size;
+        assert_eq!(opening_size(None), (800., 700.));
+        assert_eq!(opening_size(Some((1000., 820.))), (1000., 820.));
+        assert_eq!(opening_size(Some((420., 900.))), (600., 900.));
+        assert_eq!(opening_size(Some((300., 200.))), (600., 500.));
+    }
+
     #[test]
     fn every_template_shows_a_command_to_insert() {
         for t in [

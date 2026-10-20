@@ -29,6 +29,7 @@ const WINDOW: &str = "window.json";
 const RECENT: &str = "recent.json";
 const SESSION: &str = "session.json";
 const PLACED: &str = "placed.json";
+const NOTE_WINDOW: &str = "note-window.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -457,6 +458,16 @@ impl Store {
 
     pub fn save_session_state(&self, state: &SessionState) -> io::Result<()> {
         self.save_state(SESSION, state)
+    }
+
+    /// A note's window's size when one last closed
+    /// (`state/note-window.json`).
+    pub fn note_window(&self) -> Option<crate::NoteWindowState> {
+        self.load_state(NOTE_WINDOW)
+    }
+
+    pub fn save_note_window(&self, state: &crate::NoteWindowState) -> io::Result<()> {
+        self.save_state(NOTE_WINDOW, state)
     }
 
     /// Config files placed until their tab closed, that may still be on

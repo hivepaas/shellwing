@@ -653,6 +653,9 @@ opens in a window of its own, from *Settings › Notes*, or from the palette
 (under *Notes*; *New note…* there too). The palette lists first the notes
 about the focused pane's host.
 
+A note's window opens at the size the last one had when it closed (800 × 700
+the first time; never less than 600 × 500), kept in `state/note-window.json`.
+
 In its window, a note has a title, a category, a format and the hosts it is
 about (*For a host ▾*):
 
