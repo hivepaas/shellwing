@@ -589,7 +589,7 @@ impl Focusable for Palette {
 }
 
 impl Render for Palette {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let headers = self.headers();
         let mut list = div()
             .id("palette-list")
@@ -598,16 +598,27 @@ impl Render for Palette {
             .max_h(px(420.))
             .flex()
             .flex_col()
-            .p_1();
+            // Headings span the list; entries keep a margin.
+            .px_1()
+            .pb_1()
+            .when(!headers, |d| d.pt_1());
         let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
                 last = e.group.clone();
                 list = list.child(
                     div()
-                        .px_3()
-                        .pt_2()
-                        .pb_1()
+                        // A band across the whole list.
+                        .mx(px(-4.))
+                        .mb_1()
+                        .when(i > 0, |d| d.mt_1())
+                        .px(px(16.))
+                        .py(px(5.))
+                        .bg(rgb(colors().chip))
+                        .border_b_1()
+                        // The first one's top is the badges' line.
+                        .when(i > 0, |d| d.border_t_1())
+                        .border_color(rgb(colors().line))
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
                         .text_color(rgb(colors().muted))
@@ -698,8 +709,11 @@ impl Render for Palette {
             Mode::Ask => tr!("Enter answers   Esc cancels"),
             Mode::Choose => tr!("↑↓ move   Enter choose   Esc cancel"),
         };
+        // 800 px, or 40% of a wide window; never past the window.
+        let window_w = window.viewport_size().width;
+        let width = px(800.).max(window_w * 0.4).min(window_w - px(32.));
         div()
-            .w(px(640.))
+            .w(width)
             .flex()
             .flex_col()
             .bg(rgb(colors().raised))
