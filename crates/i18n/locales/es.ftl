@@ -993,21 +993,6 @@ t4545c373 = esta nota
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen.
 
-# Edit it in another app?
-t1719e0f2 = ¿Editarla en otra aplicación?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = Mientras esté abierta allí, una copia en texto sin formato está en el disco de este equipo (en una carpeta que solo tú puedes leer), y el editor puede guardar sus propias copias, como respaldos o historial. La copia se borra cuando termines.
-
-# Cannot make the copy: {e}
-td59a6621 = No se puede crear la copia: { $e }
-
-# It is not text any more.
-te3591497 = Ya no es texto.
-
-# Not read back: {e}
-tf04d4bce = No se pudo volver a leer: { $e }
-
 # The vault's passphrase
 tb66334ea = Frase de contraseña de la bóveda
 
@@ -1038,9 +1023,6 @@ tfdda4cf7 = Vista previa
 # Sensitive
 tf603feef = Confidencial
 
-# Edit in another app…
-t1c6d0a34 = Editar en otra aplicación…
-
 # The vault is locked: unlock it in the main window.
 te327c98e = La bóveda está bloqueada: desbloquéala en la ventana principal.
 
@@ -1055,9 +1037,6 @@ t3ab56316 = Confirma que eres tú en el diálogo del sistema…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Ninguna frase de contraseña protege la bóveda, así que cualquiera en este dispositivo puede mostrarlo.
-
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = Abierta en otra aplicación: lo que guarde llega aquí y se conserva.
 
 # Insert into {pane}
 t3d5eaffc = Insertar en { $pane }

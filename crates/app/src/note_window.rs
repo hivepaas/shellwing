@@ -90,7 +90,7 @@ pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
     let options = WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(Bounds::centered(
             None,
-            size(px(760.), px(680.)),
+            size(px(800.), px(700.)),
             cx,
         ))),
         window_decorations: client_side.then_some(WindowDecorations::Client),
@@ -123,7 +123,6 @@ pub fn before_lock(cx: &mut App) {
     let windows: Vec<_> = cx.default_global::<Opened>().0.values().copied().collect();
     for h in windows {
         let _ = h.update(cx, |v, _, cx| {
-            v.end_external(cx);
             v.save(cx);
             v.unload(cx);
         });
@@ -172,9 +171,6 @@ pub struct NoteWindow {
     edits: u64,
     saved_at: u64,
     problem: Option<String>,
-    /// The copy an editor of the user's own has open, and how it was when
-    /// last read.
-    external: Option<(std::path::PathBuf, Option<crate::copies::Stamp>)>,
     _subs: Vec<Subscription>,
 }
 
@@ -237,7 +233,6 @@ impl NoteWindow {
         }));
         // Saved as it goes, so leaving keeps the last of it.
         cx.on_release(|v, cx| {
-            v.end_external(cx);
             v.save(cx);
             let id = v.note.id.clone();
             let opened = &mut cx.default_global::<Opened>().0;
@@ -247,7 +242,6 @@ impl NoteWindow {
         })
         .detach();
         cx.on_app_quit(|v, cx| {
-            v.end_external(cx);
             v.save(cx);
             async {}
         })
@@ -280,7 +274,6 @@ impl NoteWindow {
             edits: 0,
             saved_at: 0,
             problem: None,
-            external: None,
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
             reveal: 0,
@@ -362,10 +355,6 @@ impl NoteWindow {
     }
 
     fn watch(&mut self, cx: &mut Context<Self>) {
-        if self.external.is_some() {
-            self.read_external(cx);
-            cx.notify();
-        }
         let open = self.vault.ready().is_some();
         if !open && self.loaded {
             self.unload(cx);
@@ -489,104 +478,6 @@ impl NoteWindow {
             });
         })
         .detach();
-    }
-
-    /// Opens the text in an editor of the user's own, after saying a copy
-    /// is on the disk meanwhile.
-    fn ask_external(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let (yes, no) = (tr!("Open"), tr!("Cancel"));
-        let answer = window.prompt(
-            PromptLevel::Warning,
-            &tr!("Edit it in another app?"),
-            Some(&tr!(
-                "While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done."
-            )),
-            &[yes.as_str(), no.as_str()],
-            cx,
-        );
-        cx.spawn_in(window, async move |this, cx| {
-            if matches!(answer.await, Ok(0)) {
-                let _ = this.update(cx, |v, cx| v.open_external(cx));
-            }
-        })
-        .detach();
-    }
-
-    fn open_external(&mut self, cx: &mut Context<Self>) {
-        if !self.loaded || self.note.sensitive {
-            return;
-        }
-        self.save(cx);
-        let note = self.current(cx);
-        let ext = match note.format {
-            NoteFormat::Markdown => "md",
-            NoteFormat::Plain => "txt",
-        };
-        let text = self.text.read(cx).text().to_string();
-        let path = match crate::note_files::write(&note.title, ext, &text) {
-            Ok(p) => p,
-            Err(e) => {
-                self.problem = Some(tr!("Cannot make the copy: {e}", e = e.to_string()));
-                return cx.notify();
-            }
-        };
-        let cmd = cx
-            .try_global::<crate::files::EditorCommand>()
-            .and_then(|c| c.0.clone())
-            .filter(|c| !c.trim().is_empty());
-        let started = match &cmd {
-            Some(cmd) => crate::editors::open_with(cmd, &path),
-            None => crate::editors::open_text(&path),
-        };
-        if let Err(e) = started {
-            crate::note_files::remove(&path);
-            let who = cmd
-                .as_deref()
-                .map_or(tr!("the text editor"), crate::editors::name_of);
-            self.problem = Some(tr!("Cannot start {who}: {e}", who = who, e = e.to_string()));
-            return cx.notify();
-        }
-        let stamp = crate::copies::stamp(&path);
-        self.external = Some((path, stamp));
-        self.problem = None;
-        cx.notify();
-    }
-
-    /// What the editor saved, into the note.
-    fn read_external(&mut self, cx: &mut App) {
-        let Some((path, seen)) = self.external.clone() else {
-            return;
-        };
-        let now = crate::copies::stamp(&path);
-        if now.is_none() || now == seen {
-            return;
-        }
-        if let Some(e) = self.external.as_mut() {
-            e.1 = now;
-        }
-        let read = std::fs::read(&path)
-            .map_err(|e| e.to_string())
-            .and_then(|b| String::from_utf8(b).map_err(|_| tr!("It is not text any more.")));
-        match read {
-            Ok(text) if text != self.text.read(cx).text() => {
-                self.text.update(cx, |e, cx| e.set_text(text, cx));
-                // An edit even when the window is closing (no event then).
-                self.edits += 1;
-            }
-            Ok(_) => {}
-            Err(e) => self.problem = Some(tr!("Not read back: {e}", e = e)),
-        }
-    }
-
-    /// Done with the editor: its last save read, the copy removed.
-    fn end_external(&mut self, cx: &mut App) {
-        if self.external.is_none() {
-            return;
-        }
-        self.read_external(cx);
-        if let Some((path, _)) = self.external.take() {
-            crate::note_files::remove(&path);
-        }
     }
 
     /// The selection as a link, `[it](url)`, `url` selected to type over
@@ -872,9 +763,7 @@ impl NoteWindow {
                 d.child(deferred(anchored().child(div().mt(px(30.)).child(list))).with_priority(2))
             });
         let _ = window;
-        let status = if self.external.is_some() {
-            None
-        } else if self.saved_at != self.edits {
+        let status = if self.saved_at != self.edits {
             Some(tr!("Saving…"))
         } else if !self.note.id.is_empty() {
             Some(tr!("Saved"))
@@ -944,12 +833,8 @@ impl NoteWindow {
                         .text_size(ui(12.5))
                         .on_click(cx.listener(|v, _, w, cx| {
                             v.note.sensitive = !v.note.sensitive;
-                            // Who turns it on sees the text already; no copy
-                            // of it stays on the disk.
+                            // Who turns it on sees the text already.
                             v.shown = true;
-                            if v.note.sensitive {
-                                v.end_external(cx);
-                            }
                             v.changed_meta(w, cx);
                         }))
                         .child(checkbox(self.note.sensitive))
@@ -970,15 +855,6 @@ impl NoteWindow {
                         .child(s),
                 )
             })
-            .when(
-                !self.note.sensitive && self.loaded && self.external.is_none(),
-                |d| {
-                    d.child(
-                        Self::chip("note-external", tr!("Edit in another app…"), false)
-                            .on_click(cx.listener(|v, _, w, cx| v.ask_external(w, cx))),
-                    )
-                },
-            )
             .child(
                 Self::chip("note-delete", tr!("Delete"), false)
                     .text_color(rgb(colors().bad))
@@ -1052,20 +928,6 @@ impl NoteWindow {
                 }
             };
             return p.into_any_element();
-        }
-        if self.external.is_some() {
-            return panel(tr!(
-                "Open in another app: what it saves comes here, and is kept."
-            ))
-            .child(
-                primary_button("note-external-done", &tr!("Done")).on_click(cx.listener(
-                    |v, _, _, cx| {
-                        v.end_external(cx);
-                        cx.notify();
-                    },
-                )),
-            )
-            .into_any_element();
         }
         let on = self.text.read(cx).focus_handle(cx).is_focused(window);
         let md = self.note.format == NoteFormat::Markdown;

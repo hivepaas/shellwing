@@ -993,21 +993,6 @@ t4545c373 = cette note
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation.
 
-# Edit it in another app?
-t1719e0f2 = La modifier dans une autre application ?
-
-# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
-tbcec8b45 = Tant qu'elle y est ouverte, une copie en texte brut se trouve sur le disque de cet ordinateur (dans un dossier que vous seul pouvez lire), et l'éditeur peut garder ses propres copies, comme des sauvegardes ou un historique. La copie disparaît quand vous avez fini.
-
-# Cannot make the copy: {e}
-td59a6621 = Impossible de créer la copie : { $e }
-
-# It is not text any more.
-te3591497 = Ce n'est plus du texte.
-
-# Not read back: {e}
-tf04d4bce = Non relu : { $e }
-
 # The vault's passphrase
 tb66334ea = Phrase secrète du coffre
 
@@ -1038,9 +1023,6 @@ tfdda4cf7 = Aperçu
 # Sensitive
 tf603feef = Sensible
 
-# Edit in another app…
-t1c6d0a34 = Modifier dans une autre application…
-
 # The vault is locked: unlock it in the main window.
 te327c98e = Le coffre est verrouillé : déverrouillez-le dans la fenêtre principale.
 
@@ -1055,9 +1037,6 @@ t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Aucune phrase secrète ne protège le coffre : toute personne devant cet appareil peut l'afficher.
-
-# Open in another app: what it saves comes here, and is kept.
-t340e0631 = Ouverte dans une autre application : ce qu'elle enregistre arrive ici et est conservé.
 
 # Insert into {pane}
 t3d5eaffc = Insérer dans { $pane }
