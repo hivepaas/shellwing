@@ -2389,6 +2389,12 @@ tfa31f588 = shellwing を終了しますか？
 # Choose a host on the left to connect.
 tf7759ebb = 左のホストを選んで接続してください。
 
+# Unlock the vault…
+tdf659182 = 保管庫のロックを解除…
+
+# Snippets, environments and config files are in it.
+t1646a763 = スニペット、環境、設定ファイルはこの中にあります。
+
 # Another tab to {title}
 ta46c00f0 = 別のタブで { $title } に接続
 
@@ -2448,9 +2454,6 @@ t4754a8f9 = ホスト一覧を表示
 
 # Saved passwords and passphrases…
 tdfc17c92 = 保存済みのパスワードとパスフレーズ…
-
-# Unlock the vault…
-tdf659182 = 保管庫のロックを解除…
 
 # Lock the vault
 tc05449a1 = 保管庫をロック

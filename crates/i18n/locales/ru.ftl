@@ -2521,6 +2521,12 @@ tfa31f588 = Выйти из shellwing?
 # Choose a host on the left to connect.
 tf7759ebb = Выберите хост слева, чтобы подключиться.
 
+# Unlock the vault…
+tdf659182 = Разблокировать хранилище…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Сниппеты, окружения и файлы конфигурации находятся в нём.
+
 # Another tab to {title}
 ta46c00f0 = Ещё одна вкладка с { $title }
 
@@ -2580,9 +2586,6 @@ t4754a8f9 = Показать список хостов
 
 # Saved passwords and passphrases…
 tdfc17c92 = Сохранённые пароли и парольные фразы…
-
-# Unlock the vault…
-tdf659182 = Разблокировать хранилище…
 
 # Lock the vault
 tc05449a1 = Заблокировать хранилище

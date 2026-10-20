@@ -2473,6 +2473,12 @@ tfa31f588 = Quitter shellwing ?
 # Choose a host on the left to connect.
 tf7759ebb = Choisissez un serveur à gauche pour vous connecter.
 
+# Unlock the vault…
+tdf659182 = Déverrouiller le coffre…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Les extraits, environnements et fichiers de configuration y sont.
+
 # Another tab to {title}
 ta46c00f0 = Un autre onglet vers { $title }
 
@@ -2532,9 +2538,6 @@ t4754a8f9 = Afficher la liste des serveurs
 
 # Saved passwords and passphrases…
 tdfc17c92 = Mots de passe et phrases secrètes enregistrés…
-
-# Unlock the vault…
-tdf659182 = Déverrouiller le coffre…
 
 # Lock the vault
 tc05449a1 = Verrouiller le coffre

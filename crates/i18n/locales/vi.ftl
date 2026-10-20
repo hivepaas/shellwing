@@ -2389,6 +2389,12 @@ tfa31f588 = Thoát shellwing?
 # Choose a host on the left to connect.
 tf7759ebb = Chọn một máy chủ bên trái để kết nối.
 
+# Unlock the vault…
+tdf659182 = Mở khoá kho…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Đoạn lệnh, biến môi trường và tệp cấu hình nằm trong đó.
+
 # Another tab to {title}
 ta46c00f0 = Tab khác tới { $title }
 
@@ -2448,9 +2454,6 @@ t4754a8f9 = Hiện danh sách máy chủ
 
 # Saved passwords and passphrases…
 tdfc17c92 = Mật khẩu và cụm mật khẩu đã lưu…
-
-# Unlock the vault…
-tdf659182 = Mở khoá kho…
 
 # Lock the vault
 tc05449a1 = Khoá kho

@@ -2473,6 +2473,12 @@ tfa31f588 = shellwing beenden?
 # Choose a host on the left to connect.
 tf7759ebb = Wähle links einen Host zum Verbinden.
 
+# Unlock the vault…
+tdf659182 = Tresor entsperren…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Snippets, Umgebungen und Konfigurationsdateien sind darin.
+
 # Another tab to {title}
 ta46c00f0 = Weiterer Tab zu { $title }
 
@@ -2532,9 +2538,6 @@ t4754a8f9 = Hostliste einblenden
 
 # Saved passwords and passphrases…
 tdfc17c92 = Gespeicherte Passwörter und Passphrasen…
-
-# Unlock the vault…
-tdf659182 = Tresor entsperren…
 
 # Lock the vault
 tc05449a1 = Tresor sperren

@@ -2473,6 +2473,12 @@ tfa31f588 = ¿Salir de shellwing?
 # Choose a host on the left to connect.
 tf7759ebb = Elige un servidor a la izquierda para conectarte.
 
+# Unlock the vault…
+tdf659182 = Desbloquear la bóveda…
+
+# Snippets, environments and config files are in it.
+t1646a763 = Los fragmentos, entornos y archivos de configuración están en ella.
+
 # Another tab to {title}
 ta46c00f0 = Otra pestaña a { $title }
 
@@ -2532,9 +2538,6 @@ t4754a8f9 = Mostrar la lista de servidores
 
 # Saved passwords and passphrases…
 tdfc17c92 = Contraseñas y frases de contraseña guardadas…
-
-# Unlock the vault…
-tdf659182 = Desbloquear la bóveda…
 
 # Lock the vault
 tc05449a1 = Bloquear la bóveda

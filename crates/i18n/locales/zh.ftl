@@ -2389,6 +2389,12 @@ tfa31f588 = 退出 shellwing？
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。
 
+# Unlock the vault…
+tdf659182 = 解锁保险库…
+
+# Snippets, environments and config files are in it.
+t1646a763 = 代码片段、环境和配置文件都在其中。
+
 # Another tab to {title}
 ta46c00f0 = 再开一个连接到 { $title } 的标签页
 
@@ -2448,9 +2454,6 @@ t4754a8f9 = 显示主机列表
 
 # Saved passwords and passphrases…
 tdfc17c92 = 已保存的密码和密码短语…
-
-# Unlock the vault…
-tdf659182 = 解锁保险库…
 
 # Lock the vault
 tc05449a1 = 锁定保险库

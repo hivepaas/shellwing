@@ -1382,6 +1382,19 @@ impl Workspace {
                 );
             }
         }
+        if self.vault.locked().is_some() && self.active_tab().is_some() {
+            // Not left out without a word: they are in the locked vault.
+            entries.push(
+                Entry::new(
+                    Kind::Action(Action::UnlockVault),
+                    tr!("Snippets"),
+                    tr!("Unlock the vault…"),
+                )
+                .detail(tr!("Snippets, environments and config files are in it."))
+                .hint("Enter")
+                .section(Part::Snippets),
+            );
+        }
         entries.extend(self.snippet_entries(cx));
         entries.extend(self.env_entries(cx));
         entries.extend(self.file_entries(cx));

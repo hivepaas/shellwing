@@ -2389,6 +2389,12 @@ tfa31f588 = shellwing을 종료하시겠습니까?
 # Choose a host on the left to connect.
 tf7759ebb = 연결하려면 왼쪽에서 호스트를 선택하세요.
 
+# Unlock the vault…
+tdf659182 = 보관함 잠금 해제…
+
+# Snippets, environments and config files are in it.
+t1646a763 = 스니펫, 환경, 설정 파일이 그 안에 있습니다.
+
 # Another tab to {title}
 ta46c00f0 = { $title }에 새 탭으로 연결
 
@@ -2448,9 +2454,6 @@ t4754a8f9 = 호스트 목록 표시
 
 # Saved passwords and passphrases…
 tdfc17c92 = 저장된 비밀번호 및 암호 문구…
-
-# Unlock the vault…
-tdf659182 = 보관함 잠금 해제…
 
 # Lock the vault
 tc05449a1 = 보관함 잠그기
