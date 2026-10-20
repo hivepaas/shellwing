@@ -116,7 +116,14 @@ impl SyncPanel {
                         .size(px(15.))
                         .text_color(rgb(c.sync_ok)),
                 )
-                .child(div().text_color(rgb(c.soft)).child(text.to_string()))
+                // Its own width, so a long line wraps rather than runs out.
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .text_color(rgb(c.soft))
+                        .child(text.to_string()),
+                )
         };
         div()
             .flex()
@@ -327,6 +334,11 @@ fn header(color: u32, title: &str) -> gpui::Div {
 /// A button of shellwing cloud's, waiting for it: shown as it will be,
 /// dimmed, and it does nothing yet.
 fn waiting_button(id: &'static str, label: &str, main: bool) -> gpui::Stateful<gpui::Div> {
+    waiting(id, main).child(label.to_string())
+}
+
+/// [`waiting_button`] before its label.
+fn waiting(id: &'static str, main: bool) -> gpui::Stateful<gpui::Div> {
     let c = colors();
     let b = div()
         .id(id)
@@ -338,8 +350,7 @@ fn waiting_button(id: &'static str, label: &str, main: bool) -> gpui::Stateful<g
         .gap(px(8.))
         .rounded(px(8.))
         .opacity(0.55)
-        .text_size(ui(13.))
-        .child(label.to_string());
+        .text_size(ui(13.));
     if main {
         b.bg(rgb(c.accent))
             .text_color(rgb(c.on_accent))
@@ -355,9 +366,10 @@ fn waiting_button(id: &'static str, label: &str, main: bool) -> gpui::Stateful<g
 fn sso_row() -> gpui::Div {
     let c = colors();
     let provider = |id: &'static str, mark: &str, name: &str| {
-        waiting_button(id, name, false)
+        waiting(id, false)
             .flex_1()
             .bg(rgb(c.chip))
+            // The provider's mark before its name.
             .child(
                 div()
                     .size(px(18.))
@@ -371,6 +383,7 @@ fn sso_row() -> gpui::Div {
                     .font_weight(FontWeight::BOLD)
                     .child(mark.to_string()),
             )
+            .child(name.to_string())
     };
     div()
         .flex()
@@ -430,6 +443,9 @@ fn footer(cx: &mut Context<SyncPanel>) -> gpui::Stateful<gpui::Div> {
         .border_t_1()
         .border_color(rgb(c.line))
         .bg(rgb(c.panel))
+        // The panel's corners: its overflow hides no child's ground, so the
+        // one at the bottom rounds itself, inside the panel's border.
+        .rounded_b(px(11.))
         .text_size(ui(12.))
         .text_color(rgb(c.muted))
         .cursor_pointer()
