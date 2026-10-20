@@ -1,6 +1,6 @@
-//! Telling that a newer shellwing is out, as the HivePaaS CLI tells it of
-//! itself: a signed list of releases (`release.signed.json`, on the
-//! repository's `release` branch) says each channel's newest; the app on
+//! Telling that a newer shellwing is out: a signed list of releases
+//! (`release.signed.json`, on the repository's `release` branch, made by
+//! `tools/releasesign`) says each channel's newest; the app on
 //! stable is offered stable releases only, the app on beta the newer of the
 //! betas and stable (a release supersedes the betas before it). The list is
 //! believed only when its signatures verify against the keys built in.
@@ -20,8 +20,8 @@ pub use install::{Install, install_of};
 pub use manifest::{Manifest, ManifestError};
 pub use version::{Channel, Version};
 
-/// What the list is signed for: a signature for another of the keys'
-/// purposes (HivePaaS's own release, its CLI's) is never taken for this one.
+/// What the list is signed for: a signature made with the keys for another
+/// purpose is never taken for this one.
 pub const CONTEXT: &str = "shellwing-release-v1";
 
 /// Where the signed list is read: the release branch, which moves to a
@@ -48,12 +48,18 @@ pub fn current() -> Version {
     })
 }
 
-/// The release keys this app trusts (HivePaaS's, see keys/README.md).
+// KEYS: every keys/<id>.pub.pem, by id (build.rs).
+include!(concat!(env!("OUT_DIR"), "/keys.rs"));
+
+/// This build has release keys: it can tell of updates. One without (a
+/// build before the keys were made) does not look.
+pub fn has_keys() -> bool {
+    !KEYS.is_empty()
+}
+
+/// The release keys this app trusts (keys/README.md).
 pub fn trusted_keys() -> Result<PublicKeys, SignatureError> {
-    envelope::parse_keys(&[
-        ("2026_ed", include_str!("../keys/2026_ed.pub.pem")),
-        ("2026_ml", include_str!("../keys/2026_ml.pub.pem")),
-    ])
+    envelope::parse_keys(KEYS)
 }
 
 #[derive(Debug, thiserror::Error)]

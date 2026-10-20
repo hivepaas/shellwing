@@ -1,5 +1,5 @@
 //! A release's version, as its tag says it: `v0.2.0`, or `v0.3.0-beta1` for a
-//! beta (no dot before the number), as HivePaaS writes them. The `v` may be
+//! beta (no dot before the number). The `v` may be
 //! left out: the app's own, from Cargo, has none.
 
 use std::cmp::Ordering;

@@ -2011,6 +2011,9 @@ ta18da274 = Блокировать при бездействии
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Если столько времени не нажимать клавиши и не щёлкать, хранилище блокируется до ввода парольной фразы. Только пока системная связка ключей не хранит его ключ: тогда каждый запуск запрашивает парольную фразу.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = В этой сборке нет ключей выпуска, поэтому она не может сообщать об обновлениях.
+
 # Looking for a newer version…
 tf1905fe9 = Поиск новой версии…
 

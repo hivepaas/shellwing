@@ -1,8 +1,7 @@
 //! `release.signed.json`: `release.json` itself, base64, with its signatures
 //! beside it in one file, so a CDN cannot serve a new list with an old
-//! signature. The format of HivePaaS's (`hivepaas_app/pkg/releasesig`), signed
-//! with the same tool (`tools/releasesign`) and keys, under a context of
-//! shellwing's own.
+//! signature. `tools/releasesign` writes it, under the context
+//! `shellwing-release-v1`.
 //!
 //! The list must carry a valid ed25519 (Ed25519ctx) and a valid ML-DSA-65
 //! signature, each by a key compiled into the app: a forger has to break
@@ -72,6 +71,9 @@ pub type PublicKeys = BTreeMap<String, PublicKey>;
 /// Reads PKIX PEM public keys by key id; every one must read, and together
 /// they must hold a key of each algorithm.
 pub fn parse_keys(pems: &[(&str, &str)]) -> Result<PublicKeys, SignatureError> {
+    if pems.is_empty() {
+        return Err(SignatureError::Key("no release keys are built in".into()));
+    }
     let mut keys = PublicKeys::new();
     for (id, pem) in pems {
         let key = parse_key(pem).map_err(|why| SignatureError::Key(format!("{id}: {why}")))?;
@@ -247,16 +249,15 @@ mod tests {
 
     const CONTEXT: &str = "shellwing-release-v1";
 
+    const TEST_ED: &str = include_str!("../testdata/test-ed.pub.pem");
+    const TEST_ML: &str = include_str!("../testdata/test-ml.pub.pem");
+
     fn test_keys() -> PublicKeys {
-        parse_keys(&[
-            ("test_ed", include_str!("../testdata/test_ed.pub.pem")),
-            ("test_ml", include_str!("../testdata/test_ml.pub.pem")),
-        ])
-        .expect("keys")
+        parse_keys(&[("test-ed", TEST_ED), ("test-ml", TEST_ML)]).expect("keys")
     }
 
     #[test]
-    fn a_list_signed_by_go_opens() {
+    fn a_list_signed_by_the_tool_opens() {
         let data = open(
             &test_keys(),
             include_bytes!("../testdata/release.signed.json"),
@@ -269,24 +270,12 @@ mod tests {
     #[test]
     fn another_purpose_another_key_or_a_change_is_refused() {
         let signed = include_str!("../testdata/release.signed.json");
-        // Signed for another purpose.
-        assert!(
-            open(
-                &test_keys(),
-                include_bytes!("../testdata/other-context.signed.json"),
-                CONTEXT
-            )
-            .is_err()
-        );
-        assert!(open(&test_keys(), signed.as_bytes(), "hivepaas-release-v1").is_err());
+        // Opened for another purpose.
+        assert!(open(&test_keys(), signed.as_bytes(), "another-purpose-v1").is_err());
         // By keys this app does not know: none is trusted.
-        let theirs = parse_keys(&[
-            ("2026_ed", include_str!("../keys/2026_ed.pub.pem")),
-            ("2026_ml", include_str!("../keys/2026_ml.pub.pem")),
-        ])
-        .expect("keys");
+        let others = parse_keys(&[("other-ed", TEST_ED), ("other-ml", TEST_ML)]).expect("keys");
         assert!(matches!(
-            open(&theirs, signed.as_bytes(), CONTEXT),
+            open(&others, signed.as_bytes(), CONTEXT),
             Err(SignatureError::Invalid(why)) if why.contains("no valid")
         ));
         // The payload changed: its hash, then its signatures, no longer hold.
@@ -310,10 +299,10 @@ mod tests {
     }
 
     #[test]
-    fn the_keys_built_in_read() {
-        assert!(crate::trusted_keys().is_ok());
+    fn the_keys_built_in_read_and_both_algorithms_are_needed() {
+        assert!(!crate::has_keys() || crate::trusted_keys().is_ok());
         assert!(matches!(
-            parse_keys(&[("test_ed", include_str!("../testdata/test_ed.pub.pem"))]),
+            parse_keys(&[("test-ed", TEST_ED)]),
             Err(SignatureError::Key(why)) if why.contains("ml-dsa-65")
         ));
     }

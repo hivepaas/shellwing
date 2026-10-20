@@ -1991,6 +1991,9 @@ ta18da274 = Verrouiller en cas d'inactivité
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Après ce délai sans touche pressée ni clic, le coffre se verrouille jusqu'à ce que sa phrase secrète soit saisie. Uniquement tant que le trousseau du système ne contient pas sa clé : chaque démarrage demande alors la phrase secrète.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Cette version n’a pas de clés de publication : elle ne peut pas signaler les mises à jour.
+
 # Looking for a newer version…
 tf1905fe9 = Recherche d'une version plus récente…
 

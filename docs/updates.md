@@ -26,8 +26,8 @@ https://raw.githubusercontent.com/hivepaas/shellwing/release/release.signed.json
 ```
 
 It is `release.json` (the readable copy, reviewed in the repository), base64,
-with its signatures beside it in one file, as HivePaaS and its CLI publish theirs.
-`release.json`:
+with its hash and its signatures beside it in one file, so that a CDN caching
+files one by one can never serve a new list with an old signature. `release.json`:
 
 ```json
 {
@@ -51,29 +51,36 @@ itself, later; nothing reads it yet.
 
 ## Signing
 
-The list is signed with **HivePaaS's release keys**, offline, by HivePaaS's
-`make release-sign`, under the context `shellwing-release-v1`. The app requires a
-valid ed25519 (Ed25519ctx) and a valid ML-DSA-65 signature by the keys built in
-(`crates/update/keys/`); a signature for another context (HivePaaS's release, its
-CLI's) does not verify here.
+The list is signed twice, with **Ed25519** (Ed25519ctx) and **ML-DSA-65**, under
+the context `shellwing-release-v1`; the app requires both, by the keys built into
+it (`crates/update/keys/`, whose README says how the keys are made and rotated).
+
+The tool is `tools/releasesign/main.go`: one file, the Go standard library only.
+It is never run from the working tree: `scripts/release_sign.sh` builds it from
+the reviewed commit in `tools/releasesign/PIN`, with the network off, signs, and
+then checks the result again with OpenSSL 3.5 or later (the payload byte for byte,
+and each signature against the public key OpenSSL derives from the private key).
 
 ```sh
-# In the hivepaas repository, on the signing machine:
-make release-sign KEYS="/offline/2026_ed.key /offline/2026_ml.key" CONTEXT=shellwing \
-  IN=../../../rust/shellwing/release.json OUT=../../../rust/shellwing/release.signed.json
+# On the signing machine, in a clone of the repository:
+scripts/release_sign.sh /offline/2026-ed.key /offline/2026-ml.key
 ```
 
-HivePaaS's tool takes `CONTEXT=release` and `CONTEXT=cli` today; `shellwing` is to
-be added to it (and its pin moved) before the first release.
+Moving `PIN` to a newer commit is how a change to the tool reaches the keys: only
+after it is reviewed.
 
-To publish: commit `release.json` and `release.signed.json`, check the envelope
-(`releasesign verify`), and move the `release` branch to that commit. Before the
-branch exists the app finds no list, and says it is up to date.
+## Publishing a release's list
+
+1. Add the release to `release.json` (and its channel), commit it.
+2. Sign it (above); commit `release.signed.json` with it.
+3. Move the `release` branch to that commit: from then on the apps see it.
+
+Before the `release` branch exists the app finds no list, and says it is up to
+date.
 
 ## Checking it
 
-- `cargo test -p shellwing-update` checks the format against a list Go signed
-  (`crates/update/testdata/gen.go` makes it, with test keys of its own).
-- `cargo test -p shellwing-update -- --ignored` reads the HivePaaS CLI's list from
-  GitHub, signed with the same keys under its context: it opens under that one,
-  and never as shellwing's.
+- `cd tools/releasesign && go test` checks the tool: what it signs verifies, one
+  algorithm alone is refused, a key is never written over.
+- `cargo test -p shellwing-update` checks the app's side against a list the tool
+  signed (`crates/update/testdata/make.sh` makes it, with test keys thrown away).

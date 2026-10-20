@@ -1991,6 +1991,9 @@ ta18da274 = Bloquear quando ocioso
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Após esse tempo sem uma tecla pressionada ou um clique, o cofre é bloqueado até a frase secreta ser digitada. Somente enquanto o chaveiro do sistema não guarda a chave dele: nesse caso, cada início pede a frase secreta.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Esta compilação não tem chaves de publicação, então não pode avisar sobre atualizações.
+
 # Looking for a newer version…
 tf1905fe9 = Procurando uma versão mais recente…
 

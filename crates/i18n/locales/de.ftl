@@ -1991,6 +1991,9 @@ ta18da274 = Bei Inaktivität sperren
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Nach dieser Zeit ohne Tastendruck oder Klick sperrt sich der Tresor, bis seine Passphrase eingegeben wird. Nur solange der Schlüsselbund des Systems seinen Schlüssel nicht enthält: dann fragt jeder Start nach der Passphrase.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Diesem Build fehlen die Release-Schlüssel, daher kann er nicht über Updates informieren.
+
 # Looking for a newer version…
 tf1905fe9 = Suche nach einer neueren Version…
 

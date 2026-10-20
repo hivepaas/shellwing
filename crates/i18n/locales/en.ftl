@@ -691,6 +691,7 @@ t0c43fb4a = 1 hour
 t7eebb6a4 = { $m } min
 ta18da274 = Lock when idle
 tf6c5f76d = After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
+t378182cb = This build has no release keys, so it cannot tell of updates.
 tf1905fe9 = Looking for a newer version…
 t3603428f = How to update
 t5b33836c = shellwing { $version } is out

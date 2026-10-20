@@ -1991,6 +1991,9 @@ ta18da274 = Bloquear por inactividad
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Tras este tiempo sin pulsar una tecla ni hacer clic, la bóveda se bloquea hasta que se escriba su frase de contraseña. Solo mientras el llavero del sistema no guarde su clave: en ese caso, cada inicio pide la frase de contraseña.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Esta compilación no tiene claves de publicación, así que no puede avisar de actualizaciones.
+
 # Looking for a newer version…
 tf1905fe9 = Buscando una versión más reciente…
 

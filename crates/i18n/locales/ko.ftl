@@ -1963,6 +1963,9 @@ ta18da274 = 유휴 시 잠금
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 키 입력이나 클릭 없이 이 시간이 지나면 암호 문구를 입력할 때까지 보관함이 잠깁니다. 시스템 키체인에 키가 보관되지 않은 경우에만 적용되며, 이때는 시작할 때마다 암호 문구를 묻습니다.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
+
 # Looking for a newer version…
 tf1905fe9 = 새 버전을 확인하는 중…
 

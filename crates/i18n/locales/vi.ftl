@@ -1963,6 +1963,9 @@ ta18da274 = Khoá khi không dùng
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, kho sẽ khoá cho tới khi nhập cụm mật khẩu. Chỉ khi kho khoá của hệ thống không giữ khoá của nó: khi đó mỗi lần khởi động đều hỏi cụm mật khẩu.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Bản build này không có khoá phát hành, nên không thể báo khi có bản cập nhật.
+
 # Looking for a newer version…
 tf1905fe9 = Đang tìm phiên bản mới hơn…
 

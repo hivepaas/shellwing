@@ -1963,6 +1963,9 @@ ta18da274 = 空闲时锁定
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 超过这段时间没有按键或点击，保险库会锁定，直到输入其密码短语。仅在系统钥匙串未保存其密钥时生效：此时每次启动都会询问密码短语。
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 此版本没有发布密钥，因此无法提示更新。
+
 # Looking for a newer version…
 tf1905fe9 = 正在检查新版本…
 

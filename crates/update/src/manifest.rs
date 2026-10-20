@@ -1,5 +1,5 @@
-//! The list of releases, `release.json`, as the HivePaaS CLI's: each
-//! channel's current release, and every release's files by platform.
+//! The list of releases, `release.json`: each channel's current release,
+//! and every release's files by platform.
 //!
 //! ```json
 //! {

@@ -2294,7 +2294,11 @@ impl SettingsView {
     fn about(&self, cx: &mut Context<Self>) -> gpui::Div {
         let u = &self.snap.update;
         let on = u.check;
-        let status: gpui::Div = if u.checking {
+        let status: gpui::Div = if !u.keys {
+            label(&tr!(
+                "This build has no release keys, so it cannot tell of updates."
+            ))
+        } else if u.checking {
             label(&tr!("Looking for a newer version…"))
         } else if let Some(v) = &u.offered {
             let get = match u.managed {
@@ -2376,7 +2380,7 @@ impl SettingsView {
                 _ => tr!("This is a release: you are told of newer releases, not of betas."),
             }))
             .child(status)
-            .child(
+            .when(u.keys, |d| d.child(
                 div()
                     .flex()
                     .child(
@@ -2386,8 +2390,8 @@ impl SettingsView {
                                 let _ = v.workspace.update(cx, |ws, cx| ws.check_updates(cx));
                             })),
                     ),
-            )
-            .child(toggle(
+            ))
+            .when(u.keys, |d| d.child(toggle(
                 "update-auto",
                 on,
                 &tr!("Look for updates once a day"),
@@ -2395,7 +2399,7 @@ impl SettingsView {
                 cx.listener(move |v, _, _, cx| {
                     v.change(&["updates", "check"], Some(SettingValue::Bool(!on)), cx)
                 }),
-            ))
+            )))
     }
 }
 

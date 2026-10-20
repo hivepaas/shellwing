@@ -1963,6 +1963,9 @@ ta18da274 = アイドル時にロック
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = キー入力やクリックがないままこの時間が経過すると、パスフレーズを入力するまで保管庫がロックされます。システムのキーチェーンに鍵が保存されていない場合のみ有効です（その場合は起動のたびにパスフレーズを尋ねます）。
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = このビルドにはリリース鍵がないため、アップデートを知らせることができません。
+
 # Looking for a newer version…
 tf1905fe9 = 新しいバージョンを確認しています…
 

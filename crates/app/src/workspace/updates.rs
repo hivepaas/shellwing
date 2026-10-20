@@ -27,6 +27,8 @@ pub(crate) struct Updates {
 /// What Settings › About shows of it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct UpdateSnap {
+    /// The build has release keys: it can tell of updates.
+    pub keys: bool,
     pub current: String,
     pub channel: &'static str,
     pub check: bool,
@@ -67,6 +69,10 @@ impl Workspace {
         if let Some(store) = self.live.store() {
             self.updates.state = store.update_state();
         }
+        // A build without release keys could believe no list: it does not look.
+        if !shellwing_update::has_keys() {
+            return;
+        }
         cx.spawn(async move |this, cx| {
             cx.background_executor().timer(FIRST_AFTER).await;
             loop {
@@ -91,7 +97,7 @@ impl Workspace {
 
     /// Reads the signed list now, and says what it offers.
     pub(crate) fn check_updates(&mut self, cx: &mut Context<Self>) {
-        if self.updates.checking {
+        if self.updates.checking || !shellwing_update::has_keys() {
             return;
         }
         self.updates.checking = true;
@@ -180,6 +186,7 @@ impl Workspace {
         let current = shellwing_update::current();
         let s = &self.updates.state;
         UpdateSnap {
+            keys: shellwing_update::has_keys(),
             channel: current.channel().name(),
             current: current.to_string(),
             check: self.live.settings().updates.check,
