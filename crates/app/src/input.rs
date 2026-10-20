@@ -37,7 +37,39 @@ pub struct TextInput {
     masked: bool,
     /// Several lines, wrapped to the width: [`TextInput::multiline`].
     lines: Option<Lines>,
+    history: History,
 }
+
+/// What the text was before an edit, to go back to.
+#[derive(Clone)]
+struct Snap {
+    content: SharedString,
+    selected: Range<usize>,
+    reversed: bool,
+}
+
+/// What an edit was, so a run of the same kind undoes as one.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EditKind {
+    Typing,
+    Deleting,
+    Other,
+}
+
+/// Undo and redo.
+#[derive(Default)]
+struct History {
+    undo: Vec<Snap>,
+    redo: Vec<Snap>,
+    /// The last edit's kind and time: the same kind within a moment joins it.
+    last: Option<(std::time::Instant, EditKind)>,
+}
+
+/// Steps kept, and the bytes they may hold together.
+const UNDO_STEPS: usize = 100;
+const UNDO_BYTES: usize = 16 * 1024 * 1024;
+/// Keys apart by less than this undo together.
+const UNDO_JOIN: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// A field of several lines: how many it shows, and how they were drawn.
 struct Lines {
@@ -48,6 +80,36 @@ struct Lines {
     drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
     line_height: Pixels,
     scroll_y: Pixels,
+    /// Where the caret was when the view last followed it: the view follows
+    /// it again only once it moves, so a wheel can scroll away from it.
+    caret_seen: Option<(usize, usize)>,
+    /// The text's height and the field's, as last drawn.
+    content_h: Pixels,
+    view_h: Pixels,
+    /// The scroll bar's thumb, dragged: where the drag started, and the
+    /// scroll then.
+    thumb_drag: Option<(Pixels, Pixels)>,
+}
+
+/// The scroll bar: its width, and the least its thumb is.
+const BAR_W: f32 = 6.;
+const THUMB_MIN: f32 = 24.;
+
+impl Lines {
+    /// How far the text scrolls at most.
+    fn most(&self) -> Pixels {
+        (self.content_h - self.view_h).max(px(0.))
+    }
+
+    /// The thumb's top and height in a field `view_h` high.
+    fn thumb(&self) -> Option<(Pixels, Pixels)> {
+        if self.content_h <= self.view_h || self.view_h <= px(0.) {
+            return None;
+        }
+        let h = (self.view_h * (self.view_h / self.content_h)).max(px(THUMB_MIN));
+        let top = (self.view_h - h) * (self.scroll_y / self.most());
+        Some((top, h))
+    }
 }
 
 /// What an empty field shows.
@@ -64,6 +126,124 @@ pub fn said<V: 'static>(
     placeholder: impl Fn() -> String + 'static,
 ) -> gpui::Entity<TextInput> {
     cx.new(|cx| TextInput::said(placeholder, cx))
+}
+
+/// The word around `offset` in `text`: a run of letters and digits, or of
+/// what is neither. A click just past a word's end (the right half of its
+/// last letter) takes that word.
+fn word_around(text: &str, offset: usize) -> Range<usize> {
+    let offset = offset.min(text.len());
+    let words: Vec<Range<usize>> = text
+        .split_word_bound_indices()
+        .map(|(i, w)| i..i + w.len())
+        .collect();
+    let wordy = |r: &Range<usize>| text[r.clone()].chars().any(char::is_alphanumeric);
+    match words
+        .iter()
+        .position(|r| r.start <= offset && offset < r.end)
+    {
+        Some(i)
+            if !wordy(&words[i]) && i > 0 && words[i - 1].end == offset && wordy(&words[i - 1]) =>
+        {
+            words[i - 1].clone()
+        }
+        Some(i) => words[i].clone(),
+        None => words.last().cloned().unwrap_or(offset..offset),
+    }
+}
+
+/// While a selection is dragged, the mouse anywhere in the window moves
+/// its end (past the field, it goes to the text's start or end), and the
+/// button let go anywhere ends it: a quick drag leaves the field before it
+/// says where it is.
+fn follow_drag(input: &Entity<TextInput>, window: &mut Window, cx: &App) {
+    if !input.read(cx).selecting {
+        return;
+    }
+    let moved = input.clone();
+    window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            moved.update(cx, |i, cx| {
+                if i.selecting {
+                    let at = i.index_for_position(e.position);
+                    i.select_to(at, cx);
+                }
+            });
+        }
+    });
+    let up = input.clone();
+    window.on_mouse_event(move |_: &MouseUpEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            up.update(cx, |i, cx| {
+                if i.selecting {
+                    i.selecting = false;
+                    cx.notify();
+                }
+            });
+        }
+    });
+}
+
+/// The scroll bar's thumb dragged (a press on the bar's strip starts it),
+/// anywhere in the window while the button is held.
+fn drag_thumb(input: &Entity<TextInput>, bounds: Bounds<Pixels>, window: &mut Window) {
+    // A strip wider than the thumb, easy to hit.
+    let strip = Bounds::new(
+        point(bounds.right() - px(BAR_W + 6.), bounds.top()),
+        size(px(BAR_W + 6.), bounds.size.height),
+    );
+    let down = input.clone();
+    window.on_mouse_event(move |e: &MouseDownEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture
+            && e.button == MouseButton::Left
+            && strip.contains(&e.position)
+        {
+            cx.stop_propagation();
+            down.update(cx, |i, cx| {
+                if let Some(l) = i.lines.as_mut() {
+                    // A press off the thumb pages the text there first.
+                    if let Some((top, h)) = l.thumb() {
+                        let y = e.position.y - strip.top();
+                        if y < top || y > top + h {
+                            let to = (y - h / 2.).max(px(0.)) / (l.view_h - h).max(px(1.));
+                            l.scroll_y = (l.most() * to).min(l.most());
+                        }
+                    }
+                    l.thumb_drag = Some((e.position.y, l.scroll_y));
+                }
+                cx.notify();
+            });
+        }
+    });
+    let moved = input.clone();
+    window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+        if phase != gpui::DispatchPhase::Capture {
+            return;
+        }
+        moved.update(cx, |i, cx| {
+            let Some(l) = i.lines.as_mut() else {
+                return;
+            };
+            let (Some((y0, s0)), Some((_, h))) = (l.thumb_drag, l.thumb()) else {
+                return;
+            };
+            let per = l.most() / (l.view_h - h).max(px(1.));
+            l.scroll_y = (s0 + (e.position.y - y0) * per).clamp(px(0.), l.most());
+            cx.notify();
+        });
+    });
+    let up = input.clone();
+    window.on_mouse_event(move |_: &MouseUpEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            up.update(cx, |i, cx| {
+                if let Some(l) = i.lines.as_mut()
+                    && l.thumb_drag.take().is_some()
+                {
+                    cx.notify();
+                }
+            });
+        }
+    });
 }
 
 /// What a masked field shows for each character.
@@ -95,6 +275,7 @@ impl TextInput {
             selecting: false,
             masked: false,
             lines: None,
+            history: History::default(),
         }
     }
 
@@ -108,8 +289,84 @@ impl TextInput {
             drawn: vec![],
             line_height: px(0.),
             scroll_y: px(0.),
+            caret_seen: None,
+            content_h: px(0.),
+            view_h: px(0.),
+            thumb_drag: None,
         });
         self
+    }
+
+    /// The selected part of the text, as a byte range.
+    pub fn selected_range(&self) -> Range<usize> {
+        self.selected.clone()
+    }
+
+    /// The mouse is still choosing the selection.
+    pub fn dragging(&self) -> bool {
+        self.selecting
+    }
+
+    /// Replaces `range` with `text` as an edit (it undoes), then selects
+    /// `select` in the new text.
+    pub fn edit(
+        &mut self,
+        range: Range<usize>,
+        text: &str,
+        select: Range<usize>,
+        cx: &mut Context<Self>,
+    ) {
+        self.remember(EditKind::Other);
+        let range = range.start.min(self.content.len())..range.end.min(self.content.len());
+        self.content =
+            (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
+        let end = select.end.min(self.content.len());
+        self.selected = select.start.min(end)..end;
+        self.reversed = false;
+        self.marked = None;
+        cx.emit(Changed);
+        cx.notify();
+    }
+
+    /// Where the selection starts on the window (the top of its row), in a
+    /// field of several lines as last drawn.
+    pub fn selection_origin(&self) -> Option<Point<Pixels>> {
+        let lines = self.lines.as_ref()?;
+        let bounds = self.last_bounds?;
+        let p = self.point_for(self.selected.start)?;
+        Some(point(
+            bounds.left() + p.x,
+            bounds.top() + p.y - lines.scroll_y,
+        ))
+    }
+
+    /// A field of several lines' row height, once it was drawn.
+    pub fn line_height(&self) -> Option<Pixels> {
+        self.lines
+            .as_ref()
+            .map(|l| l.line_height)
+            .filter(|h| *h > px(0.))
+    }
+
+    /// Puts the caret at `offset` (a byte of the text, or its end).
+    pub fn place_cursor(&mut self, offset: usize, cx: &mut Context<Self>) {
+        let at = offset.min(self.content.len());
+        let at = (0..=at)
+            .rev()
+            .find(|i| self.content.is_char_boundary(*i))
+            .unwrap_or(0);
+        self.move_to(at, cx);
+    }
+
+    /// A field of several lines shows `min` to `max` rows from now on.
+    pub fn set_rows(&mut self, min: usize, max: usize, cx: &mut Context<Self>) {
+        if let Some(l) = self.lines.as_mut() {
+            let rows = (min.max(1), max.max(min.max(1)));
+            if l.rows != rows {
+                l.rows = rows;
+                cx.notify();
+            }
+        }
     }
 
     /// Where the line holding `offset` starts and ends.
@@ -140,6 +397,16 @@ impl TextInput {
         let Some(lines) = self.lines.as_ref() else {
             return 0;
         };
+        // Above the text: its start; below it: its end (a drag past the
+        // field's edges).
+        if at.y < px(0.) {
+            return 0;
+        }
+        if let Some((_, l, top)) = lines.drawn.last()
+            && at.y > *top + l.size(lines.line_height).height
+        {
+            return self.content.len();
+        }
         let Some((start, line, top)) = lines
             .drawn
             .iter()
@@ -230,6 +497,8 @@ impl TextInput {
     /// Replaces the text, with `selected` (a byte range) chosen, as a rename
     /// field picks the name without its extension.
     pub fn set_text(&mut self, text: &str, selected: Range<usize>, cx: &mut Context<Self>) {
+        // Set from outside: nothing to undo into.
+        self.history = History::default();
         self.content = text.to_string().into();
         let end = selected.end.min(text.len());
         self.selected = selected.start.min(end)..end;
@@ -281,7 +550,75 @@ impl TextInput {
             .unwrap_or(self.content.len())
     }
 
+    /// Keeps the text as it is, before an edit of `kind`; a run of typing
+    /// (or deleting) within a moment is one step.
+    fn remember(&mut self, kind: EditKind) {
+        let now = std::time::Instant::now();
+        let joins = self
+            .history
+            .last
+            .is_some_and(|(t, k)| k == kind && kind != EditKind::Other && now - t < UNDO_JOIN);
+        self.history.last = Some((now, kind));
+        self.history.redo.clear();
+        if joins {
+            return;
+        }
+        self.history.undo.push(Snap {
+            content: self.content.clone(),
+            selected: self.selected.clone(),
+            reversed: self.reversed,
+        });
+        let h = &mut self.history.undo;
+        while h.len() > UNDO_STEPS
+            || (h.len() > 1 && h.iter().map(|s| s.content.len()).sum::<usize>() > UNDO_BYTES)
+        {
+            h.remove(0);
+        }
+    }
+
+    fn restore(&mut self, s: Snap, cx: &mut Context<Self>) {
+        self.content = s.content;
+        self.selected = s.selected;
+        self.reversed = s.reversed;
+        self.marked = None;
+        self.history.last = None;
+        cx.emit(Changed);
+        cx.notify();
+    }
+
+    fn now(&self) -> Snap {
+        Snap {
+            content: self.content.clone(),
+            selected: self.selected.clone(),
+            reversed: self.reversed,
+        }
+    }
+
+    fn undo(&mut self, cx: &mut Context<Self>) {
+        if let Some(s) = self.history.undo.pop() {
+            let now = self.now();
+            self.history.redo.push(now);
+            self.restore(s, cx);
+        }
+    }
+
+    fn redo(&mut self, cx: &mut Context<Self>) {
+        if let Some(s) = self.history.redo.pop() {
+            let now = self.now();
+            self.history.undo.push(now);
+            self.restore(s, cx);
+        }
+    }
+
     fn replace(&mut self, range: Range<usize>, text: &str, cx: &mut Context<Self>) {
+        let kind = if text.is_empty() {
+            EditKind::Deleting
+        } else if range.is_empty() && text != "\n" && text.chars().count() == 1 {
+            EditKind::Typing
+        } else {
+            EditKind::Other
+        };
+        self.remember(kind);
         self.content =
             (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
         let at = range.start + text.len();
@@ -344,6 +681,9 @@ impl TextInput {
             m.control
         };
         match k.key.as_str() {
+            "z" if cmd && m.shift => self.redo(cx),
+            "z" if cmd => self.undo(cx),
+            "y" if m.control && !cfg!(target_os = "macos") => self.redo(cx),
             "backspace" => {
                 if self.selected.is_empty() {
                     let prev = self.previous_boundary(self.cursor());
@@ -423,14 +763,60 @@ impl TextInput {
         self.text_offset(line.closest_index_for_x(position.x - bounds.left() + self.scroll_x))
     }
 
+    /// The word around `offset`; a hidden field's whole text, its words
+    /// unsaid.
+    fn word_at(&self, offset: usize) -> Range<usize> {
+        if self.masked {
+            return 0..self.content.len();
+        }
+        word_around(&self.content, offset)
+    }
+
+    /// The line around `offset`: in a field of several lines, the one it is
+    /// on; else the whole text.
+    fn line_at(&self, offset: usize) -> Range<usize> {
+        if self.lines.is_none() {
+            return 0..self.content.len();
+        }
+        let (start, end) = self.line_bounds(offset.min(self.content.len()));
+        start..end
+    }
+
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         window.focus(&self.focus, cx);
-        self.selecting = true;
         let at = self.index_for_position(e.position);
+        // A second click picks the word, a third the line.
+        if e.click_count >= 2 && !e.modifiers.shift {
+            self.selecting = false;
+            let r = if e.click_count == 2 {
+                self.word_at(at)
+            } else {
+                self.line_at(at)
+            };
+            self.selected = r;
+            self.reversed = false;
+            return cx.notify();
+        }
+        self.selecting = true;
         if e.modifiers.shift {
             self.select_to(at, cx);
         } else {
             self.move_to(at, cx);
+        }
+    }
+
+    /// A wheel or a touchpad scrolls a field of several lines; at its top
+    /// or bottom, what holds it scrolls instead.
+    fn wheel(&mut self, e: &gpui::ScrollWheelEvent, _: &mut Window, cx: &mut Context<Self>) {
+        let Some(l) = self.lines.as_mut() else {
+            return;
+        };
+        let dy = e.delta.pixel_delta(l.line_height.max(px(1.))).y;
+        let to = (l.scroll_y - dy).clamp(px(0.), l.most());
+        if to != l.scroll_y {
+            l.scroll_y = to;
+            cx.stop_propagation();
+            cx.notify();
         }
     }
 
@@ -538,6 +924,10 @@ impl EntityInputHandler for TextInput {
             .map(|r| self.range_from_utf16(r))
             .or(self.marked.clone())
             .unwrap_or(self.selected.clone());
+        // A composition starting: what was before it is a step back.
+        if self.marked.is_none() {
+            self.remember(EditKind::Typing);
+        }
         self.content =
             (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
         self.marked = (!text.is_empty()).then(|| range.start..range.start + text.len());
@@ -764,6 +1154,7 @@ impl Element for TextElement {
         cx: &mut App,
     ) {
         let focus = self.input.read(cx).focus.clone();
+        follow_drag(&self.input, window, cx);
         window.handle_input(
             &focus,
             ElementInputHandler::new(bounds, self.input.clone()),
@@ -812,6 +1203,7 @@ impl Render for TextInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_move(cx.listener(Self::mouse_move))
+            .on_scroll_wheel(cx.listener(Self::wheel))
             .when(self.lines.is_none(), |d| {
                 d.child(TextElement { input: cx.entity() })
             })
@@ -845,6 +1237,8 @@ struct Area {
     drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
     cursor: Option<PaintQuad>,
     scroll_y: Pixels,
+    content_h: Pixels,
+    caret: (usize, usize),
 }
 
 /// The runs a field's text is drawn with: the selection on its own ground.
@@ -997,7 +1391,14 @@ impl Element for AreaElement {
                 })
         };
         let mut scroll_y = input.lines.as_ref().map_or(px(0.), |l| l.scroll_y);
-        if let Some(c) = caret {
+        // Followed when it moved (or the text changed), not while a wheel
+        // or the bar scrolls the text away from it.
+        let caret_now = (input.cursor(), input.content.len());
+        let moved = input
+            .lines
+            .as_ref()
+            .is_none_or(|l| l.caret_seen != Some(caret_now));
+        if let Some(c) = caret.filter(|_| moved) {
             if c.y < scroll_y {
                 scroll_y = c.y;
             }
@@ -1021,6 +1422,8 @@ impl Element for AreaElement {
             drawn,
             cursor,
             scroll_y,
+            content_h: top,
+            caret: caret_now,
         }
     }
 
@@ -1035,6 +1438,7 @@ impl Element for AreaElement {
         cx: &mut App,
     ) {
         let focus = self.input.read(cx).focus.clone();
+        follow_drag(&self.input, window, cx);
         window.handle_input(
             &focus,
             ElementInputHandler::new(bounds, self.input.clone()),
@@ -1061,13 +1465,58 @@ impl Element for AreaElement {
             }
         });
         let drawn = std::mem::take(&mut area.drawn);
-        self.input.update(cx, |input, _| {
+        let (content_h, caret) = (area.content_h, area.caret);
+        let thumb = self.input.update(cx, |input, _| {
             input.last_bounds = Some(bounds);
-            if let Some(lines) = input.lines.as_mut() {
-                lines.drawn = drawn;
-                lines.line_height = line_height;
-                lines.scroll_y = scroll_y;
-            }
+            let lines = input.lines.as_mut()?;
+            lines.drawn = drawn;
+            lines.line_height = line_height;
+            lines.scroll_y = scroll_y;
+            lines.caret_seen = Some(caret);
+            lines.content_h = content_h;
+            lines.view_h = bounds.size.height;
+            lines.thumb()
         });
+        // The scroll bar, when the text is longer than the field.
+        if let Some((top, h)) = thumb {
+            let dragging = self
+                .input
+                .read(cx)
+                .lines
+                .as_ref()
+                .is_some_and(|l| l.thumb_drag.is_some());
+            let bar = Bounds::new(
+                point(bounds.right() - px(BAR_W) - px(1.), bounds.top() + top),
+                size(px(BAR_W), h),
+            );
+            let color = if dragging {
+                colors().soft
+            } else {
+                colors().muted
+            };
+            window.paint_quad(
+                fill(bar, rgba(crate::colors::with_alpha(color, 0x99)))
+                    .corner_radii(px(BAR_W / 2.)),
+            );
+            drag_thumb(&self.input, bounds, window);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::word_around;
+
+    #[test]
+    fn a_double_click_takes_the_word() {
+        let t = "sudo systemctl restart nginx.service";
+        let w = |at: usize| &t[word_around(t, at)];
+        assert_eq!(w(6), "systemctl");
+        // Just past its end: still the word, not the space.
+        assert_eq!(w(14), "systemctl");
+        assert_eq!(w(23), "nginx.service");
+        assert_eq!(w(t.len()), "nginx.service");
+        assert_eq!(&"a  b"[word_around("a  b", 2)], "  ");
+        assert_eq!(&"xin chào"[word_around("xin chào", 6)], "chào");
     }
 }

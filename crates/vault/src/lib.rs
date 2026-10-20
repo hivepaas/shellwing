@@ -122,6 +122,8 @@ pub mod limits {
     pub const LOADED: usize = 256 * 1024;
     /// A config file, in bytes.
     pub const FILE: usize = 1024 * 1024;
+    /// A note's text, in bytes.
+    pub const NOTE: usize = 256 * 1024;
 }
 
 /// What is past one of the [`limits`].
@@ -139,6 +141,8 @@ pub enum Oversize {
     Environment(usize),
     /// A config file of this many bytes.
     File(usize),
+    /// A note of this many bytes.
+    Note(usize),
 }
 
 impl std::fmt::Display for Oversize {
@@ -170,6 +174,12 @@ impl std::fmt::Display for Oversize {
                 "the file is {} KB; {} KB at most",
                 kb(*n),
                 kb(limits::FILE)
+            ),
+            Oversize::Note(n) => write!(
+                f,
+                "the note is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::NOTE)
             ),
         }
     }
@@ -350,6 +360,34 @@ pub struct ConfigFile {
     pub size: usize,
     /// Not text (not UTF-8, or holding a NUL): replaced whole, not edited.
     pub binary: bool,
+}
+
+/// A note's format.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum NoteFormat {
+    #[default]
+    Plain,
+    Markdown,
+}
+
+/// Free text kept in the vault: what it is, without its text
+/// ([`Vault::note_text`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Note {
+    pub id: String,
+    pub title: String,
+    /// What it is filed under; empty: none.
+    pub category: String,
+    pub format: NoteFormat,
+    /// The hosts it is about (their names): the palette offers it first in
+    /// their panes.
+    pub hosts: Vec<String>,
+    /// Its text shows masked until asked for.
+    pub sensitive: bool,
+    /// When it was last changed, as the vault's clock stamps it.
+    pub changed: String,
+    /// Its text's bytes.
+    pub size: usize,
 }
 
 /// Whether `bytes` are text to edit: UTF-8 without a NUL.
@@ -1353,6 +1391,95 @@ impl Vault {
         Ok(id)
     }
 
+    /// The notes kept here, without their texts.
+    pub fn notes(&self) -> Result<Vec<Note>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "note")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                let changed =
+                    r.f.values()
+                        .map(|f| f.t.as_str())
+                        .max()
+                        .unwrap_or("")
+                        .to_string();
+                Note {
+                    title: get("title"),
+                    category: get("category"),
+                    format: if get("format") == "markdown" {
+                        NoteFormat::Markdown
+                    } else {
+                        NoteFormat::Plain
+                    },
+                    hosts: get("hosts")
+                        .split('\n')
+                        .filter(|h| !h.is_empty())
+                        .map(str::to_string)
+                        .collect(),
+                    sensitive: get("sensitive") == "yes",
+                    size: r.f.get("text").map_or(0, |f| f.val.len()),
+                    changed,
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// A note's text.
+    pub fn note_text(&self, id: &str) -> Result<Option<Zeroizing<String>>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "note")
+            .map(|(_, r)| {
+                Zeroizing::new(r.f.get("text").map(|f| f.val.clone()).unwrap_or_default())
+            }))
+    }
+
+    /// Keeps a note, new when `n.id` is empty; returns its id. `text` None
+    /// keeps the one it had. Each part is its own field, so a title changed
+    /// on one device and the text on another both stay.
+    pub fn save_note(&self, n: &Note, text: Option<&str>) -> Result<String> {
+        let id = if n.id.is_empty() {
+            new_id()?
+        } else {
+            n.id.clone()
+        };
+        let old;
+        let text = match text {
+            Some(t) => t,
+            None => {
+                old = self.note_text(&id)?.unwrap_or_default();
+                old.as_str()
+            }
+        };
+        if text.len() > limits::NOTE {
+            return Err(Error::TooLarge(Oversize::Note(text.len())));
+        }
+        let values = BTreeMap::from([
+            ("title".to_string(), n.title.clone()),
+            ("category".to_string(), n.category.clone()),
+            (
+                "format".to_string(),
+                match n.format {
+                    NoteFormat::Plain => "plain",
+                    NoteFormat::Markdown => "markdown",
+                }
+                .to_string(),
+            ),
+            ("hosts".to_string(), n.hosts.join("\n")),
+            (
+                "sensitive".to_string(),
+                if n.sensitive { "yes" } else { "no" }.to_string(),
+            ),
+            ("text".to_string(), text.to_string()),
+        ]);
+        self.update(&id, "note", &n.title, &values)?;
+        Ok(id)
+    }
+
     /// Keeps an environment, new when `id` is empty; returns its id. Each
     /// variable is its own field, so edits on two devices to two variables
     /// both stay. A variable given None keeps the value it had; one left
@@ -2144,6 +2271,59 @@ mod tests {
         assert!(matches!(
             v.save_config_file(&f, Some(&big)),
             Err(Error::TooLarge(Oversize::File(_)))
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn notes_keep_their_parts_apart() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-notes-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let mut n = Note {
+            id: String::new(),
+            title: "Runbook".into(),
+            category: "Ops".into(),
+            format: NoteFormat::Markdown,
+            hosts: vec!["web-1".into(), "db".into()],
+            sensitive: true,
+            changed: String::new(),
+            size: 0,
+        };
+        let id = v
+            .save_note(&n, Some("# Restart\n\n- `systemctl restart app`"))
+            .expect("saved");
+        let listed = v.notes().expect("listed");
+        assert_eq!(listed.len(), 1);
+        let got = &listed[0];
+        assert_eq!(
+            (
+                got.title.as_str(),
+                got.format,
+                got.sensitive,
+                got.hosts.len()
+            ),
+            ("Runbook", NoteFormat::Markdown, true, 2)
+        );
+        assert!(!got.changed.is_empty());
+        // Retitled, its text kept.
+        n.id = id.clone();
+        n.title = "Runbook: app".into();
+        n.hosts.clear();
+        v.save_note(&n, None).expect("retitled");
+        assert_eq!(
+            v.note_text(&id)
+                .expect("read")
+                .as_deref()
+                .map(|t| t.as_str()),
+            Some("# Restart\n\n- `systemctl restart app`")
+        );
+        assert!(v.notes().expect("listed")[0].hosts.is_empty());
+        let big = "x".repeat(limits::NOTE + 1);
+        assert!(matches!(
+            v.save_note(&n, Some(&big)),
+            Err(Error::TooLarge(Oversize::Note(_)))
         ));
         let _ = std::fs::remove_dir_all(&dir);
     }

@@ -31,6 +31,9 @@ tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = Tệp dài { $size } KB; tối đa { $max } KB.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = Ghi chú dài { $size } KB; tối đa { $max } KB.
+
 # Name
 t0fe07306 = Tên
 
@@ -949,6 +952,108 @@ tdd571ace = Sáng, ấm
 # Your themes
 tb2e83d5c = Chủ đề của bạn
 
+# New note
+t788c7123 = Ghi chú mới
+
+# Title
+t24d471a9 = Tiêu đề
+
+# No category
+t44662d06 = Chưa phân loại
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = Viết ở đây; Markdown hiện khi xem trước.
+
+# It is not in the vault any more.
+td11af590 = Tệp không còn trong kho.
+
+# this note
+t4545c373 = ghi chú này
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác của bạn khi chúng đồng bộ.
+
+# Edit it in another app?
+t1719e0f2 = Sửa trong ứng dụng khác?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Trong lúc mở ở đó, một bản sao văn bản thường nằm trên đĩa của máy này (trong thư mục chỉ bạn đọc được), và trình soạn thảo có thể giữ bản sao riêng, như bản dự phòng hay lịch sử. Bản sao được xoá khi bạn xong.
+
+# Cannot make the copy: {e}
+td59a6621 = Không tạo được bản sao: { $e }
+
+# It is not text any more.
+te3591497 = Tệp không còn là văn bản.
+
+# Not read back: {e}
+tf04d4bce = Không đọc lại được: { $e }
+
+# Insert into {pane}
+t3d5eaffc = Chèn vào { $pane }
+
+# No shell to insert into
+t825e7370 = Không có shell để chèn vào
+
+# The vault's passphrase
+tb66334ea = Passphrase của kho
+
+# Wrong passphrase.
+t2ebec270 = Sai passphrase.
+
+# For a host ▾
+tfa622581 = Cho máy chủ ▾
+
+# No hosts yet.
+t71734b03 = Chưa có máy chủ.
+
+# Saving…
+tbd79b37d = Đang lưu…
+
+# Click the text to edit it
+t63928671 = Bấm vào chữ để sửa
+
+# Saved
+t8a6979e4 = Đã lưu
+
+# Plain text
+tb7fc0ade = Văn bản thường
+
+# Edit
+tc2c76cb1 = Sửa
+
+# Preview
+tfdda4cf7 = Xem trước
+
+# Sensitive
+tf603feef = Nhạy cảm
+
+# Edit in another app…
+t1c6d0a34 = Sửa trong ứng dụng khác…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Kho đang khoá: hãy mở khoá ở cửa sổ chính.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = Nhạy cảm: nội dung chỉ hiện khi xác nhận là bạn.
+
+# Show the text
+t0ff690fe = Hiện nội dung
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng xem được.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = Đang mở ở ứng dụng khác: những gì nó lưu sẽ về đây và được giữ.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = Chưa viết gì: bấm Sửa để viết.
+
+# Untitled note
+t4ce277c4 = Ghi chú chưa đặt tên
+
 # Hosts
 tcf9aefb4 = Máy chủ
 
@@ -963,6 +1068,9 @@ t273b1ccb = Biến môi trường
 
 # Config files
 t16261310 = Tệp cấu hình
+
+# Notes
+t0ff01b6a = Ghi chú
 
 # Actions
 te65fb504 = Thao tác
@@ -1230,9 +1338,6 @@ t44bdb829 = Màu nhấn của ứng dụng theo chủ đề
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = Logo, mục đang chọn và các nút chính lấy màu nhấn của chủ đề, thay cho màu xanh của ứng dụng. Màu quá gần màu nền của ứng dụng sẽ không được dùng.
-
-# Preview
-tfdda4cf7 = Xem trước
 
 # {k} k
 t450902df = { $k } nghìn
@@ -1612,9 +1717,6 @@ t87553579 = không kết nối được
 # closed
 tebee50c5 = đã đóng
 
-# Edit
-tc2c76cb1 = Sửa
-
 # No hosts yet
 ta58f36ff = Chưa có máy chủ
 
@@ -1666,9 +1768,6 @@ t0038f509 = Vị trí đặt: phải là đường dẫn tệp, không phải th
 # Permissions: three octal digits, such as 600.
 t5dde13fd = Quyền: ba chữ số bát phân, ví dụ 600.
 
-# No category
-t44662d06 = Chưa phân loại
-
 # {size}, not text
 t5956f56a = { $size }, không phải văn bản
 
@@ -1704,15 +1803,6 @@ t56c9aeed = Sửa tệp cấu hình
 
 # Category
 tafb3e591 = Phân loại
-
-# The vault's passphrase
-tb66334ea = Passphrase của kho
-
-# Wrong passphrase.
-t2ebec270 = Sai passphrase.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase của kho, để hiện giá trị
@@ -1774,6 +1864,9 @@ tf3955dbc = Bộ biến mới
 # Edit environment
 t79646cbc = Sửa bộ biến
 
+# sensitive
+ta2bd2f4f = nhạy cảm
+
 # What it does, to find it in the palette
 td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
 
@@ -1800,12 +1893,6 @@ tbafebe63 = Dành cho
 
 # No groups yet: make one in the host list.
 t31c54e54 = Chưa có nhóm: hãy tạo trong danh sách máy chủ.
-
-# No hosts yet.
-t71734b03 = Chưa có máy chủ.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác của bạn khi chúng đồng bộ.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
@@ -1858,11 +1945,17 @@ t0c42d278 = Bộ biến mới…
 # New config file…
 t58dfdc93 = Tệp cấu hình mới…
 
+# New note…
+tdad71f9d = Ghi chú mới…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = Biến cho shell, như khoá của một API, được mã hoá trong kho và đồng bộ cùng kho. Nạp vào một pane từ bảng lệnh ({ $chord }, nhóm Biến môi trường) hoặc menu của pane, rồi gỡ ra khi xong; hoặc để một đoạn lệnh cần nó dùng riêng.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Các lệnh bạn hay chạy. Chạy từ bảng lệnh ({ $chord }, rồi gõ tên của nó): Enter chạy trong khung, { $alt } chạy trong mọi khung của tab. Giữ trong kho, nên được đồng bộ cùng máy chủ của bạn.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = Văn bản tự do, được mã hoá trong kho và đồng bộ cùng kho: máy chủ dùng để làm gì, cách khởi động lại, các mã cần giữ. Mỗi ghi chú mở trong một cửa sổ riêng, từ đây hoặc từ bảng lệnh ({ $chord }, nhóm Ghi chú); văn bản thường hoặc Markdown, tự lưu khi gõ.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Các tệp để đặt lên máy chủ, như ~/.kube/config hay ~/.aws/credentials, được mã hoá trong kho và đồng bộ cùng kho. Đặt từ bảng lệnh ({ $chord }, nhóm Tệp cấu hình) hoặc menu của pane: tới khi đóng tab, hoặc giữ lại luôn.
@@ -2248,9 +2341,6 @@ t59edc3e9 = Tệp cấu hình · { $category }
 # placed: Enter places it again
 taf8f6d41 = đã đặt: Enter để đặt lại
 
-# It is not in the vault any more.
-td11af590 = Tệp không còn trong kho.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · quyền { $mode }
 
@@ -2340,6 +2430,12 @@ t6460fddf = Hãy mở một tab trước
 
 # Connect first
 t0b55252f = Hãy kết nối trước
+
+# Notes for {host}
+ta77bd589 = Ghi chú cho { $host }
+
+# Notes · {category}
+tbb112cdf = Ghi chú · { $category }
 
 # Over SSH only
 t14e43465 = Chỉ qua SSH
@@ -2793,9 +2889,6 @@ t0cf7277a = kho vẫn đang mở
 
 # No saved passwords: {why}.
 tf97d3647 = Không có mật khẩu đã lưu: { $why }.
-
-# Saved
-t8a6979e4 = Đã lưu
 
 # Password for {target}
 t2cd4c302 = Mật khẩu cho { $target }

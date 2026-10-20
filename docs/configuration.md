@@ -645,6 +645,54 @@ left as it is, and said so.
 A placed file is on the server's disk: whoever has root there can read it until
 it is removed. Place secrets on servers you trust, until the tab closes.
 
+## Notes
+
+Notes are free text kept in the vault, encrypted, and synced with it: what a
+server is for, how to restart it, codes to keep. One holds 256 KB at most. Each
+opens in a window of its own, from *Settings › Notes*, or from the palette
+(under *Notes*; *New note…* there too). The palette lists first the notes
+about the focused pane's host.
+
+In its window, a note has a title, a category, a format and the hosts it is
+about (*For a host ▾*):
+
+- **Plain text** is edited as it is.
+- **Markdown** opens as it shows (headings, emphasis, `code`, code blocks,
+  lists and task lists, quotes, GitHub alerts, rules, tables, footnotes, links
+  that open in the browser); a task's box ticks there too. *Edit* switches to
+  its text, *Preview* back. The reading view is
+  [zorite-markdown](https://crates.io/crates/zorite-markdown), which only reads
+  the text: it never changes it.
+
+Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z) redoes, in a
+note as in every field of the app.
+
+**Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
+it into the main window's focused pane (connected), without Enter, and brings
+that window forward to read it and run it. Several lines go as one paste. In a
+Markdown note the bar also formats: bold, italic, strikethrough, code (a fenced
+block for several lines), link, heading, quote, list, task; applied again, each
+comes off. Ctrl+B, Ctrl+I, Ctrl+E and Ctrl+K (Cmd on macOS) do bold, italic,
+code and link.
+
+**Edit in another app…** opens a note that is not sensitive in your text editor
+(*Settings › Files*, else the system's). While it is open there, a copy in plain
+text is on this computer's disk, in a folder only you can read
+(`<cache>/shellwing/notes`), and the editor may keep copies of its own (backups,
+swap files, history): the app says so first. What the editor saves comes into
+the note and is kept; *Done* (or closing the note's window, or the vault
+locking) reads it once more and removes the copy. Copies a run of the app left
+behind (it crashed, or was killed) are removed at the next start.
+
+It is saved a second after typing stops, when its window closes, and when the
+app quits (Ctrl+S, Cmd+S on macOS, saves at once). *Delete* removes it, after
+asking.
+
+While the vault is locked, a note's window holds no text: it comes back once
+the vault is open. A **sensitive** note's text shows only after asking it is
+you, as for an environment's values. Closing the main window closes the notes'
+windows too.
+
 ## Typing in every pane
 
 **Ctrl+Shift+I** (**Cmd+Shift+I**) types what you type in one pane into every

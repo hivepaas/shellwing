@@ -31,6 +31,9 @@ tdbf76954 = 变量合计 { $size } KB；最多 { $max } KB。
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = 文件为 { $size } KB；最多 { $max } KB。
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = 笔记为 { $size } KB；最多 { $max } KB。
+
 # Name
 t0fe07306 = 名称
 
@@ -949,6 +952,108 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# New note
+t788c7123 = 新建笔记
+
+# Title
+t24d471a9 = 标题
+
+# No category
+t44662d06 = 无分类
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = 在此书写；Markdown 在预览中显示。
+
+# It is not in the vault any more.
+td11af590 = 它已不在保险库中。
+
+# this note
+t4545c373 = 这条笔记
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
+
+# Edit it in another app?
+t1719e0f2 = 在其他应用中编辑？
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = 在那里打开期间，一份纯文本副本会存放在这台电脑的磁盘上（仅你可读的文件夹中），编辑器也可能保留自己的副本，例如备份或历史记录。完成后副本会被删除。
+
+# Cannot make the copy: {e}
+td59a6621 = 无法创建副本：{ $e }
+
+# It is not text any more.
+te3591497 = 它已不再是文本。
+
+# Not read back: {e}
+tf04d4bce = 未能读回：{ $e }
+
+# Insert into {pane}
+t3d5eaffc = 插入到 { $pane }
+
+# No shell to insert into
+t825e7370 = 没有可插入的 shell
+
+# The vault's passphrase
+tb66334ea = 保险库的密码短语
+
+# Wrong passphrase.
+t2ebec270 = 密码短语错误。
+
+# For a host ▾
+tfa622581 = 用于主机 ▾
+
+# No hosts yet.
+t71734b03 = 还没有主机。
+
+# Saving…
+tbd79b37d = 正在保存…
+
+# Click the text to edit it
+t63928671 = 点击文本即可编辑
+
+# Saved
+t8a6979e4 = 已保存
+
+# Plain text
+tb7fc0ade = 纯文本
+
+# Edit
+tc2c76cb1 = 编辑
+
+# Preview
+tfdda4cf7 = 预览
+
+# Sensitive
+tf603feef = 敏感
+
+# Edit in another app…
+t1c6d0a34 = 在其他应用中编辑…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 保险库已锁定：请在主窗口中解锁。
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = 敏感：确认是你本人后才显示内容。
+
+# Show the text
+t0ff690fe = 显示内容
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = 请在系统对话框中确认是你本人…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它。
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = 正在其他应用中打开：它保存的内容会回到这里并被保留。
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = 尚未书写内容：点击编辑开始书写。
+
+# Untitled note
+t4ce277c4 = 无标题笔记
+
 # Hosts
 tcf9aefb4 = 主机
 
@@ -963,6 +1068,9 @@ t273b1ccb = 环境
 
 # Config files
 t16261310 = 配置文件
+
+# Notes
+t0ff01b6a = 笔记
 
 # Actions
 te65fb504 = 操作
@@ -1230,9 +1338,6 @@ t44bdb829 = 使用主题的强调色作为应用强调色
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = 徽标、选中项和主要按钮将使用主题的强调色，代替应用的蓝色。与应用背景过于接近的颜色不会被采用。
-
-# Preview
-tfdda4cf7 = 预览
 
 # {k} k
 t450902df = { $k } k
@@ -1612,9 +1717,6 @@ t87553579 = 无法连接
 # closed
 tebee50c5 = 已关闭
 
-# Edit
-tc2c76cb1 = 编辑
-
 # No hosts yet
 ta58f36ff = 还没有主机
 
@@ -1666,9 +1768,6 @@ t0038f509 = 放置位置：文件的路径，而不是文件夹的路径。
 # Permissions: three octal digits, such as 600.
 t5dde13fd = 权限：三位八进制数字，例如 600。
 
-# No category
-t44662d06 = 无分类
-
 # {size}, not text
 t5956f56a = { $size }，非文本
 
@@ -1704,15 +1803,6 @@ t56c9aeed = 编辑配置文件
 
 # Category
 tafb3e591 = 分类
-
-# The vault's passphrase
-tb66334ea = 保险库的密码短语
-
-# Wrong passphrase.
-t2ebec270 = 密码短语错误。
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = 请在系统对话框中确认是你本人…
 
 # The vault's passphrase, to show the values
 teecb1d4f = 保险库的密码短语，用于显示值
@@ -1774,6 +1864,9 @@ tf3955dbc = 新建环境
 # Edit environment
 t79646cbc = 编辑环境
 
+# sensitive
+ta2bd2f4f = 敏感
+
 # What it does, to find it in the palette
 td9b8e02f = 用途说明，便于在命令面板中查找
 
@@ -1800,12 +1893,6 @@ tbafebe63 = 适用于
 
 # No groups yet: make one in the host list.
 t31c54e54 = 还没有分组：请在主机列表中创建。
-
-# No hosts yet.
-t71734b03 = 还没有主机。
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
@@ -1858,11 +1945,17 @@ t0c42d278 = 新建环境…
 # New config file…
 t58dfdc93 = 新建配置文件…
 
+# New note…
+tdad71f9d = 新建笔记…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = 供 shell 使用的变量，例如某个 API 的密钥，加密保存在保险库中并随之同步。可从命令面板（{ $chord }，在“环境”下）或窗格菜单将其加载到窗格中，用完后卸载；也可以只让需要它的代码片段单独使用。
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 常用的命令。从命令面板运行（按 { $chord }，然后输入名称）：Enter 在当前窗格中运行，{ $alt } 在该标签页的所有窗格中运行。保存在保险库中，因此会随主机一起同步。
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = 自由文本，加密保存在保险库中并随之同步：服务器的用途、如何重启、需要保存的代码。每条笔记都在独立窗口中打开，可从这里或命令面板（{ $chord }，笔记）打开；纯文本或 Markdown，输入时自动保存。
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = 要放置到主机上的文件，例如 ~/.kube/config 或 ~/.aws/credentials，加密保存在保险库中并随之同步。可从命令面板（{ $chord }，在“配置文件”下）或窗格菜单放置：直到标签页关闭，或永久保留。
@@ -2248,9 +2341,6 @@ t59edc3e9 = 配置文件 · { $category }
 # placed: Enter places it again
 taf8f6d41 = 已放置：按 Enter 再次放置
 
-# It is not in the vault any more.
-td11af590 = 它已不在保险库中。
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · 权限 { $mode }
 
@@ -2340,6 +2430,12 @@ t6460fddf = 请先打开一个标签页
 
 # Connect first
 t0b55252f = 请先连接
+
+# Notes for {host}
+ta77bd589 = { $host } 的笔记
+
+# Notes · {category}
+tbb112cdf = 笔记 · { $category }
 
 # Over SSH only
 t14e43465 = 仅限 SSH
@@ -2793,9 +2889,6 @@ t0cf7277a = 保险库仍在打开中
 
 # No saved passwords: {why}.
 tf97d3647 = 没有已保存的密码：{ $why }。
-
-# Saved
-t8a6979e4 = 已保存
 
 # Password for {target}
 t2cd4c302 = { $target } 的密码

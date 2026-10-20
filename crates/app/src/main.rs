@@ -24,6 +24,9 @@ mod input;
 mod keys_view;
 mod known_hosts_view;
 mod look;
+mod md_format;
+mod note_files;
+mod note_window;
 mod palette;
 mod pane;
 mod placement;
@@ -226,6 +229,8 @@ fn main() -> anyhow::Result<()> {
             // each one's own dialog (and Linux has none: GPUI would draw a
             // white box).
             cx.set_prompt_builder(prompt::render);
+            // Copies of notes a run that ended left behind: plain text, gone.
+            note_files::sweep();
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations. macOS and Windows keep the system's frame
@@ -273,8 +278,13 @@ fn main() -> anyhow::Result<()> {
             });
             // One window: closing it quits, on macOS too, where apps otherwise stay
             // in the Dock with no window and no way to open one.
+            // Note windows go with the main one.
             cx.on_window_closed(|cx, _| {
-                if cx.windows().is_empty() {
+                let main = cx
+                    .windows()
+                    .iter()
+                    .any(|w| w.downcast::<workspace::Workspace>().is_some());
+                if !main {
                     cx.quit();
                 }
             })

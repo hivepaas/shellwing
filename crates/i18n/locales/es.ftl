@@ -35,6 +35,9 @@ tdbf76954 = Las variables suman { $size } KB; { $max } KB como máximo.
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = El archivo ocupa { $size } KB; { $max } KB como máximo.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = La nota ocupa { $size } KB; { $max } KB como máximo.
+
 # Name
 t0fe07306 = Nombre
 
@@ -969,6 +972,108 @@ tdd571ace = Claro, cálido
 # Your themes
 tb2e83d5c = Tus temas
 
+# New note
+t788c7123 = Nota nueva
+
+# Title
+t24d471a9 = Título
+
+# No category
+t44662d06 = Sin categoría
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = Escribe aquí; el Markdown se ve en la vista previa.
+
+# It is not in the vault any more.
+td11af590 = Ya no está en la bóveda.
+
+# this note
+t4545c373 = esta nota
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen.
+
+# Edit it in another app?
+t1719e0f2 = ¿Editarla en otra aplicación?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Mientras esté abierta allí, una copia en texto sin formato está en el disco de este equipo (en una carpeta que solo tú puedes leer), y el editor puede guardar sus propias copias, como respaldos o historial. La copia se borra cuando termines.
+
+# Cannot make the copy: {e}
+td59a6621 = No se puede crear la copia: { $e }
+
+# It is not text any more.
+te3591497 = Ya no es texto.
+
+# Not read back: {e}
+tf04d4bce = No se pudo volver a leer: { $e }
+
+# Insert into {pane}
+t3d5eaffc = Insertar en { $pane }
+
+# No shell to insert into
+t825e7370 = No hay shell donde insertar
+
+# The vault's passphrase
+tb66334ea = Frase de contraseña de la bóveda
+
+# Wrong passphrase.
+t2ebec270 = Frase de contraseña incorrecta.
+
+# For a host ▾
+tfa622581 = Para un servidor ▾
+
+# No hosts yet.
+t71734b03 = Aún no hay servidores.
+
+# Saving…
+tbd79b37d = Guardando…
+
+# Click the text to edit it
+t63928671 = Haz clic en el texto para editarlo
+
+# Saved
+t8a6979e4 = Guardadas
+
+# Plain text
+tb7fc0ade = Texto sin formato
+
+# Edit
+tc2c76cb1 = Editar
+
+# Preview
+tfdda4cf7 = Vista previa
+
+# Sensitive
+tf603feef = Confidencial
+
+# Edit in another app…
+t1c6d0a34 = Editar en otra aplicación…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = La bóveda está bloqueada: desbloquéala en la ventana principal.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = Confidencial: su texto se muestra al confirmar que eres tú.
+
+# Show the text
+t0ff690fe = Mostrar el texto
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Confirma que eres tú en el diálogo del sistema…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = Ninguna frase de contraseña protege la bóveda, así que cualquiera en este dispositivo puede mostrarlo.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = Abierta en otra aplicación: lo que guarde llega aquí y se conserva.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = Aún no hay nada escrito: pulsa Editar para escribir.
+
+# Untitled note
+t4ce277c4 = Nota sin título
+
 # Hosts
 tcf9aefb4 = Servidores
 
@@ -983,6 +1088,9 @@ t273b1ccb = Entornos
 
 # Config files
 t16261310 = Archivos de configuración
+
+# Notes
+t0ff01b6a = Notas
 
 # Actions
 te65fb504 = Acciones
@@ -1250,9 +1358,6 @@ t44bdb829 = El color de acento de la app, del tema
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = El logo, lo seleccionado y los botones principales toman el color de acento del tema, en lugar del azul de la app. Si se parece demasiado al fondo de la app, no se usa.
-
-# Preview
-tfdda4cf7 = Vista previa
 
 # {k} k
 t450902df = { $k } k
@@ -1636,9 +1741,6 @@ t87553579 = no se pudo conectar
 # closed
 tebee50c5 = cerrado
 
-# Edit
-tc2c76cb1 = Editar
-
 # No hosts yet
 ta58f36ff = Aún no hay servidores
 
@@ -1691,9 +1793,6 @@ t0038f509 = Dónde va: la ruta de un archivo, no de una carpeta.
 # Permissions: three octal digits, such as 600.
 t5dde13fd = Permisos: tres dígitos octales, por ejemplo 600.
 
-# No category
-t44662d06 = Sin categoría
-
 # {size}, not text
 t5956f56a = { $size }, no es texto
 
@@ -1729,15 +1828,6 @@ t56c9aeed = Editar archivo de configuración
 
 # Category
 tafb3e591 = Categoría
-
-# The vault's passphrase
-tb66334ea = Frase de contraseña de la bóveda
-
-# Wrong passphrase.
-t2ebec270 = Frase de contraseña incorrecta.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Confirma que eres tú en el diálogo del sistema…
 
 # The vault's passphrase, to show the values
 teecb1d4f = Frase de contraseña de la bóveda, para mostrar los valores
@@ -1800,6 +1890,9 @@ tf3955dbc = Nuevo entorno
 # Edit environment
 t79646cbc = Editar entorno
 
+# sensitive
+ta2bd2f4f = confidencial
+
 # What it does, to find it in the palette
 td9b8e02f = Qué hace, para encontrarlo en la paleta
 
@@ -1826,12 +1919,6 @@ tbafebe63 = Disponible para
 
 # No groups yet: make one in the host list.
 t31c54e54 = Aún no hay grupos: crea uno en la lista de servidores.
-
-# No hosts yet.
-t71734b03 = Aún no hay servidores.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Se elimina de la bóveda, y de tus otros dispositivos cuando se sincronicen.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Sus variables se eliminan de la bóveda, y de tus otros dispositivos cuando se sincronicen. Las shells en las que está cargado las conservan hasta que se descargue.
@@ -1884,11 +1971,17 @@ t0c42d278 = Nuevo entorno…
 # New config file…
 t58dfdc93 = Nuevo archivo de configuración…
 
+# New note…
+tdad71f9d = Nota nueva…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = Variables para el shell, como las claves de una API, guardadas cifradas en la bóveda y sincronizadas con ella. Carga una en un panel desde la paleta ({ $chord }, en Entornos) o desde el menú del panel, y descárgala cuando termines; o deja que un fragmento que la necesite la tenga solo para él.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Comandos que ejecutas a menudo. Ejecuta uno desde la paleta ({ $chord } y escribe su nombre): Enter lo ejecuta en el panel, { $alt } en todos los paneles de la pestaña. Se guardan en la bóveda, así que se sincronizan con tus servidores.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = Texto libre, cifrado en la bóveda y sincronizado con ella: para qué sirve un servidor, cómo reiniciarlo, códigos que guardar. Cada una se abre en su propia ventana, desde aquí o desde la paleta ({ $chord }, en Notas); texto sin formato o Markdown, guardado al escribir.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Archivos para colocar en servidores, como ~/.kube/config o ~/.aws/credentials, guardados cifrados en la bóveda y sincronizados con ella. Coloca uno desde la paleta ({ $chord }, en Archivos de configuración) o desde el menú del panel: hasta que se cierre la pestaña, o para que se quede.
@@ -2315,9 +2408,6 @@ t59edc3e9 = Archivos de configuración · { $category }
 # placed: Enter places it again
 taf8f6d41 = colocado: Enter lo coloca de nuevo
 
-# It is not in the vault any more.
-td11af590 = Ya no está en la bóveda.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · permisos { $mode }
 
@@ -2408,6 +2498,12 @@ t6460fddf = Abre una pestaña primero
 
 # Connect first
 t0b55252f = Conéctate primero
+
+# Notes for {host}
+ta77bd589 = Notas para { $host }
+
+# Notes · {category}
+tbb112cdf = Notas · { $category }
 
 # Over SSH only
 t14e43465 = Solo por SSH
@@ -2881,9 +2977,6 @@ t0cf7277a = la bóveda aún se está abriendo
 
 # No saved passwords: {why}.
 tf97d3647 = Sin contraseñas guardadas: { $why }.
-
-# Saved
-t8a6979e4 = Guardadas
 
 # Password for {target}
 t2cd4c302 = Contraseña de { $target }

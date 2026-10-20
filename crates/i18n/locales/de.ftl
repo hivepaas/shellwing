@@ -35,6 +35,9 @@ tdbf76954 = Die Variablen ergeben { $size } KB; höchstens { $max } KB.
 # The file is {size} KB; {max} KB at most.
 tf2bc7ef2 = Die Datei hat { $size } KB; höchstens { $max } KB.
 
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = Die Notiz hat { $size } KB; höchstens { $max } KB.
+
 # Name
 t0fe07306 = Name
 
@@ -969,6 +972,108 @@ tdd571ace = Hell, warm
 # Your themes
 tb2e83d5c = Deine Designs
 
+# New note
+t788c7123 = Neue Notiz
+
+# Title
+t24d471a9 = Titel
+
+# No category
+t44662d06 = Keine Kategorie
+
+# Write here; Markdown shows when previewed.
+t05ddff4f = Hier schreiben; Markdown erscheint in der Vorschau.
+
+# It is not in the vault any more.
+td11af590 = Sie ist nicht mehr im Tresor.
+
+# this note
+t4545c373 = diese Notiz
+
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Es wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren.
+
+# Edit it in another app?
+t1719e0f2 = In einer anderen App bearbeiten?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Solange sie dort offen ist, liegt eine Kopie als reiner Text auf der Festplatte dieses Computers (in einem Ordner, den nur du lesen kannst), und der Editor kann eigene Kopien behalten, etwa Sicherungen oder Verlauf. Die Kopie verschwindet, wenn du fertig bist.
+
+# Cannot make the copy: {e}
+td59a6621 = Die Kopie lässt sich nicht anlegen: { $e }
+
+# It is not text any more.
+te3591497 = Es ist kein Text mehr.
+
+# Not read back: {e}
+tf04d4bce = Nicht zurückgelesen: { $e }
+
+# Insert into {pane}
+t3d5eaffc = In { $pane } einfügen
+
+# No shell to insert into
+t825e7370 = Keine Shell zum Einfügen
+
+# The vault's passphrase
+tb66334ea = Passphrase des Tresors
+
+# Wrong passphrase.
+t2ebec270 = Falsche Passphrase.
+
+# For a host ▾
+tfa622581 = Für einen Host ▾
+
+# No hosts yet.
+t71734b03 = Noch keine Hosts.
+
+# Saving…
+tbd79b37d = Wird gespeichert…
+
+# Click the text to edit it
+t63928671 = Zum Bearbeiten auf den Text klicken
+
+# Saved
+t8a6979e4 = Gespeichert
+
+# Plain text
+tb7fc0ade = Reiner Text
+
+# Edit
+tc2c76cb1 = Bearbeiten
+
+# Preview
+tfdda4cf7 = Vorschau
+
+# Sensitive
+tf603feef = Vertraulich
+
+# Edit in another app…
+t1c6d0a34 = In einer anderen App bearbeiten…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Der Tresor ist gesperrt: Entsperre ihn im Hauptfenster.
+
+# Sensitive: its text shows once it is you.
+tb81fab1b = Vertraulich: Der Text erscheint, sobald bestätigt ist, dass du es bist.
+
+# Show the text
+t0ff690fe = Text anzeigen
+
+# Confirm it is you in the system's prompt…
+t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
+
+# No passphrase guards the vault, so anyone at this device can show it.
+t41e36c52 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Gerät ihn anzeigen.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = In einer anderen App geöffnet: Was sie speichert, kommt hierher und bleibt.
+
+# Nothing written yet: Edit to write.
+t21ced1e5 = Noch nichts geschrieben: Zum Schreiben auf Bearbeiten.
+
+# Untitled note
+t4ce277c4 = Notiz ohne Titel
+
 # Hosts
 tcf9aefb4 = Hosts
 
@@ -983,6 +1088,9 @@ t273b1ccb = Umgebungen
 
 # Config files
 t16261310 = Konfigurationsdateien
+
+# Notes
+t0ff01b6a = Notizen
 
 # Actions
 te65fb504 = Aktionen
@@ -1250,9 +1358,6 @@ t44bdb829 = Akzentfarbe der App aus dem Design
 
 # The logo, what is chosen and the main buttons take the theme's accent color, in place of the app's blue. One too close to the app's background is not taken.
 tb5bd008b = Das Logo, die Auswahl und die Hauptschaltflächen übernehmen die Akzentfarbe des Designs statt des App-Blaus. Eine Farbe zu nah am App-Hintergrund wird nicht übernommen.
-
-# Preview
-tfdda4cf7 = Vorschau
 
 # {k} k
 t450902df = { $k } k
@@ -1636,9 +1741,6 @@ t87553579 = Verbindung fehlgeschlagen
 # closed
 tebee50c5 = geschlossen
 
-# Edit
-tc2c76cb1 = Bearbeiten
-
 # No hosts yet
 ta58f36ff = Noch keine Hosts
 
@@ -1691,9 +1793,6 @@ t0038f509 = Wohin sie kommt: der Pfad einer Datei, nicht eines Ordners.
 # Permissions: three octal digits, such as 600.
 t5dde13fd = Berechtigungen: drei Oktalziffern, z. B. 600.
 
-# No category
-t44662d06 = Keine Kategorie
-
 # {size}, not text
 t5956f56a = { $size }, kein Text
 
@@ -1729,15 +1828,6 @@ t56c9aeed = Konfigurationsdatei bearbeiten
 
 # Category
 tafb3e591 = Kategorie
-
-# The vault's passphrase
-tb66334ea = Passphrase des Tresors
-
-# Wrong passphrase.
-t2ebec270 = Falsche Passphrase.
-
-# Confirm it is you in the system's prompt…
-t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase des Tresors, um die Werte anzuzeigen
@@ -1800,6 +1890,9 @@ tf3955dbc = Neue Umgebung
 # Edit environment
 t79646cbc = Umgebung bearbeiten
 
+# sensitive
+ta2bd2f4f = vertraulich
+
 # What it does, to find it in the palette
 td9b8e02f = Was es tut, um es in der Palette zu finden
 
@@ -1826,12 +1919,6 @@ tbafebe63 = Angeboten für
 
 # No groups yet: make one in the host list.
 t31c54e54 = Noch keine Gruppen: erstelle eine in der Hostliste.
-
-# No hosts yet.
-t71734b03 = Noch keine Hosts.
-
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Es wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren.
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Seine Variablen werden aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Shells, in die es geladen ist, behalten sie, bis es entladen wird.
@@ -1884,11 +1971,17 @@ t0c42d278 = Neue Umgebung…
 # New config file…
 t58dfdc93 = Neue Konfigurationsdatei…
 
+# New note…
+tdad71f9d = Neue Notiz…
+
 # Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, under Environments) or the pane's menu, and unload it when done; or let a snippet that needs it have it for itself alone.
 t7baa8160 = Variablen für die Shell, z. B. die Schlüssel einer API, verschlüsselt im Tresor gespeichert und mit ihm synchronisiert. Lade eine über die Palette ({ $chord }, unter Umgebungen) oder das Menü des Panes in ein Pane und entlade sie wieder, wenn du fertig bist; oder gib sie einem Snippet, das sie braucht, nur für sich allein.
 
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Befehle, die du oft ausführst. Führe eines aus der Palette aus ({ $chord }, dann seinen Namen eingeben): Enter führt es im Bereich aus, { $alt } in jedem Bereich des Tabs. Im Tresor gespeichert, daher mit deinen Hosts synchronisiert.
+
+# Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({chord}, under Notes); plain text or Markdown, saved as you type.
+t5a3830ee = Freier Text, verschlüsselt im Tresor und mit ihm synchronisiert: wofür ein Server da ist, wie man ihn neu startet, Codes zum Aufbewahren. Jede öffnet sich in einem eigenen Fenster, von hier oder aus der Palette ({ $chord }, unter Notizen); reiner Text oder Markdown, beim Tippen gespeichert.
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Dateien, die auf Hosts abgelegt werden, z. B. ~/.kube/config oder ~/.aws/credentials, verschlüsselt im Tresor gespeichert und mit ihm synchronisiert. Lege eine über die Palette ({ $chord }, unter Konfigurationsdateien) oder das Menü des Panes ab: bis der Tab geschlossen wird oder dauerhaft.
@@ -2315,9 +2408,6 @@ t59edc3e9 = Konfigurationsdateien · { $category }
 # placed: Enter places it again
 taf8f6d41 = abgelegt: Enter legt sie erneut ab
 
-# It is not in the vault any more.
-td11af590 = Sie ist nicht mehr im Tresor.
-
 # {name} · {size} · permissions {mode}
 ta22bb64e = { $name } · { $size } · Berechtigungen { $mode }
 
@@ -2408,6 +2498,12 @@ t6460fddf = Öffne zuerst einen Tab
 
 # Connect first
 t0b55252f = Verbinde dich zuerst
+
+# Notes for {host}
+ta77bd589 = Notizen für { $host }
+
+# Notes · {category}
+tbb112cdf = Notizen · { $category }
 
 # Over SSH only
 t14e43465 = Nur über SSH
@@ -2881,9 +2977,6 @@ t0cf7277a = der Tresor wird noch geöffnet
 
 # No saved passwords: {why}.
 tf97d3647 = Keine gespeicherten Passwörter: { $why }.
-
-# Saved
-t8a6979e4 = Gespeichert
 
 # Password for {target}
 t2cd4c302 = Passwort für { $target }
