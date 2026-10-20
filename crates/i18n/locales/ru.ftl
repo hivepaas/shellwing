@@ -1048,6 +1048,135 @@ tc219ff12 =
        *[other] { $n } ключа
     }
 
+# Snippet library
+t1212f75d = Библиотека сниппетов
+
+# Its tool (PostgreSQL)
+tff6e50ee = Инструмент (PostgreSQL)
+
+# Its task (Backup)
+t301e1817 = Задача (Резервное копирование)
+
+# Both (PostgreSQL · Backup)
+t116d70a6 = Оба (PostgreSQL · Резервное копирование)
+
+# Find a command: a tool, a task, a word…
+tc13a8368 = Найдите команду: инструмент, задачу, слово…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Хранилище заблокировано: разблокируйте его в главном окне.
+
+# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
+t10cc86d5 =
+    { $n ->
+        [one] Добавлен { $n } сниппет — запускайте из палитры.
+        [few] Добавлено { $n } сниппета — запускайте из палитры.
+        [many] Добавлено { $n } сниппетов — запускайте из палитры.
+       *[other] Добавлено { $n } сниппета — запускайте из палитры.
+    }
+
+# Every task
+t27417099 = Все задачи
+
+# Not added yet
+t18e34a9e = Ещё не добавленные
+
+# Every tool
+t72ff8f76 = Все инструменты
+
+# Added
+tb35c3185 = Добавленные
+
+# Nothing here: try other words, or every task.
+ta46c06a7 = Ничего не найдено: попробуйте другие слова или все задачи.
+
+# Changes data
+t97d1419e = Меняет данные
+
+# Added ✓
+t27d1ed36 = Добавлено ✓
+
+# Added ×{n}
+t9e411fdf = Добавлено ×{ $n }
+
+# Click a command to see it, and adjust it before adding. Tick those to add.
+t72e679a1 = Нажмите на команду, чтобы посмотреть её и настроить перед добавлением. Отметьте те, что нужно добавить.
+
+# Docs ↗
+tffd1857b = Документация ↗
+
+# Options
+t353e0d45 = Параметры
+
+# Runs
+t9a5f395b = Где выполняется
+
+# On the host
+t1842b6cb = На хосте
+
+# In a Docker container: asks which
+te04a8531 = В контейнере Docker: спросит, в каком
+
+# The files it reads or writes are the container's.
+t33082a7c = Файлы, которые она читает или пишет, — это файлы контейнера.
+
+# None: it asks, or goes without
+tfc99399b = Нет: программа спросит пароль или обойдётся без него
+
+# It reads {var}: give it an environment that has it.
+t1a1c7252 = Читает { $var }: выберите окружение, в котором есть { $var }.
+
+# has {var}
+t4d81af7a = есть { $var }
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Пока нет: добавьте в Настройки › Окружения.
+
+# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
+tfc64bf52 = Спрашивается при запуске: { $names }. После добавления он ваш: меняйте его в окне сниппета.
+
+# It changes data: added, it is typed and waits for you to press Enter.
+t0fe19331 = Меняет данные: после добавления команда только вводится и ждёт, пока вы нажмёте Enter.
+
+# In your snippets once. | In your snippets {n} times.
+t028f555a =
+    { $n ->
+        [one] { $n } раз в ваших сниппетах.
+        [few] { $n } раза в ваших сниппетах.
+        [many] { $n } раз в ваших сниппетах.
+       *[other] { $n } раза в ваших сниппетах.
+    }
+
+# {n} picked | {n} picked
+tf375b5ad =
+    { $n ->
+        [one] Выбрано: { $n }
+        [few] Выбрано: { $n }
+        [many] Выбрано: { $n }
+       *[other] Выбрано: { $n }
+    }
+
+# Clear
+t04a57fc2 = Сбросить
+
+# Tick the commands to add; each becomes a snippet of your own.
+t71ce4a51 = Отметьте команды для добавления: каждая станет вашим сниппетом.
+
+# Add {n} to my snippets | Add {n} to my snippets
+t9489b24d =
+    { $n ->
+        [one] Добавить { $n } в мои сниппеты
+        [few] Добавить { $n } в мои сниппеты
+        [many] Добавить { $n } в мои сниппеты
+       *[other] Добавить { $n } в мои сниппеты
+    }
+
+# Add to my snippets
+tacccc61d = Добавить в мои сниппеты
+
+# File under
+t7be2ad59 = Категория
+
 # No config directory to save to.
 ta5f37ee4 = Нет каталога конфигурации для сохранения.
 
@@ -1140,9 +1269,6 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
-
-# The vault is locked: unlock it in the main window.
-te327c98e = Хранилище заблокировано: разблокируйте его в главном окне.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Конфиденциально: текст покажется, когда вы подтвердите, что это вы.
@@ -1717,9 +1843,6 @@ t59fdbd70 = Остановить синхронизацию
 # Your place
 t63cb5f41 = Ваше место
 
-# Options
-t353e0d45 = Параметры
-
 # A folder
 te84ceb50 = Папка
 
@@ -1969,9 +2092,6 @@ ta0ef59dd = + Добавить
 # Environments it needs
 tebd9fda9 = Нужные окружения
 
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Пока нет: добавьте в Настройки › Окружения.
-
 # {n} variable | {n} variables
 te4598f62 =
     { $n ->
@@ -2155,6 +2275,18 @@ t79646cbc = Изменить окружение
 # sensitive
 ta2bd2f4f = конфиденциально
 
+# Start from the library
+t401f9cb9 = Начните с библиотеки
+
+# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+tffb7b170 = Готовые команды ({ $n }) для { $tools } и не только: проверить сервер, сделать резервную копию, почистить, протестировать. Выберите нужные — они станут вашими сниппетами, которые можно править как угодно.
+
+# Open the library
+t79d7b3ad = Открыть библиотеку
+
+# from the library
+td908f0d1 = из библиотеки
+
 # typed, not run
 td4e41905 = вводится, но не выполняется
 
@@ -2169,6 +2301,9 @@ t9903435f = Он будет удалён из хранилища и с друг�
 
 # None yet.
 t786bc275 = Пока нет.
+
+# Library…
+t3d769c8c = Библиотека…
 
 # New snippet…
 tec3111a4 = Новый сниппет…
@@ -2193,6 +2328,15 @@ t5a3830ee = Свободный текст, зашифрованный в хра�
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Файлы для размещения на хостах, например ~/.kube/config или ~/.aws/credentials, хранятся в хранилище в зашифрованном виде и синхронизируются вместе с ним. Разместите файл из палитры ({ $chord }, раздел «Файлы конфигурации») или из меню панели: до закрытия вкладки или насовсем.
+
+# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
+tf7e18b27 =
+    { $n ->
+        [one] Ещё в библиотеке: { $n } команда не добавлена ›
+        [few] Ещё в библиотеке: { $n } команды не добавлены ›
+        [many] Ещё в библиотеке: { $n } команд не добавлено ›
+       *[other] Ещё в библиотеке: { $n } команды не добавлено ›
+    }
 
 # While loaded, the server can read them
 te60c8275 = Пока они загружены, сервер может их прочитать
@@ -2786,6 +2930,18 @@ t3bbceccc =
         [few] Enter · Alt+Enter: { $n } панели
         [many] Enter · Alt+Enter: { $n } панелей
        *[other] Enter · Alt+Enter: { $n } панели
+    }
+
+# Snippet library…
+tff254ce3 = Библиотека сниппетов…
+
+# {n} ready command to add | {n} ready commands to add
+t134e12f0 =
+    { $n ->
+        [one] { $n } готовая команда для добавления
+        [few] { $n } готовые команды для добавления
+        [many] { $n } готовых команд для добавления
+       *[other] { $n } готовой команды для добавления
     }
 
 # Open a tab first: a snippet runs in the focused pane.

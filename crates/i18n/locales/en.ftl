@@ -360,6 +360,57 @@ tc219ff12 =
         [one] { $n } key
        *[other] { $n } keys
     }
+t1212f75d = Snippet library
+tff6e50ee = Its tool (PostgreSQL)
+t301e1817 = Its task (Backup)
+t116d70a6 = Both (PostgreSQL · Backup)
+tc13a8368 = Find a command: a tool, a task, a word…
+te327c98e = The vault is locked: unlock it in the main window.
+t10cc86d5 =
+    { $n ->
+        [one] { $n } snippet added: run it from the palette.
+       *[other] { $n } snippets added: run them from the palette.
+    }
+t27417099 = Every task
+t18e34a9e = Not added yet
+t72ff8f76 = Every tool
+tb35c3185 = Added
+ta46c06a7 = Nothing here: try other words, or every task.
+t97d1419e = Changes data
+t27d1ed36 = Added ✓
+t9e411fdf = Added ×{ $n }
+t72e679a1 = Click a command to see it, and adjust it before adding. Tick those to add.
+tffd1857b = Docs ↗
+t353e0d45 = Options
+t9a5f395b = Runs
+t1842b6cb = On the host
+te04a8531 = In a Docker container: asks which
+t33082a7c = The files it reads or writes are the container's.
+tfc99399b = None: it asks, or goes without
+t1a1c7252 = It reads { $var }: give it an environment that has it.
+t4d81af7a = has { $var }
+t769ef9f6 = None yet: add one in Settings › Environments.
+tfc64bf52 = Asked when it runs: { $names }. Once added, it is yours: edit it in its window.
+t0fe19331 = It changes data: added, it is typed and waits for you to press Enter.
+t028f555a =
+    { $n ->
+        [one] In your snippets once.
+       *[other] In your snippets { $n } times.
+    }
+tf375b5ad =
+    { $n ->
+        [one] { $n } picked
+       *[other] { $n } picked
+    }
+t04a57fc2 = Clear
+t71ce4a51 = Tick the commands to add; each becomes a snippet of your own.
+t9489b24d =
+    { $n ->
+        [one] Add { $n } to my snippets
+       *[other] Add { $n } to my snippets
+    }
+tacccc61d = Add to my snippets
+t7be2ad59 = File under
 ta5f37ee4 = No config directory to save to.
 t1cda442a = Theme `{ $want }` not found; using the default.
 tec1b7d01 = { $host } sets its own theme in hosts.toml; change it there.
@@ -391,7 +442,6 @@ tb7fc0ade = Plain text
 tc2c76cb1 = Edit
 tfdda4cf7 = Preview
 tf603feef = Sensitive
-te327c98e = The vault is locked: unlock it in the main window.
 tb81fab1b = Sensitive: its text shows once it is you.
 t0ff690fe = Show the text
 t3ab56316 = Confirm it is you in the system's prompt…
@@ -583,7 +633,6 @@ tabf6bc68 = With { $shown }
 t16f62979 = Show the recovery key
 t59fdbd70 = Stop syncing
 t63cb5f41 = Your place
-t353e0d45 = Options
 te84ceb50 = A folder
 tdfb04144 = S3-compatible
 tc7eed334 = iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
@@ -669,7 +718,6 @@ t66336218 = The palette lists it in panes of those hosts only.
 tb7bba50b = (deleted)
 ta0ef59dd = + Add
 tebd9fda9 = Environments it needs
-t769ef9f6 = None yet: add one in Settings › Environments.
 te4598f62 =
     { $n ->
         [one] { $n } variable
@@ -739,11 +787,16 @@ ta46f6540 = A value can take several lines: Enter starts another, { $save } save
 tf3955dbc = New environment
 t79646cbc = Edit environment
 ta2bd2f4f = sensitive
+t401f9cb9 = Start from the library
+tffb7b170 = { $n } ready commands for { $tools } and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+t79d7b3ad = Open the library
+td908f0d1 = from the library
 td4e41905 = typed, not run
 tba31f3bb = with { $envs }
 td2d90383 = Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 t9903435f = It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t786bc275 = None yet.
+t3d769c8c = Library…
 tec3111a4 = New snippet…
 t0c42d278 = New environment…
 t58dfdc93 = New config file…
@@ -752,6 +805,11 @@ t7baa8160 = Variables for the shell, such as an API's keys, kept encrypted in th
 tb1ca142d = Commands you run often. Run one from the palette ({ $chord }, then type its name): Enter runs it in the pane, { $alt } in every pane of the tab. Kept in the vault, so they sync with your hosts.
 t5a3830ee = Free text, kept encrypted in the vault and synced with it: what a server is for, how to restart it, codes to keep. Each opens in a window of its own, from here or the palette ({ $chord }, under Notes); plain text or Markdown, saved as you type.
 ta84c0f04 = Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({ $chord }, under Config files) or the pane's menu: until the tab closes, or to stay.
+tf7e18b27 =
+    { $n ->
+        [one] More in the library: { $n } not added yet ›
+       *[other] More in the library: { $n } not added yet ›
+    }
 te60c8275 = While loaded, the server can read them
 t87b5db80 = Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
 t16991c40 = Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
@@ -981,6 +1039,12 @@ t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter: { $n } pane
        *[other] Enter · Alt+Enter: { $n } panes
+    }
+tff254ce3 = Snippet library…
+t134e12f0 =
+    { $n ->
+        [one] { $n } ready command to add
+       *[other] { $n } ready commands to add
     }
 t45260fd2 = Open a tab first: a snippet runs in the focused pane.
 t57139bb8 = in this pane

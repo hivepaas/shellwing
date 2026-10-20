@@ -632,6 +632,35 @@ In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
 pane's host. Any other `{{name}}` is asked for first, with the command shown as
 it will run.
 
+### The snippet library
+
+*Settings › Snippets › Library…* (or *Snippet library…* in the palette) opens
+ready commands for PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse,
+Elasticsearch, InfluxDB, SQLite, SQL Server, Docker, migration tools and load
+tests, by tool on the left and by task above (Diagnostics, Maintenance,
+Backup, Database, Data, Testing), with a search. Tick those you want and
+**Add to my snippets**: each becomes a snippet of your own, to edit as any
+other. What was added is marked *Added* (and listed under *Added*); a command
+can be added again, as another copy.
+
+- **Before adding**, the one shown on the right can be adjusted: its options
+  (the tool's flags it does not take by default), and whether it runs on the
+  host or in a Docker container (`docker exec -it {{container}} …`, the
+  container asked when it runs).
+- **Passwords** are never in a command: the tool reads its own variable
+  (`PGPASSWORD`, `MYSQL_PWD`, `REDISCLI_AUTH`…) or `$DB_PASSWORD`, from the
+  environment the snippet is given; when one environment has that variable it
+  is given by default. Without one, the tool asks for it, or goes without.
+- **Values** such as `{{db_user}}` and `{{database}}` are asked when it runs.
+- **What changes data** (restores, imports, migrations, drops, Docker's prune)
+  is marked *Changes data* and added typed, not run: it waits for Enter.
+- **File under** sets the new snippets' category: their tool (*PostgreSQL*),
+  their task (*Backup*, the name then saying the tool), or both.
+
+The library's text is in English. It is made from HivePaaS's command
+templates by `scripts/library_from_hivepaas.py` (into
+`crates/app/src/library/items.json`).
+
 ## Environments
 
 Environments are named sets of variables for the shell, such as an API's

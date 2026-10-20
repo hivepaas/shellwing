@@ -24,6 +24,8 @@ mod hotkeys;
 mod input;
 mod keys_view;
 mod known_hosts_view;
+mod library;
+mod library_window;
 mod look;
 mod note_window;
 mod palette;

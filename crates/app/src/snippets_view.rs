@@ -193,6 +193,13 @@ impl SnippetsView {
         })
     }
 
+    /// The snippet library, in its window.
+    fn open_library(&mut self, cx: &mut Context<Self>) {
+        if let Some(w) = self.workspace.upgrade() {
+            w.update(cx, |ws, cx| ws.open_library(cx));
+        }
+    }
+
     /// Opens `s` (None: a new one) in a window of its own, as a note.
     fn edit(&mut self, s: Option<Snippet>, _: &mut Window, cx: &mut Context<Self>) {
         if let Some(w) = self.workspace.upgrade() {
@@ -314,6 +321,73 @@ impl SnippetsView {
             .when_some(mono, |d, f| d.font_family(f))
     }
 
+    /// No snippets yet: the library, to start from.
+    fn library_card(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let mut tasks = div().flex().flex_wrap().gap(px(6.));
+        for t in crate::library::TASKS {
+            let n = crate::library::items()
+                .iter()
+                .filter(|i| i.task == t)
+                .count();
+            tasks = tasks.child(
+                div()
+                    .h(px(22.))
+                    .px(px(8.))
+                    .flex()
+                    .items_center()
+                    .rounded(px(11.))
+                    .bg(rgb(colors().chip))
+                    .text_size(ui(11.5))
+                    .text_color(rgb(colors().soft))
+                    .child(format!("{t} {n}")),
+            );
+        }
+        let tools: Vec<&str> = crate::library::tools()
+            .into_iter()
+            .map(|(t, _)| t)
+            .filter(|t| *t != "Migrations" && *t != "HTTP & network")
+            .take(8)
+            .collect();
+        div()
+            .flex()
+            .gap(px(18.))
+            .p(px(22.))
+            .rounded(px(12.))
+            .border_1()
+            .border_color(rgb(colors().line))
+            .bg(rgb(colors().surface))
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .flex_col()
+                    .gap(px(10.))
+                    .child(
+                        div()
+                            .text_size(ui(16.))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child(tr!("Start from the library")),
+                    )
+                    .child(
+                        div()
+                            .text_color(rgb(colors().soft))
+                            .line_height(gpui::relative(1.5))
+                            .child(tr!(
+                                "{n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.",
+                                n = crate::library::items().len(),
+                                tools = tools.join(", ")
+                            )),
+                    )
+                    .child(tasks)
+                    .child(
+                        div().flex().child(
+                            primary_button("snippet-library-open", &tr!("Open the library"))
+                                .on_click(cx.listener(|v, _, _, cx| v.open_library(cx))),
+                        ),
+                    ),
+            )
+    }
+
     fn rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
         // Under headings once any has a category (sorted by it on refresh).
         let filed = self.list.iter().any(|s| !s.category.trim().is_empty());
@@ -396,6 +470,14 @@ impl SnippetsView {
                                     .text_color(rgb(colors().soft))
                                     .child(scope.label()),
                             )
+                            .when(s.origin.starts_with(crate::library::ORIGIN), |d| {
+                                d.child(
+                                    div()
+                                        .text_size(ui(11.))
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("from the library")),
+                                )
+                            })
                             .when(!s.enter, |d| {
                                 d.child(
                                     div()
@@ -714,7 +796,8 @@ impl Render for SnippetsView {
             .rounded(px(8.))
             .border_1()
             .border_color(rgb(colors().line));
-        if rows.is_empty() {
+        let library_card = rows.is_empty() && self.shown == Shown::Snippets;
+        if rows.is_empty() && !library_card {
             list = list.child(
                 div()
                     .px(px(12.))
@@ -752,6 +835,12 @@ impl Render for SnippetsView {
                                 Shown::Notes => tr!("Notes"),
                             }),
                     )
+                    .when(self.shown == Shown::Snippets && !library_card, |d| {
+                        d.child(
+                            outline_button("snippet-library", &tr!("Library…"))
+                                .on_click(cx.listener(|v, _, _, cx| v.open_library(cx))),
+                        )
+                    })
                     .child(match self.shown {
                         Shown::Snippets => primary_button("snippet-new", &tr!("New snippet…"))
                             .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx))),
@@ -790,7 +879,36 @@ impl Render for SnippetsView {
                     .child(msg.clone()),
             );
         }
-        page = page.child(list);
+        page = if library_card {
+            page.child(self.library_card(cx))
+        } else {
+            page.child(list)
+        };
+        if self.shown == Shown::Snippets && !library_card {
+            let had: std::collections::HashSet<&str> =
+                self.list.iter().map(|s| s.origin.as_str()).collect();
+            let left = crate::library::items()
+                .iter()
+                .filter(|i| !had.contains(i.origin().as_str()))
+                .count();
+            if left > 0 {
+                page = page.child(
+                    div()
+                        .id("snippet-library-more")
+                        .mt(px(-8.))
+                        .text_size(ui(12.))
+                        .text_color(rgb(colors().accent))
+                        .cursor_pointer()
+                        .hover(|s| s.text_color(rgb(colors().accent_hover)))
+                        .on_click(cx.listener(|v, _, _, cx| v.open_library(cx)))
+                        .child(tr_n!(
+                            left,
+                            "More in the library: {n} not added yet ›",
+                            "More in the library: {n} not added yet ›"
+                        )),
+                );
+            }
+        }
         page = if self.shown == Shown::Environments {
             page.child(
                 div()

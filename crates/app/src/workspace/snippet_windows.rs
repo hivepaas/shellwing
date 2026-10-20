@@ -58,6 +58,31 @@ impl Workspace {
         }
     }
 
+    /// Opens the snippet library's window.
+    pub(crate) fn open_library(&mut self, cx: &mut Context<Self>) {
+        let ws = cx.entity().downgrade();
+        let (added, open, touched) = (ws.clone(), ws.clone(), ws);
+        let hooks = crate::library_window::Hooks {
+            added: Rc::new(move |cx| {
+                let _ = added.update(cx, |ws, cx| {
+                    ws.vault_changed();
+                    if let Some((view, _)) = &ws.settings {
+                        let view = view.clone();
+                        cx.defer(move |cx| view.update(cx, |v, cx| v.snippets_changed(cx)));
+                    }
+                });
+            }),
+            open: Rc::new(move |snippet, cx| {
+                let _ = open.update(cx, |ws, cx| ws.open_snippet(Some(snippet), cx));
+            }),
+            touched: Rc::new(move |cx| {
+                let _ = touched.update(cx, |ws, _| ws.last_input = std::time::Instant::now());
+            }),
+        };
+        let vault = self.vault.clone();
+        cx.defer(move |cx| crate::library_window::open(vault, hooks, cx));
+    }
+
     /// Opens `snippet` (None: a new one) in its window.
     pub(crate) fn open_snippet(
         &mut self,

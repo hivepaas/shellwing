@@ -1018,6 +1018,123 @@ tfb280692 = 你信任的服务器及其密钥，来自 { $path }：与 ssh 读�
 # {n} key | {n} keys
 tc219ff12 = { $n } 个密钥
 
+# Snippet library
+t1212f75d = 代码片段库
+
+# Its tool (PostgreSQL)
+tff6e50ee = 所属工具（PostgreSQL）
+
+# Its task (Backup)
+t301e1817 = 所属任务（备份）
+
+# Both (PostgreSQL · Backup)
+t116d70a6 = 两者（PostgreSQL · 备份）
+
+# Find a command: a tool, a task, a word…
+tc13a8368 = 查找命令：工具、任务、关键词…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = 保险库已锁定：请在主窗口中解锁。
+
+# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
+t10cc86d5 =
+    { $n ->
+       *[other] 已添加 { $n } 个代码片段：可从命令面板运行。
+    }
+
+# Every task
+t27417099 = 所有任务
+
+# Not added yet
+t18e34a9e = 尚未添加
+
+# Every tool
+t72ff8f76 = 所有工具
+
+# Added
+tb35c3185 = 已添加
+
+# Nothing here: try other words, or every task.
+ta46c06a7 = 这里什么都没有：换个词试试，或选择所有任务。
+
+# Changes data
+t97d1419e = 会更改数据
+
+# Added ✓
+t27d1ed36 = 已添加 ✓
+
+# Added ×{n}
+t9e411fdf = 已添加 ×{ $n }
+
+# Click a command to see it, and adjust it before adding. Tick those to add.
+t72e679a1 = 点击命令即可查看，并可在添加前调整。勾选要添加的命令。
+
+# Docs ↗
+tffd1857b = 文档 ↗
+
+# Options
+t353e0d45 = 选项
+
+# Runs
+t9a5f395b = 运行位置
+
+# On the host
+t1842b6cb = 在主机上
+
+# In a Docker container: asks which
+te04a8531 = 在 Docker 容器中：运行时询问哪个容器
+
+# The files it reads or writes are the container's.
+t33082a7c = 它读写的是容器内的文件。
+
+# None: it asks, or goes without
+tfc99399b = 无：由它自己询问，或不用密码
+
+# It reads {var}: give it an environment that has it.
+t1a1c7252 = 它会读取 { $var }：请为它指定包含 { $var } 的环境。
+
+# has {var}
+t4d81af7a = 含 { $var }
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
+
+# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
+tfc64bf52 = 运行时询问：{ $names }。添加后它就归你了：可在它的窗口中编辑。
+
+# It changes data: added, it is typed and waits for you to press Enter.
+t0fe19331 = 会更改数据：添加后只输入命令，等你按 Enter 再运行。
+
+# In your snippets once. | In your snippets {n} times.
+t028f555a =
+    { $n ->
+       *[other] 已添加到你的代码片段 { $n } 次。
+    }
+
+# {n} picked | {n} picked
+tf375b5ad =
+    { $n ->
+       *[other] 已选 { $n } 个
+    }
+
+# Clear
+t04a57fc2 = 清除
+
+# Tick the commands to add; each becomes a snippet of your own.
+t71ce4a51 = 勾选要添加的命令；每条都会成为你自己的代码片段。
+
+# Add {n} to my snippets | Add {n} to my snippets
+t9489b24d =
+    { $n ->
+       *[other] 将 { $n } 个添加到我的代码片段
+    }
+
+# Add to my snippets
+tacccc61d = 添加到我的代码片段
+
+# File under
+t7be2ad59 = 归类到
+
 # No config directory to save to.
 ta5f37ee4 = 没有可保存的配置目录。
 
@@ -1110,9 +1227,6 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
-
-# The vault is locked: unlock it in the main window.
-te327c98e = 保险库已锁定：请在主窗口中解锁。
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 敏感：确认是你本人后才显示内容。
@@ -1687,9 +1801,6 @@ t59fdbd70 = 停止同步
 # Your place
 t63cb5f41 = 你的位置
 
-# Options
-t353e0d45 = 选项
-
 # A folder
 te84ceb50 = 文件夹
 
@@ -1933,9 +2044,6 @@ ta0ef59dd = + 添加
 # Environments it needs
 tebd9fda9 = 所需环境
 
-# None yet: add one in Settings › Environments.
-t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
-
 # {n} variable | {n} variables
 te4598f62 =
     { $n ->
@@ -2107,6 +2215,18 @@ t79646cbc = 编辑环境
 # sensitive
 ta2bd2f4f = 敏感
 
+# Start from the library
+t401f9cb9 = 从代码片段库开始
+
+# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+tffb7b170 = { $n } 条现成命令，适用于 { $tools } 等：检查服务器、备份、清理、测试。挑选你想要的，它们会成为你自己的代码片段，可随意编辑。
+
+# Open the library
+t79d7b3ad = 打开代码片段库
+
+# from the library
+td908f0d1 = 来自代码片段库
+
 # typed, not run
 td4e41905 = 仅输入，不运行
 
@@ -2121,6 +2241,9 @@ t9903435f = 它将从保险库中删除，你的其他设备同步后也会删�
 
 # None yet.
 t786bc275 = 还没有。
+
+# Library…
+t3d769c8c = 代码片段库…
 
 # New snippet…
 tec3111a4 = 新建代码片段…
@@ -2145,6 +2268,12 @@ t5a3830ee = 自由文本，加密保存在保险库中并随之同步：服务�
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = 要放置到主机上的文件，例如 ~/.kube/config 或 ~/.aws/credentials，加密保存在保险库中并随之同步。可从命令面板（{ $chord }，在“配置文件”下）或窗格菜单放置：直到标签页关闭，或永久保留。
+
+# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
+tf7e18b27 =
+    { $n ->
+       *[other] 代码片段库中还有 { $n } 条未添加 ›
+    }
 
 # While loaded, the server can read them
 te60c8275 = 加载期间，服务器可以读取它们
@@ -2658,6 +2787,15 @@ t85f58d76 = 代码片段 · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 个窗格
+
+# Snippet library…
+tff254ce3 = 代码片段库…
+
+# {n} ready command to add | {n} ready commands to add
+t134e12f0 =
+    { $n ->
+       *[other] { $n } 条可添加的现成命令
+    }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 请先打开一个标签页：代码片段在选中的窗格中运行。

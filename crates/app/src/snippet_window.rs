@@ -212,6 +212,7 @@ impl SnippetWindow {
             enter: true,
             category: String::new(),
             needs: vec![],
+            origin: String::new(),
         });
         let field = |placeholder: fn() -> String, text: &str, cx: &mut Context<Self>| {
             cx.new(|cx| {

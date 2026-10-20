@@ -570,6 +570,20 @@ impl Workspace {
                     "Enter".to_string()
                 })
             })
+            .chain(std::iter::once(
+                Entry::new(
+                    Kind::Action(Action::SnippetLibrary),
+                    tr!("Snippets"),
+                    tr!("Snippet library…"),
+                )
+                .detail(tr_n!(
+                    crate::library::items().len(),
+                    "{n} ready command to add",
+                    "{n} ready commands to add"
+                ))
+                .hint("Enter")
+                .section(Part::Snippets),
+            ))
             .collect()
     }
 
@@ -3417,6 +3431,7 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
+            Action::SnippetLibrary => self.open_library(cx),
             Action::UnloadEnv => {
                 if let Some(view) = self.active_tab().cloned()
                     && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))
