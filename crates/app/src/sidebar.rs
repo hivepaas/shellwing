@@ -6,6 +6,8 @@ use gpui::{
     WeakEntity, Window, div, prelude::*, px, rgb, rgba, svg,
 };
 
+use shellwing_i18n::tr;
+
 use crate::input::{Changed, TextInput};
 
 use crate::colors::colors;
@@ -152,7 +154,7 @@ impl Render for Tip {
 
 impl Sidebar {
     pub fn new(workspace: WeakEntity<Workspace>, cx: &mut Context<Self>) -> Self {
-        let filter = cx.new(|cx| TextInput::new("Filter by name, tag or address", cx));
+        let filter = cx.new(|cx| TextInput::new(tr!("Filter by name, tag or address"), cx));
         cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify())
             .detach();
         Sidebar {
@@ -276,12 +278,12 @@ impl Sidebar {
                 let (spec, ws) = (row.spec.clone(), self.workspace.clone());
                 let title = row.name.clone();
                 let state = match row.status {
-                    Some(Status::Connected) => "connected",
-                    Some(Status::Connecting) => "connecting",
-                    Some(Status::Lost) => "connection lost",
-                    Some(Status::Failed) => "could not connect",
-                    Some(Status::Closed) => "closed",
-                    None => "",
+                    Some(Status::Connected) => tr!("connected"),
+                    Some(Status::Connecting) => tr!("connecting"),
+                    Some(Status::Lost) => tr!("connection lost"),
+                    Some(Status::Failed) => tr!("could not connect"),
+                    Some(Status::Closed) => tr!("closed"),
+                    None => String::new(),
                 };
                 let detail: SharedString = [row.detail.to_string(), state.to_string()]
                     .into_iter()
@@ -498,7 +500,7 @@ impl Render for Sidebar {
                                     let name = group.clone();
                                     let _ = ws.update(cx, |ws, cx| ws.edit_group(name, window, cx));
                                 })
-                                .child("Edit"),
+                                .child(tr!("Edit")),
                         )
                     }),
             );
@@ -509,7 +511,7 @@ impl Render for Sidebar {
                         .pb_1()
                         .text_xs()
                         .text_color(rgb(colors().faint))
-                        .child("No hosts yet"),
+                        .child(tr!("No hosts yet")),
                 );
             }
             for row in &section.rows {
@@ -609,7 +611,7 @@ impl Render for Sidebar {
                                         let _ = editing
                                             .update(cx, |ws, cx| ws.edit_host(edit, window, cx));
                                     })
-                                    .child("Edit"),
+                                    .child(tr!("Edit")),
                             )
                         })
                         .child(dot(row.status)),
@@ -622,7 +624,7 @@ impl Render for Sidebar {
                     .px_3()
                     .pt_3()
                     .text_color(rgb(colors().muted))
-                    .child("No host matches."),
+                    .child(tr!("No host matches.")),
             );
         } else if self.sections.is_empty() {
             list = list.child(
@@ -630,7 +632,9 @@ impl Render for Sidebar {
                     .px_3()
                     .pt_3()
                     .text_color(rgb(colors().muted))
-                    .child("No hosts yet. Add one, or Host blocks to ~/.ssh/config."),
+                    .child(tr!(
+                        "No hosts yet. Add one, or Host blocks to ~/.ssh/config."
+                    )),
             );
         }
         let (workspace, for_group) = (self.workspace.clone(), self.workspace.clone());
@@ -658,7 +662,7 @@ impl Render for Sidebar {
                         let _ = workspace
                             .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
                     })
-                    .child("+ New host"),
+                    .child(tr!("+ New host")),
             )
             .child(
                 div()
@@ -677,7 +681,7 @@ impl Render for Sidebar {
                     .on_click(move |_, window, cx| {
                         let _ = for_group.update(cx, |ws, cx| ws.edit_group(None, window, cx));
                     })
-                    .child("+ Group"),
+                    .child(tr!("+ Group")),
             );
         let collapse = self.workspace.clone();
         // The ground is the workspace's, which rounds the window's corner.
@@ -708,7 +712,7 @@ impl Render for Sidebar {
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(rgb(colors().muted))
-                                    .child("HOSTS"),
+                                    .child(tr!("HOSTS")),
                             )
                             .child(
                                 div()

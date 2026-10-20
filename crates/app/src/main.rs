@@ -199,6 +199,8 @@ fn main() -> anyhow::Result<()> {
         }
     };
     let (live, problems) = look::Live::open(Store::default_dir().map(Store::new));
+    // The app's language, before anything is said.
+    shellwing_i18n::set_language(live.settings().general.language.as_deref());
     // One network runtime for every tab.
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

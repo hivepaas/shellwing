@@ -13,6 +13,10 @@ id is the FNV-1a hash of its English, as crates/i18n computes it.
                              to translate in each.
     scripts/i18n.py todo LANG
                              prints what LANG still lacks: id, then English.
+    scripts/i18n.py apply LANG FILE
+                             takes translations from FILE, lines of an id, a
+                             tab, and the text (`{name}` for a value, as in
+                             the English), into LANG's file.
 """
 
 import pathlib
@@ -91,6 +95,8 @@ def fluent_text(english, indent="    "):
         return "{ $" + m.group(1) + " }"
 
     escaped = []
+    # Doubled braces are braces (a snippet's {{host}}), not a value.
+    english = english.replace("{{", "\x00").replace("}}", "\x01")
     for part in re.split(r"(\{[A-Za-z_][A-Za-z0-9_]*\})", english):
         m = re.fullmatch(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", part)
         if m:
@@ -98,6 +104,7 @@ def fluent_text(english, indent="    "):
         else:
             escaped.append(part.replace("{", '{"{"}').replace("}", '{"}"}'))
     value = "".join(escaped)
+    value = value.replace("\x00", '{"{{"}').replace("\x01", '{"}}"}')
     lines = value.split("\n")
     if len(lines) == 1:
         return " " + value
@@ -190,7 +197,8 @@ def check():
             ok = False
         for mid, lines in entries.items():
             if mid in found and found[mid][1] is None:
-                names = set(re.findall(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", found[mid][0]))
+                english = found[mid][0].replace("{{", "").replace("}}", "")
+                names = set(re.findall(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", english))
                 used = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_-]*)", "\n".join(lines)))
                 if used - names:
                     print(f"{path.name}: {mid} uses {sorted(used - names)}, which its English has not")
@@ -208,6 +216,25 @@ def todo(lang):
             print(mid + "\t" + (one if other is None else one + " | " + other).replace("\n", "\\n"))
 
 
+def apply(lang, tsv):
+    found = messages()
+    path = LOCALES / f"{lang}.ftl"
+    header, entries = read_catalog(path)
+    taken = 0
+    for line in pathlib.Path(tsv).read_text(encoding="utf-8").splitlines():
+        if not line.strip() or "\t" not in line:
+            continue
+        mid, text = line.split("\t", 1)
+        mid = mid.strip()
+        if mid not in found:
+            print(f"{mid}: not a message of the code; skipped")
+            continue
+        entries[mid] = [mid + " =" + fluent_text(text.replace("\\n", "\n"))]
+        taken += 1
+    write_catalog(path, found, header, entries)
+    print(f"{path.name}: {taken} taken")
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "check"
     if what == "update":
@@ -216,6 +243,8 @@ if __name__ == "__main__":
         sys.exit(0 if check() else 1)
     elif what == "todo":
         todo(sys.argv[2])
+    elif what == "apply":
+        apply(sys.argv[2], sys.argv[3])
     else:
         print(__doc__)
         sys.exit(2)

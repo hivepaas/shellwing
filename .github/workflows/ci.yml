@@ -73,6 +73,11 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo fmt --all -- --check
 
+      # The translations follow the code's English (crates/i18n/locales).
+      - name: Translations
+        if: runner.os == 'Linux'
+        run: python3 scripts/i18n.py check
+
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 

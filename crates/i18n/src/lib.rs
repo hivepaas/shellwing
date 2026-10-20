@@ -251,7 +251,10 @@ mod tests {
         let _turn = ONE_AT_A_TIME.lock();
         set_language(Some("en"));
         assert_eq!(tr!("Sync now"), "Sync now");
-        assert_eq!(tr!("Cannot sync: {why}.", why = "offline"), "Cannot sync: offline.");
+        assert_eq!(
+            tr!("Cannot sync: {why}.", why = "offline"),
+            "Cannot sync: offline."
+        );
         assert_eq!(tr!("{a} and {b}", a = 1, b = "x"), "1 and x");
         assert_eq!(tr!("{not an arg} stays", x = 1), "{not an arg} stays");
         assert_eq!(tr_n!(1, "{n} host", "{n} hosts"), "1 host");
@@ -281,6 +284,25 @@ mod tests {
         );
         assert_eq!(tr_n!(3, "{n} host", "{n} hosts"), "3 máy chủ");
         assert_eq!(tr!("Not translated yet"), "Not translated yet");
+        set_language(Some("en"));
+    }
+
+    #[test]
+    fn every_catalog_reads_whole_and_says_its_values() {
+        for (tag, source) in CATALOGS {
+            if let Err((_, errors)) = FluentResource::try_new(source.to_string()) {
+                panic!("{tag}.ftl: {errors:?}");
+            }
+        }
+        let _turn = ONE_AT_A_TIME.lock();
+        set_language(Some("vi"));
+        assert_eq!(tr!("Sync now"), "Đồng bộ ngay");
+        assert_eq!(tr_n!(3, "{n} host", "{n} hosts"), "3 máy chủ");
+        assert_eq!(
+            tr!("Sync: {e}", e = "offline"),
+            "Đồng bộ: offline",
+            "a value is said in place"
+        );
         set_language(Some("en"));
     }
 

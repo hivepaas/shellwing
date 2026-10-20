@@ -8,6 +8,7 @@ use gpui::{
     Context, Entity, FocusHandle, FontWeight, Render, SharedString, Window, div, prelude::*, px,
     rgb,
 };
+use shellwing_i18n::{tr, tr_n};
 use shellwing_ssh::known_hosts::{self, Entry};
 
 use crate::colors::colors;
@@ -44,7 +45,7 @@ fn host_port(typed: &str) -> (String, u16) {
 impl KnownHostsView {
     pub fn new(cx: &mut Context<Self>) -> Self {
         let filter =
-            cx.new(|cx| TextInput::new("Find a host, or type one to find hashed lines", cx));
+            cx.new(|cx| TextInput::new(tr!("Find a host, or type one to find hashed lines"), cx));
         let changed = cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify());
         let mut v = KnownHostsView {
             focus: cx.focus_handle(),
@@ -63,7 +64,10 @@ impl KnownHostsView {
         match self.path.as_deref().map(known_hosts::entries) {
             Some(Ok(e)) => self.entries = e,
             Some(Err(e)) => {
-                self.notice = Some((format!("Cannot read known_hosts: {e}").into(), true))
+                self.notice = Some((
+                    tr!("Cannot read known_hosts: {e}", e = e.to_string()).into(),
+                    true,
+                ))
             }
             None => self.entries.clear(),
         }
@@ -76,13 +80,14 @@ impl KnownHostsView {
         };
         self.notice = Some(match known_hosts::remove_lines(&path, &[line]) {
             Ok(_) => (
-                format!(
-                    "Removed line {line}: the next connection to it asks about its key. The file as it was is known_hosts.old."
+                tr!(
+                    "Removed line {line}: the next connection to it asks about its key. The file as it was is known_hosts.old.",
+                    line = line
                 )
                 .into(),
                 false,
             ),
-            Err(e) => (format!("Not removed: {e}").into(), true),
+            Err(e) => (tr!("Not removed: {e}", e = e.to_string()).into(), true),
         });
         self.refresh(cx);
     }
@@ -128,24 +133,24 @@ impl Render for KnownHostsView {
                     .text_size(ui(12.))
                     .text_color(rgb(colors().muted))
                     .child(if self.entries.is_empty() {
-                        "No hosts yet: each one you trust is added here."
+                        tr!("No hosts yet: each one you trust is added here.")
                     } else {
-                        "None matches."
+                        tr!("None matches.")
                     }),
             );
         }
         for (i, e) in shown.into_iter().enumerate() {
             let names = if e.hashed() {
                 if typed.is_empty() {
-                    "a hashed name".to_string()
+                    tr!("a hashed name")
                 } else {
-                    format!("{typed} (hashed)")
+                    tr!("{typed} (hashed)", typed = &typed)
                 }
             } else {
                 let mut n = e.names().join(", ");
                 let hashed = e.hosts.len() - e.names().len();
                 if hashed > 0 {
-                    n.push_str(&format!(" and {hashed} hashed"));
+                    n = tr!("{names} and {hashed} hashed", names = &n, hashed = hashed);
                 }
                 n
             };
@@ -189,9 +194,9 @@ impl Render for KnownHostsView {
                             colors().chip
                         }))
                         .child(if revoked {
-                            "revoked"
+                            tr!("revoked")
                         } else {
-                            "certificate authority"
+                            tr!("certificate authority")
                         }),
                 );
             }
@@ -218,11 +223,11 @@ impl Render for KnownHostsView {
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
-                                    .child(
-                                        div()
-                                            .font_family(self.mono.clone())
-                                            .child(format!("{} · line {line}", e.key.fingerprint)),
-                                    ),
+                                    .child(div().font_family(self.mono.clone()).child(tr!(
+                                        "{fingerprint} · line {line}",
+                                        fingerprint = &e.key.fingerprint,
+                                        line = line
+                                    ))),
                             ),
                     )
                     .child(
@@ -240,7 +245,7 @@ impl Render for KnownHostsView {
                             .cursor_pointer()
                             .hover(|s| s.bg(rgb(colors().button_hover)))
                             .on_click(cx.listener(move |v, _, _, cx| v.remove(line, cx)))
-                            .child("Remove"),
+                            .child(tr!("Remove")),
                     ),
             );
         }
@@ -262,19 +267,19 @@ impl Render for KnownHostsView {
                             .flex_1()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Known hosts"),
+                            .child(tr!("Known hosts")),
                     )
                     .when_some(path.clone(), |d, p| {
-                        d.child(outline_button("known-open", "Open known_hosts").on_click(
+                        d.child(outline_button("known-open", &tr!("Open known_hosts")).on_click(
                             cx.listener(move |_, _, _, cx| {
                                 cx.open_url(&format!("file://{}", p.display()))
                             }),
                         ))
                     }),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(format!(
-                "The servers you trust, and their keys, from {}: the same file ssh reads. A server showing another key is refused, and its pane says what changed. Removing one makes the next connection ask about it again.",
-                path.as_deref().map_or("known_hosts".to_string(), |p| p.display().to_string())
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
+                "The servers you trust, and their keys, from {path}: the same file ssh reads. A server showing another key is refused, and its pane says what changed. Removing one makes the next connection ask about it again.",
+                path = path.as_deref().map_or("known_hosts".to_string(), |p| p.display().to_string())
             )));
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
@@ -289,14 +294,10 @@ impl Render for KnownHostsView {
                 .flex()
                 .flex_col()
                 .gap(px(5.))
-                .child(label_text(&format!(
-                    "{} {}",
+                .child(label_text(&tr_n!(
                     self.entries.len(),
-                    if self.entries.len() == 1 {
-                        "key"
-                    } else {
-                        "keys"
-                    }
+                    "{n} key",
+                    "{n} keys"
                 )))
                 .child(
                     div()

@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use std::collections::BTreeSet;
 
 use shellwing_config::{Store, SyncPlace};
+use shellwing_i18n::tr;
 use shellwing_remote::Place;
 use shellwing_vault::{
     Answerer, Ask, AskState, Backend, FolderState, Request, SyncReport, Vault, transact,
@@ -68,7 +69,7 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
             Some(s) => Ok(s.to_string()),
             None => Err(shellwing_vault::Error::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                "its password is not saved on this device: connect again in Settings › Sync",
+                tr!("its password is not saved on this device: connect again in Settings › Sync"),
             ))),
         }
     };
@@ -507,11 +508,11 @@ fn record_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
     let file_exists = store.dir().join("hosts.toml").exists();
     store
         .assign_host_ids()
-        .map_err(|e| format!("hosts not synced: {e}"))?;
+        .map_err(|e| tr!("hosts not synced: {e}", e = e.to_string()))?;
     let hosts = store
         .hosts()
-        .map_err(|e| format!("hosts not synced: {e}"))?;
-    let err = |e: shellwing_vault::Error| format!("hosts not synced: {e}");
+        .map_err(|e| tr!("hosts not synced: {e}", e = e.to_string()))?;
+    let err = |e: shellwing_vault::Error| tr!("hosts not synced: {e}", e = e.to_string());
     let mut present = BTreeSet::new();
     let mut kept_here = BTreeSet::new();
     for h in &hosts.hosts {
@@ -561,10 +562,10 @@ fn has_settings(vault: &Vault) -> bool {
 fn record_settings(store: &Store, vault: &Vault) -> Result<(), String> {
     let fields = store
         .synced_settings()
-        .map_err(|e| format!("settings not synced: {e}"))?;
+        .map_err(|e| tr!("settings not synced: {e}", e = e.to_string()))?;
     vault
         .update(SETTINGS_ID, "settings", "Settings", &fields)
-        .map_err(|e| format!("settings not synced: {e}"))?;
+        .map_err(|e| tr!("settings not synced: {e}", e = e.to_string()))?;
     Ok(())
 }
 
@@ -572,7 +573,7 @@ fn record_settings(store: &Store, vault: &Vault) -> Result<(), String> {
 /// the others' are taken where they set a value and this device's kept
 /// where they set none, then recorded, to go out: whether that happened.
 fn write_settings(store: &Store, vault: &Vault, first: bool) -> Result<bool, String> {
-    let err = |e: String| format!("settings not written: {e}");
+    let err = |e: String| tr!("settings not written: {e}", e = e);
     let theirs = vault
         .entries("settings")
         .map_err(|e| err(e.to_string()))?
@@ -603,12 +604,12 @@ fn write_settings(store: &Store, vault: &Vault, first: bool) -> Result<bool, Str
 
 /// Writes the merged hosts and groups back into hosts.toml.
 fn write_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
-    let err = |e: shellwing_vault::Error| format!("hosts not written: {e}");
+    let err = |e: shellwing_vault::Error| tr!("hosts not written: {e}", e = e.to_string());
     let hosts = vault.entries("host").map_err(err)?;
     let groups = vault.entries("group").map_err(err)?;
     store
         .apply_synced_hosts(&hosts, &groups)
-        .map_err(|e| format!("hosts not written: {e}"))
+        .map_err(|e| tr!("hosts not written: {e}", e = e.to_string()))
 }
 
 #[cfg(test)]

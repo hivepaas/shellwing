@@ -11,6 +11,8 @@ use gpui::{
     Window, div, prelude::*, px, rgb, svg,
 };
 
+use shellwing_i18n::{tr, tr_n};
+
 use crate::colors::colors;
 use crate::look::ui;
 
@@ -140,7 +142,7 @@ impl SyncPanel {
                             .text_size(ui(19.))
                             .font_weight(FontWeight::SEMIBOLD)
                             .line_height(gpui::relative(1.25))
-                            .child("Your hosts on every device. Just sign in."),
+                            .child(tr!("Your hosts on every device. Just sign in.")),
                     )
                     .child(
                         div()
@@ -149,22 +151,22 @@ impl SyncPanel {
                             .gap(px(8.))
                             .text_size(ui(13.))
                             .line_height(gpui::relative(1.45))
-                            .child(point(
-                                "Hosts, saved passwords, keys and snippets follow you to every computer.",
-                            ))
-                            .child(point(
-                                "Nothing to set up: no folder, no server, no key to type on a new device.",
-                            ))
-                            .child(point(
-                                "Encrypted on your devices: shellwing never sees your secrets.",
-                            )),
+                            .child(point(&tr!(
+                                "Hosts, saved passwords, keys and snippets follow you to every computer."
+                            )))
+                            .child(point(&tr!(
+                                "Nothing to set up: no folder, no server, no key to type on a new device."
+                            )))
+                            .child(point(&tr!(
+                                "Encrypted on your devices: shellwing never sees your secrets."
+                            ))),
                     )
                     .child(
                         div()
                             .flex()
                             .gap(px(8.))
-                            .child(waiting_button("cloud-create", "Create an account", true).flex_1())
-                            .child(waiting_button("cloud-sign-in", "Sign in", false)),
+                            .child(waiting_button("cloud-create", &tr!("Create an account"), true).flex_1())
+                            .child(waiting_button("cloud-sign-in", &tr!("Sign in"), false)),
                     )
                     .child(
                         div()
@@ -174,7 +176,7 @@ impl SyncPanel {
                             .text_size(ui(12.))
                             .text_color(rgb(c.muted))
                             .child(div().flex_1().h(px(1.)).bg(rgb(c.edge)))
-                            .child("or continue with")
+                            .child(tr!("or continue with"))
                             .child(div().flex_1().h(px(1.)).bg(rgb(c.edge))),
                     )
                     .child(sso_row())
@@ -189,13 +191,16 @@ impl SyncPanel {
         let c = colors();
         let s = &self.snap.standing;
         let (title, detail) = match s {
-            Standing::Synced(Some(t)) => (format!("Synced · {}", ago(*t)), format!("With {place}")),
-            Standing::Synced(None) => ("Set up".to_string(), format!("With {place}")),
-            Standing::Syncing => ("Syncing…".to_string(), format!("With {place}")),
-            Standing::Failed(e) => ("Not synced".to_string(), format!("{place}: {e}")),
+            Standing::Synced(Some(t)) => (
+                tr!("Synced · {when}", when = ago(*t)),
+                tr!("With {place}", place = place),
+            ),
+            Standing::Synced(None) => (tr!("Set up"), tr!("With {place}", place = place)),
+            Standing::Syncing => (tr!("Syncing…"), tr!("With {place}", place = place)),
+            Standing::Failed(e) => (tr!("Not synced"), format!("{place}: {e}")),
             Standing::Paused => (
-                "Paused: the vault is locked".to_string(),
-                format!("With {place}, once it is open"),
+                tr!("Paused: the vault is locked"),
+                tr!("With {place}, once it is open", place = place),
             ),
             Standing::Off => (String::new(), String::new()),
         };
@@ -206,29 +211,26 @@ impl SyncPanel {
         };
         let paused = *s == Standing::Paused;
         let act = if paused {
-            small("sync-unlock", "Unlock…")
+            small("sync-unlock", &tr!("Unlock…"))
                 .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::Unlock)))
         } else {
             small(
                 "sync-now",
-                if matches!(s, Standing::Failed(_)) {
-                    "Try again"
+                &if matches!(s, Standing::Failed(_)) {
+                    tr!("Try again")
                 } else {
-                    "Sync now"
+                    tr!("Sync now")
                 },
             )
             .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::SyncNow)))
         };
         let counts = self.snap.counts.map(|(h, p, k, n)| {
-            let n_of = |n: usize, one: &str, many: &str| {
-                format!("{n} {}", if n == 1 { one } else { many })
-            };
-            format!(
-                "{}, {}, {} and {}.",
-                n_of(h, "host", "hosts"),
-                n_of(p, "password", "passwords"),
-                n_of(k, "key", "keys"),
-                n_of(n, "snippet", "snippets")
+            tr!(
+                "{hosts}, {passwords}, {keys} and {snippets}.",
+                hosts = tr_n!(h, "{n} host", "{n} hosts"),
+                passwords = tr_n!(p, "{n} password", "{n} passwords"),
+                keys = tr_n!(k, "{n} key", "{n} keys"),
+                snippets = tr_n!(n, "{n} snippet", "{n} snippets"),
             )
         });
         div()
@@ -240,7 +242,7 @@ impl SyncPanel {
                     .flex_col()
                     .gap(px(14.))
                     .p(px(18.))
-                    .child(header(s.color(), "SYNC"))
+                    .child(header(s.color(), &tr!("SYNC")))
                     .child(
                         div()
                             .flex()
@@ -292,7 +294,7 @@ impl SyncPanel {
                                     .child(
                                         div()
                                             .font_weight(FontWeight::SEMIBOLD)
-                                            .child("Rather not keep it yourself?"),
+                                            .child(tr!("Rather not keep it yourself?")),
                                     ),
                             )
                             .child(
@@ -300,7 +302,7 @@ impl SyncPanel {
                                     .text_size(ui(12.5))
                                     .line_height(gpui::relative(1.45))
                                     .text_color(rgb(c.soft))
-                                    .child("shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted."),
+                                    .child(tr!("shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.")),
                             )
                             .child(sso_row())
                             .child(coming()),
@@ -397,7 +399,7 @@ fn coming() -> gpui::Div {
     div()
         .text_size(ui(12.))
         .text_color(rgb(colors().muted))
-        .child("shellwing cloud is coming: signing in opens with it.")
+        .child(tr!("shellwing cloud is coming: signing in opens with it."))
 }
 
 /// The plans, in a line.
@@ -425,9 +427,12 @@ fn plans() -> gpui::Div {
         .rounded(px(8.))
         .bg(rgb(c.page))
         .text_size(ui(12.))
-        .child(plan("Free", "10 hosts"))
-        .child(plan("Starter", "20 hosts · $2.99/mo"))
-        .child(plan("Pro", "unlimited · $5.99/mo"))
+        .child(plan("Free", &tr_n!(10, "{n} host", "{n} hosts")))
+        .child(plan(
+            "Starter",
+            &tr_n!(20, "{n} host · $2.99/mo", "{n} hosts · $2.99/mo"),
+        ))
+        .child(plan("Pro", &tr!("unlimited · $5.99/mo")))
 }
 
 /// The way to set it up by hand.
@@ -450,12 +455,12 @@ fn footer(cx: &mut Context<SyncPanel>) -> gpui::Stateful<gpui::Div> {
         .text_color(rgb(c.muted))
         .cursor_pointer()
         .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::OpenSettings)))
-        .child("A folder, WebDAV, S3 or Git of your own:")
+        .child(tr!("A folder, WebDAV, S3 or Git of your own:"))
         .child(
             div()
                 .text_color(rgb(c.accent))
                 .hover(|s| s.text_color(rgb(c.accent_hover)))
-                .child("Settings › Sync"),
+                .child(tr!("Settings › Sync")),
         )
 }
 
@@ -485,12 +490,12 @@ fn ago(t: SystemTime) -> String {
         .map(|d| d.as_secs())
         .unwrap_or(0);
     match s {
-        0..=59 => "just now".into(),
-        60..=119 => "a minute ago".into(),
-        120..=3599 => format!("{} minutes ago", s / 60),
-        3600..=7199 => "an hour ago".into(),
-        7200..=86399 => format!("{} hours ago", s / 3600),
-        _ => format!("{} days ago", s / 86400),
+        0..=59 => tr!("just now"),
+        60..=119 => tr!("a minute ago"),
+        120..=3599 => tr_n!(s / 60, "{n} minute ago", "{n} minutes ago"),
+        3600..=7199 => tr!("an hour ago"),
+        7200..=86399 => tr_n!(s / 3600, "{n} hour ago", "{n} hours ago"),
+        _ => tr_n!(s / 86400, "{n} day ago", "{n} days ago"),
     }
 }
 

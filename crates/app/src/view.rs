@@ -18,6 +18,7 @@ use gpui::{
     size,
 };
 use shellwing_config::{CursorStyle, Gradient, Theme};
+use shellwing_i18n::{tr, tr_n};
 use shellwing_term::{
     Event as TermEvent, FindQuery, Found, Frame, Mods, MouseAction, MouseButton as TermButton,
     MouseInput, NamedKey, Rgb, Row, ScrollPos, TermHandle,
@@ -499,10 +500,10 @@ impl TermView {
     /// Starts logging the pane to a new file, or stops, and says where.
     pub fn toggle_log(&mut self, settings: &shellwing_config::Log, cx: &mut Context<Self>) {
         let said = match self.session.stop_log() {
-            Some(path) => format!("Log saved: {}", path.display()),
+            Some(path) => tr!("Log saved: {path}", path = path.display().to_string()),
             None => match self.session.start_log(settings) {
-                Ok(path) => format!("Logging to {}", path.display()),
-                Err(e) => format!("Cannot log: {e}"),
+                Ok(path) => tr!("Logging to {path}", path = path.display().to_string()),
+                Err(e) => tr!("Cannot log: {e}", e = e.to_string()),
             },
         };
         self.show_notice(said, LOG_NOTICE, cx);
@@ -547,12 +548,11 @@ impl TermView {
                 .await;
             let _ = this.update(cx, |v, cx| {
                 let said = match written {
-                    Ok(()) => format!(
-                        "Saved as {}: {}",
-                        if html { "HTML" } else { "text" },
-                        path.display()
-                    ),
-                    Err(e) => format!("Not saved: {e}"),
+                    Ok(()) if html => {
+                        tr!("Saved as HTML: {path}", path = path.display().to_string())
+                    }
+                    Ok(()) => tr!("Saved as text: {path}", path = path.display().to_string()),
+                    Err(e) => tr!("Not saved: {e}", e = e.to_string()),
                 };
                 v.show_notice(said, LOG_NOTICE, cx);
             });
@@ -607,7 +607,7 @@ impl TermView {
                     cx.open_url(&format!("file://{}", path.display()))
                 }))
                 .child(div().size(px(6.)).rounded_full().bg(rgb(colors().danger)))
-                .child("logging"),
+                .child(tr!("logging")),
         )
     }
 
@@ -648,7 +648,11 @@ impl TermView {
                 } else {
                     colors().faint
                 })))
-                .child(if listening { "listening" } else { "left out" }),
+                .child(if listening {
+                    tr!("listening")
+                } else {
+                    tr!("left out")
+                }),
         )
     }
 
@@ -661,10 +665,10 @@ impl TermView {
             shellwing_ssh::keys::INSTALL,
             format!("{}\n", key.public.trim()).into_bytes(),
         ) else {
-            return self.show_notice("Not connected.", CONFIRM_PASTE, cx);
+            return self.show_notice(tr!("Not connected."), CONFIRM_PASTE, cx);
         };
         self.show_notice(
-            format!("Installing {} on {host}…", key.name),
+            tr!("Installing {key} on {host}…", key = &key.name, host = &host),
             CONFIRM_PASTE,
             cx,
         );
@@ -676,16 +680,25 @@ impl TermView {
                         shellwing_ssh::keys::installed(out.status, &out.stdout, &out.stderr)
                     }
                     Ok(Err(e)) => Err(e.to_string()),
-                    Err(_) => Err("the connection ended".into()),
+                    Err(_) => Err(tr!("the connection ended")),
                 };
                 let said = match &done {
                     Ok(shellwing_ssh::keys::Installed::Added) => {
-                        format!("{} is installed on {host}.", key.name)
+                        tr!(
+                            "{key} is installed on {host}.",
+                            key = &key.name,
+                            host = &host
+                        )
                     }
                     Ok(shellwing_ssh::keys::Installed::Present) => {
-                        format!("{host} has {} already.", key.name)
+                        tr!("{host} has {key} already.", host = &host, key = &key.name)
                     }
-                    Err(why) => format!("{} was not installed on {host}: {why}", key.name),
+                    Err(why) => tr!(
+                        "{key} was not installed on {host}: {why}",
+                        key = &key.name,
+                        host = &host,
+                        why = why
+                    ),
                 };
                 // Offered only for a host in hosts.toml not set to it already.
                 let offer = key
@@ -748,12 +761,13 @@ impl TermView {
                 .bg(gpui::rgba(colors().banner))
                 .text_sm()
                 .text_color(rgb(colors().text))
-                .child(div().flex_1().min_w_0().child(format!(
-                    "{} is installed on {}. Sign in to {} with it from now on?",
-                    offer.key_name, offer.host, offer.host
+                .child(div().flex_1().min_w_0().child(tr!(
+                    "{key} is installed on {host}. Sign in to {host} with it from now on?",
+                    key = &offer.key_name,
+                    host = &offer.host
                 )))
                 .child(
-                    button("key-not-now", "Not now".into(), false).on_click(cx.listener(
+                    button("key-not-now", tr!("Not now"), false).on_click(cx.listener(
                         |v, _, _, cx| {
                             v.key_offer = None;
                             cx.notify();
@@ -761,18 +775,21 @@ impl TermView {
                     )),
                 )
                 .child(
-                    button("key-use", format!("Use it for {}", offer.host), true).on_click(
-                        cx.listener(|v, _, _, cx| {
-                            if let Some(o) = v.key_offer.take() {
-                                cx.emit(UseKey {
-                                    host: o.host,
-                                    vault_id: o.vault_id,
-                                    key_name: o.key_name,
-                                });
-                            }
-                            cx.notify();
-                        }),
-                    ),
+                    button(
+                        "key-use",
+                        tr!("Use it for {host}", host = &offer.host),
+                        true,
+                    )
+                    .on_click(cx.listener(|v, _, _, cx| {
+                        if let Some(o) = v.key_offer.take() {
+                            cx.emit(UseKey {
+                                host: o.host,
+                                vault_id: o.vault_id,
+                                key_name: o.key_name,
+                            });
+                        }
+                        cx.notify();
+                    })),
                 )
                 .into_any_element(),
         )
@@ -790,7 +807,7 @@ impl TermView {
                 f.input.clone()
             }
             None => {
-                let input = cx.new(|cx| TextInput::new("Find", cx));
+                let input = cx.new(|cx| TextInput::new(tr!("Find"), cx));
                 let changed = cx.subscribe(&input, |v, _, _: &Changed, cx| v.send_find(cx));
                 self.find = Some(FindBar {
                     input: input.clone(),
@@ -860,7 +877,7 @@ impl TermView {
         let (count, none) = match self.frame.find {
             _ if !typed => (String::new(), false),
             None => ("…".to_string(), false),
-            Some(s) if s.invalid => ("Invalid pattern".to_string(), true),
+            Some(s) if s.invalid => (tr!("Invalid pattern"), true),
             Some(s) => {
                 let more = if s.searching {
                     "…"
@@ -870,16 +887,24 @@ impl TermView {
                     ""
                 };
                 match (s.total, s.current) {
-                    (0, _) if !s.searching => ("No results".to_string(), true),
-                    (n, Some(i)) => (format!("{} of {n}{more}", i + 1), false),
-                    (n, None) => (format!("{n} found{more}"), false),
+                    (0, _) if !s.searching => (tr!("No results"), true),
+                    (n, Some(i)) => (
+                        tr!(
+                            "{current} of {total}{more}",
+                            current = i + 1,
+                            total = n,
+                            more = more
+                        ),
+                        false,
+                    ),
+                    (n, None) => (tr!("{total} found{more}", total = n, more = more), false),
                 }
             }
         };
         let options = cx.try_global::<FindOptions>().copied().unwrap_or_default();
         let toggle = |id: &'static str,
                       label: &'static str,
-                      tip: &'static str,
+                      tip: SharedString,
                       on: bool,
                       flip: fn(&mut FindOptions),
                       cx: &mut Context<Self>| {
@@ -902,7 +927,7 @@ impl TermView {
                 .hover(|s| s.bg(rgb(colors().hover)))
                 .tooltip(move |_, cx| {
                     cx.new(|_| crate::sidebar::Tip {
-                        title: tip.into(),
+                        title: tip.clone(),
                         detail: SharedString::default(),
                     })
                     .into()
@@ -965,7 +990,7 @@ impl TermView {
                 .child(toggle(
                     "find-case",
                     "Aa",
-                    "Match case (Alt+C)",
+                    tr!("Match case (Alt+C)").into(),
                     options.match_case,
                     |o| o.match_case = !o.match_case,
                     cx,
@@ -973,7 +998,7 @@ impl TermView {
                 .child(toggle(
                     "find-regex",
                     ".*",
-                    "Regular expression (Alt+R)",
+                    tr!("Regular expression (Alt+R)").into(),
                     options.regex,
                     |o| o.regex = !o.regex,
                     cx,
@@ -1012,7 +1037,7 @@ impl TermView {
     pub fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.session.is_local() {
             return self.show_notice(
-                "The Files panel browses a server over SFTP; this pane is a shell on this computer.",
+                tr!("The Files panel browses a server over SFTP; this pane is a shell on this computer."),
                 CONFIRM_PASTE,
                 cx,
             );
@@ -1131,13 +1156,19 @@ impl TermView {
         let offer = self.save_offer.as_ref()?;
         let what = match offer {
             shellwing_ssh::Learned::Password { target, .. } => {
-                format!("Save the password for {target} in the vault?")
+                tr!(
+                    "Save the password for {target} in the vault?",
+                    target = target
+                )
             }
             shellwing_ssh::Learned::Passphrase { key_path, .. } => {
-                format!("Save the passphrase of {key_path} in the vault?")
+                tr!(
+                    "Save the passphrase of {key_path} in the vault?",
+                    key_path = key_path
+                )
             }
         };
-        let button = |id: &'static str, label: &'static str, primary: bool| {
+        let button = |id: &'static str, label: String, primary: bool| {
             div()
                 .id(id)
                 .px_3()
@@ -1175,7 +1206,7 @@ impl TermView {
                 .text_color(rgb(colors().text))
                 .child(div().flex_1().min_w_0().child(what))
                 .child(
-                    button("save-not-now", "Not now", false).on_click(cx.listener(
+                    button("save-not-now", tr!("Not now"), false).on_click(cx.listener(
                         |v, _, _, cx| {
                             v.save_offer = None;
                             cx.notify();
@@ -1183,20 +1214,28 @@ impl TermView {
                     )),
                 )
                 .child(
-                    button("save-secret", "Save", true).on_click(cx.listener(|v, _, _, cx| {
-                        if let Some(secret) = v.save_offer.take() {
-                            match v.session.save(&secret) {
-                                Ok(()) => {
-                                    v.show_notice("Saved in the vault.", CONFIRM_PASTE, cx);
-                                    cx.emit(VaultChanged);
-                                }
-                                Err(e) => {
-                                    v.show_notice(format!("Not saved: {e}"), CONFIRM_PASTE, cx)
+                    button("save-secret", tr!("Save"), true).on_click(cx.listener(
+                        |v, _, _, cx| {
+                            if let Some(secret) = v.save_offer.take() {
+                                match v.session.save(&secret) {
+                                    Ok(()) => {
+                                        v.show_notice(
+                                            tr!("Saved in the vault."),
+                                            CONFIRM_PASTE,
+                                            cx,
+                                        );
+                                        cx.emit(VaultChanged);
+                                    }
+                                    Err(e) => v.show_notice(
+                                        tr!("Not saved: {e}", e = e.to_string()),
+                                        CONFIRM_PASTE,
+                                        cx,
+                                    ),
                                 }
                             }
-                        }
-                        cx.notify();
-                    })),
+                            cx.notify();
+                        },
+                    )),
                 )
                 .into_any_element(),
         )
@@ -1211,7 +1250,7 @@ impl TermView {
             return None;
         }
         let c = self.session.changed_key()?;
-        let button = |id: &'static str, label: &'static str, danger: bool| {
+        let button = |id: &'static str, label: String, danger: bool| {
             div()
                 .id(id)
                 .px_3()
@@ -1273,26 +1312,26 @@ impl TermView {
                     div()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(rgb(colors().bad_text))
-                        .child(format!("The host key for {} has changed.", c.label)),
+                        .child(tr!("The host key for {host} has changed.", host = &c.label)),
                 )
-                .child(div().text_color(rgb(colors().soft)).child(
-                    "If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send.",
-                ))
+                .child(div().text_color(rgb(colors().soft)).child(tr!(
+                    "If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send."
+                )))
                 .child(fact(
-                    "Known",
-                    format!("{old}  (known_hosts line {})", c.line),
+                    &tr!("Known"),
+                    tr!("{old}  (known_hosts line {line})", old = &old, line = c.line),
                 ))
-                .child(fact("Now", format!("{}  {}", c.fingerprint, c.kind)))
+                .child(fact(&tr!("Now"), format!("{}  {}", c.fingerprint, c.kind)))
                 .child(
                     div()
                         .flex()
                         .justify_end()
                         .gap_2()
                         .child(
-                            button("key-changed-trust", "Trust the new key and connect", true)
+                            button("key-changed-trust", tr!("Trust the new key and connect"), true)
                                 .on_click(cx.listener(|v, _, _, cx| match v.session.trust_changed_key() {
                                     Ok(()) => v.reconnect_now(cx),
-                                    Err(e) => v.show_notice(format!("Not trusted: {e}"), KEY_NOTICE, cx),
+                                    Err(e) => v.show_notice(tr!("Not trusted: {e}", e = e.to_string()), KEY_NOTICE, cx),
                                 })),
                         ),
                 )
@@ -1307,29 +1346,30 @@ impl TermView {
         let status = self.session.status();
         let why = self.session.ended().unwrap_or_default();
         let text = match (status, self.retry_at) {
-            (Status::Lost, Some(due)) => format!(
-                "Connection lost. Trying again in {} s (attempt {} of {}).",
-                due.saturating_duration_since(Instant::now()).as_secs() + 1,
-                self.retries,
-                BACKOFF_SECS.len()
+            (Status::Lost, Some(due)) => tr!(
+                "Connection lost. Trying again in {seconds} s (attempt {attempt} of {attempts}).",
+                seconds = due.saturating_duration_since(Instant::now()).as_secs() + 1,
+                attempt = self.retries,
+                attempts = BACKOFF_SECS.len()
             ),
             (Status::Lost, None) if self.retries >= BACKOFF_SECS.len() => {
-                format!(
-                    "Gave up after {} attempts. Enter tries again.",
-                    self.retries
+                tr_n!(
+                    self.retries,
+                    "Gave up after {n} attempt. Enter tries again.",
+                    "Gave up after {n} attempts. Enter tries again."
                 )
             }
-            (Status::Lost, None) => "Connection lost. Enter tries again.".to_string(),
+            (Status::Lost, None) => tr!("Connection lost. Enter tries again."),
             (Status::Closed, _) if self.session.is_local() => {
-                format!("{}. Enter starts it again.", capitalize(&why))
+                tr!("{why}. Enter starts it again.", why = capitalize(&why))
             }
-            (Status::Closed, _) => format!("{}. Enter reconnects.", capitalize(&why)),
+            (Status::Closed, _) => tr!("{why}. Enter reconnects.", why = capitalize(&why)),
             (Status::Failed, _) if self.session.ever_connected() || !why.is_empty() => {
-                "Could not connect. Enter tries again.".to_string()
+                tr!("Could not connect. Enter tries again.")
             }
             _ => return None,
         };
-        let button = |id: &'static str, label: &'static str, primary: bool| {
+        let button = |id: &'static str, label: String, primary: bool| {
             div()
                 .id(id)
                 .px_3()
@@ -1368,7 +1408,7 @@ impl TermView {
                 .child(div().flex_1().min_w_0().child(text))
                 .when(self.retry_at.is_some(), |d| {
                     d.child(
-                        button("stop-retry", "Stop (Esc)", false)
+                        button("stop-retry", tr!("Stop (Esc)"), false)
                             .on_click(cx.listener(|v, _, _, cx| v.stop_retrying(cx))),
                     )
                 })
@@ -1376,9 +1416,9 @@ impl TermView {
                     button(
                         "reconnect",
                         if self.session.is_local() {
-                            "Start again (Enter)"
+                            tr!("Start again (Enter)")
                         } else {
-                            "Reconnect (Enter)"
+                            tr!("Reconnect (Enter)")
                         },
                         true,
                     )
@@ -1459,7 +1499,8 @@ impl TermView {
             self.cell = (px(0.), px(0.));
             self.paint_rows.clear();
         }
-        self.show_notice(format!("Font size {}", self.font_size()), ZOOM_NOTICE, cx);
+        let size = self.font_size().to_string();
+        self.show_notice(tr!("Font size {size}", size = size), ZOOM_NOTICE, cx);
     }
 
     /// The terminal font, with fallbacks for glyphs it lacks. Missing fallback
@@ -1502,7 +1543,7 @@ impl TermView {
             TermEvent::PasteRefused(text) => {
                 self.pending_paste = Some((text, Instant::now()));
                 self.show_notice(
-                    "The pasted text could run commands. Paste again within 5 s to send it anyway.",
+                    tr!("The pasted text could run commands. Paste again within 5 s to send it anyway."),
                     CONFIRM_PASTE,
                     cx,
                 );
@@ -1518,7 +1559,11 @@ impl TermView {
             }
             TermEvent::LogFailed(e) => {
                 self.session.stop_log();
-                self.show_notice(format!("Logging stopped: {e}"), LOG_NOTICE, cx);
+                self.show_notice(
+                    tr!("Logging stopped: {e}", e = e.to_string()),
+                    LOG_NOTICE,
+                    cx,
+                );
             }
         }
     }
@@ -1608,23 +1653,23 @@ impl TermView {
                 }
             }))
             .child(
-                item("menu-palette", "Command Palette…", chord("K"), true)
+                item("menu-palette", &tr!("Command Palette…"), chord("K"), true)
                     .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
             )
             .child(line())
             .child(
-                item("menu-copy", "Copy", chord("C"), self.frame.selected)
+                item("menu-copy", &tr!("Copy"), chord("C"), self.frame.selected)
                     .when(self.frame.selected, |d| {
                         d.on_click(act(|v, _, _| v.term.copy()))
                     }),
             )
             .child(
-                item("menu-paste", "Paste", chord("V"), true)
+                item("menu-paste", &tr!("Paste"), chord("V"), true)
                     .on_click(act(|v, _, cx| v.paste_clipboard(cx))),
             )
             .child(line())
             .child(
-                item("menu-find", "Find…", chord("F"), true)
+                item("menu-find", &tr!("Find…"), chord("F"), true)
                     .on_click(act(|v, window, cx| v.open_find(window, cx))),
             )
             // Files and forwards are SSH's.
@@ -1632,10 +1677,10 @@ impl TermView {
                 d.child(
                     item(
                         "menu-files",
-                        if self.files_shown {
-                            "Hide Files"
+                        &if self.files_shown {
+                            tr!("Hide Files")
                         } else {
-                            "Browse Files (SFTP)"
+                            tr!("Browse Files (SFTP)")
                         },
                         chord("O"),
                         true,
@@ -1645,7 +1690,7 @@ impl TermView {
             })
             .when(status == Status::Connected && !local, |d| {
                 d.child(
-                    item("menu-forward", "Forward a Port…", String::new(), true)
+                    item("menu-forward", &tr!("Forward a Port…"), String::new(), true)
                         .on_click(act(|_, _, cx| cx.emit(PaneCommand::Forward))),
                 )
             })
@@ -1654,7 +1699,7 @@ impl TermView {
             .child(
                 item(
                     "menu-save-text",
-                    "Save Output as Text…",
+                    &tr!("Save Output as Text…"),
                     String::new(),
                     true,
                 )
@@ -1663,8 +1708,8 @@ impl TermView {
             .child(
                 item(
                     "menu-save-html",
-                    "Save Output as HTML…",
-                    "with colors".into(),
+                    &tr!("Save Output as HTML…"),
+                    tr!("with colors"),
                     true,
                 )
                 .on_click(act(|v, window, cx| v.save_output(true, window, cx))),
@@ -1672,10 +1717,10 @@ impl TermView {
             .child(
                 item(
                     "menu-log",
-                    if self.session.log_path().is_some() {
-                        "Stop Logging"
+                    &if self.session.log_path().is_some() {
+                        tr!("Stop Logging")
                     } else {
-                        "Start Logging"
+                        tr!("Start Logging")
                     },
                     String::new(),
                     true,
@@ -1684,14 +1729,14 @@ impl TermView {
             )
             .child(line())
             .child(
-                item("menu-split-right", "Split Right", chord("D"), true).on_click(act(
+                item("menu-split-right", &tr!("Split Right"), chord("D"), true).on_click(act(
                     |_, _, cx| cx.emit(PaneCommand::Split(gpui::Axis::Horizontal)),
                 )),
             )
             .child(
                 item(
                     "menu-split-down",
-                    "Split Down",
+                    &tr!("Split Down"),
                     if mac {
                         "Cmd+Shift+D".into()
                     } else {
@@ -1707,14 +1752,14 @@ impl TermView {
                 matches!(status, Status::Closed | Status::Lost | Status::Failed),
                 |d| {
                     d.child(
-                        item("menu-reconnect", "Reconnect", String::new(), true)
+                        item("menu-reconnect", &tr!("Reconnect"), String::new(), true)
                             .on_click(act(|v, _, cx| v.reconnect_now(cx))),
                     )
                 },
             )
             .child(line())
             .child(
-                item("menu-close", "Close Pane", chord("W"), true)
+                item("menu-close", &tr!("Close Pane"), chord("W"), true)
                     .on_click(act(|_, _, cx| cx.emit(PaneCommand::Close))),
             );
         gpui::deferred(
@@ -2470,7 +2515,7 @@ impl Render for TermView {
                         v.term.scroll_to_bottom();
                         cx.notify();
                     }))
-                    .child("↓ Back to bottom (Shift+End)"),
+                    .child(tr!("↓ Back to bottom (Shift+End)")),
             );
         }
 

@@ -38,6 +38,7 @@ your comments, and applies to the open tabs.
 ```toml
 [general]
 restore_tabs = true          # a start without a host opens the last run's tabs
+language = "auto"            # "auto" (the system's), "en" or "vi"; this device's own
 
 [appearance]
 mode = "system"              # "system" (as the desktop is), "dark" or "light"
@@ -105,6 +106,17 @@ Fonts:
 
 When shellwing changes this file itself (the theme shortcut below), it edits
 only that key, so your comments and layout stay as you wrote them.
+
+## Language
+
+shellwing speaks the system's language where it has it, else English; *Settings ›
+General › Language* (`language` under `[general]`) picks another. Each device
+keeps its own: it does not sync. Translated: English and Vietnamese. What the
+terminal shows is the server's, and stays as it is.
+
+Translations live in `crates/i18n/locales/<language>.ftl` (Fluent), each message
+under the English it translates, which is in the code. `scripts/i18n.py update`
+brings them in step with the code; `scripts/i18n.py todo vi` lists what is left.
 
 ## Themes
 

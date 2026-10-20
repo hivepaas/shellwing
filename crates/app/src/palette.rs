@@ -6,6 +6,7 @@ use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, KeyDownEvent, MouseButton, Render,
     ScrollHandle, SharedString, Subscription, Window, div, prelude::*, px, rgb,
 };
+use shellwing_i18n::tr;
 
 use crate::colors::colors;
 use crate::input::{Changed, TextInput};
@@ -110,7 +111,7 @@ pub enum Kind {
 #[derive(Clone, Debug)]
 pub struct Entry {
     pub kind: Kind,
-    pub group: &'static str,
+    pub group: SharedString,
     pub title: SharedString,
     pub detail: SharedString,
     pub status: Option<Status>,
@@ -118,10 +119,10 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(kind: Kind, group: &'static str, title: impl Into<SharedString>) -> Self {
+    pub fn new(kind: Kind, group: impl Into<SharedString>, title: impl Into<SharedString>) -> Self {
         Entry {
             kind,
-            group,
+            group: group.into(),
             title: title.into(),
             detail: SharedString::default(),
             status: None,
@@ -202,7 +203,7 @@ impl Palette {
             Mode::Connect,
             entries,
             0,
-            "Find a host, or type user@host",
+            &tr!("Find a host, or type user@host"),
             cx,
         )
     }
@@ -231,7 +232,7 @@ impl Palette {
             Mode::Secrets,
             entries,
             0,
-            "Find a saved password or passphrase",
+            &tr!("Find a saved password or passphrase"),
             cx,
         )
     }
@@ -248,7 +249,7 @@ impl Palette {
             .iter()
             .position(|e| e.kind == Kind::Theme(current.to_string()))
             .unwrap_or(0);
-        Self::build(Mode::Themes, entries, at, "Find a theme", cx)
+        Self::build(Mode::Themes, entries, at, &tr!("Find a theme"), cx)
     }
 
     fn build(
@@ -305,10 +306,10 @@ impl Palette {
         if self.mode == Mode::Connect && !actions_only && !typed.is_empty() {
             let connect = Entry::new(
                 Kind::Connect(typed.clone()),
-                "Connect",
-                format!("Connect to {typed}"),
+                tr!("Connect"),
+                tr!("Connect to {typed}", typed = &typed),
             )
-            .detail("a new address; a Host block in ~/.ssh/config applies")
+            .detail(tr!("a new address; a Host block in ~/.ssh/config applies"))
             .hint("Enter");
             // After a clearly matching host, before a weak one.
             let at = if best.is_some_and(|s| s <= 1) { 1 } else { 0 };
@@ -335,11 +336,11 @@ impl Palette {
     fn row_index(&self, ix: usize) -> usize {
         let headers = self.headers();
         let mut seen = 0;
-        let mut last = "";
+        let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
                 seen += 1;
-                last = e.group;
+                last = e.group.clone();
             }
             if i == ix {
                 return i + seen;
@@ -430,10 +431,10 @@ impl Render for Palette {
             .flex()
             .flex_col()
             .p_1();
-        let mut last = "";
+        let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
-                last = e.group;
+                last = e.group.clone();
                 list = list.child(
                     div()
                         .px_3()
@@ -442,7 +443,7 @@ impl Render for Palette {
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
                         .text_color(rgb(colors().muted))
-                        .child(e.group),
+                        .child(e.group.clone()),
                 );
             }
             let selected = i == self.selected;
@@ -495,7 +496,7 @@ impl Render for Palette {
                             div()
                                 .text_xs()
                                 .text_color(rgb(colors().bad))
-                                .child("Enter again to forget"),
+                                .child(tr!("Enter again to forget")),
                         )
                     })
                     .when(!armed && selected && !e.hint.is_empty(), |d| {
@@ -514,16 +515,18 @@ impl Render for Palette {
                     .px_3()
                     .py_2()
                     .text_color(rgb(colors().muted))
-                    .child("Nothing matches."),
+                    .child(tr!("Nothing matches.")),
             );
         }
         let footer = match self.mode {
-            Mode::Connect => "↑↓ move   Enter open   Esc close   type > for actions only",
-            Mode::Themes => "↑↓ preview   Enter keep   Esc go back",
-            Mode::Secrets => "↑↓ move   Enter twice forget   Esc close   secrets are never shown",
-            Mode::Show => "Enter copies   Esc close",
-            Mode::Ask => "Enter answers   Esc cancels",
-            Mode::Choose => "↑↓ move   Enter choose   Esc cancel",
+            Mode::Connect => tr!("↑↓ move   Enter open   Esc close   type > for actions only"),
+            Mode::Themes => tr!("↑↓ preview   Enter keep   Esc go back"),
+            Mode::Secrets => {
+                tr!("↑↓ move   Enter twice forget   Esc close   secrets are never shown")
+            }
+            Mode::Show => tr!("Enter copies   Esc close"),
+            Mode::Ask => tr!("Enter answers   Esc cancels"),
+            Mode::Choose => tr!("↑↓ move   Enter choose   Esc cancel"),
         };
         div()
             .w(px(640.))
@@ -573,7 +576,8 @@ mod tests {
     use super::*;
 
     fn host(name: &str, detail: &str) -> Entry {
-        Entry::new(Kind::Host(name.into()), "Hosts", name.to_string()).detail(detail.to_string())
+        Entry::new(Kind::Host(name.into()), tr!("Hosts"), name.to_string())
+            .detail(detail.to_string())
     }
 
     #[test]

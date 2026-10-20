@@ -11,6 +11,7 @@ use gpui::{
     Pixels, Point, Render, SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*,
     px, rgb,
 };
+use shellwing_i18n::{tr, tr_n};
 use shellwing_ssh::keys::{self, KeyFile, KeyInfo, KeyKind, ReadError};
 
 use crate::colors::colors;
@@ -163,11 +164,11 @@ fn file_name(name: &str) -> String {
     format!("id_{}", s.trim_matches('_'))
 }
 
-fn kind_label(k: KeyKind) -> &'static str {
+fn kind_label(k: KeyKind) -> String {
     match k {
-        KeyKind::Ed25519 => "Ed25519 (recommended)",
-        KeyKind::EcdsaP256 => "ECDSA P-256",
-        KeyKind::Rsa4096 => "RSA 4096",
+        KeyKind::Ed25519 => tr!("Ed25519 (recommended)"),
+        KeyKind::EcdsaP256 => "ECDSA P-256".into(),
+        KeyKind::Rsa4096 => "RSA 4096".into(),
     }
 }
 
@@ -319,7 +320,12 @@ impl KeysView {
     }
 
     fn generate_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let name = Self::input("A name, to tell your keys apart", &machine(), false, cx);
+        let name = Self::input(
+            &tr!("A name, to tell your keys apart"),
+            &machine(),
+            false,
+            cx,
+        );
         let comment = Self::input("user@host", &format!("{}@{}", user(), machine()), false, cx);
         self.open(
             Dialog::Generate {
@@ -350,7 +356,7 @@ impl KeysView {
         }
         let n = name.read(cx).text().trim().to_string();
         if n.is_empty() {
-            *problem = Some("A name is needed.".into());
+            *problem = Some(tr!("A name is needed."));
             return cx.notify();
         }
         let (c, kind) = (comment.read(cx).text().trim().to_string(), *kind);
@@ -363,9 +369,11 @@ impl KeysView {
             let key = keys::generate(kind, &c).map_err(|e| e.to_string())?;
             let info = keys::info(key.public_key());
             let private = keys::to_vault(&key).map_err(|e| e.to_string())?;
-            let v = vault
-                .get()
-                .ok_or_else(|| vault.problem().unwrap_or("the vault is not open".into()))?;
+            let v = vault.get().ok_or_else(|| {
+                vault
+                    .problem()
+                    .unwrap_or_else(|| tr!("the vault is not open"))
+            })?;
             let id = v
                 .add_ssh_key(&n, &info.public, &private)
                 .map_err(|e| e.to_string())?;
@@ -402,7 +410,7 @@ impl KeysView {
 
     fn copy_public(&mut self, info: &KeyInfo, cx: &mut Context<Self>) {
         cx.write_to_clipboard(ClipboardItem::new_string(info.public.clone()));
-        self.say("Copied the public key.", false, cx);
+        self.say(tr!("Copied the public key."), false, cx);
     }
 
     fn install(&mut self, key: KeyToInstall, window: &mut Window, cx: &mut Context<Self>) {
@@ -423,7 +431,7 @@ impl KeysView {
         let result = self
             .vault
             .get()
-            .ok_or_else(|| "the vault is not open".to_string())
+            .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| v.rename_ssh_key(id, &name).map_err(|e| e.to_string()));
         self.close(window, cx);
         match result {
@@ -431,7 +439,7 @@ impl KeysView {
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
-            Err(e) => self.say(format!("Not renamed: {e}"), true, cx),
+            Err(e) => self.say(tr!("Not renamed: {e}", e = e), true, cx),
         }
     }
 
@@ -443,16 +451,16 @@ impl KeysView {
         let result = self
             .vault
             .get()
-            .ok_or_else(|| "the vault is not open".to_string())
+            .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
         self.close(window, cx);
         match result {
             Ok(()) => {
-                self.say(format!("Deleted {name}."), false, cx);
+                self.say(tr!("Deleted {name}.", name = &name), false, cx);
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
-            Err(e) => self.say(format!("Not deleted: {e}"), true, cx),
+            Err(e) => self.say(tr!("Not deleted: {e}", e = e), true, cx),
         }
     }
 
@@ -472,7 +480,7 @@ impl KeysView {
             again.read(cx).text().to_string(),
         );
         if p != a {
-            *problem = Some("The two passphrases differ.".into());
+            *problem = Some(tr!("The two passphrases differ."));
             return cx.notify();
         }
         let kept = kept.clone();
@@ -483,10 +491,8 @@ impl KeysView {
             .and_then(|ks| ks.into_iter().find(|k| k.id == kept.id))
             .map(|k| k.private);
         let text = private
-            .ok_or_else(|| "the key is not in the vault".to_string())
-            .and_then(|pem| {
-                keys::parse(&pem, None).map_err(|_| "the key does not read".to_string())
-            })
+            .ok_or_else(|| tr!("the key is not in the vault"))
+            .and_then(|pem| keys::parse(&pem, None).map_err(|_| tr!("the key does not read")))
             .and_then(|key| keys::export(&key, Some(&p)).map_err(|e| e.to_string()));
         let text = match text {
             Ok(t) => t,
@@ -509,13 +515,13 @@ impl KeysView {
             let _ = this.update(cx, |v, cx| match written {
                 Ok(()) => {
                     v.say(
-                        format!("Written to {} and its .pub.", tilde(&path)),
+                        tr!("Written to {path} and its .pub.", path = tilde(&path)),
                         false,
                         cx,
                     );
                     v.refresh(cx);
                 }
-                Err(e) => v.say(format!("Not written: {e}"), true, cx),
+                Err(e) => v.say(tr!("Not written: {e}", e = e.to_string()), true, cx),
             });
         })
         .detach();
@@ -533,7 +539,17 @@ impl KeysView {
     ) {
         let text = match std::fs::read_to_string(&path) {
             Ok(t) => t,
-            Err(e) => return self.say(format!("Cannot read {}: {e}", tilde(&path)), true, cx),
+            Err(e) => {
+                return self.say(
+                    tr!(
+                        "Cannot read {path}: {e}",
+                        path = tilde(&path),
+                        e = e.to_string()
+                    ),
+                    true,
+                    cx,
+                );
+            }
         };
         let vault = self.vault.get();
         // The passphrase typed, else the one the vault has for it.
@@ -557,12 +573,12 @@ impl KeysView {
             Ok(k) if then != Use::Save || typed.is_some() => k,
             Ok(_) | Err(ReadError::Passphrase) => {
                 let wrong = typed.is_some();
-                let input = Self::input("Its passphrase", "", true, cx);
+                let input = Self::input(&tr!("Its passphrase"), "", true, cx);
                 return self.open(
                     Dialog::Unlock {
                         path,
                         pass: input,
-                        problem: wrong.then(|| "That passphrase does not open it.".into()),
+                        problem: wrong.then(|| tr!("That passphrase does not open it.")),
                         then,
                     },
                     window,
@@ -571,7 +587,7 @@ impl KeysView {
             }
             Err(ReadError::NotAKey(_)) => {
                 return self.say(
-                    format!("{} is not an OpenSSH private key.", tilde(&path)),
+                    tr!("{path} is not an OpenSSH private key.", path = tilde(&path)),
                     true,
                     cx,
                 );
@@ -590,7 +606,7 @@ impl KeysView {
                 window.focus(&self.focus, cx);
                 let fp = keys::info(key.public_key()).fingerprint;
                 let saved = vault
-                    .ok_or_else(|| "the vault is not open".to_string())
+                    .ok_or_else(|| tr!("the vault is not open"))
                     .and_then(|v| {
                         v.set_passphrase(&fp, &file_name, pass.as_deref().unwrap_or_default())
                             .map_err(|e| e.to_string())
@@ -598,8 +614,9 @@ impl KeysView {
                 match saved {
                     Ok(()) => {
                         self.say(
-                            format!(
-                                "Saved the passphrase of {file_name}: it is not asked for again."
+                            tr!(
+                                "Saved the passphrase of {file_name}: it is not asked for again.",
+                                file_name = &file_name
                             ),
                             false,
                             cx,
@@ -607,7 +624,7 @@ impl KeysView {
                         self.vault_changed(cx);
                         self.refresh(cx);
                     }
-                    Err(e) => self.say(format!("Not saved: {e}"), true, cx),
+                    Err(e) => self.say(tr!("Not saved: {e}", e = e), true, cx),
                 }
                 return;
             }
@@ -627,7 +644,7 @@ impl KeysView {
             .map_err(|e| e.to_string())
             .and_then(|pem| {
                 vault
-                    .ok_or_else(|| "the vault is not open".to_string())?
+                    .ok_or_else(|| tr!("the vault is not open"))?
                     .add_ssh_key(&name, &info.public, &pem)
                     .map_err(|e| e.to_string())
             });
@@ -636,14 +653,17 @@ impl KeysView {
         match added {
             Ok(_) => {
                 self.say(
-                    format!("{name} is in the vault now, and syncs to your other devices."),
+                    tr!(
+                        "{name} is in the vault now, and syncs to your other devices.",
+                        name = &name
+                    ),
                     false,
                     cx,
                 );
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
-            Err(e) => self.say(format!("Not copied: {e}"), true, cx),
+            Err(e) => self.say(tr!("Not copied: {e}", e = e), true, cx),
         }
     }
 
@@ -662,12 +682,15 @@ impl KeysView {
             let _ = this.update(cx, |v, cx| {
                 match done {
                     Ok(Ok(())) => v.say(
-                        format!("{name} is in the ssh-agent now, until it stops."),
+                        tr!(
+                            "{name} is in the ssh-agent now, until it stops.",
+                            name = &name
+                        ),
                         false,
                         cx,
                     ),
-                    Ok(Err(e)) => v.say(format!("Not added: {e}"), true, cx),
-                    Err(e) => v.say(format!("Not added: {e}"), true, cx),
+                    Ok(Err(e)) => v.say(tr!("Not added: {e}", e = e.to_string()), true, cx),
+                    Err(e) => v.say(tr!("Not added: {e}", e = e.to_string()), true, cx),
                 }
                 v.refresh(cx);
             });
@@ -687,9 +710,13 @@ impl KeysView {
             let done = task.await;
             let _ = this.update(cx, |v, cx| {
                 match done {
-                    Ok(Ok(())) => v.say(format!("{name} is out of the ssh-agent."), false, cx),
-                    Ok(Err(e)) => v.say(format!("Not removed: {e}"), true, cx),
-                    Err(e) => v.say(format!("Not removed: {e}"), true, cx),
+                    Ok(Ok(())) => v.say(
+                        tr!("{name} is out of the ssh-agent.", name = &name),
+                        false,
+                        cx,
+                    ),
+                    Ok(Err(e)) => v.say(tr!("Not removed: {e}", e = e.to_string()), true, cx),
+                    Err(e) => v.say(tr!("Not removed: {e}", e = e.to_string()), true, cx),
                 }
                 v.refresh(cx);
             });
@@ -707,7 +734,7 @@ impl KeysView {
             .and_then(|k| keys::parse(&k.private, None).ok());
         match key {
             Some(key) => self.hand_to_agent(key, kept.name.clone(), cx),
-            None => self.say("The key is not in the vault.", true, cx),
+            None => self.say(tr!("The key is not in the vault."), true, cx),
         }
     }
 
@@ -716,7 +743,7 @@ impl KeysView {
         let done = self
             .vault
             .get()
-            .ok_or_else(|| "the vault is not open".to_string())
+            .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| {
                 let items = v.items().map_err(|e| e.to_string())?;
                 for item in items {
@@ -733,9 +760,9 @@ impl KeysView {
         match done {
             Ok(()) => {
                 self.say(
-                    format!(
-                        "Forgot the passphrase of {}: it is asked for again.",
-                        tilde(&file.path)
+                    tr!(
+                        "Forgot the passphrase of {path}: it is asked for again.",
+                        path = tilde(&file.path)
                     ),
                     false,
                     cx,
@@ -743,7 +770,7 @@ impl KeysView {
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
-            Err(e) => self.say(format!("Not forgotten: {e}"), true, cx),
+            Err(e) => self.say(tr!("Not forgotten: {e}", e = e), true, cx),
         }
     }
 
@@ -759,7 +786,7 @@ impl KeysView {
             files: true,
             directories: false,
             multiple: false,
-            prompt: Some("Import".into()),
+            prompt: Some(tr!("Import").into()),
         });
         cx.spawn(async move |this, cx| {
             let Ok(Ok(Some(paths))) = picked.await else {
@@ -937,10 +964,10 @@ impl KeysView {
             .map(|(i, k)| {
                 let users = self.users.get(&k.id).map(Vec::as_slice).unwrap_or_default();
                 let used = match users {
-                    [] => "not used by a host yet".to_string(),
-                    [one] => format!("used by {one}"),
-                    [a, b] => format!("used by {a}, {b}"),
-                    more => format!("used by {} hosts", more.len()),
+                    [] => tr!("not used by a host yet"),
+                    [one] => tr!("used by {one}", one = one),
+                    [a, b] => tr!("used by {a}, {b}", a = a, b = b),
+                    more => tr_n!(more.len(), "used by {n} host", "used by {n} hosts"),
                 };
                 let mut detail = vec![k.info.fingerprint.clone()];
                 if !k.info.comment.is_empty() {
@@ -964,12 +991,14 @@ impl KeysView {
                         .flex()
                         .gap(px(6.))
                         .child(
-                            Self::small(("kept-copy", i), "Copy public key")
+                            Self::small(("kept-copy", i), &tr!("Copy public key"))
                                 .on_click(cx.listener(move |v, _, _, cx| v.copy_public(&info, cx))),
                         )
-                        .child(Self::small(("kept-install", i), "Install on…").on_click(
-                            cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
-                        ))
+                        .child(
+                            Self::small(("kept-install", i), &tr!("Install on…")).on_click(
+                                cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
+                            ),
+                        )
                         .child(
                             Self::small(("kept-more", i), "⋯")
                                 .when(open, |d| d.bg(rgb(colors().button_hover)))
@@ -999,20 +1028,20 @@ impl KeysView {
             .enumerate()
             .map(|(i, f)| {
                 let pass = if !f.file.encrypted {
-                    Self::chip("no passphrase", colors().warn, colors().warn_bg)
+                    Self::chip(tr!("no passphrase"), colors().warn, colors().warn_bg)
                 } else if f.saved {
                     Self::chip(
-                        "passphrase saved in the vault",
+                        tr!("passphrase saved in the vault"),
                         colors().good,
                         colors().good_bg,
                     )
                 } else {
-                    Self::chip("passphrase", colors().soft, colors().chip)
+                    Self::chip(tr!("passphrase"), colors().soft, colors().chip)
                 };
                 let mut marks = vec![Self::kind_chip(&f.file.info.kind), pass];
                 if f.kept {
                     marks.push(Self::chip(
-                        "also in the vault",
+                        tr!("also in the vault"),
                         colors().soft,
                         colors().chip,
                     ));
@@ -1033,12 +1062,14 @@ impl KeysView {
                     .flex()
                     .gap(px(6.))
                     .child(
-                        Self::small(("file-copy", i), "Copy public key")
+                        Self::small(("file-copy", i), &tr!("Copy public key"))
                             .on_click(cx.listener(move |v, _, _, cx| v.copy_public(&info, cx))),
                     )
-                    .child(Self::small(("file-install", i), "Install on…").on_click(
-                        cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
-                    ));
+                    .child(
+                        Self::small(("file-install", i), &tr!("Install on…")).on_click(
+                            cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
+                        ),
+                    );
                 let open = self.menu.is_some_and(|(_, m)| m == MenuFor::File(i));
                 actions = actions.child(
                     Self::small(("file-more", i), "⋯")
@@ -1089,20 +1120,20 @@ impl KeysView {
                     .files
                     .iter()
                     .find(|f| f.file.info.fingerprint == k.fingerprint)
-                    .map(|f| format!("the same key as {}", tilde(&f.file.path)))
+                    .map(|f| tr!("the same key as {path}", path = tilde(&f.file.path)))
                     .or_else(|| {
                         self.listed
                             .kept
                             .iter()
                             .find(|x| x.info.fingerprint == k.fingerprint)
-                            .map(|x| format!("the same key as {} in the vault", x.name))
+                            .map(|x| tr!("the same key as {name} in the vault", name = &x.name))
                     })
-                    .unwrap_or_else(|| "only in the agent".into());
+                    .unwrap_or_else(|| tr!("only in the agent"));
                 let (info, install) = (
                     k.clone(),
                     KeyToInstall {
                         name: if k.comment.is_empty() {
-                            "the agent's key".into()
+                            tr!("the agent's key")
                         } else {
                             k.comment.clone()
                         },
@@ -1114,7 +1145,7 @@ impl KeysView {
                     div()
                         .font_weight(FontWeight::MEDIUM)
                         .child(if k.comment.is_empty() {
-                            "(no comment)".to_string()
+                            tr!("(no comment)")
                         } else {
                             k.comment.clone()
                         }),
@@ -1124,12 +1155,14 @@ impl KeysView {
                         .flex()
                         .gap(px(6.))
                         .child(
-                            Self::small(("agent-copy", i), "Copy public key")
+                            Self::small(("agent-copy", i), &tr!("Copy public key"))
                                 .on_click(cx.listener(move |v, _, _, cx| v.copy_public(&info, cx))),
                         )
-                        .child(Self::small(("agent-install", i), "Install on…").on_click(
-                            cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
-                        )),
+                        .child(
+                            Self::small(("agent-install", i), &tr!("Install on…")).on_click(
+                                cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
+                            ),
+                        ),
                 )
             })
             .collect()
@@ -1182,59 +1215,68 @@ impl KeysView {
             MenuFor::Kept(i) => {
                 let k = self.listed.kept.get(i)?.clone();
                 let (k1, k2, k3, k4) = (k.clone(), k.clone(), k.clone(), k.clone());
-                menu =
-                    menu.child(item("menu-export", "Export to file…", false).on_click(
-                        cx.listener(move |v, _, w, cx| {
-                            let pass = Self::input("A passphrase, or none", "", true, cx);
-                            let again = Self::input("The passphrase again", "", true, cx);
-                            v.open(
-                                Dialog::Export {
-                                    kept: k1.clone(),
-                                    pass,
-                                    again,
-                                    problem: None,
-                                },
-                                w,
-                                cx,
-                            );
-                        }),
-                    ))
-                    .child(item("menu-rename", "Rename…", false).on_click(cx.listener(
-                        move |v, _, w, cx| {
-                            let input = Self::input("Name", &k2.name, false, cx);
-                            v.open(
-                                Dialog::Rename {
-                                    id: k2.id.clone(),
-                                    input,
-                                },
-                                w,
-                                cx,
-                            );
-                        },
-                    )));
-                menu =
-                    if self.in_agent(&k.info.fingerprint) {
-                        menu.child(
-                            item("menu-agent-out", "Remove from ssh-agent", false).on_click(
-                                cx.listener(move |v, _, _, cx| {
-                                    v.menu = None;
-                                    v.out_of_agent(&k3.info.public, k3.name.clone(), cx);
-                                }),
-                            ),
-                        )
-                    } else {
-                        menu.child(item("menu-agent", "Add to ssh-agent", false).on_click(
+                menu = menu
+                    .child(
+                        item("menu-export", &tr!("Export to file…"), false).on_click(cx.listener(
+                            move |v, _, w, cx| {
+                                let pass = Self::input(&tr!("A passphrase, or none"), "", true, cx);
+                                let again = Self::input(&tr!("The passphrase again"), "", true, cx);
+                                v.open(
+                                    Dialog::Export {
+                                        kept: k1.clone(),
+                                        pass,
+                                        again,
+                                        problem: None,
+                                    },
+                                    w,
+                                    cx,
+                                );
+                            },
+                        )),
+                    )
+                    .child(
+                        item("menu-rename", &tr!("Rename…"), false).on_click(cx.listener(
+                            move |v, _, w, cx| {
+                                let input = Self::input(&tr!("Name"), &k2.name, false, cx);
+                                v.open(
+                                    Dialog::Rename {
+                                        id: k2.id.clone(),
+                                        input,
+                                    },
+                                    w,
+                                    cx,
+                                );
+                            },
+                        )),
+                    );
+                menu = if self.in_agent(&k.info.fingerprint) {
+                    menu.child(
+                        item("menu-agent-out", &tr!("Remove from ssh-agent"), false).on_click(
                             cx.listener(move |v, _, _, cx| {
                                 v.menu = None;
-                                v.kept_to_agent(&k3, cx);
+                                v.out_of_agent(&k3.info.public, k3.name.clone(), cx);
                             }),
-                        ))
-                    };
-                menu = menu
-                    .child(line())
-                    .child(item("menu-delete", "Delete…", true).on_click(cx.listener(
-                        move |v, _, w, cx| v.open(Dialog::Delete { kept: k4.clone() }, w, cx),
-                    )));
+                        ),
+                    )
+                } else {
+                    menu.child(
+                        item("menu-agent", &tr!("Add to ssh-agent"), false).on_click(cx.listener(
+                            move |v, _, _, cx| {
+                                v.menu = None;
+                                v.kept_to_agent(&k3, cx);
+                            },
+                        )),
+                    )
+                };
+                menu =
+                    menu.child(line())
+                        .child(
+                            item("menu-delete", &tr!("Delete…"), true).on_click(cx.listener(
+                                move |v, _, w, cx| {
+                                    v.open(Dialog::Delete { kept: k4.clone() }, w, cx)
+                                },
+                            )),
+                        );
             }
             MenuFor::File(i) => {
                 let f = self.listed.files.get(i)?.clone();
@@ -1244,7 +1286,7 @@ impl KeysView {
                     f.file.path.clone(),
                 );
                 if !f.kept {
-                    menu = menu.child(item("menu-keep", "Copy to vault", false).on_click(
+                    menu = menu.child(item("menu-keep", &tr!("Copy to vault"), false).on_click(
                         cx.listener(move |v, _, w, cx| {
                             v.menu = None;
                             v.with_file(path1.clone(), None, Use::Keep, w, cx);
@@ -1253,9 +1295,9 @@ impl KeysView {
                 }
                 if f.file.encrypted && !f.saved {
                     menu = menu.child(
-                        item("menu-save-pass", "Save its passphrase…", false).on_click(
+                        item("menu-save-pass", &tr!("Save its passphrase…"), false).on_click(
                             cx.listener(move |v, _, w, cx| {
-                                let pass = Self::input("Its passphrase", "", true, cx);
+                                let pass = Self::input(&tr!("Its passphrase"), "", true, cx);
                                 v.open(
                                     Dialog::Unlock {
                                         path: path2.clone(),
@@ -1273,33 +1315,37 @@ impl KeysView {
                 if f.saved {
                     let file = f.file.clone();
                     menu = menu.child(
-                        item("menu-forget-pass", "Forget its saved passphrase", false).on_click(
-                            cx.listener(move |v, _, _, cx| {
-                                v.menu = None;
-                                v.forget_passphrase(&file, cx);
-                            }),
-                        ),
+                        item(
+                            "menu-forget-pass",
+                            &tr!("Forget its saved passphrase"),
+                            false,
+                        )
+                        .on_click(cx.listener(move |v, _, _, cx| {
+                            v.menu = None;
+                            v.forget_passphrase(&file, cx);
+                        })),
                     );
                 }
-                menu =
-                    if self.in_agent(&f.file.info.fingerprint) {
-                        let (public, name) = (f.file.info.public.clone(), tilde(&f.file.path));
-                        menu.child(
-                            item("menu-agent-out", "Remove from ssh-agent", false).on_click(
-                                cx.listener(move |v, _, _, cx| {
-                                    v.menu = None;
-                                    v.out_of_agent(&public, name.clone(), cx);
-                                }),
-                            ),
-                        )
-                    } else {
-                        menu.child(item("menu-agent", "Add to ssh-agent", false).on_click(
-                            cx.listener(move |v, _, w, cx| {
+                menu = if self.in_agent(&f.file.info.fingerprint) {
+                    let (public, name) = (f.file.info.public.clone(), tilde(&f.file.path));
+                    menu.child(
+                        item("menu-agent-out", &tr!("Remove from ssh-agent"), false).on_click(
+                            cx.listener(move |v, _, _, cx| {
+                                v.menu = None;
+                                v.out_of_agent(&public, name.clone(), cx);
+                            }),
+                        ),
+                    )
+                } else {
+                    menu.child(
+                        item("menu-agent", &tr!("Add to ssh-agent"), false).on_click(cx.listener(
+                            move |v, _, w, cx| {
                                 v.menu = None;
                                 v.with_file(path3.clone(), None, Use::Agent, w, cx);
-                            }),
-                        ))
-                    };
+                            },
+                        )),
+                    )
+                };
             }
         }
         Some(
@@ -1354,9 +1400,7 @@ impl KeysView {
         let focused = |i: &Entity<TextInput>, window: &Window, cx: &gpui::App| {
             i.read(cx).focus_handle(cx).is_focused(window)
         };
-        let buttons = |cancel: Option<&'static str>,
-                       ok: (&'static str, &str),
-                       cx: &mut Context<Self>| {
+        let buttons = |cancel: Option<&str>, ok: (&'static str, &str), cx: &mut Context<Self>| {
             let mut row = div().flex().justify_end().gap(px(8.)).pt(px(2.));
             if let Some(c) = cancel {
                 row = row.child(
@@ -1451,27 +1495,27 @@ impl KeysView {
                     );
                 }
                 let mut b = card
-                    .child(title("Generate a key".into()))
+                    .child(title(tr!("Generate a key")))
                     .child(
-                        Self::field("Name", name, focused(name, window, cx), None)
-                            .child(hint_text("Only for you, to tell your keys apart.")),
+                        Self::field(&tr!("Name"), name, focused(name, window, cx), None)
+                            .child(hint_text(&tr!("Only for you, to tell your keys apart."))),
                     )
                     .child(
                         div()
                             .flex()
                             .flex_col()
                             .gap(px(5.))
-                            .child(label_text("Type"))
+                            .child(label_text(&tr!("Type")))
                             .child(seg)
-                            .child(hint_text(
-                                "Ed25519 is short, fast and taken by OpenSSH 6.5 and later. RSA for very old servers.",
-                            )),
+                            .child(hint_text(&tr!(
+                                "Ed25519 is short, fast and taken by OpenSSH 6.5 and later. RSA for very old servers."
+                            ))),
                     )
                     .child(
-                        Self::field("Comment", comment, focused(comment, window, cx), Some(self.mono.clone())).child(
-                            hint_text(
-                                "Written at the end of the public key: what a server's authorized_keys shows.",
-                            ),
+                        Self::field(&tr!("Comment"), comment, focused(comment, window, cx), Some(self.mono.clone())).child(
+                            hint_text(&tr!(
+                                "Written at the end of the public key: what a server's authorized_keys shows."
+                            )),
                         ),
                     )
                     .child(
@@ -1485,16 +1529,24 @@ impl KeysView {
                             .border_color(rgb(colors().line))
                             .text_size(ui(12.5))
                             .text_color(rgb(colors().soft))
-                            .child(
-                                "Kept in the vault, encrypted, and synced to your other devices, so it needs no passphrase. To use it with ssh or git too, export it to a file, with a passphrase if you like.",
-                            ),
+                            .child(tr!(
+                                "Kept in the vault, encrypted, and synced to your other devices, so it needs no passphrase. To use it with ssh or git too, export it to a file, with a passphrase if you like."
+                            )),
                     );
                 if let Some(p) = problem {
                     b = b.child(problem_text(p));
                 }
                 b.child(buttons(
-                    Some("Cancel"),
-                    ("gen-ok", if *busy { "Generating…" } else { "Generate" }),
+                    Some(tr!("Cancel").as_str()),
+                    (
+                        "gen-ok",
+                        if *busy {
+                            tr!("Generating…")
+                        } else {
+                            tr!("Generate")
+                        }
+                        .as_str(),
+                    ),
                     cx,
                 ))
             }
@@ -1508,10 +1560,10 @@ impl KeysView {
                     },
                 );
                 let k = kept.clone();
-                card.child(title(format!("{} is ready", kept.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(
-                        "A server lets this key in once its public key is in the server's ~/.ssh/authorized_keys. Install it on a host from here, or copy it into a web console (GitHub, GitLab, a cloud provider).",
-                    ))
+                card.child(title(tr!("{name} is ready", name = &kept.name)))
+                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
+                        "A server lets this key in once its public key is in the server's ~/.ssh/authorized_keys. Install it on a host from here, or copy it into a web console (GitHub, GitLab, a cloud provider)."
+                    )))
                     .child(
                         div()
                             .flex()
@@ -1520,7 +1572,7 @@ impl KeysView {
                             .child(
                                 div()
                                     .flex()
-                                    .child(div().flex_1().child(label_text("Public key")))
+                                    .child(div().flex_1().child(label_text(&tr!("Public key"))))
                                     .child(
                                         div()
                                             .text_size(ui(11.5))
@@ -1548,7 +1600,7 @@ impl KeysView {
                                             .text_color(rgb(colors().soft))
                                             .child(kept.info.public.clone()),
                                     )
-                                    .child(Self::small("gen-copy", "Copy").on_click(cx.listener(
+                                    .child(Self::small("gen-copy", &tr!("Copy")).on_click(cx.listener(
                                         move |v, _, _, cx| v.copy_public(&info, cx),
                                     ))),
                             ),
@@ -1558,10 +1610,10 @@ impl KeysView {
                             .flex()
                             .items_center()
                             .gap(px(8.))
-                            .child(outline_button("gen-export", "Export to file…").on_click(
+                            .child(outline_button("gen-export", &tr!("Export to file…")).on_click(
                                 cx.listener(move |v, _, w, cx| {
-                                    let pass = Self::input("A passphrase, or none", "", true, cx);
-                                    let again = Self::input("The passphrase again", "", true, cx);
+                                    let pass = Self::input(&tr!("A passphrase, or none"), "", true, cx);
+                                    let again = Self::input(&tr!("The passphrase again"), "", true, cx);
                                     v.open(
                                         Dialog::Export {
                                             kept: k.clone(),
@@ -1576,36 +1628,46 @@ impl KeysView {
                             ))
                             .child(div().flex_1())
                             .child(
-                                outline_button("gen-done", "Done")
+                                outline_button("gen-done", &tr!("Done"))
                                     .on_click(cx.listener(|v, _, w, cx| v.close(w, cx))),
                             )
-                            .child(primary_button("gen-install", "Install on a host…").on_click(
+                            .child(primary_button("gen-install", &tr!("Install on a host…")).on_click(
                                 cx.listener(move |v, _, w, cx| v.install(install.clone(), w, cx)),
                             )),
                     )
             }
             Dialog::Rename { input, .. } => card
-                .child(title("Rename the key".into()))
-                .child(Self::field("Name", input, true, None))
-                .child(buttons(Some("Cancel"), ("rename-ok", "Rename"), cx)),
+                .child(title(tr!("Rename the key")))
+                .child(Self::field(&tr!("Name"), input, true, None))
+                .child(buttons(
+                    Some(tr!("Cancel").as_str()),
+                    ("rename-ok", tr!("Rename").as_str()),
+                    cx,
+                )),
             Dialog::Delete { kept } => {
                 let users = self.users.get(&kept.id).cloned().unwrap_or_default();
                 let what = if users.is_empty() {
-                    "Servers that have its public key will not let it in from here any more, from any of your devices.".to_string()
+                    tr!(
+                        "Servers that have its public key will not let it in from here any more, from any of your devices."
+                    )
                 } else {
-                    format!(
-                        "{} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.",
-                        users.join(", ")
+                    tr!(
+                        "{hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.",
+                        hosts = users.join(", ")
                     )
                 };
-                card.child(title(format!("Delete {}?", kept.name)))
+                card.child(title(tr!("Delete {name}?", name = &kept.name)))
                     .child(
                         div()
                             .text_size(ui(12.5))
                             .text_color(rgb(colors().label))
                             .child(what),
                     )
-                    .child(buttons(Some("Cancel"), ("delete-ok", "Delete"), cx))
+                    .child(buttons(
+                        Some(tr!("Cancel").as_str()),
+                        ("delete-ok", tr!("Delete").as_str()),
+                        cx,
+                    ))
             }
             Dialog::Export {
                 kept,
@@ -1614,16 +1676,20 @@ impl KeysView {
                 problem,
             } => {
                 let mut b = card
-                    .child(title(format!("Export {}", kept.name)))
-                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(
-                        "Written as an OpenSSH key file, for ssh, git and other tools, with its .pub beside it. A passphrase locks the file; the key in the vault stays as it is.",
-                    ))
-                    .child(Self::field("Passphrase", pass, focused(pass, window, cx), None))
-                    .child(Self::field("Again", again, focused(again, window, cx), None));
+                    .child(title(tr!("Export {name}", name = &kept.name)))
+                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
+                        "Written as an OpenSSH key file, for ssh, git and other tools, with its .pub beside it. A passphrase locks the file; the key in the vault stays as it is."
+                    )))
+                    .child(Self::field(&tr!("Passphrase"), pass, focused(pass, window, cx), None))
+                    .child(Self::field(&tr!("Again"), again, focused(again, window, cx), None));
                 if let Some(p) = problem {
                     b = b.child(problem_text(p));
                 }
-                b.child(buttons(Some("Cancel"), ("export-ok", "Choose where…"), cx))
+                b.child(buttons(
+                    Some(tr!("Cancel").as_str()),
+                    ("export-ok", tr!("Choose where…").as_str()),
+                    cx,
+                ))
             }
             Dialog::Unlock {
                 path,
@@ -1633,19 +1699,25 @@ impl KeysView {
             } => {
                 let (head, what, ok) = match then {
                     Use::Keep => (
-                        format!("Unlock {}", tilde(path)),
-                        "This key file has a passphrase. Type it to copy the key into the vault, where it needs none; the file stays as it is.",
-                        "Copy to vault",
+                        tr!("Unlock {path}", path = tilde(path)),
+                        tr!(
+                            "This key file has a passphrase. Type it to copy the key into the vault, where it needs none; the file stays as it is."
+                        ),
+                        tr!("Copy to vault"),
                     ),
                     Use::Agent => (
-                        format!("Unlock {}", tilde(path)),
-                        "This key file has a passphrase. Type it to hand the key to the ssh-agent; the file stays as it is.",
-                        "Add to ssh-agent",
+                        tr!("Unlock {path}", path = tilde(path)),
+                        tr!(
+                            "This key file has a passphrase. Type it to hand the key to the ssh-agent; the file stays as it is."
+                        ),
+                        tr!("Add to ssh-agent"),
                     ),
                     Use::Save => (
-                        format!("Save the passphrase of {}", tilde(path)),
-                        "Kept in the vault, encrypted, and synced: shellwing then signs in with this key without asking, here and on your other devices.",
-                        "Save",
+                        tr!("Save the passphrase of {path}", path = tilde(path)),
+                        tr!(
+                            "Kept in the vault, encrypted, and synced: shellwing then signs in with this key without asking, here and on your other devices."
+                        ),
+                        tr!("Save"),
                     ),
                 };
                 let mut b = card
@@ -1656,11 +1728,15 @@ impl KeysView {
                             .text_color(rgb(colors().label))
                             .child(what),
                     )
-                    .child(Self::field("Passphrase", pass, true, None));
+                    .child(Self::field(&tr!("Passphrase"), pass, true, None));
                 if let Some(p) = problem {
                     b = b.child(problem_text(p));
                 }
-                b.child(buttons(Some("Cancel"), ("unlock-ok", ok), cx))
+                b.child(buttons(
+                    Some(tr!("Cancel").as_str()),
+                    ("unlock-ok", ok.as_str()),
+                    cx,
+                ))
             }
         };
         Some(body)
@@ -1676,9 +1752,9 @@ impl Render for KeysView {
         let files = self.file_rows(cx);
         let agent = self.agent_rows(cx);
         let agent_empty = if self.agent.is_none() {
-            "Asking the agent…"
+            tr!("Asking the agent…")
         } else {
-            "No agent, or it holds no keys."
+            tr!("No agent, or it holds no keys.")
         };
         let mut page = div()
             .id("keys")
@@ -1698,14 +1774,14 @@ impl Render for KeysView {
                             .flex_1()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Keys"),
+                            .child(tr!("Keys")),
                     )
                     .child(
-                        outline_button("keys-import", "Import key file…")
+                        outline_button("keys-import", &tr!("Import key file…"))
                             .on_click(cx.listener(|v, _, _, cx| v.import(cx))),
                     )
                     .child(
-                        primary_button("keys-generate", "Generate key…")
+                        primary_button("keys-generate", &tr!("Generate key…"))
                             .on_click(cx.listener(|v, _, w, cx| v.generate_dialog(w, cx))),
                     ),
             )
@@ -1714,7 +1790,7 @@ impl Render for KeysView {
                     .mt(px(-6.))
                     .text_size(ui(12.5))
                     .text_color(rgb(colors().label))
-                    .child("Keys for signing in to servers. Keys you generate or import here are kept in the vault, encrypted, and sync to your other devices."),
+                    .child(tr!("Keys for signing in to servers. Keys you generate or import here are kept in the vault, encrypted, and sync to your other devices.")),
             );
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
@@ -1725,32 +1801,32 @@ impl Render for KeysView {
             );
         }
         if let Some(p) = &self.listed.problem {
-            page = page.child(problem_text(&format!("The vault cannot be read: {p}")));
+            page = page.child(problem_text(&tr!("The vault cannot be read: {p}", p = p)));
         }
         page = page
             .child(Self::section(
-                "In the vault",
-                "synced · used only by shellwing",
+                &tr!("In the vault"),
+                &tr!("synced · used only by shellwing"),
                 kept,
-                "None yet: generate one, or copy one of your key files here.",
+                &tr!("None yet: generate one, or copy one of your key files here."),
             ))
             .child(Self::section(
-                "In ~/.ssh",
-                "key files on this computer, shared with ssh and git",
+                &tr!("In ~/.ssh"),
+                &tr!("key files on this computer, shared with ssh and git"),
                 files,
-                "No key files.",
+                &tr!("No key files."),
             ))
             .child(Self::section(
-                "In ssh-agent",
-                "offered first when connecting",
+                &tr!("In ssh-agent"),
+                &tr!("offered first when connecting"),
                 agent,
-                agent_empty,
+                &agent_empty,
             ))
             .child(
                 div()
                     .text_size(ui(12.))
                     .text_color(rgb(colors().muted))
-                    .child("Hosts set to Automatic try the agent, then ~/.ssh, then the vault, then ask for a password."),
+                    .child(tr!("Hosts set to Automatic try the agent, then ~/.ssh, then the vault, then ask for a password.")),
             );
         if let Some((at, whose)) = self.menu
             && let Some(m) = self.menu(at, whose, cx)

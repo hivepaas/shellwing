@@ -7,6 +7,8 @@ use gpui::{
     Render, ScrollHandle, SharedString, Subscription, Window, div, prelude::*, px, rgb, svg,
 };
 
+use shellwing_i18n::{tr, tr_n};
+
 use crate::colors::colors;
 use crate::input::{Changed, TextInput};
 use crate::look::ui;
@@ -69,7 +71,7 @@ impl EventEmitter<OverviewEvent> for TabOverview {}
 
 impl TabOverview {
     pub fn new(rows: Vec<TabRow>, cx: &mut Context<Self>) -> Self {
-        let input = cx.new(|cx| TextInput::new("Find a tab: host, user, title", cx));
+        let input = cx.new(|cx| TextInput::new(tr!("Find a tab: host, user, title"), cx));
         let changed = cx.subscribe(&input, |o, _, _: &Changed, cx| {
             o.chosen = 0;
             o.refilter(cx);
@@ -230,13 +232,12 @@ impl Render for TabOverview {
                                 .text_color(rgb(c.text))
                                 .child(r.host.clone()),
                         )
-                        .child(div().text_size(ui(11.5)).text_color(rgb(c.muted)).child(
-                            if count == 1 {
-                                "1 tab".to_string()
-                            } else {
-                                format!("{count} tabs")
-                            },
-                        ))
+                        .child(
+                            div()
+                                .text_size(ui(11.5))
+                                .text_color(rgb(c.muted))
+                                .child(tr_n!(count, "{n} tab", "{n} tabs")),
+                        )
                         .child(div().flex_1())
                         .child(
                             div()
@@ -288,7 +289,7 @@ impl Render for TabOverview {
                                 .bg(rgb(c.chip))
                                 .text_size(ui(11.))
                                 .text_color(rgb(c.soft))
-                                .child(format!("{} panes", r.panes)),
+                                .child(tr_n!(r.panes, "{n} pane", "{n} panes")),
                         )
                     })
                     .when(r.here, |d| {
@@ -296,7 +297,7 @@ impl Render for TabOverview {
                             div()
                                 .text_size(ui(11.))
                                 .text_color(rgb(c.accent))
-                                .child("this tab"),
+                                .child(tr!("this tab")),
                         )
                     })
                     .child(
@@ -306,7 +307,7 @@ impl Render for TabOverview {
                             .justify_end()
                             .text_size(ui(11.))
                             .text_color(rgb(c.muted))
-                            .child(format!("Tab {}", tab + 1)),
+                            .child(tr!("Tab {number}", number = tab + 1)),
                     )
                     // Closes it; shown on the row the arrows are on.
                     .child(
@@ -336,7 +337,7 @@ impl Render for TabOverview {
                     .px(px(10.))
                     .py(px(18.))
                     .text_color(rgb(c.muted))
-                    .child("No tab matches."),
+                    .child(tr!("No tab matches.")),
             );
         }
         let mac = cfg!(target_os = "macos");
@@ -402,12 +403,12 @@ impl Render for TabOverview {
                     .bg(rgb(c.panel))
                     .text_size(ui(11.5))
                     .text_color(rgb(c.muted))
-                    .child("↑↓ choose")
-                    .child("Enter go to it")
+                    .child(tr!("↑↓ choose"))
+                    .child(tr!("Enter go to it"))
                     .child(if mac {
-                        "Cmd+W close it"
+                        tr!("Cmd+W close it")
                     } else {
-                        "Ctrl+W close it"
+                        tr!("Ctrl+W close it")
                     })
                     .child(div().flex_1())
                     .child("Esc"),
