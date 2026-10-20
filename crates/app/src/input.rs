@@ -98,6 +98,30 @@ pub fn said<V: 'static>(
     cx.new(|cx| TextInput::said(placeholder, cx))
 }
 
+/// The word around `offset` in `text`: a run of letters and digits, or of
+/// what is neither. A click just past a word's end (the right half of its
+/// last letter) takes that word.
+fn word_around(text: &str, offset: usize) -> Range<usize> {
+    let offset = offset.min(text.len());
+    let words: Vec<Range<usize>> = text
+        .split_word_bound_indices()
+        .map(|(i, w)| i..i + w.len())
+        .collect();
+    let wordy = |r: &Range<usize>| text[r.clone()].chars().any(char::is_alphanumeric);
+    match words
+        .iter()
+        .position(|r| r.start <= offset && offset < r.end)
+    {
+        Some(i)
+            if !wordy(&words[i]) && i > 0 && words[i - 1].end == offset && wordy(&words[i - 1]) =>
+        {
+            words[i - 1].clone()
+        }
+        Some(i) => words[i].clone(),
+        None => words.last().cloned().unwrap_or(offset..offset),
+    }
+}
+
 /// What a masked field shows for each character.
 const DOT: char = '•';
 
@@ -601,10 +625,41 @@ impl TextInput {
         self.text_offset(line.closest_index_for_x(position.x - bounds.left() + self.scroll_x))
     }
 
+    /// The word around `offset`; a hidden field's whole text, its words
+    /// unsaid.
+    fn word_at(&self, offset: usize) -> Range<usize> {
+        if self.masked {
+            return 0..self.content.len();
+        }
+        word_around(&self.content, offset)
+    }
+
+    /// The line around `offset`: in a field of several lines, the one it is
+    /// on; else the whole text.
+    fn line_at(&self, offset: usize) -> Range<usize> {
+        if self.lines.is_none() {
+            return 0..self.content.len();
+        }
+        let (start, end) = self.line_bounds(offset.min(self.content.len()));
+        start..end
+    }
+
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         window.focus(&self.focus, cx);
-        self.selecting = true;
         let at = self.index_for_position(e.position);
+        // A second click picks the word, a third the line.
+        if e.click_count >= 2 && !e.modifiers.shift {
+            self.selecting = false;
+            let r = if e.click_count == 2 {
+                self.word_at(at)
+            } else {
+                self.line_at(at)
+            };
+            self.selected = r;
+            self.reversed = false;
+            return cx.notify();
+        }
+        self.selecting = true;
         if e.modifiers.shift {
             self.select_to(at, cx);
         } else {
@@ -1251,5 +1306,23 @@ impl Element for AreaElement {
                 lines.scroll_y = scroll_y;
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::word_around;
+
+    #[test]
+    fn a_double_click_takes_the_word() {
+        let t = "sudo systemctl restart nginx.service";
+        let w = |at: usize| &t[word_around(t, at)];
+        assert_eq!(w(6), "systemctl");
+        // Just past its end: still the word, not the space.
+        assert_eq!(w(14), "systemctl");
+        assert_eq!(w(23), "nginx.service");
+        assert_eq!(w(t.len()), "nginx.service");
+        assert_eq!(&"a  b"[word_around("a  b", 2)], "  ");
+        assert_eq!(&"xin chào"[word_around("xin chào", 6)], "chào");
     }
 }
