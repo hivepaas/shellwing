@@ -1663,8 +1663,8 @@ t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подст
 # Asked for when it runs:
 t2d8c5e6d = Запрашивается при запуске:
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = Объединяйте команды через && или ; в одной строке.
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter начинает новую строку; строки выполняются по очереди. { $save } сохраняет.
 
 # Every host
 t77846bfe = Все хосты

@@ -488,7 +488,7 @@ impl Workspace {
                     tr!("Snippets"),
                     sn.name.clone(),
                 )
-                .detail(sn.command.clone())
+                .detail(snippets::one_line(&sn.command))
                 .hint(if panes > 1 {
                     tr_n!(
                         panes,
@@ -567,8 +567,9 @@ impl Workspace {
                     total = total
                 ),
             ),
-            Entry::new(Kind::Note, "", tr!("Will run"))
-                .detail(snippets::fill(&run.snippet.command, &run.values)),
+            Entry::new(Kind::Note, "", tr!("Will run")).detail(snippets::one_line(
+                &snippets::fill(&run.snippet.command, &run.values),
+            )),
         ];
         self.asking = Some(Asking::Snippet(run));
         let palette = cx.new(|cx| Palette::ask(&name, notes, cx));

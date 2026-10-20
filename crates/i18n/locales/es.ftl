@@ -1651,8 +1651,8 @@ t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} y {"{{"}address{"}}"} se rellenan
 # Asked for when it runs:
 t2d8c5e6d = Se pide al ejecutarlo:
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = Encadena comandos con && o ; en una línea.
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter empieza otra línea; las líneas se ejecutan una tras otra. { $save } guarda.
 
 # Every host
 t77846bfe = Todos los servidores

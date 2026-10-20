@@ -533,10 +533,15 @@ found:
 
 ## Snippets
 
-Snippets are commands you run often. They are kept in the vault and sync with
-it. Make and edit them in *Settings › Snippets*: a name, a one-line command
-(chain commands with `&&` or `;`), the hosts they are offered for (every host,
-a group or one host), and whether Enter is pressed after typing.
+Snippets are commands you run often. They are kept in the vault (`vault.db`,
+encrypted, never in a file of their own) and sync with it. Make and edit them
+in *Settings › Snippets*: a name, a command, the hosts they are offered for
+(every host, a group or one host), and whether Enter is pressed after typing.
+
+A command can take several lines: Enter starts another, Ctrl+Enter (Cmd+Enter
+on macOS) saves. It is sent to the pane as one paste, so a shell with bracketed
+paste on (bash, zsh and fish are, by default) takes it whole and runs it at the
+Enter; lists show it on one line, ` ⏎ ` between the lines.
 
 In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
 

@@ -1627,8 +1627,8 @@ t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動�
 # Asked for when it runs:
 t2d8c5e6d = 実行時に尋ねられる項目：
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = 1 行で && や ; を使ってコマンドをつなげられます。
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter で改行します。各行は順に実行されます。{ $save } で保存します。
 
 # Every host
 t77846bfe = すべてのホスト

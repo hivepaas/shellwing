@@ -491,7 +491,15 @@ impl TermView {
     /// Types `text` into the shell as if typed here, and presses Enter when
     /// `enter`: what a snippet does. Only this pane gets it.
     pub fn type_text(&mut self, text: &str, enter: bool) {
-        self.term.text(text.to_string());
+        // Several lines go as one paste: bracketed where the shell takes
+        // that, so they arrive whole and run at the Enter, not line by line
+        // as typed.
+        let text = text.trim_end_matches('\n');
+        if text.contains('\n') {
+            self.term.paste(text.to_string(), true);
+        } else {
+            self.term.text(text.to_string());
+        }
         if enter {
             self.term.key(NamedKey::Enter, Mods::default());
         }

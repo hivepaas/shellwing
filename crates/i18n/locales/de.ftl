@@ -1651,8 +1651,8 @@ t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden au
 # Asked for when it runs:
 t2d8c5e6d = Beim Ausführen abgefragt:
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = Verkette Befehle mit && oder ; in einer Zeile.
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter beginnt eine neue Zeile; die Zeilen laufen nacheinander. { $save } speichert.
 
 # Every host
 t77846bfe = Alle Hosts

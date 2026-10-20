@@ -101,6 +101,16 @@ pub fn asked(command: &str) -> Vec<String> {
 
 /// `command` with each `{{name}}` that `values` has replaced; the others
 /// stay as they are.
+/// A command of several lines on one, for a list: ` ⏎ ` between them.
+pub fn one_line(command: &str) -> String {
+    command
+        .lines()
+        .map(str::trim_end)
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ⏎ ")
+}
+
 pub fn fill(command: &str, values: &BTreeMap<String, String>) -> String {
     let mut out = String::new();
     let mut at = 0;
@@ -118,6 +128,15 @@ pub fn fill(command: &str, values: &BTreeMap<String, String>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn several_lines_show_on_one() {
+        assert_eq!(
+            one_line("cd /srv\n  make deploy\n\n"),
+            "cd /srv ⏎   make deploy"
+        );
+        assert_eq!(one_line("df -h"), "df -h");
+    }
 
     #[test]
     fn names_are_found_once_and_filled() {
