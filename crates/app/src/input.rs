@@ -37,7 +37,39 @@ pub struct TextInput {
     masked: bool,
     /// Several lines, wrapped to the width: [`TextInput::multiline`].
     lines: Option<Lines>,
+    history: History,
 }
+
+/// What the text was before an edit, to go back to.
+#[derive(Clone)]
+struct Snap {
+    content: SharedString,
+    selected: Range<usize>,
+    reversed: bool,
+}
+
+/// What an edit was, so a run of the same kind undoes as one.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EditKind {
+    Typing,
+    Deleting,
+    Other,
+}
+
+/// Undo and redo.
+#[derive(Default)]
+struct History {
+    undo: Vec<Snap>,
+    redo: Vec<Snap>,
+    /// The last edit's kind and time: the same kind within a moment joins it.
+    last: Option<(std::time::Instant, EditKind)>,
+}
+
+/// Steps kept, and the bytes they may hold together.
+const UNDO_STEPS: usize = 100;
+const UNDO_BYTES: usize = 16 * 1024 * 1024;
+/// Keys apart by less than this undo together.
+const UNDO_JOIN: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// A field of several lines: how many it shows, and how they were drawn.
 struct Lines {
@@ -95,6 +127,7 @@ impl TextInput {
             selecting: false,
             masked: false,
             lines: None,
+            history: History::default(),
         }
     }
 
@@ -241,6 +274,8 @@ impl TextInput {
     /// Replaces the text, with `selected` (a byte range) chosen, as a rename
     /// field picks the name without its extension.
     pub fn set_text(&mut self, text: &str, selected: Range<usize>, cx: &mut Context<Self>) {
+        // Set from outside: nothing to undo into.
+        self.history = History::default();
         self.content = text.to_string().into();
         let end = selected.end.min(text.len());
         self.selected = selected.start.min(end)..end;
@@ -292,7 +327,75 @@ impl TextInput {
             .unwrap_or(self.content.len())
     }
 
+    /// Keeps the text as it is, before an edit of `kind`; a run of typing
+    /// (or deleting) within a moment is one step.
+    fn remember(&mut self, kind: EditKind) {
+        let now = std::time::Instant::now();
+        let joins = self
+            .history
+            .last
+            .is_some_and(|(t, k)| k == kind && kind != EditKind::Other && now - t < UNDO_JOIN);
+        self.history.last = Some((now, kind));
+        self.history.redo.clear();
+        if joins {
+            return;
+        }
+        self.history.undo.push(Snap {
+            content: self.content.clone(),
+            selected: self.selected.clone(),
+            reversed: self.reversed,
+        });
+        let h = &mut self.history.undo;
+        while h.len() > UNDO_STEPS
+            || (h.len() > 1 && h.iter().map(|s| s.content.len()).sum::<usize>() > UNDO_BYTES)
+        {
+            h.remove(0);
+        }
+    }
+
+    fn restore(&mut self, s: Snap, cx: &mut Context<Self>) {
+        self.content = s.content;
+        self.selected = s.selected;
+        self.reversed = s.reversed;
+        self.marked = None;
+        self.history.last = None;
+        cx.emit(Changed);
+        cx.notify();
+    }
+
+    fn now(&self) -> Snap {
+        Snap {
+            content: self.content.clone(),
+            selected: self.selected.clone(),
+            reversed: self.reversed,
+        }
+    }
+
+    fn undo(&mut self, cx: &mut Context<Self>) {
+        if let Some(s) = self.history.undo.pop() {
+            let now = self.now();
+            self.history.redo.push(now);
+            self.restore(s, cx);
+        }
+    }
+
+    fn redo(&mut self, cx: &mut Context<Self>) {
+        if let Some(s) = self.history.redo.pop() {
+            let now = self.now();
+            self.history.undo.push(now);
+            self.restore(s, cx);
+        }
+    }
+
     fn replace(&mut self, range: Range<usize>, text: &str, cx: &mut Context<Self>) {
+        let kind = if text.is_empty() {
+            EditKind::Deleting
+        } else if range.is_empty() && text != "\n" && text.chars().count() == 1 {
+            EditKind::Typing
+        } else {
+            EditKind::Other
+        };
+        self.remember(kind);
         self.content =
             (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
         let at = range.start + text.len();
@@ -355,6 +458,9 @@ impl TextInput {
             m.control
         };
         match k.key.as_str() {
+            "z" if cmd && m.shift => self.redo(cx),
+            "z" if cmd => self.undo(cx),
+            "y" if m.control && !cfg!(target_os = "macos") => self.redo(cx),
             "backspace" => {
                 if self.selected.is_empty() {
                     let prev = self.previous_boundary(self.cursor());
@@ -549,6 +655,10 @@ impl EntityInputHandler for TextInput {
             .map(|r| self.range_from_utf16(r))
             .or(self.marked.clone())
             .unwrap_or(self.selected.clone());
+        // A composition starting: what was before it is a step back.
+        if self.marked.is_none() {
+            self.remember(EditKind::Typing);
+        }
         self.content =
             (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
         self.marked = (!text.is_empty()).then(|| range.start..range.start + text.len());

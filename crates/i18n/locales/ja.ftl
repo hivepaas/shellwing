@@ -973,6 +973,21 @@ t4545c373 = このノート
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = 保管庫から削除され、同期後は他のデバイスからも削除されます。
 
+# Edit it in another app?
+t1719e0f2 = 別のアプリで編集しますか？
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = そちらで開いている間、プレーンテキストのコピーがこのコンピューターのディスク (あなただけが読めるフォルダー) に置かれます。エディターがバックアップや履歴など独自のコピーを残すこともあります。コピーは編集の完了時に削除されます。
+
+# Cannot make the copy: {e}
+td59a6621 = コピーを作成できません: { $e }
+
+# It is not text any more.
+te3591497 = テキストではなくなりました。
+
+# Not read back: {e}
+tf04d4bce = 読み戻せません: { $e }
+
 # The vault's passphrase
 tb66334ea = 保管庫のパスフレーズ
 
@@ -1003,6 +1018,9 @@ t8a6979e4 = 保存済み
 # Editing…
 t1f2b8dc9 = 編集中…
 
+# Edit in another app…
+t1c6d0a34 = 別のアプリで編集…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = 保管庫はロックされています。メインウィンドウでロックを解除してください。
 
@@ -1017,6 +1035,9 @@ t3ab56316 = システムのダイアログで本人確認してください…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = 保管庫はパスフレーズで保護されていないため、このデバイスを使う人なら誰でも表示できます。
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = 別のアプリで開いています。そこで保存した内容がここに反映され、保持されます。
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = まだ何も書かれていません。編集で書き始めます。

@@ -973,6 +973,21 @@ t4545c373 = ghi chú này
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Nó sẽ bị xoá khỏi kho, và khỏi các thiết bị khác của bạn khi chúng đồng bộ.
 
+# Edit it in another app?
+t1719e0f2 = Sửa trong ứng dụng khác?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Trong lúc mở ở đó, một bản sao văn bản thường nằm trên đĩa của máy này (trong thư mục chỉ bạn đọc được), và trình soạn thảo có thể giữ bản sao riêng, như bản dự phòng hay lịch sử. Bản sao được xoá khi bạn xong.
+
+# Cannot make the copy: {e}
+td59a6621 = Không tạo được bản sao: { $e }
+
+# It is not text any more.
+te3591497 = Tệp không còn là văn bản.
+
+# Not read back: {e}
+tf04d4bce = Không đọc lại được: { $e }
+
 # The vault's passphrase
 tb66334ea = Passphrase của kho
 
@@ -1003,6 +1018,9 @@ t8a6979e4 = Đã lưu
 # Editing…
 t1f2b8dc9 = Đang sửa…
 
+# Edit in another app…
+t1c6d0a34 = Sửa trong ứng dụng khác…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = Kho đang khoá: hãy mở khoá ở cửa sổ chính.
 
@@ -1017,6 +1035,9 @@ t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Kho không có passphrase bảo vệ, nên ai ngồi ở máy này cũng xem được.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = Đang mở ở ứng dụng khác: những gì nó lưu sẽ về đây và được giữ.
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Chưa viết gì: bấm Sửa để viết.

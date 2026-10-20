@@ -973,6 +973,21 @@ t4545c373 = 这条笔记
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
 
+# Edit it in another app?
+t1719e0f2 = 在其他应用中编辑？
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = 在那里打开期间，一份纯文本副本会存放在这台电脑的磁盘上（仅你可读的文件夹中），编辑器也可能保留自己的副本，例如备份或历史记录。完成后副本会被删除。
+
+# Cannot make the copy: {e}
+td59a6621 = 无法创建副本：{ $e }
+
+# It is not text any more.
+te3591497 = 它已不再是文本。
+
+# Not read back: {e}
+tf04d4bce = 未能读回：{ $e }
+
 # The vault's passphrase
 tb66334ea = 保险库的密码短语
 
@@ -1003,6 +1018,9 @@ t8a6979e4 = 已保存
 # Editing…
 t1f2b8dc9 = 编辑中…
 
+# Edit in another app…
+t1c6d0a34 = 在其他应用中编辑…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = 保险库已锁定：请在主窗口中解锁。
 
@@ -1017,6 +1035,9 @@ t3ab56316 = 请在系统对话框中确认是你本人…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = 保险库没有密码短语保护，因此任何使用此设备的人都能显示它。
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = 正在其他应用中打开：它保存的内容会回到这里并被保留。
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = 尚未书写内容：点击编辑开始书写。

@@ -112,6 +112,7 @@ pub fn before_lock(cx: &mut App) {
     let windows: Vec<_> = cx.default_global::<Opened>().0.values().copied().collect();
     for h in windows {
         let _ = h.update(cx, |v, _, cx| {
+            v.end_external(cx);
             v.save(cx);
             v.unload(cx);
         });
@@ -152,6 +153,9 @@ pub struct NoteWindow {
     edits: u64,
     saved_at: u64,
     problem: Option<String>,
+    /// The copy an editor of the user's own has open, and how it was when
+    /// last read.
+    external: Option<(std::path::PathBuf, Option<crate::copies::Stamp>)>,
     _subs: Vec<Subscription>,
 }
 
@@ -193,6 +197,7 @@ impl NoteWindow {
         }
         // Saved as it goes, so leaving keeps the last of it.
         cx.on_release(|v, cx| {
+            v.end_external(cx);
             v.save(cx);
             let id = v.note.id.clone();
             let opened = &mut cx.default_global::<Opened>().0;
@@ -202,6 +207,7 @@ impl NoteWindow {
         })
         .detach();
         cx.on_app_quit(|v, cx| {
+            v.end_external(cx);
             v.save(cx);
             async {}
         })
@@ -234,6 +240,7 @@ impl NoteWindow {
             edits: 0,
             saved_at: 0,
             problem: None,
+            external: None,
             _subs: subs,
         };
         v.load(cx);
@@ -300,6 +307,10 @@ impl NoteWindow {
     }
 
     fn watch(&mut self, cx: &mut Context<Self>) {
+        if self.external.is_some() {
+            self.read_external(cx);
+            cx.notify();
+        }
         let open = self.vault.ready().is_some();
         if !open && self.loaded {
             self.unload(cx);
@@ -423,6 +434,104 @@ impl NoteWindow {
         .detach();
     }
 
+    /// Opens the text in an editor of the user's own, after saying a copy
+    /// is on the disk meanwhile.
+    fn ask_external(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (yes, no) = (tr!("Open"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Edit it in another app?"),
+            Some(&tr!(
+                "While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done."
+            )),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            if matches!(answer.await, Ok(0)) {
+                let _ = this.update(cx, |v, cx| v.open_external(cx));
+            }
+        })
+        .detach();
+    }
+
+    fn open_external(&mut self, cx: &mut Context<Self>) {
+        if !self.loaded || self.note.sensitive {
+            return;
+        }
+        self.save(cx);
+        let note = self.current(cx);
+        let ext = match note.format {
+            NoteFormat::Markdown => "md",
+            NoteFormat::Plain => "txt",
+        };
+        let text = self.text.read(cx).text().to_string();
+        let path = match crate::note_files::write(&note.title, ext, &text) {
+            Ok(p) => p,
+            Err(e) => {
+                self.problem = Some(tr!("Cannot make the copy: {e}", e = e.to_string()));
+                return cx.notify();
+            }
+        };
+        let cmd = cx
+            .try_global::<crate::files::EditorCommand>()
+            .and_then(|c| c.0.clone())
+            .filter(|c| !c.trim().is_empty());
+        let started = match &cmd {
+            Some(cmd) => crate::editors::open_with(cmd, &path),
+            None => crate::editors::open_text(&path),
+        };
+        if let Err(e) = started {
+            crate::note_files::remove(&path);
+            let who = cmd
+                .as_deref()
+                .map_or(tr!("the text editor"), crate::editors::name_of);
+            self.problem = Some(tr!("Cannot start {who}: {e}", who = who, e = e.to_string()));
+            return cx.notify();
+        }
+        let stamp = crate::copies::stamp(&path);
+        self.external = Some((path, stamp));
+        self.problem = None;
+        cx.notify();
+    }
+
+    /// What the editor saved, into the note.
+    fn read_external(&mut self, cx: &mut App) {
+        let Some((path, seen)) = self.external.clone() else {
+            return;
+        };
+        let now = crate::copies::stamp(&path);
+        if now.is_none() || now == seen {
+            return;
+        }
+        if let Some(e) = self.external.as_mut() {
+            e.1 = now;
+        }
+        let read = std::fs::read(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|b| String::from_utf8(b).map_err(|_| tr!("It is not text any more.")));
+        match read {
+            Ok(text) if text != self.text.read(cx).text() => {
+                self.text.update(cx, |i, cx| i.set_text(&text, 0..0, cx));
+                // An edit even when the window is closing (no event then).
+                self.edits += 1;
+            }
+            Ok(_) => {}
+            Err(e) => self.problem = Some(tr!("Not read back: {e}", e = e)),
+        }
+    }
+
+    /// Done with the editor: its last save read, the copy removed.
+    fn end_external(&mut self, cx: &mut App) {
+        if self.external.is_none() {
+            return;
+        }
+        self.read_external(cx);
+        if let Some((path, _)) = self.external.take() {
+            crate::note_files::remove(&path);
+        }
+    }
+
     /// A sensitive note's eye: asks it is the user.
     fn reveal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let slot = self.vault.clone();
@@ -489,6 +598,15 @@ impl NoteWindow {
                 .detach();
             }
             _ => {}
+        }
+    }
+
+    /// A task's box ticked or unticked in the reading view, at `at` in the
+    /// text.
+    fn toggle_task(&mut self, at: usize, cx: &mut Context<Self>) {
+        let text = self.text.read(cx).text().to_string();
+        if let Some(new) = zorite_markdown::toggle_task_at(&text, at) {
+            self.text.update(cx, |i, cx| i.set_text(&new, 0..0, cx));
         }
     }
 
@@ -710,8 +828,12 @@ impl NoteWindow {
                     .text_size(ui(12.5))
                     .on_click(cx.listener(|v, _, w, cx| {
                         v.note.sensitive = !v.note.sensitive;
-                        // Who turns it on sees the text already.
+                        // Who turns it on sees the text already; no copy
+                        // of it stays on the disk.
                         v.shown = true;
+                        if v.note.sensitive {
+                            v.end_external(cx);
+                        }
                         v.changed_meta(w, cx);
                     }))
                     .child(checkbox(self.note.sensitive))
@@ -729,6 +851,15 @@ impl NoteWindow {
                     } else {
                         tr!("Editing…")
                     }),
+            )
+            .when(
+                !self.note.sensitive && self.loaded && self.external.is_none(),
+                |d| {
+                    d.child(
+                        Self::chip("note-external", tr!("Edit in another app…"), false)
+                            .on_click(cx.listener(|v, _, w, cx| v.ask_external(w, cx))),
+                    )
+                },
             )
             .child(
                 outline_button("note-delete", &tr!("Delete"))
@@ -793,22 +924,47 @@ impl NoteWindow {
             };
             return p.into_any_element();
         }
+        if self.external.is_some() {
+            return panel(tr!(
+                "Open in another app: what it saves comes here, and is kept."
+            ))
+            .child(
+                primary_button("note-external-done", &tr!("Done")).on_click(cx.listener(
+                    |v, _, _, cx| {
+                        v.end_external(cx);
+                        cx.notify();
+                    },
+                )),
+            )
+            .into_any_element();
+        }
         if self.preview && self.note.format == NoteFormat::Markdown {
             let text = self.text.read(cx).text().to_string();
-            let blocks = crate::markdown::parse(&text);
+            let empty = text.trim().is_empty();
+            let rem = f32::from(look::rem_for(
+                cx.try_global::<NoteLook>().map_or(13., |l| l.size),
+            ));
+            let view = cx.entity().downgrade();
+            // Ticking a task in the reading view changes the text, as typing does.
+            let toggle: zorite_markdown::TaskToggleHandler = std::rc::Rc::new(move |at, _, cx| {
+                let _ = view.update(cx, |v, cx| v.toggle_task(at, cx));
+            });
             return div()
                 .id("note-preview")
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
                 .px(px(4.))
-                .text_size(ui(13.5))
-                .child(if blocks.is_empty() {
+                .child(if empty {
                     div()
                         .text_color(rgb(colors().muted))
                         .child(tr!("Nothing written yet: Edit to write."))
+                        .into_any_element()
                 } else {
-                    crate::markdown::render(&blocks, mono, "md")
+                    zorite_markdown::MarkdownView::new("note-md", text)
+                        .style(reading_style(px(rem * 13.5 / 16.), mono))
+                        .on_task_toggle(toggle)
+                        .into_any_element()
                 })
                 .into_any_element();
         }
@@ -818,6 +974,29 @@ impl NoteWindow {
             .font_family(mono)
             .items_start()
             .into_any_element()
+    }
+}
+
+/// The reading view in the app's colors.
+fn reading_style(size: gpui::Pixels, mono: SharedString) -> zorite_markdown::MarkdownStyle {
+    let c = colors();
+    let hsla = |v: u32| -> gpui::Hsla { rgb(v).into() };
+    zorite_markdown::MarkdownStyle {
+        text_color: hsla(c.text),
+        text_size: size,
+        heading_color: hsla(c.text),
+        link_color: hsla(c.accent),
+        tag_color: hsla(c.accent),
+        code_color: hsla(c.accent),
+        code_bg: hsla(c.chip),
+        muted_color: hsla(c.muted),
+        rule_color: hsla(c.line),
+        guide_color: hsla(c.line),
+        mark_bg: hsla(c.warn_bg),
+        search_bg: hsla(c.warn_bg),
+        search_current_bg: hsla(c.selected),
+        mono_font: mono,
+        ..Default::default()
     }
 }
 

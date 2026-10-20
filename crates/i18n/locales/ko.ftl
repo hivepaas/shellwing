@@ -973,6 +973,21 @@ t4545c373 = 이 노트
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다.
 
+# Edit it in another app?
+t1719e0f2 = 다른 앱에서 편집할까요?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = 그곳에서 열려 있는 동안 일반 텍스트 사본이 이 컴퓨터의 디스크(본인만 읽을 수 있는 폴더)에 있으며, 편집기가 백업이나 기록 같은 자체 사본을 남길 수 있습니다. 사본은 편집을 마치면 삭제됩니다.
+
+# Cannot make the copy: {e}
+td59a6621 = 사본을 만들 수 없습니다: { $e }
+
+# It is not text any more.
+te3591497 = 더 이상 텍스트가 아닙니다.
+
+# Not read back: {e}
+tf04d4bce = 다시 읽지 못했습니다: { $e }
+
 # The vault's passphrase
 tb66334ea = 보관함 암호 문구
 
@@ -1003,6 +1018,9 @@ t8a6979e4 = 저장됨
 # Editing…
 t1f2b8dc9 = 편집 중…
 
+# Edit in another app…
+t1c6d0a34 = 다른 앱에서 편집…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = 보관함이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
 
@@ -1017,6 +1035,9 @@ t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = 보관함을 보호하는 암호 문구가 없어 이 기기를 쓰는 누구나 볼 수 있습니다.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = 다른 앱에서 열려 있음: 그 앱에서 저장한 내용이 여기로 와서 유지됩니다.
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = 아직 작성된 내용이 없습니다. 편집을 눌러 작성하세요.

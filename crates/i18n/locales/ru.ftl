@@ -1003,6 +1003,21 @@ t4545c373 = эту заметку
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
 
+# Edit it in another app?
+t1719e0f2 = Редактировать в другом приложении?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Пока она открыта там, копия обычным текстом лежит на диске этого компьютера (в папке, доступной только вам), а редактор может хранить свои копии, например резервные или историю. Копия удаляется, когда вы закончите.
+
+# Cannot make the copy: {e}
+td59a6621 = Не удалось создать копию: { $e }
+
+# It is not text any more.
+te3591497 = Это больше не текст.
+
+# Not read back: {e}
+tf04d4bce = Не удалось прочитать обратно: { $e }
+
 # The vault's passphrase
 tb66334ea = Парольная фраза хранилища
 
@@ -1033,6 +1048,9 @@ t8a6979e4 = Сохранено
 # Editing…
 t1f2b8dc9 = Редактируется…
 
+# Edit in another app…
+t1c6d0a34 = Редактировать в другом приложении…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = Хранилище заблокировано: разблокируйте его в главном окне.
 
@@ -1047,6 +1065,9 @@ t3ab56316 = Подтвердите, что это вы, в окне систем
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Хранилище не защищено парольной фразой, поэтому показать его может любой, кто сидит за этим устройством.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = Открыта в другом приложении: то, что оно сохраняет, приходит сюда и сохраняется.
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Пока ничего не написано: нажмите «Изменить», чтобы писать.

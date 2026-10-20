@@ -658,8 +658,23 @@ about (*For a host ▾*):
 
 - **Plain text** is edited as it is.
 - **Markdown** opens as it shows (headings, emphasis, `code`, code blocks,
-  lists and task lists, quotes, rules, tables, links that open in the
-  browser); *Edit* switches to its text, *Preview* back.
+  lists and task lists, quotes, GitHub alerts, rules, tables, footnotes, links
+  that open in the browser); a task's box ticks there too. *Edit* switches to
+  its text, *Preview* back. The reading view is
+  [zorite-markdown](https://crates.io/crates/zorite-markdown), which only reads
+  the text: it never changes it.
+
+Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z) redoes, in a
+note as in every field of the app.
+
+**Edit in another app…** opens a note that is not sensitive in your text editor
+(*Settings › Files*, else the system's). While it is open there, a copy in plain
+text is on this computer's disk, in a folder only you can read
+(`<cache>/shellwing/notes`), and the editor may keep copies of its own (backups,
+swap files, history): the app says so first. What the editor saves comes into
+the note and is kept; *Done* (or closing the note's window, or the vault
+locking) reads it once more and removes the copy. Copies a run of the app left
+behind (it crashed, or was killed) are removed at the next start.
 
 It is saved a second after typing stops, when its window closes, and when the
 app quits (Ctrl+S, Cmd+S on macOS, saves at once). *Delete* removes it, after

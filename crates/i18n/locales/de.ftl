@@ -993,6 +993,21 @@ t4545c373 = diese Notiz
 # It goes from the vault, and from your other devices once they sync.
 t3c6666da = Es wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren.
 
+# Edit it in another app?
+t1719e0f2 = In einer anderen App bearbeiten?
+
+# While it is open there, a copy in plain text is on this computer's disk (in a folder only you can read), and the editor may keep copies of its own, such as backups or history. The copy goes when you are done.
+tbcec8b45 = Solange sie dort offen ist, liegt eine Kopie als reiner Text auf der Festplatte dieses Computers (in einem Ordner, den nur du lesen kannst), und der Editor kann eigene Kopien behalten, etwa Sicherungen oder Verlauf. Die Kopie verschwindet, wenn du fertig bist.
+
+# Cannot make the copy: {e}
+td59a6621 = Die Kopie lässt sich nicht anlegen: { $e }
+
+# It is not text any more.
+te3591497 = Es ist kein Text mehr.
+
+# Not read back: {e}
+tf04d4bce = Nicht zurückgelesen: { $e }
+
 # The vault's passphrase
 tb66334ea = Passphrase des Tresors
 
@@ -1023,6 +1038,9 @@ t8a6979e4 = Gespeichert
 # Editing…
 t1f2b8dc9 = Wird bearbeitet…
 
+# Edit in another app…
+t1c6d0a34 = In einer anderen App bearbeiten…
+
 # The vault is locked: unlock it in the main window.
 te327c98e = Der Tresor ist gesperrt: Entsperre ihn im Hauptfenster.
 
@@ -1037,6 +1055,9 @@ t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
 
 # No passphrase guards the vault, so anyone at this device can show it.
 t41e36c52 = Keine Passphrase schützt den Tresor, also kann jeder an diesem Gerät ihn anzeigen.
+
+# Open in another app: what it saves comes here, and is kept.
+t340e0631 = In einer anderen App geöffnet: Was sie speichert, kommt hierher und bleibt.
 
 # Nothing written yet: Edit to write.
 t21ced1e5 = Noch nichts geschrieben: Zum Schreiben auf Bearbeiten.

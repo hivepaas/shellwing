@@ -24,7 +24,7 @@ mod input;
 mod keys_view;
 mod known_hosts_view;
 mod look;
-mod markdown;
+mod note_files;
 mod note_window;
 mod palette;
 mod pane;
@@ -228,6 +228,8 @@ fn main() -> anyhow::Result<()> {
             // each one's own dialog (and Linux has none: GPUI would draw a
             // white box).
             cx.set_prompt_builder(prompt::render);
+            // Copies of notes a run that ended left behind: plain text, gone.
+            note_files::sweep();
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations. macOS and Windows keep the system's frame
