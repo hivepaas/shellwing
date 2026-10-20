@@ -5,9 +5,10 @@ use gpui::{
     Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
     SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*, px, rgb,
 };
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
+use crate::environment;
 use crate::host_editor::{
     checkbox, hint_text, label_text, outline_button, primary_button, problem_text,
 };
@@ -16,6 +17,7 @@ use crate::look::ui;
 use crate::secrets::VaultSlot;
 use crate::snippets::{self, Scope, Snippet};
 use crate::workspace::Workspace;
+use shellwing_vault::Environment;
 
 /// Which list of the scope is open.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -24,19 +26,48 @@ enum Pick {
     Host,
 }
 
+impl Dialog {
+    /// The scope being chosen, and which of its lists is open.
+    fn scope(&mut self) -> Option<(&mut Scope, &mut Option<Pick>)> {
+        match self {
+            Dialog::Edit { scope, pick, .. } | Dialog::EditEnv { scope, pick, .. } => {
+                Some((scope, pick))
+            }
+            _ => None,
+        }
+    }
+}
+
 enum Dialog {
     Edit {
         id: String,
         name: Entity<TextInput>,
         command: Entity<TextInput>,
+        category: Entity<TextInput>,
         scope: Scope,
         enter: bool,
+        /// The environments (ids) it runs with.
+        needs: Vec<String>,
         pick: Option<Pick>,
         problem: Option<String>,
         _changed: gpui::Subscription,
     },
     Delete {
         snippet: Snippet,
+    },
+    EditEnv {
+        id: String,
+        name: Entity<TextInput>,
+        /// `NAME=value` lines; a value left empty keeps the one it had.
+        vars: Entity<TextInput>,
+        scope: Scope,
+        pick: Option<Pick>,
+        /// The names it had, which keep their values when left empty.
+        had: Vec<String>,
+        problem: Option<String>,
+    },
+    DeleteEnv {
+        env: Environment,
     },
 }
 
@@ -45,22 +76,46 @@ pub struct SnippetsView {
     vault: VaultSlot,
     focus: FocusHandle,
     list: Vec<Snippet>,
+    /// The environments, to choose what a snippet needs.
+    envs: Vec<Environment>,
     dialog: Option<Dialog>,
     notice: Option<(SharedString, bool)>,
     /// The terminal's font, for commands.
     mono: SharedString,
+    /// The Environments page, not the Snippets one.
+    envs_page: bool,
 }
 
 impl SnippetsView {
     pub fn new(workspace: WeakEntity<Workspace>, vault: VaultSlot, cx: &mut Context<Self>) -> Self {
+        Self::make(workspace, vault, false, cx)
+    }
+
+    /// The Environments page: the variables snippets and shells are given.
+    pub fn environments(
+        workspace: WeakEntity<Workspace>,
+        vault: VaultSlot,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self::make(workspace, vault, true, cx)
+    }
+
+    fn make(
+        workspace: WeakEntity<Workspace>,
+        vault: VaultSlot,
+        envs_page: bool,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let mut v = SnippetsView {
             workspace,
             vault,
             focus: cx.focus_handle(),
             list: vec![],
+            envs: vec![],
             dialog: None,
             notice: None,
             mono: SharedString::default(),
+            envs_page,
         };
         v.refresh(cx);
         v
@@ -71,11 +126,24 @@ impl SnippetsView {
         cx.spawn(async move |this, cx| {
             let list = cx
                 .background_executor()
-                .spawn(async move { vault.get().and_then(|v| v.snippets().ok()) })
+                .spawn(async move {
+                    let v = vault.get()?;
+                    Some((v.snippets().ok()?, v.environments().unwrap_or_default()))
+                })
                 .await;
             let _ = this.update(cx, |v, cx| {
                 match list {
-                    Some(l) => v.list = l,
+                    Some((mut l, envs)) => {
+                        // By category, the ones without first.
+                        l.sort_by(|a, b| {
+                            (a.category.to_lowercase(), a.name.to_lowercase())
+                                .cmp(&(b.category.to_lowercase(), b.name.to_lowercase()))
+                        });
+                        v.list = l;
+                        let mut envs = envs;
+                        envs.sort_by_key(|e| e.name.to_lowercase());
+                        v.envs = envs;
+                    }
                     None => v.notice = Some((tr!("The vault is not open.").into(), true)),
                 }
                 cx.notify();
@@ -103,6 +171,8 @@ impl SnippetsView {
             command: String::new(),
             scope: String::new(),
             enter: true,
+            category: String::new(),
+            needs: vec![],
         });
         let name = Self::input(
             || tr!("What it does, to find it in the palette"),
@@ -115,6 +185,7 @@ impl SnippetsView {
             i.set_text(&s.command, s.command.len()..s.command.len(), cx);
             i
         });
+        let category = Self::input(|| tr!("None"), &s.category, cx);
         // The names asked for show as the command is typed.
         let changed = cx.subscribe(&command, |_, _, _: &Changed, cx| cx.notify());
         let first = if s.name.is_empty() {
@@ -126,8 +197,10 @@ impl SnippetsView {
             id: s.id,
             name,
             command,
+            category,
             scope: Scope::parse(&s.scope),
             enter: s.enter,
+            needs: s.needs,
             pick: None,
             problem: None,
             _changed: changed,
@@ -154,8 +227,10 @@ impl SnippetsView {
             id,
             name,
             command,
+            category,
             scope,
             enter,
+            needs,
             problem,
             ..
         }) = &mut self.dialog
@@ -176,6 +251,13 @@ impl SnippetsView {
             command: c,
             scope: scope.field(),
             enter: *enter,
+            category: category.read(cx).text().trim().to_string(),
+            // Environments since deleted are dropped.
+            needs: needs
+                .iter()
+                .filter(|n| self.envs.iter().any(|e| e.id == **n))
+                .cloned()
+                .collect(),
         };
         match self
             .vault
@@ -218,6 +300,125 @@ impl SnippetsView {
         }
     }
 
+    fn edit_env(&mut self, e: Option<Environment>, window: &mut Window, cx: &mut Context<Self>) {
+        let e = e.unwrap_or(Environment {
+            id: String::new(),
+            name: String::new(),
+            scope: String::new(),
+            names: vec![],
+        });
+        let name = Self::input(
+            || tr!("What they are for, such as AWS production"),
+            &e.name,
+            cx,
+        );
+        let text = environment::names_as_dotenv(&e.names);
+        let vars = cx.new(|cx| {
+            let mut i =
+                TextInput::said(|| "AWS_ACCESS_KEY_ID=AKIA…".to_string(), cx).multiline(3, 10);
+            i.set_text(&text, text.len()..text.len(), cx);
+            i
+        });
+        let first = if e.name.is_empty() {
+            name.clone()
+        } else {
+            vars.clone()
+        };
+        self.dialog = Some(Dialog::EditEnv {
+            id: e.id,
+            name,
+            vars,
+            scope: Scope::parse(&e.scope),
+            pick: None,
+            had: e.names,
+            problem: None,
+        });
+        let f = first.read(cx).focus_handle(cx);
+        window.focus(&f, cx);
+        cx.notify();
+    }
+
+    fn save_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(Dialog::EditEnv {
+            id,
+            name,
+            vars,
+            scope,
+            had,
+            problem,
+            ..
+        }) = &mut self.dialog
+        else {
+            return;
+        };
+        let n = name.read(cx).text().trim().to_string();
+        let parsed = environment::parse_dotenv(vars.read(cx).text());
+        let said = match parsed {
+            _ if n.is_empty() => Err(tr!("A name is needed.")),
+            Err(e) => Err(tr!("Not NAME=value: {e}", e = e)),
+            Ok(v) if v.is_empty() => Err(tr!("Add a variable: NAME=value, one a line.")),
+            // Left empty keeps a value; a new name has none to keep.
+            Ok(v) => match v.iter().find(|(k, val)| val.is_none() && !had.contains(k)) {
+                Some((k, _)) => Err(tr!("{name} has no value.", name = k.as_str())),
+                None => Ok(v),
+            },
+        };
+        let vars = match said {
+            Ok(v) => v,
+            Err(e) => {
+                *problem = Some(e);
+                return cx.notify();
+            }
+        };
+        let (id, scope) = (id.clone(), scope.field());
+        let saved = self
+            .vault
+            .get()
+            .ok_or_else(|| tr!("the vault is not open"))
+            .and_then(|v| {
+                v.save_environment(&id, &n, &scope, &vars)
+                    .map_err(|e| e.to_string())
+            });
+        // What was typed goes from memory with the field.
+        if let Some(Dialog::EditEnv { vars, .. }) = &self.dialog {
+            vars.update(cx, |i, cx| i.set_text("", 0..0, cx));
+        }
+        match saved {
+            Ok(_) => {
+                self.close(window, cx);
+                self.vault_changed(cx);
+                self.refresh(cx);
+            }
+            Err(e) => {
+                if let Some(Dialog::EditEnv { problem, .. }) = &mut self.dialog {
+                    *problem = Some(tr!("Not saved: {e}", e = e));
+                }
+                cx.notify();
+            }
+        }
+    }
+
+    fn delete_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(Dialog::DeleteEnv { env }) = &self.dialog else {
+            return;
+        };
+        let (id, name) = (env.id.clone(), env.name.clone());
+        let done = self
+            .vault
+            .get()
+            .ok_or_else(|| tr!("the vault is not open"))
+            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
+        self.close(window, cx);
+        match done {
+            Ok(()) => {
+                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
+                self.vault_changed(cx);
+                self.refresh(cx);
+            }
+            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
+        }
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         if self.dialog.is_none() {
             return;
@@ -227,6 +428,8 @@ impl SnippetsView {
             "enter" => match &self.dialog {
                 Some(Dialog::Edit { .. }) => self.save(window, cx),
                 Some(Dialog::Delete { .. }) => self.delete(window, cx),
+                Some(Dialog::EditEnv { .. }) => self.save_env(window, cx),
+                Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
                 None => {}
             },
             _ => return,
@@ -248,6 +451,30 @@ impl SnippetsView {
             .cursor_pointer()
             .hover(|s| s.bg(rgb(colors().button_hover)))
             .child(label.to_string())
+    }
+
+    /// A choice to turn on or off.
+    fn chip(id: impl Into<gpui::ElementId>, label: String, on: bool) -> gpui::Stateful<gpui::Div> {
+        div()
+            .id(id.into())
+            .px(px(8.))
+            .py(px(2.))
+            .rounded(px(4.))
+            .border_1()
+            .text_size(ui(12.))
+            .cursor_pointer()
+            .when(on, |d| {
+                d.border_color(rgb(colors().accent))
+                    .bg(rgb(colors().selected))
+                    .text_color(rgb(colors().text))
+            })
+            .when(!on, |d| {
+                d.border_color(rgb(colors().field_edge))
+                    .bg(rgb(colors().chip))
+                    .text_color(rgb(colors().soft))
+                    .hover(|s| s.bg(rgb(colors().hover)))
+            })
+            .child(label)
     }
 
     fn field(
@@ -284,12 +511,51 @@ impl SnippetsView {
     }
 
     fn rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        self.list
+        // Under headings once any has a category (sorted by it on refresh).
+        let filed = self.list.iter().any(|s| !s.category.trim().is_empty());
+        let mut last: Option<String> = None;
+        let mut out = vec![];
+        for (i, s) in self.list.iter().enumerate() {
+            let cat = s.category.trim().to_lowercase();
+            if filed && last.as_ref() != Some(&cat) {
+                out.push(
+                    div()
+                        .px(px(12.))
+                        .pt(px(10.))
+                        .pb(px(4.))
+                        .when(i > 0, |d| d.border_t_1().border_color(rgb(colors().line)))
+                        .text_size(ui(11.))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(colors().muted))
+                        .child(if cat.is_empty() {
+                            tr!("No category")
+                        } else {
+                            s.category.trim().to_string()
+                        })
+                        .into_any_element(),
+                );
+            }
+            let first = last.as_ref() != Some(&cat);
+            last = Some(cat);
+            let needs: Vec<String> = s
+                .needs
+                .iter()
+                .filter_map(|n| self.envs.iter().find(|e| e.id == *n))
+                .map(|e| e.name.clone())
+                .collect();
+            out.push(self.row(i, s, first && filed, needs, cx));
+        }
+        out
+    }
+
+    fn env_rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
+        self.envs
             .iter()
             .enumerate()
-            .map(|(i, s)| {
-                let scope = Scope::parse(&s.scope);
-                let (edit, del) = (s.clone(), s.clone());
+            .map(|(i, e)| {
+                let scope = Scope::parse(&e.scope);
+                let (edit, del) = (e.clone(), e.clone());
+                let used = self.list.iter().filter(|s| s.needs.contains(&e.id)).count();
                 div()
                     .flex()
                     .items_center()
@@ -310,7 +576,7 @@ impl SnippetsView {
                                     .items_center()
                                     .gap(px(8.))
                                     .child(
-                                        div().font_weight(FontWeight::MEDIUM).child(s.name.clone()),
+                                        div().font_weight(FontWeight::MEDIUM).child(e.name.clone()),
                                     )
                                     .child(
                                         div()
@@ -324,12 +590,16 @@ impl SnippetsView {
                                             .text_color(rgb(colors().soft))
                                             .child(scope.label()),
                                     )
-                                    .when(!s.enter, |d| {
+                                    .when(used > 0, |d| {
                                         d.child(
                                             div()
                                                 .text_size(ui(11.))
                                                 .text_color(rgb(colors().muted))
-                                                .child(tr!("typed, not run")),
+                                                .child(tr_n!(
+                                                    used,
+                                                    "needed by {n} snippet",
+                                                    "needed by {n} snippets"
+                                                )),
                                         )
                                     }),
                             )
@@ -341,19 +611,17 @@ impl SnippetsView {
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
-                                    .child(crate::snippets::one_line(&s.command)),
+                                    .child(e.names.join("  ")),
                             ),
                     )
-                    .child(Self::small(("snippet-edit", i), &tr!("Edit…")).on_click(
-                        cx.listener(move |v, _, w, cx| v.edit(Some(edit.clone()), w, cx)),
+                    .child(Self::small(("env-edit", i), &tr!("Edit…")).on_click(
+                        cx.listener(move |v, _, w, cx| v.edit_env(Some(edit.clone()), w, cx)),
                     ))
                     .child(
-                        Self::small(("snippet-delete", i), &tr!("Delete"))
+                        Self::small(("env-delete", i), &tr!("Delete"))
                             .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
-                                v.dialog = Some(Dialog::Delete {
-                                    snippet: del.clone(),
-                                });
+                                v.dialog = Some(Dialog::DeleteEnv { env: del.clone() });
                                 window_focus(&v.focus, w, cx);
                                 cx.notify();
                             })),
@@ -361,6 +629,232 @@ impl SnippetsView {
                     .into_any_element()
             })
             .collect()
+    }
+
+    fn row(
+        &self,
+        i: usize,
+        s: &Snippet,
+        headed: bool,
+        needs: Vec<String>,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        let scope = Scope::parse(&s.scope);
+        let (edit, del) = (s.clone(), s.clone());
+        div()
+            .flex()
+            .items_center()
+            .gap(px(12.))
+            .px(px(12.))
+            .py(px(10.))
+            .when(i > 0 && !headed, |d| {
+                d.border_t_1().border_color(rgb(colors().line))
+            })
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(8.))
+                            .child(div().font_weight(FontWeight::MEDIUM).child(s.name.clone()))
+                            .child(
+                                div()
+                                    .px(px(6.))
+                                    .py(px(1.))
+                                    .rounded(px(4.))
+                                    .border_1()
+                                    .border_color(rgb(colors().field_edge))
+                                    .bg(rgb(colors().chip))
+                                    .text_size(ui(10.5))
+                                    .text_color(rgb(colors().soft))
+                                    .child(scope.label()),
+                            )
+                            .when(!s.enter, |d| {
+                                d.child(
+                                    div()
+                                        .text_size(ui(11.))
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("typed, not run")),
+                                )
+                            })
+                            .when(!needs.is_empty(), |d| {
+                                d.child(
+                                    div()
+                                        .text_size(ui(11.))
+                                        .text_color(rgb(colors().warn))
+                                        .child(tr!("with {envs}", envs = needs.join(", "))),
+                                )
+                            }),
+                    )
+                    .child(
+                        div()
+                            .font_family(self.mono.clone())
+                            .text_size(ui(12.))
+                            .text_color(rgb(colors().soft))
+                            .overflow_hidden()
+                            .text_ellipsis()
+                            .whitespace_nowrap()
+                            .child(crate::snippets::one_line(&s.command)),
+                    ),
+            )
+            .child(
+                Self::small(("snippet-edit", i), &tr!("Edit…"))
+                    .on_click(cx.listener(move |v, _, w, cx| v.edit(Some(edit.clone()), w, cx))),
+            )
+            .child(
+                Self::small(("snippet-delete", i), &tr!("Delete"))
+                    .text_color(rgb(colors().bad))
+                    .on_click(cx.listener(move |v, _, w, cx| {
+                        v.dialog = Some(Dialog::Delete {
+                            snippet: del.clone(),
+                        });
+                        window_focus(&v.focus, w, cx);
+                        cx.notify();
+                    })),
+            )
+            .into_any_element()
+    }
+
+    /// Where it is offered: every host, a group's, or one host's.
+    fn scope_box(&self, scope: &Scope, pick: &Option<Pick>, cx: &mut Context<Self>) -> gpui::Div {
+        let (groups, hosts) = self
+            .workspace
+            .upgrade()
+            .map(|w| w.read(cx).snippet_scopes())
+            .unwrap_or_default();
+        let mut seg = div()
+            .flex()
+            .rounded(px(6.))
+            .border_1()
+            .border_color(rgb(colors().field_edge))
+            .overflow_hidden();
+        let choices = [
+            (0usize, tr!("Every host"), matches!(scope, Scope::Every)),
+            (
+                1,
+                match scope {
+                    Scope::Group(g) => format!("{g} ▾"),
+                    _ => tr!("A group ▾"),
+                },
+                matches!(scope, Scope::Group(_)),
+            ),
+            (
+                2,
+                match scope {
+                    Scope::Host(h) => format!("{h} ▾"),
+                    _ => tr!("One host ▾"),
+                },
+                matches!(scope, Scope::Host(_)),
+            ),
+        ];
+        for (n, label, on) in choices {
+            seg = seg.child(
+                div()
+                    .id(("scope", n))
+                    .flex_1()
+                    .h(px(32.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(ui(12.5))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
+                    .cursor_pointer()
+                    .when(n > 0, |d| {
+                        d.border_l_1().border_color(rgb(colors().field_edge))
+                    })
+                    .when(on, |d| {
+                        d.bg(rgb(colors().selected))
+                            .border_b_2()
+                            .border_color(rgb(colors().accent))
+                    })
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        if let Some((scope, pick)) = v.dialog.as_mut().and_then(Dialog::scope) {
+                            match n {
+                                0 => {
+                                    *scope = Scope::Every;
+                                    *pick = None;
+                                }
+                                1 => *pick = (*pick != Some(Pick::Group)).then_some(Pick::Group),
+                                _ => *pick = (*pick != Some(Pick::Host)).then_some(Pick::Host),
+                            }
+                        }
+                        cx.notify();
+                    }))
+                    .child(label),
+            );
+        }
+        let mut scope_box = div()
+            .flex()
+            .flex_col()
+            .gap(px(5.))
+            .child(label_text(&tr!("Offered for")))
+            .child(seg);
+        if let Some(p) = pick {
+            let (names, empty) = match p {
+                Pick::Group => (groups, tr!("No groups yet: make one in the host list.")),
+                Pick::Host => (hosts, tr!("No hosts yet.")),
+            };
+            let mut list = div()
+                .id("scope-list")
+                .flex()
+                .flex_col()
+                .max_h(px(180.))
+                .overflow_y_scroll()
+                .p(px(4.))
+                .rounded(px(6.))
+                .border_1()
+                .border_color(rgb(colors().edge))
+                .bg(rgb(colors().raised));
+            if names.is_empty() {
+                list = list.child(
+                    div()
+                        .px_2()
+                        .py(px(5.))
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().muted))
+                        .child(empty),
+                );
+            }
+            let p = *p;
+            for (i, name) in names.into_iter().enumerate() {
+                let shown = name.clone();
+                let chosen = match (p, scope) {
+                    (Pick::Group, Scope::Group(g)) | (Pick::Host, Scope::Host(g)) => *g == name,
+                    _ => false,
+                };
+                list = list.child(
+                    div()
+                        .id(("scope-choice", i))
+                        .px_2()
+                        .py(px(5.))
+                        .rounded(px(4.))
+                        .text_size(ui(13.))
+                        .cursor_pointer()
+                        .when(chosen, |d| d.bg(rgb(colors().selected)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(cx.listener(move |v, _, _, cx| {
+                            if let Some((scope, pick)) = v.dialog.as_mut().and_then(Dialog::scope) {
+                                *scope = match p {
+                                    Pick::Group => Scope::Group(name.clone()),
+                                    Pick::Host => Scope::Host(name.clone()),
+                                };
+                                *pick = None;
+                            }
+                            cx.notify();
+                        }))
+                        .child(shown),
+                );
+            }
+            scope_box = scope_box.child(list);
+        }
+        scope_box
     }
 
     fn dialog_card(
@@ -372,6 +866,8 @@ impl SnippetsView {
         let card = div()
             .id("snippet-dialog")
             .w(px(600.))
+            .max_h(window.viewport_size().height - px(60.))
+            .overflow_y_scroll()
             .flex()
             .flex_col()
             .gap(px(16.))
@@ -405,6 +901,8 @@ impl SnippetsView {
                         match &v.dialog {
                             Some(Dialog::Edit { .. }) => v.save(w, cx),
                             Some(Dialog::Delete { .. }) => v.delete(w, cx),
+                            Some(Dialog::EditEnv { .. }) => v.save_env(w, cx),
+                            Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
                             None => {}
                         }
                     })),
@@ -422,18 +920,80 @@ impl SnippetsView {
                         )),
                 )
                 .child(buttons(&tr!("Delete"), cx)),
-            Dialog::Edit {
+            Dialog::DeleteEnv { env } => card
+                .child(title(&tr!("Delete {name}?", name = env.name.as_str())))
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().label))
+                        .child(tr!(
+                            "Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded."
+                        )),
+                )
+                .child(buttons(&tr!("Delete"), cx)),
+            Dialog::EditEnv {
                 id,
                 name,
-                command,
+                vars,
                 scope,
-                enter,
                 pick,
                 problem,
                 ..
             } => {
+                let save = if cfg!(target_os = "macos") {
+                    "Cmd+Enter"
+                } else {
+                    "Ctrl+Enter"
+                };
+                let scope_box = self.scope_box(scope, pick, cx).child(hint_text(&tr!(
+                    "The palette offers to load it in panes of those hosts only."
+                )));
                 let focused =
                     |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
+                let mut b = card
+                    .child(title(&if id.is_empty() {
+                        tr!("New environment")
+                    } else {
+                        tr!("Edit environment")
+                    }))
+                    .child(Self::field(&tr!("Name"), name, focused(name), None))
+                    .child(
+                        Self::field(
+                            &tr!("Variables"),
+                            vars,
+                            focused(vars),
+                            Some(self.mono.clone()),
+                        )
+                        .child(hint_text(&if id.is_empty() {
+                            tr!(
+                                "NAME=value, one a line, or paste a .env file. {save} saves.",
+                                save = save
+                            )
+                        } else {
+                            tr!(
+                                "Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.",
+                                save = save
+                            )
+                        })),
+                    )
+                    .child(scope_box);
+                if let Some(p) = problem {
+                    b = b.child(problem_text(p));
+                }
+                b.child(buttons(&tr!("Save"), cx))
+            }
+            Dialog::Edit {
+                id,
+                name,
+                command,
+                category,
+                scope,
+                enter,
+                needs,
+                pick,
+                problem,
+                ..
+            } => {
                 let asked = snippets::asked(command.read(cx).text());
                 let mut vars = div()
                     .flex()
@@ -469,148 +1029,76 @@ impl SnippetsView {
                     save = save
                 )));
 
-                let (groups, hosts) = self
-                    .workspace
-                    .upgrade()
-                    .map(|w| w.read(cx).snippet_scopes())
-                    .unwrap_or_default();
-                let mut seg = div()
-                    .flex()
-                    .rounded(px(6.))
-                    .border_1()
-                    .border_color(rgb(colors().field_edge))
-                    .overflow_hidden();
-                let choices = [
-                    (0usize, tr!("Every host"), matches!(scope, Scope::Every)),
-                    (
-                        1,
-                        match scope {
-                            Scope::Group(g) => format!("{g} ▾"),
-                            _ => tr!("A group ▾"),
-                        },
-                        matches!(scope, Scope::Group(_)),
-                    ),
-                    (
-                        2,
-                        match scope {
-                            Scope::Host(h) => format!("{h} ▾"),
-                            _ => tr!("One host ▾"),
-                        },
-                        matches!(scope, Scope::Host(_)),
-                    ),
-                ];
-                for (n, label, on) in choices {
-                    seg = seg.child(
-                        div()
-                            .id(("scope", n))
-                            .flex_1()
-                            .h(px(32.))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .text_size(ui(12.5))
-                            .text_color(rgb(if on { colors().text } else { colors().soft }))
-                            .cursor_pointer()
-                            .when(n > 0, |d| {
-                                d.border_l_1().border_color(rgb(colors().field_edge))
-                            })
-                            .when(on, |d| {
-                                d.bg(rgb(colors().selected))
-                                    .border_b_2()
-                                    .border_color(rgb(colors().accent))
-                            })
-                            .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
-                            .on_click(cx.listener(move |v, _, _, cx| {
-                                if let Some(Dialog::Edit { scope, pick, .. }) = &mut v.dialog {
-                                    match n {
-                                        0 => {
-                                            *scope = Scope::Every;
-                                            *pick = None;
-                                        }
-                                        1 => {
-                                            *pick =
-                                                (*pick != Some(Pick::Group)).then_some(Pick::Group)
-                                        }
-                                        _ => {
-                                            *pick =
-                                                (*pick != Some(Pick::Host)).then_some(Pick::Host)
-                                        }
-                                    }
-                                }
-                                cx.notify();
-                            }))
-                            .child(label),
-                    );
+                let scope_box = self.scope_box(scope, pick, cx).child(hint_text(&tr!(
+                    "The palette lists it in panes of those hosts only."
+                )));
+                let focused =
+                    |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
+
+                // The categories already in use, to file it under one.
+                let mut cats: Vec<String> = vec![];
+                for c in self.list.iter().map(|s| s.category.trim()) {
+                    if !c.is_empty() && !cats.iter().any(|k| k.eq_ignore_ascii_case(c)) {
+                        cats.push(c.to_string());
+                    }
                 }
-                let mut scope_box = div()
+                let typed = category.read(cx).text().trim().to_string();
+                let mut cat_box = Self::field(&tr!("Category"), category, focused(category), None);
+                if !cats.is_empty() {
+                    let mut chips = div().flex().flex_wrap().gap(px(6.));
+                    for (i, c) in cats.into_iter().enumerate() {
+                        let on = c.eq_ignore_ascii_case(&typed);
+                        let input = category.clone();
+                        let picked = c.clone();
+                        chips = chips.child(Self::chip(("snippet-cat", i), c, on).on_click(
+                            cx.listener(move |_, _, _, cx| {
+                                let t = if on { String::new() } else { picked.clone() };
+                                input.update(cx, |i, cx| i.set_text(&t, t.len()..t.len(), cx));
+                                cx.notify();
+                            }),
+                        ));
+                    }
+                    cat_box = cat_box.child(chips);
+                }
+
+                let mut env_box = div()
                     .flex()
                     .flex_col()
                     .gap(px(5.))
-                    .child(label_text(&tr!("Offered for")))
-                    .child(seg);
-                if let Some(p) = pick {
-                    let (names, empty) = match p {
-                        Pick::Group => (groups, tr!("No groups yet: make one in the host list.")),
-                        Pick::Host => (hosts, tr!("No hosts yet.")),
-                    };
-                    let mut list = div()
-                        .id("scope-list")
-                        .flex()
-                        .flex_col()
-                        .max_h(px(180.))
-                        .overflow_y_scroll()
-                        .p(px(4.))
-                        .rounded(px(6.))
-                        .border_1()
-                        .border_color(rgb(colors().edge))
-                        .bg(rgb(colors().raised));
-                    if names.is_empty() {
-                        list = list.child(
-                            div()
-                                .px_2()
-                                .py(px(5.))
-                                .text_size(ui(12.5))
-                                .text_color(rgb(colors().muted))
-                                .child(empty),
-                        );
-                    }
-                    let p = *p;
-                    for (i, name) in names.into_iter().enumerate() {
-                        let shown = name.clone();
-                        let chosen = match (p, scope) {
-                            (Pick::Group, Scope::Group(g)) | (Pick::Host, Scope::Host(g)) => {
-                                *g == name
-                            }
-                            _ => false,
-                        };
-                        list = list.child(
-                            div()
-                                .id(("scope-choice", i))
-                                .px_2()
-                                .py(px(5.))
-                                .rounded(px(4.))
-                                .text_size(ui(13.))
-                                .cursor_pointer()
-                                .when(chosen, |d| d.bg(rgb(colors().selected)))
-                                .hover(|s| s.bg(rgb(colors().hover)))
-                                .on_click(cx.listener(move |v, _, _, cx| {
-                                    if let Some(Dialog::Edit { scope, pick, .. }) = &mut v.dialog {
-                                        *scope = match p {
-                                            Pick::Group => Scope::Group(name.clone()),
-                                            Pick::Host => Scope::Host(name.clone()),
-                                        };
-                                        *pick = None;
+                    .child(label_text(&tr!("Environments it needs")));
+                if self.envs.is_empty() {
+                    env_box = env_box.child(hint_text(&tr!(
+                        "None yet: add one in Settings › Environments."
+                    )));
+                } else {
+                    let mut chips = div().flex().flex_wrap().gap(px(6.));
+                    for (i, e) in self.envs.iter().enumerate() {
+                        let on = needs.contains(&e.id);
+                        let id = e.id.clone();
+                        chips = chips.child(
+                            Self::chip(
+                                ("snippet-env", i),
+                                format!("{} ({})", e.name, e.names.len()),
+                                on,
+                            )
+                            .on_click(cx.listener(
+                                move |v, _, _, cx| {
+                                    if let Some(Dialog::Edit { needs, .. }) = &mut v.dialog {
+                                        if let Some(at) = needs.iter().position(|n| *n == id) {
+                                            needs.remove(at);
+                                        } else {
+                                            needs.push(id.clone());
+                                        }
                                     }
                                     cx.notify();
-                                }))
-                                .child(shown),
+                                },
+                            )),
                         );
                     }
-                    scope_box = scope_box.child(list);
+                    env_box = env_box.child(chips).child(hint_text(&tr!(
+                        "It runs in a subshell that has their variables; they go when it ends."
+                    )));
                 }
-                scope_box = scope_box.child(hint_text(&tr!(
-                    "The palette lists it in panes of those hosts only."
-                )));
 
                 let enter_on = *enter;
                 let mut b = card
@@ -620,6 +1108,7 @@ impl SnippetsView {
                         tr!("Edit snippet")
                     }))
                     .child(Self::field(&tr!("Name"), name, focused(name), None))
+                    .child(cat_box)
                     .child(
                         Self::field(
                             &tr!("Command"),
@@ -630,6 +1119,7 @@ impl SnippetsView {
                         .child(vars),
                     )
                     .child(scope_box)
+                    .child(env_box)
                     .child(
                         div()
                             .id("snippet-enter")
@@ -664,7 +1154,11 @@ impl Render for SnippetsView {
         if self.mono.is_empty() {
             self.mono = crate::view::TermView::default_font(window).into();
         }
-        let rows = self.rows(cx);
+        let rows = if self.envs_page {
+            self.env_rows(cx)
+        } else {
+            self.rows(cx)
+        };
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd+K", "Option+Enter")
         } else {
@@ -707,18 +1201,32 @@ impl Render for SnippetsView {
                             .flex_1()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child(tr!("Snippets")),
+                            .child(if self.envs_page {
+                                tr!("Environments")
+                            } else {
+                                tr!("Snippets")
+                            }),
                     )
-                    .child(
+                    .child(if self.envs_page {
+                        primary_button("env-new", &tr!("New environment…"))
+                            .on_click(cx.listener(|v, _, w, cx| v.edit_env(None, w, cx)))
+                    } else {
                         primary_button("snippet-new", &tr!("New snippet…"))
-                            .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx))),
-                    ),
+                            .on_click(cx.listener(|v, _, w, cx| v.edit(None, w, cx)))
+                    }),
             )
-            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
-                "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.",
-                chord = chord,
-                alt = alt
-            )));
+            .child(div().mt(px(-6.)).text_size(ui(12.5)).text_color(rgb(colors().label)).child(if self.envs_page {
+                tr!(
+                    "Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.",
+                    chord = chord
+                )
+            } else {
+                tr!(
+                    "Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.",
+                    chord = chord,
+                    alt = alt
+                )
+            }));
         if let Some((msg, bad)) = &self.notice {
             page = page.child(
                 div()
@@ -727,12 +1235,31 @@ impl Render for SnippetsView {
                     .child(msg.clone()),
             );
         }
-        page = page.child(list).child(
-            div()
-                .text_size(ui(12.))
-                .text_color(rgb(colors().muted))
-                .child(tr!("{{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.")),
-        );
+        page = page.child(list);
+        page = if self.envs_page {
+            page.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.))
+                    .px(px(12.))
+                    .py(px(10.))
+                    .rounded(px(8.))
+                    .bg(rgb(colors().warn_bg))
+                    .text_size(ui(12.))
+                    .text_color(rgb(colors().label))
+                    .child(div().font_weight(FontWeight::SEMIBOLD).text_color(rgb(colors().warn)).child(tr!("While loaded, the server can read them")))
+                    .child(tr!("Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends."))
+                    .child(tr!("Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.")),
+            )
+        } else {
+            page.child(
+                div()
+                    .text_size(ui(12.))
+                    .text_color(rgb(colors().muted))
+                    .child(tr!("{{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.")),
+            )
+        };
         if let Some(card) = self.dialog_card(window, cx) {
             let (at, shade) = crate::chrome::shade(window);
             page = page.child(

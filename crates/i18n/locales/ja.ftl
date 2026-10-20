@@ -991,6 +991,9 @@ t699a801a = SSH とセキュリティ
 # Snippets
 t648fcbf7 = スニペット
 
+# Environments
+t273b1ccb = 環境
+
 # Vault
 td432914f = 保管庫
 
@@ -1612,23 +1615,35 @@ td9b8e02f = パレットで探すための説明
 # A name and a command are needed.
 t7f4c69bb = 名前とコマンドが必要です。
 
-# typed, not run
-td4e41905 = 入力のみ（実行しない）
+# What they are for, such as AWS production
+tb620b1e5 = 用途、たとえば AWS 本番
+
+# Not NAME=value: {e}
+t65a67e1e = NAME=value の形式ではありません: { $e }
+
+# Add a variable: NAME=value, one a line.
+tbff2467f = 変数を追加します: NAME=value を 1 行に 1 つ。
+
+# {name} has no value.
+t387a8908 = { $name } には値がありません。
+
+# No category
+t44662d06 = カテゴリなし
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+       *[other] { $n } 件のスニペットが必要としています
+    }
 
 # Edit…
 t8e7efcd7 = 編集…
 
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 保管庫から削除され、同期後は他のデバイスからも削除されます。
+# typed, not run
+td4e41905 = 入力のみ（実行しない）
 
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
-
-# Asked for when it runs:
-t2d8c5e6d = 実行時に尋ねられる項目：
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter で改行します。各行は順に実行されます。{ $save } で保存します。
+# with {envs}
+tba31f3bb = { $envs } を使用
 
 # Every host
 t77846bfe = すべてのホスト
@@ -1648,8 +1663,53 @@ t31c54e54 = まだグループはありません。ホスト一覧で作成し�
 # No hosts yet.
 t71734b03 = まだホストはありません。
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 保管庫から削除され、同期後は他のデバイスからも削除されます。
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = パレットでは、これらのホストのペインにのみ読み込みを提案します。
+
+# New environment
+tf3955dbc = 新しい環境
+
+# Edit environment
+t79646cbc = 環境を編集
+
+# Variables
+t7996f062 = 変数
+
+# NAME=value, one a line, or paste a .env file. {save} saves.
+tc682ceb0 = NAME=value を 1 行に 1 つ入力するか、.env ファイルを貼り付けます。{ $save } で保存します。
+
+# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
+t2aa2ecec = 値は表示されません。空のままにすると現在の値を保持し、入力すると変更します。行を削除すると、その変数も削除されます。{ $save } で保存します。
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} は自動で入力されます。それ以外の {"{{"}name{"}}"} は実行時に尋ねられます。
+
+# Asked for when it runs:
+t2d8c5e6d = 実行時に尋ねられる項目：
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter で改行します。各行は順に実行されます。{ $save } で保存します。
+
 # The palette lists it in panes of those hosts only.
 t66336218 = パレットでは、これらのホストのペインでのみ表示されます。
+
+# Category
+tafb3e591 = カテゴリ
+
+# Environments it needs
+tebd9fda9 = 必要な環境
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = まだありません: 設定 › 環境 で追加してください。
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 変数を持つサブシェルで実行され、終了すると変数は消えます。
 
 # New snippet
 tff3f7838 = 新しいスニペット
@@ -1666,11 +1726,26 @@ t32122ee4 = 実行する：入力後に Enter を押す
 # None yet.
 t786bc275 = まだありません。
 
+# New environment…
+t0c42d278 = 新しい環境…
+
 # New snippet…
 tec3111a4 = 新しいスニペット…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = API のキーなど、シェル用の変数です。暗号化して保管庫に保存され、保管庫と一緒に同期されます。パレット（{ $chord }、環境を読み込む…）からペインに読み込み、使い終わったら読み込みを解除するか、必要とするスニペットだけに使わせることもできます。
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = よく実行するコマンドです。パレット（{ $chord } を押して名前を入力）から実行できます。Enter でペインで実行し、{ $alt } でタブ内のすべてのペインで実行します。保管庫に保存されるため、ホストと一緒に同期されます。
+
+# While loaded, the server can read them
+te60c8275 = 読み込み中は、サーバーから読み取れます
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = 値はエコーをオフにして送信され、シェルの履歴にも残りませんが、変数を持つシェルはメモリ上に保持します。そのサーバーで root を持つ人や、そこであなたのユーザーとして動作する人は、読み込みを解除するかシェルが終了するまで読み取れます。
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = 信頼できるサーバーにのみ読み込み、使い終わったら解除してください。有効期限のあるキーや権限の小さいキー、たとえば短命のトークンや作業に必要な権限だけを持つロールを推奨します。
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} にはペインのホストの値が入ります。それ以外の {"{{"}name{"}}"} はスニペットの実行時に尋ねられます。
@@ -1812,6 +1887,21 @@ t6246d272 = Cmd+W 閉じる
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 閉じる
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = このペインではフルスクリーンのプログラムが動作中です。終了してからもう一度お試しください。
+
+# It has no variables.
+t0993a534 = 変数がありません。
+
+# {name} cannot be loaded: a value of one line is needed.
+tc2bbea4b = { $name } を読み込めません: 1 行の値が必要です。
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = シェルが変数を受け取りませんでした。プロンプトの状態でないか、POSIX シェル（sh、bash、zsh）ではありません。
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name } をこのシェルに読み込みました。
 
 # Log saved: {path}
 tcc43a8d9 = ログを保存しました：{ $path }
@@ -1996,6 +2086,9 @@ t21a947cf = ペインを閉じる
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 最下部に戻る（Shift+End）
 
+# Snippets · {category}
+t85f58d76 = スニペット · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 個のペイン
 
@@ -2010,6 +2103,18 @@ t6748f755 = { $snippet } · { $panes } · { $name }（{ $at } / { $total }）
 
 # Will run
 teaaf5750 = 実行内容
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = このスニペットが必要とする環境が削除されました。スニペットを編集してください。
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = このホスト用の環境がありません: 設定 › 環境 で追加してください。
+
+# loaded: Enter loads it again
+t1a97d76a = 読み込み済み: Enter で再度読み込みます
+
+# Load an environment into this shell…
+td1cfd29b = このシェルに環境を読み込む…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 先にタブを分割してください。入力先のペインが 1 つしかありません。
@@ -2094,6 +2199,12 @@ t13c5bc91 = { $title } のファイル
 
 # Forward a port through {title}…
 t9f033387 = { $title } 経由でポートをフォワード…
+
+# Load environment…
+ta3f75e60 = 環境を読み込む…
+
+# Unload environment: {names}
+tbe80f7b5 = 環境の読み込みを解除: { $names }
 
 # Change theme…
 t85a401b4 = テーマを変更…

@@ -1021,6 +1021,9 @@ t699a801a = SSH и безопасность
 # Snippets
 t648fcbf7 = Сниппеты
 
+# Environments
+t273b1ccb = Окружения
+
 # Vault
 td432914f = Хранилище
 
@@ -1648,23 +1651,38 @@ td9b8e02f = Что он делает, чтобы найти его в палит
 # A name and a command are needed.
 t7f4c69bb = Нужны имя и команда.
 
-# typed, not run
-td4e41905 = вводится, но не выполняется
+# What they are for, such as AWS production
+tb620b1e5 = Для чего они нужны, например AWS production
+
+# Not NAME=value: {e}
+t65a67e1e = Не NAME=value: { $e }
+
+# Add a variable: NAME=value, one a line.
+tbff2467f = Добавьте переменную: NAME=value, по одной в строке.
+
+# {name} has no value.
+t387a8908 = У { $name } нет значения.
+
+# No category
+t44662d06 = Без категории
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+        [one] нужно { $n } сниппету
+        [few] нужно { $n } сниппетам
+        [many] нужно { $n } сниппетам
+       *[other] нужно { $n } сниппета
+    }
 
 # Edit…
 t8e7efcd7 = Изменить…
 
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
+# typed, not run
+td4e41905 = вводится, но не выполняется
 
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
-
-# Asked for when it runs:
-t2d8c5e6d = Запрашивается при запуске:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter начинает новую строку; строки выполняются по очереди. { $save } сохраняет.
+# with {envs}
+tba31f3bb = с { $envs }
 
 # Every host
 t77846bfe = Все хосты
@@ -1684,8 +1702,53 @@ t31c54e54 = Групп пока нет: создайте её в списке х
 # No hosts yet.
 t71734b03 = Хостов пока нет.
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = Он будет удалён из хранилища и с других ваших устройств после синхронизации.
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = Палитра предлагает загрузить его только в панели этих хостов.
+
+# New environment
+tf3955dbc = Новое окружение
+
+# Edit environment
+t79646cbc = Изменить окружение
+
+# Variables
+t7996f062 = Переменные
+
+# NAME=value, one a line, or paste a .env file. {save} saves.
+tc682ceb0 = NAME=value, по одной в строке, или вставьте файл .env. { $save } сохраняет.
+
+# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
+t2aa2ecec = Значения никогда не показываются: оставленное пустым сохраняет прежнее; введите значение, чтобы изменить. Удалённая строка удаляет свою переменную. { $save } сохраняет.
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
+
+# Asked for when it runs:
+t2d8c5e6d = Запрашивается при запуске:
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter начинает новую строку; строки выполняются по очереди. { $save } сохраняет.
+
 # The palette lists it in panes of those hosts only.
 t66336218 = Палитра показывает его только в панелях этих хостов.
+
+# Category
+tafb3e591 = Категория
+
+# Environments it needs
+tebd9fda9 = Нужные окружения
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Пока нет: добавьте в Настройки › Окружения.
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Выполняется в подоболочке с их переменными; они исчезают, когда она завершается.
 
 # New snippet
 tff3f7838 = Новый сниппет
@@ -1702,11 +1765,26 @@ t32122ee4 = Выполнять: нажимать Enter после ввода
 # None yet.
 t786bc275 = Пока нет.
 
+# New environment…
+t0c42d278 = Новое окружение…
+
 # New snippet…
 tec3111a4 = Новый сниппет…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = Переменные для оболочки, например ключи API, хранятся зашифрованными в хранилище и синхронизируются вместе с ним. Загрузите окружение в панель через палитру ({ $chord }, Загрузить окружение…) и выгрузите, когда закончите, или позвольте сниппету, которому оно нужно, получить его только для себя.
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = Команды, которые вы часто выполняете. Запускайте из палитры ({ $chord }, затем введите имя): Enter выполняет в панели, { $alt } — во всех панелях вкладки. Хранятся в хранилище, поэтому синхронизируются вместе с хостами.
+
+# While loaded, the server can read them
+te60c8275 = Пока они загружены, сервер может их прочитать
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = Значения отправляются с отключённым эхом и не попадают в историю оболочки, но оболочка, в которой они есть, хранит их в памяти: любой, у кого на этом сервере есть root или кто работает там от вашего пользователя, может прочитать их, пока они не выгружены или оболочка не завершена.
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = Загружайте их на надёжные серверы, выгружайте, когда закончите, и отдавайте предпочтение ключам, которые истекают или мало что могут, например краткоживущим токенам или роли только с нужными для работы правами.
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются для хоста панели; любое другое {"{{"}name{"}}"} запрашивается при запуске сниппета.
@@ -1903,6 +1981,21 @@ t6246d272 = Cmd+W закрыть
 # Ctrl+W close it
 t82a6adaf = Ctrl+W закрыть
 
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = В этой панели запущена полноэкранная программа: выйдите из неё и повторите попытку.
+
+# It has no variables.
+t0993a534 = В нём нет переменных.
+
+# {name} cannot be loaded: a value of one line is needed.
+tc2bbea4b = { $name } нельзя загрузить: нужно значение в одну строку.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = Оболочка не приняла переменные: она не на приглашении или это не POSIX-оболочка (sh, bash, zsh).
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name } загружено в эту оболочку.
+
 # Log saved: {path}
 tcc43a8d9 = Журнал сохранён: { $path }
 
@@ -2092,6 +2185,9 @@ t21a947cf = Закрыть панель
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Вернуться вниз (Shift+End)
 
+# Snippets · {category}
+t85f58d76 = Сниппеты · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc =
     { $n ->
@@ -2118,6 +2214,18 @@ t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } из { $total })
 
 # Will run
 teaaf5750 = Будет выполнено
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = Окружение, нужное этому сниппету, удалено: измените сниппет.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Для этого хоста нет окружения: добавьте в Настройки › Окружения.
+
+# loaded: Enter loads it again
+t1a97d76a = загружено: Enter загрузит снова
+
+# Load an environment into this shell…
+td1cfd29b = Загрузить окружение в эту оболочку…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Сначала разделите вкладку: сейчас в ней одна панель для ввода.
@@ -2214,6 +2322,12 @@ t13c5bc91 = Файлы на { $title }
 
 # Forward a port through {title}…
 t9f033387 = Пробросить порт через { $title }…
+
+# Load environment…
+ta3f75e60 = Загрузить окружение…
+
+# Unload environment: {names}
+tbe80f7b5 = Выгрузить окружение: { $names }
 
 # Change theme…
 t85a401b4 = Сменить тему…

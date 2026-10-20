@@ -58,6 +58,10 @@ pub enum Action {
     EditHost(crate::workspace::EditTarget),
     Settings,
     Forward,
+    /// Load an environment into the focused pane's shell.
+    LoadEnv,
+    /// Unload the ones loaded there.
+    UnloadEnv,
     ToggleHosts,
     /// Type in every pane of the tab, or stop.
     Broadcast,

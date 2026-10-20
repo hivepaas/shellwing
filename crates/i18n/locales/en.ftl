@@ -351,6 +351,7 @@ t31018b9f = Appearance
 t27d1a714 = Keyboard
 t699a801a = SSH and security
 t648fcbf7 = Snippets
+t273b1ccb = Environments
 td432914f = Vault
 t58e096de = About
 t22e462e2 = Its password (an app password, where it has them)
@@ -562,26 +563,53 @@ t0d325d34 = HOSTS
 t444612de = every host
 td9b8e02f = What it does, to find it in the palette
 t7f4c69bb = A name and a command are needed.
-td4e41905 = typed, not run
+tb620b1e5 = What they are for, such as AWS production
+t65a67e1e = Not NAME=value: { $e }
+tbff2467f = Add a variable: NAME=value, one a line.
+t387a8908 = { $name } has no value.
+t44662d06 = No category
+t79d75da2 =
+    { $n ->
+        [one] needed by { $n } snippet
+       *[other] needed by { $n } snippets
+    }
 t8e7efcd7 = Edit…
-t3c6666da = It goes from the vault, and from your other devices once they sync.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
-t2d8c5e6d = Asked for when it runs:
-t883a11f4 = Enter starts another line; the lines run in turn. { $save } saves.
+td4e41905 = typed, not run
+tba31f3bb = with { $envs }
 t77846bfe = Every host
 tcd864ec5 = A group ▾
 t1864f915 = One host ▾
 tbafebe63 = Offered for
 t31c54e54 = No groups yet: make one in the host list.
 t71734b03 = No hosts yet.
+t3c6666da = It goes from the vault, and from your other devices once they sync.
+td2d90383 = Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+t67715aad = The palette offers to load it in panes of those hosts only.
+tf3955dbc = New environment
+t79646cbc = Edit environment
+t7996f062 = Variables
+tc682ceb0 = NAME=value, one a line, or paste a .env file. { $save } saves.
+t2aa2ecec = Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. { $save } saves.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
+t2d8c5e6d = Asked for when it runs:
+t883a11f4 = Enter starts another line; the lines run in turn. { $save } saves.
 t66336218 = The palette lists it in panes of those hosts only.
+tafb3e591 = Category
+tebd9fda9 = Environments it needs
+t769ef9f6 = None yet: add one in Settings › Environments.
+td5ccd9da = It runs in a subshell that has their variables; they go when it ends.
 tff3f7838 = New snippet
 t9eab9738 = Edit snippet
 tc67c8f52 = Command
 t32122ee4 = Run it: press Enter after typing it
 t786bc275 = None yet.
+t0c42d278 = New environment…
 tec3111a4 = New snippet…
+t45b0673b = Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({ $chord }, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
 tb1ca142d = Commands you run often. Run one from the palette ({ $chord }, then type its name): Enter runs it in the pane, { $alt } in every pane of the tab. Kept in the vault, so they sync with your hosts.
+te60c8275 = While loaded, the server can read them
+t87b5db80 = Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t16991c40 = Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in for the pane's host; any other {"{{"}name{"}}"} is asked for when the snippet runs.
 t88dd5f11 = Your hosts on every device. Just sign in.
 t025d99af = Hosts, saved passwords, keys and snippets follow you to every computer.
@@ -665,6 +693,11 @@ t983339a6 = ↑↓ choose
 td90b12ab = Enter go to it
 t6246d272 = Cmd+W close it
 t82a6adaf = Ctrl+W close it
+t20301272 = A full-screen program is running in this pane: leave it, then try again.
+t0993a534 = It has no variables.
+tc2bbea4b = { $name } cannot be loaded: a value of one line is needed.
+ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+t5bc879d1 = { $name } is loaded into this shell.
 tcc43a8d9 = Log saved: { $path }
 td2342a94 = Logging to { $path }
 tb673f869 = Cannot log: { $e }
@@ -730,6 +763,7 @@ t50db06c1 = Split Right
 t1165de29 = Split Down
 t21a947cf = Close Pane
 t5a2b7304 = ↓ Back to bottom (Shift+End)
+t85f58d76 = Snippets · { $category }
 t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter: { $n } pane
@@ -743,6 +777,10 @@ tca97c422 =
     }
 t6748f755 = { $snippet } · { $panes } · { $name } ({ $at } of { $total })
 teaaf5750 = Will run
+tb37e7456 = An environment this needs was deleted: edit the snippet.
+t1b95315b = No environment for this host: add one in Settings › Environments.
+t1a97d76a = loaded: Enter loads it again
+td1cfd29b = Load an environment into this shell…
 t72699bd1 = Split the tab first: there is one pane to type in.
 tc626ae98 = Close the tab?
 tf2b43783 = Close the pane?
@@ -779,6 +817,8 @@ t2f1b2b25 = Log { $title } to a file
 td567c539 = Hide the files
 t13c5bc91 = Files on { $title }
 t9f033387 = Forward a port through { $title }…
+ta3f75e60 = Load environment…
+tbe80f7b5 = Unload environment: { $names }
 t85a401b4 = Change theme…
 td7560c88 = Hide the host list
 t4754a8f9 = Show the host list

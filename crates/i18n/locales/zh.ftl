@@ -991,6 +991,9 @@ t699a801a = SSH 与安全
 # Snippets
 t648fcbf7 = 代码片段
 
+# Environments
+t273b1ccb = 环境
+
 # Vault
 td432914f = 保险库
 
@@ -1612,23 +1615,35 @@ td9b8e02f = 用途说明，便于在命令面板中查找
 # A name and a command are needed.
 t7f4c69bb = 需要填写名称和命令。
 
-# typed, not run
-td4e41905 = 仅输入，不运行
+# What they are for, such as AWS production
+tb620b1e5 = 用途，例如 AWS 生产环境
+
+# Not NAME=value: {e}
+t65a67e1e = 不是 NAME=value 格式：{ $e }
+
+# Add a variable: NAME=value, one a line.
+tbff2467f = 添加变量：NAME=value，每行一个。
+
+# {name} has no value.
+t387a8908 = { $name } 没有值。
+
+# No category
+t44662d06 = 无分类
+
+# needed by {n} snippet | needed by {n} snippets
+t79d75da2 =
+    { $n ->
+       *[other] { $n } 个代码片段需要
+    }
 
 # Edit…
 t8e7efcd7 = 编辑…
 
-# It goes from the vault, and from your other devices once they sync.
-t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
+# typed, not run
+td4e41905 = 仅输入，不运行
 
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
-
-# Asked for when it runs:
-t2d8c5e6d = 运行时询问：
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = 按 Enter 另起一行；各行依次运行。按 { $save } 保存。
+# with {envs}
+tba31f3bb = 使用 { $envs }
 
 # Every host
 t77846bfe = 所有主机
@@ -1648,8 +1663,53 @@ t31c54e54 = 还没有分组：请在主机列表中创建。
 # No hosts yet.
 t71734b03 = 还没有主机。
 
+# It goes from the vault, and from your other devices once they sync.
+t3c6666da = 它将从保险库中删除，你的其他设备同步后也会删除。
+
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
+
+# The palette offers to load it in panes of those hosts only.
+t67715aad = 命令面板只会在这些主机的窗格中提供加载它。
+
+# New environment
+tf3955dbc = 新建环境
+
+# Edit environment
+t79646cbc = 编辑环境
+
+# Variables
+t7996f062 = 变量
+
+# NAME=value, one a line, or paste a .env file. {save} saves.
+tc682ceb0 = NAME=value，每行一个，或粘贴 .env 文件。{ $save } 保存。
+
+# Values are never shown: one left empty keeps the one it has; type one to change it. A line taken out takes its variable out. {save} saves.
+t2aa2ecec = 值不会显示：留空则保留现有值；输入内容则会更改。删除一行会同时删除对应变量。{ $save } 保存。
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
+
+# Asked for when it runs:
+t2d8c5e6d = 运行时询问：
+
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = 按 Enter 另起一行；各行依次运行。按 { $save } 保存。
+
 # The palette lists it in panes of those hosts only.
 t66336218 = 命令面板仅在这些主机的窗格中列出它。
+
+# Category
+tafb3e591 = 分类
+
+# Environments it needs
+tebd9fda9 = 所需环境
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 它在带有这些变量的子 shell 中运行；子 shell 结束后变量随之消失。
 
 # New snippet
 tff3f7838 = 新建代码片段
@@ -1666,11 +1726,26 @@ t32122ee4 = 运行：输入后按 Enter
 # None yet.
 t786bc275 = 还没有。
 
+# New environment…
+t0c42d278 = 新建环境…
+
 # New snippet…
 tec3111a4 = 新建代码片段…
 
+# Variables for the shell, such as an API's keys, kept encrypted in the vault and synced with it. Load one into a pane from the palette ({chord}, Load environment…) and unload it when done, or let a snippet that needs it have it for itself alone.
+t45b0673b = 供 shell 使用的变量，例如某个 API 的密钥，加密保存在保险库中并随之同步。可通过命令面板（{ $chord }，加载环境…）将其加载到窗格中，用完后卸载，也可以让需要它的代码片段单独使用。
+
 # Commands you run often. Run one from the palette ({chord}, then type its name): Enter runs it in the pane, {alt} in every pane of the tab. Kept in the vault, so they sync with your hosts.
 tb1ca142d = 常用的命令。从命令面板运行（按 { $chord }，然后输入名称）：Enter 在当前窗格中运行，{ $alt } 在该标签页的所有窗格中运行。保存在保险库中，因此会随主机一起同步。
+
+# While loaded, the server can read them
+te60c8275 = 加载期间，服务器可以读取它们
+
+# Values are sent with the echo off and kept out of the shell's history, but a shell that has them holds them in its memory: whoever has root on that server, or runs as your user there, can read them until they are unloaded or the shell ends.
+t87b5db80 = 值在关闭回显的情况下发送，也不会进入 shell 历史记录，但持有它们的 shell 会将其保存在内存中：在该服务器上拥有 root 权限的人，或以你的用户身份在那里运行的程序，可以在卸载或 shell 结束前读取它们。
+
+# Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
+t16991c40 = 请只在你信任的服务器上加载，用完后卸载，并优先使用会过期或权限很小的密钥，例如短期令牌或仅具备工作所需权限的角色。
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会按窗格的主机自动填入；其他 {"{{"}name{"}}"} 会在代码片段运行时询问。
@@ -1812,6 +1887,21 @@ t6246d272 = Cmd+W 关闭
 
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 关闭
+
+# A full-screen program is running in this pane: leave it, then try again.
+t20301272 = 此窗格中正在运行全屏程序：请先退出，然后重试。
+
+# It has no variables.
+t0993a534 = 它没有变量。
+
+# {name} cannot be loaded: a value of one line is needed.
+tc2bbea4b = 无法加载 { $name }：需要单行的值。
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = shell 未接受这些变量：它不在提示符处，或不是 POSIX shell（sh、bash、zsh）。
+
+# {name} is loaded into this shell.
+t5bc879d1 = { $name } 已加载到此 shell。
 
 # Log saved: {path}
 tcc43a8d9 = 日志已保存：{ $path }
@@ -1996,6 +2086,9 @@ t21a947cf = 关闭窗格
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 回到底部（Shift+End）
 
+# Snippets · {category}
+t85f58d76 = 代码片段 · { $category }
+
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter：{ $n } 个窗格
 
@@ -2010,6 +2103,18 @@ t6748f755 = { $snippet } · { $panes } · { $name }（{ $at }/{ $total }）
 
 # Will run
 teaaf5750 = 将运行
+
+# An environment this needs was deleted: edit the snippet.
+tb37e7456 = 此片段需要的某个环境已被删除：请编辑该代码片段。
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
+
+# loaded: Enter loads it again
+t1a97d76a = 已加载：按 Enter 可再次加载
+
+# Load an environment into this shell…
+td1cfd29b = 将环境加载到此 shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 请先拆分标签页：当前只有一个窗格可输入。
@@ -2094,6 +2199,12 @@ t13c5bc91 = { $title } 上的文件
 
 # Forward a port through {title}…
 t9f033387 = 通过 { $title } 转发端口…
+
+# Load environment…
+ta3f75e60 = 加载环境…
+
+# Unload environment: {names}
+tbe80f7b5 = 卸载环境：{ $names }
 
 # Change theme…
 t85a401b4 = 更换主题…

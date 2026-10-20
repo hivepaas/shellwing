@@ -40,12 +40,13 @@ pub enum Page {
     Keys,
     KnownHosts,
     Snippets,
+    Environments,
     Sync,
     Vault,
     About,
 }
 
-const PAGES: [Page; 11] = [
+const PAGES: [Page; 12] = [
     Page::General,
     Page::Appearance,
     Page::Terminal,
@@ -54,6 +55,7 @@ const PAGES: [Page; 11] = [
     Page::Keys,
     Page::KnownHosts,
     Page::Snippets,
+    Page::Environments,
     Page::Sync,
     Page::Vault,
     Page::About,
@@ -71,6 +73,7 @@ impl Page {
             Page::Keys => tr!("Keys"),
             Page::KnownHosts => tr!("Known hosts"),
             Page::Snippets => tr!("Snippets"),
+            Page::Environments => tr!("Environments"),
             Page::Sync => tr!("Sync"),
             Page::Vault => tr!("Vault"),
             Page::About => tr!("About"),
@@ -135,6 +138,8 @@ pub struct SettingsView {
     keys: Option<Entity<KeysView>>,
     /// The Snippets page, once shown.
     snippets: Option<Entity<SnippetsView>>,
+    /// The Environments page, once shown.
+    environments: Option<Entity<SnippetsView>>,
     /// The Known hosts page, once shown.
     known_hosts: Option<Entity<KnownHostsView>>,
     /// Where to sync, as typed before connecting.
@@ -419,6 +424,7 @@ impl SettingsView {
             custom_editor: custom,
             keys: None,
             snippets: None,
+            environments: None,
             known_hosts: None,
         }
     }
@@ -2240,6 +2246,24 @@ impl SettingsView {
         div().child(view)
     }
 
+    /// The Environments page, likewise.
+    fn environments_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
+        let view = match &self.environments {
+            Some(s) => s.clone(),
+            None => {
+                let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
+                else {
+                    return page(&tr!("Environments"));
+                };
+                let ws = self.workspace.clone();
+                let s = cx.new(|cx| SnippetsView::environments(ws, vault, cx));
+                self.environments = Some(s.clone());
+                s
+            }
+        };
+        div().child(view)
+    }
+
     fn about(&self) -> gpui::Div {
         page(&tr!("About"))
             .child(
@@ -2490,6 +2514,11 @@ impl Render for SettingsView {
                         {
                             s.update(cx, |s, cx| s.refresh(cx));
                         }
+                        if p == Page::Environments
+                            && let Some(s) = &v.environments
+                        {
+                            s.update(cx, |s, cx| s.refresh(cx));
+                        }
                         if p == Page::KnownHosts
                             && let Some(k) = &v.known_hosts
                         {
@@ -2508,6 +2537,7 @@ impl Render for SettingsView {
             Page::Ssh => self.ssh(cx),
             Page::Keys => self.keys_page(cx),
             Page::Snippets => self.snippets_page(cx),
+            Page::Environments => self.environments_page(cx),
             Page::KnownHosts => {
                 let view = self
                     .known_hosts

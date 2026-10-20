@@ -7664,6 +7664,7 @@ dependencies = [
  "shellwing-vault",
  "tokio",
  "unicode-segmentation",
+ "zeroize",
 ]
 
 [[package]]

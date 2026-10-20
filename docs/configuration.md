@@ -535,8 +535,10 @@ found:
 
 Snippets are commands you run often. They are kept in the vault (`vault.db`,
 encrypted, never in a file of their own) and sync with it. Make and edit them
-in *Settings › Snippets*: a name, a command, the hosts they are offered for
-(every host, a group or one host), and whether Enter is pressed after typing.
+in *Settings › Snippets*: a name, a category, a command, the hosts they are
+offered for (every host, a group or one host), the environments they need, and
+whether Enter is pressed after typing. With many snippets, a category files
+them: Settings and the palette list them under it (*Snippets · Deploy*).
 
 A command can take several lines: Enter starts another, Ctrl+Enter (Cmd+Enter
 on macOS) saves. It is sent to the pane as one paste, so a shell with bracketed
@@ -552,6 +554,40 @@ In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
 In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
 pane's host. Any other `{{name}}` is asked for first, with the command shown as
 it will run.
+
+## Environments
+
+Environments are named sets of variables for the shell, such as an API's
+keys: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. They are kept in the vault,
+encrypted, and sync with it. Make them in *Settings › Environments*: a name, the
+hosts they are offered for, and the variables as `.env` text (`NAME=value` a
+line; `export`, `#` comments and quotes are taken; paste a `.env` file as is).
+Once saved, values are never shown: editing lists the names, and a value left
+empty keeps the one it had.
+
+Nothing is loaded by itself. You choose when, and what:
+
+- **Load environment…** in the palette loads one into the focused pane's
+  shell; the pane shows a badge for each one loaded. **Unload environment**, or
+  the badge's ✕, unsets its variables.
+- A snippet that **needs** environments runs in a subshell that has them, and
+  they are gone when it ends; the pane's shell never gets them.
+
+To load, shellwing types a command that turns the terminal's echo off, says it
+is ready (with an escape sequence its terminal reads and never shows), and only
+then sends the values, one a line, for `read` to take. The command holds the
+names only, and starts with a space, which keeps it out of the history of
+bash (with `HISTCONTROL=ignorespace`, the default on most systems) and zsh
+(with `HIST_IGNORE_SPACE`). A POSIX shell (sh, bash, zsh) at its prompt is
+needed; not while a full-screen program runs; fish is not supported yet. A
+value takes one line.
+
+While loaded, the variables are in the shell's memory on the server: whoever
+has root there, or runs as your user, can read them, until they are unloaded or
+the shell ends (unloading frees them in the shell, though not every copy a
+program made). Load them on servers you trust, unload them when done, and
+prefer credentials that expire or can do little: short-lived tokens, or a role
+with only what the work needs.
 
 ## Typing in every pane
 
