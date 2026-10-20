@@ -2,8 +2,8 @@
 
 CI builds and tests every push to main and every pull request into main on Linux
 (x86_64); pull requests stacked on other branches run once retargeted to main. macOS
-(arm64) and Windows (x86_64) runs cost more Actions minutes, so they start only
-by hand: Actions → CI → Run workflow, pick the branch and the platforms, or
+(arm64) and Windows (x86_64) run when started by hand, once a feature is ready:
+Actions → CI → Run workflow, pick the branch and the platforms, or
 `gh workflow run ci.yml --ref <branch> -f platforms=all`. Each run uploads the
 binaries as workflow artifacts (`shellwing-<platform>`), so a test machine does
 not need a toolchain: download the artifact from the run's summary page.
@@ -75,22 +75,14 @@ whether rendering is fast:
 
 Microsoft's Windows 11 Enterprise evaluation image works for testing.
 
-## Vietnamese input
-
-| Platform | How |
-| --- | --- |
-| macOS | System Settings → Keyboard → Input Sources → add Vietnamese, then pick **Telex** or **VNI** |
-| Windows | Settings → Time & language → Language & region → add Vietnamese → Language options → add the **Vietnamese Telex** (or VNI) keyboard |
-| Linux | ibus or fcitx5 with Bamboo or Unikey |
-
 ## What to check by hand
 
 Connect to any SSH server you can reach (`shellwing user@host`), with the key in
 your ssh-agent (OpenSSH agent or Pageant on Windows) or `SHELLWING_PASSWORD`.
 
 1. Typing, Enter, Backspace, arrows, Ctrl+C; `htop` and `vim` (including the mouse).
-2. Vietnamese: type `tieesng Vieejt ` with Telex; the composing text shows at the
-   cursor and "tiếng Việt" reaches the shell.
+2. Input methods: with an input source that composes text (an IME), the
+   composing text shows at the cursor and the committed text reaches the shell.
 3. Resize the window; the remote program follows.
 4. Scrollback with the wheel or trackpad, the "Back to bottom" badge, Shift+PageUp.
 5. Select with the mouse, copy (Ctrl+Shift+C, Cmd+C on macOS), paste
