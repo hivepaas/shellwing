@@ -15,10 +15,32 @@ use fluent_bundle::concurrent::FluentBundle;
 use fluent_bundle::{FluentArgs, FluentResource, FluentValue};
 
 /// The languages there are, by tag, each named in itself.
-pub const LANGUAGES: &[(&str, &str)] = &[("en", "English"), ("vi", "Tiếng Việt")];
+pub const LANGUAGES: &[(&str, &str)] = &[
+    ("en", "English"),
+    ("de", "Deutsch"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("pt", "Português (Brasil)"),
+    ("vi", "Tiếng Việt"),
+    ("ru", "Русский"),
+    ("ja", "日本語"),
+    ("ko", "한국어"),
+    ("zh", "简体中文"),
+];
 
-/// The translations, by language tag (English is the code's own).
-const CATALOGS: &[(&str, &str)] = &[("vi", include_str!("../locales/vi.ftl"))];
+/// The translations, by language tag (English is the code's own). `pt` is
+/// Brazil's Portuguese, `zh` simplified Chinese.
+const CATALOGS: &[(&str, &str)] = &[
+    ("de", include_str!("../locales/de.ftl")),
+    ("es", include_str!("../locales/es.ftl")),
+    ("fr", include_str!("../locales/fr.ftl")),
+    ("ja", include_str!("../locales/ja.ftl")),
+    ("ko", include_str!("../locales/ko.ftl")),
+    ("pt", include_str!("../locales/pt.ftl")),
+    ("ru", include_str!("../locales/ru.ftl")),
+    ("vi", include_str!("../locales/vi.ftl")),
+    ("zh", include_str!("../locales/zh.ftl")),
+];
 
 /// The language in use, and its translations.
 struct Current {
@@ -295,6 +317,22 @@ mod tests {
             }
         }
         let _turn = ONE_AT_A_TIME.lock();
+        // Russian's three forms that show, by the count.
+        set_language(Some("ru"));
+        let hosts = |n: i64| tr_n!(n, "{n} host", "{n} hosts");
+        assert_ne!(hosts(1), hosts(3));
+        assert_ne!(hosts(3), hosts(5));
+        assert_eq!(hosts(21), hosts(1).replace('1', "21"));
+        // Every language says every message whole: no `{` left of Fluent's.
+        for (tag, _) in CATALOGS {
+            set_language(Some(tag));
+            for n in [1, 2, 5] {
+                let said = tr_n!(n, "{n} host", "{n} hosts");
+                assert!(said.contains(&n.to_string()), "{tag}: {said}");
+            }
+            let said = tr!("Sync: {e}", e = "x");
+            assert!(said.contains('x') && !said.contains('$'), "{tag}: {said}");
+        }
         set_language(Some("vi"));
         assert_eq!(tr!("Sync now"), "Đồng bộ ngay");
         assert_eq!(tr_n!(3, "{n} host", "{n} hosts"), "3 máy chủ");

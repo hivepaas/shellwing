@@ -16,7 +16,9 @@ id is the FNV-1a hash of its English, as crates/i18n computes it.
     scripts/i18n.py apply LANG FILE
                              takes translations from FILE, lines of an id, a
                              tab, and the text (`{name}` for a value, as in
-                             the English), into LANG's file.
+                             the English), into LANG's file. A count's forms:
+                             `[one] {n} file || [other] {n} files`, in the
+                             language's plural categories, `other` last.
 """
 
 import pathlib
@@ -216,6 +218,23 @@ def todo(lang):
             print(mid + "\t" + (one if other is None else one + " | " + other).replace("\n", "\\n"))
 
 
+def plural_entry(mid, text):
+    """A count's forms, `[one] … || [few] … || [other] …`, as a Fluent
+    select on `$n` (the last is the default)."""
+    forms = []
+    for part in text.split("||"):
+        m = re.match(r"\s*\[([a-z]+)\]\s*(.*)$", part, re.S)
+        if not m:
+            raise SystemExit(f"{mid}: a plural form must start with [one], [few], [many] or [other]: {part!r}")
+        forms.append((m.group(1), m.group(2).strip()))
+    lines = [mid + " =", "    { $n ->"]
+    for i, (cat, form) in enumerate(forms):
+        star = "*" if i == len(forms) - 1 else " "
+        lines.append("       " + star + "[" + cat + "]" + fluent_text(form, " " * 12))
+    lines.append("    }")
+    return lines
+
+
 def apply(lang, tsv):
     found = messages()
     path = LOCALES / f"{lang}.ftl"
@@ -229,7 +248,10 @@ def apply(lang, tsv):
         if mid not in found:
             print(f"{mid}: not a message of the code; skipped")
             continue
-        entries[mid] = [mid + " =" + fluent_text(text.replace("\\n", "\n"))]
+        text = text.replace("\\n", "\n")
+        entries[mid] = plural_entry(mid, text) if text.lstrip().startswith("[") else [
+            mid + " =" + fluent_text(text)
+        ]
         taken += 1
     write_catalog(path, found, header, entries)
     print(f"{path.name}: {taken} taken")
