@@ -5078,7 +5078,9 @@ impl Render for Workspace {
                         .justify_center()
                         // At its own height: a flex row would stretch it to the bottom.
                         .items_start()
+                        // The same margin below as above.
                         .pt(px(56.))
+                        .pb(px(56.))
                         .bg(rgba(colors().scrim))
                         .on_mouse_down(
                             MouseButton::Left,
