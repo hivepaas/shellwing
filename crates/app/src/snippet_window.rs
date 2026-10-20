@@ -1100,7 +1100,9 @@ impl Render for SnippetWindow {
                 MouseButton::Left,
                 cx.listener(|v, _, _, cx| (v.hooks.touched)(cx)),
             )
-            .size_full()
+            // What is left under the title bar, not the window's height.
+            .flex_1()
+            .min_h_0()
             .flex()
             .flex_col()
             .text_size(ui(13.))
@@ -1139,7 +1141,7 @@ impl Render for SnippetWindow {
             .px(px(14.))
             .text_size(ui(13.))
             .child(shown_name);
-        let content = div().size_full().flex().flex_col().child(content);
+        let content = div().flex_1().min_h_0().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
     }
