@@ -148,6 +148,16 @@ lays out otherwise and selects nothing); it selects and copies.
 **Why:** the thumb was hard to see, and a mouse without a sideways wheel had no
 way along a wide table but that thumb.
 
+### 9. A quick drag selects all the way; the menu opens under the selection
+
+| Where | What |
+|---|---|
+| `src/element.rs`, `paint` (before the read-only `handle_input`) | While `is_selecting`, a window-level mouse-move listener (capture phase) moves the selection's end as `on_mouse_move` does (`table_offset_at`, else `index_for_mouse_position`): the editor's own listener hears the mouse only over it, and a quick drag left it first. |
+| `src/lib.rs`, `on_mouse_up` (change 5's menu on a selection) | The menu's anchor is under the selection's head (`bounds_for_offset(cursor_offset())`, 6 px below), not where the button was let go. |
+
+**Why:** a quick drag stopped short; let go outside the editor, the menu sat at
+the window's edge.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.

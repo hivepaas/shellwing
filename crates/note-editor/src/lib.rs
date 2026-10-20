@@ -3715,8 +3715,15 @@ impl EditorState {
             && !self.selected_range.is_empty()
             && self.menu.is_none()
         {
+            // shellwing: under the selection's head, where the eye is, not
+            // where the button was let go (outside the editor, a quick drag
+            // put it at the window's edge) (UPSTREAM.md, change 9).
+            let anchor = self
+                .bounds_for_offset(self.cursor_offset())
+                .map(|b| point(b.left(), b.bottom() + px(6.)))
+                .unwrap_or(event.position + point(px(0.), px(10.)));
             self.menu = Some(DiagMenu {
-                anchor: event.position + point(px(0.), px(10.)),
+                anchor,
                 range: self.selected_range.end..self.selected_range.end,
                 suggestions: Vec::new(),
                 scroll: ScrollHandle::new(),

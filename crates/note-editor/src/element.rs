@@ -1512,6 +1512,25 @@ impl Element for EditorElement {
         cx: &mut App,
     ) {
         let focus = self.editor.read(cx).focus_handle.clone();
+        // shellwing: while a selection is dragged, the mouse anywhere in the
+        // window moves its end: a quick drag leaves the editor before it
+        // says where it is, and the selection stopped short (UPSTREAM.md,
+        // change 9).
+        if self.editor.read(cx).is_selecting {
+            let editor = self.editor.clone();
+            window.on_mouse_event(move |e: &MouseMoveEvent, phase, window, cx| {
+                if phase == gpui::DispatchPhase::Capture {
+                    editor.update(cx, |ed, cx| {
+                        if ed.is_selecting {
+                            let offset = ed
+                                .table_offset_at(e.position, window)
+                                .unwrap_or_else(|| ed.index_for_mouse_position(e.position));
+                            ed.select_to(offset, cx);
+                        }
+                    });
+                }
+            });
+        }
         // shellwing: read-only (UPSTREAM.md, change 6): no text input.
         if !self.editor.read(cx).read_only {
             window.handle_input(
