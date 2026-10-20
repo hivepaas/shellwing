@@ -13,6 +13,21 @@ tbf2a5d3a = エディタのコマンドがありません
 # no text editor found
 t6256b3da = テキストエディタが見つかりません
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = コマンドは { $size } KB です。最大 { $max } KB です。
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: 名前は最大 { $max } 文字です。
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } は { $size } KB です。値は最大 { $max } KB です。
+
+# {count} variables; {max} at most.
+t1c9f770c = 変数が { $count } 個あります。最大 { $max } 個です。
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = 変数の合計は { $size } KB です。最大 { $max } KB です。
+
 # Name
 t0fe07306 = 名前
 
@@ -1944,6 +1959,9 @@ t20301272 = このペインではフルスクリーンのプログラムが動�
 
 # It has no variables.
 t0993a534 = 変数がありません。
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = 読み込み済みのものと合わせて { $size } KB になります。シェルは最大 { $max } KB です。先にどれかの読み込みを解除してください。
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = シェルが変数を受け取りませんでした。プロンプトの状態でないか、POSIX シェル（sh、bash、zsh）ではありません。

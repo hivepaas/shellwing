@@ -13,6 +13,21 @@ tbf2a5d3a = 편집기 명령 없음
 # no text editor found
 t6256b3da = 텍스트 편집기를 찾을 수 없음
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = 명령이 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: 이름은 최대 { $max }자입니다.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name }이(가) { $size }KB입니다. 값은 최대 { $max }KB입니다.
+
+# {count} variables; {max} at most.
+t1c9f770c = 변수가 { $count }개입니다. 최대 { $max }개입니다.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = 변수 합계가 { $size }KB입니다. 최대 { $max }KB입니다.
+
 # Name
 t0fe07306 = 이름
 
@@ -1944,6 +1959,9 @@ t20301272 = 이 창에서 전체 화면 프로그램이 실행 중입니다. 종
 
 # It has no variables.
 t0993a534 = 변수가 없습니다.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = 불러온 것과 합치면 { $size }KB입니다. 셸은 최대 { $max }KB까지 받습니다. 먼저 하나를 해제하세요.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = 셸이 변수를 받지 않았습니다. 프롬프트 상태가 아니거나 POSIX 셸(sh, bash, zsh)이 아닙니다.

@@ -253,8 +253,10 @@ impl SnippetsView {
             .vault
             .get()
             .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.save_snippet(&s).map_err(|e| e.to_string()))
-        {
+            .and_then(|v| {
+                v.save_snippet(&s)
+                    .map_err(|e| crate::environment::said_error(&e))
+            }) {
             Ok(_) => {
                 self.close(window, cx);
                 self.vault_changed(cx);

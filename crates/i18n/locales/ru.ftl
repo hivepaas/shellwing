@@ -19,6 +19,21 @@ tbf2a5d3a = нет команды редактора
 # no text editor found
 t6256b3da = текстовый редактор не найден
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = Команда занимает { $size } КБ; не больше { $max } КБ.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: имя — не больше { $max } символов.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } занимает { $size } КБ; значение — не больше { $max } КБ.
+
+# {count} variables; {max} at most.
+t1c9f770c = Переменных: { $count }; не больше { $max }.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Переменные занимают { $size } КБ; не больше { $max } КБ.
+
 # Name
 t0fe07306 = Имя
 
@@ -2037,6 +2052,9 @@ t20301272 = В этой панели запущена полноэкранная
 
 # It has no variables.
 t0993a534 = В нём нет переменных.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Вместе с загруженными это { $size } КБ; оболочка принимает не больше { $max } КБ: сначала выгрузите одно.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Оболочка не приняла переменные: она не на приглашении или это не POSIX-оболочка (sh, bash, zsh).

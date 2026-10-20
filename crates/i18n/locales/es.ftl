@@ -17,6 +17,21 @@ tbf2a5d3a = sin comando de editor
 # no text editor found
 t6256b3da = no se encontró ningún editor de texto
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = El comando ocupa { $size } KB; { $max } KB como máximo.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: un nombre admite { $max } caracteres como máximo.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } ocupa { $size } KB; un valor admite { $max } KB como máximo.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } variables; { $max } como máximo.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Las variables suman { $size } KB; { $max } KB como máximo.
+
 # Name
 t0fe07306 = Nombre
 
@@ -2005,6 +2020,9 @@ t20301272 = Hay un programa de pantalla completa en este panel: sal de él y vue
 
 # It has no variables.
 t0993a534 = No tiene variables.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Con los ya cargados, suman { $size } KB; una shell admite { $max } KB como máximo: descarga uno primero.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = La shell no aceptó las variables: no está en su prompt o no es una shell POSIX (sh, bash, zsh).

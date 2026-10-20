@@ -13,6 +13,21 @@ tbf2a5d3a = chưa có lệnh mở trình soạn thảo
 # no text editor found
 t6256b3da = không tìm thấy trình soạn thảo văn bản
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: tên biến tối đa { $max } ký tự.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } dài { $size } KB; mỗi giá trị tối đa { $max } KB.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } biến; tối đa { $max }.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
+
 # Name
 t0fe07306 = Tên
 
@@ -1944,6 +1959,9 @@ t20301272 = Một chương trình toàn màn hình đang chạy trong pane này:
 
 # It has no variables.
 t0993a534 = Nó không có biến nào.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Cộng với các bộ đang nạp là { $size } KB; một shell nhận tối đa { $max } KB: hãy gỡ bớt một bộ trước.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).

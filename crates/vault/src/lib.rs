@@ -96,9 +96,95 @@ pub enum Error {
     /// Too easy to guess for a folder others may read: `zxcvbn`'s score, 0–4.
     #[error("the passphrase is too easy to guess (strength {0} of 4; 3 is needed)")]
     GuessablePassphrase(u8),
+    #[error("{0}")]
+    TooLarge(Oversize),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// How much a snippet or an environment holds at most. A shell takes an
+/// exported variable of 128 KB at most (Linux's `MAX_ARG_STRLEN`), and
+/// all of them with a command's arguments in about 2 MB (`ARG_MAX`):
+/// past that, every program it starts fails. These stay well within, and
+/// keep each record light to sync.
+pub mod limits {
+    /// A snippet's command, in bytes.
+    pub const COMMAND: usize = 64 * 1024;
+    /// A variable's name.
+    pub const NAME: usize = 128;
+    /// A variable's value, in bytes.
+    pub const VALUE: usize = 32 * 1024;
+    /// The variables of an environment.
+    pub const VARS: usize = 100;
+    /// An environment: its `NAME=value`s, in bytes.
+    pub const ENVIRONMENT: usize = 64 * 1024;
+    /// The environments loaded into one shell, together.
+    pub const LOADED: usize = 256 * 1024;
+}
+
+/// What is past one of the [`limits`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Oversize {
+    /// A command of this many bytes.
+    Command(usize),
+    /// A variable's name, too long.
+    Name(String),
+    /// A variable whose value has this many bytes.
+    Value(String, usize),
+    /// This many variables.
+    Vars(usize),
+    /// An environment of this many bytes.
+    Environment(usize),
+}
+
+impl std::fmt::Display for Oversize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let kb = |n: usize| n.div_ceil(1024);
+        match self {
+            Oversize::Command(n) => write!(
+                f,
+                "the command is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::COMMAND)
+            ),
+            Oversize::Name(n) => write!(f, "{n}: a name takes {} characters at most", limits::NAME),
+            Oversize::Value(n, b) => write!(
+                f,
+                "{n} is {} KB; a value takes {} KB at most",
+                kb(*b),
+                kb(limits::VALUE)
+            ),
+            Oversize::Vars(n) => write!(f, "{n} variables; {} at most", limits::VARS),
+            Oversize::Environment(n) => write!(
+                f,
+                "the variables come to {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::ENVIRONMENT)
+            ),
+        }
+    }
+}
+
+/// What of `vars` (names and values) is past the [`limits`], if any.
+pub fn environment_oversize<'a>(
+    vars: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Option<Oversize> {
+    let (mut count, mut total) = (0, 0);
+    for (name, value) in vars {
+        if name.chars().count() > limits::NAME {
+            return Some(Oversize::Name(name.to_string()));
+        }
+        if value.len() > limits::VALUE {
+            return Some(Oversize::Value(name.to_string(), value.len()));
+        }
+        count += 1;
+        total += name.len() + 1 + value.len();
+    }
+    if count > limits::VARS {
+        return Some(Oversize::Vars(count));
+    }
+    (total > limits::ENVIRONMENT).then_some(Oversize::Environment(total))
+}
 
 /// Why a vault waits to be opened, and what opens it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1089,6 +1175,9 @@ impl Vault {
 
     /// Keeps a snippet, new when its id is empty; returns its id.
     pub fn save_snippet(&self, s: &Snippet) -> Result<String> {
+        if s.command.len() > limits::COMMAND {
+            return Err(Error::TooLarge(Oversize::Command(s.command.len())));
+        }
         let id = if s.id.is_empty() {
             new_id()?
         } else {
@@ -1182,6 +1271,12 @@ impl Vault {
             if !value.is_empty() {
                 values.insert(format!("var:{var}"), value);
             }
+        }
+        let vars = values
+            .iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix("var:")?, v.as_str())));
+        if let Some(o) = environment_oversize(vars) {
+            return Err(Error::TooLarge(o));
         }
         self.update(&id, "environment", name, &values)?;
         Ok(id)
@@ -1836,6 +1931,56 @@ mod tests {
         ));
         Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
             .expect("the passphrase still opens it");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn snippets_and_environments_stay_within_limits() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-limits-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let s = Snippet {
+            id: String::new(),
+            name: "big".into(),
+            command: "x".repeat(limits::COMMAND + 1),
+            scope: String::new(),
+            enter: true,
+            category: String::new(),
+            needs: vec![],
+        };
+        assert!(matches!(
+            v.save_snippet(&s),
+            Err(Error::TooLarge(Oversize::Command(_)))
+        ));
+        let big = "v".repeat(limits::VALUE + 1);
+        assert!(matches!(
+            v.save_environment("", "e", "", &[("A".into(), Some(big))]),
+            Err(Error::TooLarge(Oversize::Value(n, _))) if n == "A"
+        ));
+        // Three values that fit alone, too much together.
+        let third = "v".repeat(limits::VALUE - 10);
+        let vars: Vec<(String, Option<String>)> = ["A", "B", "C"]
+            .iter()
+            .map(|n| (n.to_string(), Some(third.clone())))
+            .collect();
+        assert!(matches!(
+            v.save_environment("", "e", "", &vars),
+            Err(Error::TooLarge(Oversize::Environment(_)))
+        ));
+        // A kept value counts as it is.
+        let id = v
+            .save_environment("", "e", "", &vars[..1])
+            .expect("one fits");
+        let more = [(vars[0].0.clone(), None), vars[1].clone(), vars[2].clone()];
+        assert!(v.save_environment(&id, "e", "", &more).is_err());
+        let many: Vec<(String, Option<String>)> = (0..=limits::VARS)
+            .map(|i| (format!("V{i}"), Some("1".into())))
+            .collect();
+        assert!(matches!(
+            v.save_environment("", "e", "", &many),
+            Err(Error::TooLarge(Oversize::Vars(_)))
+        ));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

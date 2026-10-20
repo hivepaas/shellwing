@@ -167,7 +167,7 @@ impl SnippetsView {
             .ok_or_else(|| tr!("the vault is not open"))
             .and_then(|v| {
                 v.save_environment(&id, &n, &scope, &vars)
-                    .map_err(|e| e.to_string())
+                    .map_err(|e| environment::said_error(&e))
             });
         match saved {
             Ok(_) => {

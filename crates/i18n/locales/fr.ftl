@@ -17,6 +17,21 @@ tbf2a5d3a = aucune commande d'éditeur
 # no text editor found
 t6256b3da = aucun éditeur de texte trouvé
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = La commande fait { $size } Ko ; { $max } Ko au maximum.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name } : un nom compte { $max } caractères au maximum.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } fait { $size } Ko ; une valeur fait { $max } Ko au maximum.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } variables ; { $max } au maximum.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Les variables font { $size } Ko ; { $max } Ko au maximum.
+
 # Name
 t0fe07306 = Nom
 
@@ -2005,6 +2020,9 @@ t20301272 = Un programme plein écran s'exécute dans ce panneau : quittez-le, p
 
 # It has no variables.
 t0993a534 = Il n'a pas de variables.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Avec ceux déjà chargés, cela fait { $size } Ko ; un shell en accepte { $max } Ko au maximum : déchargez-en un d'abord.
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Le shell n'a pas pris les variables : il n'est pas à son invite, ou n'est pas un shell POSIX (sh, bash, zsh).

@@ -13,6 +13,21 @@ tbf2a5d3a = 未设置编辑器命令
 # no text editor found
 t6256b3da = 未找到文本编辑器
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = 命令为 { $size } KB；最多 { $max } KB。
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }：名称最多 { $max } 个字符。
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } 为 { $size } KB；每个值最多 { $max } KB。
+
+# {count} variables; {max} at most.
+t1c9f770c = 共 { $count } 个变量；最多 { $max } 个。
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = 变量合计 { $size } KB；最多 { $max } KB。
+
 # Name
 t0fe07306 = 名称
 
@@ -1944,6 +1959,9 @@ t20301272 = 此窗格中正在运行全屏程序：请先退出，然后重试�
 
 # It has no variables.
 t0993a534 = 它没有变量。
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = 加上已加载的，共 { $size } KB；一个 shell 最多 { $max } KB：请先卸载一个。
 
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = shell 未接受这些变量：它不在提示符处，或不是 POSIX shell（sh、bash、zsh）。

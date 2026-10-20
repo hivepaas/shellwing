@@ -545,6 +545,11 @@ impl Workspace {
         else {
             return;
         };
+        // Kept within the limit, whatever device saved it.
+        if snippet.command.len() > shellwing_vault::limits::COMMAND {
+            let o = shellwing_vault::Oversize::Command(snippet.command.len());
+            return self.say(crate::environment::said_oversize(&o), CONFIG_NOTICE, cx);
+        }
         let left = snippets::asked(&snippet.command);
         self.ask_snippet(
             SnippetRun {
@@ -691,6 +696,7 @@ impl Workspace {
                             id: env.id.clone(),
                             name: env.name.clone(),
                             names: vec![],
+                            bytes: 0,
                         },
                         values,
                         cx,
