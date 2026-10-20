@@ -293,6 +293,66 @@ struct DiagMenu {
     turn_into: bool,
 }
 
+/// shellwing: an inline format of [`EditorState::toggle_inline`].
+/// (UPSTREAM.md, change 4.)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum InlineFormat {
+    Bold,
+    Italic,
+    Strike,
+    Code,
+    Underline,
+    Highlight,
+}
+
+/// shellwing: a kind of block of [`EditorState::turn_block`] (the "Turn
+/// into" kinds, math left out). (UPSTREAM.md, change 4.)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BlockKind {
+    Text,
+    H1,
+    H2,
+    H3,
+    Bullet,
+    Numbered,
+    Todo,
+    Quote,
+    Callout,
+    Code,
+}
+
+impl BlockKind {
+    fn turn(self) -> TurnKind {
+        match self {
+            BlockKind::Text => TurnKind::Text,
+            BlockKind::H1 => TurnKind::H1,
+            BlockKind::H2 => TurnKind::H2,
+            BlockKind::H3 => TurnKind::H3,
+            BlockKind::Bullet => TurnKind::Bullet,
+            BlockKind::Numbered => TurnKind::Numbered,
+            BlockKind::Todo => TurnKind::Todo,
+            BlockKind::Quote => TurnKind::Quote,
+            BlockKind::Callout => TurnKind::Callout,
+            BlockKind::Code => TurnKind::Code,
+        }
+    }
+
+    fn of(t: TurnKind) -> BlockKind {
+        match t {
+            TurnKind::Text | TurnKind::Math => BlockKind::Text,
+            TurnKind::H1 => BlockKind::H1,
+            TurnKind::H2 => BlockKind::H2,
+            TurnKind::H3 => BlockKind::H3,
+            TurnKind::Bullet => BlockKind::Bullet,
+            TurnKind::Numbered => BlockKind::Numbered,
+            TurnKind::Todo => BlockKind::Todo,
+            TurnKind::Quote => BlockKind::Quote,
+            TurnKind::Callout => BlockKind::Callout,
+            TurnKind::Code => BlockKind::Code,
+        }
+    }
+}
+
 /// A block kind the right-click "Turn into" menu converts between —
 /// flat-markdown natural: each conversion is a line-prefix rewrite (fenced
 /// kinds wrap/unwrap the block's lines).
@@ -4106,6 +4166,43 @@ impl EditorState {
         TurnKind::Text
     }
 
+    /// shellwing: toggles an inline format on the selection, as the editor's
+    /// own keys do (`**`, `*`, `~~`, `<u>`, `` ` ``, `==`): for the host's bar
+    /// over the selection. (UPSTREAM.md, change 4.)
+    pub fn toggle_inline(&mut self, f: InlineFormat, cx: &mut Context<Self>) {
+        match f {
+            InlineFormat::Bold => self.toggle_wrap("**", cx),
+            InlineFormat::Italic => self.toggle_wrap("*", cx),
+            InlineFormat::Strike => self.toggle_wrap("~~", cx),
+            InlineFormat::Code => self.toggle_wrap("`", cx),
+            InlineFormat::Underline => self.toggle_wrap_pair("<u>", "</u>", cx),
+            InlineFormat::Highlight => {
+                self.strip_color(ColorKind::Highlight);
+                self.toggle_wrap("==", cx);
+            }
+        }
+    }
+
+    /// shellwing: turns the caret's block into `kind` (back to text when it
+    /// is one already), as the "Turn into" menu does. (UPSTREAM.md, change 4.)
+    pub fn turn_block(&mut self, kind: BlockKind, window: &mut Window, cx: &mut Context<Self>) {
+        let want = kind.turn();
+        let row = self.row_col(self.selected_range.start).0;
+        let to = if self.block_kind_at(row) == want && want != TurnKind::Text {
+            TurnKind::Text
+        } else {
+            want
+        };
+        self.turn_into(to, window, cx);
+    }
+
+    /// shellwing: the caret's block, for the host's bar to show it.
+    /// (UPSTREAM.md, change 4.)
+    pub fn block_at_caret(&self) -> BlockKind {
+        let row = self.row_col(self.selected_range.start).0;
+        BlockKind::of(self.block_kind_at(row))
+    }
+
     /// Convert the caret's block to `kind` — the "Turn into" menu action.
     /// One undoable edit rewriting the block's lines; fenced kinds (code,
     /// math) and quote runs convert as whole blocks.
@@ -5605,8 +5702,11 @@ impl Render for EditorState {
                     }));
                 let turn_labels = self.labels.clone();
                 let turn_flyout = menu_turn_into.then(|| {
+                    // shellwing: no math block while math is off
+                    // (obsidian.rs; UPSTREAM.md, change 2).
                     let rows: Vec<_> = TurnKind::ALL
                         .iter()
+                        .filter(|k| crate::obsidian::MATH || **k != TurnKind::Math)
                         .enumerate()
                         .map(|(i, &k)| {
                             let checked = k == cur_kind;
@@ -6962,6 +7062,45 @@ mod tests {
     /// #119: Windows' IME reports the caret inside the composition relative to
     /// the composed text. With text before it in the note, that offset must not
     /// be read against the document — it landed mid-character and crashed.
+    // shellwing: the host's bar formats as the editor's keys do
+    // (UPSTREAM.md, change 4).
+    #[gpui::test]
+    fn the_hosts_formats_go_on_and_come_off(cx: &mut gpui::TestAppContext) {
+        use super::{BlockKind, InlineFormat};
+        let editor = cx.update(|cx| {
+            cx.open_window(Default::default(), |window, cx| {
+                cx.new(|cx| EditorState::new(window, cx).with_text("restart the app"))
+            })
+            .unwrap()
+        });
+        editor
+            .update(cx, |e, window, cx| {
+                e.select(8..11, cx);
+                assert_eq!(e.selected_range(), 8..11);
+                e.toggle_inline(InlineFormat::Bold, cx);
+                assert_eq!(e.content, "restart **the** app");
+                // The same text stays selected: a second press takes it off.
+                e.toggle_inline(InlineFormat::Bold, cx);
+                assert_eq!(e.content, "restart the app");
+                e.toggle_inline(InlineFormat::Italic, cx);
+                assert_eq!(e.content, "restart *the* app");
+                e.toggle_inline(InlineFormat::Italic, cx);
+                e.toggle_inline(InlineFormat::Underline, cx);
+                assert_eq!(e.content, "restart <u>the</u> app");
+                e.toggle_inline(InlineFormat::Underline, cx);
+                // The caret's block: a list, then back to text.
+                assert_eq!(e.block_at_caret(), BlockKind::Text);
+                e.turn_block(BlockKind::Bullet, window, cx);
+                assert_eq!(e.content, "- restart the app");
+                assert_eq!(e.block_at_caret(), BlockKind::Bullet);
+                e.turn_block(BlockKind::Bullet, window, cx);
+                assert_eq!(e.content, "restart the app");
+                e.turn_block(BlockKind::H2, window, cx);
+                assert_eq!(e.content, "## restart the app");
+            })
+            .unwrap();
+    }
+
     #[gpui::test]
     fn ime_composition_caret_is_relative_to_the_composed_text(cx: &mut gpui::TestAppContext) {
         let editor = cx.update(|cx| {

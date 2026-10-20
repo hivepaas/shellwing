@@ -73,6 +73,20 @@ tag and a property; `$` is a shell's; shellwing has no math or mermaid renderer.
 **Why:** shellwing's bar over the selection (copy, insert into the shell, Markdown
 formats) reads and sets the selection.
 
+### 4. Formats for the host's bar
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, before `enum TurnKind` | Added `pub enum InlineFormat` (bold, italic, strike, code, underline, highlight) and `pub enum BlockKind` (the "Turn into" kinds without math), with `BlockKind::turn` / `BlockKind::of` to and from `TurnKind`. |
+| `src/lib.rs`, `impl EditorState` (before `turn_into`) | Added `toggle_inline(f, cx)` (calls `toggle_wrap` / `toggle_wrap_pair` as the `bold`, `italic`, `strike`, `code`, `underline`, `highlight` actions do), `turn_block(kind, window, cx)` (calls `turn_into`; back to text when the block is that kind already), `block_at_caret()` (from `block_kind_at`). |
+| `src/lib.rs`, the "Turn into" flyout (`TurnKind::ALL` in `render`) | Leaves out `TurnKind::Math` while `obsidian::MATH` is off. |
+
+Test: `the_hosts_formats_go_on_and_come_off` in `lib.rs`'s tests.
+
+**Why:** shellwing's bar over the selection formats as the editor's own keys and
+menu do, rather than with rules of its own that disagreed (`_` against `*`, a
+fenced block of the selection against the caret's block).
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.

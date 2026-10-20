@@ -577,15 +577,21 @@ impl NoteWindow {
         }
     }
 
-    /// The selection formatted as Markdown (or the format taken off).
-    fn format(&mut self, f: crate::md_format::Format, cx: &mut Context<Self>) {
-        let text = self.text.read(cx).text().to_string();
+    /// The selection as a link, `[it](url)`, `url` selected to type over
+    /// (the editor has no link of its own).
+    fn link(&mut self, cx: &mut Context<Self>) {
         let sel = self.text.read(cx).selected_range();
-        let (new, select) = crate::md_format::apply(&text, sel, f);
-        let len = text.len();
+        let text = self
+            .text
+            .read(cx)
+            .text()
+            .get(sel.clone())
+            .unwrap_or("")
+            .to_string();
+        let url = sel.start + text.len() + 3;
         self.text.update(cx, |e, cx| {
-            e.replace_range(0..len, &new, cx);
-            e.select(select, cx);
+            e.replace_range(sel, &format!("[{text}](url)"), cx);
+            e.select(url..url + 3, cx);
         });
         // A replace says nothing: an edit all the same.
         self.edited(cx);
@@ -652,24 +658,50 @@ impl NoteWindow {
             .bg(rgb(colors().raised))
             .shadow_lg();
         if md {
-            use crate::md_format::Format;
-            let marks: [(&'static str, &'static str, Format); 9] = [
-                ("fmt-bold", "B", Format::Bold),
-                ("fmt-italic", "I", Format::Italic),
-                ("fmt-strike", "S", Format::Strike),
-                ("fmt-code", "</>", Format::Code),
-                ("fmt-link", "[ ]( )", Format::Link),
-                ("fmt-heading", "H", Format::Heading),
-                ("fmt-quote", "❝", Format::Quote),
-                ("fmt-bullet", "•", Format::Bullet),
-                ("fmt-task", "☐", Format::Task),
+            // As the editor's own keys and its "Turn into" menu do them.
+            use shellwing_note_editor::{BlockKind, InlineFormat};
+            let marks: [(&'static str, &'static str, InlineFormat); 6] = [
+                ("fmt-bold", "B", InlineFormat::Bold),
+                ("fmt-italic", "I", InlineFormat::Italic),
+                ("fmt-strike", "S", InlineFormat::Strike),
+                ("fmt-underline", "U", InlineFormat::Underline),
+                ("fmt-code", "</>", InlineFormat::Code),
+                ("fmt-mark", "ab", InlineFormat::Highlight),
             ];
             for (id, label, f) in marks {
                 let t = tool(id, label.into())
-                    .when(f == Format::Bold, |d| d.font_weight(FontWeight::BOLD))
-                    .when(f == Format::Italic, |d| d.italic())
-                    .when(f == Format::Strike, |d| d.line_through())
-                    .on_click(cx.listener(move |v, _, _, cx| v.format(f, cx)));
+                    .when(f == InlineFormat::Bold, |d| d.font_weight(FontWeight::BOLD))
+                    .when(f == InlineFormat::Italic, |d| d.italic())
+                    .when(f == InlineFormat::Strike, |d| d.line_through())
+                    .when(f == InlineFormat::Underline, |d| d.underline())
+                    .when(f == InlineFormat::Highlight, |d| {
+                        d.bg(rgb(colors().warn_bg))
+                    })
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        v.text.update(cx, |e, cx| e.toggle_inline(f, cx))
+                    }));
+                bar = bar.child(t);
+            }
+            bar = bar.child(
+                tool("fmt-link", "[ ]( )".into()).on_click(cx.listener(|v, _, _, cx| v.link(cx))),
+            );
+            bar = bar.child(gap());
+            let now = input.block_at_caret();
+            let blocks: [(&'static str, &'static str, BlockKind); 7] = [
+                ("blk-h1", "H1", BlockKind::H1),
+                ("blk-h2", "H2", BlockKind::H2),
+                ("blk-bullet", "•", BlockKind::Bullet),
+                ("blk-numbered", "1.", BlockKind::Numbered),
+                ("blk-todo", "☐", BlockKind::Todo),
+                ("blk-quote", "❝", BlockKind::Quote),
+                ("blk-code", "{ }", BlockKind::Code),
+            ];
+            for (id, label, k) in blocks {
+                let t = tool(id, label.into())
+                    .when(k == now, |d| d.bg(rgb(colors().selected)))
+                    .on_click(cx.listener(move |v, _, w, cx| {
+                        v.text.update(cx, |e, cx| e.turn_block(k, w, cx))
+                    }));
                 bar = bar.child(t);
             }
             bar = bar.child(gap());
@@ -806,13 +838,8 @@ impl NoteWindow {
         let md = self.note.format == NoteFormat::Markdown
             && self.text.read(cx).focus_handle(cx).is_focused(window);
         // The editor binds B, I, E and the like itself; K (a link) is ours.
-        let format = |key: &str| (key == "k").then_some(crate::md_format::Format::Link);
-        if md
-            && cmd
-            && !k.modifiers.shift
-            && let Some(f) = format(k.key.as_str())
-        {
-            self.format(f, cx);
+        if md && cmd && !k.modifiers.shift && k.key == "k" {
+            self.link(cx);
             return cx.stop_propagation();
         }
         match k.key.as_str() {

@@ -24,7 +24,6 @@ mod input;
 mod keys_view;
 mod known_hosts_view;
 mod look;
-mod md_format;
 mod note_files;
 mod note_window;
 mod palette;
