@@ -405,8 +405,12 @@ fn coming() -> gpui::Div {
 /// The plans, in a line.
 fn plans() -> gpui::Div {
     let c = colors();
+    // Each its share of the row, its text wrapping there: a language's
+    // longer words do not push the last one out.
     let plan = |name: &str, what: &str| {
         div()
+            .flex_1()
+            .min_w_0()
             .flex()
             .flex_col()
             .gap(px(2.))
@@ -511,7 +515,7 @@ impl Render for SyncPanel {
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-            .w(px(400.))
+            .w(px(450.))
             .flex()
             .flex_col()
             .rounded(px(12.))
