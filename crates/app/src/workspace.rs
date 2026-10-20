@@ -29,6 +29,7 @@ use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, Row, Section, Sidebar, dot};
 use crate::snippets;
+use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
@@ -124,6 +125,12 @@ pub struct Workspace {
     overview: Option<(Entity<TabOverview>, Subscription)>,
     /// Where the tab button is, for the overview to hang from.
     overview_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
+    /// The sync panel, while open, and where its cloud button is.
+    sync_panel: Option<(Entity<SyncPanel>, Subscription)>,
+    sync_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
+    /// When this run last synced, and whether a sync runs now.
+    last_synced: Option<std::time::SystemTime>,
+    syncing: bool,
     /// The split whose divider is being dragged.
     dragging: Option<Rc<SplitState>>,
     /// The window's size and place, waiting to be saved, and which change it is.
@@ -288,6 +295,10 @@ impl Workspace {
             palette: None,
             overview: None,
             overview_button: Rc::default(),
+            sync_panel: None,
+            sync_button: Rc::default(),
+            last_synced: None,
+            syncing: false,
             dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
@@ -1401,7 +1412,24 @@ impl Workspace {
     }
 
     fn on_sync(&mut self, ev: SyncEvent, cx: &mut Context<Self>) {
+        // The cloud, and its panel, follow.
+        match &ev {
+            SyncEvent::Started => self.syncing = true,
+            SyncEvent::Done(_) => {
+                self.syncing = false;
+                self.last_synced = Some(std::time::SystemTime::now());
+            }
+            SyncEvent::Failed(_) => self.syncing = false,
+            _ => {}
+        }
+        self.on_sync_event(ev, cx);
+        self.refresh_sync_panel(cx);
+        cx.notify();
+    }
+
+    fn on_sync_event(&mut self, ev: SyncEvent, cx: &mut Context<Self>) {
         match ev {
+            SyncEvent::Started => {}
             SyncEvent::Done(r) => {
                 self.sync_error = None;
                 if r.pulled > 0 {
@@ -2076,6 +2104,8 @@ impl Workspace {
             );
         }
         self.passphrase_joins = None;
+        self.sync_error = None;
+        self.last_synced = None;
         self.sync.set_place(place.cloned());
         self.sync.now();
         self.refresh_settings(cx);
@@ -3509,6 +3539,92 @@ impl Workspace {
         cx.notify();
     }
 
+    /// How sync stands, for the cloud and its panel.
+    fn sync_standing(&self) -> Standing {
+        if self.sync.place().is_none() {
+            Standing::Off
+        } else if self.vault.locked().is_some() {
+            Standing::Paused
+        } else if self.syncing {
+            Standing::Syncing
+        } else if let Some(e) = &self.sync_error {
+            Standing::Failed(e.clone())
+        } else {
+            Standing::Synced(self.last_synced)
+        }
+    }
+
+    fn sync_snap(&self) -> SyncSnap {
+        let counts = self.vault.ready().map(|v| {
+            let passwords = v
+                .items()
+                .map(|i| {
+                    i.iter()
+                        .filter(|i| matches!(i, shellwing_vault::Item::Password { .. }))
+                        .count()
+                })
+                .unwrap_or(0);
+            (
+                self.live.hosts().hosts.len(),
+                passwords,
+                v.ssh_keys().map(|k| k.len()).unwrap_or(0),
+                v.snippets().map(|s| s.len()).unwrap_or(0),
+            )
+        });
+        SyncSnap {
+            standing: self.sync_standing(),
+            place: self.sync.place().map(|p| crate::syncing::describe(&p)),
+            counts,
+        }
+    }
+
+    /// Shows how sync stands, hanging from the cloud, or hides it.
+    fn toggle_sync_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.sync_panel.is_some() {
+            return self.close_sync_panel(window, cx);
+        }
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        if self.overview.is_some() {
+            self.close_overview(window, cx);
+        }
+        let snap = self.sync_snap();
+        let view = cx.new(|cx| SyncPanel::new(snap, cx));
+        let sub = cx.subscribe_in(
+            &view,
+            window,
+            |ws, _, ev: &SyncPanelEvent, window, cx| match ev {
+                SyncPanelEvent::Dismiss => ws.close_sync_panel(window, cx),
+                SyncPanelEvent::SyncNow => ws.run(Action::SyncNow, window, cx),
+                SyncPanelEvent::OpenSettings => {
+                    ws.close_sync_panel(window, cx);
+                    ws.open_settings(Page::Sync, window, cx);
+                }
+                SyncPanelEvent::Unlock => {
+                    ws.close_sync_panel(window, cx);
+                    ws.run(Action::UnlockVault, window, cx);
+                }
+            },
+        );
+        window.focus(&view.focus_handle(cx), cx);
+        self.sync_panel = Some((view, sub));
+        cx.notify();
+    }
+
+    fn close_sync_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.sync_panel.take().is_some() {
+            self.activate(self.active, window, cx);
+        }
+    }
+
+    fn refresh_sync_panel(&mut self, cx: &mut Context<Self>) {
+        if let Some((view, _)) = &self.sync_panel {
+            let (view, snap) = (view.clone(), self.sync_snap());
+            view.update(cx, |p, cx| p.set_snap(snap, cx));
+        }
+    }
+
     fn close_overview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.overview.take().is_some() {
             self.activate(self.active, window, cx);
@@ -3831,6 +3947,55 @@ impl Workspace {
                             .text_color(rgb(if open { colors().text } else { colors().soft })),
                     ),
             )
+            .child(self.sync_button(cx))
+    }
+
+    /// The cloud: its color says how sync stands; it opens the sync panel.
+    fn sync_button(&self, cx: &mut Context<Self>) -> gpui::Stateful<Div> {
+        let standing = self.sync_standing();
+        let showing = self.sync_panel.is_some();
+        let bounds = self.sync_button.clone();
+        div()
+            .id("sync-button")
+            .relative()
+            .flex_shrink_0()
+            .size(px(30.))
+            .mr(px(4.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(6.))
+            .cursor_pointer()
+            .when(showing, |d| d.bg(rgb(colors().selected)))
+            .hover(|s| s.bg(rgb(colors().hover)))
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .on_click(cx.listener(|ws, _, window, cx| ws.toggle_sync_panel(window, cx)))
+            .child(
+                canvas(|_, _, _| {}, move |b, _, _, _| bounds.set(b))
+                    .absolute()
+                    .size_full()
+                    .top_0()
+                    .left_0(),
+            )
+            .child(
+                svg()
+                    .path("icons/cloud.svg")
+                    .size(px(18.))
+                    .text_color(rgb(standing.color())),
+            )
+            .when(standing.dotted(), |d| {
+                d.child(
+                    div()
+                        .absolute()
+                        .right(px(4.))
+                        .bottom(px(5.))
+                        .size(px(8.))
+                        .rounded_full()
+                        .border_1()
+                        .border_color(rgb(colors().chrome))
+                        .bg(rgb(standing.color())),
+                )
+            })
     }
 
     /// The color a hosts.toml host is marked with, by name.
@@ -4404,6 +4569,27 @@ impl Render for Workspace {
                                     // The button toggles it itself.
                                     if !button.get().contains(&e.position) {
                                         ws.close_overview(window, cx);
+                                    }
+                                },
+                            ))),
+                    )
+                    .with_priority(1),
+                )
+            })
+            // Hangs from the cloud, as the overview from its button.
+            .when_some(self.sync_panel.as_ref().map(|(p, _)| p.clone()), |d, p| {
+                let button = self.sync_button.clone();
+                let b = button.get();
+                d.child(
+                    gpui::deferred(
+                        gpui::anchored()
+                            .anchor(gpui::Anchor::TopRight)
+                            .position(gpui::point(b.right(), b.bottom() + px(6.)))
+                            .snap_to_window_with_margin(px(8.))
+                            .child(div().child(p).on_mouse_down_out(cx.listener(
+                                move |ws, e: &gpui::MouseDownEvent, window, cx| {
+                                    if !button.get().contains(&e.position) {
+                                        ws.close_sync_panel(window, cx);
                                     }
                                 },
                             ))),

@@ -36,6 +36,8 @@ const PAIRING: Duration = Duration::from_secs(2);
 const PAIRING_GIT: Duration = Duration::from_secs(5);
 
 pub enum SyncEvent {
+    /// A sync starts.
+    Started,
     Done(SyncReport),
     Failed(String),
     /// This device's request to join: where it stands.
@@ -315,6 +317,9 @@ impl SyncWorker {
                         continue;
                     }
                     last_sync = Some(Instant::now());
+                    if events.send_blocking(SyncEvent::Started).is_err() {
+                        return;
+                    }
                     let event = sync_once(&vault, store, config.as_ref());
                     if events.send_blocking(event).is_err() {
                         return;
