@@ -1681,29 +1681,11 @@ tf5a4f646 = Агент
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = Ключи в ssh-agent (Pageant или агент OpenSSH в Windows).
 
-# Sync now
-ta34dd8fe = Синхронизировать
-
-# Show the recovery key
-t16f62979 = Показать ключ восстановления
-
-# Stop syncing
-t59fdbd70 = Остановить синхронизацию
-
-# With {shown}
-tabf6bc68 = С { $shown }
-
-# Sync with a folder or a server
-t6c2be41e = Синхронизация через папку или сервер
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = Хосты, сохранённые пароли, ключи и сниппеты передаются через папку, которую синхронизирует другое приложение (iCloud Drive, Syncthing, Dropbox), сервер WebDAV или S3-совместимое хранилище. Всё там зашифровано вашим ключом восстановления; сервер никогда не видит секретов.
-
 # Sync settings too
 ta578f67d = Синхронизировать и настройки
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = Внешний вид (тёмный или светлый режим, темы, шрифты), параметры по умолчанию терминала и SSH, журналы. У каждого устройства свои папка синхронизации, папка журналов, локальная оболочка и редактор.
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = Внешний вид (тёмный или светлый режим, темы, шрифты), параметры по умолчанию терминала и SSH, журналы. У каждого устройства свои папка синхронизации, папка журналов, локальная оболочка, редактор и сочетания клавиш.
 
 # Let a passphrase join new devices
 t6906cf2c = Подключать новые устройства по парольной фразе
@@ -1713,6 +1695,30 @@ t637858c5 = Новое устройство, синхронизирующеес�
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = Хосты, оставленные только на этом устройстве (в их редакторе), сюда не попадают.
+
+# Or a place of your own
+t7b88a644 = Или своё место
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = Хосты, сохранённые пароли, ключи и сниппеты передаются через папку, которую синхронизирует другое приложение (iCloud Drive, Syncthing, Dropbox), сервер WebDAV, S3-совместимое хранилище или Git. Всё там зашифровано вашим ключом восстановления; сервер никогда не видит секретов.
+
+# When it syncs
+t4849994e = При синхронизации
+
+# With {shown}
+tabf6bc68 = С { $shown }
+
+# Show the recovery key
+t16f62979 = Показать ключ восстановления
+
+# Stop syncing
+t59fdbd70 = Остановить синхронизацию
+
+# Your place
+t63cb5f41 = Ваше место
+
+# Options
+t353e0d45 = Параметры
 
 # A folder
 te84ceb50 = Папка
@@ -2170,48 +2176,6 @@ t1d5d16cc = Размещённый файл лежит на диске серв�
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются для хоста панели; любое другое {"{{"}name{"}}"} запрашивается при запуске сниппета.
 
-# Your hosts on every device. Just sign in.
-t88dd5f11 = Ваши хосты на всех устройствах. Просто войдите.
-
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = Хосты, сохранённые пароли, ключи и сниппеты следуют за вами на любой компьютер.
-
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = Ничего не нужно настраивать: ни папки, ни сервера, ни ключа для ввода на новом устройстве.
-
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = Шифруется на ваших устройствах: shellwing никогда не видит ваших секретов.
-
-# Create an account
-td7f6c093 = Создать аккаунт
-
-# or continue with
-t2f60c9bf = или продолжить с
-
-# Synced · {when}
-ta250b3ba = Синхронизировано · { $when }
-
-# With {place}
-t6c9fa51a = С { $place }
-
-# Set up
-t43c06abc = Настроить
-
-# Syncing…
-t8ad2ae06 = Синхронизация…
-
-# Not synced
-t4d1a6724 = Не синхронизировано
-
-# Paused: the vault is locked
-tfff0fb2a = Приостановлено: хранилище заблокировано
-
-# With {place}, once it is open
-tf75bc464 = С { $place }, когда оно открыто
-
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }, { $passwords }, { $keys } и { $snippets }.
-
 # {n} host | {n} hosts
 t2489674e =
     { $n ->
@@ -2239,8 +2203,95 @@ t4a5f7c7a =
        *[other] { $n } сниппета
     }
 
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+        [one] { $n } окружение
+        [few] { $n } окружения
+        [many] { $n } окружений
+       *[other] { $n } окружения
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+        [one] { $n } файл конфигурации
+        [few] { $n } файла конфигурации
+        [many] { $n } файлов конфигурации
+       *[other] { $n } файла конфигурации
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+        [one] { $n } заметка
+        [few] { $n } заметки
+        [many] { $n } заметок
+       *[other] { $n } заметки
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = НЕ СИНХРОНИЗИРУЕТСЯ
+
+# Your hosts on every device. Just sign in.
+t88dd5f11 = Ваши хосты на всех устройствах. Просто войдите.
+
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = Хосты, пароли, ключи и сниппеты пока хранятся только на этом компьютере.
+
+# See shellwing cloud
+t88cbb4e0 = Подробнее о shellwing cloud
+
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = Своя папка, WebDAV, S3 или Git:
+
+# Settings › Sync
+t6790eaeb = Настройки › Синхронизация
+
 # SYNC
 t476c685a = СИНХРОНИЗАЦИЯ
+
+# Open Settings › Sync
+tbef0fba1 = Открыть Настройки › Синхронизация
+
+# Synced · {when}
+ta250b3ba = Синхронизировано · { $when }
+
+# With {place}
+t6c9fa51a = С { $place }
+
+# Set up
+t43c06abc = Настроить
+
+# Syncing…
+t8ad2ae06 = Синхронизация…
+
+# Not synced
+t4d1a6724 = Не синхронизировано
+
+# Paused: the vault is locked
+tfff0fb2a = Приостановлено: хранилище заблокировано
+
+# With {place}, once it is open
+tf75bc464 = С { $place }, когда оно открыто
+
+# Sync now
+ta34dd8fe = Синхронизировать
+
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = Хосты, сохранённые пароли, ключи и сниппеты следуют за вами на любой компьютер.
+
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = Ничего не нужно настраивать: ни папки, ни сервера, ни ключа для ввода на новом устройстве.
+
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = Шифруется на ваших устройствах: shellwing никогда не видит ваших секретов.
+
+# Create an account
+td7f6c093 = Создать аккаунт
+
+# or continue with
+t2f60c9bf = или продолжить с
 
 # Rather not keep it yourself?
 t616f184a = Не хотите хранить сами?
@@ -2262,12 +2313,6 @@ t6036c21e =
 
 # unlimited · $5.99/mo
 td7d2332f = без ограничений · $5.99/мес.
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = Своя папка, WebDAV, S3 или Git:
-
-# Settings › Sync
-t6790eaeb = Настройки › Синхронизация
 
 # just now
 ta715ef0f = только что

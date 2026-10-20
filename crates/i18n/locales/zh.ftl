@@ -1651,29 +1651,11 @@ tf5a4f646 = 代理
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = ssh-agent 中的密钥（Windows 上为 Pageant 或 OpenSSH 代理）。
 
-# Sync now
-ta34dd8fe = 立即同步
-
-# Show the recovery key
-t16f62979 = 显示恢复密钥
-
-# Stop syncing
-t59fdbd70 = 停止同步
-
-# With {shown}
-tabf6bc68 = 与 { $shown } 同步
-
-# Sync with a folder or a server
-t6c2be41e = 与文件夹或服务器同步
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = 主机、已保存的密码、密钥和代码片段通过其他应用同步的文件夹（iCloud Drive、Syncthing、Dropbox）、WebDAV 服务器或 S3 兼容存储传输。其中的所有内容都用你的恢复密钥加密；服务器永远看不到任何机密信息。
-
 # Sync settings too
 ta578f67d = 同时同步设置
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = 外观（深色或浅色、主题、字体）、终端和 SSH 的默认设置以及日志记录。每台设备各自保留同步文件夹、日志文件夹、本地 shell 和编辑器。
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = 外观（深色或浅色、主题、字体）、终端和 SSH 的默认设置以及日志记录。每台设备各自保留同步文件夹、日志文件夹、本地 shell、编辑器和快捷键。
 
 # Let a passphrase join new devices
 t6906cf2c = 允许用密码短语加入新设备
@@ -1683,6 +1665,30 @@ t637858c5 = 同步到同一位置的新设备可输入此密码短语，而无�
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = 设为仅保留在此设备上的主机（在其编辑器中设置）不包含在内。
+
+# Or a place of your own
+t7b88a644 = 或者用你自己的位置
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = 主机、已保存的密码、密钥和代码片段通过其他应用同步的文件夹（iCloud Drive、Syncthing、Dropbox）、WebDAV 服务器、S3 兼容存储或 Git 传输。其中的所有内容都用你的恢复密钥加密；服务器永远看不到任何机密信息。
+
+# When it syncs
+t4849994e = 同步时
+
+# With {shown}
+tabf6bc68 = 与 { $shown } 同步
+
+# Show the recovery key
+t16f62979 = 显示恢复密钥
+
+# Stop syncing
+t59fdbd70 = 停止同步
+
+# Your place
+t63cb5f41 = 你的位置
+
+# Options
+t353e0d45 = 选项
 
 # A folder
 te84ceb50 = 文件夹
@@ -2128,23 +2134,56 @@ t1d5d16cc = 放置的文件位于服务器磁盘上，并带有其权限：在�
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会按窗格的主机自动填入；其他 {"{{"}name{"}}"} 会在代码片段运行时询问。
 
+# {n} host | {n} hosts
+t2489674e = { $n } 台主机
+
+# {n} password | {n} passwords
+tf07ec59c = { $n } 个密码
+
+# {n} snippet | {n} snippets
+t4a5f7c7a = { $n } 个代码片段
+
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+       *[other] { $n } 个环境
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+       *[other] { $n } 个配置文件
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+       *[other] { $n } 条笔记
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = 未同步
+
 # Your hosts on every device. Just sign in.
 t88dd5f11 = 你的主机，在每台设备上。只需登录。
 
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = 主机、已保存的密码、密钥和代码片段随你到每台计算机。
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = 主机、密码、密钥和代码片段目前只在这台电脑上。
 
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = 无需任何设置：在新设备上不用文件夹、不用服务器、不用输入密钥。
+# See shellwing cloud
+t88cbb4e0 = 了解 shellwing cloud
 
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = 在你的设备上加密：shellwing 永远看不到你的机密信息。
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = 使用你自己的文件夹、WebDAV、S3 或 Git：
 
-# Create an account
-td7f6c093 = 创建账户
+# Settings › Sync
+t6790eaeb = 设置 › 同步
 
-# or continue with
-t2f60c9bf = 或使用以下方式继续
+# SYNC
+t476c685a = 同步
+
+# Open Settings › Sync
+tbef0fba1 = 打开 设置 › 同步
 
 # Synced · {when}
 ta250b3ba = 已同步 · { $when }
@@ -2167,20 +2206,23 @@ tfff0fb2a = 已暂停：保险库已锁定
 # With {place}, once it is open
 tf75bc464 = 与 { $place } 同步，待保险库打开后进行
 
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }、{ $passwords }、{ $keys } 和 { $snippets }。
+# Sync now
+ta34dd8fe = 立即同步
 
-# {n} host | {n} hosts
-t2489674e = { $n } 台主机
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = 主机、已保存的密码、密钥和代码片段随你到每台计算机。
 
-# {n} password | {n} passwords
-tf07ec59c = { $n } 个密码
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = 无需任何设置：在新设备上不用文件夹、不用服务器、不用输入密钥。
 
-# {n} snippet | {n} snippets
-t4a5f7c7a = { $n } 个代码片段
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = 在你的设备上加密：shellwing 永远看不到你的机密信息。
 
-# SYNC
-t476c685a = 同步
+# Create an account
+td7f6c093 = 创建账户
+
+# or continue with
+t2f60c9bf = 或使用以下方式继续
 
 # Rather not keep it yourself?
 t616f184a = 不想自己保管？
@@ -2196,12 +2238,6 @@ t6036c21e = { $n } 台主机 · $2.99/月
 
 # unlimited · $5.99/mo
 td7d2332f = 不限数量 · $5.99/月
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = 使用你自己的文件夹、WebDAV、S3 或 Git：
-
-# Settings › Sync
-t6790eaeb = 设置 › 同步
 
 # just now
 ta715ef0f = 刚刚

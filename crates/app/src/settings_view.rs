@@ -124,6 +124,8 @@ pub struct Snap {
     /// A passphrase joins new devices to the vault in the sync folder; None
     /// while not syncing.
     pub passphrase_joins: Option<bool>,
+    /// How sync stands, as the cloud's panel says.
+    pub sync: crate::sync_panel::SyncSnap,
 }
 
 pub struct SettingsView {
@@ -1742,53 +1744,19 @@ impl SettingsView {
             .child(setting(&tr!("Agent"), &tr!("Keys in ssh-agent (Pageant or the OpenSSH agent on Windows)."), div().text_size(ui(12.5)).child(agent)))
     }
 
+    /// Settings › Sync. Not syncing: shellwing cloud, then a place of one's
+    /// own to set up. Syncing: how it goes, the place, the options, and
+    /// shellwing cloud beside it.
     fn sync(&self, cx: &mut Context<Self>) -> gpui::Div {
-        let mut buttons = div().flex().flex_wrap().gap_2();
-        let place = match &self.snap.sync_place {
-            Some(p) => {
-                buttons = buttons
-                    .child(
-                        small_button("sync-now", &tr!("Sync now"))
-                            .on_click(cx.listener(|v, _, w, cx| v.run(Action::SyncNow, w, cx))),
-                    )
-                    .child(
-                        small_button("sync-key", &tr!("Show the recovery key")).on_click(
-                            cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx)),
-                        ),
-                    )
-                    .child(
-                        small_button("sync-stop", &tr!("Stop syncing"))
-                            .on_click(cx.listener(|v, _, w, cx| v.run(Action::StopSync, w, cx))),
-                    );
-                let shown = match p {
-                    SyncPlace::Folder(f) => shown_path(f),
-                    other => crate::syncing::describe(other),
-                };
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_size(ui(12.5))
-                            .child(tr!("With {shown}", shown = shown)),
-                    )
-                    .child(buttons)
-            }
-            None => self.sync_choice(cx),
-        };
         let settings_on = self.snap.settings.sync.settings;
-        page(&tr!("Sync"))
-            .child(setting(
-                &tr!("Sync with a folder or a server"),
-                &tr!("Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret."),
-                place,
-            ))
+        let options = div()
+            .flex()
+            .flex_col()
             .child(toggle(
                 "sync-settings",
                 settings_on,
                 &tr!("Sync settings too"),
-                &tr!("The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor."),
+                &tr!("The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts."),
                 cx.listener(move |v, _, _, cx| {
                     v.change(&["sync", "settings"], Some(SettingValue::Bool(!settings_on)), cx)
                 }),
@@ -1808,8 +1776,87 @@ impl SettingsView {
                         v.run(a, w, cx)
                     }),
                 ))
+            });
+        let local = label(&tr!(
+            "Hosts kept on this device only (in their editor) stay out of it."
+        ));
+        let Some(p) = &self.snap.sync_place else {
+            return page(&tr!("Sync"))
+                .child(
+                    div()
+                        .p(px(22.))
+                        .rounded(px(12.))
+                        .border_1()
+                        .border_color(rgb(colors().line))
+                        .bg(rgb(colors().surface))
+                        .child(crate::sync_panel::invitation()),
+                )
+                .child(heading(&tr!("Or a place of your own")).pt(px(6.)))
+                .child(label(&tr!("Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.")))
+                .child(self.sync_choice(cx))
+                .child(heading(&tr!("When it syncs")).pt(px(6.)))
+                .child(options)
+                .child(local);
+        };
+        let shown = match p {
+            SyncPlace::Folder(f) => shown_path(f),
+            other => crate::syncing::describe(other),
+        };
+        let snap = &self.snap.sync;
+        let card = crate::sync_panel::status_card(
+            &snap.standing,
+            snap.place.as_deref().unwrap_or(&shown),
+            Box::new(cx.listener(|v, _, w, cx| v.run(Action::SyncNow, w, cx))),
+            Box::new(cx.listener(|v, _, w, cx| v.run(Action::UnlockVault, w, cx))),
+        );
+        let place = div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(12.))
+            .py(px(10.))
+            .border_b_1()
+            .border_color(rgb(colors().line))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w(px(240.))
+                    .text_size(ui(13.))
+                    .child(tr!("With {shown}", shown = shown)),
+            )
+            .child(
+                small_button("sync-key", &tr!("Show the recovery key"))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx))),
+            )
+            .child(
+                small_button("sync-stop", &tr!("Stop syncing"))
+                    .border_color(rgb(colors().bad_edge))
+                    .text_color(rgb(colors().bad_text))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::StopSync, w, cx))),
+            );
+        page(&tr!("Sync"))
+            .child(card)
+            .when_some(snap.counts, |d, n| {
+                d.child(
+                    div()
+                        .mt(px(-6.))
+                        .px(px(4.))
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().soft))
+                        .child(n.said()),
+                )
             })
-            .child(label(&tr!("Hosts kept on this device only (in their editor) stay out of it.")))
+            .child(heading(&tr!("Your place")).pt(px(6.)))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .child(place)
+                    .child(div().pt(px(8.)).child(local)),
+            )
+            .child(heading(&tr!("Options")).pt(px(6.)))
+            .child(options)
+            .child(div().pt(px(8.)).child(crate::sync_panel::aside()))
     }
 
     /// Where to sync, while not syncing: a folder, or a server's address
@@ -2508,7 +2555,17 @@ impl Render for SettingsView {
                         }
                         cx.notify();
                     }))
-                    .child(p.title()),
+                    .child(p.title())
+                    // How sync stands, in the cloud's color.
+                    .when(p == Page::Sync, |d| {
+                        d.child(
+                            div().ml(px(8.)).size(px(7.)).rounded_full().bg(rgb(self
+                                .snap
+                                .sync
+                                .standing
+                                .color())),
+                        )
+                    }),
             );
         }
         let content = match self.page {

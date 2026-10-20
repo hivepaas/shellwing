@@ -1651,29 +1651,11 @@ tf5a4f646 = Agent
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = Các khoá trong ssh-agent (Pageant hoặc agent của OpenSSH trên Windows).
 
-# Sync now
-ta34dd8fe = Đồng bộ ngay
-
-# Show the recovery key
-t16f62979 = Hiện khoá khôi phục
-
-# Stop syncing
-t59fdbd70 = Ngừng đồng bộ
-
-# With {shown}
-tabf6bc68 = Với { $shown }
-
-# Sync with a folder or a server
-t6c2be41e = Đồng bộ qua một thư mục hoặc một máy chủ
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = Máy chủ, mật khẩu đã lưu, khoá và đoạn lệnh được chuyển qua một thư mục mà ứng dụng khác đồng bộ (iCloud Drive, Syncthing, Dropbox), một máy chủ WebDAV hoặc kho lưu trữ tương thích S3. Mọi thứ ở đó đều được mã hoá bằng khoá khôi phục của bạn; máy chủ không bao giờ thấy được bí mật nào.
-
 # Sync settings too
 ta578f67d = Đồng bộ cả cài đặt
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = Giao diện (sáng hay tối, chủ đề, phông chữ), mặc định của terminal và SSH, và nhật ký. Mỗi thiết bị giữ riêng thư mục đồng bộ, thư mục nhật ký, shell cục bộ và trình soạn thảo.
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = Giao diện (sáng hay tối, chủ đề, phông chữ), mặc định của terminal và SSH, và nhật ký. Mỗi thiết bị giữ riêng thư mục đồng bộ, thư mục nhật ký, shell cục bộ, trình soạn thảo và phím tắt.
 
 # Let a passphrase join new devices
 t6906cf2c = Cho phép thiết bị mới tham gia bằng cụm mật khẩu
@@ -1683,6 +1665,30 @@ t637858c5 = Thiết bị mới đồng bộ cùng nơi sẽ nhập cụm mật k
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = Các máy chủ chỉ giữ trên thiết bị này (trong trình sửa của chúng) không được đồng bộ.
+
+# Or a place of your own
+t7b88a644 = Hoặc một chỗ của riêng bạn
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = Máy chủ, mật khẩu đã lưu, khoá và đoạn lệnh được chuyển qua một thư mục mà ứng dụng khác đồng bộ (iCloud Drive, Syncthing, Dropbox), một máy chủ WebDAV, kho lưu trữ tương thích S3 hoặc Git. Mọi thứ ở đó đều được mã hoá bằng khoá khôi phục của bạn; máy chủ không bao giờ thấy được bí mật nào.
+
+# When it syncs
+t4849994e = Khi đồng bộ
+
+# With {shown}
+tabf6bc68 = Với { $shown }
+
+# Show the recovery key
+t16f62979 = Hiện khoá khôi phục
+
+# Stop syncing
+t59fdbd70 = Ngừng đồng bộ
+
+# Your place
+t63cb5f41 = Chỗ đồng bộ của bạn
+
+# Options
+t353e0d45 = Tuỳ chọn
 
 # A folder
 te84ceb50 = Một thư mục
@@ -2128,23 +2134,56 @@ t1d5d16cc = Tệp đã đặt nằm trên đĩa của máy chủ, với quyền 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền theo máy chủ của khung; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi đoạn lệnh chạy.
 
+# {n} host | {n} hosts
+t2489674e = { $n } máy chủ
+
+# {n} password | {n} passwords
+tf07ec59c = { $n } mật khẩu
+
+# {n} snippet | {n} snippets
+t4a5f7c7a = { $n } đoạn lệnh
+
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+       *[other] { $n } biến môi trường
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+       *[other] { $n } tệp cấu hình
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+       *[other] { $n } ghi chú
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = CHƯA ĐỒNG BỘ
+
 # Your hosts on every device. Just sign in.
 t88dd5f11 = Máy chủ của bạn trên mọi thiết bị. Chỉ cần đăng nhập.
 
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = Máy chủ, mật khẩu đã lưu, khoá và đoạn lệnh theo bạn sang mọi máy tính.
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = Máy chủ, mật khẩu, khoá và đoạn lệnh hiện chỉ nằm trên máy này.
 
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = Không phải cài đặt gì: không thư mục, không máy chủ, không khoá nào phải nhập trên thiết bị mới.
+# See shellwing cloud
+t88cbb4e0 = Xem shellwing cloud
 
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = Được mã hoá trên thiết bị của bạn: shellwing không bao giờ thấy bí mật của bạn.
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = Thư mục, WebDAV, S3 hoặc Git của riêng bạn:
 
-# Create an account
-td7f6c093 = Tạo tài khoản
+# Settings › Sync
+t6790eaeb = Cài đặt › Đồng bộ
 
-# or continue with
-t2f60c9bf = hoặc tiếp tục với
+# SYNC
+t476c685a = ĐỒNG BỘ
+
+# Open Settings › Sync
+tbef0fba1 = Mở Cài đặt › Đồng bộ
 
 # Synced · {when}
 ta250b3ba = Đã đồng bộ · { $when }
@@ -2167,20 +2206,23 @@ tfff0fb2a = Tạm dừng: kho đang khoá
 # With {place}, once it is open
 tf75bc464 = Với { $place }, khi kho được mở
 
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }, { $passwords }, { $keys } và { $snippets }.
+# Sync now
+ta34dd8fe = Đồng bộ ngay
 
-# {n} host | {n} hosts
-t2489674e = { $n } máy chủ
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = Máy chủ, mật khẩu đã lưu, khoá và đoạn lệnh theo bạn sang mọi máy tính.
 
-# {n} password | {n} passwords
-tf07ec59c = { $n } mật khẩu
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = Không phải cài đặt gì: không thư mục, không máy chủ, không khoá nào phải nhập trên thiết bị mới.
 
-# {n} snippet | {n} snippets
-t4a5f7c7a = { $n } đoạn lệnh
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = Được mã hoá trên thiết bị của bạn: shellwing không bao giờ thấy bí mật của bạn.
 
-# SYNC
-t476c685a = ĐỒNG BỘ
+# Create an account
+td7f6c093 = Tạo tài khoản
+
+# or continue with
+t2f60c9bf = hoặc tiếp tục với
 
 # Rather not keep it yourself?
 t616f184a = Không muốn tự giữ?
@@ -2196,12 +2238,6 @@ t6036c21e = { $n } máy chủ · $2.99/tháng
 
 # unlimited · $5.99/mo
 td7d2332f = không giới hạn · $5.99/tháng
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = Thư mục, WebDAV, S3 hoặc Git của riêng bạn:
-
-# Settings › Sync
-t6790eaeb = Cài đặt › Đồng bộ
 
 # just now
 ta715ef0f = vừa xong

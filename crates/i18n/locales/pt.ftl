@@ -1671,29 +1671,11 @@ tf5a4f646 = Agente
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = Chaves no ssh-agent (Pageant ou o agente do OpenSSH no Windows).
 
-# Sync now
-ta34dd8fe = Sincronizar agora
-
-# Show the recovery key
-t16f62979 = Mostrar a chave de recuperação
-
-# Stop syncing
-t59fdbd70 = Parar de sincronizar
-
-# With {shown}
-tabf6bc68 = Com { $shown }
-
-# Sync with a folder or a server
-t6c2be41e = Sincronizar com uma pasta ou um servidor
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = Servidores, senhas salvas, chaves e trechos passam por uma pasta que outro app sincroniza (iCloud Drive, Syncthing, Dropbox), um servidor WebDAV ou um armazenamento compatível com S3. Tudo lá é criptografado com a sua chave de recuperação; o servidor nunca vê um segredo.
-
 # Sync settings too
 ta578f67d = Sincronizar também as configurações
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = A aparência (escuro ou claro, temas, fontes), os padrões do terminal e do SSH, e os registros. Cada dispositivo mantém a própria pasta de sincronização, pasta de registros, shell local e editor.
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = A aparência (escuro ou claro, temas, fontes), os padrões do terminal e do SSH, e os registros. Cada dispositivo mantém a própria pasta de sincronização, pasta de registros, shell local, editor e atalhos de teclado.
 
 # Let a passphrase join new devices
 t6906cf2c = Permitir que uma frase secreta adicione novos dispositivos
@@ -1703,6 +1685,30 @@ t637858c5 = Um novo dispositivo que sincroniza o mesmo local a digita em vez da 
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = Servidores mantidos somente neste dispositivo (no editor deles) ficam de fora.
+
+# Or a place of your own
+t7b88a644 = Ou um lugar seu
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = Servidores, senhas salvas, chaves e trechos passam por uma pasta que outro app sincroniza (iCloud Drive, Syncthing, Dropbox), um servidor WebDAV, um armazenamento compatível com S3 ou Git. Tudo lá é criptografado com a sua chave de recuperação; o servidor nunca vê um segredo.
+
+# When it syncs
+t4849994e = Ao sincronizar
+
+# With {shown}
+tabf6bc68 = Com { $shown }
+
+# Show the recovery key
+t16f62979 = Mostrar a chave de recuperação
+
+# Stop syncing
+t59fdbd70 = Parar de sincronizar
+
+# Your place
+t63cb5f41 = Seu lugar
+
+# Options
+t353e0d45 = Opções
 
 # A folder
 te84ceb50 = Uma pasta
@@ -2154,23 +2160,71 @@ t1d5d16cc = Um arquivo colocado fica no disco do servidor, com suas permissões:
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} e {"{{"}address{"}}"} são preenchidos com os dados do servidor do painel; qualquer outro {"{{"}name{"}}"} é pedido quando o trecho é executado.
 
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } servidor
+       *[other] { $n } servidores
+    }
+
+# {n} password | {n} passwords
+tf07ec59c =
+    { $n ->
+        [one] { $n } senha
+       *[other] { $n } senhas
+    }
+
+# {n} snippet | {n} snippets
+t4a5f7c7a =
+    { $n ->
+        [one] { $n } trecho
+       *[other] { $n } trechos
+    }
+
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+        [one] { $n } ambiente
+       *[other] { $n } ambientes
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+        [one] { $n } arquivo de configuração
+       *[other] { $n } arquivos de configuração
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+        [one] { $n } nota
+       *[other] { $n } notas
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = SEM SINCRONIZAÇÃO
+
 # Your hosts on every device. Just sign in.
 t88dd5f11 = Seus servidores em todos os dispositivos. Basta entrar.
 
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = Servidores, senhas salvas, chaves e trechos acompanham você em todos os computadores.
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = Servidores, senhas, chaves e trechos ficam neste computador por enquanto.
 
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = Nada a configurar: nenhuma pasta, nenhum servidor, nenhuma chave para digitar em um novo dispositivo.
+# See shellwing cloud
+t88cbb4e0 = Conhecer o shellwing cloud
 
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = Criptografado nos seus dispositivos: o shellwing nunca vê seus segredos.
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = Uma pasta, WebDAV, S3 ou Git próprio:
 
-# Create an account
-td7f6c093 = Criar uma conta
+# Settings › Sync
+t6790eaeb = Configurações › Sincronização
 
-# or continue with
-t2f60c9bf = ou continue com
+# SYNC
+t476c685a = SINCRONIZAÇÃO
+
+# Open Settings › Sync
+tbef0fba1 = Abrir Configurações › Sincronização
 
 # Synced · {when}
 ta250b3ba = Sincronizado · { $when }
@@ -2193,32 +2247,23 @@ tfff0fb2a = Pausado: o cofre está bloqueado
 # With {place}, once it is open
 tf75bc464 = Com { $place }, assim que ele for aberto
 
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }, { $passwords }, { $keys } e { $snippets }.
+# Sync now
+ta34dd8fe = Sincronizar agora
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } servidor
-       *[other] { $n } servidores
-    }
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = Servidores, senhas salvas, chaves e trechos acompanham você em todos os computadores.
 
-# {n} password | {n} passwords
-tf07ec59c =
-    { $n ->
-        [one] { $n } senha
-       *[other] { $n } senhas
-    }
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = Nada a configurar: nenhuma pasta, nenhum servidor, nenhuma chave para digitar em um novo dispositivo.
 
-# {n} snippet | {n} snippets
-t4a5f7c7a =
-    { $n ->
-        [one] { $n } trecho
-       *[other] { $n } trechos
-    }
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = Criptografado nos seus dispositivos: o shellwing nunca vê seus segredos.
 
-# SYNC
-t476c685a = SINCRONIZAÇÃO
+# Create an account
+td7f6c093 = Criar uma conta
+
+# or continue with
+t2f60c9bf = ou continue com
 
 # Rather not keep it yourself?
 t616f184a = Prefere não guardar isso você mesmo?
@@ -2238,12 +2283,6 @@ t6036c21e =
 
 # unlimited · $5.99/mo
 td7d2332f = ilimitado · $5.99/mês
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = Uma pasta, WebDAV, S3 ou Git próprio:
-
-# Settings › Sync
-t6790eaeb = Configurações › Sincronização
 
 # just now
 ta715ef0f = agora mesmo
