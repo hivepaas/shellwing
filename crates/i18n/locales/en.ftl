@@ -571,17 +571,19 @@ t70767f0d = ssh config file
 tc5c7d789 = Read only. Its hosts show in the host list.
 tf5a4f646 = Agent
 t28b5b26a = Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
-ta34dd8fe = Sync now
-t16f62979 = Show the recovery key
-t59fdbd70 = Stop syncing
-tabf6bc68 = With { $shown }
-t6c2be41e = Sync with a folder or a server
-tb88756e2 = Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
 ta578f67d = Sync settings too
-t12b4e6d2 = The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
+t27d3016a = The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
 t6906cf2c = Let a passphrase join new devices
 t637858c5 = A new device that syncs the same place types it instead of the recovery key or being approved here. It is kept there, sealed by the passphrase: anyone who can read the place can try to guess it, so it has to be hard to guess.
 t06079f7b = Hosts kept on this device only (in their editor) stay out of it.
+t7b88a644 = Or a place of your own
+t99dee6c8 = Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t4849994e = When it syncs
+tabf6bc68 = With { $shown }
+t16f62979 = Show the recovery key
+t59fdbd70 = Stop syncing
+t63cb5f41 = Your place
+t353e0d45 = Options
 te84ceb50 = A folder
 tdfb04144 = S3-compatible
 tc7eed334 = iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
@@ -740,20 +742,6 @@ t87b5db80 = Values are sent with the echo off and kept out of the shell's histor
 t16991c40 = Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t1d5d16cc = A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in for the pane's host; any other {"{{"}name{"}}"} is asked for when the snippet runs.
-t88dd5f11 = Your hosts on every device. Just sign in.
-t025d99af = Hosts, saved passwords, keys and snippets follow you to every computer.
-tde7b1d58 = Nothing to set up: no folder, no server, no key to type on a new device.
-t35aecaf3 = Encrypted on your devices: shellwing never sees your secrets.
-td7f6c093 = Create an account
-t2f60c9bf = or continue with
-ta250b3ba = Synced · { $when }
-t6c9fa51a = With { $place }
-t43c06abc = Set up
-t8ad2ae06 = Syncing…
-t4d1a6724 = Not synced
-tfff0fb2a = Paused: the vault is locked
-tf75bc464 = With { $place }, once it is open
-t668619a5 = { $hosts }, { $passwords }, { $keys } and { $snippets }.
 t2489674e =
     { $n ->
         [one] { $n } host
@@ -769,7 +757,42 @@ t4a5f7c7a =
         [one] { $n } snippet
        *[other] { $n } snippets
     }
+t97db2cda =
+    { $n ->
+        [one] { $n } environment
+       *[other] { $n } environments
+    }
+tc9aa46c2 =
+    { $n ->
+        [one] { $n } config file
+       *[other] { $n } config files
+    }
+t9adc29da =
+    { $n ->
+        [one] { $n } note
+       *[other] { $n } notes
+    }
+t7c7f0ba3 = NOT SYNCING
+t88dd5f11 = Your hosts on every device. Just sign in.
+td2cff7db = Hosts, passwords, keys and snippets stay on this computer for now.
+t88cbb4e0 = See shellwing cloud
+t42ad626a = A folder, WebDAV, S3 or Git of your own:
+t6790eaeb = Settings › Sync
 t476c685a = SYNC
+tbef0fba1 = Open Settings › Sync
+ta250b3ba = Synced · { $when }
+t6c9fa51a = With { $place }
+t43c06abc = Set up
+t8ad2ae06 = Syncing…
+t4d1a6724 = Not synced
+tfff0fb2a = Paused: the vault is locked
+tf75bc464 = With { $place }, once it is open
+ta34dd8fe = Sync now
+t025d99af = Hosts, saved passwords, keys and snippets follow you to every computer.
+tde7b1d58 = Nothing to set up: no folder, no server, no key to type on a new device.
+t35aecaf3 = Encrypted on your devices: shellwing never sees your secrets.
+td7f6c093 = Create an account
+t2f60c9bf = or continue with
 t616f184a = Rather not keep it yourself?
 t81dee99e = shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.
 t8de35792 = shellwing cloud is coming: signing in opens with it.
@@ -779,8 +802,6 @@ t6036c21e =
        *[other] { $n } hosts · $2.99/mo
     }
 td7d2332f = unlimited · $5.99/mo
-t42ad626a = A folder, WebDAV, S3 or Git of your own:
-t6790eaeb = Settings › Sync
 ta715ef0f = just now
 t85ac693d = a minute ago
 t6c7302d6 =

@@ -1732,6 +1732,8 @@ impl Workspace {
         }
         self.on_sync_event(ev, cx);
         self.refresh_sync_panel(cx);
+        // Settings › Sync shows the same.
+        self.refresh_settings(cx);
         cx.notify();
     }
 
@@ -2542,6 +2544,7 @@ impl Workspace {
                 })
             },
             passphrase_joins: self.sync.place().and(self.passphrase_joins),
+            sync: self.sync_snap(),
             secrets: self
                 .vault
                 .ready()
@@ -4009,21 +4012,21 @@ impl Workspace {
     }
 
     fn sync_snap(&self) -> SyncSnap {
-        let counts = self.vault.ready().map(|v| {
-            let passwords = v
+        let counts = self.vault.ready().map(|v| crate::sync_panel::Counts {
+            hosts: self.live.hosts().hosts.len(),
+            passwords: v
                 .items()
                 .map(|i| {
                     i.iter()
                         .filter(|i| matches!(i, shellwing_vault::Item::Password { .. }))
                         .count()
                 })
-                .unwrap_or(0);
-            (
-                self.live.hosts().hosts.len(),
-                passwords,
-                v.ssh_keys().map(|k| k.len()).unwrap_or(0),
-                v.snippets().map(|s| s.len()).unwrap_or(0),
-            )
+                .unwrap_or(0),
+            keys: v.ssh_keys().map(|k| k.len()).unwrap_or(0),
+            snippets: v.snippets().map(|s| s.len()).unwrap_or(0),
+            environments: v.environments().map(|e| e.len()).unwrap_or(0),
+            files: v.config_files().map(|f| f.len()).unwrap_or(0),
+            notes: v.notes().map(|n| n.len()).unwrap_or(0),
         });
         SyncSnap {
             standing: self.sync_standing(),

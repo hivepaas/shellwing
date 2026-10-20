@@ -1651,29 +1651,11 @@ tf5a4f646 = 에이전트
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = ssh-agent의 키 (Windows에서는 Pageant 또는 OpenSSH 에이전트).
 
-# Sync now
-ta34dd8fe = 지금 동기화
-
-# Show the recovery key
-t16f62979 = 복구 키 보기
-
-# Stop syncing
-t59fdbd70 = 동기화 중지
-
-# With {shown}
-tabf6bc68 = { $shown }과(와) 동기화
-
-# Sync with a folder or a server
-t6c2be41e = 폴더 또는 서버와 동기화
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = 호스트, 저장된 비밀번호, 키, 스니펫을 다른 앱이 동기화하는 폴더(iCloud Drive, Syncthing, Dropbox), WebDAV 서버 또는 S3 호환 스토리지를 통해 주고받습니다. 그곳의 모든 내용은 복구 키로 암호화되며, 서버는 비밀 정보를 볼 수 없습니다.
-
 # Sync settings too
 ta578f67d = 설정도 동기화
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = 모양(다크 또는 라이트, 테마, 글꼴), 터미널과 SSH 기본값, 로그 설정. 동기화 폴더, 로그 폴더, 로컬 셸, 편집기는 기기마다 따로 유지됩니다.
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = 모양(다크 또는 라이트, 테마, 글꼴), 터미널과 SSH 기본값, 로그 설정. 동기화 폴더, 로그 폴더, 로컬 셸, 편집기, 단축키는 기기마다 따로 유지됩니다.
 
 # Let a passphrase join new devices
 t6906cf2c = 암호 문구로 새 기기 추가 허용
@@ -1683,6 +1665,30 @@ t637858c5 = 같은 위치를 동기화하는 새 기기에서 복구 키를 입�
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = 호스트 편집기에서 이 기기에만 보관하도록 설정한 호스트는 제외됩니다.
+
+# Or a place of your own
+t7b88a644 = 또는 내 저장소
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = 호스트, 저장된 비밀번호, 키, 스니펫을 다른 앱이 동기화하는 폴더(iCloud Drive, Syncthing, Dropbox), WebDAV 서버, S3 호환 스토리지 또는 Git을 통해 주고받습니다. 그곳의 모든 내용은 복구 키로 암호화되며, 서버는 비밀 정보를 볼 수 없습니다.
+
+# When it syncs
+t4849994e = 동기화할 때
+
+# With {shown}
+tabf6bc68 = { $shown }과(와) 동기화
+
+# Show the recovery key
+t16f62979 = 복구 키 보기
+
+# Stop syncing
+t59fdbd70 = 동기화 중지
+
+# Your place
+t63cb5f41 = 내 저장소
+
+# Options
+t353e0d45 = 옵션
 
 # A folder
 te84ceb50 = 폴더
@@ -2128,23 +2134,56 @@ t1d5d16cc = 배치된 파일은 권한과 함께 서버 디스크에 있으며, 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 창의 호스트에 맞게 채워지며, 그 밖의 {"{{"}name{"}}"}은 스니펫을 실행할 때 묻습니다.
 
+# {n} host | {n} hosts
+t2489674e = 호스트 { $n }개
+
+# {n} password | {n} passwords
+tf07ec59c = 비밀번호 { $n }개
+
+# {n} snippet | {n} snippets
+t4a5f7c7a = 스니펫 { $n }개
+
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+       *[other] 환경 { $n }개
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+       *[other] 설정 파일 { $n }개
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+       *[other] 노트 { $n }개
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = 동기화 안 함
+
 # Your hosts on every device. Just sign in.
 t88dd5f11 = 모든 기기에서 내 호스트를 사용하세요. 로그인만 하면 됩니다.
 
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = 호스트, 저장된 비밀번호, 키, 스니펫을 모든 컴퓨터에서 사용할 수 있습니다.
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = 호스트, 비밀번호, 키, 스니펫은 지금은 이 컴퓨터에만 있습니다.
 
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = 설정할 것이 없습니다. 새 기기에서 폴더, 서버, 키를 입력할 필요가 없습니다.
+# See shellwing cloud
+t88cbb4e0 = shellwing cloud 보기
 
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = 기기에서 암호화되므로 shellwing은 비밀 정보를 볼 수 없습니다.
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = 직접 관리하는 폴더, WebDAV, S3 또는 Git:
 
-# Create an account
-td7f6c093 = 계정 만들기
+# Settings › Sync
+t6790eaeb = 설정 › 동기화
 
-# or continue with
-t2f60c9bf = 또는 다음으로 계속
+# SYNC
+t476c685a = 동기화
+
+# Open Settings › Sync
+tbef0fba1 = 설정 › 동기화 열기
 
 # Synced · {when}
 ta250b3ba = 동기화됨 · { $when }
@@ -2167,20 +2206,23 @@ tfff0fb2a = 일시 중지됨: 보관함이 잠겨 있음
 # With {place}, once it is open
 tf75bc464 = 보관함이 열리면 { $place }과(와) 동기화
 
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }, { $passwords }, { $keys }, { $snippets }.
+# Sync now
+ta34dd8fe = 지금 동기화
 
-# {n} host | {n} hosts
-t2489674e = 호스트 { $n }개
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = 호스트, 저장된 비밀번호, 키, 스니펫을 모든 컴퓨터에서 사용할 수 있습니다.
 
-# {n} password | {n} passwords
-tf07ec59c = 비밀번호 { $n }개
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = 설정할 것이 없습니다. 새 기기에서 폴더, 서버, 키를 입력할 필요가 없습니다.
 
-# {n} snippet | {n} snippets
-t4a5f7c7a = 스니펫 { $n }개
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = 기기에서 암호화되므로 shellwing은 비밀 정보를 볼 수 없습니다.
 
-# SYNC
-t476c685a = 동기화
+# Create an account
+td7f6c093 = 계정 만들기
+
+# or continue with
+t2f60c9bf = 또는 다음으로 계속
 
 # Rather not keep it yourself?
 t616f184a = 직접 관리하고 싶지 않으신가요?
@@ -2196,12 +2238,6 @@ t6036c21e = 호스트 { $n }개 · $2.99/월
 
 # unlimited · $5.99/mo
 td7d2332f = 무제한 · $5.99/월
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = 직접 관리하는 폴더, WebDAV, S3 또는 Git:
-
-# Settings › Sync
-t6790eaeb = 설정 › 동기화
 
 # just now
 ta715ef0f = 방금

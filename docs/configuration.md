@@ -832,6 +832,12 @@ folder = "~/Library/Mobile Documents/com~apple~CloudDocs/shellwing"   # any sync
 settings = true             # sync the settings that are not this device's own
 ```
 
+*Settings › Sync* is where sync is set up and followed: how it stands (when it
+last synced, or why not, with Sync now or Try again), what travels, the place
+and its recovery key, and the options; shellwing cloud beside them. The cloud
+in the header says the same in brief, in its color (green synced, orange
+failed, a light orange not set up), and opens Settings › Sync.
+
 Choose *Sync passwords with a folder…* in the palette, or set the folder here.
 Any folder another tool keeps in sync works: iCloud Drive, Syncthing, a Dropbox
 or OneDrive folder, a network share. shellwing writes `shellwing/format.json` and

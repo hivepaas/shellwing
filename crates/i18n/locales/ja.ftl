@@ -1651,29 +1651,11 @@ tf5a4f646 = エージェント
 # Keys in ssh-agent (Pageant or the OpenSSH agent on Windows).
 t28b5b26a = ssh-agent の鍵（Windows では Pageant または OpenSSH エージェント）。
 
-# Sync now
-ta34dd8fe = 今すぐ同期
-
-# Show the recovery key
-t16f62979 = 復旧キーを表示
-
-# Stop syncing
-t59fdbd70 = 同期を停止
-
-# With {shown}
-tabf6bc68 = 同期先：{ $shown }
-
-# Sync with a folder or a server
-t6c2be41e = フォルダまたはサーバーと同期
-
-# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server or S3-compatible storage. Everything there is encrypted with your recovery key; the server never sees a secret.
-tb88756e2 = ホスト、保存済みパスワード、鍵、スニペットは、他のアプリが同期するフォルダ（iCloud Drive、Syncthing、Dropbox）、WebDAV サーバー、または S3 互換ストレージを介して共有されます。保存される内容はすべて復旧キーで暗号化され、サーバーがシークレットを見ることはありません。
-
 # Sync settings too
 ta578f67d = 設定も同期
 
-# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell and editor.
-t12b4e6d2 = 外観（ダーク/ライト、テーマ、フォント）、ターミナルと SSH の既定値、ログ記録。同期フォルダ、ログフォルダ、ローカルシェル、エディタは各デバイスで個別に保持されます。
+# The look (dark or light, themes, fonts), the terminal's and SSH's defaults, and logging. Each device keeps its own sync folder, log folder, local shell, editor and keyboard shortcuts.
+t27d3016a = 外観（ダーク/ライト、テーマ、フォント）、ターミナルと SSH の既定値、ログ記録。同期フォルダ、ログフォルダ、ローカルシェル、エディタ、キーボードショートカットは各デバイスで個別に保持されます。
 
 # Let a passphrase join new devices
 t6906cf2c = パスフレーズで新しいデバイスを参加可能にする
@@ -1683,6 +1665,30 @@ t637858c5 = 同じ場所と同期する新しいデバイスでは、復旧キ�
 
 # Hosts kept on this device only (in their editor) stay out of it.
 t06079f7b = このデバイスのみに保存するホスト（ホストのエディタで設定）は含まれません。
+
+# Or a place of your own
+t7b88a644 = または自分の場所で
+
+# Hosts, saved passwords, keys and snippets travel through a folder another app syncs (iCloud Drive, Syncthing, Dropbox), a WebDAV server, S3-compatible storage or Git. Everything there is encrypted with your recovery key; the server never sees a secret.
+t99dee6c8 = ホスト、保存済みパスワード、鍵、スニペットは、他のアプリが同期するフォルダ（iCloud Drive、Syncthing、Dropbox）、WebDAV サーバー、S3 互換ストレージ、または Git を介して共有されます。保存される内容はすべて復旧キーで暗号化され、サーバーがシークレットを見ることはありません。
+
+# When it syncs
+t4849994e = 同期するとき
+
+# With {shown}
+tabf6bc68 = 同期先：{ $shown }
+
+# Show the recovery key
+t16f62979 = 復旧キーを表示
+
+# Stop syncing
+t59fdbd70 = 同期を停止
+
+# Your place
+t63cb5f41 = 同期先
+
+# Options
+t353e0d45 = オプション
 
 # A folder
 te84ceb50 = フォルダ
@@ -2128,23 +2134,56 @@ t1d5d16cc = 配置したファイルはサーバーのディスク上にパー�
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} にはペインのホストの値が入ります。それ以外の {"{{"}name{"}}"} はスニペットの実行時に尋ねられます。
 
+# {n} host | {n} hosts
+t2489674e = ホスト { $n } 件
+
+# {n} password | {n} passwords
+tf07ec59c = パスワード { $n } 件
+
+# {n} snippet | {n} snippets
+t4a5f7c7a = スニペット { $n } 件
+
+# {n} environment | {n} environments
+t97db2cda =
+    { $n ->
+       *[other] 環境 { $n } 件
+    }
+
+# {n} config file | {n} config files
+tc9aa46c2 =
+    { $n ->
+       *[other] 設定ファイル { $n } 件
+    }
+
+# {n} note | {n} notes
+t9adc29da =
+    { $n ->
+       *[other] ノート { $n } 件
+    }
+
+# NOT SYNCING
+t7c7f0ba3 = 同期していません
+
 # Your hosts on every device. Just sign in.
 t88dd5f11 = すべてのデバイスであなたのホストを。サインインするだけです。
 
-# Hosts, saved passwords, keys and snippets follow you to every computer.
-t025d99af = ホスト、保存済みパスワード、鍵、スニペットを、どのコンピュータでも使えます。
+# Hosts, passwords, keys and snippets stay on this computer for now.
+td2cff7db = ホスト、パスワード、鍵、スニペットは今のところこのコンピューターにだけあります。
 
-# Nothing to set up: no folder, no server, no key to type on a new device.
-tde7b1d58 = 設定は不要です。新しいデバイスでフォルダ、サーバー、キーを入力する必要はありません。
+# See shellwing cloud
+t88cbb4e0 = shellwing cloud を見る
 
-# Encrypted on your devices: shellwing never sees your secrets.
-t35aecaf3 = デバイス上で暗号化されるため、shellwing があなたのシークレットを見ることはありません。
+# A folder, WebDAV, S3 or Git of your own:
+t42ad626a = 自前のフォルダ、WebDAV、S3、Git：
 
-# Create an account
-td7f6c093 = アカウントを作成
+# Settings › Sync
+t6790eaeb = 設定 › 同期
 
-# or continue with
-t2f60c9bf = または次の方法で続行
+# SYNC
+t476c685a = 同期
+
+# Open Settings › Sync
+tbef0fba1 = 設定 › 同期 を開く
 
 # Synced · {when}
 ta250b3ba = 同期済み · { $when }
@@ -2167,20 +2206,23 @@ tfff0fb2a = 一時停止：保管庫がロックされています
 # With {place}, once it is open
 tf75bc464 = 同期先：{ $place }（保管庫を開くと再開）
 
-# {hosts}, {passwords}, {keys} and {snippets}.
-t668619a5 = { $hosts }、{ $passwords }、{ $keys }、{ $snippets }。
+# Sync now
+ta34dd8fe = 今すぐ同期
 
-# {n} host | {n} hosts
-t2489674e = ホスト { $n } 件
+# Hosts, saved passwords, keys and snippets follow you to every computer.
+t025d99af = ホスト、保存済みパスワード、鍵、スニペットを、どのコンピュータでも使えます。
 
-# {n} password | {n} passwords
-tf07ec59c = パスワード { $n } 件
+# Nothing to set up: no folder, no server, no key to type on a new device.
+tde7b1d58 = 設定は不要です。新しいデバイスでフォルダ、サーバー、キーを入力する必要はありません。
 
-# {n} snippet | {n} snippets
-t4a5f7c7a = スニペット { $n } 件
+# Encrypted on your devices: shellwing never sees your secrets.
+t35aecaf3 = デバイス上で暗号化されるため、shellwing があなたのシークレットを見ることはありません。
 
-# SYNC
-t476c685a = 同期
+# Create an account
+td7f6c093 = アカウントを作成
+
+# or continue with
+t2f60c9bf = または次の方法で続行
 
 # Rather not keep it yourself?
 t616f184a = 自分で保管したくない場合は
@@ -2196,12 +2238,6 @@ t6036c21e = ホスト { $n } 件 · $2.99/月
 
 # unlimited · $5.99/mo
 td7d2332f = 無制限 · $5.99/月
-
-# A folder, WebDAV, S3 or Git of your own:
-t42ad626a = 自前のフォルダ、WebDAV、S3、Git：
-
-# Settings › Sync
-t6790eaeb = 設定 › 同期
 
 # just now
 ta715ef0f = たった今

@@ -1,8 +1,9 @@
 //! The cloud beside Settings: how sync stands, as its color says, and the
-//! panel that hangs from it. Without sync it invites to shellwing cloud
-//! (sign in, and every device has it); with a folder, WebDAV, S3 or Git set
-//! up by hand it says how that goes. shellwing cloud itself is not there
-//! yet: its buttons wait for it.
+//! panel that hangs from it: how it goes and what travels, or, without sync,
+//! a line on shellwing cloud. Settings › Sync tells the rest, with the parts
+//! here: the status card, shellwing cloud in full (sign in, and every device
+//! has it) and beside a place set up by hand. shellwing cloud itself is not
+//! there yet: its buttons wait for it.
 
 use std::time::SystemTime;
 
@@ -49,21 +50,62 @@ impl Standing {
     }
 }
 
-/// What the panel shows, from the workspace.
+/// What travels with the vault.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Counts {
+    pub hosts: usize,
+    pub passwords: usize,
+    pub keys: usize,
+    pub snippets: usize,
+    pub environments: usize,
+    pub files: usize,
+    pub notes: usize,
+}
+
+impl Counts {
+    /// "12 hosts · 30 passwords · 4 keys": the hosts, and what else there is.
+    pub fn said(&self) -> String {
+        let mut parts = vec![tr_n!(self.hosts, "{n} host", "{n} hosts")];
+        let rest = [
+            (
+                self.passwords,
+                tr_n!(self.passwords, "{n} password", "{n} passwords"),
+            ),
+            (self.keys, tr_n!(self.keys, "{n} key", "{n} keys")),
+            (
+                self.snippets,
+                tr_n!(self.snippets, "{n} snippet", "{n} snippets"),
+            ),
+            (
+                self.environments,
+                tr_n!(self.environments, "{n} environment", "{n} environments"),
+            ),
+            (
+                self.files,
+                tr_n!(self.files, "{n} config file", "{n} config files"),
+            ),
+            (self.notes, tr_n!(self.notes, "{n} note", "{n} notes")),
+        ];
+        parts.extend(rest.into_iter().filter(|(n, _)| *n > 0).map(|(_, s)| s));
+        parts.join(" · ")
+    }
+}
+
+/// How sync stands, from the workspace: for the panel and Settings › Sync.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SyncSnap {
     pub standing: Standing,
     /// Where it syncs, as said to the user; None: nowhere.
     pub place: Option<String>,
-    /// What travels: hosts, passwords, SSH keys, snippets.
-    pub counts: Option<(usize, usize, usize, usize)>,
+    /// What travels; None while the vault is not open.
+    pub counts: Option<Counts>,
 }
 
 /// What the panel asks the workspace to do.
 pub enum SyncPanelEvent {
     Dismiss,
     SyncNow,
-    /// Settings › Sync, to set up a folder or a server.
+    /// Settings › Sync: shellwing cloud, and the places of one's own.
     OpenSettings,
     Unlock,
 }
@@ -80,6 +122,8 @@ impl Focusable for SyncPanel {
         self.focus.clone()
     }
 }
+
+type Click = Box<dyn Fn(&gpui::ClickEvent, &mut Window, &mut gpui::App) + 'static>;
 
 impl SyncPanel {
     pub fn new(snap: SyncSnap, cx: &mut Context<Self>) -> Self {
@@ -103,30 +147,9 @@ impl SyncPanel {
         }
     }
 
-    /// Nothing set up: what shellwing cloud would do.
-    fn invitation(&self, cx: &mut Context<Self>) -> gpui::Div {
+    /// Nothing set up: a line on shellwing cloud, which Settings tells.
+    fn not_syncing(&self, cx: &mut Context<Self>) -> gpui::Div {
         let c = colors();
-        let point = |text: &str| {
-            div()
-                .flex()
-                .gap(px(10.))
-                .child(
-                    svg()
-                        .path("icons/check.svg")
-                        .flex_shrink_0()
-                        .mt(px(2.))
-                        .size(px(15.))
-                        .text_color(rgb(c.sync_ok)),
-                )
-                // Its own width, so a long line wraps rather than runs out.
-                .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .text_color(rgb(c.soft))
-                        .child(text.to_string()),
-                )
-        };
         div()
             .flex()
             .flex_col()
@@ -134,105 +157,60 @@ impl SyncPanel {
                 div()
                     .flex()
                     .flex_col()
-                    .gap(px(14.))
+                    .gap(px(12.))
                     .p(px(20.))
-                    .child(header(c.sync_off, "SHELLWING CLOUD"))
+                    .child(header(c.sync_off, &tr!("NOT SYNCING")))
                     .child(
                         div()
-                            .text_size(ui(19.))
+                            .text_size(ui(17.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .line_height(gpui::relative(1.25))
+                            .line_height(gpui::relative(1.3))
                             .child(tr!("Your hosts on every device. Just sign in.")),
                     )
                     .child(
                         div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(8.))
-                            .text_size(ui(13.))
+                            .text_size(ui(12.5))
                             .line_height(gpui::relative(1.45))
-                            .child(point(&tr!(
-                                "Hosts, saved passwords, keys and snippets follow you to every computer."
-                            )))
-                            .child(point(&tr!(
-                                "Nothing to set up: no folder, no server, no key to type on a new device."
-                            )))
-                            .child(point(&tr!(
-                                "Encrypted on your devices: shellwing never sees your secrets."
-                            ))),
+                            .text_color(rgb(c.soft))
+                            .child(tr!(
+                                "Hosts, passwords, keys and snippets stay on this computer for now."
+                            )),
                     )
                     .child(
                         div()
-                            .flex()
-                            .gap(px(8.))
-                            .child(waiting_button("cloud-create", &tr!("Create an account"), true).flex_1())
-                            .child(waiting_button("cloud-sign-in", &tr!("Sign in"), false)),
-                    )
-                    .child(
-                        div()
+                            .id("sync-see-cloud")
+                            .h(px(34.))
                             .flex()
                             .items_center()
-                            .gap(px(10.))
-                            .text_size(ui(12.))
-                            .text_color(rgb(c.muted))
-                            .child(div().flex_1().h(px(1.)).bg(rgb(c.edge)))
-                            .child(tr!("or continue with"))
-                            .child(div().flex_1().h(px(1.)).bg(rgb(c.edge))),
-                    )
-                    .child(sso_row())
-                    .child(coming())
-                    .child(plans()),
+                            .justify_center()
+                            .rounded(px(8.))
+                            .bg(rgb(c.accent))
+                            .hover(|s| s.bg(rgb(c.accent_hover)))
+                            .text_color(rgb(c.on_accent))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .cursor_pointer()
+                            .on_click(
+                                cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::OpenSettings)),
+                            )
+                            .child(tr!("See shellwing cloud")),
+                    ),
             )
-            .child(footer(cx))
+            .child(footer(
+                Some(tr!("A folder, WebDAV, S3 or Git of your own:")),
+                &tr!("Settings › Sync"),
+                cx,
+            ))
     }
 
-    /// Set up by hand: how it goes, and shellwing cloud beside it.
-    fn standing(&self, place: &str, cx: &mut Context<Self>) -> gpui::Div {
-        let c = colors();
+    /// Set up: how it goes, what travels, and Settings for the rest.
+    fn syncing(&self, place: &str, cx: &mut Context<Self>) -> gpui::Div {
         let s = &self.snap.standing;
-        let (title, detail) = match s {
-            Standing::Synced(Some(t)) => (
-                tr!("Synced · {when}", when = ago(*t)),
-                tr!("With {place}", place = place),
-            ),
-            Standing::Synced(None) => (tr!("Set up"), tr!("With {place}", place = place)),
-            Standing::Syncing => (tr!("Syncing…"), tr!("With {place}", place = place)),
-            Standing::Failed(e) => (tr!("Not synced"), format!("{place}: {e}")),
-            Standing::Paused => (
-                tr!("Paused: the vault is locked"),
-                tr!("With {place}, once it is open", place = place),
-            ),
-            Standing::Off => (String::new(), String::new()),
-        };
-        let (edge, ground) = match s {
-            Standing::Failed(_) => (c.warn_edge, c.warn_bg),
-            Standing::Paused => (c.edge, c.chip),
-            _ => (c.edge, c.good_bg),
-        };
-        let paused = *s == Standing::Paused;
-        let act = if paused {
-            small("sync-unlock", &tr!("Unlock…"))
-                .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::Unlock)))
-        } else {
-            small(
-                "sync-now",
-                &if matches!(s, Standing::Failed(_)) {
-                    tr!("Try again")
-                } else {
-                    tr!("Sync now")
-                },
-            )
-            .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::SyncNow)))
-        };
-        let counts = self.snap.counts.map(|(h, p, k, n)| {
-            tr!(
-                "{hosts}, {passwords}, {keys} and {snippets}.",
-                hosts = tr_n!(h, "{n} host", "{n} hosts"),
-                passwords = tr_n!(p, "{n} password", "{n} passwords"),
-                keys = tr_n!(k, "{n} key", "{n} keys"),
-                snippets = tr_n!(n, "{n} snippet", "{n} snippets"),
-            )
-        });
+        let card = status_card(
+            s,
+            place,
+            Box::new(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::SyncNow))),
+            Box::new(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::Unlock))),
+        );
         div()
             .flex()
             .flex_col()
@@ -240,76 +218,205 @@ impl SyncPanel {
                 div()
                     .flex()
                     .flex_col()
-                    .gap(px(14.))
+                    .gap(px(12.))
                     .p(px(18.))
                     .child(header(s.color(), &tr!("SYNC")))
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap(px(10.))
-                            .px(px(12.))
-                            .py(px(10.))
-                            .rounded(px(9.))
-                            .border_1()
-                            .border_color(rgb(edge))
-                            .bg(rgb(ground))
-                            .child(div().flex_shrink_0().size(px(9.)).rounded_full().bg(rgb(s.color())))
-                            .child(
-                                div()
-                                    .flex_1()
-                                    .min_w_0()
-                                    .flex()
-                                    .flex_col()
-                                    .gap(px(2.))
-                                    .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
-                                    .child(
-                                        div()
-                                            .text_size(ui(12.))
-                                            .text_color(rgb(c.soft))
-                                            .child(detail),
-                                    ),
-                            )
-                            .child(act),
-                    )
-                    .when_some(counts, |d, n| {
-                        d.child(div().text_size(ui(12.5)).text_color(rgb(c.soft)).child(n))
-                    })
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(10.))
-                            .p(px(14.))
-                            .rounded(px(10.))
-                            .border_1()
-                            .border_color(rgb(c.line))
-                            .bg(rgb(c.page))
-                            .child(
-                                div()
-                                    .flex()
-                                    .items_center()
-                                    .gap(px(8.))
-                                    .child(svg().path("icons/cloud.svg").size(px(17.)).text_color(rgb(c.accent)))
-                                    .child(
-                                        div()
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                            .child(tr!("Rather not keep it yourself?")),
-                                    ),
-                            )
-                            .child(
-                                div()
-                                    .text_size(ui(12.5))
-                                    .line_height(gpui::relative(1.45))
-                                    .text_color(rgb(c.soft))
-                                    .child(tr!("shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.")),
-                            )
-                            .child(sso_row())
-                            .child(coming()),
-                    ),
+                    .child(card)
+                    .when_some(self.snap.counts, |d, n| {
+                        d.child(
+                            div()
+                                .text_size(ui(12.5))
+                                .text_color(rgb(colors().soft))
+                                .child(n.said()),
+                        )
+                    }),
             )
-            .child(footer(cx))
+            .child(footer(None, &tr!("Open Settings › Sync"), cx))
     }
+}
+
+/// How sync stands, in a card: its dot, when it last synced (or why not)
+/// and where, and what to do: sync now, try again, or unlock the vault.
+pub fn status_card(standing: &Standing, place: &str, sync: Click, unlock: Click) -> gpui::Div {
+    let c = colors();
+    let s = standing;
+    let (title, detail) = match s {
+        Standing::Synced(Some(t)) => (
+            tr!("Synced · {when}", when = ago(*t)),
+            tr!("With {place}", place = place),
+        ),
+        Standing::Synced(None) => (tr!("Set up"), tr!("With {place}", place = place)),
+        Standing::Syncing => (tr!("Syncing…"), tr!("With {place}", place = place)),
+        Standing::Failed(e) => (tr!("Not synced"), format!("{place}: {e}")),
+        Standing::Paused => (
+            tr!("Paused: the vault is locked"),
+            tr!("With {place}, once it is open", place = place),
+        ),
+        Standing::Off => (String::new(), String::new()),
+    };
+    let (edge, ground, said) = match s {
+        Standing::Failed(_) => (c.warn_edge, c.warn_bg, c.warn_text),
+        Standing::Paused => (c.edge, c.chip, c.soft),
+        _ => (c.edge, c.good_bg, c.soft),
+    };
+    let act = if *s == Standing::Paused {
+        small("sync-unlock", &tr!("Unlock…")).on_click(unlock)
+    } else {
+        small(
+            "sync-now",
+            &if matches!(s, Standing::Failed(_)) {
+                tr!("Try again")
+            } else {
+                tr!("Sync now")
+            },
+        )
+        .on_click(sync)
+    };
+    div()
+        .flex()
+        .items_center()
+        .gap(px(10.))
+        .px(px(12.))
+        .py(px(10.))
+        .rounded(px(9.))
+        .border_1()
+        .border_color(rgb(edge))
+        .bg(rgb(ground))
+        .child(
+            div()
+                .flex_shrink_0()
+                .size(px(9.))
+                .rounded_full()
+                .bg(rgb(s.color())),
+        )
+        .child(
+            div()
+                .flex_1()
+                .min_w_0()
+                .flex()
+                .flex_col()
+                .gap(px(2.))
+                .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
+                .child(div().text_size(ui(12.)).text_color(rgb(said)).child(detail)),
+        )
+        .child(act)
+}
+
+/// shellwing cloud, told in full: what it does, signing in, the plans.
+pub fn invitation() -> gpui::Div {
+    let c = colors();
+    let point = |text: &str| {
+        div()
+            .flex()
+            .gap(px(10.))
+            .child(
+                svg()
+                    .path("icons/check.svg")
+                    .flex_shrink_0()
+                    .mt(px(2.))
+                    .size(px(15.))
+                    .text_color(rgb(c.sync_ok)),
+            )
+            // Its own width, so a long line wraps rather than runs out.
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .text_color(rgb(c.soft))
+                    .child(text.to_string()),
+            )
+    };
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(14.))
+        .child(header(c.sync_off, "SHELLWING CLOUD"))
+        .child(
+            div()
+                .text_size(ui(19.))
+                .font_weight(FontWeight::SEMIBOLD)
+                .line_height(gpui::relative(1.25))
+                .child(tr!("Your hosts on every device. Just sign in.")),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(8.))
+                .text_size(ui(13.))
+                .line_height(gpui::relative(1.45))
+                .child(point(&tr!(
+                    "Hosts, saved passwords, keys and snippets follow you to every computer."
+                )))
+                .child(point(&tr!(
+                    "Nothing to set up: no folder, no server, no key to type on a new device."
+                )))
+                .child(point(&tr!(
+                    "Encrypted on your devices: shellwing never sees your secrets."
+                ))),
+        )
+        .child(
+            div()
+                .flex()
+                .gap(px(8.))
+                .child(waiting_button("cloud-create", &tr!("Create an account"), true).flex_1())
+                .child(waiting_button("cloud-sign-in", &tr!("Sign in"), false)),
+        )
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(10.))
+                .text_size(ui(12.))
+                .text_color(rgb(c.muted))
+                .child(div().flex_1().h(px(1.)).bg(rgb(c.edge)))
+                .child(tr!("or continue with"))
+                .child(div().flex_1().h(px(1.)).bg(rgb(c.edge))),
+        )
+        .child(sso_row())
+        .child(coming())
+        .child(plans())
+}
+
+/// shellwing cloud beside a place set up by hand.
+pub fn aside() -> gpui::Div {
+    let c = colors();
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.))
+        .p(px(14.))
+        .rounded(px(10.))
+        .border_1()
+        .border_color(rgb(c.line))
+        .bg(rgb(c.surface))
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(8.))
+                .child(
+                    svg()
+                        .path("icons/cloud.svg")
+                        .size(px(17.))
+                        .text_color(rgb(c.accent)),
+                )
+                .child(
+                    div()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .child(tr!("Rather not keep it yourself?")),
+                ),
+        )
+        .child(
+            div()
+                .text_size(ui(12.5))
+                .line_height(gpui::relative(1.45))
+                .text_color(rgb(c.soft))
+                .child(tr!("shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.")),
+        )
+        .child(sso_row())
+        .child(coming())
+        .child(plans())
 }
 
 /// A section's small title, with the cloud.
@@ -439,8 +546,12 @@ fn plans() -> gpui::Div {
         .child(plan("Pro", &tr!("unlimited · $5.99/mo")))
 }
 
-/// The way to set it up by hand.
-fn footer(cx: &mut Context<SyncPanel>) -> gpui::Stateful<gpui::Div> {
+/// The panel's foot: a word, and Settings › Sync to open.
+fn footer(
+    said: Option<String>,
+    link: &str,
+    cx: &mut Context<SyncPanel>,
+) -> gpui::Stateful<gpui::Div> {
     let c = colors();
     div()
         .id("sync-settings-link")
@@ -459,12 +570,12 @@ fn footer(cx: &mut Context<SyncPanel>) -> gpui::Stateful<gpui::Div> {
         .text_color(rgb(c.muted))
         .cursor_pointer()
         .on_click(cx.listener(|_, _, _, cx| cx.emit(SyncPanelEvent::OpenSettings)))
-        .child(tr!("A folder, WebDAV, S3 or Git of your own:"))
+        .when_some(said, |d, s| d.child(s))
         .child(
             div()
                 .text_color(rgb(c.accent))
                 .hover(|s| s.text_color(rgb(c.accent_hover)))
-                .child(tr!("Settings › Sync")),
+                .child(link.to_string()),
         )
 }
 
@@ -507,8 +618,8 @@ impl Render for SyncPanel {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let c = colors();
         let body = match self.snap.place.clone() {
-            None => self.invitation(cx),
-            Some(place) => self.standing(&place, cx),
+            None => self.not_syncing(cx),
+            Some(place) => self.syncing(&place, cx),
         };
         div()
             .id("sync-panel")
@@ -542,6 +653,17 @@ mod tests {
         assert_eq!(ago(then(600)), "10 minutes ago");
         assert_eq!(ago(then(3 * 3600)), "3 hours ago");
         assert_eq!(ago(then(3 * 86400)), "3 days ago");
+    }
+
+    #[test]
+    fn what_travels_is_said_without_what_there_is_none_of() {
+        let n = Counts {
+            hosts: 0,
+            passwords: 1,
+            notes: 3,
+            ..Counts::default()
+        };
+        assert_eq!(n.said(), "0 hosts · 1 password · 3 notes");
     }
 
     #[test]
