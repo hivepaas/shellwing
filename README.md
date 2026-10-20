@@ -1,110 +1,93 @@
+<div align="center">
+
+<img src="packaging/icons/shellwing.svg" alt="shellwing logo" width="96" height="96">
+
 # shellwing
 
-A fast, native SSH client for macOS, Windows and Linux.
+**A fast, native SSH client for macOS, Windows and Linux.**
 
-Built in Rust on [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui),
-with [libghostty-vt](https://ghostty.org) for terminal emulation and
-[russh](https://github.com/Eugeny/russh) for SSH.
+Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs between your devices, in a GPU-rendered terminal built in Rust.
 
-Status: early development.
+[![CI](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml/badge.svg)](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml)
+[![Rust](https://img.shields.io/badge/Rust-1.95+-DEA584?style=flat&logo=rust)](https://www.rust-lang.org)
+[![GPUI](https://img.shields.io/badge/UI-GPUI-7B61FF?style=flat)](https://github.com/zed-industries/zed/tree/main/crates/gpui)
+[![libghostty](https://img.shields.io/badge/Terminal-libghostty-3551F3?style=flat)](https://ghostty.org)
+[![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20Windows%20%7C%20Linux-555?style=flat)](docs/platforms.md)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-## Build
+[Features](#-key-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Architecture](#-architecture) • [License](#-license)
 
-Needs Rust 1.95+ and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is
-built from source).
+</div>
+
+---
+
+## 🌟 Key Features
+
+* **Native and fast:** a GPU-rendered terminal on [libghostty-vt](https://ghostty.org), parsing on its own thread; the display's full refresh rate under heavy output, sharp text at any HiDPI scale, and input methods (IME) with the composing text at the cursor.
+* **SSH the way OpenSSH does it:** `~/.ssh/config` (aliases, `ProxyJump`, forwards, identity files), `known_hosts` checks, agent keys, key files, certificates, keyboard-interactive and two-factor codes, and agent forwarding.
+* **Tabs and panes:** split a tab to the same host, move between panes, type into every pane at once, reorder tabs by dragging; tabs follow the shell's title.
+* **Files over SFTP:** browse, upload and download (drag and drop too), rename, delete, and edit remote files in your own editor.
+* **Port forwarding:** local, remote and SOCKS (`-L`, `-R`, `-D`), from the command line, a saved host or the palette while connected.
+* **Saved hosts:** `hosts.toml` with groups, colors, favorites, tags, jump hosts, forwards and a command to run after connecting; a host list and a palette to find and open them.
+* **Vault:** passwords, SSH keys, snippets, environments, config files and notes, encrypted and unlocked through the system keychain, Windows Hello or Touch ID, or a passphrase.
+* **Sync between devices:** the vault, hosts and settings through a synced folder (iCloud Drive, Dropbox, Syncthing...), WebDAV, S3-compatible storage or a Git repository, end-to-end encrypted, with a recovery key and device pairing.
+* **Made for work:** a command palette, find in the terminal and its history, session logs, a local terminal beside the SSH tabs, customizable shortcuts, light and dark themes (gradients too), and an interface in 10 languages.
+* **Reconnects on its own:** a lost connection is retried with a back-off, and forwards come back with it.
+
+---
+
+## 🚀 Getting Started
+
+shellwing is in active development and has no release yet: build it from source.
+
+It needs Rust 1.95+ and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is built from source):
 
 ```sh
-cargo build --release
+make build                    # a release build for this computer, into dist/
+cargo build --release         # or by hand
 ```
 
-On Linux both Wayland and X11 are enabled; without the X11 development
-libraries, build with `--no-default-features --features wayland`. Per-platform
-setup, Windows VMs, Vietnamese input and a manual test checklist are in
-[docs/platforms.md](docs/platforms.md). CI builds Linux on every push and macOS
-and Windows when started by hand, and uploads the binaries as artifacts.
-
-On Linux, `scripts/install-desktop.sh` adds the app's icon and a launcher for
-the built binary to your desktop (the dock, Alt+Tab and the app grid then show
-it); `--remove` takes them away. The icon itself is `packaging/icons/shellwing.svg`.
-
-## Run
+Then:
 
 ```sh
 shellwing                     # the window with the host list
-shellwing [user@]host[:port]  # and a tab connected to host
+shellwing [user@]host[:port]  # and a tab connected to the host
 shellwing --local             # and a tab with a shell on this computer
 ```
 
-`host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`
-(`HostName`, `User`, `Port`, `IdentityFile` and `ProxyJump` are honoured). The host
-list on the left shows both; clicking one opens a tab. A tab shows the host's
-name and what the shell puts in the title (its folder, the program running);
-drag a tab onto another to move it there. Sign-in follows OpenSSH:
-agent keys, key files, keyboard-interactive (one-time codes, or the password when
-PAM asks for it), then a password;
-questions are asked in the terminal. Host keys are checked against
-`~/.ssh/known_hosts` (override with `$SHELLWING_KNOWN_HOSTS`): a new key is shown
-with its fingerprint for you to accept, a changed key refuses the connection.
+`host` can be a name from `hosts.toml` or an alias from `~/.ssh/config`. Per-platform setup (toolchains, Linux libraries, testing on Windows in a VM) is in [docs/platforms.md](docs/platforms.md).
 
-## Shortcuts
+---
 
-Ctrl+Shift on Linux and Windows is Cmd on macOS. The window's shortcuts can be
-changed in *Settings › Keyboard* (see [Keyboard shortcuts](docs/configuration.md#keyboard-shortcuts)).
+## ⚙️ Configuration
 
-| Keys | Does |
-| --- | --- |
-| Ctrl+Shift+K or P (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
-| Ctrl+Shift+T | A new tab (opens the palette) |
-| Ctrl+Shift+D / E (Cmd+D / Cmd+Shift+D) | Split right / down, to the same host |
-| Ctrl+Shift+I (Cmd+Shift+I) | Type in every pane of the tab, or stop; a pane's badge leaves it out |
-| Alt+arrows (Cmd+Alt+arrows) | Move between panes (with one pane they go to the shell) |
-| Ctrl+Shift+W | Close the pane; the last one closes the tab (asks first while connected) |
-| Cmd+Q (macOS) | Quit; closing the window quits too, asking first while connections are open |
-| Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown / PageUp | Next / previous tab (also Cmd+Shift+] / [ on macOS) |
-| Alt+1…9 (Cmd+1…9) | Go to a tab |
-| Ctrl+Shift+A (Cmd+Shift+A) | Every open tab by host (also the tab button in the header): type to find one, Enter to go to it, Ctrl+W to close it |
-| Ctrl+Shift+B | Show or hide the host list |
-| Ctrl+Shift+F (Cmd+F) | Find in the pane and its history: Enter (or Up) for the next match up, Shift+Enter (or Down) back down, Alt+C to match case, Alt+R for a regular expression, Esc to close |
-| Ctrl+Shift+C / V, Shift+Insert | Copy / paste |
-| Shift+PageUp / PageDown / End | Scroll the history / back to the bottom |
-| Ctrl+= / Ctrl+- / Ctrl+0 | Zoom the font in this tab (Cmd on macOS) |
-| Ctrl+Shift+] / [ (Cmd+] / [) | Next / previous theme, saved to `config.toml` |
-| Ctrl+click (Cmd+click) | Open a link |
-| Right-click (Shift+right-click while a program takes the mouse) | The pane's menu: copy, paste, find, files, forward, split, reconnect, close |
+Settings, hosts and themes are TOML files in the config directory (`~/.config/shellwing` on Linux) and apply while the app runs; *Settings* in the app edits the same files. Everything is described in [docs/configuration.md](docs/configuration.md), and the design notes are in [docs/design](docs/design/README.md).
 
-## Configuration
+---
 
-Settings (theme, font, cursor, scrollback), hosts and custom themes are TOML
-files in the config directory (`~/.config/shellwing` on Linux) and apply while
-running. 19 themes are built in, 12 of them gradients; Ctrl+Shift+] and
-Ctrl+Shift+[ (Cmd+] and Cmd+[ on macOS) step through them. Details:
-[docs/configuration.md](docs/configuration.md).
+## 🏗️ Architecture
 
-## Layout
+The app is a [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui) window over a core with no UI, which also builds for iOS and Android.
 
 | Crate | Role |
 | --- | --- |
-| `crates/term` | libghostty-vt on its own thread; produces immutable frames |
-| `crates/ssh` | russh sessions as OpenSSH does them: ssh config, host keys, sign-in, ProxyJump |
-| `crates/vault` | Saved passwords and passphrases: encrypted records in SQLite, key in the OS keychain |
-| `crates/config` | `config.toml`, `hosts.toml` and themes: loading, precedence, comment-preserving writes |
-| `crates/core` | Sessions without a UI: connecting and reconnecting, prompts, saved secrets, host targets |
-| `crates/app` | GPUI window: tabs, host list, terminal rendering, keys, IME (preedit), window chrome |
+| `crates/app` | The GPUI window: tabs, panes, host list, palette, panels, settings |
+| `crates/core` | Sessions without a UI: connecting and reconnecting, prompts, saved secrets |
+| `crates/term` | Terminal emulation: libghostty-vt on its own thread, producing frames to paint |
+| `crates/ssh` | SSH over [russh](https://github.com/Eugeny/russh), as OpenSSH does it |
+| `crates/vault` | The encrypted vault, and its sync |
+| `crates/remote` | Sync backends over the network |
+| `crates/config` | `config.toml`, `hosts.toml` and themes |
+| `crates/presence` | Windows Hello and Touch ID |
+| `crates/i18n` | The interface's languages |
+| `crates/note-editor` | The notes' editor |
 
-`SHELLWING_BENCH=latency` or `flood` runs a measurement and prints a `REPORT` line.
+---
 
-## License
+## 📜 License
 
-shellwing is free software: you can redistribute it and/or modify it under the
-terms of the GNU General Public License, version 3 or (at your option) any later
-version. See [LICENSE](LICENSE). Copyright (C) 2026 HivePaaS.
+shellwing is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License, version 3 or (at your option) any later version. See [LICENSE](LICENSE). Copyright (C) 2026 HivePaaS.
 
-The name and logo are not covered by the GPL: see [TRADEMARKS.md](TRADEMARKS.md).
-Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
+The name and logo are not covered by the GPL: see [TRADEMARKS.md](TRADEMARKS.md). Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Code adapted from other projects keeps its license and notice:
-`crates/app/src/input.rs` is adapted from GPUI's `examples/input.rs`
-(Apache-2.0, Zed Industries), and most built-in terminal themes come from
-iTerm2-Color-Schemes (MIT; see `crates/config/themes/LICENSE-iTerm2-Color-Schemes`).
-The libraries shellwing builds on are all under
-licenses that allow this (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0 and similar).
+Code adapted from other projects keeps its license and notice: `crates/app/src/input.rs` is adapted from GPUI's `examples/input.rs` (Apache-2.0, Zed Industries), `crates/note-editor` from zorite-editor (MIT; see `crates/note-editor/LICENSE`), and most built-in terminal themes come from iTerm2-Color-Schemes (MIT; see `crates/config/themes/LICENSE-iTerm2-Color-Schemes`). The libraries shellwing builds on are all under licenses that allow this (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0 and similar).
