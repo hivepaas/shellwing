@@ -2557,14 +2557,14 @@ tc1b10302 = Biểu thức chính quy (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Bảng Tệp duyệt máy chủ qua SFTP; khung này là shell trên máy tính này.
 
+# Saved in the vault.
+t0d69c4e6 = Đã lưu vào kho.
+
 # Save the password for {target} in the vault?
 tceb19137 = Lưu mật khẩu cho { $target } vào kho?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Lưu cụm mật khẩu của { $key_path } vào kho?
-
-# Saved in the vault.
-t0d69c4e6 = Đã lưu vào kho.
 
 # The host key for {host} has changed.
 t1e510d66 = Khoá máy chủ của { $host } đã thay đổi.

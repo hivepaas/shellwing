@@ -2557,14 +2557,14 @@ tc1b10302 = 正規表現（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = ファイルパネルは SFTP でサーバーを閲覧します。このペインはこのコンピュータ上のシェルです。
 
+# Saved in the vault.
+t0d69c4e6 = 保管庫に保存しました。
+
 # Save the password for {target} in the vault?
 tceb19137 = { $target } のパスワードを保管庫に保存しますか？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path } のパスフレーズを保管庫に保存しますか？
-
-# Saved in the vault.
-t0d69c4e6 = 保管庫に保存しました。
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } のホスト鍵が変更されています。
