@@ -7,7 +7,9 @@
 //! lines of printable ASCII for `read` to take (see [`encode`]). The command itself holds the names only,
 //! and starts with a space, which keeps it out of a bash history.
 
+use shellwing_i18n::tr;
 use shellwing_term::signal_sequence;
+use shellwing_vault::{Oversize, limits};
 use zeroize::Zeroizing;
 
 /// A variable's name, as a POSIX shell takes it.
@@ -53,6 +55,47 @@ pub fn parse_dotenv(text: &str) -> Result<Parsed, String> {
         ));
     }
     Ok(vars)
+}
+
+/// What is past a limit, said in the language in use.
+pub fn said_oversize(o: &Oversize) -> String {
+    let kb = |n: usize| n.div_ceil(1024);
+    match o {
+        Oversize::Command(n) => tr!(
+            "The command is {size} KB; {max} KB at most.",
+            size = kb(*n),
+            max = kb(limits::COMMAND)
+        ),
+        Oversize::Name(n) => tr!(
+            "{name}: a name takes {max} characters at most.",
+            name = n.as_str(),
+            max = limits::NAME
+        ),
+        Oversize::Value(n, b) => tr!(
+            "{name} is {size} KB; a value takes {max} KB at most.",
+            name = n.as_str(),
+            size = kb(*b),
+            max = kb(limits::VALUE)
+        ),
+        Oversize::Vars(n) => tr!(
+            "{count} variables; {max} at most.",
+            count = *n,
+            max = limits::VARS
+        ),
+        Oversize::Environment(n) => tr!(
+            "The variables come to {size} KB; {max} KB at most.",
+            size = kb(*n),
+            max = kb(limits::ENVIRONMENT)
+        ),
+    }
+}
+
+/// A vault's error, said: a limit in the language in use.
+pub fn said_error(e: &shellwing_vault::Error) -> String {
+    match e {
+        shellwing_vault::Error::TooLarge(o) => said_oversize(o),
+        e => e.to_string(),
+    }
 }
 
 /// A variable as sent: its name, and the lines its value goes in.

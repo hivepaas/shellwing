@@ -22,7 +22,7 @@ use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{self, Live, rgb as theme_rgb};
-use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
+use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent, Part};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Opens, Session, Status};
@@ -224,8 +224,6 @@ enum Asking {
     Forward,
     /// A value a snippet needs before it runs.
     Snippet(SnippetRun),
-    /// An environment to load into the focused pane.
-    LoadEnv,
 }
 
 /// A snippet on its way to running.
@@ -524,6 +522,7 @@ impl Workspace {
                     sn.name.clone(),
                 )
                 .detail(snippets::one_line(&sn.command))
+                .section(Part::Snippets)
                 .hint(if panes > 1 {
                     tr_n!(
                         panes,
@@ -546,6 +545,11 @@ impl Workspace {
         else {
             return;
         };
+        // Kept within the limit, whatever device saved it.
+        if snippet.command.len() > shellwing_vault::limits::COMMAND {
+            let o = shellwing_vault::Oversize::Command(snippet.command.len());
+            return self.say(crate::environment::said_oversize(&o), CONFIG_NOTICE, cx);
+        }
         let left = snippets::asked(&snippet.command);
         self.ask_snippet(
             SnippetRun {
@@ -644,21 +648,14 @@ impl Workspace {
         Ok(all)
     }
 
-    /// Offers the environments to load into the focused pane.
-    fn ask_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(view) = self.active_tab().cloned() else {
-            return;
+    /// The environments the palette offers to load into the focused pane,
+    /// while it is connected.
+    fn env_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
+        let Some(view) = self.active_tab() else {
+            return vec![];
         };
-        if let Some(why) = view.read(cx).shell_unready() {
-            return self.say(why, CONFIG_NOTICE, cx);
-        }
-        let envs = self.pane_envs(cx);
-        if envs.is_empty() {
-            return self.say(
-                tr!("No environment for this host: add one in Settings › Environments."),
-                CONFIG_NOTICE,
-                cx,
-            );
+        if view.read(cx).session().status() != Status::Connected {
+            return vec![];
         }
         let loaded: Vec<String> = view
             .read(cx)
@@ -666,23 +663,20 @@ impl Workspace {
             .iter()
             .map(|e| e.id.clone())
             .collect();
-        let entries = envs
+        self.pane_envs(cx)
             .into_iter()
             .map(|e| {
                 let on = loaded.contains(&e.id);
-                Entry::new(Kind::Choice(e.id.clone()), "", e.name.clone())
+                Entry::new(Kind::Env(e.id.clone()), tr!("Environments"), e.name.clone())
                     .detail(e.names.join(" "))
                     .hint(if on {
                         tr!("loaded: Enter loads it again")
                     } else {
                         "Enter".into()
                     })
+                    .section(Part::Environments)
             })
-            .collect();
-        self.asking = Some(Asking::LoadEnv);
-        let palette = cx
-            .new(|cx| Palette::chooser(&tr!("Load an environment into this shell…"), entries, cx));
-        self.show_palette(palette, false, window, cx);
+            .collect()
     }
 
     /// Loads environment `id` into the focused pane.
@@ -702,6 +696,7 @@ impl Workspace {
                             id: env.id.clone(),
                             name: env.name.clone(),
                             names: vec![],
+                            bytes: 0,
                         },
                         values,
                         cx,
@@ -1055,6 +1050,10 @@ impl Workspace {
             ws.set_focused(view.clone(), window, cx);
             match *c {
                 PaneCommand::Palette => ws.open_palette(window, cx),
+                PaneCommand::Snippets => ws.open_palette_at(Some(Part::Snippets), window, cx),
+                PaneCommand::Environments => {
+                    ws.open_palette_at(Some(Part::Environments), window, cx)
+                }
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Log => ws.toggle_log(cx),
@@ -1343,25 +1342,42 @@ impl Workspace {
                             format!("{} · {}", r.detail, section.title).into()
                         })
                         .status(r.status)
-                        .hint("Enter"),
+                        .hint("Enter")
+                        .section(Part::Hosts),
                 );
             }
         }
         for spec in self.live.store().map(|s| s.recent()).unwrap_or_default() {
             if !specs.contains(&spec) {
                 entries.push(
-                    Entry::new(Kind::Recent(spec.clone()), tr!("Recent"), spec).hint("Enter"),
+                    Entry::new(Kind::Recent(spec.clone()), tr!("Recent"), spec)
+                        .hint("Enter")
+                        .section(Part::Recent),
                 );
             }
         }
         entries.extend(self.snippet_entries(cx));
+        entries.extend(self.env_entries(cx));
         let (chord, alt) = if cfg!(target_os = "macos") {
             ("Cmd", "Cmd")
         } else {
             ("Ctrl+Shift", "Ctrl+Shift")
         };
+        // What is done in the pane or the tab, then what is set.
+        let (mut acts, mut sets) = (vec![], vec![]);
         let mut action = |a: Action, title: String, keys: String| {
-            entries.push(Entry::new(Kind::Action(a), tr!("Actions"), title).hint(keys));
+            acts.push(
+                Entry::new(Kind::Action(a), tr!("Actions"), title)
+                    .hint(keys)
+                    .section(Part::Actions),
+            );
+        };
+        let mut setting = |a: Action, title: String, keys: String| {
+            sets.push(
+                Entry::new(Kind::Action(a), tr!("Settings"), title)
+                    .hint(keys)
+                    .section(Part::Settings),
+            );
         };
         if let Some(t) = self.active_tab() {
             let title = t.read(cx).session().title.clone();
@@ -1451,9 +1467,6 @@ impl Workspace {
                     tr!("Forward a port through {title}…", title = title.clone()),
                     "-L / -R / -D".into(),
                 );
-                if !self.pane_envs(cx).is_empty() {
-                    action(Action::LoadEnv, tr!("Load environment…"), String::new());
-                }
                 let loaded: Vec<String> = t
                     .read(cx)
                     .loaded_envs()
@@ -1469,12 +1482,12 @@ impl Workspace {
                 }
             }
         }
-        action(
+        setting(
             Action::ChangeTheme,
             tr!("Change theme…"),
             format!("{alt}+] / ["),
         );
-        action(
+        setting(
             Action::ToggleHosts,
             if self.show_sidebar {
                 tr!("Hide the host list")
@@ -1483,20 +1496,20 @@ impl Workspace {
             },
             format!("{chord}+B"),
         );
-        action(
+        setting(
             Action::ManageSecrets,
             tr!("Saved passwords and passphrases…"),
             String::new(),
         );
         if self.vault.locked().is_some() {
-            action(Action::UnlockVault, tr!("Unlock the vault…"), String::new());
+            setting(Action::UnlockVault, tr!("Unlock the vault…"), String::new());
         }
         if self.vault.can_lock() {
-            action(Action::LockVault, tr!("Lock the vault"), String::new());
+            setting(Action::LockVault, tr!("Lock the vault"), String::new());
         }
         match self.sync.place() {
             Some(f) => {
-                action(
+                setting(
                     Action::SyncNow,
                     tr!(
                         "Sync now with {place}",
@@ -1504,27 +1517,27 @@ impl Workspace {
                     ),
                     String::new(),
                 );
-                action(
+                setting(
                     Action::ShowRecoveryKey,
                     tr!("Show the recovery key"),
                     String::new(),
                 );
-                action(Action::StopSync, tr!("Stop syncing"), String::new());
+                setting(Action::StopSync, tr!("Stop syncing"), String::new());
             }
             None => {
-                action(
+                setting(
                     Action::SyncFolder,
                     tr!("Sync passwords with a folder…"),
                     "iCloud Drive, Syncthing, Dropbox…".into(),
                 );
-                action(
+                setting(
                     Action::SyncServer,
                     tr!("Sync passwords with a server…"),
                     "WebDAV (Nextcloud, Synology), S3 (AWS, R2, B2), Git".into(),
                 );
             }
         }
-        action(
+        setting(
             Action::Settings,
             tr!("Settings…"),
             if cfg!(target_os = "macos") {
@@ -1554,14 +1567,33 @@ impl Workspace {
                 String::new(),
             );
         }
-        action(Action::EditHosts, tr!("Edit hosts.toml"), String::new());
-        action(Action::EditSettings, tr!("Edit config.toml"), String::new());
+        setting(Action::EditHosts, tr!("Edit hosts.toml"), String::new());
+        setting(Action::EditSettings, tr!("Edit config.toml"), String::new());
+        entries.extend(acts);
+        entries.extend(sets);
         entries
     }
 
     fn open_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.open_palette_at(None, window, cx);
+    }
+
+    /// The palette, opened at section `at` (from the pane's menu); a word
+    /// instead where the focused pane has none of it.
+    fn open_palette_at(&mut self, at: Option<Part>, window: &mut Window, cx: &mut Context<Self>) {
         let entries = self.palette_entries(cx);
-        let palette = cx.new(|cx| Palette::connect(entries, cx));
+        if let Some(s) = at
+            && !entries.iter().any(|e| e.section == s)
+        {
+            let said = match s {
+                Part::Snippets => {
+                    tr!("No snippet for this host: add one in Settings › Snippets.")
+                }
+                _ => tr!("No environment for this host: add one in Settings › Environments."),
+            };
+            return self.say(said, CONFIG_NOTICE, cx);
+        }
+        let palette = cx.new(|cx| Palette::connect(entries, at, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -3137,9 +3169,8 @@ impl Workspace {
                     self.ask_recovery_key(false, window, cx);
                 }
             }
-            PaletteEvent::Chose(id) if matches!(self.asking, Some(Asking::LoadEnv)) => {
+            PaletteEvent::LoadEnv(id) => {
                 let id = id.clone();
-                self.asking = None;
                 self.close_palette(window, cx);
                 self.load_env(&id, cx);
             }
@@ -3189,7 +3220,7 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::LoadEnv) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
                         return self.close_palette(window, cx);
                     }
                 };
@@ -3267,7 +3298,6 @@ impl Workspace {
             Action::CloseTab => self.request_close_tab(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
-            Action::LoadEnv => self.ask_env(window, cx),
             Action::UnloadEnv => {
                 if let Some(view) = self.active_tab().cloned()
                     && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))

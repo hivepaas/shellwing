@@ -13,6 +13,21 @@ tbf2a5d3a = chưa có lệnh mở trình soạn thảo
 # no text editor found
 t6256b3da = không tìm thấy trình soạn thảo văn bản
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: tên biến tối đa { $max } ký tự.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } dài { $size } KB; mỗi giá trị tối đa { $max } KB.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } biến; tối đa { $max }.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
+
 # Name
 t0fe07306 = Tên
 
@@ -931,6 +946,24 @@ tdd571ace = Sáng, ấm
 # Your themes
 tb2e83d5c = Chủ đề của bạn
 
+# Hosts
+tcf9aefb4 = Máy chủ
+
+# Recent
+t50e888fe = Gần đây
+
+# Snippets
+t648fcbf7 = Đoạn lệnh
+
+# Environments
+t273b1ccb = Biến môi trường
+
+# Actions
+te65fb504 = Thao tác
+
+# Settings
+t4b058728 = Cài đặt
+
 # Find a host, or type user@host
 t18f005c7 = Tìm máy chủ, hoặc gõ user@host
 
@@ -955,8 +988,8 @@ t850e9777 = Nhấn Enter lần nữa để quên
 # Nothing matches.
 tf8e003c3 = Không có kết quả.
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ di chuyển   Enter mở   Esc đóng   gõ > để chỉ xem thao tác
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ di chuyển   Tab sang nhóm khác   Enter mở   Esc đóng   gõ > để chỉ xem thao tác
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ xem trước   Enter giữ   Esc quay lại
@@ -973,9 +1006,6 @@ tbfdc091c = Enter trả lời   Esc huỷ
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ di chuyển   Enter chọn   Esc huỷ
 
-# Hosts
-tcf9aefb4 = Máy chủ
-
 # General
 t5561fd0b = Chung
 
@@ -987,12 +1017,6 @@ t27d1a714 = Bàn phím
 
 # SSH and security
 t699a801a = SSH và bảo mật
-
-# Snippets
-t648fcbf7 = Đoạn lệnh
-
-# Environments
-t273b1ccb = Biến môi trường
 
 # Vault
 td432914f = Kho
@@ -1305,9 +1329,6 @@ t412f3292 = Tới tab 1–9
 
 # Host list
 t2c78c1d9 = Danh sách máy chủ
-
-# Settings
-t4b058728 = Cài đặt
 
 # Next and previous theme
 t94e69c03 = Chủ đề sau và chủ đề trước
@@ -1651,20 +1672,8 @@ t8e7efcd7 = Sửa…
 # Change
 ta1de2fdd = Đổi
 
-# Show values
-t68f568ba = Hiện giá trị
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Giá trị lưu trong kho được che; muốn hiện sẽ phải xác nhận là bạn.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
-
-# Hide values
-tab6d76ed = Ẩn giá trị
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Giá trị đang hiện trên màn hình: cẩn thận khi chia sẻ màn hình. Một phút nữa sẽ tự che lại.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase của kho, để hiện giá trị
@@ -1939,6 +1948,9 @@ t20301272 = Một chương trình toàn màn hình đang chạy trong pane này:
 # It has no variables.
 t0993a534 = Nó không có biến nào.
 
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Cộng với các bộ đang nạp là { $size } KB; một shell nhận tối đa { $max } KB: hãy gỡ bớt một bộ trước.
+
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).
 
@@ -2086,6 +2098,15 @@ t435e7ac0 = Đã ngừng ghi nhật ký: { $e }
 # Command Palette…
 t14aa6ff7 = Bảng lệnh…
 
+# Snippets…
+t2b3c5b61 = Đoạn lệnh…
+
+# Load Environment…
+td34b2cc0 = Nạp biến môi trường…
+
+# Unload {names}
+t362b9a48 = Gỡ { $names }
+
 # Paste
 tb34a0288 = Dán
 
@@ -2149,14 +2170,8 @@ teaaf5750 = Sẽ chạy
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = Một bộ biến mà đoạn lệnh này cần đã bị xoá: hãy sửa đoạn lệnh.
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = Không có bộ biến nào cho máy chủ này: thêm trong Cài đặt › Biến môi trường.
-
 # loaded: Enter loads it again
 t1a97d76a = đã nạp: Enter để nạp lại
-
-# Load an environment into this shell…
-td1cfd29b = Nạp một bộ biến vào shell này…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Hãy chia tab trước: chỉ có một khung để gõ.
@@ -2190,12 +2205,6 @@ tfa31f588 = Thoát shellwing?
 
 # Choose a host on the left to connect.
 tf7759ebb = Chọn một máy chủ bên trái để kết nối.
-
-# Recent
-t50e888fe = Gần đây
-
-# Actions
-te65fb504 = Thao tác
 
 # Another tab to {title}
 ta46c00f0 = Tab khác tới { $title }
@@ -2241,9 +2250,6 @@ t13c5bc91 = Tệp trên { $title }
 
 # Forward a port through {title}…
 t9f033387 = Chuyển tiếp một cổng qua { $title }…
-
-# Load environment…
-ta3f75e60 = Nạp biến môi trường…
 
 # Unload environment: {names}
 tbe80f7b5 = Gỡ biến môi trường: { $names }
@@ -2292,6 +2298,12 @@ tbfa1762c = Sửa hosts.toml
 
 # Edit config.toml
 tf108a14d = Sửa config.toml
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = Không có đoạn lệnh nào cho máy chủ này: thêm trong Cài đặt › Đoạn lệnh.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Không có bộ biến nào cho máy chủ này: thêm trong Cài đặt › Biến môi trường.
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = Máy chủ này dùng chủ đề `{ $t }` từ hosts.toml; hãy đổi ở đó.

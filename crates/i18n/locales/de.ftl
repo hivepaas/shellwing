@@ -17,6 +17,21 @@ tbf2a5d3a = kein Editor-Befehl
 # no text editor found
 t6256b3da = kein Texteditor gefunden
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = Der Befehl hat { $size } KB; höchstens { $max } KB.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: Ein Name hat höchstens { $max } Zeichen.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } hat { $size } KB; ein Wert hat höchstens { $max } KB.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } Variablen; höchstens { $max }.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Die Variablen ergeben { $size } KB; höchstens { $max } KB.
+
 # Name
 t0fe07306 = Name
 
@@ -951,6 +966,24 @@ tdd571ace = Hell, warm
 # Your themes
 tb2e83d5c = Deine Designs
 
+# Hosts
+tcf9aefb4 = Hosts
+
+# Recent
+t50e888fe = Zuletzt
+
+# Snippets
+t648fcbf7 = Snippets
+
+# Environments
+t273b1ccb = Umgebungen
+
+# Actions
+te65fb504 = Aktionen
+
+# Settings
+t4b058728 = Einstellungen
+
 # Find a host, or type user@host
 t18f005c7 = Host suchen oder user@host eingeben
 
@@ -975,8 +1008,8 @@ t850e9777 = Erneut Enter zum Vergessen
 # Nothing matches.
 tf8e003c3 = Keine Treffer.
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ bewegen   Enter öffnen   Esc schließen   > tippen nur für Aktionen
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ bewegen   Tab nächste Gruppe   Enter öffnen   Esc schließen   > tippen nur für Aktionen
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ Vorschau   Enter behalten   Esc zurück
@@ -993,9 +1026,6 @@ tbfdc091c = Enter antworten   Esc abbrechen
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ bewegen   Enter wählen   Esc abbrechen
 
-# Hosts
-tcf9aefb4 = Hosts
-
 # General
 t5561fd0b = Allgemein
 
@@ -1007,12 +1037,6 @@ t27d1a714 = Tastatur
 
 # SSH and security
 t699a801a = SSH und Sicherheit
-
-# Snippets
-t648fcbf7 = Snippets
-
-# Environments
-t273b1ccb = Umgebungen
 
 # Vault
 td432914f = Tresor
@@ -1325,9 +1349,6 @@ t412f3292 = Zu Tab 1–9 wechseln
 
 # Host list
 t2c78c1d9 = Hostliste
-
-# Settings
-t4b058728 = Einstellungen
 
 # Next and previous theme
 t94e69c03 = Nächstes und vorheriges Design
@@ -1676,20 +1697,8 @@ t8e7efcd7 = Bearbeiten…
 # Change
 ta1de2fdd = Ändern
 
-# Show values
-t68f568ba = Werte anzeigen
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Im Tresor gespeicherte Werte sind maskiert; zum Anzeigen wird bestätigt, dass du es bist.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
-
-# Hide values
-tab6d76ed = Werte ausblenden
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Sie stehen auf dem Bildschirm: Vorsicht bei Bildschirmfreigabe. In einer Minute werden sie wieder maskiert.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase des Tresors, um die Werte anzuzeigen
@@ -2000,6 +2009,9 @@ t20301272 = In diesem Pane läuft ein Vollbildprogramm: Beende es und versuche e
 # It has no variables.
 t0993a534 = Sie hat keine Variablen.
 
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Mit den geladenen sind das { $size } KB; eine Shell nimmt höchstens { $max } KB: Entlade zuerst eine.
+
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = Die Shell hat die Variablen nicht übernommen: Sie ist nicht am Prompt oder keine POSIX-Shell (sh, bash, zsh).
 
@@ -2151,6 +2163,15 @@ t435e7ac0 = Protokollierung gestoppt: { $e }
 # Command Palette…
 t14aa6ff7 = Befehlspalette…
 
+# Snippets…
+t2b3c5b61 = Snippets…
+
+# Load Environment…
+td34b2cc0 = Umgebung laden…
+
+# Unload {names}
+t362b9a48 = { $names } entladen
+
 # Paste
 tb34a0288 = Einfügen
 
@@ -2222,14 +2243,8 @@ teaaf5750 = Wird ausgeführt
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = Eine Umgebung, die dieses Snippet braucht, wurde gelöscht: Bearbeite das Snippet.
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = Keine Umgebung für diesen Host: Füge in Einstellungen › Umgebungen eine hinzu.
-
 # loaded: Enter loads it again
 t1a97d76a = geladen: Mit Enter wird sie erneut geladen
-
-# Load an environment into this shell…
-td1cfd29b = Eine Umgebung in diese Shell laden…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Teile zuerst den Tab: es gibt nur einen Bereich zum Tippen.
@@ -2271,12 +2286,6 @@ tfa31f588 = shellwing beenden?
 
 # Choose a host on the left to connect.
 tf7759ebb = Wähle links einen Host zum Verbinden.
-
-# Recent
-t50e888fe = Zuletzt
-
-# Actions
-te65fb504 = Aktionen
 
 # Another tab to {title}
 ta46c00f0 = Weiterer Tab zu { $title }
@@ -2322,9 +2331,6 @@ t13c5bc91 = Dateien auf { $title }
 
 # Forward a port through {title}…
 t9f033387 = Port über { $title } weiterleiten…
-
-# Load environment…
-ta3f75e60 = Umgebung laden…
 
 # Unload environment: {names}
 tbe80f7b5 = Umgebung entladen: { $names }
@@ -2373,6 +2379,12 @@ tbfa1762c = hosts.toml bearbeiten
 
 # Edit config.toml
 tf108a14d = config.toml bearbeiten
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = Kein Snippet für diesen Host: Füge in Einstellungen › Snippets eines hinzu.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Keine Umgebung für diesen Host: Füge in Einstellungen › Umgebungen eine hinzu.
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = Dieser Host nutzt das Design `{ $t }` aus hosts.toml; ändere es dort.

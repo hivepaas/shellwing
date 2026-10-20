@@ -13,6 +13,21 @@ tbf2a5d3a = 未设置编辑器命令
 # no text editor found
 t6256b3da = 未找到文本编辑器
 
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = 命令为 { $size } KB；最多 { $max } KB。
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }：名称最多 { $max } 个字符。
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } 为 { $size } KB；每个值最多 { $max } KB。
+
+# {count} variables; {max} at most.
+t1c9f770c = 共 { $count } 个变量；最多 { $max } 个。
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = 变量合计 { $size } KB；最多 { $max } KB。
+
 # Name
 t0fe07306 = 名称
 
@@ -931,6 +946,24 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# Hosts
+tcf9aefb4 = 主机
+
+# Recent
+t50e888fe = 最近
+
+# Snippets
+t648fcbf7 = 代码片段
+
+# Environments
+t273b1ccb = 环境
+
+# Actions
+te65fb504 = 操作
+
+# Settings
+t4b058728 = 设置
+
 # Find a host, or type user@host
 t18f005c7 = 查找主机，或输入 user@host
 
@@ -955,8 +988,8 @@ t850e9777 = 再按 Enter 忘记
 # Nothing matches.
 tf8e003c3 = 没有匹配项。
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ 移动   Enter 打开   Esc 关闭   输入 > 仅显示操作
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ 移动   Tab 下一组   Enter 打开   Esc 关闭   输入 > 仅显示操作
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 预览   Enter 保留   Esc 返回
@@ -973,9 +1006,6 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移动   Enter 选择   Esc 取消
 
-# Hosts
-tcf9aefb4 = 主机
-
 # General
 t5561fd0b = 通用
 
@@ -987,12 +1017,6 @@ t27d1a714 = 键盘
 
 # SSH and security
 t699a801a = SSH 与安全
-
-# Snippets
-t648fcbf7 = 代码片段
-
-# Environments
-t273b1ccb = 环境
 
 # Vault
 td432914f = 保险库
@@ -1305,9 +1329,6 @@ t412f3292 = 转到标签页 1–9
 
 # Host list
 t2c78c1d9 = 主机列表
-
-# Settings
-t4b058728 = 设置
 
 # Next and previous theme
 t94e69c03 = 下一个和上一个主题
@@ -1651,20 +1672,8 @@ t8e7efcd7 = 编辑…
 # Change
 ta1de2fdd = 更改
 
-# Show values
-t68f568ba = 显示值
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = 保险库中的值已遮盖；显示前需要确认是你本人。
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = 请在系统对话框中确认是你本人…
-
-# Hide values
-tab6d76ed = 隐藏值
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = 值正显示在屏幕上：共享屏幕时请注意。一分钟后会再次遮盖。
 
 # The vault's passphrase, to show the values
 teecb1d4f = 保险库的密码短语，用于显示值
@@ -1939,6 +1948,9 @@ t20301272 = 此窗格中正在运行全屏程序：请先退出，然后重试�
 # It has no variables.
 t0993a534 = 它没有变量。
 
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = 加上已加载的，共 { $size } KB；一个 shell 最多 { $max } KB：请先卸载一个。
+
 # The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 ta1a9b215 = shell 未接受这些变量：它不在提示符处，或不是 POSIX shell（sh、bash、zsh）。
 
@@ -2086,6 +2098,15 @@ t435e7ac0 = 记录已停止：{ $e }
 # Command Palette…
 t14aa6ff7 = 命令面板…
 
+# Snippets…
+t2b3c5b61 = 代码片段…
+
+# Load Environment…
+td34b2cc0 = 加载环境…
+
+# Unload {names}
+t362b9a48 = 卸载 { $names }
+
 # Paste
 tb34a0288 = 粘贴
 
@@ -2149,14 +2170,8 @@ teaaf5750 = 将运行
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = 此片段需要的某个环境已被删除：请编辑该代码片段。
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
-
 # loaded: Enter loads it again
 t1a97d76a = 已加载：按 Enter 可再次加载
-
-# Load an environment into this shell…
-td1cfd29b = 将环境加载到此 shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 请先拆分标签页：当前只有一个窗格可输入。
@@ -2190,12 +2205,6 @@ tfa31f588 = 退出 shellwing？
 
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。
-
-# Recent
-t50e888fe = 最近
-
-# Actions
-te65fb504 = 操作
 
 # Another tab to {title}
 ta46c00f0 = 再开一个连接到 { $title } 的标签页
@@ -2241,9 +2250,6 @@ t13c5bc91 = { $title } 上的文件
 
 # Forward a port through {title}…
 t9f033387 = 通过 { $title } 转发端口…
-
-# Load environment…
-ta3f75e60 = 加载环境…
 
 # Unload environment: {names}
 tbe80f7b5 = 卸载环境：{ $names }
@@ -2292,6 +2298,12 @@ tbfa1762c = 编辑 hosts.toml
 
 # Edit config.toml
 tf108a14d = 编辑 config.toml
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = 此主机没有代码片段：请在 设置 › 代码片段 中添加。
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = 此主机使用 hosts.toml 中的主题 `{ $t }`；请在那里修改。

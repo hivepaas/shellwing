@@ -545,7 +545,10 @@ on macOS) saves. It is sent to the pane as one paste, so a shell with bracketed
 paste on (bash, zsh and fish are, by default) takes it whole and runs it at the
 Enter; lists show it on one line, ` ⏎ ` between the lines.
 
-In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
+In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*;
+*Snippets…* in the pane's right-click menu opens the palette there. Under the
+palette's field, a row of badges (Hosts, Recent, Snippets, Environments,
+Actions, Settings) jumps to each part of the list; so do Tab and Shift+Tab.
 
 - **Enter** types the snippet into the pane.
 - **Alt+Enter** (Option+Enter on macOS) types it into every pane of the tab;
@@ -572,9 +575,11 @@ passphrase; with neither, a yes. They are masked again a minute later.
 
 Nothing is loaded by itself. You choose when, and what:
 
-- **Load environment…** in the palette loads one into the focused pane's
-  shell; the pane shows a badge for each one loaded. **Unload environment**, or
-  the badge's ✕, unsets its variables.
+- The palette lists the focused pane's under *Environments*, while it is
+  connected: Enter loads one into its shell (*Load Environment…* in the pane's
+  right-click menu opens the palette there). The pane shows a badge for each
+  one loaded. **Unload environment** in the palette or the menu, or the
+  badge's ✕, unsets its variables.
 - A snippet that **needs** environments runs in a subshell that has them, and
   they are gone when it ends; the pane's shell never gets them.
 
@@ -586,6 +591,13 @@ shell's `printf %b` to turn back. The command holds the names only, and starts w
 bash (with `HISTCONTROL=ignorespace`, the default on most systems) and zsh
 (with `HIST_IGNORE_SPACE`). A POSIX shell (sh, bash, zsh) at its prompt is
 needed; not while a full-screen program runs; fish is not supported yet.
+
+**Limits.** A shell takes an exported variable of 128 KB at most on Linux, and
+all of them with a command's arguments in about 2 MB: past that, every program
+it starts fails ("Argument list too long"). So shellwing keeps well within: a
+variable's name takes 128 characters, a value 32 KB (a PEM key is 3–4 KB), an
+environment 100 variables and 64 KB, and the environments loaded into one
+shell 256 KB together. A snippet's command takes 64 KB.
 
 While loaded, the variables are in the shell's memory on the server: whoever
 has root there, or runs as your user, can read them, until they are unloaded or

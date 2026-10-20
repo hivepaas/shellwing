@@ -34,6 +34,8 @@ pub enum PaletteEvent {
         id: String,
         all: bool,
     },
+    /// Load an environment (by id) into the focused pane.
+    LoadEnv(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,8 +60,6 @@ pub enum Action {
     EditHost(crate::workspace::EditTarget),
     Settings,
     Forward,
-    /// Load an environment into the focused pane's shell.
-    LoadEnv,
     /// Unload the ones loaded there.
     UnloadEnv,
     ToggleHosts,
@@ -110,6 +110,37 @@ pub enum Kind {
     Choice(String),
     /// A snippet, by id.
     Snippet(String),
+    /// An environment to load into the focused pane, by id.
+    Env(String),
+}
+
+/// What part of the palette an entry is in, to jump to from the row of
+/// badges under the field. Several groups can be one section (the
+/// snippets of each category).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Part {
+    Hosts,
+    Recent,
+    Snippets,
+    Environments,
+    Actions,
+    Settings,
+    /// No badge.
+    Other,
+}
+
+impl Part {
+    fn label(self) -> String {
+        match self {
+            Part::Hosts => tr!("Hosts"),
+            Part::Recent => tr!("Recent"),
+            Part::Snippets => tr!("Snippets"),
+            Part::Environments => tr!("Environments"),
+            Part::Actions => tr!("Actions"),
+            Part::Settings => tr!("Settings"),
+            Part::Other => String::new(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -120,6 +151,7 @@ pub struct Entry {
     pub detail: SharedString,
     pub status: Option<Status>,
     pub hint: SharedString,
+    pub section: Part,
 }
 
 impl Entry {
@@ -131,7 +163,13 @@ impl Entry {
             detail: SharedString::default(),
             status: None,
             hint: SharedString::default(),
+            section: Part::Other,
         }
+    }
+
+    pub fn section(mut self, s: Part) -> Self {
+        self.section = s;
+        self
     }
 
     pub fn detail(mut self, d: impl Into<SharedString>) -> Self {
@@ -201,15 +239,66 @@ pub struct Palette {
 impl EventEmitter<PaletteEvent> for Palette {}
 
 impl Palette {
-    /// Hosts, recent connections and actions, plus "connect to" whatever is typed.
-    pub fn connect(entries: Vec<Entry>, cx: &mut Context<Self>) -> Self {
-        Self::build(
+    /// Hosts, recent connections and actions, plus "connect to" whatever
+    /// is typed; opened at `at`'s first entry, at the top, when given.
+    pub fn connect(entries: Vec<Entry>, at: Option<Part>, cx: &mut Context<Self>) -> Self {
+        let mut p = Self::build(
             Mode::Connect,
             entries,
             0,
             &tr!("Find a host, or type user@host"),
             cx,
-        )
+        );
+        if let Some(s) = at {
+            p.jump(s, cx);
+        }
+        p
+    }
+
+    /// The sections of what is listed, in order: the badges under the field.
+    fn sections(&self) -> Vec<Part> {
+        let mut out: Vec<Part> = vec![];
+        for e in &self.shown {
+            if e.section != Part::Other && !out.contains(&e.section) {
+                out.push(e.section);
+            }
+        }
+        out
+    }
+
+    /// Selects the first entry of section `s`, with its heading at the top
+    /// of the list.
+    fn jump(&mut self, s: Part, cx: &mut Context<Self>) {
+        let Some(ix) = self.shown.iter().position(|e| e.section == s) else {
+            return;
+        };
+        self.selected = ix;
+        self.armed = None;
+        let row = self.row_index(ix);
+        // The heading above it, while there are headings.
+        let row = if self.headers() {
+            row.saturating_sub(1)
+        } else {
+            row
+        };
+        self.scroll.scroll_to_top_of_item(row);
+        cx.notify();
+    }
+
+    /// The next section (`by` 1) or the one before (-1), from the selected
+    /// entry's, around.
+    fn step_section(&mut self, by: isize, cx: &mut Context<Self>) {
+        let sections = self.sections();
+        if sections.is_empty() {
+            return;
+        }
+        let now = self.shown.get(self.selected).map(|e| e.section);
+        let at = now
+            .and_then(|s| sections.iter().position(|x| *x == s))
+            .map_or(0, |i| {
+                (i as isize + by).rem_euclid(sections.len() as isize) as usize
+            });
+        self.jump(sections[at], cx);
     }
 
     /// Entries to read or copy, such as the recovery key.
@@ -383,6 +472,7 @@ impl Palette {
                 id: id.clone(),
                 all,
             },
+            Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
             Kind::Note => return,
         });
     }
@@ -410,11 +500,64 @@ impl Palette {
             "up" => step(-1, self, cx),
             "n" if k.modifiers.control => step(1, self, cx),
             "p" if k.modifiers.control => step(-1, self, cx),
+            "tab" if self.mode == Mode::Connect => {
+                self.step_section(if k.modifiers.shift { -1 } else { 1 }, cx)
+            }
             "pagedown" => step(8, self, cx),
             "pageup" => step(-8, self, cx),
             _ => return,
         }
         cx.stop_propagation();
+    }
+}
+
+impl Palette {
+    /// The row of badges under the field, one a section listed; the
+    /// selected entry's lit. A click jumps there.
+    fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::Div> {
+        let sections = self.sections();
+        if self.mode != Mode::Connect || sections.len() < 2 {
+            return None;
+        }
+        let now = self.shown.get(self.selected).map(|e| e.section);
+        let mut row = div()
+            .flex()
+            .flex_wrap()
+            .gap(px(6.))
+            .px_4()
+            .py(px(8.))
+            .border_b_1()
+            .border_color(rgb(colors().line));
+        for (i, s) in sections.into_iter().enumerate() {
+            let on = now == Some(s);
+            row = row.child(
+                div()
+                    .id(("palette-section", i))
+                    .px(px(9.))
+                    .py(px(2.))
+                    .rounded_full()
+                    .border_1()
+                    .text_xs()
+                    .cursor_pointer()
+                    .when(on, |d| {
+                        d.border_color(rgb(colors().accent))
+                            .bg(rgb(colors().selected))
+                            .text_color(rgb(colors().text))
+                    })
+                    .when(!on, |d| {
+                        d.border_color(rgb(colors().line))
+                            .text_color(rgb(colors().muted))
+                            .hover(|h| h.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
+                    })
+                    .on_click(cx.listener(move |p, _, window, cx| {
+                        p.jump(s, cx);
+                        // Back to typing.
+                        window.focus(&p.input.focus_handle(cx), cx);
+                    }))
+                    .child(s.label()),
+            );
+        }
+        Some(row)
     }
 }
 
@@ -523,7 +666,9 @@ impl Render for Palette {
             );
         }
         let footer = match self.mode {
-            Mode::Connect => tr!("↑↓ move   Enter open   Esc close   type > for actions only"),
+            Mode::Connect => {
+                tr!("↑↓ move   Tab next group   Enter open   Esc close   type > for actions only")
+            }
             Mode::Themes => tr!("↑↓ preview   Enter keep   Esc go back"),
             Mode::Secrets => {
                 tr!("↑↓ move   Enter twice forget   Esc close   secrets are never shown")
@@ -561,6 +706,7 @@ impl Render for Palette {
                     .child(self.input.clone())
                     .child(div().text_xs().text_color(rgb(colors().muted)).child("Esc")),
             )
+            .children(self.badges(cx))
             .child(list)
             .child(
                 div()

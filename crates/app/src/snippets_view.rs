@@ -253,8 +253,10 @@ impl SnippetsView {
             .vault
             .get()
             .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.save_snippet(&s).map_err(|e| e.to_string()))
-        {
+            .and_then(|v| {
+                v.save_snippet(&s)
+                    .map_err(|e| crate::environment::said_error(&e))
+            }) {
             Ok(_) => {
                 self.close(window, cx);
                 self.vault_changed(cx);
@@ -368,6 +370,11 @@ impl SnippetsView {
         focused: bool,
         mono: Option<SharedString>,
     ) -> gpui::Div {
+        Self::field_shell(focused, mono).child(input.clone())
+    }
+
+    /// The box alone, for what goes in it.
+    fn field_shell(focused: bool, mono: Option<SharedString>) -> gpui::Div {
         div()
             // One line high, or as many as a field of several lines has.
             .min_h(px(32.))
@@ -385,7 +392,6 @@ impl SnippetsView {
             .bg(rgb(colors().field))
             .text_size(ui(13.))
             .when_some(mono, |d, f| d.font_family(f))
-            .child(input.clone())
     }
 
     fn rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {

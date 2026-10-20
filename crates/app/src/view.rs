@@ -227,6 +227,8 @@ pub struct LoadedEnv {
     pub id: String,
     pub name: String,
     pub names: Vec<String>,
+    /// Its `NAME=value`s, in bytes.
+    pub bytes: usize,
 }
 
 /// Values waiting to go to the shell: when it signals `ready` (its echo
@@ -275,6 +277,10 @@ pub struct FilesResized;
 pub enum PaneCommand {
     /// The palette: hosts, actions, themes, for those who do not know the keys.
     Palette,
+    /// The palette, at the snippets for this pane's host.
+    Snippets,
+    /// The palette, at the environments to load.
+    Environments,
     Split(gpui::Axis),
     Forward,
     /// Log the pane to a file, or stop: the workspace has the settings.
@@ -576,7 +582,9 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (names, sent) = Self::env_values(values)?;
+        let (names, sent, bytes) = Self::env_values(values)?;
+        let others = self.env_bytes(Some(&env.id));
+        Self::fits(others, bytes)?;
         let (ready, done) = (
             format!("ready-{}", env_nonce()),
             format!("done-{}", env_nonce()),
@@ -589,7 +597,11 @@ impl TermView {
                 ready,
                 done: Some(done),
                 values: lines(sent),
-                env: Some(LoadedEnv { names, ..env }),
+                env: Some(LoadedEnv {
+                    names,
+                    bytes,
+                    ..env
+                }),
             },
             cx,
         );
@@ -608,7 +620,9 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (_, sent) = Self::env_values(values)?;
+        let (_, sent, bytes) = Self::env_values(values)?;
+        // The subshell has the ones loaded too.
+        Self::fits(self.env_bytes(None), bytes)?;
         let ready = format!("ready-{}", env_nonce());
         let text = crate::environment::wrapped(&sent, &ready, command.trim_end_matches('\n'));
         // Several lines: one paste, so it runs whole at the Enter.
@@ -649,10 +663,17 @@ impl TermView {
     /// The variables to send, each value as its lines; the names too.
     fn env_values(
         values: shellwing_vault::EnvValues,
-    ) -> Result<(Vec<String>, Vec<crate::environment::Sent>), String> {
+    ) -> Result<(Vec<String>, Vec<crate::environment::Sent>, usize), String> {
         if values.is_empty() {
             return Err(tr!("It has no variables."));
         }
+        // Kept within the limits, whatever device saved it.
+        if let Some(o) = shellwing_vault::environment_oversize(
+            values.iter().map(|(n, v)| (n.as_str(), v.as_str())),
+        ) {
+            return Err(crate::environment::said_oversize(&o));
+        }
+        let bytes = values.iter().map(|(n, v)| n.len() + 1 + v.len()).sum();
         if let Some((n, _)) = values
             .iter()
             .find(|(n, _)| !crate::environment::valid_name(n))
@@ -664,7 +685,29 @@ impl TermView {
             .iter()
             .map(|(n, v)| crate::environment::encode(n, v))
             .collect();
-        Ok((names, sent))
+        Ok((names, sent, bytes))
+    }
+
+    /// The bytes of the environments loaded here, but `except`'s.
+    fn env_bytes(&self, except: Option<&str>) -> usize {
+        self.env_loaded
+            .iter()
+            .filter(|e| except.is_none_or(|x| e.id != x))
+            .map(|e| e.bytes)
+            .sum()
+    }
+
+    /// Whether `bytes` more fit in the shell beside `loaded`.
+    fn fits(loaded: usize, bytes: usize) -> Result<(), String> {
+        let max = shellwing_vault::limits::LOADED;
+        if loaded + bytes <= max {
+            return Ok(());
+        }
+        Err(tr!(
+            "With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.",
+            size = (loaded + bytes).div_ceil(1024),
+            max = max / 1024
+        ))
     }
 
     /// Keeps `load` until the shell signals, or gives it up after a while.
@@ -1924,6 +1967,37 @@ impl TermView {
                 item("menu-palette", &tr!("Command Palette…"), chord("K"), true)
                     .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
             )
+            .child(
+                item("menu-snippets", &tr!("Snippets…"), String::new(), true)
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Snippets))),
+            )
+            .when(status == Status::Connected, |d| {
+                d.child(
+                    item(
+                        "menu-load-env",
+                        &tr!("Load Environment…"),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Environments))),
+                )
+            })
+            .when(!self.env_loaded.is_empty(), |d| {
+                let names: Vec<String> = self.env_loaded.iter().map(|e| e.name.clone()).collect();
+                d.child(
+                    item(
+                        "menu-unload-env",
+                        &tr!("Unload {names}", names = names.join(", ")),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|v, _, cx| {
+                        if let Err(e) = v.unload_env(None, cx) {
+                            v.show_notice(e, LOG_NOTICE, cx);
+                        }
+                    })),
+                )
+            })
             .child(line())
             .child(
                 item("menu-copy", &tr!("Copy"), chord("C"), self.frame.selected)
