@@ -169,23 +169,27 @@ fn method_label(m: AuthMethod) -> String {
 
 impl HostEditor {
     fn blank(ctx: EditorContext, mode: Mode, cx: &mut Context<Self>) -> Self {
-        let input = |cx: &mut Context<Self>, hint: &str| {
-            let hint = hint.to_string();
-            cx.new(|cx| TextInput::new(hint, cx))
-        };
+        // Placeholders said again when drawn: they follow the language.
+        fn input(
+            cx: &mut Context<HostEditor>,
+            hint: impl Fn() -> String + 'static,
+        ) -> gpui::Entity<TextInput> {
+            crate::input::said(cx, hint)
+        }
+        let keepalive = ctx.app_ssh.keepalive.to_string();
         let inputs = Inputs {
-            name: input(cx, "web-1"),
-            alias: input(cx, &tr!("optional")),
-            address: input(cx, &tr!("10.0.0.5 or host.example.com")),
-            port: input(cx, "22"),
-            user: input(cx, &tr!("your login name")),
-            key: input(cx, "~/.ssh/id_ed25519"),
-            tags: input(cx, "api, docker"),
-            jump: input(cx, &tr!("a host here, an ssh alias, or user@host")),
-            forward: input(cx, "-L 8080:localhost:80"),
-            keepalive: input(cx, &ctx.app_ssh.keepalive.to_string()),
-            run: input(cx, "cd ~/apps && exec $SHELL -l"),
-            new_group: input(cx, &tr!("Staging")),
+            name: input(cx, || "web-1".to_string()),
+            alias: input(cx, || tr!("optional")),
+            address: input(cx, || tr!("10.0.0.5 or host.example.com")),
+            port: input(cx, || "22".to_string()),
+            user: input(cx, || tr!("your login name")),
+            key: input(cx, || "~/.ssh/id_ed25519".to_string()),
+            tags: input(cx, || "api, docker".to_string()),
+            jump: input(cx, || tr!("a host here, an ssh alias, or user@host")),
+            forward: input(cx, || "-L 8080:localhost:80".to_string()),
+            keepalive: input(cx, move || keepalive.clone()),
+            run: input(cx, || "cd ~/apps && exec $SHELL -l".to_string()),
+            new_group: input(cx, || tr!("Staging")),
         };
         HostEditor {
             focus: cx.focus_handle(),

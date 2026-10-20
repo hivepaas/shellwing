@@ -3333,7 +3333,16 @@ impl Workspace {
     /// app is in: light or dark, by the settings or the system.
     fn restyle(&mut self, cx: &mut Context<Self>) -> Vec<String> {
         // The language, as config.toml now says (a reload, or Settings).
+        let was = shellwing_i18n::language();
         shellwing_i18n::set_language(self.live.settings().general.language.as_deref());
+        if shellwing_i18n::language() != was {
+            // What was said once and kept: the host list's sections, the
+            // window's title, the panels that are open.
+            self.refresh_sidebar(cx);
+            self.refresh_sync_panel(cx);
+            self.refresh_overview(cx);
+            self.in_window(cx, |ws, window, cx| ws.title_window(window, cx));
+        }
         let light = self.live.light_for(self.system_light);
         crate::colors::set_light(light);
         self.live.set_light(light);

@@ -24,7 +24,7 @@ pub struct Changed;
 pub struct TextInput {
     focus: FocusHandle,
     content: SharedString,
-    placeholder: SharedString,
+    placeholder: Placeholder,
     selected: Range<usize>,
     reversed: bool,
     marked: Option<Range<usize>>,
@@ -34,6 +34,22 @@ pub struct TextInput {
     masked: bool,
 }
 
+/// What an empty field shows.
+enum Placeholder {
+    Text(SharedString),
+    /// Said again each time it is drawn: in the language in use now.
+    Said(Box<dyn Fn() -> String>),
+}
+
+/// A field whose placeholder is said in the language in use when drawn,
+/// so it follows a change of language: `said(cx, || tr!("Find"))`.
+pub fn said<V: 'static>(
+    cx: &mut Context<V>,
+    placeholder: impl Fn() -> String + 'static,
+) -> gpui::Entity<TextInput> {
+    cx.new(|cx| TextInput::said(placeholder, cx))
+}
+
 /// What a masked field shows for each character.
 const DOT: char = '•';
 
@@ -41,10 +57,19 @@ impl gpui::EventEmitter<Changed> for TextInput {}
 
 impl TextInput {
     pub fn new(placeholder: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+        Self::with(Placeholder::Text(placeholder.into()), cx)
+    }
+
+    /// See [`said`].
+    pub fn said(placeholder: impl Fn() -> String + 'static, cx: &mut Context<Self>) -> Self {
+        Self::with(Placeholder::Said(Box::new(placeholder)), cx)
+    }
+
+    fn with(placeholder: Placeholder, cx: &mut Context<Self>) -> Self {
         TextInput {
             focus: cx.focus_handle(),
             content: SharedString::default(),
-            placeholder: placeholder.into(),
+            placeholder,
             selected: 0..0,
             reversed: false,
             marked: None,
@@ -52,6 +77,13 @@ impl TextInput {
             last_bounds: None,
             selecting: false,
             masked: false,
+        }
+    }
+
+    fn placeholder_text(&self) -> SharedString {
+        match &self.placeholder {
+            Placeholder::Text(t) => t.clone(),
+            Placeholder::Said(f) => f().into(),
         }
     }
 
@@ -465,7 +497,7 @@ impl Element for TextElement {
         let input = self.input.read(cx);
         let style = window.text_style();
         let (text, color) = if input.content.is_empty() {
-            (input.placeholder.clone(), rgb(colors().faint).into())
+            (input.placeholder_text(), rgb(colors().faint).into())
         } else {
             (input.shown(), style.color)
         };

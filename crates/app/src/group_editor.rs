@@ -49,7 +49,7 @@ impl GroupEditor {
         group: Option<Group>,
         cx: &mut Context<Self>,
     ) -> Self {
-        let name = cx.new(|cx| TextInput::new(tr!("Production"), cx));
+        let name = crate::input::said(cx, || tr!("Production"));
         if let Some(g) = &group {
             let n = g.name.clone();
             name.update(cx, |i, cx| i.set_text(&n, n.len()..n.len(), cx));

@@ -168,9 +168,15 @@ enum SyncKind {
 
 impl SyncForm {
     fn new(sync: &shellwing_config::Sync, cx: &mut Context<SettingsView>) -> SyncForm {
-        let field = |hint: &str, text: &str, masked: bool, cx: &mut Context<SettingsView>| {
+        // Placeholders said again when drawn: they follow the language.
+        fn field(
+            hint: impl Fn() -> String + 'static,
+            text: &str,
+            masked: bool,
+            cx: &mut Context<SettingsView>,
+        ) -> Entity<TextInput> {
             cx.new(|cx| {
-                let mut i = TextInput::new(hint.to_string(), cx);
+                let mut i = TextInput::said(hint, cx);
                 if masked {
                     i = i.masked();
                 }
@@ -193,14 +199,14 @@ impl SyncForm {
             },
             dav: [
                 field(
-                    "https://cloud.example.com/remote.php/dav/files/you/",
+                    || "https://cloud.example.com/remote.php/dav/files/you/".to_string(),
                     &dav.url,
                     false,
                     cx,
                 ),
-                field("you", &dav.user, false, cx),
+                field(|| "you".to_string(), &dav.user, false, cx),
                 field(
-                    &tr!("Its password (an app password, where it has them)"),
+                    || tr!("Its password (an app password, where it has them)"),
                     "",
                     true,
                     cx,
@@ -208,27 +214,32 @@ impl SyncForm {
             ],
             s3: [
                 field(
-                    "https://s3.eu-west-1.amazonaws.com",
+                    || "https://s3.eu-west-1.amazonaws.com".to_string(),
                     &s3.endpoint,
                     false,
                     cx,
                 ),
-                field("auto", &s3.region, false, cx),
-                field("my-bucket", &s3.bucket, false, cx),
-                field(&tr!("none: the top of the bucket"), &s3.prefix, false, cx),
-                field("AKIA…", &s3.access_key, false, cx),
-                field(&tr!("Its secret"), "", true, cx),
+                field(|| "auto".to_string(), &s3.region, false, cx),
+                field(|| "my-bucket".to_string(), &s3.bucket, false, cx),
+                field(|| tr!("none: the top of the bucket"), &s3.prefix, false, cx),
+                field(|| "AKIA…".to_string(), &s3.access_key, false, cx),
+                field(|| tr!("Its secret"), "", true, cx),
             ],
             git: [
                 field(
-                    &tr!("https://github.com/you/vault.git, or git@github.com:you/vault.git"),
+                    || tr!("https://github.com/you/vault.git, or git@github.com:you/vault.git"),
                     &git.url,
                     false,
                     cx,
                 ),
-                field(&tr!("its default"), &git.branch, false, cx),
-                field(&tr!("none: git signs in as it does for you"), "", true, cx),
-                field(&tr!("any (Gitea: yours)"), &git.user, false, cx),
+                field(|| tr!("its default"), &git.branch, false, cx),
+                field(
+                    || tr!("none: git signs in as it does for you"),
+                    "",
+                    true,
+                    cx,
+                ),
+                field(|| tr!("any (Gitea: yours)"), &git.user, false, cx),
             ],
             problem: None,
             no_git: None,
@@ -384,18 +395,13 @@ impl SettingsView {
             .clone()
             .unwrap_or_default();
         let shell_input = cx.new(|cx| {
-            let mut i = TextInput::new(
-                tr!(
-                    "{shell} (yours)",
-                    shell = crate::local::shell(None).join(" ")
-                ),
-                cx,
-            );
+            let yours = crate::local::shell(None).join(" ");
+            let mut i = TextInput::said(move || tr!("{shell} (yours)", shell = &yours), cx);
             i.set_text(&shell, shell.len()..shell.len(), cx);
             i
         });
         let editor_input = cx.new(|cx| {
-            let mut i = TextInput::new(tr!("e.g. code -n, or /path/to/editor --flag"), cx);
+            let mut i = TextInput::said(|| tr!("e.g. code -n, or /path/to/editor --flag"), cx);
             i.set_text(&text, text.len()..text.len(), cx);
             i
         });

@@ -154,7 +154,7 @@ impl Render for Tip {
 
 impl Sidebar {
     pub fn new(workspace: WeakEntity<Workspace>, cx: &mut Context<Self>) -> Self {
-        let filter = cx.new(|cx| TextInput::new(tr!("Filter by name, tag or address"), cx));
+        let filter = crate::input::said(cx, || tr!("Filter by name, tag or address"));
         cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify())
             .detach();
         Sidebar {

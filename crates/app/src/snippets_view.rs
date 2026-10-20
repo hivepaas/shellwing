@@ -84,9 +84,13 @@ impl SnippetsView {
         .detach();
     }
 
-    fn input(placeholder: &str, text: &str, cx: &mut Context<Self>) -> Entity<TextInput> {
+    fn input(
+        placeholder: impl Fn() -> String + 'static,
+        text: &str,
+        cx: &mut Context<Self>,
+    ) -> Entity<TextInput> {
         cx.new(|cx| {
-            let mut i = TextInput::new(placeholder.to_string(), cx);
+            let mut i = TextInput::said(placeholder, cx);
             i.set_text(text, text.len()..text.len(), cx);
             i
         })
@@ -100,8 +104,12 @@ impl SnippetsView {
             scope: String::new(),
             enter: true,
         });
-        let name = Self::input(&tr!("What it does, to find it in the palette"), &s.name, cx);
-        let command = Self::input("df -h / && free -h", &s.command, cx);
+        let name = Self::input(
+            || tr!("What it does, to find it in the palette"),
+            &s.name,
+            cx,
+        );
+        let command = Self::input(|| "df -h / && free -h".to_string(), &s.command, cx);
         // The names asked for show as the command is typed.
         let changed = cx.subscribe(&command, |_, _, _: &Changed, cx| cx.notify());
         let first = if s.name.is_empty() {

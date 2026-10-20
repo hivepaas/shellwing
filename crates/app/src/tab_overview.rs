@@ -71,7 +71,7 @@ impl EventEmitter<OverviewEvent> for TabOverview {}
 
 impl TabOverview {
     pub fn new(rows: Vec<TabRow>, cx: &mut Context<Self>) -> Self {
-        let input = cx.new(|cx| TextInput::new(tr!("Find a tab: host, user, title"), cx));
+        let input = crate::input::said(cx, || tr!("Find a tab: host, user, title"));
         let changed = cx.subscribe(&input, |o, _, _: &Changed, cx| {
             o.chosen = 0;
             o.refilter(cx);

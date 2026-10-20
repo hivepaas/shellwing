@@ -45,7 +45,7 @@ fn host_port(typed: &str) -> (String, u16) {
 impl KnownHostsView {
     pub fn new(cx: &mut Context<Self>) -> Self {
         let filter =
-            cx.new(|cx| TextInput::new(tr!("Find a host, or type one to find hashed lines"), cx));
+            crate::input::said(cx, || tr!("Find a host, or type one to find hashed lines"));
         let changed = cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify());
         let mut v = KnownHostsView {
             focus: cx.focus_handle(),

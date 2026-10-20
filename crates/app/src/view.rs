@@ -807,7 +807,7 @@ impl TermView {
                 f.input.clone()
             }
             None => {
-                let input = cx.new(|cx| TextInput::new(tr!("Find"), cx));
+                let input = crate::input::said(cx, || tr!("Find"));
                 let changed = cx.subscribe(&input, |v, _, _: &Changed, cx| v.send_find(cx));
                 self.find = Some(FindBar {
                     input: input.clone(),

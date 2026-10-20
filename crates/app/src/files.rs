@@ -356,7 +356,7 @@ impl FilesPanel {
             ticking: false,
             scroll: UniformListScrollHandle::new(),
             downloads: downloads_dir(),
-            input: cx.new(|cx| TextInput::new(tr!("Name"), cx)),
+            input: crate::input::said(cx, || tr!("Name")),
             editing: None,
             edit_problem: None,
             deleting: None,

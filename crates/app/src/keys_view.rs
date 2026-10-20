@@ -278,13 +278,13 @@ impl KeysView {
     }
 
     fn input(
-        placeholder: &str,
+        placeholder: impl Fn() -> String + 'static,
         text: &str,
         masked: bool,
         cx: &mut Context<Self>,
     ) -> Entity<TextInput> {
         cx.new(|cx| {
-            let mut i = TextInput::new(placeholder.to_string(), cx);
+            let mut i = TextInput::said(placeholder, cx);
             if masked {
                 i = i.masked();
             }
@@ -321,12 +321,17 @@ impl KeysView {
 
     fn generate_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let name = Self::input(
-            &tr!("A name, to tell your keys apart"),
+            || tr!("A name, to tell your keys apart"),
             &machine(),
             false,
             cx,
         );
-        let comment = Self::input("user@host", &format!("{}@{}", user(), machine()), false, cx);
+        let comment = Self::input(
+            || "user@host".to_string(),
+            &format!("{}@{}", user(), machine()),
+            false,
+            cx,
+        );
         self.open(
             Dialog::Generate {
                 name,
@@ -573,7 +578,7 @@ impl KeysView {
             Ok(k) if then != Use::Save || typed.is_some() => k,
             Ok(_) | Err(ReadError::Passphrase) => {
                 let wrong = typed.is_some();
-                let input = Self::input(&tr!("Its passphrase"), "", true, cx);
+                let input = Self::input(|| tr!("Its passphrase"), "", true, cx);
                 return self.open(
                     Dialog::Unlock {
                         path,
@@ -1219,8 +1224,10 @@ impl KeysView {
                     .child(
                         item("menu-export", &tr!("Export to file…"), false).on_click(cx.listener(
                             move |v, _, w, cx| {
-                                let pass = Self::input(&tr!("A passphrase, or none"), "", true, cx);
-                                let again = Self::input(&tr!("The passphrase again"), "", true, cx);
+                                let pass =
+                                    Self::input(|| tr!("A passphrase, or none"), "", true, cx);
+                                let again =
+                                    Self::input(|| tr!("The passphrase again"), "", true, cx);
                                 v.open(
                                     Dialog::Export {
                                         kept: k1.clone(),
@@ -1237,7 +1244,7 @@ impl KeysView {
                     .child(
                         item("menu-rename", &tr!("Rename…"), false).on_click(cx.listener(
                             move |v, _, w, cx| {
-                                let input = Self::input(&tr!("Name"), &k2.name, false, cx);
+                                let input = Self::input(|| tr!("Name"), &k2.name, false, cx);
                                 v.open(
                                     Dialog::Rename {
                                         id: k2.id.clone(),
@@ -1297,7 +1304,7 @@ impl KeysView {
                     menu = menu.child(
                         item("menu-save-pass", &tr!("Save its passphrase…"), false).on_click(
                             cx.listener(move |v, _, w, cx| {
-                                let pass = Self::input(&tr!("Its passphrase"), "", true, cx);
+                                let pass = Self::input(|| tr!("Its passphrase"), "", true, cx);
                                 v.open(
                                     Dialog::Unlock {
                                         path: path2.clone(),
@@ -1612,8 +1619,8 @@ impl KeysView {
                             .gap(px(8.))
                             .child(outline_button("gen-export", &tr!("Export to file…")).on_click(
                                 cx.listener(move |v, _, w, cx| {
-                                    let pass = Self::input(&tr!("A passphrase, or none"), "", true, cx);
-                                    let again = Self::input(&tr!("The passphrase again"), "", true, cx);
+                                    let pass = Self::input(|| tr!("A passphrase, or none"), "", true, cx);
+                                    let again = Self::input(|| tr!("The passphrase again"), "", true, cx);
                                     v.open(
                                         Dialog::Export {
                                             kept: k.clone(),
