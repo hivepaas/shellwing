@@ -80,6 +80,8 @@ pub enum Action {
     LeaveKeychain,
     /// Close the open vault until its passphrase is typed again.
     LockVault,
+    /// Let Windows Hello or Touch ID open the vault, or stop.
+    TogglePresence,
     /// Let a passphrase join new devices through the sync folder, or stop.
     LetPassphraseJoin,
     StopPassphraseJoin,

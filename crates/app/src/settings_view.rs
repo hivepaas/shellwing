@@ -86,6 +86,9 @@ pub struct Snap {
     pub vault_keychain: bool,
     /// It is open, and its passphrase alone opens it again.
     pub vault_can_lock: bool,
+    /// Windows Hello or Touch ID, where this system has it, and whether it
+    /// opens the vault.
+    pub presence: Option<(&'static str, bool)>,
     /// A passphrase joins new devices to the vault in the sync folder; None
     /// while not syncing.
     pub passphrase_joins: Option<bool>,
@@ -2065,6 +2068,25 @@ impl SettingsView {
                 "What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.",
                 div().flex().flex_col().gap_2().child(div().text_size(ui(12.5)).child(state)).child(buttons),
             ))
+            .when_some(
+                self.snap
+                    .presence
+                    .filter(|_| self.snap.vault_passphrase == Some(true)),
+                |d, (name, on)| {
+                    let what = if cfg!(target_os = "macos") {
+                        format!("When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.")
+                    } else {
+                        format!("When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.")
+                    };
+                    d.child(toggle(
+                        "vault-presence",
+                        on,
+                        &format!("Unlock with {name}"),
+                        &what,
+                        cx.listener(|v, _, w, cx| v.run(Action::TogglePresence, w, cx)),
+                    ))
+                },
+            )
             .when(self.snap.vault_passphrase == Some(true), |d| {
                 let after = self.snap.settings.vault.lock_after.unwrap_or(0);
                 let options = [0, 5, 15, 30, 60]

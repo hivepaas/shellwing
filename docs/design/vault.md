@@ -42,7 +42,19 @@ Space or collection key ── encrypts ──▶ each record (host, password, s
   after that many minutes without a key or a click, and asks for the
   passphrase again; *Lock the vault* does it at once. With the key in the
   keychain there is nothing to lock: any program running as the user could
-  read it there. (Touch ID or Windows Hello in its place: later.)
+  read it there.
+- **The user's presence** (built: `crates/presence`), with a passphrase set:
+  the account key sealed with a secret the system gives only after it,
+  `wrapped_by = 'presence'`, with the device's id for it in `meta`.
+  - Windows Hello: a `KeyCredentialManager` key (in the TPM) signs one fixed
+    challenge; the secret is SHA-256 of the signature (RSA PKCS#1 v1.5
+    signatures are deterministic), as KeePass's Windows Hello plugins do.
+  - Touch ID: a random secret in the data protection keychain, readable only
+    with `kSecAccessControlBiometryCurrentSet`
+    (`WhenPasscodeSetThisDeviceOnly`). Needs a Developer ID-signed app
+    (`errSecMissingEntitlement` otherwise).
+  - A gate only (a prompt before reading the keychain) would add nothing:
+    any program running as the user could read the key without it.
 - Linux without Secret Service falls back to the passphrase (built: the
   account key wrapped by Argon2id(passphrase), m = 64 MiB, t = 3, p = 1, with
   its salt and parameters in `meta`; `wrapped_by = 'passphrase'`).

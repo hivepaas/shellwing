@@ -1,0 +1,27 @@
+[package]
+name = "shellwing-presence"
+description = "Windows Hello and Touch ID, to open the vault with the user's presence"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+sha2 = "0.10"
+windows = { version = "0.62", features = [
+    "Foundation",
+    "Security_Credentials",
+    "Security_Cryptography",
+    "Storage_Streams",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# The data protection keychain (OSX_10_15), which takes Touch ID items.
+security-framework = { version = "3.7", features = ["OSX_10_15"] }
+getrandom = "0.3"
+
+[lints]
+workspace = true

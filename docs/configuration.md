@@ -375,6 +375,21 @@ hold the key:
   that long without a key pressed or a click in shellwing, and asks for the
   passphrase, waiting for your return. Each device has its own.
 
+**Windows Hello and Touch ID** open the locked vault too, once turned on in
+*Settings › Vault › Unlock with Windows Hello* (or *Touch ID*), which needs a
+passphrase set. When the vault locks (at start, when idle, *Lock now*), the
+system asks, and the passphrase can be typed meanwhile; cancelled, the
+passphrase is asked for as before. The passphrase and the recovery key keep
+working.
+
+- **Windows Hello** (a fingerprint, the face or the device's PIN): the key is
+  kept by the device's security chip (TPM) and used only after Hello.
+- **Touch ID** (macOS): the key is a Keychain item that opens only to Touch ID
+  with the fingers enrolled now; adding one stops it until it is turned on
+  again. Apple lets only signed apps keep such items: an unsigned build of
+  shellwing says so.
+- Linux has no such thing for keys: the passphrase it is.
+
 ## Local terminal
 
 *This computer › Local terminal*, at the top of the host list (and of the

@@ -27,6 +27,7 @@ mod cipher;
 mod hlc;
 mod keychain;
 mod pairing;
+mod presence;
 mod recovery;
 mod sync;
 
@@ -35,6 +36,7 @@ pub use cipher::Cipher;
 pub use keychain::OsKeychain;
 pub use keychain::{KeyStore, MemoryKeys};
 pub use pairing::{Answerer, Ask, AskState, Request};
+pub use presence::{MemoryPresence, Presence};
 pub use recovery::RecoveryKey;
 pub use sync::{Backend, Folder, FolderState, SyncReport, transact};
 
@@ -86,6 +88,9 @@ pub enum Error {
     Locked(Lock),
     #[error("that passphrase does not open the vault")]
     WrongPassphrase,
+    /// The user's presence was not given (cancelled), or no longer opens it.
+    #[error("not confirmed")]
+    NotPresent,
     #[error("the passphrase is too short: at least {0} characters")]
     WeakPassphrase(usize),
     /// Too easy to guess for a folder others may read: `zxcvbn`'s score, 0–4.
@@ -113,6 +118,8 @@ pub enum Unlock<'a> {
     RecoveryKey(&'a str),
     /// Makes a new vault whose key this passphrase keeps ([`Lock::New`]).
     NewPassphrase(&'a str),
+    /// The user's presence, where it was set up ([`Vault::set_presence`]).
+    Presence(&'a dyn Presence),
 }
 
 /// The shortest passphrase taken.
@@ -124,6 +131,9 @@ pub fn passphrase_strength(passphrase: &str) -> u8 {
 }
 const PASSPHRASE_AAD: &[u8] = b"shellwing account key wrapped by a passphrase v1";
 const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery key v1";
+const PRESENCE_AAD: &[u8] = b"shellwing account key wrapped by the user's presence v1";
+/// What the system shows when it asks.
+const PRESENCE_REASON: &str = "open shellwing's vault";
 
 fn device_secret_aad(name: &str) -> Vec<u8> {
     format!("shellwing device secret v1 {name}").into_bytes()
@@ -361,6 +371,21 @@ impl Vault {
                 let _ = keys.save(&a[..]);
                 a
             }
+            Unlock::Presence(p) => {
+                let (Some(wrapped), Some(id)) = (
+                    Self::wrapped_account(&o.db, "presence")?,
+                    Self::presence_id(&o.db)?,
+                ) else {
+                    return Err(Error::Locked(Lock::Passphrase));
+                };
+                let secret = p
+                    .secret(&id, PRESENCE_REASON)
+                    .map_err(Error::Keychain)?
+                    .ok_or(Error::NotPresent)?;
+                let (a, _) =
+                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
+                Self::account_from(&a)?
+            }
             Unlock::NewPassphrase(p) => {
                 if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() {
                     return Err(Error::Locked(Lock::Passphrase));
@@ -445,6 +470,78 @@ impl Vault {
     }
 
     /// Whether a passphrase keeps the account key too.
+    /// This device's id for its presence secret (made with it).
+    fn presence_id(db: &Connection) -> Result<Option<String>> {
+        Ok(db
+            .query_row("SELECT value FROM meta WHERE key = 'presence'", [], |r| {
+                r.get(0)
+            })
+            .optional()?)
+    }
+
+    /// Lets `p` (Windows Hello, Touch ID) open the vault on this device: the
+    /// system asks the user once now. Only with a passphrase set: a secret
+    /// of this device's alone must not be all that opens it here.
+    pub fn set_presence(&self, p: &dyn Presence) -> Result<()> {
+        if !self.has_vault_passphrase()? {
+            return Err(Error::Locked(Lock::Passphrase));
+        }
+        let id = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            match Self::presence_id(&db)? {
+                Some(id) => id,
+                None => {
+                    let id: String = random::<16>()?.iter().map(|b| format!("{b:02x}")).collect();
+                    db.execute(
+                        "INSERT INTO meta (key, value) VALUES ('presence', ?1)",
+                        params![id],
+                    )?;
+                    id
+                }
+            }
+        };
+        let secret = Zeroizing::new(p.enroll(&id, PRESENCE_REASON).map_err(Error::Keychain)?);
+        let sealed = cipher::seal(self.cipher, &secret, &self.account[..], PRESENCE_AAD)?;
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('account', 1, ?1, 'presence')
+             ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+            params![sealed],
+        )?;
+        Ok(())
+    }
+
+    /// Stops `p` opening the vault, and has the system forget its secret.
+    pub fn remove_presence(&self, p: &dyn Presence) -> Result<()> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "DELETE FROM keys WHERE id = 'account' AND wrapped_by = 'presence'",
+            [],
+        )?;
+        if let Some(id) = Self::presence_id(&db)? {
+            p.forget(&id).map_err(Error::Keychain)?;
+        }
+        Ok(())
+    }
+
+    /// Whether the user's presence opens the vault on this device.
+    pub fn has_presence(&self) -> Result<bool> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        Ok(Self::wrapped_account(&db, "presence")?.is_some())
+    }
+
+    /// The same, of the vault at `path` before it is opened (to offer it at
+    /// the lock).
+    pub fn opens_with_presence(path: &Path) -> bool {
+        let read_only = rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY;
+        Connection::open_with_flags(path, read_only).is_ok_and(|db| {
+            Self::wrapped_account(&db, "presence")
+                .ok()
+                .flatten()
+                .is_some()
+        })
+    }
+
     pub fn has_vault_passphrase(&self) -> Result<bool> {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         Ok(Self::wrapped_account(&db, "passphrase")?.is_some())
@@ -1547,6 +1644,59 @@ mod tests {
         let v = Vault::open(&path, &keys).expect("again");
         v.set_device_secret("sync", None).expect("forget");
         assert!(v.device_secret("sync").expect("read").is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_users_presence_opens_the_vault_beside_its_passphrase() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-presence-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let hello = MemoryPresence::default();
+        let v = Vault::open(&path, &keys).expect("made");
+        v.set_password("u@h:22", "hunter2").expect("save");
+        assert!(
+            matches!(v.set_presence(&hello), Err(Error::Locked(Lock::Passphrase))),
+            "not without a passphrase"
+        );
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.set_presence(&hello).expect("presence");
+        assert!(v.has_presence().expect("has"));
+        v.leave_keychain(&keys).expect("left");
+        drop(v);
+
+        assert!(Vault::opens_with_presence(&path));
+        assert_eq!(locked(Vault::open(&path, &keys)), Lock::Passphrase);
+        hello
+            .absent
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        assert!(matches!(
+            Vault::unlock(&path, &keys, Unlock::Presence(&hello)),
+            Err(Error::NotPresent)
+        ));
+        hello
+            .absent
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+        let v = Vault::unlock(&path, &keys, Unlock::Presence(&hello)).expect("present");
+        assert_eq!(
+            v.password("u@h:22")
+                .expect("read")
+                .map(|p| p.to_string())
+                .as_deref(),
+            Some("hunter2")
+        );
+        v.remove_presence(&hello).expect("removed");
+        drop(v);
+        assert!(!Vault::opens_with_presence(&path));
+        assert!(matches!(
+            Vault::unlock(&path, &keys, Unlock::Presence(&hello)),
+            Err(Error::Locked(Lock::Passphrase))
+        ));
+        Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
+            .expect("the passphrase still opens it");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
