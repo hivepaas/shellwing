@@ -7778,6 +7778,8 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "rand 0.10.3",
+ "russh",
  "sha2 0.10.9",
  "shellwing-config",
  "shellwing-core",

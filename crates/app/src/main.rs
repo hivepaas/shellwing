@@ -42,6 +42,9 @@ mod tab_overview;
 mod view;
 mod workspace;
 
+#[cfg(test)]
+mod ui_tests;
+
 use std::sync::Arc;
 use std::time::Duration;
 

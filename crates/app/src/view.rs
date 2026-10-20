@@ -1872,6 +1872,21 @@ impl TermView {
         Bounds::new(self.grid_origin.get(), self.area.get())
     }
 
+    /// The screen as text, one line per row, trailing spaces cut: for the UI
+    /// tests. Takes the newest frame, as painting does.
+    #[cfg(test)]
+    pub fn screen_text(&mut self) -> String {
+        if let Some(frame) = self.term.take_frame() {
+            self.frame = frame;
+        }
+        self.frame
+            .rows
+            .iter()
+            .map(|r| r.text.trim_end())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     pub fn session(&self) -> &Session {
         &self.session
     }

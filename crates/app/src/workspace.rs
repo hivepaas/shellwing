@@ -403,6 +403,12 @@ impl Workspace {
         }
     }
 
+    /// The focused pane of the active tab: for the UI tests to read.
+    #[cfg(test)]
+    pub fn active_view(&self) -> Entity<TermView> {
+        self.tabs[self.active].focused.clone()
+    }
+
     pub fn active_index(&self) -> usize {
         self.active
     }

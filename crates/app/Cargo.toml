@@ -45,5 +45,13 @@ unicode-segmentation = "1"
 dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
+[dev-dependencies]
+# The UI tests (src/ui_tests.rs): GPUI's test windows and keystrokes, and an
+# SSH server in the test process.
+gpui = { workspace = true, features = ["test-support"] }
+russh.workspace = true
+rand = { version = "0.10", features = ["thread_rng"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "net"] }
+
 [lints]
 workspace = true
