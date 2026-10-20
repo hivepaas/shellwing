@@ -1429,6 +1429,90 @@ tbfdc091c = Enter responder   Esc cancelar
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ mover   Enter elegir   Esc cancelar
 
+# About
+t58e096de = Acerca de
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS. El nombre y el logotipo de shellwing son marcas de HivePaaS.
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Un cliente SSH nativo para Linux, macOS y Windows.
+
+# Version {version} · {os} {arch}
+t6bead5ae = Versión { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = Copiar datos de la versión
+
+# Copied: {info}
+t183c7f9f = Copiado: { $info }
+
+# Open on GitHub
+t24804c99 = Abrir en GitHub
+
+# Report a problem
+t7b1728e7 = Informar de un problema
+
+# Release notes
+tc52ab62f = Notas de la versión
+
+# Contributing
+ta4fe74dd = Contribuir
+
+# License
+t38e70ee4 = Licencia
+
+# Open source
+ta04619ce = Código abierto
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing es software libre y de código abierto, con licencia GPL-3.0-or-later. Lee el código, compílalo tú mismo, informa de un problema o envía una corrección.
+
+# Open source · Apache-2.0
+tf33a768c = Código abierto · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Una plataforma autoalojada para tus aplicaciones, basada en Docker Swarm
+
+# On your servers
+te5da903f = En tus servidores
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Despliega desde Git o una imagen de Docker, con dominios y TLS automático, logs, métricas y escalado en un clúster.
+
+# On your own computer
+t75086b1c = En tu propio ordenador
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Instálalo en tu ordenador en lugar de Docker Desktop o Portainer y obtén además una gestión completa de aplicaciones.
+
+# 300+ one-click apps
+t6a770b0a = Más de 300 aplicaciones con un clic
+
+# Deploy on push
+tb0bfc3e9 = Despliegue con cada push
+
+# Pull request previews
+t4e4180fc = Vistas previas de pull requests
+
+# Automatic TLS
+t9e9776ed = TLS automático
+
+# Live logs and metrics
+tebe3a172 = Logs y métricas en vivo
+
+# Functions
+t69d796ee = Funciones
+
+# Visit hivepaas.com
+t0632975a = Visitar hivepaas.com
+
+# From the same author
+te0bcddcb = Del mismo autor
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = Quizá te interese HivePaaS, del mismo autor: una alternativa autoalojada y de código abierto a Heroku, Render y Coolify.
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = Pulsa un dígito del 1 al 9 junto con las teclas que se mantienen, como { $example }: el dígito elige la pestaña.
 
@@ -1482,9 +1566,6 @@ t699a801a = SSH y seguridad
 
 # Vault
 td432914f = Bóveda
-
-# About
-t58e096de = Acerca de
 
 # Its password (an app password, where it has them)
 t22e462e2 = Su contraseña (una contraseña de aplicación, si las tiene)
@@ -1996,9 +2077,6 @@ ta18da274 = Bloquear por inactividad
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Tras este tiempo sin pulsar una tecla ni hacer clic, la bóveda se bloquea hasta que se escriba su frase de contraseña. Solo mientras el llavero del sistema no guarde su clave: en ese caso, cada inicio pide la frase de contraseña.
-
-# A native SSH client.
-tdb654976 = Un cliente SSH nativo.
 
 # Open config.toml
 t07a52335 = Abrir config.toml

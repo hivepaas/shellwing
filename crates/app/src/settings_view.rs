@@ -26,6 +26,7 @@ use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
 use crate::workspace::Workspace;
 
+mod about;
 mod keyboard;
 
 pub enum SettingsEvent {
@@ -2288,16 +2289,6 @@ impl SettingsView {
         };
         div().child(view)
     }
-
-    fn about(&self) -> gpui::Div {
-        page(&tr!("About"))
-            .child(
-                div()
-                    .text_size(ui(15.))
-                    .child(format!("shellwing {}", env!("CARGO_PKG_VERSION"))),
-            )
-            .child(label(&tr!("A native SSH client.")))
-    }
 }
 
 fn page(title: &str) -> gpui::Div {
@@ -2595,7 +2586,7 @@ impl Render for SettingsView {
             }
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
-            Page::About => self.about(),
+            Page::About => self.about(cx),
         };
         corners
             .round(div())

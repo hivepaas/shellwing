@@ -1405,6 +1405,90 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移动   Enter 选择   Esc 取消
 
+# About
+t58e096de = 关于
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS。shellwing 名称和标志是 HivePaaS 的商标。
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = 适用于 Linux、macOS 和 Windows 的原生 SSH 客户端。
+
+# Version {version} · {os} {arch}
+t6bead5ae = 版本 { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = 复制版本信息
+
+# Copied: {info}
+t183c7f9f = 已复制：{ $info }
+
+# Open on GitHub
+t24804c99 = 在 GitHub 上打开
+
+# Report a problem
+t7b1728e7 = 报告问题
+
+# Release notes
+tc52ab62f = 发行说明
+
+# Contributing
+ta4fe74dd = 参与贡献
+
+# License
+t38e70ee4 = 许可证
+
+# Open source
+ta04619ce = 开源
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing 是免费的开源软件，采用 GPL-3.0-or-later 许可证。欢迎阅读代码、自行构建、报告问题或提交修复。
+
+# Open source · Apache-2.0
+tf33a768c = 开源 · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = 基于 Docker Swarm 的自托管应用平台
+
+# On your servers
+te5da903f = 在你的服务器上
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = 从 Git 或 Docker 镜像部署，自带域名与自动 TLS、日志、指标，并可在集群中扩展。
+
+# On your own computer
+t75086b1c = 在你自己的电脑上
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = 可直接装在本机，替代 Docker Desktop 或 Portainer，同时提供完整的应用管理功能。
+
+# 300+ one-click apps
+t6a770b0a = 300+ 一键应用
+
+# Deploy on push
+tb0bfc3e9 = 推送即部署
+
+# Pull request previews
+t4e4180fc = 拉取请求预览
+
+# Automatic TLS
+t9e9776ed = 自动 TLS
+
+# Live logs and metrics
+tebe3a172 = 实时日志和指标
+
+# Functions
+t69d796ee = 函数
+
+# Visit hivepaas.com
+t0632975a = 访问 hivepaas.com
+
+# From the same author
+te0bcddcb = 同一作者的作品
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = 你可能也会喜欢同一作者的 HivePaaS：一个开源、自托管的 Heroku、Render 和 Coolify 替代方案。
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = 在按住修饰键的同时按 1 到 9 中的数字，例如 { $example }：数字用于选择标签页。
 
@@ -1458,9 +1542,6 @@ t699a801a = SSH 与安全
 
 # Vault
 td432914f = 保险库
-
-# About
-t58e096de = 关于
 
 # Its password (an app password, where it has them)
 t22e462e2 = 该服务的密码（如支持应用专用密码，请使用它）
@@ -1968,9 +2049,6 @@ ta18da274 = 空闲时锁定
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 超过这段时间没有按键或点击，保险库会锁定，直到输入其密码短语。仅在系统钥匙串未保存其密钥时生效：此时每次启动都会询问密码短语。
-
-# A native SSH client.
-tdb654976 = 原生 SSH 客户端。
 
 # Open config.toml
 t07a52335 = 打开 config.toml

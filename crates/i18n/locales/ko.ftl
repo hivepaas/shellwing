@@ -1405,6 +1405,90 @@ tbfdc091c = Enter 응답   Esc 취소
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 이동   Enter 선택   Esc 취소
 
+# About
+t58e096de = 정보
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS. shellwing 이름과 로고는 HivePaaS의 상표입니다.
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Linux, macOS, Windows용 네이티브 SSH 클라이언트.
+
+# Version {version} · {os} {arch}
+t6bead5ae = 버전 { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = 버전 정보 복사
+
+# Copied: {info}
+t183c7f9f = 복사함: { $info }
+
+# Open on GitHub
+t24804c99 = GitHub에서 열기
+
+# Report a problem
+t7b1728e7 = 문제 신고
+
+# Release notes
+tc52ab62f = 릴리스 노트
+
+# Contributing
+ta4fe74dd = 기여하기
+
+# License
+t38e70ee4 = 라이선스
+
+# Open source
+ta04619ce = 오픈 소스
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing은 GPL-3.0-or-later 라이선스의 무료 오픈 소스 소프트웨어입니다. 코드를 읽고, 직접 빌드하고, 문제를 신고하거나 수정 사항을 보내 주세요.
+
+# Open source · Apache-2.0
+tf33a768c = 오픈 소스 · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Docker Swarm 기반의 셀프 호스팅 앱 플랫폼
+
+# On your servers
+te5da903f = 내 서버에서
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Git이나 Docker 이미지로 배포하고, 도메인과 자동 TLS, 로그, 메트릭, 클러스터 전체 확장까지 제공합니다.
+
+# On your own computer
+t75086b1c = 내 컴퓨터에서
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Docker Desktop이나 Portainer 대신 내 컴퓨터에 설치해도, 완전한 앱 관리 기능을 그대로 쓸 수 있습니다.
+
+# 300+ one-click apps
+t6a770b0a = 원클릭 앱 300개 이상
+
+# Deploy on push
+tb0bfc3e9 = push 시 자동 배포
+
+# Pull request previews
+t4e4180fc = 풀 리퀘스트 미리보기
+
+# Automatic TLS
+t9e9776ed = 자동 TLS
+
+# Live logs and metrics
+tebe3a172 = 실시간 로그와 메트릭
+
+# Functions
+t69d796ee = Functions
+
+# Visit hivepaas.com
+t0632975a = hivepaas.com 방문
+
+# From the same author
+te0bcddcb = 같은 개발자의 앱
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = 이런 앱은 어떠세요? 같은 개발자가 만든 HivePaaS는 Heroku, Render, Coolify를 대체하는 오픈 소스 셀프 호스팅 솔루션입니다.
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = 누르고 있을 키와 함께 1–9 숫자를 누르세요(예: { $example }). 숫자로 탭을 고릅니다.
 
@@ -1458,9 +1542,6 @@ t699a801a = SSH 및 보안
 
 # Vault
 td432914f = 보관함
-
-# About
-t58e096de = 정보
 
 # Its password (an app password, where it has them)
 t22e462e2 = 비밀번호 (앱 비밀번호를 지원하면 앱 비밀번호)
@@ -1968,9 +2049,6 @@ ta18da274 = 유휴 시 잠금
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 키 입력이나 클릭 없이 이 시간이 지나면 암호 문구를 입력할 때까지 보관함이 잠깁니다. 시스템 키체인에 키가 보관되지 않은 경우에만 적용되며, 이때는 시작할 때마다 암호 문구를 묻습니다.
-
-# A native SSH client.
-tdb654976 = 네이티브 SSH 클라이언트.
 
 # Open config.toml
 t07a52335 = config.toml 열기

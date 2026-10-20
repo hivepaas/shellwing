@@ -1405,6 +1405,90 @@ tbfdc091c = Enter 回答   Esc キャンセル
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選択   Esc キャンセル
 
+# About
+t58e096de = 情報
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS。shellwing の名称とロゴは HivePaaS の商標です。
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Linux、macOS、Windows 向けのネイティブ SSH クライアント。
+
+# Version {version} · {os} {arch}
+t6bead5ae = バージョン { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = バージョン情報をコピー
+
+# Copied: {info}
+t183c7f9f = コピーしました：{ $info }
+
+# Open on GitHub
+t24804c99 = GitHub で開く
+
+# Report a problem
+t7b1728e7 = 問題を報告
+
+# Release notes
+tc52ab62f = リリースノート
+
+# Contributing
+ta4fe74dd = 貢献する
+
+# License
+t38e70ee4 = ライセンス
+
+# Open source
+ta04619ce = オープンソース
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing は GPL-3.0-or-later ライセンスの無料オープンソースソフトウェアです。コードを読む、自分でビルドする、問題を報告する、修正を送る、どれも自由です。
+
+# Open source · Apache-2.0
+tf33a768c = オープンソース · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Docker Swarm 上に構築された、アプリのためのセルフホスト型プラットフォーム
+
+# On your servers
+te5da903f = あなたのサーバーで
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Git や Docker イメージからデプロイ。ドメインと自動 TLS、ログ、メトリクス、クラスター全体でのスケーリングを備えています。
+
+# On your own computer
+t75086b1c = あなたのパソコンで
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Docker Desktop や Portainer の代わりにパソコンへインストールでき、さらに本格的なアプリ管理機能も使えます。
+
+# 300+ one-click apps
+t6a770b0a = 300 以上のワンクリックアプリ
+
+# Deploy on push
+tb0bfc3e9 = push で自動デプロイ
+
+# Pull request previews
+t4e4180fc = プルリクエストのプレビュー
+
+# Automatic TLS
+t9e9776ed = 自動 TLS
+
+# Live logs and metrics
+tebe3a172 = ライブログとメトリクス
+
+# Functions
+t69d796ee = Functions
+
+# Visit hivepaas.com
+t0632975a = hivepaas.com を見る
+
+# From the same author
+te0bcddcb = 同じ作者のアプリ
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = こちらもおすすめ：同じ作者による HivePaaS。Heroku、Render、Coolify に代わる、オープンソースのセルフホスト型ソリューションです。
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = 押したままにするキーと一緒に 1〜9 の数字を押してください（例：{ $example }）。数字でタブを選びます。
 
@@ -1458,9 +1542,6 @@ t699a801a = SSH とセキュリティ
 
 # Vault
 td432914f = 保管庫
-
-# About
-t58e096de = 情報
 
 # Its password (an app password, where it has them)
 t22e462e2 = パスワード（アプリパスワードがある場合はそちら）
@@ -1968,9 +2049,6 @@ ta18da274 = アイドル時にロック
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = キー入力やクリックがないままこの時間が経過すると、パスフレーズを入力するまで保管庫がロックされます。システムのキーチェーンに鍵が保存されていない場合のみ有効です（その場合は起動のたびにパスフレーズを尋ねます）。
-
-# A native SSH client.
-tdb654976 = ネイティブの SSH クライアント。
 
 # Open config.toml
 t07a52335 = config.toml を開く

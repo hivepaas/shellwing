@@ -1,0 +1,469 @@
+//! The About page: the version, where the code is and how to take part, and
+//! HivePaaS, from the same author.
+
+use gpui::{
+    ClipboardItem, Context, FontWeight, InteractiveElement, ParentElement,
+    StatefulInteractiveElement, Styled, div, px, rgb, svg,
+};
+use shellwing_i18n::tr;
+
+use super::{SettingsView, heading, label, page, small_button};
+use crate::colors::colors;
+use crate::look::ui;
+
+const REPO: &str = "https://github.com/hivepaas/shellwing";
+const HIVEPAAS: &str = "https://hivepaas.com";
+const HIVEPAAS_REPO: &str = "https://github.com/hivepaas/hivepaas";
+/// The year in the copyright line.
+const YEAR: u32 = 2026;
+
+/// What a problem report needs to say about this build.
+fn version_info() -> String {
+    format!(
+        "shellwing {} ({} {})",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    )
+}
+
+/// A link to a page of the shellwing repository.
+fn repo(path: &str) -> String {
+    format!("{REPO}/{path}")
+}
+
+impl SettingsView {
+    pub(super) fn about(&self, cx: &mut Context<Self>) -> gpui::Div {
+        page(&tr!("About"))
+            .child(self.identity(cx))
+            .child(open_source(cx))
+            .child(hivepaas(cx))
+            .child(
+                div()
+                    .pt(px(12.))
+                    .border_t_1()
+                    .border_color(rgb(colors().line))
+                    .child(label(&tr!(
+                        "© {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.",
+                        year = YEAR.to_string()
+                    ))),
+            )
+    }
+
+    /// The logo, the name, what it is and which build this is.
+    fn identity(&self, cx: &mut Context<Self>) -> gpui::Div {
+        div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(16.))
+            .child(app_logo())
+            .child(
+                div()
+                    .flex_1()
+                    .min_w(px(220.))
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(
+                        div()
+                            .text_size(ui(22.))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child("shellwing"),
+                    )
+                    .child(
+                        div()
+                            .text_size(ui(14.))
+                            .text_color(rgb(colors().soft))
+                            .child(tr!("A native SSH client for Linux, macOS and Windows.")),
+                    )
+                    .child(
+                        div()
+                            .pt(px(2.))
+                            .text_size(ui(12.))
+                            .text_color(rgb(colors().muted))
+                            .child(tr!(
+                                "Version {version} · {os} {arch}",
+                                version = env!("CARGO_PKG_VERSION"),
+                                os = std::env::consts::OS,
+                                arch = std::env::consts::ARCH
+                            )),
+                    ),
+            )
+            .child(
+                small_button("about-copy-version", &tr!("Copy version info")).on_click(
+                    cx.listener(|v, _, _, cx| {
+                        cx.write_to_clipboard(ClipboardItem::new_string(version_info()));
+                        v.say(tr!("Copied: {info}", info = version_info()), cx);
+                    }),
+                ),
+            )
+    }
+}
+
+/// The app's icon as the window draws it: the wing on a pale tile.
+fn app_logo() -> gpui::Div {
+    div()
+        .size(px(64.))
+        .flex_shrink_0()
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(px(15.))
+        .border_2()
+        .border_color(rgb(0xb9c3cf))
+        .bg(rgb(0xeef1f5))
+        .child(
+            svg()
+                .path("icons/logo.svg")
+                .size(px(44.))
+                .text_color(rgb(0x0284c7)),
+        )
+}
+
+/// HivePaaS's mark, seven cells of a hive in its brown and amber, on a pale
+/// tile like shellwing's (the brown does not show on a dark one).
+fn hivepaas_logo() -> gpui::Div {
+    const BROWN: u32 = 0x543d2b;
+    const AMBER: u32 = 0xf59e0b;
+    // Centers in the mark's 36-unit box.
+    const CELLS: [(f32, f32, u32); 7] = [
+        (12.98, 9.30, BROWN),
+        (23.02, 9.30, AMBER),
+        (7.95, 18.0, BROWN),
+        (18.0, 18.0, AMBER),
+        (28.05, 18.0, AMBER),
+        (12.98, 26.70, BROWN),
+        (23.02, 26.70, AMBER),
+    ];
+    let mark = div()
+        .relative()
+        .size(px(36.))
+        .children(CELLS.map(|(x, y, c)| {
+            div()
+                .absolute()
+                .left(px(x - 4.3))
+                .top(px(y - 4.3))
+                .size(px(8.6))
+                .rounded_full()
+                .bg(rgb(c))
+        }));
+    div()
+        .size(px(52.))
+        .flex_shrink_0()
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(px(12.))
+        .border_1()
+        .border_color(rgb(0xd9cbb5))
+        .bg(rgb(0xfbf7f0))
+        .child(mark)
+}
+
+/// A box on the page holding a section's content.
+fn card() -> gpui::Div {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(14.))
+        .p(px(16.))
+        .rounded(px(10.))
+        .border_1()
+        .border_color(rgb(colors().line))
+        .bg(rgb(colors().surface))
+}
+
+fn section(title: &str, body: gpui::Div) -> gpui::Div {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.))
+        .child(heading(title))
+        .child(body)
+}
+
+fn body_text(s: String) -> gpui::Div {
+    div()
+        .text_size(ui(13.))
+        .text_color(rgb(colors().soft))
+        .child(s)
+}
+
+/// A button that opens a web page.
+fn link_button(
+    id: &'static str,
+    text: &str,
+    url: String,
+    cx: &mut Context<SettingsView>,
+) -> gpui::Stateful<gpui::Div> {
+    small_button(id, text).on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
+}
+
+/// A filled button that opens a web page: the section's main way on.
+fn primary_link(
+    id: &'static str,
+    text: &str,
+    url: &'static str,
+    (bg, hover, fg): (u32, u32, u32),
+    cx: &mut Context<SettingsView>,
+) -> gpui::Stateful<gpui::Div> {
+    div()
+        .id(id)
+        .h(px(28.))
+        .px(px(12.))
+        .flex()
+        .items_center()
+        .rounded(px(6.))
+        .bg(rgb(bg))
+        .text_size(ui(12.))
+        .font_weight(FontWeight::SEMIBOLD)
+        .text_color(rgb(fg))
+        .cursor_pointer()
+        .hover(move |s| s.bg(rgb(hover)))
+        .child(text.to_string())
+        .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url)))
+}
+
+/// Where the code is, under which license, and the ways to take part.
+fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
+    let c = colors();
+    let repo_row = div()
+        .flex()
+        .flex_wrap()
+        .items_center()
+        .gap(px(10.))
+        .py(px(6.))
+        .pl(px(12.))
+        .pr(px(6.))
+        .rounded(px(8.))
+        .border_1()
+        .border_color(rgb(c.field_edge))
+        .bg(rgb(c.field))
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(200.))
+                .text_size(ui(12.5))
+                .text_color(rgb(c.text))
+                .child("github.com/hivepaas/shellwing"),
+        )
+        .child(primary_link(
+            "about-github",
+            &tr!("Open on GitHub"),
+            REPO,
+            (c.accent, c.accent_hover, c.on_accent),
+            cx,
+        ));
+    let links = div()
+        .flex()
+        .flex_wrap()
+        .gap(px(8.))
+        .child(link_button(
+            "about-issue",
+            &tr!("Report a problem"),
+            repo("issues/new"),
+            cx,
+        ))
+        .child(link_button(
+            "about-releases",
+            &tr!("Release notes"),
+            repo("releases"),
+            cx,
+        ))
+        .child(link_button(
+            "about-contributing",
+            &tr!("Contributing"),
+            repo("blob/main/CONTRIBUTING.md"),
+            cx,
+        ))
+        .child(link_button(
+            "about-license",
+            &tr!("License"),
+            repo("blob/main/LICENSE"),
+            cx,
+        ));
+    section(
+        &tr!("Open source"),
+        card()
+            .child(body_text(tr!(
+                "shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix."
+            )))
+            .child(repo_row)
+            .child(links),
+    )
+}
+
+/// HivePaaS: what it is, where it runs, and where to see more.
+fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
+    let c = colors();
+    let title = div()
+        .flex()
+        .flex_wrap()
+        .items_center()
+        .gap(px(14.))
+        .child(hivepaas_logo())
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(220.))
+                .flex()
+                .flex_col()
+                .gap(px(3.))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .gap(px(8.))
+                        .child(
+                            div()
+                                .text_size(ui(17.))
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child("HivePaaS"),
+                        )
+                        .child(
+                            div()
+                                .px(px(8.))
+                                .rounded_full()
+                                .border_1()
+                                .border_color(rgb(c.warn_edge))
+                                .bg(rgb(c.warn_bg))
+                                .text_size(ui(11.))
+                                .text_color(rgb(c.warn_text))
+                                .child(tr!("Open source · Apache-2.0")),
+                        ),
+                )
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(c.muted))
+                        .child(tr!(
+                            "A self-hosted platform for your apps, built on Docker Swarm"
+                        )),
+                ),
+        );
+    let place = |icon: &'static str, name: String, what: String| {
+        div()
+            .flex_1()
+            .min_w(px(240.))
+            .flex()
+            .flex_col()
+            .gap(px(6.))
+            .py(px(12.))
+            .px(px(14.))
+            .rounded(px(8.))
+            .border_1()
+            .border_color(rgb(c.line))
+            .bg(rgb(c.page))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(8.))
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child(svg().path(icon).size(px(16.)).text_color(rgb(c.amber)))
+                    .child(name),
+            )
+            .child(
+                div()
+                    .text_size(ui(12.5))
+                    .text_color(rgb(c.soft))
+                    .child(what),
+            )
+    };
+    let places = div()
+        .flex()
+        .flex_wrap()
+        .gap(px(12.))
+        .child(place(
+            "icons/server.svg",
+            tr!("On your servers"),
+            tr!(
+                "Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster."
+            ),
+        ))
+        .child(place(
+            "icons/laptop.svg",
+            tr!("On your own computer"),
+            tr!(
+                "Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top."
+            ),
+        ));
+    let features = [
+        tr!("300+ one-click apps"),
+        tr!("Deploy on push"),
+        tr!("Pull request previews"),
+        tr!("Automatic TLS"),
+        tr!("Live logs and metrics"),
+        tr!("Functions"),
+    ];
+    let chips = div()
+        .flex()
+        .flex_wrap()
+        .gap(px(6.))
+        .children(features.map(|f| {
+            div()
+                .px(px(10.))
+                .py(px(2.))
+                .rounded_full()
+                .bg(rgb(c.chip))
+                .text_size(ui(12.))
+                .text_color(rgb(c.soft))
+                .child(f)
+        }));
+    let actions = div()
+        .flex()
+        .flex_wrap()
+        .gap(px(8.))
+        .child(primary_link(
+            "about-hivepaas",
+            &tr!("Visit hivepaas.com"),
+            HIVEPAAS,
+            (c.amber, c.amber_hover, c.on_amber),
+            cx,
+        ))
+        .child(link_button(
+            "about-hivepaas-github",
+            "GitHub",
+            HIVEPAAS_REPO.to_string(),
+            cx,
+        ));
+    section(
+        &tr!("From the same author"),
+        card()
+            .gap(px(16.))
+            .child(title)
+            .child(
+                div()
+                    .text_size(ui(14.))
+                    .text_color(rgb(c.text))
+                    .child(tr!(
+                        "You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify."
+                    )),
+            )
+            .child(places)
+            .child(chips)
+            .child(actions),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_info_names_the_build() {
+        let info = version_info();
+        assert!(info.starts_with(&format!("shellwing {} (", env!("CARGO_PKG_VERSION"))));
+        assert!(info.ends_with(&format!("{})", std::env::consts::ARCH)));
+    }
+
+    #[test]
+    fn links_stay_in_the_repository() {
+        assert_eq!(
+            repo("issues/new"),
+            "https://github.com/hivepaas/shellwing/issues/new"
+        );
+    }
+}
