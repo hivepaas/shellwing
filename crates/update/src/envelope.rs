@@ -300,7 +300,9 @@ mod tests {
 
     #[test]
     fn the_keys_built_in_read_and_both_algorithms_are_needed() {
-        assert!(!crate::has_keys() || crate::trusted_keys().is_ok());
+        // The real ones: a build without them would never tell of an update.
+        assert!(crate::has_keys());
+        assert!(crate::trusted_keys().is_ok());
         assert!(matches!(
             parse_keys(&[("test-ed", TEST_ED)]),
             Err(SignatureError::Key(why)) if why.contains("ml-dsa-65")
