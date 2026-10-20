@@ -183,7 +183,7 @@ impl SyncForm {
                 i.set_text(text, text.len()..text.len(), cx);
                 i
             })
-        };
+        }
         let dav = sync.webdav.clone().unwrap_or_default();
         let s3 = sync.s3.clone().unwrap_or_default();
         let git = sync.git.clone().unwrap_or_default();
