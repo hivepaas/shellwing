@@ -349,9 +349,9 @@ impl TurnKind {
 /// exactly like fresh typing and the reader's pre-parse normalization.
 /// Unpaired `$$` prose/code is untouched. Both load paths (`with_text`,
 /// `set_text`) route through here.
-/// A document as loaded: as it is. (zorite-editor rewrote `$$` math fences
-/// here; a shell's `$$` is not math, and a note merely opened must not
-/// change.)
+/// A document as loaded: as it is. shellwing: zorite-editor rewrote `$$`
+/// math fences here; a shell's `$$` is not math, and a note merely opened
+/// must not change. (UPSTREAM.md, change 1.)
 fn normalize_loaded(content: String) -> String {
     content
 }
@@ -1165,7 +1165,8 @@ impl EditorState {
     }
 
     /// The selection, as a byte range of the text (`start <= end`).
-    /// (shellwing: for the host's bar over the selection.)
+    /// shellwing: added, with `select` and `is_selecting`, for the host's bar
+    /// over the selection. (UPSTREAM.md, change 3.)
     pub fn selected_range(&self) -> Range<usize> {
         self.selected_range.clone()
     }
@@ -6996,7 +6997,8 @@ mod tests {
         // Table marker at the top: the caret steps to the header line.
         let doc = "<!-- table:grid cols=40,40 -->\n| a | b |\n| --- | --- |\n| 1 | 2 |";
         assert_eq!(caret_off_marker_line(doc, 0), 31);
-        // (Math align markers: math is off in shellwing, see obsidian.rs.)
+        // shellwing: the math align marker case went (math is off, see
+        // obsidian.rs; UPSTREAM.md, change 2).
         // Plain lines pass through untouched.
         assert_eq!(caret_off_marker_line("hello\nworld", 0), 0);
         assert_eq!(caret_off_marker_line("", 0), 0);

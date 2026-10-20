@@ -16,7 +16,11 @@ license is in [LICENSE](LICENSE).
   `#tags`, `^block-ids`, `key:: value` properties, `![[embeds]]`, `$…$` and
   `$$…$$` math, mermaid. In notes about servers, `#` and `::` are comments and
   paths, not tags and properties.
-- The host can read the selection (`selected_range`) for its own bar.
+- The host can read and set the selection (`selected_range`, `select`) for its
+  own bar.
+
+Every change, where it is and why, and how to take in a newer zorite-editor:
+[UPSTREAM.md](UPSTREAM.md).
 
 Taken out next: the code behind what is off, once nothing reaches it; then tests
 for the editing core (`element.rs` has none).
