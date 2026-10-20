@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# Third-party crates taken in to patch: not ours to lint (see each UPSTREAM.md).
+exclude = ["vendor"]
 
 [workspace.package]
 version = "0.1.0"
@@ -48,3 +50,7 @@ strip = true
 # Dependencies optimised in dev builds too, so the terminal is usable while developing.
 [profile.dev.package."*"]
 opt-level = 2
+
+# GPUI's Linux platform, taken in for a fix (vendor/gpui-pre-linux/UPSTREAM.md).
+[patch.crates-io]
+gpui-pre-linux = { path = "vendor/gpui-pre-linux" }
