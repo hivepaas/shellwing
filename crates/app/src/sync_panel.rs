@@ -541,9 +541,9 @@ fn plans() -> gpui::Div {
         .child(plan("Free", &tr_n!(10, "{n} host", "{n} hosts")))
         .child(plan(
             "Starter",
-            &tr_n!(20, "{n} host · $2.99/mo", "{n} hosts · $2.99/mo"),
+            &tr_n!(20, "{n} host · $3.99/mo", "{n} hosts · $3.99/mo"),
         ))
-        .child(plan("Pro", &tr!("unlimited · $5.99/mo")))
+        .child(plan("Pro", &tr!("unlimited · $7.99/mo")))
 }
 
 /// The panel's foot: a word, and Settings › Sync to open.

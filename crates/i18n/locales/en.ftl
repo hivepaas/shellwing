@@ -871,12 +871,12 @@ t2f60c9bf = or continue with
 t616f184a = Rather not keep it yourself?
 t81dee99e = shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.
 t8de35792 = shellwing cloud is coming: signing in opens with it.
-t6036c21e =
+td1ec974a =
     { $n ->
-        [one] { $n } host · $2.99/mo
-       *[other] { $n } hosts · $2.99/mo
+        [one] { $n } host · $3.99/mo
+       *[other] { $n } hosts · $3.99/mo
     }
-td7d2332f = unlimited · $5.99/mo
+t6cc4bcad = unlimited · $7.99/mo
 ta715ef0f = just now
 t85ac693d = a minute ago
 t6c7302d6 =

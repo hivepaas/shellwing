@@ -2395,11 +2395,11 @@ t81dee99e = shellwing cloud giữ giúp bạn: đăng nhập trên mỗi thiết
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud sắp ra mắt: đăng nhập sẽ mở cùng lúc.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } máy chủ · $2.99/tháng
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } máy chủ · $3.99/tháng
 
-# unlimited · $5.99/mo
-td7d2332f = không giới hạn · $5.99/tháng
+# unlimited · $7.99/mo
+t6cc4bcad = không giới hạn · $7.99/tháng
 
 # just now
 ta715ef0f = vừa xong
