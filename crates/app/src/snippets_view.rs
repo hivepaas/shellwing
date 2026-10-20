@@ -342,12 +342,17 @@ impl SnippetsView {
                     .child(format!("{t} {n}")),
             );
         }
-        let tools: Vec<&str> = crate::library::tools()
-            .into_iter()
-            .map(|(t, _)| t)
-            .filter(|t| *t != "Migrations" && *t != "HTTP & network")
-            .take(8)
-            .collect();
+        // A few, as people know them.
+        let tools = [
+            "Linux",
+            "systemd",
+            "Docker",
+            "Kubernetes",
+            "nginx",
+            "PostgreSQL",
+            "MySQL",
+            "Redis",
+        ];
         div()
             .flex()
             .gap(px(18.))

@@ -7790,6 +7790,7 @@ dependencies = [
  "shellwing-term",
  "shellwing-vault",
  "tokio",
+ "toml 1.1.8+spec-1.1.0",
  "unicode-segmentation",
  "zeroize",
  "zorite-markdown",

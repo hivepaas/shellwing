@@ -630,21 +630,32 @@ Actions, Settings) jumps to each part of the list; so do Tab and Shift+Tab.
 
 In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
 pane's host. Any other `{{name}}` is asked for first, with the command shown as
-it will run.
+it will run. A name starts with a letter or `_`: Go templates such as Docker's
+and kubectl's (`--format '{{.Names}}'`) stay as they are.
 
 ### The snippet library
 
 *Settings › Snippets › Library…* (or *Snippet library…* in the palette) opens
-ready commands for PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse,
-Elasticsearch, InfluxDB, SQLite, SQL Server, Docker, migration tools and load
-tests, by tool on the left and by task above (Diagnostics, Maintenance,
-Backup, Database, Data, Testing), with a search. Tick those you want and
+about 250 ready commands, by tool on the left and by task above (Diagnostics,
+Logs, Maintenance, Deploy, Backup, Database, Data, Testing), with a search:
+
+- **The machine:** the system (disk, memory, processes, kernel errors, OOM
+  kills), systemd (services, timers, the journal), the network (ports,
+  connections, DNS, HTTP timing, firewalls), files (largest, recent, deleted
+  but open, tar, rsync), security (failed SSH logins, fail2ban, certificates),
+  packages (apt, dnf) and performance (vmstat, iostat, iotop).
+- **What runs on it:** Docker, Docker Compose, Docker Swarm, Kubernetes, web
+  servers (nginx, Apache, Caddy), RabbitMQ, Kafka, Git checkouts.
+- **Databases:** PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse,
+  Elasticsearch, InfluxDB, SQLite, SQL Server, Dolt, migration tools.
+- **Backups and clouds:** restic, Borg, AWS, Google Cloud, Azure; load tests. Tick those you want and
 **Add to my snippets**: each becomes a snippet of your own, to edit as any
 other. What was added is marked *Added* (and listed under *Added*); a command
 can be added again, as another copy.
 
 - **Before adding**, the one shown on the right can be adjusted: its options
-  (the tool's flags it does not take by default), and whether it runs on the
+  (the tool's flags it does not take by default), **sudo** (on for what needs
+  root, before each command of it that needs it), and whether it runs on the
   host or in a Docker container (`docker exec -it {{container}} …`, the
   container asked when it runs).
 - **Passwords** are never in a command: the tool reads its own variable
@@ -652,14 +663,17 @@ can be added again, as another copy.
   environment the snippet is given; when one environment has that variable it
   is given by default. Without one, the tool asks for it, or goes without.
 - **Values** such as `{{db_user}}` and `{{database}}` are asked when it runs.
-- **What changes data** (restores, imports, migrations, drops, Docker's prune)
-  is marked *Changes data* and added typed, not run: it waits for Enter.
+- **What makes changes** (restarts, deploys, scaling, restores, imports,
+  migrations, drops, prunes, upgrades) is marked *Makes changes* and added
+  typed, not run: it waits for Enter.
 - **File under** sets the new snippets' category: their tool (*PostgreSQL*),
   their task (*Backup*, the name then saying the tool), or both.
 
-The library's text is in English. It is made from HivePaaS's command
-templates by `scripts/library_from_hivepaas.py` (into
-`crates/app/src/library/items.json`).
+The library's text is in English. Its commands are in two files:
+`crates/app/src/library/extra.toml`, written by hand (the machine, what runs on
+it, backups and clouds), and `crates/app/src/library/items.json`, made from
+HivePaaS's command templates by `scripts/library_from_hivepaas.py` (the
+databases).
 
 ## Environments
 

@@ -1057,8 +1057,8 @@ tb35c3185 = 已添加
 # Nothing here: try other words, or every task.
 ta46c06a7 = 这里什么都没有：换个词试试，或选择所有任务。
 
-# Changes data
-t97d1419e = 会更改数据
+# Makes changes
+te471188d = 会做出更改
 
 # Added ✓
 t27d1ed36 = 已添加 ✓
@@ -1074,6 +1074,12 @@ tffd1857b = 文档 ↗
 
 # Options
 t353e0d45 = 选项
+
+# Run with sudo
+tf1d67ebb = 用 sudo 运行
+
+# it needs root
+t992a8383 = 需要 root
 
 # Runs
 t9a5f395b = 运行位置
@@ -1102,8 +1108,8 @@ t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = 运行时询问：{ $names }。添加后它就归你了：可在它的窗口中编辑。
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = 会更改数据：添加后只输入命令，等你按 Enter 再运行。
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = 会做出更改：添加后只输入命令，等你按 Enter 再运行。
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =
