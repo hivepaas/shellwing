@@ -8,6 +8,20 @@ use gpui::{
 };
 use shellwing_i18n::tr;
 
+/// The list's height when nothing was dragged: it scrolls past it.
+const LIST_H: f32 = 420.;
+/// The least it is dragged to.
+const MIN_LIST_H: f32 = 160.;
+
+/// The list's height as dragged at the palette's bottom edge, kept for the
+/// next time it opens.
+pub struct ListHeight(pub f32);
+
+impl gpui::Global for ListHeight {}
+
+/// Dragging the palette's bottom edge.
+struct Resize;
+
 use crate::colors::colors;
 use crate::input::{Changed, TextInput};
 use crate::session::Status;
@@ -239,6 +253,8 @@ pub struct Palette {
     /// The entry one Enter away from being forgotten.
     armed: Option<usize>,
     scroll: ScrollHandle,
+    /// Where a drag of the bottom edge started, and the height then.
+    resizing: Option<(gpui::Pixels, f32)>,
     _changed: Subscription,
 }
 
@@ -383,6 +399,7 @@ impl Palette {
             unfiltered: true,
             armed: None,
             scroll: ScrollHandle::new(),
+            resizing: None,
             _changed: changed,
         };
         p.refilter(cx);
@@ -595,7 +612,7 @@ impl Render for Palette {
             .id("palette-list")
             .track_scroll(&self.scroll)
             .overflow_y_scroll()
-            .max_h(px(420.))
+            .max_h(px(cx.try_global::<ListHeight>().map_or(LIST_H, |h| h.0)))
             .flex()
             .flex_col()
             // Headings span the list; entries keep a margin.
@@ -712,11 +729,68 @@ impl Render for Palette {
         // 800 px, or 40% of a wide window; never past the window.
         let window_w = window.viewport_size().width;
         let width = px(800.).max(window_w * 0.4).min(window_w - px(32.));
+        // As tall as the window has room for: below its top (56 px), with
+        // the field, the badges and the footer (about 125 px), and a margin.
+        let most = (f32::from(window.viewport_size().height) - 56. - 125. - 24.).max(MIN_LIST_H);
+        let grip = div()
+            .id("palette-grip")
+            .absolute()
+            .bottom_0()
+            .left_0()
+            .right_0()
+            .h(px(7.))
+            .flex()
+            .justify_center()
+            .items_end()
+            .pb(px(2.))
+            .cursor(gpui::CursorStyle::ResizeUpDown)
+            .group("palette-grip")
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|p, e: &gpui::MouseDownEvent, _, cx| {
+                    cx.stop_propagation();
+                    if e.click_count >= 2 {
+                        // Back to the default.
+                        p.resizing = None;
+                        cx.set_global(ListHeight(LIST_H));
+                    } else {
+                        let now = cx.try_global::<ListHeight>().map_or(LIST_H, |h| h.0);
+                        p.resizing = Some((e.position.y, now));
+                    }
+                    cx.notify();
+                }),
+            )
+            .on_drag(Resize, |_, _, _, cx| cx.new(|_| gpui::EmptyView))
+            .child(
+                div()
+                    .w(px(36.))
+                    .h(px(3.))
+                    .rounded_full()
+                    .bg(rgb(colors().line))
+                    .group_hover("palette-grip", |s| s.bg(rgb(colors().accent))),
+            );
         div()
+            .relative()
             .w(width)
             .flex()
             .flex_col()
             .bg(rgb(colors().raised))
+            .on_drag_move::<Resize>(cx.listener(
+                move |p, e: &gpui::DragMoveEvent<Resize>, _, cx| {
+                    if let Some((y0, h0)) = p.resizing {
+                        let h = (h0 + f32::from(e.event.position.y - y0)).clamp(MIN_LIST_H, most);
+                        cx.set_global(ListHeight(h));
+                        cx.notify();
+                    }
+                },
+            ))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|p, _, _, cx| {
+                    p.resizing = None;
+                    cx.notify();
+                }),
+            )
             .border_1()
             .border_color(rgb(colors().edge))
             .rounded_lg()
@@ -753,6 +827,7 @@ impl Render for Palette {
                     .text_color(rgb(colors().muted))
                     .child(footer),
             )
+            .child(grip)
     }
 }
 
