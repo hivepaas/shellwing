@@ -292,6 +292,18 @@ pub enum Event {
 
 /// What a command prints to signal shellwing, for a payload such as
 /// `ready-1f3a`: printed with `printf`, it never shows.
+/// Pasted text with every line end as a newline. A carriage return runs a
+/// line as surely as a newline (Enter sends one), but libghostty's check for
+/// a paste that could run commands looks for newlines only: lines ended by a
+/// bare `\r`, as a web page can hide in text copied from it, would run with
+/// no question. Windows' `\r\n` becomes one newline.
+fn line_ends_as_newlines(text: &str) -> std::borrow::Cow<'_, str> {
+    if !text.contains('\r') {
+        return text.into();
+    }
+    text.replace("\r\n", "\n").replace('\r', "\n").into()
+}
+
 pub fn signal_sequence(payload: &str) -> String {
     format!("\\033]777;shellwing;{payload}\\007")
 }
@@ -769,9 +781,10 @@ fn run(
                 Cmd::Paste { text, allow_unsafe } => {
                     let mime = ClipboardMime::new("text/plain");
                     let opts = paste::Options::new().with_allow_unsafe(allow_unsafe);
+                    let sent = line_ends_as_newlines(&text);
                     match e
                         .term
-                        .paste(opts, &[mime], |_, w| w.write_all(text.as_bytes()))
+                        .paste(opts, &[mime], |_, w| w.write_all(sent.as_bytes()))
                     {
                         Ok(_) => e.term.scroll_viewport(ScrollViewport::Bottom),
                         Err(libghostty_vt::Error::Rejected) => {
