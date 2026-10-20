@@ -122,6 +122,38 @@ fn word_around(text: &str, offset: usize) -> Range<usize> {
     }
 }
 
+/// While a selection is dragged, the mouse anywhere in the window moves
+/// its end (past the field, it goes to the text's start or end), and the
+/// button let go anywhere ends it: a quick drag leaves the field before it
+/// says where it is.
+fn follow_drag(input: &Entity<TextInput>, window: &mut Window, cx: &App) {
+    if !input.read(cx).selecting {
+        return;
+    }
+    let moved = input.clone();
+    window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            moved.update(cx, |i, cx| {
+                if i.selecting {
+                    let at = i.index_for_position(e.position);
+                    i.select_to(at, cx);
+                }
+            });
+        }
+    });
+    let up = input.clone();
+    window.on_mouse_event(move |_: &MouseUpEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            up.update(cx, |i, cx| {
+                if i.selecting {
+                    i.selecting = false;
+                    cx.notify();
+                }
+            });
+        }
+    });
+}
+
 /// What a masked field shows for each character.
 const DOT: char = '•';
 
@@ -269,6 +301,16 @@ impl TextInput {
         let Some(lines) = self.lines.as_ref() else {
             return 0;
         };
+        // Above the text: its start; below it: its end (a drag past the
+        // field's edges).
+        if at.y < px(0.) {
+            return 0;
+        }
+        if let Some((_, l, top)) = lines.drawn.last()
+            && at.y > *top + l.size(lines.line_height).height
+        {
+            return self.content.len();
+        }
         let Some((start, line, top)) = lines
             .drawn
             .iter()
@@ -1001,6 +1043,7 @@ impl Element for TextElement {
         cx: &mut App,
     ) {
         let focus = self.input.read(cx).focus.clone();
+        follow_drag(&self.input, window, cx);
         window.handle_input(
             &focus,
             ElementInputHandler::new(bounds, self.input.clone()),
@@ -1272,6 +1315,7 @@ impl Element for AreaElement {
         cx: &mut App,
     ) {
         let focus = self.input.read(cx).focus.clone();
+        follow_drag(&self.input, window, cx);
         window.handle_input(
             &focus,
             ElementInputHandler::new(bounds, self.input.clone()),

@@ -624,7 +624,7 @@ impl NoteWindow {
                 ("fmt-italic", "I", Format::Italic),
                 ("fmt-strike", "S", Format::Strike),
                 ("fmt-code", "</>", Format::Code),
-                ("fmt-link", "🔗", Format::Link),
+                ("fmt-link", "[ ]( )", Format::Link),
                 ("fmt-heading", "H", Format::Heading),
                 ("fmt-quote", "❝", Format::Quote),
                 ("fmt-bullet", "•", Format::Bullet),
@@ -665,6 +665,8 @@ impl NoteWindow {
                 anchored()
                     .anchor(gpui::Anchor::BottomLeft)
                     .position(gpui::point(at.x, at.y - px(6.)))
+                    // Within the window, however near its edge the text is.
+                    .snap_to_window_with_margin(px(8.))
                     .child(bar),
             )
             .with_priority(3)
