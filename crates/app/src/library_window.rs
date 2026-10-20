@@ -1098,7 +1098,9 @@ impl Render for LibraryWindow {
                 MouseButton::Left,
                 cx.listener(|v, _, _, cx| (v.hooks.touched)(cx)),
             )
-            .size_full()
+            // What is left under the title bar, not the window's height.
+            .flex_1()
+            .min_h_0()
             .flex()
             .flex_col()
             .text_size(ui(13.))
@@ -1106,7 +1108,7 @@ impl Render for LibraryWindow {
             .child(self.top(window, cx))
             .child(body)
             .child(self.footer(cx));
-        let content = div().size_full().flex().flex_col().child(content);
+        let content = div().flex_1().min_h_0().flex().flex_col().child(content);
         let bar = div()
             .h_full()
             .flex()
