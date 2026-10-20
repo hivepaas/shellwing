@@ -1078,8 +1078,8 @@ tb35c3185 = Hinzugefügt
 # Nothing here: try other words, or every task.
 ta46c06a7 = Nichts gefunden: Versuche andere Wörter oder alle Aufgaben.
 
-# Changes data
-t97d1419e = Ändert Daten
+# Makes changes
+te471188d = Ändert etwas
 
 # Added ✓
 t27d1ed36 = Hinzugefügt ✓
@@ -1095,6 +1095,12 @@ tffd1857b = Doku ↗
 
 # Options
 t353e0d45 = Optionen
+
+# Run with sudo
+tf1d67ebb = Mit sudo ausführen
+
+# it needs root
+t992a8383 = braucht root
 
 # Runs
 t9a5f395b = Ausführung
@@ -1123,8 +1129,8 @@ t769ef9f6 = Noch keine: Füge in Einstellungen › Umgebungen eine hinzu.
 # Asked when it runs: {names}. Once added, it is yours: edit it in its window.
 tfc64bf52 = Beim Ausführen gefragt: { $names }. Nach dem Hinzufügen gehört es dir: Bearbeite es in seinem Fenster.
 
-# It changes data: added, it is typed and waits for you to press Enter.
-t0fe19331 = Er ändert Daten: Hinzugefügt wird er nur eingetippt und wartet, bis du Enter drückst.
+# It makes changes: added, it is typed and waits for you to press Enter.
+t4d1e2e14 = Er ändert etwas: Hinzugefügt wird er nur eingetippt und wartet, bis du Enter drückst.
 
 # In your snippets once. | In your snippets {n} times.
 t028f555a =

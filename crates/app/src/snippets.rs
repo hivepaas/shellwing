@@ -62,6 +62,8 @@ fn var_char(c: char) -> bool {
 }
 
 /// Each `{{name}}` in `command`: where it is (the braces included), and the name.
+/// A name starts with a letter or `_`: Go templates as Docker and kubectl
+/// take them (`{{.Names}}`, `{{json .State}}`) stay as they are.
 pub fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
     let mut out = vec![];
     let mut from = 0;
@@ -70,7 +72,8 @@ pub fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
             break;
         };
         let name = command[open + 2..close].trim();
-        if !name.is_empty() && name.chars().all(var_char) {
+        let starts = name.starts_with(|c: char| c.is_alphabetic() || c == '_');
+        if starts && name.chars().all(var_char) {
             out.push((open..close + 2, name.to_string()));
             from = close + 2;
         } else {
@@ -140,7 +143,7 @@ mod tests {
 
     #[test]
     fn names_are_found_once_and_filled() {
-        let cmd = "sudo systemctl restart {{service}} && systemctl status {{ service }} -H {{host}} {{not a name}} {{";
+        let cmd = "sudo systemctl restart {{service}} && systemctl status {{ service }} -H {{host}} {{not a name}} {{.Names}} {{-x}} {{";
         assert_eq!(vars(cmd), ["service", "host"]);
         assert_eq!(asked(cmd), ["service"]);
         let values = BTreeMap::from([
@@ -149,7 +152,7 @@ mod tests {
         ]);
         assert_eq!(
             fill(cmd, &values),
-            "sudo systemctl restart nginx && systemctl status nginx -H api-1 {{not a name}} {{"
+            "sudo systemctl restart nginx && systemctl status nginx -H api-1 {{not a name}} {{.Names}} {{-x}} {{"
         );
         // A value is not read again for names.
         let odd = BTreeMap::from([("a".to_string(), "{{b}}".to_string())]);

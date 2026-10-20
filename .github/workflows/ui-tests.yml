@@ -6,10 +6,6 @@ name: UI tests
 # (Actions > UI tests > Run workflow), not on pushes or pull requests.
 
 on:
-  # TEMPORARY: runs the new workflow on this branch before it is on main
-  # (a workflow_dispatch needs it there). Removed before merging.
-  push:
-    branches: [test/ui-e2e-pilot]
   schedule:
     # 02:00 in Vietnam.
     - cron: "0 19 * * *"
@@ -40,7 +36,7 @@ jobs:
       matrix:
         name: >-
           ${{ fromJSON(
-          (github.event_name != 'workflow_dispatch' || inputs.platforms == 'all') && '["linux-x86_64","macos-arm64","windows-x86_64"]' ||
+          (github.event_name == 'schedule' || inputs.platforms == 'all') && '["linux-x86_64","macos-arm64","windows-x86_64"]' ||
           inputs.platforms == 'macos' && '["macos-arm64"]' ||
           inputs.platforms == 'windows' && '["windows-x86_64"]' ||
           '["linux-x86_64"]') }}

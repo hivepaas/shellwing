@@ -40,9 +40,9 @@ TOOLS = [
     ("goose", "Migrations", ""),
     ("migrate", "Migrations", ""),
     ("prisma", "Migrations", ""),
-    ("hey", "HTTP & network", ""),
-    ("k6", "HTTP & network", ""),
-    ("iperf3", "HTTP & network", ""),
+    ("hey", "Load tests", ""),
+    ("k6", "Load tests", ""),
+    ("iperf3", "Load tests", ""),
 ]
 
 TASKS = {

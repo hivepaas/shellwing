@@ -12,6 +12,9 @@
 //! once before asking, and `$SHELLWING_KNOWN_HOSTS` replaces
 //! `~/.ssh/known_hosts` (both meant for scripts and benchmarks).
 
+// A GUI program on Windows: no console window opens beside it.
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
 mod chrome;
 mod colors;
 mod copies;
@@ -203,7 +206,20 @@ fn parse_args(
     Ok((host, forwards))
 }
 
+/// Windows starts a GUI program without a console. Started from a terminal,
+/// the app takes that one, so `--help`, errors and logs are written there.
+#[cfg(windows)]
+#[allow(unsafe_code)]
+fn attach_console() {
+    use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
+    // SAFETY: no pointers or handles go in. Without a parent console it
+    // fails and changes nothing, which is what a start from Explorer wants.
+    unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
+}
+
 fn main() -> anyhow::Result<()> {
+    #[cfg(windows)]
+    attach_console();
     if std::env::args().skip(1).any(|a| a == "-h" || a == "--help") {
         println!("{USAGE}");
         return Ok(());
