@@ -7778,6 +7778,8 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "serde",
+ "serde_json",
  "sha2 0.10.9",
  "shellwing-config",
  "shellwing-core",

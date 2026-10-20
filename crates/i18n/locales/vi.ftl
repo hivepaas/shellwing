@@ -1018,6 +1018,123 @@ tfb280692 = Các máy chủ bạn tin tưởng, cùng khoá của chúng, từ {
 # {n} key | {n} keys
 tc219ff12 = { $n } khoá
 
+# Snippet library
+t1212f75d = Thư viện đoạn lệnh
+
+# Its tool (PostgreSQL)
+tff6e50ee = Theo công cụ (PostgreSQL)
+
+# Its task (Backup)
+t301e1817 = Theo việc (Backup)
+
+# Both (PostgreSQL · Backup)
+t116d70a6 = Cả hai (PostgreSQL · Backup)
+
+# Find a command: a tool, a task, a word…
+tc13a8368 = Tìm lệnh: một công cụ, một việc, một từ…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = Kho đang khoá: hãy mở khoá ở cửa sổ chính.
+
+# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
+t10cc86d5 =
+    { $n ->
+       *[other] Đã thêm { $n } đoạn lệnh: chạy từ bảng lệnh.
+    }
+
+# Every task
+t27417099 = Mọi việc
+
+# Not added yet
+t18e34a9e = Chưa thêm
+
+# Every tool
+t72ff8f76 = Mọi công cụ
+
+# Added
+tb35c3185 = Đã thêm
+
+# Nothing here: try other words, or every task.
+ta46c06a7 = Không có gì: thử từ khác, hoặc chọn mọi việc.
+
+# Changes data
+t97d1419e = Thay đổi dữ liệu
+
+# Added ✓
+t27d1ed36 = Đã thêm ✓
+
+# Added ×{n}
+t9e411fdf = Đã thêm ×{ $n }
+
+# Click a command to see it, and adjust it before adding. Tick those to add.
+t72e679a1 = Bấm vào một lệnh để xem và chỉnh trước khi thêm. Tick những lệnh muốn thêm.
+
+# Docs ↗
+tffd1857b = Tài liệu ↗
+
+# Options
+t353e0d45 = Tuỳ chọn
+
+# Runs
+t9a5f395b = Chạy ở đâu
+
+# On the host
+t1842b6cb = Trên máy chủ
+
+# In a Docker container: asks which
+te04a8531 = Trong một container Docker: hỏi container nào
+
+# The files it reads or writes are the container's.
+t33082a7c = Các tệp nó đọc hay ghi là của container.
+
+# None: it asks, or goes without
+tfc99399b = Không: công cụ tự hỏi, hoặc chạy không cần
+
+# It reads {var}: give it an environment that has it.
+t1a1c7252 = Nó đọc { $var }: hãy gắn một bộ biến có biến này.
+
+# has {var}
+t4d81af7a = có { $var }
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
+
+# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
+tfc64bf52 = Hỏi khi chạy: { $names }. Thêm rồi là của bạn: sửa trong cửa sổ của nó.
+
+# It changes data: added, it is typed and waits for you to press Enter.
+t0fe19331 = Lệnh này thay đổi dữ liệu: khi thêm, nó chỉ được gõ vào và chờ bạn nhấn Enter.
+
+# In your snippets once. | In your snippets {n} times.
+t028f555a =
+    { $n ->
+       *[other] Có { $n } lần trong đoạn lệnh của bạn.
+    }
+
+# {n} picked | {n} picked
+tf375b5ad =
+    { $n ->
+       *[other] Đã chọn { $n }
+    }
+
+# Clear
+t04a57fc2 = Bỏ chọn
+
+# Tick the commands to add; each becomes a snippet of your own.
+t71ce4a51 = Tick các lệnh muốn thêm; mỗi lệnh thành một đoạn lệnh của riêng bạn.
+
+# Add {n} to my snippets | Add {n} to my snippets
+t9489b24d =
+    { $n ->
+       *[other] Thêm { $n } vào đoạn lệnh của tôi
+    }
+
+# Add to my snippets
+tacccc61d = Thêm vào đoạn lệnh của tôi
+
+# File under
+t7be2ad59 = Xếp vào
+
 # No config directory to save to.
 ta5f37ee4 = Không có thư mục cấu hình để lưu.
 
@@ -1110,9 +1227,6 @@ tfdda4cf7 = Xem trước
 
 # Sensitive
 tf603feef = Nhạy cảm
-
-# The vault is locked: unlock it in the main window.
-te327c98e = Kho đang khoá: hãy mở khoá ở cửa sổ chính.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Nhạy cảm: nội dung chỉ hiện khi xác nhận là bạn.
@@ -1687,9 +1801,6 @@ t59fdbd70 = Ngừng đồng bộ
 # Your place
 t63cb5f41 = Chỗ đồng bộ của bạn
 
-# Options
-t353e0d45 = Tuỳ chọn
-
 # A folder
 te84ceb50 = Một thư mục
 
@@ -1933,9 +2044,6 @@ ta0ef59dd = + Thêm
 # Environments it needs
 tebd9fda9 = Bộ biến cần dùng
 
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
-
 # {n} variable | {n} variables
 te4598f62 =
     { $n ->
@@ -2107,6 +2215,18 @@ t79646cbc = Sửa bộ biến
 # sensitive
 ta2bd2f4f = nhạy cảm
 
+# Start from the library
+t401f9cb9 = Bắt đầu từ thư viện
+
+# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+tffb7b170 = { $n } lệnh có sẵn cho { $tools } và hơn nữa: kiểm tra máy chủ, sao lưu, dọn dẹp, kiểm thử. Chọn những lệnh bạn muốn; chúng thành đoạn lệnh của riêng bạn, sửa tuỳ ý.
+
+# Open the library
+t79d7b3ad = Mở thư viện
+
+# from the library
+td908f0d1 = từ thư viện
+
 # typed, not run
 td4e41905 = chỉ gõ, không chạy
 
@@ -2121,6 +2241,9 @@ t9903435f = Tệp bị xoá khỏi kho, và khỏi các thiết bị khác khi c
 
 # None yet.
 t786bc275 = Chưa có.
+
+# Library…
+t3d769c8c = Thư viện…
 
 # New snippet…
 tec3111a4 = Đoạn lệnh mới…
@@ -2145,6 +2268,12 @@ t5a3830ee = Văn bản tự do, được mã hoá trong kho và đồng bộ cù
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Các tệp để đặt lên máy chủ, như ~/.kube/config hay ~/.aws/credentials, được mã hoá trong kho và đồng bộ cùng kho. Đặt từ bảng lệnh ({ $chord }, nhóm Tệp cấu hình) hoặc menu của pane: tới khi đóng tab, hoặc giữ lại luôn.
+
+# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
+tf7e18b27 =
+    { $n ->
+       *[other] Thêm trong thư viện: { $n } lệnh chưa thêm ›
+    }
 
 # While loaded, the server can read them
 te60c8275 = Khi đang nạp, máy chủ có thể đọc được
@@ -2658,6 +2787,15 @@ t85f58d76 = Đoạn lệnh · { $category }
 
 # Enter · Alt+Enter: {n} pane | Enter · Alt+Enter: {n} panes
 t3bbceccc = Enter · Alt+Enter: { $n } khung
+
+# Snippet library…
+tff254ce3 = Thư viện đoạn lệnh…
+
+# {n} ready command to add | {n} ready commands to add
+t134e12f0 =
+    { $n ->
+       *[other] { $n } lệnh có sẵn để thêm
+    }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = Hãy mở một tab trước: đoạn lệnh chạy trong pane đang chọn.

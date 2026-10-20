@@ -1038,6 +1038,127 @@ tc219ff12 =
        *[other] { $n } chaves
     }
 
+# Snippet library
+t1212f75d = Biblioteca de trechos
+
+# Its tool (PostgreSQL)
+tff6e50ee = Sua ferramenta (PostgreSQL)
+
+# Its task (Backup)
+t301e1817 = Sua tarefa (Backup)
+
+# Both (PostgreSQL · Backup)
+t116d70a6 = Ambas (PostgreSQL · Backup)
+
+# Find a command: a tool, a task, a word…
+tc13a8368 = Encontre um comando: uma ferramenta, uma tarefa, uma palavra…
+
+# The vault is locked: unlock it in the main window.
+te327c98e = O cofre está bloqueado: desbloqueie-o na janela principal.
+
+# {n} snippet added: run it from the palette. | {n} snippets added: run them from the palette.
+t10cc86d5 =
+    { $n ->
+        [one] { $n } trecho adicionado: execute-o pela paleta.
+       *[other] { $n } trechos adicionados: execute-os pela paleta.
+    }
+
+# Every task
+t27417099 = Todas as tarefas
+
+# Not added yet
+t18e34a9e = Ainda não adicionados
+
+# Every tool
+t72ff8f76 = Todas as ferramentas
+
+# Added
+tb35c3185 = Adicionados
+
+# Nothing here: try other words, or every task.
+ta46c06a7 = Nada aqui: tente outras palavras ou todas as tarefas.
+
+# Changes data
+t97d1419e = Altera dados
+
+# Added ✓
+t27d1ed36 = Adicionado ✓
+
+# Added ×{n}
+t9e411fdf = Adicionado ×{ $n }
+
+# Click a command to see it, and adjust it before adding. Tick those to add.
+t72e679a1 = Clique em um comando para vê-lo e ajustá-lo antes de adicionar. Marque os que quiser adicionar.
+
+# Docs ↗
+tffd1857b = Documentação ↗
+
+# Options
+t353e0d45 = Opções
+
+# Runs
+t9a5f395b = Execução
+
+# On the host
+t1842b6cb = No servidor
+
+# In a Docker container: asks which
+te04a8531 = Em um contêiner Docker: pergunta qual
+
+# The files it reads or writes are the container's.
+t33082a7c = Os arquivos que ele lê ou grava são os do contêiner.
+
+# None: it asks, or goes without
+tfc99399b = Nenhum: ele pede a senha ou segue sem ela
+
+# It reads {var}: give it an environment that has it.
+t1a1c7252 = Ele lê { $var }: dê a ele um ambiente que a tenha.
+
+# has {var}
+t4d81af7a = tem { $var }
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Nenhum ainda: adicione um em Configurações › Ambientes.
+
+# Asked when it runs: {names}. Once added, it is yours: edit it in its window.
+tfc64bf52 = Perguntado ao executar: { $names }. Depois de adicionado, ele é seu: edite-o na janela dele.
+
+# It changes data: added, it is typed and waits for you to press Enter.
+t0fe19331 = Altera dados: depois de adicionado, ele é digitado e espera você pressionar Enter.
+
+# In your snippets once. | In your snippets {n} times.
+t028f555a =
+    { $n ->
+        [one] { $n } vez nos seus trechos.
+       *[other] { $n } vezes nos seus trechos.
+    }
+
+# {n} picked | {n} picked
+tf375b5ad =
+    { $n ->
+        [one] { $n } selecionado
+       *[other] { $n } selecionados
+    }
+
+# Clear
+t04a57fc2 = Limpar
+
+# Tick the commands to add; each becomes a snippet of your own.
+t71ce4a51 = Marque os comandos para adicionar; cada um vira um trecho seu.
+
+# Add {n} to my snippets | Add {n} to my snippets
+t9489b24d =
+    { $n ->
+        [one] Adicionar { $n } aos meus trechos
+       *[other] Adicionar { $n } aos meus trechos
+    }
+
+# Add to my snippets
+tacccc61d = Adicionar aos meus trechos
+
+# File under
+t7be2ad59 = Classificar em
+
 # No config directory to save to.
 ta5f37ee4 = Nenhum diretório de configuração para salvar.
 
@@ -1130,9 +1251,6 @@ tfdda4cf7 = Prévia
 
 # Sensitive
 tf603feef = Confidencial
-
-# The vault is locked: unlock it in the main window.
-te327c98e = O cofre está bloqueado: desbloqueie-o na janela principal.
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Confidencial: o texto aparece depois de confirmar que é você.
@@ -1707,9 +1825,6 @@ t59fdbd70 = Parar de sincronizar
 # Your place
 t63cb5f41 = Seu lugar
 
-# Options
-t353e0d45 = Opções
-
 # A folder
 te84ceb50 = Uma pasta
 
@@ -1957,9 +2072,6 @@ ta0ef59dd = + Adicionar
 # Environments it needs
 tebd9fda9 = Ambientes de que precisa
 
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Nenhum ainda: adicione um em Configurações › Ambientes.
-
 # {n} variable | {n} variables
 te4598f62 =
     { $n ->
@@ -2135,6 +2247,18 @@ t79646cbc = Editar ambiente
 # sensitive
 ta2bd2f4f = confidencial
 
+# Start from the library
+t401f9cb9 = Comece pela biblioteca
+
+# {n} ready commands for {tools} and more: check a server, back it up, clean it, test it. Pick the ones you want; they become your own snippets, to edit as you like.
+tffb7b170 = { $n } comandos prontos para { $tools } e mais: verificar um servidor, fazer backup, limpar, testar. Escolha os que quiser; eles viram seus próprios trechos, para editar à vontade.
+
+# Open the library
+t79d7b3ad = Abrir a biblioteca
+
+# from the library
+td908f0d1 = da biblioteca
+
 # typed, not run
 td4e41905 = digitado, não executado
 
@@ -2149,6 +2273,9 @@ t9903435f = Ele sai do cofre e dos seus outros dispositivos assim que eles sincr
 
 # None yet.
 t786bc275 = Nenhum ainda.
+
+# Library…
+t3d769c8c = Biblioteca…
 
 # New snippet…
 tec3111a4 = Novo trecho…
@@ -2173,6 +2300,13 @@ t5a3830ee = Texto livre, criptografado no cofre e sincronizado com ele: para que
 
 # Files to place on hosts, such as ~/.kube/config or ~/.aws/credentials, kept encrypted in the vault and synced with it. Place one from the palette ({chord}, under Config files) or the pane's menu: until the tab closes, or to stay.
 ta84c0f04 = Arquivos para colocar em servidores, como ~/.kube/config ou ~/.aws/credentials, guardados criptografados no cofre e sincronizados com ele. Coloque um pela paleta ({ $chord }, em Arquivos de configuração) ou pelo menu do painel: até a aba fechar, ou para ficar.
+
+# More in the library: {n} not added yet › | More in the library: {n} not added yet ›
+tf7e18b27 =
+    { $n ->
+        [one] Mais na biblioteca: { $n } ainda não adicionado ›
+       *[other] Mais na biblioteca: { $n } ainda não adicionados ›
+    }
 
 # While loaded, the server can read them
 te60c8275 = Enquanto estiverem carregadas, o servidor pode lê-las
@@ -2734,6 +2868,16 @@ t3bbceccc =
     { $n ->
         [one] Enter · Alt+Enter: { $n } painel
        *[other] Enter · Alt+Enter: { $n } painéis
+    }
+
+# Snippet library…
+tff254ce3 = Biblioteca de trechos…
+
+# {n} ready command to add | {n} ready commands to add
+t134e12f0 =
+    { $n ->
+        [one] { $n } comando pronto para adicionar
+       *[other] { $n } comandos prontos para adicionar
     }
 
 # Open a tab first: a snippet runs in the focused pane.
