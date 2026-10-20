@@ -961,6 +961,24 @@ tdd571ace = Светлые, тёплые
 # Your themes
 tb2e83d5c = Ваши темы
 
+# Hosts
+tcf9aefb4 = Хосты
+
+# Recent
+t50e888fe = Недавние
+
+# Snippets
+t648fcbf7 = Сниппеты
+
+# Environments
+t273b1ccb = Окружения
+
+# Actions
+te65fb504 = Действия
+
+# Settings
+t4b058728 = Настройки
+
 # Find a host, or type user@host
 t18f005c7 = Найдите хост или введите user@host
 
@@ -985,8 +1003,8 @@ t850e9777 = Enter ещё раз, чтобы забыть
 # Nothing matches.
 tf8e003c3 = Совпадений нет.
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ выбор   Enter открыть   Esc закрыть   > только действия
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ выбор   Tab следующая группа   Enter открыть   Esc закрыть   > только действия
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ просмотр   Enter оставить   Esc назад
@@ -1003,9 +1021,6 @@ tbfdc091c = Enter отвечает   Esc отменяет
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ выбор   Enter выбрать   Esc отмена
 
-# Hosts
-tcf9aefb4 = Хосты
-
 # General
 t5561fd0b = Общие
 
@@ -1017,12 +1032,6 @@ t27d1a714 = Клавиатура
 
 # SSH and security
 t699a801a = SSH и безопасность
-
-# Snippets
-t648fcbf7 = Сниппеты
-
-# Environments
-t273b1ccb = Окружения
 
 # Vault
 td432914f = Хранилище
@@ -1335,9 +1344,6 @@ t412f3292 = Перейти на вкладку 1–9
 
 # Host list
 t2c78c1d9 = Список хостов
-
-# Settings
-t4b058728 = Настройки
 
 # Next and previous theme
 t94e69c03 = Следующая и предыдущая тема
@@ -2185,6 +2191,15 @@ t435e7ac0 = Запись журнала остановлена: { $e }
 # Command Palette…
 t14aa6ff7 = Палитра команд…
 
+# Snippets…
+t2b3c5b61 = Сниппеты…
+
+# Load Environment…
+td34b2cc0 = Загрузить окружение…
+
+# Unload {names}
+t362b9a48 = Выгрузить { $names }
+
 # Paste
 tb34a0288 = Вставить
 
@@ -2260,14 +2275,8 @@ teaaf5750 = Будет выполнено
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = Окружение, нужное этому сниппету, удалено: измените сниппет.
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = Для этого хоста нет окружения: добавьте в Настройки › Окружения.
-
 # loaded: Enter loads it again
 t1a97d76a = загружено: Enter загрузит снова
-
-# Load an environment into this shell…
-td1cfd29b = Загрузить окружение в эту оболочку…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Сначала разделите вкладку: сейчас в ней одна панель для ввода.
@@ -2314,12 +2323,6 @@ tfa31f588 = Выйти из shellwing?
 # Choose a host on the left to connect.
 tf7759ebb = Выберите хост слева, чтобы подключиться.
 
-# Recent
-t50e888fe = Недавние
-
-# Actions
-te65fb504 = Действия
-
 # Another tab to {title}
 ta46c00f0 = Ещё одна вкладка с { $title }
 
@@ -2364,9 +2367,6 @@ t13c5bc91 = Файлы на { $title }
 
 # Forward a port through {title}…
 t9f033387 = Пробросить порт через { $title }…
-
-# Load environment…
-ta3f75e60 = Загрузить окружение…
 
 # Unload environment: {names}
 tbe80f7b5 = Выгрузить окружение: { $names }
@@ -2415,6 +2415,12 @@ tbfa1762c = Изменить hosts.toml
 
 # Edit config.toml
 tf108a14d = Изменить config.toml
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = Для этого хоста нет сниппетов: добавьте в Настройки › Сниппеты.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Для этого хоста нет окружения: добавьте в Настройки › Окружения.
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = Этот хост использует тему `{ $t }` из hosts.toml; измените её там.

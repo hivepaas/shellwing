@@ -931,6 +931,24 @@ tdd571ace = ライト（ウォーム）
 # Your themes
 tb2e83d5c = マイテーマ
 
+# Hosts
+tcf9aefb4 = ホスト
+
+# Recent
+t50e888fe = 最近使用
+
+# Snippets
+t648fcbf7 = スニペット
+
+# Environments
+t273b1ccb = 環境
+
+# Actions
+te65fb504 = アクション
+
+# Settings
+t4b058728 = 設定
+
 # Find a host, or type user@host
 t18f005c7 = ホストを検索、または user@host を入力
 
@@ -955,8 +973,8 @@ t850e9777 = もう一度 Enter で消去
 # Nothing matches.
 tf8e003c3 = 一致するものがありません。
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ 移動   Enter 開く   Esc 閉じる   > を入力でアクションのみ
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ 移動   Tab 次のグループ   Enter 開く   Esc 閉じる   > を入力でアクションのみ
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ プレビュー   Enter 決定   Esc 戻る
@@ -973,9 +991,6 @@ tbfdc091c = Enter 回答   Esc キャンセル
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選択   Esc キャンセル
 
-# Hosts
-tcf9aefb4 = ホスト
-
 # General
 t5561fd0b = 一般
 
@@ -987,12 +1002,6 @@ t27d1a714 = キーボード
 
 # SSH and security
 t699a801a = SSH とセキュリティ
-
-# Snippets
-t648fcbf7 = スニペット
-
-# Environments
-t273b1ccb = 環境
 
 # Vault
 td432914f = 保管庫
@@ -1305,9 +1314,6 @@ t412f3292 = タブ 1〜9 に移動
 
 # Host list
 t2c78c1d9 = ホスト一覧
-
-# Settings
-t4b058728 = 設定
 
 # Next and previous theme
 t94e69c03 = 次/前のテーマ
@@ -2086,6 +2092,15 @@ t435e7ac0 = ログ記録が停止しました：{ $e }
 # Command Palette…
 t14aa6ff7 = コマンドパレット…
 
+# Snippets…
+t2b3c5b61 = スニペット…
+
+# Load Environment…
+td34b2cc0 = 環境を読み込む…
+
+# Unload {names}
+t362b9a48 = { $names } の読み込みを解除
+
 # Paste
 tb34a0288 = 貼り付け
 
@@ -2149,14 +2164,8 @@ teaaf5750 = 実行内容
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = このスニペットが必要とする環境が削除されました。スニペットを編集してください。
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = このホスト用の環境がありません: 設定 › 環境 で追加してください。
-
 # loaded: Enter loads it again
 t1a97d76a = 読み込み済み: Enter で再度読み込みます
-
-# Load an environment into this shell…
-td1cfd29b = このシェルに環境を読み込む…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 先にタブを分割してください。入力先のペインが 1 つしかありません。
@@ -2190,12 +2199,6 @@ tfa31f588 = shellwing を終了しますか？
 
 # Choose a host on the left to connect.
 tf7759ebb = 左のホストを選んで接続してください。
-
-# Recent
-t50e888fe = 最近使用
-
-# Actions
-te65fb504 = アクション
 
 # Another tab to {title}
 ta46c00f0 = 別のタブで { $title } に接続
@@ -2241,9 +2244,6 @@ t13c5bc91 = { $title } のファイル
 
 # Forward a port through {title}…
 t9f033387 = { $title } 経由でポートをフォワード…
-
-# Load environment…
-ta3f75e60 = 環境を読み込む…
 
 # Unload environment: {names}
 tbe80f7b5 = 環境の読み込みを解除: { $names }
@@ -2292,6 +2292,12 @@ tbfa1762c = hosts.toml を編集
 
 # Edit config.toml
 tf108a14d = config.toml を編集
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = このホスト用のスニペットがありません: 設定 › スニペット で追加してください。
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = このホスト用の環境がありません: 設定 › 環境 で追加してください。
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = このホストは hosts.toml のテーマ `{ $t }` を使っています。そちらで変更してください。

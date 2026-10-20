@@ -931,6 +931,24 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# Hosts
+tcf9aefb4 = 主机
+
+# Recent
+t50e888fe = 最近
+
+# Snippets
+t648fcbf7 = 代码片段
+
+# Environments
+t273b1ccb = 环境
+
+# Actions
+te65fb504 = 操作
+
+# Settings
+t4b058728 = 设置
+
 # Find a host, or type user@host
 t18f005c7 = 查找主机，或输入 user@host
 
@@ -955,8 +973,8 @@ t850e9777 = 再按 Enter 忘记
 # Nothing matches.
 tf8e003c3 = 没有匹配项。
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ 移动   Enter 打开   Esc 关闭   输入 > 仅显示操作
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ 移动   Tab 下一组   Enter 打开   Esc 关闭   输入 > 仅显示操作
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 预览   Enter 保留   Esc 返回
@@ -973,9 +991,6 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移动   Enter 选择   Esc 取消
 
-# Hosts
-tcf9aefb4 = 主机
-
 # General
 t5561fd0b = 通用
 
@@ -987,12 +1002,6 @@ t27d1a714 = 键盘
 
 # SSH and security
 t699a801a = SSH 与安全
-
-# Snippets
-t648fcbf7 = 代码片段
-
-# Environments
-t273b1ccb = 环境
 
 # Vault
 td432914f = 保险库
@@ -1305,9 +1314,6 @@ t412f3292 = 转到标签页 1–9
 
 # Host list
 t2c78c1d9 = 主机列表
-
-# Settings
-t4b058728 = 设置
 
 # Next and previous theme
 t94e69c03 = 下一个和上一个主题
@@ -2086,6 +2092,15 @@ t435e7ac0 = 记录已停止：{ $e }
 # Command Palette…
 t14aa6ff7 = 命令面板…
 
+# Snippets…
+t2b3c5b61 = 代码片段…
+
+# Load Environment…
+td34b2cc0 = 加载环境…
+
+# Unload {names}
+t362b9a48 = 卸载 { $names }
+
 # Paste
 tb34a0288 = 粘贴
 
@@ -2149,14 +2164,8 @@ teaaf5750 = 将运行
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = 此片段需要的某个环境已被删除：请编辑该代码片段。
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
-
 # loaded: Enter loads it again
 t1a97d76a = 已加载：按 Enter 可再次加载
-
-# Load an environment into this shell…
-td1cfd29b = 将环境加载到此 shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 请先拆分标签页：当前只有一个窗格可输入。
@@ -2190,12 +2199,6 @@ tfa31f588 = 退出 shellwing？
 
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。
-
-# Recent
-t50e888fe = 最近
-
-# Actions
-te65fb504 = 操作
 
 # Another tab to {title}
 ta46c00f0 = 再开一个连接到 { $title } 的标签页
@@ -2241,9 +2244,6 @@ t13c5bc91 = { $title } 上的文件
 
 # Forward a port through {title}…
 t9f033387 = 通过 { $title } 转发端口…
-
-# Load environment…
-ta3f75e60 = 加载环境…
 
 # Unload environment: {names}
 tbe80f7b5 = 卸载环境：{ $names }
@@ -2292,6 +2292,12 @@ tbfa1762c = 编辑 hosts.toml
 
 # Edit config.toml
 tf108a14d = 编辑 config.toml
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = 此主机没有代码片段：请在 设置 › 代码片段 中添加。
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = 此主机没有环境：请在 设置 › 环境 中添加。
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = 此主机使用 hosts.toml 中的主题 `{ $t }`；请在那里修改。

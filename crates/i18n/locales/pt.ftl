@@ -951,6 +951,24 @@ tdd571ace = Claro, quente
 # Your themes
 tb2e83d5c = Seus temas
 
+# Hosts
+tcf9aefb4 = Servidores
+
+# Recent
+t50e888fe = Recentes
+
+# Snippets
+t648fcbf7 = Trechos
+
+# Environments
+t273b1ccb = Ambientes
+
+# Actions
+te65fb504 = Ações
+
+# Settings
+t4b058728 = Configurações
+
 # Find a host, or type user@host
 t18f005c7 = Encontre um servidor ou digite user@host
 
@@ -975,8 +993,8 @@ t850e9777 = Enter de novo para esquecer
 # Nothing matches.
 tf8e003c3 = Nada corresponde.
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ mover   Enter abrir   Esc fechar   digite > para ver só ações
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ mover   Tab próximo grupo   Enter abrir   Esc fechar   digite > para ver só ações
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ visualizar   Enter manter   Esc voltar
@@ -993,9 +1011,6 @@ tbfdc091c = Enter responde   Esc cancela
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ mover   Enter escolher   Esc cancelar
 
-# Hosts
-tcf9aefb4 = Servidores
-
 # General
 t5561fd0b = Geral
 
@@ -1007,12 +1022,6 @@ t27d1a714 = Teclado
 
 # SSH and security
 t699a801a = SSH e segurança
-
-# Snippets
-t648fcbf7 = Trechos
-
-# Environments
-t273b1ccb = Ambientes
 
 # Vault
 td432914f = Cofre
@@ -1325,9 +1334,6 @@ t412f3292 = Ir para a aba 1–9
 
 # Host list
 t2c78c1d9 = Lista de servidores
-
-# Settings
-t4b058728 = Configurações
 
 # Next and previous theme
 t94e69c03 = Tema seguinte e anterior
@@ -2151,6 +2157,15 @@ t435e7ac0 = Registro interrompido: { $e }
 # Command Palette…
 t14aa6ff7 = Paleta de comandos…
 
+# Snippets…
+t2b3c5b61 = Trechos…
+
+# Load Environment…
+td34b2cc0 = Carregar ambiente…
+
+# Unload {names}
+t362b9a48 = Descarregar { $names }
+
 # Paste
 tb34a0288 = Colar
 
@@ -2222,14 +2237,8 @@ teaaf5750 = Será executado
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = Um ambiente de que este trecho precisa foi excluído: edite o trecho.
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = Nenhum ambiente para este servidor: adicione um em Configurações › Ambientes.
-
 # loaded: Enter loads it again
 t1a97d76a = carregado: Enter o carrega de novo
-
-# Load an environment into this shell…
-td1cfd29b = Carregar um ambiente neste shell…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Divida a aba primeiro: há só um painel para digitar.
@@ -2271,12 +2280,6 @@ tfa31f588 = Sair do shellwing?
 
 # Choose a host on the left to connect.
 tf7759ebb = Escolha um servidor à esquerda para conectar.
-
-# Recent
-t50e888fe = Recentes
-
-# Actions
-te65fb504 = Ações
 
 # Another tab to {title}
 ta46c00f0 = Outra aba para { $title }
@@ -2322,9 +2325,6 @@ t13c5bc91 = Arquivos em { $title }
 
 # Forward a port through {title}…
 t9f033387 = Redirecionar uma porta via { $title }…
-
-# Load environment…
-ta3f75e60 = Carregar ambiente…
 
 # Unload environment: {names}
 tbe80f7b5 = Descarregar ambiente: { $names }
@@ -2373,6 +2373,12 @@ tbfa1762c = Editar hosts.toml
 
 # Edit config.toml
 tf108a14d = Editar config.toml
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = Nenhum trecho para este servidor: adicione um em Configurações › Trechos.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = Nenhum ambiente para este servidor: adicione um em Configurações › Ambientes.
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = Este servidor usa o tema `{ $t }` de hosts.toml; altere-o lá.

@@ -275,6 +275,10 @@ pub struct FilesResized;
 pub enum PaneCommand {
     /// The palette: hosts, actions, themes, for those who do not know the keys.
     Palette,
+    /// The palette, at the snippets for this pane's host.
+    Snippets,
+    /// The palette, at the environments to load.
+    Environments,
     Split(gpui::Axis),
     Forward,
     /// Log the pane to a file, or stop: the workspace has the settings.
@@ -1924,6 +1928,37 @@ impl TermView {
                 item("menu-palette", &tr!("Command Palette…"), chord("K"), true)
                     .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
             )
+            .child(
+                item("menu-snippets", &tr!("Snippets…"), String::new(), true)
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Snippets))),
+            )
+            .when(status == Status::Connected, |d| {
+                d.child(
+                    item(
+                        "menu-load-env",
+                        &tr!("Load Environment…"),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Environments))),
+                )
+            })
+            .when(!self.env_loaded.is_empty(), |d| {
+                let names: Vec<String> = self.env_loaded.iter().map(|e| e.name.clone()).collect();
+                d.child(
+                    item(
+                        "menu-unload-env",
+                        &tr!("Unload {names}", names = names.join(", ")),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|v, _, cx| {
+                        if let Err(e) = v.unload_env(None, cx) {
+                            v.show_notice(e, LOG_NOTICE, cx);
+                        }
+                    })),
+                )
+            })
             .child(line())
             .child(
                 item("menu-copy", &tr!("Copy"), chord("C"), self.frame.selected)

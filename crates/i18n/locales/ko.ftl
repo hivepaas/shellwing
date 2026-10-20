@@ -931,6 +931,24 @@ tdd571ace = 밝은 따뜻한 톤
 # Your themes
 tb2e83d5c = 내 테마
 
+# Hosts
+tcf9aefb4 = 호스트
+
+# Recent
+t50e888fe = 최근
+
+# Snippets
+t648fcbf7 = 스니펫
+
+# Environments
+t273b1ccb = 환경
+
+# Actions
+te65fb504 = 작업
+
+# Settings
+t4b058728 = 설정
+
 # Find a host, or type user@host
 t18f005c7 = 호스트 찾기 또는 user@host 입력
 
@@ -955,8 +973,8 @@ t850e9777 = 삭제하려면 Enter를 한 번 더 누르세요
 # Nothing matches.
 tf8e003c3 = 일치하는 항목이 없습니다.
 
-# ↑↓ move   Enter open   Esc close   type > for actions only
-taeac962d = ↑↓ 이동   Enter 열기   Esc 닫기   > 입력 시 작업만 표시
+# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+t007c4e08 = ↑↓ 이동   Tab 다음 그룹   Enter 열기   Esc 닫기   > 입력 시 작업만 표시
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 미리 보기   Enter 적용   Esc 돌아가기
@@ -973,9 +991,6 @@ tbfdc091c = Enter 응답   Esc 취소
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 이동   Enter 선택   Esc 취소
 
-# Hosts
-tcf9aefb4 = 호스트
-
 # General
 t5561fd0b = 일반
 
@@ -987,12 +1002,6 @@ t27d1a714 = 키보드
 
 # SSH and security
 t699a801a = SSH 및 보안
-
-# Snippets
-t648fcbf7 = 스니펫
-
-# Environments
-t273b1ccb = 환경
 
 # Vault
 td432914f = 보관함
@@ -1305,9 +1314,6 @@ t412f3292 = 탭 1–9로 이동
 
 # Host list
 t2c78c1d9 = 호스트 목록
-
-# Settings
-t4b058728 = 설정
 
 # Next and previous theme
 t94e69c03 = 다음/이전 테마
@@ -2086,6 +2092,15 @@ t435e7ac0 = 기록이 중지됨: { $e }
 # Command Palette…
 t14aa6ff7 = 명령 팔레트…
 
+# Snippets…
+t2b3c5b61 = 스니펫…
+
+# Load Environment…
+td34b2cc0 = 환경 불러오기…
+
+# Unload {names}
+t362b9a48 = { $names } 해제
+
 # Paste
 tb34a0288 = 붙여넣기
 
@@ -2149,14 +2164,8 @@ teaaf5750 = 실행할 명령
 # An environment this needs was deleted: edit the snippet.
 tb37e7456 = 이 스니펫이 필요로 하는 환경이 삭제되었습니다. 스니펫을 편집하세요.
 
-# No environment for this host: add one in Settings › Environments.
-t1b95315b = 이 호스트용 환경이 없습니다: 설정 › 환경에서 추가하세요.
-
 # loaded: Enter loads it again
 t1a97d76a = 불러옴: Enter를 누르면 다시 불러옵니다
-
-# Load an environment into this shell…
-td1cfd29b = 이 셸에 환경 불러오기…
 
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 먼저 탭을 분할하세요. 입력할 창이 하나뿐입니다.
@@ -2190,12 +2199,6 @@ tfa31f588 = shellwing을 종료하시겠습니까?
 
 # Choose a host on the left to connect.
 tf7759ebb = 연결하려면 왼쪽에서 호스트를 선택하세요.
-
-# Recent
-t50e888fe = 최근
-
-# Actions
-te65fb504 = 작업
 
 # Another tab to {title}
 ta46c00f0 = { $title }에 새 탭으로 연결
@@ -2241,9 +2244,6 @@ t13c5bc91 = { $title }의 파일
 
 # Forward a port through {title}…
 t9f033387 = { $title }을(를) 통해 포트 포워딩…
-
-# Load environment…
-ta3f75e60 = 환경 불러오기…
 
 # Unload environment: {names}
 tbe80f7b5 = 환경 해제: { $names }
@@ -2292,6 +2292,12 @@ tbfa1762c = hosts.toml 편집
 
 # Edit config.toml
 tf108a14d = config.toml 편집
+
+# No snippet for this host: add one in Settings › Snippets.
+tdd2847bb = 이 호스트용 스니펫이 없습니다: 설정 › 스니펫에서 추가하세요.
+
+# No environment for this host: add one in Settings › Environments.
+t1b95315b = 이 호스트용 환경이 없습니다: 설정 › 환경에서 추가하세요.
 
 # This host uses the theme `{t}` from hosts.toml; change it there.
 td55512c8 = 이 호스트는 hosts.toml에 지정된 `{ $t }` 테마를 사용합니다. 그곳에서 변경하세요.
