@@ -595,16 +595,29 @@ found:
 ## Snippets
 
 Snippets are commands you run often. They are kept in the vault (`vault.db`,
-encrypted, never in a file of their own) and sync with it. Make and edit them
-in *Settings › Snippets*: a name, a category, a command, the hosts they are
-offered for (every host, a group or one host), the environments they need, and
-whether Enter is pressed after typing. With many snippets, a category files
-them: Settings and the palette list them under it (*Snippets · Deploy*).
+encrypted, never in a file of their own) and sync with it. In *Settings ›
+Snippets*, **New snippet…** or a snippet's edit button opens it in a window of
+its own, as a note: its name and category above, its command in a code editor,
+and beside it the hosts it is offered for (every host, a group or one host),
+the environments it needs, its `{{name}}` values and whether Enter is pressed
+after typing. With many snippets, a category files them: Settings and the
+palette list them under it (*Snippets · Deploy*).
 
-A command can take several lines: Enter starts another, Ctrl+Enter (Cmd+Enter
-on macOS) saves. It is sent to the pane as one paste, so a shell with bracketed
-paste on (bash, zsh and fish are, by default) takes it whole and runs it at the
-Enter; lists show it on one line, ` ⏎ ` between the lines.
+- **The editor** colors the command as shell (commands, flags, quoted text,
+  `$` expansions, operators, comments) and its `{{name}}` values, and numbers
+  its lines. Tab indents with two spaces; Enter keeps the line's indent.
+- **Saving** is as for notes: a moment after typing stops, once it has a name
+  and a command, and when the window closes; Ctrl+S (Cmd+S) saves at once.
+  While its window is open, the snippet is left out of syncs.
+- **Run in {pane} / Insert into {pane}** below run it in the main window's
+  focused pane (its values asked for there), or type it without Enter. A
+  snippet that needs environments only runs: typed alone it could not have
+  them.
+
+A command can take several lines. It is sent to the pane as one paste, so a
+shell with bracketed paste on (bash, zsh and fish are, by default) takes it
+whole and runs it at the Enter; lists show it on one line, ` ⏎ ` between the
+lines.
 
 In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*;
 *Snippets…* in the pane's right-click menu opens the palette there. Under the
@@ -618,6 +631,35 @@ Actions, Settings) jumps to each part of the list; so do Tab and Shift+Tab.
 In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
 pane's host. Any other `{{name}}` is asked for first, with the command shown as
 it will run.
+
+### The snippet library
+
+*Settings › Snippets › Library…* (or *Snippet library…* in the palette) opens
+ready commands for PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse,
+Elasticsearch, InfluxDB, SQLite, SQL Server, Docker, migration tools and load
+tests, by tool on the left and by task above (Diagnostics, Maintenance,
+Backup, Database, Data, Testing), with a search. Tick those you want and
+**Add to my snippets**: each becomes a snippet of your own, to edit as any
+other. What was added is marked *Added* (and listed under *Added*); a command
+can be added again, as another copy.
+
+- **Before adding**, the one shown on the right can be adjusted: its options
+  (the tool's flags it does not take by default), and whether it runs on the
+  host or in a Docker container (`docker exec -it {{container}} …`, the
+  container asked when it runs).
+- **Passwords** are never in a command: the tool reads its own variable
+  (`PGPASSWORD`, `MYSQL_PWD`, `REDISCLI_AUTH`…) or `$DB_PASSWORD`, from the
+  environment the snippet is given; when one environment has that variable it
+  is given by default. Without one, the tool asks for it, or goes without.
+- **Values** such as `{{db_user}}` and `{{database}}` are asked when it runs.
+- **What changes data** (restores, imports, migrations, drops, Docker's prune)
+  is marked *Changes data* and added typed, not run: it waits for Enter.
+- **File under** sets the new snippets' category: their tool (*PostgreSQL*),
+  their task (*Backup*, the name then saying the tool), or both.
+
+The library's text is in English. It is made from HivePaaS's command
+templates by `scripts/library_from_hivepaas.py` (into
+`crates/app/src/library/items.json`).
 
 ## Environments
 

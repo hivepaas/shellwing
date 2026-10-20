@@ -21,6 +21,17 @@ use crate::colors::colors;
 /// The text changed.
 pub struct Changed;
 
+/// How a part of code is painted: its color, and a ground behind it
+/// (`0xRRGGBBAA`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Paint {
+    pub color: u32,
+    pub ground: Option<u32>,
+}
+
+/// The parts of a text and their paint, in order: [`TextInput::code`].
+pub type Painter = fn(&str) -> Vec<(Range<usize>, Paint)>;
+
 pub struct TextInput {
     focus: FocusHandle,
     content: SharedString,
@@ -37,6 +48,8 @@ pub struct TextInput {
     masked: bool,
     /// Several lines, wrapped to the width: [`TextInput::multiline`].
     lines: Option<Lines>,
+    /// Code: colored by part, its lines numbered, as high as its parent.
+    code: Option<Painter>,
     history: History,
 }
 
@@ -275,6 +288,7 @@ impl TextInput {
             selecting: false,
             masked: false,
             lines: None,
+            code: None,
             history: History::default(),
         }
     }
@@ -294,6 +308,17 @@ impl TextInput {
             view_h: px(0.),
             thumb_drag: None,
         });
+        self
+    }
+
+    /// Code: a field of several lines as high as what holds it, its parts
+    /// painted by `paint`, its lines numbered; Tab indents, and Enter keeps
+    /// the line's indent.
+    pub fn code(mut self, paint: Painter) -> Self {
+        if self.lines.is_none() {
+            self = self.multiline(1, usize::MAX);
+        }
+        self.code = Some(paint);
         self
     }
 
@@ -581,8 +606,20 @@ impl TextInput {
                 return cx.stop_propagation();
             }
             let (start, end) = self.line_bounds(self.cursor());
+            let plain = !(m.control || m.alt || m.platform || m.shift);
             match k.key.as_str() {
+                // Code: the new line as indented as this one.
+                "enter" if !cmd && self.code.is_some() => {
+                    let indent: String = self.content[start..self.cursor()]
+                        .chars()
+                        .take_while(|c| *c == ' ' || *c == '\t')
+                        .collect();
+                    self.replace(self.selected.clone(), &format!("\n{indent}"), cx)
+                }
                 "enter" if !cmd => self.replace(self.selected.clone(), "\n", cx),
+                "tab" if plain && self.code.is_some() => {
+                    self.replace(self.selected.clone(), "  ", cx)
+                }
                 "home" if m.shift => self.select_to(start, cx),
                 "end" if m.shift => self.select_to(end, cx),
                 "home" => self.move_to(start, cx),
@@ -1162,6 +1199,10 @@ impl IntoElement for AreaElement {
 
 /// The text of a field of several lines as it will be drawn.
 struct Area {
+    /// Where the text is: the field, less code's line numbers.
+    text: Bounds<Pixels>,
+    /// Code's line numbers, shaped, the caret's line brighter.
+    numbers: Vec<gpui::ShapedLine>,
     drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
     cursor: Option<PaintQuad>,
     scroll_y: Pixels,
@@ -1169,14 +1210,15 @@ struct Area {
     caret: (usize, usize),
 }
 
-/// The runs a field's text is drawn with: the selection on its own ground.
+/// The runs a field's text is drawn with: code's parts in their colors,
+/// the selection on its own ground.
 fn area_runs(
     input: &TextInput,
     text: &str,
     color: gpui::Hsla,
     style: &gpui::TextStyle,
 ) -> Vec<TextRun> {
-    let run = TextRun {
+    let base = TextRun {
         len: text.len(),
         font: style.font(),
         color,
@@ -1184,29 +1226,57 @@ fn area_runs(
         underline: None,
         strikethrough: None,
     };
-    let sel = &input.selected;
-    if input.content.is_empty() || sel.is_empty() {
-        return vec![run];
+    if input.content.is_empty() {
+        return vec![base];
     }
+    let painted = input.code.map(|paint| paint(text)).unwrap_or_default();
     let ground = rgba(crate::colors::with_alpha(colors().accent, 0x55)).into();
-    [
-        TextRun {
-            len: sel.start,
-            ..run.clone()
-        },
-        TextRun {
-            len: sel.end - sel.start,
-            background_color: Some(ground),
-            ..run.clone()
-        },
-        TextRun {
-            len: text.len() - sel.end,
-            ..run
-        },
-    ]
-    .into_iter()
-    .filter(|r| r.len > 0)
-    .collect()
+    runs(text.len(), &base, &painted, input.selected.clone(), ground)
+}
+
+/// `len` bytes as runs: each part of `painted` (in order, apart) in its
+/// paint, the rest as `base`, and `selected` on `selection`'s ground.
+fn runs(
+    len: usize,
+    base: &TextRun,
+    painted: &[(Range<usize>, Paint)],
+    selected: Range<usize>,
+    selection: gpui::Hsla,
+) -> Vec<TextRun> {
+    let mut cuts = vec![0, len];
+    if selected.start < selected.end {
+        cuts.extend([selected.start.min(len), selected.end.min(len)]);
+    }
+    for (r, _) in painted {
+        cuts.push(r.start.min(len));
+        cuts.push(r.end.min(len));
+    }
+    cuts.sort_unstable();
+    cuts.dedup();
+    let mut out = vec![];
+    let mut part = painted.iter().peekable();
+    for w in cuts.windows(2) {
+        let (from, to) = (w[0], w[1]);
+        while part.peek().is_some_and(|(r, _)| r.end <= from) {
+            part.next();
+        }
+        let mut run = TextRun {
+            len: to - from,
+            ..base.clone()
+        };
+        if let Some((_, p)) = part.peek().filter(|(r, _)| r.start <= from) {
+            run.color = rgb(p.color).into();
+            run.background_color = p.ground.map(|g| rgba(g).into());
+        }
+        if selected.start <= from && to <= selected.end && selected.start < selected.end {
+            run.background_color = Some(selection);
+        }
+        out.push(run);
+    }
+    if out.is_empty() {
+        out.push(base.clone());
+    }
+    out
 }
 
 impl Element for AreaElement {
@@ -1228,8 +1298,15 @@ impl Element for AreaElement {
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, ()) {
-        // As high as the text wraps to, within its rows.
         let input = self.input.read(cx);
+        // Code: as high as what holds it; it scrolls past that.
+        if input.code.is_some() {
+            let mut layout = Style::default();
+            layout.size.width = relative(1.).into();
+            layout.size.height = relative(1.).into();
+            return (window.request_layout(layout, [], cx), ());
+        }
+        // As high as the text wraps to, within its rows.
         let text = if input.content.is_empty() {
             input.placeholder_text()
         } else {
@@ -1290,6 +1367,46 @@ impl Element for AreaElement {
         };
         let runs = area_runs(input, &text, color, &style);
         let font_size = style.font_size.to_pixels(window.rem_size());
+        // Code: its lines' numbers in a gutter on the left, the scroll bar
+        // clear of the text on the right.
+        let mut numbers = vec![];
+        let bounds = if input.code.is_some() {
+            let count = input.content.split('\n').count();
+            let number = |n: usize, color: u32| {
+                let s: SharedString = n.to_string().into();
+                let run = TextRun {
+                    len: s.len(),
+                    font: style.font(),
+                    color: rgb(color).into(),
+                    background_color: None,
+                    underline: None,
+                    strikethrough: None,
+                };
+                window.text_system().shape_line(s, font_size, &[run], None)
+            };
+            let caret_line = input.content[..input.cursor()].matches('\n').count();
+            numbers = (1..=count)
+                .map(|n| {
+                    let color = if n == caret_line + 1 {
+                        colors().soft
+                    } else {
+                        colors().faint
+                    };
+                    number(n, color)
+                })
+                .collect();
+            let digits = number(count.max(10), colors().faint).width;
+            let gutter = digits + px(22.);
+            Bounds::new(
+                point(bounds.left() + gutter, bounds.top()),
+                size(
+                    (bounds.size.width - gutter - px(BAR_W + 6.)).max(px(20.)),
+                    bounds.size.height,
+                ),
+            )
+        } else {
+            bounds
+        };
         let shaped = window
             .text_system()
             .shape_text(text, font_size, &runs, Some(bounds.size.width), None)
@@ -1347,6 +1464,8 @@ impl Element for AreaElement {
             )
         });
         Area {
+            text: bounds,
+            numbers,
             drawn,
             cursor,
             scroll_y,
@@ -1367,6 +1486,8 @@ impl Element for AreaElement {
     ) {
         let focus = self.input.read(cx).focus.clone();
         follow_drag(&self.input, window, cx);
+        let field = bounds;
+        let bounds = area.text;
         window.handle_input(
             &focus,
             ElementInputHandler::new(bounds, self.input.clone()),
@@ -1375,7 +1496,23 @@ impl Element for AreaElement {
         let line_height = window.line_height();
         let focused = focus.is_focused(window);
         let scroll_y = area.scroll_y;
-        window.with_content_mask(Some(gpui::ContentMask { bounds }), |window| {
+        window.with_content_mask(Some(gpui::ContentMask { bounds: field }), |window| {
+            // Each line's number, right-aligned before it.
+            for ((_, _, top), n) in area.drawn.iter().zip(&area.numbers) {
+                let y = bounds.top() + *top - scroll_y;
+                if y + line_height < field.top() || y > field.bottom() {
+                    continue;
+                }
+                let x = bounds.left() - px(12.) - n.width;
+                let _ = n.paint(
+                    point(x, y),
+                    line_height,
+                    gpui::TextAlign::Left,
+                    None,
+                    window,
+                    cx,
+                );
+            }
             for (_, line, top) in &area.drawn {
                 let origin = point(bounds.left(), bounds.top() + *top - scroll_y);
                 let _ = line.paint_background(
@@ -1405,6 +1542,7 @@ impl Element for AreaElement {
             lines.view_h = bounds.size.height;
             lines.thumb()
         });
+        let bounds = field;
         // The scroll bar, when the text is longer than the field.
         if let Some((top, h)) = thumb {
             let dragging = self
@@ -1433,7 +1571,39 @@ impl Element for AreaElement {
 
 #[cfg(test)]
 mod tests {
-    use super::word_around;
+    use super::{Paint, runs, word_around};
+
+    #[test]
+    fn code_is_painted_by_part_and_the_selection_goes_over_it() {
+        let base = gpui::TextRun {
+            len: 10,
+            font: gpui::font("x"),
+            color: gpui::black(),
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        let red = Paint {
+            color: 0xff0000,
+            ground: None,
+        };
+        let r = runs(10, &base, &[(2..5, red)], 4..7, gpui::white());
+        let lens: Vec<usize> = r.iter().map(|r| r.len).collect();
+        assert_eq!(lens, [2, 2, 1, 2, 3]);
+        let red: gpui::Hsla = gpui::rgb(0xff0000).into();
+        assert_eq!((r[1].color, r[1].background_color), (red, None));
+        assert_eq!(
+            (r[2].color, r[2].background_color),
+            (red, Some(gpui::white()))
+        );
+        assert_eq!(
+            (r[3].color, r[3].background_color),
+            (gpui::black(), Some(gpui::white()))
+        );
+        assert_eq!((r[4].color, r[4].background_color), (gpui::black(), None));
+        // Nothing painted, nothing selected: one run.
+        assert_eq!(runs(10, &base, &[], 3..3, gpui::white()).len(), 1);
+    }
 
     #[test]
     fn a_double_click_takes_the_word() {
