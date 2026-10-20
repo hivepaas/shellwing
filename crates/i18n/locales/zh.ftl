@@ -1672,20 +1672,8 @@ t8e7efcd7 = 编辑…
 # Change
 ta1de2fdd = 更改
 
-# Show values
-t68f568ba = 显示值
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = 保险库中的值已遮盖；显示前需要确认是你本人。
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = 请在系统对话框中确认是你本人…
-
-# Hide values
-tab6d76ed = 隐藏值
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = 值正显示在屏幕上：共享屏幕时请注意。一分钟后会再次遮盖。
 
 # The vault's passphrase, to show the values
 teecb1d4f = 保险库的密码短语，用于显示值

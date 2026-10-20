@@ -1697,20 +1697,8 @@ t8e7efcd7 = Editar…
 # Change
 ta1de2fdd = Cambiar
 
-# Show values
-t68f568ba = Mostrar valores
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Los valores guardados en la bóveda están ocultos; para mostrarlos se confirma que eres tú.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Confirma que eres tú en el diálogo del sistema…
-
-# Hide values
-tab6d76ed = Ocultar valores
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Se ven en pantalla: cuidado al compartir pantalla. Se ocultan de nuevo en un minuto.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Frase de contraseña de la bóveda, para mostrar los valores

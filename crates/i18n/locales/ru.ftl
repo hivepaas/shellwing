@@ -1711,20 +1711,8 @@ t8e7efcd7 = Изменить…
 # Change
 ta1de2fdd = Изменить
 
-# Show values
-t68f568ba = Показать значения
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Значения из хранилища скрыты; чтобы показать их, нужно подтвердить, что это вы.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Подтвердите, что это вы, в окне системы…
-
-# Hide values
-tab6d76ed = Скрыть значения
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Они видны на экране: осторожно при демонстрации экрана. Через минуту они снова будут скрыты.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Парольная фраза хранилища, чтобы показать значения

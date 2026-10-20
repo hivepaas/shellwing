@@ -1672,20 +1672,8 @@ t8e7efcd7 = 編集…
 # Change
 ta1de2fdd = 変更
 
-# Show values
-t68f568ba = 値を表示
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = 保管庫の値はマスクされています。表示するには本人確認が必要です。
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = システムのダイアログで本人確認してください…
-
-# Hide values
-tab6d76ed = 値を隠す
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = 画面に表示されています。画面共有に注意してください。1 分後に再びマスクされます。
 
 # The vault's passphrase, to show the values
 teecb1d4f = 値を表示するための保管庫のパスフレーズ

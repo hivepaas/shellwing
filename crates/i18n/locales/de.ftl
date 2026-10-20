@@ -1697,20 +1697,8 @@ t8e7efcd7 = Bearbeiten…
 # Change
 ta1de2fdd = Ändern
 
-# Show values
-t68f568ba = Werte anzeigen
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Im Tresor gespeicherte Werte sind maskiert; zum Anzeigen wird bestätigt, dass du es bist.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Bestätige im Dialog des Systems, dass du es bist…
-
-# Hide values
-tab6d76ed = Werte ausblenden
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Sie stehen auf dem Bildschirm: Vorsicht bei Bildschirmfreigabe. In einer Minute werden sie wieder maskiert.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase des Tresors, um die Werte anzuzeigen

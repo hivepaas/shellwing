@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use super::*;
 use crate::environment;
+use gpui::{App, svg};
 use shellwing_vault::{EnvValues, Error as VaultError};
 
 /// How long values stay shown.
@@ -19,21 +20,25 @@ pub(super) struct VarRow {
     /// Its value is the one in the vault, masked and not loaded: saving
     /// keeps it.
     kept: bool,
+    /// Its kept value is shown (the eye), to mask again while unchanged.
+    revealed: bool,
 }
 
 /// Where showing the values stands.
 pub(super) enum Reveal {
     Hidden,
-    /// Asking first: for the vault's passphrase, or (None: none guards the
-    /// vault) for a yes.
+    /// Asking first, to show row `row`: for the vault's passphrase, or
+    /// (None: none guards the vault) for a yes.
     Asking {
         passphrase: Option<Entity<TextInput>>,
         problem: Option<String>,
+        row: usize,
     },
     /// Windows Hello or Touch ID is asking.
     Waiting,
-    /// Shown, with the values as they were, to mask again those unchanged.
-    Shown(EnvValues),
+    /// Asked: the values as they are in the vault, for the eyes to show
+    /// at once, for a while.
+    Open(EnvValues),
 }
 
 pub(super) struct EnvEdit {
@@ -43,7 +48,7 @@ pub(super) struct EnvEdit {
     pub(super) scope: Scope,
     pub(super) pick: Option<Pick>,
     reveal: Reveal,
-    /// Counts each showing, so a timer hides only its own.
+    /// Counts each opening, so a timer closes only its own.
     shown: u64,
     problem: Option<String>,
 }
@@ -63,7 +68,12 @@ impl SnippetsView {
             i.set_text(value, value.len()..value.len(), cx);
             i
         });
-        VarRow { name, value, kept }
+        VarRow {
+            name,
+            value,
+            kept,
+            revealed: false,
+        }
     }
 
     pub(super) fn edit_env(
@@ -242,6 +252,7 @@ impl SnippetsView {
             {
                 Some(r) => {
                     r.kept = false;
+                    r.revealed = false;
                     r.value
                         .update(cx, |i, cx| i.set_text(&value, value.len()..value.len(), cx));
                 }
@@ -255,43 +266,55 @@ impl SnippetsView {
         cx.notify();
     }
 
-    /// Asks it is the user before the values show: Windows Hello or Touch
-    /// ID where it opens the vault, else its passphrase, else a yes.
-    fn start_reveal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// The eye of row `i`: shows its value, asking it is the user first
+    /// unless asked a moment ago.
+    fn eye(&mut self, i: usize, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(EnvEdit {
+            reveal: Reveal::Open(_),
+            ..
+        }) = self.env_edit()
+        {
+            return self.reveal_row(i, cx);
+        }
+        self.start_reveal(i, window, cx);
+    }
+
+    /// Asks it is the user before row `row`'s value shows: Windows Hello
+    /// or Touch ID where it opens the vault, else its passphrase, else a yes.
+    fn start_reveal(&mut self, row: usize, window: &mut Window, cx: &mut Context<Self>) {
         let slot = self.vault.clone();
         let Some(vault) = slot.ready() else {
             return;
         };
         let presence = slot.presence().is_some() && vault.has_presence().unwrap_or(false);
         let passphrase = vault.has_vault_passphrase().unwrap_or(false);
-        if presence {
-            if let Some(e) = self.env_edit() {
-                e.reveal = Reveal::Waiting;
-            }
-            cx.notify();
-            let job = cx.background_spawn(async move { slot.confirm(None) });
-            cx.spawn_in(window, async move |this, cx| {
-                let done = job.await;
-                let _ = this.update_in(cx, |v, window, cx| match done {
-                    Ok(()) => v.reveal_values(cx),
-                    Err(err) => {
-                        // Not there, or cancelled: the passphrase instead.
-                        let problem =
-                            (!matches!(err, VaultError::NotPresent)).then(|| err.to_string());
-                        v.ask_passphrase(passphrase, problem, window, cx);
-                    }
-                });
-            })
-            .detach();
-        } else {
-            self.ask_passphrase(passphrase, None, window, cx);
+        if !presence {
+            return self.ask_passphrase(passphrase, None, row, window, cx);
         }
+        if let Some(e) = self.env_edit() {
+            e.reveal = Reveal::Waiting;
+        }
+        cx.notify();
+        let job = cx.background_spawn(async move { slot.confirm(None) });
+        cx.spawn_in(window, async move |this, cx| {
+            let done = job.await;
+            let _ = this.update_in(cx, |v, window, cx| match done {
+                Ok(()) => v.open_values(row, cx),
+                Err(err) => {
+                    // Not there, or cancelled: the passphrase instead.
+                    let problem = (!matches!(err, VaultError::NotPresent)).then(|| err.to_string());
+                    v.ask_passphrase(passphrase, problem, row, window, cx);
+                }
+            });
+        })
+        .detach();
     }
 
     fn ask_passphrase(
         &mut self,
         passphrase: bool,
         problem: Option<String>,
+        row: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -302,6 +325,7 @@ impl SnippetsView {
             e.reveal = Reveal::Asking {
                 passphrase: input,
                 problem,
+                row,
             };
         }
         match focus {
@@ -315,14 +339,17 @@ impl SnippetsView {
     /// window: its KDF takes a moment), or the yes.
     fn confirm_reveal(&mut self, cx: &mut Context<Self>) {
         let Some(EnvEdit {
-            reveal: Reveal::Asking { passphrase, .. },
+            reveal: Reveal::Asking {
+                passphrase, row, ..
+            },
             ..
         }) = self.env_edit()
         else {
             return;
         };
+        let row = *row;
         let Some(input) = passphrase.clone() else {
-            return self.reveal_values(cx);
+            return self.open_values(row, cx);
         };
         let typed = zeroize::Zeroizing::new(input.read(cx).text().to_string());
         input.update(cx, |i, cx| i.set_text("", 0..0, cx));
@@ -331,7 +358,7 @@ impl SnippetsView {
         cx.spawn(async move |this, cx| {
             let done = job.await;
             let _ = this.update(cx, |v, cx| match done {
-                Ok(()) => v.reveal_values(cx),
+                Ok(()) => v.open_values(row, cx),
                 Err(err) => {
                     if let Some(EnvEdit {
                         reveal: Reveal::Asking { problem, .. },
@@ -350,8 +377,9 @@ impl SnippetsView {
         .detach();
     }
 
-    /// Shows the values kept in the vault, for a while.
-    fn reveal_values(&mut self, cx: &mut Context<Self>) {
+    /// Asked: the values from the vault, row `row`'s shown, and the eyes
+    /// open at once for a while.
+    fn open_values(&mut self, row: usize, cx: &mut Context<Self>) {
         let vault = self.vault.clone();
         let Some(e) = self.env_edit() else {
             return;
@@ -365,52 +393,94 @@ impl SnippetsView {
             }
             _ => vec![],
         };
-        let rows: Vec<(Entity<TextInput>, String)> = e
-            .rows
-            .iter_mut()
-            .filter(|r| r.kept)
-            .filter_map(|r| {
-                let name = r.name.read(cx).text().trim().to_string();
-                let value = values.iter().find(|(n, _)| *n == name)?.1.to_string();
-                r.kept = false;
-                Some((r.value.clone(), value))
-            })
-            .collect();
-        e.reveal = Reveal::Shown(values);
+        e.reveal = Reveal::Open(values);
         e.shown += 1;
         let shown = e.shown;
-        for (input, value) in rows {
-            input.update(cx, |i, cx| i.set_text(&value, value.len()..value.len(), cx));
-        }
+        self.reveal_row(row, cx);
         cx.spawn(async move |this, cx| {
             cx.background_executor().timer(SHOWN_FOR).await;
             let _ = this.update(cx, |v, cx| {
                 if v.env_edit().is_some_and(|e| e.shown == shown) {
-                    v.hide_values(cx);
+                    v.close_values(cx);
                 }
             });
         })
         .detach();
+    }
+
+    /// Shows row `i`'s kept value.
+    fn reveal_row(&mut self, i: usize, cx: &mut Context<Self>) {
+        let Some(EnvEdit {
+            rows,
+            reveal: Reveal::Open(values),
+            ..
+        }) = self.env_edit()
+        else {
+            return;
+        };
+        let Some(r) = rows.get_mut(i).filter(|r| r.kept) else {
+            return;
+        };
+        let name = r.name.read(cx).text().trim().to_string();
+        let Some(value) = values
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, v)| v.to_string())
+        else {
+            return;
+        };
+        r.kept = false;
+        r.revealed = true;
+        let input = r.value.clone();
+        input.update(cx, |i, cx| i.set_text(&value, value.len()..value.len(), cx));
         cx.notify();
     }
 
-    /// Masks again the values shown that were not changed.
-    fn hide_values(&mut self, cx: &mut Context<Self>) {
+    /// Whether row `r` still holds the value it was shown with.
+    fn unchanged(values: &EnvValues, r: &VarRow, cx: &App) -> bool {
+        let name = r.name.read(cx).text().trim().to_string();
+        r.revealed
+            && values
+                .iter()
+                .any(|(n, v)| *n == name && v.as_str() == r.value.read(cx).text())
+    }
+
+    /// Masks row `i` again, unchanged.
+    fn hide_row(&mut self, i: usize, cx: &mut Context<Self>) {
+        let Some(EnvEdit {
+            rows,
+            reveal: Reveal::Open(values),
+            ..
+        }) = self.env_edit()
+        else {
+            return;
+        };
+        let Some(r) = rows.get_mut(i) else {
+            return;
+        };
+        if Self::unchanged(values, r, cx) {
+            r.kept = true;
+            r.revealed = false;
+            r.value.update(cx, |i, cx| i.set_text("", 0..0, cx));
+        }
+        cx.notify();
+    }
+
+    /// The while is over: the values shown and unchanged masked again, and
+    /// the next eye asks again.
+    fn close_values(&mut self, cx: &mut Context<Self>) {
         let Some(e) = self.env_edit() else {
             return;
         };
-        let Reveal::Shown(values) = std::mem::replace(&mut e.reveal, Reveal::Hidden) else {
+        let Reveal::Open(values) = std::mem::replace(&mut e.reveal, Reveal::Hidden) else {
             return;
         };
         for r in &mut e.rows {
-            let name = r.name.read(cx).text().trim().to_string();
-            let same = values
-                .iter()
-                .any(|(n, v)| *n == name && v.as_str() == r.value.read(cx).text());
-            if !r.kept && same {
+            if Self::unchanged(&values, r, cx) {
                 r.kept = true;
                 r.value.update(cx, |i, cx| i.set_text("", 0..0, cx));
             }
+            r.revealed = false;
         }
         cx.notify();
     }
@@ -498,12 +568,33 @@ impl SnippetsView {
             .collect()
     }
 
-    /// A row of the dialog: the name, the value (masked while kept), and a
-    /// button that takes the row out.
+    /// A small icon that does something.
+    fn icon_tool(id: impl Into<gpui::ElementId>, icon: &'static str) -> gpui::Stateful<gpui::Div> {
+        div()
+            .id(id.into())
+            .flex_shrink_0()
+            .size(px(16.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(4.))
+            .cursor_pointer()
+            .hover(|s| s.bg(rgb(colors().hover)))
+            .child(
+                svg()
+                    .path(icon)
+                    .size(px(14.))
+                    .text_color(rgb(colors().muted)),
+            )
+    }
+
+    /// A row of the dialog: the name, the value (masked while kept, an eye
+    /// to show it), and a button that takes the row out.
     fn var_line(
         &self,
         i: usize,
         row: &VarRow,
+        open: Option<&EnvValues>,
         window: &Window,
         cx: &mut Context<Self>,
     ) -> gpui::Div {
@@ -511,18 +602,10 @@ impl SnippetsView {
         let (name_on, value_on) = (focused(&row.name), focused(&row.value));
         let value = if row.kept {
             let input = row.value.clone();
-            div()
+            Self::field_shell(false, None)
                 .flex_1()
                 .min_w_0()
-                .h(px(32.))
-                .px(px(10.))
-                .flex()
-                .items_center()
                 .gap(px(8.))
-                .rounded(px(6.))
-                .border_1()
-                .border_color(rgb(colors().field_edge))
-                .bg(rgb(colors().chip))
                 .child(
                     div()
                         .flex_1()
@@ -530,23 +613,43 @@ impl SnippetsView {
                         .child("••••••••••••"),
                 )
                 .child(
-                    Self::small(("env-change", i), &tr!("Change")).on_click(cx.listener(
-                        move |v, _, w, cx| {
+                    Self::icon_tool(("env-eye", i), "icons/eye.svg")
+                        .on_click(cx.listener(move |v, _, w, cx| v.eye(i, w, cx))),
+                )
+                .child(
+                    div()
+                        .id(("env-change", i))
+                        .flex_shrink_0()
+                        .text_size(ui(12.))
+                        .text_color(rgb(colors().accent))
+                        .cursor_pointer()
+                        .hover(|s| s.underline())
+                        .on_click(cx.listener(move |v, _, w, cx| {
                             if let Some(e) = v.env_edit()
                                 && let Some(r) = e.rows.get_mut(i)
                             {
                                 r.kept = false;
+                                r.revealed = false;
                             }
                             let f = input.read(cx).focus_handle(cx);
                             w.focus(&f, cx);
                             cx.notify();
-                        },
-                    )),
+                        }))
+                        .child(tr!("Change")),
                 )
         } else {
-            Self::field_box(&row.value, value_on, Some(self.mono.clone()))
+            let unchanged = open.is_some_and(|values| Self::unchanged(values, row, cx));
+            Self::field_shell(value_on, Some(self.mono.clone()))
                 .flex_1()
                 .min_w_0()
+                .gap(px(8.))
+                .child(div().flex_1().min_w_0().child(row.value.clone()))
+                .when(unchanged, |d| {
+                    d.child(
+                        Self::icon_tool(("env-eye-off", i), "icons/eye-off.svg")
+                            .on_click(cx.listener(move |v, _, _, cx| v.hide_row(i, cx))),
+                    )
+                })
         };
         div()
             .flex()
@@ -576,6 +679,10 @@ impl SnippetsView {
                             && i < e.rows.len()
                         {
                             e.rows.remove(i);
+                            // Indices moved: a question about a row is moot.
+                            if matches!(e.reveal, Reveal::Asking { .. } | Reveal::Waiting) {
+                                e.reveal = Reveal::Hidden;
+                            }
                         }
                         cx.notify();
                     }))
@@ -583,40 +690,23 @@ impl SnippetsView {
             )
     }
 
-    /// What showing the values stands at: a button, the question, or the
-    /// wait for the system's prompt.
+    /// The question before a value shows, or the wait for the system's
+    /// prompt; nothing otherwise.
     fn reveal_line(
         &self,
         e: &EnvEdit,
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Option<gpui::Div> {
-        let kept = e.rows.iter().any(|r| r.kept);
-        let line = div().flex().items_center().gap(px(8.)).flex_wrap();
-        Some(match &e.reveal {
-            Reveal::Hidden if kept => line
-                .child(
-                    Self::small("env-show", &tr!("Show values"))
-                        .on_click(cx.listener(|v, _, w, cx| v.start_reveal(w, cx))),
-                )
-                .child(hint_text(&tr!(
-                    "Values kept in the vault are masked; showing them asks it is you."
-                ))),
-            Reveal::Hidden => return None,
+        match &e.reveal {
+            Reveal::Hidden | Reveal::Open(_) => None,
             Reveal::Waiting => {
-                line.child(hint_text(&tr!("Confirm it is you in the system's prompt…")))
+                Some(div().child(hint_text(&tr!("Confirm it is you in the system's prompt…"))))
             }
-            Reveal::Shown(_) => line
-                .child(
-                    Self::small("env-hide", &tr!("Hide values"))
-                        .on_click(cx.listener(|v, _, _, cx| v.hide_values(cx))),
-                )
-                .child(hint_text(&tr!(
-                    "They show on screen: mind screen sharing. They are masked again in a minute."
-                ))),
             Reveal::Asking {
                 passphrase,
                 problem,
+                ..
             } => {
                 let mut ask = div().flex().flex_col().gap(px(6.));
                 match passphrase {
@@ -656,9 +746,9 @@ impl SnippetsView {
                 if let Some(p) = problem {
                     ask = ask.child(problem_text(p));
                 }
-                return Some(ask);
+                Some(ask)
             }
-        })
+        }
     }
 
     pub(super) fn env_card(
@@ -678,8 +768,12 @@ impl SnippetsView {
             .flex_col()
             .gap(px(6.))
             .child(label_text(&tr!("Variables")));
+        let open = match &e.reveal {
+            Reveal::Open(values) => Some(values),
+            _ => None,
+        };
         for (i, row) in e.rows.iter().enumerate() {
-            vars = vars.child(self.var_line(i, row, window, cx));
+            vars = vars.child(self.var_line(i, row, open, window, cx));
         }
         vars = vars.child(
             div()

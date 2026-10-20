@@ -1697,20 +1697,8 @@ t8e7efcd7 = Modifier…
 # Change
 ta1de2fdd = Modifier
 
-# Show values
-t68f568ba = Afficher les valeurs
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Les valeurs gardées dans le coffre sont masquées ; les afficher demande de confirmer que c'est vous.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Confirmez que c'est vous dans la fenêtre du système…
-
-# Hide values
-tab6d76ed = Masquer les valeurs
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Elles s'affichent à l'écran : attention au partage d'écran. Elles sont masquées à nouveau dans une minute.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Phrase secrète du coffre, pour afficher les valeurs

@@ -1672,20 +1672,8 @@ t8e7efcd7 = 편집…
 # Change
 ta1de2fdd = 변경
 
-# Show values
-t68f568ba = 값 표시
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = 보관함에 저장된 값은 가려져 있으며, 표시하려면 본인 확인이 필요합니다.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = 시스템 대화 상자에서 본인임을 확인하세요…
-
-# Hide values
-tab6d76ed = 값 숨기기
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = 화면에 표시됩니다: 화면 공유에 주의하세요. 1분 후 다시 가려집니다.
 
 # The vault's passphrase, to show the values
 teecb1d4f = 값을 표시하기 위한 보관함 암호 문구

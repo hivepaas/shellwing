@@ -1672,20 +1672,8 @@ t8e7efcd7 = Sửa…
 # Change
 ta1de2fdd = Đổi
 
-# Show values
-t68f568ba = Hiện giá trị
-
-# Values kept in the vault are masked; showing them asks it is you.
-tf0365fc2 = Giá trị lưu trong kho được che; muốn hiện sẽ phải xác nhận là bạn.
-
 # Confirm it is you in the system's prompt…
 t3ab56316 = Xác nhận là bạn trong hộp thoại của hệ thống…
-
-# Hide values
-tab6d76ed = Ẩn giá trị
-
-# They show on screen: mind screen sharing. They are masked again in a minute.
-td45dba68 = Giá trị đang hiện trên màn hình: cẩn thận khi chia sẻ màn hình. Một phút nữa sẽ tự che lại.
 
 # The vault's passphrase, to show the values
 teecb1d4f = Passphrase của kho, để hiện giá trị

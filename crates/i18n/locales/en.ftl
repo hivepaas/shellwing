@@ -585,11 +585,7 @@ t79d75da2 =
     }
 t8e7efcd7 = Edit…
 ta1de2fdd = Change
-t68f568ba = Show values
-tf0365fc2 = Values kept in the vault are masked; showing them asks it is you.
 t3ab56316 = Confirm it is you in the system's prompt…
-tab6d76ed = Hide values
-td45dba68 = They show on screen: mind screen sharing. They are masked again in a minute.
 teecb1d4f = The vault's passphrase, to show the values
 tc7928fa4 = No passphrase guards the vault, so anyone at this device can show them. Show the values?
 t67715aad = The palette offers to load it in panes of those hosts only.
