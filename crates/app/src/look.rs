@@ -5,9 +5,10 @@
 use std::sync::Arc;
 
 use shellwing_config::{
-    ColorMode, CursorStyle, Hosts, LoadError, OnDisconnect, Scrollbar, Settings, Stamp, Store,
-    Theme, Themes, theme_for,
+    ColorMode, CursorStyle, Hosts, Keymap, LoadError, OnDisconnect, Os, Scrollbar, Settings, Stamp,
+    Store, Theme, Themes, theme_for,
 };
+use shellwing_i18n::tr;
 use shellwing_term::{Colors, Rgb};
 
 /// Everything that decides how the terminal looks.
@@ -65,6 +66,8 @@ pub struct Live {
     settings: Settings,
     hosts: Hosts,
     themes: Themes,
+    /// The window's shortcuts, as `[shortcuts]` sets them.
+    keymap: Arc<Keymap>,
     /// The app is light: the terminal takes `light_theme`.
     light: bool,
 }
@@ -78,6 +81,7 @@ impl Live {
             settings: Settings::default(),
             hosts: Hosts::default(),
             themes: Themes::builtin(),
+            keymap: Arc::new(Keymap::defaults(Os::this())),
             light: false,
         };
         let problems = live.load();
@@ -102,7 +106,7 @@ impl Live {
         let store = self
             .store
             .as_ref()
-            .ok_or("No config directory to save to.")?;
+            .ok_or_else(|| tr!("No config directory to save to."))?;
         let text = place.map(|p| match p {
             // Shown with ~ for the home folder, as people write it.
             SyncPlace::Folder(f) => SyncPlaceText::Folder(
@@ -161,7 +165,7 @@ impl Live {
         let store = self
             .store
             .as_ref()
-            .ok_or("No config directory to save to.")?;
+            .ok_or_else(|| tr!("No config directory to save to."))?;
         store.set_setting(path, value).map_err(|e| e.to_string())?;
         let problems = self.load();
         match problems.first() {
@@ -196,7 +200,15 @@ impl Live {
         let (themes, errors) = store.themes();
         self.themes = themes;
         problems.extend(errors);
-        problems.iter().map(ToString::to_string).collect()
+        let (keymap, wrong) = Keymap::new(&self.settings.shortcuts, Os::this());
+        self.keymap = Arc::new(keymap);
+        let mut problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
+        problems.extend(wrong.iter().map(crate::hotkeys::problem));
+        problems
+    }
+
+    pub fn keymap(&self) -> Arc<Keymap> {
+        self.keymap.clone()
     }
 
     /// Reloads if a file changed since the last load: `Some(problems)`.
@@ -214,7 +226,10 @@ impl Live {
             Some(t) => (t.clone(), None),
             None => (
                 self.themes.fallback(),
-                Some(format!("Theme `{want}` not found; using the default.")),
+                Some(tr!(
+                    "Theme `{want}` not found; using the default.",
+                    want = want
+                )),
             ),
         };
         let a = &self.settings.appearance;
@@ -240,9 +255,9 @@ impl Live {
         if let Some(h) = host
             && theme_for(&self.settings, &self.hosts, Some(h), self.light) != self.app_theme()
         {
-            return Err(format!(
-                "{} sets its own theme in hosts.toml; change it there.",
-                h.name
+            return Err(tr!(
+                "{host} sets its own theme in hosts.toml; change it there.",
+                host = h.name.as_str()
             ));
         }
         let current = self
@@ -261,7 +276,7 @@ impl Live {
             .themes
             .find(id)
             .cloned()
-            .ok_or_else(|| format!("Theme `{id}` not found."))?;
+            .ok_or_else(|| tr!("Theme `{id}` not found.", id = id))?;
         self.save_theme(&theme.id)?;
         Ok(theme)
     }
@@ -270,7 +285,7 @@ impl Live {
         let store = self
             .store
             .as_ref()
-            .ok_or("No config directory to save to.")?;
+            .ok_or_else(|| tr!("No config directory to save to."))?;
         // The light mode's theme is a key of its own.
         if self.light {
             store.set_setting(
@@ -295,6 +310,29 @@ impl Live {
         let h = self.hosts.find(host?)?;
         let t = theme_for(&self.settings, &self.hosts, Some(h), self.light);
         (t != self.app_theme()).then_some(t)
+    }
+}
+
+/// A theme group's name, by its id (one of `shellwing_config::GROUPS`), in
+/// the user's language; None: the user's own themes.
+pub fn group_title(id: Option<&str>) -> String {
+    use shellwing_i18n::tr;
+    match id {
+        Some("blue") => tr!("Blue and slate"),
+        Some("purple") => tr!("Purple and pink"),
+        Some("green") => tr!("Green and teal"),
+        Some("warm") => tr!("Warm"),
+        Some("neutral") => tr!("Neutral"),
+        Some("gradient") => tr!("Gradient"),
+        Some("gradient-light") => tr!("Gradient, light"),
+        Some("light-cool") => tr!("Light, cool"),
+        Some("light-warm") => tr!("Light, warm"),
+        // A group a newer version has: its English name.
+        Some(other) => shellwing_config::GROUPS
+            .iter()
+            .find(|(g, _)| *g == other)
+            .map_or_else(|| other.to_string(), |(_, t)| (*t).to_string()),
+        None => tr!("Your themes"),
     }
 }
 

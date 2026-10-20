@@ -6,6 +6,11 @@ use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, KeyDownEvent, MouseButton, Render,
     ScrollHandle, SharedString, Subscription, Window, div, prelude::*, px, rgb,
 };
+use shellwing_i18n::tr;
+
+/// The most a question's list (not the main palette's) is high before it
+/// scrolls.
+const LIST_H: f32 = 420.;
 
 use crate::colors::colors;
 use crate::input::{Changed, TextInput};
@@ -33,6 +38,12 @@ pub enum PaletteEvent {
         id: String,
         all: bool,
     },
+    /// Load an environment (by id) into the focused pane.
+    LoadEnv(String),
+    /// Place a config file (by id) on the focused pane's host.
+    PlaceFile(String),
+    /// Open a note (by id) in its window.
+    OpenNote(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -57,6 +68,12 @@ pub enum Action {
     EditHost(crate::workspace::EditTarget),
     Settings,
     Forward,
+    /// Unload the ones loaded there.
+    UnloadEnv,
+    /// A new note, in a window of its own.
+    NewNote,
+    /// The snippet library's window.
+    SnippetLibrary,
     ToggleHosts,
     /// Type in every pane of the tab, or stop.
     Broadcast,
@@ -80,6 +97,8 @@ pub enum Action {
     LeaveKeychain,
     /// Close the open vault until its passphrase is typed again.
     LockVault,
+    /// Let Windows Hello or Touch ID open the vault, or stop.
+    TogglePresence,
     /// Let a passphrase join new devices through the sync folder, or stop.
     LetPassphraseJoin,
     StopPassphraseJoin,
@@ -103,28 +122,74 @@ pub enum Kind {
     Choice(String),
     /// A snippet, by id.
     Snippet(String),
+    /// An environment to load into the focused pane, by id.
+    Env(String),
+    /// A config file to place on the focused pane's host, by id.
+    File(String),
+    /// A note to open in its window, by id.
+    OpenNote(String),
+}
+
+/// What part of the palette an entry is in, to jump to from the row of
+/// badges under the field. Several groups can be one section (the
+/// snippets of each category).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Part {
+    Hosts,
+    Recent,
+    Snippets,
+    Environments,
+    ConfigFiles,
+    Notes,
+    Actions,
+    Settings,
+    /// No badge.
+    Other,
+}
+
+impl Part {
+    fn label(self) -> String {
+        match self {
+            Part::Hosts => tr!("Hosts"),
+            Part::Recent => tr!("Recent"),
+            Part::Snippets => tr!("Snippets"),
+            Part::Environments => tr!("Environments"),
+            Part::ConfigFiles => tr!("Config files"),
+            Part::Notes => tr!("Notes"),
+            Part::Actions => tr!("Actions"),
+            Part::Settings => tr!("Settings"),
+            Part::Other => String::new(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct Entry {
     pub kind: Kind,
-    pub group: &'static str,
+    pub group: SharedString,
     pub title: SharedString,
     pub detail: SharedString,
     pub status: Option<Status>,
     pub hint: SharedString,
+    pub section: Part,
 }
 
 impl Entry {
-    pub fn new(kind: Kind, group: &'static str, title: impl Into<SharedString>) -> Self {
+    pub fn new(kind: Kind, group: impl Into<SharedString>, title: impl Into<SharedString>) -> Self {
         Entry {
             kind,
-            group,
+            group: group.into(),
             title: title.into(),
             detail: SharedString::default(),
             status: None,
             hint: SharedString::default(),
+            section: Part::Other,
         }
+    }
+
+    pub fn section(mut self, s: Part) -> Self {
+        self.section = s;
+        self
     }
 
     pub fn detail(mut self, d: impl Into<SharedString>) -> Self {
@@ -194,15 +259,66 @@ pub struct Palette {
 impl EventEmitter<PaletteEvent> for Palette {}
 
 impl Palette {
-    /// Hosts, recent connections and actions, plus "connect to" whatever is typed.
-    pub fn connect(entries: Vec<Entry>, cx: &mut Context<Self>) -> Self {
-        Self::build(
+    /// Hosts, recent connections and actions, plus "connect to" whatever
+    /// is typed; opened at `at`'s first entry, at the top, when given.
+    pub fn connect(entries: Vec<Entry>, at: Option<Part>, cx: &mut Context<Self>) -> Self {
+        let mut p = Self::build(
             Mode::Connect,
             entries,
             0,
-            "Find a host, or type user@host",
+            &tr!("Find a host, or type user@host"),
             cx,
-        )
+        );
+        if let Some(s) = at {
+            p.jump(s, cx);
+        }
+        p
+    }
+
+    /// The sections of what is listed, in order: the badges under the field.
+    fn sections(&self) -> Vec<Part> {
+        let mut out: Vec<Part> = vec![];
+        for e in &self.shown {
+            if e.section != Part::Other && !out.contains(&e.section) {
+                out.push(e.section);
+            }
+        }
+        out
+    }
+
+    /// Selects the first entry of section `s`, with its heading at the top
+    /// of the list.
+    fn jump(&mut self, s: Part, cx: &mut Context<Self>) {
+        let Some(ix) = self.shown.iter().position(|e| e.section == s) else {
+            return;
+        };
+        self.selected = ix;
+        self.armed = None;
+        let row = self.row_index(ix);
+        // The heading above it, while there are headings.
+        let row = if self.headers() {
+            row.saturating_sub(1)
+        } else {
+            row
+        };
+        self.scroll.scroll_to_top_of_item(row);
+        cx.notify();
+    }
+
+    /// The next section (`by` 1) or the one before (-1), from the selected
+    /// entry's, around.
+    fn step_section(&mut self, by: isize, cx: &mut Context<Self>) {
+        let sections = self.sections();
+        if sections.is_empty() {
+            return;
+        }
+        let now = self.shown.get(self.selected).map(|e| e.section);
+        let at = now
+            .and_then(|s| sections.iter().position(|x| *x == s))
+            .map_or(0, |i| {
+                (i as isize + by).rem_euclid(sections.len() as isize) as usize
+            });
+        self.jump(sections[at], cx);
     }
 
     /// Entries to read or copy, such as the recovery key.
@@ -213,6 +329,20 @@ impl Palette {
     /// A question, with notes under the field; Enter answers.
     pub fn ask(placeholder: &str, notes: Vec<Entry>, cx: &mut Context<Self>) -> Self {
         Self::build(Mode::Ask, notes, 0, placeholder, cx)
+    }
+
+    /// Like [`Palette::ask`], with `text` typed already (all of it chosen,
+    /// to type over).
+    pub fn ask_with(
+        placeholder: &str,
+        text: &str,
+        notes: Vec<Entry>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let p = Self::build(Mode::Ask, notes, 0, placeholder, cx);
+        p.input
+            .update(cx, |i, cx| i.set_text(text, text.len()..text.len(), cx));
+        p
     }
 
     /// Like [`Palette::ask`], typing a secret: the field shows dots.
@@ -229,7 +359,7 @@ impl Palette {
             Mode::Secrets,
             entries,
             0,
-            "Find a saved password or passphrase",
+            &tr!("Find a saved password or passphrase"),
             cx,
         )
     }
@@ -246,7 +376,7 @@ impl Palette {
             .iter()
             .position(|e| e.kind == Kind::Theme(current.to_string()))
             .unwrap_or(0);
-        Self::build(Mode::Themes, entries, at, "Find a theme", cx)
+        Self::build(Mode::Themes, entries, at, &tr!("Find a theme"), cx)
     }
 
     fn build(
@@ -303,10 +433,10 @@ impl Palette {
         if self.mode == Mode::Connect && !actions_only && !typed.is_empty() {
             let connect = Entry::new(
                 Kind::Connect(typed.clone()),
-                "Connect",
-                format!("Connect to {typed}"),
+                tr!("Connect"),
+                tr!("Connect to {typed}", typed = &typed),
             )
-            .detail("a new address; a Host block in ~/.ssh/config applies")
+            .detail(tr!("a new address; a Host block in ~/.ssh/config applies"))
             .hint("Enter");
             // After a clearly matching host, before a weak one.
             let at = if best.is_some_and(|s| s <= 1) { 1 } else { 0 };
@@ -333,11 +463,11 @@ impl Palette {
     fn row_index(&self, ix: usize) -> usize {
         let headers = self.headers();
         let mut seen = 0;
-        let mut last = "";
+        let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
                 seen += 1;
-                last = e.group;
+                last = e.group.clone();
             }
             if i == ix {
                 return i + seen;
@@ -376,6 +506,9 @@ impl Palette {
                 id: id.clone(),
                 all,
             },
+            Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
+            Kind::File(id) => PaletteEvent::PlaceFile(id.clone()),
+            Kind::OpenNote(id) => PaletteEvent::OpenNote(id.clone()),
             Kind::Note => return,
         });
     }
@@ -403,11 +536,64 @@ impl Palette {
             "up" => step(-1, self, cx),
             "n" if k.modifiers.control => step(1, self, cx),
             "p" if k.modifiers.control => step(-1, self, cx),
+            "tab" if self.mode == Mode::Connect => {
+                self.step_section(if k.modifiers.shift { -1 } else { 1 }, cx)
+            }
             "pagedown" => step(8, self, cx),
             "pageup" => step(-8, self, cx),
             _ => return,
         }
         cx.stop_propagation();
+    }
+}
+
+impl Palette {
+    /// The row of badges under the field, one a section listed; the
+    /// selected entry's lit. A click jumps there.
+    fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::Div> {
+        let sections = self.sections();
+        if self.mode != Mode::Connect || sections.len() < 2 {
+            return None;
+        }
+        let now = self.shown.get(self.selected).map(|e| e.section);
+        let mut row = div()
+            .flex()
+            .flex_wrap()
+            .gap(px(6.))
+            .px_4()
+            .py(px(8.))
+            .border_b_1()
+            .border_color(rgb(colors().line));
+        for (i, s) in sections.into_iter().enumerate() {
+            let on = now == Some(s);
+            row = row.child(
+                div()
+                    .id(("palette-section", i))
+                    .px(px(9.))
+                    .py(px(2.))
+                    .rounded_full()
+                    .border_1()
+                    .text_xs()
+                    .cursor_pointer()
+                    .when(on, |d| {
+                        d.border_color(rgb(colors().accent))
+                            .bg(rgb(colors().selected))
+                            .text_color(rgb(colors().text))
+                    })
+                    .when(!on, |d| {
+                        d.border_color(rgb(colors().line))
+                            .text_color(rgb(colors().muted))
+                            .hover(|h| h.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
+                    })
+                    .on_click(cx.listener(move |p, _, window, cx| {
+                        p.jump(s, cx);
+                        // Back to typing.
+                        window.focus(&p.input.focus_handle(cx), cx);
+                    }))
+                    .child(s.label()),
+            );
+        }
+        Some(row)
     }
 }
 
@@ -418,29 +604,43 @@ impl Focusable for Palette {
 }
 
 impl Render for Palette {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let headers = self.headers();
         let mut list = div()
             .id("palette-list")
             .track_scroll(&self.scroll)
             .overflow_y_scroll()
-            .max_h(px(420.))
+            // The main palette's fills it; a question's is as long as it is.
+            .when(self.mode == Mode::Connect, |d| d.flex_1())
+            .when(self.mode != Mode::Connect, |d| d.max_h(px(LIST_H)))
+            .min_h_0()
             .flex()
             .flex_col()
-            .p_1();
-        let mut last = "";
+            // Headings span the list; entries keep a margin.
+            .px_1()
+            .pb_1()
+            .when(!headers, |d| d.pt_1());
+        let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
             if headers && e.group != last {
-                last = e.group;
+                last = e.group.clone();
                 list = list.child(
                     div()
-                        .px_3()
-                        .pt_2()
-                        .pb_1()
+                        // A band across the whole list.
+                        .mx(px(-4.))
+                        .mb_1()
+                        .when(i > 0, |d| d.mt_1())
+                        .px(px(16.))
+                        .py(px(5.))
+                        .bg(rgb(colors().chip))
+                        .border_b_1()
+                        // The first one's top is the badges' line.
+                        .when(i > 0, |d| d.border_t_1())
+                        .border_color(rgb(colors().line))
                         .text_xs()
                         .font_weight(gpui::FontWeight::SEMIBOLD)
-                        .text_color(rgb(colors().muted))
-                        .child(e.group),
+                        .text_color(rgb(colors().accent))
+                        .child(e.group.clone()),
                 );
             }
             let selected = i == self.selected;
@@ -493,7 +693,7 @@ impl Render for Palette {
                             div()
                                 .text_xs()
                                 .text_color(rgb(colors().bad))
-                                .child("Enter again to forget"),
+                                .child(tr!("Enter again to forget")),
                         )
                     })
                     .when(!armed && selected && !e.hint.is_empty(), |d| {
@@ -512,19 +712,31 @@ impl Render for Palette {
                     .px_3()
                     .py_2()
                     .text_color(rgb(colors().muted))
-                    .child("Nothing matches."),
+                    .child(tr!("Nothing matches.")),
             );
         }
         let footer = match self.mode {
-            Mode::Connect => "↑↓ move   Enter open   Esc close   type > for actions only",
-            Mode::Themes => "↑↓ preview   Enter keep   Esc go back",
-            Mode::Secrets => "↑↓ move   Enter twice forget   Esc close   secrets are never shown",
-            Mode::Show => "Enter copies   Esc close",
-            Mode::Ask => "Enter answers   Esc cancels",
-            Mode::Choose => "↑↓ move   Enter choose   Esc cancel",
+            Mode::Connect => {
+                tr!("↑↓ move   Tab next group   Enter open   Esc close   type > for actions only")
+            }
+            Mode::Themes => tr!("↑↓ preview   Enter keep   Esc go back"),
+            Mode::Secrets => {
+                tr!("↑↓ move   Enter twice forget   Esc close   secrets are never shown")
+            }
+            Mode::Show => tr!("Enter copies   Esc close"),
+            Mode::Ask => tr!("Enter answers   Esc cancels"),
+            Mode::Choose => tr!("↑↓ move   Enter choose   Esc cancel"),
         };
+        // 800 px, or 40% of a wide window; never past the window.
+        let window_w = window.viewport_size().width;
+        let width = px(800.).max(window_w * 0.4).min(window_w - px(32.));
         div()
-            .w(px(640.))
+            .w(width)
+            // The main palette as high as the room left between margins
+            // alike above and below (the backdrop's); a question as high
+            // as it needs, within them.
+            .when(self.mode == Mode::Connect, |d| d.h_full())
+            .max_h_full()
             .flex()
             .flex_col()
             .bg(rgb(colors().raised))
@@ -552,6 +764,7 @@ impl Render for Palette {
                     .child(self.input.clone())
                     .child(div().text_xs().text_color(rgb(colors().muted)).child("Esc")),
             )
+            .children(self.badges(cx))
             .child(list)
             .child(
                 div()
@@ -571,7 +784,8 @@ mod tests {
     use super::*;
 
     fn host(name: &str, detail: &str) -> Entry {
-        Entry::new(Kind::Host(name.into()), "Hosts", name.to_string()).detail(detail.to_string())
+        Entry::new(Kind::Host(name.into()), tr!("Hosts"), name.to_string())
+            .detail(detail.to_string())
     }
 
     #[test]

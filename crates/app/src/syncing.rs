@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use std::collections::BTreeSet;
 
 use shellwing_config::{Store, SyncPlace};
+use shellwing_i18n::tr;
 use shellwing_remote::Place;
 use shellwing_vault::{
     Answerer, Ask, AskState, Backend, FolderState, Request, SyncReport, Vault, transact,
@@ -36,6 +37,8 @@ const PAIRING: Duration = Duration::from_secs(2);
 const PAIRING_GIT: Duration = Duration::from_secs(5);
 
 pub enum SyncEvent {
+    /// A sync starts.
+    Started,
     Done(SyncReport),
     Failed(String),
     /// This device's request to join: where it stands.
@@ -66,7 +69,7 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
             Some(s) => Ok(s.to_string()),
             None => Err(shellwing_vault::Error::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                "its password is not saved on this device: connect again in Settings › Sync",
+                tr!("its password is not saved on this device: connect again in Settings › Sync"),
             ))),
         }
     };
@@ -153,6 +156,8 @@ impl Opened {
 
 enum Cmd {
     Sync,
+    /// A sync, then a word back once it is over (or nothing could sync).
+    SyncThen(mpsc::Sender<()>),
     /// Ask to join the vault there, as this device.
     Ask(SyncPlace),
     CancelAsk,
@@ -164,6 +169,9 @@ enum Cmd {
 pub struct SyncWorker {
     wake: mpsc::Sender<Cmd>,
     place: Arc<Mutex<Option<SyncPlace>>>,
+    /// Records left out of every sync for now (notes open in their windows):
+    /// they sync when let go.
+    held: Arc<Mutex<BTreeSet<String>>>,
 }
 
 /// This device's name, shown to the other when pairing.
@@ -192,6 +200,8 @@ impl SyncWorker {
         let (wake, woken) = mpsc::channel::<Cmd>();
         let place: Arc<Mutex<Option<SyncPlace>>> = Arc::default();
         let watched = place.clone();
+        let held: Arc<Mutex<BTreeSet<String>>> = Arc::default();
+        let holding = held.clone();
         let config = store;
         let spawned = std::thread::Builder::new()
             .name("shellwing-sync".into())
@@ -206,7 +216,13 @@ impl SyncWorker {
                 let mut told: Option<AskState> = None;
                 // Due at once: the first sync runs at start.
                 let mut last_sync: Option<Instant> = None;
+                // Those waiting for a sync to be over: told when the round
+                // that took their wake is done.
+                let mut acks: Vec<mpsc::Sender<()>> = vec![];
                 loop {
+                    for a in acks.drain(..) {
+                        let _ = a.send(());
+                    }
                     let pairing = asking.is_some() || answerer.busy();
                     let over_git = matches!(
                         watched.lock().ok().and_then(|f| f.clone()),
@@ -218,6 +234,10 @@ impl SyncWorker {
                         (true, true) => PAIRING_GIT,
                     };
                     let mut sync = match woken.recv_timeout(wait) {
+                        Ok(Cmd::SyncThen(a)) => {
+                            acks.push(a);
+                            true
+                        }
                         Ok(cmd) => Self::run(
                             cmd,
                             &vault,
@@ -232,6 +252,11 @@ impl SyncWorker {
                     };
                     // Several wakes in a row are one sync.
                     while let Ok(cmd) = woken.try_recv() {
+                        if let Cmd::SyncThen(a) = cmd {
+                            acks.push(a);
+                            sync = true;
+                            continue;
+                        }
                         sync |= Self::run(
                             cmd,
                             &vault,
@@ -315,7 +340,11 @@ impl SyncWorker {
                         continue;
                     }
                     last_sync = Some(Instant::now());
-                    let event = sync_once(&vault, store, config.as_ref());
+                    if events.send_blocking(SyncEvent::Started).is_err() {
+                        return;
+                    }
+                    let now_held = holding.lock().map(|h| h.clone()).unwrap_or_default();
+                    let event = sync_once(&vault, store, config.as_ref(), &now_held);
                     if events.send_blocking(event).is_err() {
                         return;
                     }
@@ -335,7 +364,7 @@ impl SyncWorker {
         if let Err(e) = spawned {
             eprintln!("cannot start syncing: {e}");
         }
-        SyncWorker { wake, place }
+        SyncWorker { wake, place, held }
     }
 
     /// Syncs with `place` from now on (None: stops), starting right away.
@@ -360,6 +389,33 @@ impl SyncWorker {
 
     pub fn now(&self) {
         let _ = self.wake.send(Cmd::Sync);
+    }
+
+    /// Leaves record `id` out of syncs (a note open in its window).
+    pub fn hold(&self, id: &str) {
+        if let Ok(mut h) = self.held.lock() {
+            h.insert(id.to_string());
+        }
+    }
+
+    /// Lets record `id` sync again; at once when it `changed` meanwhile.
+    pub fn release(&self, id: &str, changed: bool) {
+        if let Ok(mut h) = self.held.lock() {
+            h.remove(id);
+        }
+        if changed {
+            self.now();
+        }
+    }
+
+    /// Asks for a sync and waits for it to be over, `most` at the longest
+    /// (quitting: the last edits go out first). False when it took longer.
+    pub fn sync_and_wait(&self, most: Duration) -> bool {
+        let (tx, rx) = mpsc::channel();
+        if self.wake.send(Cmd::SyncThen(tx)).is_err() {
+            return true;
+        }
+        rx.recv_timeout(most).is_ok()
     }
 
     /// Asks to join the vault at `place` from a device that syncs it; how it
@@ -401,7 +457,8 @@ impl SyncWorker {
             opened.get(&place, vault).ok()
         };
         match cmd {
-            Cmd::Sync => true,
+            // (Taken before run, with its word back.)
+            Cmd::Sync | Cmd::SyncThen(_) => true,
             Cmd::Ask(place) => {
                 if let Some((old, _, at)) = asking.take() {
                     let _ = transact(at.as_ref(), |b| old.cancel(b));
@@ -455,7 +512,12 @@ impl SyncWorker {
 
 /// One round: records the edits made in the files, syncs, and writes the
 /// merged result back into them.
-fn sync_once(vault: &Vault, store: &dyn Backend, config: Option<&Store>) -> SyncEvent {
+fn sync_once(
+    vault: &Vault,
+    store: &dyn Backend,
+    config: Option<&Store>,
+    held: &BTreeSet<String>,
+) -> SyncEvent {
     // A folder set by hand in config.toml starts empty: begin
     // there (the recovery key can be shown from the palette).
     let started = transact(store, |b| match vault.folder_state(b)? {
@@ -472,7 +534,7 @@ fn sync_once(vault: &Vault, store: &dyn Backend, config: Option<&Store>) -> Sync
     let settings_problem = settings
         .filter(|_| settings_known)
         .and_then(|c| record_settings(c, vault).err());
-    let synced = started.and_then(|()| vault.sync(store));
+    let synced = started.and_then(|()| vault.sync_holding(store, held));
     let written = match (&synced, config) {
         (Ok(_), Some(c)) if hosts_problem.is_none() => write_hosts(c, vault).err(),
         _ => None,
@@ -482,7 +544,7 @@ fn sync_once(vault: &Vault, store: &dyn Backend, config: Option<&Store>) -> Sync
             let joined = write_settings(c, vault, !settings_known);
             // Its own settings go out now, merged with the others'.
             if joined.as_ref().is_ok_and(|&new| new) {
-                let _ = vault.sync(store);
+                let _ = vault.sync_holding(store, held);
             }
             joined.err()
         }
@@ -502,11 +564,11 @@ fn record_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
     let file_exists = store.dir().join("hosts.toml").exists();
     store
         .assign_host_ids()
-        .map_err(|e| format!("hosts not synced: {e}"))?;
+        .map_err(|e| tr!("hosts not synced: {e}", e = e.to_string()))?;
     let hosts = store
         .hosts()
-        .map_err(|e| format!("hosts not synced: {e}"))?;
-    let err = |e: shellwing_vault::Error| format!("hosts not synced: {e}");
+        .map_err(|e| tr!("hosts not synced: {e}", e = e.to_string()))?;
+    let err = |e: shellwing_vault::Error| tr!("hosts not synced: {e}", e = e.to_string());
     let mut present = BTreeSet::new();
     let mut kept_here = BTreeSet::new();
     for h in &hosts.hosts {
@@ -556,10 +618,10 @@ fn has_settings(vault: &Vault) -> bool {
 fn record_settings(store: &Store, vault: &Vault) -> Result<(), String> {
     let fields = store
         .synced_settings()
-        .map_err(|e| format!("settings not synced: {e}"))?;
+        .map_err(|e| tr!("settings not synced: {e}", e = e.to_string()))?;
     vault
         .update(SETTINGS_ID, "settings", "Settings", &fields)
-        .map_err(|e| format!("settings not synced: {e}"))?;
+        .map_err(|e| tr!("settings not synced: {e}", e = e.to_string()))?;
     Ok(())
 }
 
@@ -567,7 +629,7 @@ fn record_settings(store: &Store, vault: &Vault) -> Result<(), String> {
 /// the others' are taken where they set a value and this device's kept
 /// where they set none, then recorded, to go out: whether that happened.
 fn write_settings(store: &Store, vault: &Vault, first: bool) -> Result<bool, String> {
-    let err = |e: String| format!("settings not written: {e}");
+    let err = |e: String| tr!("settings not written: {e}", e = e);
     let theirs = vault
         .entries("settings")
         .map_err(|e| err(e.to_string()))?
@@ -598,12 +660,12 @@ fn write_settings(store: &Store, vault: &Vault, first: bool) -> Result<bool, Str
 
 /// Writes the merged hosts and groups back into hosts.toml.
 fn write_hosts(store: &Store, vault: &Vault) -> Result<(), String> {
-    let err = |e: shellwing_vault::Error| format!("hosts not written: {e}");
+    let err = |e: shellwing_vault::Error| tr!("hosts not written: {e}", e = e.to_string());
     let hosts = vault.entries("host").map_err(err)?;
     let groups = vault.entries("group").map_err(err)?;
     store
         .apply_synced_hosts(&hosts, &groups)
-        .map_err(|e| format!("hosts not written: {e}"))
+        .map_err(|e| tr!("hosts not written: {e}", e = e.to_string()))
 }
 
 #[cfg(test)]
@@ -633,7 +695,7 @@ mod tests {
 
         /// One round, as the worker does it.
         fn sync(&self, folder: &Folder) {
-            match sync_once(&self.vault, folder, Some(&self.store)) {
+            match sync_once(&self.vault, folder, Some(&self.store), &BTreeSet::new()) {
                 SyncEvent::Done(_) => {}
                 SyncEvent::Failed(e) => panic!("sync: {e}"),
                 _ => panic!("not a sync"),

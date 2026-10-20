@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
 
 use shellwing_ssh::{Learned, Secrets};
-use shellwing_vault::{KeyStore, Lock, Unlock, Vault};
+use shellwing_vault::{KeyStore, Lock, Presence, Unlock, Vault};
 
 enum State {
     Opening,
@@ -135,6 +135,10 @@ impl VaultSlot {
         let (Some(path), Some(keys)) = (&self.0.path, &self.0.keys) else {
             return Err(shellwing_vault::Error::NotSynced);
         };
+        // Opened meanwhile (the passphrase typed while Windows Hello asked).
+        if let Some(v) = self.ready() {
+            return Ok(v);
+        }
         let vault = Arc::new(Vault::unlock(path, keys.as_ref(), how)?);
         // A recovery key puts the key back where it can: one look tells.
         self.keep(vault.kept_in(keys.as_ref()));
@@ -196,6 +200,66 @@ impl VaultSlot {
         true
     }
 
+    /// Windows Hello or Touch ID, where this system has it.
+    pub fn presence(&self) -> Option<SystemPresence> {
+        shellwing_presence::System::here().map(SystemPresence)
+    }
+
+    /// Whether the user's presence opens the locked vault on this device.
+    pub fn opens_with_presence(&self) -> bool {
+        self.locked().is_some()
+            && self
+                .0
+                .path
+                .as_deref()
+                .is_some_and(Vault::opens_with_presence)
+    }
+
+    /// Opens the locked vault with Windows Hello or Touch ID: blocks on the
+    /// system's prompt.
+    pub fn unlock_with_presence(&self) -> Result<Arc<Vault>, shellwing_vault::Error> {
+        let p = self
+            .presence()
+            .ok_or(shellwing_vault::Error::Locked(Lock::Passphrase))?;
+        self.unlock(Unlock::Presence(&p))
+    }
+
+    /// Checks it is the user before a secret shows: with Windows Hello or
+    /// Touch ID where it opens the vault (`passphrase` None), else with the
+    /// vault's passphrase. Blocks on the system's prompt or the KDF.
+    pub fn confirm(&self, passphrase: Option<&str>) -> Result<(), shellwing_vault::Error> {
+        let vault = self
+            .ready()
+            .ok_or(shellwing_vault::Error::Locked(Lock::Passphrase))?;
+        match passphrase {
+            Some(p) => vault.confirm(Unlock::Passphrase(p)),
+            None => {
+                let p = self
+                    .presence()
+                    .ok_or(shellwing_vault::Error::Locked(Lock::Passphrase))?;
+                vault.confirm(Unlock::Presence(&p))
+            }
+        }
+    }
+
+    /// Lets the user's presence open the vault on this device, or (`false`)
+    /// stops it: blocks on the system's prompt.
+    pub fn set_presence(&self, on: bool) -> Result<(), String> {
+        let vault = self.ready().ok_or("the vault is not open")?;
+        let p = self
+            .presence()
+            .ok_or("this system has neither Windows Hello nor Touch ID")?;
+        let done = if on {
+            vault.set_presence(&p)
+        } else {
+            vault.remove_presence(&p)
+        };
+        done.map_err(|e| match e {
+            shellwing_vault::Error::Locked(_) => "set a passphrase first".to_string(),
+            e => e.to_string(),
+        })
+    }
+
     /// The keychain the vault's key goes in, where there is one.
     pub fn keys(&self) -> Option<Arc<dyn KeyStore>> {
         self.0.keys.clone()
@@ -215,6 +279,30 @@ impl VaultSlot {
             } => vault.set_passphrase(fingerprint, key_path, passphrase),
         }
         .map_err(|e| e.to_string())
+    }
+}
+
+/// Windows Hello or Touch ID, as the vault asks for the user's presence.
+pub struct SystemPresence(shellwing_presence::System);
+
+impl Presence for SystemPresence {
+    fn name(&self) -> &'static str {
+        self.0.name()
+    }
+
+    fn enroll(&self, id: &str, reason: &str) -> Result<[u8; 32], String> {
+        self.0.enroll(id, reason)
+    }
+
+    fn secret(&self, id: &str, reason: &str) -> Result<Option<[u8; 32]>, String> {
+        Ok(match self.0.secret(id, reason)? {
+            shellwing_presence::Secret::Given(s) => Some(s),
+            shellwing_presence::Secret::Refused => None,
+        })
+    }
+
+    fn forget(&self, id: &str) -> Result<(), String> {
+        self.0.forget(id)
     }
 }
 

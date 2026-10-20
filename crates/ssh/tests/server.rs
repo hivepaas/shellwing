@@ -38,6 +38,10 @@ struct Policy {
     home: Option<PathBuf>,
     /// Accept user certificates this authority signed.
     user_ca: Option<PublicKey>,
+    /// The password is only the first factor: once it is right, the server
+    /// wants `otp` through keyboard-interactive (`AuthenticationMethods
+    /// password,keyboard-interactive`).
+    then_otp: bool,
 }
 
 /// A certificate for `key`, signed by `ca`, valid from a minute ago for an hour.
@@ -102,6 +106,8 @@ struct TestServer {
     /// Session channels not yet a shell or a subsystem. A shell's channel is
     /// dropped (its input arrives in `data`); a subsystem's becomes a stream.
     opened: HashMap<ChannelId, Channel<Msg>>,
+    /// The first factor passed (with `then_otp`).
+    first_factor: bool,
 }
 
 impl TestServer {
@@ -123,11 +129,21 @@ impl server::Handler for TestServer {
         _user: &str,
         password: &str,
     ) -> Result<ServerAuth, Self::Error> {
-        Ok(if self.policy.password == Some(password) {
-            ServerAuth::Accept
-        } else {
-            self.reject()
-        })
+        Ok(
+            if self.policy.password == Some(password) && self.policy.then_otp {
+                self.first_factor = true;
+                ServerAuth::Reject {
+                    proceed_with_methods: Some(MethodSet::from(
+                        &[MethodKind::KeyboardInteractive][..],
+                    )),
+                    partial_success: true,
+                }
+            } else if self.policy.password == Some(password) {
+                ServerAuth::Accept
+            } else {
+                self.reject()
+            },
+        )
     }
 
     async fn auth_publickey_offered(
@@ -192,6 +208,10 @@ impl server::Handler for TestServer {
         _submethods: &str,
         response: Option<server::Response<'a>>,
     ) -> Result<ServerAuth, Self::Error> {
+        // The code comes second, after the password.
+        if self.policy.then_otp && !self.first_factor {
+            return Ok(self.reject());
+        }
         let (name, question, answer) =
             match (self.policy.pam, self.policy.password, self.policy.otp) {
                 (true, Some(pw), _) => ("", "Password:", pw),
@@ -503,6 +523,7 @@ async fn serve_as(
                     methods,
                     sessions: vec![],
                     opened: HashMap::new(),
+                    first_factor: false,
                 };
                 if let Ok(running) = server::run_stream(config, socket, handler).await {
                     let _ = running.await;
@@ -729,6 +750,28 @@ async fn wrong_password_is_asked_again() {
         text.starts_with("Permission denied, please try again.\r\nalice@127.0.0.1's password: "),
         "{text:?}"
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn password_then_one_time_code() {
+    // `AuthenticationMethods password,keyboard-interactive`: the password is
+    // accepted in part, and the code is asked for after it.
+    let fx = Fixture::new("password-then-otp");
+    let (port, _) = serve(
+        Policy {
+            password: Some("hunter2"),
+            otp: Some("123456"),
+            then_otp: true,
+            ..Default::default()
+        },
+        &[MethodKind::Password, MethodKind::KeyboardInteractive],
+    )
+    .await;
+    let (p, asked) = scripted(vec![Some("yes"), Some("hunter2"), Some("123456")]);
+    connect(fx.options(local(port, "alice"), p))
+        .await
+        .expect("connect");
+    assert_eq!(kinds(&asked), ["hostkey", "password", "question"]);
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1472,6 +1515,78 @@ async fn folders_are_made_renamed_and_removed_over_sftp() {
     sftp.remove(&join(&home, "nothing"))
         .await
         .expect("already gone is fine");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn config_files_are_placed_whole_and_taken_back() {
+    if sftp_server().is_none() {
+        eprintln!("skipped: no sftp-server on this system");
+        return;
+    }
+    let fx = Fixture::new("sftp-place");
+    let remote = fx.dir.join("remote");
+    std::fs::create_dir_all(&remote).expect("remote");
+    std::fs::write(remote.join(".npmrc"), "theirs").expect("theirs");
+    let (_session, sftp) = sftp_session(&fx, Some(remote.clone())).await;
+    let sftp = sftp.expect("sftp opens");
+
+    let kube = sftp.expand("~/.kube/config").await.expect("expand");
+    assert!(kube.ends_with("/.kube/config"), "{kube}");
+    assert!(sftp.read_file(&kube, 1024).await.expect("read").is_none());
+    // Its directory made, 0700; the file 0600.
+    sftp.place(&kube, b"apiVersion: v1\n", 0o600, None)
+        .await
+        .expect("placed");
+    assert_eq!(
+        std::fs::read(remote.join(".kube/config")).expect("kube"),
+        b"apiVersion: v1\n"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode =
+            |p: &std::path::Path| std::fs::metadata(p).expect("meta").permissions().mode() & 0o777;
+        assert_eq!(mode(&remote.join(".kube/config")), 0o600);
+        assert_eq!(mode(&remote.join(".kube")), 0o700);
+    }
+    assert_eq!(
+        sftp.read_file(&kube, 1024).await.expect("read").as_deref(),
+        Some(&b"apiVersion: v1\n"[..])
+    );
+    assert!(sftp.read_file(&kube, 4).await.is_err(), "past the most");
+
+    // Over a file there: what was there set aside, and put back.
+    let npmrc = sftp.expand("~/.npmrc").await.expect("expand");
+    let aside = format!("{npmrc}.shellwing-saved");
+    sftp.place(&npmrc, b"ours", 0o600, Some(&aside))
+        .await
+        .expect("placed over");
+    assert_eq!(std::fs::read(remote.join(".npmrc")).expect("ours"), b"ours");
+    assert_eq!(
+        std::fs::read(remote.join(".npmrc.shellwing-saved")).expect("aside"),
+        b"theirs"
+    );
+    sftp.unplace(&npmrc, Some(&aside))
+        .await
+        .expect("taken back");
+    assert_eq!(
+        std::fs::read(remote.join(".npmrc")).expect("back"),
+        b"theirs"
+    );
+    assert!(!remote.join(".npmrc.shellwing-saved").exists());
+    // Over a file, not set aside: it is replaced, nothing left beside it.
+    sftp.place(&npmrc, b"again", 0o600, None)
+        .await
+        .expect("replaced");
+    sftp.unplace(&kube, None).await.expect("removed");
+    assert!(!remote.join(".kube/config").exists());
+    let left: Vec<String> = std::fs::read_dir(&remote)
+        .expect("ls")
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.contains("shellwing"))
+        .collect();
+    assert!(left.is_empty(), "nothing left beside: {left:?}");
 }
 
 #[tokio::test(flavor = "multi_thread")]

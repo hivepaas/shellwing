@@ -19,21 +19,31 @@ mod chrome;
 mod colors;
 mod copies;
 mod editors;
+mod environment;
 mod files;
 mod group_editor;
 mod host_editor;
+mod hotkeys;
 mod input;
 mod keys_view;
 mod known_hosts_view;
+mod library;
+mod library_window;
 mod look;
+mod note_window;
 mod palette;
 mod pane;
 mod placement;
+mod placing;
 mod prompt;
+mod scrollbar;
 mod settings_view;
+mod shell_syntax;
 mod sidebar;
+mod snippet_window;
 mod snippets;
 mod snippets_view;
+mod sync_panel;
 mod syncing;
 mod tab_overview;
 mod view;
@@ -67,6 +77,19 @@ const ICONS: &[(&str, &[u8])] = &[
     ),
     ("icons/logo.svg", include_bytes!("../assets/icons/logo.svg")),
     ("icons/tabs.svg", include_bytes!("../assets/icons/tabs.svg")),
+    (
+        "icons/cloud.svg",
+        include_bytes!("../assets/icons/cloud.svg"),
+    ),
+    (
+        "icons/check.svg",
+        include_bytes!("../assets/icons/check.svg"),
+    ),
+    ("icons/eye.svg", include_bytes!("../assets/icons/eye.svg")),
+    (
+        "icons/eye-off.svg",
+        include_bytes!("../assets/icons/eye-off.svg"),
+    ),
     (
         "icons/terminal.svg",
         include_bytes!("../assets/icons/terminal.svg"),
@@ -206,6 +229,8 @@ fn main() -> anyhow::Result<()> {
         }
     };
     let (live, problems) = look::Live::open(Store::default_dir().map(Store::new));
+    // The app's language, before anything is said.
+    shellwing_i18n::set_language(live.settings().general.language.as_deref());
     // One network runtime for every tab.
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -224,6 +249,8 @@ fn main() -> anyhow::Result<()> {
             // each one's own dialog (and Linux has none: GPUI would draw a
             // white box).
             cx.set_prompt_builder(prompt::render);
+            // The notes' editor: its keys, while it has the focus.
+            shellwing_note_editor::bind_keys(cx);
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations. macOS and Windows keep the system's frame
@@ -271,8 +298,13 @@ fn main() -> anyhow::Result<()> {
             });
             // One window: closing it quits, on macOS too, where apps otherwise stay
             // in the Dock with no window and no way to open one.
+            // Note windows go with the main one.
             cx.on_window_closed(|cx, _| {
-                if cx.windows().is_empty() {
+                let main = cx
+                    .windows()
+                    .iter()
+                    .any(|w| w.downcast::<workspace::Workspace>().is_some());
+                if !main {
                     cx.quit();
                 }
             })

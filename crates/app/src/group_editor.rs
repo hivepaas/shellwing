@@ -8,6 +8,7 @@ use gpui::{
     SharedString, Window, div, prelude::*, px, rgb,
 };
 use shellwing_config::{Group, HOST_COLORS, Hosts, Store};
+use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
 use crate::host_editor::{
@@ -48,7 +49,7 @@ impl GroupEditor {
         group: Option<Group>,
         cx: &mut Context<Self>,
     ) -> Self {
-        let name = cx.new(|cx| TextInput::new("Production", cx));
+        let name = crate::input::said(cx, || tr!("Production"));
         if let Some(g) = &group {
             let n = g.name.clone();
             name.update(cx, |i, cx| i.set_text(&n, n.len()..n.len(), cx));
@@ -106,9 +107,9 @@ impl GroupEditor {
             None => false,
         };
         self.problem = if name.is_empty() {
-            Some("A name is needed.".into())
+            Some(tr!("A name is needed."))
         } else if self.hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
-            Some("Another group has this name.".into())
+            Some(tr!("Another group has this name."))
         } else {
             None
         };
@@ -116,7 +117,7 @@ impl GroupEditor {
             return cx.notify();
         }
         let Some(store) = &self.store else {
-            self.problem = Some("There is no config directory to save in.".into());
+            self.problem = Some(tr!("There is no config directory to save in."));
             return cx.notify();
         };
         let group = Group {
@@ -145,7 +146,7 @@ impl GroupEditor {
         }
         let result = match (&self.store, &g.id) {
             (Some(store), Some(id)) => store.delete_group(id, &g.name).map_err(|e| e.to_string()),
-            _ => Err("This group cannot be found in hosts.toml.".into()),
+            _ => Err(tr!("This group cannot be found in hosts.toml.")),
         };
         match result {
             Ok(()) => cx.emit(GroupEvent::Deleted { name: g.name }),
@@ -180,7 +181,7 @@ impl Render for GroupEditor {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let typed = self.typed(cx);
         let title = if typed.is_empty() {
-            "New group".to_string()
+            tr!("New group")
         } else {
             typed
         };
@@ -215,9 +216,9 @@ impl Render for GroupEditor {
                     .text_size(ui(12.))
                     .text_color(rgb(colors().muted))
                     .child(if self.original.is_some() {
-                        "Group in hosts.toml"
+                        tr!("Group in hosts.toml")
                     } else {
-                        "Not saved yet"
+                        tr!("Not saved yet")
                     }),
             )
             .child(
@@ -307,12 +308,12 @@ impl Render for GroupEditor {
                     .map(|(_, n)| n.clone())
                     .unwrap_or_else(|| t.clone())
             })
-            .unwrap_or_else(|| "Same as the app".into());
+            .unwrap_or_else(|| tr!("Same as the app"));
         let mut theme = div()
             .flex()
             .flex_col()
             .gap(px(4.))
-            .child(label_text("Theme for its hosts"))
+            .child(label_text(&tr!("Theme for its hosts")))
             .child(
                 div()
                     .id("group-theme")
@@ -350,7 +351,7 @@ impl Render for GroupEditor {
                 .border_1()
                 .border_color(rgb(colors().edge))
                 .bg(rgb(colors().raised));
-            let mut choices = vec![(None, "Same as the app".to_string())];
+            let mut choices = vec![(None, tr!("Same as the app"))];
             choices.extend(
                 self.themes
                     .iter()
@@ -382,24 +383,25 @@ impl Render for GroupEditor {
         let members = self.members();
         let who = match members.len() {
             0 if self.original.is_some() => {
-                "No hosts yet. Choose this group in a host's editor.".to_string()
+                tr!("No hosts yet. Choose this group in a host's editor.")
             }
-            0 => "Choose the group in a host's editor to put the host in it.".to_string(),
-            n => format!(
-                "{n} host{}: {}",
-                if n == 1 { "" } else { "s" },
-                members.join(", ")
+            0 => tr!("Choose the group in a host's editor to put the host in it."),
+            n => tr_n!(
+                n,
+                "{n} host: {names}",
+                "{n} hosts: {names}",
+                names = members.join(", ")
             ),
         };
 
-        let body = section("Group")
+        let body = section(&tr!("Group"))
             .border_b_0()
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap(px(4.))
-                    .child(label_text("Name"))
+                    .child(label_text(&tr!("Name")))
                     .child(name_box)
                     .when_some(self.problem.clone(), |d, p| d.child(problem_text(&p))),
             )
@@ -408,11 +410,11 @@ impl Render for GroupEditor {
                     .flex()
                     .items_center()
                     .gap(px(8.))
-                    .child(div().mr(px(6.)).child(label_text("Color")))
+                    .child(div().mr(px(6.)).child(label_text(&tr!("Color"))))
                     .child(swatches),
             )
             .child(theme)
-            .child(hint_text("A host's own theme wins over its group's."))
+            .child(hint_text(&tr!("A host's own theme wins over its group's.")))
             .child(
                 div()
                     .text_size(ui(12.5))
@@ -425,39 +427,41 @@ impl Render for GroupEditor {
             let n = members.len();
             buttons = buttons
                 .child(div().text_size(ui(12.5)).child(if n == 0 {
-                    format!("Delete {title}?")
+                    tr!("Delete {title}?", title = title.as_str())
                 } else {
-                    format!(
-                        "Delete {title}? Its {n} host{} stay.",
-                        if n == 1 { "" } else { "s" }
+                    tr_n!(
+                        n,
+                        "Delete {title}? Its {n} host stay.",
+                        "Delete {title}? Its {n} hosts stay.",
+                        title = title.as_str()
                     )
                 }))
                 .child(
-                    text_button("group-delete-yes", "Delete", colors().bad)
+                    text_button("group-delete-yes", &tr!("Delete"), colors().bad)
                         .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
                 )
                 .child(
-                    text_button("group-delete-no", "Cancel", colors().label).on_click(cx.listener(
-                        |e, _, _, cx| {
+                    text_button("group-delete-no", &tr!("Cancel"), colors().label).on_click(
+                        cx.listener(|e, _, _, cx| {
                             e.confirm_delete = false;
                             cx.notify();
-                        },
-                    )),
+                        }),
+                    ),
                 );
         } else if self.original.is_some() {
             buttons = buttons.child(
-                text_button("group-delete", "Delete", colors().bad)
+                text_button("group-delete", &tr!("Delete"), colors().bad)
                     .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
             );
         }
         buttons = buttons
             .child(div().flex_1())
             .child(
-                outline_button("group-cancel", "Cancel")
+                outline_button("group-cancel", &tr!("Cancel"))
                     .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close))),
             )
             .child(
-                primary_button("group-save", "Save")
+                primary_button("group-save", &tr!("Save"))
                     .on_click(cx.listener(|e, _, _, cx| e.save(cx))),
             );
 

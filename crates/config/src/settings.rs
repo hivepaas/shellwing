@@ -15,6 +15,9 @@ pub struct Settings {
     pub files: Files,
     pub log: Log,
     pub vault: VaultSettings,
+    /// `[shortcuts]`: keys for the window's shortcuts, by name, over the
+    /// defaults. This device's own: keys differ between systems.
+    pub shortcuts: crate::ShortcutSettings,
 }
 
 /// The vault on this device.
@@ -213,11 +216,17 @@ pub enum SyncPlace {
 pub struct General {
     /// Open the tabs of the last run when started without a host.
     pub restore_tabs: bool,
+    /// The app's language, a tag (`en`, `vi`); None or `auto`: the
+    /// system's. This device's own: it does not sync.
+    pub language: Option<String>,
 }
 
 impl Default for General {
     fn default() -> Self {
-        General { restore_tabs: true }
+        General {
+            restore_tabs: true,
+            language: None,
+        }
     }
 }
 

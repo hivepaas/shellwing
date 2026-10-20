@@ -115,12 +115,39 @@ pub struct Palette {
     /// The window's and menus' shadow.
     pub shadow: u32,
 
+    // The sync button's cloud.
+    /// Nothing set up: an invitation, not a warning.
+    pub sync_off: u32,
+    /// Synced, or syncing.
+    pub sync_ok: u32,
+    /// The last sync failed.
+    pub sync_bad: u32,
+    /// Waiting: the vault is locked.
+    pub sync_paused: u32,
+
     // The Files panel.
     pub folder: u32,
     /// A transfer's progress.
     pub progress: u32,
     /// Where dropped files go.
     pub drop: u32,
+
+    // Shell code, as a snippet's editor colors it.
+    /// A command's name.
+    pub code_command: u32,
+    /// `if`, `then`, `done`.
+    pub code_keyword: u32,
+    /// `-f`, `--all`.
+    pub code_flag: u32,
+    /// Quoted text.
+    pub code_text: u32,
+    /// `$VAR`, `$(…)`.
+    pub code_expansion: u32,
+    /// `|`, `&&`, `>`.
+    pub code_operator: u32,
+    /// `{{name}}`, filled in when it runs: on a ground of its own, `0xRRGGBBAA`.
+    pub code_hole: u32,
+    pub code_hole_ground: u32,
 
     // Finding text in the terminal.
     pub find_match: u32,
@@ -190,9 +217,22 @@ pub const DUSK: Palette = Palette {
     tint: 0xffffff0d,
     shadow: 0x00000073,
 
+    sync_off: 0xf6c08a,
+    sync_ok: 0x4ade80,
+    sync_bad: 0xfb923c,
+    sync_paused: 0x8b95a5,
     folder: 0x7aa2f7,
     progress: 0x3b82f6,
     drop: 0x2a3a55,
+
+    code_command: 0x7dd3fc,
+    code_keyword: 0xf0abfc,
+    code_flag: 0xc4b5fd,
+    code_text: 0xfde68a,
+    code_expansion: 0xf9a8d4,
+    code_operator: 0xfb923c,
+    code_hole: 0x7dd3fc,
+    code_hole_ground: 0x4cc4f933,
 
     find_match: 0xffe082,
     find_current: 0xf2a57e,
@@ -259,9 +299,22 @@ pub const LIGHT: Palette = Palette {
     tint: 0x0000000d,
     shadow: 0x0f172a33,
 
+    sync_off: 0xc77a2c,
+    sync_ok: 0x16a34a,
+    sync_bad: 0xea580c,
+    sync_paused: 0x6b7280,
     folder: 0x2563eb,
     progress: 0x2563eb,
     drop: 0xdbeafe,
+
+    code_command: 0x0369a1,
+    code_keyword: 0xa21caf,
+    code_flag: 0x6d28d9,
+    code_text: 0x92400e,
+    code_expansion: 0xbe185d,
+    code_operator: 0xc2410c,
+    code_hole: 0x0369a1,
+    code_hole_ground: 0x0284c726,
 
     find_match: 0xffd54f,
     find_current: 0xf2a57e,

@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+/// A note's window's size when one last closed, in logical pixels: the
+/// next opens so.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct NoteWindowState {
+    pub width: f32,
+    pub height: f32,
+}
+
 /// Where the window was when last seen, in logical pixels. For a maximised or
 /// fullscreen window, the bounds it returns to.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -28,6 +36,22 @@ pub enum WindowMode {
     Windowed,
     Maximized,
     Fullscreen,
+}
+
+/// A config file placed on a host until its tab closed, that may still be
+/// there: the app quit, or the connection dropped, first. Taken away the
+/// next time the host connects, if it is still as placed.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PlacedFile {
+    /// The host, as the tab opened it.
+    pub host: String,
+    pub name: String,
+    /// Where it is, in full.
+    pub path: String,
+    /// Where what was there before was set aside, to put back.
+    pub aside: Option<String>,
+    /// SHA-256 of what was placed, hex: a file since changed is left alone.
+    pub sha256: String,
 }
 
 /// The tabs and panes open when the app last ran, to open again.

@@ -11,7 +11,9 @@ use gpui::{
     KeyDownEvent, MouseButton, MouseMoveEvent, PromptLevel, Render, SharedString, Subscription,
     Window, WindowControlArea, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
 };
-use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
+use shellwing_config::{
+    EditFile, Host, Hotkey, Keymap, PaneState, SessionState, TabState, WindowState,
+};
 use shellwing_ssh::config as ssh_config;
 use tokio::runtime::Handle;
 
@@ -22,21 +24,27 @@ use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{self, Live, rgb as theme_rgb};
-use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent};
+use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent, Part};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
 use crate::sidebar::{self, Row, Section, Sidebar, dot};
 use crate::snippets;
+use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
+mod config_files;
+mod notes;
+mod snippet_windows;
+
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
-    TitleChanged, UseKey, VaultChanged, hsla,
+    TitleChanged, Unplaced, UseKey, VaultChanged, hsla,
 };
 use shellwing_config::SyncPlace;
+use shellwing_i18n::{tr, tr_n};
 use shellwing_vault::FolderState;
 use shellwing_vault::{AskState, Request};
 
@@ -124,6 +132,12 @@ pub struct Workspace {
     overview: Option<(Entity<TabOverview>, Subscription)>,
     /// Where the tab button is, for the overview to hang from.
     overview_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
+    /// The sync panel, while open, and where its cloud button is.
+    sync_panel: Option<(Entity<SyncPanel>, Subscription)>,
+    sync_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
+    /// When this run last synced, and whether a sync runs now.
+    last_synced: Option<std::time::SystemTime>,
+    syncing: bool,
     /// The split whose divider is being dragged.
     dragging: Option<Rc<SplitState>>,
     /// The window's size and place, waiting to be saved, and which change it is.
@@ -144,6 +158,8 @@ pub struct Workspace {
     vault_asked: bool,
     /// The last key pressed or click, for locking the vault when idle.
     last_input: std::time::Instant,
+    /// Windows Hello or Touch ID is asking now, to open the vault.
+    presence_asking: bool,
     sync: SyncWorker,
     /// The last sync error shown, so it is not repeated every minute.
     sync_error: Option<String>,
@@ -214,6 +230,16 @@ enum Asking {
     Forward,
     /// A value a snippet needs before it runs.
     Snippet(SnippetRun),
+    /// Where on the host to place a config file.
+    PlacePath(shellwing_vault::ConfigFile),
+    /// How to place it there (`full`), in `view`'s host.
+    PlaceHow {
+        file: shellwing_vault::ConfigFile,
+        full: String,
+        view: gpui::WeakEntity<TermView>,
+    },
+    /// A file of the host to keep in the vault.
+    SaveFile,
 }
 
 /// A snippet on its way to running.
@@ -286,6 +312,10 @@ impl Workspace {
             palette: None,
             overview: None,
             overview_button: Rc::default(),
+            sync_panel: None,
+            sync_button: Rc::default(),
+            last_synced: None,
+            syncing: false,
             dragging: None,
             unsaved_bounds: None,
             bounds_change: 0,
@@ -297,6 +327,7 @@ impl Workspace {
             vault_reported: false,
             vault_asked: false,
             last_input: std::time::Instant::now(),
+            presence_asking: false,
             sync,
             sync_error: None,
             passphrase_joins: None,
@@ -448,38 +479,122 @@ impl Workspace {
             .collect()
     }
 
-    /// The snippets the palette offers for the focused pane's host.
-    fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
-        let Some(view) = self.active_tab() else {
-            return vec![];
-        };
-        let s = view.read(cx).session();
+    /// The focused pane's host and its group, which snippets and
+    /// environments are offered for.
+    fn pane_scope(&self, cx: &Context<Self>) -> Option<(String, Option<String>)> {
+        let s = self.active_tab()?.read(cx).session();
         let host = s.entry.clone().unwrap_or_else(|| s.spec.clone());
         let group = s
             .entry
             .as_deref()
             .and_then(|n| self.live.hosts().find(n))
             .and_then(|h| h.group.clone());
+        Some((host, group))
+    }
+
+    /// The environments that can be loaded in the focused pane.
+    fn pane_envs(&self, cx: &Context<Self>) -> Vec<shellwing_vault::Environment> {
+        let mut envs: Vec<_> = self
+            .vault
+            .ready()
+            .and_then(|v| v.environments().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|e| self.fits_pane(&e.scope, cx))
+            .collect();
+        envs.sort_by_key(|e| e.name.to_lowercase());
+        envs
+    }
+
+    /// Whether something offered for `scope` is for the focused pane's
+    /// host; with no pane, everything is (listed, to say what it needs).
+    pub(super) fn fits_pane(&self, scope: &str, cx: &Context<Self>) -> bool {
+        match self.pane_scope(cx) {
+            Some((host, group)) => {
+                snippets::Scope::parse(scope).fits(Some(&host), group.as_deref())
+            }
+            None => true,
+        }
+    }
+
+    /// Why the focused pane cannot take an environment or a config file
+    /// (`ssh`: over SSH only) now, if so: said in the palette, and on Enter.
+    pub(super) fn pane_unready(&self, ssh: bool, cx: &Context<Self>) -> Option<String> {
+        let Some(view) = self.active_tab() else {
+            return Some(tr!("Open a tab first"));
+        };
+        let s = view.read(cx).session();
+        if s.status() != Status::Connected {
+            return Some(tr!("Connect first"));
+        }
+        (ssh && s.is_local()).then(|| tr!("Over SSH only"))
+    }
+
+    /// The snippets the palette offers for the focused pane's host.
+    fn snippet_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
         let panes = self.snippet_targets(true).len();
-        self.vault
+        let no_tab = self.active_tab().is_none();
+        let mut list: Vec<_> = self
+            .vault
             .ready()
             .and_then(|v| v.snippets().ok())
             .unwrap_or_default()
             .into_iter()
-            .filter(|sn| snippets::Scope::parse(&sn.scope).fits(Some(&host), group.as_deref()))
+            .filter(|sn| self.fits_pane(&sn.scope, cx))
+            .collect();
+        // By category, those without first, as in Settings.
+        list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
+        list.into_iter()
             .map(|sn| {
-                Entry::new(Kind::Snippet(sn.id.clone()), "Snippets", sn.name.clone())
-                    .detail(sn.command.clone())
-                    .hint(if panes > 1 {
-                        format!("Enter · Alt+Enter: {panes} panes")
+                let category = sn.category.trim();
+                Entry::new(
+                    Kind::Snippet(sn.id.clone()),
+                    if category.is_empty() {
+                        tr!("Snippets")
                     } else {
-                        "Enter".to_string()
-                    })
+                        tr!("Snippets · {category}", category = category)
+                    },
+                    sn.name.clone(),
+                )
+                .detail(snippets::one_line(&sn.command))
+                .section(Part::Snippets)
+                .hint(if no_tab {
+                    tr!("Open a tab first")
+                } else if panes > 1 {
+                    tr_n!(
+                        panes,
+                        "Enter · Alt+Enter: {n} pane",
+                        "Enter · Alt+Enter: {n} panes"
+                    )
+                } else {
+                    "Enter".to_string()
+                })
             })
+            .chain(std::iter::once(
+                Entry::new(
+                    Kind::Action(Action::SnippetLibrary),
+                    tr!("Snippets"),
+                    tr!("Snippet library…"),
+                )
+                .detail(tr_n!(
+                    crate::library::items().len(),
+                    "{n} ready command to add",
+                    "{n} ready commands to add"
+                ))
+                .hint("Enter")
+                .section(Part::Snippets),
+            ))
             .collect()
     }
 
     fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if self.active_tab().is_none() {
+            return self.say(
+                tr!("Open a tab first: a snippet runs in the focused pane."),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
         let Some(snippet) = self
             .vault
             .ready()
@@ -488,6 +603,11 @@ impl Workspace {
         else {
             return;
         };
+        // Kept within the limit, whatever device saved it.
+        if snippet.command.len() > shellwing_vault::limits::COMMAND {
+            let o = shellwing_vault::Oversize::Command(snippet.command.len());
+            return self.say(crate::environment::said_oversize(&o), CONFIG_NOTICE, cx);
+        }
         let left = snippets::asked(&snippet.command);
         self.ask_snippet(
             SnippetRun {
@@ -521,28 +641,133 @@ impl Workspace {
                     }
                     snippets::fill(&run.snippet.command, &values)
                 };
-                v.update(cx, |v, _| v.type_text(&text, run.snippet.enter));
+                if run.snippet.needs.is_empty() {
+                    v.update(cx, |v, _| v.type_text(&text, run.snippet.enter));
+                    continue;
+                }
+                // In a subshell that has the environments, run at once: it
+                // waits for their values, sent once it is ready.
+                let values = match self.env_values(&run.snippet.needs) {
+                    Ok(values) => values,
+                    Err(e) => return self.say(e, CONFIG_NOTICE, cx),
+                };
+                if let Err(e) = v.update(cx, |v, cx| v.run_with_env(values, &text, true, cx)) {
+                    v.update(cx, |v, cx| v.show_notice(e, CONFIG_NOTICE, cx));
+                }
             }
             return;
         };
         let total = snippets::asked(&run.snippet.command).len();
         let at = total - run.left.len() + 1;
         let panes = match targets.len() {
-            1 => "in this pane".to_string(),
-            n => format!("in {n} panes"),
+            1 => tr!("in this pane"),
+            n => tr_n!(n, "in {n} pane", "in {n} panes"),
         };
         let notes = vec![
             Entry::new(
                 Kind::Note,
                 "",
-                format!("{} · {panes} · {name} ({at} of {total})", run.snippet.name),
+                tr!(
+                    "{snippet} · {panes} · {name} ({at} of {total})",
+                    snippet = run.snippet.name.clone(),
+                    panes = panes,
+                    name = name.clone(),
+                    at = at,
+                    total = total
+                ),
             ),
-            Entry::new(Kind::Note, "", "Will run")
-                .detail(snippets::fill(&run.snippet.command, &run.values)),
+            Entry::new(Kind::Note, "", tr!("Will run")).detail(snippets::one_line(
+                &snippets::fill(&run.snippet.command, &run.values),
+            )),
         ];
         self.asking = Some(Asking::Snippet(run));
         let palette = cx.new(|cx| Palette::ask(&name, notes, cx));
         self.show_palette(palette, false, window, cx);
+    }
+
+    /// The variables of the environments `ids`, together (a later one's
+    /// value wins).
+    fn env_values(&self, ids: &[String]) -> Result<shellwing_vault::EnvValues, String> {
+        let vault = self
+            .vault
+            .ready()
+            .ok_or_else(|| tr!("The vault is not open."))?;
+        let mut all: shellwing_vault::EnvValues = vec![];
+        for id in ids {
+            let values = vault
+                .environment_values(id)
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| tr!("An environment this needs was deleted: edit the snippet."))?;
+            for (name, value) in values {
+                all.retain(|(n, _)| *n != name);
+                all.push((name, value));
+            }
+        }
+        Ok(all)
+    }
+
+    /// The environments the palette offers to load into the focused pane,
+    /// while it is connected.
+    fn env_entries(&self, cx: &Context<Self>) -> Vec<Entry> {
+        let unready = self.pane_unready(false, cx);
+        let loaded: Vec<String> = self
+            .active_tab()
+            .map(|v| {
+                v.read(cx)
+                    .loaded_envs()
+                    .iter()
+                    .map(|e| e.id.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
+        self.pane_envs(cx)
+            .into_iter()
+            .map(|e| {
+                let on = loaded.contains(&e.id);
+                Entry::new(Kind::Env(e.id.clone()), tr!("Environments"), e.name.clone())
+                    .detail(e.names.join(" "))
+                    .hint(if let Some(why) = &unready {
+                        why.clone()
+                    } else if on {
+                        tr!("loaded: Enter loads it again")
+                    } else {
+                        "Enter".into()
+                    })
+                    .section(Part::Environments)
+            })
+            .collect()
+    }
+
+    /// Loads environment `id` into the focused pane.
+    fn load_env(&mut self, id: &str, cx: &mut Context<Self>) {
+        if let Some(why) = self.pane_unready(false, cx) {
+            return self.say(why, CONFIG_NOTICE, cx);
+        }
+        let Some(view) = self.active_tab().cloned() else {
+            return;
+        };
+        let Some(env) = self.pane_envs(cx).into_iter().find(|e| e.id == id) else {
+            return;
+        };
+        let done = self
+            .env_values(std::slice::from_ref(&env.id))
+            .and_then(|values| {
+                view.update(cx, |v, cx| {
+                    v.load_env(
+                        crate::view::LoadedEnv {
+                            id: env.id.clone(),
+                            name: env.name.clone(),
+                            names: vec![],
+                            bytes: 0,
+                        },
+                        values,
+                        cx,
+                    )
+                })
+            });
+        if let Err(e) = done {
+            self.say(e, CONFIG_NOTICE, cx);
+        }
     }
 
     /// Types in every pane of the active tab, or stops.
@@ -552,7 +777,7 @@ impl Workspace {
         };
         if !tab.broadcast && tab.views().len() < 2 {
             return self.say(
-                "Split the tab first: there is one pane to type in.".into(),
+                tr!("Split the tab first: there is one pane to type in."),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -629,7 +854,7 @@ impl Workspace {
         let (views, key) = (tab.views(), tab.focused.clone());
         self.confirm_close(
             &views,
-            "Close the tab?",
+            &tr!("Close the tab?"),
             window,
             cx,
             move |ws, window, cx| {
@@ -653,9 +878,9 @@ impl Workspace {
             .find(|t| t.views().contains(view))
             .is_some_and(|t| t.views().len() < 2);
         let question = if last {
-            "Close the tab?"
+            &tr!("Close the tab?")
         } else {
-            "Close the pane?"
+            &tr!("Close the pane?")
         };
         let v = view.clone();
         self.confirm_close(
@@ -672,7 +897,7 @@ impl Workspace {
     fn confirm_close(
         &mut self,
         views: &[Entity<TermView>],
-        question: &'static str,
+        question: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
         close: impl FnOnce(&mut Self, &mut Window, &mut Context<Self>) + 'static,
@@ -683,22 +908,32 @@ impl Workspace {
             .filter(|s| s.status() == Status::Connected)
             .map(|s| s.title.clone())
             .collect();
+        // The files placed until the tab closes go first.
+        let views = views.to_vec();
         if open.is_empty() {
-            return close(self, window, cx);
+            return self.take_down_then(views, window, cx, close);
         }
         if self.prompting {
             return;
         }
         self.prompting = true;
         let detail = match open.as_slice() {
-            [one] => format!("The connection to {one} is open; closing ends it."),
-            _ => format!("{} connections are open; closing ends them.", open.len()),
+            [one] => tr!(
+                "The connection to {one} is open; closing ends it.",
+                one = one
+            ),
+            _ => tr_n!(
+                open.len(),
+                "{n} connection is open; closing ends it.",
+                "{n} connections are open; closing ends them."
+            ),
         };
+        let (close_label, cancel_label) = (tr!("Close"), tr!("Cancel"));
         let answer = window.prompt(
             PromptLevel::Warning,
             question,
             Some(&detail),
-            &["Close", "Cancel"],
+            &[close_label.as_str(), cancel_label.as_str()],
             cx,
         );
         cx.spawn_in(window, async move |this, cx| {
@@ -706,7 +941,7 @@ impl Workspace {
             let _ = this.update_in(cx, |ws, window, cx| {
                 ws.prompting = false;
                 if yes {
-                    close(ws, window, cx);
+                    ws.take_down_then(views, window, cx, close);
                 }
             });
         })
@@ -830,7 +1065,7 @@ impl Workspace {
         ) {
             Ok(s) => s,
             Err(e) => {
-                self.notice = Some(format!("Cannot open a terminal: {e}").into());
+                self.notice = Some(tr!("Cannot open a terminal: {e}", e = e.to_string()).into());
                 cx.notify();
                 return None;
             }
@@ -845,9 +1080,17 @@ impl Workspace {
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
         // Tab and host list dots follow the session's status; a key waiting
         // for the connection is installed once it is up.
-        cx.subscribe(&view, |ws, _, _: &StatusChanged, cx| {
+        cx.subscribe(&view, |ws, view, _: &StatusChanged, cx| {
             ws.refresh_sidebar(cx);
             ws.run_installs(cx);
+            if view.read(cx).session().status() == Status::Connected {
+                ws.tidy_placed(&view, cx);
+            }
+        })
+        .detach();
+        cx.subscribe(&view, |ws, view, ev: &Unplaced, cx| {
+            let spec = view.read(cx).session().spec.clone();
+            ws.forget_placed(&spec, &ev.0);
         })
         .detach();
         cx.subscribe(&view, |ws, _, ev: &UseKey, cx| ws.use_key(ev, cx))
@@ -879,6 +1122,12 @@ impl Workspace {
             ws.set_focused(view.clone(), window, cx);
             match *c {
                 PaneCommand::Palette => ws.open_palette(window, cx),
+                PaneCommand::Snippets => ws.open_palette_at(Some(Part::Snippets), window, cx),
+                PaneCommand::Environments => {
+                    ws.open_palette_at(Some(Part::Environments), window, cx)
+                }
+                PaneCommand::ConfigFiles => ws.open_palette_at(Some(Part::ConfigFiles), window, cx),
+                PaneCommand::SaveFile => ws.ask_save_file(window, cx),
                 PaneCommand::Split(axis) => ws.split(axis, window, cx),
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Log => ws.toggle_log(cx),
@@ -1089,34 +1338,65 @@ impl Workspace {
     pub fn may_quit(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let open = self.connections(cx);
         if open == 0 {
-            return true;
+            // Notes changed in their windows sync first.
+            self.finish_then_quit(cx);
+            return false;
         }
         if !self.prompting {
             self.prompting = true;
             let detail = if open == 1 {
-                "A connection is open; quitting closes it.".to_string()
+                tr!("A connection is open; quitting closes it.")
             } else {
-                format!("{open} connections are open; quitting closes them.")
+                tr_n!(
+                    open,
+                    "{n} connection is open; quitting closes it.",
+                    "{n} connections are open; quitting closes them."
+                )
             };
+            let (quit_label, cancel_label) = (tr!("Quit"), tr!("Cancel"));
             let answer = window.prompt(
                 PromptLevel::Warning,
-                "Quit shellwing?",
+                &tr!("Quit shellwing?"),
                 Some(&detail),
-                &["Quit", "Cancel"],
+                &[quit_label.as_str(), cancel_label.as_str()],
                 cx,
             );
-            cx.spawn(async move |this, cx| {
+            cx.spawn_in(window, async move |this, cx| {
                 let quit = matches!(answer.await, Ok(0));
-                let _ = this.update(cx, |ws, cx| {
+                let _ = this.update_in(cx, |ws, window, cx| {
                     ws.prompting = false;
                     if quit {
-                        cx.quit();
+                        // The files placed until their tab closes go first.
+                        let views = ws.tabs.iter().flat_map(|t| t.views()).collect();
+                        ws.take_down_then(views, window, cx, |ws, _, cx| ws.finish_then_quit(cx));
                     }
                 });
             })
             .detach();
         }
         false
+    }
+
+    /// Quits once the notes and snippets open in their windows are saved
+    /// and, when any changed, synced (10 s at most: a place that does not
+    /// answer does not hold the app).
+    fn finish_then_quit(&mut self, cx: &mut Context<Self>) {
+        let notes = crate::note_window::finish_all(cx);
+        let snippets = crate::snippet_window::finish_all(cx);
+        if !(notes || snippets) || self.sync.place().is_none() {
+            return cx.quit();
+        }
+        self.say(tr!("Syncing the notes before quitting…"), THEME_NOTICE, cx);
+        let sync = self.sync.clone();
+        let job =
+            cx.background_spawn(
+                async move { sync.sync_and_wait(std::time::Duration::from_secs(10)) },
+            );
+        cx.spawn(async move |_, cx| {
+            let _ = job.await;
+            cx.update(|cx| cx.quit());
+        })
+        .detach();
     }
 
     /// Closing the window quits, so the system's close button asks first too.
@@ -1141,7 +1421,7 @@ impl Workspace {
         match self.active_tab().map(|t| t.read(cx).session().spec.clone()) {
             Some(spec) => self.open(&spec, window, cx),
             None => {
-                self.notice = Some("Choose a host on the left to connect.".into());
+                self.notice = Some(tr!("Choose a host on the left to connect.").into());
                 cx.notify();
             }
         }
@@ -1155,185 +1435,223 @@ impl Workspace {
             for r in section.rows {
                 specs.push(r.spec.clone());
                 entries.push(
-                    Entry::new(Kind::Host(r.spec), "Hosts", r.name)
+                    Entry::new(Kind::Host(r.spec), tr!("Hosts"), r.name)
                         .detail(if r.detail.is_empty() {
                             section.title.clone()
                         } else {
                             format!("{} · {}", r.detail, section.title).into()
                         })
                         .status(r.status)
-                        .hint("Enter"),
+                        .hint("Enter")
+                        .section(Part::Hosts),
                 );
             }
         }
         for spec in self.live.store().map(|s| s.recent()).unwrap_or_default() {
             if !specs.contains(&spec) {
-                entries.push(Entry::new(Kind::Recent(spec.clone()), "Recent", spec).hint("Enter"));
+                entries.push(
+                    Entry::new(Kind::Recent(spec.clone()), tr!("Recent"), spec)
+                        .hint("Enter")
+                        .section(Part::Recent),
+                );
             }
         }
+        if self.vault.locked().is_some() {
+            // Not left out without a word: they are in the locked vault.
+            entries.push(
+                Entry::new(
+                    Kind::Action(Action::UnlockVault),
+                    tr!("Snippets"),
+                    tr!("Unlock the vault…"),
+                )
+                .detail(tr!("Snippets, environments and config files are in it."))
+                .hint("Enter")
+                .section(Part::Snippets),
+            );
+        }
         entries.extend(self.snippet_entries(cx));
-        let (chord, alt) = if cfg!(target_os = "macos") {
-            ("Cmd", "Cmd")
-        } else {
-            ("Ctrl+Shift", "Ctrl+Shift")
-        };
+        entries.extend(self.env_entries(cx));
+        entries.extend(self.file_entries(cx));
+        entries.extend(self.note_entries(cx));
+        let keys = crate::hotkeys::keymap(cx);
+        // What is done in the pane or the tab, then what is set.
+        let (mut acts, mut sets) = (vec![], vec![]);
         let mut action = |a: Action, title: String, keys: String| {
-            entries.push(Entry::new(Kind::Action(a), "Actions", title).hint(keys));
+            acts.push(
+                Entry::new(Kind::Action(a), tr!("Actions"), title)
+                    .hint(keys)
+                    .section(Part::Actions),
+            );
+        };
+        let mut setting = |a: Action, title: String, keys: String| {
+            sets.push(
+                Entry::new(Kind::Action(a), tr!("Settings"), title)
+                    .hint(keys)
+                    .section(Part::Settings),
+            );
         };
         if let Some(t) = self.active_tab() {
             let title = t.read(cx).session().title.clone();
             action(
                 Action::Duplicate,
-                format!("Another tab to {title}"),
+                tr!("Another tab to {title}", title = title.clone()),
                 String::new(),
             );
             action(
                 Action::SplitRight,
-                format!("Split right, to {title}"),
-                format!("{chord}+D"),
+                tr!("Split right, to {title}", title = title.clone()),
+                keys.hint(Hotkey::SplitRight),
             );
             action(
                 Action::SplitDown,
-                format!("Split down, to {title}"),
-                if cfg!(target_os = "macos") {
-                    "Cmd+Shift+D".into()
-                } else {
-                    "Ctrl+Shift+E".into()
-                },
+                tr!("Split down, to {title}", title = title.clone()),
+                keys.hint(Hotkey::SplitDown),
             );
-            action(Action::CloseTab, "Close the tab".into(), String::new());
+            action(Action::CloseTab, tr!("Close the tab"), String::new());
             if let Some(tab) = self.tabs.get(self.active)
                 && tab.views().len() > 1
             {
                 action(
                     Action::Broadcast,
                     if tab.broadcast {
-                        "Stop typing in every pane".into()
+                        tr!("Stop typing in every pane")
                     } else {
-                        "Type in every pane of this tab".into()
+                        tr!("Type in every pane of this tab")
                     },
-                    format!("{chord}+I"),
+                    keys.hint(Hotkey::Broadcast),
                 );
             }
             if self.tabs.len() >= 2 {
                 action(
                     Action::Tabs,
-                    format!("All {} tabs, by host…", self.tabs.len()),
-                    if cfg!(target_os = "macos") {
-                        "Cmd+Shift+A".into()
-                    } else {
-                        "Ctrl+Shift+A".into()
-                    },
+                    tr!("All {count} tabs, by host…", count = self.tabs.len()),
+                    keys.hint(Hotkey::Tabs),
                 );
             }
             action(
                 Action::Find,
-                format!("Find in {title}…"),
-                format!("{chord}+F"),
+                tr!("Find in {title}…", title = title.clone()),
+                keys.hint(Hotkey::Find),
             );
             action(
                 Action::SaveOutput { html: false },
-                format!("Save the output of {title} as text…"),
+                tr!("Save the output of {title} as text…", title = title.clone()),
                 String::new(),
             );
             action(
                 Action::SaveOutput { html: true },
-                format!("Save the output of {title} as HTML, with colors…"),
+                tr!(
+                    "Save the output of {title} as HTML, with colors…",
+                    title = title.clone()
+                ),
                 String::new(),
             );
             action(
                 Action::Log,
                 if t.read(cx).session().log_path().is_some() {
-                    format!("Stop logging {title}")
+                    tr!("Stop logging {title}", title = title.clone())
                 } else {
-                    format!("Log {title} to a file")
+                    tr!("Log {title} to a file", title = title.clone())
                 },
                 String::new(),
             );
             action(
                 Action::Files,
                 if t.read(cx).files_shown() {
-                    "Hide the files".into()
+                    tr!("Hide the files")
                 } else {
-                    format!("Files on {title}")
+                    tr!("Files on {title}", title = title.clone())
                 },
-                format!("{chord}+O"),
+                keys.hint(Hotkey::Files),
             );
             if t.read(cx).session().status() == Status::Connected {
                 action(
                     Action::Forward,
-                    format!("Forward a port through {title}…"),
+                    tr!("Forward a port through {title}…", title = title.clone()),
                     "-L / -R / -D".into(),
                 );
+                let loaded: Vec<String> = t
+                    .read(cx)
+                    .loaded_envs()
+                    .iter()
+                    .map(|e| e.name.clone())
+                    .collect();
+                if !loaded.is_empty() {
+                    action(
+                        Action::UnloadEnv,
+                        tr!("Unload environment: {names}", names = loaded.join(", ")),
+                        String::new(),
+                    );
+                }
             }
         }
-        action(
+        setting(
             Action::ChangeTheme,
-            "Change theme…".into(),
-            format!("{alt}+] / ["),
+            tr!("Change theme…"),
+            [Hotkey::NextTheme, Hotkey::PreviousTheme]
+                .map(|h| keys.hint(h))
+                .into_iter()
+                .filter(|k| !k.is_empty())
+                .collect::<Vec<_>>()
+                .join(" / "),
         );
-        action(
+        setting(
             Action::ToggleHosts,
             if self.show_sidebar {
-                "Hide the host list".into()
+                tr!("Hide the host list")
             } else {
-                "Show the host list".into()
+                tr!("Show the host list")
             },
-            format!("{chord}+B"),
+            keys.hint(Hotkey::HostList),
         );
-        action(
+        setting(
             Action::ManageSecrets,
-            "Saved passwords and passphrases…".into(),
+            tr!("Saved passwords and passphrases…"),
             String::new(),
         );
         if self.vault.locked().is_some() {
-            action(
-                Action::UnlockVault,
-                "Unlock the vault…".into(),
-                String::new(),
-            );
+            setting(Action::UnlockVault, tr!("Unlock the vault…"), String::new());
         }
         if self.vault.can_lock() {
-            action(Action::LockVault, "Lock the vault".into(), String::new());
+            setting(Action::LockVault, tr!("Lock the vault"), String::new());
         }
         match self.sync.place() {
             Some(f) => {
-                action(
+                setting(
                     Action::SyncNow,
-                    format!("Sync now with {}", crate::syncing::describe(&f)),
+                    tr!(
+                        "Sync now with {place}",
+                        place = crate::syncing::describe(&f)
+                    ),
                     String::new(),
                 );
-                action(
+                setting(
                     Action::ShowRecoveryKey,
-                    "Show the recovery key".into(),
+                    tr!("Show the recovery key"),
                     String::new(),
                 );
-                action(Action::StopSync, "Stop syncing".into(), String::new());
+                setting(Action::StopSync, tr!("Stop syncing"), String::new());
             }
             None => {
-                action(
+                setting(
                     Action::SyncFolder,
-                    "Sync passwords with a folder…".into(),
+                    tr!("Sync passwords with a folder…"),
                     "iCloud Drive, Syncthing, Dropbox…".into(),
                 );
-                action(
+                setting(
                     Action::SyncServer,
-                    "Sync passwords with a server…".into(),
+                    tr!("Sync passwords with a server…"),
                     "WebDAV (Nextcloud, Synology), S3 (AWS, R2, B2), Git".into(),
                 );
             }
         }
-        action(
+        setting(
             Action::Settings,
-            "Settings…".into(),
-            if cfg!(target_os = "macos") {
-                "Cmd+,".into()
-            } else {
-                "Ctrl+,".into()
-            },
+            tr!("Settings…"),
+            keys.hint(Hotkey::Settings),
         );
-        action(Action::NewHost, "New host…".into(), String::new());
-        action(Action::NewGroup, "New group…".into(), String::new());
+        action(Action::NewHost, tr!("New host…"), String::new());
+        action(Action::NewGroup, tr!("New group…"), String::new());
         if let Some(target) = self.active_tab().map(|t| {
             let s = t.read(cx).session();
             match &s.entry {
@@ -1349,22 +1667,40 @@ impl Workspace {
             };
             action(
                 Action::EditHost(target),
-                format!("Edit host {name}…"),
+                tr!("Edit host {name}…", name = name),
                 String::new(),
             );
         }
-        action(Action::EditHosts, "Edit hosts.toml".into(), String::new());
-        action(
-            Action::EditSettings,
-            "Edit config.toml".into(),
-            String::new(),
-        );
+        setting(Action::EditHosts, tr!("Edit hosts.toml"), String::new());
+        setting(Action::EditSettings, tr!("Edit config.toml"), String::new());
+        entries.extend(acts);
+        entries.extend(sets);
         entries
     }
 
     fn open_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.open_palette_at(None, window, cx);
+    }
+
+    /// The palette, opened at section `at` (from the pane's menu); a word
+    /// instead where the focused pane has none of it.
+    fn open_palette_at(&mut self, at: Option<Part>, window: &mut Window, cx: &mut Context<Self>) {
         let entries = self.palette_entries(cx);
-        let palette = cx.new(|cx| Palette::connect(entries, cx));
+        if let Some(s) = at
+            && !entries.iter().any(|e| e.section == s)
+        {
+            let said = match s {
+                Part::Snippets => {
+                    tr!("No snippet for this host: add one in Settings › Snippets.")
+                }
+                Part::ConfigFiles => {
+                    tr!("No config file for this host: add one in Settings › Config files.")
+                }
+                _ => tr!("No environment for this host: add one in Settings › Environments."),
+            };
+            return self.say(said, CONFIG_NOTICE, cx);
+        }
+        let palette = cx.new(|cx| Palette::connect(entries, at, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -1373,7 +1709,10 @@ impl Workspace {
             .active_tab()
             .and_then(|t| t.read(cx).session().entry.clone());
         if let Some(t) = self.live.host_theme(entry.as_deref()) {
-            let msg = format!("This host uses the theme `{t}` from hosts.toml; change it there.");
+            let msg = tr!(
+                "This host uses the theme `{t}` from hosts.toml; change it there.",
+                t = t
+            );
             self.say(msg, CONFIG_NOTICE, cx);
             return;
         }
@@ -1386,10 +1725,10 @@ impl Workspace {
         let entries = themes
             .into_iter()
             .map(|t| {
-                let group = shellwing_config::GROUPS
+                let known = shellwing_config::GROUPS
                     .iter()
-                    .find(|(g, _)| Some(*g) == t.group.as_deref())
-                    .map_or("Your themes", |(_, title)| *title);
+                    .any(|(g, _)| Some(*g) == t.group.as_deref());
+                let group = crate::look::group_title(t.group.as_deref().filter(|_| known));
                 Entry::new(Kind::Theme(t.id.clone()), group, t.name.clone())
             })
             .collect();
@@ -1398,14 +1737,36 @@ impl Workspace {
     }
 
     fn on_sync(&mut self, ev: SyncEvent, cx: &mut Context<Self>) {
+        // The cloud, and its panel, follow.
+        match &ev {
+            SyncEvent::Started => self.syncing = true,
+            SyncEvent::Done(_) => {
+                self.syncing = false;
+                self.last_synced = Some(std::time::SystemTime::now());
+            }
+            SyncEvent::Failed(_) => self.syncing = false,
+            _ => {}
+        }
+        self.on_sync_event(ev, cx);
+        self.refresh_sync_panel(cx);
+        // Settings › Sync shows the same.
+        self.refresh_settings(cx);
+        cx.notify();
+    }
+
+    fn on_sync_event(&mut self, ev: SyncEvent, cx: &mut Context<Self>) {
         match ev {
+            SyncEvent::Started => {}
             SyncEvent::Done(r) => {
                 self.sync_error = None;
                 if r.pulled > 0 {
                     let n = r.pulled;
-                    let s = if n == 1 { "" } else { "s" };
                     self.say(
-                        format!("Synced {n} change{s} from other devices."),
+                        tr_n!(
+                            n,
+                            "Synced {n} change from other devices.",
+                            "Synced {n} changes from other devices."
+                        ),
                         THEME_NOTICE,
                         cx,
                     );
@@ -1413,7 +1774,7 @@ impl Workspace {
             }
             SyncEvent::Failed(e) => {
                 if self.sync_error.as_ref() != Some(&e) {
-                    self.say(format!("Sync: {e}"), CONFIG_NOTICE, cx);
+                    self.say(tr!("Sync: {e}", e = e.to_string()), CONFIG_NOTICE, cx);
                     self.sync_error = Some(e);
                 }
             }
@@ -1437,11 +1798,13 @@ impl Workspace {
                         self.asking = None;
                         self.in_window(cx, |ws, window, cx| ws.close_palette(window, cx));
                         let msg = if state == AskState::Refused {
-                            "The other device refused to let this one in."
+                            tr!("The other device refused to let this one in.")
                         } else {
-                            "No device let this one in within 10 minutes. Ask again, or use the recovery key."
+                            tr!(
+                                "No device let this one in within 10 minutes. Ask again, or use the recovery key."
+                            )
                         };
-                        self.say(msg.into(), CONFIG_NOTICE, cx);
+                        self.say(msg, CONFIG_NOTICE, cx);
                     }
                 }
             }
@@ -1452,7 +1815,9 @@ impl Workspace {
                     }
                 }
             }
-            SyncEvent::PairingFailed(e) => self.say(format!("Pairing: {e}"), CONFIG_NOTICE, cx),
+            SyncEvent::PairingFailed(e) => {
+                self.say(tr!("Pairing: {e}", e = e.to_string()), CONFIG_NOTICE, cx)
+            }
             SyncEvent::PassphraseJoins(joins) => {
                 self.passphrase_joins = Some(joins);
                 self.refresh_settings(cx);
@@ -1483,14 +1848,15 @@ impl Workspace {
     fn prompt_pairing(&mut self, r: Request, window: &mut Window, cx: &mut Context<Self>) {
         let answer = window.prompt(
             PromptLevel::Warning,
-            &format!("Let {} into this vault?", r.device),
-            Some(&format!(
-                "It gets everything the vault holds: passwords, keys, snippets and hosts. Approve only if {} shows the code {}.",
-                r.device, r.code
+            &tr!("Let {device} into this vault?", device = r.device.clone()),
+            Some(&tr!(
+                "It gets everything the vault holds: passwords, keys, snippets and hosts. Approve only if {device} shows the code {code}.",
+                device = r.device.clone(),
+                code = r.code.clone()
             )),
             &[
-                gpui::PromptButton::Ok("Approve".into()),
-                gpui::PromptButton::Cancel("Refuse".into()),
+                gpui::PromptButton::Ok(tr!("Approve").into()),
+                gpui::PromptButton::Cancel(tr!("Refuse").into()),
             ],
             cx,
         );
@@ -1520,24 +1886,77 @@ impl Workspace {
         }
         self.asking = Some(Asking::VaultUnlock(lock));
         let mut notes = vec![if lock == Lock::Passphrase {
-            Entry::new(Kind::Note, "", "The vault is locked").detail(
-                "Its passphrase opens it, or its recovery key (13 groups of four). Esc leaves it locked: Unlock the vault, in the palette, asks again.",
-            )
+            Entry::new(Kind::Note, "", tr!("The vault is locked")).detail(tr!(
+                "Its passphrase opens it, or its recovery key (13 groups of four). Esc leaves it locked: Unlock the vault, in the palette, asks again."
+            ))
         } else {
-            Entry::new(Kind::Note, "", "The system keychain lost the vault's key").detail(
-                "Its recovery key (13 groups of four) opens it, and puts the key back in the keychain.",
-            )
+            Entry::new(Kind::Note, "", tr!("The system keychain lost the vault's key")).detail(tr!(
+                "Its recovery key (13 groups of four) opens it, and puts the key back in the keychain."
+            ))
         }];
         if let Some(p) = problem {
             notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
         }
+        // Windows Hello or Touch ID asks too, where it opens the vault; the
+        // passphrase can be typed meanwhile. Not again after a wrong one.
+        let presence = (lock == Lock::Passphrase && problem.is_none())
+            .then(|| {
+                self.vault
+                    .presence()
+                    .filter(|_| self.vault.opens_with_presence())
+            })
+            .flatten();
+        if let Some(p) = &presence {
+            use shellwing_vault::Presence as _;
+            notes.insert(
+                0,
+                Entry::new(Kind::Note, "", tr!("{name} is asking", name = p.name()))
+                    .detail(tr!("Or type the passphrase here.")),
+            );
+        }
         let placeholder = if lock == Lock::Passphrase {
-            "The vault's passphrase, or its recovery key"
+            tr!("The vault's passphrase, or its recovery key")
         } else {
-            "The recovery key"
+            tr!("The recovery key")
         };
-        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        let palette = cx.new(|cx| Palette::ask_secret(&placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
+        if presence.is_some() && !self.presence_asking {
+            self.unlock_with_presence(window, cx);
+        }
+    }
+
+    /// Opens the locked vault with Windows Hello or Touch ID, off the UI
+    /// thread (the system's prompt waits for the user).
+    fn unlock_with_presence(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.presence_asking = true;
+        let slot = self.vault.clone();
+        let job = cx.background_spawn(async move { slot.unlock_with_presence() });
+        cx.spawn_in(window, async move |this, cx| {
+            let done = job.await;
+            let _ = this.update_in(cx, |ws, window, cx| {
+                ws.presence_asking = false;
+                match done {
+                    Ok(_) => {
+                        if matches!(ws.asking, Some(Asking::VaultUnlock(_))) {
+                            ws.asking = None;
+                            ws.close_palette(window, cx);
+                        }
+                        ws.sync.now();
+                        ws.say(tr!("The vault is open."), THEME_NOTICE, cx);
+                        ws.refresh_settings(cx);
+                    }
+                    // Cancelled: the passphrase is still asked for.
+                    Err(shellwing_vault::Error::NotPresent) => {}
+                    Err(e) => ws.say(
+                        tr!("Not opened that way: {e}", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                }
+            });
+        })
+        .detach();
     }
 
     /// Asks for a new passphrase, or for it again to check it.
@@ -1552,25 +1971,27 @@ impl Workspace {
         };
         let min = shellwing_vault::MIN_PASSPHRASE;
         let mut notes = vec![if first.is_some() {
-            Entry::new(Kind::Note, "", "Type it again").detail("To be sure of it.")
+            Entry::new(Kind::Note, "", tr!("Type it again")).detail(tr!("To be sure of it."))
         } else if *new {
-            Entry::new(Kind::Note, "", "There is no system keychain to keep the vault's key").detail(format!(
-                "A passphrase keeps it instead: you type it when shellwing starts. At least {min} characters. Esc: no saved passwords, keys or sync this time."
+            Entry::new(Kind::Note, "", tr!("There is no system keychain to keep the vault's key")).detail(tr!(
+                "A passphrase keeps it instead: you type it when shellwing starts. At least {min} characters. Esc: no saved passwords, keys or sync this time.",
+                min = min
             ))
         } else {
-            Entry::new(Kind::Note, "", "A passphrase for the vault").detail(format!(
-                "It opens the vault where the system keychain cannot. At least {min} characters."
+            Entry::new(Kind::Note, "", tr!("A passphrase for the vault")).detail(tr!(
+                "It opens the vault where the system keychain cannot. At least {min} characters.",
+                min = min
             ))
         }];
         if let Some(p) = problem {
             notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
         }
         let placeholder = if first.is_some() {
-            "The passphrase again"
+            tr!("The passphrase again")
         } else {
-            "A passphrase"
+            tr!("A passphrase")
         };
-        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        let palette = cx.new(|cx| Palette::ask_secret(&placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -1596,17 +2017,21 @@ impl Workspace {
                 match tried {
                     Ok(_) => {
                         self.sync.now();
-                        self.say("The vault is open.".into(), THEME_NOTICE, cx);
+                        self.say(tr!("The vault is open."), THEME_NOTICE, cx);
                         self.refresh_settings(cx);
                     }
                     Err(e @ (VaultError::WrongPassphrase | VaultError::WrongRecoveryKey)) => self
                         .ask_vault(
                             lock,
-                            Some(&format!("That does not open it: {e}.")),
+                            Some(&tr!("That does not open it: {e}.", e = e.to_string())),
                             window,
                             cx,
                         ),
-                    Err(e) => self.say(format!("The vault stays locked: {e}"), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(
+                        tr!("The vault stays locked: {e}", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                 }
             }
             Some(Asking::VaultPassphrase { first: None, new }) => {
@@ -1616,7 +2041,7 @@ impl Workspace {
                     first: (text.chars().count() >= min).then(|| text.clone()),
                     new,
                 });
-                let short = format!("Too short: at least {min} characters.");
+                let short = tr!("Too short: at least {min} characters.", min = min);
                 let problem = (text.chars().count() < min).then_some(short.as_str());
                 self.ask_passphrase(problem, window, cx);
             }
@@ -1627,7 +2052,11 @@ impl Workspace {
                 self.close_palette(window, cx);
                 if first != text {
                     self.asking = Some(Asking::VaultPassphrase { first: None, new });
-                    return self.ask_passphrase(Some("The two were not the same."), window, cx);
+                    return self.ask_passphrase(
+                        Some(&tr!("The two were not the same.")),
+                        window,
+                        cx,
+                    );
                 }
                 let done = if new {
                     self.vault.unlock(Unlock::NewPassphrase(&text)).map(|_| ())
@@ -1643,26 +2072,30 @@ impl Workspace {
                         if let Some(Ok(Some(rk))) = self.vault.ready().map(|v| v.recovery_key()) {
                             let key = rk.to_string();
                             let entries = vec![
-                                Entry::new(Kind::Copy(key.clone()), "Recovery key", key).hint("Enter copies"),
-                                Entry::new(Kind::Note, "Recovery key", "Write this key down and keep it safe.").detail(
-                                    "It opens the vault if the passphrase is forgotten; Settings › Vault shows it again.",
-                                ),
+                                Entry::new(Kind::Copy(key.clone()), tr!("Recovery key"), key).hint(tr!("Enter copies")),
+                                Entry::new(Kind::Note, tr!("Recovery key"), tr!("Write this key down and keep it safe.")).detail(tr!(
+                                    "It opens the vault if the passphrase is forgotten; Settings › Vault shows it again."
+                                )),
                             ];
                             let palette = cx.new(|cx| Palette::show(entries, cx));
                             self.show_palette(palette, false, window, cx);
                         }
                         self.say(
-                            "The vault is ready; its passphrase keeps it.".into(),
+                            tr!("The vault is ready; its passphrase keeps it."),
                             CONFIG_NOTICE,
                             cx,
                         );
                     }
                     Ok(()) => self.say(
-                        "The passphrase opens the vault too now.".into(),
+                        tr!("The passphrase opens the vault too now."),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(format!("No passphrase set: {e}"), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(
+                        tr!("No passphrase set: {e}", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                 }
                 self.refresh_settings(cx);
             }
@@ -1683,21 +2116,22 @@ impl Workspace {
         };
         let min = shellwing_vault::MIN_PASSPHRASE;
         let mut notes = vec![if first.is_some() {
-            Entry::new(Kind::Note, "", "Type it again").detail("To be sure of it.")
+            Entry::new(Kind::Note, "", tr!("Type it again")).detail(tr!("To be sure of it."))
         } else {
-            Entry::new(Kind::Note, "", "A passphrase that joins new devices").detail(format!(
-                "Typed on a new device that syncs the same folder, instead of the recovery key. Anyone who can read the folder can try to guess it: four or more unrelated words, at least {min} characters."
+            Entry::new(Kind::Note, "", tr!("A passphrase that joins new devices")).detail(tr!(
+                "Typed on a new device that syncs the same folder, instead of the recovery key. Anyone who can read the folder can try to guess it: four or more unrelated words, at least {min} characters.",
+                min = min
             ))
         }];
         if let Some(p) = problem {
             notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
         }
         let placeholder = if first.is_some() {
-            "The passphrase again"
+            tr!("The passphrase again")
         } else {
-            "A sync passphrase"
+            tr!("A sync passphrase")
         };
-        let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
+        let palette = cx.new(|cx| Palette::ask_secret(&placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -1715,17 +2149,18 @@ impl Workspace {
             Entry::new(
                 Kind::Note,
                 "",
-                format!(
-                    "{} lets a passphrase join its vault",
-                    crate::syncing::describe(place)
+                tr!(
+                    "{place} lets a passphrase join its vault",
+                    place = crate::syncing::describe(place)
                 ),
             )
-            .detail("The one set on a device that syncs (Settings › Sync). Secrets saved here are kept and merged."),
+            .detail(tr!("The one set on a device that syncs (Settings › Sync). Secrets saved here are kept and merged.")),
         ];
         if let Some(p) = problem {
             notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
         }
-        let palette = cx.new(|cx| Palette::ask_secret("The sync passphrase", notes, cx));
+        let placeholder = tr!("The sync passphrase");
+        let palette = cx.new(|cx| Palette::ask_secret(&placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -1744,10 +2179,11 @@ impl Workspace {
                 let min = shellwing_vault::MIN_PASSPHRASE;
                 let strength = shellwing_vault::passphrase_strength(&text);
                 let problem = if text.chars().count() < min {
-                    Some(format!("Too short: at least {min} characters."))
+                    Some(tr!("Too short: at least {min} characters.", min = min))
                 } else if strength < 3 {
-                    Some(format!(
-                        "Too easy to guess (strength {strength} of 4; 3 is needed). Several unrelated words work well."
+                    Some(tr!(
+                        "Too easy to guess (strength {strength} of 4; 3 is needed). Several unrelated words work well.",
+                        strength = strength
                     ))
                 } else {
                     None
@@ -1761,19 +2197,19 @@ impl Workspace {
                 if first != text {
                     self.asking = Some(Asking::FolderPassphrase { first: None });
                     return self.ask_folder_passphrase(
-                        Some("The two were not the same."),
+                        Some(&tr!("The two were not the same.")),
                         window,
                         cx,
                     );
                 }
                 let Some(place) = self.sync.place() else {
                     return self.say(
-                        "Not set: this device does not sync.".into(),
+                        tr!("Not set: this device does not sync."),
                         CONFIG_NOTICE,
                         cx,
                     );
                 };
-                self.say("Setting the sync passphrase…".into(), THEME_NOTICE, cx);
+                self.say(tr!("Setting the sync passphrase…"), THEME_NOTICE, cx);
                 self.at_place(
                     place,
                     move |vault, b| vault.let_passphrase_join(b, Some(&text)),
@@ -1782,12 +2218,14 @@ impl Workspace {
                             Ok(()) => {
                                 ws.passphrase_joins = Some(true);
                                 ws.say(
-                                    "New devices can join with the sync passphrase now.".into(),
+                                    tr!("New devices can join with the sync passphrase now."),
                                     CONFIG_NOTICE,
                                     cx,
                                 )
                             }
-                            Err(e) => ws.say(format!("Not set: {e}"), CONFIG_NOTICE, cx),
+                            Err(e) => {
+                                ws.say(tr!("Not set: {e}", e = e.to_string()), CONFIG_NOTICE, cx)
+                            }
                         }
                         ws.refresh_settings(cx);
                     },
@@ -1797,7 +2235,7 @@ impl Workspace {
             }
             Some(Asking::JoinPassphrase(place)) => {
                 let at = place.clone();
-                self.say("Joining…".into(), THEME_NOTICE, cx);
+                self.say(tr!("Joining…"), THEME_NOTICE, cx);
                 self.at_place(
                     place,
                     move |vault, b| vault.join_with_passphrase(b, &text),
@@ -1806,12 +2244,16 @@ impl Workspace {
                         Err(VaultError::WrongPassphrase) => {
                             ws.asking = Some(Asking::JoinPassphrase(at));
                             ws.ask_join_passphrase(
-                                Some("That passphrase does not open it."),
+                                Some(&tr!("That passphrase does not open it.")),
                                 window,
                                 cx,
                             );
                         }
-                        Err(e) => ws.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
+                        Err(e) => ws.say(
+                            tr!("Cannot join: {e}", e = e.to_string()),
+                            CONFIG_NOTICE,
+                            cx,
+                        ),
                     },
                     window,
                     cx,
@@ -1830,31 +2272,37 @@ impl Workspace {
             }
             _ => return,
         };
-        let mut entries = vec![
+        let mut entries =
+            vec![
             Entry::new(
                 Kind::Choice("pair".into()),
                 "",
-                "Approve it on a device that syncs",
+                tr!("Approve it on a device that syncs"),
             )
-            .detail(
-                "That device asks whether to let this one in; you check both show the same code.",
-            ),
-            Entry::new(Kind::Choice("recovery".into()), "", "Type the recovery key")
-                .detail("The 13 groups of four from when syncing started."),
+            .detail(tr!(
+                "That device asks whether to let this one in; you check both show the same code."
+            )),
+            Entry::new(Kind::Choice("recovery".into()), "", tr!("Type the recovery key"))
+                .detail(tr!("The 13 groups of four from when syncing started.")),
         ];
         if joins {
             entries.push(
                 Entry::new(
                     Kind::Choice("passphrase".into()),
                     "",
-                    "Type the sync passphrase",
+                    tr!("Type the sync passphrase"),
                 )
-                .detail("The one a device that syncs set to let new devices join."),
+                .detail(tr!(
+                    "The one a device that syncs set to let new devices join."
+                )),
             );
         }
         let palette = cx.new(|cx| {
             Palette::chooser(
-                &format!("{folder} holds a vault from another device: join it"),
+                &tr!(
+                    "{folder} holds a vault from another device: join it",
+                    folder = folder
+                ),
                 entries,
                 cx,
             )
@@ -1866,14 +2314,15 @@ impl Workspace {
     fn show_pairing(&mut self, state: &AskState, window: &mut Window, cx: &mut Context<Self>) {
         let entries = match state {
             AskState::Compare { device, code } => vec![
-                Entry::new(Kind::Note, "", format!("Code {code}")).detail(format!(
-                    "{device} asks whether to let this device in. Approve there if it shows this same code."
+                Entry::new(Kind::Note, "", tr!("Code {code}", code = code)).detail(tr!(
+                    "{device} asks whether to let this device in. Approve there if it shows this same code.",
+                    device = device
                 )),
             ],
             _ => vec![
-                Entry::new(Kind::Note, "", "Waiting for a device that syncs").detail(
-                    "Open shellwing on a device that syncs this folder: it asks whether to let this one in. Esc cancels.",
-                ),
+                Entry::new(Kind::Note, "", tr!("Waiting for a device that syncs")).detail(tr!(
+                    "Open shellwing on a device that syncs this folder: it asks whether to let this one in. Esc cancels."
+                )),
             ],
         };
         let palette = cx.new(|cx| Palette::show(entries, cx));
@@ -1886,7 +2335,7 @@ impl Workspace {
             files: false,
             directories: true,
             multiple: false,
-            prompt: Some("Sync with this folder".into()),
+            prompt: Some(tr!("Sync with this folder").into()),
         });
         cx.spawn_in(window, async move |this, cx| {
             if let Ok(Ok(Some(paths))) = picked.await
@@ -1913,13 +2362,21 @@ impl Workspace {
             let why = self
                 .vault
                 .problem()
-                .unwrap_or_else(|| "it is still opening".into());
-            return self.say(format!("Cannot sync: the vault: {why}."), CONFIG_NOTICE, cx);
+                .unwrap_or_else(|| tr!("it is still opening"));
+            return self.say(
+                tr!("Cannot sync: the vault: {why}.", why = why),
+                CONFIG_NOTICE,
+                cx,
+            );
         };
         // None: none (a Git repository git signs in to by itself), not the
         // last place's.
         if let Err(e) = vault.set_device_secret(crate::syncing::PLACE_SECRET, secret.as_deref()) {
-            return self.say(format!("Cannot keep the password: {e}"), CONFIG_NOTICE, cx);
+            return self.say(
+                tr!("Cannot keep the password: {e}", e = e.to_string()),
+                CONFIG_NOTICE,
+                cx,
+            );
         }
         self.sync_with(place, window, cx);
     }
@@ -1933,7 +2390,10 @@ impl Workspace {
             Other { passphrase: bool },
         }
         self.say(
-            format!("Connecting to {}…", crate::syncing::describe(&place)),
+            tr!(
+                "Connecting to {place}…",
+                place = crate::syncing::describe(&place)
+            ),
             THEME_NOTICE,
             cx,
         );
@@ -1960,7 +2420,11 @@ impl Workspace {
                     });
                     ws.ask_join_how(window, cx);
                 }
-                Err(e) => ws.say(format!("Cannot sync: {e}"), CONFIG_NOTICE, cx),
+                Err(e) => ws.say(
+                    tr!("Cannot sync: {e}", e = e.to_string()),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
             },
             window,
             cx,
@@ -1987,8 +2451,8 @@ impl Workspace {
             let why = self
                 .vault
                 .problem()
-                .unwrap_or_else(|| "it is still opening".into());
-            return self.say(format!("The vault: {why}."), CONFIG_NOTICE, cx);
+                .unwrap_or_else(|| tr!("it is still opening"));
+            return self.say(tr!("The vault: {why}.", why = why), CONFIG_NOTICE, cx);
         };
         let job = cx.background_spawn(async move {
             let backend = crate::syncing::open(&place, &vault)?;
@@ -2007,9 +2471,9 @@ impl Workspace {
     /// This device joined the vault at `place`: it syncs there from now on.
     fn joined(&mut self, place: SyncPlace, cx: &mut Context<Self>) {
         self.asking = None;
-        let msg = format!(
-            "Joined: this device syncs with {}.",
-            crate::syncing::describe(&place)
+        let msg = tr!(
+            "Joined: this device syncs with {place}.",
+            place = crate::syncing::describe(&place)
         );
         self.keep_sync_place(Some(&place), cx);
         self.say(msg, CONFIG_NOTICE, cx);
@@ -2018,12 +2482,14 @@ impl Workspace {
     fn keep_sync_place(&mut self, place: Option<&SyncPlace>, cx: &mut Context<Self>) {
         if let Err(e) = self.live.set_sync_place(place) {
             self.say(
-                format!("Cannot save where the vault syncs: {e}"),
+                tr!("Cannot save where the vault syncs: {e}", e = e.to_string()),
                 CONFIG_NOTICE,
                 cx,
             );
         }
         self.passphrase_joins = None;
+        self.sync_error = None;
+        self.last_synced = None;
         self.sync.set_place(place.cloned());
         self.sync.now();
         self.refresh_settings(cx);
@@ -2038,18 +2504,25 @@ impl Workspace {
             Entry::new(
                 Kind::Note,
                 "",
-                format!("{folder} holds a vault from another device."),
+                tr!(
+                    "{folder} holds a vault from another device.",
+                    folder = folder
+                ),
             )
-            .detail("Type its recovery key to share it. Secrets saved here are kept and merged."),
+            .detail(tr!(
+                "Type its recovery key to share it. Secrets saved here are kept and merged."
+            )),
         ];
         if again {
             notes.insert(
                 0,
-                Entry::new(Kind::Note, "", "That recovery key does not open it.")
-                    .detail("Check each group of four; letters and case do not need to be exact."),
+                Entry::new(Kind::Note, "", tr!("That recovery key does not open it.")).detail(tr!(
+                    "Check each group of four; letters and case do not need to be exact."
+                )),
             );
         }
-        let palette = cx.new(|cx| Palette::ask("Recovery key: XXXX-XXXX-…", notes, cx));
+        let placeholder = tr!("Recovery key: XXXX-XXXX-…");
+        let palette = cx.new(|cx| Palette::ask(&placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
     }
 
@@ -2076,7 +2549,19 @@ impl Workspace {
                 .and_then(|v| v.has_vault_passphrase().ok()),
             vault_keychain: self.vault.in_keychain(),
             vault_can_lock: self.vault.can_lock(),
+            presence: {
+                use shellwing_vault::Presence as _;
+                self.vault.presence().map(|p| {
+                    let on = self
+                        .vault
+                        .ready()
+                        .and_then(|v| v.has_presence().ok())
+                        .unwrap_or(false);
+                    (p.name(), on)
+                })
+            },
             passphrase_joins: self.sync.place().and(self.passphrase_joins),
+            sync: self.sync_snap(),
             secrets: self
                 .vault
                 .ready()
@@ -2125,6 +2610,7 @@ impl Workspace {
     /// here reloads at once, so the periodic look finds nothing new after it.
     fn share_settings(&self, cx: &mut Context<Self>) {
         cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
+        cx.set_global(crate::hotkeys::Bound(self.live.keymap()));
         let font = self.live.settings().appearance.ui_font.family.clone();
         cx.set_global(crate::prompt::PromptFont(font.map(Into::into)));
     }
@@ -2251,9 +2737,9 @@ impl Workspace {
                 let entry = Entry::new(
                     Kind::Choice(r.spec),
                     if up {
-                        "Connected"
+                        tr!("Connected")
                     } else {
-                        "Other hosts · connected first"
+                        tr!("Other hosts · connected first")
                     },
                     r.name,
                 )
@@ -2272,7 +2758,7 @@ impl Workspace {
             }
         }
         connected.extend(others);
-        let title = format!("Install {} on…", key.name);
+        let title = tr!("Install {key} on…", key = key.name.clone());
         self.choosing = Some(key);
         let palette = cx.new(|cx| Palette::chooser(&title, connected, cx));
         self.show_palette(palette, false, window, cx);
@@ -2307,7 +2793,7 @@ impl Workspace {
                 {
                     view.update(cx, |v, cx| {
                         v.show_notice(
-                            format!("{} goes on here once connected.", key.name),
+                            tr!("{key} goes on here once connected.", key = key.name.clone()),
                             CONFIG_NOTICE,
                             cx,
                         )
@@ -2345,19 +2831,23 @@ impl Workspace {
                 .save_host(&host)
                 .map(|_| ())
                 .map_err(|e| e.to_string()),
-            None => Err("no config directory".into()),
+            None => Err(tr!("no config directory")),
         };
         match saved {
             Ok(()) => {
                 self.poll_config(cx);
                 self.sync.now();
                 self.say(
-                    format!("{} signs in with {} from now on.", ev.host, ev.key_name),
+                    tr!(
+                        "{host} signs in with {key} from now on.",
+                        host = ev.host.clone(),
+                        key = ev.key_name.clone()
+                    ),
                     CONFIG_NOTICE,
                     cx,
                 );
             }
-            Err(e) => self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx),
+            Err(e) => self.say(tr!("Cannot edit hosts.toml: {e}", e = e), CONFIG_NOTICE, cx),
         }
     }
 
@@ -2393,7 +2883,11 @@ impl Workspace {
         if let Some(store) = self.live.store()
             && let Err(e) = store.assign_host_ids()
         {
-            self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx);
+            self.say(
+                tr!("Cannot edit hosts.toml: {e}", e = e.to_string()),
+                CONFIG_NOTICE,
+                cx,
+            );
             return;
         }
         self.poll_config(cx);
@@ -2441,7 +2935,7 @@ impl Workspace {
                     } else if connect {
                         ws.open(&name, window, cx);
                     } else {
-                        ws.say(format!("Saved {name}."), THEME_NOTICE, cx);
+                        ws.say(tr!("Saved {name}.", name = name), THEME_NOTICE, cx);
                     }
                 }
                 EditorEvent::Deleted { name } => {
@@ -2449,7 +2943,7 @@ impl Workspace {
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
                     ws.sync.now();
-                    ws.say(format!("Deleted {name}."), THEME_NOTICE, cx);
+                    ws.say(tr!("Deleted {name}.", name = name), THEME_NOTICE, cx);
                 }
                 EditorEvent::OpenSshConfig => {
                     if let Some(path) = ssh_config::default_config_path() {
@@ -2477,7 +2971,11 @@ impl Workspace {
         if let Some(store) = self.live.store()
             && let Err(e) = store.assign_host_ids()
         {
-            self.say(format!("Cannot edit hosts.toml: {e}"), CONFIG_NOTICE, cx);
+            self.say(
+                tr!("Cannot edit hosts.toml: {e}", e = e.to_string()),
+                CONFIG_NOTICE,
+                cx,
+            );
             return;
         }
         self.poll_config(cx);
@@ -2495,8 +2993,8 @@ impl Workspace {
         let sub = cx.subscribe_in(&editor, window, |ws, _, ev: &GroupEvent, window, cx| {
             let said = match ev {
                 GroupEvent::Close => None,
-                GroupEvent::Saved { name } => Some(format!("Saved the group {name}.")),
-                GroupEvent::Deleted { name } => Some(format!("Deleted the group {name}.")),
+                GroupEvent::Saved { name } => Some(tr!("Saved the group {name}.", name = name)),
+                GroupEvent::Deleted { name } => Some(tr!("Deleted the group {name}.", name = name)),
             };
             ws.close_group_editor(window, cx);
             if let Some(msg) = said {
@@ -2564,19 +3062,21 @@ impl Workspace {
         let mut notes = vec![
             note(
                 "-L 8080:localhost:80",
-                "Port 8080 here reaches localhost:80 as the server sees it.",
+                &tr!("Port 8080 here reaches localhost:80 as the server sees it."),
             ),
             note(
                 "-R 9000:localhost:3000",
-                "Port 9000 on the server reaches localhost:3000 here.",
+                &tr!("Port 9000 on the server reaches localhost:3000 here."),
             ),
             note(
                 "-D 1080",
-                "A SOCKS proxy on port 1080 here; connections go out from the server.",
+                &tr!("A SOCKS proxy on port 1080 here; connections go out from the server."),
             ),
             note(
-                "For this tab, until it is closed",
-                "To forward on every connection, add it to the host's forward list in hosts.toml.",
+                &tr!("For this tab, until it is closed"),
+                &tr!(
+                    "To forward on every connection, add it to the host's forward list in hosts.toml."
+                ),
             ),
         ];
         if let Some(p) = problem {
@@ -2599,7 +3099,7 @@ impl Workspace {
             return;
         };
         let Some(answer) = tab.read(cx).session().forward(forward) else {
-            return self.say("Not connected.".into(), CONFIG_NOTICE, cx);
+            return self.say(tr!("Not connected."), CONFIG_NOTICE, cx);
         };
         cx.spawn(async move |_, cx| {
             let result = answer.await;
@@ -2615,7 +3115,7 @@ impl Workspace {
                             .unwrap_or(text)
                     }
                     Ok(Err(e)) => e.to_string(),
-                    Err(_) => "The connection ended.".into(),
+                    Err(_) => tr!("The connection ended."),
                 };
                 v.show_notice(msg, CONFIG_NOTICE, cx);
             });
@@ -2631,19 +3131,19 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) {
         let entries = vec![
-            Entry::new(Kind::Copy(key.clone()), "Recovery key", key).hint("Enter copies"),
+            Entry::new(Kind::Copy(key.clone()), tr!("Recovery key"), key).hint(tr!("Enter copies")),
             Entry::new(
                 Kind::Note,
-                "Recovery key",
+                tr!("Recovery key"),
                 if new {
-                    "Syncing. Write this key down and keep it safe."
+                    tr!("Syncing. Write this key down and keep it safe.")
                 } else {
-                    "The key of the synced vault."
+                    tr!("The key of the synced vault.")
                 },
             )
-            .detail(
-                "Another device needs it to join; it also opens the vault if this device is lost.",
-            ),
+            .detail(tr!(
+                "Another device needs it to join; it also opens the vault if this device is lost."
+            )),
         ];
         let palette = cx.new(|cx| Palette::show(entries, cx));
         self.show_palette(palette, false, window, cx);
@@ -2654,39 +3154,49 @@ impl Workspace {
             let why = self
                 .vault
                 .problem()
-                .unwrap_or_else(|| "the vault is still opening".into());
-            self.say(format!("No saved passwords: {why}."), CONFIG_NOTICE, cx);
+                .unwrap_or_else(|| tr!("the vault is still opening"));
+            self.say(
+                tr!("No saved passwords: {why}.", why = why),
+                CONFIG_NOTICE,
+                cx,
+            );
             return;
         };
         let entries: Vec<Entry> = match vault.items() {
             Ok(items) => items
                 .into_iter()
                 .map(|item| match item {
-                    shellwing_vault::Item::Password { id, target } => {
-                        Entry::new(Kind::Secret(id), "Saved", format!("Password for {target}"))
-                            .hint("Enter to forget")
-                    }
+                    shellwing_vault::Item::Password { id, target } => Entry::new(
+                        Kind::Secret(id),
+                        tr!("Saved"),
+                        tr!("Password for {target}", target = target),
+                    )
+                    .hint(tr!("Enter to forget")),
                     shellwing_vault::Item::Passphrase {
                         id,
                         fingerprint,
                         key_path,
                     } => Entry::new(
                         Kind::Secret(id),
-                        "Saved",
-                        format!("Passphrase of {key_path}"),
+                        tr!("Saved"),
+                        tr!("Passphrase of {key_path}", key_path = key_path),
                     )
                     .detail(fingerprint)
-                    .hint("Enter to forget"),
+                    .hint(tr!("Enter to forget")),
                 })
                 .collect(),
             Err(e) => {
-                self.say(format!("Cannot read the vault: {e}"), CONFIG_NOTICE, cx);
+                self.say(
+                    tr!("Cannot read the vault: {e}", e = e.to_string()),
+                    CONFIG_NOTICE,
+                    cx,
+                );
                 return;
             }
         };
         if entries.is_empty() {
             self.say(
-                "Nothing saved yet: after a password works, the pane offers to save it.".into(),
+                tr!("Nothing saved yet: after a password works, the pane offers to save it."),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -2739,7 +3249,7 @@ impl Workspace {
             PaletteEvent::Dismiss => {
                 if let Some(Asking::Pairing(_)) = self.asking.take() {
                     self.sync.cancel_ask();
-                    self.say("Pairing cancelled.".into(), THEME_NOTICE, cx);
+                    self.say(tr!("Pairing cancelled."), THEME_NOTICE, cx);
                 }
                 self.close_palette(window, cx)
             }
@@ -2770,6 +3280,25 @@ impl Workspace {
                     self.ask_recovery_key(false, window, cx);
                 }
             }
+            PaletteEvent::LoadEnv(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.load_env(&id, cx);
+            }
+            PaletteEvent::OpenNote(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.open_note_id(&id, cx);
+            }
+            PaletteEvent::PlaceFile(id) => {
+                let id = id.clone();
+                self.close_palette(window, cx);
+                self.ask_place(&id, window, cx);
+            }
+            PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::PlaceHow { .. })) => {
+                let how = how.clone();
+                self.chose_place(&how, window, cx);
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -2796,11 +3325,17 @@ impl Workspace {
             PaletteEvent::Copy(text) => {
                 cx.write_to_clipboard(gpui::ClipboardItem::new_string(text.clone()));
                 self.close_palette(window, cx);
-                self.say("Copied.".into(), THEME_NOTICE, cx);
+                self.say(tr!("Copied."), THEME_NOTICE, cx);
             }
             PaletteEvent::Answer(text) => {
                 let folder = match self.asking.clone() {
                     Some(Asking::Forward) => return self.answer_forward(text, window, cx),
+                    Some(Asking::PlacePath(_)) => {
+                        return self.answer_place_path(text.clone(), window, cx);
+                    }
+                    Some(Asking::SaveFile) => {
+                        return self.answer_save_file(text.clone(), window, cx);
+                    }
                     Some(Asking::Snippet(mut run)) => {
                         if !run.left.is_empty() {
                             let name = run.left.remove(0);
@@ -2816,14 +3351,15 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_)) | None => {
+                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::PlaceHow { .. })
+                    | None => {
                         return self.close_palette(window, cx);
                     }
                 };
                 let text = text.clone();
                 let at = folder.clone();
                 self.close_palette(window, cx);
-                self.say("Joining…".into(), THEME_NOTICE, cx);
+                self.say(tr!("Joining…"), THEME_NOTICE, cx);
                 self.at_place(
                     folder,
                     move |vault, b| vault.join(b, &text),
@@ -2833,7 +3369,11 @@ impl Workspace {
                             ws.asking = Some(Asking::RecoveryKey(at));
                             ws.ask_recovery_key(true, window, cx);
                         }
-                        Err(e) => ws.say(format!("Cannot join: {e}"), CONFIG_NOTICE, cx),
+                        Err(e) => ws.say(
+                            tr!("Cannot join: {e}", e = e.to_string()),
+                            CONFIG_NOTICE,
+                            cx,
+                        ),
                     },
                     window,
                     cx,
@@ -2845,7 +3385,7 @@ impl Workspace {
                 match forgotten {
                     Some(Ok(())) => {
                         self.sync.now();
-                        self.say("Forgotten.".into(), THEME_NOTICE, cx);
+                        self.say(tr!("Forgotten."), THEME_NOTICE, cx);
                         // Back to the list for the next one, if any is left.
                         let left = self
                             .vault
@@ -2856,7 +3396,11 @@ impl Workspace {
                             self.open_secrets(window, cx);
                         }
                     }
-                    Some(Err(e)) => self.say(format!("Not forgotten: {e}"), CONFIG_NOTICE, cx),
+                    Some(Err(e)) => self.say(
+                        tr!("Not forgotten: {e}", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                     None => {}
                 }
             }
@@ -2866,7 +3410,11 @@ impl Workspace {
                 match picked {
                     Ok(t) => {
                         self.restyle(cx);
-                        self.say(format!("Theme: {}", t.name), THEME_NOTICE, cx);
+                        self.say(
+                            tr!("Theme: {name}", name = t.name.clone()),
+                            THEME_NOTICE,
+                            cx,
+                        );
                     }
                     Err(e) => self.say(e, CONFIG_NOTICE, cx),
                 }
@@ -2882,6 +3430,15 @@ impl Workspace {
             Action::CloseTab => self.request_close_tab(self.active, window, cx),
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
+            Action::NewNote => self.open_note(None, cx),
+            Action::SnippetLibrary => self.open_library(cx),
+            Action::UnloadEnv => {
+                if let Some(view) = self.active_tab().cloned()
+                    && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))
+                {
+                    self.say(e, CONFIG_NOTICE, cx);
+                }
+            }
             Action::Files => self.toggle_files(window, cx),
             Action::Broadcast => self.toggle_broadcast(cx),
             Action::Find => self.find(window, cx),
@@ -2898,16 +3455,20 @@ impl Workspace {
             Action::SyncNow => {
                 self.sync_error = None;
                 self.sync.now();
-                self.say("Syncing…".into(), THEME_NOTICE, cx);
+                self.say(tr!("Syncing…"), THEME_NOTICE, cx);
             }
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
-                Some(Err(e)) => self.say(format!("Cannot read the key: {e}"), CONFIG_NOTICE, cx),
-                _ => self.say("The vault is not open.".into(), CONFIG_NOTICE, cx),
+                Some(Err(e)) => self.say(
+                    tr!("Cannot read the key: {e}", e = e.to_string()),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+                _ => self.say(tr!("The vault is not open."), CONFIG_NOTICE, cx),
             },
             Action::UnlockVault => match self.vault.locked() {
                 Some(lock) => self.ask_vault(lock, None, window, cx),
-                None => self.say("The vault is open.".into(), THEME_NOTICE, cx),
+                None => self.say(tr!("The vault is open."), THEME_NOTICE, cx),
             },
             Action::SetVaultPassphrase => {
                 self.asking = Some(Asking::VaultPassphrase {
@@ -2921,24 +3482,67 @@ impl Workspace {
                     Some(v) if self.vault.in_keychain() => {
                         v.set_vault_passphrase(None).map_err(|e| e.to_string())
                     }
-                    _ => Err("the system keychain does not hold the vault's key: without a passphrase, only the recovery key would open it".into()),
+                    _ => Err(tr!(
+                        "the system keychain does not hold the vault's key: without a passphrase, only the recovery key would open it"
+                    )),
                 };
                 match done {
                     Ok(()) => self.say(
-                        "The vault opens with the system keychain alone now.".into(),
+                        tr!("The vault opens with the system keychain alone now."),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(format!("Passphrase kept: {e}."), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(tr!("Passphrase kept: {e}.", e = e), CONFIG_NOTICE, cx),
                 }
                 self.refresh_settings(cx);
             }
+            Action::TogglePresence => {
+                let slot = self.vault.clone();
+                let on = !self
+                    .vault
+                    .ready()
+                    .and_then(|v| v.has_presence().ok())
+                    .unwrap_or(false);
+                let name = {
+                    use shellwing_vault::Presence as _;
+                    self.vault
+                        .presence()
+                        .map(|p| p.name().to_string())
+                        .unwrap_or_else(|| tr!("Presence"))
+                };
+                let job = cx.background_spawn(async move { slot.set_presence(on) });
+                cx.spawn(async move |this, cx| {
+                    let done = job.await;
+                    let _ = this.update(cx, |ws, cx| {
+                        match done {
+                            Ok(()) if on => ws.say(
+                                tr!(
+                                    "{name} opens the vault now, as its passphrase does.",
+                                    name = name.as_str()
+                                ),
+                                CONFIG_NOTICE,
+                                cx,
+                            ),
+                            Ok(()) => ws.say(
+                                tr!("{name} no longer opens the vault.", name = name.as_str()),
+                                CONFIG_NOTICE,
+                                cx,
+                            ),
+                            Err(e) => ws.say(format!("{name}: {e}"), CONFIG_NOTICE, cx),
+                        }
+                        ws.refresh_settings(cx);
+                    });
+                })
+                .detach();
+            }
             Action::LockVault => {
+                crate::note_window::before_lock(cx);
+                crate::snippet_window::before_lock(cx);
                 if self.vault.lock() {
-                    self.say("The vault is locked.".into(), THEME_NOTICE, cx);
+                    self.say(tr!("The vault is locked."), THEME_NOTICE, cx);
                 } else {
                     self.say(
-                        "The vault cannot lock: the system keychain opens it, or it has no passphrase.".into(),
+                        tr!("The vault cannot lock: the system keychain opens it, or it has no passphrase."),
                         CONFIG_NOTICE,
                         cx,
                     );
@@ -2948,11 +3552,15 @@ impl Workspace {
             Action::LeaveKeychain => {
                 match self.vault.leave_keychain() {
                     Ok(()) => self.say(
-                        "The vault's key is out of the system keychain: each start asks for the passphrase.".into(),
+                        tr!("The vault's key is out of the system keychain: each start asks for the passphrase."),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(format!("The key stays in the keychain: {e}."), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(
+                        tr!("The key stays in the keychain: {e}.", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                 }
                 self.refresh_settings(cx);
             }
@@ -2972,13 +3580,12 @@ impl Workspace {
                             Ok(()) => {
                                 ws.passphrase_joins = Some(false);
                                 ws.say(
-                                    "New devices join with the recovery key, or by approving them."
-                                        .into(),
+                                    tr!("New devices join with the recovery key, or by approving them."),
                                     CONFIG_NOTICE,
                                     cx,
                                 )
                             }
-                            Err(e) => ws.say(format!("Not stopped: {e}"), CONFIG_NOTICE, cx),
+                            Err(e) => ws.say(tr!("Not stopped: {e}", e = e.to_string()), CONFIG_NOTICE, cx),
                         }
                         ws.refresh_settings(cx);
                     },
@@ -2990,11 +3597,11 @@ impl Workspace {
                 let done = self.vault.keep_in_keychain();
                 match done {
                     Ok(()) => self.say(
-                        "The system keychain keeps the vault's key now.".into(),
+                        tr!("The system keychain keeps the vault's key now."),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(format!("Not kept: {e}"), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(tr!("Not kept: {e}", e = e.to_string()), CONFIG_NOTICE, cx),
                 }
                 self.refresh_settings(cx);
             }
@@ -3005,7 +3612,7 @@ impl Workspace {
                     let _ = v.set_device_secret(crate::syncing::PLACE_SECRET, None);
                 }
                 self.say(
-                    "Stopped syncing. What is there and the secrets here are kept.".into(),
+                    tr!("Stopped syncing. What is there and the secrets here are kept."),
                     CONFIG_NOTICE,
                     cx,
                 );
@@ -3022,10 +3629,12 @@ impl Workspace {
                 };
                 match self.live.store().map(|s| s.file_for_editing(which)) {
                     Some(Ok(path)) => cx.open_url(&format!("file://{}", path.display())),
-                    Some(Err(e)) => {
-                        self.say(format!("Cannot create the file: {e}"), CONFIG_NOTICE, cx)
-                    }
-                    None => self.say("No config directory.".into(), CONFIG_NOTICE, cx),
+                    Some(Err(e)) => self.say(
+                        tr!("Cannot create the file: {e}", e = e.to_string()),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
+                    None => self.say(tr!("No config directory."), CONFIG_NOTICE, cx),
                 }
             }
         }
@@ -3057,6 +3666,17 @@ impl Workspace {
     /// Gives every tab the look its host should have now, in the mode the
     /// app is in: light or dark, by the settings or the system.
     fn restyle(&mut self, cx: &mut Context<Self>) -> Vec<String> {
+        // The language, as config.toml now says (a reload, or Settings).
+        let was = shellwing_i18n::language();
+        shellwing_i18n::set_language(self.live.settings().general.language.as_deref());
+        if shellwing_i18n::language() != was {
+            // What was said once and kept: the host list's sections, the
+            // window's title, the panels that are open.
+            self.refresh_sidebar(cx);
+            self.refresh_sync_panel(cx);
+            self.refresh_overview(cx);
+            self.in_window(cx, |ws, window, cx| ws.title_window(window, cx));
+        }
         let light = self.live.light_for(self.system_light);
         crate::colors::set_light(light);
         self.live.set_light(light);
@@ -3085,12 +3705,21 @@ impl Workspace {
     /// Called periodically: picks up edits to the config files.
     pub fn poll_config(&mut self, cx: &mut Context<Self>) {
         let idle = self.live.settings().vault.lock_after.unwrap_or(0);
-        if idle > 0
+        let idle_now = idle > 0
             && self.last_input.elapsed() >= std::time::Duration::from_secs(u64::from(idle) * 60)
-            && self.vault.lock()
-        {
+            && self.vault.locked().is_none()
+            && self.vault.can_lock();
+        if idle_now && {
+            crate::note_window::before_lock(cx);
+            crate::snippet_window::before_lock(cx);
+            self.vault.lock()
+        } {
             self.say(
-                format!("The vault locked: {idle} minutes without use."),
+                tr_n!(
+                    idle,
+                    "The vault locked: {n} minute without use.",
+                    "The vault locked: {n} minutes without use."
+                ),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -3116,7 +3745,11 @@ impl Workspace {
             && let Some(p) = self.vault.problem()
         {
             self.vault_reported = true;
-            self.say(format!("Passwords cannot be saved: {p}"), CONFIG_NOTICE, cx);
+            self.say(
+                tr!("Passwords cannot be saved: {p}", p = p),
+                CONFIG_NOTICE,
+                cx,
+            );
         }
         if let Some(mut problems) = self.live.reload_if_changed() {
             self.ssh_aliases = ssh_config::aliases(ssh_config::default_config_path().as_deref());
@@ -3136,7 +3769,11 @@ impl Workspace {
         match self.live.step_theme(step, entry.as_deref()) {
             Ok(theme) => {
                 self.restyle(cx);
-                self.say(format!("Theme: {}", theme.name), THEME_NOTICE, cx);
+                self.say(
+                    tr!("Theme: {name}", name = theme.name.clone()),
+                    THEME_NOTICE,
+                    cx,
+                );
             }
             Err(e) => self.say(e, CONFIG_NOTICE, cx),
         }
@@ -3206,78 +3843,47 @@ impl Workspace {
         }
     }
 
-    fn shortcut_for(ev: &KeyDownEvent) -> Option<Shortcut> {
-        let k = &ev.keystroke;
-        let m = &k.modifiers;
-        let key = k.key.as_str();
-        let mac = cfg!(target_os = "macos");
-        // Ctrl+Shift on Linux and Windows, Cmd on macOS, as for copy and paste.
-        let chord = if mac {
-            m.platform && !m.control
-        } else {
-            m.control && m.shift
-        };
-        // GPUI reports Shift+] as "}" and drops the Shift flag for symbols.
-        let braced = !mac && m.control && !m.alt;
-        let numbered = if mac {
-            m.platform && !m.control && !m.alt
-        } else {
-            m.alt && !m.control && !m.platform
-        };
-        // Moving between panes: Alt+arrows, as in Windows Terminal (Cmd+Alt on macOS).
-        let panes = if mac {
-            m.platform && m.alt && !m.control
-        } else {
-            m.alt && !m.control && !m.shift && !m.platform
-        };
-        // Ctrl+K alone is the shell's kill-line, so the palette takes Ctrl+Shift+K.
-        Some(match key {
-            "k" if chord => Shortcut::Palette,
-            "t" if chord => Shortcut::NewTab,
-            "w" if chord => Shortcut::Close,
-            "q" if mac && m.platform && !m.control && !m.alt && !m.shift => Shortcut::Quit,
-            // Cmd+D and Cmd+Shift+D on macOS, as in iTerm.
-            "d" if mac && chord => Shortcut::Split(if m.shift {
-                Axis::Vertical
-            } else {
-                Axis::Horizontal
-            }),
-            "d" if chord => Shortcut::Split(Axis::Horizontal),
-            "e" if !mac && chord => Shortcut::Split(Axis::Vertical),
-            "left" | "right" | "up" | "down" if panes => Shortcut::Focus(match key {
-                "left" => Dir::Left,
-                "right" => Dir::Right,
-                "up" => Dir::Up,
-                _ => Dir::Down,
-            }),
-            "b" if chord => Shortcut::Sidebar,
-            "o" if chord => Shortcut::Files,
-            "f" if chord => Shortcut::Find,
-            "i" if chord => Shortcut::Broadcast,
-            // Cmd+Shift+A on macOS, as Chrome's tab search: Cmd+A selects all.
-            "a" if chord && (!mac || m.shift) => Shortcut::Tabs,
-            // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
-            "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
-            "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
-            "pagedown" if m.control && !m.shift => Shortcut::Step(1),
-            "pageup" if m.control && !m.shift => Shortcut::Step(-1),
-            "}" if mac && chord => Shortcut::Step(1),
-            "{" if mac && chord => Shortcut::Step(-1),
-            "]" if mac && chord => Shortcut::Theme(1),
-            "[" if mac && chord => Shortcut::Theme(-1),
-            "}" if braced => Shortcut::Theme(1),
-            "{" if braced => Shortcut::Theme(-1),
-            d if numbered && d.len() == 1 && matches!(d.as_bytes()[0], b'1'..=b'9') => {
-                Shortcut::Goto((d.as_bytes()[0] - b'1') as usize)
-            }
-            _ => return None,
+    /// The window's shortcut a key is, as `[shortcuts]` sets them over the
+    /// defaults (see [`shellwing_config::Hotkey::defaults`]).
+    fn shortcut_for(keys: &Keymap, ev: &KeyDownEvent) -> Option<Shortcut> {
+        let (h, digit) = keys.find(&crate::hotkeys::pressed(&ev.keystroke)?)?;
+        Some(match h {
+            Hotkey::Palette => Shortcut::Palette,
+            Hotkey::NewTab => Shortcut::NewTab,
+            Hotkey::ClosePane => Shortcut::Close,
+            Hotkey::SplitRight => Shortcut::Split(Axis::Horizontal),
+            Hotkey::SplitDown => Shortcut::Split(Axis::Vertical),
+            Hotkey::PaneLeft => Shortcut::Focus(Dir::Left),
+            Hotkey::PaneRight => Shortcut::Focus(Dir::Right),
+            Hotkey::PaneUp => Shortcut::Focus(Dir::Up),
+            Hotkey::PaneDown => Shortcut::Focus(Dir::Down),
+            Hotkey::NextTab => Shortcut::Step(1),
+            Hotkey::PreviousTab => Shortcut::Step(-1),
+            Hotkey::GoToTab => Shortcut::Goto(digit?),
+            Hotkey::Tabs => Shortcut::Tabs,
+            Hotkey::HostList => Shortcut::Sidebar,
+            Hotkey::Files => Shortcut::Files,
+            Hotkey::Find => Shortcut::Find,
+            Hotkey::Broadcast => Shortcut::Broadcast,
+            Hotkey::Settings => Shortcut::Settings,
+            Hotkey::NextTheme => Shortcut::Theme(1),
+            Hotkey::PreviousTheme => Shortcut::Theme(-1),
+            Hotkey::Quit => Shortcut::Quit,
         })
     }
 
     /// Runs before the terminal sees the key, so these never reach the host.
     fn shortcut(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.last_input = std::time::Instant::now();
-        let Some(s) = Self::shortcut_for(ev) else {
+        // The Keyboard page is taking a key for a shortcut.
+        if self
+            .settings
+            .as_ref()
+            .is_some_and(|(v, _)| v.read(cx).recording())
+        {
+            return;
+        }
+        let Some(s) = Self::shortcut_for(&self.live.keymap(), ev) else {
             return;
         };
         // Without a second pane, Alt+arrows belong to the shell (word movement).
@@ -3346,7 +3952,7 @@ impl Workspace {
                 let s = v.session();
                 let local = s.is_local();
                 let address: SharedString = match s.reached() {
-                    _ if local => "this computer".into(),
+                    _ if local => tr!("this computer").into(),
                     Some(t) => format!("{}@{}", t.user, t.host).into(),
                     None => s.spec.clone().into(),
                 };
@@ -3358,7 +3964,7 @@ impl Workspace {
                         s.entry.clone().unwrap_or_else(|| s.title.clone())
                     },
                     host: if local {
-                        "Local terminal".into()
+                        tr!("Local terminal").into()
                     } else {
                         s.title.clone().into()
                     },
@@ -3410,6 +4016,92 @@ impl Workspace {
         cx.notify();
     }
 
+    /// How sync stands, for the cloud and its panel.
+    fn sync_standing(&self) -> Standing {
+        if self.sync.place().is_none() {
+            Standing::Off
+        } else if self.vault.locked().is_some() {
+            Standing::Paused
+        } else if self.syncing {
+            Standing::Syncing
+        } else if let Some(e) = &self.sync_error {
+            Standing::Failed(e.clone())
+        } else {
+            Standing::Synced(self.last_synced)
+        }
+    }
+
+    fn sync_snap(&self) -> SyncSnap {
+        let counts = self.vault.ready().map(|v| crate::sync_panel::Counts {
+            hosts: self.live.hosts().hosts.len(),
+            passwords: v
+                .items()
+                .map(|i| {
+                    i.iter()
+                        .filter(|i| matches!(i, shellwing_vault::Item::Password { .. }))
+                        .count()
+                })
+                .unwrap_or(0),
+            keys: v.ssh_keys().map(|k| k.len()).unwrap_or(0),
+            snippets: v.snippets().map(|s| s.len()).unwrap_or(0),
+            environments: v.environments().map(|e| e.len()).unwrap_or(0),
+            files: v.config_files().map(|f| f.len()).unwrap_or(0),
+            notes: v.notes().map(|n| n.len()).unwrap_or(0),
+        });
+        SyncSnap {
+            standing: self.sync_standing(),
+            place: self.sync.place().map(|p| crate::syncing::describe(&p)),
+            counts,
+        }
+    }
+
+    /// Shows how sync stands, hanging from the cloud, or hides it.
+    fn toggle_sync_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.sync_panel.is_some() {
+            return self.close_sync_panel(window, cx);
+        }
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        if self.overview.is_some() {
+            self.close_overview(window, cx);
+        }
+        let snap = self.sync_snap();
+        let view = cx.new(|cx| SyncPanel::new(snap, cx));
+        let sub = cx.subscribe_in(
+            &view,
+            window,
+            |ws, _, ev: &SyncPanelEvent, window, cx| match ev {
+                SyncPanelEvent::Dismiss => ws.close_sync_panel(window, cx),
+                SyncPanelEvent::SyncNow => ws.run(Action::SyncNow, window, cx),
+                SyncPanelEvent::OpenSettings => {
+                    ws.close_sync_panel(window, cx);
+                    ws.open_settings(Page::Sync, window, cx);
+                }
+                SyncPanelEvent::Unlock => {
+                    ws.close_sync_panel(window, cx);
+                    ws.run(Action::UnlockVault, window, cx);
+                }
+            },
+        );
+        window.focus(&view.focus_handle(cx), cx);
+        self.sync_panel = Some((view, sub));
+        cx.notify();
+    }
+
+    fn close_sync_panel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.sync_panel.take().is_some() {
+            self.activate(self.active, window, cx);
+        }
+    }
+
+    fn refresh_sync_panel(&mut self, cx: &mut Context<Self>) {
+        if let Some((view, _)) = &self.sync_panel {
+            let (view, snap) = (view.clone(), self.sync_snap());
+            view.update(cx, |p, cx| p.set_snap(snap, cx));
+        }
+    }
+
     fn close_overview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.overview.take().is_some() {
             self.activate(self.active, window, cx);
@@ -3448,11 +4140,7 @@ impl Workspace {
     /// Settings button.
     /// Above the panes of a tab that types in every pane.
     fn broadcast_strip(&self, listening: usize, panes: usize, cx: &mut Context<Self>) -> Div {
-        let keys = if cfg!(target_os = "macos") {
-            "Cmd+Shift+I"
-        } else {
-            "Ctrl+Shift+I"
-        };
+        let keys = crate::hotkeys::hint(cx, Hotkey::Broadcast);
         div()
             .h(px(34.))
             .flex_shrink_0()
@@ -3466,8 +4154,11 @@ impl Workspace {
             .text_sm()
             .text_color(rgb(colors().warn_text))
             .child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
-            .child(div().flex_1().min_w_0().child(format!(
-                "Typing goes to {listening} of {panes} panes. Click a pane's badge to leave it out or bring it back."
+            .child(div().flex_1().min_w_0().child(tr_n!(
+                panes,
+                "Typing goes to {listening} of {n} pane. Click a pane's badge to leave it out or bring it back.",
+                "Typing goes to {listening} of {n} panes. Click a pane's badge to leave it out or bring it back.",
+                listening = listening
             )))
             .child(
                 div()
@@ -3484,7 +4175,7 @@ impl Workspace {
                     .cursor_pointer()
                     .hover(|s| s.bg(rgb(colors().warn_hover)))
                     .on_click(cx.listener(|ws, _, _, cx| ws.toggle_broadcast(cx)))
-                    .child(format!("Stop ({keys})")),
+                    .child(tr!("Stop ({keys})", keys = keys)),
             )
     }
 
@@ -3732,6 +4423,55 @@ impl Workspace {
                             .text_color(rgb(if open { colors().text } else { colors().soft })),
                     ),
             )
+            .child(self.sync_button(cx))
+    }
+
+    /// The cloud: its color says how sync stands; it opens the sync panel.
+    fn sync_button(&self, cx: &mut Context<Self>) -> gpui::Stateful<Div> {
+        let standing = self.sync_standing();
+        let showing = self.sync_panel.is_some();
+        let bounds = self.sync_button.clone();
+        div()
+            .id("sync-button")
+            .relative()
+            .flex_shrink_0()
+            .size(px(30.))
+            .mr(px(4.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(6.))
+            .cursor_pointer()
+            .when(showing, |d| d.bg(rgb(colors().selected)))
+            .hover(|s| s.bg(rgb(colors().hover)))
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .on_click(cx.listener(|ws, _, window, cx| ws.toggle_sync_panel(window, cx)))
+            .child(
+                canvas(|_, _, _| {}, move |b, _, _, _| bounds.set(b))
+                    .absolute()
+                    .size_full()
+                    .top_0()
+                    .left_0(),
+            )
+            .child(
+                svg()
+                    .path("icons/cloud.svg")
+                    .size(px(18.))
+                    .text_color(rgb(standing.color())),
+            )
+            .when(standing.dotted(), |d| {
+                d.child(
+                    div()
+                        .absolute()
+                        .right(px(4.))
+                        .bottom(px(5.))
+                        .size(px(8.))
+                        .rounded_full()
+                        .border_1()
+                        .border_color(rgb(colors().chrome))
+                        .bg(rgb(standing.color())),
+                )
+            })
     }
 
     /// The color a hosts.toml host is marked with, by name.
@@ -3776,25 +4516,29 @@ impl Workspace {
         let shell = crate::local::shell(self.live.settings().terminal.local_shell.as_deref());
         let shell_name = crate::local::shell_name(&shell);
         sections.push(Section {
-            title: "This computer".into(),
+            title: tr!("This computer").into(),
             note: SharedString::default(),
             group: None,
             color: None,
             rows: vec![Row {
-                name: "Local terminal".into(),
+                name: tr!("Local terminal").into(),
                 detail: shell_name.clone().into(),
                 spec: crate::local::SPEC.into(),
                 status: self.host_status(cx, Session::is_local),
                 edit: EditTarget::Local,
                 color: None,
                 active: active_spec.as_deref() == Some(crate::local::SPEC),
-                search: format!("local terminal this computer shell {shell_name}"),
+                search: format!(
+                    "{} {} local terminal this computer shell {shell_name}",
+                    tr!("Local terminal"),
+                    tr!("this computer")
+                ),
             }],
         });
         let favorites: Vec<Row> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
         if !favorites.is_empty() {
             sections.push(Section {
-                title: "Favorites".into(),
+                title: tr!("Favorites").into(),
                 note: SharedString::default(),
                 group: None,
                 color: None,
@@ -3825,7 +4569,7 @@ impl Workspace {
             .collect();
         if !loose.is_empty() {
             sections.push(Section {
-                title: "Hosts".into(),
+                title: tr!("Hosts").into(),
                 note: loose.len().to_string().into(),
                 group: None,
                 color: None,
@@ -3850,7 +4594,7 @@ impl Workspace {
         if !aliases.is_empty() {
             sections.push(Section {
                 title: "~/.ssh/config".into(),
-                note: "read only".into(),
+                note: tr!("read only").into(),
                 group: None,
                 color: None,
                 rows: aliases,
@@ -4006,11 +4750,22 @@ impl Workspace {
                         .child(what.to_string()),
                 )
         };
-        let (chord, alt) = if cfg!(target_os = "macos") {
-            ("Cmd", "Cmd")
-        } else {
-            ("Ctrl+Shift", "Alt")
-        };
+        let keys = self.live.keymap();
+        let palette = keys.hint(Hotkey::Palette);
+        let mut list = div().flex().flex_col().gap_1().pt_2();
+        for (h, what) in [
+            (Hotkey::Palette, tr!("find a host, connect, run an action")),
+            (Hotkey::NewTab, tr!("a new tab")),
+            (Hotkey::ClosePane, tr!("close the tab")),
+            (Hotkey::NextTab, tr!("next tab")),
+            (Hotkey::GoToTab, tr!("go to a tab")),
+            (Hotkey::HostList, tr!("show or hide the host list")),
+        ] {
+            let k = keys.hint(h);
+            if !k.is_empty() {
+                list = list.child(key(&k, &what));
+            }
+        }
         corners
             .round(div())
             .flex_1()
@@ -4032,32 +4787,15 @@ impl Workspace {
                 div()
                     .text_color(rgb(colors().text))
                     .text_lg()
-                    .child("Choose a host on the left to connect"),
+                    .child(tr!("Choose a host on the left to connect")),
             )
-            .child(div().text_color(rgb(colors().muted)).child(format!(
-                "or press {} to find one, or to connect to user@host",
-                if cfg!(target_os = "macos") {
-                    "Cmd+K"
-                } else {
-                    "Ctrl+Shift+K"
-                }
-            )))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_1()
-                    .pt_2()
-                    .child(key(
-                        &format!("{chord}+K"),
-                        "find a host, connect, run an action",
-                    ))
-                    .child(key(&format!("{chord}+T"), "a new tab"))
-                    .child(key(&format!("{chord}+W"), "close the tab"))
-                    .child(key("Ctrl+Tab", "next tab"))
-                    .child(key(&format!("{alt}+1…9"), "go to a tab"))
-                    .child(key(&format!("{chord}+B"), "show or hide the host list")),
-            )
+            .when(!palette.is_empty(), |d| {
+                d.child(div().text_color(rgb(colors().muted)).child(tr!(
+                    "or press {keys} to find one, or to connect to user@host",
+                    keys = palette
+                )))
+            })
+            .child(list)
             .when_some(self.notice.clone(), |d, n| {
                 d.child(div().pt_2().text_color(rgb(colors().warn)).child(n))
             })
@@ -4075,6 +4813,19 @@ impl Render for Workspace {
         // The UI font: every rem-sized text follows its size; the terminal has its own.
         let ui_font = self.live.settings().appearance.ui_font.clone();
         window.set_rem_size(look::rem_for(ui_font.size));
+        // Note windows are drawn in the same font.
+        let family = ui_font.family.clone().map(SharedString::from);
+        if cx
+            .try_global::<crate::note_window::NoteLook>()
+            .is_none_or(|l| l.size != ui_font.size || l.family != family)
+        {
+            let mono = TermView::default_font(window).into();
+            cx.set_global(crate::note_window::NoteLook {
+                size: ui_font.size,
+                family,
+                mono,
+            });
+        }
         let look = match self.active_tab() {
             Some(t) => t.read(cx).look().clone(),
             None => self.live.look_for(None).0,
@@ -4312,6 +5063,27 @@ impl Render for Workspace {
                     .with_priority(1),
                 )
             })
+            // Hangs from the cloud, as the overview from its button.
+            .when_some(self.sync_panel.as_ref().map(|(p, _)| p.clone()), |d, p| {
+                let button = self.sync_button.clone();
+                let b = button.get();
+                d.child(
+                    gpui::deferred(
+                        gpui::anchored()
+                            .anchor(gpui::Anchor::TopRight)
+                            .position(gpui::point(b.right(), b.bottom() + px(6.)))
+                            .snap_to_window_with_margin(px(8.))
+                            .child(div().child(p).on_mouse_down_out(cx.listener(
+                                move |ws, e: &gpui::MouseDownEvent, window, cx| {
+                                    if !button.get().contains(&e.position) {
+                                        ws.close_sync_panel(window, cx);
+                                    }
+                                },
+                            ))),
+                    )
+                    .with_priority(1),
+                )
+            })
             .when_some(palette, |d, p| {
                 d.child(
                     bottom
@@ -4325,7 +5097,9 @@ impl Render for Workspace {
                         .justify_center()
                         // At its own height: a flex row would stretch it to the bottom.
                         .items_start()
+                        // The same margin below as above.
                         .pt(px(56.))
+                        .pb(px(56.))
                         .bg(rgba(colors().scrim))
                         .on_mouse_down(
                             MouseButton::Left,
@@ -4411,20 +5185,24 @@ mod tests {
     use gpui::{Keystroke, Modifiers};
 
     fn key(key: &str, control: bool, shift: bool, alt: bool) -> Option<Shortcut> {
-        Workspace::shortcut_for(&KeyDownEvent {
-            keystroke: Keystroke {
-                modifiers: Modifiers {
-                    control,
-                    shift,
-                    alt,
-                    ..Modifiers::default()
+        let keys = Keymap::defaults(shellwing_config::Os::this());
+        Workspace::shortcut_for(
+            &keys,
+            &KeyDownEvent {
+                keystroke: Keystroke {
+                    modifiers: Modifiers {
+                        control,
+                        shift,
+                        alt,
+                        ..Modifiers::default()
+                    },
+                    key: key.into(),
+                    key_char: None,
                 },
-                key: key.into(),
-                key_char: None,
+                is_held: false,
+                prefer_character_input: false,
             },
-            is_held: false,
-            prefer_character_input: false,
-        })
+        )
     }
 
     #[test]

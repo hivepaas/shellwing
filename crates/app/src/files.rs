@@ -21,6 +21,7 @@ use gpui::{
     ScrollStrategy, SharedString, UniformListScrollHandle, Window, div, prelude::*, px, relative,
     rgb, svg, uniform_list,
 };
+use shellwing_i18n::tr;
 use shellwing_ssh::sftp::{self, Entry, Progress};
 use shellwing_ssh::{Error, Sftp};
 
@@ -355,7 +356,7 @@ impl FilesPanel {
             ticking: false,
             scroll: UniformListScrollHandle::new(),
             downloads: downloads_dir(),
-            input: cx.new(|cx| TextInput::new("Name", cx)),
+            input: crate::input::said(cx, || tr!("Name")),
             editing: None,
             edit_problem: None,
             deleting: None,
@@ -390,16 +391,16 @@ impl FilesPanel {
             match ed.step {
                 EditStep::Opening => {
                     ed.copy.remove();
-                    ed.step = EditStep::NotOpened("The connection ended.".into());
+                    ed.step = EditStep::NotOpened(tr!("The connection ended."));
                 }
                 EditStep::Saving => {
-                    ed.step = EditStep::Unsent("The connection ended while writing back.".into());
+                    ed.step = EditStep::Unsent(tr!("The connection ended while writing back."));
                 }
                 _ => {}
             }
         }
         let Some(answer) = self.remote.sftp() else {
-            return self.fail("Not connected.".into(), cx);
+            return self.fail(tr!("Not connected."), cx);
         };
         self.state = State::Opening;
         cx.notify();
@@ -426,7 +427,7 @@ impl FilesPanel {
                         p.open_dir(dir, chosen, cx);
                     }
                     Ok(Err(e)) => p.fail(e.to_string(), cx),
-                    Err(_) => p.fail("The connection ended.".into(), cx),
+                    Err(_) => p.fail(tr!("The connection ended."), cx),
                 }
             });
         })
@@ -578,7 +579,7 @@ impl FilesPanel {
     {
         let Some(sftp) = self.sftp.clone() else {
             if let Some(t) = self.transfer(id) {
-                t.step = Step::Failed("Not connected.".into());
+                t.step = Step::Failed(tr!("Not connected."));
             }
             return cx.notify();
         };
@@ -756,11 +757,19 @@ impl FilesPanel {
             return self.open_editor(&local, text, cx);
         }
         if self.sftp.is_none() {
-            return self.fail("Not connected.".into(), cx);
+            return self.fail(tr!("Not connected."), cx);
         }
         let copy = match EditCopy::new(&remote) {
             Ok(c) => c,
-            Err(err) => return self.fail(format!("Cannot make a folder to edit in: {err}"), cx),
+            Err(err) => {
+                return self.fail(
+                    tr!(
+                        "Cannot make a folder to edit in: {err}",
+                        err = err.to_string()
+                    ),
+                    cx,
+                );
+            }
         };
         let into = copy.path.clone();
         self.next_id += 1;
@@ -822,8 +831,8 @@ impl FilesPanel {
         let problem = started.err().map(|e| {
             let who = cmd
                 .as_deref()
-                .map_or("the text editor".to_string(), editors::name_of);
-            format!("Cannot start {who}: {e}")
+                .map_or(tr!("the text editor"), editors::name_of);
+            tr!("Cannot start {who}: {e}", who = who, e = e.to_string())
         });
         if let Some(ed) = self.edits.iter_mut().find(|x| x.copy.path == path) {
             ed.problem = problem;
@@ -878,7 +887,7 @@ impl FilesPanel {
         let written = copies::stamp(&local);
         if !connected {
             ed.written = written;
-            ed.step = EditStep::Unsent("Not connected: written back once it is.".into());
+            ed.step = EditStep::Unsent(tr!("Not connected: written back once it is."));
             return cx.notify();
         }
         ed.step = EditStep::Saving;
@@ -912,7 +921,7 @@ impl FilesPanel {
                     Err(e) => {
                         // Tried again on the next save, or on Retry.
                         ed.written = written;
-                        ed.step = EditStep::Unsent(format!("Not written back: {e}"));
+                        ed.step = EditStep::Unsent(tr!("Not written back: {e}", e = e.to_string()));
                     }
                 }
                 let refresh = p.dir.as_deref() == Some(&*sftp::parent(&ed.remote));
@@ -956,7 +965,7 @@ impl FilesPanel {
                 ed.stopping = false;
                 ed.problem = None;
             }
-            Err(e) => ed.problem = Some(format!("Cannot move it to Downloads: {e}")),
+            Err(e) => ed.problem = Some(tr!("Cannot move it to Downloads: {e}", e = e.to_string())),
         }
         cx.notify();
     }
@@ -973,21 +982,25 @@ impl FilesPanel {
         let id = ed.id;
         let (status, bad) = match &ed.step {
             _ if ed.stopping => (
-                "not written back to the server: discard your changes?".to_string(),
+                tr!("not written back to the server: discard your changes?"),
                 true,
             ),
             _ if ed.problem.is_some() => (ed.problem.clone().unwrap_or_default(), true),
-            EditStep::Opening => ("opening…".to_string(), false),
+            EditStep::Opening => (tr!("opening…"), false),
             EditStep::NotOpened(why) => (why.clone(), true),
-            EditStep::Watching(None) => ("in the editor; each save is written back".into(), false),
-            EditStep::Watching(Some(t)) => (format!("written back at {t}"), false),
-            EditStep::Saving => ("writing back…".into(), false),
-            EditStep::Conflict => ("changed on the server since you opened it".into(), true),
+            EditStep::Watching(None) => (tr!("in the editor; each save is written back"), false),
+            EditStep::Watching(Some(t)) => (tr!("written back at {t}", t = t), false),
+            EditStep::Saving => (tr!("writing back…"), false),
+            EditStep::Conflict => (tr!("changed on the server since you opened it"), true),
             EditStep::Unsent(why) => (why.clone(), true),
             EditStep::Kept(path) => (
-                format!(
-                    "not on the server; moved to Downloads as {}",
-                    path.file_name().unwrap_or_default().to_string_lossy()
+                tr!(
+                    "not on the server; moved to Downloads as {name}",
+                    name = path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string()
                 ),
                 false,
             ),
@@ -996,13 +1009,13 @@ impl FilesPanel {
         let open = |actions: gpui::Div, cx: &mut Context<Self>| {
             let (local, text) = (ed.copy.path.clone(), ed.text);
             actions.child(
-                button(("edit-open", id), "Open")
+                button(("edit-open", id), &tr!("Open"))
                     .on_click(cx.listener(move |p, _, _, cx| p.open_editor(&local, text, cx))),
             )
         };
         let stop = |actions: gpui::Div, cx: &mut Context<Self>| {
             actions.child(
-                button(("edit-stop", id), "Stop")
+                button(("edit-stop", id), &tr!("Stop"))
                     .on_click(cx.listener(move |p, _, _, cx| p.stop_edit(id, cx))),
             )
         };
@@ -1015,41 +1028,43 @@ impl FilesPanel {
         actions = match &ed.step {
             _ if ed.stopping => actions
                 .child(
-                    button(("edit-discard", id), "Discard")
+                    button(("edit-discard", id), &tr!("Discard"))
                         .on_click(cx.listener(move |p, _, _, cx| p.drop_edit(id, cx))),
                 )
                 .child(
-                    button(("edit-keep", id), "Keep in Downloads")
+                    button(("edit-keep", id), &tr!("Keep in Downloads"))
                         .on_click(cx.listener(move |p, _, _, cx| p.keep_edit(id, cx))),
                 )
-                .child(button(("edit-cancel", id), "Cancel").on_click(cx.listener(
-                    move |p, _, _, cx| {
-                        if let Some(ed) = p.edits.iter_mut().find(|x| x.id == id) {
-                            ed.stopping = false;
-                        }
-                        cx.notify();
-                    },
-                ))),
+                .child(
+                    button(("edit-cancel", id), &tr!("Cancel")).on_click(cx.listener(
+                        move |p, _, _, cx| {
+                            if let Some(ed) = p.edits.iter_mut().find(|x| x.id == id) {
+                                ed.stopping = false;
+                            }
+                            cx.notify();
+                        },
+                    )),
+                ),
             EditStep::Opening => stop(actions, cx),
             EditStep::NotOpened(_) => dismiss(actions, cx),
             EditStep::Kept(path) => {
                 let path = path.clone();
                 let actions = actions.child(
-                    button(("edit-show", id), "Show")
+                    button(("edit-show", id), &tr!("Show"))
                         .on_click(cx.listener(move |_, _, _, cx| cx.reveal_path(&path))),
                 );
                 dismiss(actions, cx)
             }
             EditStep::Conflict => {
                 let actions = actions.child(
-                    button(("edit-overwrite", id), "Overwrite")
+                    button(("edit-overwrite", id), &tr!("Overwrite"))
                         .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, true, cx))),
                 );
                 stop(actions, cx)
             }
             EditStep::Unsent(_) => {
                 let actions = actions.child(
-                    button(("edit-retry", id), "Retry")
+                    button(("edit-retry", id), &tr!("Retry"))
                         .on_click(cx.listener(move |p, _, _, cx| p.write_back(id, false, cx))),
                 );
                 stop(open(actions, cx), cx)
@@ -1142,7 +1157,7 @@ impl FilesPanel {
             files: true,
             directories: true,
             multiple: true,
-            prompt: Some("Upload".into()),
+            prompt: Some(tr!("Upload").into()),
         });
         cx.spawn(async move |this, cx| {
             if let Ok(Ok(Some(paths))) = picked.await {
@@ -1283,7 +1298,7 @@ impl FilesPanel {
                     let dir = p.dir.clone();
                     p.open_dir(dir, neighbour, cx);
                 }
-                Err(err) => p.fail(format!("Not deleted: {err}"), cx),
+                Err(err) => p.fail(tr!("Not deleted: {err}", err = err.to_string()), cx),
             },
         );
     }
@@ -1326,8 +1341,8 @@ impl FilesPanel {
             .map(|c| editors::name_of(&c))
             .or_else(editors::system_name)
             .map_or_else(
-                || "Edit in text editor".to_string(),
-                |n| format!("Edit in {n}"),
+                || tr!("Edit in text editor"),
+                |n| tr!("Edit in {editor}", editor = n),
             );
         let mut menu = div()
             .id("files-menu")
@@ -1342,6 +1357,8 @@ impl FilesPanel {
             .border_color(rgb(colors().edge))
             .shadow_lg()
             .text_sm()
+            // A press on it is its own, not the list's under it.
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             // Another click anywhere closes it (a right click opens the next one).
             .on_mouse_down_out(cx.listener(|p, e: &gpui::MouseDownEvent, _, cx| {
                 if e.button != MouseButton::Right {
@@ -1361,14 +1378,12 @@ impl FilesPanel {
             MenuFor::Entry(i) => {
                 let is_dir = self.entries.get(i).is_some_and(|e| e.is_dir());
                 menu = if is_dir {
-                    menu.child(
-                        item("menu-open", "Open", "Enter", false).on_click(cx.listener(
-                            move |p, _, _, cx| {
-                                p.menu = None;
-                                p.enter(i, cx);
-                            },
-                        )),
-                    )
+                    menu.child(item("menu-open", &tr!("Open"), "Enter", false).on_click(
+                        cx.listener(move |p, _, _, cx| {
+                            p.menu = None;
+                            p.enter(i, cx);
+                        }),
+                    ))
                 } else {
                     menu.child(
                         item("menu-edit", &edit_label, "", false).on_click(cx.listener(
@@ -1379,7 +1394,7 @@ impl FilesPanel {
                         )),
                     )
                     .child(
-                        item("menu-open-app", "Open with default app", "", false).on_click(
+                        item("menu-open-app", &tr!("Open with default app"), "", false).on_click(
                             cx.listener(|p, _, _, cx| {
                                 p.menu = None;
                                 p.edit_chosen(false, cx);
@@ -1388,36 +1403,32 @@ impl FilesPanel {
                     )
                 };
                 menu = menu
+                    .child(item("menu-download", &tr!("Download"), "", false).on_click(
+                        cx.listener(move |p, _, _, cx| {
+                            p.menu = None;
+                            p.download(i, cx);
+                        }),
+                    ))
                     .child(
-                        item("menu-download", "Download", "", false).on_click(cx.listener(
-                            move |p, _, _, cx| {
-                                p.menu = None;
-                                p.download(i, cx);
-                            },
-                        )),
-                    )
-                    .child(
-                        item("menu-download-as", "Download As…", "", false).on_click(cx.listener(
-                            move |p, _, _, cx| {
+                        item("menu-download-as", &tr!("Download As…"), "", false).on_click(
+                            cx.listener(move |p, _, _, cx| {
                                 p.menu = None;
                                 p.download_as(i, cx);
-                            },
-                        )),
+                            }),
+                        ),
                     )
                     .child(line());
             }
             MenuFor::Folder => {
                 menu = menu
+                    .child(item("menu-mkdir", &tr!("New folder…"), "", false).on_click(
+                        cx.listener(|p, _, window, cx| {
+                            p.menu = None;
+                            p.start_edit(Edit::NewFolder, window, cx);
+                        }),
+                    ))
                     .child(
-                        item("menu-mkdir", "New folder…", "", false).on_click(cx.listener(
-                            |p, _, window, cx| {
-                                p.menu = None;
-                                p.start_edit(Edit::NewFolder, window, cx);
-                            },
-                        )),
-                    )
-                    .child(
-                        item("menu-upload", "Upload…", "", false).on_click(cx.listener(
+                        item("menu-upload", &tr!("Upload…"), "", false).on_click(cx.listener(
                             |p, _, _, cx| {
                                 p.menu = None;
                                 p.pick_uploads(cx);
@@ -1425,7 +1436,7 @@ impl FilesPanel {
                         )),
                     )
                     .child(
-                        item("menu-refresh", "Refresh", "", false).on_click(cx.listener(
+                        item("menu-refresh", &tr!("Refresh"), "", false).on_click(cx.listener(
                             |p, _, _, cx| {
                                 p.menu = None;
                                 p.refresh(cx);
@@ -1436,29 +1447,25 @@ impl FilesPanel {
             }
         }
         if let Some(path) = path {
-            menu = menu.child(
-                item("menu-copy", "Copy path", "", false).on_click(cx.listener(
-                    move |p, _, _, cx| {
-                        p.menu = None;
-                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(path.clone()));
-                        cx.notify();
-                    },
-                )),
-            );
+            menu = menu.child(item("menu-copy", &tr!("Copy path"), "", false).on_click(
+                cx.listener(move |p, _, _, cx| {
+                    p.menu = None;
+                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(path.clone()));
+                    cx.notify();
+                }),
+            ));
         }
         if let MenuFor::Entry(_) = target {
-            menu = menu
-                .child(
-                    item("menu-rename", "Rename…", "F2", false).on_click(cx.listener(
-                        |p, _, window, cx| {
-                            p.menu = None;
-                            p.start_rename(window, cx);
-                        },
-                    )),
-                )
+            menu =
+                menu.child(item("menu-rename", &tr!("Rename…"), "F2", false).on_click(
+                    cx.listener(|p, _, window, cx| {
+                        p.menu = None;
+                        p.start_rename(window, cx);
+                    }),
+                ))
                 .child(line())
                 .child(
-                    item("menu-delete", "Delete…", "Del", true).on_click(cx.listener(
+                    item("menu-delete", &tr!("Delete…"), "Del", true).on_click(cx.listener(
                         |p, _, _, cx| {
                             p.menu = None;
                             p.ask_delete(cx);
@@ -1643,7 +1650,7 @@ impl FilesPanel {
                     div()
                         .text_xs()
                         .text_color(rgb(colors().muted))
-                        .child("link"),
+                        .child(tr!("link")),
                 )
             })
             .child(
@@ -1682,37 +1689,41 @@ impl FilesPanel {
                 let secs = t.started.elapsed().as_secs_f64().max(0.001);
                 let rate = (done as f64 / secs) as u64;
                 status = if total > 0 {
-                    format!(
-                        "{}% · {}/s",
-                        done.saturating_mul(100) / total.max(1),
-                        human_size(rate)
+                    tr!(
+                        "{percent}% · {rate}/s",
+                        percent = done.saturating_mul(100) / total.max(1),
+                        rate = human_size(rate)
                     )
                 } else {
-                    "starting…".into()
+                    tr!("starting…")
                 };
                 actions = actions.child(
-                    button(("cancel", id), "Cancel")
+                    button(("cancel", id), &tr!("Cancel"))
                         .on_click(cx.listener(move |p, _, _, cx| p.dismiss(id, cx))),
                 );
             }
             Step::Exists { local, .. } => {
-                status = "already there".into();
-                let label = if local.is_dir() { "Merge" } else { "Replace" };
+                status = tr!("already there");
+                let label = if local.is_dir() {
+                    tr!("Merge")
+                } else {
+                    tr!("Replace")
+                };
                 actions = actions
                     .child(
-                        button(("replace", id), label)
+                        button(("replace", id), &label)
                             .on_click(cx.listener(move |p, _, _, cx| p.replace(id, cx))),
                     )
                     .child(
-                        button(("skip", id), "Skip")
+                        button(("skip", id), &tr!("Skip"))
                             .on_click(cx.listener(move |p, _, _, cx| p.dismiss(id, cx))),
                     );
             }
             Step::Done(local) => {
-                status = format!("done · {}", human_size(total));
+                status = tr!("done · {size}", size = human_size(total));
                 if let Some(path) = local.clone() {
                     actions = actions.child(
-                        button(("show", id), "Show")
+                        button(("show", id), &tr!("Show"))
                             .on_click(cx.listener(move |_, _, _, cx| cx.reveal_path(&path))),
                     );
                 }
@@ -1790,7 +1801,7 @@ impl Render for FilesPanel {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // The title and the folder's tools as icons; the rest is in the
         // context menu (right click) and on the keys.
-        let tool = |id: &'static str, icon: &'static str, tip: &'static str| {
+        let tool = |id: &'static str, icon: &'static str, tip: SharedString| {
             div()
                 .id(id)
                 .size(px(28.))
@@ -1802,7 +1813,7 @@ impl Render for FilesPanel {
                 .hover(|s| s.bg(rgb(colors().hover)))
                 .tooltip(move |_, cx| {
                     cx.new(|_| Tip {
-                        title: tip.into(),
+                        title: tip.clone(),
                         detail: SharedString::default(),
                     })
                     .into()
@@ -1827,23 +1838,28 @@ impl Render for FilesPanel {
                 div()
                     .flex_1()
                     .font_weight(FontWeight::SEMIBOLD)
-                    .child("Files"),
+                    .child(tr!("Files")),
             )
             .child(
-                tool("files-home", "icons/home.svg", "Home")
+                tool("files-home", "icons/home.svg", tr!("Home").into())
                     .on_click(cx.listener(|p, _, _, cx| p.go_home(cx))),
             )
             .child(
-                tool("files-refresh", "icons/refresh.svg", "Refresh")
+                tool("files-refresh", "icons/refresh.svg", tr!("Refresh").into())
                     .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
             )
             .child(
-                tool("files-mkdir", "icons/folder-plus.svg", "New folder").on_click(
+                tool(
+                    "files-mkdir",
+                    "icons/folder-plus.svg",
+                    tr!("New folder").into(),
+                )
+                .on_click(
                     cx.listener(|p, _, window, cx| p.start_edit(Edit::NewFolder, window, cx)),
                 ),
             )
             .child(
-                tool("files-upload", "icons/upload.svg", "Upload…")
+                tool("files-upload", "icons/upload.svg", tr!("Upload…").into())
                     .on_click(cx.listener(|p, _, _, cx| p.pick_uploads(cx))),
             )
             .child(div().w(px(6.)))
@@ -1869,8 +1885,8 @@ impl Render for FilesPanel {
         let mut asking = div().flex().flex_col();
         if let Some(edit) = &self.editing {
             let label = match edit {
-                Edit::NewFolder => "New folder".to_string(),
-                Edit::Rename(old) => format!("Rename {old}"),
+                Edit::NewFolder => tr!("New folder"),
+                Edit::Rename(old) => tr!("Rename {old}", old = old),
             };
             asking = asking.child(
                 div()
@@ -1900,15 +1916,18 @@ impl Render for FilesPanel {
                         None => div()
                             .text_xs()
                             .text_color(rgb(colors().muted))
-                            .child("Enter to save · Esc to cancel"),
+                            .child(tr!("Enter to save · Esc to cancel")),
                     }),
             );
         }
         if let Some(e) = &self.deleting {
             let question = if e.kind == sftp::Kind::Dir {
-                format!("Delete the folder {} and everything in it?", e.name)
+                tr!(
+                    "Delete the folder {name} and everything in it?",
+                    name = &e.name
+                )
             } else {
-                format!("Delete {}?", e.name)
+                tr!("Delete {name}?", name = &e.name)
             };
             asking = asking.child(
                 div()
@@ -1925,17 +1944,17 @@ impl Render for FilesPanel {
                             .flex()
                             .gap_1()
                             .child(
-                                button("files-delete-yes", "Delete")
+                                button("files-delete-yes", &tr!("Delete"))
                                     .bg(rgb(colors().bad_edge))
                                     .hover(|s| s.bg(rgb(colors().bad_hover)))
                                     .on_click(cx.listener(|p, _, _, cx| p.confirm_delete(cx))),
                             )
-                            .child(button("files-delete-no", "Cancel").on_click(cx.listener(
-                                |p, _, _, cx| {
+                            .child(button("files-delete-no", &tr!("Cancel")).on_click(
+                                cx.listener(|p, _, _, cx| {
                                     p.deleting = None;
                                     cx.notify();
-                                },
-                            ))),
+                                }),
+                            )),
                     ),
             );
         }
@@ -1965,9 +1984,9 @@ impl Render for FilesPanel {
                 }),
             );
         match &self.state {
-            State::Opening => body = body.child(note("Opening SFTP…".into(), colors().muted)),
+            State::Opening => body = body.child(note(tr!("Opening SFTP…"), colors().muted)),
             State::Loading if self.entries.is_empty() => {
-                body = body.child(note("Loading…".into(), colors().muted))
+                body = body.child(note(tr!("Loading…"), colors().muted))
             }
             State::Failed(why) => {
                 body = body.child(
@@ -1978,7 +1997,7 @@ impl Render for FilesPanel {
                         .pr_3()
                         .child(note(why.to_string(), colors().bad).flex_1())
                         .child(
-                            button("files-retry", "Try again")
+                            button("files-retry", &tr!("Try again"))
                                 .on_click(cx.listener(|p, _, _, cx| p.refresh(cx))),
                         ),
                 )
@@ -2022,7 +2041,7 @@ impl Render for FilesPanel {
             );
         }
         if self.dir.is_some() && self.entries.is_empty() && self.state == State::Ready {
-            body = body.child(note("Empty folder.".into(), colors().muted));
+            body = body.child(note(tr!("Empty folder."), colors().muted));
         }
         if !self.entries.is_empty() {
             body = body.child(
@@ -2050,8 +2069,9 @@ impl Render for FilesPanel {
         }
         if self.transfers.is_empty() && self.edits.is_empty() {
             transfers = transfers.child(note(
-                "Right-click a file or folder for its actions; drop files here to upload them."
-                    .into(),
+                tr!(
+                    "Right-click a file or folder for its actions; drop files here to upload them."
+                ),
                 colors().muted,
             ));
         }

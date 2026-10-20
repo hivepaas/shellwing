@@ -27,6 +27,7 @@ mod cipher;
 mod hlc;
 mod keychain;
 mod pairing;
+mod presence;
 mod recovery;
 mod sync;
 
@@ -35,6 +36,7 @@ pub use cipher::Cipher;
 pub use keychain::OsKeychain;
 pub use keychain::{KeyStore, MemoryKeys};
 pub use pairing::{Answerer, Ask, AskState, Request};
+pub use presence::{MemoryPresence, Presence};
 pub use recovery::RecoveryKey;
 pub use sync::{Backend, Folder, FolderState, SyncReport, transact};
 
@@ -86,14 +88,123 @@ pub enum Error {
     Locked(Lock),
     #[error("that passphrase does not open the vault")]
     WrongPassphrase,
+    /// The user's presence was not given (cancelled), or no longer opens it.
+    #[error("not confirmed")]
+    NotPresent,
     #[error("the passphrase is too short: at least {0} characters")]
     WeakPassphrase(usize),
     /// Too easy to guess for a folder others may read: `zxcvbn`'s score, 0–4.
     #[error("the passphrase is too easy to guess (strength {0} of 4; 3 is needed)")]
     GuessablePassphrase(u8),
+    #[error("{0}")]
+    TooLarge(Oversize),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// How much a snippet or an environment holds at most. A shell takes an
+/// exported variable of 128 KB at most (Linux's `MAX_ARG_STRLEN`), and
+/// all of them with a command's arguments in about 2 MB (`ARG_MAX`):
+/// past that, every program it starts fails. These stay well within, and
+/// keep each record light to sync.
+pub mod limits {
+    /// A snippet's command, in bytes.
+    pub const COMMAND: usize = 64 * 1024;
+    /// A variable's name.
+    pub const NAME: usize = 128;
+    /// A variable's value, in bytes.
+    pub const VALUE: usize = 32 * 1024;
+    /// The variables of an environment.
+    pub const VARS: usize = 100;
+    /// An environment: its `NAME=value`s, in bytes.
+    pub const ENVIRONMENT: usize = 64 * 1024;
+    /// The environments loaded into one shell, together.
+    pub const LOADED: usize = 256 * 1024;
+    /// A config file, in bytes.
+    pub const FILE: usize = 1024 * 1024;
+    /// A note's text, in bytes.
+    pub const NOTE: usize = 256 * 1024;
+}
+
+/// What is past one of the [`limits`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Oversize {
+    /// A command of this many bytes.
+    Command(usize),
+    /// A variable's name, too long.
+    Name(String),
+    /// A variable whose value has this many bytes.
+    Value(String, usize),
+    /// This many variables.
+    Vars(usize),
+    /// An environment of this many bytes.
+    Environment(usize),
+    /// A config file of this many bytes.
+    File(usize),
+    /// A note of this many bytes.
+    Note(usize),
+}
+
+impl std::fmt::Display for Oversize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let kb = |n: usize| n.div_ceil(1024);
+        match self {
+            Oversize::Command(n) => write!(
+                f,
+                "the command is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::COMMAND)
+            ),
+            Oversize::Name(n) => write!(f, "{n}: a name takes {} characters at most", limits::NAME),
+            Oversize::Value(n, b) => write!(
+                f,
+                "{n} is {} KB; a value takes {} KB at most",
+                kb(*b),
+                kb(limits::VALUE)
+            ),
+            Oversize::Vars(n) => write!(f, "{n} variables; {} at most", limits::VARS),
+            Oversize::Environment(n) => write!(
+                f,
+                "the variables come to {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::ENVIRONMENT)
+            ),
+            Oversize::File(n) => write!(
+                f,
+                "the file is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::FILE)
+            ),
+            Oversize::Note(n) => write!(
+                f,
+                "the note is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::NOTE)
+            ),
+        }
+    }
+}
+
+/// What of `vars` (names and values) is past the [`limits`], if any.
+pub fn environment_oversize<'a>(
+    vars: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Option<Oversize> {
+    let (mut count, mut total) = (0, 0);
+    for (name, value) in vars {
+        if name.chars().count() > limits::NAME {
+            return Some(Oversize::Name(name.to_string()));
+        }
+        if value.len() > limits::VALUE {
+            return Some(Oversize::Value(name.to_string(), value.len()));
+        }
+        count += 1;
+        total += name.len() + 1 + value.len();
+    }
+    if count > limits::VARS {
+        return Some(Oversize::Vars(count));
+    }
+    (total > limits::ENVIRONMENT).then_some(Oversize::Environment(total))
+}
 
 /// Why a vault waits to be opened, and what opens it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -113,6 +224,8 @@ pub enum Unlock<'a> {
     RecoveryKey(&'a str),
     /// Makes a new vault whose key this passphrase keeps ([`Lock::New`]).
     NewPassphrase(&'a str),
+    /// The user's presence, where it was set up ([`Vault::set_presence`]).
+    Presence(&'a dyn Presence),
 }
 
 /// The shortest passphrase taken.
@@ -124,6 +237,9 @@ pub fn passphrase_strength(passphrase: &str) -> u8 {
 }
 const PASSPHRASE_AAD: &[u8] = b"shellwing account key wrapped by a passphrase v1";
 const RECOVERY_WRAP_AAD: &[u8] = b"shellwing account key wrapped by the recovery key v1";
+const PRESENCE_AAD: &[u8] = b"shellwing account key wrapped by the user's presence v1";
+/// What the system shows when it asks.
+const PRESENCE_REASON: &str = "open shellwing's vault";
 
 fn device_secret_aad(name: &str) -> Vec<u8> {
     format!("shellwing device secret v1 {name}").into_bytes()
@@ -219,6 +335,83 @@ pub struct Snippet {
     pub scope: String,
     /// Enter is pressed after it is typed.
     pub enter: bool,
+    /// What it is filed under, to find it among many; empty: none.
+    pub category: String,
+    /// The environments (their ids) loaded for it alone: it runs in a
+    /// subshell that has them, and they go when it ends.
+    pub needs: Vec<String>,
+    /// Where it came from, when not typed here: `library:<item>` for one
+    /// added from the snippet library. Empty: made here.
+    pub origin: String,
+}
+
+/// A file kept in the vault to place on hosts, such as `~/.kube/config`:
+/// what it is, without its content ([`Vault::config_file_content`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConfigFile {
+    pub id: String,
+    pub name: String,
+    /// What it is filed under; empty: none.
+    pub category: String,
+    /// Where it goes on a host, `~/` for the home directory.
+    pub path: String,
+    /// Its permissions there, as `chmod` takes them: 0o600.
+    pub mode: u32,
+    /// Where it is offered, as a snippet's scope.
+    pub scope: String,
+    /// Its content's bytes.
+    pub size: usize,
+    /// Not text (not UTF-8, or holding a NUL): replaced whole, not edited.
+    pub binary: bool,
+}
+
+/// A note's format.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum NoteFormat {
+    #[default]
+    Plain,
+    Markdown,
+}
+
+/// Free text kept in the vault: what it is, without its text
+/// ([`Vault::note_text`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Note {
+    pub id: String,
+    pub title: String,
+    /// What it is filed under; empty: none.
+    pub category: String,
+    pub format: NoteFormat,
+    /// The hosts it is about (their names): the palette offers it first in
+    /// their panes.
+    pub hosts: Vec<String>,
+    /// Its text shows masked until asked for.
+    pub sensitive: bool,
+    /// When it was last changed, as the vault's clock stamps it.
+    pub changed: String,
+    /// Its text's bytes.
+    pub size: usize,
+}
+
+/// Whether `bytes` are text to edit: UTF-8 without a NUL.
+pub fn is_text(bytes: &[u8]) -> bool {
+    !bytes.contains(&0) && std::str::from_utf8(bytes).is_ok()
+}
+
+/// An environment's variables: names and their values.
+pub type EnvValues = Vec<(String, Zeroizing<String>)>;
+
+/// Variables for the shell, kept in the vault, to load into a pane or
+/// for a snippet: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    /// Where it is offered, as a snippet's scope.
+    pub scope: String,
+    /// The variables' names; their values only through
+    /// [`Vault::environment_values`].
+    pub names: Vec<String>,
 }
 
 /// A field and when it was set (a clock stamp), for merging edits.
@@ -339,28 +532,12 @@ impl Vault {
     pub fn unlock(path: &Path, keys: &dyn KeyStore, how: Unlock) -> Result<Vault> {
         let o = Self::open_db(path)?;
         let account = match how {
-            Unlock::Passphrase(p) => {
-                let (Some(wrapped), Some(kdf)) = (
-                    Self::wrapped_account(&o.db, "passphrase")?,
-                    Self::kdf(&o.db)?,
-                ) else {
-                    return Err(Error::WrongPassphrase);
-                };
-                let key = kdf.key(p)?;
-                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
-                    .map_err(|_| Error::WrongPassphrase)?;
-                Self::account_from(&a)?
-            }
-            Unlock::RecoveryKey(text) => {
-                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
-                let wrapped =
-                    Self::wrapped_account(&o.db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
-                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
-                    .map_err(|_| Error::WrongRecoveryKey)?;
-                let a = Self::account_from(&a)?;
+            Unlock::RecoveryKey(_) => {
+                let a = Self::account_by(&o.db, &how)?;
                 let _ = keys.save(&a[..]);
                 a
             }
+            Unlock::Passphrase(_) | Unlock::Presence(_) => Self::account_by(&o.db, &how)?,
             Unlock::NewPassphrase(p) => {
                 if o.has_records || Self::wrapped_account(&o.db, "passphrase")?.is_some() {
                     return Err(Error::Locked(Lock::Passphrase));
@@ -371,6 +548,66 @@ impl Vault {
             }
         };
         Self::finish(o, account)
+    }
+
+    /// The account key, as the passphrase, recovery key or presence `how`
+    /// unwraps it.
+    fn account_by(db: &Connection, how: &Unlock) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        match how {
+            Unlock::Passphrase(p) => {
+                let (Some(wrapped), Some(kdf)) =
+                    (Self::wrapped_account(db, "passphrase")?, Self::kdf(db)?)
+                else {
+                    return Err(Error::WrongPassphrase);
+                };
+                let key = kdf.key(p)?;
+                let (a, _) = cipher::open(&key, &wrapped, PASSPHRASE_AAD)
+                    .map_err(|_| Error::WrongPassphrase)?;
+                Self::account_from(&a)
+            }
+            Unlock::RecoveryKey(text) => {
+                let rk = RecoveryKey::parse(text).ok_or(Error::WrongRecoveryKey)?;
+                let wrapped =
+                    Self::wrapped_account(db, "recovery")?.ok_or(Error::WrongRecoveryKey)?;
+                let (a, _) = cipher::open(&rk.0, &wrapped, RECOVERY_WRAP_AAD)
+                    .map_err(|_| Error::WrongRecoveryKey)?;
+                Self::account_from(&a)
+            }
+            Unlock::Presence(p) => {
+                let (Some(wrapped), Some(id)) = (
+                    Self::wrapped_account(db, "presence")?,
+                    Self::presence_id(db)?,
+                ) else {
+                    return Err(Error::Locked(Lock::Passphrase));
+                };
+                let secret = p
+                    .secret(&id, PRESENCE_REASON)
+                    .map_err(Error::Keychain)?
+                    .ok_or(Error::NotPresent)?;
+                let (a, _) =
+                    cipher::open(&secret, &wrapped, PRESENCE_AAD).map_err(|_| Error::NotPresent)?;
+                Self::account_from(&a)
+            }
+            Unlock::NewPassphrase(_) => Err(Error::Locked(Lock::Passphrase)),
+        }
+    }
+
+    /// Checks it is the user, at an open vault, before something shows a
+    /// secret: their passphrase, recovery key or presence opens its key.
+    pub fn confirm(&self, how: Unlock) -> Result<()> {
+        let a = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            Self::account_by(&db, &how)?
+        };
+        if a[..] == self.account[..] {
+            Ok(())
+        } else {
+            Err(match how {
+                Unlock::Presence(_) => Error::NotPresent,
+                Unlock::RecoveryKey(_) => Error::WrongRecoveryKey,
+                _ => Error::WrongPassphrase,
+            })
+        }
     }
 
     fn account_from(plain: &[u8]) -> Result<Zeroizing<[u8; KEY_LEN]>> {
@@ -445,6 +682,78 @@ impl Vault {
     }
 
     /// Whether a passphrase keeps the account key too.
+    /// This device's id for its presence secret (made with it).
+    fn presence_id(db: &Connection) -> Result<Option<String>> {
+        Ok(db
+            .query_row("SELECT value FROM meta WHERE key = 'presence'", [], |r| {
+                r.get(0)
+            })
+            .optional()?)
+    }
+
+    /// Lets `p` (Windows Hello, Touch ID) open the vault on this device: the
+    /// system asks the user once now. Only with a passphrase set: a secret
+    /// of this device's alone must not be all that opens it here.
+    pub fn set_presence(&self, p: &dyn Presence) -> Result<()> {
+        if !self.has_vault_passphrase()? {
+            return Err(Error::Locked(Lock::Passphrase));
+        }
+        let id = {
+            let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+            match Self::presence_id(&db)? {
+                Some(id) => id,
+                None => {
+                    let id: String = random::<16>()?.iter().map(|b| format!("{b:02x}")).collect();
+                    db.execute(
+                        "INSERT INTO meta (key, value) VALUES ('presence', ?1)",
+                        params![id],
+                    )?;
+                    id
+                }
+            }
+        };
+        let secret = Zeroizing::new(p.enroll(&id, PRESENCE_REASON).map_err(Error::Keychain)?);
+        let sealed = cipher::seal(self.cipher, &secret, &self.account[..], PRESENCE_AAD)?;
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "INSERT INTO keys (id, ver, wrapped, wrapped_by) VALUES ('account', 1, ?1, 'presence')
+             ON CONFLICT(id, ver, wrapped_by) DO UPDATE SET wrapped = excluded.wrapped",
+            params![sealed],
+        )?;
+        Ok(())
+    }
+
+    /// Stops `p` opening the vault, and has the system forget its secret.
+    pub fn remove_presence(&self, p: &dyn Presence) -> Result<()> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "DELETE FROM keys WHERE id = 'account' AND wrapped_by = 'presence'",
+            [],
+        )?;
+        if let Some(id) = Self::presence_id(&db)? {
+            p.forget(&id).map_err(Error::Keychain)?;
+        }
+        Ok(())
+    }
+
+    /// Whether the user's presence opens the vault on this device.
+    pub fn has_presence(&self) -> Result<bool> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        Ok(Self::wrapped_account(&db, "presence")?.is_some())
+    }
+
+    /// The same, of the vault at `path` before it is opened (to offer it at
+    /// the lock).
+    pub fn opens_with_presence(path: &Path) -> bool {
+        let read_only = rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY;
+        Connection::open_with_flags(path, read_only).is_ok_and(|db| {
+            Self::wrapped_account(&db, "presence")
+                .ok()
+                .flatten()
+                .is_some()
+        })
+    }
+
     pub fn has_vault_passphrase(&self) -> Result<bool> {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         Ok(Self::wrapped_account(&db, "passphrase")?.is_some())
@@ -927,6 +1236,14 @@ impl Vault {
                     scope: get("scope"),
                     // Unset means yes: running is what a snippet is for.
                     enter: get("enter") != "no",
+                    category: get("category"),
+                    needs: get("needs")
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|n| !n.is_empty())
+                        .map(str::to_string)
+                        .collect(),
+                    origin: get("origin"),
                     id,
                 }
             })
@@ -935,6 +1252,9 @@ impl Vault {
 
     /// Keeps a snippet, new when its id is empty; returns its id.
     pub fn save_snippet(&self, s: &Snippet) -> Result<String> {
+        if s.command.len() > limits::COMMAND {
+            return Err(Error::TooLarge(Oversize::Command(s.command.len())));
+        }
         let id = if s.id.is_empty() {
             new_id()?
         } else {
@@ -948,8 +1268,264 @@ impl Vault {
                 "enter".to_string(),
                 if s.enter { "yes" } else { "no" }.to_string(),
             ),
+            ("category".to_string(), s.category.clone()),
+            ("needs".to_string(), s.needs.join(",")),
+            ("origin".to_string(), s.origin.clone()),
         ]);
         self.update(&id, "snippet", &s.name, &values)?;
+        Ok(id)
+    }
+
+    /// The environments kept here, oldest first, without their values.
+    pub fn environments(&self) -> Result<Vec<Environment>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "environment")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                Environment {
+                    name: get("name"),
+                    scope: get("scope"),
+                    names: r
+                        .f
+                        .iter()
+                        .filter(|(_, f)| !f.val.is_empty())
+                        .filter_map(|(k, _)| k.strip_prefix("var:").map(str::to_string))
+                        .collect(),
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// An environment's variables, with their values, in name order.
+    pub fn environment_values(&self, id: &str) -> Result<Option<EnvValues>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "environment")
+            .map(|(_, r)| {
+                r.f.iter()
+                    .filter(|(_, f)| !f.val.is_empty())
+                    .filter_map(|(k, f)| {
+                        k.strip_prefix("var:")
+                            .map(|n| (n.to_string(), Zeroizing::new(f.val.clone())))
+                    })
+                    .collect()
+            }))
+    }
+
+    /// The config files kept here, without their contents.
+    pub fn config_files(&self) -> Result<Vec<ConfigFile>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "config_file")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                ConfigFile {
+                    name: get("name"),
+                    category: get("category"),
+                    path: get("path"),
+                    mode: u32::from_str_radix(&get("mode"), 8).unwrap_or(0o600),
+                    scope: get("scope"),
+                    size: get("size").parse().unwrap_or(0),
+                    binary: get("binary") == "yes",
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// A config file's content.
+    pub fn config_file_content(&self, id: &str) -> Result<Option<Zeroizing<Vec<u8>>>> {
+        use base64::Engine as _;
+        let Some((_, r)) = self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "config_file")
+        else {
+            return Ok(None);
+        };
+        let text = r.f.get("content").map(|f| f.val.as_str()).unwrap_or("");
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(text)
+            .map_err(|_| Error::Decrypt)?;
+        Ok(Some(Zeroizing::new(bytes)))
+    }
+
+    /// Keeps a config file, new when `f.id` is empty; returns its id.
+    /// `content` None keeps the one it had; `f.size` and `f.binary` are
+    /// worked out from it.
+    pub fn save_config_file(&self, f: &ConfigFile, content: Option<&[u8]>) -> Result<String> {
+        use base64::Engine as _;
+        let id = if f.id.is_empty() {
+            new_id()?
+        } else {
+            f.id.clone()
+        };
+        let old;
+        let content = match content {
+            Some(c) => c,
+            None => {
+                old = self.config_file_content(&id)?.unwrap_or_default();
+                &old[..]
+            }
+        };
+        if content.len() > limits::FILE {
+            return Err(Error::TooLarge(Oversize::File(content.len())));
+        }
+        let values = BTreeMap::from([
+            ("name".to_string(), f.name.clone()),
+            ("category".to_string(), f.category.clone()),
+            ("path".to_string(), f.path.clone()),
+            ("mode".to_string(), format!("{:o}", f.mode)),
+            ("scope".to_string(), f.scope.clone()),
+            ("size".to_string(), content.len().to_string()),
+            (
+                "binary".to_string(),
+                if is_text(content) { "no" } else { "yes" }.to_string(),
+            ),
+            (
+                "content".to_string(),
+                base64::engine::general_purpose::STANDARD.encode(content),
+            ),
+        ]);
+        self.update(&id, "config_file", &f.name, &values)?;
+        Ok(id)
+    }
+
+    /// The notes kept here, without their texts.
+    pub fn notes(&self) -> Result<Vec<Note>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .filter(|(_, r)| r.kind == "note")
+            .map(|(id, r)| {
+                let get = |k: &str| r.f.get(k).map(|f| f.val.clone()).unwrap_or_default();
+                let changed =
+                    r.f.values()
+                        .map(|f| f.t.as_str())
+                        .max()
+                        .unwrap_or("")
+                        .to_string();
+                Note {
+                    title: get("title"),
+                    category: get("category"),
+                    format: if get("format") == "markdown" {
+                        NoteFormat::Markdown
+                    } else {
+                        NoteFormat::Plain
+                    },
+                    hosts: get("hosts")
+                        .split('\n')
+                        .filter(|h| !h.is_empty())
+                        .map(str::to_string)
+                        .collect(),
+                    sensitive: get("sensitive") == "yes",
+                    size: r.f.get("text").map_or(0, |f| f.val.len()),
+                    changed,
+                    id,
+                }
+            })
+            .collect())
+    }
+
+    /// A note's text.
+    pub fn note_text(&self, id: &str) -> Result<Option<Zeroizing<String>>> {
+        Ok(self
+            .records()?
+            .into_iter()
+            .find(|(i, r)| i == id && r.kind == "note")
+            .map(|(_, r)| {
+                Zeroizing::new(r.f.get("text").map(|f| f.val.clone()).unwrap_or_default())
+            }))
+    }
+
+    /// Keeps a note, new when `n.id` is empty; returns its id. `text` None
+    /// keeps the one it had. Each part is its own field, so a title changed
+    /// on one device and the text on another both stay.
+    pub fn save_note(&self, n: &Note, text: Option<&str>) -> Result<String> {
+        let id = if n.id.is_empty() {
+            new_id()?
+        } else {
+            n.id.clone()
+        };
+        let old;
+        let text = match text {
+            Some(t) => t,
+            None => {
+                old = self.note_text(&id)?.unwrap_or_default();
+                old.as_str()
+            }
+        };
+        if text.len() > limits::NOTE {
+            return Err(Error::TooLarge(Oversize::Note(text.len())));
+        }
+        let values = BTreeMap::from([
+            ("title".to_string(), n.title.clone()),
+            ("category".to_string(), n.category.clone()),
+            (
+                "format".to_string(),
+                match n.format {
+                    NoteFormat::Plain => "plain",
+                    NoteFormat::Markdown => "markdown",
+                }
+                .to_string(),
+            ),
+            ("hosts".to_string(), n.hosts.join("\n")),
+            (
+                "sensitive".to_string(),
+                if n.sensitive { "yes" } else { "no" }.to_string(),
+            ),
+            ("text".to_string(), text.to_string()),
+        ]);
+        self.update(&id, "note", &n.title, &values)?;
+        Ok(id)
+    }
+
+    /// Keeps an environment, new when `id` is empty; returns its id. Each
+    /// variable is its own field, so edits on two devices to two variables
+    /// both stay. A variable given None keeps the value it had; one left
+    /// out is removed.
+    pub fn save_environment(
+        &self,
+        id: &str,
+        name: &str,
+        scope: &str,
+        vars: &[(String, Option<String>)],
+    ) -> Result<String> {
+        let id = if id.is_empty() {
+            new_id()?
+        } else {
+            id.to_string()
+        };
+        let old = self.environment_values(&id)?.unwrap_or_default();
+        let mut values = BTreeMap::from([
+            ("name".to_string(), name.to_string()),
+            ("scope".to_string(), scope.to_string()),
+        ]);
+        for (var, value) in vars {
+            let value = match value {
+                Some(v) => v.clone(),
+                None => old
+                    .iter()
+                    .find(|(n, _)| n == var)
+                    .map(|(_, v)| v.to_string())
+                    .unwrap_or_default(),
+            };
+            if !value.is_empty() {
+                values.insert(format!("var:{var}"), value);
+            }
+        }
+        let vars = values
+            .iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix("var:")?, v.as_str())));
+        if let Some(o) = environment_oversize(vars) {
+            return Err(Error::TooLarge(o));
+        }
+        self.update(&id, "environment", name, &values)?;
         Ok(id)
     }
 
@@ -1083,6 +1659,9 @@ mod tests {
             command: "df -h /".into(),
             scope: String::new(),
             enter: true,
+            category: "Checks".into(),
+            needs: vec!["e1".into(), "e2".into()],
+            origin: "library:diagnostics/pg_ping".into(),
         };
         s.id = v.save_snippet(&s).expect("save");
         s.command = "df -h / && free -h".into();
@@ -1547,6 +2126,283 @@ mod tests {
         let v = Vault::open(&path, &keys).expect("again");
         v.set_device_secret("sync", None).expect("forget");
         assert!(v.device_secret("sync").expect("read").is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_users_presence_opens_the_vault_beside_its_passphrase() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-presence-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("vault.db");
+        let keys = MemoryKeys::default();
+        let hello = MemoryPresence::default();
+        let v = Vault::open(&path, &keys).expect("made");
+        v.set_password("u@h:22", "hunter2").expect("save");
+        assert!(
+            matches!(v.set_presence(&hello), Err(Error::Locked(Lock::Passphrase))),
+            "not without a passphrase"
+        );
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.set_presence(&hello).expect("presence");
+        assert!(v.has_presence().expect("has"));
+        v.leave_keychain(&keys).expect("left");
+        drop(v);
+
+        assert!(Vault::opens_with_presence(&path));
+        assert_eq!(locked(Vault::open(&path, &keys)), Lock::Passphrase);
+        hello
+            .absent
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        assert!(matches!(
+            Vault::unlock(&path, &keys, Unlock::Presence(&hello)),
+            Err(Error::NotPresent)
+        ));
+        hello
+            .absent
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+        let v = Vault::unlock(&path, &keys, Unlock::Presence(&hello)).expect("present");
+        assert_eq!(
+            v.password("u@h:22")
+                .expect("read")
+                .map(|p| p.to_string())
+                .as_deref(),
+            Some("hunter2")
+        );
+        v.remove_presence(&hello).expect("removed");
+        drop(v);
+        assert!(!Vault::opens_with_presence(&path));
+        assert!(matches!(
+            Vault::unlock(&path, &keys, Unlock::Presence(&hello)),
+            Err(Error::Locked(Lock::Passphrase))
+        ));
+        Vault::unlock(&path, &keys, Unlock::Passphrase("correct horse battery"))
+            .expect("the passphrase still opens it");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn snippets_and_environments_stay_within_limits() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-limits-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let s = Snippet {
+            id: String::new(),
+            name: "big".into(),
+            command: "x".repeat(limits::COMMAND + 1),
+            scope: String::new(),
+            enter: true,
+            category: String::new(),
+            needs: vec![],
+            origin: String::new(),
+        };
+        assert!(matches!(
+            v.save_snippet(&s),
+            Err(Error::TooLarge(Oversize::Command(_)))
+        ));
+        let big = "v".repeat(limits::VALUE + 1);
+        assert!(matches!(
+            v.save_environment("", "e", "", &[("A".into(), Some(big))]),
+            Err(Error::TooLarge(Oversize::Value(n, _))) if n == "A"
+        ));
+        // Three values that fit alone, too much together.
+        let third = "v".repeat(limits::VALUE - 10);
+        let vars: Vec<(String, Option<String>)> = ["A", "B", "C"]
+            .iter()
+            .map(|n| (n.to_string(), Some(third.clone())))
+            .collect();
+        assert!(matches!(
+            v.save_environment("", "e", "", &vars),
+            Err(Error::TooLarge(Oversize::Environment(_)))
+        ));
+        // A kept value counts as it is.
+        let id = v
+            .save_environment("", "e", "", &vars[..1])
+            .expect("one fits");
+        let more = [(vars[0].0.clone(), None), vars[1].clone(), vars[2].clone()];
+        assert!(v.save_environment(&id, "e", "", &more).is_err());
+        let many: Vec<(String, Option<String>)> = (0..=limits::VARS)
+            .map(|i| (format!("V{i}"), Some("1".into())))
+            .collect();
+        assert!(matches!(
+            v.save_environment("", "e", "", &many),
+            Err(Error::TooLarge(Oversize::Vars(_)))
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn config_files_keep_their_bytes_and_stay_within_a_megabyte() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-files-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let mut f = ConfigFile {
+            id: String::new(),
+            name: "kube prod".into(),
+            category: "Kubernetes".into(),
+            path: "~/.kube/config".into(),
+            mode: 0o600,
+            scope: "group:prod".into(),
+            size: 0,
+            binary: false,
+        };
+        let id = v
+            .save_config_file(&f, Some(b"apiVersion: v1\n"))
+            .expect("saved");
+        let listed = v.config_files().expect("listed");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            (listed[0].size, listed[0].binary, listed[0].mode),
+            (15, false, 0o600)
+        );
+        assert_eq!(listed[0].category, "Kubernetes");
+        // Renamed, its content kept.
+        f.id = id.clone();
+        f.name = "kube".into();
+        v.save_config_file(&f, None).expect("renamed");
+        assert_eq!(
+            v.config_file_content(&id)
+                .expect("read")
+                .as_deref()
+                .map(|c| &c[..]),
+            Some(&b"apiVersion: v1\n"[..])
+        );
+        // Bytes that are not text.
+        v.save_config_file(&f, Some(&[0x30, 0x82, 0, 1]))
+            .expect("binary");
+        assert!(v.config_files().expect("listed")[0].binary);
+        let big = vec![b'x'; limits::FILE + 1];
+        assert!(matches!(
+            v.save_config_file(&f, Some(&big)),
+            Err(Error::TooLarge(Oversize::File(_)))
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn notes_keep_their_parts_apart() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-notes-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let mut n = Note {
+            id: String::new(),
+            title: "Runbook".into(),
+            category: "Ops".into(),
+            format: NoteFormat::Markdown,
+            hosts: vec!["web-1".into(), "db".into()],
+            sensitive: true,
+            changed: String::new(),
+            size: 0,
+        };
+        let id = v
+            .save_note(&n, Some("# Restart\n\n- `systemctl restart app`"))
+            .expect("saved");
+        let listed = v.notes().expect("listed");
+        assert_eq!(listed.len(), 1);
+        let got = &listed[0];
+        assert_eq!(
+            (
+                got.title.as_str(),
+                got.format,
+                got.sensitive,
+                got.hosts.len()
+            ),
+            ("Runbook", NoteFormat::Markdown, true, 2)
+        );
+        assert!(!got.changed.is_empty());
+        // Retitled, its text kept.
+        n.id = id.clone();
+        n.title = "Runbook: app".into();
+        n.hosts.clear();
+        v.save_note(&n, None).expect("retitled");
+        assert_eq!(
+            v.note_text(&id)
+                .expect("read")
+                .as_deref()
+                .map(|t| t.as_str()),
+            Some("# Restart\n\n- `systemctl restart app`")
+        );
+        assert!(v.notes().expect("listed")[0].hosts.is_empty());
+        let big = "x".repeat(limits::NOTE + 1);
+        assert!(matches!(
+            v.save_note(&n, Some(&big)),
+            Err(Error::TooLarge(Oversize::Note(_)))
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_open_vault_confirms_its_passphrase_only() {
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-vault-confirm-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("anything at all")),
+            Err(Error::WrongPassphrase)
+        ));
+        v.set_vault_passphrase(Some("correct horse battery"))
+            .expect("passphrase");
+        v.confirm(Unlock::Passphrase("correct horse battery"))
+            .expect("confirmed");
+        assert!(matches!(
+            v.confirm(Unlock::Passphrase("wrong horse battery")),
+            Err(Error::WrongPassphrase)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn environments_keep_values_apart_from_their_names() {
+        let dir = std::env::temp_dir().join(format!("shellwing-vault-env-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let v = Vault::open(&dir.join("vault.db"), &MemoryKeys::default()).expect("open");
+        let id = v
+            .save_environment(
+                "",
+                "aws-prod",
+                "group:prod",
+                &[
+                    ("AWS_ACCESS_KEY_ID".into(), Some("AKIA1".into())),
+                    ("AWS_SECRET_ACCESS_KEY".into(), Some("s3cret".into())),
+                ],
+            )
+            .expect("save");
+        let listed = v.environments().expect("list");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(
+            listed[0].names,
+            ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+        );
+        assert_eq!(listed[0].scope, "group:prod");
+        // None keeps a value; a name left out goes.
+        v.save_environment(
+            &id,
+            "aws-prod",
+            "",
+            &[
+                ("AWS_SECRET_ACCESS_KEY".into(), None),
+                ("AWS_REGION".into(), Some("eu-west-1".into())),
+            ],
+        )
+        .expect("edit");
+        let values = v.environment_values(&id).expect("read").expect("there");
+        let said: Vec<(String, String)> = values
+            .into_iter()
+            .map(|(n, x)| (n, x.to_string()))
+            .collect();
+        assert_eq!(
+            said,
+            [
+                ("AWS_REGION".to_string(), "eu-west-1".to_string()),
+                ("AWS_SECRET_ACCESS_KEY".to_string(), "s3cret".to_string())
+            ]
+        );
+        assert!(v.items().expect("items").is_empty(), "not a password");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

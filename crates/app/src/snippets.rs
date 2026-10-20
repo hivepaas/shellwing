@@ -4,6 +4,8 @@
 
 use std::collections::BTreeMap;
 
+use shellwing_i18n::tr;
+
 pub use shellwing_vault::Snippet;
 
 /// Filled in from the pane's host.
@@ -39,7 +41,7 @@ impl Scope {
 
     pub fn label(&self) -> String {
         match self {
-            Scope::Every => "every host".into(),
+            Scope::Every => tr!("every host"),
             Scope::Group(g) | Scope::Host(g) => g.clone(),
         }
     }
@@ -60,7 +62,7 @@ fn var_char(c: char) -> bool {
 }
 
 /// Each `{{name}}` in `command`: where it is (the braces included), and the name.
-fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
+pub fn holes(command: &str) -> Vec<(std::ops::Range<usize>, String)> {
     let mut out = vec![];
     let mut from = 0;
     while let Some(open) = command[from..].find("{{").map(|i| from + i) {
@@ -99,6 +101,16 @@ pub fn asked(command: &str) -> Vec<String> {
 
 /// `command` with each `{{name}}` that `values` has replaced; the others
 /// stay as they are.
+/// A command of several lines on one, for a list: ` ⏎ ` between them.
+pub fn one_line(command: &str) -> String {
+    command
+        .lines()
+        .map(str::trim_end)
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ⏎ ")
+}
+
 pub fn fill(command: &str, values: &BTreeMap<String, String>) -> String {
     let mut out = String::new();
     let mut at = 0;
@@ -116,6 +128,15 @@ pub fn fill(command: &str, values: &BTreeMap<String, String>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn several_lines_show_on_one() {
+        assert_eq!(
+            one_line("cd /srv\n  make deploy\n\n"),
+            "cd /srv ⏎   make deploy"
+        );
+        assert_eq!(one_line("df -h"), "df -h");
+    }
 
     #[test]
     fn names_are_found_once_and_filled() {

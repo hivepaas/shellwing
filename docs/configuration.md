@@ -38,6 +38,7 @@ your comments, and applies to the open tabs.
 ```toml
 [general]
 restore_tabs = true          # a start without a host opens the last run's tabs
+language = "auto"            # "auto" (the system's) or a language, see Language; this device's own
 
 [appearance]
 mode = "system"              # "system" (as the desktop is), "dark" or "light"
@@ -105,6 +106,95 @@ Fonts:
 
 When shellwing changes this file itself (the theme shortcut below), it edits
 only that key, so your comments and layout stay as you wrote them.
+
+## Language
+
+shellwing speaks the system's language where it has it, else English; *Settings ›
+General › Language* (`language` under `[general]`) picks another. Each device
+keeps its own: it does not sync. What the terminal shows is the server's, and
+stays as it is.
+
+| `language` | |
+| --- | --- |
+| `en` | English |
+| `de` | Deutsch |
+| `es` | Español |
+| `fr` | Français |
+| `pt` | Português (Brasil) |
+| `vi` | Tiếng Việt |
+| `ru` | Русский |
+| `ja` | 日本語 |
+| `ko` | 한국어 |
+| `zh` | 简体中文 (simplified Chinese) |
+
+Japanese, Korean and Chinese need a font with their characters. If they show
+as boxes, pick a UI font that has them in *Settings › Appearance › App text*
+(Noto Sans CJK, for one).
+
+Translations live in `crates/i18n/locales/<language>.ftl` (Fluent), each message
+under the English it translates, which is in the code. `scripts/i18n.py update`
+brings them in step with the code; `scripts/i18n.py todo vi` lists what is left.
+
+## Keyboard shortcuts
+
+*Settings › Keyboard* lists the window's shortcuts with their keys. Click a key
+and press the new one (Esc stops); **+** gives a shortcut one more key, **×**
+takes one away. **Reset** puts a shortcut's own keys back, **Reset all** every
+shortcut's.
+
+- **A key another shortcut has** moves to the new one when you say so; when it
+  replaced a key, the two swap.
+- **A key programs in the terminal use** (Ctrl+letter, Alt+letter, F-keys:
+  Ctrl+R searches the shell's history, Alt+B goes back a word) is taken only
+  when you say so: from then on the window has it, and the programs never get
+  it. That is why the defaults are Ctrl+Shift on Linux and Windows.
+- **Refused:** a key alone or with Shift alone (it is for typing), keys the
+  system keeps (Alt+Tab, Alt+F4, the Windows key, Cmd+Tab, Cmd+H), and the
+  pane's own keys, which cannot be changed: copy and paste, zoom, Shift+PageUp /
+  PageDown / End.
+
+The keys are kept in `config.toml`, under `[shortcuts]`, only for the shortcuts
+whose keys differ from their defaults; each device keeps its own (they do not
+sync, as keys differ between systems). A shortcut takes one key or a list, and
+`[]` leaves it without one:
+
+```toml
+[shortcuts]
+palette = ["ctrl+shift+p", "ctrl+shift+space"]
+find = "ctrl+alt+f"
+broadcast = []
+go_to_tab = "ctrl+digit"     # Ctrl+1…9
+```
+
+A key is its modifiers and then the key, joined by `+`: `ctrl`, `alt`
+(`option`), `shift`, `cmd` (`super`, `win`: Cmd on macOS, the Windows key
+elsewhere), then a letter, digit or symbol, or `left`, `right`, `up`, `down`,
+`home`, `end`, `pageup`, `pagedown`, `tab`, `enter`, `escape`, `space`,
+`backspace`, `delete`, `insert`, `f1`…`f24`. `ctrl+shift+]` is the same key as
+`ctrl+}`. `digit` stands for 1 to 9, and only `go_to_tab` takes it.
+
+| Name | Linux, Windows | macOS |
+| --- | --- | --- |
+| `palette` | Ctrl+Shift+K, Ctrl+Shift+P | Cmd+K |
+| `new_tab` | Ctrl+Shift+T | Cmd+T |
+| `close_pane` | Ctrl+Shift+W | Cmd+W |
+| `split_right` | Ctrl+Shift+D | Cmd+D |
+| `split_down` | Ctrl+Shift+E | Cmd+Shift+D |
+| `pane_left`, `pane_right`, `pane_up`, `pane_down` | Alt+arrows | Cmd+Option+arrows |
+| `next_tab` | Ctrl+Tab, Ctrl+PageDown | Ctrl+Tab, Ctrl+PageDown, Cmd+Shift+] |
+| `previous_tab` | Ctrl+Shift+Tab, Ctrl+PageUp | Ctrl+Shift+Tab, Ctrl+PageUp, Cmd+Shift+[ |
+| `go_to_tab` | Alt+1…9 | Cmd+1…9 |
+| `tabs` | Ctrl+Shift+A | Cmd+Shift+A |
+| `host_list` | Ctrl+Shift+B | Cmd+B |
+| `files` | Ctrl+Shift+O | Cmd+O |
+| `find` | Ctrl+Shift+F | Cmd+F |
+| `broadcast` | Ctrl+Shift+I | Cmd+Shift+I |
+| `settings` | Ctrl+, | Cmd+, |
+| `next_theme`, `previous_theme` | Ctrl+Shift+] / [ | Cmd+] / [ |
+| `quit` | none | Cmd+Q |
+
+The pane keys (`pane_left` …) go to the shell when there is no pane that way.
+A name or key that does not read is reported and left out.
 
 ## Themes
 
@@ -375,6 +465,21 @@ hold the key:
   that long without a key pressed or a click in shellwing, and asks for the
   passphrase, waiting for your return. Each device has its own.
 
+**Windows Hello and Touch ID** open the locked vault too, once turned on in
+*Settings › Vault › Unlock with Windows Hello* (or *Touch ID*), which needs a
+passphrase set. When the vault locks (at start, when idle, *Lock now*), the
+system asks, and the passphrase can be typed meanwhile; cancelled, the
+passphrase is asked for as before. The passphrase and the recovery key keep
+working.
+
+- **Windows Hello** (a fingerprint, the face or the device's PIN): the key is
+  kept by the device's security chip (TPM) and used only after Hello.
+- **Touch ID** (macOS): the key is a Keychain item that opens only to Touch ID
+  with the fingers enrolled now; adding one stops it until it is turned on
+  again. Apple lets only signed apps keep such items: an unsigned build of
+  shellwing says so.
+- Linux has no such thing for keys: the passphrase it is.
+
 ## Local terminal
 
 *This computer › Local terminal*, at the top of the host list (and of the
@@ -489,12 +594,35 @@ found:
 
 ## Snippets
 
-Snippets are commands you run often. They are kept in the vault and sync with
-it. Make and edit them in *Settings › Snippets*: a name, a one-line command
-(chain commands with `&&` or `;`), the hosts they are offered for (every host,
-a group or one host), and whether Enter is pressed after typing.
+Snippets are commands you run often. They are kept in the vault (`vault.db`,
+encrypted, never in a file of their own) and sync with it. In *Settings ›
+Snippets*, **New snippet…** or a snippet's edit button opens it in a window of
+its own, as a note: its name and category above, its command in a code editor,
+and beside it the hosts it is offered for (every host, a group or one host),
+the environments it needs, its `{{name}}` values and whether Enter is pressed
+after typing. With many snippets, a category files them: Settings and the
+palette list them under it (*Snippets · Deploy*).
 
-In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
+- **The editor** colors the command as shell (commands, flags, quoted text,
+  `$` expansions, operators, comments) and its `{{name}}` values, and numbers
+  its lines. Tab indents with two spaces; Enter keeps the line's indent.
+- **Saving** is as for notes: a moment after typing stops, once it has a name
+  and a command, and when the window closes; Ctrl+S (Cmd+S) saves at once.
+  While its window is open, the snippet is left out of syncs.
+- **Run in {pane} / Insert into {pane}** below run it in the main window's
+  focused pane (its values asked for there), or type it without Enter. A
+  snippet that needs environments only runs: typed alone it could not have
+  them.
+
+A command can take several lines. It is sent to the pane as one paste, so a
+shell with bracketed paste on (bash, zsh and fish are, by default) takes it
+whole and runs it at the Enter; lists show it on one line, ` ⏎ ` between the
+lines.
+
+In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*;
+*Snippets…* in the pane's right-click menu opens the palette there. Under the
+palette's field, a row of badges (Hosts, Recent, Snippets, Environments,
+Actions, Settings) jumps to each part of the list; so do Tab and Shift+Tab.
 
 - **Enter** types the snippet into the pane.
 - **Alt+Enter** (Option+Enter on macOS) types it into every pane of the tab;
@@ -503,6 +631,184 @@ In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*:
 In the command, `{{host}}`, `{{user}}` and `{{address}}` are filled in for each
 pane's host. Any other `{{name}}` is asked for first, with the command shown as
 it will run.
+
+### The snippet library
+
+*Settings › Snippets › Library…* (or *Snippet library…* in the palette) opens
+ready commands for PostgreSQL, MySQL, MariaDB, Redis, MongoDB, ClickHouse,
+Elasticsearch, InfluxDB, SQLite, SQL Server, Docker, migration tools and load
+tests, by tool on the left and by task above (Diagnostics, Maintenance,
+Backup, Database, Data, Testing), with a search. Tick those you want and
+**Add to my snippets**: each becomes a snippet of your own, to edit as any
+other. What was added is marked *Added* (and listed under *Added*); a command
+can be added again, as another copy.
+
+- **Before adding**, the one shown on the right can be adjusted: its options
+  (the tool's flags it does not take by default), and whether it runs on the
+  host or in a Docker container (`docker exec -it {{container}} …`, the
+  container asked when it runs).
+- **Passwords** are never in a command: the tool reads its own variable
+  (`PGPASSWORD`, `MYSQL_PWD`, `REDISCLI_AUTH`…) or `$DB_PASSWORD`, from the
+  environment the snippet is given; when one environment has that variable it
+  is given by default. Without one, the tool asks for it, or goes without.
+- **Values** such as `{{db_user}}` and `{{database}}` are asked when it runs.
+- **What changes data** (restores, imports, migrations, drops, Docker's prune)
+  is marked *Changes data* and added typed, not run: it waits for Enter.
+- **File under** sets the new snippets' category: their tool (*PostgreSQL*),
+  their task (*Backup*, the name then saying the tool), or both.
+
+The library's text is in English. It is made from HivePaaS's command
+templates by `scripts/library_from_hivepaas.py` (into
+`crates/app/src/library/items.json`).
+
+## Environments
+
+Environments are named sets of variables for the shell, such as an API's
+keys: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. They are kept in the vault,
+encrypted, and sync with it. Make them in *Settings › Environments*: a name, the
+hosts they are offered for, and the variables, a name and a value a row. A value
+can take several lines (a PEM key, say): Enter starts another, Ctrl+Enter
+(Cmd+Enter on macOS) saves. **Paste a .env file** fills the rows from `.env`
+text on the clipboard (`export`, `#` comments and quotes are taken).
+
+Once saved, values are masked: editing shows the names, and a masked value is
+kept unless you change it. **Show values** shows them, after asking it is you:
+Windows Hello or Touch ID where it opens the vault, else the vault's
+passphrase; with neither, a yes. They are masked again a minute later.
+
+Nothing is loaded by itself. You choose when, and what:
+
+- The palette lists the focused pane's under *Environments*, while it is
+  connected: Enter loads one into its shell (*Load Environment…* in the pane's
+  right-click menu opens the palette there). The pane shows a badge for each
+  one loaded. **Unload environment** in the palette or the menu, or the
+  badge's ✕, unsets its variables.
+- A snippet that **needs** environments runs in a subshell that has them, and
+  they are gone when it ends; the pane's shell never gets them.
+
+To load, shellwing types a command that turns the terminal's echo off, says it
+is ready (with an escape sequence its terminal reads and never shows), and only
+then sends the values for `read` to take: as lines of printable ASCII, with a
+newline, a control character or a byte past ASCII written `\0ooo` for the
+shell's `printf %b` to turn back. The command holds the names only, and starts with a space, which keeps it out of the history of
+bash (with `HISTCONTROL=ignorespace`, the default on most systems) and zsh
+(with `HIST_IGNORE_SPACE`). A POSIX shell (sh, bash, zsh) at its prompt is
+needed; not while a full-screen program runs; fish is not supported yet.
+
+**Limits.** A shell takes an exported variable of 128 KB at most on Linux, and
+all of them with a command's arguments in about 2 MB: past that, every program
+it starts fails ("Argument list too long"). So shellwing keeps well within: a
+variable's name takes 128 characters, a value 32 KB (a PEM key is 3–4 KB), an
+environment 100 variables and 64 KB, and the environments loaded into one
+shell 256 KB together. A snippet's command takes 64 KB.
+
+While loaded, the variables are in the shell's memory on the server: whoever
+has root there, or runs as your user, can read them, until they are unloaded or
+the shell ends (unloading frees them in the shell, though not every copy a
+program made). Load them on servers you trust, unload them when done, and
+prefer credentials that expire or can do little: short-lived tokens, or a role
+with only what the work needs.
+
+## Config files
+
+Config files are files to place on hosts, such as `~/.kube/config`,
+`~/.aws/credentials` or `~/.npmrc`. They are kept in the vault, encrypted, and
+sync with it; one holds 1 MB at most, text or not. Make them in *Settings ›
+Config files*: a name, a category, where the file goes on the host (from `/` or
+`~/`), its permissions (`600` by default), the hosts it is offered for, and its
+content. Text up to 64 KB is edited there; **Choose a file…** takes any file up
+to 1 MB from this computer (one under your home folder goes to the same place
+under the host's). *Keep a File in the Vault…* in the pane's right-click menu
+takes one from the host instead.
+
+Once saved, the content is masked: the eye shows it, after asking it is you, as
+for an environment's values.
+
+**Placing one.** The palette lists the focused pane's host's under *Config
+files*, while it is connected (*Place Config File…* in the pane's right-click
+menu opens it there). Enter asks where (the file's own path, to change if
+need be), then how:
+
+- **Until the tab closes** (the default): the pane shows a badge; closing the
+  tab, the pane or the app takes the file away, as does the badge's ✕ or
+  *Remove …* in the menu.
+- **To stay**: it is left there.
+
+If a file is there already (and differs), it asks: replace it until the tab
+closes (the one there is set aside beside it, as `….shellwing-saved`, and comes
+back), replace it and keep the old one as `….bak`, or replace it.
+
+The file is written whole: to a file beside it first, with its permissions from
+the start, then renamed over the target; folders missing on the way are made
+with `700`. If the connection drops, or the app is killed, before a file placed
+until the tab closes is taken away, it is taken away the next time the host
+connects (and what it set aside put back), unless it changed since: then it is
+left as it is, and said so.
+
+A placed file is on the server's disk: whoever has root there can read it until
+it is removed. Place secrets on servers you trust, until the tab closes.
+
+## Notes
+
+Notes are free text kept in the vault, encrypted, and synced with it: what a
+server is for, how to restart it, codes to keep. One holds 256 KB at most. Each
+opens in a window of its own, from *Settings › Notes*, or from the palette
+(under *Notes*; *New note…* there too). The palette lists first the notes
+about the focused pane's host.
+
+A note's window opens at the size the last one had when it closed (800 × 700
+the first time; never less than 600 × 500), kept in `state/note-window.json`.
+
+In its window, a note has a title, a category, a format and the hosts it is
+about (*For a host ▾*):
+
+- **Plain text** is edited as it is, in the terminal's font.
+- **Markdown** shows as it is typed: headings, emphasis, `code`, code blocks,
+  lists and task lists, quotes, GitHub alerts, rules, tables; the marks
+  (`**`, `#`) show on the caret's line only. Enter carries a list on (an empty
+  item ends it), Tab and Shift+Tab indent; a table is edited in its cells; a
+  task's box ticks on a click. The right-click menu cuts, copies (also as
+  Markdown), pastes, turns a line into another kind of block, and edits a
+  table. *Preview* shows it read-only, laid out as when it is edited: it
+  selects and copies, a task's box ticks, nothing else changes it. A code
+  block has *Copy* and *Insert* (into the main window's pane) at its top.
+
+The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
+into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as
+it is, and Obsidian's constructs (`[[links]]`, `#tags`, `key:: value`) and
+math (`$`, `$$`) are plain text, as commands and paths are. The read-only view
+is the same editor, read-only.
+
+Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z (Cmd+Shift+Z) redoes. A long note scrolls,
+with a bar to drag. Text wraps to the window; a table wider than it scrolls
+sideways, by its bar, a sideways swipe, or Shift and the wheel.
+
+A new note starts with a short guide, in the app's language: what Markdown
+does there, a code block, and how it goes into the shell. Write over it;
+closed untouched, a new note is not kept.
+
+**Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
+it into the main window's focused pane (connected), without Enter, and brings
+that window forward to read it and run it. Several lines go as one paste. In a
+Markdown note the bar also formats: bold, italic, strikethrough, code (a fenced
+block for several lines), link, heading, quote, list, task; applied again, each
+comes off. Ctrl+B, Ctrl+I, Ctrl+E and Ctrl+K (Cmd on macOS) do bold, italic,
+code and link.
+
+It is saved on this device three seconds after it last changed (nothing is
+written when it is as last saved), when its window closes, before the vault
+locks, and when the app quits; Ctrl+S (Cmd+S on macOS) saves at once. *Delete*
+removes it, after asking.
+
+**Syncing.** While a note is open in its window, syncs leave it alone (both
+ways): it goes out when the window closes, at once if it changed, and when the
+app quits (the app syncs before it goes, ten seconds at most). The rest of the
+vault syncs as before: when it changes, and every minute.
+
+While the vault is locked, a note's window holds no text: it comes back once
+the vault is open. A **sensitive** note's text shows only after asking it is
+you, as for an environment's values. Closing the main window closes the notes'
+windows too.
 
 ## Typing in every pane
 
@@ -567,6 +873,12 @@ in the vault, then a password. A host that names a key offers only that key.
 folder = "~/Library/Mobile Documents/com~apple~CloudDocs/shellwing"   # any synced folder
 settings = true             # sync the settings that are not this device's own
 ```
+
+*Settings › Sync* is where sync is set up and followed: how it stands (when it
+last synced, or why not, with Sync now or Try again), what travels, the place
+and its recovery key, and the options; shellwing cloud beside them. The cloud
+in the header says the same in brief, in its color (green synced, orange
+failed, a light orange not set up), and opens Settings › Sync.
 
 Choose *Sync passwords with a folder…* in the palette, or set the folder here.
 Any folder another tool keeps in sync works: iCloud Drive, Syncthing, a Dropbox

@@ -176,6 +176,9 @@ pub struct Frame {
     pub find: Option<FindStatus>,
     /// The program asked for mouse reports (Shift still selects).
     pub mouse_tracking: bool,
+    /// A full-screen program (vim, htop, less) is on the alternate screen:
+    /// what is typed goes to it, not to the shell.
+    pub alternate: bool,
     /// Some text is selected, to copy.
     pub selected: bool,
     /// Increases with every frame built.
@@ -282,6 +285,76 @@ pub enum Event {
     /// The program set the terminal's title (OSC 0 or 2), such as the shell's
     /// `user@host: ~/dir`; empty when it cleared it.
     Title(String),
+    /// What a command shellwing typed printed to say where it stands
+    /// (`OSC 777 ; shellwing ; <payload>`): see [`signal_sequence`].
+    Signal(String),
+}
+
+/// What a command prints to signal shellwing, for a payload such as
+/// `ready-1f3a`: printed with `printf`, it never shows.
+/// Pasted text with every line end as a newline. A carriage return runs a
+/// line as surely as a newline (Enter sends one), but libghostty's check for
+/// a paste that could run commands looks for newlines only: lines ended by a
+/// bare `\r`, as a web page can hide in text copied from it, would run with
+/// no question. Windows' `\r\n` becomes one newline.
+fn line_ends_as_newlines(text: &str) -> std::borrow::Cow<'_, str> {
+    if !text.contains('\r') {
+        return text.into();
+    }
+    text.replace("\r\n", "\n").replace('\r', "\n").into()
+}
+
+pub fn signal_sequence(payload: &str) -> String {
+    format!("\\033]777;shellwing;{payload}\\007")
+}
+
+/// Finds shellwing's signals in what the program sends, a sequence split
+/// between two reads too.
+#[derive(Default)]
+struct Signals {
+    /// The end of the last read, where a signal may have begun.
+    tail: Vec<u8>,
+}
+
+const SIGNAL: &[u8] = b"\x1b]777;shellwing;";
+
+impl Signals {
+    fn scan(&mut self, bytes: &[u8]) -> Vec<String> {
+        let mut seen = std::mem::take(&mut self.tail);
+        seen.extend_from_slice(bytes);
+        let mut found = vec![];
+        let mut at = 0;
+        while let Some(i) = find(&seen[at..], SIGNAL) {
+            let start = at + i + SIGNAL.len();
+            let end = seen[start..]
+                .iter()
+                .position(|&b| b == 0x07 || b == 0x1b)
+                .map(|e| start + e);
+            match end {
+                Some(e) => {
+                    found.push(String::from_utf8_lossy(&seen[start..e]).into_owned());
+                    at = e + 1;
+                }
+                None if seen.len() - start < 128 => {
+                    // Its end is in the next read.
+                    self.tail = seen[at + i..].to_vec();
+                    return found;
+                }
+                None => at = start,
+            }
+        }
+        // A signal's first bytes may end this read.
+        let keep = (1..SIGNAL.len())
+            .rev()
+            .find(|&n| seen.len() >= n && seen.ends_with(&SIGNAL[..n]))
+            .unwrap_or(0);
+        self.tail = seen[seen.len() - keep..].to_vec();
+        found
+    }
+}
+
+fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
+    hay.windows(needle.len()).position(|w| w == needle)
 }
 
 enum Cmd {
@@ -605,6 +678,7 @@ fn run(
     }
     // The new title can be read only once the write that set it is done.
     let titled = std::rc::Rc::new(std::cell::Cell::new(false));
+    let mut signals = Signals::default();
     {
         let titled = titled.clone();
         term.on_title_changed(move |_| titled.set(true))?;
@@ -669,6 +743,9 @@ fn run(
         }) {
             match cmd {
                 Cmd::Feed(b) => {
+                    for signal in signals.scan(&b) {
+                        (e.events)(Event::Signal(signal));
+                    }
                     logging.write(&b, &e.events);
                     e.term.vt_write(&b);
                     if titled.replace(false)
@@ -704,9 +781,10 @@ fn run(
                 Cmd::Paste { text, allow_unsafe } => {
                     let mime = ClipboardMime::new("text/plain");
                     let opts = paste::Options::new().with_allow_unsafe(allow_unsafe);
+                    let sent = line_ends_as_newlines(&text);
                     match e
                         .term
-                        .paste(opts, &[mime], |_, w| w.write_all(text.as_bytes()))
+                        .paste(opts, &[mime], |_, w| w.write_all(sent.as_bytes()))
                     {
                         Ok(_) => e.term.scroll_viewport(ScrollViewport::Bottom),
                         Err(libghostty_vt::Error::Rejected) => {
@@ -1338,8 +1416,31 @@ impl Engine {
             hover_link: self.hover,
             find: self.find.as_ref().map(Finding::status),
             mouse_tracking: self.term.is_mouse_tracking().unwrap_or(false),
+            alternate: matches!(self.term.active_screen(), Ok(Screen::Alternate)),
             selected: self.term.selection().is_ok_and(|s| s.is_some()),
             seq: self.seq,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn signals_are_found_whole_or_split_between_reads() {
+        let mut s = Signals::default();
+        assert_eq!(
+            s.scan(b"ls\r\n\x1b]777;shellwing;ready-1f\x07$ "),
+            vec!["ready-1f".to_string()]
+        );
+        assert!(s.scan(b"out \x1b]777;shell").is_empty());
+        assert!(s.scan(b"wing;done").is_empty());
+        assert_eq!(s.scan(b"-1f\x1b\\ rest"), vec!["done-1f".to_string()]);
+        assert!(
+            s.scan(b"\x1b]2;title\x07 plain").is_empty(),
+            "others are not"
+        );
+        assert_eq!(signal_sequence("x"), "\\033]777;shellwing;x\\007");
     }
 }
