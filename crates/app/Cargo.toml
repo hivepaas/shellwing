@@ -17,6 +17,9 @@ default = ["wayland", "x11"]
 # when the X11 development libraries are not installed.
 wayland = ["gpui_platform/wayland"]
 x11 = ["gpui_platform/x11"]
+# The UI tests (src/ui_tests): longer than the unit tests, so CI runs them
+# daily and by hand. `cargo test -p shellwing --features ui-tests ui_tests`.
+ui-tests = ["gpui/test-support"]
 
 [dependencies]
 shellwing-term.workspace = true
@@ -57,6 +60,13 @@ windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
 # Puts the icon and the version into shellwing.exe (see build.rs).
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1.34"
+
+[dev-dependencies]
+# The UI tests (src/ui_tests, with the `ui-tests` feature): an SSH server in
+# the test process.
+russh.workspace = true
+rand = { version = "0.10", features = ["thread_rng"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "net", "io-util", "process"] }
 
 # The workspace's lints, except that unsafe code is denied rather than
 # forbidden: one Win32 call (AttachConsole, in main.rs) allows it.

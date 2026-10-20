@@ -2630,14 +2630,14 @@ tc1b10302 = Expression régulière (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Le panneau Fichiers parcourt un serveur via SFTP ; ce volet est un shell sur cet ordinateur.
 
+# Saved in the vault.
+t0d69c4e6 = Enregistré dans le coffre.
+
 # Save the password for {target} in the vault?
 tceb19137 = Enregistrer le mot de passe de { $target } dans le coffre ?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Enregistrer la phrase secrète de { $key_path } dans le coffre ?
-
-# Saved in the vault.
-t0d69c4e6 = Enregistré dans le coffre.
 
 # The host key for {host} has changed.
 t1e510d66 = La clé du serveur { $host } a changé.

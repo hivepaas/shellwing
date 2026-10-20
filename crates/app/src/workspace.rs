@@ -277,6 +277,14 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) -> Self {
         let vault = match live.store() {
+            // Tests keep the vault's key in memory: the system keychain's
+            // entry is the user's own app's, the same service and account.
+            #[cfg(test)]
+            Some(store) => VaultSlot::open_with(
+                store.dir().join("vault.db"),
+                shellwing_vault::MemoryKeys::default(),
+            ),
+            #[cfg(not(test))]
             Some(store) => VaultSlot::open(store.dir().join("vault.db")),
             None => VaultSlot::none(),
         };
@@ -402,6 +410,33 @@ impl Workspace {
         {
             eprintln!("cannot save the window layout: {e}");
         }
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn tab_count(&self) -> usize {
+        self.tabs.len()
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn pane_count(&self) -> usize {
+        self.tabs.get(self.active).map_or(0, |t| t.views().len())
+    }
+
+    /// The notice at the bottom of the window, if one shows.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn notice_text(&self) -> Option<String> {
+        self.notice.as_ref().map(|n| n.to_string())
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn palette_open(&self) -> bool {
+        self.palette.is_some()
+    }
+
+    /// The focused pane of the active tab: for the UI tests to read.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn active_view(&self) -> Entity<TermView> {
+        self.tabs[self.active].focused.clone()
     }
 
     pub fn active_index(&self) -> usize {

@@ -2557,14 +2557,14 @@ tc1b10302 = 正则表达式（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = “文件”面板通过 SFTP 浏览服务器；此窗格是本机上的 shell。
 
+# Saved in the vault.
+t0d69c4e6 = 已保存到保险库。
+
 # Save the password for {target} in the vault?
 tceb19137 = 将 { $target } 的密码保存到保险库？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = 将 { $key_path } 的密码短语保存到保险库？
-
-# Saved in the vault.
-t0d69c4e6 = 已保存到保险库。
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } 的主机密钥已更改。

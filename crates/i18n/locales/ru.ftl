@@ -2686,14 +2686,14 @@ tc1b10302 = Регулярное выражение (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Панель «Файлы» просматривает сервер по SFTP; эта панель — оболочка на этом компьютере.
 
+# Saved in the vault.
+t0d69c4e6 = Сохранено в хранилище.
+
 # Save the password for {target} in the vault?
 tceb19137 = Сохранить пароль для { $target } в хранилище?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Сохранить парольную фразу { $key_path } в хранилище?
-
-# Saved in the vault.
-t0d69c4e6 = Сохранено в хранилище.
 
 # The host key for {host} has changed.
 t1e510d66 = Ключ хоста { $host } изменился.

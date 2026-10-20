@@ -7481,6 +7481,8 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "rand 0.10.3",
+ "russh",
  "serde",
  "serde_json",
  "sha2 0.10.9",

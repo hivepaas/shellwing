@@ -1502,6 +1502,46 @@ impl TermView {
         cx.notify();
     }
 
+    /// The bar offering to save a password or passphrase that worked: Save
+    /// puts it in the vault, Not now drops it.
+    pub fn answer_save_offer(&mut self, save: bool, cx: &mut Context<Self>) {
+        if !save {
+            self.save_offer = None;
+            cx.notify();
+            return;
+        }
+        if let Some(secret) = self.save_offer.take() {
+            match self.session.save(&secret) {
+                Ok(()) => {
+                    self.show_notice(tr!("Saved in the vault."), CONFIRM_PASTE, cx);
+                    cx.emit(VaultChanged);
+                }
+                Err(e) => {
+                    self.show_notice(tr!("Not saved: {e}", e = e.to_string()), CONFIRM_PASTE, cx)
+                }
+            }
+        }
+        cx.notify();
+    }
+
+    /// Whether the bar offering to save a secret shows: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn save_offered(&self) -> bool {
+        self.save_offer.is_some()
+    }
+
+    /// The notice over the pane, if one shows: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn notice_text(&self) -> Option<String> {
+        self.notice.as_ref().map(|n| n.to_string())
+    }
+
+    /// The Files panel, once opened: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn files_panel(&self) -> Option<Entity<FilesPanel>> {
+        self.files.clone()
+    }
+
     pub fn files_shown(&self) -> bool {
         self.files_shown
     }
@@ -1645,36 +1685,12 @@ impl TermView {
                 .text_color(rgb(colors().text))
                 .child(div().flex_1().min_w_0().child(what))
                 .child(
-                    button("save-not-now", tr!("Not now"), false).on_click(cx.listener(
-                        |v, _, _, cx| {
-                            v.save_offer = None;
-                            cx.notify();
-                        },
-                    )),
+                    button("save-not-now", tr!("Not now"), false)
+                        .on_click(cx.listener(|v, _, _, cx| v.answer_save_offer(false, cx))),
                 )
                 .child(
-                    button("save-secret", tr!("Save"), true).on_click(cx.listener(
-                        |v, _, _, cx| {
-                            if let Some(secret) = v.save_offer.take() {
-                                match v.session.save(&secret) {
-                                    Ok(()) => {
-                                        v.show_notice(
-                                            tr!("Saved in the vault."),
-                                            CONFIRM_PASTE,
-                                            cx,
-                                        );
-                                        cx.emit(VaultChanged);
-                                    }
-                                    Err(e) => v.show_notice(
-                                        tr!("Not saved: {e}", e = e.to_string()),
-                                        CONFIRM_PASTE,
-                                        cx,
-                                    ),
-                                }
-                            }
-                            cx.notify();
-                        },
-                    )),
+                    button("save-secret", tr!("Save"), true)
+                        .on_click(cx.listener(|v, _, _, cx| v.answer_save_offer(true, cx))),
                 )
                 .into_any_element(),
         )
@@ -1870,6 +1886,27 @@ impl TermView {
     /// Where the terminal was last painted, in window coordinates.
     pub fn bounds(&self) -> Bounds<Pixels> {
         Bounds::new(self.grid_origin.get(), self.area.get())
+    }
+
+    /// The newest frame, taken as painting takes it: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn latest_frame(&mut self) -> Arc<Frame> {
+        if let Some(frame) = self.term.take_frame() {
+            self.frame = frame;
+        }
+        self.frame.clone()
+    }
+
+    /// The screen as text, one line per row, trailing spaces cut: for the UI
+    /// tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn screen_text(&mut self) -> String {
+        self.latest_frame()
+            .rows
+            .iter()
+            .map(|r| r.text.trim_end())
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     pub fn session(&self) -> &Session {

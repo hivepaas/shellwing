@@ -2557,14 +2557,14 @@ tc1b10302 = 정규식 (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 파일 패널은 SFTP로 서버를 탐색합니다. 이 창은 이 컴퓨터의 셸입니다.
 
+# Saved in the vault.
+t0d69c4e6 = 보관함에 저장했습니다.
+
 # Save the password for {target} in the vault?
 tceb19137 = { $target }의 비밀번호를 보관함에 저장하시겠습니까?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path }의 암호 문구를 보관함에 저장하시겠습니까?
-
-# Saved in the vault.
-t0d69c4e6 = 보관함에 저장했습니다.
 
 # The host key for {host} has changed.
 t1e510d66 = { $host }의 호스트 키가 변경되었습니다.

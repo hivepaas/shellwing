@@ -49,6 +49,9 @@ mod tab_overview;
 mod view;
 mod workspace;
 
+#[cfg(all(test, feature = "ui-tests"))]
+mod ui_tests;
+
 use std::sync::Arc;
 use std::time::Duration;
 
