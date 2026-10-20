@@ -461,6 +461,7 @@ impl Session {
     /// Starts the shell on this computer, in a PTY the pane's input goes to.
     fn connect_local(&mut self, argv: Vec<String>) {
         self.set_status(Status::Connecting, None);
+        self.writer.connecting();
         let (term, writer, state, wake_tx) = (
             self.term.clone(),
             self.writer.clone(),
@@ -510,6 +511,7 @@ impl Session {
             return;
         };
         self.set_status(Status::Connecting, None);
+        self.writer.connecting();
         let (term, writer, state, wake_tx) = (
             self.term.clone(),
             self.writer.clone(),

@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# Third-party crates taken in to patch: not ours to lint (see each UPSTREAM.md).
+exclude = ["vendor"]
 
 [workspace.package]
 version = "0.1.0"
@@ -20,9 +22,9 @@ shellwing-remote = { path = "crates/remote" }
 shellwing-presence = { path = "crates/presence" }
 shellwing-i18n = { path = "crates/i18n" }
 # GPUI as published by Longbridge (the same snapshot tern and gpui-kit use).
-gpui = { package = "gpui-pre", version = "=0.3.8" }
+gpui = { package = "gpui-pre", version = "=0.3.9" }
 # font-kit and runtime_shaders only affect macOS; the Linux backends are app features.
-gpui_platform = { package = "gpui-pre-platform", version = "=0.3.8", default-features = false, features = ["font-kit", "runtime_shaders"] }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.9", default-features = false, features = ["font-kit", "runtime_shaders"] }
 # Master tracks Zig 0.16; the 0.2.2 release still needs Zig 0.15.
 libghostty-vt = { git = "https://github.com/uzaaft/libghostty-rs", branch = "master" }
 # ring rather than the default aws-lc-rs: it builds on Windows without NASM or CMake.
@@ -48,3 +50,7 @@ strip = true
 # Dependencies optimised in dev builds too, so the terminal is usable while developing.
 [profile.dev.package."*"]
 opt-level = 2
+
+# GPUI's Linux platform, taken in for a fix (vendor/gpui-pre-linux/UPSTREAM.md).
+[patch.crates-io]
+gpui-pre-linux = { path = "vendor/gpui-pre-linux" }
