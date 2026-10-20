@@ -1176,7 +1176,7 @@
   },
   {
    "id": "testing/hey_load_test",
-   "tool": "HTTP & network",
+   "tool": "Load tests",
    "task": "Testing",
    "name": "HTTP load test (hey)",
    "about": "Send concurrent HTTP requests and measure response time percentiles",
@@ -1188,7 +1188,7 @@
   },
   {
    "id": "testing/k6_run",
-   "tool": "HTTP & network",
+   "tool": "Load tests",
    "task": "Testing",
    "name": "Load test script (k6)",
    "about": "Run modern load and performance testing script with k6",
@@ -1200,7 +1200,7 @@
   },
   {
    "id": "testing/iperf3_bandwidth",
-   "tool": "HTTP & network",
+   "tool": "Load tests",
    "task": "Testing",
    "name": "Network bandwidth (iperf3)",
    "about": "Test maximum network bandwidth and TCP throughput between nodes",
