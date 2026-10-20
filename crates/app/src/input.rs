@@ -80,6 +80,36 @@ struct Lines {
     drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
     line_height: Pixels,
     scroll_y: Pixels,
+    /// Where the caret was when the view last followed it: the view follows
+    /// it again only once it moves, so a wheel can scroll away from it.
+    caret_seen: Option<(usize, usize)>,
+    /// The text's height and the field's, as last drawn.
+    content_h: Pixels,
+    view_h: Pixels,
+    /// The scroll bar's thumb, dragged: where the drag started, and the
+    /// scroll then.
+    thumb_drag: Option<(Pixels, Pixels)>,
+}
+
+/// The scroll bar: its width, and the least its thumb is.
+const BAR_W: f32 = 6.;
+const THUMB_MIN: f32 = 24.;
+
+impl Lines {
+    /// How far the text scrolls at most.
+    fn most(&self) -> Pixels {
+        (self.content_h - self.view_h).max(px(0.))
+    }
+
+    /// The thumb's top and height in a field `view_h` high.
+    fn thumb(&self) -> Option<(Pixels, Pixels)> {
+        if self.content_h <= self.view_h || self.view_h <= px(0.) {
+            return None;
+        }
+        let h = (self.view_h * (self.view_h / self.content_h)).max(px(THUMB_MIN));
+        let top = (self.view_h - h) * (self.scroll_y / self.most());
+        Some((top, h))
+    }
 }
 
 /// What an empty field shows.
@@ -154,6 +184,68 @@ fn follow_drag(input: &Entity<TextInput>, window: &mut Window, cx: &App) {
     });
 }
 
+/// The scroll bar's thumb dragged (a press on the bar's strip starts it),
+/// anywhere in the window while the button is held.
+fn drag_thumb(input: &Entity<TextInput>, bounds: Bounds<Pixels>, window: &mut Window) {
+    // A strip wider than the thumb, easy to hit.
+    let strip = Bounds::new(
+        point(bounds.right() - px(BAR_W + 6.), bounds.top()),
+        size(px(BAR_W + 6.), bounds.size.height),
+    );
+    let down = input.clone();
+    window.on_mouse_event(move |e: &MouseDownEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture
+            && e.button == MouseButton::Left
+            && strip.contains(&e.position)
+        {
+            cx.stop_propagation();
+            down.update(cx, |i, cx| {
+                if let Some(l) = i.lines.as_mut() {
+                    // A press off the thumb pages the text there first.
+                    if let Some((top, h)) = l.thumb() {
+                        let y = e.position.y - strip.top();
+                        if y < top || y > top + h {
+                            let to = (y - h / 2.).max(px(0.)) / (l.view_h - h).max(px(1.));
+                            l.scroll_y = (l.most() * to).min(l.most());
+                        }
+                    }
+                    l.thumb_drag = Some((e.position.y, l.scroll_y));
+                }
+                cx.notify();
+            });
+        }
+    });
+    let moved = input.clone();
+    window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+        if phase != gpui::DispatchPhase::Capture {
+            return;
+        }
+        moved.update(cx, |i, cx| {
+            let Some(l) = i.lines.as_mut() else {
+                return;
+            };
+            let (Some((y0, s0)), Some((_, h))) = (l.thumb_drag, l.thumb()) else {
+                return;
+            };
+            let per = l.most() / (l.view_h - h).max(px(1.));
+            l.scroll_y = (s0 + (e.position.y - y0) * per).clamp(px(0.), l.most());
+            cx.notify();
+        });
+    });
+    let up = input.clone();
+    window.on_mouse_event(move |_: &MouseUpEvent, phase, _, cx| {
+        if phase == gpui::DispatchPhase::Capture {
+            up.update(cx, |i, cx| {
+                if let Some(l) = i.lines.as_mut()
+                    && l.thumb_drag.take().is_some()
+                {
+                    cx.notify();
+                }
+            });
+        }
+    });
+}
+
 /// What a masked field shows for each character.
 const DOT: char = '•';
 
@@ -197,6 +289,10 @@ impl TextInput {
             drawn: vec![],
             line_height: px(0.),
             scroll_y: px(0.),
+            caret_seen: None,
+            content_h: px(0.),
+            view_h: px(0.),
+            thumb_drag: None,
         });
         self
     }
@@ -709,6 +805,21 @@ impl TextInput {
         }
     }
 
+    /// A wheel or a touchpad scrolls a field of several lines; at its top
+    /// or bottom, what holds it scrolls instead.
+    fn wheel(&mut self, e: &gpui::ScrollWheelEvent, _: &mut Window, cx: &mut Context<Self>) {
+        let Some(l) = self.lines.as_mut() else {
+            return;
+        };
+        let dy = e.delta.pixel_delta(l.line_height.max(px(1.))).y;
+        let to = (l.scroll_y - dy).clamp(px(0.), l.most());
+        if to != l.scroll_y {
+            l.scroll_y = to;
+            cx.stop_propagation();
+            cx.notify();
+        }
+    }
+
     fn mouse_up(&mut self, _: &MouseUpEvent, _: &mut Window, _: &mut Context<Self>) {
         self.selecting = false;
     }
@@ -1092,6 +1203,7 @@ impl Render for TextInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_move(cx.listener(Self::mouse_move))
+            .on_scroll_wheel(cx.listener(Self::wheel))
             .when(self.lines.is_none(), |d| {
                 d.child(TextElement { input: cx.entity() })
             })
@@ -1125,6 +1237,8 @@ struct Area {
     drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
     cursor: Option<PaintQuad>,
     scroll_y: Pixels,
+    content_h: Pixels,
+    caret: (usize, usize),
 }
 
 /// The runs a field's text is drawn with: the selection on its own ground.
@@ -1277,7 +1391,14 @@ impl Element for AreaElement {
                 })
         };
         let mut scroll_y = input.lines.as_ref().map_or(px(0.), |l| l.scroll_y);
-        if let Some(c) = caret {
+        // Followed when it moved (or the text changed), not while a wheel
+        // or the bar scrolls the text away from it.
+        let caret_now = (input.cursor(), input.content.len());
+        let moved = input
+            .lines
+            .as_ref()
+            .is_none_or(|l| l.caret_seen != Some(caret_now));
+        if let Some(c) = caret.filter(|_| moved) {
             if c.y < scroll_y {
                 scroll_y = c.y;
             }
@@ -1301,6 +1422,8 @@ impl Element for AreaElement {
             drawn,
             cursor,
             scroll_y,
+            content_h: top,
+            caret: caret_now,
         }
     }
 
@@ -1342,14 +1465,41 @@ impl Element for AreaElement {
             }
         });
         let drawn = std::mem::take(&mut area.drawn);
-        self.input.update(cx, |input, _| {
+        let (content_h, caret) = (area.content_h, area.caret);
+        let thumb = self.input.update(cx, |input, _| {
             input.last_bounds = Some(bounds);
-            if let Some(lines) = input.lines.as_mut() {
-                lines.drawn = drawn;
-                lines.line_height = line_height;
-                lines.scroll_y = scroll_y;
-            }
+            let lines = input.lines.as_mut()?;
+            lines.drawn = drawn;
+            lines.line_height = line_height;
+            lines.scroll_y = scroll_y;
+            lines.caret_seen = Some(caret);
+            lines.content_h = content_h;
+            lines.view_h = bounds.size.height;
+            lines.thumb()
         });
+        // The scroll bar, when the text is longer than the field.
+        if let Some((top, h)) = thumb {
+            let dragging = self
+                .input
+                .read(cx)
+                .lines
+                .as_ref()
+                .is_some_and(|l| l.thumb_drag.is_some());
+            let bar = Bounds::new(
+                point(bounds.right() - px(BAR_W) - px(1.), bounds.top() + top),
+                size(px(BAR_W), h),
+            );
+            let color = if dragging {
+                colors().soft
+            } else {
+                colors().muted
+            };
+            window.paint_quad(
+                fill(bar, rgba(crate::colors::with_alpha(color, 0x99)))
+                    .corner_radii(px(BAR_W / 2.)),
+            );
+            drag_thumb(&self.input, bounds, window);
+        }
     }
 }
 
