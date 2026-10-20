@@ -1918,6 +1918,89 @@ t9585c651 = + Gruppe
 # HOSTS
 t0d325d34 = HOSTS
 
+# New snippet
+tff3f7838 = Neues Snippet
+
+# What it does, to find it in the palette
+td9b8e02f = Was es tut, um es in der Palette zu finden
+
+# A name and a command are needed.
+t7f4c69bb = Name und Befehl sind erforderlich.
+
+# this snippet
+t155d1e08 = dieses Snippet
+
+# Every host
+t77846bfe = Alle Hosts
+
+# A group ▾
+tcd864ec5 = Eine Gruppe ▾
+
+# One host ▾
+t1864f915 = Ein Host ▾
+
+# Offered for
+tbafebe63 = Angeboten für
+
+# No groups yet: make one in the host list.
+t31c54e54 = Noch keine Gruppen: erstelle eine in der Hostliste.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = Die Palette zeigt es nur in Bereichen dieser Hosts.
+
+# (deleted)
+tb7bba50b = (gelöscht)
+
+# + Add
+ta0ef59dd = + Hinzufügen
+
+# Environments it needs
+tebd9fda9 = Benötigte Umgebungen
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Noch keine: Füge in Einstellungen › Umgebungen eine hinzu.
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+        [one] { $n } Variable
+       *[other] { $n } Variablen
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Es läuft in einer Subshell, die ihre Variablen hat; sie verschwinden, wenn sie endet.
+
+# Values
+t8d4d225b = Werte
+
+# from the pane's host
+t0607dcd8 = vom Host des Bereichs
+
+# asked when it runs
+t8ee70b94 = wird beim Ausführen gefragt
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen abgefragt.
+
+# Run it: press Enter after typing it
+t32122ee4 = Ausführen: nach dem Eingeben Enter drücken
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = Aus: Es wird nur eingetippt und wartet, bis du es gelesen hast.
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+        [one] { $n } Zeile
+       *[other] { $n } Zeilen
+    }
+
+# Run in {pane}
+t27e0e0f9 = In { $pane } ausführen
+
+# Connect a tab in the main window to run it there.
+tc580324f = Verbinde einen Tab im Hauptfenster, um es dort auszuführen.
+
 # every host
 t444612de = alle Hosts
 
@@ -2052,71 +2135,17 @@ t79646cbc = Umgebung bearbeiten
 # sensitive
 ta2bd2f4f = vertraulich
 
-# What it does, to find it in the palette
-td9b8e02f = Was es tut, um es in der Palette zu finden
-
-# A name and a command are needed.
-t7f4c69bb = Name und Befehl sind erforderlich.
-
 # typed, not run
 td4e41905 = eingegeben, nicht ausgeführt
 
 # with {envs}
 tba31f3bb = mit { $envs }
 
-# Every host
-t77846bfe = Alle Hosts
-
-# A group ▾
-tcd864ec5 = Eine Gruppe ▾
-
-# One host ▾
-t1864f915 = Ein Host ▾
-
-# Offered for
-tbafebe63 = Angeboten für
-
-# No groups yet: make one in the host list.
-t31c54e54 = Noch keine Gruppen: erstelle eine in der Hostliste.
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Seine Variablen werden aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Shells, in die es geladen ist, behalten sie, bis es entladen wird.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = Sie wird aus dem Tresor entfernt und von deinen anderen Geräten, sobald sie synchronisieren. Wo sie abgelegt wurde, bleibt sie.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} und {"{{"}address{"}}"} werden ausgefüllt; jedes andere {"{{"}name{"}}"} wird beim Ausführen abgefragt.
-
-# Asked for when it runs:
-t2d8c5e6d = Beim Ausführen abgefragt:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter beginnt eine neue Zeile; die Zeilen laufen nacheinander. { $save } speichert.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = Die Palette zeigt es nur in Bereichen dieser Hosts.
-
-# Environments it needs
-tebd9fda9 = Benötigte Umgebungen
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Noch keine: Füge in Einstellungen › Umgebungen eine hinzu.
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = Es läuft in einer Subshell, die ihre Variablen hat; sie verschwinden, wenn sie endet.
-
-# New snippet
-tff3f7838 = Neues Snippet
-
-# Edit snippet
-t9eab9738 = Snippet bearbeiten
-
-# Command
-tc67c8f52 = Befehl
-
-# Run it: press Enter after typing it
-t32122ee4 = Ausführen: nach dem Eingeben Enter drücken
 
 # None yet.
 t786bc275 = Noch keine.

@@ -595,16 +595,29 @@ found:
 ## Snippets
 
 Snippets are commands you run often. They are kept in the vault (`vault.db`,
-encrypted, never in a file of their own) and sync with it. Make and edit them
-in *Settings › Snippets*: a name, a category, a command, the hosts they are
-offered for (every host, a group or one host), the environments they need, and
-whether Enter is pressed after typing. With many snippets, a category files
-them: Settings and the palette list them under it (*Snippets · Deploy*).
+encrypted, never in a file of their own) and sync with it. In *Settings ›
+Snippets*, **New snippet…** or a snippet's edit button opens it in a window of
+its own, as a note: its name and category above, its command in a code editor,
+and beside it the hosts it is offered for (every host, a group or one host),
+the environments it needs, its `{{name}}` values and whether Enter is pressed
+after typing. With many snippets, a category files them: Settings and the
+palette list them under it (*Snippets · Deploy*).
 
-A command can take several lines: Enter starts another, Ctrl+Enter (Cmd+Enter
-on macOS) saves. It is sent to the pane as one paste, so a shell with bracketed
-paste on (bash, zsh and fish are, by default) takes it whole and runs it at the
-Enter; lists show it on one line, ` ⏎ ` between the lines.
+- **The editor** colors the command as shell (commands, flags, quoted text,
+  `$` expansions, operators, comments) and its `{{name}}` values, and numbers
+  its lines. Tab indents with two spaces; Enter keeps the line's indent.
+- **Saving** is as for notes: a moment after typing stops, once it has a name
+  and a command, and when the window closes; Ctrl+S (Cmd+S) saves at once.
+  While its window is open, the snippet is left out of syncs.
+- **Run in {pane} / Insert into {pane}** below run it in the main window's
+  focused pane (its values asked for there), or type it without Enter. A
+  snippet that needs environments only runs: typed alone it could not have
+  them.
+
+A command can take several lines. It is sent to the pane as one paste, so a
+shell with bracketed paste on (bash, zsh and fish are, by default) takes it
+whole and runs it at the Enter; lists show it on one line, ` ⏎ ` between the
+lines.
 
 In the palette (Ctrl+Shift+K), a pane's snippets are listed under *Snippets*;
 *Snippets…* in the pane's right-click menu opens the palette there. Under the

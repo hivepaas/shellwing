@@ -656,6 +656,39 @@ tbbe50baa = No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tc7a909aa = + New host
 t9585c651 = + Group
 t0d325d34 = HOSTS
+tff3f7838 = New snippet
+td9b8e02f = What it does, to find it in the palette
+t7f4c69bb = A name and a command are needed.
+t155d1e08 = this snippet
+t77846bfe = Every host
+tcd864ec5 = A group ▾
+t1864f915 = One host ▾
+tbafebe63 = Offered for
+t31c54e54 = No groups yet: make one in the host list.
+t66336218 = The palette lists it in panes of those hosts only.
+tb7bba50b = (deleted)
+ta0ef59dd = + Add
+tebd9fda9 = Environments it needs
+t769ef9f6 = None yet: add one in Settings › Environments.
+te4598f62 =
+    { $n ->
+        [one] { $n } variable
+       *[other] { $n } variables
+    }
+td5ccd9da = It runs in a subshell that has their variables; they go when it ends.
+t8d4d225b = Values
+t0607dcd8 = from the pane's host
+t8ee70b94 = asked when it runs
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
+t32122ee4 = Run it: press Enter after typing it
+t2ccc04b4 = Off: it is typed, and waits for you to read it.
+t5c4bb67a =
+    { $n ->
+        [one] { $n } line
+       *[other] { $n } lines
+    }
+t27e0e0f9 = Run in { $pane }
+tc580324f = Connect a tab in the main window to run it there.
 t444612de = every host
 te8f231ba =
     { $n ->
@@ -706,28 +739,10 @@ ta46f6540 = A value can take several lines: Enter starts another, { $save } save
 tf3955dbc = New environment
 t79646cbc = Edit environment
 ta2bd2f4f = sensitive
-td9b8e02f = What it does, to find it in the palette
-t7f4c69bb = A name and a command are needed.
 td4e41905 = typed, not run
 tba31f3bb = with { $envs }
-t77846bfe = Every host
-tcd864ec5 = A group ▾
-t1864f915 = One host ▾
-tbafebe63 = Offered for
-t31c54e54 = No groups yet: make one in the host list.
 td2d90383 = Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 t9903435f = It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in; any other {"{{"}name{"}}"} is asked for when it runs.
-t2d8c5e6d = Asked for when it runs:
-t883a11f4 = Enter starts another line; the lines run in turn. { $save } saves.
-t66336218 = The palette lists it in panes of those hosts only.
-tebd9fda9 = Environments it needs
-t769ef9f6 = None yet: add one in Settings › Environments.
-td5ccd9da = It runs in a subshell that has their variables; they go when it ends.
-tff3f7838 = New snippet
-t9eab9738 = Edit snippet
-tc67c8f52 = Command
-t32122ee4 = Run it: press Enter after typing it
 t786bc275 = None yet.
 tec3111a4 = New snippet…
 t0c42d278 = New environment…

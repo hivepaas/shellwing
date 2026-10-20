@@ -8,13 +8,11 @@ use gpui::{
 use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
-use crate::host_editor::{
-    checkbox, hint_text, label_text, outline_button, primary_button, problem_text,
-};
-use crate::input::{Changed, TextInput};
+use crate::host_editor::{hint_text, label_text, outline_button, primary_button, problem_text};
+use crate::input::TextInput;
 use crate::look::ui;
 use crate::secrets::VaultSlot;
-use crate::snippets::{self, Scope, Snippet};
+use crate::snippets::{Scope, Snippet};
 use crate::workspace::Workspace;
 use shellwing_vault::Environment;
 
@@ -44,7 +42,6 @@ impl Dialog {
     /// The scope being chosen, and which of its lists is open.
     fn scope(&mut self) -> Option<(&mut Scope, &mut Option<Pick>)> {
         match self {
-            Dialog::Edit { scope, pick, .. } => Some((scope, pick)),
             Dialog::EditEnv(e) => Some((&mut e.scope, &mut e.pick)),
             Dialog::EditFile(f) => Some((&mut f.scope, &mut f.pick)),
             _ => None,
@@ -53,33 +50,12 @@ impl Dialog {
 }
 
 enum Dialog {
-    Edit {
-        id: String,
-        name: Entity<TextInput>,
-        command: Entity<TextInput>,
-        category: Entity<TextInput>,
-        scope: Scope,
-        enter: bool,
-        /// The environments (ids) it runs with.
-        needs: Vec<String>,
-        pick: Option<Pick>,
-        problem: Option<String>,
-        _changed: gpui::Subscription,
-    },
-    Delete {
-        snippet: Snippet,
-    },
+    Delete { snippet: Snippet },
     EditEnv(Box<environments::EnvEdit>),
-    DeleteEnv {
-        env: Environment,
-    },
+    DeleteEnv { env: Environment },
     EditFile(Box<config_files::FileEdit>),
-    DeleteFile {
-        file: shellwing_vault::ConfigFile,
-    },
-    DeleteNote {
-        note: shellwing_vault::Note,
-    },
+    DeleteFile { file: shellwing_vault::ConfigFile },
+    DeleteNote { note: shellwing_vault::Note },
 }
 
 pub struct SnippetsView {
@@ -217,50 +193,11 @@ impl SnippetsView {
         })
     }
 
-    fn edit(&mut self, s: Option<Snippet>, window: &mut Window, cx: &mut Context<Self>) {
-        let s = s.unwrap_or(Snippet {
-            id: String::new(),
-            name: String::new(),
-            command: String::new(),
-            scope: String::new(),
-            enter: true,
-            category: String::new(),
-            needs: vec![],
-        });
-        let name = Self::input(
-            || tr!("What it does, to find it in the palette"),
-            &s.name,
-            cx,
-        );
-        // Several lines: each runs in turn.
-        let command = cx.new(|cx| {
-            let mut i = TextInput::said(|| "df -h / && free -h".to_string(), cx).multiline(1, 8);
-            i.set_text(&s.command, s.command.len()..s.command.len(), cx);
-            i
-        });
-        let category = Self::input(|| tr!("None"), &s.category, cx);
-        // The names asked for show as the command is typed.
-        let changed = cx.subscribe(&command, |_, _, _: &Changed, cx| cx.notify());
-        let first = if s.name.is_empty() {
-            name.clone()
-        } else {
-            command.clone()
-        };
-        self.dialog = Some(Dialog::Edit {
-            id: s.id,
-            name,
-            command,
-            category,
-            scope: Scope::parse(&s.scope),
-            enter: s.enter,
-            needs: s.needs,
-            pick: None,
-            problem: None,
-            _changed: changed,
-        });
-        let f = first.read(cx).focus_handle(cx);
-        window.focus(&f, cx);
-        cx.notify();
+    /// Opens `s` (None: a new one) in a window of its own, as a note.
+    fn edit(&mut self, s: Option<Snippet>, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(w) = self.workspace.upgrade() {
+            w.update(cx, |ws, cx| ws.open_snippet(s, cx));
+        }
     }
 
     fn close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -273,65 +210,6 @@ impl SnippetsView {
     fn vault_changed(&self, cx: &mut Context<Self>) {
         if let Some(w) = self.workspace.upgrade() {
             w.update(cx, |ws, _| ws.vault_changed());
-        }
-    }
-
-    fn save(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::Edit {
-            id,
-            name,
-            command,
-            category,
-            scope,
-            enter,
-            needs,
-            problem,
-            ..
-        }) = &mut self.dialog
-        else {
-            return;
-        };
-        let (n, c) = (
-            name.read(cx).text().trim().to_string(),
-            command.read(cx).text().trim().to_string(),
-        );
-        if n.is_empty() || c.is_empty() {
-            *problem = Some(tr!("A name and a command are needed."));
-            return cx.notify();
-        }
-        let s = Snippet {
-            id: id.clone(),
-            name: n,
-            command: c,
-            scope: scope.field(),
-            enter: *enter,
-            category: category.read(cx).text().trim().to_string(),
-            // Environments since deleted are dropped.
-            needs: needs
-                .iter()
-                .filter(|n| self.envs.iter().any(|e| e.id == **n))
-                .cloned()
-                .collect(),
-        };
-        match self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| {
-                v.save_snippet(&s)
-                    .map_err(|e| crate::environment::said_error(&e))
-            }) {
-            Ok(_) => {
-                self.close(window, cx);
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => {
-                if let Some(Dialog::Edit { problem, .. }) = &mut self.dialog {
-                    *problem = Some(tr!("Not saved: {e}", e = e));
-                }
-                cx.notify();
-            }
         }
     }
 
@@ -363,7 +241,6 @@ impl SnippetsView {
         match ev.keystroke.key.as_str() {
             "escape" => self.close(window, cx),
             "enter" => match &self.dialog {
-                Some(Dialog::Edit { .. }) => self.save(window, cx),
                 Some(Dialog::Delete { .. }) => self.delete(window, cx),
                 Some(Dialog::EditEnv(_)) => self.env_enter(window, cx),
                 Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
@@ -391,30 +268,6 @@ impl SnippetsView {
             .cursor_pointer()
             .hover(|s| s.bg(rgb(colors().button_hover)))
             .child(label.to_string())
-    }
-
-    /// A choice to turn on or off.
-    fn chip(id: impl Into<gpui::ElementId>, label: String, on: bool) -> gpui::Stateful<gpui::Div> {
-        div()
-            .id(id.into())
-            .px(px(8.))
-            .py(px(2.))
-            .rounded(px(4.))
-            .border_1()
-            .text_size(ui(12.))
-            .cursor_pointer()
-            .when(on, |d| {
-                d.border_color(rgb(colors().accent))
-                    .bg(rgb(colors().selected))
-                    .text_color(rgb(colors().text))
-            })
-            .when(!on, |d| {
-                d.border_color(rgb(colors().field_edge))
-                    .bg(rgb(colors().chip))
-                    .text_color(rgb(colors().soft))
-                    .hover(|s| s.bg(rgb(colors().hover)))
-            })
-            .child(label)
     }
 
     fn field(
@@ -739,7 +592,6 @@ impl SnippetsView {
             .child(
                 primary_button("snippet-ok", ok).on_click(cx.listener(
                     |v, _, w, cx| match &v.dialog {
-                        Some(Dialog::Edit { .. }) => v.save(w, cx),
                         Some(Dialog::Delete { .. }) => v.delete(w, cx),
                         Some(Dialog::EditEnv(_)) => v.save_env(w, cx),
                         Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
@@ -824,165 +676,6 @@ impl SnippetsView {
                         )),
                 )
                 .child(buttons(&tr!("Delete"), cx)),
-            Dialog::Edit {
-                id,
-                name,
-                command,
-                category,
-                scope,
-                enter,
-                needs,
-                pick,
-                problem,
-                ..
-            } => {
-                let asked = snippets::asked(command.read(cx).text());
-                let mut vars = div()
-                    .flex()
-                    .flex_wrap()
-                    .items_center()
-                    .gap(px(6.))
-                    .text_size(ui(11.5))
-                    .text_color(rgb(colors().muted));
-                if asked.is_empty() {
-                    vars = vars.child(tr!("{{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs."));
-                } else {
-                    vars = vars.child(tr!("Asked for when it runs:"));
-                    for a in asked {
-                        vars = vars.child(
-                            div()
-                                .px(px(7.))
-                                .py(px(1.))
-                                .rounded(px(4.))
-                                .bg(rgb(colors().warn_bg))
-                                .text_color(rgb(colors().warn))
-                                .font_family(self.mono.clone())
-                                .child(a),
-                        );
-                    }
-                }
-                let save = if cfg!(target_os = "macos") {
-                    "Cmd+Enter"
-                } else {
-                    "Ctrl+Enter"
-                };
-                vars = vars.child(div().ml(px(6.)).child(tr!(
-                    "Enter starts another line; the lines run in turn. {save} saves.",
-                    save = save
-                )));
-
-                let scope_box = self.scope_box(scope, pick, cx).child(hint_text(&tr!(
-                    "The palette lists it in panes of those hosts only."
-                )));
-                let focused =
-                    |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
-
-                // The categories already in use, to file it under one.
-                let mut cats: Vec<String> = vec![];
-                for c in self.list.iter().map(|s| s.category.trim()) {
-                    if !c.is_empty() && !cats.iter().any(|k| k.eq_ignore_ascii_case(c)) {
-                        cats.push(c.to_string());
-                    }
-                }
-                let typed = category.read(cx).text().trim().to_string();
-                let mut cat_box = Self::field(&tr!("Category"), category, focused(category), None);
-                if !cats.is_empty() {
-                    let mut chips = div().flex().flex_wrap().gap(px(6.));
-                    for (i, c) in cats.into_iter().enumerate() {
-                        let on = c.eq_ignore_ascii_case(&typed);
-                        let input = category.clone();
-                        let picked = c.clone();
-                        chips = chips.child(Self::chip(("snippet-cat", i), c, on).on_click(
-                            cx.listener(move |_, _, _, cx| {
-                                let t = if on { String::new() } else { picked.clone() };
-                                input.update(cx, |i, cx| i.set_text(&t, t.len()..t.len(), cx));
-                                cx.notify();
-                            }),
-                        ));
-                    }
-                    cat_box = cat_box.child(chips);
-                }
-
-                let mut env_box = div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(5.))
-                    .child(label_text(&tr!("Environments it needs")));
-                if self.envs.is_empty() {
-                    env_box = env_box.child(hint_text(&tr!(
-                        "None yet: add one in Settings › Environments."
-                    )));
-                } else {
-                    let mut chips = div().flex().flex_wrap().gap(px(6.));
-                    for (i, e) in self.envs.iter().enumerate() {
-                        let on = needs.contains(&e.id);
-                        let id = e.id.clone();
-                        chips = chips.child(
-                            Self::chip(
-                                ("snippet-env", i),
-                                format!("{} ({})", e.name, e.names.len()),
-                                on,
-                            )
-                            .on_click(cx.listener(
-                                move |v, _, _, cx| {
-                                    if let Some(Dialog::Edit { needs, .. }) = &mut v.dialog {
-                                        if let Some(at) = needs.iter().position(|n| *n == id) {
-                                            needs.remove(at);
-                                        } else {
-                                            needs.push(id.clone());
-                                        }
-                                    }
-                                    cx.notify();
-                                },
-                            )),
-                        );
-                    }
-                    env_box = env_box.child(chips).child(hint_text(&tr!(
-                        "It runs in a subshell that has their variables; they go when it ends."
-                    )));
-                }
-
-                let enter_on = *enter;
-                let mut b = card
-                    .child(title(&if id.is_empty() {
-                        tr!("New snippet")
-                    } else {
-                        tr!("Edit snippet")
-                    }))
-                    .child(Self::field(&tr!("Name"), name, focused(name), None))
-                    .child(cat_box)
-                    .child(
-                        Self::field(
-                            &tr!("Command"),
-                            command,
-                            focused(command),
-                            Some(self.mono.clone()),
-                        )
-                        .child(vars),
-                    )
-                    .child(scope_box)
-                    .child(env_box)
-                    .child(
-                        div()
-                            .id("snippet-enter")
-                            .flex()
-                            .items_center()
-                            .gap(px(8.))
-                            .cursor_pointer()
-                            .on_click(cx.listener(|v, _, _, cx| {
-                                if let Some(Dialog::Edit { enter, .. }) = &mut v.dialog {
-                                    *enter = !*enter;
-                                }
-                                cx.notify();
-                            }))
-                            .child(checkbox(enter_on))
-                            .child(label_text(&tr!("Run it: press Enter after typing it"))),
-                    );
-                if let Some(p) = problem {
-                    b = b.child(problem_text(p));
-                }
-                b.child(buttons(&tr!("Save"), cx))
-            }
         })
     }
 }

@@ -1930,6 +1930,93 @@ t9585c651 = + Группа
 # HOSTS
 t0d325d34 = ХОСТЫ
 
+# New snippet
+tff3f7838 = Новый сниппет
+
+# What it does, to find it in the palette
+td9b8e02f = Что он делает, чтобы найти его в палитре
+
+# A name and a command are needed.
+t7f4c69bb = Нужны имя и команда.
+
+# this snippet
+t155d1e08 = этот сниппет
+
+# Every host
+t77846bfe = Все хосты
+
+# A group ▾
+tcd864ec5 = Группа ▾
+
+# One host ▾
+t1864f915 = Один хост ▾
+
+# Offered for
+tbafebe63 = Доступен для
+
+# No groups yet: make one in the host list.
+t31c54e54 = Групп пока нет: создайте её в списке хостов.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = Палитра показывает его только в панелях этих хостов.
+
+# (deleted)
+tb7bba50b = (удалено)
+
+# + Add
+ta0ef59dd = + Добавить
+
+# Environments it needs
+tebd9fda9 = Нужные окружения
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Пока нет: добавьте в Настройки › Окружения.
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+        [one] { $n } переменная
+        [few] { $n } переменные
+        [many] { $n } переменных
+       *[other] { $n } переменной
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Выполняется в подоболочке с их переменными; они исчезают, когда она завершается.
+
+# Values
+t8d4d225b = Значения
+
+# from the pane's host
+t0607dcd8 = из хоста панели
+
+# asked when it runs
+t8ee70b94 = спрашивается при запуске
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
+
+# Run it: press Enter after typing it
+t32122ee4 = Выполнять: нажимать Enter после ввода
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = Выключено: команда только вводится и ждёт, пока вы её прочитаете.
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+        [one] { $n } строка
+        [few] { $n } строки
+        [many] { $n } строк
+       *[other] { $n } строки
+    }
+
+# Run in {pane}
+t27e0e0f9 = Выполнить в { $pane }
+
+# Connect a tab in the main window to run it there.
+tc580324f = Подключите вкладку в главном окне, чтобы выполнить там.
+
 # every host
 t444612de = все хосты
 
@@ -2068,71 +2155,17 @@ t79646cbc = Изменить окружение
 # sensitive
 ta2bd2f4f = конфиденциально
 
-# What it does, to find it in the palette
-td9b8e02f = Что он делает, чтобы найти его в палитре
-
-# A name and a command are needed.
-t7f4c69bb = Нужны имя и команда.
-
 # typed, not run
 td4e41905 = вводится, но не выполняется
 
 # with {envs}
 tba31f3bb = с { $envs }
 
-# Every host
-t77846bfe = Все хосты
-
-# A group ▾
-tcd864ec5 = Группа ▾
-
-# One host ▾
-t1864f915 = Один хост ▾
-
-# Offered for
-tbafebe63 = Доступен для
-
-# No groups yet: make one in the host list.
-t31c54e54 = Групп пока нет: создайте её в списке хостов.
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = Он будет удалён из хранилища и с других ваших устройств после синхронизации. Там, где он уже размещён, он остаётся.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются; любое другое {"{{"}name{"}}"} запрашивается при запуске.
-
-# Asked for when it runs:
-t2d8c5e6d = Запрашивается при запуске:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter начинает новую строку; строки выполняются по очереди. { $save } сохраняет.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = Палитра показывает его только в панелях этих хостов.
-
-# Environments it needs
-tebd9fda9 = Нужные окружения
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Пока нет: добавьте в Настройки › Окружения.
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = Выполняется в подоболочке с их переменными; они исчезают, когда она завершается.
-
-# New snippet
-tff3f7838 = Новый сниппет
-
-# Edit snippet
-t9eab9738 = Изменить сниппет
-
-# Command
-tc67c8f52 = Команда
-
-# Run it: press Enter after typing it
-t32122ee4 = Выполнять: нажимать Enter после ввода
 
 # None yet.
 t786bc275 = Пока нет.

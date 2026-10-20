@@ -1894,6 +1894,87 @@ t9585c651 = + 分组
 # HOSTS
 t0d325d34 = 主机
 
+# New snippet
+tff3f7838 = 新建代码片段
+
+# What it does, to find it in the palette
+td9b8e02f = 用途说明，便于在命令面板中查找
+
+# A name and a command are needed.
+t7f4c69bb = 需要填写名称和命令。
+
+# this snippet
+t155d1e08 = 这个代码片段
+
+# Every host
+t77846bfe = 所有主机
+
+# A group ▾
+tcd864ec5 = 某个分组 ▾
+
+# One host ▾
+t1864f915 = 某台主机 ▾
+
+# Offered for
+tbafebe63 = 适用于
+
+# No groups yet: make one in the host list.
+t31c54e54 = 还没有分组：请在主机列表中创建。
+
+# The palette lists it in panes of those hosts only.
+t66336218 = 命令面板仅在这些主机的窗格中列出它。
+
+# (deleted)
+tb7bba50b = （已删除）
+
+# + Add
+ta0ef59dd = + 添加
+
+# Environments it needs
+tebd9fda9 = 所需环境
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+       *[other] { $n } 个变量
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = 它在带有这些变量的子 shell 中运行；子 shell 结束后变量随之消失。
+
+# Values
+t8d4d225b = 值
+
+# from the pane's host
+t0607dcd8 = 来自窗格的主机
+
+# asked when it runs
+t8ee70b94 = 运行时询问
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
+
+# Run it: press Enter after typing it
+t32122ee4 = 运行：输入后按 Enter
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = 关闭：只输入命令，等你看过再说。
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+       *[other] { $n } 行
+    }
+
+# Run in {pane}
+t27e0e0f9 = 在 { $pane } 中运行
+
+# Connect a tab in the main window to run it there.
+tc580324f = 在主窗口中连接一个标签页，才能在那里运行。
+
 # every host
 t444612de = 所有主机
 
@@ -2026,71 +2107,17 @@ t79646cbc = 编辑环境
 # sensitive
 ta2bd2f4f = 敏感
 
-# What it does, to find it in the palette
-td9b8e02f = 用途说明，便于在命令面板中查找
-
-# A name and a command are needed.
-t7f4c69bb = 需要填写名称和命令。
-
 # typed, not run
 td4e41905 = 仅输入，不运行
 
 # with {envs}
 tba31f3bb = 使用 { $envs }
 
-# Every host
-t77846bfe = 所有主机
-
-# A group ▾
-tcd864ec5 = 某个分组 ▾
-
-# One host ▾
-t1864f915 = 某台主机 ▾
-
-# Offered for
-tbafebe63 = 适用于
-
-# No groups yet: make one in the host list.
-t31c54e54 = 还没有分组：请在主机列表中创建。
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = 它将从保险库中删除，你的其他设备同步后也会删除。已放置的地方会保留。
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自动填入；其他 {"{{"}name{"}}"} 会在运行时询问。
-
-# Asked for when it runs:
-t2d8c5e6d = 运行时询问：
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = 按 Enter 另起一行；各行依次运行。按 { $save } 保存。
-
-# The palette lists it in panes of those hosts only.
-t66336218 = 命令面板仅在这些主机的窗格中列出它。
-
-# Environments it needs
-tebd9fda9 = 所需环境
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = 暂无：请在 设置 › 环境 中添加。
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = 它在带有这些变量的子 shell 中运行；子 shell 结束后变量随之消失。
-
-# New snippet
-tff3f7838 = 新建代码片段
-
-# Edit snippet
-t9eab9738 = 编辑代码片段
-
-# Command
-tc67c8f52 = 命令
-
-# Run it: press Enter after typing it
-t32122ee4 = 运行：输入后按 Enter
 
 # None yet.
 t786bc275 = 还没有。

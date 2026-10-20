@@ -1894,6 +1894,87 @@ t9585c651 = + Nhóm
 # HOSTS
 t0d325d34 = MÁY CHỦ
 
+# New snippet
+tff3f7838 = Đoạn lệnh mới
+
+# What it does, to find it in the palette
+td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
+
+# A name and a command are needed.
+t7f4c69bb = Cần có tên và lệnh.
+
+# this snippet
+t155d1e08 = đoạn lệnh này
+
+# Every host
+t77846bfe = Mọi máy chủ
+
+# A group ▾
+tcd864ec5 = Một nhóm ▾
+
+# One host ▾
+t1864f915 = Một máy chủ ▾
+
+# Offered for
+tbafebe63 = Dành cho
+
+# No groups yet: make one in the host list.
+t31c54e54 = Chưa có nhóm: hãy tạo trong danh sách máy chủ.
+
+# The palette lists it in panes of those hosts only.
+t66336218 = Bảng lệnh chỉ hiện nó trong khung của những máy chủ đó.
+
+# (deleted)
+tb7bba50b = (đã xoá)
+
+# + Add
+ta0ef59dd = + Thêm
+
+# Environments it needs
+tebd9fda9 = Bộ biến cần dùng
+
+# None yet: add one in Settings › Environments.
+t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
+
+# {n} variable | {n} variables
+te4598f62 =
+    { $n ->
+       *[other] { $n } biến
+    }
+
+# It runs in a subshell that has their variables; they go when it ends.
+td5ccd9da = Nó chạy trong một subshell có các biến này; chạy xong là biến mất.
+
+# Values
+t8d4d225b = Giá trị
+
+# from the pane's host
+t0607dcd8 = lấy từ máy chủ của khung
+
+# asked when it runs
+t8ee70b94 = hỏi khi chạy
+
+# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
+t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
+
+# Run it: press Enter after typing it
+t32122ee4 = Chạy luôn: nhấn Enter sau khi gõ
+
+# Off: it is typed, and waits for you to read it.
+t2ccc04b4 = Tắt: lệnh chỉ được gõ vào, và chờ bạn đọc lại.
+
+# {n} line | {n} lines
+t5c4bb67a =
+    { $n ->
+       *[other] { $n } dòng
+    }
+
+# Run in {pane}
+t27e0e0f9 = Chạy trong { $pane }
+
+# Connect a tab in the main window to run it there.
+tc580324f = Kết nối một tab ở cửa sổ chính để chạy ở đó.
+
 # every host
 t444612de = mọi máy chủ
 
@@ -2026,71 +2107,17 @@ t79646cbc = Sửa bộ biến
 # sensitive
 ta2bd2f4f = nhạy cảm
 
-# What it does, to find it in the palette
-td9b8e02f = Nó làm gì, để tìm trong bảng lệnh
-
-# A name and a command are needed.
-t7f4c69bb = Cần có tên và lệnh.
-
 # typed, not run
 td4e41905 = chỉ gõ, không chạy
 
 # with {envs}
 tba31f3bb = kèm { $envs }
 
-# Every host
-t77846bfe = Mọi máy chủ
-
-# A group ▾
-tcd864ec5 = Một nhóm ▾
-
-# One host ▾
-t1864f915 = Một máy chủ ▾
-
-# Offered for
-tbafebe63 = Dành cho
-
-# No groups yet: make one in the host list.
-t31c54e54 = Chưa có nhóm: hãy tạo trong danh sách máy chủ.
-
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
 
 # It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
 t9903435f = Tệp bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Những nơi đã đặt tệp thì vẫn giữ.
-
-# {{host}}, {{user}} and {{address}} are filled in; any other {{name}} is asked for when it runs.
-t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền sẵn; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi chạy.
-
-# Asked for when it runs:
-t2d8c5e6d = Được hỏi khi chạy:
-
-# Enter starts another line; the lines run in turn. {save} saves.
-t883a11f4 = Enter để xuống dòng; các dòng chạy lần lượt. { $save } để lưu.
-
-# The palette lists it in panes of those hosts only.
-t66336218 = Bảng lệnh chỉ hiện nó trong khung của những máy chủ đó.
-
-# Environments it needs
-tebd9fda9 = Bộ biến cần dùng
-
-# None yet: add one in Settings › Environments.
-t769ef9f6 = Chưa có: thêm trong Cài đặt › Biến môi trường.
-
-# It runs in a subshell that has their variables; they go when it ends.
-td5ccd9da = Nó chạy trong một subshell có các biến này; chạy xong là biến mất.
-
-# New snippet
-tff3f7838 = Đoạn lệnh mới
-
-# Edit snippet
-t9eab9738 = Sửa đoạn lệnh
-
-# Command
-tc67c8f52 = Lệnh
-
-# Run it: press Enter after typing it
-t32122ee4 = Chạy luôn: nhấn Enter sau khi gõ
 
 # None yet.
 t786bc275 = Chưa có.
