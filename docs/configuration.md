@@ -674,7 +674,12 @@ math (`$`, `$$`) are plain text, as commands and paths are. The read-only view
 is the same editor, read-only.
 
 Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z (Cmd+Shift+Z) redoes. A long note scrolls,
-with a bar to drag.
+with a bar to drag. Text wraps to the window; a table wider than it scrolls
+sideways, by its bar, a sideways swipe, or Shift and the wheel.
+
+A new note starts with a short guide, in the app's language: what Markdown
+does there, a code block, and how it goes into the shell. Write over it;
+closed untouched, a new note is not kept.
 
 **Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
 it into the main window's focused pane (connected), without Enter, and brings

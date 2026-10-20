@@ -977,9 +977,11 @@ impl Element for EditorElement {
                     let frac = f32::from(sx) / range;
                     let frac = if t.rtl { 1. - frac } else { frac };
                     let th_x = track + (avail - th_w) * frac;
+                    // shellwing: a thumb that shows (6 px, nearly opaque),
+                    // not 3 px of the border's tint (UPSTREAM.md, change 8).
                     let mut th_c = t.border;
-                    th_c.a = (th_c.a * 1.5).min(0.8);
-                    let rect = Bounds::new(point(th_x, bottom - px(4.)), size(th_w, px(3.)));
+                    th_c.a = 0.9;
+                    let rect = Bounds::new(point(th_x, bottom - px(5.)), size(th_w, px(6.)));
                     let grab = Bounds::new(
                         rect.origin - point(px(4.), px(6.)),
                         rect.size + size(px(8.), px(12.)),
@@ -2207,7 +2209,7 @@ impl Element for EditorElement {
         // wide table's last row, with a hand cursor over its grab band —
         // draggable (see `on_mouse_down`).
         for (thumb, hb) in &prepaint.table_thumbs {
-            window.paint_quad(fill(thumb.rect, thumb.color).corner_radii(Corners::all(px(1.5))));
+            window.paint_quad(fill(thumb.rect, thumb.color).corner_radii(Corners::all(px(3.))));
             window.set_cursor_style(CursorStyle::PointingHand, hb);
         }
         // Gutter drag grip: six muted dots on the hovered line; while a drag

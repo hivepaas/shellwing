@@ -66,6 +66,11 @@ impl EditorState {
         // Vertical scrolling is the overwhelmingly common case — bail before
         // the O(lines) row walk when there's no horizontal delta.
         let dx = f32::from(event.delta.pixel_delta(px(20.)).x);
+        // shellwing: Shift turns a mouse's vertical wheel sideways over a
+        // table, as browsers do (UPSTREAM.md, change 8).
+        let dy = f32::from(event.delta.pixel_delta(px(20.)).y);
+        let shifted = dx == 0. && event.modifiers.shift && dy != 0.;
+        let dx = if shifted { dy } else { dx };
         if std::env::var_os("ZORITE_WHEEL_DEBUG").is_some() {
             eprintln!("wheel: delta={:?} dx={dx}", event.delta);
         }
@@ -93,7 +98,7 @@ impl EditorState {
         // A horizontally-dominant wheel over a table belongs to the table —
         // consume it even at the scroll ends, so leftover deltas don't spill
         // into the page. Vertical-dominant scrolling keeps feeding the page.
-        if dx.abs() >= f32::from(event.delta.pixel_delta(px(20.)).y).abs() {
+        if shifted || dx.abs() >= dy.abs() {
             cx.stop_propagation();
         }
         let Some(t) = self.table_rows.get(header).and_then(Option::as_ref) else {

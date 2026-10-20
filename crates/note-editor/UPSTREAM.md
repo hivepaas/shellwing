@@ -137,6 +137,17 @@ lays out otherwise and selects nothing); it selects and copies.
 
 **Why:** a command in a note's code block goes into the shell with one press.
 
+### 8. Wide tables scroll where they can be seen
+
+| Where | What |
+|---|---|
+| `src/element.rs`, the wide table's scroll thumb (prepaint) | 6 px high (was 3), 5 px above the table's bottom, the border's color at 0.9 alpha (was its own tint × 1.5, at most 0.8). |
+| `src/element.rs`, the thumb's paint | Corner radius 3 px (was 1.5). |
+| `src/tables.rs`, `on_scroll_wheel` | With Shift, a vertical wheel scrolls the table under the pointer sideways (`shifted`), and the page does not move. |
+
+**Why:** the thumb was hard to see, and a mouse without a sideways wheel had no
+way along a wide table but that thumb.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.

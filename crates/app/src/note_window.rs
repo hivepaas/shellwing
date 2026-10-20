@@ -306,7 +306,9 @@ impl NoteWindow {
             return;
         }
         let text = if self.note.id.is_empty() {
-            Default::default()
+            // A new note starts with a guide to write over (not an edit:
+            // closed untouched, nothing is kept).
+            zeroize::Zeroizing::new(template().to_string())
         } else {
             match vault.note_text(&self.note.id) {
                 Ok(Some(t)) => t,
@@ -1157,6 +1159,23 @@ impl NoteWindow {
     }
 }
 
+/// What a new note starts with, in the app's language: how to write one,
+/// a code block, and that it goes into the shell.
+fn template() -> &'static str {
+    match shellwing_i18n::language() {
+        "vi" => include_str!("note_templates/vi.md"),
+        "de" => include_str!("note_templates/de.md"),
+        "es" => include_str!("note_templates/es.md"),
+        "fr" => include_str!("note_templates/fr.md"),
+        "ja" => include_str!("note_templates/ja.md"),
+        "ko" => include_str!("note_templates/ko.md"),
+        "pt" => include_str!("note_templates/pt.md"),
+        "ru" => include_str!("note_templates/ru.md"),
+        "zh" => include_str!("note_templates/zh.md"),
+        _ => include_str!("note_templates/en.md"),
+    }
+}
+
 /// The editor in the app's colors: Markdown shown as it is typed, or plain
 /// text.
 fn style_editor(e: &mut EditorState, markdown: bool, cx: &mut Context<EditorState>) {
@@ -1308,5 +1327,29 @@ impl Render for NoteWindow {
         let content = div().size_full().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn every_template_shows_a_command_to_insert() {
+        for t in [
+            include_str!("note_templates/en.md"),
+            include_str!("note_templates/vi.md"),
+            include_str!("note_templates/de.md"),
+            include_str!("note_templates/es.md"),
+            include_str!("note_templates/fr.md"),
+            include_str!("note_templates/ja.md"),
+            include_str!("note_templates/ko.md"),
+            include_str!("note_templates/pt.md"),
+            include_str!("note_templates/ru.md"),
+            include_str!("note_templates/zh.md"),
+        ] {
+            assert!(t.starts_with("# "), "a heading first");
+            assert_eq!(t.matches("```").count(), 2, "one code block");
+            assert!(t.contains("sudo systemctl restart nginx"));
+            assert!(t.contains("- [ ] "), "a task");
+        }
     }
 }
