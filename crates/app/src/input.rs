@@ -145,6 +145,49 @@ impl TextInput {
         self
     }
 
+    /// The selected part of the text, as a byte range.
+    pub fn selected_range(&self) -> Range<usize> {
+        self.selected.clone()
+    }
+
+    /// The mouse is still choosing the selection.
+    pub fn dragging(&self) -> bool {
+        self.selecting
+    }
+
+    /// Replaces `range` with `text` as an edit (it undoes), then selects
+    /// `select` in the new text.
+    pub fn edit(
+        &mut self,
+        range: Range<usize>,
+        text: &str,
+        select: Range<usize>,
+        cx: &mut Context<Self>,
+    ) {
+        self.remember(EditKind::Other);
+        let range = range.start.min(self.content.len())..range.end.min(self.content.len());
+        self.content =
+            (self.content[..range.start].to_owned() + text + &self.content[range.end..]).into();
+        let end = select.end.min(self.content.len());
+        self.selected = select.start.min(end)..end;
+        self.reversed = false;
+        self.marked = None;
+        cx.emit(Changed);
+        cx.notify();
+    }
+
+    /// Where the selection starts on the window (the top of its row), in a
+    /// field of several lines as last drawn.
+    pub fn selection_origin(&self) -> Option<Point<Pixels>> {
+        let lines = self.lines.as_ref()?;
+        let bounds = self.last_bounds?;
+        let p = self.point_for(self.selected.start)?;
+        Some(point(
+            bounds.left() + p.x,
+            bounds.top() + p.y - lines.scroll_y,
+        ))
+    }
+
     /// A field of several lines' row height, once it was drawn.
     pub fn line_height(&self) -> Option<Pixels> {
         self.lines

@@ -49,7 +49,17 @@ pub struct Hooks {
     pub touched: Rc<dyn Fn(&mut App)>,
     /// The hosts a note can be about.
     pub hosts: HostNames,
+    /// The main window's focused pane, when its shell can take text: its
+    /// title.
+    pub pane: PaneTitle,
+    /// Types text into that pane, without Enter.
+    pub insert: Insert,
 }
+
+/// See [`Hooks::pane`].
+pub type PaneTitle = Rc<dyn Fn(&App) -> Option<String>>;
+/// See [`Hooks::insert`].
+pub type Insert = Rc<dyn Fn(String, &mut App) -> Result<(), String>>;
 
 /// The names of the hosts, as the app has them now.
 pub type HostNames = Rc<dyn Fn(&App) -> Vec<String>>;
@@ -538,6 +548,130 @@ impl NoteWindow {
         }
     }
 
+    /// The selection formatted as Markdown (or the format taken off).
+    fn format(&mut self, f: crate::md_format::Format, cx: &mut Context<Self>) {
+        let text = self.text.read(cx).text().to_string();
+        let sel = self.text.read(cx).selected_range();
+        let (new, select) = crate::md_format::apply(&text, sel, f);
+        let len = text.len();
+        self.text
+            .update(cx, |i, cx| i.edit(0..len, &new, select, cx));
+    }
+
+    fn selected_text(&self, cx: &App) -> String {
+        let i = self.text.read(cx);
+        i.text()
+            .get(i.selected_range())
+            .unwrap_or_default()
+            .to_string()
+    }
+
+    /// The selection into the main window's pane, to run from there.
+    fn insert(&mut self, cx: &mut Context<Self>) {
+        let text = self.selected_text(cx);
+        if text.is_empty() {
+            return;
+        }
+        match (self.hooks.insert)(text, cx) {
+            Ok(()) => self.problem = None,
+            Err(e) => self.problem = Some(e),
+        }
+        cx.notify();
+    }
+
+    /// Over the selection: formats (Markdown), copy, and into the shell.
+    fn selection_bar(&self, window: &Window, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let input = self.text.read(cx);
+        let focused = input.focus_handle(cx).is_focused(window);
+        if !focused || input.selected_range().is_empty() || input.dragging() {
+            return None;
+        }
+        let at = input.selection_origin()?;
+        let md = self.note.format == NoteFormat::Markdown;
+        let tool = |id: &'static str, label: SharedString| {
+            div()
+                .id(id)
+                .h(px(26.))
+                .min_w(px(26.))
+                .px(px(7.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(px(5.))
+                .text_size(ui(12.5))
+                .text_color(rgb(colors().text))
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(colors().hover)))
+                // Pressing it must not take the focus from the text.
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        let gap = || div().w(px(1.)).h(px(16.)).mx(px(3.)).bg(rgb(colors().line));
+        let mut bar = div()
+            .flex()
+            .items_center()
+            .gap(px(2.))
+            .p(px(3.))
+            .rounded(px(7.))
+            .border_1()
+            .border_color(rgb(colors().edge))
+            .bg(rgb(colors().raised))
+            .shadow_lg();
+        if md {
+            use crate::md_format::Format;
+            let marks: [(&'static str, &'static str, Format); 9] = [
+                ("fmt-bold", "B", Format::Bold),
+                ("fmt-italic", "I", Format::Italic),
+                ("fmt-strike", "S", Format::Strike),
+                ("fmt-code", "</>", Format::Code),
+                ("fmt-link", "🔗", Format::Link),
+                ("fmt-heading", "H", Format::Heading),
+                ("fmt-quote", "❝", Format::Quote),
+                ("fmt-bullet", "•", Format::Bullet),
+                ("fmt-task", "☐", Format::Task),
+            ];
+            for (id, label, f) in marks {
+                let t = tool(id, label.into())
+                    .when(f == Format::Bold, |d| d.font_weight(FontWeight::BOLD))
+                    .when(f == Format::Italic, |d| d.italic())
+                    .when(f == Format::Strike, |d| d.line_through())
+                    .on_click(cx.listener(move |v, _, _, cx| v.format(f, cx)));
+                bar = bar.child(t);
+            }
+            bar = bar.child(gap());
+        }
+        bar = bar.child(tool("sel-copy", tr!("Copy").into()).on_click(cx.listener(
+            |v, _, _, cx| {
+                let text = v.selected_text(cx);
+                cx.write_to_clipboard(gpui::ClipboardItem::new_string(text));
+            },
+        )));
+        bar = match (self.hooks.pane)(cx) {
+            Some(pane) => bar.child(
+                tool("sel-insert", tr!("Insert into {pane}", pane = pane).into())
+                    .text_color(rgb(colors().accent))
+                    .on_click(cx.listener(|v, _, _, cx| v.insert(cx))),
+            ),
+            None => bar.child(
+                div()
+                    .px(px(7.))
+                    .text_size(ui(12.))
+                    .text_color(rgb(colors().faint))
+                    .child(tr!("No shell to insert into")),
+            ),
+        };
+        Some(
+            deferred(
+                anchored()
+                    .anchor(gpui::Anchor::BottomLeft)
+                    .position(gpui::point(at.x, at.y - px(6.)))
+                    .child(bar),
+            )
+            .with_priority(3)
+            .into_any_element(),
+        )
+    }
+
     /// A sensitive note's eye: asks it is the user.
     fn reveal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let slot = self.vault.clone();
@@ -630,6 +764,26 @@ impl NoteWindow {
         } else {
             k.modifiers.control
         };
+        let md = self.note.format == NoteFormat::Markdown
+            && self.text.read(cx).focus_handle(cx).is_focused(window);
+        let format = |key: &str| {
+            use crate::md_format::Format;
+            match key {
+                "b" => Some(Format::Bold),
+                "i" => Some(Format::Italic),
+                "e" => Some(Format::Code),
+                "k" => Some(Format::Link),
+                _ => None,
+            }
+        };
+        if md
+            && cmd
+            && !k.modifiers.shift
+            && let Some(f) = format(k.key.as_str())
+        {
+            self.format(f, cx);
+            return cx.stop_propagation();
+        }
         match k.key.as_str() {
             "enter" if self.ask.is_some() => self.answer(cx),
             // Saved at once, as editors do.
@@ -1018,6 +1172,7 @@ impl NoteWindow {
             .font_family(mono)
             .items_start()
             .flex_shrink_0()
+            .children(self.selection_bar(window, cx))
             .into_any_element()
     }
 }

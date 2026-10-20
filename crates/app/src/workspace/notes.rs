@@ -12,7 +12,8 @@ impl Workspace {
     /// use (the vault does not lock as idle), and the hosts to choose from.
     fn note_hooks(&self, cx: &Context<Self>) -> Hooks {
         let ws = cx.entity().downgrade();
-        let (saved, touched, hosts) = (ws.clone(), ws.clone(), ws);
+        let (saved, touched, hosts, pane, insert) =
+            (ws.clone(), ws.clone(), ws.clone(), ws.clone(), ws);
         Hooks {
             saved: Rc::new(move |cx| {
                 let _ = saved.update(cx, |ws, cx| {
@@ -32,7 +33,36 @@ impl Workspace {
                     .map(|ws| ws.read(cx).snippet_scopes().1)
                     .unwrap_or_default()
             }),
+            pane: Rc::new(move |cx| {
+                let ws = pane.upgrade()?;
+                let view = ws.read(cx).active_tab()?.clone();
+                let s = view.read(cx).session();
+                (s.status() == Status::Connected).then(|| s.title.clone())
+            }),
+            insert: Rc::new(move |text, cx| {
+                let ws = insert.upgrade().ok_or_else(|| tr!("Not connected."))?;
+                ws.update(cx, |ws, cx| ws.insert_text(&text, cx))
+            }),
         }
+    }
+
+    /// Types `text` into the focused pane (no Enter: it is read first), and
+    /// brings the window forward to run it.
+    fn insert_text(&mut self, text: &str, cx: &mut Context<Self>) -> Result<(), String> {
+        let view = self
+            .active_tab()
+            .cloned()
+            .ok_or_else(|| tr!("Open a tab first"))?;
+        if view.read(cx).session().status() != Status::Connected {
+            return Err(tr!("Connect first"));
+        }
+        view.update(cx, |v, _| v.type_text(text, false));
+        let focus = view.read(cx).focus_handle(cx);
+        self.in_window(cx, move |_, window, cx| {
+            window.activate_window();
+            window.focus(&focus, cx);
+        });
+        Ok(())
     }
 
     /// Opens `note` (None: a new one) in its window.

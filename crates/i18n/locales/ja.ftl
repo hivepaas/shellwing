@@ -988,6 +988,12 @@ te3591497 = テキストではなくなりました。
 # Not read back: {e}
 tf04d4bce = 読み戻せません: { $e }
 
+# Insert into {pane}
+t3d5eaffc = { $pane } に挿入
+
+# No shell to insert into
+t825e7370 = 挿入先のシェルがありません
+
 # The vault's passphrase
 tb66334ea = 保管庫のパスフレーズ
 
@@ -2419,17 +2425,17 @@ tc12e4203 = 保存できませんでした：{ $e }
 # Removing the config files placed…
 tbd123099 = 配置した設定ファイルを削除しています…
 
-# Notes for {host}
-ta77bd589 = { $host } のノート
-
-# Notes · {category}
-tbb112cdf = ノート · { $category }
-
 # Open a tab first
 t6460fddf = 先にタブを開いてください
 
 # Connect first
 t0b55252f = 先に接続してください
+
+# Notes for {host}
+ta77bd589 = { $host } のノート
+
+# Notes · {category}
+tbb112cdf = ノート · { $category }
 
 # Over SSH only
 t14e43465 = SSH のみ

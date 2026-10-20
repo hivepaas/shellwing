@@ -1008,6 +1008,12 @@ te3591497 = Ya no es texto.
 # Not read back: {e}
 tf04d4bce = No se pudo volver a leer: { $e }
 
+# Insert into {pane}
+t3d5eaffc = Insertar en { $pane }
+
+# No shell to insert into
+t825e7370 = No hay shell donde insertar
+
 # The vault's passphrase
 tb66334ea = Frase de contraseña de la bóveda
 
@@ -2487,17 +2493,17 @@ tc12e4203 = No se guardó: { $e }
 # Removing the config files placed…
 tbd123099 = Quitando los archivos de configuración colocados…
 
-# Notes for {host}
-ta77bd589 = Notas para { $host }
-
-# Notes · {category}
-tbb112cdf = Notas · { $category }
-
 # Open a tab first
 t6460fddf = Abre una pestaña primero
 
 # Connect first
 t0b55252f = Conéctate primero
+
+# Notes for {host}
+ta77bd589 = Notas para { $host }
+
+# Notes · {category}
+tbb112cdf = Notas · { $category }
 
 # Over SSH only
 t14e43465 = Solo por SSH

@@ -988,6 +988,12 @@ te3591497 = 它已不再是文本。
 # Not read back: {e}
 tf04d4bce = 未能读回：{ $e }
 
+# Insert into {pane}
+t3d5eaffc = 插入到 { $pane }
+
+# No shell to insert into
+t825e7370 = 没有可插入的 shell
+
 # The vault's passphrase
 tb66334ea = 保险库的密码短语
 
@@ -2419,17 +2425,17 @@ tc12e4203 = 未保存：{ $e }
 # Removing the config files placed…
 tbd123099 = 正在移除已放置的配置文件…
 
-# Notes for {host}
-ta77bd589 = { $host } 的笔记
-
-# Notes · {category}
-tbb112cdf = 笔记 · { $category }
-
 # Open a tab first
 t6460fddf = 请先打开一个标签页
 
 # Connect first
 t0b55252f = 请先连接
+
+# Notes for {host}
+ta77bd589 = { $host } 的笔记
+
+# Notes · {category}
+tbb112cdf = 笔记 · { $category }
 
 # Over SSH only
 t14e43465 = 仅限 SSH

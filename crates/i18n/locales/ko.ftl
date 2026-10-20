@@ -988,6 +988,12 @@ te3591497 = 더 이상 텍스트가 아닙니다.
 # Not read back: {e}
 tf04d4bce = 다시 읽지 못했습니다: { $e }
 
+# Insert into {pane}
+t3d5eaffc = { $pane }에 삽입
+
+# No shell to insert into
+t825e7370 = 삽입할 셸이 없습니다
+
 # The vault's passphrase
 tb66334ea = 보관함 암호 문구
 
@@ -2419,17 +2425,17 @@ tc12e4203 = 보관되지 않음: { $e }
 # Removing the config files placed…
 tbd123099 = 배치된 설정 파일을 삭제하는 중…
 
-# Notes for {host}
-ta77bd589 = { $host }용 노트
-
-# Notes · {category}
-tbb112cdf = 노트 · { $category }
-
 # Open a tab first
 t6460fddf = 먼저 탭을 여세요
 
 # Connect first
 t0b55252f = 먼저 연결하세요
+
+# Notes for {host}
+ta77bd589 = { $host }용 노트
+
+# Notes · {category}
+tbb112cdf = 노트 · { $category }
 
 # Over SSH only
 t14e43465 = SSH 전용

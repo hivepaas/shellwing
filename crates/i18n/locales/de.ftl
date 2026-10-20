@@ -1008,6 +1008,12 @@ te3591497 = Es ist kein Text mehr.
 # Not read back: {e}
 tf04d4bce = Nicht zurückgelesen: { $e }
 
+# Insert into {pane}
+t3d5eaffc = In { $pane } einfügen
+
+# No shell to insert into
+t825e7370 = Keine Shell zum Einfügen
+
 # The vault's passphrase
 tb66334ea = Passphrase des Tresors
 
@@ -2487,17 +2493,17 @@ tc12e4203 = Nicht abgelegt: { $e }
 # Removing the config files placed…
 tbd123099 = Die abgelegten Konfigurationsdateien werden entfernt…
 
-# Notes for {host}
-ta77bd589 = Notizen für { $host }
-
-# Notes · {category}
-tbb112cdf = Notizen · { $category }
-
 # Open a tab first
 t6460fddf = Öffne zuerst einen Tab
 
 # Connect first
 t0b55252f = Verbinde dich zuerst
+
+# Notes for {host}
+ta77bd589 = Notizen für { $host }
+
+# Notes · {category}
+tbb112cdf = Notizen · { $category }
 
 # Over SSH only
 t14e43465 = Nur über SSH

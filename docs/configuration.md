@@ -667,6 +667,14 @@ about (*For a host ▾*):
 Ctrl+Z (Cmd+Z) undoes, Ctrl+Shift+Z or Ctrl+Y (Cmd+Shift+Z) redoes, in a
 note as in every field of the app.
 
+**Selected text** gets a bar over it: *Copy*, and *Insert into …*, which types
+it into the main window's focused pane (connected), without Enter, and brings
+that window forward to read it and run it. Several lines go as one paste. In a
+Markdown note the bar also formats: bold, italic, strikethrough, code (a fenced
+block for several lines), link, heading, quote, list, task; applied again, each
+comes off. Ctrl+B, Ctrl+I, Ctrl+E and Ctrl+K (Cmd on macOS) do bold, italic,
+code and link.
+
 **Edit in another app…** opens a note that is not sensitive in your text editor
 (*Settings › Files*, else the system's). While it is open there, a copy in plain
 text is on this computer's disk, in a folder only you can read

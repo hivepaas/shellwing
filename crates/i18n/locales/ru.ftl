@@ -1018,6 +1018,12 @@ te3591497 = Это больше не текст.
 # Not read back: {e}
 tf04d4bce = Не удалось прочитать обратно: { $e }
 
+# Insert into {pane}
+t3d5eaffc = Вставить в { $pane }
+
+# No shell to insert into
+t825e7370 = Нет оболочки для вставки
+
 # The vault's passphrase
 tb66334ea = Парольная фраза хранилища
 
@@ -2527,17 +2533,17 @@ tc12e4203 = Не сохранено: { $e }
 # Removing the config files placed…
 tbd123099 = Удаление размещённых файлов конфигурации…
 
-# Notes for {host}
-ta77bd589 = Заметки для { $host }
-
-# Notes · {category}
-tbb112cdf = Заметки · { $category }
-
 # Open a tab first
 t6460fddf = Сначала откройте вкладку
 
 # Connect first
 t0b55252f = Сначала подключитесь
+
+# Notes for {host}
+ta77bd589 = Заметки для { $host }
+
+# Notes · {category}
+tbb112cdf = Заметки · { $category }
 
 # Over SSH only
 t14e43465 = Только по SSH

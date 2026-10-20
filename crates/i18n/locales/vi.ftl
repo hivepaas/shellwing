@@ -988,6 +988,12 @@ te3591497 = Tệp không còn là văn bản.
 # Not read back: {e}
 tf04d4bce = Không đọc lại được: { $e }
 
+# Insert into {pane}
+t3d5eaffc = Chèn vào { $pane }
+
+# No shell to insert into
+t825e7370 = Không có shell để chèn vào
+
 # The vault's passphrase
 tb66334ea = Passphrase của kho
 
@@ -2419,17 +2425,17 @@ tc12e4203 = Chưa giữ: { $e }
 # Removing the config files placed…
 tbd123099 = Đang gỡ các tệp cấu hình đã đặt…
 
-# Notes for {host}
-ta77bd589 = Ghi chú cho { $host }
-
-# Notes · {category}
-tbb112cdf = Ghi chú · { $category }
-
 # Open a tab first
 t6460fddf = Hãy mở một tab trước
 
 # Connect first
 t0b55252f = Hãy kết nối trước
+
+# Notes for {host}
+ta77bd589 = Ghi chú cho { $host }
+
+# Notes · {category}
+tbb112cdf = Ghi chú · { $category }
 
 # Over SSH only
 t14e43465 = Chỉ qua SSH
