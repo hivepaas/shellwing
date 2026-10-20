@@ -776,7 +776,7 @@ impl Element for EditorElement {
                     .and_then(|st| st.block_ref_count.as_ref())
                     .filter(|_| editor.row_col(editor.selected_range.start).0 != i)
                     .and_then(|f| {
-                        zorite_markdown::syntax::block_id(line)
+                        crate::obsidian::block_id(line)
                             .filter(|(_, id)| f(id) > 0)
                             .map(|(at, _)| at..line.len())
                     });
@@ -3111,7 +3111,7 @@ fn shape_document(
         // through to the chip below.
         if md.is_some()
             && caret_row != Some(idx)
-            && let Some(inner) = zorite_markdown::syntax::embed_line(line)
+            && let Some(inner) = crate::obsidian::embed_line(line)
             && let Some(h) = embed_view.and_then(|f| f(inner).map(|(_, h)| h))
         {
             out.push_placeholder(window, base_font_size, wrap_width, h, None, None, 1);
@@ -3230,7 +3230,7 @@ fn shape_document(
             _ => px(0.),
         };
         let widget: Option<Block> = if let Some(st) = md.filter(|_| !is_code)
-            && let Some(inner) = zorite_markdown::syntax::embed_line(line)
+            && let Some(inner) = crate::obsidian::embed_line(line)
         {
             // A standalone `![[target]]` transclusion renders as a clickable
             // chip (`⧉ Note → anchor`) that opens/jumps to the source — the
@@ -4051,7 +4051,7 @@ fn build_prop_panel(
     let mut key_w = px(0.);
     let mut val_w = px(0.);
     for &line in &lines[range.start..range.end] {
-        let Some((_, k, v)) = zorite_markdown::syntax::prefixed_property(line) else {
+        let Some((_, k, v)) = crate::obsidian::prefixed_property(line) else {
             continue;
         };
         key_w = key_w.max(measure_width(window, k, font, font_size));

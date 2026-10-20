@@ -45,6 +45,8 @@ use gpui::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
+mod obsidian;
+
 mod markdown_syntax;
 pub use markdown_syntax::{AlertIcons, MathAlign, PropertyIconFn, SyntaxStyle};
 
@@ -347,14 +349,11 @@ impl TurnKind {
 /// exactly like fresh typing and the reader's pre-parse normalization.
 /// Unpaired `$$` prose/code is untouched. Both load paths (`with_text`,
 /// `set_text`) route through here.
+/// A document as loaded: as it is. (zorite-editor rewrote `$$` math fences
+/// here; a shell's `$$` is not math, and a note merely opened must not
+/// change.)
 fn normalize_loaded(content: String) -> String {
-    if !content.contains("$$") {
-        return content;
-    }
-    match zorite_markdown::syntax::normalize_math_fences(&content) {
-        std::borrow::Cow::Owned(n) => n,
-        std::borrow::Cow::Borrowed(_) => content,
-    }
+    content
 }
 
 /// If `offset` sits on a collapsed marker line (a table style marker or a
@@ -1165,6 +1164,33 @@ impl EditorState {
         &self.content
     }
 
+    /// The selection, as a byte range of the text (`start <= end`).
+    /// (shellwing: for the host's bar over the selection.)
+    pub fn selected_range(&self) -> Range<usize> {
+        self.selected_range.clone()
+    }
+
+    /// Selects `range` of the text, snapped to characters.
+    pub fn select(&mut self, range: Range<usize>, cx: &mut Context<Self>) {
+        let len = self.content.len();
+        let snap = |mut i: usize| {
+            i = i.min(len);
+            while i > 0 && !self.content.is_char_boundary(i) {
+                i -= 1;
+            }
+            i
+        };
+        let (start, end) = (snap(range.start), snap(range.end));
+        self.selected_range = start.min(end)..end.max(start);
+        self.selection_reversed = false;
+        cx.notify();
+    }
+
+    /// The mouse is still choosing the selection.
+    pub fn is_selecting(&self) -> bool {
+        self.is_selecting
+    }
+
     /// Replace byte `range` with `text` as ONE recorded (undoable) edit, leaving the caret
     /// after the inserted text. Unlike [`Self::set_text`] this preserves — and extends — the
     /// undo history, so a host writing back a structural edit (e.g. a committed `$$…$$`
@@ -1628,7 +1654,7 @@ impl EditorState {
             if caret_row == Some(row) {
                 continue;
             }
-            let Some(inner) = zorite_markdown::syntax::embed_line(line) else {
+            let Some(inner) = crate::obsidian::embed_line(line) else {
                 continue;
             };
             let (Some(top), Some((view, height))) = (self.line_tops.get(row), provider(inner))
@@ -3366,7 +3392,7 @@ impl EditorState {
             // the anchor is hidden — with the caret on the line the raw text
             // is revealed for editing and clicks place the caret as usual.
             if self.row_col(self.selected_range.start).0 != row
-                && let Some((at, id)) = zorite_markdown::syntax::block_id(line)
+                && let Some((at, id)) = crate::obsidian::block_id(line)
                 && offset - start >= at
                 && self
                     .markdown_style
@@ -6970,10 +6996,7 @@ mod tests {
         // Table marker at the top: the caret steps to the header line.
         let doc = "<!-- table:grid cols=40,40 -->\n| a | b |\n| --- | --- |\n| 1 | 2 |";
         assert_eq!(caret_off_marker_line(doc, 0), 31);
-        // Math align marker: the caret lands after the block.
-        let doc = "<!-- math:center -->\n$$\nx^2\n$$\nafter";
-        assert_eq!(caret_off_marker_line(doc, 0), 31);
-        assert_eq!(&doc[31..], "after");
+        // (Math align markers: math is off in shellwing, see obsidian.rs.)
         // Plain lines pass through untouched.
         assert_eq!(caret_off_marker_line("hello\nworld", 0), 0);
         assert_eq!(caret_off_marker_line("", 0), 0);

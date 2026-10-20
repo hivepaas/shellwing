@@ -580,7 +580,7 @@ fn scan_line(text: &str, start: usize, end: usize, st: &SyntaxStyle, out: &mut V
     // place (Logseq-style; the anchor hitbox/click emit `refs:^id`).
     // Hidden BEFORE the heading fast-path — heading lines carry anchors too
     // (`### Notes ^id` used to show the raw tail).
-    let end = match zorite_markdown::syntax::block_id(&text[start..end]) {
+    let end = match crate::obsidian::block_id(&text[start..end]) {
         Some((at, id)) => {
             let refs = st.block_ref_count.as_ref().map_or(0, |f| f(id));
             if refs > 0 {
@@ -962,7 +962,8 @@ fn scan_inline(
             }
         }
         // Wiki-link: [[Page]] (check before single-[ link).
-        if c == b'['
+        if crate::obsidian::OBSIDIAN
+            && c == b'['
             && !is_backslash_escaped(b, i)
             && i + 1 < end
             && b[i + 1] == b'['
@@ -1150,7 +1151,7 @@ fn scan_inline(
             }
         }
         // Tag: #tag (at a non-word boundary; needs at least one tag char).
-        if c == b'#' && (i == start || !is_word(b[i - 1])) {
+        if crate::obsidian::OBSIDIAN && c == b'#' && (i == start || !is_word(b[i - 1])) {
             let mut j = i + 1;
             while j < end && is_tag(b[j]) {
                 j += 1;
@@ -1231,7 +1232,8 @@ fn find_underscore_close(b: &[u8], from: usize, end: usize, double: bool) -> Opt
 // Linkables (wiki/tag/url/bare-url) are shared with the reader
 // (`zorite_markdown::syntax`) — one grammar for clicks, hover cursors, and
 // styling in every renderer.
-pub(crate) use zorite_markdown::syntax::{LinkHit, link_at, links};
+pub(crate) use crate::obsidian::{link_at, links};
+pub(crate) use zorite_markdown::syntax::LinkHit;
 
 /// ATX heading depth (1–6) if `line` is a heading: 1–6 leading `#` followed by
 /// a space or end-of-line. `None` otherwise.
@@ -1671,6 +1673,9 @@ pub(crate) fn line_scale(line: &str) -> f32 {
 /// range covering both fences (so it can collapse), and the diagram source (the
 /// lines between the fences, joined). Used to render the block as a diagram.
 pub(crate) fn mermaid_blocks(content: &str) -> Vec<(Range<usize>, String)> {
+    if !crate::obsidian::MATH {
+        return Vec::new();
+    }
     let lines: Vec<&str> = content.split('\n').collect();
     let mut out = Vec::new();
     let mut i = 0;
@@ -1757,6 +1762,9 @@ pub(crate) struct MathRegion {
 }
 
 pub(crate) fn math_regions(content: &str) -> Vec<MathRegion> {
+    if !crate::obsidian::MATH {
+        return Vec::new();
+    }
     let lines: Vec<&str> = content.split('\n').collect();
     let mut out = Vec::new();
     let mut in_code = false;
@@ -1875,6 +1883,9 @@ pub(crate) fn inline_math_latex<'a>(line: &'a str, span: &Range<usize>) -> &'a s
 }
 
 pub(crate) fn inline_math_spans(line: &str) -> Vec<Range<usize>> {
+    if !crate::obsidian::MATH {
+        return Vec::new();
+    }
     let bytes = line.as_bytes();
     let mut out = Vec::new();
     let mut i = 0;
@@ -2163,12 +2174,12 @@ pub(crate) fn property_regions(content: &str) -> Vec<Range<usize>> {
             i += 1;
             continue;
         }
-        if !in_fence && zorite_markdown::syntax::prefixed_property(lines[i]).is_some() {
+        if !in_fence && crate::obsidian::prefixed_property(lines[i]).is_some() {
             let start = i;
             i += 1;
             while i < lines.len()
                 && !lines[i].trim_start().starts_with("```")
-                && zorite_markdown::syntax::prefixed_property(lines[i]).is_some()
+                && crate::obsidian::prefixed_property(lines[i]).is_some()
             {
                 i += 1;
             }
@@ -2465,6 +2476,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn inline_math_basic() {
         assert_eq!(spans("the area $\\pi r^2$ of a circle"), vec!["$\\pi r^2$"]);
         assert_eq!(spans("$x$"), vec!["$x$"]);
@@ -2484,6 +2496,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn inline_math_escapes_and_later_close() {
         // `\$` is a literal dollar, not a delimiter.
         assert!(spans("price is 5\\$ even").is_empty());
@@ -2577,6 +2590,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn inline_math_multibyte_safe() {
         // A multi-byte char (é, —) adjacent to a delimiter counts as non-space; ranges stay
         // on char boundaries.
@@ -2588,6 +2602,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn one_line_math_regions() {
         // `$$x$$` alone on a line is a display-math REGION (block treatment);
         // so is a single complete pair with words around it (see
@@ -2616,6 +2631,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn inline_display_math_double_dollar() {
         // Same-line `$$…$$` is display math (issue #54): one span covering
         // both delimiter pairs, spaces inside allowed.
@@ -2642,6 +2658,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn mermaid_block_extraction() {
         let md = "intro\n\n```mermaid\ngraph TD\nA --> B\n```\n\nafter";
         let blocks = mermaid_blocks(md);
@@ -2752,6 +2769,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn link_at_hits_every_linkable_construct() {
         use LinkHit::*;
         let line = "see [[Ops Net|the net]] and #scada plus [docs](https://x.io/d) `#not` [[]]";
@@ -3269,6 +3287,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "off in shellwing (obsidian.rs); goes with its code"]
     fn property_regions_group_and_skip_code() {
         // Two adjacent property lines form one region; prose breaks it.
         let r = property_regions("attendees:: Bob\ntime:: 3pm\n\nprose\nowner:: Sue");
