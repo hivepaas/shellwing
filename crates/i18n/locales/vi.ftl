@@ -1627,8 +1627,8 @@ t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được 
 # Asked for when it runs:
 t2d8c5e6d = Được hỏi khi chạy:
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = Nối các lệnh bằng && hoặc ; trên một dòng.
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter để xuống dòng; các dòng chạy lần lượt. { $save } để lưu.
 
 # Every host
 t77846bfe = Mọi máy chủ

@@ -109,7 +109,12 @@ impl SnippetsView {
             &s.name,
             cx,
         );
-        let command = Self::input(|| "df -h / && free -h".to_string(), &s.command, cx);
+        // Several lines: each runs in turn.
+        let command = cx.new(|cx| {
+            let mut i = TextInput::said(|| "df -h / && free -h".to_string(), cx).multiline(1, 8);
+            i.set_text(&s.command, s.command.len()..s.command.len(), cx);
+            i
+        });
         // The names asked for show as the command is typed.
         let changed = cx.subscribe(&command, |_, _, _: &Changed, cx| cx.notify());
         let first = if s.name.is_empty() {
@@ -258,7 +263,9 @@ impl SnippetsView {
             .child(label_text(title))
             .child(
                 div()
-                    .h(px(32.))
+                    // One line high, or as many as a field of several lines has.
+                    .min_h(px(32.))
+                    .py(px(6.))
                     .px(px(10.))
                     .flex()
                     .items_center()
@@ -334,7 +341,7 @@ impl SnippetsView {
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
-                                    .child(s.command.clone()),
+                                    .child(crate::snippets::one_line(&s.command)),
                             ),
                     )
                     .child(Self::small(("snippet-edit", i), &tr!("Edit…")).on_click(
@@ -452,11 +459,15 @@ impl SnippetsView {
                         );
                     }
                 }
-                vars = vars.child(
-                    div()
-                        .ml(px(6.))
-                        .child(tr!("Chain commands with && or ; on one line.")),
-                );
+                let save = if cfg!(target_os = "macos") {
+                    "Cmd+Enter"
+                } else {
+                    "Ctrl+Enter"
+                };
+                vars = vars.child(div().ml(px(6.)).child(tr!(
+                    "Enter starts another line; the lines run in turn. {save} saves.",
+                    save = save
+                )));
 
                 let (groups, hosts) = self
                     .workspace

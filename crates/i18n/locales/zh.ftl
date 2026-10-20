@@ -1627,8 +1627,8 @@ t482910da = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会自�
 # Asked for when it runs:
 t2d8c5e6d = 运行时询问：
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = 用 && 或 ; 在一行中串联多条命令。
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = 按 Enter 另起一行；各行依次运行。按 { $save } 保存。
 
 # Every host
 t77846bfe = 所有主机

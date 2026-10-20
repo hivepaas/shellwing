@@ -35,6 +35,19 @@ pub struct TextInput {
     scroll_x: Pixels,
     selecting: bool,
     masked: bool,
+    /// Several lines, wrapped to the width: [`TextInput::multiline`].
+    lines: Option<Lines>,
+}
+
+/// A field of several lines: how many it shows, and how they were drawn.
+struct Lines {
+    /// Rows shown at the least and at the most; beyond, it scrolls.
+    rows: (usize, usize),
+    /// Each line of the text, from the byte it starts at, as last drawn,
+    /// with its top (before scrolling).
+    drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
+    line_height: Pixels,
+    scroll_y: Pixels,
 }
 
 /// What an empty field shows.
@@ -81,7 +94,84 @@ impl TextInput {
             scroll_x: px(0.),
             selecting: false,
             masked: false,
+            lines: None,
         }
+    }
+
+    /// A field of several lines, wrapped to its width, `min` to `max` rows
+    /// high as its text needs (then it scrolls). Enter starts a line; with
+    /// Ctrl (Cmd on macOS) it goes to whoever holds the field, as a lone
+    /// line's Enter does.
+    pub fn multiline(mut self, min: usize, max: usize) -> Self {
+        self.lines = Some(Lines {
+            rows: (min.max(1), max.max(min.max(1))),
+            drawn: vec![],
+            line_height: px(0.),
+            scroll_y: px(0.),
+        });
+        self
+    }
+
+    /// Where the line holding `offset` starts and ends.
+    fn line_bounds(&self, offset: usize) -> (usize, usize) {
+        let start = self.content[..offset].rfind('\n').map_or(0, |i| i + 1);
+        let end = self.content[offset..]
+            .find('\n')
+            .map_or(self.content.len(), |i| offset + i);
+        (start, end)
+    }
+
+    /// Where `offset` was drawn in a field of several lines, from the top of
+    /// its text (before scrolling).
+    fn point_for(&self, offset: usize) -> Option<Point<Pixels>> {
+        let lines = self.lines.as_ref()?;
+        let (start, line, top) = lines
+            .drawn
+            .iter()
+            .rev()
+            .find(|(start, _, _)| *start <= offset)?;
+        let p = line.position_for_index(offset - start, lines.line_height)?;
+        Some(point(p.x, *top + p.y))
+    }
+
+    /// The offset nearest to `at` (from the top of the text, before
+    /// scrolling) in a field of several lines.
+    fn offset_at(&self, at: Point<Pixels>) -> usize {
+        let Some(lines) = self.lines.as_ref() else {
+            return 0;
+        };
+        let Some((start, line, top)) = lines
+            .drawn
+            .iter()
+            .rev()
+            .find(|(_, _, top)| *top <= at.y)
+            .or(lines.drawn.first())
+        else {
+            return 0;
+        };
+        let local = point(at.x.max(px(0.)), (at.y - *top).max(px(0.)));
+        let i = match line.closest_index_for_position(local, lines.line_height) {
+            Ok(i) | Err(i) => i,
+        };
+        (start + i).min(self.content.len())
+    }
+
+    /// The cursor a row up (`-1`) or down (`1`), at the same place across.
+    fn row_from(&self, offset: usize, rows: f32) -> Option<usize> {
+        let lines = self.lines.as_ref()?;
+        let p = self.point_for(offset)?;
+        let y = p.y + lines.line_height * (0.5 + rows);
+        let last = lines
+            .drawn
+            .last()
+            .map(|(_, l, top)| *top + l.size(lines.line_height).height)?;
+        if y < px(0.) {
+            return Some(0);
+        }
+        if y > last {
+            return Some(self.content.len());
+        }
+        Some(self.offset_at(point(p.x, y)))
     }
 
     fn placeholder_text(&self) -> SharedString {
@@ -211,6 +301,48 @@ impl TextInput {
         } else {
             m.control
         };
+        if self.lines.is_some() {
+            let vertical = match k.key.as_str() {
+                "up" => self.row_from(self.cursor(), -1.),
+                "down" => self.row_from(self.cursor(), 1.),
+                _ => None,
+            };
+            if let Some(to) = vertical {
+                if m.shift {
+                    self.select_to(to, cx);
+                } else {
+                    self.move_to(to, cx);
+                }
+                return cx.stop_propagation();
+            }
+            let (start, end) = self.line_bounds(self.cursor());
+            match k.key.as_str() {
+                "enter" if !cmd => self.replace(self.selected.clone(), "\n", cx),
+                "home" if m.shift => self.select_to(start, cx),
+                "end" if m.shift => self.select_to(end, cx),
+                "home" => self.move_to(start, cx),
+                "end" => self.move_to(end, cx),
+                "v" if cmd => {
+                    if let Some(text) = cx.read_from_clipboard().and_then(|c| c.text()) {
+                        self.replace(self.selected.clone(), &text.replace("\r\n", "\n"), cx);
+                    }
+                }
+                _ => return self.on_key_line(ev, cx),
+            }
+            return cx.stop_propagation();
+        }
+        self.on_key_line(ev, cx)
+    }
+
+    /// The keys a field of one line takes (those of several lines too).
+    fn on_key_line(&mut self, ev: &KeyDownEvent, cx: &mut Context<Self>) {
+        let k = &ev.keystroke;
+        let m = &k.modifiers;
+        let cmd = if cfg!(target_os = "macos") {
+            m.platform
+        } else {
+            m.control
+        };
         match k.key.as_str() {
             "backspace" => {
                 if self.selected.is_empty() {
@@ -271,6 +403,13 @@ impl TextInput {
     }
 
     fn index_for_position(&self, position: Point<Pixels>) -> usize {
+        if let (Some(lines), Some(bounds)) = (self.lines.as_ref(), self.last_bounds.as_ref()) {
+            let at = point(
+                position.x - bounds.left(),
+                position.y - bounds.top() + lines.scroll_y,
+            );
+            return self.offset_at(at);
+        }
         let (Some(bounds), Some(line)) = (self.last_bounds.as_ref(), self.last_layout.as_ref())
         else {
             return 0;
@@ -418,8 +557,16 @@ impl EntityInputHandler for TextInput {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<Bounds<Pixels>> {
-        let layout = self.last_layout.as_ref()?;
         let range = self.range_from_utf16(&range_utf16);
+        if let Some(lines) = self.lines.as_ref() {
+            let p = self.point_for(range.start)?;
+            let top = bounds.top() + p.y - lines.scroll_y;
+            return Some(Bounds::new(
+                point(bounds.left() + p.x, top),
+                size(px(2.), lines.line_height),
+            ));
+        }
+        let layout = self.last_layout.as_ref()?;
         let left = bounds.left() - self.scroll_x;
         Some(Bounds::from_corners(
             point(
@@ -665,12 +812,262 @@ impl Render for TextInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_move(cx.listener(Self::mouse_move))
-            .child(TextElement { input: cx.entity() })
+            .when(self.lines.is_none(), |d| {
+                d.child(TextElement { input: cx.entity() })
+            })
+            .when(self.lines.is_some(), |d| {
+                d.child(AreaElement { input: cx.entity() })
+            })
     }
 }
 
 impl Focusable for TextInput {
     fn focus_handle(&self, _: &App) -> FocusHandle {
         self.focus.clone()
+    }
+}
+
+/// A field of several lines, as [`TextElement`] draws one.
+struct AreaElement {
+    input: Entity<TextInput>,
+}
+
+impl IntoElement for AreaElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self {
+        self
+    }
+}
+
+/// The text of a field of several lines as it will be drawn.
+struct Area {
+    drawn: Vec<(usize, gpui::WrappedLine, Pixels)>,
+    cursor: Option<PaintQuad>,
+    scroll_y: Pixels,
+}
+
+/// The runs a field's text is drawn with: the selection on its own ground.
+fn area_runs(
+    input: &TextInput,
+    text: &str,
+    color: gpui::Hsla,
+    style: &gpui::TextStyle,
+) -> Vec<TextRun> {
+    let run = TextRun {
+        len: text.len(),
+        font: style.font(),
+        color,
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let sel = &input.selected;
+    if input.content.is_empty() || sel.is_empty() {
+        return vec![run];
+    }
+    let ground = rgba(crate::colors::with_alpha(colors().accent, 0x55)).into();
+    [
+        TextRun {
+            len: sel.start,
+            ..run.clone()
+        },
+        TextRun {
+            len: sel.end - sel.start,
+            background_color: Some(ground),
+            ..run.clone()
+        },
+        TextRun {
+            len: text.len() - sel.end,
+            ..run
+        },
+    ]
+    .into_iter()
+    .filter(|r| r.len > 0)
+    .collect()
+}
+
+impl Element for AreaElement {
+    type RequestLayoutState = ();
+    type PrepaintState = Area;
+
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+
+    fn source_location(&self) -> Option<&'static core::panic::Location<'static>> {
+        None
+    }
+
+    fn request_layout(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, ()) {
+        // As high as the text wraps to, within its rows.
+        let input = self.input.read(cx);
+        let text = if input.content.is_empty() {
+            input.placeholder_text()
+        } else {
+            input.content.clone()
+        };
+        let (min, max) = input.lines.as_ref().map_or((1, 1), |l| l.rows);
+        let style = window.text_style();
+        let font_size = style.font_size.to_pixels(window.rem_size());
+        let line_height = window.line_height();
+        let font = style.font();
+        let mut layout = Style::default();
+        layout.size.width = relative(1.).into();
+        let id = window.request_measured_layout(layout, move |known, available, window, _| {
+            let width = known.width.or(match available.width {
+                gpui::AvailableSpace::Definite(w) => Some(w),
+                _ => None,
+            });
+            let run = TextRun {
+                len: text.len(),
+                font: font.clone(),
+                color: gpui::black(),
+                background_color: None,
+                underline: None,
+                strikethrough: None,
+            };
+            let rows = window
+                .text_system()
+                .shape_text(text.clone(), font_size, &[run], width, None)
+                .map(|lines| {
+                    lines
+                        .iter()
+                        .map(|l| (l.size(line_height).height / line_height).round() as usize)
+                        .sum::<usize>()
+                })
+                .unwrap_or(1)
+                .clamp(min, max);
+            gpui::size(width.unwrap_or(px(0.)), line_height * rows as f32)
+        });
+        (id, ())
+    }
+
+    fn prepaint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Area {
+        let input = self.input.read(cx);
+        let style = window.text_style();
+        let line_height = window.line_height();
+        let (text, color) = if input.content.is_empty() {
+            (input.placeholder_text(), rgb(colors().faint).into())
+        } else {
+            (input.content.clone(), style.color)
+        };
+        let runs = area_runs(input, &text, color, &style);
+        let font_size = style.font_size.to_pixels(window.rem_size());
+        let shaped = window
+            .text_system()
+            .shape_text(text, font_size, &runs, Some(bounds.size.width), None)
+            .unwrap_or_default();
+        // Each line from the byte it starts at, one under the other.
+        let mut drawn = vec![];
+        let (mut start, mut top) = (0, px(0.));
+        for line in shaped {
+            let len = line.len();
+            let height = line.size(line_height).height;
+            drawn.push((start, line, top));
+            start += len + 1;
+            top += height;
+        }
+        // Scrolled just enough to show the cursor's row.
+        let caret = if input.content.is_empty() {
+            Some(point(px(0.), px(0.)))
+        } else {
+            let offset = input.cursor();
+            drawn
+                .iter()
+                .rev()
+                .find(|(s, _, _)| *s <= offset)
+                .and_then(|(s, l, t)| {
+                    l.position_for_index(offset - s, line_height)
+                        .map(|p| point(p.x, *t + p.y))
+                })
+        };
+        let mut scroll_y = input.lines.as_ref().map_or(px(0.), |l| l.scroll_y);
+        if let Some(c) = caret {
+            if c.y < scroll_y {
+                scroll_y = c.y;
+            }
+            if c.y + line_height > scroll_y + bounds.size.height {
+                scroll_y = c.y + line_height - bounds.size.height;
+            }
+        }
+        scroll_y = scroll_y
+            .min((top - bounds.size.height).max(px(0.)))
+            .max(px(0.));
+        let cursor = caret.filter(|_| input.selected.is_empty()).map(|c| {
+            fill(
+                Bounds::new(
+                    point(bounds.left() + c.x, bounds.top() + c.y - scroll_y),
+                    size(px(2.), line_height),
+                ),
+                rgb(colors().accent),
+            )
+        });
+        Area {
+            drawn,
+            cursor,
+            scroll_y,
+        }
+    }
+
+    fn paint(
+        &mut self,
+        _: Option<&GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        _: &mut (),
+        area: &mut Area,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        let focus = self.input.read(cx).focus.clone();
+        window.handle_input(
+            &focus,
+            ElementInputHandler::new(bounds, self.input.clone()),
+            cx,
+        );
+        let line_height = window.line_height();
+        let focused = focus.is_focused(window);
+        let scroll_y = area.scroll_y;
+        window.with_content_mask(Some(gpui::ContentMask { bounds }), |window| {
+            for (_, line, top) in &area.drawn {
+                let origin = point(bounds.left(), bounds.top() + *top - scroll_y);
+                let _ = line.paint_background(
+                    origin,
+                    line_height,
+                    gpui::TextAlign::Left,
+                    None,
+                    window,
+                    cx,
+                );
+                let _ = line.paint(origin, line_height, gpui::TextAlign::Left, None, window, cx);
+            }
+            if focused && let Some(c) = area.cursor.take() {
+                window.paint_quad(c);
+            }
+        });
+        let drawn = std::mem::take(&mut area.drawn);
+        self.input.update(cx, |input, _| {
+            input.last_bounds = Some(bounds);
+            if let Some(lines) = input.lines.as_mut() {
+                lines.drawn = drawn;
+                lines.line_height = line_height;
+                lines.scroll_y = scroll_y;
+            }
+        });
     }
 }

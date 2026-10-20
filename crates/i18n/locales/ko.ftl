@@ -1627,8 +1627,8 @@ t482910da = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 자동으
 # Asked for when it runs:
 t2d8c5e6d = 실행할 때 묻는 항목:
 
-# Chain commands with && or ; on one line.
-tf31eecd5 = 한 줄에서 && 또는 ;로 명령을 연결하세요.
+# Enter starts another line; the lines run in turn. {save} saves.
+t883a11f4 = Enter 키로 줄을 바꿉니다. 각 줄은 차례로 실행됩니다. { $save }로 저장합니다.
 
 # Every host
 t77846bfe = 모든 호스트
