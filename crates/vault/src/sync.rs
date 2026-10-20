@@ -455,11 +455,17 @@ impl Vault {
 
     /// Merges this vault with the store, both ways.
     pub fn sync(&self, b: &dyn Backend) -> Result<SyncReport> {
-        transact(b, |b| self.sync_round(b))
+        self.sync_holding(b, &BTreeSet::new())
+    }
+
+    /// As [`Vault::sync`], leaving the records `held` alone both ways (a
+    /// note open in its window: it syncs when the window closes).
+    pub fn sync_holding(&self, b: &dyn Backend, held: &BTreeSet<String>) -> Result<SyncReport> {
+        transact(b, |b| self.sync_round(b, held))
     }
 
     /// One sync, over the files as they are now.
-    fn sync_round(&self, b: &dyn Backend) -> Result<SyncReport> {
+    fn sync_round(&self, b: &dyn Backend, held: &BTreeSet<String>) -> Result<SyncReport> {
         match self.folder_state(b)? {
             FolderState::Ours => {}
             FolderState::Empty => return Err(Error::NotSynced),
@@ -503,6 +509,9 @@ impl Vault {
         let ids: BTreeSet<String> = remote.keys().chain(local.keys()).cloned().collect();
         let mut report = SyncReport::default();
         for id in ids {
+            if held.contains(&id) {
+                continue;
+            }
             let here = local.remove(&id);
             let there = remote.remove(&id).unwrap_or_default();
             let mut merged = here.clone();
@@ -676,6 +685,43 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("dir");
         dir
+    }
+
+    #[test]
+    fn a_held_record_waits_until_let_go() {
+        let dir = temp("held");
+        let folder = Folder::new(&dir.join("shared"));
+        let (keys_a, keys_b) = (MemoryKeys::default(), MemoryKeys::default());
+        let a = Vault::open(&dir.join("a.db"), &keys_a).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &keys_b).expect("b");
+        let rk = a.start_sync(&folder).expect("start").to_string();
+        b.join(&folder, &rk).expect("join");
+        let mut note = crate::Note {
+            id: String::new(),
+            title: "Runbook".into(),
+            category: String::new(),
+            format: crate::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        note.id = a.save_note(&note, Some("v1")).expect("save");
+        a.sync(&folder).expect("sync a");
+        b.sync(&folder).expect("sync b");
+        let text = |v: &Vault| v.note_text(&note.id).expect("read").map(|t| t.to_string());
+        assert_eq!(text(&b).as_deref(), Some("v1"));
+
+        // Open in its window on A: edited, but held from syncs.
+        a.save_note(&note, Some("v2")).expect("edit");
+        let held: BTreeSet<String> = [note.id.clone()].into();
+        a.sync_holding(&folder, &held).expect("sync a, held");
+        b.sync(&folder).expect("sync b");
+        assert_eq!(text(&b).as_deref(), Some("v1"), "not out while held");
+        // Its window closed: let go, it goes.
+        a.sync(&folder).expect("sync a");
+        b.sync(&folder).expect("sync b");
+        assert_eq!(text(&b).as_deref(), Some("v2"));
     }
 
     #[test]

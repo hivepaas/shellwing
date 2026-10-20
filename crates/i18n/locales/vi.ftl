@@ -2554,6 +2554,9 @@ tc7b3d356 = Thoát
 # Quit shellwing?
 tfa31f588 = Thoát shellwing?
 
+# Syncing the notes before quitting…
+tb66945de = Đang đồng bộ ghi chú trước khi thoát…
+
 # Choose a host on the left to connect.
 tf7759ebb = Chọn một máy chủ bên trái để kết nối.
 

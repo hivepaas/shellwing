@@ -2686,6 +2686,9 @@ tc7b3d356 = Выйти
 # Quit shellwing?
 tfa31f588 = Выйти из shellwing?
 
+# Syncing the notes before quitting…
+tb66945de = Синхронизация заметок перед выходом…
+
 # Choose a host on the left to connect.
 tf7759ebb = Выберите хост слева, чтобы подключиться.
 

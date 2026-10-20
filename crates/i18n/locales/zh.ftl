@@ -2554,6 +2554,9 @@ tc7b3d356 = 退出
 # Quit shellwing?
 tfa31f588 = 退出 shellwing？
 
+# Syncing the notes before quitting…
+tb66945de = 正在退出前同步笔记…
+
 # Choose a host on the left to connect.
 tf7759ebb = 在左侧选择一台主机以连接。
 

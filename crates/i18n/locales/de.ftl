@@ -2638,6 +2638,9 @@ tc7b3d356 = Beenden
 # Quit shellwing?
 tfa31f588 = shellwing beenden?
 
+# Syncing the notes before quitting…
+tb66945de = Notizen werden vor dem Beenden synchronisiert…
+
 # Choose a host on the left to connect.
 tf7759ebb = Wähle links einen Host zum Verbinden.
 

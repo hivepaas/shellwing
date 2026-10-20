@@ -2638,6 +2638,9 @@ tc7b3d356 = Quitter
 # Quit shellwing?
 tfa31f588 = Quitter shellwing ?
 
+# Syncing the notes before quitting…
+tb66945de = Synchronisation des notes avant de quitter…
+
 # Choose a host on the left to connect.
 tf7759ebb = Choisissez un serveur à gauche pour vous connecter.
 

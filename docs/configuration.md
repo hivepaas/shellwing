@@ -689,9 +689,15 @@ block for several lines), link, heading, quote, list, task; applied again, each
 comes off. Ctrl+B, Ctrl+I, Ctrl+E and Ctrl+K (Cmd on macOS) do bold, italic,
 code and link.
 
-It is saved a second after typing stops, when its window closes, and when the
-app quits (Ctrl+S, Cmd+S on macOS, saves at once). *Delete* removes it, after
-asking.
+It is saved on this device three seconds after it last changed (nothing is
+written when it is as last saved), when its window closes, before the vault
+locks, and when the app quits; Ctrl+S (Cmd+S on macOS) saves at once. *Delete*
+removes it, after asking.
+
+**Syncing.** While a note is open in its window, syncs leave it alone (both
+ways): it goes out when the window closes, at once if it changed, and when the
+app quits (the app syncs before it goes, ten seconds at most). The rest of the
+vault syncs as before: when it changes, and every minute.
 
 While the vault is locked, a note's window holds no text: it comes back once
 the vault is open. A **sensitive** note's text shows only after asking it is

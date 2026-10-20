@@ -13,17 +13,20 @@ impl Workspace {
     fn note_hooks(&self, cx: &Context<Self>) -> Hooks {
         let ws = cx.entity().downgrade();
         let (saved, touched, hosts, pane, insert) =
-            (ws.clone(), ws.clone(), ws.clone(), ws.clone(), ws);
+            (ws.clone(), ws.clone(), ws.clone(), ws.clone(), ws.clone());
+        let (hold, release) = (self.sync.clone(), self.sync.clone());
         Hooks {
             saved: Rc::new(move |cx| {
+                // Saved here only: it syncs when its window lets it go.
                 let _ = saved.update(cx, |ws, cx| {
-                    ws.vault_changed();
                     if let Some((view, _)) = &ws.settings {
                         let view = view.clone();
                         cx.defer(move |cx| view.update(cx, |v, cx| v.notes_changed(cx)));
                     }
                 });
             }),
+            hold: Rc::new(move |id, _| hold.hold(id)),
+            release: Rc::new(move |id, changed, _| release.release(id, changed)),
             touched: Rc::new(move |cx| {
                 let _ = touched.update(cx, |ws, _| ws.last_input = std::time::Instant::now());
             }),

@@ -26,7 +26,7 @@ use crate::secrets::VaultSlot;
 use shellwing_note_editor::{EditorEvent, EditorState, SyntaxStyle};
 
 /// How long after the last key a note is saved.
-const SAVE_AFTER: Duration = Duration::from_secs(1);
+const SAVE_AFTER: Duration = Duration::from_secs(3);
 /// How often a window looks whether the vault locked or opened.
 const WATCH: Duration = Duration::from_secs(1);
 
@@ -44,8 +44,13 @@ impl gpui::Global for NoteLook {}
 /// What a note window tells the rest of the app.
 #[derive(Clone)]
 pub struct Hooks {
-    /// The vault changed: sync it, refresh lists.
+    /// A note was saved (on this device only): lists show it again.
     pub saved: Rc<dyn Fn(&mut App)>,
+    /// A note is open in its window: left out of syncs until let go.
+    pub hold: Hold,
+    /// Its window is done with it: it syncs again, at once when it
+    /// changed meanwhile.
+    pub release: Release,
     /// A key or a click: the vault is in use (it locks when idle).
     pub touched: Rc<dyn Fn(&mut App)>,
     /// The hosts a note can be about.
@@ -57,6 +62,10 @@ pub struct Hooks {
     pub insert: Insert,
 }
 
+/// See [`Hooks::hold`].
+pub type Hold = Rc<dyn Fn(&str, &mut App)>;
+/// See [`Hooks::release`].
+pub type Release = Rc<dyn Fn(&str, bool, &mut App)>;
 /// See [`Hooks::pane`].
 pub type PaneTitle = Rc<dyn Fn(&App) -> Option<String>>;
 /// See [`Hooks::insert`].
@@ -117,6 +126,21 @@ pub fn open(note: Option<Note>, vault: VaultSlot, hooks: Hooks, cx: &mut App) {
     }
 }
 
+/// Quitting: every note window saves, and lets its note sync again. True
+/// when any changed while open, for the app to sync before it goes.
+pub fn finish_all(cx: &mut App) -> bool {
+    let windows: Vec<_> = cx.default_global::<Opened>().0.values().copied().collect();
+    let mut changed = false;
+    for h in windows {
+        let _ = h.update(cx, |v, _, cx| {
+            v.save(cx);
+            changed |= v.unsynced;
+            v.let_go(cx);
+        });
+    }
+    changed
+}
+
 /// The vault is about to lock: every note window saves, and lets go of its
 /// text.
 pub fn before_lock(cx: &mut App) {
@@ -170,6 +194,10 @@ pub struct NoteWindow {
     /// Counts the edits, so a save waits for the last one.
     edits: u64,
     saved_at: u64,
+    /// What was last saved (or loaded), to save only what differs.
+    last_saved: Option<u64>,
+    /// Saved here since the window held its note: it syncs when let go.
+    unsynced: bool,
     problem: Option<String>,
     _subs: Vec<Subscription>,
 }
@@ -234,6 +262,7 @@ impl NoteWindow {
         // Saved as it goes, so leaving keeps the last of it.
         cx.on_release(|v, cx| {
             v.save(cx);
+            v.let_go(cx);
             let id = v.note.id.clone();
             let opened = &mut cx.default_global::<Opened>().0;
             if opened.get(&id).is_some_and(|h| Some(*h) == v.handle) {
@@ -273,6 +302,8 @@ impl NoteWindow {
             ask: None,
             edits: 0,
             saved_at: 0,
+            last_saved: None,
+            unsynced: false,
             problem: None,
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
@@ -326,7 +357,38 @@ impl NoteWindow {
         self.saved_at = self.edits + 1;
         self.edits += 1;
         self.loaded = true;
+        // As it is in the vault: a save of the same is no save. A new
+        // note's guide is not kept unless written over.
+        self.last_saved = (!self.note.id.is_empty()).then(|| self.snapshot(cx));
         cx.notify();
+    }
+
+    /// What a save would keep, hashed: the note's parts and its text.
+    fn snapshot(&self, cx: &App) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let n = self.current(cx);
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        (
+            &n.title,
+            &n.category,
+            n.format == NoteFormat::Markdown,
+            &n.hosts,
+            n.sensitive,
+        )
+            .hash(&mut h);
+        if self.loaded {
+            self.text.read(cx).text().hash(&mut h);
+        }
+        h.finish()
+    }
+
+    /// The window is done with its note: it syncs again (at once when it
+    /// changed meanwhile).
+    fn let_go(&mut self, cx: &mut App) {
+        if !self.note.id.is_empty() {
+            (self.hooks.release)(&self.note.id, self.unsynced, cx);
+        }
+        self.unsynced = false;
     }
 
     /// Notes the window under the note's id, once it has one.
@@ -337,6 +399,8 @@ impl NoteWindow {
             cx.default_global::<Opened>()
                 .0
                 .insert(self.note.id.clone(), h);
+            // Open here: it syncs when the window closes.
+            (self.hooks.hold)(&self.note.id, cx);
         }
     }
 
@@ -398,6 +462,12 @@ impl NoteWindow {
         let Some(vault) = self.vault.ready() else {
             return;
         };
+        // The same as last saved: nothing to write.
+        let snap = self.snapshot(cx);
+        if self.last_saved == Some(snap) {
+            self.saved_at = self.edits;
+            return;
+        }
         let note = self.current(cx);
         let text = self.loaded.then(|| self.text.read(cx).text().to_string());
         if note.id.is_empty() && note.title.is_empty() && text.as_deref().unwrap_or("").is_empty() {
@@ -408,6 +478,8 @@ impl NoteWindow {
         match vault.save_note(&note, text.as_deref()) {
             Ok(id) => {
                 self.saved_at = self.edits;
+                self.last_saved = Some(snap);
+                self.unsynced = true;
                 self.problem = None;
                 if self.note.id.is_empty() {
                     self.note.id = id;
@@ -471,6 +543,9 @@ impl NoteWindow {
                     }
                     cx.default_global::<Opened>().0.remove(&id);
                     (v.hooks.saved)(cx);
+                    // Gone: that goes out at once.
+                    (v.hooks.release)(&id, true, cx);
+                    v.note.id.clear();
                 }
                 // Nothing to save on the way out.
                 v.saved_at = v.edits;

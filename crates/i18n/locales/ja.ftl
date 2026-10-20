@@ -2554,6 +2554,9 @@ tc7b3d356 = 終了
 # Quit shellwing?
 tfa31f588 = shellwing を終了しますか？
 
+# Syncing the notes before quitting…
+tb66945de = 終了する前にノートを同期しています…
+
 # Choose a host on the left to connect.
 tf7759ebb = 左のホストを選んで接続してください。
 

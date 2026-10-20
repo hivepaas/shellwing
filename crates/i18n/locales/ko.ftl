@@ -2554,6 +2554,9 @@ tc7b3d356 = 종료
 # Quit shellwing?
 tfa31f588 = shellwing을 종료하시겠습니까?
 
+# Syncing the notes before quitting…
+tb66945de = 종료하기 전에 노트를 동기화하는 중…
+
 # Choose a host on the left to connect.
 tf7759ebb = 연결하려면 왼쪽에서 호스트를 선택하세요.
 

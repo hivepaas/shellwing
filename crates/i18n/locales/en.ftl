@@ -944,6 +944,7 @@ td41065cb =
     }
 tc7b3d356 = Quit
 tfa31f588 = Quit shellwing?
+tb66945de = Syncing the notes before quitting…
 tf7759ebb = Choose a host on the left to connect.
 tdf659182 = Unlock the vault…
 t1646a763 = Snippets, environments and config files are in it.
