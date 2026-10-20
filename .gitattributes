@@ -1,0 +1,6 @@
+# What is signed or hashed is kept byte for byte: a checkout on Windows must
+# not turn its line ends into CRLF.
+/release.json -text
+/release.signed.json -text
+crates/update/testdata/** -text
+crates/update/keys/*.pem -text
