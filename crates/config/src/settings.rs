@@ -15,6 +15,9 @@ pub struct Settings {
     pub files: Files,
     pub log: Log,
     pub vault: VaultSettings,
+    /// `[shortcuts]`: keys for the window's shortcuts, by name, over the
+    /// defaults. This device's own: keys differ between systems.
+    pub shortcuts: crate::ShortcutSettings,
 }
 
 /// The vault on this device.

@@ -11,7 +11,9 @@ use gpui::{
     KeyDownEvent, MouseButton, MouseMoveEvent, PromptLevel, Render, SharedString, Subscription,
     Window, WindowControlArea, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
 };
-use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
+use shellwing_config::{
+    EditFile, Host, Hotkey, Keymap, PaneState, SessionState, TabState, WindowState,
+};
 use shellwing_ssh::config as ssh_config;
 use tokio::runtime::Handle;
 
@@ -1454,11 +1456,7 @@ impl Workspace {
         entries.extend(self.env_entries(cx));
         entries.extend(self.file_entries(cx));
         entries.extend(self.note_entries(cx));
-        let (chord, alt) = if cfg!(target_os = "macos") {
-            ("Cmd", "Cmd")
-        } else {
-            ("Ctrl+Shift", "Ctrl+Shift")
-        };
+        let keys = crate::hotkeys::keymap(cx);
         // What is done in the pane or the tab, then what is set.
         let (mut acts, mut sets) = (vec![], vec![]);
         let mut action = |a: Action, title: String, keys: String| {
@@ -1485,16 +1483,12 @@ impl Workspace {
             action(
                 Action::SplitRight,
                 tr!("Split right, to {title}", title = title.clone()),
-                format!("{chord}+D"),
+                keys.hint(Hotkey::SplitRight),
             );
             action(
                 Action::SplitDown,
                 tr!("Split down, to {title}", title = title.clone()),
-                if cfg!(target_os = "macos") {
-                    "Cmd+Shift+D".into()
-                } else {
-                    "Ctrl+Shift+E".into()
-                },
+                keys.hint(Hotkey::SplitDown),
             );
             action(Action::CloseTab, tr!("Close the tab"), String::new());
             if let Some(tab) = self.tabs.get(self.active)
@@ -1507,24 +1501,20 @@ impl Workspace {
                     } else {
                         tr!("Type in every pane of this tab")
                     },
-                    format!("{chord}+I"),
+                    keys.hint(Hotkey::Broadcast),
                 );
             }
             if self.tabs.len() >= 2 {
                 action(
                     Action::Tabs,
                     tr!("All {count} tabs, by host…", count = self.tabs.len()),
-                    if cfg!(target_os = "macos") {
-                        "Cmd+Shift+A".into()
-                    } else {
-                        "Ctrl+Shift+A".into()
-                    },
+                    keys.hint(Hotkey::Tabs),
                 );
             }
             action(
                 Action::Find,
                 tr!("Find in {title}…", title = title.clone()),
-                format!("{chord}+F"),
+                keys.hint(Hotkey::Find),
             );
             action(
                 Action::SaveOutput { html: false },
@@ -1555,7 +1545,7 @@ impl Workspace {
                 } else {
                     tr!("Files on {title}", title = title.clone())
                 },
-                format!("{chord}+O"),
+                keys.hint(Hotkey::Files),
             );
             if t.read(cx).session().status() == Status::Connected {
                 action(
@@ -1581,7 +1571,12 @@ impl Workspace {
         setting(
             Action::ChangeTheme,
             tr!("Change theme…"),
-            format!("{alt}+] / ["),
+            [Hotkey::NextTheme, Hotkey::PreviousTheme]
+                .map(|h| keys.hint(h))
+                .into_iter()
+                .filter(|k| !k.is_empty())
+                .collect::<Vec<_>>()
+                .join(" / "),
         );
         setting(
             Action::ToggleHosts,
@@ -1590,7 +1585,7 @@ impl Workspace {
             } else {
                 tr!("Show the host list")
             },
-            format!("{chord}+B"),
+            keys.hint(Hotkey::HostList),
         );
         setting(
             Action::ManageSecrets,
@@ -1636,11 +1631,7 @@ impl Workspace {
         setting(
             Action::Settings,
             tr!("Settings…"),
-            if cfg!(target_os = "macos") {
-                "Cmd+,".into()
-            } else {
-                "Ctrl+,".into()
-            },
+            keys.hint(Hotkey::Settings),
         );
         action(Action::NewHost, tr!("New host…"), String::new());
         action(Action::NewGroup, tr!("New group…"), String::new());
@@ -2599,6 +2590,7 @@ impl Workspace {
     /// here reloads at once, so the periodic look finds nothing new after it.
     fn share_settings(&self, cx: &mut Context<Self>) {
         cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
+        cx.set_global(crate::hotkeys::Bound(self.live.keymap()));
         let font = self.live.settings().appearance.ui_font.family.clone();
         cx.set_global(crate::prompt::PromptFont(font.map(Into::into)));
     }
@@ -3828,78 +3820,47 @@ impl Workspace {
         }
     }
 
-    fn shortcut_for(ev: &KeyDownEvent) -> Option<Shortcut> {
-        let k = &ev.keystroke;
-        let m = &k.modifiers;
-        let key = k.key.as_str();
-        let mac = cfg!(target_os = "macos");
-        // Ctrl+Shift on Linux and Windows, Cmd on macOS, as for copy and paste.
-        let chord = if mac {
-            m.platform && !m.control
-        } else {
-            m.control && m.shift
-        };
-        // GPUI reports Shift+] as "}" and drops the Shift flag for symbols.
-        let braced = !mac && m.control && !m.alt;
-        let numbered = if mac {
-            m.platform && !m.control && !m.alt
-        } else {
-            m.alt && !m.control && !m.platform
-        };
-        // Moving between panes: Alt+arrows, as in Windows Terminal (Cmd+Alt on macOS).
-        let panes = if mac {
-            m.platform && m.alt && !m.control
-        } else {
-            m.alt && !m.control && !m.shift && !m.platform
-        };
-        // Ctrl+K alone is the shell's kill-line, so the palette takes Ctrl+Shift+K.
-        Some(match key {
-            "k" if chord => Shortcut::Palette,
-            "t" if chord => Shortcut::NewTab,
-            "w" if chord => Shortcut::Close,
-            "q" if mac && m.platform && !m.control && !m.alt && !m.shift => Shortcut::Quit,
-            // Cmd+D and Cmd+Shift+D on macOS, as in iTerm.
-            "d" if mac && chord => Shortcut::Split(if m.shift {
-                Axis::Vertical
-            } else {
-                Axis::Horizontal
-            }),
-            "d" if chord => Shortcut::Split(Axis::Horizontal),
-            "e" if !mac && chord => Shortcut::Split(Axis::Vertical),
-            "left" | "right" | "up" | "down" if panes => Shortcut::Focus(match key {
-                "left" => Dir::Left,
-                "right" => Dir::Right,
-                "up" => Dir::Up,
-                _ => Dir::Down,
-            }),
-            "b" if chord => Shortcut::Sidebar,
-            "o" if chord => Shortcut::Files,
-            "f" if chord => Shortcut::Find,
-            "i" if chord => Shortcut::Broadcast,
-            // Cmd+Shift+A on macOS, as Chrome's tab search: Cmd+A selects all.
-            "a" if chord && (!mac || m.shift) => Shortcut::Tabs,
-            // Ctrl+, sends nothing to a terminal, so it is free, as in most apps.
-            "," if (mac && m.platform) || (!mac && m.control && !m.alt) => Shortcut::Settings,
-            "tab" if m.control => Shortcut::Step(if m.shift { -1 } else { 1 }),
-            "pagedown" if m.control && !m.shift => Shortcut::Step(1),
-            "pageup" if m.control && !m.shift => Shortcut::Step(-1),
-            "}" if mac && chord => Shortcut::Step(1),
-            "{" if mac && chord => Shortcut::Step(-1),
-            "]" if mac && chord => Shortcut::Theme(1),
-            "[" if mac && chord => Shortcut::Theme(-1),
-            "}" if braced => Shortcut::Theme(1),
-            "{" if braced => Shortcut::Theme(-1),
-            d if numbered && d.len() == 1 && matches!(d.as_bytes()[0], b'1'..=b'9') => {
-                Shortcut::Goto((d.as_bytes()[0] - b'1') as usize)
-            }
-            _ => return None,
+    /// The window's shortcut a key is, as `[shortcuts]` sets them over the
+    /// defaults (see [`shellwing_config::Hotkey::defaults`]).
+    fn shortcut_for(keys: &Keymap, ev: &KeyDownEvent) -> Option<Shortcut> {
+        let (h, digit) = keys.find(&crate::hotkeys::pressed(&ev.keystroke)?)?;
+        Some(match h {
+            Hotkey::Palette => Shortcut::Palette,
+            Hotkey::NewTab => Shortcut::NewTab,
+            Hotkey::ClosePane => Shortcut::Close,
+            Hotkey::SplitRight => Shortcut::Split(Axis::Horizontal),
+            Hotkey::SplitDown => Shortcut::Split(Axis::Vertical),
+            Hotkey::PaneLeft => Shortcut::Focus(Dir::Left),
+            Hotkey::PaneRight => Shortcut::Focus(Dir::Right),
+            Hotkey::PaneUp => Shortcut::Focus(Dir::Up),
+            Hotkey::PaneDown => Shortcut::Focus(Dir::Down),
+            Hotkey::NextTab => Shortcut::Step(1),
+            Hotkey::PreviousTab => Shortcut::Step(-1),
+            Hotkey::GoToTab => Shortcut::Goto(digit?),
+            Hotkey::Tabs => Shortcut::Tabs,
+            Hotkey::HostList => Shortcut::Sidebar,
+            Hotkey::Files => Shortcut::Files,
+            Hotkey::Find => Shortcut::Find,
+            Hotkey::Broadcast => Shortcut::Broadcast,
+            Hotkey::Settings => Shortcut::Settings,
+            Hotkey::NextTheme => Shortcut::Theme(1),
+            Hotkey::PreviousTheme => Shortcut::Theme(-1),
+            Hotkey::Quit => Shortcut::Quit,
         })
     }
 
     /// Runs before the terminal sees the key, so these never reach the host.
     fn shortcut(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.last_input = std::time::Instant::now();
-        let Some(s) = Self::shortcut_for(ev) else {
+        // The Keyboard page is taking a key for a shortcut.
+        if self
+            .settings
+            .as_ref()
+            .is_some_and(|(v, _)| v.read(cx).recording())
+        {
+            return;
+        }
+        let Some(s) = Self::shortcut_for(&self.live.keymap(), ev) else {
             return;
         };
         // Without a second pane, Alt+arrows belong to the shell (word movement).
@@ -4156,11 +4117,7 @@ impl Workspace {
     /// Settings button.
     /// Above the panes of a tab that types in every pane.
     fn broadcast_strip(&self, listening: usize, panes: usize, cx: &mut Context<Self>) -> Div {
-        let keys = if cfg!(target_os = "macos") {
-            "Cmd+Shift+I"
-        } else {
-            "Ctrl+Shift+I"
-        };
+        let keys = crate::hotkeys::hint(cx, Hotkey::Broadcast);
         div()
             .h(px(34.))
             .flex_shrink_0()
@@ -4770,11 +4727,22 @@ impl Workspace {
                         .child(what.to_string()),
                 )
         };
-        let (chord, alt) = if cfg!(target_os = "macos") {
-            ("Cmd", "Cmd")
-        } else {
-            ("Ctrl+Shift", "Alt")
-        };
+        let keys = self.live.keymap();
+        let palette = keys.hint(Hotkey::Palette);
+        let mut list = div().flex().flex_col().gap_1().pt_2();
+        for (h, what) in [
+            (Hotkey::Palette, tr!("find a host, connect, run an action")),
+            (Hotkey::NewTab, tr!("a new tab")),
+            (Hotkey::ClosePane, tr!("close the tab")),
+            (Hotkey::NextTab, tr!("next tab")),
+            (Hotkey::GoToTab, tr!("go to a tab")),
+            (Hotkey::HostList, tr!("show or hide the host list")),
+        ] {
+            let k = keys.hint(h);
+            if !k.is_empty() {
+                list = list.child(key(&k, &what));
+            }
+        }
         corners
             .round(div())
             .flex_1()
@@ -4798,33 +4766,13 @@ impl Workspace {
                     .text_lg()
                     .child(tr!("Choose a host on the left to connect")),
             )
-            .child(div().text_color(rgb(colors().muted)).child(tr!(
-                "or press {keys} to find one, or to connect to user@host",
-                keys = if cfg!(target_os = "macos") {
-                    "Cmd+K"
-                } else {
-                    "Ctrl+Shift+K"
-                }
-            )))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_1()
-                    .pt_2()
-                    .child(key(
-                        &format!("{chord}+K"),
-                        &tr!("find a host, connect, run an action"),
-                    ))
-                    .child(key(&format!("{chord}+T"), &tr!("a new tab")))
-                    .child(key(&format!("{chord}+W"), &tr!("close the tab")))
-                    .child(key("Ctrl+Tab", &tr!("next tab")))
-                    .child(key(&format!("{alt}+1…9"), &tr!("go to a tab")))
-                    .child(key(
-                        &format!("{chord}+B"),
-                        &tr!("show or hide the host list"),
-                    )),
-            )
+            .when(!palette.is_empty(), |d| {
+                d.child(div().text_color(rgb(colors().muted)).child(tr!(
+                    "or press {keys} to find one, or to connect to user@host",
+                    keys = palette
+                )))
+            })
+            .child(list)
             .when_some(self.notice.clone(), |d, n| {
                 d.child(div().pt_2().text_color(rgb(colors().warn)).child(n))
             })
@@ -5214,20 +5162,24 @@ mod tests {
     use gpui::{Keystroke, Modifiers};
 
     fn key(key: &str, control: bool, shift: bool, alt: bool) -> Option<Shortcut> {
-        Workspace::shortcut_for(&KeyDownEvent {
-            keystroke: Keystroke {
-                modifiers: Modifiers {
-                    control,
-                    shift,
-                    alt,
-                    ..Modifiers::default()
+        let keys = Keymap::defaults(shellwing_config::Os::this());
+        Workspace::shortcut_for(
+            &keys,
+            &KeyDownEvent {
+                keystroke: Keystroke {
+                    modifiers: Modifiers {
+                        control,
+                        shift,
+                        alt,
+                        ..Modifiers::default()
+                    },
+                    key: key.into(),
+                    key_char: None,
                 },
-                key: key.into(),
-                key_char: None,
+                is_held: false,
+                prefer_character_input: false,
             },
-            is_held: false,
-            prefer_character_input: false,
-        })
+        )
     }
 
     #[test]

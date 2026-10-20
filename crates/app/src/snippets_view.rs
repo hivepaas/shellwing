@@ -1009,10 +1009,11 @@ impl Render for SnippetsView {
             Shown::Files => self.file_rows(cx),
             Shown::Notes => self.note_rows(cx),
         };
-        let (chord, alt) = if cfg!(target_os = "macos") {
-            ("Cmd+K", "Option+Enter")
+        let chord = crate::hotkeys::hint(cx, shellwing_config::Hotkey::Palette);
+        let alt = if cfg!(target_os = "macos") {
+            "Option+Enter"
         } else {
-            ("Ctrl+Shift+K", "Alt+Enter")
+            "Alt+Enter"
         };
         let mut list = div()
             .flex()

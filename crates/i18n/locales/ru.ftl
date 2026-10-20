@@ -595,6 +595,117 @@ tfc330336 = Дублировать
 # Save and connect
 t83731197 = Сохранить и подключиться
 
+# Command palette
+td54729b1 = Палитра команд
+
+# New tab
+td3a5555a = Новая вкладка
+
+# Close the pane
+tc4b0686e = Закрыть панель
+
+# Split right
+t7c661b21 = Разделить вправо
+
+# Split down
+t8ebf2909 = Разделить вниз
+
+# Pane to the left
+tbf1cdf5c = Панель слева
+
+# Pane to the right
+tddc060a9 = Панель справа
+
+# Pane above
+t842141d6 = Панель сверху
+
+# Pane below
+t46005f86 = Панель снизу
+
+# Next tab
+tb7610e87 = Следующая вкладка
+
+# Previous tab
+t2908a747 = Предыдущая вкладка
+
+# Go to tab 1–9
+t412f3292 = Перейти на вкладку 1–9
+
+# Every tab, by host
+td3226d58 = Все вкладки, по хостам
+
+# Host list
+t2c78c1d9 = Список хостов
+
+# Find in the pane
+t9dcfe91c = Найти в панели
+
+# Type in every pane
+t5938c30b = Вводить во все панели
+
+# Settings
+t4b058728 = Настройки
+
+# Next theme
+t9f747e2d = Следующая тема
+
+# Previous theme
+t4c4139ed = Предыдущая тема
+
+# Quit
+tc7b3d356 = Выйти
+
+# Copy
+t658f3664 = Копировать
+
+# Paste
+tb34a0288 = Вставить
+
+# Larger text
+t0acf4d25 = Увеличить текст
+
+# Smaller text
+t3c9ae792 = Уменьшить текст
+
+# Text at its set size
+tfd1aa132 = Текст заданного размера
+
+# Scroll up a page
+t3904cd21 = Прокрутить на страницу вверх
+
+# Scroll down a page
+t6cd6ecda = Прокрутить на страницу вниз
+
+# Back to the bottom
+t8f497cc3 = Вернуться вниз
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = { $key } без модификаторов — это ввод текста: удерживайте вместе с ней Cmd, Ctrl или Option.
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = { $key } без модификаторов — это ввод текста: удерживайте вместе с ней Ctrl или Alt.
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key } принадлежит системе и никогда не доходит до Shellwing.
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key } — это «{ $what }»; изменить нельзя.
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]: сочетания клавиш с именем `{ $name }` нет.
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }: `{ $key }`: { $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }: { $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]: `{ $key }` используется и в { $kept }, и в { $lost }; остаётся за { $kept }.
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` не подходит; `digit` (от 1 до 9) принимает только go_to_tab, и ничего другого он не принимает.
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (рекомендуется)
 
@@ -786,9 +897,6 @@ tb989d6aa = Сервер впускает с этим ключом, когда �
 
 # Public key
 t9981f45f = Открытый ключ
-
-# Copy
-t658f3664 = Копировать
 
 # Done
 t8dd31791 = Готово
@@ -1063,9 +1171,6 @@ t58e25863 = Вырезать
 # Copy as Markdown
 t944799cd = Копировать как Markdown
 
-# Paste
-tb34a0288 = Вставить
-
 # Turn into
 t10726570 = Превратить в
 
@@ -1168,9 +1273,6 @@ t0ff01b6a = Заметки
 # Actions
 te65fb504 = Действия
 
-# Settings
-t4b058728 = Настройки
-
 # Find a host, or type user@host
 t18f005c7 = Найдите хост или введите user@host
 
@@ -1213,14 +1315,53 @@ tbfdc091c = Enter отвечает   Esc отменяет
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ выбор   Enter выбрать   Esc отмена
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = Нажмите цифру от 1 до 9 вместе с удерживаемыми клавишами, например { $example }: цифра выбирает вкладку.
+
+# Reset
+t0ac8a560 = Сбросить
+
+# Every shortcut back to its own keys?
+t0990da9d = Вернуть всем сочетаниям клавиш значения по умолчанию?
+
+# Reset all
+t3c3d9373 = Сбросить все
+
+# Keyboard
+t27d1a714 = Клавиатура
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = Сочетания клавиш окна никогда не доходят до удалённого хоста. Щёлкните по клавише, чтобы изменить её, и нажмите новую (Esc — отмена); + добавляет сочетанию ещё одну клавишу, × убирает одну. Они хранятся в config.toml, в разделе [shortcuts].
+
+# In a pane, cannot be changed
+t8cb028d3 = В панели, нельзя изменить
+
+# Use it anyway
+t52386b1a = Всё равно использовать
+
+# Swap
+te519d36e = Поменять
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key } уже используется в «{ $what }». Поменять: «{ $what }» получит { $old }.
+
+# Move it here
+t8c848ead = Перенести сюда
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key } уже используется в «{ $what }». Перенести сюда: «{ $what }» останется без { $key }.
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = Программы в терминале используют { $key } (Ctrl+R ищет в истории оболочки, Alt+B переходит на слово назад): если назначить здесь, { $key } до них больше не дойдёт.
+
+# Press keys…
+t2b545ab4 = Нажмите клавиши…
+
 # General
 t5561fd0b = Общие
 
 # Appearance
 t31018b9f = Внешний вид
-
-# Keyboard
-t27d1a714 = Клавиатура
 
 # SSH and security
 t699a801a = SSH и безопасность
@@ -1497,54 +1638,6 @@ t6395d795 = Журналы сохраняются в { $folder }. Читать �
 
 # No folder for logs: choose one.
 tc4affc27 = Нет папки для журналов: выберите её.
-
-# Command palette
-td54729b1 = Палитра команд
-
-# New tab
-td3a5555a = Новая вкладка
-
-# Close the pane
-tc4b0686e = Закрыть панель
-
-# Split right
-t7c661b21 = Разделить вправо
-
-# Split down
-t8ebf2909 = Разделить вниз
-
-# Move between panes
-td5a160e3 = Переход между панелями
-
-# {pane}+arrows
-tf3ff453e = { $pane }+стрелки
-
-# Next and previous tab
-tdbe14691 = Следующая и предыдущая вкладка
-
-# Every tab, by host
-td3226d58 = Все вкладки, по хостам
-
-# Go to tab 1–9
-t412f3292 = Перейти на вкладку 1–9
-
-# Host list
-t2c78c1d9 = Список хостов
-
-# Next and previous theme
-t94e69c03 = Следующая и предыдущая тема
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] и [
-
-# Copy and paste
-t2f23e09a = Копировать и вставить
-
-# Back to the bottom
-t8f497cc3 = Вернуться вниз
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = Сочетания клавиш окна никогда не передаются на удалённый хост. Пока их нельзя изменить.
 
 # Found. Its keys are tried first.
 tc1d15743 = Найден. Его ключи пробуются первыми.
@@ -2680,9 +2773,6 @@ td41065cb =
        *[other] Открыто { $n } соединения; выход закроет их.
     }
 
-# Quit
-tc7b3d356 = Выйти
-
 # Quit shellwing?
 tfa31f588 = Выйти из shellwing?
 
@@ -3202,12 +3292,6 @@ t7c2c53ba = Избранное
 # read only
 t0d7ec241 = только чтение
 
-# Choose a host on the left to connect
-t8354c717 = Выберите хост слева, чтобы подключиться
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = или нажмите { $keys }, чтобы найти его или подключиться к user@host
-
 # find a host, connect, run an action
 t4b795631 = найти хост, подключиться, выполнить действие
 
@@ -3225,3 +3309,9 @@ tf70ede40 = перейти на вкладку
 
 # show or hide the host list
 t9489dcc2 = показать или скрыть список хостов
+
+# Choose a host on the left to connect
+t8354c717 = Выберите хост слева, чтобы подключиться
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = или нажмите { $keys }, чтобы найти его или подключиться к user@host

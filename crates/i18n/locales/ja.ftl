@@ -577,6 +577,117 @@ tfc330336 = 複製
 # Save and connect
 t83731197 = 保存して接続
 
+# Command palette
+td54729b1 = コマンドパレット
+
+# New tab
+td3a5555a = 新しいタブ
+
+# Close the pane
+tc4b0686e = ペインを閉じる
+
+# Split right
+t7c661b21 = 右に分割
+
+# Split down
+t8ebf2909 = 下に分割
+
+# Pane to the left
+tbf1cdf5c = 左のペイン
+
+# Pane to the right
+tddc060a9 = 右のペイン
+
+# Pane above
+t842141d6 = 上のペイン
+
+# Pane below
+t46005f86 = 下のペイン
+
+# Next tab
+tb7610e87 = 次のタブ
+
+# Previous tab
+t2908a747 = 前のタブ
+
+# Go to tab 1–9
+t412f3292 = タブ 1〜9 に移動
+
+# Every tab, by host
+td3226d58 = ホスト別のすべてのタブ
+
+# Host list
+t2c78c1d9 = ホスト一覧
+
+# Find in the pane
+t9dcfe91c = ペイン内を検索
+
+# Type in every pane
+t5938c30b = すべてのペインに入力
+
+# Settings
+t4b058728 = 設定
+
+# Next theme
+t9f747e2d = 次のテーマ
+
+# Previous theme
+t4c4139ed = 前のテーマ
+
+# Quit
+tc7b3d356 = 終了
+
+# Copy
+t658f3664 = コピー
+
+# Paste
+tb34a0288 = 貼り付け
+
+# Larger text
+t0acf4d25 = 文字を大きく
+
+# Smaller text
+t3c9ae792 = 文字を小さく
+
+# Text at its set size
+tfd1aa132 = 文字を設定サイズに戻す
+
+# Scroll up a page
+t3904cd21 = 1 ページ上へスクロール
+
+# Scroll down a page
+t6cd6ecda = 1 ページ下へスクロール
+
+# Back to the bottom
+t8f497cc3 = 最下部に戻る
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = { $key } だけでは文字入力になります。Cmd、Ctrl、Option のいずれかを押しながら押してください。
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = { $key } だけでは文字入力になります。Ctrl か Alt を押しながら押してください。
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key } はシステムが使用しています。Shellwing には届きません。
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key } は「{ $what }」で、変更できません。
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]：`{ $name }` という名前のショートカットはありません。
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }：`{ $key }`：{ $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }：{ $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]：`{ $key }` が { $kept } と { $lost } の両方に割り当てられています。{ $kept } のほうを残します。
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }：`{ $key }` は使えません。`digit`（1〜9）を使えるのは go_to_tab だけで、go_to_tab にはそれ以外を使えません。
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推奨）
 
@@ -762,9 +873,6 @@ tb989d6aa = 公開鍵がサーバーの ~/.ssh/authorized_keys に登録され�
 
 # Public key
 t9981f45f = 公開鍵
-
-# Copy
-t658f3664 = コピー
 
 # Done
 t8dd31791 = 完了
@@ -1033,9 +1141,6 @@ t58e25863 = 切り取り
 # Copy as Markdown
 t944799cd = Markdown としてコピー
 
-# Paste
-tb34a0288 = 貼り付け
-
 # Turn into
 t10726570 = 変換
 
@@ -1138,9 +1243,6 @@ t0ff01b6a = ノート
 # Actions
 te65fb504 = アクション
 
-# Settings
-t4b058728 = 設定
-
 # Find a host, or type user@host
 t18f005c7 = ホストを検索、または user@host を入力
 
@@ -1183,14 +1285,53 @@ tbfdc091c = Enter 回答   Esc キャンセル
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選択   Esc キャンセル
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = 押したままにするキーと一緒に 1〜9 の数字を押してください（例：{ $example }）。数字でタブを選びます。
+
+# Reset
+t0ac8a560 = リセット
+
+# Every shortcut back to its own keys?
+t0990da9d = すべてのショートカットを既定のキーに戻しますか？
+
+# Reset all
+t3c3d9373 = すべてリセット
+
+# Keyboard
+t27d1a714 = キーボード
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = ウィンドウのショートカットはリモートホストには送られません。キーをクリックして新しいキーを押すと変更できます（Esc で中止）。+ でショートカットにキーを追加し、× で取り除きます。設定は config.toml の [shortcuts] に保存されます。
+
+# In a pane, cannot be changed
+t8cb028d3 = ペイン内（変更不可）
+
+# Use it anyway
+t52386b1a = それでも使う
+
+# Swap
+te519d36e = 入れ替え
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key } は「{ $what }」に割り当て済みです。入れ替え：「{ $what }」には { $old } が割り当てられます。
+
+# Move it here
+t8c848ead = ここに移す
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key } は「{ $what }」に割り当て済みです。ここに移す：「{ $what }」からは { $key } が外れます。
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = ターミナル内のプログラムは { $key } を使います（Ctrl+R でシェルの履歴を検索、Alt+B で 1 単語戻るなど）。ここで割り当てると、プログラムには届かなくなります。
+
+# Press keys…
+t2b545ab4 = キーを押してください…
+
 # General
 t5561fd0b = 一般
 
 # Appearance
 t31018b9f = 外観
-
-# Keyboard
-t27d1a714 = キーボード
 
 # SSH and security
 t699a801a = SSH とセキュリティ
@@ -1467,54 +1608,6 @@ t6395d795 = ログは { $folder } に保存されます。セッションに表�
 
 # No folder for logs: choose one.
 tc4affc27 = ログ用のフォルダがありません。選択してください。
-
-# Command palette
-td54729b1 = コマンドパレット
-
-# New tab
-td3a5555a = 新しいタブ
-
-# Close the pane
-tc4b0686e = ペインを閉じる
-
-# Split right
-t7c661b21 = 右に分割
-
-# Split down
-t8ebf2909 = 下に分割
-
-# Move between panes
-td5a160e3 = ペイン間を移動
-
-# {pane}+arrows
-tf3ff453e = { $pane }+矢印キー
-
-# Next and previous tab
-tdbe14691 = 次/前のタブ
-
-# Every tab, by host
-td3226d58 = ホスト別のすべてのタブ
-
-# Go to tab 1–9
-t412f3292 = タブ 1〜9 に移動
-
-# Host list
-t2c78c1d9 = ホスト一覧
-
-# Next and previous theme
-t94e69c03 = 次/前のテーマ
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] と [
-
-# Copy and paste
-t2f23e09a = コピーと貼り付け
-
-# Back to the bottom
-t8f497cc3 = 最下部に戻る
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = ウィンドウのショートカットはリモートホストには送られません。現在は変更できません。
 
 # Found. Its keys are tried first.
 tc1d15743 = 見つかりました。その鍵が最初に試されます。
@@ -2548,9 +2641,6 @@ tf3732b18 = 接続が開いています。終了すると切断されます。
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } 件の接続が開いています。終了すると切断されます。
 
-# Quit
-tc7b3d356 = 終了
-
 # Quit shellwing?
 tfa31f588 = shellwing を終了しますか？
 
@@ -3052,12 +3142,6 @@ t7c2c53ba = お気に入り
 # read only
 t0d7ec241 = 読み取り専用
 
-# Choose a host on the left to connect
-t8354c717 = 左のホストを選んで接続
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = または { $keys } を押してホストを検索するか、user@host に接続
-
 # find a host, connect, run an action
 t4b795631 = ホストの検索、接続、アクションの実行
 
@@ -3075,3 +3159,9 @@ tf70ede40 = タブに移動
 
 # show or hide the host list
 t9489dcc2 = ホスト一覧の表示/非表示
+
+# Choose a host on the left to connect
+t8354c717 = 左のホストを選んで接続
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = または { $keys } を押してホストを検索するか、user@host に接続

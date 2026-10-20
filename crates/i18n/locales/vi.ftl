@@ -577,6 +577,117 @@ tfc330336 = Nhân bản
 # Save and connect
 t83731197 = Lưu và kết nối
 
+# Command palette
+td54729b1 = Bảng lệnh
+
+# New tab
+td3a5555a = Tab mới
+
+# Close the pane
+tc4b0686e = Đóng khung
+
+# Split right
+t7c661b21 = Chia sang phải
+
+# Split down
+t8ebf2909 = Chia xuống dưới
+
+# Pane to the left
+tbf1cdf5c = Khung bên trái
+
+# Pane to the right
+tddc060a9 = Khung bên phải
+
+# Pane above
+t842141d6 = Khung phía trên
+
+# Pane below
+t46005f86 = Khung phía dưới
+
+# Next tab
+tb7610e87 = Tab sau
+
+# Previous tab
+t2908a747 = Tab trước
+
+# Go to tab 1–9
+t412f3292 = Tới tab 1–9
+
+# Every tab, by host
+td3226d58 = Mọi tab, theo máy chủ
+
+# Host list
+t2c78c1d9 = Danh sách máy chủ
+
+# Find in the pane
+t9dcfe91c = Tìm trong khung
+
+# Type in every pane
+t5938c30b = Gõ vào mọi khung
+
+# Settings
+t4b058728 = Cài đặt
+
+# Next theme
+t9f747e2d = Giao diện sau
+
+# Previous theme
+t4c4139ed = Giao diện trước
+
+# Quit
+tc7b3d356 = Thoát
+
+# Copy
+t658f3664 = Sao chép
+
+# Paste
+tb34a0288 = Dán
+
+# Larger text
+t0acf4d25 = Chữ to hơn
+
+# Smaller text
+t3c9ae792 = Chữ nhỏ hơn
+
+# Text at its set size
+tfd1aa132 = Chữ về cỡ đã đặt
+
+# Scroll up a page
+t3904cd21 = Cuộn lên một trang
+
+# Scroll down a page
+t6cd6ecda = Cuộn xuống một trang
+
+# Back to the bottom
+t8f497cc3 = Về cuối
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = { $key } riêng lẻ là để gõ chữ: hãy giữ kèm Cmd, Ctrl hoặc Option.
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = { $key } riêng lẻ là để gõ chữ: hãy giữ kèm Ctrl hoặc Alt.
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key } thuộc về hệ thống: nó không bao giờ tới được Shellwing.
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key } là { $what }, phím này không đổi được.
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]: không có phím tắt nào tên `{ $name }`.
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }: `{ $key }`: { $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }: { $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]: `{ $key }` được gán cho cả { $kept } và { $lost }; { $kept } giữ nó.
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` không hợp; chỉ go_to_tab nhận `digit` (1 đến 9), và nó không nhận gì khác.
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (khuyên dùng)
 
@@ -762,9 +873,6 @@ tb989d6aa = Máy chủ chấp nhận khoá này khi khoá công khai của nó c
 
 # Public key
 t9981f45f = Khoá công khai
-
-# Copy
-t658f3664 = Sao chép
 
 # Done
 t8dd31791 = Xong
@@ -1033,9 +1141,6 @@ t58e25863 = Cắt
 # Copy as Markdown
 t944799cd = Sao chép dạng Markdown
 
-# Paste
-tb34a0288 = Dán
-
 # Turn into
 t10726570 = Chuyển thành
 
@@ -1138,9 +1243,6 @@ t0ff01b6a = Ghi chú
 # Actions
 te65fb504 = Thao tác
 
-# Settings
-t4b058728 = Cài đặt
-
 # Find a host, or type user@host
 t18f005c7 = Tìm máy chủ, hoặc gõ user@host
 
@@ -1183,14 +1285,53 @@ tbfdc091c = Enter trả lời   Esc huỷ
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ di chuyển   Enter chọn   Esc huỷ
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = Nhấn một chữ số từ 1 đến 9 cùng các phím cần giữ, ví dụ { $example }: chữ số chọn tab.
+
+# Reset
+t0ac8a560 = Đặt lại
+
+# Every shortcut back to its own keys?
+t0990da9d = Đưa mọi phím tắt về phím mặc định?
+
+# Reset all
+t3c3d9373 = Đặt lại tất cả
+
+# Keyboard
+t27d1a714 = Bàn phím
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = Phím tắt của cửa sổ không bao giờ tới máy chủ từ xa. Bấm vào một phím để đổi rồi nhấn phím mới (Esc để dừng); + thêm một phím cho phím tắt, × bỏ một phím. Chúng được lưu trong config.toml, mục [shortcuts].
+
+# In a pane, cannot be changed
+t8cb028d3 = Trong khung, không đổi được
+
+# Use it anyway
+t52386b1a = Vẫn dùng
+
+# Swap
+te519d36e = Hoán đổi
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key } đang là của "{ $what }". Hoán đổi: "{ $what }" nhận { $old }.
+
+# Move it here
+t8c848ead = Chuyển sang đây
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key } đang là của "{ $what }". Chuyển sang đây: "{ $what }" mất phím này.
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = Các chương trình trong terminal dùng { $key } (như Ctrl+R tìm trong lịch sử shell, Alt+B lùi một từ): gán ở đây thì chúng không bao giờ nhận được nữa.
+
+# Press keys…
+t2b545ab4 = Nhấn phím…
+
 # General
 t5561fd0b = Chung
 
 # Appearance
 t31018b9f = Giao diện
-
-# Keyboard
-t27d1a714 = Bàn phím
 
 # SSH and security
 t699a801a = SSH và bảo mật
@@ -1467,54 +1608,6 @@ t6395d795 = Nhật ký được lưu vào { $folder }. Chỉ bạn đọc đư�
 
 # No folder for logs: choose one.
 tc4affc27 = Chưa có thư mục nhật ký: hãy chọn một thư mục.
-
-# Command palette
-td54729b1 = Bảng lệnh
-
-# New tab
-td3a5555a = Tab mới
-
-# Close the pane
-tc4b0686e = Đóng khung
-
-# Split right
-t7c661b21 = Chia sang phải
-
-# Split down
-t8ebf2909 = Chia xuống dưới
-
-# Move between panes
-td5a160e3 = Di chuyển giữa các khung
-
-# {pane}+arrows
-tf3ff453e = { $pane }+mũi tên
-
-# Next and previous tab
-tdbe14691 = Tab sau và tab trước
-
-# Every tab, by host
-td3226d58 = Mọi tab, theo máy chủ
-
-# Go to tab 1–9
-t412f3292 = Tới tab 1–9
-
-# Host list
-t2c78c1d9 = Danh sách máy chủ
-
-# Next and previous theme
-t94e69c03 = Chủ đề sau và chủ đề trước
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] và [
-
-# Copy and paste
-t2f23e09a = Sao chép và dán
-
-# Back to the bottom
-t8f497cc3 = Về cuối
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = Phím tắt của cửa sổ không bao giờ được gửi tới máy chủ. Hiện chưa đổi được chúng.
 
 # Found. Its keys are tried first.
 tc1d15743 = Đã tìm thấy. Các khoá của nó được thử trước.
@@ -2548,9 +2641,6 @@ tf3732b18 = Một kết nối đang mở; thoát sẽ đóng nó.
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } kết nối đang mở; thoát sẽ đóng các kết nối đó.
 
-# Quit
-tc7b3d356 = Thoát
-
 # Quit shellwing?
 tfa31f588 = Thoát shellwing?
 
@@ -3052,12 +3142,6 @@ t7c2c53ba = Yêu thích
 # read only
 t0d7ec241 = chỉ đọc
 
-# Choose a host on the left to connect
-t8354c717 = Chọn một máy chủ bên trái để kết nối
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host
-
 # find a host, connect, run an action
 t4b795631 = tìm máy chủ, kết nối, chạy thao tác
 
@@ -3075,3 +3159,9 @@ tf70ede40 = tới một tab
 
 # show or hide the host list
 t9489dcc2 = hiện hoặc ẩn danh sách máy chủ
+
+# Choose a host on the left to connect
+t8354c717 = Chọn một máy chủ bên trái để kết nối
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host

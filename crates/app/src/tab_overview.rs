@@ -387,7 +387,10 @@ impl Render for TabOverview {
                                     .text_size(ui(11.))
                                     .text_color(rgb(c.muted))
                                     .whitespace_nowrap()
-                                    .child(if mac { "Cmd+Shift+A" } else { "Ctrl+Shift+A" }),
+                                    .child(crate::hotkeys::hint(
+                                        cx,
+                                        shellwing_config::Hotkey::Tabs,
+                                    )),
                             ),
                     ),
             )

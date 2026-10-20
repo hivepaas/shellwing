@@ -20,6 +20,7 @@ mod environment;
 mod files;
 mod group_editor;
 mod host_editor;
+mod hotkeys;
 mod input;
 mod keys_view;
 mod known_hosts_view;

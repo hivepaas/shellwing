@@ -48,11 +48,12 @@ with its fingerprint for you to accept, a changed key refuses the connection.
 
 ## Shortcuts
 
-Ctrl+Shift on Linux and Windows is Cmd on macOS.
+Ctrl+Shift on Linux and Windows is Cmd on macOS. The window's shortcuts can be
+changed in *Settings › Keyboard* (see [Keyboard shortcuts](docs/configuration.md#keyboard-shortcuts)).
 
 | Keys | Does |
 | --- | --- |
-| Ctrl+Shift+K (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
+| Ctrl+Shift+K or P (Cmd+K) | Palette: find a host, connect to `user@host`, change the theme, run an action |
 | Ctrl+Shift+T | A new tab (opens the palette) |
 | Ctrl+Shift+D / E (Cmd+D / Cmd+Shift+D) | Split right / down, to the same host |
 | Ctrl+Shift+I (Cmd+Shift+I) | Type in every pane of the tab, or stop; a pane's badge leaves it out |

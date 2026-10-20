@@ -2039,6 +2039,8 @@ impl TermView {
                 format!("Ctrl+Shift+{key}")
             }
         };
+        let keys = crate::hotkeys::keymap(cx);
+        let hint = |h: shellwing_config::Hotkey| keys.hint(h);
         let item = |id: &'static str, label: &str, hint: String, enabled: bool| {
             div()
                 .id(id)
@@ -2093,8 +2095,13 @@ impl TermView {
                 }
             }))
             .child(
-                item("menu-palette", &tr!("Command Palette…"), chord("K"), true)
-                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
+                item(
+                    "menu-palette",
+                    &tr!("Command Palette…"),
+                    hint(shellwing_config::Hotkey::Palette),
+                    true,
+                )
+                .on_click(act(|_, _, cx| cx.emit(PaneCommand::Palette))),
             )
             .child(
                 item("menu-snippets", &tr!("Snippets…"), String::new(), true)
@@ -2172,8 +2179,13 @@ impl TermView {
             )
             .child(line())
             .child(
-                item("menu-find", &tr!("Find…"), chord("F"), true)
-                    .on_click(act(|v, window, cx| v.open_find(window, cx))),
+                item(
+                    "menu-find",
+                    &tr!("Find…"),
+                    hint(shellwing_config::Hotkey::Find),
+                    true,
+                )
+                .on_click(act(|v, window, cx| v.open_find(window, cx))),
             )
             // Files and forwards are SSH's.
             .when(!local, |d| {
@@ -2185,7 +2197,7 @@ impl TermView {
                         } else {
                             tr!("Browse Files (SFTP)")
                         },
-                        chord("O"),
+                        hint(shellwing_config::Hotkey::Files),
                         true,
                     )
                     .on_click(act(|v, window, cx| v.toggle_files(window, cx))),
@@ -2232,19 +2244,21 @@ impl TermView {
             )
             .child(line())
             .child(
-                item("menu-split-right", &tr!("Split Right"), chord("D"), true).on_click(act(
-                    |_, _, cx| cx.emit(PaneCommand::Split(gpui::Axis::Horizontal)),
-                )),
+                item(
+                    "menu-split-right",
+                    &tr!("Split Right"),
+                    hint(shellwing_config::Hotkey::SplitRight),
+                    true,
+                )
+                .on_click(act(|_, _, cx| {
+                    cx.emit(PaneCommand::Split(gpui::Axis::Horizontal))
+                })),
             )
             .child(
                 item(
                     "menu-split-down",
                     &tr!("Split Down"),
-                    if mac {
-                        "Cmd+Shift+D".into()
-                    } else {
-                        chord("E")
-                    },
+                    hint(shellwing_config::Hotkey::SplitDown),
                     true,
                 )
                 .on_click(act(|_, _, cx| {
@@ -2262,8 +2276,13 @@ impl TermView {
             )
             .child(line())
             .child(
-                item("menu-close", &tr!("Close Pane"), chord("W"), true)
-                    .on_click(act(|_, _, cx| cx.emit(PaneCommand::Close))),
+                item(
+                    "menu-close",
+                    &tr!("Close Pane"),
+                    hint(shellwing_config::Hotkey::ClosePane),
+                    true,
+                )
+                .on_click(act(|_, _, cx| cx.emit(PaneCommand::Close))),
             );
         gpui::deferred(
             gpui::anchored()
