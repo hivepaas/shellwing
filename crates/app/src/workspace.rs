@@ -9,7 +9,7 @@ use std::rc::Rc;
 use gpui::{
     AnyElement, Axis, Context, CursorStyle, Div, ElementId, Entity, FocusHandle, Focusable, Hsla,
     KeyDownEvent, MouseButton, MouseMoveEvent, PromptLevel, Render, SharedString, Subscription,
-    Window, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
+    Window, WindowControlArea, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
 };
 use shellwing_config::{EditFile, Host, PaneState, SessionState, TabState, WindowState};
 use shellwing_ssh::config as ssh_config;
@@ -3631,17 +3631,32 @@ impl Workspace {
             // Its own size: under a native title bar (Windows, X11) nothing
             // above it sets one, and the rem default is bigger than the sidebar's.
             .text_sm()
-            // The logo, as the sketch puts it before the tabs.
+            // The logo, as the sketch puts it before the tabs. It and the room
+            // after the tabs move the window: on Windows only what is marked
+            // so does (see chrome::window_chrome).
             .child(
-                div().flex_shrink_0().pl(px(12.)).pr(px(8.)).child(
-                    svg()
-                        .path("icons/logo.svg")
-                        .size(px(18.))
-                        .text_color(rgb(colors().accent)),
-                ),
+                div()
+                    .flex_shrink_0()
+                    .h_full()
+                    .flex()
+                    .items_center()
+                    .pl(px(12.))
+                    .pr(px(8.))
+                    .window_control_area(WindowControlArea::Drag)
+                    .child(
+                        svg()
+                            .path("icons/logo.svg")
+                            .size(px(18.))
+                            .text_color(rgb(colors().accent)),
+                    ),
             )
             .child(strip)
-            .child(div().flex_1().h_full())
+            .child(
+                div()
+                    .flex_1()
+                    .h_full()
+                    .window_control_area(WindowControlArea::Drag),
+            )
             // Every tab by host: for when the strip has more than it shows.
             .when(self.tabs.len() >= 2, |d| {
                 d.child(
@@ -4319,13 +4334,10 @@ impl Render for Workspace {
                         .child(p),
                 )
             });
-        let root = if matches!(
-            window.window_decorations(),
-            gpui::Decorations::Client { .. }
-        ) {
+        let root = if chrome::draws_title_bar(window) {
             chrome::window_chrome(tabs, body, bg, window)
         } else {
-            // A native title bar: the tabs get a row of their own.
+            // A native title bar (X11): the tabs get a row of their own.
             div()
                 .size_full()
                 .flex()
