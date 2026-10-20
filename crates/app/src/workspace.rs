@@ -144,6 +144,8 @@ pub struct Workspace {
     vault_asked: bool,
     /// The last key pressed or click, for locking the vault when idle.
     last_input: std::time::Instant,
+    /// Windows Hello or Touch ID is asking now, to open the vault.
+    presence_asking: bool,
     sync: SyncWorker,
     /// The last sync error shown, so it is not repeated every minute.
     sync_error: Option<String>,
@@ -297,6 +299,7 @@ impl Workspace {
             vault_reported: false,
             vault_asked: false,
             last_input: std::time::Instant::now(),
+            presence_asking: false,
             sync,
             sync_error: None,
             passphrase_joins: None,
@@ -1531,6 +1534,23 @@ impl Workspace {
         if let Some(p) = problem {
             notes.insert(0, Entry::new(Kind::Note, "", p.to_string()));
         }
+        // Windows Hello or Touch ID asks too, where it opens the vault; the
+        // passphrase can be typed meanwhile. Not again after a wrong one.
+        let presence = (lock == Lock::Passphrase && problem.is_none())
+            .then(|| {
+                self.vault
+                    .presence()
+                    .filter(|_| self.vault.opens_with_presence())
+            })
+            .flatten();
+        if let Some(p) = &presence {
+            use shellwing_vault::Presence as _;
+            notes.insert(
+                0,
+                Entry::new(Kind::Note, "", format!("{} is asking", p.name()))
+                    .detail("Or type the passphrase here."),
+            );
+        }
         let placeholder = if lock == Lock::Passphrase {
             "The vault's passphrase, or its recovery key"
         } else {
@@ -1538,6 +1558,38 @@ impl Workspace {
         };
         let palette = cx.new(|cx| Palette::ask_secret(placeholder, notes, cx));
         self.show_palette(palette, false, window, cx);
+        if presence.is_some() && !self.presence_asking {
+            self.unlock_with_presence(window, cx);
+        }
+    }
+
+    /// Opens the locked vault with Windows Hello or Touch ID, off the UI
+    /// thread (the system's prompt waits for the user).
+    fn unlock_with_presence(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.presence_asking = true;
+        let slot = self.vault.clone();
+        let job = cx.background_spawn(async move { slot.unlock_with_presence() });
+        cx.spawn_in(window, async move |this, cx| {
+            let done = job.await;
+            let _ = this.update_in(cx, |ws, window, cx| {
+                ws.presence_asking = false;
+                match done {
+                    Ok(_) => {
+                        if matches!(ws.asking, Some(Asking::VaultUnlock(_))) {
+                            ws.asking = None;
+                            ws.close_palette(window, cx);
+                        }
+                        ws.sync.now();
+                        ws.say("The vault is open.".into(), THEME_NOTICE, cx);
+                        ws.refresh_settings(cx);
+                    }
+                    // Cancelled: the passphrase is still asked for.
+                    Err(shellwing_vault::Error::NotPresent) => {}
+                    Err(e) => ws.say(format!("Not opened that way: {e}"), CONFIG_NOTICE, cx),
+                }
+            });
+        })
+        .detach();
     }
 
     /// Asks for a new passphrase, or for it again to check it.
@@ -2076,6 +2128,17 @@ impl Workspace {
                 .and_then(|v| v.has_vault_passphrase().ok()),
             vault_keychain: self.vault.in_keychain(),
             vault_can_lock: self.vault.can_lock(),
+            presence: {
+                use shellwing_vault::Presence as _;
+                self.vault.presence().map(|p| {
+                    let on = self
+                        .vault
+                        .ready()
+                        .and_then(|v| v.has_presence().ok())
+                        .unwrap_or(false);
+                    (p.name(), on)
+                })
+            },
             passphrase_joins: self.sync.place().and(self.passphrase_joins),
             secrets: self
                 .vault
@@ -2932,6 +2995,42 @@ impl Workspace {
                     Err(e) => self.say(format!("Passphrase kept: {e}."), CONFIG_NOTICE, cx),
                 }
                 self.refresh_settings(cx);
+            }
+            Action::TogglePresence => {
+                let slot = self.vault.clone();
+                let on = !self
+                    .vault
+                    .ready()
+                    .and_then(|v| v.has_presence().ok())
+                    .unwrap_or(false);
+                let name = {
+                    use shellwing_vault::Presence as _;
+                    self.vault
+                        .presence()
+                        .map(|p| p.name())
+                        .unwrap_or("Presence")
+                };
+                let job = cx.background_spawn(async move { slot.set_presence(on) });
+                cx.spawn(async move |this, cx| {
+                    let done = job.await;
+                    let _ = this.update(cx, |ws, cx| {
+                        match done {
+                            Ok(()) if on => ws.say(
+                                format!("{name} opens the vault now, as its passphrase does."),
+                                CONFIG_NOTICE,
+                                cx,
+                            ),
+                            Ok(()) => ws.say(
+                                format!("{name} no longer opens the vault."),
+                                CONFIG_NOTICE,
+                                cx,
+                            ),
+                            Err(e) => ws.say(format!("{name}: {e}"), CONFIG_NOTICE, cx),
+                        }
+                        ws.refresh_settings(cx);
+                    });
+                })
+                .detach();
             }
             Action::LockVault => {
                 if self.vault.lock() {
