@@ -135,6 +135,67 @@ Translations live in `crates/i18n/locales/<language>.ftl` (Fluent), each message
 under the English it translates, which is in the code. `scripts/i18n.py update`
 brings them in step with the code; `scripts/i18n.py todo vi` lists what is left.
 
+## Keyboard shortcuts
+
+*Settings › Keyboard* lists the window's shortcuts with their keys. Click a key
+and press the new one (Esc stops); **+** gives a shortcut one more key, **×**
+takes one away. **Reset** puts a shortcut's own keys back, **Reset all** every
+shortcut's.
+
+- **A key another shortcut has** moves to the new one when you say so; when it
+  replaced a key, the two swap.
+- **A key programs in the terminal use** (Ctrl+letter, Alt+letter, F-keys:
+  Ctrl+R searches the shell's history, Alt+B goes back a word) is taken only
+  when you say so: from then on the window has it, and the programs never get
+  it. That is why the defaults are Ctrl+Shift on Linux and Windows.
+- **Refused:** a key alone or with Shift alone (it is for typing), keys the
+  system keeps (Alt+Tab, Alt+F4, the Windows key, Cmd+Tab, Cmd+H), and the
+  pane's own keys, which cannot be changed: copy and paste, zoom, Shift+PageUp /
+  PageDown / End.
+
+The keys are kept in `config.toml`, under `[shortcuts]`, only for the shortcuts
+whose keys differ from their defaults; each device keeps its own (they do not
+sync, as keys differ between systems). A shortcut takes one key or a list, and
+`[]` leaves it without one:
+
+```toml
+[shortcuts]
+palette = ["ctrl+shift+p", "ctrl+shift+space"]
+find = "ctrl+alt+f"
+broadcast = []
+go_to_tab = "ctrl+digit"     # Ctrl+1…9
+```
+
+A key is its modifiers and then the key, joined by `+`: `ctrl`, `alt`
+(`option`), `shift`, `cmd` (`super`, `win`: Cmd on macOS, the Windows key
+elsewhere), then a letter, digit or symbol, or `left`, `right`, `up`, `down`,
+`home`, `end`, `pageup`, `pagedown`, `tab`, `enter`, `escape`, `space`,
+`backspace`, `delete`, `insert`, `f1`…`f24`. `ctrl+shift+]` is the same key as
+`ctrl+}`. `digit` stands for 1 to 9, and only `go_to_tab` takes it.
+
+| Name | Linux, Windows | macOS |
+| --- | --- | --- |
+| `palette` | Ctrl+Shift+K, Ctrl+Shift+P | Cmd+K |
+| `new_tab` | Ctrl+Shift+T | Cmd+T |
+| `close_pane` | Ctrl+Shift+W | Cmd+W |
+| `split_right` | Ctrl+Shift+D | Cmd+D |
+| `split_down` | Ctrl+Shift+E | Cmd+Shift+D |
+| `pane_left`, `pane_right`, `pane_up`, `pane_down` | Alt+arrows | Cmd+Option+arrows |
+| `next_tab` | Ctrl+Tab, Ctrl+PageDown | Ctrl+Tab, Ctrl+PageDown, Cmd+Shift+] |
+| `previous_tab` | Ctrl+Shift+Tab, Ctrl+PageUp | Ctrl+Shift+Tab, Ctrl+PageUp, Cmd+Shift+[ |
+| `go_to_tab` | Alt+1…9 | Cmd+1…9 |
+| `tabs` | Ctrl+Shift+A | Cmd+Shift+A |
+| `host_list` | Ctrl+Shift+B | Cmd+B |
+| `files` | Ctrl+Shift+O | Cmd+O |
+| `find` | Ctrl+Shift+F | Cmd+F |
+| `broadcast` | Ctrl+Shift+I | Cmd+Shift+I |
+| `settings` | Ctrl+, | Cmd+, |
+| `next_theme`, `previous_theme` | Ctrl+Shift+] / [ | Cmd+] / [ |
+| `quit` | none | Cmd+Q |
+
+The pane keys (`pane_left` …) go to the shell when there is no pane that way.
+A name or key that does not read is reported and left out.
+
 ## Themes
 
 **Dark and light.** The app is dark or light as `mode` says, or as the

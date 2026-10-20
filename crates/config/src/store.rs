@@ -74,6 +74,8 @@ pub enum SettingValue {
     Int(i64),
     Float(f64),
     Str(String),
+    /// An array of strings.
+    List(Vec<String>),
 }
 
 impl SettingValue {
@@ -85,6 +87,11 @@ impl SettingValue {
             SettingValue::Float(f) if f.fract() == 0. && f.abs() < 1e15 => (*f as i64).into(),
             SettingValue::Float(f) => (*f).into(),
             SettingValue::Str(s) => s.as_str().into(),
+            SettingValue::List(l) => l
+                .iter()
+                .map(String::as_str)
+                .collect::<toml_edit::Array>()
+                .into(),
         }
     }
 
@@ -96,6 +103,9 @@ impl SettingValue {
                 v.as_float() == Some(*f) || v.as_integer().is_some_and(|i| i as f64 == *f)
             }
             SettingValue::Str(s) => v.as_str() == Some(s.as_str()),
+            SettingValue::List(l) => v.as_array().is_some_and(|a| {
+                a.len() == l.len() && a.iter().zip(l).all(|(v, s)| v.as_str() == Some(s.as_str()))
+            }),
         }
     }
 }
@@ -647,6 +657,32 @@ mod tests {
             store.settings().expect("settings").terminal.scrollback,
             Settings::default().terminal.scrollback
         );
+        // A shortcut's keys are a list; the whole section goes at once.
+        let keys = |l: &[&str]| {
+            Some(SettingValue::List(
+                l.iter().map(|s| s.to_string()).collect(),
+            ))
+        };
+        set(
+            &["shortcuts", "palette"],
+            keys(&["ctrl+shift+p", "ctrl+shift+space"]),
+        );
+        set(&["shortcuts", "broadcast"], keys(&[]));
+        let before = store.stamp();
+        set(
+            &["shortcuts", "palette"],
+            keys(&["ctrl+shift+p", "ctrl+shift+space"]),
+        );
+        assert_eq!(store.stamp(), before);
+        let s = store.settings().expect("settings").shortcuts;
+        assert_eq!(s.len(), 2);
+        let text = fs::read_to_string(store.dir().join(SETTINGS)).expect("read");
+        assert!(
+            text.contains("[shortcuts]\npalette = [\"ctrl+shift+p\", \"ctrl+shift+space\"]"),
+            "{text}"
+        );
+        set(&["shortcuts"], None);
+        assert!(store.settings().expect("settings").shortcuts.is_empty());
         let _ = fs::remove_dir_all(store.dir());
     }
 

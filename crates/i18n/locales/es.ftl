@@ -589,6 +589,117 @@ tfc330336 = Duplicar
 # Save and connect
 t83731197 = Guardar y conectar
 
+# Command palette
+td54729b1 = Paleta de comandos
+
+# New tab
+td3a5555a = Nueva pestaña
+
+# Close the pane
+tc4b0686e = Cerrar el panel
+
+# Split right
+t7c661b21 = Dividir a la derecha
+
+# Split down
+t8ebf2909 = Dividir hacia abajo
+
+# Pane to the left
+tbf1cdf5c = Panel de la izquierda
+
+# Pane to the right
+tddc060a9 = Panel de la derecha
+
+# Pane above
+t842141d6 = Panel de arriba
+
+# Pane below
+t46005f86 = Panel de abajo
+
+# Next tab
+tb7610e87 = Pestaña siguiente
+
+# Previous tab
+t2908a747 = Pestaña anterior
+
+# Go to tab 1–9
+t412f3292 = Ir a la pestaña 1–9
+
+# Every tab, by host
+td3226d58 = Todas las pestañas, por servidor
+
+# Host list
+t2c78c1d9 = Lista de servidores
+
+# Find in the pane
+t9dcfe91c = Buscar en el panel
+
+# Type in every pane
+t5938c30b = Escribir en todos los paneles
+
+# Settings
+t4b058728 = Ajustes
+
+# Next theme
+t9f747e2d = Tema siguiente
+
+# Previous theme
+t4c4139ed = Tema anterior
+
+# Quit
+tc7b3d356 = Salir
+
+# Copy
+t658f3664 = Copiar
+
+# Paste
+tb34a0288 = Pegar
+
+# Larger text
+t0acf4d25 = Texto más grande
+
+# Smaller text
+t3c9ae792 = Texto más pequeño
+
+# Text at its set size
+tfd1aa132 = Texto al tamaño configurado
+
+# Scroll up a page
+t3904cd21 = Subir una página
+
+# Scroll down a page
+t6cd6ecda = Bajar una página
+
+# Back to the bottom
+t8f497cc3 = Volver al final
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = { $key } sola es para escribir: mantén pulsado Cmd, Ctrl u Option a la vez.
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = { $key } sola es para escribir: mantén pulsado Ctrl o Alt a la vez.
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key } pertenece al sistema: nunca llega a Shellwing.
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key } es «{ $what }», que no se puede cambiar.
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]: no hay ningún atajo llamado `{ $name }`.
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }: `{ $key }`: { $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }: { $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]: `{ $key }` está asignado a { $kept } y a { $lost }; { $kept } lo conserva.
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` no encaja; solo go_to_tab acepta `digit` (del 1 al 9), y no acepta nada más.
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (recomendado)
 
@@ -778,9 +889,6 @@ tb989d6aa = Un servidor acepta esta clave cuando su clave pública está en el ~
 
 # Public key
 t9981f45f = Clave pública
-
-# Copy
-t658f3664 = Copiar
 
 # Done
 t8dd31791 = Listo
@@ -1053,9 +1161,6 @@ t58e25863 = Cortar
 # Copy as Markdown
 t944799cd = Copiar como Markdown
 
-# Paste
-tb34a0288 = Pegar
-
 # Turn into
 t10726570 = Convertir en
 
@@ -1158,9 +1263,6 @@ t0ff01b6a = Notas
 # Actions
 te65fb504 = Acciones
 
-# Settings
-t4b058728 = Ajustes
-
 # Find a host, or type user@host
 t18f005c7 = Busca un servidor, o escribe user@host
 
@@ -1203,14 +1305,53 @@ tbfdc091c = Enter responder   Esc cancelar
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ mover   Enter elegir   Esc cancelar
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = Pulsa un dígito del 1 al 9 junto con las teclas que se mantienen, como { $example }: el dígito elige la pestaña.
+
+# Reset
+t0ac8a560 = Restablecer
+
+# Every shortcut back to its own keys?
+t0990da9d = ¿Devolver cada atajo a sus teclas predeterminadas?
+
+# Reset all
+t3c3d9373 = Restablecer todo
+
+# Keyboard
+t27d1a714 = Teclado
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = Los atajos de la ventana nunca llegan al servidor remoto. Haz clic en una tecla para cambiarla y pulsa la nueva (Esc cancela); + da a un atajo una tecla más, × le quita una. Se guardan en config.toml, en [shortcuts].
+
+# In a pane, cannot be changed
+t8cb028d3 = En un panel, no se pueden cambiar
+
+# Use it anyway
+t52386b1a = Usar de todos modos
+
+# Swap
+te519d36e = Intercambiar
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key } es de «{ $what }». Intercambiar: «{ $what }» recibe { $old }.
+
+# Move it here
+t8c848ead = Mover aquí
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key } es de «{ $what }». Mover aquí: «{ $what }» pierde { $key }.
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = Los programas de la terminal usan { $key } (Ctrl+R busca en el historial de la shell, Alt+B retrocede una palabra): si se asigna aquí, nunca les llega.
+
+# Press keys…
+t2b545ab4 = Pulsa las teclas…
+
 # General
 t5561fd0b = General
 
 # Appearance
 t31018b9f = Apariencia
-
-# Keyboard
-t27d1a714 = Teclado
 
 # SSH and security
 t699a801a = SSH y seguridad
@@ -1487,54 +1628,6 @@ t6395d795 = Los registros van a { $folder }. Solo tú puedes leerlos: contienen 
 
 # No folder for logs: choose one.
 tc4affc27 = No hay carpeta para los registros: elige una.
-
-# Command palette
-td54729b1 = Paleta de comandos
-
-# New tab
-td3a5555a = Nueva pestaña
-
-# Close the pane
-tc4b0686e = Cerrar el panel
-
-# Split right
-t7c661b21 = Dividir a la derecha
-
-# Split down
-t8ebf2909 = Dividir hacia abajo
-
-# Move between panes
-td5a160e3 = Moverse entre paneles
-
-# {pane}+arrows
-tf3ff453e = { $pane }+flechas
-
-# Next and previous tab
-tdbe14691 = Pestaña siguiente y anterior
-
-# Every tab, by host
-td3226d58 = Todas las pestañas, por servidor
-
-# Go to tab 1–9
-t412f3292 = Ir a la pestaña 1–9
-
-# Host list
-t2c78c1d9 = Lista de servidores
-
-# Next and previous theme
-t94e69c03 = Tema siguiente y anterior
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] y [
-
-# Copy and paste
-t2f23e09a = Copiar y pegar
-
-# Back to the bottom
-t8f497cc3 = Volver al final
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = Los atajos de la ventana nunca llegan al servidor remoto. Aún no se pueden cambiar.
 
 # Found. Its keys are tried first.
 tc1d15743 = Encontrado. Sus claves se prueban primero.
@@ -2632,9 +2725,6 @@ td41065cb =
        *[other] { $n } conexiones están abiertas; al salir, se cerrarán.
     }
 
-# Quit
-tc7b3d356 = Salir
-
 # Quit shellwing?
 tfa31f588 = ¿Salir de shellwing?
 
@@ -3148,12 +3238,6 @@ t7c2c53ba = Favoritos
 # read only
 t0d7ec241 = solo lectura
 
-# Choose a host on the left to connect
-t8354c717 = Elige un servidor a la izquierda para conectarte
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = o pulsa { $keys } para buscar uno, o para conectarte a user@host
-
 # find a host, connect, run an action
 t4b795631 = buscar un servidor, conectar, ejecutar una acción
 
@@ -3171,3 +3255,9 @@ tf70ede40 = ir a una pestaña
 
 # show or hide the host list
 t9489dcc2 = mostrar u ocultar la lista de servidores
+
+# Choose a host on the left to connect
+t8354c717 = Elige un servidor a la izquierda para conectarte
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = o pulsa { $keys } para buscar uno, o para conectarte a user@host

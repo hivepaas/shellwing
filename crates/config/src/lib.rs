@@ -16,6 +16,7 @@ mod hosts;
 mod hosts_sync;
 mod settings;
 pub mod settings_sync;
+pub mod shortcuts;
 mod state;
 mod store;
 mod theme;
@@ -28,6 +29,7 @@ pub use settings::{
     OnDisconnect, Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal,
     UI_FONT_SIZE, UiFont, VaultSettings, WebDavSync,
 };
+pub use shortcuts::{Chord, Hotkey, Keymap, Mods, Os, ShortcutSettings};
 pub use state::{
     NoteWindowState, PaneState, PlacedFile, SessionState, TabState, WindowMode, WindowState,
 };

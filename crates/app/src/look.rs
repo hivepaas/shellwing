@@ -5,8 +5,8 @@
 use std::sync::Arc;
 
 use shellwing_config::{
-    ColorMode, CursorStyle, Hosts, LoadError, OnDisconnect, Scrollbar, Settings, Stamp, Store,
-    Theme, Themes, theme_for,
+    ColorMode, CursorStyle, Hosts, Keymap, LoadError, OnDisconnect, Os, Scrollbar, Settings, Stamp,
+    Store, Theme, Themes, theme_for,
 };
 use shellwing_i18n::tr;
 use shellwing_term::{Colors, Rgb};
@@ -66,6 +66,8 @@ pub struct Live {
     settings: Settings,
     hosts: Hosts,
     themes: Themes,
+    /// The window's shortcuts, as `[shortcuts]` sets them.
+    keymap: Arc<Keymap>,
     /// The app is light: the terminal takes `light_theme`.
     light: bool,
 }
@@ -79,6 +81,7 @@ impl Live {
             settings: Settings::default(),
             hosts: Hosts::default(),
             themes: Themes::builtin(),
+            keymap: Arc::new(Keymap::defaults(Os::this())),
             light: false,
         };
         let problems = live.load();
@@ -197,7 +200,15 @@ impl Live {
         let (themes, errors) = store.themes();
         self.themes = themes;
         problems.extend(errors);
-        problems.iter().map(ToString::to_string).collect()
+        let (keymap, wrong) = Keymap::new(&self.settings.shortcuts, Os::this());
+        self.keymap = Arc::new(keymap);
+        let mut problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
+        problems.extend(wrong.iter().map(crate::hotkeys::problem));
+        problems
+    }
+
+    pub fn keymap(&self) -> Arc<Keymap> {
+        self.keymap.clone()
     }
 
     /// Reloads if a file changed since the last load: `Some(problems)`.

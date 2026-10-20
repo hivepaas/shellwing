@@ -26,6 +26,8 @@ use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
 use crate::workspace::Workspace;
 
+mod keyboard;
+
 pub enum SettingsEvent {
     Close,
 }
@@ -154,6 +156,8 @@ pub struct SettingsView {
     known_hosts: Option<Entity<KnownHostsView>>,
     /// Where to sync, as typed before connecting.
     sync_form: SyncForm,
+    /// The Keyboard page taking a key, or asking about one.
+    keyboard: keyboard::Keyboard,
 }
 
 /// The Sync page's choice of a place, before syncing starts.
@@ -438,6 +442,7 @@ impl SettingsView {
             config_files: None,
             notes: None,
             known_hosts: None,
+            keyboard: Default::default(),
         }
     }
 
@@ -468,12 +473,7 @@ impl SettingsView {
     }
 
     /// Writes one setting; the workspace applies it and hands back the result.
-    fn change(
-        &mut self,
-        path: &'static [&'static str],
-        value: Option<SettingValue>,
-        cx: &mut Context<Self>,
-    ) {
+    fn change(&mut self, path: &[&str], value: Option<SettingValue>, cx: &mut Context<Self>) {
         let snap = self
             .workspace
             .update(cx, |ws, cx| ws.change_setting(path, value, cx));
@@ -602,6 +602,9 @@ impl SettingsView {
     }
 
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        if self.record_key(ev, cx) {
+            return cx.stop_propagation();
+        }
         let k = &ev.keystroke;
         // Typing a server's address and sign-in: Enter connects, Tab goes on.
         let fields = self.sync_form.fields().to_vec();
@@ -646,6 +649,7 @@ impl SettingsView {
         }
         let step = |by: isize, v: &mut Self| {
             let at = PAGES.iter().position(|p| *p == v.page).unwrap_or(0) as isize;
+            v.stop_recording();
             v.page = PAGES[(at + by).rem_euclid(PAGES.len() as isize) as usize];
         };
         match k.key.as_str() {
@@ -1648,94 +1652,6 @@ impl SettingsView {
             )))
     }
 
-    fn keyboard(&self) -> gpui::Div {
-        let mac = cfg!(target_os = "macos");
-        let (chord, pane) = if mac {
-            ("Cmd", "Cmd+Alt")
-        } else {
-            ("Ctrl+Shift", "Alt")
-        };
-        let keys: Vec<(String, String)> = vec![
-            (tr!("Command palette"), format!("{chord}+K")),
-            (tr!("New tab"), format!("{chord}+T")),
-            (tr!("Close the pane"), format!("{chord}+W")),
-            (tr!("Split right"), format!("{chord}+D")),
-            (
-                tr!("Split down"),
-                if mac {
-                    "Cmd+Shift+D".into()
-                } else {
-                    "Ctrl+Shift+E".into()
-                },
-            ),
-            (tr!("Move between panes"), tr!("{pane}+arrows", pane = pane)),
-            (
-                tr!("Next and previous tab"),
-                "Ctrl+Tab, Ctrl+Shift+Tab".into(),
-            ),
-            (
-                tr!("Every tab, by host"),
-                if mac {
-                    "Cmd+Shift+A".into()
-                } else {
-                    "Ctrl+Shift+A".into()
-                },
-            ),
-            (
-                tr!("Go to tab 1–9"),
-                if mac {
-                    "Cmd+1…9".into()
-                } else {
-                    "Alt+1…9".into()
-                },
-            ),
-            (tr!("Host list"), format!("{chord}+B")),
-            (tr!("Files"), format!("{chord}+O")),
-            (
-                tr!("Settings"),
-                if mac { "Cmd+,".into() } else { "Ctrl+,".into() },
-            ),
-            (
-                tr!("Next and previous theme"),
-                tr!("{chord}+] and [", chord = chord),
-            ),
-            (
-                tr!("Copy and paste"),
-                if mac {
-                    "Cmd+C, Cmd+V".into()
-                } else {
-                    "Ctrl+Shift+C, Ctrl+Shift+V".into()
-                },
-            ),
-            (tr!("Back to the bottom"), "Shift+End".into()),
-        ];
-        let mut list = div().flex().flex_col().gap(px(8.));
-        for (what, key) in keys {
-            list = list.child(
-                div()
-                    .flex()
-                    .justify_between()
-                    .text_size(ui(13.))
-                    .child(what)
-                    .child(
-                        div()
-                            .px_2()
-                            .rounded(px(4.))
-                            .bg(rgb(colors().chip))
-                            .border_1()
-                            .border_color(rgb(colors().edge))
-                            .text_size(ui(12.))
-                            .child(key),
-                    ),
-            );
-        }
-        page(&tr!("Keyboard"))
-            .child(label(&tr!(
-                "Window shortcuts never reach the remote host. They cannot be changed yet."
-            )))
-            .child(div().max_w(px(520.)).child(list))
-    }
-
     fn ssh(&self, cx: &mut Context<Self>) -> gpui::Div {
         let agent = if std::env::var_os("SSH_AUTH_SOCK").is_some() || cfg!(windows) {
             tr!("Found. Its keys are tried first.")
@@ -2454,7 +2370,7 @@ fn toggle(
         )
 }
 
-fn small_button(id: &'static str, label: &str) -> gpui::Stateful<gpui::Div> {
+fn small_button(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
     div()
         .id(id)
         .h(px(28.))
@@ -2557,6 +2473,7 @@ impl Render for SettingsView {
                     })
                     .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |v, _, _, cx| {
+                        v.stop_recording();
                         v.page = p;
                         v.fonts_open = None;
                         if p == Page::Keys
@@ -2598,7 +2515,7 @@ impl Render for SettingsView {
             Page::General => self.general(cx),
             Page::Appearance => self.appearance(cx),
             Page::Terminal => self.terminal(cx),
-            Page::Keyboard => self.keyboard(),
+            Page::Keyboard => self.keyboard(cx),
             Page::Ssh => self.ssh(cx),
             Page::Keys => self.keys_page(cx),
             Page::Snippets => self.snippets_page(cx),

@@ -577,6 +577,117 @@ tfc330336 = 복제
 # Save and connect
 t83731197 = 저장 후 연결
 
+# Command palette
+td54729b1 = 명령 팔레트
+
+# New tab
+td3a5555a = 새 탭
+
+# Close the pane
+tc4b0686e = 창 닫기
+
+# Split right
+t7c661b21 = 오른쪽으로 분할
+
+# Split down
+t8ebf2909 = 아래로 분할
+
+# Pane to the left
+tbf1cdf5c = 왼쪽 창
+
+# Pane to the right
+tddc060a9 = 오른쪽 창
+
+# Pane above
+t842141d6 = 위쪽 창
+
+# Pane below
+t46005f86 = 아래쪽 창
+
+# Next tab
+tb7610e87 = 다음 탭
+
+# Previous tab
+t2908a747 = 이전 탭
+
+# Go to tab 1–9
+t412f3292 = 탭 1–9로 이동
+
+# Every tab, by host
+td3226d58 = 호스트별 전체 탭
+
+# Host list
+t2c78c1d9 = 호스트 목록
+
+# Find in the pane
+t9dcfe91c = 창에서 찾기
+
+# Type in every pane
+t5938c30b = 모든 창에 입력
+
+# Settings
+t4b058728 = 설정
+
+# Next theme
+t9f747e2d = 다음 테마
+
+# Previous theme
+t4c4139ed = 이전 테마
+
+# Quit
+tc7b3d356 = 종료
+
+# Copy
+t658f3664 = 복사
+
+# Paste
+tb34a0288 = 붙여넣기
+
+# Larger text
+t0acf4d25 = 글자 크게
+
+# Smaller text
+t3c9ae792 = 글자 작게
+
+# Text at its set size
+tfd1aa132 = 설정한 글자 크기로
+
+# Scroll up a page
+t3904cd21 = 한 페이지 위로 스크롤
+
+# Scroll down a page
+t6cd6ecda = 한 페이지 아래로 스크롤
+
+# Back to the bottom
+t8f497cc3 = 맨 아래로
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = { $key }만 누르면 입력이 됩니다. Cmd, Ctrl 또는 Option을 함께 누르세요.
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = { $key }만 누르면 입력이 됩니다. Ctrl 또는 Alt를 함께 누르세요.
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key }은(는) 시스템이 사용합니다. Shellwing에는 전달되지 않습니다.
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key }은(는) '{ $what }'에 쓰이며 변경할 수 없습니다.
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]: `{ $name }`(이)라는 단축키가 없습니다.
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }: `{ $key }`: { $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }: { $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]: `{ $key }`이(가) { $kept }과(와) { $lost }에 모두 지정되어 있습니다. { $kept }에 유지됩니다.
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }`은(는) 쓸 수 없습니다. `digit`(1–9)은 go_to_tab에만 쓸 수 있고, go_to_tab에는 그 밖의 것을 쓸 수 없습니다.
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (권장)
 
@@ -762,9 +873,6 @@ tb989d6aa = 서버의 ~/.ssh/authorized_keys에 공개 키가 등록되면 서�
 
 # Public key
 t9981f45f = 공개 키
-
-# Copy
-t658f3664 = 복사
 
 # Done
 t8dd31791 = 완료
@@ -1033,9 +1141,6 @@ t58e25863 = 잘라내기
 # Copy as Markdown
 t944799cd = Markdown으로 복사
 
-# Paste
-tb34a0288 = 붙여넣기
-
 # Turn into
 t10726570 = 변환
 
@@ -1138,9 +1243,6 @@ t0ff01b6a = 노트
 # Actions
 te65fb504 = 작업
 
-# Settings
-t4b058728 = 설정
-
 # Find a host, or type user@host
 t18f005c7 = 호스트 찾기 또는 user@host 입력
 
@@ -1183,14 +1285,53 @@ tbfdc091c = Enter 응답   Esc 취소
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 이동   Enter 선택   Esc 취소
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = 누르고 있을 키와 함께 1–9 숫자를 누르세요(예: { $example }). 숫자로 탭을 고릅니다.
+
+# Reset
+t0ac8a560 = 초기화
+
+# Every shortcut back to its own keys?
+t0990da9d = 모든 단축키를 기본 키로 되돌릴까요?
+
+# Reset all
+t3c3d9373 = 모두 초기화
+
+# Keyboard
+t27d1a714 = 키보드
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = 앱 단축키는 원격 호스트로 전달되지 않습니다. 키를 클릭한 뒤 새 키를 누르면 바뀝니다(Esc로 중단). +는 단축키에 키를 하나 더하고, ×는 하나 뺍니다. config.toml의 [shortcuts]에 보관됩니다.
+
+# In a pane, cannot be changed
+t8cb028d3 = 창 안에서 (변경 불가)
+
+# Use it anyway
+t52386b1a = 그래도 사용
+
+# Swap
+te519d36e = 맞바꾸기
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key }은(는) '{ $what }'에 지정되어 있습니다. 맞바꾸기: '{ $what }'에는 { $old }이(가) 지정됩니다.
+
+# Move it here
+t8c848ead = 여기로 옮기기
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key }은(는) '{ $what }'에 지정되어 있습니다. 여기로 옮기기: '{ $what }'에서는 { $key }이(가) 빠집니다.
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = 터미널의 프로그램은 { $key }을(를) 사용합니다(예: Ctrl+R은 셸 기록 검색, Alt+B는 한 단어 뒤로 이동). 여기서 지정하면 프로그램에는 전달되지 않습니다.
+
+# Press keys…
+t2b545ab4 = 키를 누르세요…
+
 # General
 t5561fd0b = 일반
 
 # Appearance
 t31018b9f = 모양
-
-# Keyboard
-t27d1a714 = 키보드
 
 # SSH and security
 t699a801a = SSH 및 보안
@@ -1467,54 +1608,6 @@ t6395d795 = 로그는 { $folder }에 저장됩니다. 세션에 표시된 모든
 
 # No folder for logs: choose one.
 tc4affc27 = 로그 폴더가 없습니다. 폴더를 선택하세요.
-
-# Command palette
-td54729b1 = 명령 팔레트
-
-# New tab
-td3a5555a = 새 탭
-
-# Close the pane
-tc4b0686e = 창 닫기
-
-# Split right
-t7c661b21 = 오른쪽으로 분할
-
-# Split down
-t8ebf2909 = 아래로 분할
-
-# Move between panes
-td5a160e3 = 창 간 이동
-
-# {pane}+arrows
-tf3ff453e = { $pane }+화살표
-
-# Next and previous tab
-tdbe14691 = 다음/이전 탭
-
-# Every tab, by host
-td3226d58 = 호스트별 전체 탭
-
-# Go to tab 1–9
-t412f3292 = 탭 1–9로 이동
-
-# Host list
-t2c78c1d9 = 호스트 목록
-
-# Next and previous theme
-t94e69c03 = 다음/이전 테마
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] 및 [
-
-# Copy and paste
-t2f23e09a = 복사 및 붙여넣기
-
-# Back to the bottom
-t8f497cc3 = 맨 아래로
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = 앱 단축키는 원격 호스트로 전달되지 않습니다. 아직 변경할 수 없습니다.
 
 # Found. Its keys are tried first.
 tc1d15743 = 찾았습니다. 에이전트의 키를 먼저 시도합니다.
@@ -2548,9 +2641,6 @@ tf3732b18 = 연결이 열려 있습니다. 종료하면 연결이 닫힙니다.
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = 연결 { $n }개가 열려 있습니다. 종료하면 연결이 닫힙니다.
 
-# Quit
-tc7b3d356 = 종료
-
 # Quit shellwing?
 tfa31f588 = shellwing을 종료하시겠습니까?
 
@@ -3052,12 +3142,6 @@ t7c2c53ba = 즐겨찾기
 # read only
 t0d7ec241 = 읽기 전용
 
-# Choose a host on the left to connect
-t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요
-
 # find a host, connect, run an action
 t4b795631 = 호스트 찾기, 연결, 작업 실행
 
@@ -3075,3 +3159,9 @@ tf70ede40 = 탭으로 이동
 
 # show or hide the host list
 t9489dcc2 = 호스트 목록 표시 또는 숨기기
+
+# Choose a host on the left to connect
+t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요

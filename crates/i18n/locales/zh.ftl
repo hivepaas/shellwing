@@ -577,6 +577,117 @@ tfc330336 = 创建副本
 # Save and connect
 t83731197 = 保存并连接
 
+# Command palette
+td54729b1 = 命令面板
+
+# New tab
+td3a5555a = 新建标签页
+
+# Close the pane
+tc4b0686e = 关闭窗格
+
+# Split right
+t7c661b21 = 向右拆分
+
+# Split down
+t8ebf2909 = 向下拆分
+
+# Pane to the left
+tbf1cdf5c = 左侧窗格
+
+# Pane to the right
+tddc060a9 = 右侧窗格
+
+# Pane above
+t842141d6 = 上方窗格
+
+# Pane below
+t46005f86 = 下方窗格
+
+# Next tab
+tb7610e87 = 下一个标签页
+
+# Previous tab
+t2908a747 = 上一个标签页
+
+# Go to tab 1–9
+t412f3292 = 转到标签页 1–9
+
+# Every tab, by host
+td3226d58 = 按主机列出所有标签页
+
+# Host list
+t2c78c1d9 = 主机列表
+
+# Find in the pane
+t9dcfe91c = 在窗格中查找
+
+# Type in every pane
+t5938c30b = 在所有窗格中输入
+
+# Settings
+t4b058728 = 设置
+
+# Next theme
+t9f747e2d = 下一个主题
+
+# Previous theme
+t4c4139ed = 上一个主题
+
+# Quit
+tc7b3d356 = 退出
+
+# Copy
+t658f3664 = 复制
+
+# Paste
+tb34a0288 = 粘贴
+
+# Larger text
+t0acf4d25 = 放大文字
+
+# Smaller text
+t3c9ae792 = 缩小文字
+
+# Text at its set size
+tfd1aa132 = 恢复设定字号
+
+# Scroll up a page
+t3904cd21 = 向上滚动一页
+
+# Scroll down a page
+t6cd6ecda = 向下滚动一页
+
+# Back to the bottom
+t8f497cc3 = 回到底部
+
+# {key} alone is for typing: hold Cmd, Ctrl or Option with it.
+ta81ce4ca = 单独按 { $key } 用于输入文字：请同时按住 Cmd、Ctrl 或 Option。
+
+# {key} alone is for typing: hold Ctrl or Alt with it.
+t834f7024 = 单独按 { $key } 用于输入文字：请同时按住 Ctrl 或 Alt。
+
+# {key} belongs to the system: it never reaches Shellwing.
+tcf75feb6 = { $key } 由系统占用：永远不会传到 Shellwing。
+
+# {key} is {what}, which cannot be changed.
+t01906ac3 = { $key } 是“{ $what }”，无法更改。
+
+# config.toml, [shortcuts]: no shortcut is named `{name}`.
+t331b3467 = config.toml, [shortcuts]：没有名为 `{ $name }` 的快捷键。
+
+# config.toml, [shortcuts] {name}: `{key}`: {error}
+tb915b010 = config.toml, [shortcuts] { $name }：`{ $key }`：{ $error }
+
+# config.toml, [shortcuts] {name}: {why}
+t71adda1f = config.toml, [shortcuts] { $name }：{ $why }
+
+# config.toml, [shortcuts]: `{key}` is given to both {kept} and {lost}; {kept} keeps it.
+te833da37 = config.toml, [shortcuts]：`{ $key }` 同时分配给了 { $kept } 和 { $lost }；保留给 { $kept }。
+
+# config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+ta357f31b = config.toml, [shortcuts] { $name }：`{ $key }` 不适用；只有 go_to_tab 接受 `digit`（1 到 9），且它不接受其他任何值。
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推荐）
 
@@ -762,9 +873,6 @@ tb989d6aa = 服务器的 ~/.ssh/authorized_keys 中有此密钥的公钥后，�
 
 # Public key
 t9981f45f = 公钥
-
-# Copy
-t658f3664 = 复制
 
 # Done
 t8dd31791 = 完成
@@ -1033,9 +1141,6 @@ t58e25863 = 剪切
 # Copy as Markdown
 t944799cd = 复制为 Markdown
 
-# Paste
-tb34a0288 = 粘贴
-
 # Turn into
 t10726570 = 转换为
 
@@ -1138,9 +1243,6 @@ t0ff01b6a = 笔记
 # Actions
 te65fb504 = 操作
 
-# Settings
-t4b058728 = 设置
-
 # Find a host, or type user@host
 t18f005c7 = 查找主机，或输入 user@host
 
@@ -1183,14 +1285,53 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移动   Enter 选择   Esc 取消
 
+# Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
+t78f1fce3 = 在按住修饰键的同时按 1 到 9 中的数字，例如 { $example }：数字用于选择标签页。
+
+# Reset
+t0ac8a560 = 重置
+
+# Every shortcut back to its own keys?
+t0990da9d = 将所有快捷键恢复为默认按键？
+
+# Reset all
+t3c3d9373 = 全部重置
+
+# Keyboard
+t27d1a714 = 键盘
+
+# Window shortcuts never reach the remote host. Click a key to change it and press the new one (Esc stops); + gives a shortcut one more key, × takes one away. They are kept in config.toml, under [shortcuts].
+t1bbd6fbd = 窗口快捷键不会发送到远程主机。点击一个按键，再按下新的按键即可更改（Esc 停止）；+ 为快捷键再添加一个按键，× 移除一个。它们保存在 config.toml 的 [shortcuts] 下。
+
+# In a pane, cannot be changed
+t8cb028d3 = 窗格内，不可更改
+
+# Use it anyway
+t52386b1a = 仍然使用
+
+# Swap
+te519d36e = 交换
+
+# {key} is {what}'s. Swap: {what} gets {old}.
+t6f1711d7 = { $key } 已分配给“{ $what }”。交换：“{ $what }”改用 { $old }。
+
+# Move it here
+t8c848ead = 移到这里
+
+# {key} is {what}'s. Move it here: {what} loses it.
+t010b909d = { $key } 已分配给“{ $what }”。移到这里：“{ $what }”将不再使用 { $key }。
+
+# Programs in the terminal use {key} (as Ctrl+R searches the shell's history, Alt+B goes back a word): taken here, they never get it.
+t13aa6dfa = 终端中的程序会用到 { $key }（例如 Ctrl+R 搜索 shell 历史记录，Alt+B 后退一个单词）：在这里占用后，它们将再也收不到 { $key }。
+
+# Press keys…
+t2b545ab4 = 请按键…
+
 # General
 t5561fd0b = 通用
 
 # Appearance
 t31018b9f = 外观
-
-# Keyboard
-t27d1a714 = 键盘
 
 # SSH and security
 t699a801a = SSH 与安全
@@ -1467,54 +1608,6 @@ t6395d795 = 日志保存到 { $folder }。只有你能读取：其中包含会�
 
 # No folder for logs: choose one.
 tc4affc27 = 没有日志文件夹：请选择一个。
-
-# Command palette
-td54729b1 = 命令面板
-
-# New tab
-td3a5555a = 新建标签页
-
-# Close the pane
-tc4b0686e = 关闭窗格
-
-# Split right
-t7c661b21 = 向右拆分
-
-# Split down
-t8ebf2909 = 向下拆分
-
-# Move between panes
-td5a160e3 = 在窗格间移动
-
-# {pane}+arrows
-tf3ff453e = { $pane }+方向键
-
-# Next and previous tab
-tdbe14691 = 下一个和上一个标签页
-
-# Every tab, by host
-td3226d58 = 按主机列出所有标签页
-
-# Go to tab 1–9
-t412f3292 = 转到标签页 1–9
-
-# Host list
-t2c78c1d9 = 主机列表
-
-# Next and previous theme
-t94e69c03 = 下一个和上一个主题
-
-# {chord}+] and [
-tcf6edce3 = { $chord }+] 和 [
-
-# Copy and paste
-t2f23e09a = 复制和粘贴
-
-# Back to the bottom
-t8f497cc3 = 回到底部
-
-# Window shortcuts never reach the remote host. They cannot be changed yet.
-t95c4a480 = 窗口快捷键不会发送到远程主机。目前还不能更改。
 
 # Found. Its keys are tried first.
 tc1d15743 = 已找到。会优先尝试其中的密钥。
@@ -2548,9 +2641,6 @@ tf3732b18 = 有一个连接处于打开状态；退出将关闭它。
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } 个连接处于打开状态；退出将关闭这些连接。
 
-# Quit
-tc7b3d356 = 退出
-
 # Quit shellwing?
 tfa31f588 = 退出 shellwing？
 
@@ -3052,12 +3142,6 @@ t7c2c53ba = 收藏
 # read only
 t0d7ec241 = 只读
 
-# Choose a host on the left to connect
-t8354c717 = 在左侧选择一台主机以连接
-
-# or press {keys} to find one, or to connect to user@host
-t4f67c373 = 或按 { $keys } 查找主机，或连接到 user@host
-
 # find a host, connect, run an action
 t4b795631 = 查找主机、连接、执行操作
 
@@ -3075,3 +3159,9 @@ tf70ede40 = 转到标签页
 
 # show or hide the host list
 t9489dcc2 = 显示或隐藏主机列表
+
+# Choose a host on the left to connect
+t8354c717 = 在左侧选择一台主机以连接
+
+# or press {keys} to find one, or to connect to user@host
+t4f67c373 = 或按 { $keys } 查找主机，或连接到 user@host
