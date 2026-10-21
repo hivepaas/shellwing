@@ -101,9 +101,13 @@ scenario!(
         let path = missing.display().to_string().replace('\\', "/");
         ui.type_text(&format!("file:///{}", path.trim_start_matches('/')));
         ui.click("sync-connect");
-        ui.wait_until("the reason beside Connect", |ui| {
-            ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync"))
-        });
+        // git itself, started under a full run's load, can take long on
+        // Windows: up to the 90 s the app gives it.
+        ui.wait_until_within(
+            "the reason beside Connect",
+            std::time::Duration::from_secs(120),
+            |ui| ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync")),
+        );
         ui.wait_for_notice_in("Cannot sync", crate::notice::Tone::Bad);
         let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
             .unwrap_or_default();
