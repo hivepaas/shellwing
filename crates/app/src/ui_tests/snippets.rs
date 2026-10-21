@@ -256,3 +256,34 @@ scenario!(
         ui.wait_for("admin");
     }
 );
+
+scenario!(
+    /// The palette's badges are all there with nothing in a section: a
+    /// click on an empty one scrolls to its heading, with nothing under it.
+    palette_badges_with_empty_sections,
+    |ui| {
+        ui.open();
+        ui.shortcut("k");
+        ui.wait_until("the palette", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        for part in [
+            "Hosts",
+            "Recent",
+            "Snippets",
+            "Environments",
+            "ConfigFiles",
+            "Notes",
+            "Actions",
+            "Settings",
+        ] {
+            assert!(ui.find(&format!("palette-section:{part}")).is_some(), "{part}");
+        }
+        let before = ui.bounds("palette-empty:Environments").top();
+        ui.click("palette-section:Environments");
+        // At the top, or as near as the list scrolls.
+        let list = ui.bounds("palette-list");
+        ui.wait_until("the empty heading scrolled into view", |ui| {
+            let b = ui.bounds("palette-empty:Environments");
+            b.top() < before && b.top() >= list.top() && b.bottom() <= list.bottom()
+        });
+    }
+);

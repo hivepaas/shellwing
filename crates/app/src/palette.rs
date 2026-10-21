@@ -155,6 +155,19 @@ pub enum Part {
 }
 
 impl Part {
+    /// The badges of the main palette, in its order: each is there even
+    /// with nothing in it.
+    const ALL: [Part; 8] = [
+        Part::Hosts,
+        Part::Recent,
+        Part::Snippets,
+        Part::Environments,
+        Part::ConfigFiles,
+        Part::Notes,
+        Part::Actions,
+        Part::Settings,
+    ];
+
     fn label(self) -> String {
         match self {
             Part::Hosts => tr!("Hosts"),
@@ -249,6 +262,15 @@ enum Mode {
     Choose,
 }
 
+/// A line of the list: a group's heading, an empty section's, or an entry
+/// (by its index in `shown`).
+#[derive(Clone, Copy, PartialEq)]
+enum Row {
+    Heading(usize),
+    Empty(Part),
+    Entry(usize),
+}
+
 pub struct Palette {
     input: Entity<TextInput>,
     mode: Mode,
@@ -259,6 +281,9 @@ pub struct Palette {
     unfiltered: bool,
     /// The entry one Enter away from being forgotten.
     armed: Option<usize>,
+    /// An empty section jumped to from its badge, lit until the selection
+    /// moves.
+    at_empty: Option<Part>,
     scroll: ScrollHandle,
     _changed: Subscription,
 }
@@ -297,10 +322,17 @@ impl Palette {
     /// of the list.
     fn jump(&mut self, s: Part, cx: &mut Context<Self>) {
         let Some(ix) = self.shown.iter().position(|e| e.section == s) else {
+            // An empty one: its heading at the top, the selection kept.
+            if let Some(row) = self.rows().iter().position(|r| *r == Row::Empty(s)) {
+                self.at_empty = Some(s);
+                self.scroll.scroll_to_top_of_item(row);
+                cx.notify();
+            }
             return;
         };
         self.selected = ix;
         self.armed = None;
+        self.at_empty = None;
         let row = self.row_index(ix);
         // The heading above it, while there are headings.
         let row = if self.headers() {
@@ -403,6 +435,7 @@ impl Palette {
             selected,
             unfiltered: true,
             armed: None,
+            at_empty: None,
             scroll: ScrollHandle::new(),
             _changed: changed,
         };
@@ -458,6 +491,7 @@ impl Palette {
 
     fn highlighted(&mut self, cx: &mut Context<Self>) {
         self.armed = None;
+        self.at_empty = None;
         self.scroll.scroll_to_item(self.row_index(self.selected));
         if self.mode == Mode::Themes
             && let Some(Kind::Theme(id)) = self.shown.get(self.selected).map(|e| e.kind.clone())
@@ -466,21 +500,45 @@ impl Palette {
         }
     }
 
-    /// The list's child index of entry `ix`, counting the group headers above it.
+    /// The list's child index of entry `ix`, counting the headings above it.
     fn row_index(&self, ix: usize) -> usize {
+        self.rows()
+            .iter()
+            .position(|r| *r == Row::Entry(ix))
+            .unwrap_or(ix)
+    }
+
+    /// The lines of the list. While nothing is typed, each group has its
+    /// heading, and the main palette's empty sections theirs, in their place.
+    fn rows(&self) -> Vec<Row> {
         let headers = self.headers();
-        let mut seen = 0;
+        let mut empty: Vec<Part> = if headers && self.mode == Mode::Connect {
+            Part::ALL
+                .into_iter()
+                .filter(|s| !self.shown.iter().any(|e| e.section == *s))
+                .collect()
+        } else {
+            vec![]
+        };
+        let mut rows = vec![];
         let mut last = SharedString::default();
         for (i, e) in self.shown.iter().enumerate() {
-            if headers && e.group != last {
-                seen += 1;
-                last = e.group.clone();
+            if headers {
+                while empty
+                    .first()
+                    .is_some_and(|s| (*s as usize) < e.section as usize)
+                {
+                    rows.push(Row::Empty(empty.remove(0)));
+                }
+                if e.group != last {
+                    last = e.group.clone();
+                    rows.push(Row::Heading(i));
+                }
             }
-            if i == ix {
-                return i + seen;
-            }
+            rows.push(Row::Entry(i));
         }
-        ix
+        rows.extend(empty.into_iter().map(Row::Empty));
+        rows
     }
 
     /// Group headers only while nothing is typed; a filtered list is one ranking.
@@ -558,11 +616,12 @@ impl Palette {
     /// The row of badges under the field, one a section listed; the
     /// selected entry's lit. A click jumps there.
     fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::Div> {
-        let sections = self.sections();
-        if self.mode != Mode::Connect || sections.len() < 2 {
+        if self.mode != Mode::Connect {
             return None;
         }
-        let now = self.shown.get(self.selected).map(|e| e.section);
+        let now = self
+            .at_empty
+            .or_else(|| self.shown.get(self.selected).map(|e| e.section));
         let mut row = div()
             .flex()
             .flex_wrap()
@@ -571,11 +630,12 @@ impl Palette {
             .py(px(8.))
             .border_b_1()
             .border_color(rgb(colors().line));
-        for (i, s) in sections.into_iter().enumerate() {
+        for (i, s) in Part::ALL.into_iter().enumerate() {
             let on = now == Some(s);
             row = row.child(
                 div()
                     .id(("palette-section", i))
+                    .debug_selector(move || format!("palette-section:{s:?}"))
                     .px(px(9.))
                     .py(px(2.))
                     .rounded_full()
@@ -615,6 +675,7 @@ impl Render for Palette {
         let headers = self.headers();
         let mut list = div()
             .id("palette-list")
+            .debug_selector(|| "palette-list".into())
             .track_scroll(&self.scroll)
             .overflow_y_scroll()
             // The main palette's fills it; a question's is as long as it is.
@@ -627,29 +688,22 @@ impl Render for Palette {
             .px_1()
             .pb_1()
             .when(!headers, |d| d.pt_1());
-        let mut last = SharedString::default();
-        for (i, e) in self.shown.iter().enumerate() {
-            if headers && e.group != last {
-                last = e.group.clone();
-                list = list.child(
-                    div()
-                        // A band across the whole list.
-                        .mx(px(-4.))
-                        .mb_1()
-                        .when(i > 0, |d| d.mt_1())
-                        .px(px(16.))
-                        .py(px(5.))
-                        .bg(rgb(colors().chip))
-                        .border_b_1()
-                        // The first one's top is the badges' line.
-                        .when(i > 0, |d| d.border_t_1())
-                        .border_color(rgb(colors().line))
-                        .text_xs()
-                        .font_weight(gpui::FontWeight::SEMIBOLD)
-                        .text_color(rgb(colors().accent))
-                        .child(e.group.clone()),
-                );
-            }
+        for (r, row) in self.rows().into_iter().enumerate() {
+            let i = match row {
+                Row::Entry(i) => i,
+                Row::Heading(i) => {
+                    list = list.child(heading(self.shown[i].group.clone(), r == 0));
+                    continue;
+                }
+                Row::Empty(s) => {
+                    list = list.child(
+                        heading(s.label().into(), r == 0)
+                            .debug_selector(move || format!("palette-empty:{s:?}")),
+                    );
+                    continue;
+                }
+            };
+            let e = &self.shown[i];
             let selected = i == self.selected;
             let armed = self.armed == Some(i);
             let has_dot = matches!(e.kind, Kind::Host(_) | Kind::Choice(_));
@@ -784,6 +838,24 @@ impl Render for Palette {
                     .child(footer),
             )
     }
+}
+
+/// A heading in the list: a band across it, under the badges' line when
+/// `first`.
+fn heading(title: SharedString, first: bool) -> gpui::Div {
+    div()
+        .mx(px(-4.))
+        .mb_1()
+        .when(!first, |d| d.mt_1().border_t_1())
+        .px(px(16.))
+        .py(px(5.))
+        .bg(rgb(colors().chip))
+        .border_b_1()
+        .border_color(rgb(colors().line))
+        .text_xs()
+        .font_weight(gpui::FontWeight::SEMIBOLD)
+        .text_color(rgb(colors().accent))
+        .child(title)
 }
 
 #[cfg(test)]
