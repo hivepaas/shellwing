@@ -85,3 +85,41 @@ scenario!(
         assert!(!ui.hosts_toml().contains("vault:"));
     }
 );
+
+scenario!(
+    /// Settings › Keys › Import key file…: the key file is kept in the vault,
+    /// and signs in with no file on disk any more.
+    imported_key_file_signs_in,
+    |ui| {
+        let (path, key) = crate::ui_tests::connect::key_file(ui, "id_work", None);
+        let server = ui.server(Policy {
+            key: Some(key.public_key().clone()),
+            ..Default::default()
+        });
+        ui.trust(&server);
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Keys");
+        ui.click("keys-import");
+        ui.wait_until("the file dialog", |ui| ui.cx.did_prompt_for_paths());
+        let chosen = path.clone();
+        ui.cx.simulate_path_prompt_response(move |_| Some(vec![chosen]));
+        ui.wait_until("the key in the vault", |ui| {
+            ui.vault()
+                .and_then(|v| v.ssh_keys().ok())
+                .is_some_and(|keys| keys.iter().any(|k| k.name == "id_work"))
+        });
+        std::fs::remove_file(&path).expect("remove the key file");
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette(&server.spec());
+        ui.wait_for(WELCOME);
+        assert!(!ui.screen().contains("password:"), "asked for a password");
+        assert_eq!(
+            server.seen(|s| s.auth.last().cloned()).as_deref(),
+            Some("publickey:ok")
+        );
+    }
+);

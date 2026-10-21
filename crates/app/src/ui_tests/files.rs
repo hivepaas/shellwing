@@ -388,3 +388,39 @@ scenario!(
         });
     }
 );
+
+scenario!(
+    /// Download As… (right click): the file goes where the save dialog says.
+    download_as,
+    |ui| {
+        let Some((_home, _server)) = with_files(ui) else {
+            return;
+        };
+        ui.right_click("file:notes.txt");
+        ui.click("menu-download-as");
+        ui.wait_until("the save dialog", |ui| ui.cx.did_prompt_for_new_path());
+        let target = ui.dir.join("chosen-name.txt");
+        let chosen = target.clone();
+        ui.cx.simulate_new_path_selection(move |_| Some(chosen));
+        ui.wait_until("the download", |_| {
+            std::fs::read_to_string(&target).is_ok_and(|t| t == "remember the milk\n")
+        });
+    }
+);
+
+scenario!(
+    /// The `..` row above a folder's files: a double click goes up.
+    parent_row_goes_up,
+    |ui| {
+        let Some((_home, _server)) = with_files(ui) else {
+            return;
+        };
+        let p = panel(ui);
+        ui.cx.update(|cx| p.update(cx, |p, cx| p.select_named("projects", cx)));
+        ui.keys("enter");
+        wait_entries(ui, "projects' files", |e| e == ["readme.md"]);
+        ui.double_click("files-parent");
+        wait_entries(ui, "the home folder again", |e| e.iter().any(|n| n == "notes.txt"));
+        assert!(shown(ui).0.is_some_and(|d| d.ends_with("remote")));
+    }
+);

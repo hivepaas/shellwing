@@ -192,3 +192,32 @@ scenario!(
         assert_eq!(ran(&server, "printenv DB_USER"), 2);
     }
 );
+
+scenario!(
+    /// The snippet library: a command ticked and added becomes the user's
+    /// snippet, filed under its tool, and runs from the palette.
+    snippet_added_from_the_library,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Snippet library");
+        ui.wait_until("the library", |ui| ui.library_window().is_some());
+        let lib = ui.library_window().expect("library").into();
+        ui.click_in(lib, "library-check:system/memory");
+        ui.click_in(lib, "library-add");
+        ui.wait_until("the snippet in the vault", |ui| {
+            ui.vault()
+                .and_then(|v| v.snippets().ok())
+                .is_some_and(|s| s.iter().any(|s| s.name == "Memory"))
+        });
+        let added = ui
+            .vault()
+            .and_then(|v| v.snippets().ok())
+            .and_then(|s| s.into_iter().find(|s| s.name == "Memory"))
+            .expect("added");
+        assert_eq!(added.origin, "library:system/memory");
+        assert_eq!(added.category, "System");
+        ui.palette("Memory");
+        ui.wait_for("you said: free -h");
+    }
+);

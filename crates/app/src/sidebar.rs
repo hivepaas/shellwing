@@ -228,6 +228,7 @@ impl Sidebar {
         let icon_button = |id: &'static str, icon: &'static str, on: bool| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .w(px(32.))
                 .h(px(28.))
                 .flex()
@@ -302,6 +303,7 @@ impl Sidebar {
                 tiles = tiles.child(
                     div()
                         .id(ElementId::NamedInteger("tile".into(), id))
+                        .debug_selector(|| format!("tile:{}", row.name))
                         .relative()
                         .flex_shrink_0()
                         .size(px(36.))
@@ -393,6 +395,7 @@ impl Sidebar {
                     .child(
                         div()
                             .id("rail-new-host")
+                            .debug_selector(|| "rail-new-host".into())
                             .w(px(36.))
                             .h(px(32.))
                             .flex()
@@ -775,6 +778,7 @@ impl Render for Sidebar {
                             .child(
                                 div()
                                     .id("collapse-hosts")
+                                    .debug_selector(|| "collapse-hosts".into())
                                     .w(px(26.))
                                     .h(px(24.))
                                     .flex()

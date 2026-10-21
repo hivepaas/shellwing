@@ -369,8 +369,11 @@ impl LibraryWindow {
         } else {
             (c.button, c.button_hover, c.field_edge)
         };
+        let id = id.into();
+        let selector = id.to_string();
         div()
-            .id(id.into())
+            .id(id)
+            .debug_selector(|| selector)
             .h(px(30.))
             .px(px(12.))
             .flex()
@@ -612,6 +615,7 @@ impl LibraryWindow {
                     .child(
                         div()
                             .id(("library-check", n))
+                            .debug_selector(|| format!("library-check:{}", i.id))
                             .mt(px(2.))
                             .on_click(cx.listener(move |v, _, _, cx| {
                                 cx.stop_propagation();
