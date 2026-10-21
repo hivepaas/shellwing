@@ -434,9 +434,7 @@ impl Ui {
     }
 
     /// The snippet library's window, once open.
-    pub fn library_window(
-        &mut self,
-    ) -> Option<WindowHandle<crate::library_window::LibraryWindow>> {
+    pub fn library_window(&mut self) -> Option<WindowHandle<crate::library_window::LibraryWindow>> {
         self.cx.update(|cx| {
             cx.windows()
                 .iter()
@@ -459,17 +457,6 @@ impl Ui {
             .unwrap_or_else(|| panic!("nothing marked {selector:?} is drawn there"))
             .center();
         vcx.simulate_click(at, gpui::Modifiers::none());
-        self.cx.run_until_parked();
-    }
-
-    /// Types `text` into another of the app's windows.
-    pub fn type_in(&mut self, window: gpui::AnyWindowHandle, text: &str) {
-        for c in text.chars() {
-            match c {
-                ' ' => self.cx.simulate_keystrokes(window, "space"),
-                c => self.cx.simulate_input(window, &c.to_string()),
-            }
-        }
         self.cx.run_until_parked();
     }
 
