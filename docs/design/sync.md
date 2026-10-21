@@ -98,7 +98,9 @@ counter and the device id.
 - **Different fields.** Edits by two devices to different fields both survive.
   Example: A changes `port` while B, offline, changes `tags`.
 - **The same field.** The later HLC wins, and the losing value goes to the sync
-  log shown in Settings.
+  log shown in Settings. A note's text is the exception: when two devices
+  changed it without seeing each other's change, the losing text is kept as a
+  note of its own ([note-conflicts.md](note-conflicts.md)).
 - **Deletes.** A delete is a tombstone with its own HLC. An edit made after the
   delete brings the record back. Tombstones are dropped once every device in
   `devices/` has synced past them.
