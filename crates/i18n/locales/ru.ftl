@@ -1234,6 +1234,9 @@ tdd571ace = Светлые, тёплые
 # Your themes
 tb2e83d5c = Ваши темы
 
+# Image from {host}
+t4b45629c = Изображение с { $host }
+
 # Loading the image…
 t457184d7 = Загрузка изображения…
 
@@ -1258,6 +1261,12 @@ t53d0e31f = { $name } — не изображение, которое можно
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } — слишком большое изображение ({ $width } × { $height }).
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } находится в частной сети: его изображение не загружено.
+
+# {name} could not be downloaded: {e}
+t66ad539b = Не удалось загрузить { $name }: { $e }
+
 # New note
 t788c7123 = Новая заметка
 
@@ -1270,6 +1279,12 @@ t44662d06 = Без категории
 # Write here; Markdown shows as you type.
 t117b6c23 = Пишите здесь; Markdown виден по мере ввода.
 
+# Copy Image
+tf77eb889 = Копировать изображение
+
+# Save Image As…
+t4504c6b5 = Сохранить изображение как…
+
 # It is not in the vault any more.
 td11af590 = Его больше нет в хранилище.
 
@@ -1278,6 +1293,42 @@ tb31ba949 = Изображения показываются в заметках 
 
 # Images go in while the note is edited.
 t6f2c9191 = Изображения добавляются, пока заметка редактируется.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing загружает их с { $hosts }, и эти серверы узнают ваш адрес. Затем изображения хранятся в хранилище в зашифрованном виде, а ссылки в заметке заменяются.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Некоторые приходят по обычному http: их могли изменить по пути.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+        [one] Загрузить из интернета { $n } изображение заметки?
+        [few] Загрузить из интернета { $n } изображения заметки?
+        [many] Загрузить из интернета { $n } изображений заметки?
+       *[other] Загрузить из интернета { $n } изображения заметки?
+    }
+
+# Export
+te86349d3 = Экспортировать
+
+# Export the note?
+t3fc8daf1 = Экспортировать заметку?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = Заметка и её изображения записываются файлами без шифрования: их прочтёт любой, кто может читать папку.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+        [one] Экспортировано без { $n } ещё не синхронизированного изображения.
+        [few] Экспортировано без { $n } ещё не синхронизированных изображений.
+        [many] Экспортировано без { $n } ещё не синхронизированных изображений.
+       *[other] Экспортировано без { $n } ещё не синхронизированного изображения.
+    }
+
+# Not exported: {e}
+t9d93dffa = Не экспортировано: { $e }
 
 # Insert
 t0f317948 = Вставить
@@ -1317,6 +1368,18 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+        [one] Загрузить { $n } изображение
+        [few] Загрузить { $n } изображения
+        [many] Загрузить { $n } изображений
+       *[other] Загрузить { $n } изображения
+    }
+
+# Export…
+tc8865b2d = Экспортировать…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Конфиденциально: текст покажется, когда вы подтвердите, что это вы.
@@ -2082,6 +2145,9 @@ t47252d7a = Секретный ключ
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Приватный репозиторий на GitHub, GitLab, Gitea или вашем сервере, через git этой системы: он входит так же, как у вас (менеджер учётных данных, ваши ключи SSH и агент). Каждое изменение — коммит.
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git хранит все версии: изображения из заметок остаются в истории репозитория в зашифрованном виде даже после удаления, поэтому он только растёт.
 
 # Repository
 te763c8b5 = Репозиторий

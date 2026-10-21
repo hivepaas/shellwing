@@ -1192,6 +1192,9 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# Image from {host}
+t4b45629c = 来自 { $host } 的图片
+
 # Loading the image…
 t457184d7 = 正在加载图片…
 
@@ -1216,6 +1219,12 @@ t53d0e31f = { $name } 不是可读取的图片。
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } 图片太大（{ $width } × { $height }）。
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } 位于专用网络：未下载其图片。
+
+# {name} could not be downloaded: {e}
+t66ad539b = 无法下载 { $name }：{ $e }
+
 # New note
 t788c7123 = 新建笔记
 
@@ -1228,6 +1237,12 @@ t44662d06 = 无分类
 # Write here; Markdown shows as you type.
 t117b6c23 = 在此书写；Markdown 会在输入时显示。
 
+# Copy Image
+tf77eb889 = 复制图片
+
+# Save Image As…
+t4504c6b5 = 将图片另存为…
+
 # It is not in the vault any more.
 td11af590 = 它已不在保险库中。
 
@@ -1236,6 +1251,36 @@ tb31ba949 = 图片显示在 Markdown 笔记中；此笔记是纯文本。
 
 # Images go in while the note is edited.
 t6f2c9191 = 图片需在编辑笔记时插入。
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing 从 { $hosts } 下载这些图片，这些服务器会得知你的地址。图片随后加密保存在保险库中，笔记中的链接会被替换。
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = 部分图片通过未加密的 http 传输：可能在途中被篡改。
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] 从网络下载笔记中的 { $n } 张图片？
+    }
+
+# Export
+te86349d3 = 导出
+
+# Export the note?
+t3fc8daf1 = 导出笔记？
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = 笔记及其图片将以未加密的文件写出：任何能读取该文件夹的人都能读取它们。
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] 已导出，缺少 { $n } 张尚未同步的图片。
+    }
+
+# Not exported: {e}
+t9d93dffa = 未导出：{ $e }
 
 # Insert
 t0f317948 = 插入
@@ -1275,6 +1320,15 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] 下载 { $n } 张图片
+    }
+
+# Export…
+tc8865b2d = 导出…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 敏感：确认是你本人后才显示内容。
@@ -2040,6 +2094,9 @@ t47252d7a = 秘密访问密钥
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea 或你自己服务器上的私有仓库，通过本系统的 git 访问：它按你平时的方式登录（凭据管理器、你的 SSH 密钥和代理）。每次更改都是一次提交。
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git 会保留每个版本：笔记中的图片即使被移除，也会以加密形式留在仓库历史中，因此仓库只会越来越大。
 
 # Repository
 te763c8b5 = 仓库

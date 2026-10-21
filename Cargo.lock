@@ -7517,6 +7517,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "base64 0.22.1",
  "chrono",
  "dirs 7.0.0",
  "futures",
@@ -7524,7 +7525,9 @@ dependencies = [
  "gpui-pre-platform",
  "image",
  "rand 0.10.3",
+ "reqwest",
  "russh",
+ "rustls",
  "serde",
  "serde_json",
  "sha2 0.10.9",

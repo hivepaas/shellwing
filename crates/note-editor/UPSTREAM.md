@@ -172,6 +172,19 @@ selected, beside Paste as another way to put something in, and never into a
 read-only note; and an image pasted from the menu did nothing, since `paste`
 passed it on (`cx.propagate()`) outside an action's dispatch.
 
+### 11. The host's items in an image's menu; an offset for a drop
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, `enum EditorEvent` | Added `ImageItem { item, src }`: one of the host's items in an image's menu was chosen, with the image's `src`. |
+| `src/lib.rs`, `struct EditorState` and `new` | Added the field `image_items`. |
+| `src/lib.rs`, `impl EditorState` | Added `set_image_items(items, cx)`, and `offset_for_position(position)`: the byte offset under a point, as a click would place the caret (`index_for_mouse_position`). |
+| `src/lib.rs`, `on_right_mouse_down` | The image menu opens read-only too when the host has items for it (was: never read-only, change 6). |
+| `src/lib.rs`, `render`, the image menu | The host's items first (`image_src` of the row, a press emits `ImageItem`), a divider, then Delete, which stays out while read-only. |
+
+**Why:** shellwing's *Copy Image* and *Save Image As…*, in Preview too; and
+images dropped on a note go where they were dropped.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.

@@ -1192,6 +1192,9 @@ tdd571ace = Sáng, ấm
 # Your themes
 tb2e83d5c = Chủ đề của bạn
 
+# Image from {host}
+t4b45629c = Ảnh từ { $host }
+
 # Loading the image…
 t457184d7 = Đang tải ảnh…
 
@@ -1216,6 +1219,12 @@ t53d0e31f = { $name } không phải ảnh đọc được.
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } là ảnh quá lớn ({ $width } × { $height }).
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } nằm trong mạng nội bộ: không tải ảnh của nó.
+
+# {name} could not be downloaded: {e}
+t66ad539b = Không tải được { $name }: { $e }
+
 # New note
 t788c7123 = Ghi chú mới
 
@@ -1228,6 +1237,12 @@ t44662d06 = Chưa phân loại
 # Write here; Markdown shows as you type.
 t117b6c23 = Viết ở đây; Markdown hiện ngay khi gõ.
 
+# Copy Image
+tf77eb889 = Sao chép ảnh
+
+# Save Image As…
+t4504c6b5 = Lưu ảnh thành…
+
 # It is not in the vault any more.
 td11af590 = Tệp không còn trong kho.
 
@@ -1236,6 +1251,36 @@ tb31ba949 = Ảnh chỉ hiện trong ghi chú Markdown; ghi chú này là văn b
 
 # Images go in while the note is edited.
 t6f2c9191 = Chỉ chèn được ảnh khi đang sửa ghi chú.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing tải ảnh từ { $hosts }, và các máy chủ này sẽ biết địa chỉ của bạn. Sau đó ảnh được lưu trong kho, có mã hoá, và các liên kết trong ghi chú được thay thế.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Một số ảnh đến qua http thường: chúng có thể bị sửa trên đường đi.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] Tải { $n } ảnh của ghi chú từ web?
+    }
+
+# Export
+te86349d3 = Xuất
+
+# Export the note?
+t3fc8daf1 = Xuất ghi chú?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = Ghi chú và ảnh của nó được ghi thành tệp, không mã hoá: ai đọc được thư mục cũng đọc được chúng.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] Đã xuất, thiếu { $n } ảnh chưa đồng bộ xong.
+    }
+
+# Not exported: {e}
+t9d93dffa = Chưa xuất được: { $e }
 
 # Insert
 t0f317948 = Chèn
@@ -1275,6 +1320,15 @@ tfdda4cf7 = Xem trước
 
 # Sensitive
 tf603feef = Nhạy cảm
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] Tải { $n } ảnh
+    }
+
+# Export…
+tc8865b2d = Xuất…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Nhạy cảm: nội dung chỉ hiện khi xác nhận là bạn.
@@ -2040,6 +2094,9 @@ t47252d7a = Khoá bí mật
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Một repository riêng tư trên GitHub, GitLab, Gitea hoặc máy chủ của bạn, qua git của hệ thống này: nó đăng nhập như với bạn (trình quản lý thông tin đăng nhập, khoá SSH và agent của bạn). Mỗi thay đổi là một commit.
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git giữ mọi phiên bản: ảnh trong ghi chú vẫn nằm trong lịch sử của kho, ở dạng mã hoá, kể cả sau khi đã xoá, nên kho chỉ lớn dần.
 
 # Repository
 te763c8b5 = Repository

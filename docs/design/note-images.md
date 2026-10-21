@@ -2,7 +2,7 @@
 
 A note can show images: a screenshot of an error, a dashboard, a diagram. They
 are kept encrypted in the vault and sync with it, as the note's text does.
-Phase 1 below is built; phase 2 is still to do. Questions still to settle are
+Phases 1 and 2 below are built. Questions still to settle are
 marked **Open**.
 
 ## What the editor brings
@@ -17,7 +17,9 @@ marked **Open**.
 - **The clipboard carries images** on macOS, Windows and Linux
   (`ClipboardEntry::Image` in GPUI 0.3.9).
 
-So phase 1 needed no change to the editor (`crates/note-editor`).
+So phase 1 needed no change to the editor (`crates/note-editor`). Phase 2
+added the host's items in an image's menu and an offset for a drop
+(`UPSTREAM.md`, change 11), and items under Paste (change 10).
 
 ## Where images are kept
 
@@ -34,7 +36,7 @@ Ruled out:
 | --- | --- |
 | Base64 inside the note (`data:` URIs) | A screenshot fills the note's 256 KB at once. The editor would lay out megabytes of text, and every edit of the note would sync the images again. |
 | Image files beside `vault.db` | Not encrypted, and not synced. |
-| `http(s)://` images | Loading one tells its server when the note is opened, and needs the network. They stay links unless the user loads them (**Open**: an opt-in per note, phase 2). |
+| `http(s)://` images, loaded when the note opens | Loading one tells its server who opened the note, and when, every time (a 1×1 pixel is enough to track); a note may be someone else's; it needs the network, and the picture can change after it was written about. They are downloaded only when asked, and kept (see Images on the web). |
 | A normal vault record per image | The sync engine reads and merges every record each round; records are assumed small (under 2 KB, [sync.md](sync.md)). Megabytes re-read every minute would be slow on a folder and costly on S3. |
 
 **Ids.** An attachment's id is made as a record's (`new_id`: time, then 80
@@ -101,9 +103,10 @@ The WebDAV and S3 backend keeps every record it read in memory, to answer the
 next round without a download; images are left out of that cache, and a
 refused create of an image does not download it.
 
-**Git.** History keeps every image ever pushed, even after it is removed.
-**Open:** whether Settings › Sync should say so, or offer leaving images out
-of Git sync.
+**Git.** History keeps every image ever pushed, even after it is removed, so
+the repository only grows. Settings › Sync says so under Git, before it is
+chosen; images are not left out of Git sync, since a note would then show
+them on one device only.
 
 **shellwing cloud.** Attachments count toward the account's storage cap
 ([sync.md](sync.md)), never toward hosts. **Open:** the cap.
@@ -132,10 +135,14 @@ line break is added before or after where text would share it).
 
 1. **Paste** (Ctrl+V, Cmd+V on macOS) with an image on the clipboard (a
    screenshot), or image files copied in a file manager.
-2. **Drop** image files on the note's window. Phase 1 puts them at the caret,
-   not where they were dropped.
-3. **Insert Image…** in the editor's menu: a file dialog, several files at
-   once.
+2. **Drop** image files on the note's window: where they were dropped, at the
+   start of the line under the pointer, or after it when the pointer is in a
+   line (a line of text is never split).
+3. **Insert Image…** in the editor's menu, under Paste (not while
+   read-only): a file dialog, several files at once.
+4. **Markdown with `data:` images** (pasted from elsewhere): each
+   `data:image/…;base64,…` becomes an attachment, and its reference replaces
+   the URI.
 
 Images go into Markdown notes only, while they are edited (not in Preview);
 otherwise the window says why.
@@ -175,16 +182,49 @@ not grow.
 - **Sensitive notes:** images show only once the note's text does.
 - **Locked vault:** a note's window holds no text and forgets its images.
 
+## Images on the web
+
+A line `![alt](https://…)` is never fetched by itself: it shows a label,
+*Image from example.com*, and a click opens it in the browser. The note's
+toolbar offers *Download Images* (with their count) while it has any:
+
+1. It asks first, naming the hosts that will be contacted (they learn the
+   user's address), and saying so when some come over plain `http` (they
+   could be altered on the way; the picture is still checked as any is).
+2. Each is downloaded once, off the UI thread, prepared and kept as an
+   attachment, as a pasted image is; its link becomes `attachment:<id>`
+   (a `{width=N}` after it stays). From then on it syncs encrypted, shows
+   offline, and its server is never asked again.
+
+Downloading is held to the internet: a host whose name resolves to this
+computer, a private or link-local network or carrier-grade NAT (IPv4 and
+IPv6) is refused, said why, and not contacted, so a note cannot make the app
+reach into the user's network (a router's page, a cloud's metadata address).
+The connection goes to the addresses checked (`resolve_to_addrs`), so a name
+that answers otherwise the second time leads nowhere else; a redirect is
+checked the same way, five at most. 20 MB, 10 s to connect and 30 s in all,
+`reqwest` on rustls, as the sync places and the update check have it.
+
+## An image's menu, and export
+
+- Right-click an image: *Copy Image* (the image itself on the clipboard),
+  *Save Image As…* (a file dialog, Downloads first; the note's title as the
+  name), then *Delete image* while edited. In Preview the first two only.
+- *Export…*, beside the note's Delete: asks first, since the files leave the
+  vault unencrypted ([vault.md](vault.md): plain-text export needs
+  confirmation), then writes a folder named after the note, in one the user
+  chooses: `note.md`, its images in `images/<id>.png|jpg`, the references
+  rewritten to them. Images not synced yet are left out, and said so.
+
 ## Phases
 
 1. **Phase 1 (built):** the `attachments` table and backend folder, preparing,
    paste, drop and *Insert Image…*, the providers and cache, limits, removal,
    sync (push before records, pull on reference, putting back), sealing again
    on joining.
-2. **Phase 2:** an image menu (*Copy image*, *Save image as…*), copying an
-   image with a selection, exporting a note with its images as `images/`,
-   `data:` URIs pasted in Markdown turned into attachments, `http(s)` images
-   loaded on request, dropping at the pointer.
+2. **Phase 2 (built):** the image's menu (*Copy Image*, *Save Image As…*),
+   *Export…* with `images/`, `data:` URIs pasted in Markdown turned into
+   attachments, dropping at the pointer, web images downloaded when asked.
 
 ## Tests
 
@@ -202,7 +242,14 @@ not grow.
 - **UI scenarios** (`ui_tests/notes.rs`): a screenshot pasted into a note is
   kept and drawn; the note saved and opened again draws it from the vault;
   *Insert Image…* with a file; a copied script is refused, saying why; a plain
-  text note says images need Markdown.
+  text note says images need Markdown; *Copy Image*; *Save Image As…*; a drop
+  in a line goes after it; a pasted `data:` URI becomes an attachment;
+  *Export…* writes `note.md` and `images/`; a web image is not fetched by
+  itself; one on a private network is refused, the server never asked; one
+  downloaded comes once, its link replaced, its width kept.
+- **Web images** (`note_images.rs`): links found once each, hosts read,
+  private addresses (IPv4, IPv6, mapped) refused, `localhost` refused before
+  any connection.
 
 ## Threats
 
@@ -211,3 +258,4 @@ not grow.
 | The backend is read by someone else | They see how many images there are and their sizes, not what they show. |
 | A crafted image is pasted or synced | Its size is checked before decoding, and decoding runs in `image`, off the UI thread. A blob that does not open under its id and this vault's key is not taken. |
 | A note is deleted by mistake | Its images stay 30 days, and come back with the note (from another device or an undo). |
+| A note links images to track who reads it, or to reach the reader's network | Nothing is fetched unless asked; asking names the hosts; private networks are refused, after a redirect too, and the address checked is the one connected to. |
