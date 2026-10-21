@@ -70,11 +70,25 @@ jobs:
         with:
           key: ui-${{ matrix.name }}
 
+      # Zig fetches libghostty's own dependencies while building it: a network
+      # hiccup there (codeberg.org's DNS, once) should not fail the run. What
+      # it fetched stays in Zig's cache for the builds after this one.
+      - name: Build libghostty (up to three tries)
+        shell: bash
+        run: |
+          for try in 1 2 3; do
+            cargo check -p libghostty-vt-sys && exit 0
+            echo "::warning::building libghostty failed (try $try)"
+            sleep 30
+          done
+          exit 1
+
       - name: Clippy (with the UI tests)
         run: cargo clippy -p shellwing --features ui-tests --all-targets -- -D warnings
 
-      # Release, as CI's tests: debug builds of libghostty parse too slowly for
-      # the flood scenario on CI machines.
+      # The ui-tests profile (Cargo.toml): release speed, as debug builds of
+      # libghostty parse too slowly for the flood scenario on CI machines, with
+      # debug assertions, which the clicking scenarios need.
       - name: UI scenarios
         shell: bash
-        run: cargo test --release -p shellwing --features ui-tests "ui_tests::${{ inputs.filter }}"
+        run: cargo test --profile ui-tests -p shellwing --features ui-tests "ui_tests::${{ inputs.filter }}"
