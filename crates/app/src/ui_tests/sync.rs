@@ -629,3 +629,58 @@ scenario!(
         assert_eq!(ui.hosts_toml(), BROKEN, "hosts.toml was changed");
     }
 );
+
+scenario!(
+    /// A locked vault does not sync: the other device's host waits; once the
+    /// passphrase unlocks the vault, it comes.
+    a_locked_vault_syncs_once_unlocked,
+    |ui| {
+        const PASSPHRASE: &str = "correct horse battery";
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        // A passphrase, out of the keychain, locked (as in vault.rs).
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Vault");
+        ui.click("vault-pass");
+        ui.line(PASSPHRASE);
+        ui.line(PASSPHRASE);
+        ui.wait_for_notice("The passphrase opens the vault too now.");
+        ui.click("vault-leave");
+        ui.wait_for_notice("out of the system keychain");
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette("Lock the vault");
+        ui.wait_for_notice("The vault is locked.");
+        // There: a host.
+        let fields: BTreeMap<String, String> = [
+            ("name", "db"),
+            ("address", "127.0.0.1"),
+            ("port", "2202"),
+            ("user", USER),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+        other
+            .update("0190a1b2c3d4e5f60718293a4b5c6d81", "host", "db", &fields)
+            .expect("host");
+        other.sync(&folder).expect("sync there");
+        // Locked here: nothing comes.
+        ui.settle(std::time::Duration::from_secs(3));
+        ui.reload_config();
+        assert!(!ui.hosts_toml().contains("name = \"db\""), "synced while locked");
+        // The app asks for the passphrase on its own, a locked vault being
+        // seen; typed, the vault is open and the host comes.
+        ui.wait_until("the passphrase asked for", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.line(PASSPHRASE);
+        // Open, it syncs at once ("Synced 1 change…" is said over "The vault
+        // is open.").
+        ui.wait_until("the vault open", |ui| ui.vault().is_some());
+        ui.wait_until("the host here", |ui| {
+            ui.reload_config();
+            ui.host_names().contains(&"db".to_string())
+        });
+    }
+);
