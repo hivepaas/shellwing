@@ -5,12 +5,17 @@
 //! betas and stable (a release supersedes the betas before it). The list is
 //! believed only when its signatures verify against the keys built in.
 //!
-//! Installing what is offered comes later: for now the app says where to get
-//! it, or what updates it when something else installed it.
+//! A copy the app can replace (an AppImage, an `.app`, one its installer put
+//! on Windows) downloads the release's file for its platform, checks it
+//! against the list's SHA-256, and installs it as it quits (`apply`). Any
+//! other copy is told where the release is, or what updates it.
 
+pub mod apply;
+pub mod download;
 pub mod envelope;
 pub mod install;
 pub mod manifest;
+pub mod platform;
 pub mod version;
 
 use std::time::Duration;
@@ -25,9 +30,12 @@ pub use version::{Channel, Version};
 pub const CONTEXT: &str = "shellwing-release-v1";
 
 /// Where the signed list is read: the release branch, which moves to a
-/// release once it is checked.
-pub const LIST_URL: &str =
-    "https://raw.githubusercontent.com/hivepaas/shellwing/release/release.signed.json";
+/// release once it is checked. A build that tries the updater
+/// (scripts/update_try.sh) names its own, as it is built.
+pub const LIST_URL: &str = match option_env!("SHELLWING_UPDATE_LIST") {
+    Some(url) => url,
+    None => "https://raw.githubusercontent.com/hivepaas/shellwing/release/release.signed.json",
+};
 
 /// The list is small; anything bigger is not it.
 const MOST_LIST: usize = 1 << 20;
@@ -73,6 +81,40 @@ pub enum CheckError {
     Signature(#[from] SignatureError),
     #[error(transparent)]
     Manifest(#[from] ManifestError),
+    #[error("the download is not the file the list of releases names: its SHA-256 differs")]
+    Checksum,
+    #[error("{0}")]
+    Io(String),
+    #[error("the release has no file for this platform")]
+    NoFile,
+}
+
+/// A release's file for this platform, as the signed list names it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReleaseFile {
+    pub version: Version,
+    pub file: String,
+    pub sha256: String,
+    pub url: String,
+}
+
+/// The file `version` has for this platform, from a signed list.
+pub fn release_file(envelope: &[u8], version: &Version) -> Result<ReleaseFile, CheckError> {
+    let data = envelope::open(&trusted_keys()?, envelope, CONTEXT)?;
+    let m = Manifest::parse(&data)?;
+    let release = m
+        .releases
+        .get(&version.to_string())
+        .ok_or(CheckError::NoFile)?;
+    let a = platform::current()
+        .and_then(|p| release.archives.get(p))
+        .ok_or(CheckError::NoFile)?;
+    Ok(ReleaseFile {
+        version: version.clone(),
+        url: platform::download_url(version, &a.file),
+        file: a.file.clone(),
+        sha256: a.sha256.clone(),
+    })
 }
 
 /// What a signed list offers the app at `current`: None when it is the

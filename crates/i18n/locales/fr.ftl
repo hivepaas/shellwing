@@ -2000,14 +2000,26 @@ tf6c5f76d = Après ce délai sans touche pressée ni clic, le coffre se verrouil
 # This build has no release keys, so it cannot tell of updates.
 t378182cb = Cette version n’a pas de clés de publication : elle ne peut pas signaler les mises à jour.
 
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } est prêt
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Il s'installe quand vous quittez, ou maintenant avec Redémarrer.
+
+# Restart now
+t54001a7c = Redémarrer maintenant
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
 # Looking for a newer version…
 tf1905fe9 = Recherche d'une version plus récente…
 
 # How to update
 t3603428f = Comment mettre à jour
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } est disponible
+# Download and install
+t1a99173f = Télécharger et installer
 
 # {by} updates it: {command}
 tdf2cab9c = Mise à jour via { $by } : { $command }
@@ -2015,8 +2027,17 @@ tdf2cab9c = Mise à jour via { $by } : { $command }
 # {by} updates it.
 t84b27295 = Mise à jour via { $by }.
 
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Il est téléchargé et vérifié, puis installé quand vous quittez.
+
 # Download it, and install it in place of this one.
 t39312eae = Téléchargez-la, puis installez-la à la place de celle-ci.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } est disponible
+
+# The download failed: {why}
+t5e96c075 = Le téléchargement a échoué : { $why }
 
 # Skip this version
 t2c33d756 = Ignorer cette version
@@ -2048,8 +2069,8 @@ t4f0e0677 = Vérifier maintenant
 # Look for updates once a day
 tcc27ace1 = Rechercher les mises à jour une fois par jour
 
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
-t64b22a53 = La liste des versions est lue sur GitHub, et n'est retenue que si ses signatures sont valides. Rien n'est installé sans vous.
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = La liste des versions est lue sur GitHub, et n'est crue que si ses signatures sont valides. Rien n'est téléchargé ni installé sans vous.
 
 # Open config.toml
 t07a52335 = Ouvrir config.toml
@@ -2929,6 +2950,18 @@ t270e30ba = shellwing { $version } est disponible : mise à jour via { $by } ({ 
 # shellwing {version} is out: {by} updates it.
 t34c8e3f2 = shellwing { $version } est disponible : mise à jour via { $by }.
 
+# No folder to download to.
+t2bfc1370 = Aucun dossier où télécharger.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } est prêt : il s'installe quand vous quittez, ou maintenant avec Redémarrer.
+
+# Downloading… {got} of {total}
+taee668c2 = Téléchargement… { $got } sur { $total }
+
+# Downloading… {got}
+t4873b921 = Téléchargement… { $got }
+
 # Over SSH only
 t14e43465 = Par SSH uniquement
 
@@ -3008,6 +3041,12 @@ td41065cb =
         [one] { $n } connexion est ouverte ; quitter la ferme.
        *[other] { $n } connexions sont ouvertes ; quitter les ferme.
     }
+
+# Restart
+t2f44ed8c = Redémarrer
+
+# Restart to install the update?
+tdab4b0cf = Redémarrer pour installer la mise à jour ?
 
 # Quit shellwing?
 tfa31f588 = Quitter shellwing ?
@@ -3098,6 +3137,9 @@ tc73a9bf6 = Synchroniser les mots de passe avec un serveur…
 
 # Settings…
 t64d0d0b4 = Réglages…
+
+# Restart to install shellwing {version}
+taadea299 = Redémarrer pour installer shellwing { $version }
 
 # shellwing {version} is out…
 tab699ac8 = shellwing { $version } est disponible…

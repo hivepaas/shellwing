@@ -1972,14 +1972,26 @@ tf6c5f76d = 超过这段时间没有按键或点击，保险库会锁定，直�
 # This build has no release keys, so it cannot tell of updates.
 t378182cb = 此版本没有发布密钥，因此无法提示更新。
 
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } 已就绪
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 退出时安装，或点击“重新启动”立即安装。
+
+# Restart now
+t54001a7c = 立即重新启动
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
 # Looking for a newer version…
 tf1905fe9 = 正在检查新版本…
 
 # How to update
 t3603428f = 如何更新
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } 已发布
+# Download and install
+t1a99173f = 下载并安装
 
 # {by} updates it: {command}
 tdf2cab9c = 通过 { $by } 更新：{ $command }
@@ -1987,8 +1999,17 @@ tdf2cab9c = 通过 { $by } 更新：{ $command }
 # {by} updates it.
 t84b27295 = 通过 { $by } 更新。
 
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = 下载并校验后，在退出时安装。
+
 # Download it, and install it in place of this one.
 t39312eae = 下载后安装，替换当前版本。
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 已发布
+
+# The download failed: {why}
+t5e96c075 = 下载失败：{ $why }
 
 # Skip this version
 t2c33d756 = 跳过此版本
@@ -2020,8 +2041,8 @@ t4f0e0677 = 立即检查
 # Look for updates once a day
 tcc27ace1 = 每天检查一次更新
 
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
-t64b22a53 = 从 GitHub 读取版本列表，仅在签名验证通过时才予以采信。未经你的同意，不会安装任何内容。
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = 从 GitHub 读取版本列表，仅在其签名验证通过时才采信。未经你的同意，不会下载或安装任何内容。
 
 # Open config.toml
 t07a52335 = 打开 config.toml
@@ -2851,6 +2872,18 @@ t270e30ba = shellwing { $version } 已发布：通过 { $by } 更新（{ $comman
 # shellwing {version} is out: {by} updates it.
 t34c8e3f2 = shellwing { $version } 已发布：通过 { $by } 更新。
 
+# No folder to download to.
+t2bfc1370 = 没有可用于下载的文件夹。
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } 已就绪：退出时安装，或点击“重新启动”立即安装。
+
+# Downloading… {got} of {total}
+taee668c2 = 正在下载… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = 正在下载… { $got }
+
 # Over SSH only
 t14e43465 = 仅限 SSH
 
@@ -2913,6 +2946,12 @@ tf3732b18 = 有一个连接处于打开状态；退出将关闭它。
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } 个连接处于打开状态；退出将关闭这些连接。
+
+# Restart
+t2f44ed8c = 重新启动
+
+# Restart to install the update?
+tdab4b0cf = 重新启动以安装更新？
 
 # Quit shellwing?
 tfa31f588 = 退出 shellwing？
@@ -3003,6 +3042,9 @@ tc73a9bf6 = 与服务器同步密码…
 
 # Settings…
 t64d0d0b4 = 设置…
+
+# Restart to install shellwing {version}
+taadea299 = 重新启动以安装 shellwing { $version }
 
 # shellwing {version} is out…
 tab699ac8 = shellwing { $version } 已发布…

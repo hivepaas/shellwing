@@ -1972,14 +1972,26 @@ tf6c5f76d = キー入力やクリックがないままこの時間が経過す�
 # This build has no release keys, so it cannot tell of updates.
 t378182cb = このビルドにはリリース鍵がないため、アップデートを知らせることができません。
 
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } の準備ができました
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 終了時にインストールされます。今すぐなら「再起動」を押してください。
+
+# Restart now
+t54001a7c = 今すぐ再起動
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
 # Looking for a newer version…
 tf1905fe9 = 新しいバージョンを確認しています…
 
 # How to update
 t3603428f = アップデート方法
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } が公開されました
+# Download and install
+t1a99173f = ダウンロードしてインストール
 
 # {by} updates it: {command}
 tdf2cab9c = { $by } でアップデートします：{ $command }
@@ -1987,8 +1999,17 @@ tdf2cab9c = { $by } でアップデートします：{ $command }
 # {by} updates it.
 t84b27295 = { $by } でアップデートします。
 
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = ダウンロードして検証し、終了時にインストールします。
+
 # Download it, and install it in place of this one.
 t39312eae = ダウンロードして、このバージョンの代わりにインストールしてください。
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } が公開されました
+
+# The download failed: {why}
+t5e96c075 = ダウンロードに失敗しました: { $why }
 
 # Skip this version
 t2c33d756 = このバージョンをスキップ
@@ -2020,8 +2041,8 @@ t4f0e0677 = 今すぐ確認
 # Look for updates once a day
 tcc27ace1 = 1 日 1 回アップデートを確認
 
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
-t64b22a53 = GitHub からリリースの一覧を読み込み、署名を検証できた場合にのみ信頼します。勝手に何かがインストールされることはありません。
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = リリース一覧を GitHub から読み込み、署名が検証できた場合のみ信頼します。あなたの操作なしに何もダウンロード・インストールされません。
 
 # Open config.toml
 t07a52335 = config.toml を開く
@@ -2851,6 +2872,18 @@ t270e30ba = shellwing { $version } が公開されました：{ $by } でアッ�
 # shellwing {version} is out: {by} updates it.
 t34c8e3f2 = shellwing { $version } が公開されました：{ $by } でアップデートします。
 
+# No folder to download to.
+t2bfc1370 = ダウンロード先のフォルダーがありません。
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } の準備ができました: 終了時にインストールされます。今すぐなら「再起動」を押してください。
+
+# Downloading… {got} of {total}
+taee668c2 = ダウンロード中… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = ダウンロード中… { $got }
+
 # Over SSH only
 t14e43465 = SSH のみ
 
@@ -2913,6 +2946,12 @@ tf3732b18 = 接続が開いています。終了すると切断されます。
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } 件の接続が開いています。終了すると切断されます。
+
+# Restart
+t2f44ed8c = 再起動
+
+# Restart to install the update?
+tdab4b0cf = 再起動してアップデートをインストールしますか？
 
 # Quit shellwing?
 tfa31f588 = shellwing を終了しますか？
@@ -3003,6 +3042,9 @@ tc73a9bf6 = サーバーとパスワードを同期…
 
 # Settings…
 t64d0d0b4 = 設定…
+
+# Restart to install shellwing {version}
+taadea299 = 再起動して shellwing { $version } をインストール
 
 # shellwing {version} is out…
 tab699ac8 = shellwing { $version } が公開されました…

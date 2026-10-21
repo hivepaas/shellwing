@@ -2020,14 +2020,26 @@ tf6c5f76d = Если столько времени не нажимать кла�
 # This build has no release keys, so it cannot tell of updates.
 t378182cb = В этой сборке нет ключей выпуска, поэтому она не может сообщать об обновлениях.
 
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } готов
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Он установится при выходе или сейчас — кнопкой «Перезапустить».
+
+# Restart now
+t54001a7c = Перезапустить сейчас
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
 # Looking for a newer version…
 tf1905fe9 = Поиск новой версии…
 
 # How to update
 t3603428f = Как обновить
 
-# shellwing {version} is out
-t5b33836c = Вышел shellwing { $version }
+# Download and install
+t1a99173f = Скачать и установить
 
 # {by} updates it: {command}
 tdf2cab9c = Обновляется через { $by }: { $command }
@@ -2035,8 +2047,17 @@ tdf2cab9c = Обновляется через { $by }: { $command }
 # {by} updates it.
 t84b27295 = Обновляется через { $by }.
 
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Он скачивается и проверяется, а устанавливается при выходе.
+
 # Download it, and install it in place of this one.
 t39312eae = Скачайте её и установите вместо текущей.
+
+# shellwing {version} is out
+t5b33836c = Вышел shellwing { $version }
+
+# The download failed: {why}
+t5e96c075 = Не удалось скачать: { $why }
 
 # Skip this version
 t2c33d756 = Пропустить эту версию
@@ -2068,8 +2089,8 @@ t4f0e0677 = Проверить сейчас
 # Look for updates once a day
 tcc27ace1 = Проверять обновления раз в день
 
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
-t64b22a53 = Список версий читается с GitHub и принимается, только если его подписи верны. Без вас ничего не устанавливается.
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = Список выпусков читается с GitHub и принимается, только если его подписи верны. Без вас ничего не скачивается и не устанавливается.
 
 # Open config.toml
 t07a52335 = Открыть config.toml
@@ -2989,6 +3010,18 @@ t270e30ba = Вышел shellwing { $version }: обновляется через
 # shellwing {version} is out: {by} updates it.
 t34c8e3f2 = Вышел shellwing { $version }: обновляется через { $by }.
 
+# No folder to download to.
+t2bfc1370 = Нет папки для загрузки.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } готов: он установится при выходе или сейчас — кнопкой «Перезапустить».
+
+# Downloading… {got} of {total}
+taee668c2 = Загрузка… { $got } из { $total }
+
+# Downloading… {got}
+t4873b921 = Загрузка… { $got }
+
 # Over SSH only
 t14e43465 = Только по SSH
 
@@ -3079,6 +3112,12 @@ td41065cb =
        *[other] Открыто { $n } соединения; выход закроет их.
     }
 
+# Restart
+t2f44ed8c = Перезапустить
+
+# Restart to install the update?
+tdab4b0cf = Перезапустить, чтобы установить обновление?
+
 # Quit shellwing?
 tfa31f588 = Выйти из shellwing?
 
@@ -3168,6 +3207,9 @@ tc73a9bf6 = Синхронизировать пароли через серве�
 
 # Settings…
 t64d0d0b4 = Настройки…
+
+# Restart to install shellwing {version}
+taadea299 = Перезапустить, чтобы установить shellwing { $version }
 
 # shellwing {version} is out…
 tab699ac8 = Вышел shellwing { $version }…

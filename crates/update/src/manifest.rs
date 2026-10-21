@@ -55,6 +55,12 @@ pub enum ManifestError {
         platform: String,
         sha256: String,
     },
+    #[error("the list of releases: {release} {platform}: {file} is not that platform's file")]
+    File {
+        release: String,
+        platform: String,
+        file: String,
+    },
     #[error("the list of releases: {0} is not a channel")]
     Channel(String),
     #[error("the list of releases: channel {channel} is {release}, which it does not list")]
@@ -75,6 +81,14 @@ impl Manifest {
                 return Err(ManifestError::Version(name.clone()));
             }
             for (platform, a) in &release.archives {
+                // The file the release has for the platform, by its name.
+                if crate::platform::archive_file(&v, platform).as_deref() != Some(a.file.as_str()) {
+                    return Err(ManifestError::File {
+                        release: name.clone(),
+                        platform: platform.clone(),
+                        file: a.file.clone(),
+                    });
+                }
                 let hex = a.sha256.len() == 64
                     && a.sha256
                         .bytes()
@@ -180,9 +194,15 @@ mod tests {
         );
         assert!(matches!(
             bad(
-                r#"{"releases": {"v0.2.0": {"archives": {"linux_x86_64": {"file": "x", "sha256": "no"}}}}}"#
+                r#"{"releases": {"v0.2.0": {"archives": {"linux_x86_64": {"file": "shellwing_0.2.0_linux_x86_64.AppImage", "sha256": "no"}}}}}"#
             ),
             ManifestError::Sha256 { .. }
+        ));
+        assert!(matches!(
+            bad(
+                r#"{"releases": {"v0.2.0": {"archives": {"linux_x86_64": {"file": "other.AppImage", "sha256": "no"}}}}}"#
+            ),
+            ManifestError::File { .. }
         ));
     }
 }

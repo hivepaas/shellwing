@@ -17,6 +17,12 @@ thiserror.workspace = true
 # Reading the list: reqwest on rustls with ring, as crates/remote has them.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+# A macOS release is Shellwing.app, tarred and gzipped.
+flate2 = "1"
+tar = { version = "0.4", default-features = false }
+
+[dev-dependencies]
+tokio.workspace = true
 
 [lints]
 workspace = true

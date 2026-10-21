@@ -1,10 +1,16 @@
-//! Builds in every release key there is: keys/<id>.pub.pem, by id.
+//! Builds in every release key there is: keys/<id>.pub.pem, by id; or, for
+//! a build that tries the updater on a list of its own
+//! (scripts/update_try.sh), the ones in `$SHELLWING_RELEASE_KEYS`.
 
 use std::fmt::Write as _;
 use std::path::Path;
 
 fn main() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("keys");
+    println!("cargo:rerun-if-env-changed=SHELLWING_RELEASE_KEYS");
+    let dir = match std::env::var_os("SHELLWING_RELEASE_KEYS").filter(|d| !d.is_empty()) {
+        Some(d) => d.into(),
+        None => Path::new(env!("CARGO_MANIFEST_DIR")).join("keys"),
+    };
     println!("cargo:rerun-if-changed={}", dir.display());
     let mut keys: Vec<(String, String)> = std::fs::read_dir(&dir)
         .into_iter()
