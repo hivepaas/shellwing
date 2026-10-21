@@ -244,6 +244,8 @@ fn main() -> anyhow::Result<()> {
     let (live, problems) = look::Live::open(Store::default_dir().map(Store::new));
     // The app's language, before anything is said.
     shellwing_i18n::set_language(live.settings().general.language.as_deref());
+    // A note's text kept from another device's edit is titled in it.
+    shellwing_vault::title_copies(syncing::copy_title);
     // One network runtime for every tab.
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

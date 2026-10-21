@@ -21,8 +21,8 @@ note's text field holds:
 
 - `seen`: for each device, the stamp of the newest edit of this text by that
   device that the value builds on, its own included;
-- `by`: the name of the device that wrote it (`device_name()`: the computer's
-  host name), for the copy's title.
+- `by`: the name of the device that wrote it (the computer's host name), for
+  the copy's title.
 
 ```json
 "text": {
@@ -79,9 +79,9 @@ version of the note:
 - **Images:** its text refers to the same attachments, so they are kept as long
   as the copy is ([note-images.md](note-images.md), Removal).
 
-It then syncs as any note. `SyncReport` counts the copies made in a round, and
-the sync panel says so: *1 note was changed on two devices; the other version
-was kept as "Disk usage (from laptop)".*
+It then syncs as any note. `SyncReport::copies` lists the titles of the copies
+made in a round, and the window says so: *A note was changed on two devices:
+the other version is kept as Disk usage (from laptop).*
 
 ## Where it applies
 
@@ -119,5 +119,5 @@ Snippets' bodies could be handled the same way later.
   - a note held open merges when let go;
   - the images of the losing text are kept.
 - **UI scenario** (`ui_tests/notes.rs`): a note edited in its window while
-  another vault on the same folder changes it; after the window closes and
-  syncs, the list shows the copy and the sync panel says so.
+  another vault on the same folder changes it; when the window closes it
+  syncs, the window says so, and both devices hold the note and the copy.

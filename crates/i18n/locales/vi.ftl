@@ -2674,6 +2674,12 @@ tb9fa7744 = { $n } ngày trước
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = mật khẩu của nó chưa được lưu trên thiết bị này: hãy kết nối lại trong Cài đặt › Đồng bộ
 
+# {title} (from {device})
+t63a0d436 = { $title } (từ { $device })
+
+# {title} (from another device)
+t0e55da75 = { $title } (từ thiết bị khác)
+
 # hosts not synced: {e}
 te7d5212e = chưa đồng bộ được máy chủ: { $e }
 
@@ -3261,6 +3267,12 @@ td55512c8 = Máy chủ này dùng chủ đề `{ $t }` từ hosts.toml; hãy đ�
 
 # Synced {n} change from other devices. | Synced {n} changes from other devices.
 tffe9e6a0 = Đã đồng bộ { $n } thay đổi từ các thiết bị khác.
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = Một ghi chú đã được sửa trên hai thiết bị: bản còn lại được giữ thành { $title }.
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 = { $n } ghi chú đã được sửa trên hai thiết bị: các bản còn lại được giữ ngay bên cạnh.
 
 # Sync: {e}
 t8cb8c8c3 = Đồng bộ: { $e }

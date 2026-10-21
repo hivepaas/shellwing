@@ -176,18 +176,20 @@ pub struct SyncWorker {
 
 /// This device's name, shown to the other when pairing.
 pub fn device_name() -> String {
-    let from_env = std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME"));
-    let name = from_env.ok().or_else(|| {
-        std::fs::read_to_string("/etc/hostname").ok().or_else(|| {
-            std::process::Command::new("hostname")
-                .output()
-                .ok()
-                .and_then(|o| String::from_utf8(o.stdout).ok())
-        })
-    });
-    match name.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()) {
-        Some(n) => n,
-        None => "another device".into(),
+    shellwing_vault::host_name().unwrap_or_else(|| "another device".into())
+}
+
+/// The title of a note made to keep a text that another device's edit
+/// replaced without seeing it; `device` wrote that text
+/// (docs/design/note-conflicts.md).
+pub fn copy_title(title: &str, device: Option<&str>) -> String {
+    match device {
+        Some(d) => tr!(
+            "{title} (from {device})",
+            title = title.to_string(),
+            device = d.to_string()
+        ),
+        None => tr!("{title} (from another device)", title = title.to_string()),
     }
 }
 

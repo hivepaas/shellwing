@@ -35,6 +35,11 @@ impl Clock {
         }
     }
 
+    /// The device its stamps end with.
+    pub fn device(&self) -> &str {
+        &self.device
+    }
+
     /// A stamp later than any this clock made or saw.
     pub fn tick(&self) -> String {
         let mut last = self.last.lock().unwrap_or_else(|e| e.into_inner());

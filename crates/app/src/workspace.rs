@@ -423,6 +423,12 @@ impl Workspace {
         self.tabs.len()
     }
 
+    /// Syncs at once, as *Sync now* does, without saying so.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn sync_now(&self) {
+        self.sync.now();
+    }
+
     /// The vault, for the UI tests to wait on and look into.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn vault_slot(&self) -> VaultSlot {
@@ -1874,6 +1880,31 @@ impl Workspace {
                         THEME_NOTICE,
                         cx,
                     );
+                }
+                // Texts kept from edits made on two devices
+                // (docs/design/note-conflicts.md): said last, and longer.
+                match r.copies.as_slice() {
+                    [] => {}
+                    [title] => self.say(
+                        tr!(
+                            "A note was changed on two devices: the other version is kept as {title}.",
+                            title = title.clone()
+                        ),
+                        KEPT_NOTICE,
+                        cx,
+                    ),
+                    copies => {
+                        let n = copies.len();
+                        self.say(
+                            tr_n!(
+                                n,
+                                "{n} note was changed on two devices: the other version is kept beside it.",
+                                "{n} notes were changed on two devices: the other versions are kept beside them."
+                            ),
+                            KEPT_NOTICE,
+                            cx,
+                        );
+                    }
                 }
             }
             SyncEvent::Failed(e) => {
