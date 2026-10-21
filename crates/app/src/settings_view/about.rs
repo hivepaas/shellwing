@@ -13,6 +13,7 @@ use crate::look::ui;
 use crate::palette::Action;
 use crate::workspace::{UpdateStage, Workspace};
 
+const SITE: &str = "https://shellwing.app";
 const REPO: &str = "https://github.com/hivepaas/shellwing";
 const HIVEPAAS: &str = "https://hivepaas.com";
 const HIVEPAAS_REPO: &str = "https://github.com/hivepaas/hivepaas";
@@ -411,37 +412,18 @@ fn primary_link(
 /// Where the code is, under which license, and the ways to take part.
 fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
     let c = colors();
-    let repo_row = div()
-        .flex()
-        .flex_wrap()
-        .items_center()
-        .gap(px(10.))
-        .py(px(6.))
-        .pl(px(12.))
-        .pr(px(6.))
-        .rounded(px(8.))
-        .border_1()
-        .border_color(rgb(c.field_edge))
-        .bg(rgb(c.field))
-        .child(
-            div()
-                .flex_1()
-                .min_w(px(200.))
-                .text_size(ui(12.5))
-                .text_color(rgb(c.text))
-                .child("github.com/hivepaas/shellwing"),
-        )
-        .child(primary_link(
-            "about-github",
-            &tr!("Open on GitHub"),
-            REPO,
-            (c.accent, c.accent_hover, c.on_accent),
-            cx,
-        ));
-    let links = div()
+    let actions = div()
         .flex()
         .flex_wrap()
         .gap(px(8.))
+        .child(primary_link(
+            "about-site",
+            &tr!("Visit shellwing.app"),
+            SITE,
+            (c.accent, c.accent_hover, c.on_accent),
+            cx,
+        ))
+        .child(link_button("about-github", "GitHub", REPO.to_string(), cx))
         .child(link_button(
             "about-issue",
             &tr!("Report a problem"),
@@ -453,18 +435,6 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             &tr!("Release notes"),
             repo("releases"),
             cx,
-        ))
-        .child(link_button(
-            "about-contributing",
-            &tr!("Contributing"),
-            repo("blob/main/CONTRIBUTING.md"),
-            cx,
-        ))
-        .child(link_button(
-            "about-license",
-            &tr!("License"),
-            repo("blob/main/LICENSE"),
-            cx,
         ));
     section(
         &tr!("Open source"),
@@ -472,8 +442,7 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             .child(body_text(tr!(
                 "shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix."
             )))
-            .child(repo_row)
-            .child(links),
+            .child(actions),
     )
 }
 

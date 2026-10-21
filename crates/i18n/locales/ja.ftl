@@ -1591,20 +1591,14 @@ tcc27ace1 = 1 日 1 回アップデートを確認
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = リリース一覧を GitHub から読み込み、署名が検証できた場合のみ信頼します。あなたの操作なしに何もダウンロード・インストールされません。
 
-# Open on GitHub
-t24804c99 = GitHub で開く
+# Visit shellwing.app
+t1d2ed540 = shellwing.app を見る
 
 # Report a problem
 t7b1728e7 = 問題を報告
 
 # Release notes
 tc52ab62f = リリースノート
-
-# Contributing
-ta4fe74dd = 貢献する
-
-# License
-t38e70ee4 = ライセンス
 
 # Open source
 ta04619ce = オープンソース

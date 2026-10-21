@@ -1591,20 +1591,14 @@ tcc27ace1 = Kiểm tra cập nhật mỗi ngày một lần
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = App đọc danh sách bản phát hành từ GitHub, và chỉ tin khi chữ ký của nó hợp lệ. Không có gì được tải xuống hay cài đặt nếu bạn không đồng ý.
 
-# Open on GitHub
-t24804c99 = Mở trên GitHub
+# Visit shellwing.app
+t1d2ed540 = Xem shellwing.app
 
 # Report a problem
 t7b1728e7 = Báo lỗi
 
 # Release notes
 tc52ab62f = Ghi chú phát hành
-
-# Contributing
-ta4fe74dd = Đóng góp
-
-# License
-t38e70ee4 = Giấy phép
 
 # Open source
 ta04619ce = Mã nguồn mở

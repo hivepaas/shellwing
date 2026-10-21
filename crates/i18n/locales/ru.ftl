@@ -1642,20 +1642,14 @@ tcc27ace1 = Проверять обновления раз в день
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = Список выпусков читается с GitHub и принимается, только если его подписи верны. Без вас ничего не скачивается и не устанавливается.
 
-# Open on GitHub
-t24804c99 = Открыть на GitHub
+# Visit shellwing.app
+t1d2ed540 = Перейти на shellwing.app
 
 # Report a problem
 t7b1728e7 = Сообщить о проблеме
 
 # Release notes
 tc52ab62f = Примечания к выпуску
-
-# Contributing
-ta4fe74dd = Участие в разработке
-
-# License
-t38e70ee4 = Лицензия
 
 # Open source
 ta04619ce = Открытый исходный код

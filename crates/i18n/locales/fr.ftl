@@ -1618,20 +1618,14 @@ tcc27ace1 = Rechercher les mises à jour une fois par jour
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = La liste des versions est lue sur GitHub, et n'est crue que si ses signatures sont valides. Rien n'est téléchargé ni installé sans vous.
 
-# Open on GitHub
-t24804c99 = Ouvrir sur GitHub
+# Visit shellwing.app
+t1d2ed540 = Visiter shellwing.app
 
 # Report a problem
 t7b1728e7 = Signaler un problème
 
 # Release notes
 tc52ab62f = Notes de version
-
-# Contributing
-ta4fe74dd = Contribuer
-
-# License
-t38e70ee4 = Licence
 
 # Open source
 ta04619ce = Open source
