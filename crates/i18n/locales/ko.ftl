@@ -2446,11 +2446,11 @@ t81dee99e = shellwing cloud가 대신 보관합니다. 각 기기에서 로그�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud가 곧 출시됩니다. 출시와 함께 로그인할 수 있습니다.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = 호스트 { $n }개 · $2.99/월
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = 호스트 { $n }개 · $3.99/월
 
-# unlimited · $5.99/mo
-td7d2332f = 무제한 · $5.99/월
+# unlimited · $7.99/mo
+t6cc4bcad = 무제한 · $7.99/월
 
 # just now
 ta715ef0f = 방금

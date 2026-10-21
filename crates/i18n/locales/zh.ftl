@@ -2446,11 +2446,11 @@ t81dee99e = shellwing cloud 替你保管：在每台设备上登录即可。仍�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud 即将推出：届时将开放登录。
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } 台主机 · $2.99/月
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } 台主机 · $3.99/月
 
-# unlimited · $5.99/mo
-td7d2332f = 不限数量 · $5.99/月
+# unlimited · $7.99/mo
+t6cc4bcad = 不限数量 · $7.99/月
 
 # just now
 ta715ef0f = 刚刚
