@@ -291,6 +291,10 @@ struct Output {
 
 /// Runs `c`, stopped after `limit`.
 fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
+    // A group of its own, so that stopping it stops what it started too
+    // (ssh, a credential helper), which would otherwise live on.
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(c, 0);
     let mut child = c.spawn()?;
     let mut out = child.stdout.take();
     let mut err = child.stderr.take();
@@ -315,6 +319,13 @@ fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
             break status;
         }
         if start.elapsed() > limit {
+            #[cfg(unix)]
+            let _ = Command::new("kill")
+                .args(["-KILL", "--", &format!("-{}", child.id())])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
             let _ = child.kill();
             let _ = child.wait();
             return Err(io::Error::new(
@@ -576,14 +587,26 @@ impl Backend for GitRepo {
             return Ok(());
         }
         let theirs = format!("refs/remotes/origin/{}", self.branch);
-        let fetched = self.git_said(&[
-            "fetch",
-            "-q",
-            "--depth",
-            "1",
-            "origin",
-            &format!("+refs/heads/{}:{theirs}", self.branch),
-        ])?;
+        let ours = format!("refs/heads/{}", self.branch);
+        // Asked first rather than fetched and failed: git fetching a branch
+        // that is not there dies waiting for its ssh, which outside a
+        // terminal does not always end, until the time limit.
+        let there = !self
+            .git(&["ls-remote", "--heads", "origin", &ours])?
+            .trim()
+            .is_empty();
+        let fetched = if there {
+            self.git_said(&[
+                "fetch",
+                "-q",
+                "--depth",
+                "1",
+                "origin",
+                &format!("+{ours}:{theirs}"),
+            ])?
+        } else {
+            Err(format!("couldn't find remote ref {ours}"))
+        };
         match fetched {
             Ok(_) => {
                 self.git(&["reset", "-q", "--hard", &theirs])?;

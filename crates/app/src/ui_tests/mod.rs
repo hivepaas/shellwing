@@ -42,9 +42,11 @@ mod keys;
 mod local;
 mod mouse;
 mod notes;
+mod overlays;
 mod security;
 mod session_life;
 mod snippets;
+mod sync;
 mod tabs;
 mod terminal;
 mod updates;
@@ -456,9 +458,12 @@ impl Ui {
         self.draw();
     }
 
-    /// The notice showing, the window's or the active pane's.
+    /// The notice showing: Settings', the window's or the active pane's.
     pub fn notice(&mut self) -> Option<String> {
         self.cx.run_until_parked();
+        if let Some(s) = self.ws(|ws, _, _| ws.settings_view()) {
+            return self.cx.read(|cx| s.read(cx).notice_text());
+        }
         let window = self.ws(|ws, _, _| ws.notice_text());
         if window.is_some() || self.tabs() == 0 {
             return window;
@@ -646,6 +651,13 @@ impl Ui {
     /// The Settings page showing, if Settings is open.
     pub fn settings_page(&mut self) -> Option<crate::settings_view::Page> {
         self.ws(|ws, _, cx| ws.settings_page(cx))
+    }
+
+    /// What Settings' Sync page says beside Connect, if Settings is open.
+    pub fn sync_problem(&mut self) -> Option<String> {
+        self.cx.run_until_parked();
+        let s = self.ws(|ws, _, _| ws.settings_view())?;
+        self.cx.read(|cx| s.read(cx).sync_problem())
     }
 
     /// The sidebar's host list as shown: each section's title and its hosts.
