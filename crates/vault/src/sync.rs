@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use zeroize::Zeroizing;
 
+use crate::attachments::ATTACHMENTS;
 use crate::recovery::RecoveryKey;
 use crate::{Error, Field, KEY_LEN, KEY_VERSION, Record, Result, SPACE, Vault, cipher, clear_kind};
 
@@ -258,6 +259,12 @@ pub struct SyncReport {
     pub pulled: usize,
     /// Records written to the store.
     pub pushed: usize,
+    /// Images sent to the store.
+    pub images_pushed: usize,
+    /// Images fetched from it.
+    pub images_pulled: usize,
+    /// Images a note shows that are not in the store yet.
+    pub images_missing: usize,
 }
 
 /// Whether a store already holds a vault, and whose.
@@ -438,6 +445,7 @@ impl Vault {
                 rusqlite::params![id, resealed],
             )?;
         }
+        self.reseal_attachments(&tx, &new_key)?;
         tx.execute(
             "UPDATE keys SET wrapped = ?1 WHERE id = ?2 AND ver = ?3 AND wrapped_by = 'account'",
             rusqlite::params![
@@ -506,10 +514,47 @@ impl Vault {
             kinds.insert(id.clone(), kind);
             local.insert(id, v);
         }
-        let ids: BTreeSet<String> = remote.keys().chain(local.keys()).cloned().collect();
         let mut report = SyncReport::default();
+        // Images first: those the notes here refer to that the store lacks,
+        // so no device finds a note before its images
+        // (docs/design/note-images.md). This also puts back one that went
+        // missing.
+        let listed: BTreeMap<String, String> = b
+            .list(ATTACHMENTS)?
+            .into_iter()
+            .filter_map(|name| file_id(&name).map(|id| (id.to_string(), name.clone())))
+            .collect();
+        let refs_here: BTreeSet<String> = local
+            .values()
+            .filter_map(|v| match v {
+                Version::Live(r) => Some(r.attachment_refs()),
+                Version::Gone(_) => None,
+            })
+            .flatten()
+            .collect();
+        let stored: BTreeSet<String> = self
+            .stored_attachments()?
+            .into_iter()
+            .map(|a| a.id)
+            .collect();
+        for id in refs_here.intersection(&stored) {
+            if listed.contains_key(id) {
+                continue;
+            }
+            if let Some(data) = self.sealed_attachment(id)? {
+                // Refused: another device put it there since the listing.
+                b.replace(&format!("{ATTACHMENTS}/{id}.sw"), &data)?;
+                report.images_pushed += 1;
+            }
+        }
+        // The images the notes refer to once merged, to fetch the missing.
+        let mut used: BTreeSet<String> = BTreeSet::new();
+        let ids: BTreeSet<String> = remote.keys().chain(local.keys()).cloned().collect();
         for id in ids {
             if held.contains(&id) {
+                if let Some(Version::Live(r)) = local.get(&id) {
+                    used.extend(r.attachment_refs());
+                }
                 continue;
             }
             let here = local.remove(&id);
@@ -522,6 +567,9 @@ impl Vault {
                 });
             }
             let Some(merged) = merged else { continue };
+            if let Version::Live(r) = &merged {
+                used.extend(r.attachment_refs());
+            }
             let kind = match &merged {
                 Version::Live(r) => clear_kind(&r.kind).to_string(),
                 Version::Gone(_) => kinds.get(&id).cloned().unwrap_or_else(|| "other".into()),
@@ -556,6 +604,29 @@ impl Vault {
                     }
                 }
                 report.pushed += 1;
+            }
+        }
+        // Images the merged notes show that are not here yet, from the
+        // store, checked to be what their ids say.
+        for id in used.difference(&stored) {
+            let data = match listed.get(id) {
+                Some(name) => b.read(&format!("{ATTACHMENTS}/{name}"))?,
+                None => None,
+            };
+            match data.and_then(|d| self.check_attachment(id, &d).map(|n| (d, n))) {
+                Some((data, bytes)) => {
+                    self.store_attachment(id, &data, bytes)?;
+                    report.images_pulled += 1;
+                }
+                // Not synced yet (another device still sending it), or
+                // damaged: the note shows a placeholder; tried again next time.
+                None => report.images_missing += 1,
+            }
+        }
+        // Those no note has shown for long go, here and there.
+        for id in self.tend_attachments(&used, crate::now_ms())? {
+            if let Some(name) = listed.get(&id) {
+                b.remove(&format!("{ATTACHMENTS}/{name}"))?;
             }
         }
         Ok(report)
@@ -909,5 +980,182 @@ mod tests {
         b.sync(&folder).expect("sync b");
         assert_eq!(pw(&b).as_deref(), Some("from-b"));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Records the names written, in order.
+    struct Recording {
+        inner: Folder,
+        written: std::sync::Mutex<Vec<String>>,
+    }
+
+    impl Backend for Recording {
+        fn list(&self, dir: &str) -> io::Result<Vec<String>> {
+            self.inner.list(dir)
+        }
+        fn read(&self, name: &str) -> io::Result<Option<Vec<u8>>> {
+            self.inner.read(name)
+        }
+        fn write(&self, name: &str, data: &[u8]) -> io::Result<()> {
+            self.written.lock().expect("lock").push(name.to_string());
+            self.inner.write(name, data)
+        }
+        fn remove(&self, name: &str) -> io::Result<()> {
+            self.inner.remove(name)
+        }
+        fn replace(&self, name: &str, data: &[u8]) -> io::Result<bool> {
+            self.written.lock().expect("lock").push(name.to_string());
+            self.inner.replace(name, data)
+        }
+    }
+
+    /// A small PNG: its signature, then bytes enough to stand for one.
+    fn png(n: u8) -> Vec<u8> {
+        let mut b = b"\x89PNG\r\n\x1a\n".to_vec();
+        b.extend(std::iter::repeat_n(n, 200));
+        b
+    }
+
+    /// A Markdown note showing `images`, saved in `v`: its id.
+    fn note_showing(v: &Vault, images: &[&str]) -> String {
+        let text: Vec<String> = images.iter().map(|id| crate::attachment_line(id)).collect();
+        let note = crate::Note {
+            id: String::new(),
+            title: "Disk usage".into(),
+            category: String::new(),
+            format: crate::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        v.save_note(&note, Some(&text.join("\n"))).expect("note")
+    }
+
+    /// Two devices of one vault, syncing through a folder in `dir`.
+    fn two_devices(dir: &Path) -> (Folder, Vault, Vault) {
+        let folder = Folder::new(&dir.join("shared"));
+        let a = Vault::open(&dir.join("a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &MemoryKeys::default()).expect("b");
+        let rk = a.start_sync(&folder).expect("start").to_string();
+        b.join(&folder, &rk).expect("join");
+        (folder, a, b)
+    }
+
+    #[test]
+    fn an_image_goes_with_its_note_and_before_it() {
+        let dir = temp("image");
+        let (folder, a, b) = two_devices(&dir);
+        let id = a.add_attachment(&png(1)).expect("image");
+        let note = note_showing(&a, &[&id]);
+        let recording = Recording {
+            inner: Folder::new(&dir.join("shared")),
+            written: Default::default(),
+        };
+        let report = a.sync(&recording).expect("sync a");
+        assert_eq!(report.images_pushed, 1);
+        let written = recording.written.lock().expect("lock").clone();
+        let image_at = written
+            .iter()
+            .position(|n| *n == format!("attachments/{id}.sw"));
+        let note_at = written
+            .iter()
+            .position(|n| *n == format!("records/{note}.sw"));
+        assert!(
+            image_at.is_some() && image_at < note_at,
+            "the image goes first: {written:?}"
+        );
+
+        let report = b.sync(&folder).expect("sync b");
+        assert_eq!((report.images_pulled, report.images_missing), (1, 0));
+        assert_eq!(
+            b.attachment(&id).expect("read").map(|i| i.to_vec()),
+            Some(png(1))
+        );
+        // Nothing new: nothing sent or fetched again.
+        assert_eq!(a.sync(&folder).expect("again"), SyncReport::default());
+        assert_eq!(b.sync(&folder).expect("again"), SyncReport::default());
+    }
+
+    #[test]
+    fn a_missing_image_is_put_back() {
+        let dir = temp("missing");
+        let (folder, a, b) = two_devices(&dir);
+        let id = a.add_attachment(&png(2)).expect("image");
+        note_showing(&a, &[&id]);
+        a.sync(&folder).expect("sync a");
+        // Lost from the store (a sync tool's mistake, a cleanup by hand).
+        std::fs::remove_file(dir.join(format!("shared/shellwing/attachments/{id}.sw")))
+            .expect("remove");
+        let report = b.sync(&folder).expect("sync b");
+        assert_eq!(report.images_missing, 1, "the note came; its image not");
+        assert!(b.attachment(&id).expect("read").is_none());
+        assert_eq!(a.sync(&folder).expect("sync a").images_pushed, 1);
+        assert_eq!(b.sync(&folder).expect("sync b").images_pulled, 1);
+        assert!(b.attachment(&id).expect("read").is_some());
+    }
+
+    #[test]
+    fn a_damaged_image_is_not_taken() {
+        let dir = temp("damaged");
+        let (folder, a, b) = two_devices(&dir);
+        let id = a.add_attachment(&png(3)).expect("image");
+        note_showing(&a, &[&id]);
+        a.sync(&folder).expect("sync a");
+        let path = dir.join(format!("shared/shellwing/attachments/{id}.sw"));
+        let mut data = std::fs::read(&path).expect("read");
+        let last = data.len() - 1;
+        data[last] ^= 1;
+        std::fs::write(&path, data).expect("write");
+        assert_eq!(b.sync(&folder).expect("sync b").images_missing, 1);
+        assert!(b.attachment(&id).expect("read").is_none());
+    }
+
+    #[test]
+    fn joining_another_vault_keeps_the_images() {
+        let dir = temp("join-images");
+        let folder = Folder::new(&dir.join("shared"));
+        let a = Vault::open(&dir.join("a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &MemoryKeys::default()).expect("b");
+        // A had notes with images before it joined B's vault.
+        let id = a.add_attachment(&png(4)).expect("image");
+        note_showing(&a, &[&id]);
+        let rk = b.start_sync(&folder).expect("start").to_string();
+        a.join(&folder, &rk).expect("join");
+        assert_eq!(
+            a.attachment(&id).expect("read").map(|i| i.to_vec()),
+            Some(png(4)),
+            "sealed again with the new key"
+        );
+        a.sync(&folder).expect("sync a");
+        b.sync(&folder).expect("sync b");
+        assert_eq!(
+            b.attachment(&id).expect("read").map(|i| i.to_vec()),
+            Some(png(4))
+        );
+    }
+
+    #[test]
+    fn an_image_no_note_shows_for_long_goes_from_the_store() {
+        let dir = temp("unused-image");
+        let (folder, a, _b) = two_devices(&dir);
+        let id = a.add_attachment(&png(5)).expect("image");
+        let note = note_showing(&a, &[&id]);
+        a.sync(&folder).expect("sync a");
+        let stored = dir.join(format!("shared/shellwing/attachments/{id}.sw"));
+        assert!(stored.exists());
+        a.delete(&note).expect("delete the note");
+        a.sync(&folder).expect("sync a");
+        assert!(stored.exists(), "kept for a while, for an undo");
+        // As if that were 31 days ago.
+        a.db.lock()
+            .expect("db")
+            .execute(
+                "UPDATE attachments SET unused_since = 1 WHERE id = ?1",
+                rusqlite::params![id],
+            )
+            .expect("age");
+        a.sync(&folder).expect("sync a");
+        assert!(!stored.exists());
+        assert!(a.attachment(&id).expect("read").is_none());
     }
 }

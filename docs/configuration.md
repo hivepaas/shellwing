@@ -787,6 +787,18 @@ about (*For a host ▾*):
   selects and copies, a task's box ticks, nothing else changes it. A code
   block has *Copy* and *Insert* (into the main window's pane) at its top.
 
+**Images.** A Markdown note shows images: paste one (a screenshot on the
+clipboard, or image files copied), drop image files on its window, or choose
+*Insert Image…* in the editor's menu. Each goes in as a line of its own,
+`![](attachment:…)`, and shows as the picture; its grip resizes it. Images
+are kept in the vault, encrypted, and sync with it. Before they are kept they
+are scaled to 2560 px on their long edge and written as PNG (screenshots) or
+JPEG (photos), which drops their metadata, such as where a photo was taken;
+one holds 2 MB at most, and a note's 20 MB together. An image no note has
+shown for 30 days is removed. While a synced note's image has not come yet,
+its line says so, and the picture shows once it does. Design:
+[docs/design/note-images.md](design/note-images.md).
+
 The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
 into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as
 it is, and Obsidian's constructs (`[[links]]`, `#tags`, `key:: value`) and

@@ -38,6 +38,15 @@ tf2bc7ef2 = El archivo ocupa { $size } KB; { $max } KB como máximo.
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = La nota ocupa { $size } KB; { $max } KB como máximo.
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = La imagen ocupa { $size } KB; { $max } KB como máximo.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Las imágenes de la nota ocupan { $size } MB; { $max } MB como máximo.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = No es una imagen que se pueda guardar: un PNG o un JPEG.
+
 # Name
 t0fe07306 = Nombre
 
@@ -1207,6 +1216,30 @@ tdd571ace = Claro, cálido
 # Your themes
 tb2e83d5c = Tus temas
 
+# Loading the image…
+t457184d7 = Cargando la imagen…
+
+# Image not synced yet
+tf2f8e6ad = Imagen aún no sincronizada
+
+# The image cannot be shown
+teac0ac18 = No se puede mostrar la imagen
+
+# The pasted image
+t10124f90 = La imagen pegada
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } es demasiado grande para ser una imagen aquí.
+
+# {name} cannot be read: {e}
+teff3eb8d = No se puede leer { $name }: { $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } no es una imagen que se pueda leer.
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } es una imagen demasiado grande ({ $width } × { $height }).
+
 # New note
 t788c7123 = Nota nueva
 
@@ -1221,6 +1254,15 @@ t117b6c23 = Escribe aquí; el Markdown se ve mientras escribes.
 
 # It is not in the vault any more.
 td11af590 = Ya no está en la bóveda.
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = Las imágenes se muestran en notas Markdown; esta nota es texto sin formato.
+
+# Images go in while the note is edited.
+t6f2c9191 = Las imágenes se añaden mientras se edita la nota.
+
+# Insert
+t0f317948 = Insertar
 
 # this note
 t4545c373 = esta nota
@@ -1276,8 +1318,8 @@ t3d5eaffc = Insertar en { $pane }
 # No shell to insert into
 t825e7370 = No hay shell donde insertar
 
-# Insert
-t0f317948 = Insertar
+# Insert Image…
+t012e861b = Insertar imagen…
 
 # Cut
 t58e25863 = Cortar

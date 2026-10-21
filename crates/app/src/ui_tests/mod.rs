@@ -35,6 +35,7 @@ mod files;
 mod forward;
 mod hosts;
 mod local;
+mod notes;
 mod session_life;
 mod tabs;
 mod terminal;
@@ -162,6 +163,8 @@ impl Ui {
             .expect("run through in_child");
         let cx = TestAppContext::single();
         cx.executor().allow_parking();
+        // As main does: the notes' editor keys.
+        cx.update(shellwing_note_editor::bind_keys);
         Ui {
             cx,
             rt: tokio::runtime::Runtime::new().expect("runtime"),
@@ -371,14 +374,51 @@ impl Ui {
     /// Draws the window, as a new frame from the system would: layout runs,
     /// and with it what depends on sizes (the terminal's grid).
     pub fn draw(&mut self) {
-        // Not through the workspace: drawing renders it.
         let window = self.window().into();
+        self.draw_window(window);
+    }
+
+    /// Draws `window`, as a new frame would.
+    pub fn draw_window(&mut self, window: gpui::AnyWindowHandle) {
+        // Not through its view: drawing renders it.
         gpui::AppContext::update_window(&mut self.cx, window, |_, window, cx| {
             window.refresh();
             window.draw(cx).clear(cx);
         })
         .expect("the window is open");
         self.cx.run_until_parked();
+    }
+
+    /// The vault, once it is open.
+    pub fn vault(&mut self) -> Option<std::sync::Arc<shellwing_vault::Vault>> {
+        self.ws(|ws, _, _| ws.vault_slot().ready())
+    }
+
+    /// The note window that is open (the last one opened).
+    pub fn note_window(&mut self) -> Option<WindowHandle<crate::note_window::NoteWindow>> {
+        self.cx.update(|cx| {
+            cx.windows()
+                .iter()
+                .rev()
+                .find_map(|w| w.downcast::<crate::note_window::NoteWindow>())
+        })
+    }
+
+    /// Acts on the note window that is open.
+    pub fn note<R>(
+        &mut self,
+        f: impl FnOnce(
+            &mut crate::note_window::NoteWindow,
+            &mut Window,
+            &mut Context<crate::note_window::NoteWindow>,
+        ) -> R,
+    ) -> R {
+        let window = self.note_window().expect("a note window");
+        let r = window
+            .update(&mut self.cx, f)
+            .expect("the note window is open");
+        self.cx.run_until_parked();
+        r
     }
 
     /// Resizes the window, as dragging its edge does, and draws it.

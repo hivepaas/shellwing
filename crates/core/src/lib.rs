@@ -4,6 +4,7 @@
 
 pub mod bench;
 pub mod command;
+pub mod images;
 pub mod local;
 pub mod logs;
 pub mod secrets;

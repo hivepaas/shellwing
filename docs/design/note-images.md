@@ -1,0 +1,213 @@
+# Images in notes
+
+A note can show images: a screenshot of an error, a dashboard, a diagram. They
+are kept encrypted in the vault and sync with it, as the note's text does.
+Phase 1 below is built; phase 2 is still to do. Questions still to settle are
+marked **Open**.
+
+## What the editor brings
+
+- **It draws block images.** A line holding only `![alt](src)`, optionally
+  followed by `{width=N}`, is drawn as the image, with a grip to resize it
+  (which writes `{width=N}`). It asks the host for the picture through
+  `EditorState::set_block_image_provider`, and for a label to show instead
+  through `set_block_chip_provider` (asked first).
+- **It passes on pastes it does not take.** With an image or files on the
+  clipboard and no text, the editor's `Paste` propagates to the window.
+- **The clipboard carries images** on macOS, Windows and Linux
+  (`ClipboardEntry::Image` in GPUI 0.3.9).
+
+So phase 1 needed no change to the editor (`crates/note-editor`).
+
+## Where images are kept
+
+Each image is an **attachment**: an immutable, encrypted blob in the vault,
+under a random id. A note refers to it in Markdown:
+
+```markdown
+![](attachment:019a4be1c0a7d2f95e13a0c6b8f41a2c){width=640}
+```
+
+Ruled out:
+
+| Option | Why not |
+| --- | --- |
+| Base64 inside the note (`data:` URIs) | A screenshot fills the note's 256 KB at once. The editor would lay out megabytes of text, and every edit of the note would sync the images again. |
+| Image files beside `vault.db` | Not encrypted, and not synced. |
+| `http(s)://` images | Loading one tells its server when the note is opened, and needs the network. They stay links unless the user loads them (**Open**: an opt-in per note, phase 2). |
+| A normal vault record per image | The sync engine reads and merges every record each round; records are assumed small (under 2 KB, [sync.md](sync.md)). Megabytes re-read every minute would be slow on a folder and costly on S3. |
+
+**Ids.** An attachment's id is made as a record's (`new_id`: time, then 80
+random bits, in hex). A keyed hash of the content was considered, to store an
+image pasted twice once, but the key would come from the space key, which
+changes when a device joins another vault: every id would change, and every
+note's text with it. Random ids reveal nothing about the image and never
+change; an image pasted twice is kept twice.
+
+**Encryption.** The blob is the image's bytes sealed as a record is
+([vault.md](vault.md)): cipher id ‖ nonce ‖ AEAD(space key, nonce, bytes,
+aad = `attachment` ‖ id ‖ space ‖ key version). The AAD binds a blob to its id:
+one moved to another id does not open. Only PNG and JPEG are kept; their type
+is read from the bytes, so nothing about an image is in the clear but its id
+and size.
+
+**On this device.** A table in `vault.db`:
+
+```sql
+CREATE TABLE attachments (
+  id            TEXT PRIMARY KEY,
+  space         TEXT NOT NULL,
+  key_ver       INTEGER NOT NULL,
+  data          BLOB NOT NULL,   -- cipher id, nonce, ciphertext and tag
+  bytes         INTEGER NOT NULL, -- plaintext size, for the limits
+  unused_since  INTEGER          -- ms; set while no live note refers to it
+);
+```
+
+**Joining another vault** seals every attachment again with that vault's key,
+in the same transaction as the records (`adopt`).
+
+## Sync
+
+Attachments sit in their own folder on the backend, apart from the records the
+engine merges:
+
+```
+shellwing/
+  records/<id>.sw         merged every round
+  attachments/<id>.sw     listed every round, never merged or read twice
+```
+
+Each round (`sync_round`), around the records:
+
+1. **Listing.** `attachments/` is listed; the names alone tell what the store
+   holds, so a round with nothing new reads no image.
+2. **Pushing, before the records.** The attachments the notes here refer to
+   that the store lacks are written (`replace`: a create-only write where the
+   backend has one, as `If-None-Match: *` on WebDAV and S3). A note's record
+   is never written before its images, so no device finds a reference before
+   its image. This also puts back an image that went missing from the store.
+3. **Records** merge as before.
+4. **Pulling.** The attachments the merged notes refer to that are not here
+   are read, checked (size, opens under its id and this vault's key, is a PNG
+   or JPEG) and kept as they came. One the store lacks (another device still
+   sending it) or that does not check out counts as missing; the next round
+   tries again. A device fetches only the images its notes show.
+5. **Removal** (below).
+
+`SyncReport` counts `images_pushed`, `images_pulled` and `images_missing`.
+
+The WebDAV and S3 backend keeps every record it read in memory, to answer the
+next round without a download; images are left out of that cache, and a
+refused create of an image does not download it.
+
+**Git.** History keeps every image ever pushed, even after it is removed.
+**Open:** whether Settings › Sync should say so, or offer leaving images out
+of Git sync.
+
+**shellwing cloud.** Attachments count toward the account's storage cap
+([sync.md](sync.md)), never toward hosts. **Open:** the cap.
+
+## Removal
+
+An attachment is unused while no live note's text refers to it. Deleted notes
+cannot be looked into (a tombstone keeps no text), so they do not count.
+
+1. A device marks an attachment unused when it first finds it so
+   (`unused_since`), and clears the mark if a note refers to it again (an
+   undo, a note brought back by a later edit).
+2. After 30 days unused, the device removes it here and from the store.
+3. A device whose note still refers to it puts it back (pushing, above), so a
+   note edited offline across the removal keeps its image.
+
+Removing an image's line from a note does not remove the image at once, so
+undo and a note restored from another device keep working. A vault that does
+not sync looks after its own with `Vault::sweep_attachments`.
+
+## Putting images in
+
+All three end the same way: each image is prepared, kept, and a line
+`![](attachment:…)` goes in place of the selection, on a line of its own (a
+line break is added before or after where text would share it).
+
+1. **Paste** (Ctrl+V, Cmd+V on macOS) with an image on the clipboard (a
+   screenshot), or image files copied in a file manager.
+2. **Drop** image files on the note's window. Phase 1 puts them at the caret,
+   not where they were dropped.
+3. **Insert Image…** in the editor's menu: a file dialog, several files at
+   once.
+
+Images go into Markdown notes only, while they are edited (not in Preview);
+otherwise the window says why.
+
+**Preparing an image** (`shellwing_core::images::prepare`, off the UI thread):
+
+- Formats read: PNG, JPEG, GIF (its first frame), WebP, BMP, TIFF (macOS puts
+  screenshots on the clipboard as TIFF).
+- **Decompression bombs:** the header's size is checked before decoding; more
+  than 50 megapixels is refused, and the decoder is held to that size.
+- **Size:** a long edge over 2560 px is scaled down (Lanczos3). That stays
+  sharp on HiDPI screens and keeps a screenshot near a few hundred KB.
+- **Format kept:** PNG when the image has transparency; otherwise PNG unless
+  it is more than twice the size of the same image as JPEG at quality 85.
+  Screenshots and diagrams stay crisp PNG; photos become JPEG.
+- **Metadata** (EXIF, GPS) does not survive re-encoding: a phone photo does
+  not carry where it was taken.
+- **Limits:** 2 MB per attachment once prepared, 20 MB of attachments per
+  note. Past either, the image is not added and the window says why.
+
+GPUI already takes in the `image` crate with these formats, so the app does
+not grow.
+
+## Showing them
+
+- The note's window installs the editor's two providers (`note_images.rs`):
+  - the label provider answers *Loading the image…*, *Image not synced yet* or
+    *The image cannot be shown* while an attachment is not drawn, and asks for
+    it to be loaded the first time;
+  - the image provider answers with the decoded picture once it is ready.
+- Loading reads the attachment from the vault and decodes it (to BGRA, as GPUI
+  paints) on a background thread; the editor repaints when it is ready.
+- Decoded images are kept per window, 64 MB in all, the oldest dropped first
+  (and dropped from the GPU's atlas).
+- An image not synced yet is looked for again every second, and drawn once a
+  sync brought it.
+- **Sensitive notes:** images show only once the note's text does.
+- **Locked vault:** a note's window holds no text and forgets its images.
+
+## Phases
+
+1. **Phase 1 (built):** the `attachments` table and backend folder, preparing,
+   paste, drop and *Insert Image…*, the providers and cache, limits, removal,
+   sync (push before records, pull on reference, putting back), sealing again
+   on joining.
+2. **Phase 2:** an image menu (*Copy image*, *Save image as…*), copying an
+   image with a selection, exporting a note with its images as `images/`,
+   `data:` URIs pasted in Markdown turned into attachments, `http(s)` images
+   loaded on request, dropping at the pointer.
+
+## Tests
+
+- **Vault** (`attachments.rs`): refs found in Markdown; kept sealed and given
+  back; only PNG and JPEG, 2 MB; a blob under another id does not open;
+  unused ones go after 30 days, and one used again is kept.
+- **Sync** (`sync.rs`): an image goes with its note, written before it, and
+  nothing is sent or fetched again; a missing image is put back; a damaged one
+  is not taken; joining another vault keeps the images; one no note shows for
+  30 days goes from the store. Over WebDAV (`crates/remote`): an image travels,
+  and is read once.
+- **Preparing** (`images.rs`): a screenshot stays PNG, a photo becomes JPEG,
+  transparency stays PNG, large images are scaled, EXIF and GPS are gone, a
+  bomb is refused before decoding, what is not an image is refused.
+- **UI scenarios** (`ui_tests/notes.rs`): a screenshot pasted into a note is
+  kept and drawn; the note saved and opened again draws it from the vault;
+  *Insert Image…* with a file; a copied script is refused, saying why; a plain
+  text note says images need Markdown.
+
+## Threats
+
+| If this happens | Then |
+| --- | --- |
+| The backend is read by someone else | They see how many images there are and their sizes, not what they show. |
+| A crafted image is pasted or synced | Its size is checked before decoding, and decoding runs in `image`, off the UI thread. A blob that does not open under its id and this vault's key is not taken. |
+| A note is deleted by mistake | Its images stay 30 days, and come back with the note (from another device or an undo). |

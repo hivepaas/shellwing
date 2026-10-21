@@ -97,6 +97,16 @@ pub fn said_oversize(o: &Oversize) -> String {
             size = kb(*n),
             max = kb(limits::NOTE)
         ),
+        Oversize::Attachment(n) => tr!(
+            "The image is {size} KB; {max} KB at most.",
+            size = kb(*n),
+            max = kb(limits::ATTACHMENT)
+        ),
+        Oversize::NoteAttachments(n) => tr!(
+            "The note's images come to {size} MB; {max} MB at most.",
+            size = n.div_ceil(1024 * 1024),
+            max = limits::NOTE_ATTACHMENTS / (1024 * 1024)
+        ),
     }
 }
 
@@ -104,6 +114,9 @@ pub fn said_oversize(o: &Oversize) -> String {
 pub fn said_error(e: &shellwing_vault::Error) -> String {
     match e {
         shellwing_vault::Error::TooLarge(o) => said_oversize(o),
+        shellwing_vault::Error::NotAnImage => {
+            tr!("Not an image that can be kept: a PNG or a JPEG.")
+        }
         e => e.to_string(),
     }
 }

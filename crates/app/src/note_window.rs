@@ -4,15 +4,16 @@
 //! the vault is locked the text is not in the window; a sensitive note's
 //! text shows only once the user is confirmed (as an environment's values).
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 
 use gpui::{
-    App, AppContext as _, Bounds, Context, Entity, FocusHandle, Focusable, FontWeight,
-    KeyDownEvent, MouseButton, PromptLevel, Render, SharedString, Subscription, Window,
-    WindowBounds, WindowDecorations, WindowHandle, WindowOptions, anchored, deferred, div,
-    prelude::*, px, rgb, size,
+    App, AppContext as _, Bounds, ClipboardEntry, Context, Entity, ExternalPaths, FocusHandle,
+    Focusable, FontWeight, KeyDownEvent, MouseButton, PathPromptOptions, PromptLevel, Render,
+    SharedString, Subscription, Window, WindowBounds, WindowDecorations, WindowHandle,
+    WindowOptions, anchored, deferred, div, prelude::*, px, rgb, size,
 };
 use shellwing_i18n::tr;
 use shellwing_vault::{Error as VaultError, Note, NoteFormat};
@@ -22,6 +23,7 @@ use crate::colors::colors;
 use crate::host_editor::{checkbox, hint_text, primary_button, problem_text};
 use crate::input::{Changed, TextInput};
 use crate::look::{self, ui};
+use crate::note_images::{self, Images, SharedImages, Source};
 use crate::secrets::VaultSlot;
 use shellwing_note_editor::{EditorEvent, EditorState, SyntaxStyle};
 
@@ -226,6 +228,11 @@ pub struct NoteWindow {
     /// Saved here since the window held its note: it syncs when let go.
     unsynced: bool,
     problem: Option<String>,
+    /// The images the text shows, as loaded (note_images.rs).
+    images: SharedImages,
+    /// What "Insert Image…" in the editor's menu was last set for: whether
+    /// images can go in.
+    images_item: Option<bool>,
     _subs: Vec<Subscription>,
 }
 
@@ -257,6 +264,8 @@ impl NoteWindow {
         };
         let title = field(|| tr!("Title"), &note.title, cx);
         let category = field(|| tr!("No category"), &note.category, cx);
+        let images: SharedImages = Rc::new(RefCell::new(Images::default()));
+        let (wanted, to_load) = async_channel::unbounded::<String>();
         let text = cx.new(|cx| {
             let mut e = EditorState::new(window, cx)
                 .with_placeholder(tr!("Write here; Markdown shows as you type."));
@@ -264,8 +273,36 @@ impl NoteWindow {
             // A selection made with the mouse opens the menu, with the
             // app's items first.
             e.set_menu_on_select(true);
+            note_images::show_in(&mut e, images.clone(), wanted);
             e
         });
+        // The images the editor asks for, read and decoded off the UI thread.
+        cx.spawn(async move |this, cx| {
+            while let Ok(id) = to_load.recv().await {
+                let Ok(vault) = this.update(cx, |v, _| v.vault.ready()) else {
+                    break;
+                };
+                let Some(vault) = vault else {
+                    // Locked: asked for again once the text is back.
+                    let _ = this.update(cx, |v, _| v.images.borrow_mut().forget(&id));
+                    continue;
+                };
+                let loaded = cx
+                    .background_spawn({
+                        let id = id.clone();
+                        async move { note_images::load(&vault, &id) }
+                    })
+                    .await;
+                let shown = this.update(cx, |v, cx| {
+                    v.images.borrow_mut().put(id, loaded);
+                    v.text.update(cx, |_, cx| cx.notify());
+                });
+                if shown.is_err() {
+                    break;
+                }
+            }
+        })
+        .detach();
         let mut subs = vec![];
         for i in [&title, &category] {
             subs.push(cx.subscribe(i, |v, _, _: &Changed, cx| v.edited(cx)));
@@ -280,6 +317,7 @@ impl NoteWindow {
                 cx.notify();
             }
             EditorEvent::HostItem(id) if id.as_ref() == "insert" => v.insert(cx),
+            EditorEvent::HostItem(id) if id.as_ref() == "image" => v.pick_images(cx),
             EditorEvent::InsertCode(code) => v.insert_text(code.to_string(), cx),
             EditorEvent::OpenLink(url) if zorite_markdown::syntax::is_safe_external_url(url) => {
                 cx.open_url(url)
@@ -335,6 +373,8 @@ impl NoteWindow {
             last_saved: None,
             unsynced: false,
             problem: None,
+            images,
+            images_item: None,
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
             reveal: 0,
@@ -441,6 +481,7 @@ impl NoteWindow {
             return;
         }
         self.text.update(cx, |e, cx| e.set_text(String::new(), cx));
+        self.images.borrow_mut().clear();
         self.edits += 1;
         self.saved_at = self.edits;
         self.loaded = false;
@@ -456,6 +497,145 @@ impl NoteWindow {
         } else if open && !self.loaded {
             self.load(cx);
         }
+        self.look_for_missing_images(cx);
+    }
+
+    /// Images not synced yet are asked for again once a sync brought them.
+    fn look_for_missing_images(&mut self, cx: &mut Context<Self>) {
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        let missing = self.images.borrow().missing();
+        let mut came = false;
+        for id in missing {
+            if vault
+                .attachments_size(std::slice::from_ref(&id))
+                .unwrap_or(0)
+                > 0
+            {
+                self.images.borrow_mut().forget(&id);
+                came = true;
+            }
+        }
+        if came {
+            self.text.update(cx, |_, cx| cx.notify());
+        }
+    }
+
+    /// Why images cannot go into the note now, if they cannot.
+    fn images_refused(&self) -> Option<String> {
+        if self.note.format != NoteFormat::Markdown {
+            return Some(tr!(
+                "Images show in Markdown notes; this note is plain text."
+            ));
+        }
+        if !self.loaded || self.preview || self.vault.ready().is_none() {
+            return Some(tr!("Images go in while the note is edited."));
+        }
+        None
+    }
+
+    /// Pasted with an image (a screenshot) or files on the clipboard: the
+    /// editor pastes text itself and passes on what it does not take.
+    fn paste_images(
+        &mut self,
+        _: &shellwing_note_editor::Paste,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self
+            .text
+            .read(cx)
+            .focus_handle(cx)
+            .contains_focused(window, cx)
+        {
+            cx.propagate();
+            return;
+        }
+        let Some(item) = cx.read_from_clipboard() else {
+            return;
+        };
+        let mut sources = vec![];
+        for entry in item.entries() {
+            match entry {
+                ClipboardEntry::Image(image) => sources.push(Source::Bytes(image.bytes.clone())),
+                ClipboardEntry::ExternalPaths(paths) => {
+                    sources.extend(paths.paths().iter().cloned().map(Source::File))
+                }
+                _ => {}
+            }
+        }
+        if sources.is_empty() {
+            cx.propagate();
+            return;
+        }
+        self.add_images(sources, cx);
+    }
+
+    /// Files dropped on the window.
+    fn drop_images(&mut self, paths: &ExternalPaths, _: &mut Window, cx: &mut Context<Self>) {
+        self.add_images(
+            paths.paths().iter().cloned().map(Source::File).collect(),
+            cx,
+        );
+    }
+
+    /// "Insert Image…": files chosen in the system's dialog.
+    fn pick_images(&mut self, cx: &mut Context<Self>) {
+        if let Some(why) = self.images_refused() {
+            self.problem = Some(why);
+            cx.notify();
+            return;
+        }
+        let chosen = cx.prompt_for_paths(PathPromptOptions {
+            files: true,
+            directories: false,
+            multiple: true,
+            prompt: Some(tr!("Insert").into()),
+        });
+        cx.spawn(async move |this, cx| {
+            if let Ok(Ok(Some(paths))) = chosen.await {
+                let _ = this.update(cx, |v, cx| {
+                    v.add_images(paths.into_iter().map(Source::File).collect(), cx)
+                });
+            }
+        })
+        .detach();
+    }
+
+    /// Prepares and keeps `sources` (off the UI thread), then puts a line
+    /// for each at the caret.
+    fn add_images(&mut self, sources: Vec<Source>, cx: &mut Context<Self>) {
+        if sources.is_empty() {
+            return;
+        }
+        if let Some(why) = self.images_refused() {
+            self.problem = Some(why);
+            cx.notify();
+            return;
+        }
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        let text = self.text.read(cx).text().to_string();
+        cx.spawn(async move |this, cx| {
+            let (ids, problems) = cx
+                .background_spawn(async move { note_images::add(&vault, &text, sources) })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                if !ids.is_empty() {
+                    v.text.update(cx, |e, cx| {
+                        let range = e.selected_range();
+                        let lines = note_images::insertion(e.text(), range.clone(), &ids);
+                        e.replace_range(range, &lines, cx);
+                    });
+                    v.edited(cx);
+                }
+                v.problem = (!problems.is_empty()).then(|| problems.join(" "));
+                cx.notify();
+            });
+        })
+        .detach();
     }
 
     fn edited(&mut self, cx: &mut Context<Self>) {
@@ -1059,7 +1239,11 @@ impl NoteWindow {
                     .track_scroll(&self.scroll)
                     .child(
                         div()
-                            .px(px(12.))
+                            // While Markdown is edited, room on the left for
+                            // the editor's grip (22 px out from the text), to
+                            // drag a block, an image's among them, elsewhere.
+                            .pl(px(if md && !self.preview { 30. } else { 12. }))
+                            .pr(px(12.))
                             .py(px(10.))
                             .text_size(ui(13.5))
                             .text_color(rgb(colors().text))
@@ -1081,7 +1265,8 @@ impl NoteWindow {
     /// pane, named; set again only when that changes.
     fn menu_items(&mut self, cx: &mut Context<Self>) {
         let pane = (self.hooks.pane)(cx);
-        if self.insert_into.as_ref() == Some(&pane) {
+        let images = self.images_refused().is_none();
+        if self.insert_into.as_ref() == Some(&pane) && self.images_item == Some(images) {
             return;
         }
         let item = shellwing_note_editor::HostItem {
@@ -1091,12 +1276,20 @@ impl NoteWindow {
                 None => tr!("No shell to insert into").into(),
             },
             enabled: pane.is_some(),
+            selection: true,
+        };
+        let image = shellwing_note_editor::HostItem {
+            id: "image".into(),
+            label: tr!("Insert Image…").into(),
+            enabled: images,
+            selection: false,
         };
         // A code block's Insert too, while a pane can take it.
         let code = pane.as_ref().map(|_| tr!("Insert").into());
         self.insert_into = Some(pane);
+        self.images_item = Some(images);
         self.text.update(cx, |e, cx| {
-            e.set_host_items(vec![item], cx);
+            e.set_host_items(vec![item, image], cx);
             e.set_code_insert(code, cx);
         });
     }
@@ -1225,6 +1418,61 @@ fn editor_labels() -> shellwing_note_editor::Labels {
     }
 }
 
+/// For the UI tests: what a user would see, and a way in where they would
+/// click.
+#[cfg(all(test, feature = "ui-tests"))]
+impl NoteWindow {
+    pub fn editor_text(&self, cx: &App) -> String {
+        self.text.read(cx).text().to_string()
+    }
+
+    pub fn is_loaded(&self) -> bool {
+        self.loaded
+    }
+
+    pub fn images_ready(&self) -> usize {
+        self.images.borrow().ready_count()
+    }
+
+    pub fn problem(&self) -> Option<String> {
+        self.problem.clone()
+    }
+
+    pub fn note_id(&self) -> String {
+        self.note.id.clone()
+    }
+
+    /// The caret at the end of the text, in the editor.
+    pub fn focus_text_end(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let end = self.text.read(cx).text().len();
+        self.text.update(cx, |e, cx| {
+            e.set_cursor(end, cx);
+            e.focus(window, cx);
+        });
+    }
+
+    /// The format's chip, clicked.
+    pub fn make_plain(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.note.format = NoteFormat::Plain;
+        self.preview = false;
+        self.text.update(cx, |e, cx| {
+            style_editor(e, false, cx);
+            e.set_read_only(false, cx);
+        });
+        self.changed_meta(window, cx);
+    }
+
+    /// "Insert Image…" in the editor's menu, chosen.
+    pub fn choose_insert_image(&mut self, cx: &mut Context<Self>) {
+        self.pick_images(cx);
+    }
+
+    /// Saved now, as Ctrl+S does.
+    pub fn save_now(&mut self, cx: &mut Context<Self>) {
+        self.save(cx);
+    }
+}
+
 impl Focusable for NoteWindow {
     fn focus_handle(&self, _: &App) -> FocusHandle {
         self.focus.clone()
@@ -1250,10 +1498,16 @@ impl Render for NoteWindow {
         self.menu_items(cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (title_on, cat_on) = (focused(&self.title), focused(&self.category));
+        // Images the window let go of leave the GPU's atlas too.
+        for image in self.images.borrow_mut().take_evicted() {
+            let _ = window.drop_image(image);
+        }
         let content = div()
             .id("note")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
+            .on_action(cx.listener(Self::paste_images))
+            .on_drop(cx.listener(Self::drop_images))
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|v, _, _, cx| (v.hooks.touched)(cx)),
