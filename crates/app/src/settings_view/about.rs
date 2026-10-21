@@ -383,12 +383,22 @@ fn link_button(
         .on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
 }
 
+/// shellwing's own button: the logo's blue, lighter at the top, in either
+/// mode (amber is HivePaaS's).
+fn shellwing_fill(top: u32, bottom: u32) -> gpui::Background {
+    gpui::linear_gradient(
+        180.,
+        gpui::linear_color_stop(rgb(top), 0.),
+        gpui::linear_color_stop(rgb(bottom), 1.),
+    )
+}
+
 /// A filled button that opens a web page: the section's main way on.
 fn primary_link(
     id: &'static str,
     text: &str,
     url: &'static str,
-    (bg, hover, fg): (u32, u32, u32),
+    (bg, hover, fg): (gpui::Background, gpui::Background, u32),
     cx: &mut Context<SettingsView>,
 ) -> gpui::Stateful<gpui::Div> {
     div()
@@ -399,19 +409,18 @@ fn primary_link(
         .flex()
         .items_center()
         .rounded(px(6.))
-        .bg(rgb(bg))
+        .bg(bg)
         .text_size(ui(12.))
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(rgb(fg))
         .cursor_pointer()
-        .hover(move |s| s.bg(rgb(hover)))
+        .hover(move |s| s.bg(hover))
         .child(text.to_string())
         .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url)))
 }
 
 /// Where the code is, under which license, and the ways to take part.
 fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
-    let c = colors();
     let actions = div()
         .flex()
         .flex_wrap()
@@ -420,7 +429,11 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             "about-site",
             &tr!("Visit shellwing.app"),
             SITE,
-            (c.accent, c.accent_hover, c.on_accent),
+            (
+                shellwing_fill(0x38b6f3, 0x0f87c9),
+                shellwing_fill(0x5cc6f7, 0x1a95d6),
+                0xffffff,
+            ),
             cx,
         ))
         .child(link_button("about-github", "GitHub", REPO.to_string(), cx))
@@ -572,7 +585,7 @@ fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
             "about-hivepaas",
             &tr!("Visit hivepaas.com"),
             HIVEPAAS,
-            (c.amber, c.amber_hover, c.on_amber),
+            (rgb(c.amber).into(), rgb(c.amber_hover).into(), c.on_amber),
             cx,
         ))
         .child(link_button(
