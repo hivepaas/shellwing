@@ -8,9 +8,10 @@
 //! `docs/configuration.md`). Authentication follows OpenSSH: agent keys, key
 //! files, keyboard-interactive, password; any passphrase, code or password is
 //! asked for in the terminal. A new host key is shown with its fingerprint and
-//! must be accepted; a changed one is refused. `$SHELLWING_PASSWORD` is tried
-//! once before asking, and `$SHELLWING_KNOWN_HOSTS` replaces
-//! `~/.ssh/known_hosts` (both meant for scripts and benchmarks).
+//! must be accepted; a changed one is refused. In a debug build
+//! `$SHELLWING_PASSWORD` is tried once before asking (a release ignores it),
+//! and `$SHELLWING_KNOWN_HOSTS` replaces `~/.ssh/known_hosts` (both meant for
+//! scripts and benchmarks).
 
 // A GUI program on Windows: no console window opens beside it.
 #![cfg_attr(windows, windows_subsystem = "windows")]

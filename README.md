@@ -38,12 +38,23 @@ Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs betwe
 
 ## 🚀 Getting Started
 
-shellwing is in active development and has no release yet: build it from source.
+Download the latest release from [GitHub Releases](https://github.com/hivepaas/shellwing/releases/latest):
+
+| System | File |
+| --- | --- |
+| macOS (Apple silicon, Intel) | `shellwing_<version>_macos_<arch>.dmg` |
+| Windows | `shellwing_<version>_windows_x86_64-setup.exe`, or the `.zip` |
+| Linux (x86_64, aarch64) | the `.AppImage`, the `.deb`, or the `.tar.gz` |
+
+The releases are not signed with an Apple Developer ID or a Windows certificate yet: the first time, macOS asks you to allow it in *System Settings › Privacy & Security* (**Open Anyway**), and Windows' SmartScreen under **More info › Run anyway**. The app tells you when a newer version is out, and installs it when you say so.
+
+### Building from source
 
 It needs Rust 1.95+ and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is built from source):
 
 ```sh
 make build                    # a release build for this computer, into dist/
+make package                  # and the packages a release ships (docs/releasing.md)
 cargo build --release         # or by hand
 ```
 
