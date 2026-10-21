@@ -261,3 +261,59 @@ scenario!(
         );
     }
 );
+
+scenario!(
+    /// Ctrl/Cmd and = makes this pane's font bigger, and 0 brings it back.
+    zoom_keys_change_the_font_size,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        ui.draw();
+        let cell = ui.view(|v, _| v.cell_size());
+        ui.keys("secondary-=");
+        ui.wait_for_notice("Font size 15");
+        ui.draw();
+        assert!(ui.view(|v, _| v.cell_size()).0 > cell.0);
+        ui.keys("secondary-0");
+        ui.wait_for_notice("Font size 14");
+        ui.draw();
+        assert_eq!(ui.view(|v, _| v.cell_size()), cell);
+    }
+);
+
+scenario!(
+    /// Find with match case (Alt+C) and regular expressions (Alt+R): the
+    /// count follows each option; a broken pattern says so.
+    find_with_match_case_and_regex,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        ui.line("Alpha alpha ALPHA");
+        ui.wait_for("you said: Alpha alpha ALPHA");
+        ui.shortcut("f");
+        ui.type_text("alpha");
+        let found = |ui: &mut crate::ui_tests::Ui| {
+            ui.view(|v, _| v.latest_frame().find)
+                .filter(|f| !f.searching)
+        };
+        ui.wait_until("6 found", |ui| found(ui).is_some_and(|f| f.total == 6));
+        ui.keys("alt-c");
+        ui.wait_until("2 found, matching case", |ui| found(ui).is_some_and(|f| f.total == 2));
+        ui.keys("alt-c");
+        ui.keys("alt-r");
+        for _ in 0.."alpha".len() {
+            ui.keys("backspace");
+        }
+        // "al.ha" is no text on the screen; as a pattern it is each alpha.
+        ui.type_text("al.ha");
+        ui.wait_until("words by the pattern", |ui| found(ui).is_some_and(|f| f.total == 6));
+        ui.type_text("(");
+        ui.wait_until("a broken pattern", |ui| {
+            ui.view(|v, _| v.latest_frame().find).is_some_and(|f| f.invalid)
+        });
+    }
+);

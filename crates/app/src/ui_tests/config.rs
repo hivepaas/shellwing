@@ -169,3 +169,84 @@ scenario!(
         });
     }
 );
+
+/// Settings › Appearance, shown.
+fn appearance(ui: &mut Ui) {
+    ui.palette("Settings");
+    ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+    ui.click("settings-page:Appearance");
+}
+
+scenario!(
+    /// Light, in Settings › Appearance: the app and the terminal turn light
+    /// at once, and config.toml keeps it.
+    light_mode_chosen_in_settings,
+    |ui| {
+        // Dark to start with: the test window's system look is light.
+        ui.config_file("config.toml", "[appearance]\nmode = \"dark\"\n");
+        let _server = signed_in(ui);
+        let before = ui.view(|v, _| v.latest_frame().background);
+        appearance(ui);
+        ui.click("color-mode:2");
+        ui.wait_until("config.toml", |ui| {
+            std::fs::read_to_string(ui.config_dir().join("config.toml"))
+                .is_ok_and(|c| c.contains("mode = \"light\""))
+        });
+        assert_eq!(crate::colors::colors().page, crate::colors::LIGHT.page);
+        ui.click("settings-close");
+        ui.wait_until("the terminal's light colors", |ui| {
+            ui.view(|v, _| v.latest_frame().background) != before
+        });
+    }
+);
+
+scenario!(
+    /// A bigger font in Settings › Appearance: the terminal's cells grow, and
+    /// the server is told the smaller size in cells.
+    font_size_chosen_in_settings,
+    |ui| {
+        let server = signed_in(ui);
+        ui.draw();
+        let (cell, cols) = (
+            ui.view(|v, _| v.cell_size()),
+            server.seen(|s| s.sizes.last().map(|s| s.0)),
+        );
+        appearance(ui);
+        ui.click("size:5");
+        ui.click("settings-close");
+        ui.wait_until("bigger cells", |ui| {
+            ui.draw();
+            ui.view(|v, _| v.look().font_size) == 16. && ui.view(|v, _| v.cell_size()).0 > cell.0
+        });
+        ui.wait_until("the server told the new size", |_| {
+            server.seen(|s| s.sizes.last().map(|s| s.0)) < cols
+        });
+    }
+);
+
+scenario!(
+    /// Start Logging from the pane's menu: the session goes to the file the
+    /// notice names, from then on; Stop Logging ends it.
+    log_started_from_the_pane_menu,
+    |ui| {
+        let folder = ui.dir.join("session-logs");
+        ui.config_file(
+            "config.toml",
+            &format!("[log]\nfolder = {}\ntimestamps = false\n", literal(&folder)),
+        );
+        let _server = signed_in(ui);
+        ui.line("before logging");
+        ui.wait_for("you said: before logging");
+        ui.right_click("terminal");
+        ui.click("menu-log");
+        ui.wait_for_notice("Logging to");
+        ui.line("while logging");
+        ui.wait_until("the log to have it", |_| {
+            logs(&folder).contains("you said: while logging")
+        });
+        assert!(!logs(&folder).contains("you said: before logging"), "{}", logs(&folder));
+        ui.right_click("terminal");
+        ui.click("menu-log");
+        ui.wait_for_notice("Log saved");
+    }
+);

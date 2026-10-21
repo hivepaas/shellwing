@@ -236,3 +236,34 @@ scenario!(
         drop(web_server);
     }
 );
+
+scenario!(
+    /// Tabs open when the app last closed are opened again at start, the
+    /// active one active, each connecting.
+    tabs_reopened_at_start,
+    |ui| {
+        let (a, b) = (ui.server(Policy::password()), ui.server(Policy::password()));
+        ui.trust(&a);
+        ui.trust(&b);
+        let state = ui.config_dir().join("state");
+        std::fs::create_dir_all(&state).expect("state dir");
+        let leaf = |spec: String| format!("{{\"root\":{{\"kind\":\"leaf\",\"spec\":\"{spec}\"}},\"focused\":0}}");
+        std::fs::write(
+            state.join("session.json"),
+            format!(
+                "{{\"tabs\":[{},{}],\"active\":1}}",
+                leaf(a.spec()),
+                leaf(b.spec())
+            ),
+        )
+        .expect("session.json");
+        ui.open();
+        ui.wait_until("two tabs", |ui| ui.tabs() == 2);
+        assert_eq!(ui.ws(|ws, _, _| ws.active_index()), 1);
+        assert_eq!(ui.view(|v, _| v.session().spec.clone()), b.spec());
+        ui.login();
+        ui.wait_until("both servers reached", |_| {
+            a.seen(|s| s.connections) >= 1 && b.seen(|s| s.connections) >= 1
+        });
+    }
+);

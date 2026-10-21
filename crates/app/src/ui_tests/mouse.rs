@@ -196,3 +196,22 @@ scenario!(
         assert!(ui.screen().contains("line 400"));
     }
 );
+
+scenario!(
+    /// The pane's right-click menu: Copy takes the selection, Paste types the
+    /// clipboard into the shell.
+    copy_and_paste_from_the_pane_menu,
+    |ui| {
+        let (_server, row, start) = long_line(ui);
+        ui.drag((row, word(start, 4)), (row, word(start, 5) + 2), Modifiers::none());
+        ui.wait_until("a selection", |ui| ui.view(|v, _| v.latest_frame().selected));
+        ui.right_click("terminal");
+        ui.click("menu-copy");
+        ui.wait_until("the copy", |ui| ui.clipboard().as_deref() == Some("w04 w05"));
+        ui.copy_to_clipboard("pasted words");
+        ui.right_click("terminal");
+        ui.click("menu-paste");
+        ui.keys("enter");
+        ui.wait_for("you said: pasted words");
+    }
+);
