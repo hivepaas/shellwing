@@ -93,11 +93,18 @@ scenario!(
         ui.click("settings-page:Sync");
         ui.click("sync-kind:3");
         ui.click("sync-field:Repository");
-        ui.type_text(&format!("file://{}", missing.display()));
+        // A file URL as git takes it everywhere: file:///C:/… on Windows
+        // (file://C:\… names a host "C:", which git looks for on the network).
+        let path = missing.display().to_string().replace('\\', "/");
+        ui.type_text(&format!("file:///{}", path.trim_start_matches('/')));
         ui.click("sync-connect");
-        ui.wait_until("the reason beside Connect", |ui| {
-            ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync"))
-        });
+        // git itself, started under a full run's load, can take long on
+        // Windows: up to the 90 s the app gives it.
+        ui.wait_until_within(
+            "the reason beside Connect",
+            std::time::Duration::from_secs(120),
+            |ui| ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync")),
+        );
         ui.wait_for_notice_in("Cannot sync", crate::notice::Tone::Bad);
         let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
             .unwrap_or_default();
@@ -223,5 +230,302 @@ scenario!(
         let request = asked.expect("a request");
         answerer.approve(&other, &folder, &request.id).expect("approve");
         joined_with_the_other_devices_records(ui, &server);
+    }
+);
+
+/// Syncing here with a new, empty folder, chosen from the palette: the
+/// folder, and the vault's recovery key (as the user writes it down).
+fn sync_with_a_new_folder(ui: &mut Ui) -> (std::path::PathBuf, String) {
+    ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+    let shared = ui.dir.join("cloud-drive");
+    std::fs::create_dir_all(&shared).expect("folder");
+    ui.palette("Sync passwords with a folder");
+    ui.wait_until("the folder dialog", |ui| ui.cx.did_prompt_for_paths());
+    let chosen = shared.clone();
+    ui.cx
+        .simulate_path_prompt_response(move |_| Some(vec![chosen]));
+    ui.wait_until("the folder set up", |_| {
+        shared.join("shellwing/format.json").exists()
+    });
+    // The recovery key is shown: written down, put away.
+    ui.keys("escape");
+    let key = ui
+        .vault()
+        .and_then(|v| v.recovery_key().ok().flatten())
+        .expect("recovery key")
+        .to_string();
+    (shared, key)
+}
+
+/// Another device, joined to `shared` with the recovery key, synced once.
+fn other_device_joins(ui: &Ui, shared: &std::path::Path, key: &str) -> (Vault, Folder) {
+    let other_dir = ui.dir.join("other-device");
+    std::fs::create_dir_all(&other_dir).expect("other dir");
+    let other =
+        Vault::open(&other_dir.join("vault.db"), &MemoryKeys::default()).expect("other vault");
+    let folder = Folder::new(shared);
+    other.join(&folder, key).expect("join");
+    other.sync(&folder).expect("the other device syncs");
+    (other, folder)
+}
+
+/// The hosts the other device has: (name, fields), after syncing again.
+fn hosts_there(other: &Vault, folder: &Folder) -> Vec<(String, BTreeMap<String, String>)> {
+    let _ = other.sync(folder);
+    other
+        .entries("host")
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(_, f)| (f.get("name").cloned().unwrap_or_default(), f))
+        .collect()
+}
+
+/// Sync now, here.
+fn sync_now(ui: &mut Ui) {
+    ui.palette("Sync now");
+}
+
+/// A hosts.toml entry `name` for 127.0.0.1:`port`, with more lines.
+fn host_line(name: &str, port: u16, more: &str) -> String {
+    format!(
+        "[[host]]\nname = \"{name}\"\naddress = \"127.0.0.1\"\nport = {port}\nuser = \"{USER}\"\n{more}\n"
+    )
+}
+
+scenario!(
+    /// What is made here reaches the other device: a host, a saved password,
+    /// a snippet. A host kept on this device only does not.
+    changes_made_here_reach_the_other_device,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &[
+                host_line("web", 2201, ""),
+                host_line("laptop-only", 2202, "local_only = true"),
+            ]
+            .join("\n"),
+        );
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let vault = ui.vault().expect("vault");
+        vault
+            .set_password(&format!("{USER}@127.0.0.1:2201"), "made here")
+            .expect("password");
+        vault
+            .save_snippet(&Snippet {
+                id: String::new(),
+                name: "Disk usage".into(),
+                command: "df -h".into(),
+                scope: String::new(),
+                enter: true,
+                category: String::new(),
+                needs: vec![],
+                origin: String::new(),
+            })
+            .expect("snippet");
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        sync_now(ui);
+        ui.wait_until("the host, password and snippet there", |_| {
+            let hosts = hosts_there(&other, &folder);
+            hosts.iter().any(|(n, _)| n == "web")
+                && other
+                    .password(&format!("{USER}@127.0.0.1:2201"))
+                    .ok()
+                    .flatten()
+                    .is_some_and(|p| p.as_str() == "made here")
+                && other
+                    .snippets()
+                    .is_ok_and(|s| s.iter().any(|s| s.name == "Disk usage"))
+        });
+        let hosts = hosts_there(&other, &folder);
+        assert!(
+            !hosts.iter().any(|(n, _)| n == "laptop-only"),
+            "a host kept on this device went out: {hosts:?}"
+        );
+    }
+);
+
+scenario!(
+    /// A host deleted on the other device goes from here too; one deleted
+    /// here (in the host editor) goes from there.
+    deletions_travel_both_ways,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &[host_line("web", 2201, ""), host_line("db", 2202, "")].join("\n"),
+        );
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        sync_now(ui);
+        ui.wait_until("both hosts there", |_| hosts_there(&other, &folder).len() == 2);
+        // Deleted there.
+        let db = other
+            .entries("host")
+            .expect("hosts")
+            .into_iter()
+            .find(|(_, f)| f.get("name").is_some_and(|n| n == "db"))
+            .map(|(id, _)| id)
+            .expect("db there");
+        other.delete(&db).expect("delete");
+        other.sync(&folder).expect("sync");
+        sync_now(ui);
+        ui.wait_until("db gone here", |ui| {
+            ui.reload_config();
+            !ui.hosts_toml().contains("name = \"db\"")
+                && !ui.host_names().contains(&"db".to_string())
+        });
+        // Deleted here.
+        ui.hover("host:web");
+        ui.click("edit-host:web");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        ui.click("delete");
+        ui.click("delete-yes");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        sync_now(ui);
+        ui.wait_until("web gone there", |_| hosts_there(&other, &folder).is_empty());
+    }
+);
+
+scenario!(
+    /// The same host changed on two devices, each a different field: both
+    /// changes are kept, here and there.
+    edits_on_two_devices_are_both_kept,
+    |ui| {
+        ui.config_file("hosts.toml", &host_line("web", 2201, ""));
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        sync_now(ui);
+        ui.wait_until("web there", |_| hosts_there(&other, &folder).len() == 1);
+        // There: the port.
+        let (id, mut fields) = other
+            .entries("host")
+            .expect("hosts")
+            .into_iter()
+            .next()
+            .expect("web there");
+        fields.insert("port".into(), "2299".into());
+        other.update(&id, "host", "web", &fields).expect("edit there");
+        other.sync(&folder).expect("sync there");
+        // Here, meanwhile: the user, in the host editor.
+        ui.hover("host:web");
+        ui.click("edit-host:web");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        ui.keys("tab tab tab tab"); // name, alias, address, port, to the user
+        ui.keys("secondary-a");
+        ui.type_text("deploy");
+        ui.keys("enter");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        sync_now(ui);
+        ui.wait_until("both edits here", |ui| {
+            ui.reload_config();
+            let h = ui.hosts_toml();
+            h.contains("port = 2299") && h.contains("user = \"deploy\"")
+        });
+        ui.wait_until("both edits there", |_| {
+            hosts_there(&other, &folder).iter().any(|(_, f)| {
+                f.get("port").is_some_and(|p| p == "2299")
+                    && f.get("user").is_some_and(|u| u == "deploy")
+            })
+        });
+    }
+);
+
+/// A new device asks to join the vault synced here (pairing): the app is
+/// woken to look, and the question it asks comes up. The asking device's
+/// vault, the folder and its request.
+fn a_device_asks_to_join(
+    ui: &mut Ui,
+    shared: &std::path::Path,
+) -> (Vault, Folder, shellwing_vault::Ask) {
+    let new_dir = ui.dir.join("new-device");
+    std::fs::create_dir_all(&new_dir).expect("new device dir");
+    let new = Vault::open(&new_dir.join("vault.db"), &MemoryKeys::default()).expect("vault");
+    let folder = Folder::new(shared);
+    let mut ask = shellwing_vault::Ask::new(&folder, "Desktop").expect("ask");
+    sync_now(ui);
+    ui.wait_until("the question here", |ui| {
+        let _ = ask.step(&new, &folder);
+        ui.cx.has_pending_prompt()
+    });
+    let (message, _) = ui.cx.pending_prompt().expect("a prompt");
+    assert_eq!(message, "Let Desktop into this vault?");
+    (new, folder, ask)
+}
+
+scenario!(
+    /// Another device asks to join (pairing), and is approved here: it gets
+    /// the vault's keys, and with them the password saved here.
+    another_device_approved_here,
+    |ui| {
+        ui.open();
+        let (shared, _key) = sync_with_a_new_folder(ui);
+        let target = format!("{USER}@127.0.0.1:2201");
+        ui.vault()
+            .expect("vault")
+            .set_password(&target, "made here")
+            .expect("password");
+        sync_now(ui);
+        let (new, folder, mut ask) = a_device_asks_to_join(ui, &shared);
+        ui.answer_prompt("Approve");
+        ui.wait_until("the new device in", |_| {
+            matches!(ask.step(&new, &folder), Ok(shellwing_vault::AskState::Joined))
+        });
+        ui.wait_until("the password there", |_| {
+            let _ = new.sync(&folder);
+            new.password(&target)
+                .ok()
+                .flatten()
+                .is_some_and(|p| p.as_str() == "made here")
+        });
+    }
+);
+
+scenario!(
+    /// Another device asks to join, and is refused here: it is told so, and
+    /// gets nothing.
+    another_device_refused_here,
+    |ui| {
+        ui.open();
+        let (shared, _key) = sync_with_a_new_folder(ui);
+        let (new, folder, mut ask) = a_device_asks_to_join(ui, &shared);
+        ui.answer_prompt("Refuse");
+        ui.wait_until("the new device refused", |_| {
+            matches!(ask.step(&new, &folder), Ok(shellwing_vault::AskState::Refused))
+        });
+        assert!(new.sync(&folder).is_err(), "a refused device could sync");
+    }
+);
+
+scenario!(
+    /// Stop syncing: the folder is no longer in config.toml, and what the
+    /// other device adds after does not come here.
+    stopped_syncing_takes_nothing_more,
+    |ui| {
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        ui.palette("Stop syncing");
+        ui.wait_for_notice("Stopped syncing");
+        let config =
+            std::fs::read_to_string(ui.config_dir().join("config.toml")).unwrap_or_default();
+        assert!(!config.contains("cloud-drive"), "{config}");
+        let fields: BTreeMap<String, String> = [
+            ("name", "db"),
+            ("address", "127.0.0.1"),
+            ("port", "2202"),
+            ("user", USER),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+        other
+            .update("0190a1b2c3d4e5f60718293a4b5c6d80", "host", "db", &fields)
+            .expect("host");
+        other.sync(&folder).expect("sync there");
+        ui.settle(std::time::Duration::from_secs(3));
+        ui.reload_config();
+        assert!(!ui.host_names().contains(&"db".to_string()), "{:?}", ui.host_names());
     }
 );
