@@ -1405,6 +1405,162 @@ tbfdc091c = Enter 응답   Esc 취소
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 이동   Enter 선택   Esc 취소
 
+# About
+t58e096de = 정보
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS. shellwing 이름과 로고는 HivePaaS의 상표입니다.
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Linux, macOS, Windows용 네이티브 SSH 클라이언트.
+
+# Version {version} · {os} {arch}
+t6bead5ae = 버전 { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = 버전 정보 복사
+
+# Copied: {info}
+t183c7f9f = 복사함: { $info }
+
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } 준비 완료
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Restart now
+t54001a7c = 지금 다시 시작
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = 새 버전을 확인하는 중…
+
+# How to update
+t3603428f = 업데이트 방법
+
+# Download and install
+t1a99173f = 다운로드 및 설치
+
+# {by} updates it: {command}
+tdf2cab9c = { $by }에서 업데이트합니다: { $command }
+
+# {by} updates it.
+t84b27295 = { $by }에서 업데이트합니다.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = 다운로드하고 확인한 뒤, 종료할 때 설치합니다.
+
+# Download it, and install it in place of this one.
+t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 출시
+
+# The download failed: {why}
+t5e96c075 = 다운로드 실패: { $why }
+
+# Skip this version
+t2c33d756 = 이 버전 건너뛰기
+
+# The last look failed: {why}
+td122a092 = 마지막 확인에 실패했습니다: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 최신 버전입니다({ $when } 확인).
+
+# Not looked yet.
+t5a3ba058 = 아직 확인하지 않았습니다.
+
+# Updates
+t483075a5 = 업데이트
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = 베타 버전입니다: 새 베타 버전과 그 뒤에 나오는 정식 버전의 알림을 받습니다.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = 정식 버전입니다: 새 정식 버전의 알림을 받으며, 베타 버전 알림은 받지 않습니다.
+
+# Check now
+t4f0e0677 = 지금 확인
+
+# Look for updates once a day
+tcc27ace1 = 하루에 한 번 업데이트 확인
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = GitHub에서 릴리스 목록을 읽고, 서명이 검증될 때만 신뢰합니다. 사용자 동의 없이는 아무것도 다운로드하거나 설치하지 않습니다.
+
+# Open on GitHub
+t24804c99 = GitHub에서 열기
+
+# Report a problem
+t7b1728e7 = 문제 신고
+
+# Release notes
+tc52ab62f = 릴리스 노트
+
+# Contributing
+ta4fe74dd = 기여하기
+
+# License
+t38e70ee4 = 라이선스
+
+# Open source
+ta04619ce = 오픈 소스
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing은 GPL-3.0-or-later 라이선스의 무료 오픈 소스 소프트웨어입니다. 코드를 읽고, 직접 빌드하고, 문제를 신고하거나 수정 사항을 보내 주세요.
+
+# Open source · Apache-2.0
+tf33a768c = 오픈 소스 · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Docker Swarm 기반의 셀프 호스팅 앱 플랫폼
+
+# On your servers
+te5da903f = 내 서버에서
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Git이나 Docker 이미지로 배포하고, 도메인과 자동 TLS, 로그, 메트릭, 클러스터 전체 확장까지 제공합니다.
+
+# On your own computer
+t75086b1c = 내 컴퓨터에서
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Docker Desktop이나 Portainer 대신 내 컴퓨터에 설치해도, 완전한 앱 관리 기능을 그대로 쓸 수 있습니다.
+
+# 300+ one-click apps
+t6a770b0a = 원클릭 앱 300개 이상
+
+# Deploy on push
+tb0bfc3e9 = push 시 자동 배포
+
+# Pull request previews
+t4e4180fc = 풀 리퀘스트 미리보기
+
+# Automatic TLS
+t9e9776ed = 자동 TLS
+
+# Live logs and metrics
+tebe3a172 = 실시간 로그와 메트릭
+
+# Functions
+t69d796ee = Functions
+
+# Visit hivepaas.com
+t0632975a = hivepaas.com 방문
+
+# From the same author
+te0bcddcb = 같은 개발자의 앱
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = 이런 앱은 어떠세요? 같은 개발자가 만든 HivePaaS는 Heroku, Render, Coolify를 대체하는 오픈 소스 셀프 호스팅 솔루션입니다.
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = 누르고 있을 키와 함께 1–9 숫자를 누르세요(예: { $example }). 숫자로 탭을 고릅니다.
 
@@ -1458,9 +1614,6 @@ t699a801a = SSH 및 보안
 
 # Vault
 td432914f = 보관함
-
-# About
-t58e096de = 정보
 
 # Its password (an app password, where it has them)
 t22e462e2 = 비밀번호 (앱 비밀번호를 지원하면 앱 비밀번호)
@@ -1968,81 +2121,6 @@ ta18da274 = 유휴 시 잠금
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 키 입력이나 클릭 없이 이 시간이 지나면 암호 문구를 입력할 때까지 보관함이 잠깁니다. 시스템 키체인에 키가 보관되지 않은 경우에만 적용되며, 이때는 시작할 때마다 암호 문구를 묻습니다.
-
-# This build has no release keys, so it cannot tell of updates.
-t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
-
-# shellwing {version} is ready
-t3f4cfe3f = shellwing { $version } 준비 완료
-
-# It is installed when you quit, or now with Restart.
-t6fecac86 = 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
-
-# Restart now
-t54001a7c = 지금 다시 시작
-
-# shellwing {version}
-tfc977e10 = shellwing { $version }
-
-# Looking for a newer version…
-tf1905fe9 = 새 버전을 확인하는 중…
-
-# How to update
-t3603428f = 업데이트 방법
-
-# Download and install
-t1a99173f = 다운로드 및 설치
-
-# {by} updates it: {command}
-tdf2cab9c = { $by }에서 업데이트합니다: { $command }
-
-# {by} updates it.
-t84b27295 = { $by }에서 업데이트합니다.
-
-# It is downloaded and checked, then installed when you quit.
-tb46c0678 = 다운로드하고 확인한 뒤, 종료할 때 설치합니다.
-
-# Download it, and install it in place of this one.
-t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
-
-# shellwing {version} is out
-t5b33836c = shellwing { $version } 출시
-
-# The download failed: {why}
-t5e96c075 = 다운로드 실패: { $why }
-
-# Skip this version
-t2c33d756 = 이 버전 건너뛰기
-
-# The last look failed: {why}
-td122a092 = 마지막 확인에 실패했습니다: { $why }
-
-# Up to date (looked {when}).
-t4665ef60 = 최신 버전입니다({ $when } 확인).
-
-# Not looked yet.
-t5a3ba058 = 아직 확인하지 않았습니다.
-
-# A native SSH client.
-tdb654976 = 네이티브 SSH 클라이언트.
-
-# Updates
-t483075a5 = 업데이트
-
-# This is a beta: you are told of newer betas, and of the release that follows them.
-t1d6a96bc = 베타 버전입니다: 새 베타 버전과 그 뒤에 나오는 정식 버전의 알림을 받습니다.
-
-# This is a release: you are told of newer releases, not of betas.
-t9d2d8250 = 정식 버전입니다: 새 정식 버전의 알림을 받으며, 베타 버전 알림은 받지 않습니다.
-
-# Check now
-t4f0e0677 = 지금 확인
-
-# Look for updates once a day
-tcc27ace1 = 하루에 한 번 업데이트 확인
-
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
-t258cdfd9 = GitHub에서 릴리스 목록을 읽고, 서명이 검증될 때만 신뢰합니다. 사용자 동의 없이는 아무것도 다운로드하거나 설치하지 않습니다.
 
 # Open config.toml
 t07a52335 = config.toml 열기

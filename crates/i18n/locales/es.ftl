@@ -1429,6 +1429,162 @@ tbfdc091c = Enter responder   Esc cancelar
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ mover   Enter elegir   Esc cancelar
 
+# About
+t58e096de = Acerca de
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS. El nombre y el logotipo de shellwing son marcas de HivePaaS.
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Un cliente SSH nativo para Linux, macOS y Windows.
+
+# Version {version} · {os} {arch}
+t6bead5ae = Versión { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = Copiar datos de la versión
+
+# Copied: {info}
+t183c7f9f = Copiado: { $info }
+
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Esta compilación no tiene claves de publicación, así que no puede avisar de actualizaciones.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } está listo
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Se instala al salir, o ahora con Reiniciar.
+
+# Restart now
+t54001a7c = Reiniciar ahora
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = Buscando una versión más reciente…
+
+# How to update
+t3603428f = Cómo actualizar
+
+# Download and install
+t1a99173f = Descargar e instalar
+
+# {by} updates it: {command}
+tdf2cab9c = Se actualiza con { $by }: { $command }
+
+# {by} updates it.
+t84b27295 = Se actualiza con { $by }.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Se descarga y se comprueba, y se instala al salir.
+
+# Download it, and install it in place of this one.
+t39312eae = Descárgala e instálala en lugar de esta.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } está disponible
+
+# The download failed: {why}
+t5e96c075 = La descarga falló: { $why }
+
+# Skip this version
+t2c33d756 = Omitir esta versión
+
+# The last look failed: {why}
+td122a092 = La última comprobación falló: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Al día (comprobado { $when }).
+
+# Not looked yet.
+t5a3ba058 = Aún no se ha comprobado.
+
+# Updates
+t483075a5 = Actualizaciones
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Esta es una beta: se te avisa de las betas más recientes y de la versión estable que las sigue.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Esta es una versión estable: se te avisa de las versiones estables más recientes, no de las betas.
+
+# Check now
+t4f0e0677 = Comprobar ahora
+
+# Look for updates once a day
+tcc27ace1 = Buscar actualizaciones una vez al día
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = Lee la lista de versiones desde GitHub y solo la cree si sus firmas son válidas. No se descarga ni se instala nada sin ti.
+
+# Open on GitHub
+t24804c99 = Abrir en GitHub
+
+# Report a problem
+t7b1728e7 = Informar de un problema
+
+# Release notes
+tc52ab62f = Notas de la versión
+
+# Contributing
+ta4fe74dd = Contribuir
+
+# License
+t38e70ee4 = Licencia
+
+# Open source
+ta04619ce = Código abierto
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing es software libre y de código abierto, con licencia GPL-3.0-or-later. Lee el código, compílalo tú mismo, informa de un problema o envía una corrección.
+
+# Open source · Apache-2.0
+tf33a768c = Código abierto · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Una plataforma autoalojada para tus aplicaciones, basada en Docker Swarm
+
+# On your servers
+te5da903f = En tus servidores
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Despliega desde Git o una imagen de Docker, con dominios y TLS automático, logs, métricas y escalado en un clúster.
+
+# On your own computer
+t75086b1c = En tu propio ordenador
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Instálalo en tu ordenador en lugar de Docker Desktop o Portainer y obtén además una gestión completa de aplicaciones.
+
+# 300+ one-click apps
+t6a770b0a = Más de 300 aplicaciones con un clic
+
+# Deploy on push
+tb0bfc3e9 = Despliegue con cada push
+
+# Pull request previews
+t4e4180fc = Vistas previas de pull requests
+
+# Automatic TLS
+t9e9776ed = TLS automático
+
+# Live logs and metrics
+tebe3a172 = Logs y métricas en vivo
+
+# Functions
+t69d796ee = Funciones
+
+# Visit hivepaas.com
+t0632975a = Visitar hivepaas.com
+
+# From the same author
+te0bcddcb = Del mismo autor
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = Quizá te interese HivePaaS, del mismo autor: una alternativa autoalojada y de código abierto a Heroku, Render y Coolify.
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = Pulsa un dígito del 1 al 9 junto con las teclas que se mantienen, como { $example }: el dígito elige la pestaña.
 
@@ -1482,9 +1638,6 @@ t699a801a = SSH y seguridad
 
 # Vault
 td432914f = Bóveda
-
-# About
-t58e096de = Acerca de
 
 # Its password (an app password, where it has them)
 t22e462e2 = Su contraseña (una contraseña de aplicación, si las tiene)
@@ -1996,81 +2149,6 @@ ta18da274 = Bloquear por inactividad
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Tras este tiempo sin pulsar una tecla ni hacer clic, la bóveda se bloquea hasta que se escriba su frase de contraseña. Solo mientras el llavero del sistema no guarde su clave: en ese caso, cada inicio pide la frase de contraseña.
-
-# This build has no release keys, so it cannot tell of updates.
-t378182cb = Esta compilación no tiene claves de publicación, así que no puede avisar de actualizaciones.
-
-# shellwing {version} is ready
-t3f4cfe3f = shellwing { $version } está listo
-
-# It is installed when you quit, or now with Restart.
-t6fecac86 = Se instala al salir, o ahora con Reiniciar.
-
-# Restart now
-t54001a7c = Reiniciar ahora
-
-# shellwing {version}
-tfc977e10 = shellwing { $version }
-
-# Looking for a newer version…
-tf1905fe9 = Buscando una versión más reciente…
-
-# How to update
-t3603428f = Cómo actualizar
-
-# Download and install
-t1a99173f = Descargar e instalar
-
-# {by} updates it: {command}
-tdf2cab9c = Se actualiza con { $by }: { $command }
-
-# {by} updates it.
-t84b27295 = Se actualiza con { $by }.
-
-# It is downloaded and checked, then installed when you quit.
-tb46c0678 = Se descarga y se comprueba, y se instala al salir.
-
-# Download it, and install it in place of this one.
-t39312eae = Descárgala e instálala en lugar de esta.
-
-# shellwing {version} is out
-t5b33836c = shellwing { $version } está disponible
-
-# The download failed: {why}
-t5e96c075 = La descarga falló: { $why }
-
-# Skip this version
-t2c33d756 = Omitir esta versión
-
-# The last look failed: {why}
-td122a092 = La última comprobación falló: { $why }
-
-# Up to date (looked {when}).
-t4665ef60 = Al día (comprobado { $when }).
-
-# Not looked yet.
-t5a3ba058 = Aún no se ha comprobado.
-
-# A native SSH client.
-tdb654976 = Un cliente SSH nativo.
-
-# Updates
-t483075a5 = Actualizaciones
-
-# This is a beta: you are told of newer betas, and of the release that follows them.
-t1d6a96bc = Esta es una beta: se te avisa de las betas más recientes y de la versión estable que las sigue.
-
-# This is a release: you are told of newer releases, not of betas.
-t9d2d8250 = Esta es una versión estable: se te avisa de las versiones estables más recientes, no de las betas.
-
-# Check now
-t4f0e0677 = Comprobar ahora
-
-# Look for updates once a day
-tcc27ace1 = Buscar actualizaciones una vez al día
-
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
-t258cdfd9 = Lee la lista de versiones desde GitHub y solo la cree si sus firmas son válidas. No se descarga ni se instala nada sin ti.
 
 # Open config.toml
 t07a52335 = Abrir config.toml

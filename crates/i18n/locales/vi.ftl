@@ -1405,6 +1405,162 @@ tbfdc091c = Enter trả lời   Esc huỷ
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ di chuyển   Enter chọn   Esc huỷ
 
+# About
+t58e096de = Giới thiệu
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS. Tên và logo shellwing là nhãn hiệu của HivePaaS.
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Ứng dụng SSH gốc cho Linux, macOS và Windows.
+
+# Version {version} · {os} {arch}
+t6bead5ae = Phiên bản { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = Sao chép thông tin phiên bản
+
+# Copied: {info}
+t183c7f9f = Đã sao chép: { $info }
+
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Bản build này không có khoá phát hành, nên không thể báo khi có bản cập nhật.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } đã sẵn sàng
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
+
+# Restart now
+t54001a7c = Khởi động lại ngay
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = Đang tìm phiên bản mới hơn…
+
+# How to update
+t3603428f = Cách cập nhật
+
+# Download and install
+t1a99173f = Tải xuống và cài đặt
+
+# {by} updates it: {command}
+tdf2cab9c = { $by } sẽ cập nhật nó: { $command }
+
+# {by} updates it.
+t84b27295 = { $by } sẽ cập nhật nó.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Bản mới được tải xuống và kiểm tra, rồi cài khi bạn thoát app.
+
+# Download it, and install it in place of this one.
+t39312eae = Tải về và cài đè lên bản này.
+
+# shellwing {version} is out
+t5b33836c = Đã có shellwing { $version }
+
+# The download failed: {why}
+t5e96c075 = Tải xuống thất bại: { $why }
+
+# Skip this version
+t2c33d756 = Bỏ qua phiên bản này
+
+# The last look failed: {why}
+td122a092 = Lần kiểm tra trước bị lỗi: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Đang là bản mới nhất (kiểm tra { $when }).
+
+# Not looked yet.
+t5a3ba058 = Chưa kiểm tra lần nào.
+
+# Updates
+t483075a5 = Cập nhật
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Đây là bản beta: bạn sẽ được báo khi có beta mới hơn, và khi có bản chính thức tiếp theo.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Đây là bản chính thức: bạn chỉ được báo khi có bản chính thức mới hơn, không báo bản beta.
+
+# Check now
+t4f0e0677 = Kiểm tra ngay
+
+# Look for updates once a day
+tcc27ace1 = Kiểm tra cập nhật mỗi ngày một lần
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = App đọc danh sách bản phát hành từ GitHub, và chỉ tin khi chữ ký của nó hợp lệ. Không có gì được tải xuống hay cài đặt nếu bạn không đồng ý.
+
+# Open on GitHub
+t24804c99 = Mở trên GitHub
+
+# Report a problem
+t7b1728e7 = Báo lỗi
+
+# Release notes
+tc52ab62f = Ghi chú phát hành
+
+# Contributing
+ta4fe74dd = Đóng góp
+
+# License
+t38e70ee4 = Giấy phép
+
+# Open source
+ta04619ce = Mã nguồn mở
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing là phần mềm miễn phí, mã nguồn mở theo giấy phép GPL-3.0-or-later. Bạn có thể đọc mã, tự build, báo lỗi hoặc gửi bản sửa.
+
+# Open source · Apache-2.0
+tf33a768c = Mã nguồn mở · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Nền tảng self-hosted cho ứng dụng của bạn, chạy trên Docker Swarm
+
+# On your servers
+te5da903f = Trên máy chủ của bạn
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Triển khai từ Git hoặc Docker image, kèm tên miền và TLS tự động, log, metrics và mở rộng trên cả cụm máy chủ.
+
+# On your own computer
+t75086b1c = Ngay trên máy của bạn
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Cài ngay trên máy local thay cho Docker Desktop hay Portainer, mà vẫn có nhiều tính năng quản lý ứng dụng cao cấp.
+
+# 300+ one-click apps
+t6a770b0a = 300+ ứng dụng cài một chạm
+
+# Deploy on push
+tb0bfc3e9 = Deploy khi push
+
+# Pull request previews
+t4e4180fc = Bản xem trước cho pull request
+
+# Automatic TLS
+t9e9776ed = TLS tự động
+
+# Live logs and metrics
+tebe3a172 = Log và metrics trực tiếp
+
+# Functions
+t69d796ee = Functions
+
+# Visit hivepaas.com
+t0632975a = Xem hivepaas.com
+
+# From the same author
+te0bcddcb = Cùng tác giả
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = Có thể bạn quan tâm: HivePaaS, ứng dụng từ cùng tác giả. Một giải pháp self-hosted, mã nguồn mở thay thế cho Heroku, Render và Coolify.
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = Nhấn một chữ số từ 1 đến 9 cùng các phím cần giữ, ví dụ { $example }: chữ số chọn tab.
 
@@ -1458,9 +1614,6 @@ t699a801a = SSH và bảo mật
 
 # Vault
 td432914f = Kho
-
-# About
-t58e096de = Giới thiệu
 
 # Its password (an app password, where it has them)
 t22e462e2 = Mật khẩu của nó (mật khẩu ứng dụng, nếu dịch vụ có)
@@ -1968,81 +2121,6 @@ ta18da274 = Khoá khi không dùng
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, kho sẽ khoá cho tới khi nhập cụm mật khẩu. Chỉ khi kho khoá của hệ thống không giữ khoá của nó: khi đó mỗi lần khởi động đều hỏi cụm mật khẩu.
-
-# This build has no release keys, so it cannot tell of updates.
-t378182cb = Bản build này không có khoá phát hành, nên không thể báo khi có bản cập nhật.
-
-# shellwing {version} is ready
-t3f4cfe3f = shellwing { $version } đã sẵn sàng
-
-# It is installed when you quit, or now with Restart.
-t6fecac86 = Bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
-
-# Restart now
-t54001a7c = Khởi động lại ngay
-
-# shellwing {version}
-tfc977e10 = shellwing { $version }
-
-# Looking for a newer version…
-tf1905fe9 = Đang tìm phiên bản mới hơn…
-
-# How to update
-t3603428f = Cách cập nhật
-
-# Download and install
-t1a99173f = Tải xuống và cài đặt
-
-# {by} updates it: {command}
-tdf2cab9c = { $by } sẽ cập nhật nó: { $command }
-
-# {by} updates it.
-t84b27295 = { $by } sẽ cập nhật nó.
-
-# It is downloaded and checked, then installed when you quit.
-tb46c0678 = Bản mới được tải xuống và kiểm tra, rồi cài khi bạn thoát app.
-
-# Download it, and install it in place of this one.
-t39312eae = Tải về và cài đè lên bản này.
-
-# shellwing {version} is out
-t5b33836c = Đã có shellwing { $version }
-
-# The download failed: {why}
-t5e96c075 = Tải xuống thất bại: { $why }
-
-# Skip this version
-t2c33d756 = Bỏ qua phiên bản này
-
-# The last look failed: {why}
-td122a092 = Lần kiểm tra trước bị lỗi: { $why }
-
-# Up to date (looked {when}).
-t4665ef60 = Đang là bản mới nhất (kiểm tra { $when }).
-
-# Not looked yet.
-t5a3ba058 = Chưa kiểm tra lần nào.
-
-# A native SSH client.
-tdb654976 = Một ứng dụng SSH gốc.
-
-# Updates
-t483075a5 = Cập nhật
-
-# This is a beta: you are told of newer betas, and of the release that follows them.
-t1d6a96bc = Đây là bản beta: bạn sẽ được báo khi có beta mới hơn, và khi có bản chính thức tiếp theo.
-
-# This is a release: you are told of newer releases, not of betas.
-t9d2d8250 = Đây là bản chính thức: bạn chỉ được báo khi có bản chính thức mới hơn, không báo bản beta.
-
-# Check now
-t4f0e0677 = Kiểm tra ngay
-
-# Look for updates once a day
-tcc27ace1 = Kiểm tra cập nhật mỗi ngày một lần
-
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
-t258cdfd9 = App đọc danh sách bản phát hành từ GitHub, và chỉ tin khi chữ ký của nó hợp lệ. Không có gì được tải xuống hay cài đặt nếu bạn không đồng ý.
 
 # Open config.toml
 t07a52335 = Mở config.toml

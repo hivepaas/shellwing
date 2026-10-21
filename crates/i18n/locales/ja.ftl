@@ -1405,6 +1405,162 @@ tbfdc091c = Enter 回答   Esc キャンセル
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選択   Esc キャンセル
 
+# About
+t58e096de = 情報
+
+# © {year} HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
+ta956e96f = © { $year } HivePaaS。shellwing の名称とロゴは HivePaaS の商標です。
+
+# A native SSH client for Linux, macOS and Windows.
+t182e3bec = Linux、macOS、Windows 向けのネイティブ SSH クライアント。
+
+# Version {version} · {os} {arch}
+t6bead5ae = バージョン { $version } · { $os } { $arch }
+
+# Copy version info
+t3d37483c = バージョン情報をコピー
+
+# Copied: {info}
+t183c7f9f = コピーしました：{ $info }
+
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = このビルドにはリリース鍵がないため、アップデートを知らせることができません。
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } の準備ができました
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 終了時にインストールされます。今すぐなら「再起動」を押してください。
+
+# Restart now
+t54001a7c = 今すぐ再起動
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = 新しいバージョンを確認しています…
+
+# How to update
+t3603428f = アップデート方法
+
+# Download and install
+t1a99173f = ダウンロードしてインストール
+
+# {by} updates it: {command}
+tdf2cab9c = { $by } でアップデートします：{ $command }
+
+# {by} updates it.
+t84b27295 = { $by } でアップデートします。
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = ダウンロードして検証し、終了時にインストールします。
+
+# Download it, and install it in place of this one.
+t39312eae = ダウンロードして、このバージョンの代わりにインストールしてください。
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } が公開されました
+
+# The download failed: {why}
+t5e96c075 = ダウンロードに失敗しました: { $why }
+
+# Skip this version
+t2c33d756 = このバージョンをスキップ
+
+# The last look failed: {why}
+td122a092 = 前回の確認に失敗しました：{ $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 最新です（確認：{ $when }）。
+
+# Not looked yet.
+t5a3ba058 = まだ確認していません。
+
+# Updates
+t483075a5 = アップデート
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = これはベータ版です：新しいベータ版と、それに続く安定版をお知らせします。
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = これは安定版です：新しい安定版をお知らせします。ベータ版はお知らせしません。
+
+# Check now
+t4f0e0677 = 今すぐ確認
+
+# Look for updates once a day
+tcc27ace1 = 1 日 1 回アップデートを確認
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = リリース一覧を GitHub から読み込み、署名が検証できた場合のみ信頼します。あなたの操作なしに何もダウンロード・インストールされません。
+
+# Open on GitHub
+t24804c99 = GitHub で開く
+
+# Report a problem
+t7b1728e7 = 問題を報告
+
+# Release notes
+tc52ab62f = リリースノート
+
+# Contributing
+ta4fe74dd = 貢献する
+
+# License
+t38e70ee4 = ライセンス
+
+# Open source
+ta04619ce = オープンソース
+
+# shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
+tcde8081b = shellwing は GPL-3.0-or-later ライセンスの無料オープンソースソフトウェアです。コードを読む、自分でビルドする、問題を報告する、修正を送る、どれも自由です。
+
+# Open source · Apache-2.0
+tf33a768c = オープンソース · Apache-2.0
+
+# A self-hosted platform for your apps, built on Docker Swarm
+t92f3d8ce = Docker Swarm 上に構築された、アプリのためのセルフホスト型プラットフォーム
+
+# On your servers
+te5da903f = あなたのサーバーで
+
+# Deploy from Git or a Docker image, with domains and automatic TLS, logs, metrics and scaling across a cluster.
+t1671a837 = Git や Docker イメージからデプロイ。ドメインと自動 TLS、ログ、メトリクス、クラスター全体でのスケーリングを備えています。
+
+# On your own computer
+t75086b1c = あなたのパソコンで
+
+# Install it on your own computer in place of Docker Desktop or Portainer, and still get full app management on top.
+te7416212 = Docker Desktop や Portainer の代わりにパソコンへインストールでき、さらに本格的なアプリ管理機能も使えます。
+
+# 300+ one-click apps
+t6a770b0a = 300 以上のワンクリックアプリ
+
+# Deploy on push
+tb0bfc3e9 = push で自動デプロイ
+
+# Pull request previews
+t4e4180fc = プルリクエストのプレビュー
+
+# Automatic TLS
+t9e9776ed = 自動 TLS
+
+# Live logs and metrics
+tebe3a172 = ライブログとメトリクス
+
+# Functions
+t69d796ee = Functions
+
+# Visit hivepaas.com
+t0632975a = hivepaas.com を見る
+
+# From the same author
+te0bcddcb = 同じ作者のアプリ
+
+# You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
+t1f5d9e97 = こちらもおすすめ：同じ作者による HivePaaS。Heroku、Render、Coolify に代わる、オープンソースのセルフホスト型ソリューションです。
+
 # Press a digit from 1 to 9 with the keys to hold, such as {example}: the digit picks the tab.
 t78f1fce3 = 押したままにするキーと一緒に 1〜9 の数字を押してください（例：{ $example }）。数字でタブを選びます。
 
@@ -1458,9 +1614,6 @@ t699a801a = SSH とセキュリティ
 
 # Vault
 td432914f = 保管庫
-
-# About
-t58e096de = 情報
 
 # Its password (an app password, where it has them)
 t22e462e2 = パスワード（アプリパスワードがある場合はそちら）
@@ -1968,81 +2121,6 @@ ta18da274 = アイドル時にロック
 
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = キー入力やクリックがないままこの時間が経過すると、パスフレーズを入力するまで保管庫がロックされます。システムのキーチェーンに鍵が保存されていない場合のみ有効です（その場合は起動のたびにパスフレーズを尋ねます）。
-
-# This build has no release keys, so it cannot tell of updates.
-t378182cb = このビルドにはリリース鍵がないため、アップデートを知らせることができません。
-
-# shellwing {version} is ready
-t3f4cfe3f = shellwing { $version } の準備ができました
-
-# It is installed when you quit, or now with Restart.
-t6fecac86 = 終了時にインストールされます。今すぐなら「再起動」を押してください。
-
-# Restart now
-t54001a7c = 今すぐ再起動
-
-# shellwing {version}
-tfc977e10 = shellwing { $version }
-
-# Looking for a newer version…
-tf1905fe9 = 新しいバージョンを確認しています…
-
-# How to update
-t3603428f = アップデート方法
-
-# Download and install
-t1a99173f = ダウンロードしてインストール
-
-# {by} updates it: {command}
-tdf2cab9c = { $by } でアップデートします：{ $command }
-
-# {by} updates it.
-t84b27295 = { $by } でアップデートします。
-
-# It is downloaded and checked, then installed when you quit.
-tb46c0678 = ダウンロードして検証し、終了時にインストールします。
-
-# Download it, and install it in place of this one.
-t39312eae = ダウンロードして、このバージョンの代わりにインストールしてください。
-
-# shellwing {version} is out
-t5b33836c = shellwing { $version } が公開されました
-
-# The download failed: {why}
-t5e96c075 = ダウンロードに失敗しました: { $why }
-
-# Skip this version
-t2c33d756 = このバージョンをスキップ
-
-# The last look failed: {why}
-td122a092 = 前回の確認に失敗しました：{ $why }
-
-# Up to date (looked {when}).
-t4665ef60 = 最新です（確認：{ $when }）。
-
-# Not looked yet.
-t5a3ba058 = まだ確認していません。
-
-# A native SSH client.
-tdb654976 = ネイティブの SSH クライアント。
-
-# Updates
-t483075a5 = アップデート
-
-# This is a beta: you are told of newer betas, and of the release that follows them.
-t1d6a96bc = これはベータ版です：新しいベータ版と、それに続く安定版をお知らせします。
-
-# This is a release: you are told of newer releases, not of betas.
-t9d2d8250 = これは安定版です：新しい安定版をお知らせします。ベータ版はお知らせしません。
-
-# Check now
-t4f0e0677 = 今すぐ確認
-
-# Look for updates once a day
-tcc27ace1 = 1 日 1 回アップデートを確認
-
-# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
-t258cdfd9 = リリース一覧を GitHub から読み込み、署名が検証できた場合のみ信頼します。あなたの操作なしに何もダウンロード・インストールされません。
 
 # Open config.toml
 t07a52335 = config.toml を開く
