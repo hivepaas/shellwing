@@ -198,3 +198,24 @@ pub async fn fetch(url: &str) -> Result<Vec<u8>, CheckError> {
     }
     Ok(body.to_vec())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The repository's signed list (published on the `release` branch,
+    /// docs/releasing.md) opens with the keys built into the app, under its
+    /// context, and carries release.json byte for byte: a list changed and
+    /// not signed again fails here.
+    #[test]
+    fn the_signed_list_opens_with_the_apps_keys() {
+        let keys = envelope::parse_keys(KEYS).expect("the app's keys");
+        let signed = include_bytes!("../../../release.signed.json");
+        let opened = envelope::open(&keys, signed, CONTEXT).expect("signed by the app's keys");
+        assert_eq!(
+            opened.as_slice(),
+            include_bytes!("../../../release.json").as_slice()
+        );
+        manifest::Manifest::parse(&opened).expect("a list the app takes");
+    }
+}
