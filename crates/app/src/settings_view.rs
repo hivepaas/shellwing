@@ -2418,8 +2418,11 @@ fn toggle(
 }
 
 fn small_button(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
+    let id = id.into();
+    let selector = id.to_string();
     div()
         .id(id)
+        .debug_selector(|| selector)
         .h(px(28.))
         .px(px(10.))
         .flex()
