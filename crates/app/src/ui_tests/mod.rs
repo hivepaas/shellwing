@@ -1,7 +1,8 @@
-//! UI tests: the real workspace in GPUI's test window, driven by keystrokes as
-//! a user would, against an SSH server running in the test process (see
-//! [`server`]). They read back what a user would see: the terminal's screen as
-//! text, the tabs, a pane's status.
+//! UI tests: the real workspace in GPUI's test window, driven by keystrokes and
+//! clicks as a user would, against an SSH server running in the test process
+//! (see [`server`]). They read back what a user would see: the terminal's
+//! screen as text, the tabs, a pane's status, the host list. A click finds its
+//! element by a `.debug_selector(..)` in the app's code ([`Ui::click`]).
 //!
 //! Built only with the `ui-tests` feature: they take longer than the unit
 //! tests, so CI runs them daily and by hand (`.github/workflows/ui-tests.yml`).
@@ -33,6 +34,7 @@ pub mod server;
 mod connect;
 mod files;
 mod forward;
+mod host_list;
 mod hosts;
 mod local;
 mod session_life;
@@ -41,6 +43,10 @@ mod terminal;
 mod vault;
 
 pub use server::{OTP, PASSWORD, PROMPT, Policy, Server, USER, WELCOME};
+
+/// The lists that scroll, by their `.debug_selector(..)`: a click on what is
+/// in one scrolls it into view first ([`Ui::click`]).
+const SCROLLING: [&str; 2] = ["settings-content", "hosts"];
 
 /// How long a step may take before the scenario fails. Generous: debug
 /// builds of libghostty parse slowly, and CI machines are slow.
@@ -410,6 +416,126 @@ impl Ui {
         self.wait_until("a dialog", |ui| ui.cx.has_pending_prompt());
         self.cx.simulate_prompt_answer(button);
         self.cx.run_until_parked();
+    }
+
+    /// Where the element marked `.debug_selector(|| selector)` is drawn now.
+    /// GPUI records these only with debug assertions: a release build of
+    /// the tests takes the `ui-tests` profile, which keeps them on for GPUI.
+    pub fn bounds(&mut self, selector: &str) -> gpui::Bounds<gpui::Pixels> {
+        self.find(selector)
+            .unwrap_or_else(|| panic!("nothing marked {selector:?} is drawn"))
+    }
+
+    /// The element marked `selector`, if the window draws it.
+    pub fn find(&mut self, selector: &str) -> Option<gpui::Bounds<gpui::Pixels>> {
+        self.draw();
+        // GPUI looks selectors up by a 'static str; a scenario names a few.
+        let selector: &'static str = Box::leak(selector.to_string().into_boxed_str());
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.debug_bounds(selector)
+    }
+
+    /// The middle of the element marked `selector`, scrolled into view first
+    /// when it is in one of the [`SCROLLING`] lists and beyond what the list
+    /// shows, as a user scrolls to what they want to click. (Its bounds are
+    /// where it is laid out, shown or not: one scrolled under a page's
+    /// header is not under the mouse.) What does not scroll, as a footer
+    /// below a list, is clicked where it is.
+    fn reach(&mut self, selector: &str) -> gpui::Point<gpui::Pixels> {
+        let mut last = None;
+        for _ in 0..50 {
+            let b = self.bounds(selector);
+            let at = b.center();
+            let list = SCROLLING
+                .iter()
+                .filter_map(|s| self.find(s))
+                .find(|l| l.left() <= at.x && at.x <= l.right());
+            let Some(list) = list else {
+                return at;
+            };
+            let delta = if b.top() < list.top() {
+                3.
+            } else if b.bottom() > list.bottom() {
+                -3.
+            } else {
+                return at;
+            };
+            if last == Some(at.y) {
+                // It does not move: it is not in the list.
+                let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+                let window = vcx.update(|w, _| w.viewport_size());
+                assert!(
+                    at.y >= gpui::px(0.) && at.y < window.height,
+                    "{selector:?} is outside the window and does not scroll into it"
+                );
+                return at;
+            }
+            last = Some(at.y);
+            let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+            vcx.simulate_event(gpui::ScrollWheelEvent {
+                position: list.center(),
+                delta: gpui::ScrollDelta::Lines(gpui::point(0., delta)),
+                ..Default::default()
+            });
+            self.cx.run_until_parked();
+        }
+        panic!("{selector:?} cannot be scrolled into view");
+    }
+
+    /// Clicks the middle of the element marked `selector`, as the mouse does.
+    pub fn click(&mut self, selector: &str) {
+        let at = self.reach(selector);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.simulate_click(at, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
+    /// Moves the mouse over the middle of the element marked `selector`.
+    pub fn hover(&mut self, selector: &str) {
+        let at = self.reach(selector);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.simulate_mouse_move(at, None, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
+    /// The last web page or file the app asked the system to open.
+    pub fn opened_url(&mut self) -> Option<String> {
+        self.cx.run_until_parked();
+        self.cx.opened_url()
+    }
+
+    /// The text on the clipboard.
+    pub fn clipboard(&mut self) -> Option<String> {
+        self.cx.read_from_clipboard().and_then(|c| c.text())
+    }
+
+    /// The Settings page showing, if Settings is open.
+    pub fn settings_page(&mut self) -> Option<crate::settings_view::Page> {
+        self.ws(|ws, _, cx| ws.settings_page(cx))
+    }
+
+    /// The sidebar's host list as shown: each section's title and its hosts.
+    pub fn host_list(&mut self) -> Vec<(String, Vec<String>)> {
+        self.cx.run_until_parked();
+        self.ws(|ws, _, cx| ws.host_list(cx))
+    }
+
+    /// The names of the hosts the sidebar shows, in order.
+    pub fn host_names(&mut self) -> Vec<String> {
+        self.host_list().into_iter().flat_map(|(_, h)| h).collect()
+    }
+
+    pub fn host_editor_open(&mut self) -> bool {
+        self.ws(|ws, _, _| ws.host_editor_open())
+    }
+
+    pub fn group_editor_open(&mut self) -> bool {
+        self.ws(|ws, _, _| ws.group_editor_open())
+    }
+
+    /// hosts.toml as it is on disk.
+    pub fn hosts_toml(&self) -> String {
+        std::fs::read_to_string(self.config_dir().join("hosts.toml")).unwrap_or_default()
     }
 
     pub fn copy_to_clipboard(&mut self, text: &str) {

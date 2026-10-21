@@ -94,12 +94,12 @@ impl SettingsView {
                     ),
             )
             .child(
-                small_button("about-copy-version", &tr!("Copy version info")).on_click(
-                    cx.listener(|v, _, _, cx| {
+                small_button("about-copy-version", &tr!("Copy version info"))
+                    .debug_selector(|| "about-copy-version".into())
+                    .on_click(cx.listener(|v, _, _, cx| {
                         cx.write_to_clipboard(ClipboardItem::new_string(version_info()));
                         v.say(tr!("Copied: {info}", info = version_info()), cx);
-                    }),
-                ),
+                    })),
             )
     }
 
@@ -377,7 +377,9 @@ fn link_button(
     url: String,
     cx: &mut Context<SettingsView>,
 ) -> gpui::Stateful<gpui::Div> {
-    small_button(id, text).on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
+    small_button(id, text)
+        .debug_selector(|| id.into())
+        .on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
 }
 
 /// A filled button that opens a web page: the section's main way on.
@@ -390,6 +392,7 @@ fn primary_link(
 ) -> gpui::Stateful<gpui::Div> {
     div()
         .id(id)
+        .debug_selector(|| id.into())
         .h(px(28.))
         .px(px(12.))
         .flex()

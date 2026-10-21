@@ -439,6 +439,28 @@ impl Workspace {
         self.palette.is_some()
     }
 
+    /// The Settings page showing, if Settings is open.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn settings_page(&self, cx: &gpui::App) -> Option<Page> {
+        self.settings.as_ref().map(|(v, _)| v.read(cx).page())
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn host_editor_open(&self) -> bool {
+        self.editor.is_some()
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn group_editor_open(&self) -> bool {
+        self.group_editor.is_some()
+    }
+
+    /// The host list as shown: each section's title and its hosts' names.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn host_list(&self, cx: &gpui::App) -> Vec<(String, Vec<String>)> {
+        self.sidebar.read(cx).shown_names(cx)
+    }
+
     /// The focused pane of the active tab: for the UI tests to read.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn active_view(&self) -> Entity<TermView> {
