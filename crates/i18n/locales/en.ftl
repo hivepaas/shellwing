@@ -895,12 +895,12 @@ t2f60c9bf = or continue with
 t616f184a = Rather not keep it yourself?
 t81dee99e = shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.
 t8de35792 = shellwing cloud is coming: signing in opens with it.
-t6036c21e =
+td1ec974a =
     { $n ->
-        [one] { $n } host · $2.99/mo
-       *[other] { $n } hosts · $2.99/mo
+        [one] { $n } host · $3.99/mo
+       *[other] { $n } hosts · $3.99/mo
     }
-td7d2332f = unlimited · $5.99/mo
+t6cc4bcad = unlimited · $7.99/mo
 ta715ef0f = just now
 t85ac693d = a minute ago
 t6c7302d6 =
@@ -976,9 +976,9 @@ t59fb4764 = { $total } found{ $more }
 t692d685e = Match case (Alt+C)
 tc1b10302 = Regular expression (Alt+R)
 t0e83f1c9 = The Files panel browses a server over SFTP; this pane is a shell on this computer.
+t0d69c4e6 = Saved in the vault.
 tceb19137 = Save the password for { $target } in the vault?
 tc75d3456 = Save the passphrase of { $key_path } in the vault?
-t0d69c4e6 = Saved in the vault.
 t1e510d66 = The host key for { $host } has changed.
 t26f8b8a1 = If the server was reinstalled or its key replaced, trust the new key. If you do not know why it changed, do not: someone may be between you and the server, reading what you send.
 t3f42d62c = Known

@@ -2515,15 +2515,15 @@ t81dee99e = shellwing cloud s'en charge pour vous : connectez-vous sur chaque ap
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud arrive bientôt : la connexion au compte ouvrira avec lui.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e =
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a =
     { $n ->
         [one] { $n } serveur · 2,99 $/mois
        *[other] { $n } serveurs · 2,99 $/mois
     }
 
-# unlimited · $5.99/mo
-td7d2332f = illimité · 5,99 $/mois
+# unlimited · $7.99/mo
+t6cc4bcad = illimité · 5,99 $/mois
 
 # just now
 ta715ef0f = à l'instant
@@ -2702,14 +2702,14 @@ tc1b10302 = Expression régulière (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Le panneau Fichiers parcourt un serveur via SFTP ; ce volet est un shell sur cet ordinateur.
 
+# Saved in the vault.
+t0d69c4e6 = Enregistré dans le coffre.
+
 # Save the password for {target} in the vault?
 tceb19137 = Enregistrer le mot de passe de { $target } dans le coffre ?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Enregistrer la phrase secrète de { $key_path } dans le coffre ?
-
-# Saved in the vault.
-t0d69c4e6 = Enregistré dans le coffre.
 
 # The host key for {host} has changed.
 t1e510d66 = La clé du serveur { $host } a changé.

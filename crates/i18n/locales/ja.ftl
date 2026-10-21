@@ -2467,11 +2467,11 @@ t81dee99e = shellwing cloud が代わりに保管します。各デバイスで�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud は近日提供予定です。提供開始後はサインインで使えます。
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = ホスト { $n } 件 · $2.99/月
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = ホスト { $n } 件 · $3.99/月
 
-# unlimited · $5.99/mo
-td7d2332f = 無制限 · $5.99/月
+# unlimited · $7.99/mo
+t6cc4bcad = 無制限 · $7.99/月
 
 # just now
 ta715ef0f = たった今
@@ -2629,14 +2629,14 @@ tc1b10302 = 正規表現（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = ファイルパネルは SFTP でサーバーを閲覧します。このペインはこのコンピュータ上のシェルです。
 
+# Saved in the vault.
+t0d69c4e6 = 保管庫に保存しました。
+
 # Save the password for {target} in the vault?
 tceb19137 = { $target } のパスワードを保管庫に保存しますか？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path } のパスフレーズを保管庫に保存しますか？
-
-# Saved in the vault.
-t0d69c4e6 = 保管庫に保存しました。
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } のホスト鍵が変更されています。

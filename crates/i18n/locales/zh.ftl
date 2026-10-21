@@ -2467,11 +2467,11 @@ t81dee99e = shellwing cloud 替你保管：在每台设备上登录即可。仍�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud 即将推出：届时将开放登录。
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } 台主机 · $2.99/月
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } 台主机 · $3.99/月
 
-# unlimited · $5.99/mo
-td7d2332f = 不限数量 · $5.99/月
+# unlimited · $7.99/mo
+t6cc4bcad = 不限数量 · $7.99/月
 
 # just now
 ta715ef0f = 刚刚
@@ -2629,14 +2629,14 @@ tc1b10302 = 正则表达式（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = “文件”面板通过 SFTP 浏览服务器；此窗格是本机上的 shell。
 
+# Saved in the vault.
+t0d69c4e6 = 已保存到保险库。
+
 # Save the password for {target} in the vault?
 tceb19137 = 将 { $target } 的密码保存到保险库？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = 将 { $key_path } 的密码短语保存到保险库？
-
-# Saved in the vault.
-t0d69c4e6 = 已保存到保险库。
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } 的主机密钥已更改。

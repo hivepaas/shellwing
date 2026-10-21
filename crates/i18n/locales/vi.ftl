@@ -2467,11 +2467,11 @@ t81dee99e = shellwing cloud giữ giúp bạn: đăng nhập trên mỗi thiết
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud sắp ra mắt: đăng nhập sẽ mở cùng lúc.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } máy chủ · $2.99/tháng
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } máy chủ · $3.99/tháng
 
-# unlimited · $5.99/mo
-td7d2332f = không giới hạn · $5.99/tháng
+# unlimited · $7.99/mo
+t6cc4bcad = không giới hạn · $7.99/tháng
 
 # just now
 ta715ef0f = vừa xong
@@ -2629,14 +2629,14 @@ tc1b10302 = Biểu thức chính quy (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Bảng Tệp duyệt máy chủ qua SFTP; khung này là shell trên máy tính này.
 
+# Saved in the vault.
+t0d69c4e6 = Đã lưu vào kho.
+
 # Save the password for {target} in the vault?
 tceb19137 = Lưu mật khẩu cho { $target } vào kho?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Lưu cụm mật khẩu của { $key_path } vào kho?
-
-# Saved in the vault.
-t0d69c4e6 = Đã lưu vào kho.
 
 # The host key for {host} has changed.
 t1e510d66 = Khoá máy chủ của { $host } đã thay đổi.

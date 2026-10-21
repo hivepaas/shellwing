@@ -2467,11 +2467,11 @@ t81dee99e = shellwing cloud가 대신 보관합니다. 각 기기에서 로그�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud가 곧 출시됩니다. 출시와 함께 로그인할 수 있습니다.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = 호스트 { $n }개 · $2.99/월
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = 호스트 { $n }개 · $3.99/월
 
-# unlimited · $5.99/mo
-td7d2332f = 무제한 · $5.99/월
+# unlimited · $7.99/mo
+t6cc4bcad = 무제한 · $7.99/월
 
 # just now
 ta715ef0f = 방금
@@ -2629,14 +2629,14 @@ tc1b10302 = 정규식 (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 파일 패널은 SFTP로 서버를 탐색합니다. 이 창은 이 컴퓨터의 셸입니다.
 
+# Saved in the vault.
+t0d69c4e6 = 보관함에 저장했습니다.
+
 # Save the password for {target} in the vault?
 tceb19137 = { $target }의 비밀번호를 보관함에 저장하시겠습니까?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path }의 암호 문구를 보관함에 저장하시겠습니까?
-
-# Saved in the vault.
-t0d69c4e6 = 보관함에 저장했습니다.
 
 # The host key for {host} has changed.
 t1e510d66 = { $host }의 호스트 키가 변경되었습니다.

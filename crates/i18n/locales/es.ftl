@@ -2515,15 +2515,15 @@ t81dee99e = shellwing cloud lo guarda por ti: inicia sesión en cada dispositivo
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud llega pronto: el inicio de sesión se habilitará con él.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e =
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a =
     { $n ->
-        [one] { $n } servidor · $2.99/mes
-       *[other] { $n } servidores · $2.99/mes
+        [one] { $n } servidor · $3.99/mes
+       *[other] { $n } servidores · $3.99/mes
     }
 
-# unlimited · $5.99/mo
-td7d2332f = ilimitado · $5.99/mes
+# unlimited · $7.99/mo
+t6cc4bcad = ilimitado · $7.99/mes
 
 # just now
 ta715ef0f = ahora mismo
@@ -2702,14 +2702,14 @@ tc1b10302 = Expresión regular (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = El panel Archivos explora un servidor por SFTP; este panel es una shell en este equipo.
 
+# Saved in the vault.
+t0d69c4e6 = Guardado en la bóveda.
+
 # Save the password for {target} in the vault?
 tceb19137 = ¿Guardar la contraseña de { $target } en la bóveda?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = ¿Guardar la frase de contraseña de { $key_path } en la bóveda?
-
-# Saved in the vault.
-t0d69c4e6 = Guardado en la bóveda.
 
 # The host key for {host} has changed.
 t1e510d66 = La clave del servidor { $host } ha cambiado.

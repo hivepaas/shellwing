@@ -2557,17 +2557,17 @@ t81dee99e = shellwing cloud хранит всё за вас: войдите на
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud скоро появится: вход откроется вместе с ним.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e =
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a =
     { $n ->
-        [one] { $n } хост · $2.99/мес.
-        [few] { $n } хоста · $2.99/мес.
-        [many] { $n } хостов · $2.99/мес.
-       *[other] { $n } хоста · $2.99/мес.
+        [one] { $n } хост · $3.99/мес.
+        [few] { $n } хоста · $3.99/мес.
+        [many] { $n } хостов · $3.99/мес.
+       *[other] { $n } хоста · $3.99/мес.
     }
 
-# unlimited · $5.99/mo
-td7d2332f = без ограничений · $5.99/мес.
+# unlimited · $7.99/mo
+t6cc4bcad = без ограничений · $7.99/мес.
 
 # just now
 ta715ef0f = только что
@@ -2758,14 +2758,14 @@ tc1b10302 = Регулярное выражение (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Панель «Файлы» просматривает сервер по SFTP; эта панель — оболочка на этом компьютере.
 
+# Saved in the vault.
+t0d69c4e6 = Сохранено в хранилище.
+
 # Save the password for {target} in the vault?
 tceb19137 = Сохранить пароль для { $target } в хранилище?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Сохранить парольную фразу { $key_path } в хранилище?
-
-# Saved in the vault.
-t0d69c4e6 = Сохранено в хранилище.
 
 # The host key for {host} has changed.
 t1e510d66 = Ключ хоста { $host } изменился.
