@@ -1252,6 +1252,12 @@ t44662d06 = Sin categoría
 # Write here; Markdown shows as you type.
 t117b6c23 = Escribe aquí; el Markdown se ve mientras escribes.
 
+# Copy Image
+tf77eb889 = Copiar imagen
+
+# Save Image As…
+t4504c6b5 = Guardar imagen como…
+
 # It is not in the vault any more.
 td11af590 = Ya no está en la bóveda.
 
@@ -1260,6 +1266,25 @@ tb31ba949 = Las imágenes se muestran en notas Markdown; esta nota es texto sin 
 
 # Images go in while the note is edited.
 t6f2c9191 = Las imágenes se añaden mientras se edita la nota.
+
+# Export
+te86349d3 = Exportar
+
+# Export the note?
+t3fc8daf1 = ¿Exportar la nota?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = La nota y sus imágenes se escriben como archivos, sin cifrar: quien pueda leer la carpeta podrá leerlas.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+        [one] Exportada sin una imagen aún no sincronizada.
+       *[other] Exportada sin { $n } imágenes aún no sincronizadas.
+    }
+
+# Not exported: {e}
+t9d93dffa = No se exportó: { $e }
 
 # Insert
 t0f317948 = Insertar
@@ -1299,6 +1324,9 @@ tfdda4cf7 = Vista previa
 
 # Sensitive
 tf603feef = Confidencial
+
+# Export…
+tc8865b2d = Exportar…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Confidencial: su texto se muestra al confirmar que eres tú.

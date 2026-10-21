@@ -1228,6 +1228,12 @@ t44662d06 = 카테고리 없음
 # Write here; Markdown shows as you type.
 t117b6c23 = 여기에 작성하세요. Markdown은 입력하는 대로 표시됩니다.
 
+# Copy Image
+tf77eb889 = 이미지 복사
+
+# Save Image As…
+t4504c6b5 = 이미지를 다른 이름으로 저장…
+
 # It is not in the vault any more.
 td11af590 = 더 이상 보관함에 없습니다.
 
@@ -1236,6 +1242,24 @@ tb31ba949 = 이미지는 Markdown 노트에서 표시됩니다. 이 노트는 �
 
 # Images go in while the note is edited.
 t6f2c9191 = 이미지는 노트를 편집하는 동안 넣을 수 있습니다.
+
+# Export
+te86349d3 = 내보내기
+
+# Export the note?
+t3fc8daf1 = 노트를 내보낼까요?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = 노트와 이미지는 암호화되지 않은 파일로 기록됩니다. 폴더를 읽을 수 있는 사람은 누구나 읽을 수 있습니다.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] 아직 동기화되지 않은 이미지 { $n }개를 빼고 내보냈습니다.
+    }
+
+# Not exported: {e}
+t9d93dffa = 내보내지 못함: { $e }
 
 # Insert
 t0f317948 = 삽입
@@ -1275,6 +1299,9 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
+
+# Export…
+tc8865b2d = 내보내기…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 민감 정보: 본인 확인 후 텍스트가 표시됩니다.

@@ -442,9 +442,20 @@ t788c7123 = New note
 t24d471a9 = Title
 t44662d06 = No category
 t117b6c23 = Write here; Markdown shows as you type.
+tf77eb889 = Copy Image
+t4504c6b5 = Save Image As…
 td11af590 = It is not in the vault any more.
 tb31ba949 = Images show in Markdown notes; this note is plain text.
 t6f2c9191 = Images go in while the note is edited.
+te86349d3 = Export
+t3fc8daf1 = Export the note?
+t599b6331 = The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t9b7fcb65 =
+    { $n ->
+        [one] Exported without an image not synced yet.
+       *[other] Exported without { $n } images not synced yet.
+    }
+t9d93dffa = Not exported: { $e }
 t0f317948 = Insert
 t4545c373 = this note
 t3c6666da = It goes from the vault, and from your other devices once they sync.
@@ -458,6 +469,7 @@ tb7fc0ade = Plain text
 tc2c76cb1 = Edit
 tfdda4cf7 = Preview
 tf603feef = Sensitive
+tc8865b2d = Export…
 tb81fab1b = Sensitive: its text shows once it is you.
 t0ff690fe = Show the text
 t3ab56316 = Confirm it is you in the system's prompt…

@@ -1228,6 +1228,12 @@ t44662d06 = カテゴリなし
 # Write here; Markdown shows as you type.
 t117b6c23 = ここに書きます。Markdown は入力しながら表示されます。
 
+# Copy Image
+tf77eb889 = 画像をコピー
+
+# Save Image As…
+t4504c6b5 = 名前を付けて画像を保存…
+
 # It is not in the vault any more.
 td11af590 = 保管庫にはもうありません。
 
@@ -1236,6 +1242,24 @@ tb31ba949 = 画像は Markdown のノートで表示されます。このノー�
 
 # Images go in while the note is edited.
 t6f2c9191 = 画像はノートの編集中に追加できます。
+
+# Export
+te86349d3 = 書き出す
+
+# Export the note?
+t3fc8daf1 = ノートを書き出しますか？
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = ノートとその画像は暗号化されずにファイルとして書き出されます。フォルダを読める人は誰でも読めます。
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] まだ同期されていない画像 { $n } 枚を除いて書き出しました。
+    }
+
+# Not exported: {e}
+t9d93dffa = 書き出せませんでした：{ $e }
 
 # Insert
 t0f317948 = 挿入
@@ -1275,6 +1299,9 @@ tfdda4cf7 = プレビュー
 
 # Sensitive
 tf603feef = 機密
+
+# Export…
+tc8865b2d = 書き出す…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 機密: 本人確認後にテキストが表示されます。

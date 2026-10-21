@@ -1228,6 +1228,12 @@ t44662d06 = Chưa phân loại
 # Write here; Markdown shows as you type.
 t117b6c23 = Viết ở đây; Markdown hiện ngay khi gõ.
 
+# Copy Image
+tf77eb889 = Sao chép ảnh
+
+# Save Image As…
+t4504c6b5 = Lưu ảnh thành…
+
 # It is not in the vault any more.
 td11af590 = Tệp không còn trong kho.
 
@@ -1236,6 +1242,24 @@ tb31ba949 = Ảnh chỉ hiện trong ghi chú Markdown; ghi chú này là văn b
 
 # Images go in while the note is edited.
 t6f2c9191 = Chỉ chèn được ảnh khi đang sửa ghi chú.
+
+# Export
+te86349d3 = Xuất
+
+# Export the note?
+t3fc8daf1 = Xuất ghi chú?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = Ghi chú và ảnh của nó được ghi thành tệp, không mã hoá: ai đọc được thư mục cũng đọc được chúng.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] Đã xuất, thiếu { $n } ảnh chưa đồng bộ xong.
+    }
+
+# Not exported: {e}
+t9d93dffa = Chưa xuất được: { $e }
 
 # Insert
 t0f317948 = Chèn
@@ -1275,6 +1299,9 @@ tfdda4cf7 = Xem trước
 
 # Sensitive
 tf603feef = Nhạy cảm
+
+# Export…
+tc8865b2d = Xuất…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Nhạy cảm: nội dung chỉ hiện khi xác nhận là bạn.

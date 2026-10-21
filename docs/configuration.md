@@ -796,8 +796,13 @@ are scaled to 2560 px on their long edge and written as PNG (screenshots) or
 JPEG (photos), which drops their metadata, such as where a photo was taken;
 one holds 2 MB at most, and a note's 20 MB together. An image no note has
 shown for 30 days is removed. While a synced note's image has not come yet,
-its line says so, and the picture shows once it does. Design:
-[docs/design/note-images.md](design/note-images.md).
+its line says so, and the picture shows once it does. Right-click an image
+for *Copy Image* and *Save Image As…* (in Preview too), or *Delete image*.
+Dropped files go where they are dropped, after the line under the pointer.
+Markdown pasted from elsewhere with images as `data:` URIs keeps them, as
+attachments. *Export…*, beside *Delete*, writes the note as `note.md` with
+its images in `images/`, in a folder you choose; it asks first, as the files
+are not encrypted. Design: [docs/design/note-images.md](design/note-images.md).
 
 The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
 into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as

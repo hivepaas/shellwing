@@ -2,7 +2,7 @@
 
 A note can show images: a screenshot of an error, a dashboard, a diagram. They
 are kept encrypted in the vault and sync with it, as the note's text does.
-Phase 1 below is built; phase 2 is still to do. Questions still to settle are
+Phases 1 and 2 below are built, but for `http(s)` images. Questions still to settle are
 marked **Open**.
 
 ## What the editor brings
@@ -17,7 +17,9 @@ marked **Open**.
 - **The clipboard carries images** on macOS, Windows and Linux
   (`ClipboardEntry::Image` in GPUI 0.3.9).
 
-So phase 1 needed no change to the editor (`crates/note-editor`).
+So phase 1 needed no change to the editor (`crates/note-editor`). Phase 2
+added the host's items in an image's menu and an offset for a drop
+(`UPSTREAM.md`, change 11), and items under Paste (change 10).
 
 ## Where images are kept
 
@@ -132,10 +134,14 @@ line break is added before or after where text would share it).
 
 1. **Paste** (Ctrl+V, Cmd+V on macOS) with an image on the clipboard (a
    screenshot), or image files copied in a file manager.
-2. **Drop** image files on the note's window. Phase 1 puts them at the caret,
-   not where they were dropped.
-3. **Insert Image…** in the editor's menu: a file dialog, several files at
-   once.
+2. **Drop** image files on the note's window: where they were dropped, at the
+   start of the line under the pointer, or after it when the pointer is in a
+   line (a line of text is never split).
+3. **Insert Image…** in the editor's menu, under Paste (not while
+   read-only): a file dialog, several files at once.
+4. **Markdown with `data:` images** (pasted from elsewhere): each
+   `data:image/…;base64,…` becomes an attachment, and its reference replaces
+   the URI.
 
 Images go into Markdown notes only, while they are edited (not in Preview);
 otherwise the window says why.
@@ -175,16 +181,27 @@ not grow.
 - **Sensitive notes:** images show only once the note's text does.
 - **Locked vault:** a note's window holds no text and forgets its images.
 
+## An image's menu, and export
+
+- Right-click an image: *Copy Image* (the image itself on the clipboard),
+  *Save Image As…* (a file dialog, Downloads first; the note's title as the
+  name), then *Delete image* while edited. In Preview the first two only.
+- *Export…*, beside the note's Delete: asks first, since the files leave the
+  vault unencrypted ([vault.md](vault.md): plain-text export needs
+  confirmation), then writes a folder named after the note, in one the user
+  chooses: `note.md`, its images in `images/<id>.png|jpg`, the references
+  rewritten to them. Images not synced yet are left out, and said so.
+
 ## Phases
 
 1. **Phase 1 (built):** the `attachments` table and backend folder, preparing,
    paste, drop and *Insert Image…*, the providers and cache, limits, removal,
    sync (push before records, pull on reference, putting back), sealing again
    on joining.
-2. **Phase 2:** an image menu (*Copy image*, *Save image as…*), copying an
-   image with a selection, exporting a note with its images as `images/`,
-   `data:` URIs pasted in Markdown turned into attachments, `http(s)` images
-   loaded on request, dropping at the pointer.
+2. **Phase 2 (built):** the image's menu (*Copy Image*, *Save Image As…*),
+   *Export…* with `images/`, `data:` URIs pasted in Markdown turned into
+   attachments, dropping at the pointer.
+3. **Still to do:** `http(s)` images loaded on request (**Open**).
 
 ## Tests
 
@@ -202,7 +219,9 @@ not grow.
 - **UI scenarios** (`ui_tests/notes.rs`): a screenshot pasted into a note is
   kept and drawn; the note saved and opened again draws it from the vault;
   *Insert Image…* with a file; a copied script is refused, saying why; a plain
-  text note says images need Markdown.
+  text note says images need Markdown; *Copy Image*; *Save Image As…*; a drop
+  in a line goes after it; a pasted `data:` URI becomes an attachment;
+  *Export…* writes `note.md` and `images/`.
 
 ## Threats
 

@@ -1228,6 +1228,12 @@ t44662d06 = 无分类
 # Write here; Markdown shows as you type.
 t117b6c23 = 在此书写；Markdown 会在输入时显示。
 
+# Copy Image
+tf77eb889 = 复制图片
+
+# Save Image As…
+t4504c6b5 = 将图片另存为…
+
 # It is not in the vault any more.
 td11af590 = 它已不在保险库中。
 
@@ -1236,6 +1242,24 @@ tb31ba949 = 图片显示在 Markdown 笔记中；此笔记是纯文本。
 
 # Images go in while the note is edited.
 t6f2c9191 = 图片需在编辑笔记时插入。
+
+# Export
+te86349d3 = 导出
+
+# Export the note?
+t3fc8daf1 = 导出笔记？
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = 笔记及其图片将以未加密的文件写出：任何能读取该文件夹的人都能读取它们。
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] 已导出，缺少 { $n } 张尚未同步的图片。
+    }
+
+# Not exported: {e}
+t9d93dffa = 未导出：{ $e }
 
 # Insert
 t0f317948 = 插入
@@ -1275,6 +1299,9 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
+
+# Export…
+tc8865b2d = 导出…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 敏感：确认是你本人后才显示内容。

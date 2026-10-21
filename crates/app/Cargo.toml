@@ -50,6 +50,8 @@ tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
 unicode-segmentation = "1"
+# Images pasted into notes as data: URIs.
+base64 = "0.22"
 # Where downloads go, and file dates in local time.
 dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

@@ -1270,6 +1270,12 @@ t44662d06 = Без категории
 # Write here; Markdown shows as you type.
 t117b6c23 = Пишите здесь; Markdown виден по мере ввода.
 
+# Copy Image
+tf77eb889 = Копировать изображение
+
+# Save Image As…
+t4504c6b5 = Сохранить изображение как…
+
 # It is not in the vault any more.
 td11af590 = Его больше нет в хранилище.
 
@@ -1278,6 +1284,27 @@ tb31ba949 = Изображения показываются в заметках 
 
 # Images go in while the note is edited.
 t6f2c9191 = Изображения добавляются, пока заметка редактируется.
+
+# Export
+te86349d3 = Экспортировать
+
+# Export the note?
+t3fc8daf1 = Экспортировать заметку?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = Заметка и её изображения записываются файлами без шифрования: их прочтёт любой, кто может читать папку.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+        [one] Экспортировано без { $n } ещё не синхронизированного изображения.
+        [few] Экспортировано без { $n } ещё не синхронизированных изображений.
+        [many] Экспортировано без { $n } ещё не синхронизированных изображений.
+       *[other] Экспортировано без { $n } ещё не синхронизированного изображения.
+    }
+
+# Not exported: {e}
+t9d93dffa = Не экспортировано: { $e }
 
 # Insert
 t0f317948 = Вставить
@@ -1317,6 +1344,9 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
+
+# Export…
+tc8865b2d = Экспортировать…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Конфиденциально: текст покажется, когда вы подтвердите, что это вы.

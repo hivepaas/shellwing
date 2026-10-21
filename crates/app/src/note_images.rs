@@ -274,6 +274,104 @@ fn said_prepare(name: &str, e: &PrepareError) -> String {
     }
 }
 
+/// The image an attachment holds, with its extension (`png` or `jpg`).
+pub fn image_bytes(vault: &Vault, id: &str) -> Option<(Vec<u8>, &'static str)> {
+    let bytes = vault.attachment(id).ok()??.to_vec();
+    let ext = match shellwing_vault::image_mime(&bytes)? {
+        "image/png" => "png",
+        _ => "jpg",
+    };
+    Some((bytes, ext))
+}
+
+/// Where dropped images go: the start of the line under the pointer
+/// (`offset`) if it is at one, else the end of that line, so a line of text
+/// is never split.
+pub fn drop_offset(text: &str, offset: usize) -> usize {
+    let offset = offset.min(text.len());
+    if offset == 0 || text[..offset].ends_with('\n') {
+        return offset;
+    }
+    text[offset..].find('\n').map_or(text.len(), |i| offset + i)
+}
+
+/// The images written in `text` as `data:` URIs (pasted Markdown from
+/// elsewhere): each URI (as it is in the text) and its bytes.
+pub fn data_images(text: &str) -> Vec<(String, Vec<u8>)> {
+    use base64::Engine as _;
+    let mut out = vec![];
+    let mut rest = text;
+    while let Some(at) = rest.find("](data:image/") {
+        let uri_start = at + 2;
+        let tail = &rest[uri_start..];
+        let Some(end) = tail.find(')') else { break };
+        let uri = &tail[..end];
+        if let Some((_, data)) = uri.split_once(";base64,")
+            && let Ok(bytes) = base64::engine::general_purpose::STANDARD
+                .decode(data.trim().replace(['\n', '\r', ' '], ""))
+        {
+            out.push((uri.to_string(), bytes));
+        }
+        rest = &tail[end..];
+    }
+    out
+}
+
+/// Writes the note `text` titled `title`, with its images, into a folder of
+/// its own in `dir`: `note.md`, its images in `images/`, the references
+/// rewritten to them. The folder, and how many images were not here to
+/// write.
+pub fn export(
+    vault: &Vault,
+    title: &str,
+    text: &str,
+    dir: &std::path::Path,
+) -> std::io::Result<(PathBuf, usize)> {
+    let name: String = title
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || " -_.".contains(c) {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .trim()
+        .trim_matches('.')
+        .to_string();
+    let name = if name.is_empty() {
+        "note".to_string()
+    } else {
+        name
+    };
+    let mut folder = dir.join(&name);
+    let mut n = 2;
+    while folder.exists() {
+        folder = dir.join(format!("{name} ({n})"));
+        n += 1;
+    }
+    std::fs::create_dir_all(&folder)?;
+    let mut out = text.to_string();
+    let mut missing = 0;
+    let refs = attachment_refs(text);
+    if !refs.is_empty() {
+        std::fs::create_dir_all(folder.join("images"))?;
+    }
+    for id in refs {
+        match image_bytes(vault, &id) {
+            Some((bytes, ext)) => {
+                let file = format!("images/{id}.{ext}");
+                std::fs::write(folder.join(&file), bytes)?;
+                out = out.replace(&format!("{SCHEME}{id}"), &file);
+            }
+            None => missing += 1,
+        }
+    }
+    std::fs::write(folder.join("note.md"), out)?;
+    Ok((folder, missing))
+}
+
 /// What to put in place of `range` of `text` for images `ids`: one line each,
 /// on lines of their own (a line break is added before or after when the
 /// text around would share their lines).
@@ -317,6 +415,28 @@ mod tests {
             insertion("", 0..0, &two),
             format!("{line}\n{}", attachment_line(&two[1]))
         );
+    }
+
+    #[test]
+    fn dropped_images_do_not_split_a_line() {
+        let text = "first line\nsecond line\n";
+        // At a line's start: there.
+        assert_eq!(drop_offset(text, 11), 11);
+        assert_eq!(drop_offset(text, 0), 0);
+        // In a line: at its end.
+        assert_eq!(drop_offset(text, 4), 10);
+        assert_eq!(drop_offset("no newline", 3), 10);
+    }
+
+    #[test]
+    fn data_uris_are_found_and_decoded() {
+        let text = "a ![x](data:image/png;base64,iVBORw0K) b ![y](https://e.com/y.png) \
+                    ![z](data:image/jpeg;base64,/9j/4A==)";
+        let found = data_images(text);
+        assert_eq!(found.len(), 2);
+        assert_eq!(found[0].0, "data:image/png;base64,iVBORw0K");
+        assert!(found[0].1.starts_with(b"\x89PNG"));
+        assert_eq!(found[1].1, [0xFF, 0xD8, 0xFF, 0xE0]);
     }
 
     #[test]
