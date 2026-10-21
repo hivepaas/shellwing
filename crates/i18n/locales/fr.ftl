@@ -709,6 +709,109 @@ te833da37 = config.toml, [shortcuts] : `{ $key }` est attribué à la fois à { 
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name } : `{ $key }` ne convient pas ; seul go_to_tab accepte `digit` (1 à 9), et il n'accepte rien d'autre.
 
+# Import
+t573e0af4 = Importer
+
+# No hosts in it.
+tbb05fee9 = Il ne contient aucun serveur.
+
+# Looking for other SSH apps…
+tb71f4415 = Recherche d'autres applis SSH…
+
+# No other SSH app with hosts was found here.
+tecba4271 = Aucune autre appli SSH avec des serveurs n'a été trouvée ici.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } serveur
+       *[other] { $n } serveurs
+    }
+
+# Import hosts
+t956d1e67 = Importer des serveurs
+
+# Found on this computer
+td811df9d = Trouvé sur cet ordinateur
+
+# Or a file another app exported
+t9e7f0266 = Ou un fichier exporté par une autre appli
+
+# Choose a file or folder…
+t379a2c2c = Choisir un fichier ou un dossier…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = .reg de PuTTY ou KiTTY, .mxtsessions de MobaXterm, XML ou dossier Sessions de SecureCRT, .xts ou dossier Sessions de Xshell, config.yaml de Tabby, une config ssh, ou un CSV avec en-tête.
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = Les mots de passe ne sont pas importés : chaque serveur demande le sien la première fois et propose de le garder dans le coffre.
+
+# Import from {app}
+tb591e273 = Importer depuis { $app }
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c =
+    { $n ->
+        [one] { $n } serveur coché sur { $total }.
+       *[other] { $n } serveurs cochés sur { $total }.
+    }
+
+# {was} here is another host: named apart.
+t3dd0ab4e = Un autre serveur s'appelle déjà { $was } ici : renommé.
+
+# Already here as {name}.
+t536acaec = Déjà ici sous le nom { $name }.
+
+# Added: other hosts go through it.
+te8d2ba16 = Ajouté : d'autres serveurs passent par lui.
+
+# No group
+t2721e1c1 = Sans groupe
+
+# {n} left out | {n} left out
+t1e072c4b =
+    { $n ->
+        [one] { $n } laissé de côté
+       *[other] { $n } laissés de côté
+    }
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = Impossible d'importer des serveurs depuis ce fichier.
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app } garde ce fichier chiffré : il ne peut pas être lu ici.
+
+# Cannot read it: {e}
+t4fd94e68 = Lecture impossible : { $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = Sa clé est un .ppk de PuTTY : convertissez-la avec puttygen (format OpenSSH) pour vous connecter avec.
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = Sa clé { $name } est dans le magasin propre à { $app } : exportez-la là-bas, puis ajoutez-la dans Clés.
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = Son serveur de rebond { $name } n'est pas parmi les serveurs : laissé de côté.
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name } : pas SSH ({ $protocol })
+
+# {name}: no address
+t9f701d25 = { $name } : pas d'adresse
+
+# Reading…
+t6aad8485 = Lecture…
+
+# Back
+tc2954bc2 = Retour
+
+# Import {n} host | Import {n} hosts
+t040b2da6 =
+    { $n ->
+        [one] Importer { $n } serveur
+       *[other] Importer { $n } serveurs
+    }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (recommandé)
 
@@ -786,9 +889,6 @@ t4b242af5 = Phrase secrète de { $path } oubliée : elle sera de nouveau demand�
 
 # Not forgotten: {e}
 t0e3fb3a1 = Non oubliée : { $e }
-
-# Import
-t573e0af4 = Importer
 
 # not used by a host yet
 t7a67a5ad = pas encore utilisée par un serveur
@@ -1837,6 +1937,15 @@ tf7087aa7 = Rouvrir les derniers onglets au démarrage
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = Quand shellwing démarre sans serveur, il rouvre les onglets et divisions qu'il avait.
 
+# Hosts from another app
+tffafddac = Serveurs d'une autre appli
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config ou un fichier CSV : leurs serveurs, groupes, serveurs de rebond et redirections, montrés d'abord pour choisir. Les mots de passe ne sont pas importés.
+
+# Import…
+tecc08160 = Importer…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = Ces réglages, pour cet appareil. Les modifications dans le fichier s'appliquent immédiatement.
 
@@ -2276,6 +2385,9 @@ t2a8f8871 = Aucun serveur ne correspond.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Aucun serveur pour l'instant. Ajoutez-en un, ou ajoutez des blocs Host à ~/.ssh/config.
 
+# Import hosts from another app…
+tb00d665f = Importer des serveurs d'une autre appli…
+
 # + Host
 t0e963f08 = + Serveur
 
@@ -2577,13 +2689,6 @@ t1d5d16cc = Un fichier déposé se trouve sur le disque du serveur, avec ses per
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} sont remplis pour le serveur du volet ; tout autre {"{{"}name{"}}"} est demandé à l'exécution de l'extrait.
-
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } serveur
-       *[other] { $n } serveurs
-    }
 
 # {n} password | {n} passwords
 tf07ec59c =
@@ -3336,6 +3441,9 @@ t70ad7706 = Rechercher des mises à jour
 # New group…
 t2c0113fa = Nouveau groupe…
 
+# Undo import from {app}
+t971f8deb = Annuler l'import depuis { $app }
+
 # Edit host {name}…
 te6b404e6 = Modifier le serveur { $name }…
 
@@ -3622,6 +3730,26 @@ t58507cbd = Groupe { $name } enregistré.
 
 # Deleted the group {name}.
 t2dbe70db = Groupe { $name } supprimé.
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 =
+    { $n ->
+        [one] { $n } serveur importé depuis { $app }.
+       *[other] { $n } serveurs importés depuis { $app }.
+    }
+
+# {n} left out. | {n} left out.
+t96ae7881 =
+    { $n ->
+        [one] { $n } laissé de côté.
+       *[other] { $n } laissés de côté.
+    }
+
+# The palette can undo it.
+t21bfdf84 = La palette peut l'annuler.
+
+# The import from {app} is undone.
+t5f37b9b7 = L'import depuis { $app } est annulé.
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = Le port 8080 ici atteint localhost:80 tel que le serveur le voit.

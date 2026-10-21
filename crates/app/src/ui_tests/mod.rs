@@ -493,6 +493,20 @@ impl Ui {
         r
     }
 
+    /// Runs `f` on the import drawer, when it is open.
+    pub fn import<R>(
+        &mut self,
+        f: impl FnOnce(
+            &mut crate::import_view::ImportView,
+            &mut Context<crate::import_view::ImportView>,
+        ) -> R,
+    ) -> Option<R> {
+        let view = self.ws(|ws, _, _| ws.import_view())?;
+        let r = view.update(&mut self.cx, f);
+        self.cx.run_until_parked();
+        Some(r)
+    }
+
     /// Resizes the window, as dragging its edge does, and draws it.
     pub fn resize(&mut self, width: f32, height: f32) {
         let vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);

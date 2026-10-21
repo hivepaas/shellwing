@@ -329,6 +329,19 @@ A user or port typed on the command line (`root@api1:22`) wins over the file.
 behave like the default for now: agent, then key files, then a password prompt,
 as `ssh` does.
 
+**Importing hosts.** *Import hosts from another app…* (in the palette, under
+an empty host list, and *Import…* in Settings › General) reads the hosts another SSH client keeps: PuTTY and
+KiTTY, MobaXterm, SecureCRT, Xshell and Tabby where they are installed, or a
+file one of them exported (`.reg`, `.mxtsessions`, SecureCRT's XML or
+`Sessions` folder, `.xts`), `~/.ssh/config`, or a CSV with a header row. It
+shows the hosts first, by group, each with a checkbox; a host already here
+(same address, port and user) is unchecked. *Import* adds the hosts checked to
+this file with their groups (a folder in a folder becomes `Parent / Child`),
+ports, users, key files, jump hosts and forwards, tagged `imported:<app>`; a
+description becomes a note on the host. Passwords are not imported. *Undo
+import from <app>* in the palette takes it all out again, until the app quits.
+Termius keeps its hosts in its cloud, with no export, so they cannot be read.
+
 **Theme order,** highest first:
 
 1. The host's `theme`.

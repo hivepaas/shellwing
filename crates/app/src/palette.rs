@@ -65,6 +65,10 @@ pub enum Action {
     },
     NewHost,
     NewGroup,
+    /// Hosts from another SSH app (docs/design/import.md).
+    ImportHosts,
+    /// Take out what the last import put in.
+    UndoImport,
     EditHost(crate::workspace::EditTarget),
     Settings,
     Forward,

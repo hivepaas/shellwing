@@ -115,7 +115,7 @@ All fields are optional except the address. What is not listed is not read.
 | Host, port, user | `address`, `port` (left out when 22), `user` |
 | A key file | `auth = { method = "key", key = "…" }`, the path as written (`~` kept) |
 | Agent forwarding | `forward_agent = true` |
-| Jump hosts | `jump`, by the names the jump hosts got in this import; one not imported is left out, said so |
+| Jump hosts | `jump`, by the names the jump hosts got in this import; one named but not found is left out, said so; one given by its address (MobaXterm, PuTTY, an ssh config) is the host with that address, port and user, here or imported, or else a host of its own, added |
 | Forwards | `forward`, as `ssh` writes them: `-L 8080:localhost:80`, `-R …`, `-D 1080` |
 | A color | `color`: one of shellwing's names when close, else `#rrggbb` |
 | A description | a Markdown note titled after the host, with the host set on it |
@@ -143,25 +143,27 @@ The import shows what it found before anything is written:
 the vault. The notice says what was done: *Imported 42 hosts in 5 groups; 3
 left out.*
 
-**Undo.** Until the app quits, *Undo import* in the palette removes the hosts,
-groups and notes that import made, and nothing else (by their ids). Imported
-hosts also keep their `imported:<app>` tag, to find them later.
+**Undo.** Until the app quits, *Undo import from <app>* in the palette
+removes the hosts, groups and notes that import made, and nothing else (by
+their ids), in one edit. Imported hosts also keep their `imported:<app>` tag,
+to find them later.
 
 ## Where it lives
 
-- **`crates/import`**, no UI: one module per source, each with:
-  - `find()`: where the app keeps its sessions on this computer, if anywhere;
-  - `read(bytes or folder)`: what is in it, as a `Found` list of hosts (with
-    their folder path, jump references, forwards and description), what was
-    left out and why, and what to look at.
-
-  It knows nothing of `hosts.toml`.
-- **`shellwing-config`:** turning `Found` into hosts and groups for the file
-  (names, groups, jump names, duplicates), and `Store::import` writing them in
-  one edit.
-- **The app:** the palette entry (*Import hosts…*), the panel with the sources
-  and the preview (a drawer, as the host editor), the notes, and *Undo
-  import*.
+- **`crates/import`**, no UI:
+  - one module per source, each with where the app keeps its sessions on this
+    computer (`installed()` lists them, with their counts), and what is in a
+    source (`read()`, or `read_file()` for one chosen by hand, told by its
+    content): `Found` hosts (with their folder path, jump references, forwards
+    and description), what was left out and why, and what to look at;
+  - `plan()`: those hosts as `hosts.toml`'s, against the hosts there (names,
+    groups, jump names, duplicates).
+- **`shellwing-config`:** `Store::import` writes the groups and hosts in one
+  edit, and `Store::unimport` takes them out.
+- **The app:** *Import hosts from another app…* in the palette, in the
+  empty host list and in Settings › General (the drawer then shows over
+  Settings); the drawer (as the host editor's) with the sources and the
+  preview; the notes; *Undo import from <app>*.
 - **New dependencies:**
   - `zip` (deflate only), for Xshell's `.xts`;
   - a YAML reader, for Tabby.

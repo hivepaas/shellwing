@@ -697,6 +697,93 @@ te833da37 = config.toml, [shortcuts]: `{ $key }` được gán cho cả { $kept 
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` không hợp; chỉ go_to_tab nhận `digit` (1 đến 9), và nó không nhận gì khác.
 
+# Import
+t573e0af4 = Nhập
+
+# No hosts in it.
+tbb05fee9 = Không có máy chủ nào trong đó.
+
+# Looking for other SSH apps…
+tb71f4415 = Đang tìm các app SSH khác…
+
+# No other SSH app with hosts was found here.
+tecba4271 = Không tìm thấy app SSH nào khác có máy chủ trên máy này.
+
+# {n} host | {n} hosts
+t2489674e = { $n } máy chủ
+
+# Import hosts
+t956d1e67 = Nhập máy chủ
+
+# Found on this computer
+td811df9d = Tìm thấy trên máy này
+
+# Or a file another app exported
+t9e7f0266 = Hoặc một file do app khác xuất ra
+
+# Choose a file or folder…
+t379a2c2c = Chọn file hoặc thư mục…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = File .reg của PuTTY hoặc KiTTY, .mxtsessions của MobaXterm, file XML hoặc thư mục Sessions của SecureCRT, .xts hoặc thư mục Sessions của Xshell, config.yaml của Tabby, file ssh config, hoặc CSV có dòng tiêu đề.
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = Mật khẩu không được nhập: lần đầu kết nối, máy chủ sẽ hỏi mật khẩu và đề nghị lưu vào kho.
+
+# Import from {app}
+tb591e273 = Nhập từ { $app }
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c = Đã chọn { $n } trên { $total } máy chủ.
+
+# {was} here is another host: named apart.
+t3dd0ab4e = Ở đây đã có một máy chủ khác tên { $was }: máy chủ này được đặt tên khác.
+
+# Already here as {name}.
+t536acaec = Đã có ở đây với tên { $name }.
+
+# Added: other hosts go through it.
+te8d2ba16 = Được thêm vào: các máy chủ khác đi qua máy chủ này.
+
+# No group
+t2721e1c1 = Không có nhóm
+
+# {n} left out | {n} left out
+t1e072c4b = { $n } mục bị bỏ qua
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = Không nhập được máy chủ từ file này.
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app } mã hoá file này nên không đọc được ở đây.
+
+# Cannot read it: {e}
+t4fd94e68 = Không đọc được: { $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = Khoá của máy chủ này là .ppk của PuTTY: hãy chuyển sang định dạng OpenSSH bằng puttygen để đăng nhập bằng nó.
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = Khoá { $name } nằm trong kho riêng của { $app }: hãy xuất nó từ đó, rồi thêm vào mục Khoá.
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = Máy chủ trung gian { $name } không có trong danh sách: đã bỏ qua.
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name }: không phải SSH ({ $protocol })
+
+# {name}: no address
+t9f701d25 = { $name }: không có địa chỉ
+
+# Reading…
+t6aad8485 = Đang đọc…
+
+# Back
+tc2954bc2 = Quay lại
+
+# Import {n} host | Import {n} hosts
+t040b2da6 = Nhập { $n } máy chủ
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (khuyên dùng)
 
@@ -774,9 +861,6 @@ t4b242af5 = Đã quên cụm mật khẩu của { $path }: sẽ được hỏi l
 
 # Not forgotten: {e}
 t0e3fb3a1 = Chưa quên: { $e }
-
-# Import
-t573e0af4 = Nhập
 
 # not used by a host yet
 t7a67a5ad = chưa máy chủ nào dùng
@@ -1810,6 +1894,15 @@ tf7087aa7 = Mở lại các tab lần trước khi khởi động
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = Khi shellwing khởi động mà không có máy chủ, nó mở lại các tab và các khung chia đã có.
 
+# Hosts from another app
+tffafddac = Máy chủ từ app khác
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config hoặc file CSV: máy chủ, nhóm, máy chủ trung gian và chuyển tiếp cổng của chúng, được hiện trước để chọn. Mật khẩu không được nhập.
+
+# Import…
+tecc08160 = Nhập…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = Các cài đặt này, cho thiết bị này. Sửa trong tệp có hiệu lực ngay.
 
@@ -2245,6 +2338,9 @@ t2a8f8871 = Không có máy chủ nào khớp.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Chưa có máy chủ. Hãy thêm một máy chủ, hoặc các khối Host vào ~/.ssh/config.
 
+# Import hosts from another app…
+tb00d665f = Nhập máy chủ từ app khác…
+
 # + Host
 t0e963f08 = + Máy chủ
 
@@ -2541,9 +2637,6 @@ t1d5d16cc = Tệp đã đặt nằm trên đĩa của máy chủ, với quyền 
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} được điền theo máy chủ của khung; mọi {"{{"}name{"}}"} khác sẽ được hỏi khi đoạn lệnh chạy.
-
-# {n} host | {n} hosts
-t2489674e = { $n } máy chủ
 
 # {n} password | {n} passwords
 tf07ec59c = { $n } mật khẩu
@@ -3238,6 +3331,9 @@ t70ad7706 = Kiểm tra cập nhật
 # New group…
 t2c0113fa = Nhóm mới…
 
+# Undo import from {app}
+t971f8deb = Hoàn tác lần nhập từ { $app }
+
 # Edit host {name}…
 te6b404e6 = Sửa máy chủ { $name }…
 
@@ -3516,6 +3612,18 @@ t58507cbd = Đã lưu nhóm { $name }.
 
 # Deleted the group {name}.
 t2dbe70db = Đã xoá nhóm { $name }.
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 = Đã nhập { $n } máy chủ từ { $app }.
+
+# {n} left out. | {n} left out.
+t96ae7881 = { $n } mục bị bỏ qua.
+
+# The palette can undo it.
+t21bfdf84 = Có thể hoàn tác trong bảng lệnh.
+
+# The import from {app} is undone.
+t5f37b9b7 = Đã hoàn tác lần nhập từ { $app }.
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = Cổng 8080 ở đây tới localhost:80 theo cách máy chủ nhìn thấy.

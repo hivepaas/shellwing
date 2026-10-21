@@ -1057,6 +1057,14 @@ impl SettingsView {
                     cx,
                 )
             }),
+        ))
+        .child(setting(
+            &tr!("Hosts from another app"),
+            &tr!("PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported."),
+            div().flex().child(
+                small_button("import-hosts", &tr!("Import…"))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::ImportHosts, w, cx))),
+            ),
         ));
         if let Some(dir) = self.snap.config_dir.clone() {
             let files: [(String, String); 5] = [

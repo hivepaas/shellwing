@@ -6,8 +6,11 @@
 
 use std::path::{Path, PathBuf};
 
+pub use plan::{Plan, Row, State, plan};
+
 mod csv;
 mod mobaxterm;
+mod plan;
 mod putty;
 mod securecrt;
 mod ssh_config;
@@ -103,6 +106,8 @@ pub enum Look {
     PpkKey,
     /// Its key is in the app's own key store, under this name.
     KeyInApp(String),
+    /// A jump host the app names that is not among its hosts (left out).
+    JumpNotFound(String),
 }
 
 /// A session left out, and why.
