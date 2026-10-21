@@ -163,13 +163,14 @@ the window's edge.
 
 | Where | What |
 |---|---|
-| `src/lib.rs`, `pub struct HostItem` | Added `selection: bool`: the item shows only with a selection. |
-| `src/lib.rs`, `render`, the menu's `host_rows` | Shows the host's items that need no selection without one too (was: none without a selection). |
+| `src/lib.rs`, `pub struct HostItem` | Added `selection: bool`: an action on the selection (shown only with one), or something put in at the caret. |
+| `src/lib.rs`, `render`, the menu | The host's items are built by `host_section`. Those with `selection` stay at the menu's top (`host_rows`), only with a selection; the others go under Paste (`caret_rows`, a divider above them), and not while read-only. |
 | `src/lib.rs`, `render`, the menu's Paste | Dispatches the `Paste` action (`window.dispatch_action`) instead of calling `paste` itself, so a paste the editor does not take (an image on the clipboard) goes on to the host, as it does from the keys. |
 
 **Why:** shellwing's *Insert Image…* goes in at the caret, with nothing
-selected; and an image pasted from the menu did nothing, since `paste` passed
-it on (`cx.propagate()`) outside an action's dispatch.
+selected, beside Paste as another way to put something in, and never into a
+read-only note; and an image pasted from the menu did nothing, since `paste`
+passed it on (`cx.propagate()`) outside an action's dispatch.
 
 ## Taking in a newer zorite-editor
 
