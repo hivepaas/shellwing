@@ -34,6 +34,15 @@ tf2bc7ef2 = Tệp dài { $size } KB; tối đa { $max } KB.
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = Ghi chú dài { $size } KB; tối đa { $max } KB.
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = Ảnh dài { $size } KB; tối đa { $max } KB.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Ảnh của ghi chú tổng cộng { $size } MB; tối đa { $max } MB.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = Không phải ảnh có thể lưu: chỉ PNG hoặc JPEG.
+
 # Name
 t0fe07306 = Tên
 
@@ -1183,6 +1192,30 @@ tdd571ace = Sáng, ấm
 # Your themes
 tb2e83d5c = Chủ đề của bạn
 
+# Loading the image…
+t457184d7 = Đang tải ảnh…
+
+# Image not synced yet
+tf2f8e6ad = Ảnh chưa đồng bộ xong
+
+# The image cannot be shown
+teac0ac18 = Không hiển thị được ảnh
+
+# The pasted image
+t10124f90 = Ảnh vừa dán
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } quá lớn để làm ảnh ở đây.
+
+# {name} cannot be read: {e}
+teff3eb8d = Không đọc được { $name }: { $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } không phải ảnh đọc được.
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } là ảnh quá lớn ({ $width } × { $height }).
+
 # New note
 t788c7123 = Ghi chú mới
 
@@ -1197,6 +1230,15 @@ t117b6c23 = Viết ở đây; Markdown hiện ngay khi gõ.
 
 # It is not in the vault any more.
 td11af590 = Tệp không còn trong kho.
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = Ảnh chỉ hiện trong ghi chú Markdown; ghi chú này là văn bản thường.
+
+# Images go in while the note is edited.
+t6f2c9191 = Chỉ chèn được ảnh khi đang sửa ghi chú.
+
+# Insert
+t0f317948 = Chèn
 
 # this note
 t4545c373 = ghi chú này
@@ -1252,8 +1294,8 @@ t3d5eaffc = Chèn vào { $pane }
 # No shell to insert into
 t825e7370 = Không có shell để chèn vào
 
-# Insert
-t0f317948 = Chèn
+# Insert Image…
+t012e861b = Chèn ảnh…
 
 # Cut
 t58e25863 = Cắt

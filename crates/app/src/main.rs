@@ -30,6 +30,7 @@ mod known_hosts_view;
 mod library;
 mod library_window;
 mod look;
+mod note_images;
 mod note_window;
 mod palette;
 mod pane;

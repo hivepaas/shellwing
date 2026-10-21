@@ -34,6 +34,15 @@ tf2bc7ef2 = ファイルは { $size } KB です。最大 { $max } KB です。
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = ノートは { $size } KB です。最大 { $max } KB です。
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = 画像は { $size } KB です。最大 { $max } KB です。
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = ノートの画像は合計 { $size } MB です。最大 { $max } MB です。
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = 保存できる画像ではありません（PNG または JPEG）。
+
 # Name
 t0fe07306 = 名前
 
@@ -1183,6 +1192,30 @@ tdd571ace = ライト（ウォーム）
 # Your themes
 tb2e83d5c = マイテーマ
 
+# Loading the image…
+t457184d7 = 画像を読み込み中…
+
+# Image not synced yet
+tf2f8e6ad = 画像はまだ同期されていません
+
+# The image cannot be shown
+teac0ac18 = 画像を表示できません
+
+# The pasted image
+t10124f90 = 貼り付けた画像
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } はここで画像として扱うには大きすぎます。
+
+# {name} cannot be read: {e}
+teff3eb8d = { $name } を読み込めません：{ $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } は読み込める画像ではありません。
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } は大きすぎる画像です（{ $width } × { $height }）。
+
 # New note
 t788c7123 = 新しいノート
 
@@ -1197,6 +1230,15 @@ t117b6c23 = ここに書きます。Markdown は入力しながら表示され�
 
 # It is not in the vault any more.
 td11af590 = 保管庫にはもうありません。
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = 画像は Markdown のノートで表示されます。このノートはプレーンテキストです。
+
+# Images go in while the note is edited.
+t6f2c9191 = 画像はノートの編集中に追加できます。
+
+# Insert
+t0f317948 = 挿入
 
 # this note
 t4545c373 = このノート
@@ -1252,8 +1294,8 @@ t3d5eaffc = { $pane } に挿入
 # No shell to insert into
 t825e7370 = 挿入先のシェルがありません
 
-# Insert
-t0f317948 = 挿入
+# Insert Image…
+t012e861b = 画像を挿入…
 
 # Cut
 t58e25863 = 切り取り

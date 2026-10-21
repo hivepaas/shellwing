@@ -34,6 +34,15 @@ tf2bc7ef2 = 파일이 { $size }KB입니다. 최대 { $max }KB입니다.
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = 노트가 { $size }KB입니다. 최대 { $max }KB입니다.
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = 이미지가 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = 노트의 이미지가 모두 { $size }MB입니다. 최대 { $max }MB입니다.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = 보관할 수 있는 이미지가 아닙니다: PNG 또는 JPEG만 됩니다.
+
 # Name
 t0fe07306 = 이름
 
@@ -1183,6 +1192,30 @@ tdd571ace = 밝은 따뜻한 톤
 # Your themes
 tb2e83d5c = 내 테마
 
+# Loading the image…
+t457184d7 = 이미지를 불러오는 중…
+
+# Image not synced yet
+tf2f8e6ad = 이미지가 아직 동기화되지 않음
+
+# The image cannot be shown
+teac0ac18 = 이미지를 표시할 수 없음
+
+# The pasted image
+t10124f90 = 붙여 넣은 이미지
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name }은(는) 여기서 이미지로 쓰기에 너무 큽니다.
+
+# {name} cannot be read: {e}
+teff3eb8d = { $name }을(를) 읽을 수 없습니다: { $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name }은(는) 읽을 수 있는 이미지가 아닙니다.
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name }은(는) 너무 큰 이미지입니다({ $width } × { $height }).
+
 # New note
 t788c7123 = 새 노트
 
@@ -1197,6 +1230,15 @@ t117b6c23 = 여기에 작성하세요. Markdown은 입력하는 대로 표시됩
 
 # It is not in the vault any more.
 td11af590 = 더 이상 보관함에 없습니다.
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = 이미지는 Markdown 노트에서 표시됩니다. 이 노트는 일반 텍스트입니다.
+
+# Images go in while the note is edited.
+t6f2c9191 = 이미지는 노트를 편집하는 동안 넣을 수 있습니다.
+
+# Insert
+t0f317948 = 삽입
 
 # this note
 t4545c373 = 이 노트
@@ -1252,8 +1294,8 @@ t3d5eaffc = { $pane }에 삽입
 # No shell to insert into
 t825e7370 = 삽입할 셸이 없습니다
 
-# Insert
-t0f317948 = 삽입
+# Insert Image…
+t012e861b = 이미지 삽입…
 
 # Cut
 t58e25863 = 잘라내기

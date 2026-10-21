@@ -34,6 +34,15 @@ tf2bc7ef2 = 文件为 { $size } KB；最多 { $max } KB。
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = 笔记为 { $size } KB；最多 { $max } KB。
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = 图片为 { $size } KB；最多 { $max } KB。
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = 笔记的图片共 { $size } MB；最多 { $max } MB。
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = 不是可保存的图片：仅支持 PNG 或 JPEG。
+
 # Name
 t0fe07306 = 名称
 
@@ -1183,6 +1192,30 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# Loading the image…
+t457184d7 = 正在加载图片…
+
+# Image not synced yet
+tf2f8e6ad = 图片尚未同步
+
+# The image cannot be shown
+teac0ac18 = 无法显示图片
+
+# The pasted image
+t10124f90 = 粘贴的图片
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } 太大，无法作为图片放在这里。
+
+# {name} cannot be read: {e}
+teff3eb8d = 无法读取 { $name }：{ $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } 不是可读取的图片。
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } 图片太大（{ $width } × { $height }）。
+
 # New note
 t788c7123 = 新建笔记
 
@@ -1197,6 +1230,15 @@ t117b6c23 = 在此书写；Markdown 会在输入时显示。
 
 # It is not in the vault any more.
 td11af590 = 它已不在保险库中。
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = 图片显示在 Markdown 笔记中；此笔记是纯文本。
+
+# Images go in while the note is edited.
+t6f2c9191 = 图片需在编辑笔记时插入。
+
+# Insert
+t0f317948 = 插入
 
 # this note
 t4545c373 = 这条笔记
@@ -1252,8 +1294,8 @@ t3d5eaffc = 插入到 { $pane }
 # No shell to insert into
 t825e7370 = 没有可插入的 shell
 
-# Insert
-t0f317948 = 插入
+# Insert Image…
+t012e861b = 插入图片…
 
 # Cut
 t58e25863 = 剪切

@@ -303,6 +303,10 @@ pub struct HostItem {
     pub label: SharedString,
     /// Shown faint, choosing nothing, when not.
     pub enabled: bool,
+    /// An action on the selection: shown at the menu's top, only with a
+    /// selection. Otherwise it puts something in at the caret: shown under
+    /// Paste, not while read-only. (UPSTREAM.md, change 10.)
+    pub selection: bool,
 }
 
 /// shellwing: an inline format of [`EditorState::toggle_inline`].
@@ -5641,41 +5645,62 @@ impl Render for EditorState {
                         .hover(move |s| s.bg(hover))
                         .child(label)
                 };
-                // shellwing: the host's items, for a selection (UPSTREAM.md,
-                // change 5).
-                let host_rows = (has_sel && !self.host_items.is_empty()).then(|| {
-                    let mut rows = div().flex().flex_col().py(px(4.));
-                    for (i, item) in self.host_items.iter().enumerate() {
-                        let id = item.id.clone();
-                        let row = div()
-                            .id(("host-item", i))
-                            .flex_shrink_0()
-                            .px(px(10.))
-                            .py(px(3.))
-                            .font_weight(FontWeight::MEDIUM)
-                            .child(item.label.clone());
-                        rows = rows.child(if item.enabled {
-                            row.text_color(link_c)
-                                .hover(move |s| s.bg(hover))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(move |editor, _: &MouseDownEvent, _, cx| {
-                                        cx.stop_propagation();
-                                        editor.menu = None;
-                                        cx.emit(EditorEvent::HostItem(id.clone()));
-                                        cx.notify();
-                                    }),
-                                )
-                        } else {
-                            row.opacity(0.5)
-                        });
-                    }
-                    div()
-                        .flex()
-                        .flex_col()
-                        .child(rows)
-                        .child(div().h(px(1.)).bg(menu_border))
-                });
+                // shellwing: the host's items (UPSTREAM.md, changes 5 and 10).
+                let host_section = |items: Vec<(usize, &HostItem)>| {
+                    (!items.is_empty()).then(|| {
+                        let mut rows = div().flex().flex_col().py(px(4.));
+                        for (i, item) in items {
+                            let id = item.id.clone();
+                            let row = div()
+                                .id(("host-item", i))
+                                .flex_shrink_0()
+                                .px(px(10.))
+                                .py(px(3.))
+                                .font_weight(FontWeight::MEDIUM)
+                                .child(item.label.clone());
+                            rows = rows.child(if item.enabled {
+                                row.text_color(link_c)
+                                    .hover(move |s| s.bg(hover))
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |editor, _: &MouseDownEvent, _, cx| {
+                                            cx.stop_propagation();
+                                            editor.menu = None;
+                                            cx.emit(EditorEvent::HostItem(id.clone()));
+                                            cx.notify();
+                                        }),
+                                    )
+                            } else {
+                                row.opacity(0.5)
+                            });
+                        }
+                        rows
+                    })
+                };
+                // Actions on a selection first, easy to find; those at the
+                // caret (they put something in) under Paste, and not while
+                // read-only.
+                let (on_selection, at_caret): (Vec<_>, Vec<_>) = self
+                    .host_items
+                    .iter()
+                    .enumerate()
+                    .partition(|(_, item)| item.selection);
+                let host_rows =
+                    host_section(if has_sel { on_selection } else { vec![] }).map(|rows| {
+                        div()
+                            .flex()
+                            .flex_col()
+                            .child(rows)
+                            .child(div().h(px(1.)).bg(menu_border))
+                    });
+                let caret_rows =
+                    host_section(if self.read_only { vec![] } else { at_caret }).map(|rows| {
+                        div()
+                            .flex()
+                            .flex_col()
+                            .child(div().h(px(1.)).bg(menu_border))
+                            .child(rows)
+                    });
                 let mut clipboard = div().flex().flex_col().py(px(4.));
                 if has_sel {
                     // shellwing: no Cut while read-only (UPSTREAM.md, change 6).
@@ -5722,7 +5747,9 @@ impl Render for EditorState {
                         cx.listener(|editor, _: &MouseDownEvent, window, cx| {
                             cx.stop_propagation();
                             editor.menu = None;
-                            editor.paste(&Paste, window, cx);
+                            // As the keys do: what the editor does not paste
+                            // (an image) goes on to the host (change 10).
+                            window.dispatch_action(Box::new(Paste), cx);
                         }),
                     )
                 }));
@@ -5985,6 +6012,7 @@ impl Render for EditorState {
                                 }))
                                 .children((count > 0).then(|| div().h(px(1.)).bg(menu_border)))
                                 .child(clipboard)
+                                .children(caret_rows)
                                 .children(markdown.then(|| div().h(px(1.)).bg(menu_border)))
                                 .children(
                                     markdown.then(|| {

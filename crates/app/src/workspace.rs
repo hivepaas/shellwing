@@ -423,6 +423,12 @@ impl Workspace {
         self.tabs.len()
     }
 
+    /// The vault, for the UI tests to wait on and look into.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn vault_slot(&self) -> VaultSlot {
+        self.vault.clone()
+    }
+
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn pane_count(&self) -> usize {
         self.tabs.get(self.active).map_or(0, |t| t.views().len())

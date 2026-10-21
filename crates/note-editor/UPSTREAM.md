@@ -159,6 +159,19 @@ way along a wide table but that thumb.
 **Why:** a quick drag stopped short; let go outside the editor, the menu sat at
 the window's edge.
 
+### 10. The host's items at the caret; the menu's Paste as the keys'
+
+| Where | What |
+|---|---|
+| `src/lib.rs`, `pub struct HostItem` | Added `selection: bool`: an action on the selection (shown only with one), or something put in at the caret. |
+| `src/lib.rs`, `render`, the menu | The host's items are built by `host_section`. Those with `selection` stay at the menu's top (`host_rows`), only with a selection; the others go under Paste (`caret_rows`, a divider above them), and not while read-only. |
+| `src/lib.rs`, `render`, the menu's Paste | Dispatches the `Paste` action (`window.dispatch_action`) instead of calling `paste` itself, so a paste the editor does not take (an image on the clipboard) goes on to the host, as it does from the keys. |
+
+**Why:** shellwing's *Insert Image…* goes in at the caret, with nothing
+selected, beside Paste as another way to put something in, and never into a
+read-only note; and an image pasted from the menu did nothing, since `paste`
+passed it on (`cx.propagate()`) outside an action's dispatch.
+
 ## Taking in a newer zorite-editor
 
 1. Note the version; read its changelog and `API.md` for what changed.
