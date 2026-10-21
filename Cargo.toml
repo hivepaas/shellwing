@@ -52,6 +52,15 @@ strip = true
 [profile.dev.package."*"]
 opt-level = 2
 
+# The UI tests on CI (`--profile ui-tests`): release speed, as debug builds of
+# libghostty parse too slowly (its Zig build follows DEBUG and OPT_LEVEL, not
+# this), with debug assertions: GPUI records where elements are drawn only
+# with them, so the tests could not click without, and they catch what only a
+# debug build would.
+[profile.ui-tests]
+inherits = "release"
+debug-assertions = true
+
 # GPUI's Linux platform, taken in for a fix (vendor/gpui-pre-linux/UPSTREAM.md).
 [patch.crates-io]
 gpui-pre-linux = { path = "vendor/gpui-pre-linux" }

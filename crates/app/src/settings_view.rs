@@ -2434,6 +2434,14 @@ fn small_button(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<g
         .child(label.to_string())
 }
 
+impl SettingsView {
+    /// The page showing: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn page(&self) -> Page {
+        self.page
+    }
+}
+
 impl Focusable for SettingsView {
     fn focus_handle(&self, _: &gpui::App) -> FocusHandle {
         self.focus.clone()
@@ -2611,6 +2619,7 @@ impl Render for SettingsView {
                     .child(
                         div()
                             .id("settings-content")
+                            .debug_selector(|| "settings-content".into())
                             .flex_1()
                             .min_w_0()
                             .overflow_y_scroll()

@@ -413,6 +413,19 @@ impl Sidebar {
             )
     }
 
+    /// The sections shown, each title with its hosts' names: for the UI
+    /// tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn shown_names(&self, cx: &App) -> Vec<(String, Vec<String>)> {
+        self.shown(cx)
+            .into_iter()
+            .map(|s| {
+                let names = s.rows.iter().map(|r| r.name.to_string()).collect();
+                (s.title.to_string(), names)
+            })
+            .collect()
+    }
+
     pub fn set(&mut self, sections: Vec<Section>, cx: &mut Context<Self>) {
         if sections != self.sections {
             self.sections = sections;
@@ -428,6 +441,7 @@ impl Render for Sidebar {
         }
         let mut list = div()
             .id("hosts")
+            .debug_selector(|| "hosts".into())
             .flex()
             .flex_col()
             .flex_1()
@@ -527,6 +541,7 @@ impl Render for Sidebar {
                 list = list.child(
                     div()
                         .id(ElementId::NamedInteger("host".into(), id))
+                        .debug_selector(|| format!("host:{}", row.name))
                         .on_hover(cx.listener(move |s, over: &bool, _, cx| {
                             let now = if *over {
                                 Some(this)
@@ -599,6 +614,7 @@ impl Render for Sidebar {
                             d.child(
                                 div()
                                     .id(ElementId::NamedInteger("edit-host".into(), this))
+                                    .debug_selector(|| format!("edit-host:{}", row.name))
                                     // An amber badge: plain to see on any row.
                                     .px_2()
                                     .py(px(1.))
@@ -655,6 +671,7 @@ impl Render for Sidebar {
             .child(
                 div()
                     .id("new-host")
+                    .debug_selector(|| "new-host".into())
                     .flex_1()
                     .h(px(32.))
                     .flex()
@@ -675,6 +692,7 @@ impl Render for Sidebar {
             .child(
                 div()
                     .id("new-group")
+                    .debug_selector(|| "new-group".into())
                     .h(px(32.))
                     .px_3()
                     .flex()
@@ -694,6 +712,7 @@ impl Render for Sidebar {
             .child(
                 div()
                     .id("about")
+                    .debug_selector(|| "about".into())
                     .size(px(32.))
                     .flex_shrink_0()
                     .flex()
@@ -789,6 +808,7 @@ impl Render for Sidebar {
                             .bg(rgb(colors().field))
                             .text_xs()
                             .text_color(rgb(colors().text))
+                            .debug_selector(|| "host-filter".into())
                             .child(self.filter.clone()),
                     ),
             )
