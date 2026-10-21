@@ -24,6 +24,7 @@ use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
 use crate::look::{self, Live, rgb as theme_rgb};
+use crate::notice::{Notice, colored};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent, Part};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
@@ -124,7 +125,7 @@ pub struct Workspace {
     /// `$SHELLWING_BENCH`: measured on the first tab opened.
     bench: Option<(String, Arc<Probe>)>,
     /// Shown in place of the terminal while no tab is open.
-    notice: Option<SharedString>,
+    notice: Option<Notice>,
     /// A quit or close question is showing (GPUI allows one prompt at a time).
     prompting: bool,
     /// The open palette, and whether it is picking a theme (whose preview must
@@ -378,7 +379,7 @@ impl Workspace {
                 .spawn(async move { crate::copies::sweep(&into) })
                 .await;
             if let Some(msg) = crate::copies::kept_notice(&kept) {
-                let _ = this.update(cx, |ws, cx| ws.say(msg, KEPT_NOTICE, cx));
+                let _ = this.update(cx, |ws, cx| ws.say(Notice::warn(msg), KEPT_NOTICE, cx));
             }
         })
         .detach();
@@ -442,8 +443,8 @@ impl Workspace {
 
     /// The notice at the bottom of the window, if one shows.
     #[cfg(all(test, feature = "ui-tests"))]
-    pub fn notice_text(&self) -> Option<String> {
-        self.notice.as_ref().map(|n| n.to_string())
+    pub fn notice_shown(&self) -> Option<Notice> {
+        self.notice.clone()
     }
 
     #[cfg(all(test, feature = "ui-tests"))]
@@ -671,7 +672,7 @@ impl Workspace {
     fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
         if self.active_tab().is_none() {
             return self.say(
-                tr!("Open a tab first: a snippet runs in the focused pane."),
+                Notice::warn(tr!("Open a tab first: a snippet runs in the focused pane.")),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -687,7 +688,11 @@ impl Workspace {
         // Kept within the limit, whatever device saved it.
         if snippet.command.len() > shellwing_vault::limits::COMMAND {
             let o = shellwing_vault::Oversize::Command(snippet.command.len());
-            return self.say(crate::environment::said_oversize(&o), CONFIG_NOTICE, cx);
+            return self.say(
+                Notice::warn(crate::environment::said_oversize(&o)),
+                CONFIG_NOTICE,
+                cx,
+            );
         }
         let left = snippets::asked(&snippet.command);
         self.ask_snippet(
@@ -730,10 +735,10 @@ impl Workspace {
                 // waits for their values, sent once it is ready.
                 let values = match self.env_values(&run.snippet.needs) {
                     Ok(values) => values,
-                    Err(e) => return self.say(e, CONFIG_NOTICE, cx),
+                    Err(e) => return self.say(Notice::bad(e), CONFIG_NOTICE, cx),
                 };
                 if let Err(e) = v.update(cx, |v, cx| v.run_with_env(values, &text, true, cx)) {
-                    v.update(cx, |v, cx| v.show_notice(e, CONFIG_NOTICE, cx));
+                    v.update(cx, |v, cx| v.show_notice(Notice::bad(e), CONFIG_NOTICE, cx));
                 }
             }
             return;
@@ -822,7 +827,7 @@ impl Workspace {
     /// Loads environment `id` into the focused pane.
     fn load_env(&mut self, id: &str, cx: &mut Context<Self>) {
         if let Some(why) = self.pane_unready(false, cx) {
-            return self.say(why, CONFIG_NOTICE, cx);
+            return self.say(Notice::warn(why), CONFIG_NOTICE, cx);
         }
         let Some(view) = self.active_tab().cloned() else {
             return;
@@ -847,7 +852,7 @@ impl Workspace {
                 })
             });
         if let Err(e) = done {
-            self.say(e, CONFIG_NOTICE, cx);
+            self.say(Notice::bad(e), CONFIG_NOTICE, cx);
         }
     }
 
@@ -858,7 +863,7 @@ impl Workspace {
         };
         if !tab.broadcast && tab.views().len() < 2 {
             return self.say(
-                tr!("Split the tab first: there is one pane to type in."),
+                Notice::warn(tr!("Split the tab first: there is one pane to type in.")),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -1146,7 +1151,10 @@ impl Workspace {
         ) {
             Ok(s) => s,
             Err(e) => {
-                self.notice = Some(tr!("Cannot open a terminal: {e}", e = e.to_string()).into());
+                self.notice = Some(Notice::bad(tr!(
+                    "Cannot open a terminal: {e}",
+                    e = e.to_string()
+                )));
                 cx.notify();
                 return None;
             }
@@ -1221,7 +1229,9 @@ impl Workspace {
         })
         .detach();
         if let Some(p) = problem {
-            view.update(cx, |v, cx| v.show_notice(p, CONFIG_NOTICE, cx));
+            view.update(cx, |v, cx| {
+                v.show_notice(Notice::warn(p), CONFIG_NOTICE, cx)
+            });
         }
         Some(view)
     }
@@ -1806,13 +1816,15 @@ impl Workspace {
             && !entries.iter().any(|e| e.section == s)
         {
             let said = match s {
-                Part::Snippets => {
-                    tr!("No snippet for this host: add one in Settings › Snippets.")
-                }
-                Part::ConfigFiles => {
-                    tr!("No config file for this host: add one in Settings › Config files.")
-                }
-                _ => tr!("No environment for this host: add one in Settings › Environments."),
+                Part::Snippets => Notice::warn(tr!(
+                    "No snippet for this host: add one in Settings › Snippets."
+                )),
+                Part::ConfigFiles => Notice::warn(tr!(
+                    "No config file for this host: add one in Settings › Config files."
+                )),
+                _ => Notice::warn(tr!(
+                    "No environment for this host: add one in Settings › Environments."
+                )),
             };
             return self.say(said, CONFIG_NOTICE, cx);
         }
@@ -1825,10 +1837,10 @@ impl Workspace {
             .active_tab()
             .and_then(|t| t.read(cx).session().entry.clone());
         if let Some(t) = self.live.host_theme(entry.as_deref()) {
-            let msg = tr!(
+            let msg = Notice::warn(tr!(
                 "This host uses the theme `{t}` from hosts.toml; change it there.",
                 t = t
-            );
+            ));
             self.say(msg, CONFIG_NOTICE, cx);
             return;
         }
@@ -1878,11 +1890,11 @@ impl Workspace {
                 if r.pulled > 0 {
                     let n = r.pulled;
                     self.say(
-                        tr_n!(
+                        Notice::good(tr_n!(
                             n,
                             "Synced {n} change from other devices.",
                             "Synced {n} changes from other devices."
-                        ),
+                        )),
                         THEME_NOTICE,
                         cx,
                     );
@@ -1892,21 +1904,21 @@ impl Workspace {
                 match r.copies.as_slice() {
                     [] => {}
                     [title] => self.say(
-                        tr!(
+                        Notice::warn(tr!(
                             "A note was changed on two devices: the other version is kept as {title}.",
                             title = title.clone()
-                        ),
+                        )),
                         KEPT_NOTICE,
                         cx,
                     ),
                     copies => {
                         let n = copies.len();
                         self.say(
-                            tr_n!(
+                            Notice::warn(tr_n!(
                                 n,
                                 "{n} note was changed on two devices: the other version is kept beside it.",
                                 "{n} notes were changed on two devices: the other versions are kept beside them."
-                            ),
+                            )),
                             KEPT_NOTICE,
                             cx,
                         );
@@ -1915,7 +1927,11 @@ impl Workspace {
             }
             SyncEvent::Failed(e) => {
                 if self.sync_error.as_ref() != Some(&e) {
-                    self.say(tr!("Sync: {e}", e = e.to_string()), CONFIG_NOTICE, cx);
+                    self.say(
+                        Notice::bad(tr!("Sync: {e}", e = e.to_string())),
+                        CONFIG_NOTICE,
+                        cx,
+                    );
                     self.sync_error = Some(e);
                 }
             }
@@ -1939,11 +1955,11 @@ impl Workspace {
                         self.asking = None;
                         self.in_window(cx, |ws, window, cx| ws.close_palette(window, cx));
                         let msg = if state == AskState::Refused {
-                            tr!("The other device refused to let this one in.")
+                            Notice::bad(tr!("The other device refused to let this one in."))
                         } else {
-                            tr!(
+                            Notice::bad(tr!(
                                 "No device let this one in within 10 minutes. Ask again, or use the recovery key."
-                            )
+                            ))
                         };
                         self.say(msg, CONFIG_NOTICE, cx);
                     }
@@ -1956,9 +1972,11 @@ impl Workspace {
                     }
                 }
             }
-            SyncEvent::PairingFailed(e) => {
-                self.say(tr!("Pairing: {e}", e = e.to_string()), CONFIG_NOTICE, cx)
-            }
+            SyncEvent::PairingFailed(e) => self.say(
+                Notice::bad(tr!("Pairing: {e}", e = e.to_string())),
+                CONFIG_NOTICE,
+                cx,
+            ),
             SyncEvent::PassphraseJoins(joins) => {
                 self.passphrase_joins = Some(joins);
                 self.refresh_settings(cx);
@@ -2084,13 +2102,13 @@ impl Workspace {
                             ws.close_palette(window, cx);
                         }
                         ws.sync.now();
-                        ws.say(tr!("The vault is open."), THEME_NOTICE, cx);
+                        ws.say(Notice::good(tr!("The vault is open.")), THEME_NOTICE, cx);
                         ws.refresh_settings(cx);
                     }
                     // Cancelled: the passphrase is still asked for.
                     Err(shellwing_vault::Error::NotPresent) => {}
                     Err(e) => ws.say(
-                        tr!("Not opened that way: {e}", e = e.to_string()),
+                        Notice::bad(tr!("Not opened that way: {e}", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -2158,7 +2176,7 @@ impl Workspace {
                 match tried {
                     Ok(_) => {
                         self.sync.now();
-                        self.say(tr!("The vault is open."), THEME_NOTICE, cx);
+                        self.say(Notice::good(tr!("The vault is open.")), THEME_NOTICE, cx);
                         self.refresh_settings(cx);
                     }
                     Err(e @ (VaultError::WrongPassphrase | VaultError::WrongRecoveryKey)) => self
@@ -2169,7 +2187,7 @@ impl Workspace {
                             cx,
                         ),
                     Err(e) => self.say(
-                        tr!("The vault stays locked: {e}", e = e.to_string()),
+                        Notice::bad(tr!("The vault stays locked: {e}", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -2222,18 +2240,18 @@ impl Workspace {
                             self.show_palette(palette, false, window, cx);
                         }
                         self.say(
-                            tr!("The vault is ready; its passphrase keeps it."),
+                            Notice::good(tr!("The vault is ready; its passphrase keeps it.")),
                             CONFIG_NOTICE,
                             cx,
                         );
                     }
                     Ok(()) => self.say(
-                        tr!("The passphrase opens the vault too now."),
+                        Notice::good(tr!("The passphrase opens the vault too now.")),
                         CONFIG_NOTICE,
                         cx,
                     ),
                     Err(e) => self.say(
-                        tr!("No passphrase set: {e}", e = e.to_string()),
+                        Notice::bad(tr!("No passphrase set: {e}", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -2345,7 +2363,7 @@ impl Workspace {
                 }
                 let Some(place) = self.sync.place() else {
                     return self.say(
-                        tr!("Not set: this device does not sync."),
+                        Notice::warn(tr!("Not set: this device does not sync.")),
                         CONFIG_NOTICE,
                         cx,
                     );
@@ -2359,14 +2377,18 @@ impl Workspace {
                             Ok(()) => {
                                 ws.passphrase_joins = Some(true);
                                 ws.say(
-                                    tr!("New devices can join with the sync passphrase now."),
+                                    Notice::good(tr!(
+                                        "New devices can join with the sync passphrase now."
+                                    )),
                                     CONFIG_NOTICE,
                                     cx,
                                 )
                             }
-                            Err(e) => {
-                                ws.say(tr!("Not set: {e}", e = e.to_string()), CONFIG_NOTICE, cx)
-                            }
+                            Err(e) => ws.say(
+                                Notice::bad(tr!("Not set: {e}", e = e.to_string())),
+                                CONFIG_NOTICE,
+                                cx,
+                            ),
                         }
                         ws.refresh_settings(cx);
                     },
@@ -2391,7 +2413,7 @@ impl Workspace {
                             );
                         }
                         Err(e) => ws.say(
-                            tr!("Cannot join: {e}", e = e.to_string()),
+                            Notice::bad(tr!("Cannot join: {e}", e = e.to_string())),
                             CONFIG_NOTICE,
                             cx,
                         ),
@@ -2505,7 +2527,7 @@ impl Workspace {
                 .problem()
                 .unwrap_or_else(|| tr!("it is still opening"));
             return self.say(
-                tr!("Cannot sync: the vault: {why}.", why = why),
+                Notice::bad(tr!("Cannot sync: the vault: {why}.", why = why)),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -2514,7 +2536,7 @@ impl Workspace {
         // last place's.
         if let Err(e) = vault.set_device_secret(crate::syncing::PLACE_SECRET, secret.as_deref()) {
             return self.say(
-                tr!("Cannot keep the password: {e}", e = e.to_string()),
+                Notice::bad(tr!("Cannot keep the password: {e}", e = e.to_string())),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -2575,7 +2597,7 @@ impl Workspace {
             let (s, kept) = (s.clone(), why.clone());
             cx.defer(move |cx| s.update(cx, |v, cx| v.sync_failed(kept, cx)));
         }
-        self.say(why, CONFIG_NOTICE, cx);
+        self.say(Notice::bad(why), CONFIG_NOTICE, cx);
     }
 
     /// Runs `work` against `place` off the UI thread (a server may be slow to
@@ -2599,7 +2621,11 @@ impl Workspace {
                 .vault
                 .problem()
                 .unwrap_or_else(|| tr!("it is still opening"));
-            return self.say(tr!("The vault: {why}.", why = why), CONFIG_NOTICE, cx);
+            return self.say(
+                Notice::bad(tr!("The vault: {why}.", why = why)),
+                CONFIG_NOTICE,
+                cx,
+            );
         };
         let job = cx.background_spawn(async move {
             let backend = crate::syncing::open(&place, &vault)?;
@@ -2623,13 +2649,16 @@ impl Workspace {
             place = crate::syncing::describe(&place)
         );
         self.keep_sync_place(Some(&place), cx);
-        self.say(msg, CONFIG_NOTICE, cx);
+        self.say(Notice::good(msg), CONFIG_NOTICE, cx);
     }
 
     fn keep_sync_place(&mut self, place: Option<&SyncPlace>, cx: &mut Context<Self>) {
         if let Err(e) = self.live.set_sync_place(place) {
             self.say(
-                tr!("Cannot save where the vault syncs: {e}", e = e.to_string()),
+                Notice::bad(tr!(
+                    "Cannot save where the vault syncs: {e}",
+                    e = e.to_string()
+                )),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -2770,7 +2799,7 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) -> Option<Snap> {
         if let Err(e) = self.live.set_setting(path, value) {
-            self.say(e, CONFIG_NOTICE, cx);
+            self.say(Notice::bad(e), CONFIG_NOTICE, cx);
         }
         self.share_settings(cx);
         let problems = self.restyle(cx);
@@ -2783,7 +2812,7 @@ impl Workspace {
             Ok(_) => {
                 self.restyle(cx);
             }
-            Err(e) => self.say(e, CONFIG_NOTICE, cx),
+            Err(e) => self.say(Notice::bad(e), CONFIG_NOTICE, cx),
         }
         Some(self.settings_snap())
     }
@@ -2986,16 +3015,20 @@ impl Workspace {
                 self.poll_config(cx);
                 self.sync.now();
                 self.say(
-                    tr!(
+                    Notice::good(tr!(
                         "{host} signs in with {key} from now on.",
                         host = ev.host.clone(),
                         key = ev.key_name.clone()
-                    ),
+                    )),
                     CONFIG_NOTICE,
                     cx,
                 );
             }
-            Err(e) => self.say(tr!("Cannot edit hosts.toml: {e}", e = e), CONFIG_NOTICE, cx),
+            Err(e) => self.say(
+                Notice::bad(tr!("Cannot edit hosts.toml: {e}", e = e)),
+                CONFIG_NOTICE,
+                cx,
+            ),
         }
     }
 
@@ -3032,7 +3065,7 @@ impl Workspace {
             && let Err(e) = store.assign_host_ids()
         {
             self.say(
-                tr!("Cannot edit hosts.toml: {e}", e = e.to_string()),
+                Notice::bad(tr!("Cannot edit hosts.toml: {e}", e = e.to_string())),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -3083,7 +3116,11 @@ impl Workspace {
                     } else if connect {
                         ws.open(&name, window, cx);
                     } else {
-                        ws.say(tr!("Saved {name}.", name = name), THEME_NOTICE, cx);
+                        ws.say(
+                            Notice::good(tr!("Saved {name}.", name = name)),
+                            THEME_NOTICE,
+                            cx,
+                        );
                     }
                 }
                 EditorEvent::Deleted { name } => {
@@ -3091,7 +3128,11 @@ impl Workspace {
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
                     ws.sync.now();
-                    ws.say(tr!("Deleted {name}.", name = name), THEME_NOTICE, cx);
+                    ws.say(
+                        Notice::good(tr!("Deleted {name}.", name = name)),
+                        THEME_NOTICE,
+                        cx,
+                    );
                 }
                 EditorEvent::OpenSshConfig => {
                     if let Some(path) = ssh_config::default_config_path() {
@@ -3120,7 +3161,7 @@ impl Workspace {
             && let Err(e) = store.assign_host_ids()
         {
             self.say(
-                tr!("Cannot edit hosts.toml: {e}", e = e.to_string()),
+                Notice::bad(tr!("Cannot edit hosts.toml: {e}", e = e.to_string())),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -3141,8 +3182,12 @@ impl Workspace {
         let sub = cx.subscribe_in(&editor, window, |ws, _, ev: &GroupEvent, window, cx| {
             let said = match ev {
                 GroupEvent::Close => None,
-                GroupEvent::Saved { name } => Some(tr!("Saved the group {name}.", name = name)),
-                GroupEvent::Deleted { name } => Some(tr!("Deleted the group {name}.", name = name)),
+                GroupEvent::Saved { name } => {
+                    Some(Notice::good(tr!("Saved the group {name}.", name = name)))
+                }
+                GroupEvent::Deleted { name } => {
+                    Some(Notice::good(tr!("Deleted the group {name}.", name = name)))
+                }
             };
             ws.close_group_editor(window, cx);
             if let Some(msg) = said {
@@ -3247,7 +3292,7 @@ impl Workspace {
             return;
         };
         let Some(answer) = tab.read(cx).session().forward(forward) else {
-            return self.say(tr!("Not connected."), CONFIG_NOTICE, cx);
+            return self.say(Notice::warn(tr!("Not connected.")), CONFIG_NOTICE, cx);
         };
         cx.spawn(async move |_, cx| {
             let result = answer.await;
@@ -3257,13 +3302,14 @@ impl Workspace {
                         v.session_mut().keep_forward(&active);
                         let text = active.to_string();
                         let mut chars = text.chars();
-                        chars
+                        let said: String = chars
                             .next()
                             .map(|c| c.to_uppercase().chain(chars).collect())
-                            .unwrap_or(text)
+                            .unwrap_or(text);
+                        Notice::good(said)
                     }
-                    Ok(Err(e)) => e.to_string(),
-                    Err(_) => tr!("The connection ended."),
+                    Ok(Err(e)) => Notice::bad(e.to_string()),
+                    Err(_) => Notice::bad(tr!("The connection ended.")),
                 };
                 v.show_notice(msg, CONFIG_NOTICE, cx);
             });
@@ -3304,7 +3350,7 @@ impl Workspace {
                 .problem()
                 .unwrap_or_else(|| tr!("the vault is still opening"));
             self.say(
-                tr!("No saved passwords: {why}.", why = why),
+                Notice::bad(tr!("No saved passwords: {why}.", why = why)),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -3335,7 +3381,7 @@ impl Workspace {
                 .collect(),
             Err(e) => {
                 self.say(
-                    tr!("Cannot read the vault: {e}", e = e.to_string()),
+                    Notice::bad(tr!("Cannot read the vault: {e}", e = e.to_string())),
                     CONFIG_NOTICE,
                     cx,
                 );
@@ -3473,7 +3519,7 @@ impl Workspace {
             PaletteEvent::Copy(text) => {
                 cx.write_to_clipboard(gpui::ClipboardItem::new_string(text.clone()));
                 self.close_palette(window, cx);
-                self.say(tr!("Copied."), THEME_NOTICE, cx);
+                self.say(Notice::good(tr!("Copied.")), THEME_NOTICE, cx);
             }
             PaletteEvent::Answer(text) => {
                 let folder = match self.asking.clone() {
@@ -3518,7 +3564,7 @@ impl Workspace {
                             ws.ask_recovery_key(true, window, cx);
                         }
                         Err(e) => ws.say(
-                            tr!("Cannot join: {e}", e = e.to_string()),
+                            Notice::bad(tr!("Cannot join: {e}", e = e.to_string())),
                             CONFIG_NOTICE,
                             cx,
                         ),
@@ -3533,7 +3579,7 @@ impl Workspace {
                 match forgotten {
                     Some(Ok(())) => {
                         self.sync.now();
-                        self.say(tr!("Forgotten."), THEME_NOTICE, cx);
+                        self.say(Notice::good(tr!("Forgotten.")), THEME_NOTICE, cx);
                         // Back to the list for the next one, if any is left.
                         let left = self
                             .vault
@@ -3545,7 +3591,7 @@ impl Workspace {
                         }
                     }
                     Some(Err(e)) => self.say(
-                        tr!("Not forgotten: {e}", e = e.to_string()),
+                        Notice::bad(tr!("Not forgotten: {e}", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -3564,7 +3610,7 @@ impl Workspace {
                             cx,
                         );
                     }
-                    Err(e) => self.say(e, CONFIG_NOTICE, cx),
+                    Err(e) => self.say(Notice::bad(e), CONFIG_NOTICE, cx),
                 }
             }
         }
@@ -3590,7 +3636,7 @@ impl Workspace {
                 if let Some(view) = self.active_tab().cloned()
                     && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))
                 {
-                    self.say(e, CONFIG_NOTICE, cx);
+                    self.say(Notice::bad(e), CONFIG_NOTICE, cx);
                 }
             }
             Action::Files => self.toggle_files(window, cx),
@@ -3614,15 +3660,19 @@ impl Workspace {
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(
-                    tr!("Cannot read the key: {e}", e = e.to_string()),
+                    Notice::bad(tr!("Cannot read the key: {e}", e = e.to_string())),
                     CONFIG_NOTICE,
                     cx,
                 ),
-                _ => self.say(tr!("The vault is not open."), CONFIG_NOTICE, cx),
+                _ => self.say(
+                    Notice::warn(tr!("The vault is not open.")),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
             },
             Action::UnlockVault => match self.vault.locked() {
                 Some(lock) => self.ask_vault(lock, None, window, cx),
-                None => self.say(tr!("The vault is open."), THEME_NOTICE, cx),
+                None => self.say(Notice::good(tr!("The vault is open.")), THEME_NOTICE, cx),
             },
             Action::SetVaultPassphrase => {
                 self.asking = Some(Asking::VaultPassphrase {
@@ -3642,11 +3692,15 @@ impl Workspace {
                 };
                 match done {
                     Ok(()) => self.say(
-                        tr!("The vault opens with the system keychain alone now."),
+                        Notice::good(tr!("The vault opens with the system keychain alone now.")),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(tr!("Passphrase kept: {e}.", e = e), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(
+                        Notice::bad(tr!("Passphrase kept: {e}.", e = e)),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                 }
                 self.refresh_settings(cx);
             }
@@ -3670,10 +3724,10 @@ impl Workspace {
                     let _ = this.update(cx, |ws, cx| {
                         match done {
                             Ok(()) if on => ws.say(
-                                tr!(
+                                Notice::good(tr!(
                                     "{name} opens the vault now, as its passphrase does.",
                                     name = name.as_str()
-                                ),
+                                )),
                                 CONFIG_NOTICE,
                                 cx,
                             ),
@@ -3682,7 +3736,9 @@ impl Workspace {
                                 CONFIG_NOTICE,
                                 cx,
                             ),
-                            Err(e) => ws.say(format!("{name}: {e}"), CONFIG_NOTICE, cx),
+                            Err(e) => {
+                                ws.say(Notice::bad(format!("{name}: {e}")), CONFIG_NOTICE, cx)
+                            }
                         }
                         ws.refresh_settings(cx);
                     });
@@ -3696,7 +3752,7 @@ impl Workspace {
                     self.say(tr!("The vault is locked."), THEME_NOTICE, cx);
                 } else {
                     self.say(
-                        tr!("The vault cannot lock: the system keychain opens it, or it has no passphrase."),
+                        Notice::warn(tr!("The vault cannot lock: the system keychain opens it, or it has no passphrase.")),
                         CONFIG_NOTICE,
                         cx,
                     );
@@ -3711,7 +3767,7 @@ impl Workspace {
                         cx,
                     ),
                     Err(e) => self.say(
-                        tr!("The key stays in the keychain: {e}.", e = e.to_string()),
+                        Notice::bad(tr!("The key stays in the keychain: {e}.", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -3739,7 +3795,7 @@ impl Workspace {
                                     cx,
                                 )
                             }
-                            Err(e) => ws.say(tr!("Not stopped: {e}", e = e.to_string()), CONFIG_NOTICE, cx),
+                            Err(e) => ws.say(Notice::bad(tr!("Not stopped: {e}", e = e.to_string())), CONFIG_NOTICE, cx),
                         }
                         ws.refresh_settings(cx);
                     },
@@ -3751,11 +3807,15 @@ impl Workspace {
                 let done = self.vault.keep_in_keychain();
                 match done {
                     Ok(()) => self.say(
-                        tr!("The system keychain keeps the vault's key now."),
+                        Notice::good(tr!("The system keychain keeps the vault's key now.")),
                         CONFIG_NOTICE,
                         cx,
                     ),
-                    Err(e) => self.say(tr!("Not kept: {e}", e = e.to_string()), CONFIG_NOTICE, cx),
+                    Err(e) => self.say(
+                        Notice::bad(tr!("Not kept: {e}", e = e.to_string())),
+                        CONFIG_NOTICE,
+                        cx,
+                    ),
                 }
                 self.refresh_settings(cx);
             }
@@ -3784,7 +3844,7 @@ impl Workspace {
                 match self.live.store().map(|s| s.file_for_editing(which)) {
                     Some(Ok(path)) => cx.open_url(&format!("file://{}", path.display())),
                     Some(Err(e)) => self.say(
-                        tr!("Cannot create the file: {e}", e = e.to_string()),
+                        Notice::bad(tr!("Cannot create the file: {e}", e = e.to_string())),
                         CONFIG_NOTICE,
                         cx,
                     ),
@@ -3799,10 +3859,11 @@ impl Workspace {
         if problems.is_empty() {
             return;
         }
-        self.say(problems.join("\n"), CONFIG_NOTICE, cx);
+        self.say(Notice::warn(problems.join("\n")), CONFIG_NOTICE, cx);
     }
 
-    fn say(&mut self, msg: String, shown: Duration, cx: &mut Context<Self>) {
+    fn say(&mut self, msg: impl Into<Notice>, shown: Duration, cx: &mut Context<Self>) {
+        let msg: Notice = msg.into();
         // Settings covers the tabs: said there, or nobody sees it. Deferred,
         // as Settings may be what is asking, in the middle of its update.
         if let Some((s, _)) = &self.settings {
@@ -3813,7 +3874,7 @@ impl Workspace {
         match self.active_tab().cloned() {
             Some(tab) => tab.update(cx, |v, cx| v.show_notice(msg, shown, cx)),
             None => {
-                self.notice = Some(msg.into());
+                self.notice = Some(msg);
                 cx.notify();
             }
         }
@@ -3902,7 +3963,7 @@ impl Workspace {
         {
             self.vault_reported = true;
             self.say(
-                tr!("Passwords cannot be saved: {p}", p = p),
+                Notice::bad(tr!("Passwords cannot be saved: {p}", p = p)),
                 CONFIG_NOTICE,
                 cx,
             );
@@ -3931,7 +3992,7 @@ impl Workspace {
                     cx,
                 );
             }
-            Err(e) => self.say(e, CONFIG_NOTICE, cx),
+            Err(e) => self.say(Notice::bad(e), CONFIG_NOTICE, cx),
         }
     }
 
@@ -4970,7 +5031,8 @@ impl Workspace {
             })
             .child(list)
             .when_some(self.notice.clone(), |d, n| {
-                d.child(div().pt_2().text_color(rgb(colors().warn)).child(n))
+                let notice = div().mt_2().px_3().py_2().rounded_md();
+                d.child(colored(notice, n.tone).child(n.text))
             })
     }
 }

@@ -90,7 +90,8 @@ pub struct Palette {
     /// The red fill: failed, logging.
     pub danger: u32,
 
-    // Notices: a warning's box, an error's box; a good one's tag.
+    // Notices, by tone (notice.rs): each a ground, an edge and text. The
+    // good ground is also a good one's tag.
     pub good_bg: u32,
     pub warn_bg: u32,
     pub warn_edge: u32,
@@ -100,6 +101,11 @@ pub struct Palette {
     pub bad_edge: u32,
     pub bad_text: u32,
     pub bad_hover: u32,
+    pub good_edge: u32,
+    pub good_text: u32,
+    pub info_bg: u32,
+    pub info_edge: u32,
+    pub info_text: u32,
 
     // Translucent, `0xRRGGBBAA`.
     /// Behind a dialog or a drawer.
@@ -209,6 +215,11 @@ pub const DUSK: Palette = Palette {
     bad_edge: 0x8a2a2a,
     bad_text: 0xfecaca,
     bad_hover: 0xa33232,
+    good_edge: 0x2f7a4f,
+    good_text: 0xbbf7d0,
+    info_bg: 0x1b3550,
+    info_edge: 0x2f6694,
+    info_text: 0xd3ebfb,
 
     scrim: 0x0b0e13a0,
     banner: 0x1c2129ee,
@@ -288,9 +299,14 @@ pub const LIGHT: Palette = Palette {
     warn_text: 0x92400e,
     warn_hover: 0xfde68a,
     bad_bg: 0xfdecec,
-    bad_edge: 0xf5b5b5,
+    bad_edge: 0xeba3a3,
     bad_text: 0x991b1b,
     bad_hover: 0xfbd5d5,
+    good_edge: 0x7fcf9c,
+    good_text: 0x14532d,
+    info_bg: 0xe2f1fc,
+    info_edge: 0x8fc3ea,
+    info_text: 0x0b3a5c,
 
     scrim: 0x0f172a59,
     banner: 0xffffffee,
@@ -424,5 +440,22 @@ mod tests {
         assert_eq!(colors(), DUSK);
         assert!((contrast(0xffffff, 0x000000) - 21.).abs() < 0.01);
         assert_eq!(mix(0x000000, 0xffffff, 0.5), 0x808080);
+    }
+
+    #[test]
+    fn every_notice_reads_well_and_stands_out_from_the_page() {
+        for p in [DUSK, LIGHT] {
+            for (tone, ground, edge, text) in [
+                ("info", p.info_bg, p.info_edge, p.info_text),
+                ("good", p.good_bg, p.good_edge, p.good_text),
+                ("warn", p.warn_bg, p.warn_edge, p.warn_text),
+                ("bad", p.bad_bg, p.bad_edge, p.bad_text),
+            ] {
+                assert!(contrast(text, ground) >= 4.5, "{tone}: its text reads");
+                for under in [p.page, p.surface, p.chrome] {
+                    assert!(contrast(edge, under) >= 1.5, "{tone}: its box shows");
+                }
+            }
+        }
     }
 }

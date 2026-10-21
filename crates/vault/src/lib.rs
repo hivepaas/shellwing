@@ -59,7 +59,7 @@ pub(crate) fn clear_kind(record_type: &str) -> &'static str {
 pub enum Error {
     #[error("vault database: {0}")]
     Db(#[from] rusqlite::Error),
-    #[error("sync: {0}")]
+    #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error("system keychain: {0}")]
     Keychain(String),

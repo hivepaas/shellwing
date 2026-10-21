@@ -30,6 +30,7 @@ use crate::colors::colors;
 use crate::files::{self, FilesEvent, FilesPanel};
 use crate::input::{Changed, TextInput};
 use crate::look::{Look, rgb as theme_rgb};
+use crate::notice::{Notice, colored};
 use crate::session::{Session, Status};
 use shellwing_config::{OnDisconnect, Scrollbar};
 
@@ -338,7 +339,7 @@ pub struct TermView {
     env_loaded: Vec<LoadedEnv>,
     /// Config files placed on the host until the tab closes.
     placed: Vec<crate::placing::Placed>,
-    notice: Option<SharedString>,
+    notice: Option<Notice>,
     /// Last pointer position over the grid, to show links when the modifier goes down.
     last_mouse: Option<(f32, f32)>,
     font_family: SharedString,
@@ -641,16 +642,18 @@ impl TermView {
     /// Takes away the placed file at `path` (None: all), and says so.
     pub fn remove_placed(&mut self, path: Option<&str>, cx: &mut Context<Self>) {
         let Some(job) = self.take_down(path) else {
-            return self.show_notice(tr!("Not connected."), LOG_NOTICE, cx);
+            return self.show_notice(Notice::warn(tr!("Not connected.")), LOG_NOTICE, cx);
         };
         cx.spawn(async move |this, cx| {
             let (gone, problem) = job.await.unwrap_or_else(|e| (vec![], Some(e.to_string())));
             let _ = this.update(cx, |v, cx| {
                 v.took_down(&gone, cx);
                 match problem {
-                    Some(e) => v.show_notice(tr!("Not removed: {e}", e = e), LOG_NOTICE, cx),
+                    Some(e) => {
+                        v.show_notice(Notice::bad(tr!("Not removed: {e}", e = e)), LOG_NOTICE, cx)
+                    }
                     None => v.show_notice(
-                        tr_n!(gone.len(), "Removed {n} file.", "Removed {n} files."),
+                        Notice::good(tr_n!(gone.len(), "Removed {n} file.", "Removed {n} files.")),
                         LOG_NOTICE,
                         cx,
                     ),
@@ -815,7 +818,7 @@ impl TermView {
                 v.env_pending.retain(|p| p.ready != ready);
                 if v.env_pending.len() < before {
                     v.show_notice(
-                        tr!("The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh)."),
+                        Notice::warn(tr!("The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).")),
                         LOG_NOTICE,
                         cx,
                     );
@@ -849,7 +852,7 @@ impl TermView {
                 self.env_loaded.retain(|e| e.id != env.id);
                 self.env_loaded.push(env);
                 self.show_notice(
-                    tr!("{name} is loaded into this shell.", name = name),
+                    Notice::good(tr!("{name} is loaded into this shell.", name = name)),
                     LOG_NOTICE,
                     cx,
                 );
@@ -861,10 +864,10 @@ impl TermView {
     /// Starts logging the pane to a new file, or stops, and says where.
     pub fn toggle_log(&mut self, settings: &shellwing_config::Log, cx: &mut Context<Self>) {
         let said = match self.session.stop_log() {
-            Some(path) => tr!("Log saved: {path}", path = path.display().to_string()),
+            Some(path) => Notice::good(tr!("Log saved: {path}", path = path.display().to_string())),
             None => match self.session.start_log(settings) {
-                Ok(path) => tr!("Logging to {path}", path = path.display().to_string()),
-                Err(e) => tr!("Cannot log: {e}", e = e.to_string()),
+                Ok(path) => tr!("Logging to {path}", path = path.display().to_string()).into(),
+                Err(e) => Notice::bad(tr!("Cannot log: {e}", e = e.to_string())),
             },
         };
         self.show_notice(said, LOG_NOTICE, cx);
@@ -909,11 +912,15 @@ impl TermView {
                 .await;
             let _ = this.update(cx, |v, cx| {
                 let said = match written {
-                    Ok(()) if html => {
-                        tr!("Saved as HTML: {path}", path = path.display().to_string())
-                    }
-                    Ok(()) => tr!("Saved as text: {path}", path = path.display().to_string()),
-                    Err(e) => tr!("Not saved: {e}", e = e.to_string()),
+                    Ok(()) if html => Notice::good(tr!(
+                        "Saved as HTML: {path}",
+                        path = path.display().to_string()
+                    )),
+                    Ok(()) => Notice::good(tr!(
+                        "Saved as text: {path}",
+                        path = path.display().to_string()
+                    )),
+                    Err(e) => Notice::bad(tr!("Not saved: {e}", e = e.to_string())),
                 };
                 v.show_notice(said, LOG_NOTICE, cx);
             });
@@ -975,7 +982,7 @@ impl TermView {
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(move |v, _, _, cx| {
                         if let Err(e) = v.unload_env(Some(&id), cx) {
-                            v.show_notice(e, LOG_NOTICE, cx);
+                            v.show_notice(Notice::bad(e), LOG_NOTICE, cx);
                         }
                     }))
                     .child(div().size(px(6.)).rounded_full().bg(rgb(colors().amber)))
@@ -1096,7 +1103,7 @@ impl TermView {
             shellwing_ssh::keys::INSTALL,
             format!("{}\n", key.public.trim()).into_bytes(),
         ) else {
-            return self.show_notice(tr!("Not connected."), CONFIRM_PASTE, cx);
+            return self.show_notice(Notice::warn(tr!("Not connected.")), CONFIRM_PASTE, cx);
         };
         self.show_notice(
             tr!("Installing {key} on {host}…", key = &key.name, host = &host),
@@ -1114,22 +1121,20 @@ impl TermView {
                     Err(_) => Err(tr!("the connection ended")),
                 };
                 let said = match &done {
-                    Ok(shellwing_ssh::keys::Installed::Added) => {
-                        tr!(
-                            "{key} is installed on {host}.",
-                            key = &key.name,
-                            host = &host
-                        )
-                    }
+                    Ok(shellwing_ssh::keys::Installed::Added) => Notice::good(tr!(
+                        "{key} is installed on {host}.",
+                        key = &key.name,
+                        host = &host
+                    )),
                     Ok(shellwing_ssh::keys::Installed::Present) => {
-                        tr!("{host} has {key} already.", host = &host, key = &key.name)
+                        tr!("{host} has {key} already.", host = &host, key = &key.name).into()
                     }
-                    Err(why) => tr!(
+                    Err(why) => Notice::bad(tr!(
                         "{key} was not installed on {host}: {why}",
                         key = &key.name,
                         host = &host,
                         why = why
-                    ),
+                    )),
                 };
                 // Offered only for a host in hosts.toml not set to it already.
                 let offer = key
@@ -1469,7 +1474,7 @@ impl TermView {
     pub fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.session.is_local() {
             return self.show_notice(
-                tr!("The Files panel browses a server over SFTP; this pane is a shell on this computer."),
+                Notice::warn(tr!("The Files panel browses a server over SFTP; this pane is a shell on this computer.")),
                 CONFIRM_PASTE,
                 cx,
             );
@@ -1514,12 +1519,14 @@ impl TermView {
         if let Some(secret) = self.save_offer.take() {
             match self.session.save(&secret) {
                 Ok(()) => {
-                    self.show_notice(tr!("Saved in the vault."), CONFIRM_PASTE, cx);
+                    self.show_notice(Notice::good(tr!("Saved in the vault.")), CONFIRM_PASTE, cx);
                     cx.emit(VaultChanged);
                 }
-                Err(e) => {
-                    self.show_notice(tr!("Not saved: {e}", e = e.to_string()), CONFIRM_PASTE, cx)
-                }
+                Err(e) => self.show_notice(
+                    Notice::bad(tr!("Not saved: {e}", e = e.to_string())),
+                    CONFIRM_PASTE,
+                    cx,
+                ),
             }
         }
         cx.notify();
@@ -1539,8 +1546,8 @@ impl TermView {
 
     /// The notice over the pane, if one shows: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
-    pub fn notice_text(&self) -> Option<String> {
-        self.notice.as_ref().map(|n| n.to_string())
+    pub fn notice_shown(&self) -> Option<Notice> {
+        self.notice.clone()
     }
 
     /// The Files panel, once opened: for the UI tests.
@@ -1793,7 +1800,7 @@ impl TermView {
                             button("key-changed-trust", tr!("Trust the new key and connect"), true)
                                 .on_click(cx.listener(|v, _, _, cx| match v.session.trust_changed_key() {
                                     Ok(()) => v.reconnect_now(cx),
-                                    Err(e) => v.show_notice(tr!("Not trusted: {e}", e = e.to_string()), KEY_NOTICE, cx),
+                                    Err(e) => v.show_notice(Notice::bad(tr!("Not trusted: {e}", e = e.to_string())), KEY_NOTICE, cx),
                                 })),
                         ),
                 )
@@ -2032,7 +2039,7 @@ impl TermView {
             TermEvent::PasteRefused(text) => {
                 self.pending_paste = Some((text, Instant::now()));
                 self.show_notice(
-                    tr!("The pasted text could run commands. Paste again within 5 s to send it anyway."),
+                    Notice::warn(tr!("The pasted text could run commands. Paste again within 5 s to send it anyway.")),
                     CONFIRM_PASTE,
                     cx,
                 );
@@ -2050,7 +2057,7 @@ impl TermView {
             TermEvent::LogFailed(e) => {
                 self.session.stop_log();
                 self.show_notice(
-                    tr!("Logging stopped: {e}", e = e.to_string()),
+                    Notice::bad(tr!("Logging stopped: {e}", e = e.to_string())),
                     LOG_NOTICE,
                     cx,
                 );
@@ -2058,13 +2065,8 @@ impl TermView {
         }
     }
 
-    pub fn show_notice(
-        &mut self,
-        msg: impl Into<SharedString>,
-        shown: Duration,
-        cx: &mut Context<Self>,
-    ) {
-        let msg: SharedString = msg.into();
+    pub fn show_notice(&mut self, msg: impl Into<Notice>, shown: Duration, cx: &mut Context<Self>) {
+        let msg: Notice = msg.into();
         self.notice = Some(msg.clone());
         cx.notify();
         cx.spawn(async move |this, cx| {
@@ -2216,7 +2218,7 @@ impl TermView {
                     )
                     .on_click(act(|v, _, cx| {
                         if let Err(e) = v.unload_env(None, cx) {
-                            v.show_notice(e, LOG_NOTICE, cx);
+                            v.show_notice(Notice::bad(e), LOG_NOTICE, cx);
                         }
                     })),
                 )
@@ -3047,7 +3049,8 @@ impl Render for TermView {
             } else {
                 px(12.)
             };
-            terminal = terminal.child(badge().top(top).child(n.clone()));
+            let n = colored(badge().top(top), n.tone).child(n.text.clone());
+            terminal = terminal.child(n);
         }
         if let Some(bar) = self.find_bar(cx) {
             terminal = terminal.child(bar);

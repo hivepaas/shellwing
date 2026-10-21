@@ -220,7 +220,7 @@ scenario!(
         ui.copy_to_clipboard("echo one\necho two\n");
         let paste = if cfg!(target_os = "macos") { "cmd-v" } else { "ctrl-shift-v" };
         ui.keys(paste);
-        ui.wait_until("a warning", |ui| ui.notice().is_some_and(|n| n.contains("run commands")));
+        ui.wait_for_notice_in("run commands", crate::notice::Tone::Warn);
         ui.settle(std::time::Duration::from_millis(200));
         assert!(server.seen(|s| s.lines.is_empty()), "it ran");
         ui.keys(paste);

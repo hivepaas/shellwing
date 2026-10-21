@@ -23,6 +23,7 @@ use crate::input::TextInput;
 use crate::keys_view::KeysView;
 use crate::known_hosts_view::KnownHostsView;
 use crate::look::ui;
+use crate::notice::{Notice, colored};
 use crate::palette::Action;
 use crate::snippets_view::SnippetsView;
 use crate::workspace::Workspace;
@@ -136,7 +137,7 @@ pub struct SettingsView {
     focus: FocusHandle,
     /// What the app has to say while Settings covers the tabs (where it
     /// would say it otherwise), and which saying it is, to put it away.
-    notice: Option<(String, u64)>,
+    notice: Option<(Notice, u64)>,
     notices: u64,
     /// Gradient themes drawn for their tiles and the preview, by theme and
     /// size: GPUI's own gradients take two stops, these take them all.
@@ -593,10 +594,10 @@ impl SettingsView {
                         form.no_git = None;
                         form.problem = None;
                         v.say(
-                            tr!(
+                            Notice::good(tr!(
                                 "git {version} is installed: Connect again.",
                                 version = git.version()
-                            ),
+                            )),
                             cx,
                         );
                     }
@@ -616,15 +617,15 @@ impl SettingsView {
     }
 
     /// A notice from the page, through the workspace.
-    fn say(&mut self, msg: String, cx: &mut Context<Self>) {
+    fn say(&mut self, msg: impl Into<Notice>, cx: &mut Context<Self>) {
         self.show_notice(msg, Duration::from_secs(8), cx);
     }
 
     /// Shows `msg` over the page for `shown`.
-    pub fn show_notice(&mut self, msg: String, shown: Duration, cx: &mut Context<Self>) {
+    pub fn show_notice(&mut self, msg: impl Into<Notice>, shown: Duration, cx: &mut Context<Self>) {
         self.notices += 1;
         let n = self.notices;
-        self.notice = Some((msg, n));
+        self.notice = Some((msg.into(), n));
         cx.notify();
         cx.spawn(async move |this, cx| {
             cx.background_executor().timer(shown).await;
@@ -2093,7 +2094,7 @@ impl SettingsView {
                                         cx.write_to_clipboard(gpui::ClipboardItem::new_string(
                                             copied.clone(),
                                         ));
-                                        v.say(tr!("Copied."), cx);
+                                        v.say(Notice::good(tr!("Copied.")), cx);
                                     }),
                                 )),
                         )
@@ -2496,7 +2497,7 @@ impl SettingsView {
 
     /// The notice over the page: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
-    pub fn notice_text(&self) -> Option<String> {
+    pub fn notice_shown(&self) -> Option<Notice> {
         self.notice.as_ref().map(|(m, _)| m.clone())
     }
 }
@@ -2703,21 +2704,16 @@ impl Render for SettingsView {
                     }),
             )
             .when_some(self.notice.as_ref().map(|(m, _)| m.clone()), |d, m| {
-                d.child(
-                    div()
-                        .absolute()
-                        .right(px(20.))
-                        .bottom(px(20.))
-                        .max_w(px(460.))
-                        .px(px(12.))
-                        .py(px(8.))
-                        .rounded(px(8.))
-                        .bg(rgb(colors().surface))
-                        .border_1()
-                        .border_color(rgb(colors().line))
-                        .shadow_lg()
-                        .child(m),
-                )
+                let notice = div()
+                    .absolute()
+                    .right(px(20.))
+                    .bottom(px(20.))
+                    .max_w(px(460.))
+                    .px(px(12.))
+                    .py(px(8.))
+                    .rounded(px(8.))
+                    .shadow_lg();
+                d.child(colored(notice, m.tone).child(m.text))
             })
     }
 }

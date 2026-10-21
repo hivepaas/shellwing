@@ -32,6 +32,7 @@ mod library_window;
 mod look;
 mod note_images;
 mod note_window;
+mod notice;
 mod palette;
 mod pane;
 mod placement;
