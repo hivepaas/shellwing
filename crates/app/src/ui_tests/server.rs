@@ -676,6 +676,11 @@ impl Shell {
                 });
                 return Ok(());
             }
+            // An OSC 8 hyperlink: `link <url> <text>`.
+            "link" => {
+                let (url, text) = arg.split_once(' ').unwrap_or((arg, arg));
+                format!("\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\\r\n")
+            }
             "bracketed" => "\x1b[?2004h".into(),
             "bell" => "\x07".into(),
             "red" => "\x1b[31mred text\x1b[0m\r\n".into(),

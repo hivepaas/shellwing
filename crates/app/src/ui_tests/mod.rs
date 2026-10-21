@@ -32,6 +32,7 @@ use crate::workspace::Workspace;
 
 pub mod server;
 
+mod config;
 mod connect;
 mod files;
 mod forward;
@@ -547,6 +548,18 @@ impl Ui {
         self.cx.run_until_parked();
     }
 
+    /// Right-clicks the middle of the element marked `selector` (a context
+    /// menu).
+    pub fn right_click(&mut self, selector: &str) {
+        let at = self.reach(selector);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        let right = gpui::MouseButton::Right;
+        vcx.simulate_mouse_move(at, None, gpui::Modifiers::none());
+        vcx.simulate_mouse_down(at, right, gpui::Modifiers::none());
+        vcx.simulate_mouse_up(at, right, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
     /// Moves the mouse over the middle of the element marked `selector`.
     pub fn hover(&mut self, selector: &str) {
         let at = self.reach(selector);
@@ -558,10 +571,16 @@ impl Ui {
     /// The middle of the active terminal's cell at `row`, `col` (from the
     /// top left of the screen), where it is drawn.
     pub fn cell_point(&mut self, row: usize, col: usize) -> gpui::Point<gpui::Pixels> {
+        self.cell_at(row, col, 0.5)
+    }
+
+    /// A point in the cell at `row`, `col`, `across` its width from its left
+    /// edge (0 to 1), in the middle of its height.
+    pub fn cell_at(&mut self, row: usize, col: usize, across: f32) -> gpui::Point<gpui::Pixels> {
         self.draw();
         let (origin, (w, h)) = self.view(|v, _| (v.bounds().origin, v.cell_size()));
         gpui::point(
-            origin.x + w * (col as f32 + 0.5),
+            origin.x + w * (col as f32 + across),
             origin.y + h * (row as f32 + 0.5),
         )
     }
@@ -579,15 +598,15 @@ impl Ui {
         panic!("{text:?} is not on the screen:\n{}", self.screen());
     }
 
-    /// Presses the mouse's `button` on one cell and lets it go on another,
-    /// moving over the cells between, with `modifiers` held.
-    pub fn drag(
-        &mut self,
-        from: (usize, usize),
-        to: (usize, usize),
-        modifiers: gpui::Modifiers,
-    ) {
-        let (a, b) = (self.cell_point(from.0, from.1), self.cell_point(to.0, to.1));
+    /// Presses the left button on one cell and lets it go on another, moving
+    /// over the cells between, with `modifiers` held: from the left part of
+    /// the first to the right part of the last, as a user drags over text
+    /// (a cell is in a selection once the mouse is past its middle).
+    pub fn drag(&mut self, from: (usize, usize), to: (usize, usize), modifiers: gpui::Modifiers) {
+        let (a, b) = (
+            self.cell_at(from.0, from.1, 0.2),
+            self.cell_at(to.0, to.1, 0.8),
+        );
         let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
         let left = gpui::MouseButton::Left;
         vcx.simulate_mouse_move(a, None, modifiers);

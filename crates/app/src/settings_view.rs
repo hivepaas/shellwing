@@ -691,6 +691,7 @@ impl SettingsView {
             row = row.child(
                 div()
                     .id((id, n))
+                    .debug_selector(|| format!("{id}:{n}"))
                     .h(px(28.))
                     .min_w(px(40.))
                     .px(px(10.))

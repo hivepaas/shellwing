@@ -429,6 +429,28 @@ impl FilesPanel {
         found.is_some()
     }
 
+    /// The files being edited: each one's name, its local copy, and where it
+    /// stands (`opening`, `watching`, `saving`, `conflict`, `unsent: …`,
+    /// `kept`, `not opened: …`): for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn edits_shown(&self) -> Vec<(String, PathBuf, String)> {
+        self.edits
+            .iter()
+            .map(|e| {
+                let step = match &e.step {
+                    EditStep::Opening => "opening".to_string(),
+                    EditStep::NotOpened(why) => format!("not opened: {why}"),
+                    EditStep::Watching(_) => "watching".to_string(),
+                    EditStep::Saving => "saving".to_string(),
+                    EditStep::Conflict => "conflict".to_string(),
+                    EditStep::Unsent(why) => format!("unsent: {why}"),
+                    EditStep::Kept(_) => "kept".to_string(),
+                };
+                (e.name.clone(), e.copy.path.clone(), step)
+            })
+            .collect()
+    }
+
     /// Downloads go here instead of the user's Downloads: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn set_downloads(&mut self, dir: PathBuf) {
@@ -1373,6 +1395,7 @@ impl FilesPanel {
         let item = |id: &'static str, label: &str, hint: &str, danger: bool| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .flex()
                 .items_center()
                 .justify_between()
@@ -1626,6 +1649,7 @@ impl FilesPanel {
         };
         div()
             .id(("file", i))
+            .debug_selector(|| format!("file:{}", e.name))
             // The whole width: the size and date columns line up.
             .w_full()
             .h(px(ROW_H))
@@ -1864,6 +1888,7 @@ impl Render for FilesPanel {
         let tool = |id: &'static str, icon: &'static str, tip: SharedString| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .size(px(28.))
                 .flex()
                 .items_center()
