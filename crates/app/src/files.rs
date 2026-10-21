@@ -2097,6 +2097,7 @@ impl Render for FilesPanel {
             body = body.child(
                 div()
                     .id("files-parent")
+                    .debug_selector(|| "files-parent".into())
                     .w_full()
                     .h(px(ROW_H))
                     .flex_shrink_0()

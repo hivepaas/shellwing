@@ -217,6 +217,7 @@ impl SettingsView {
                 } else {
                     chip(c.label(os))
                         .id(("key", n * 16 + i))
+                        .debug_selector(|| format!("key:{h:?}:{i}"))
                         .cursor_pointer()
                         .hover(|s| s.border_color(rgb(colors().accent)))
                         .on_click(

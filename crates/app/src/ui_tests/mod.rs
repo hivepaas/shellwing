@@ -38,6 +38,7 @@ mod files;
 mod forward;
 mod host_list;
 mod hosts;
+mod keyboard;
 mod keys;
 mod local;
 mod mouse;
@@ -54,7 +55,7 @@ pub use server::{OTP, PASSWORD, PROMPT, Policy, Server, USER, WELCOME};
 
 /// The lists that scroll, by their `.debug_selector(..)`: a click on what is
 /// in one scrolls it into view first ([`Ui::click`]).
-const SCROLLING: [&str; 2] = ["settings-content", "hosts"];
+const SCROLLING: [&str; 3] = ["settings-content", "hosts", "editor-body"];
 
 /// How long a step may take before the scenario fails. Generous: debug
 /// builds of libghostty parse slowly, and CI machines are slow.
@@ -432,6 +433,46 @@ impl Ui {
         })
     }
 
+    /// The snippet library's window, once open.
+    pub fn library_window(
+        &mut self,
+    ) -> Option<WindowHandle<crate::library_window::LibraryWindow>> {
+        self.cx.update(|cx| {
+            cx.windows()
+                .iter()
+                .find_map(|w| w.downcast::<crate::library_window::LibraryWindow>())
+        })
+    }
+
+    /// Clicks the element marked `selector` in another of the app's windows
+    /// (the snippet library, a note), drawn first.
+    pub fn click_in(&mut self, window: gpui::AnyWindowHandle, selector: &str) {
+        gpui::AppContext::update_window(&mut self.cx, window, |_, w, cx| {
+            w.refresh();
+            w.draw(cx).clear(cx);
+        })
+        .expect("the window is open");
+        let selector: &'static str = Box::leak(selector.to_string().into_boxed_str());
+        let mut vcx = gpui::VisualTestContext::from_window(window, &self.cx);
+        let at = vcx
+            .debug_bounds(selector)
+            .unwrap_or_else(|| panic!("nothing marked {selector:?} is drawn there"))
+            .center();
+        vcx.simulate_click(at, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
+    /// Types `text` into another of the app's windows.
+    pub fn type_in(&mut self, window: gpui::AnyWindowHandle, text: &str) {
+        for c in text.chars() {
+            match c {
+                ' ' => self.cx.simulate_keystrokes(window, "space"),
+                c => self.cx.simulate_input(window, &c.to_string()),
+            }
+        }
+        self.cx.run_until_parked();
+    }
+
     /// Acts on the note window that is open.
     pub fn note<R>(
         &mut self,
@@ -561,6 +602,29 @@ impl Ui {
         vcx.simulate_mouse_move(at, None, gpui::Modifiers::none());
         vcx.simulate_mouse_down(at, right, gpui::Modifiers::none());
         vcx.simulate_mouse_up(at, right, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
+    /// Double-clicks the middle of the element marked `selector`.
+    pub fn double_click(&mut self, selector: &str) {
+        let at = self.reach(selector);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        let (button, modifiers) = (gpui::MouseButton::Left, gpui::Modifiers::none());
+        for click_count in [1, 2] {
+            vcx.simulate_event(gpui::MouseDownEvent {
+                position: at,
+                modifiers,
+                button,
+                click_count,
+                first_mouse: false,
+            });
+            vcx.simulate_event(gpui::MouseUpEvent {
+                position: at,
+                modifiers,
+                button,
+                click_count,
+            });
+        }
         self.cx.run_until_parked();
     }
 

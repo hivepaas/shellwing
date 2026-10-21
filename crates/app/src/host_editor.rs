@@ -842,6 +842,7 @@ impl HostEditor {
             .child(
                 div()
                     .id(SharedString::from(id.to_string()))
+                    .debug_selector(|| id.to_string())
                     .h(px(30.))
                     .px(px(10.))
                     .flex()
@@ -908,6 +909,7 @@ impl HostEditor {
             list = list.child(
                 div()
                     .id(("choice", i))
+                    .debug_selector(|| format!("choice:{label}"))
                     .px_2()
                     .py(px(5.))
                     .rounded(px(4.))
@@ -1200,6 +1202,7 @@ fn chip(
 fn dashed(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
     div()
         .id(SharedString::from(id.to_string()))
+        .debug_selector(|| id.to_string())
         .h(px(26.))
         .px(px(10.))
         .flex()
@@ -1308,6 +1311,7 @@ impl Render for HostEditor {
             seg = seg.child(
                 div()
                     .id(("method", n))
+                    .debug_selector(|| format!("method:{n}"))
                     .flex_1()
                     .h(px(30.))
                     .flex()
@@ -1646,6 +1650,7 @@ impl Render for HostEditor {
         swatches = swatches.child(
             div()
                 .id("color-none")
+                .debug_selector(|| "color-none".into())
                 .size(px(20.))
                 .rounded_full()
                 .border_2()
@@ -1674,6 +1679,7 @@ impl Render for HostEditor {
             swatches = swatches.child(
                 div()
                     .id(SharedString::from(format!("color-{name}")))
+                    .debug_selector(|| format!("color-{name}"))
                     .size(px(20.))
                     .rounded_full()
                     .bg(rgb(value))
@@ -1690,6 +1696,7 @@ impl Render for HostEditor {
         organize = organize.child(swatches).child(
             div()
                 .id("favorite")
+                .debug_selector(|| "favorite".into())
                 .flex()
                 .items_center()
                 .gap_2()
@@ -1912,6 +1919,7 @@ impl Render for HostEditor {
             .child(
                 div()
                     .id("editor-body")
+                    .debug_selector(|| "editor-body".into())
                     .flex_1()
                     .min_h_0()
                     .overflow_y_scroll()

@@ -242,3 +242,141 @@ scenario!(
         ui.wait_for_notice("shellwing");
     }
 );
+
+scenario!(
+    /// The host list folded to a rail of tiles: a click on a host's tile
+    /// connects to it; the rail unfolds back to the list.
+    rail_tile_connects,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        ui.click("collapse-hosts");
+        ui.wait_until("the rail", |ui| ui.find("hosts").is_none());
+        ui.click("tile:web");
+        ui.login();
+        assert_eq!(ui.tabs(), 1);
+        assert_eq!(ui.view(|v, _| v.session().title.clone()), "web");
+        ui.click("expand-hosts");
+        ui.wait_until("the list again", |ui| ui.find("hosts").is_some());
+    }
+);
+
+/// Opens the editor on a saved host, as hovering it and clicking Edit does.
+fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
+    ui.hover(&format!("host:{name}"));
+    ui.click(&format!("edit-host:{name}"));
+    ui.wait_until("the host editor", |ui| ui.host_editor_open());
+}
+
+/// Saves the editor's host with its Save button.
+fn save_host(ui: &mut crate::ui_tests::Ui) {
+    ui.click("save");
+    ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+}
+
+scenario!(
+    /// The editor's Group: a host put in a group is listed under it.
+    host_put_in_a_group_in_the_editor,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &format!("[[group]]\nname = \"Databases\"\n\n{}", host("db", closed_port())),
+        );
+        ui.open();
+        edit_host(ui, "db");
+        ui.click("group-select");
+        ui.click("choice:Databases");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("group = \"Databases\""), "{}", ui.hosts_toml());
+        let list = ui.host_list();
+        assert!(
+            list.iter().any(|(t, h)| t == "Databases" && h == &["db"]),
+            "{list:?}"
+        );
+    }
+);
+
+scenario!(
+    /// A favorite (the editor's Favorite) is listed first, under Favorites.
+    favorite_listed_first,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &[host("web", closed_port()), host("db", closed_port())].join("\n"),
+        );
+        ui.open();
+        edit_host(ui, "db");
+        ui.click("favorite");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("favorite = true"), "{}", ui.hosts_toml());
+        let list = ui.host_list();
+        assert_eq!(list.get(1), Some(&("Favorites".to_string(), vec!["db".to_string()])), "{list:?}");
+    }
+);
+
+scenario!(
+    /// A jump host added in the editor: the host is reached through it, each
+    /// asking for its password.
+    jump_host_set_in_the_editor,
+    |ui| {
+        let bastion = ui.server(Policy {
+            forward: true,
+            ..Policy::password()
+        });
+        let target = ui.server(Policy::password());
+        ui.trust(&bastion);
+        ui.trust(&target);
+        ui.config_file(
+            "hosts.toml",
+            &[host("bastion", bastion.port), host("inner", target.port)].join("\n"),
+        );
+        ui.open();
+        edit_host(ui, "inner");
+        ui.click("add-jump");
+        ui.type_text("bastion");
+        ui.keys("enter");
+        ui.keys("escape");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("jump = [\"bastion\"]"), "{}", ui.hosts_toml());
+        ui.click("host:inner");
+        ui.wait_for("password:");
+        ui.line(crate::ui_tests::PASSWORD);
+        ui.wait_for_count("password:", 2);
+        ui.line(crate::ui_tests::PASSWORD);
+        ui.wait_for(crate::ui_tests::WELCOME);
+        assert_eq!(bastion.seen(|s| s.forwards.len()), 1);
+        assert_eq!(target.seen(|s| s.auth.clone()), ["password:ok"]);
+    }
+);
+
+scenario!(
+    /// A host from ~/.ssh/config, copied to hosts.toml from the editor: it
+    /// moves from the ~/.ssh/config section to the user's hosts.
+    host_copied_from_the_ssh_config,
+    |ui| {
+        ui.ssh_config(&format!(
+            "Host staging\n  HostName 127.0.0.1\n  Port {}\n  User {USER}\n",
+            closed_port()
+        ));
+        ui.open();
+        let list = ui.host_list();
+        assert!(
+            list.iter().any(|(t, h)| t == "~/.ssh/config" && h == &["staging"]),
+            "{list:?}"
+        );
+        edit_host(ui, "staging");
+        ui.click("ssh-copy");
+        save_host(ui);
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("name = \"staging\""), "{hosts}");
+        assert!(hosts.contains("address = \"127.0.0.1\""), "{hosts}");
+        let list = ui.host_list();
+        assert!(
+            list.iter().any(|(t, h)| t == "Hosts" && h.contains(&"staging".to_string())),
+            "{list:?}"
+        );
+        assert!(!list.iter().any(|(t, _)| t == "~/.ssh/config"), "{list:?}");
+    }
+);

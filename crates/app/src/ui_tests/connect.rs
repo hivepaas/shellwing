@@ -352,3 +352,26 @@ scenario!(
         assert_eq!(server.seen(|s| s.auth.clone()), ["publickey:ok", "otp:ok"]);
     }
 );
+
+scenario!(
+    /// A host connected to before is under Recent in the palette: a part of
+    /// its address finds it, and Enter opens it.
+    recent_connection_from_the_palette,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        let state = ui.config_dir().join("state");
+        std::fs::create_dir_all(&state).expect("state dir");
+        std::fs::write(
+            state.join("recent.json"),
+            format!("[\"{}\"]", server.spec()),
+        )
+        .expect("recent.json");
+        ui.open();
+        // Only a part of it: on its own, ":PORT" is no address to connect to.
+        ui.palette(&format!(":{}", server.port));
+        ui.login();
+        assert_eq!(ui.tabs(), 1);
+        assert_eq!(server.seen(|s| s.connections), 1);
+    }
+);
