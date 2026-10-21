@@ -203,9 +203,12 @@ impl Sidebar {
                 let first = self.shown(cx).into_iter().flat_map(|s| s.rows).next();
                 if let Some(row) = first {
                     self.filter.update(cx, |f, cx| f.set_text("", 0..0, cx));
-                    let _ = self
-                        .workspace
-                        .update(cx, |ws, cx| ws.open(&row.spec, window, cx));
+                    // Once this key is handled: opening refreshes this list,
+                    // which cannot be updated while it handles the key.
+                    let ws = self.workspace.clone();
+                    window.defer(cx, move |window, cx| {
+                        let _ = ws.update(cx, |ws, cx| ws.open(&row.spec, window, cx));
+                    });
                 }
             }
             _ => return,
