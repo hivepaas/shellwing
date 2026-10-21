@@ -460,9 +460,7 @@ impl Ui {
     }
 
     /// The snippet window that is open, once it is.
-    pub fn snippet_window(
-        &mut self,
-    ) -> Option<WindowHandle<crate::snippet_window::SnippetWindow>> {
+    pub fn snippet_window(&mut self) -> Option<WindowHandle<crate::snippet_window::SnippetWindow>> {
         self.cx.update(|cx| {
             cx.windows()
                 .iter()
