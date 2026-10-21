@@ -2095,6 +2095,9 @@ t47252d7a = シークレットキー
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea、または自前のサーバー上のプライベートリポジトリを、このシステムの git 経由で使います。git は通常どおりの方法（認証情報マネージャー、SSH 鍵とエージェント）でサインインします。変更はそれぞれ 1 つのコミットになります。
 
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git はすべての版を残します。ノートの画像は削除した後も暗号化されたままリポジトリの履歴に残るため、リポジトリは大きくなる一方です。
+
 # Repository
 te763c8b5 = リポジトリ
 

@@ -1946,6 +1946,15 @@ impl SettingsView {
                 .flex_col()
                 .gap(px(10.))
                 .child(label(&tr!("A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.")))
+                // Images are large and git forgets nothing (note-images.md).
+                .child(
+                    div()
+                        .text_size(ui(12.5))
+                        .text_color(rgb(colors().warn_text))
+                        .child(tr!(
+                            "Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows."
+                        )),
+                )
                 .child(field(&tr!("Repository"), &form.git[0]))
                 .child(field(&tr!("Branch"), &form.git[1]))
                 .child(field(&tr!("Token (if git cannot sign in by itself)"), &form.git[2]))

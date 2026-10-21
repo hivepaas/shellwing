@@ -2095,6 +2095,9 @@ t47252d7a = 시크릿 키
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub, GitLab, Gitea 또는 자체 서버의 비공개 저장소를 이 시스템의 git으로 사용합니다. git은 평소와 같은 방식(자격 증명 관리자, SSH 키 및 에이전트)으로 인증합니다. 변경 사항마다 커밋이 하나씩 생성됩니다.
 
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git은 모든 버전을 보관합니다. 노트의 이미지는 삭제한 뒤에도 암호화된 채 저장소 기록에 남으므로 저장소는 계속 커지기만 합니다.
+
 # Repository
 te763c8b5 = 저장소
 

@@ -2122,6 +2122,9 @@ t47252d7a = Clave secreta
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Un repositorio privado en GitHub, GitLab, Gitea o tu propio servidor, mediante el git de este sistema: inicia sesión como lo hace para ti (su gestor de credenciales, tus claves SSH y tu agente). Cada cambio es un commit.
 
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git conserva todas las versiones: las imágenes de las notas quedan cifradas en el historial del repositorio, incluso después de quitarlas, así que solo crece.
+
 # Repository
 te763c8b5 = Repositorio
 

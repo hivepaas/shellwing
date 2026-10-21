@@ -2095,6 +2095,9 @@ t47252d7a = Khoá bí mật
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Một repository riêng tư trên GitHub, GitLab, Gitea hoặc máy chủ của bạn, qua git của hệ thống này: nó đăng nhập như với bạn (trình quản lý thông tin đăng nhập, khoá SSH và agent của bạn). Mỗi thay đổi là một commit.
 
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git giữ mọi phiên bản: ảnh trong ghi chú vẫn nằm trong lịch sử của kho, ở dạng mã hoá, kể cả sau khi đã xoá, nên kho chỉ lớn dần.
+
 # Repository
 te763c8b5 = Repository
 

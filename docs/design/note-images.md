@@ -103,9 +103,10 @@ The WebDAV and S3 backend keeps every record it read in memory, to answer the
 next round without a download; images are left out of that cache, and a
 refused create of an image does not download it.
 
-**Git.** History keeps every image ever pushed, even after it is removed.
-**Open:** whether Settings › Sync should say so, or offer leaving images out
-of Git sync.
+**Git.** History keeps every image ever pushed, even after it is removed, so
+the repository only grows. Settings › Sync says so under Git, before it is
+chosen; images are not left out of Git sync, since a note would then show
+them on one device only.
 
 **shellwing cloud.** Attachments count toward the account's storage cap
 ([sync.md](sync.md)), never toward hosts. **Open:** the cap.

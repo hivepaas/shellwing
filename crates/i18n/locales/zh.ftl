@@ -2095,6 +2095,9 @@ t47252d7a = 秘密访问密钥
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea 或你自己服务器上的私有仓库，通过本系统的 git 访问：它按你平时的方式登录（凭据管理器、你的 SSH 密钥和代理）。每次更改都是一次提交。
 
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git 会保留每个版本：笔记中的图片即使被移除，也会以加密形式留在仓库历史中，因此仓库只会越来越大。
+
 # Repository
 te763c8b5 = 仓库
 
