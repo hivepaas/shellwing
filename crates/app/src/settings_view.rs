@@ -2483,6 +2483,7 @@ impl Render for SettingsView {
             .child(
                 div()
                     .id("settings-close")
+                    .debug_selector(|| "settings-close".into())
                     .w(px(34.))
                     .h(px(28.))
                     .flex()
@@ -2514,6 +2515,7 @@ impl Render for SettingsView {
             nav = nav.child(
                 div()
                     .id(("settings-page", n))
+                    .debug_selector(|| format!("settings-page:{p:?}"))
                     .h(px(34.))
                     .px(px(10.))
                     .flex()
