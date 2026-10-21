@@ -72,6 +72,12 @@ pub enum Action {
     UnloadEnv,
     /// A new note, in a window of its own.
     NewNote,
+    /// A new snippet, in a window of its own.
+    NewSnippet,
+    /// Settings › Environments, with a new one's form open.
+    NewEnvironment,
+    /// Settings › Config files, likewise.
+    NewConfigFile,
     /// The snippet library's window.
     SnippetLibrary,
     /// The newer shellwing that is out: downloaded to install, its page, or

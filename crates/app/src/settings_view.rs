@@ -2285,38 +2285,48 @@ impl SettingsView {
 
     /// The Environments page, likewise.
     fn environments_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
-        let view = match &self.environments {
-            Some(s) => s.clone(),
-            None => {
-                let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
-                else {
-                    return page(&tr!("Environments"));
-                };
-                let ws = self.workspace.clone();
-                let s = cx.new(|cx| SnippetsView::environments(ws, vault, cx));
-                self.environments = Some(s.clone());
-                s
-            }
-        };
-        div().child(view)
+        match self.environments_view(cx) {
+            Some(view) => div().child(view),
+            None => page(&tr!("Environments")),
+        }
+    }
+
+    fn environments_view(&mut self, cx: &mut Context<Self>) -> Option<Entity<SnippetsView>> {
+        if self.environments.is_none() {
+            let (vault, _) = self.workspace.upgrade()?.read(cx).keys_context();
+            let ws = self.workspace.clone();
+            self.environments = Some(cx.new(|cx| SnippetsView::environments(ws, vault, cx)));
+        }
+        self.environments.clone()
     }
 
     /// The Config files page, likewise.
     fn config_files_page(&mut self, cx: &mut Context<Self>) -> gpui::Div {
-        let view = match &self.config_files {
-            Some(s) => s.clone(),
-            None => {
-                let Some((vault, _)) = self.workspace.upgrade().map(|w| w.read(cx).keys_context())
-                else {
-                    return page(&tr!("Config files"));
-                };
-                let ws = self.workspace.clone();
-                let s = cx.new(|cx| SnippetsView::config_files(ws, vault, cx));
-                self.config_files = Some(s.clone());
-                s
-            }
+        match self.config_files_view(cx) {
+            Some(view) => div().child(view),
+            None => page(&tr!("Config files")),
+        }
+    }
+
+    fn config_files_view(&mut self, cx: &mut Context<Self>) -> Option<Entity<SnippetsView>> {
+        if self.config_files.is_none() {
+            let (vault, _) = self.workspace.upgrade()?.read(cx).keys_context();
+            let ws = self.workspace.clone();
+            self.config_files = Some(cx.new(|cx| SnippetsView::config_files(ws, vault, cx)));
+        }
+        self.config_files.clone()
+    }
+
+    /// The form for a new environment or config file, on its page.
+    pub fn new_item(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let view = match self.page {
+            Page::Environments => self.environments_view(cx),
+            Page::ConfigFiles => self.config_files_view(cx),
+            _ => None,
         };
-        div().child(view)
+        if let Some(view) = view {
+            view.update(cx, |v, cx| v.new_item(window, cx));
+        }
     }
 
     /// The Notes page, likewise.

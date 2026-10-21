@@ -631,6 +631,15 @@ impl Workspace {
             .collect();
         // By category, those without first, as in Settings.
         list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
+        let first = (list.is_empty() && self.vault.ready().is_some()).then(|| {
+            Entry::new(
+                Kind::Action(Action::NewSnippet),
+                tr!("Snippets"),
+                tr!("New snippet…"),
+            )
+            .hint("Enter")
+            .section(Part::Snippets)
+        });
         list.into_iter()
             .map(|sn| {
                 let category = sn.category.trim();
@@ -657,6 +666,7 @@ impl Workspace {
                     "Enter".to_string()
                 })
             })
+            .chain(first)
             .chain(std::iter::once(
                 Entry::new(
                     Kind::Action(Action::SnippetLibrary),
@@ -1557,6 +1567,17 @@ impl Workspace {
                 );
             }
         }
+        if entries.is_empty() {
+            entries.push(
+                Entry::new(
+                    Kind::Action(Action::NewHost),
+                    tr!("Hosts"),
+                    tr!("New host…"),
+                )
+                .hint("Enter")
+                .section(Part::Hosts),
+            );
+        }
         for spec in self.live.store().map(|s| s.recent()).unwrap_or_default() {
             if !specs.contains(&spec) {
                 entries.push(
@@ -1580,8 +1601,34 @@ impl Workspace {
             );
         }
         entries.extend(self.snippet_entries(cx));
-        entries.extend(self.env_entries(cx));
-        entries.extend(self.file_entries(cx));
+        // A section with nothing in it offers to make the first one (not
+        // while the vault they are kept in is locked).
+        let open = self.vault.ready().is_some();
+        let first = |a: Action, group: String, title: String, s: Part| {
+            Entry::new(Kind::Action(a), group, title)
+                .hint("Enter")
+                .section(s)
+        };
+        let envs = self.env_entries(cx);
+        if envs.is_empty() && open {
+            entries.push(first(
+                Action::NewEnvironment,
+                tr!("Environments"),
+                tr!("New environment…"),
+                Part::Environments,
+            ));
+        }
+        entries.extend(envs);
+        let files = self.file_entries(cx);
+        if files.is_empty() && open {
+            entries.push(first(
+                Action::NewConfigFile,
+                tr!("Config files"),
+                tr!("New config file…"),
+                Part::ConfigFiles,
+            ));
+        }
+        entries.extend(files);
         entries.extend(self.note_entries(cx));
         let keys = crate::hotkeys::keymap(cx);
         // What is done in the pane or the tab, then what is set.
@@ -3635,6 +3682,22 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
+            Action::NewSnippet => self.open_snippet(None, cx),
+            Action::NewEnvironment | Action::NewConfigFile => {
+                let page = if a == Action::NewEnvironment {
+                    Page::Environments
+                } else {
+                    Page::ConfigFiles
+                };
+                self.open_settings(page, window, cx);
+                // Once this update is done: making the page's view reads it.
+                if let Some((view, _)) = &self.settings {
+                    let view = view.clone();
+                    window.defer(cx, move |window, cx| {
+                        view.update(cx, |v, cx| v.new_item(window, cx))
+                    });
+                }
+            }
             Action::Update => self.get_update(cx),
             Action::RestartToUpdate => self.restart_to_update(window, cx),
             Action::CheckUpdates => {

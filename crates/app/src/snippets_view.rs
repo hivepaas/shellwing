@@ -201,6 +201,16 @@ impl SnippetsView {
     }
 
     /// Opens `s` (None: a new one) in a window of its own, as a note.
+    /// The form for a new environment or config file, as its page's button
+    /// opens it.
+    pub fn new_item(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        match self.shown {
+            Shown::Environments => self.edit_env(None, window, cx),
+            Shown::Files => self.edit_file(None, window, cx),
+            Shown::Snippets | Shown::Notes => {}
+        }
+    }
+
     fn edit(&mut self, s: Option<Snippet>, _: &mut Window, cx: &mut Context<Self>) {
         if let Some(w) = self.workspace.upgrade() {
             w.update(cx, |ws, cx| ws.open_snippet(s, cx));
