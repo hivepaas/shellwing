@@ -7565,6 +7565,7 @@ dependencies = [
  "async-channel",
  "chrono",
  "dirs 7.0.0",
+ "image",
  "portable-pty",
  "russh",
  "shellwing-config",
