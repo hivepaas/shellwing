@@ -482,6 +482,22 @@ impl Ui {
 
     /// Clicks the element marked `selector` in another of the app's windows
     /// (the snippet library, a note), drawn first.
+    /// The element marked `selector` in `window`, if it draws it.
+    pub fn find_in(
+        &mut self,
+        window: gpui::AnyWindowHandle,
+        selector: &str,
+    ) -> Option<gpui::Bounds<gpui::Pixels>> {
+        gpui::AppContext::update_window(&mut self.cx, window, |_, w, cx| {
+            w.refresh();
+            w.draw(cx).clear(cx);
+        })
+        .expect("the window is open");
+        let selector: &'static str = Box::leak(selector.to_string().into_boxed_str());
+        let mut vcx = gpui::VisualTestContext::from_window(window, &self.cx);
+        vcx.debug_bounds(selector)
+    }
+
     pub fn click_in(&mut self, window: gpui::AnyWindowHandle, selector: &str) {
         gpui::AppContext::update_window(&mut self.cx, window, |_, w, cx| {
             w.refresh();

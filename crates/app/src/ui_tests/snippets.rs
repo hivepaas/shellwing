@@ -361,3 +361,23 @@ scenario!(
         assert!(text.size.height > gpui::px(40.), "it wraps onto more lines: {text:?}");
     }
 );
+
+scenario!(
+    /// The library's File under list opens right above its button (it is at
+    /// the window's foot), not somewhere off it.
+    the_file_under_list_opens_at_its_button,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Snippet library");
+        ui.wait_until("the library", |ui| ui.library_window().is_some());
+        let lib = ui.library_window().expect("library").into();
+        ui.click_in(lib, "library-check:system/memory");
+        ui.click_in(lib, "library-file");
+        let button = ui.find_in(lib, "library-file").expect("the button");
+        let list = ui.find_in(lib, "library-file-list").expect("the list");
+        let gap = button.top() - list.bottom();
+        assert!(gap >= gpui::px(0.) && gap <= gpui::px(6.), "above it: {list:?} over {button:?}");
+        assert!((list.left() - button.left()).abs() <= gpui::px(1.), "from its left edge");
+    }
+);

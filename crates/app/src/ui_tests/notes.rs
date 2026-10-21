@@ -487,3 +487,18 @@ scenario!(
         assert_eq!(notes_of(&other), both);
     }
 );
+
+scenario!(
+    /// A note's For a host list opens right below its chip, not off it.
+    the_host_list_opens_below_its_chip,
+    |ui| {
+        new_note(ui);
+        let window = ui.note_window().expect("a note window").into();
+        ui.click_in(window, "note-add-host");
+        let chip = ui.find_in(window, "note-add-host").expect("the chip");
+        let list = ui.find_in(window, "note-host-list").expect("the list");
+        let gap = list.top() - chip.bottom();
+        assert!(gap >= gpui::px(0.) && gap <= gpui::px(6.), "below it: {list:?} under {chip:?}");
+        assert!((list.left() - chip.left()).abs() <= gpui::px(1.), "from its left edge");
+    }
+);
