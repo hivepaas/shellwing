@@ -219,6 +219,8 @@ pub struct NoteWindow {
     preview: bool,
     /// The list of hosts to add, open.
     picking: bool,
+    /// Where the For a host chip is drawn: its list opens below it.
+    host_chip: Rc<std::cell::Cell<Bounds<gpui::Pixels>>>,
     ask: Option<Ask>,
     /// Counts the edits, so a save waits for the last one.
     edits: u64,
@@ -393,6 +395,7 @@ impl NoteWindow {
             shown: false,
             preview,
             picking: false,
+            host_chip: Rc::default(),
             ask: None,
             edits: 0,
             saved_at: 0,
@@ -1318,15 +1321,24 @@ impl NoteWindow {
                     .child(div().text_color(rgb(colors().muted)).child("✕")),
             );
         }
+        let at = self.host_chip.clone();
         let picker = div()
             .relative()
             .child(
-                Self::chip("note-add-host", tr!("For a host ▾"), self.picking).on_click(
-                    cx.listener(|v, _, _, cx| {
+                Self::chip("note-add-host", tr!("For a host ▾"), self.picking)
+                    .debug_selector(|| "note-add-host".into())
+                    .relative()
+                    .on_click(cx.listener(|v, _, _, cx| {
                         v.picking = !v.picking;
                         cx.notify();
-                    }),
-                ),
+                    }))
+                    .child(
+                        gpui::canvas(move |b, _, _| at.set(b), |_, _, _, _| {})
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full(),
+                    ),
             )
             .when(self.picking, |d| {
                 let choices: Vec<String> = (self.hooks.hosts)(cx)
@@ -1335,6 +1347,7 @@ impl NoteWindow {
                     .collect();
                 let mut list = div()
                     .id("note-host-list")
+                    .debug_selector(|| "note-host-list".into())
                     .min_w(px(220.))
                     .max_h(px(260.))
                     .overflow_y_scroll()
@@ -1377,7 +1390,17 @@ impl NoteWindow {
                             .child(h),
                     );
                 }
-                d.child(deferred(anchored().child(div().mt(px(30.)).child(list))).with_priority(2))
+                // Right below the chip.
+                let b = self.host_chip.get();
+                d.child(
+                    deferred(
+                        anchored()
+                            .position(gpui::point(b.left(), b.bottom() + px(4.)))
+                            .snap_to_window_with_margin(px(8.))
+                            .child(list),
+                    )
+                    .with_priority(2),
+                )
             });
         let _ = window;
         let status = if self.saved_at != self.edits {

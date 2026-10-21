@@ -151,6 +151,8 @@ pub struct LibraryWindow {
     picking_env: bool,
     file_under: FileUnder,
     picking_file: bool,
+    /// Where the File under button is drawn: its list opens from there.
+    file_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
     /// The user's snippets made from an item, by its origin.
     added: HashMap<String, Vec<Snippet>>,
     envs: Vec<Environment>,
@@ -188,6 +190,7 @@ impl LibraryWindow {
             picking_env: false,
             file_under: FileUnder::Tool,
             picking_file: false,
+            file_button: Rc::default(),
             added: HashMap::new(),
             envs: vec![],
             notice: None,
@@ -1031,16 +1034,26 @@ impl LibraryWindow {
             )));
         }
         let file = self.file_under;
+        let at = self.file_button.clone();
         let mut under = div().relative().child(
             Self::button("library-file", format!("{} ▾", file.said()))
+                .relative()
                 .bg(rgb(colors().field))
                 .on_click(cx.listener(|v, _, _, cx| {
                     v.picking_file = !v.picking_file;
                     cx.notify();
-                })),
+                }))
+                .child(
+                    gpui::canvas(move |b, _, _| at.set(b), |_, _, _, _| {})
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full(),
+                ),
         );
         if self.picking_file {
             let mut list = div()
+                .debug_selector(|| "library-file-list".into())
                 .w(px(260.))
                 .flex()
                 .flex_col()
@@ -1072,8 +1085,18 @@ impl LibraryWindow {
                         .child(f.said()),
                 );
             }
-            // Above the button: the window's foot is below it.
-            under = under.child(deferred(anchored().child(div().mt(px(-140.)).child(list))));
+            // Right above the button: the window's foot is below it.
+            let b = self.file_button.get();
+            under = under.child(
+                deferred(
+                    anchored()
+                        .anchor(gpui::Anchor::BottomLeft)
+                        .position(gpui::point(b.left(), b.top() - px(4.)))
+                        .snap_to_window_with_margin(px(8.))
+                        .child(list),
+                )
+                .with_priority(1),
+            );
         }
         let add = Self::styled_button(
             "library-add",
