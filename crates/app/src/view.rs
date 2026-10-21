@@ -2504,10 +2504,22 @@ impl TermView {
         }
     }
 
-    /// A window position relative to the grid's top-left corner.
+    /// A window position relative to the grid's top-left corner, in the
+    /// engine's pixels: its cells are whole pixels (`fit_grid`), and the
+    /// cells drawn are as wide as the font's (8.4 px, say). Without the
+    /// scaling, a click lands a column further right every few dozen.
     fn grid_pos(&self, p: Point<Pixels>) -> (f32, f32) {
         let o = self.grid_origin.get();
-        (f32::from(p.x - o.x), f32::from(p.y - o.y))
+        let (x, y) = (f32::from(p.x - o.x), f32::from(p.y - o.y));
+        let scale = |at: f32, cell: Pixels| {
+            let drawn = f32::from(cell);
+            if drawn > 0. {
+                at / drawn * (drawn as u32).max(1) as f32
+            } else {
+                at
+            }
+        };
+        (scale(x, self.cell.0), scale(y, self.cell.1))
     }
 
     fn mouse_down(&mut self, e: &MouseDownEvent, window: &mut Window, cx: &mut Context<Self>) {
