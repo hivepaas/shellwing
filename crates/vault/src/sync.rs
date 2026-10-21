@@ -1110,6 +1110,57 @@ mod tests {
         assert!(b.attachment(&id).expect("read").is_none());
     }
 
+    /// Every file under `dir`, nested ones too.
+    fn files_under(dir: &Path) -> Vec<PathBuf> {
+        let mut found = Vec::new();
+        for entry in std::fs::read_dir(dir).expect("list") {
+            let path = entry.expect("entry").path();
+            if path.is_dir() {
+                found.extend(files_under(&path));
+            } else {
+                found.push(path);
+            }
+        }
+        found
+    }
+
+    #[test]
+    fn nothing_of_an_image_is_in_the_clear() {
+        let dir = temp("clear");
+        let (folder, a, b) = two_devices(&dir);
+        // A PNG holding a text chunk, then bytes no file holds by chance.
+        let mut image = b"\x89PNG\r\n\x1a\n\0\0\0\x1btEXtComment\0".to_vec();
+        image.extend_from_slice(b"shellwing-plaintext-canary");
+        image.extend((0..200u32).map(|i| (i * 37 + 11) as u8));
+        let id = a.add_attachment(&image).expect("image");
+        note_showing(&a, &[&id]);
+        a.sync(&folder).expect("sync a");
+        assert_eq!(b.sync(&folder).expect("sync b").images_pulled, 1);
+        assert_eq!(
+            b.attachment(&id).expect("read").map(|i| i.to_vec()),
+            Some(image.clone())
+        );
+
+        // The store, and each device's vault.db (and its journal).
+        let files = files_under(&dir);
+        assert!(
+            files
+                .iter()
+                .any(|f| f.ends_with(format!("attachments/{id}.sw"))),
+            "the image is in the store: {files:?}"
+        );
+        for file in &files {
+            let data = std::fs::read(file).expect("read");
+            for piece in image.windows(16) {
+                assert!(
+                    !data.windows(16).any(|w| w == piece),
+                    "{} holds the image's bytes {piece:02x?}",
+                    file.display()
+                );
+            }
+        }
+    }
+
     #[test]
     fn joining_another_vault_keeps_the_images() {
         let dir = temp("join-images");
