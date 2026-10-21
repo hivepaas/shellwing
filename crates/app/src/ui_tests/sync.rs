@@ -93,7 +93,10 @@ scenario!(
         ui.click("settings-page:Sync");
         ui.click("sync-kind:3");
         ui.click("sync-field:Repository");
-        ui.type_text(&format!("file://{}", missing.display()));
+        // A file URL as git takes it everywhere: file:///C:/… on Windows
+        // (file://C:\… names a host "C:", which git looks for on the network).
+        let path = missing.display().to_string().replace('\\', "/");
+        ui.type_text(&format!("file:///{}", path.trim_start_matches('/')));
         ui.click("sync-connect");
         ui.wait_until("the reason beside Connect", |ui| {
             ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync"))
