@@ -1,0 +1,32 @@
+{
+  "channels": {
+    "stable": "v0.1.0"
+  },
+  "releases": {
+    "v0.1.0": {
+      "releaseDate": "2026-10-21",
+      "archives": {
+        "linux_x86_64": {
+          "file": "shellwing_0.1.0_linux_x86_64.AppImage",
+          "sha256": "64d3584d9d3064d3163c1f7e2c1d793bb581e5375b0092dd26b1d7161138259c"
+        },
+        "linux_aarch64": {
+          "file": "shellwing_0.1.0_linux_aarch64.AppImage",
+          "sha256": "14ffc4cf4838254373258096039e6184961f5e44622045cbabd584ed1d8d3c85"
+        },
+        "macos_aarch64": {
+          "file": "shellwing_0.1.0_macos_aarch64.app.tar.gz",
+          "sha256": "728ac41fccc34af8da1614537972c53a27881944ed9a81404ed3729ef833523c"
+        },
+        "macos_x86_64": {
+          "file": "shellwing_0.1.0_macos_x86_64.app.tar.gz",
+          "sha256": "69bf8fd9420db4c671c75b610cba381129cd4236cdd231a4822c877ebcd5092d"
+        },
+        "windows_x86_64": {
+          "file": "shellwing_0.1.0_windows_x86_64-setup.exe",
+          "sha256": "c064cb83dd4178b7e0040103bb104d567f5807b42d66b5fec64a51743ec68f2c"
+        }
+      }
+    }
+  }
+}
