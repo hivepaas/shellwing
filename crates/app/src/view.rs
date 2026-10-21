@@ -1342,6 +1342,7 @@ impl TermView {
                       cx: &mut Context<Self>| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .h(px(22.))
                 .min_w(px(24.))
                 .px_1()
@@ -1370,6 +1371,7 @@ impl TermView {
         let step = |id: &'static str, label: &'static str, older: bool, cx: &mut Context<Self>| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .w(px(24.))
                 .h(px(24.))
                 .flex()
@@ -2094,6 +2096,7 @@ impl TermView {
         let item = |id: &'static str, label: &str, hint: String, enabled: bool| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .flex()
                 .items_center()
                 .justify_between()

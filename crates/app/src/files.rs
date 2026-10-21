@@ -2170,6 +2170,7 @@ impl Render for FilesPanel {
 
         div()
             .id("files")
+            .debug_selector(|| "files-panel".into())
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
             // A click anywhere takes the keyboard, unless the name field just did.

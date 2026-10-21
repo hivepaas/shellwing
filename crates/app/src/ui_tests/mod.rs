@@ -256,6 +256,9 @@ impl Ui {
         });
         self.window = Some(window);
         self.ws(|ws, window, cx| {
+            // As main does: the window's appearance, and its handle, which
+            // what the workspace does later in the window needs.
+            ws.track_appearance(window, cx);
             let active = ws.active_index();
             ws.activate(active, window, cx);
         });
