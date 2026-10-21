@@ -307,20 +307,31 @@ impl Ui {
     }
 
     /// Waits until `done` holds; fails with `what` and the screen after [`STEP`].
-    pub fn wait_until(&mut self, what: &str, mut done: impl FnMut(&mut Ui) -> bool) {
+    pub fn wait_until(&mut self, what: &str, done: impl FnMut(&mut Ui) -> bool) {
+        self.wait_until_within(what, STEP, done);
+    }
+
+    /// As [`Ui::wait_until`], for a step that may take longer than [`STEP`]
+    /// on a busy machine (a program the app runs, such as git).
+    pub fn wait_until_within(
+        &mut self,
+        what: &str,
+        limit: Duration,
+        mut done: impl FnMut(&mut Ui) -> bool,
+    ) {
         let start = Instant::now();
         loop {
             self.cx.run_until_parked();
             if done(self) {
                 return;
             }
-            if start.elapsed() > STEP {
+            if start.elapsed() > limit {
                 let screen = if self.window.is_some() && self.tabs() > 0 {
                     self.screen()
                 } else {
                     "(no tab)".into()
                 };
-                panic!("waited {STEP:?} for {what}; the screen:\n{screen}");
+                panic!("waited {limit:?} for {what}; the screen:\n{screen}");
             }
             std::thread::sleep(Duration::from_millis(15));
         }
