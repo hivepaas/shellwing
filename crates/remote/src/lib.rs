@@ -304,10 +304,10 @@ impl Remote {
     fn wrote(&self, name: &str, data: &[u8], tag: Option<String>) -> io::Result<()> {
         let mut read = self.read.lock().map_err(poisoned)?;
         match &tag {
-            Some(tag) => {
+            Some(tag) if kept_read(name) => {
                 read.insert(name.to_string(), (tag.clone(), data.to_vec()));
             }
-            None => {
+            _ => {
                 read.remove(name);
             }
         }
@@ -330,6 +330,14 @@ impl Remote {
             }
             Err(e) => return Err(to_io(e)),
         };
+        if !kept_read(name) {
+            // Written once and never again (an image): only that it is there.
+            self.listed
+                .lock()
+                .map_err(poisoned)?
+                .insert(name.to_string(), tag);
+            return Ok(());
+        }
         let bytes = self.op.read(name).map_err(to_io)?.to_vec();
         // Should it change between the two, the next write is refused again.
         self.wrote(name, &bytes, tag)
@@ -445,6 +453,7 @@ impl Backend for Remote {
             .cloned()
             .flatten();
         if let Some(tag) = &tag
+            && kept_read(name)
             && let Some((had, bytes)) = self.read.lock().map_err(poisoned)?.get(name)
             && had == tag
         {
@@ -457,7 +466,9 @@ impl Backend for Remote {
         };
         // Kept under the listing's tag: should the file have changed since,
         // the next listing's differs and it is read again.
-        if let Some(tag) = tag {
+        if let Some(tag) = tag
+            && kept_read(name)
+        {
             self.read
                 .lock()
                 .map_err(poisoned)?
@@ -594,6 +605,13 @@ fn short(s: &str) -> String {
     }
 }
 
+/// Whether a file read is kept for the next round, as records are (each
+/// round reads every one). Images are read once, when a note first needs
+/// them, and are large: keeping them would hold every image in memory.
+fn kept_read(name: &str) -> bool {
+    !name.starts_with("attachments/")
+}
+
 fn poisoned<T>(_: T) -> io::Error {
     io::Error::other("a sync thread panicked")
 }
@@ -714,6 +732,14 @@ mod tests {
     /// A WebDAV server in memory on a port of its own, counting the records
     /// fetched from it.
     fn dav_server(rt: &tokio::runtime::Runtime) -> (String, Arc<std::sync::atomic::AtomicUsize>) {
+        dav_server_counting(rt, "/records/")
+    }
+
+    /// A WebDAV server in memory, counting the GETs of paths with `part`.
+    fn dav_server_counting(
+        rt: &tokio::runtime::Runtime,
+        part: &'static str,
+    ) -> (String, Arc<std::sync::atomic::AtomicUsize>) {
         use std::sync::atomic::{AtomicUsize, Ordering};
         let fetched = Arc::new(AtomicUsize::new(0));
         let counted = fetched.clone();
@@ -733,9 +759,7 @@ mod tests {
                 let (dav, counted) = (dav.clone(), counted.clone());
                 tokio::spawn(async move {
                     let service = hyper::service::service_fn(move |req: hyper::Request<_>| {
-                        if req.method() == hyper::Method::GET
-                            && req.uri().path().contains("/records/")
-                        {
+                        if req.method() == hyper::Method::GET && req.uri().path().contains(part) {
                             counted.fetch_add(1, Ordering::Relaxed);
                         }
                         let dav = dav.clone();
@@ -790,6 +814,53 @@ mod tests {
         b.sync(b_side.as_ref()).expect("pull");
         assert_eq!(fetched.load(Ordering::Relaxed), before + 1);
         assert_eq!(pw(&b, "deploy@web").as_deref(), Some("changed"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn webdav_carries_a_notes_images() {
+        use std::sync::atomic::Ordering;
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let (url, fetched) = dav_server_counting(&rt, "/attachments/");
+        let place = Place::WebDav {
+            url,
+            user: "me".into(),
+            password: "pw".into(),
+        };
+        let (a_side, b_side) = (place.open().expect("a"), place.open().expect("b"));
+        let dir = std::env::temp_dir().join(format!("shellwing-dav-img-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let a = Vault::open(&dir.join("a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &MemoryKeys::default()).expect("b");
+        let mut image = b"\x89PNG\r\n\x1a\n".to_vec();
+        image.extend(std::iter::repeat_n(7u8, 4096));
+        let id = a.add_attachment(&image).expect("image");
+        let note = shellwing_vault::Note {
+            id: String::new(),
+            title: "Dashboard".into(),
+            category: String::new(),
+            format: shellwing_vault::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        a.save_note(&note, Some(&shellwing_vault::attachment_line(&id)))
+            .expect("note");
+        let rk = a.start_sync(a_side.as_ref()).expect("start").to_string();
+        assert_eq!(a.sync(a_side.as_ref()).expect("sync a").images_pushed, 1);
+        b.join(b_side.as_ref(), &rk).expect("join");
+        assert_eq!(b.sync(b_side.as_ref()).expect("sync b").images_pulled, 1);
+        assert_eq!(
+            b.attachment(&id).expect("read").map(|i| i.to_vec()),
+            Some(image)
+        );
+        assert_eq!(fetched.load(Ordering::Relaxed), 1);
+        // Neither device sends or fetches it again.
+        assert_eq!(a.sync(a_side.as_ref()).expect("idle a").images_pushed, 0);
+        b.sync(b_side.as_ref()).expect("idle b");
+        assert_eq!(fetched.load(Ordering::Relaxed), 1);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

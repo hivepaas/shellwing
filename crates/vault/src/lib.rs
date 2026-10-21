@@ -23,6 +23,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
+mod attachments;
 mod cipher;
 mod hlc;
 mod keychain;
@@ -31,6 +32,7 @@ mod presence;
 mod recovery;
 mod sync;
 
+pub use attachments::{UNUSED_FOR_MS, attachment_line, attachment_refs, image_mime};
 pub use cipher::Cipher;
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use keychain::OsKeychain;
@@ -98,6 +100,9 @@ pub enum Error {
     GuessablePassphrase(u8),
     #[error("{0}")]
     TooLarge(Oversize),
+    /// Not a PNG or a JPEG: the images kept for notes.
+    #[error("not an image that can be kept (PNG or JPEG)")]
+    NotAnImage,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -124,6 +129,10 @@ pub mod limits {
     pub const FILE: usize = 1024 * 1024;
     /// A note's text, in bytes.
     pub const NOTE: usize = 256 * 1024;
+    /// An image kept for notes, in bytes.
+    pub const ATTACHMENT: usize = 2 * 1024 * 1024;
+    /// The images one note shows, together.
+    pub const NOTE_ATTACHMENTS: usize = 20 * 1024 * 1024;
 }
 
 /// What is past one of the [`limits`].
@@ -143,6 +152,10 @@ pub enum Oversize {
     File(usize),
     /// A note of this many bytes.
     Note(usize),
+    /// An image of this many bytes.
+    Attachment(usize),
+    /// A note whose images come to this many bytes.
+    NoteAttachments(usize),
 }
 
 impl std::fmt::Display for Oversize {
@@ -180,6 +193,18 @@ impl std::fmt::Display for Oversize {
                 "the note is {} KB; {} KB at most",
                 kb(*n),
                 kb(limits::NOTE)
+            ),
+            Oversize::Attachment(n) => write!(
+                f,
+                "the image is {} KB; {} KB at most",
+                kb(*n),
+                kb(limits::ATTACHMENT)
+            ),
+            Oversize::NoteAttachments(n) => write!(
+                f,
+                "the note's images come to {} MB; {} MB at most",
+                n.div_ceil(1024 * 1024),
+                limits::NOTE_ATTACHMENTS / (1024 * 1024)
             ),
         }
     }
@@ -796,7 +821,10 @@ impl Vault {
              CREATE TABLE IF NOT EXISTS keys (
                 id TEXT NOT NULL, ver INTEGER NOT NULL, wrapped BLOB NOT NULL,
                 wrapped_by TEXT NOT NULL, PRIMARY KEY (id, ver, wrapped_by));
-             CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);",
+             CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             CREATE TABLE IF NOT EXISTS attachments (
+                id TEXT PRIMARY KEY, space TEXT NOT NULL, key_ver INTEGER NOT NULL,
+                data BLOB NOT NULL, bytes INTEGER NOT NULL, unused_since INTEGER);",
         )?;
         // This device's name in clock stamps: random, made once.
         let device: String = match db
