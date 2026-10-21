@@ -445,6 +445,11 @@ impl Workspace {
         self.palette.is_some()
     }
 
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn overview_open(&self) -> bool {
+        self.overview.is_some()
+    }
+
     /// The Settings page showing, if Settings is open.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn settings_page(&self, cx: &gpui::App) -> Option<Page> {

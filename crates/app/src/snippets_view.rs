@@ -262,8 +262,11 @@ impl SnippetsView {
     }
 
     fn small(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
+        let id = id.into();
+        let selector = id.to_string();
         div()
-            .id(id.into())
+            .id(id)
+            .debug_selector(|| selector)
             .h(px(26.))
             .px(px(10.))
             .flex()

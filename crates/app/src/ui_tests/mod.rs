@@ -46,6 +46,7 @@ mod notes;
 mod security;
 mod session_life;
 mod snippets;
+mod sync;
 mod tabs;
 mod terminal;
 mod updates;

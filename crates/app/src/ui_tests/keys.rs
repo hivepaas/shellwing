@@ -123,3 +123,65 @@ scenario!(
         );
     }
 );
+
+/// A key made as make_key does, its dialog closed: the list shows it.
+fn made(ui: &mut Ui, name: &str) {
+    make_key(ui, name);
+    ui.click("gen-done");
+    ui.wait_until("the key listed", |ui| ui.find("kept-more-0").is_some());
+}
+
+fn vault_keys(ui: &mut Ui) -> Vec<String> {
+    ui.vault()
+        .and_then(|v| v.ssh_keys().ok())
+        .map(|k| k.into_iter().map(|k| k.name).collect())
+        .unwrap_or_default()
+}
+
+scenario!(
+    /// A vault key renamed, then deleted, from its ⋯ menu.
+    rename_and_delete_a_vault_key,
+    |ui| {
+        ui.open();
+        made(ui, "work-key");
+        ui.click("kept-more-0");
+        ui.click("menu-rename");
+        ui.keys("secondary-a");
+        ui.type_text("deploy-key");
+        ui.keys("enter");
+        ui.wait_until("renamed", |ui| vault_keys(ui) == ["deploy-key"]);
+        ui.click("kept-more-0");
+        ui.click("menu-delete");
+        ui.click("delete-ok");
+        ui.wait_until("deleted", |ui| vault_keys(ui).is_empty());
+    }
+);
+
+scenario!(
+    /// Export to file…, with a passphrase: an OpenSSH key file that opens
+    /// only with it, and its .pub beside it.
+    export_a_key_with_a_passphrase,
+    |ui| {
+        const PASS: &str = "export passphrase";
+        ui.open();
+        made(ui, "work-key");
+        ui.click("kept-more-0");
+        ui.click("menu-export");
+        ui.type_text(PASS);
+        ui.click("field:Again");
+        ui.type_text(PASS);
+        ui.click("export-ok");
+        ui.wait_until("the save dialog", |ui| ui.cx.did_prompt_for_new_path());
+        let target = ui.dir.join("exported-key");
+        let chosen = target.clone();
+        ui.cx.simulate_new_path_selection(move |_| Some(chosen));
+        ui.wait_until("the files", |_| {
+            target.exists() && target.with_extension("pub").exists()
+        });
+        let text = std::fs::read_to_string(&target).expect("key file");
+        assert!(shellwing_ssh::keys::parse(&text, Some(PASS)).is_ok(), "does not open");
+        assert!(shellwing_ssh::keys::parse(&text, None).is_err(), "not locked");
+        let public = std::fs::read_to_string(target.with_extension("pub")).expect("pub");
+        assert!(public.starts_with("ssh-ed25519 "), "{public}");
+    }
+);

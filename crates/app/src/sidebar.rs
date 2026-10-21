@@ -460,6 +460,7 @@ impl Render for Sidebar {
             list = list.child(
                 div()
                     .id(("section", n))
+                    .debug_selector(|| format!("section:{}", section.title))
                     .flex()
                     .items_center()
                     .justify_between()
@@ -509,6 +510,7 @@ impl Render for Sidebar {
                         d.child(
                             div()
                                 .id(("edit-group", n))
+                                .debug_selector(|| format!("edit-group:{}", section.title))
                                 .px_2()
                                 .py(px(1.))
                                 .rounded_md()

@@ -1553,6 +1553,7 @@ impl Render for HostEditor {
             .child(
                 div()
                     .id("local-only")
+                    .debug_selector(|| "local-only".into())
                     .flex()
                     .items_center()
                     .gap_2()
@@ -1837,6 +1838,7 @@ impl Render for HostEditor {
             .child(
                 div()
                     .id("forward-agent")
+                    .debug_selector(|| "forward-agent".into())
                     .flex()
                     .items_center()
                     .gap_2()

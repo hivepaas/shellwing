@@ -221,3 +221,38 @@ scenario!(
         ui.wait_for("you said: free -h");
     }
 );
+
+scenario!(
+    /// An environment made in Settings › Environments from a pasted .env
+    /// file, then loaded into the shell from the palette.
+    environment_made_in_settings_loads,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Environments");
+        ui.click("env-new");
+        ui.type_text("Staging");
+        ui.copy_to_clipboard("DB_USER=admin\nDB_PASSWORD=s3cret\n");
+        ui.click("env-paste");
+        ui.keys("enter");
+        ui.wait_until("the environment in the vault", |ui| {
+            ui.vault()
+                .and_then(|v| v.environments().ok())
+                .is_some_and(|e| {
+                    e.iter().any(|e| {
+                        let mut names = e.names.clone();
+                        names.sort();
+                        e.name == "Staging" && names == ["DB_PASSWORD", "DB_USER"]
+                    })
+                })
+        });
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette("Staging");
+        ui.wait_for_notice("Staging is loaded into this shell.");
+        ui.line("printenv DB_USER");
+        ui.wait_for("admin");
+    }
+);
