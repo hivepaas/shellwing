@@ -367,6 +367,7 @@ impl SnippetsView {
             "Redis",
         ];
         div()
+            .debug_selector(|| "snippet-library-card".into())
             .flex()
             .gap(px(18.))
             .p(px(22.))
@@ -377,6 +378,9 @@ impl SnippetsView {
             .child(
                 div()
                     .flex_1()
+                    // As narrow as the card: the text wraps rather than
+                    // pushing past its edge.
+                    .min_w_0()
                     .flex()
                     .flex_col()
                     .gap(px(10.))
@@ -388,6 +392,7 @@ impl SnippetsView {
                     )
                     .child(
                         div()
+                            .debug_selector(|| "snippet-library-text".into())
                             .text_color(rgb(colors().soft))
                             .line_height(gpui::relative(1.5))
                             .child(tr!(
