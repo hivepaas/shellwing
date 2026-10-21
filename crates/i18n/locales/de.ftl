@@ -1447,6 +1447,78 @@ t3d37483c = Versionsinfo kopieren
 # Copied: {info}
 t183c7f9f = Kopiert: { $info }
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Diesem Build fehlen die Release-Schlüssel, daher kann er nicht über Updates informieren.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } ist bereit
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Es wird beim Beenden installiert, oder jetzt mit Neu starten.
+
+# Restart now
+t54001a7c = Jetzt neu starten
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = Suche nach einer neueren Version…
+
+# How to update
+t3603428f = So aktualisierst du
+
+# Download and install
+t1a99173f = Herunterladen und installieren
+
+# {by} updates it: {command}
+tdf2cab9c = Das Update übernimmt { $by }: { $command }
+
+# {by} updates it.
+t84b27295 = Das Update übernimmt { $by }.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Es wird heruntergeladen und geprüft, dann beim Beenden installiert.
+
+# Download it, and install it in place of this one.
+t39312eae = Lade sie herunter und installiere sie anstelle dieser Version.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } ist verfügbar
+
+# The download failed: {why}
+t5e96c075 = Der Download ist fehlgeschlagen: { $why }
+
+# Skip this version
+t2c33d756 = Diese Version überspringen
+
+# The last look failed: {why}
+td122a092 = Die letzte Prüfung ist fehlgeschlagen: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Auf dem neuesten Stand (geprüft { $when }).
+
+# Not looked yet.
+t5a3ba058 = Noch nicht geprüft.
+
+# Updates
+t483075a5 = Updates
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Dies ist eine Beta: Du erfährst von neueren Betas und von der stabilen Version, die auf sie folgt.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Dies ist eine stabile Version: Du erfährst von neueren stabilen Versionen, nicht von Betas.
+
+# Check now
+t4f0e0677 = Jetzt prüfen
+
+# Look for updates once a day
+tcc27ace1 = Einmal täglich nach Updates suchen
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = Die Liste der Releases wird von GitHub gelesen und nur geglaubt, wenn ihre Signaturen gültig sind. Ohne Sie wird nichts heruntergeladen oder installiert.
+
 # Open on GitHub
 t24804c99 = Auf GitHub öffnen
 
@@ -2521,15 +2593,15 @@ t81dee99e = shellwing cloud übernimmt das für dich: auf jedem Gerät anmelden,
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud kommt bald: die Anmeldung startet damit.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e =
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a =
     { $n ->
-        [one] { $n } Host · $2.99/Monat
-       *[other] { $n } Hosts · $2.99/Monat
+        [one] { $n } Host · $3.99/Monat
+       *[other] { $n } Hosts · $3.99/Monat
     }
 
-# unlimited · $5.99/mo
-td7d2332f = unbegrenzt · $5.99/Monat
+# unlimited · $7.99/mo
+t6cc4bcad = unbegrenzt · $7.99/Monat
 
 # just now
 ta715ef0f = gerade eben
@@ -2941,6 +3013,33 @@ ta77bd589 = Notizen für { $host }
 # Notes · {category}
 tbb112cdf = Notizen · { $category }
 
+# the system's package manager
+t11465c20 = der Paketmanager des Systems
+
+# the App Store
+ta8cbd72e = der App Store
+
+# the Microsoft Store
+t1df799a1 = der Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } ist verfügbar: Das Update übernimmt { $by } ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } ist verfügbar: Das Update übernimmt { $by }.
+
+# No folder to download to.
+t2bfc1370 = Kein Ordner zum Herunterladen.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } ist bereit: Es wird beim Beenden installiert, oder jetzt mit Neu starten.
+
+# Downloading… {got} of {total}
+taee668c2 = Wird heruntergeladen… { $got } von { $total }
+
+# Downloading… {got}
+t4873b921 = Wird heruntergeladen… { $got }
+
 # Over SSH only
 t14e43465 = Nur über SSH
 
@@ -3020,6 +3119,12 @@ td41065cb =
         [one] { $n } Verbindung ist offen; Beenden schließt sie.
        *[other] { $n } Verbindungen sind offen; Beenden schließt sie.
     }
+
+# Restart
+t2f44ed8c = Neu starten
+
+# Restart to install the update?
+tdab4b0cf = Neu starten, um das Update zu installieren?
 
 # Quit shellwing?
 tfa31f588 = shellwing beenden?
@@ -3110,6 +3215,15 @@ tc73a9bf6 = Passwörter mit einem Server synchronisieren…
 
 # Settings…
 t64d0d0b4 = Einstellungen…
+
+# Restart to install shellwing {version}
+taadea299 = Neu starten, um shellwing { $version } zu installieren
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } ist verfügbar…
+
+# Check for updates
+t70ad7706 = Nach Updates suchen
 
 # New host…
 t13806b73 = Neuer Host…

@@ -1423,6 +1423,78 @@ t3d37483c = 复制版本信息
 # Copied: {info}
 t183c7f9f = 已复制：{ $info }
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 此版本没有发布密钥，因此无法提示更新。
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } 已就绪
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 退出时安装，或点击“重新启动”立即安装。
+
+# Restart now
+t54001a7c = 立即重新启动
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = 正在检查新版本…
+
+# How to update
+t3603428f = 如何更新
+
+# Download and install
+t1a99173f = 下载并安装
+
+# {by} updates it: {command}
+tdf2cab9c = 通过 { $by } 更新：{ $command }
+
+# {by} updates it.
+t84b27295 = 通过 { $by } 更新。
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = 下载并校验后，在退出时安装。
+
+# Download it, and install it in place of this one.
+t39312eae = 下载后安装，替换当前版本。
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 已发布
+
+# The download failed: {why}
+t5e96c075 = 下载失败：{ $why }
+
+# Skip this version
+t2c33d756 = 跳过此版本
+
+# The last look failed: {why}
+td122a092 = 上次检查失败：{ $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 已是最新版本（上次检查：{ $when }）。
+
+# Not looked yet.
+t5a3ba058 = 尚未检查。
+
+# Updates
+t483075a5 = 更新
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = 这是测试版：会通知你更新的测试版，以及其后的正式版。
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = 这是正式版：会通知你更新的正式版，但不通知测试版。
+
+# Check now
+t4f0e0677 = 立即检查
+
+# Look for updates once a day
+tcc27ace1 = 每天检查一次更新
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = 从 GitHub 读取版本列表，仅在其签名验证通过时才采信。未经你的同意，不会下载或安装任何内容。
+
 # Open on GitHub
 t24804c99 = 在 GitHub 上打开
 
@@ -2473,11 +2545,11 @@ t81dee99e = shellwing cloud 替你保管：在每台设备上登录即可。仍�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud 即将推出：届时将开放登录。
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } 台主机 · $2.99/月
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } 台主机 · $3.99/月
 
-# unlimited · $5.99/mo
-td7d2332f = 不限数量 · $5.99/月
+# unlimited · $7.99/mo
+t6cc4bcad = 不限数量 · $7.99/月
 
 # just now
 ta715ef0f = 刚刚
@@ -2863,6 +2935,33 @@ ta77bd589 = { $host } 的笔记
 # Notes · {category}
 tbb112cdf = 笔记 · { $category }
 
+# the system's package manager
+t11465c20 = 系统包管理器
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } 已发布：通过 { $by } 更新（{ $command }）。
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } 已发布：通过 { $by } 更新。
+
+# No folder to download to.
+t2bfc1370 = 没有可用于下载的文件夹。
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } 已就绪：退出时安装，或点击“重新启动”立即安装。
+
+# Downloading… {got} of {total}
+taee668c2 = 正在下载… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = 正在下载… { $got }
+
 # Over SSH only
 t14e43465 = 仅限 SSH
 
@@ -2925,6 +3024,12 @@ tf3732b18 = 有一个连接处于打开状态；退出将关闭它。
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } 个连接处于打开状态；退出将关闭这些连接。
+
+# Restart
+t2f44ed8c = 重新启动
+
+# Restart to install the update?
+tdab4b0cf = 重新启动以安装更新？
 
 # Quit shellwing?
 tfa31f588 = 退出 shellwing？
@@ -3015,6 +3120,15 @@ tc73a9bf6 = 与服务器同步密码…
 
 # Settings…
 t64d0d0b4 = 设置…
+
+# Restart to install shellwing {version}
+taadea299 = 重新启动以安装 shellwing { $version }
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } 已发布…
+
+# Check for updates
+t70ad7706 = 检查更新
 
 # New host…
 t13806b73 = 新建主机…

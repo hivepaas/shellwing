@@ -127,6 +127,8 @@ pub struct Snap {
     pub passphrase_joins: Option<bool>,
     /// How sync stands, as the cloud's panel says.
     pub sync: crate::sync_panel::SyncSnap,
+    /// Whether a newer shellwing is out.
+    pub update: crate::workspace::UpdateSnap,
 }
 
 pub struct SettingsView {

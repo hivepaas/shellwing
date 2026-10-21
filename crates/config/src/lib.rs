@@ -27,11 +27,12 @@ pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, GitSync, Log, LogFormat,
     OnDisconnect, Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal,
-    UI_FONT_SIZE, UiFont, VaultSettings, WebDavSync,
+    UI_FONT_SIZE, UiFont, Updates, VaultSettings, WebDavSync,
 };
 pub use shortcuts::{Chord, Hotkey, Keymap, Mods, Os, ShortcutSettings};
 pub use state::{
-    NoteWindowState, PaneState, PlacedFile, SessionState, TabState, WindowMode, WindowState,
+    NoteWindowState, PaneState, PlacedFile, SessionState, TabState, UpdateState, WindowMode,
+    WindowState,
 };
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, SyncPlaceText, WriteError};
 pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, GROUPS, Gradient, Theme, Themes};

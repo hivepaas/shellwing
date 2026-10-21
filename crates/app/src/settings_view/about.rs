@@ -1,15 +1,17 @@
-//! The About page: the version, where the code is and how to take part, and
-//! HivePaaS, from the same author.
+//! The About page: the version, where the code is and how to take part,
+//! updates, and HivePaaS, from the same author.
 
 use gpui::{
     ClipboardItem, Context, FontWeight, InteractiveElement, ParentElement,
-    StatefulInteractiveElement, Styled, div, px, rgb, svg,
+    StatefulInteractiveElement, Styled, div, prelude::*, px, rgb, svg,
 };
 use shellwing_i18n::tr;
 
-use super::{SettingsView, heading, label, page, small_button};
+use super::{SettingValue, SettingsView, heading, label, page, small_button, toggle};
 use crate::colors::colors;
 use crate::look::ui;
+use crate::palette::Action;
+use crate::workspace::{UpdateStage, Workspace};
 
 const REPO: &str = "https://github.com/hivepaas/shellwing";
 const HIVEPAAS: &str = "https://hivepaas.com";
@@ -37,6 +39,7 @@ impl SettingsView {
         page(&tr!("About"))
             .child(self.identity(cx))
             .child(open_source(cx))
+            .child(self.updates(cx))
             .child(hivepaas(cx))
             .child(
                 div()
@@ -99,6 +102,158 @@ impl SettingsView {
                 ),
             )
     }
+
+    /// Which channel this build is on, what a look found, and getting it.
+    fn updates(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let u = &self.snap.update;
+        let on = u.check;
+        let status: gpui::Div = if !u.keys {
+            label(&tr!(
+                "This build has no release keys, so it cannot tell of updates."
+            ))
+        } else if let UpdateStage::Ready(v) = &u.stage {
+            update_card(
+                tr!("shellwing {version} is ready", version = v.to_string()),
+                div().child(label(&tr!(
+                    "It is installed when you quit, or now with Restart."
+                ))),
+            )
+            .child(
+                small_button("update-restart", &tr!("Restart now"))
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::RestartToUpdate, w, cx))),
+            )
+        } else if let UpdateStage::Downloading(got, of) = u.stage {
+            let v = u.offered.clone().unwrap_or_default();
+            update_card(
+                tr!("shellwing {version}", version = v),
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.))
+                    .child(label(&Workspace::download_said(got, of)))
+                    .when_some(of.filter(|n| *n > 0), |d, of| {
+                        let done = (got as f32 / of as f32).clamp(0., 1.);
+                        d.child(
+                            div()
+                                .h(px(4.))
+                                .w_full()
+                                .rounded_full()
+                                .bg(rgb(colors().edge))
+                                .child(
+                                    div()
+                                        .h_full()
+                                        .w(gpui::relative(done))
+                                        .rounded_full()
+                                        .bg(rgb(colors().accent)),
+                                ),
+                        )
+                    }),
+            )
+        } else if u.checking {
+            label(&tr!("Looking for a newer version…"))
+        } else if let Some(v) = &u.offered {
+            let get = match u.managed {
+                Some(_) => tr!("How to update"),
+                None if u.updates_itself => match u.stage {
+                    UpdateStage::Failed(_) => tr!("Try again"),
+                    _ => tr!("Download and install"),
+                },
+                None => tr!("Download"),
+            };
+            let said = match u.managed {
+                Some((by, Some(command))) => {
+                    tr!(
+                        "{by} updates it: {command}",
+                        by = crate::workspace::by_said(by),
+                        command = command
+                    )
+                }
+                Some((by, None)) => {
+                    tr!("{by} updates it.", by = crate::workspace::by_said(by))
+                }
+                None if u.updates_itself => {
+                    tr!("It is downloaded and checked, then installed when you quit.")
+                }
+                None => tr!("Download it, and install it in place of this one."),
+            };
+            update_card(
+                tr!("shellwing {version} is out", version = v.clone()),
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(label(&said))
+                    .when_some(
+                        match &u.stage {
+                            UpdateStage::Failed(why) => Some(why.clone()),
+                            _ => None,
+                        },
+                        |d, why| {
+                            d.child(
+                                div()
+                                    .text_size(ui(12.))
+                                    .text_color(rgb(colors().bad))
+                                    .child(tr!("The download failed: {why}", why = why)),
+                            )
+                        },
+                    ),
+            )
+            .child(
+                small_button("update-get", &get)
+                    .on_click(cx.listener(|v, _, w, cx| v.run(Action::Update, w, cx))),
+            )
+            .child(
+                small_button("update-skip", &tr!("Skip this version")).on_click(cx.listener(
+                    |v, _, _, cx| {
+                        let _ = v.workspace.update(cx, |ws, cx| ws.skip_update(cx));
+                    },
+                )),
+            )
+        } else if let Some(p) = &u.problem {
+            div()
+                .text_size(ui(12.))
+                .text_color(rgb(colors().bad))
+                .child(tr!("The last look failed: {why}", why = p.clone()))
+        } else if let Some(t) = u.checked_at {
+            label(&tr!(
+                "Up to date (looked {when}).",
+                when = crate::sync_panel::ago(t)
+            ))
+        } else {
+            label(&tr!("Not looked yet."))
+        };
+        section(
+            &tr!("Updates"),
+            card()
+                .child(label(&match u.channel {
+                    "beta" => tr!(
+                        "This is a beta: you are told of newer betas, and of the release that follows them."
+                    ),
+                    _ => tr!("This is a release: you are told of newer releases, not of betas."),
+                }))
+                .child(status)
+                .when(u.keys, |d| d.child(
+                    div()
+                        .flex()
+                        .child(
+                            small_button("update-check", &tr!("Check now"))
+                                .when(u.checking, |d| d.opacity(0.5))
+                                .on_click(cx.listener(|v, _, _, cx| {
+                                    let _ = v.workspace.update(cx, |ws, cx| ws.check_updates(cx));
+                                })),
+                        ),
+                ))
+                .when(u.keys, |d| d.child(toggle(
+                    "update-auto",
+                    on,
+                    &tr!("Look for updates once a day"),
+                    &tr!("It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you."),
+                    cx.listener(move |v, _, _, cx| {
+                        v.change(&["updates", "check"], Some(SettingValue::Bool(!on)), cx)
+                    }),
+                ))),
+        )
+    }
 }
 
 /// The app's icon as the window draws it: the wing on a pale tile.
@@ -159,6 +314,31 @@ fn hivepaas_logo() -> gpui::Div {
         .border_color(rgb(0xd9cbb5))
         .bg(rgb(0xfbf7f0))
         .child(mark)
+}
+
+/// A release, as About shows it: what it is, and what is said of it; the
+/// buttons follow.
+fn update_card(title: String, body: gpui::Div) -> gpui::Div {
+    div()
+        .flex()
+        .flex_wrap()
+        .items_center()
+        .gap(px(10.))
+        .p(px(12.))
+        .rounded(px(8.))
+        .border_1()
+        .border_color(rgb(colors().accent))
+        .bg(rgb(colors().selected))
+        .child(
+            div()
+                .flex_1()
+                .min_w(px(220.))
+                .flex()
+                .flex_col()
+                .gap(px(2.))
+                .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
+                .child(body),
+        )
 }
 
 /// A box on the page holding a section's content.

@@ -74,6 +74,13 @@ pub enum Action {
     NewNote,
     /// The snippet library's window.
     SnippetLibrary,
+    /// The newer shellwing that is out: downloaded to install, its page, or
+    /// what updates this copy.
+    Update,
+    /// Quit to install the downloaded shellwing, and start it.
+    RestartToUpdate,
+    /// Look for a newer shellwing now.
+    CheckUpdates,
     ToggleHosts,
     /// Type in every pane of the tab, or stop.
     Broadcast,

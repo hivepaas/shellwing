@@ -1423,6 +1423,78 @@ t3d37483c = 버전 정보 복사
 # Copied: {info}
 t183c7f9f = 복사함: { $info }
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } 준비 완료
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Restart now
+t54001a7c = 지금 다시 시작
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = 새 버전을 확인하는 중…
+
+# How to update
+t3603428f = 업데이트 방법
+
+# Download and install
+t1a99173f = 다운로드 및 설치
+
+# {by} updates it: {command}
+tdf2cab9c = { $by }에서 업데이트합니다: { $command }
+
+# {by} updates it.
+t84b27295 = { $by }에서 업데이트합니다.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = 다운로드하고 확인한 뒤, 종료할 때 설치합니다.
+
+# Download it, and install it in place of this one.
+t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 출시
+
+# The download failed: {why}
+t5e96c075 = 다운로드 실패: { $why }
+
+# Skip this version
+t2c33d756 = 이 버전 건너뛰기
+
+# The last look failed: {why}
+td122a092 = 마지막 확인에 실패했습니다: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 최신 버전입니다({ $when } 확인).
+
+# Not looked yet.
+t5a3ba058 = 아직 확인하지 않았습니다.
+
+# Updates
+t483075a5 = 업데이트
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = 베타 버전입니다: 새 베타 버전과 그 뒤에 나오는 정식 버전의 알림을 받습니다.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = 정식 버전입니다: 새 정식 버전의 알림을 받으며, 베타 버전 알림은 받지 않습니다.
+
+# Check now
+t4f0e0677 = 지금 확인
+
+# Look for updates once a day
+tcc27ace1 = 하루에 한 번 업데이트 확인
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = GitHub에서 릴리스 목록을 읽고, 서명이 검증될 때만 신뢰합니다. 사용자 동의 없이는 아무것도 다운로드하거나 설치하지 않습니다.
+
 # Open on GitHub
 t24804c99 = GitHub에서 열기
 
@@ -2473,11 +2545,11 @@ t81dee99e = shellwing cloud가 대신 보관합니다. 각 기기에서 로그�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud가 곧 출시됩니다. 출시와 함께 로그인할 수 있습니다.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = 호스트 { $n }개 · $2.99/월
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = 호스트 { $n }개 · $3.99/월
 
-# unlimited · $5.99/mo
-td7d2332f = 무제한 · $5.99/월
+# unlimited · $7.99/mo
+t6cc4bcad = 무제한 · $7.99/월
 
 # just now
 ta715ef0f = 방금
@@ -2863,6 +2935,33 @@ ta77bd589 = { $host }용 노트
 # Notes · {category}
 tbb112cdf = 노트 · { $category }
 
+# the system's package manager
+t11465c20 = 시스템 패키지 관리자
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version }이(가) 출시되었습니다: { $by }에서 업데이트합니다({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version }이(가) 출시되었습니다: { $by }에서 업데이트합니다.
+
+# No folder to download to.
+t2bfc1370 = 다운로드할 폴더가 없습니다.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } 준비 완료: 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Downloading… {got} of {total}
+taee668c2 = 다운로드 중… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = 다운로드 중… { $got }
+
 # Over SSH only
 t14e43465 = SSH 전용
 
@@ -2925,6 +3024,12 @@ tf3732b18 = 연결이 열려 있습니다. 종료하면 연결이 닫힙니다.
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = 연결 { $n }개가 열려 있습니다. 종료하면 연결이 닫힙니다.
+
+# Restart
+t2f44ed8c = 다시 시작
+
+# Restart to install the update?
+tdab4b0cf = 다시 시작하여 업데이트를 설치하시겠습니까?
 
 # Quit shellwing?
 tfa31f588 = shellwing을 종료하시겠습니까?
@@ -3015,6 +3120,15 @@ tc73a9bf6 = 서버와 비밀번호 동기화…
 
 # Settings…
 t64d0d0b4 = 설정…
+
+# Restart to install shellwing {version}
+taadea299 = 다시 시작하여 shellwing { $version } 설치
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } 출시…
+
+# Check for updates
+t70ad7706 = 업데이트 확인
 
 # New host…
 t13806b73 = 새 호스트…

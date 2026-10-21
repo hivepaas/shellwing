@@ -507,6 +507,30 @@ t182e3bec = A native SSH client for Linux, macOS and Windows.
 t6bead5ae = Version { $version } · { $os } { $arch }
 t3d37483c = Copy version info
 t183c7f9f = Copied: { $info }
+t378182cb = This build has no release keys, so it cannot tell of updates.
+t3f4cfe3f = shellwing { $version } is ready
+t6fecac86 = It is installed when you quit, or now with Restart.
+t54001a7c = Restart now
+tfc977e10 = shellwing { $version }
+tf1905fe9 = Looking for a newer version…
+t3603428f = How to update
+t1a99173f = Download and install
+tdf2cab9c = { $by } updates it: { $command }
+t84b27295 = { $by } updates it.
+tb46c0678 = It is downloaded and checked, then installed when you quit.
+t39312eae = Download it, and install it in place of this one.
+t5b33836c = shellwing { $version } is out
+t5e96c075 = The download failed: { $why }
+t2c33d756 = Skip this version
+td122a092 = The last look failed: { $why }
+t4665ef60 = Up to date (looked { $when }).
+t5a3ba058 = Not looked yet.
+t483075a5 = Updates
+t1d6a96bc = This is a beta: you are told of newer betas, and of the release that follows them.
+t9d2d8250 = This is a release: you are told of newer releases, not of betas.
+t4f0e0677 = Check now
+tcc27ace1 = Look for updates once a day
+t258cdfd9 = It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t24804c99 = Open on GitHub
 t7b1728e7 = Report a problem
 tc52ab62f = Release notes
@@ -897,12 +921,12 @@ t2f60c9bf = or continue with
 t616f184a = Rather not keep it yourself?
 t81dee99e = shellwing cloud keeps it for you: sign in on each device, and that is all. Still end-to-end encrypted.
 t8de35792 = shellwing cloud is coming: signing in opens with it.
-t6036c21e =
+td1ec974a =
     { $n ->
-        [one] { $n } host · $2.99/mo
-       *[other] { $n } hosts · $2.99/mo
+        [one] { $n } host · $3.99/mo
+       *[other] { $n } hosts · $3.99/mo
     }
-td7d2332f = unlimited · $5.99/mo
+t6cc4bcad = unlimited · $7.99/mo
 ta715ef0f = just now
 t85ac693d = a minute ago
 t6c7302d6 =
@@ -1061,6 +1085,15 @@ t6460fddf = Open a tab first
 t0b55252f = Connect first
 ta77bd589 = Notes for { $host }
 tbb112cdf = Notes · { $category }
+t11465c20 = the system's package manager
+ta8cbd72e = the App Store
+t1df799a1 = the Microsoft Store
+t270e30ba = shellwing { $version } is out: { $by } updates it ({ $command }).
+t34c8e3f2 = shellwing { $version } is out: { $by } updates it.
+t2bfc1370 = No folder to download to.
+t4cc4357e = shellwing { $version } is ready: it is installed when you quit, or now with Restart.
+taee668c2 = Downloading… { $got } of { $total }
+t4873b921 = Downloading… { $got }
 t14e43465 = Over SSH only
 t85f58d76 = Snippets · { $category }
 t3bbceccc =
@@ -1101,6 +1134,8 @@ td41065cb =
         [one] { $n } connection is open; quitting closes it.
        *[other] { $n } connections are open; quitting closes them.
     }
+t2f44ed8c = Restart
+tdab4b0cf = Restart to install the update?
 tfa31f588 = Quit shellwing?
 tb66945de = Syncing the notes before quitting…
 tf7759ebb = Choose a host on the left to connect.
@@ -1131,6 +1166,9 @@ t8aad97ad = Sync now with { $place }
 t74de6b57 = Sync passwords with a folder…
 tc73a9bf6 = Sync passwords with a server…
 t64d0d0b4 = Settings…
+taadea299 = Restart to install shellwing { $version }
+tab699ac8 = shellwing { $version } is out…
+t70ad7706 = Check for updates
 t13806b73 = New host…
 t2c0113fa = New group…
 te6b404e6 = Edit host { $name }…

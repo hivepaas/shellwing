@@ -1423,6 +1423,78 @@ t3d37483c = Sao chép thông tin phiên bản
 # Copied: {info}
 t183c7f9f = Đã sao chép: { $info }
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Bản build này không có khoá phát hành, nên không thể báo khi có bản cập nhật.
+
+# shellwing {version} is ready
+t3f4cfe3f = shellwing { $version } đã sẵn sàng
+
+# It is installed when you quit, or now with Restart.
+t6fecac86 = Bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
+
+# Restart now
+t54001a7c = Khởi động lại ngay
+
+# shellwing {version}
+tfc977e10 = shellwing { $version }
+
+# Looking for a newer version…
+tf1905fe9 = Đang tìm phiên bản mới hơn…
+
+# How to update
+t3603428f = Cách cập nhật
+
+# Download and install
+t1a99173f = Tải xuống và cài đặt
+
+# {by} updates it: {command}
+tdf2cab9c = { $by } sẽ cập nhật nó: { $command }
+
+# {by} updates it.
+t84b27295 = { $by } sẽ cập nhật nó.
+
+# It is downloaded and checked, then installed when you quit.
+tb46c0678 = Bản mới được tải xuống và kiểm tra, rồi cài khi bạn thoát app.
+
+# Download it, and install it in place of this one.
+t39312eae = Tải về và cài đè lên bản này.
+
+# shellwing {version} is out
+t5b33836c = Đã có shellwing { $version }
+
+# The download failed: {why}
+t5e96c075 = Tải xuống thất bại: { $why }
+
+# Skip this version
+t2c33d756 = Bỏ qua phiên bản này
+
+# The last look failed: {why}
+td122a092 = Lần kiểm tra trước bị lỗi: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Đang là bản mới nhất (kiểm tra { $when }).
+
+# Not looked yet.
+t5a3ba058 = Chưa kiểm tra lần nào.
+
+# Updates
+t483075a5 = Cập nhật
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Đây là bản beta: bạn sẽ được báo khi có beta mới hơn, và khi có bản chính thức tiếp theo.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Đây là bản chính thức: bạn chỉ được báo khi có bản chính thức mới hơn, không báo bản beta.
+
+# Check now
+t4f0e0677 = Kiểm tra ngay
+
+# Look for updates once a day
+tcc27ace1 = Kiểm tra cập nhật mỗi ngày một lần
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
+t258cdfd9 = App đọc danh sách bản phát hành từ GitHub, và chỉ tin khi chữ ký của nó hợp lệ. Không có gì được tải xuống hay cài đặt nếu bạn không đồng ý.
+
 # Open on GitHub
 t24804c99 = Mở trên GitHub
 
@@ -2473,11 +2545,11 @@ t81dee99e = shellwing cloud giữ giúp bạn: đăng nhập trên mỗi thiết
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud sắp ra mắt: đăng nhập sẽ mở cùng lúc.
 
-# {n} host · $2.99/mo | {n} hosts · $2.99/mo
-t6036c21e = { $n } máy chủ · $2.99/tháng
+# {n} host · $3.99/mo | {n} hosts · $3.99/mo
+td1ec974a = { $n } máy chủ · $3.99/tháng
 
-# unlimited · $5.99/mo
-td7d2332f = không giới hạn · $5.99/tháng
+# unlimited · $7.99/mo
+t6cc4bcad = không giới hạn · $7.99/tháng
 
 # just now
 ta715ef0f = vừa xong
@@ -2863,6 +2935,33 @@ ta77bd589 = Ghi chú cho { $host }
 # Notes · {category}
 tbb112cdf = Ghi chú · { $category }
 
+# the system's package manager
+t11465c20 = trình quản lý gói của hệ thống
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = Đã có shellwing { $version }: { $by } sẽ cập nhật nó ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = Đã có shellwing { $version }: { $by } sẽ cập nhật nó.
+
+# No folder to download to.
+t2bfc1370 = Không có thư mục để tải xuống.
+
+# shellwing {version} is ready: it is installed when you quit, or now with Restart.
+t4cc4357e = shellwing { $version } đã sẵn sàng: bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
+
+# Downloading… {got} of {total}
+taee668c2 = Đang tải xuống… { $got } / { $total }
+
+# Downloading… {got}
+t4873b921 = Đang tải xuống… { $got }
+
 # Over SSH only
 t14e43465 = Chỉ qua SSH
 
@@ -2925,6 +3024,12 @@ tf3732b18 = Một kết nối đang mở; thoát sẽ đóng nó.
 
 # {n} connection is open; quitting closes it. | {n} connections are open; quitting closes them.
 td41065cb = { $n } kết nối đang mở; thoát sẽ đóng các kết nối đó.
+
+# Restart
+t2f44ed8c = Khởi động lại
+
+# Restart to install the update?
+tdab4b0cf = Khởi động lại để cài bản cập nhật?
 
 # Quit shellwing?
 tfa31f588 = Thoát shellwing?
@@ -3015,6 +3120,15 @@ tc73a9bf6 = Đồng bộ mật khẩu qua một máy chủ…
 
 # Settings…
 t64d0d0b4 = Cài đặt…
+
+# Restart to install shellwing {version}
+taadea299 = Khởi động lại để cài shellwing { $version }
+
+# shellwing {version} is out…
+tab699ac8 = Đã có shellwing { $version }…
+
+# Check for updates
+t70ad7706 = Kiểm tra cập nhật
 
 # New host…
 t13806b73 = Máy chủ mới…

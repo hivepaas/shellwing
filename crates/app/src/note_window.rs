@@ -1288,13 +1288,7 @@ impl Render for NoteWindow {
                     .flex_col()
                     .child(self.body(window, cx)),
             );
-        let bar = div()
-            .h_full()
-            .flex()
-            .items_center()
-            .px(px(14.))
-            .text_size(ui(13.))
-            .child(shown_title);
+        let bar = chrome::title_bar(shown_title);
         let content = div().size_full().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
