@@ -2645,6 +2645,11 @@ impl Workspace {
         self.sync.set_place(place.cloned());
         self.sync.now();
         self.refresh_settings(cx);
+        // Saving the place reloads the config files, hosts.toml with them,
+        // which a sync may have just written (a device let in by pairing
+        // syncs at once): the next poll sees nothing changed, so the host
+        // list is shown again here.
+        self.refresh_sidebar(cx);
     }
 
     fn ask_recovery_key(&mut self, again: bool, window: &mut Window, cx: &mut Context<Self>) {
