@@ -140,3 +140,23 @@ scenario!(
         assert_eq!(talk(local, "added later"), "echo: added later");
     }
 );
+
+scenario!(
+    /// A LocalForward in the ssh config's entry for the host starts with it,
+    /// as `ssh box` would.
+    local_forward_from_the_ssh_config,
+    |ui| {
+        let service = echo_service(&ui.rt);
+        let server = forwarding_server(ui);
+        let local = free_port();
+        ui.ssh_config(&format!(
+            "Host box\n  HostName 127.0.0.1\n  Port {}\n  User {}\n  LocalForward {local} 127.0.0.1:{service}\n",
+            server.port,
+            crate::ui_tests::USER
+        ));
+        ui.connect("box");
+        ui.login();
+        ui.wait_for(&format!("forwarding localhost:{local}"));
+        assert_eq!(talk(local, "from the config"), "echo: from the config");
+    }
+);

@@ -744,6 +744,17 @@ impl Shell {
                 }
                 return session.data(channel, "\x1b[?1049h\x1b[2J\x1b[HFULL SCREEN PROGRAM");
             }
+            // A full screen program that takes the mouse (htop, mc, vim with
+            // mouse=a): clicks come to it as SGR reports, kept in `input`.
+            "mouse" => {
+                if let Some(s) = self.shells.get_mut(&channel) {
+                    s.alternate = true;
+                }
+                return session.data(
+                    channel,
+                    "\x1b[?1049h\x1b[?1000h\x1b[?1006h\x1b[2J\x1b[HMOUSE PROGRAM",
+                );
+            }
             _ => format!("you said: {line}\r\n"),
         };
         session.data(channel, format!("\r\n{out}{PROMPT}"))
@@ -1046,7 +1057,10 @@ impl server::Handler for Shell {
                     if let Some(s) = self.shells.get_mut(&channel) {
                         s.alternate = false;
                     }
-                    session.data(channel, format!("\x1b[?1049l{PROMPT}"))?;
+                    session.data(
+                        channel,
+                        format!("\x1b[?1000l\x1b[?1006l\x1b[?1049l{PROMPT}"),
+                    )?;
                 }
                 continue;
             }

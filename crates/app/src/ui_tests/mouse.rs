@@ -142,3 +142,57 @@ scenario!(
         assert_eq!(ui.opened_url().as_deref(), Some(URL));
     }
 );
+
+scenario!(
+    /// A full screen program that takes the mouse gets a click as a report of
+    /// the cell under it, far along the screen too (column and row from 1).
+    clicks_reach_a_full_screen_program,
+    |ui| {
+        let server = signed_in(ui);
+        ui.line("mouse");
+        ui.wait_for("MOUSE PROGRAM");
+        ui.wait_until("the program to take the mouse", |ui| {
+            ui.view(|v, _| v.latest_frame().mouse_tracking)
+        });
+        ui.click_cell(5, 120, Modifiers::none());
+        let (press, release) = ("\x1b[<0;121;6M", "\x1b[<0;121;6m");
+        ui.wait_until("the click's reports", |_| {
+            let input = server.seen(|s| String::from_utf8_lossy(&s.input).into_owned());
+            input.contains(press) && input.contains(release)
+        });
+    }
+);
+
+scenario!(
+    /// After a flood of output, the wheel scrolls back through it; typing
+    /// brings the newest lines back.
+    scroll_back_after_a_flood,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.line("lines 400");
+        ui.wait_for("line 400");
+        let at = ui.cell_point(10, 10);
+        let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+        for _ in 0..10 {
+            vcx.simulate_event(gpui::ScrollWheelEvent {
+                position: at,
+                delta: gpui::ScrollDelta::Lines(gpui::point(0., 5.)),
+                ..Default::default()
+            });
+        }
+        ui.wait_until("scrolled back", |ui| {
+            ui.view(|v, _| v.latest_frame().scrolled_back)
+        });
+        let screen = ui.screen();
+        assert!(!screen.contains("line 400"), "still at the bottom:\n{screen}");
+        // Some 50 lines further up, a screenful of what came before.
+        let first = ui.view(|v, _| v.latest_frame().scroll.offset);
+        assert!(first < 400 - 50, "scrolled {first}:\n{screen}");
+        assert!(screen.contains("line 2"), "not in the output:\n{screen}");
+        ui.type_text("x");
+        ui.wait_until("back at the bottom", |ui| {
+            !ui.view(|v, _| v.latest_frame().scrolled_back)
+        });
+        assert!(ui.screen().contains("line 400"));
+    }
+);

@@ -317,3 +317,74 @@ scenario!(
         );
     }
 );
+
+scenario!(
+    /// The connection drops while a remote file is being edited (Wi-Fi gone,
+    /// the server restarting): a save then cannot be written back, and the
+    /// copy keeps it; once connected again, it is written back.
+    edit_saved_while_disconnected_reaches_the_server_on_reconnect,
+    |ui| {
+        if !has_sftp() {
+            eprintln!("skipped: OpenSSH's sftp-server is not installed");
+            return;
+        }
+        ui.config_file("config.toml", EDITOR);
+        let home = ui.dir.join("remote");
+        std::fs::create_dir_all(&home).expect("remote dir");
+        std::fs::write(home.join("notes.txt"), "remember the milk\n").expect("file");
+        let key = russh::keys::PrivateKey::random(
+            &mut rand::rng(),
+            russh::keys::ssh_key::Algorithm::Ed25519,
+        )
+        .expect("key");
+        let policy = Policy {
+            sftp: Some(home.clone()),
+            ..Policy::password()
+        };
+        let server = crate::ui_tests::Server::start_with_key(&ui.rt, policy.clone(), key.clone(), 0);
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        ui.shortcut("o");
+        wait_ready(ui);
+        let copy = edit(ui, "notes.txt");
+        // The server goes away; the editor saves meanwhile.
+        server.kill();
+        ui.wait_until("the session to be lost", |ui| {
+            ui.status() == crate::session::Status::Lost
+        });
+        save_in_editor(&copy, "remember the milk\nwritten offline\n");
+        ui.advance(std::time::Duration::from_millis(1200));
+        assert_eq!(
+            std::fs::read_to_string(home.join("notes.txt")).expect("server file"),
+            "remember the milk\n",
+            "written with no connection"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&copy).expect("copy"),
+            "remember the milk\nwritten offline\n",
+            "the copy lost the save"
+        );
+        // Back: the same server, the same key.
+        let again = crate::ui_tests::Server::start_with_key(&ui.rt, policy, key, server.port);
+        // The tab tries again on its own, on the app's clock (an attempt
+        // while the server was away makes it wait longer).
+        ui.wait_until("a new attempt", |ui| {
+            ui.advance(std::time::Duration::from_millis(500));
+            again.seen(|s| s.connections) >= 1
+        });
+        ui.wait_for_count("password:", 2);
+        // The Files panel has the keys: a click in the terminal, then the
+        // password.
+        ui.click_cell(1, 1, gpui::Modifiers::none());
+        ui.line(crate::ui_tests::PASSWORD);
+        ui.wait_until("connected again", |ui| {
+            ui.status() == crate::session::Status::Connected
+        });
+        ui.wait_until("the save written back", |ui| {
+            ui.advance(std::time::Duration::from_millis(300));
+            std::fs::read_to_string(home.join("notes.txt"))
+                .is_ok_and(|t| t == "remember the milk\nwritten offline\n")
+        });
+    }
+);
