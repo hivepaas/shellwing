@@ -7,11 +7,12 @@ it is implemented yet. Questions still to settle are marked **Open**.
 | Note | Covers |
 | --- | --- |
 | [config.md](config.md) | Files on disk, their formats, settings precedence |
+| [note-images.md](note-images.md) | Images in notes: attachments, their sync and removal |
 | [sync.md](sync.md) | Accounts, the sync engine, backends, host limits |
 | [teams.md](teams.md) | Organizations, sharing, the self-hosted server |
 | [vault.md](vault.md) | Secrets, the key hierarchy, encryption, local storage |
 
-Principles shared by all four:
+Principles shared by all of them:
 
 - **Works without an account.** Signing in only adds shellwing's own cloud sync
   and team features.
