@@ -2674,6 +2674,12 @@ tb9fa7744 = { $n } 日前
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = このデバイスにはパスワードが保存されていません。設定 › 同期 で再接続してください
 
+# {title} (from {device})
+t63a0d436 = { $title }（{ $device } から）
+
+# {title} (from another device)
+t0e55da75 = { $title }（別のデバイスから）
+
 # hosts not synced: {e}
 te7d5212e = ホストを同期できませんでした：{ $e }
 
@@ -3261,6 +3267,12 @@ td55512c8 = このホストは hosts.toml のテーマ `{ $t }` を使ってい�
 
 # Synced {n} change from other devices. | Synced {n} changes from other devices.
 tffe9e6a0 = 他のデバイスから { $n } 件の変更を同期しました。
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = ノートが 2 台のデバイスで変更されました。もう一方の版は { $title } として残してあります。
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 = { $n } 件のノートが 2 台のデバイスで変更されました。もう一方の版はそれぞれ隣に残してあります。
 
 # Sync: {e}
 t8cb8c8c3 = 同期：{ $e }

@@ -400,3 +400,90 @@ scenario!(
         assert_eq!(hits(&served), 1);
     }
 );
+
+/// Each note's title and text in `vault`, in order.
+fn notes_of(vault: &shellwing_vault::Vault) -> Vec<(String, String)> {
+    let mut notes: Vec<(String, String)> = vault
+        .notes()
+        .expect("notes")
+        .into_iter()
+        .map(|n| {
+            let text = vault.note_text(&n.id).expect("text").expect("there");
+            (n.title, text.to_string())
+        })
+        .collect();
+    notes.sort();
+    notes
+}
+
+scenario!(
+    /// A note changed in its window while another device changed it too,
+    /// neither seeing the other's change: both texts stay, the other
+    /// device's as a note beside it, and the app says so
+    /// (`docs/design/note-conflicts.md`).
+    a_note_changed_on_two_devices_keeps_both_texts,
+    |ui| {
+        use shellwing_vault::{Folder, FolderState, MemoryKeys, Note, NoteFormat, Vault};
+        // As main does.
+        shellwing_vault::title_copies(crate::syncing::copy_title);
+        let shared = ui.dir.join("shared");
+        std::fs::create_dir_all(&shared).expect("shared folder");
+        ui.config_file("config.toml", &format!("[sync]\nfolder = {shared:?}\n"));
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        let vault = ui.vault().expect("vault");
+        let folder = Folder::new(&shared);
+        ui.wait_until("the folder to sync", |_| {
+            vault.folder_state(&folder).ok() == Some(FolderState::Ours)
+        });
+        let note = Note {
+            id: String::new(),
+            title: "Disk usage".into(),
+            category: String::new(),
+            format: NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        let id = vault.save_note(&note, Some("df -h")).expect("note");
+        ui.ws(|ws, _, _| ws.sync_now());
+        let record = shared.join(format!("shellwing/records/{id}.sw"));
+        ui.wait_until("the note in the folder", |_| record.exists());
+
+        // Opened here: it syncs again when its window closes.
+        let note = Note { id: id.clone(), ..note };
+        ui.ws(|ws, _, cx| ws.open_note(Some(note.clone()), cx));
+        ui.wait_until("its text", |ui| ui.note(|n, _, _| n.is_loaded()));
+
+        // Meanwhile another device changes it.
+        let other = Vault::open(&ui.dir.join("other.db"), &MemoryKeys::default()).expect("other");
+        let rk = vault.recovery_key().expect("read").expect("a key").to_string();
+        other.join(&folder, &rk).expect("join");
+        other.set_device_name("laptop");
+        other.sync(&folder).expect("sync other");
+        other.save_note(&note, Some("du -sh /var/log")).expect("edit other");
+        other.sync(&folder).expect("sync other");
+
+        // Then it is changed here, and the window closes.
+        ui.note(|n, window, cx| n.click_edit(window, cx));
+        ui.note(|n, window, cx| n.focus_text_end(window, cx));
+        let window = ui.note_window().expect("window");
+        ui.cx.simulate_input(window.into(), " /var");
+        ui.wait_until("the edit", |ui| text(ui) == "df -h /var");
+        window
+            .update(&mut ui.cx, |_, window, _| window.remove_window())
+            .expect("close");
+        ui.wait_for_notice(
+            "A note was changed on two devices: the other version is kept as Disk usage (from laptop).",
+        );
+        let both = vec![
+            ("Disk usage".to_string(), "df -h /var".to_string()),
+            ("Disk usage (from laptop)".to_string(), "du -sh /var/log".to_string()),
+        ];
+        assert_eq!(notes_of(&vault), both);
+        let report = other.sync(&folder).expect("sync other");
+        assert!(report.copies.is_empty(), "made once");
+        assert_eq!(notes_of(&other), both);
+    }
+);

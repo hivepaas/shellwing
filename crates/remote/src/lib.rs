@@ -1036,6 +1036,122 @@ mod tests {
         assert_eq!(pw(&b).as_deref(), Some("from-b"));
     }
 
+    /// Saves note `id` (new when empty), "Disk usage", holding `text`: its id.
+    pub(crate) fn write_note(v: &Vault, id: &str, text: &str) -> String {
+        let note = shellwing_vault::Note {
+            id: id.into(),
+            title: "Disk usage".into(),
+            category: String::new(),
+            format: shellwing_vault::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        v.save_note(&note, Some(text)).expect("note")
+    }
+
+    /// Each note's title and text, in order.
+    pub(crate) fn notes_of(v: &Vault) -> Vec<(String, String)> {
+        let mut notes: Vec<(String, String)> = v
+            .notes()
+            .expect("notes")
+            .into_iter()
+            .map(|n| {
+                let text = v.note_text(&n.id).expect("text").expect("there");
+                (n.title, text.to_string())
+            })
+            .collect();
+        notes.sort();
+        notes
+    }
+
+    /// Note "Disk usage" changed on "desk" (A) and then on "laptop" (B),
+    /// neither seeing the other's change, kept as the note and a copy.
+    pub(crate) fn both_kept() -> Vec<(String, String)> {
+        vec![
+            ("Disk usage".into(), "du -sh /var/log".into()),
+            ("Disk usage (from desk)".into(), "df -h /var".into()),
+        ]
+    }
+
+    /// Two devices on `place` change a note's text without seeing each
+    /// other's change, B later. With `meanwhile`, B writes while A syncs, so
+    /// the server refuses A's write; otherwise A syncs first.
+    fn note_changed_on_both(dir: &std::path::Path, place: &Place, meanwhile: bool) {
+        let _ = std::fs::create_dir_all(dir);
+        let a = Vault::open(&dir.join("note-a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("note-b.db"), &MemoryKeys::default()).expect("b");
+        a.set_device_name("desk");
+        b.set_device_name("laptop");
+        let (a_side, b_side) = (place.open().expect("a"), place.open().expect("b"));
+        let note = write_note(&a, "", "df -h");
+        let rk = a.start_sync(a_side.as_ref()).expect("start").to_string();
+        a.sync(a_side.as_ref()).expect("sync a");
+        b.join(b_side.as_ref(), &rk).expect("join");
+        b.sync(b_side.as_ref()).expect("sync b");
+
+        write_note(&a, &note, "df -h /var");
+        std::thread::sleep(Duration::from_millis(5));
+        write_note(&b, &note, "du -sh /var/log");
+        let copies = if meanwhile {
+            let racing = Racing {
+                inner: a_side.clone(),
+                meanwhile: Mutex::new(Some(Box::new(|| {
+                    b.sync(b_side.as_ref()).expect("b meanwhile");
+                }))),
+            };
+            let report = a.sync(&racing).expect("sync a");
+            assert!(report.pulled >= 1, "the server refused A's write");
+            report.copies
+        } else {
+            assert!(a.sync(a_side.as_ref()).expect("sync a").copies.is_empty());
+            b.sync(b_side.as_ref()).expect("sync b").copies
+        };
+        assert_eq!(copies, ["Disk usage (from desk)"]);
+        for _ in 0..2 {
+            let a_report = a.sync(a_side.as_ref()).expect("sync a");
+            let b_report = b.sync(b_side.as_ref()).expect("sync b");
+            assert!(
+                a_report.copies.is_empty() && b_report.copies.is_empty(),
+                "made once"
+            );
+        }
+        assert_eq!(notes_of(&a), both_kept());
+        assert_eq!(notes_of(&b), both_kept());
+    }
+
+    #[test]
+    fn webdav_keeps_both_texts_of_a_note_changed_on_two_devices() {
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let (url, _) = dav_server(&rt);
+        let dir = std::env::temp_dir().join(format!("shellwing-dav-note-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let place = Place::WebDav {
+            url,
+            user: "me".into(),
+            password: "pw".into(),
+        };
+        note_changed_on_both(&dir, &place, false);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn webdav_keeps_a_text_lost_to_a_write_made_meanwhile() {
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let (url, _) = dav_server(&rt);
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-dav-note-race-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let place = Place::WebDav {
+            url,
+            user: "me".into(),
+            password: "pw".into(),
+        };
+        note_changed_on_both(&dir, &place, true);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn webdav_refuses_a_write_over_another_devices() {
         let rt = tokio::runtime::Runtime::new().expect("runtime");

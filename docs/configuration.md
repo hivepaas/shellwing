@@ -841,6 +841,11 @@ ways): it goes out when the window closes, at once if it changed, and when the
 app quits (the app syncs before it goes, ten seconds at most). The rest of the
 vault syncs as before: when it changes, and every minute.
 
+A note's text changed on two devices before either saw the other's change
+keeps both: the later edit stays the note, and the other becomes a note beside
+it, titled *Disk usage (from laptop)* after the device that wrote it; the
+window says so. Delete it once its text is taken in.
+
 While the vault is locked, a note's window holds no text: it comes back once
 the vault is open. A **sensitive** note's text shows only after asking it is
 you, as for an environment's values. Closing the main window closes the notes'

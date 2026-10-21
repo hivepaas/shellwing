@@ -6,7 +6,7 @@
 //! result in any order and on stores without locking: a write lost to a race is
 //! merged back at the next sync by the device that still has it.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -186,6 +186,33 @@ impl Record {
     }
 }
 
+/// The device a stamp was made on: its end.
+fn stamp_device(t: &str) -> Option<&str> {
+    t.splitn(3, '-').nth(2)
+}
+
+impl Field {
+    /// What the value builds on, itself included. A value from before `seen`
+    /// has seen only itself.
+    pub(crate) fn seen_all(&self) -> BTreeMap<String, String> {
+        let mut seen = self.seen.clone();
+        if let Some(device) = stamp_device(&self.t) {
+            let newest = seen.entry(device.to_string()).or_default();
+            if *newest < self.t {
+                newest.clone_from(&self.t);
+            }
+        }
+        seen
+    }
+
+    /// Whether this value was written after seeing `other`.
+    fn has_seen(&self, other: &Field) -> bool {
+        stamp_device(&other.t)
+            .and_then(|d| self.seen_all().remove(d))
+            .is_some_and(|t| t >= other.t)
+    }
+}
+
 impl Version {
     fn newest(&self) -> &str {
         match self {
@@ -200,10 +227,9 @@ impl Version {
                 a.kind == b.kind
                     && a.name == b.name
                     && a.f.len() == b.f.len()
-                    && a.f
-                        .iter()
-                        .zip(&b.f)
-                        .all(|((ka, fa), (kb, fb))| ka == kb && fa.val == fb.val && fa.t == fb.t)
+                    && a.f.iter().zip(&b.f).all(|((ka, fa), (kb, fb))| {
+                        ka == kb && fa.val == fb.val && fa.t == fb.t && fa.seen == fb.seen
+                    })
             }
             (Version::Gone(a), Version::Gone(b)) => a == b,
             _ => false,
@@ -213,14 +239,17 @@ impl Version {
 
 /// Merges two versions of one record: each field keeps its newest value, and a
 /// deletion wins over edits made before it (an edit after it brings it back).
-pub(crate) fn merge(a: Version, b: Version) -> Version {
+/// A note's text that loses to one written without seeing it comes back too:
+/// the losing side's version, to keep as a copy
+/// (docs/design/note-conflicts.md).
+pub(crate) fn merge(a: Version, b: Version) -> (Version, Option<Record>) {
     match (a, b) {
-        (Version::Gone(x), Version::Gone(y)) => Version::Gone(x.max(y)),
+        (Version::Gone(x), Version::Gone(y)) => (Version::Gone(x.max(y)), None),
         (Version::Live(r), Version::Gone(t)) | (Version::Gone(t), Version::Live(r)) => {
             if t.as_str() > r.newest() {
-                Version::Gone(t)
+                (Version::Gone(t), None)
             } else {
-                Version::Live(r)
+                (Version::Live(r), None)
             }
         }
         (Version::Live(a), Version::Live(b)) => {
@@ -242,14 +271,81 @@ pub(crate) fn merge(a: Version, b: Version) -> Version {
                     }
                 }
             }
-            Version::Live(Record {
+            let mut lost = None;
+            if a.kind == "note"
+                && let (Some(ta), Some(tb)) = (a.f.get("text"), b.f.get("text"))
+                && let Some(text) = f.get_mut("text")
+            {
+                if ta.val != tb.val && !ta.has_seen(tb) && !tb.has_seen(ta) {
+                    let a_won = (&text.t, &text.val) == (&ta.t, &ta.val);
+                    lost = Some(if a_won { b.clone() } else { a.clone() });
+                }
+                // The result has seen both, so neither is found again.
+                let mut seen = ta.seen_all();
+                for (device, t) in tb.seen_all() {
+                    let newest = seen.entry(device).or_default();
+                    if *newest < t {
+                        *newest = t;
+                    }
+                }
+                text.seen = seen;
+            }
+            let merged = Record {
                 v: a.v.max(b.v),
                 kind: a.kind.clone(),
                 name: newer_name,
                 f,
-            })
+            };
+            (Version::Live(merged), lost)
         }
     }
+}
+
+/// A record merged, to keep here and in the store.
+struct Pending {
+    id: String,
+    /// As it is here, and in the store's files.
+    here: Option<Version>,
+    there: Vec<(String, Version)>,
+    merged: Version,
+}
+
+/// The note to keep a lost text in: `text` is the losing side's version of
+/// note `note`. Its id and every stamp come from the losing edit, so each
+/// device that finds the loss makes the same note, and a copy deleted since
+/// stays deleted (docs/design/note-conflicts.md).
+fn copy_of(note: &str, text: &Record) -> Option<(String, Record)> {
+    let lost = text.f.get("text")?;
+    let ms: u64 = lost.t.split('-').next()?.parse().ok()?;
+    let hash = Sha256::new()
+        .chain_update(b"shellwing note copy\0")
+        .chain_update(note)
+        .chain_update(b"\0")
+        .chain_update(&lost.t)
+        .finalize();
+    let hex: String = hash[..10].iter().map(|b| format!("{b:02x}")).collect();
+    let title = text.f.get("title").map_or("", |f| f.val.as_str());
+    let by = Some(lost.by.as_str()).filter(|b| !b.is_empty());
+    let title = crate::copy_title(title, by);
+    let mut f = text.f.clone();
+    for field in f.values_mut() {
+        field.t.clone_from(&lost.t);
+    }
+    f.insert(
+        "title".into(),
+        Field {
+            val: title.clone(),
+            t: lost.t.clone(),
+            ..Default::default()
+        },
+    );
+    let copy = Record {
+        v: text.v,
+        kind: text.kind.clone(),
+        name: title,
+        f,
+    };
+    Some((format!("{ms:012x}{hex}"), copy))
 }
 
 /// What a sync did.
@@ -265,6 +361,9 @@ pub struct SyncReport {
     pub images_pulled: usize,
     /// Images a note shows that are not in the store yet.
     pub images_missing: usize,
+    /// The titles of notes made here to keep a text another device's edit
+    /// replaced without seeing it.
+    pub copies: Vec<String>,
 }
 
 /// Whether a store already holds a vault, and whose.
@@ -469,7 +568,17 @@ impl Vault {
     /// As [`Vault::sync`], leaving the records `held` alone both ways (a
     /// note open in its window: it syncs when the window closes).
     pub fn sync_holding(&self, b: &dyn Backend, held: &BTreeSet<String>) -> Result<SyncReport> {
-        transact(b, |b| self.sync_round(b, held))
+        // A copy made in a round whose publishing was refused is kept here,
+        // and goes out in the next round, which finds it made: it is still
+        // said.
+        let mut copies = Vec::new();
+        let mut report = transact(b, |b| {
+            let round = self.sync_round(b, held)?;
+            copies.extend(round.copies.iter().cloned());
+            Ok(round)
+        })?;
+        report.copies = copies;
+        Ok(report)
     }
 
     /// One sync, over the files as they are now.
@@ -505,12 +614,7 @@ impl Vault {
             kind,
         } in self.raw_rows()?
         {
-            let v = if deleted {
-                Version::Gone(hlc)
-            } else {
-                let (plain, _) = cipher::open(&self.sk(), &data, &crate::record_aad(&id, &kind))?;
-                Version::Live(serde_json::from_slice(&plain)?)
-            };
+            let v = self.row_version(&id, &kind, &data, hlc, deleted)?;
             kinds.insert(id.clone(), kind);
             local.insert(id, v);
         }
@@ -549,6 +653,11 @@ impl Vault {
         }
         // The images the notes refer to once merged, to fetch the missing.
         let mut used: BTreeSet<String> = BTreeSet::new();
+        // Every record is merged before any is written, so the notes' texts
+        // lost to an edit made without seeing them are kept as notes of
+        // their own (docs/design/note-conflicts.md).
+        let mut queue: VecDeque<Pending> = VecDeque::new();
+        let mut lost: Vec<(String, Record)> = Vec::new();
         let ids: BTreeSet<String> = remote.keys().chain(local.keys()).cloned().collect();
         for id in ids {
             if held.contains(&id) {
@@ -562,49 +671,26 @@ impl Vault {
             let mut merged = here.clone();
             for (_, v) in &there {
                 merged = Some(match merged {
-                    Some(m) => merge(m, v.clone()),
+                    Some(m) => {
+                        let (m, text) = merge(m, v.clone());
+                        lost.extend(text.map(|r| (id.clone(), r)));
+                        m
+                    }
                     None => v.clone(),
                 });
             }
             let Some(merged) = merged else { continue };
-            if let Version::Live(r) = &merged {
-                used.extend(r.attachment_refs());
-            }
-            let kind = match &merged {
-                Version::Live(r) => clear_kind(&r.kind).to_string(),
-                Version::Gone(_) => kinds.get(&id).cloned().unwrap_or_else(|| "other".into()),
-            };
-            if !here.as_ref().is_some_and(|h| h.same(&merged)) {
-                self.store_version(&id, &kind, &merged)?;
-                report.pulled += 1;
-            }
-            let canonical = format!("{id}.sw");
-            let up_to_date =
-                there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
-            if !up_to_date {
-                let path = format!("{RECORDS}/{canonical}");
-                let mut merged = merged;
-                for _ in 0..REPLACE_TRIES {
-                    if b.replace(&path, &self.envelope(&id, &kind, &merged)?)? {
-                        break;
-                    }
-                    // Another device wrote it since the listing: theirs
-                    // goes in, and the write is tried again.
-                    if let Some(bytes) = b.read(&path)?
-                        && let Some((_, theirs)) = self.version_in(&id, &bytes)?
-                    {
-                        merged = merge(merged, theirs);
-                        self.store_version(&id, &kind, &merged)?;
-                        report.pulled += 1;
-                    }
-                }
-                for (name, _) in &there {
-                    if *name != canonical {
-                        b.remove(&format!("{RECORDS}/{name}"))?;
-                    }
-                }
-                report.pushed += 1;
-            }
+            queue.push_back(Pending {
+                id,
+                here,
+                there,
+                merged,
+            });
+        }
+        self.keep_copies(lost, held, &mut queue, &mut report)?;
+        while let Some(p) = queue.pop_front() {
+            let lost = self.settle(b, p, &kinds, &mut used, &mut report)?;
+            self.keep_copies(lost, held, &mut queue, &mut report)?;
         }
         // Images the merged notes show that are not here yet, from the
         // store, checked to be what their ids say.
@@ -630,6 +716,138 @@ impl Vault {
             }
         }
         Ok(report)
+    }
+
+    /// A record row's version.
+    fn row_version(
+        &self,
+        id: &str,
+        kind: &str,
+        data: &[u8],
+        hlc: String,
+        deleted: bool,
+    ) -> Result<Version> {
+        Ok(if deleted {
+            Version::Gone(hlc)
+        } else {
+            let (plain, _) = cipher::open(&self.sk(), data, &crate::record_aad(id, kind))?;
+            Version::Live(serde_json::from_slice(&plain)?)
+        })
+    }
+
+    /// The record `id` as kept here.
+    fn version_here(&self, id: &str) -> Result<Option<Version>> {
+        for row in self.raw_rows()? {
+            if row.id == id {
+                let v = self.row_version(&row.id, &row.kind, &row.data, row.hlc, row.deleted)?;
+                return Ok(Some(v));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Keeps a merged record here and in the store. Gives back the notes'
+    /// texts lost to another device's version written meanwhile.
+    fn settle(
+        &self,
+        b: &dyn Backend,
+        p: Pending,
+        kinds: &BTreeMap<String, String>,
+        used: &mut BTreeSet<String>,
+        report: &mut SyncReport,
+    ) -> Result<Vec<(String, Record)>> {
+        let Pending {
+            id,
+            here,
+            there,
+            merged,
+        } = p;
+        let mut lost = Vec::new();
+        if let Version::Live(r) = &merged {
+            used.extend(r.attachment_refs());
+        }
+        let kind = match &merged {
+            Version::Live(r) => clear_kind(&r.kind).to_string(),
+            Version::Gone(_) => kinds.get(&id).cloned().unwrap_or_else(|| "other".into()),
+        };
+        if !here.as_ref().is_some_and(|h| h.same(&merged)) {
+            self.store_version(&id, &kind, &merged)?;
+            report.pulled += 1;
+        }
+        let canonical = format!("{id}.sw");
+        let up_to_date = there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
+        if !up_to_date {
+            let path = format!("{RECORDS}/{canonical}");
+            let mut merged = merged;
+            for _ in 0..REPLACE_TRIES {
+                if b.replace(&path, &self.envelope(&id, &kind, &merged)?)? {
+                    break;
+                }
+                // Another device wrote it since the listing: theirs
+                // goes in, and the write is tried again.
+                if let Some(bytes) = b.read(&path)?
+                    && let Some((_, theirs)) = self.version_in(&id, &bytes)?
+                {
+                    let (m, text) = merge(merged, theirs);
+                    merged = m;
+                    lost.extend(text.map(|r| (id.clone(), r)));
+                    self.store_version(&id, &kind, &merged)?;
+                    report.pulled += 1;
+                }
+            }
+            for (name, _) in &there {
+                if *name != canonical {
+                    b.remove(&format!("{RECORDS}/{name}"))?;
+                }
+            }
+            report.pushed += 1;
+        }
+        Ok(lost)
+    }
+
+    /// Keeps each text `lost` as a note of its own, to merge and write with
+    /// the others. One already there (another device made it, or it was
+    /// deleted since) is merged with, so it is made once.
+    fn keep_copies(
+        &self,
+        lost: Vec<(String, Record)>,
+        held: &BTreeSet<String>,
+        queue: &mut VecDeque<Pending>,
+        report: &mut SyncReport,
+    ) -> Result<()> {
+        for (note, text) in lost {
+            let Some((id, copy)) = copy_of(&note, &text) else {
+                continue;
+            };
+            if held.contains(&id) {
+                continue;
+            }
+            let copy = Version::Live(copy);
+            if let Some(p) = queue.iter_mut().find(|p| p.id == id) {
+                p.merged = merge(p.merged.clone(), copy).0;
+                continue;
+            }
+            let here = self.version_here(&id)?;
+            let merged = match &here {
+                Some(h) => merge(h.clone(), copy).0,
+                None => copy,
+            };
+            if here.as_ref().is_some_and(|h| h.same(&merged)) {
+                continue;
+            }
+            if here.is_none()
+                && let Version::Live(r) = &merged
+            {
+                report.copies.push(r.name.clone());
+            }
+            queue.push_back(Pending {
+                id,
+                here,
+                there: Vec::new(),
+                merged,
+            });
+        }
+        Ok(())
     }
 
     /// The record `id` in a synced file's `bytes`, with its clear kind; None
@@ -685,6 +903,7 @@ mod tests {
         Field {
             val: val.into(),
             t: t.into(),
+            ..Default::default()
         }
     }
 
@@ -715,8 +934,8 @@ mod tests {
     fn merging_keeps_each_fields_newest_in_any_order() {
         let a = rec(&[("user", "deploy", "1-0-a"), ("port", "22", "5-0-a")]);
         let b = rec(&[("user", "root", "3-0-b"), ("port", "2222", "2-0-b")]);
-        let ab = merge(a.clone(), b.clone());
-        let ba = merge(b, a);
+        let ab = merge(a.clone(), b.clone()).0;
+        let ba = merge(b, a).0;
         assert_eq!(vals(&ab), vals(&ba));
         assert_eq!(
             vals(&ab),
@@ -728,11 +947,11 @@ mod tests {
     fn deletion_wins_over_older_edits_but_not_newer_ones() {
         let r = rec(&[("password", "x", "3-0-a")]);
         assert!(matches!(
-            merge(r.clone(), Version::Gone("4-0-b".into())),
+            merge(r.clone(), Version::Gone("4-0-b".into())).0,
             Version::Gone(_)
         ));
         assert!(matches!(
-            merge(Version::Gone("2-0-b".into()), r),
+            merge(Version::Gone("2-0-b".into()), r).0,
             Version::Live(_)
         ));
     }
@@ -1208,5 +1427,359 @@ mod tests {
         a.sync(&folder).expect("sync a");
         assert!(!stored.exists());
         assert!(a.attachment(&id).expect("read").is_none());
+    }
+
+    /// A note's version whose text `val` was written at `t` on "laptop",
+    /// after seeing the edits `seen` (stamps).
+    fn note_v(val: &str, t: &str, seen: &[&str]) -> Version {
+        let mut text = field(val, t);
+        text.by = "laptop".into();
+        for s in seen.iter().chain([&t]) {
+            let device = stamp_device(s).expect("stamp");
+            text.seen.insert(device.into(), s.to_string());
+        }
+        note_with(text)
+    }
+
+    /// A note's version from before `seen`.
+    fn note_before_seen(val: &str, t: &str) -> Version {
+        note_with(field(val, t))
+    }
+
+    fn note_with(text: Field) -> Version {
+        let t = text.t.clone();
+        Version::Live(Record {
+            v: 1,
+            kind: "note".into(),
+            name: "Disk usage".into(),
+            f: BTreeMap::from([
+                ("title".to_string(), field("Disk usage", &t)),
+                ("text".to_string(), text),
+            ]),
+        })
+    }
+
+    fn text_of(v: &Version) -> String {
+        match v {
+            Version::Live(r) => r.f["text"].val.clone(),
+            Version::Gone(_) => "gone".into(),
+        }
+    }
+
+    fn lost_text(lost: &Option<Record>) -> Option<String> {
+        lost.as_ref().map(|r| r.f["text"].val.clone())
+    }
+
+    #[test]
+    fn an_edit_made_after_another_makes_no_copy() {
+        let first = note_v("df -h", "1-0-a", &[]);
+        let then = note_v("df -h /var", "2-0-b", &["1-0-a"]);
+        for (x, y) in [(first.clone(), then.clone()), (then.clone(), first)] {
+            let (merged, lost) = merge(x, y);
+            assert_eq!(text_of(&merged), "df -h /var");
+            assert!(lost.is_none());
+        }
+        // A's next edit, made from B's: still one line of edits.
+        let again = note_v("du -sh", "3-0-a", &["1-0-a", "2-0-b"]);
+        assert!(merge(then, again).1.is_none());
+    }
+
+    #[test]
+    fn edits_made_without_seeing_each_other_keep_both() {
+        let a = note_v("df -h /var", "2-0-a", &["1-0-a"]);
+        let b = note_v("du -sh /var/log", "3-0-b", &["1-0-a"]);
+        let (ab, lost_ab) = merge(a.clone(), b.clone());
+        let (ba, lost_ba) = merge(b.clone(), a.clone());
+        assert_eq!(text_of(&ab), "du -sh /var/log", "the later stays the note");
+        assert_eq!(lost_text(&lost_ab).as_deref(), Some("df -h /var"));
+        assert_eq!(lost_text(&lost_ba), lost_text(&lost_ab));
+        assert!(ab.same(&ba));
+        // The result has seen both: merging either again finds nothing.
+        assert!(merge(ab.clone(), a).1.is_none());
+        assert!(merge(b, ab.clone()).1.is_none());
+        assert!(merge(ab.clone(), ab).1.is_none());
+    }
+
+    #[test]
+    fn the_same_text_written_on_two_devices_makes_no_copy() {
+        let a = note_v("df -h", "2-0-a", &["1-0-a"]);
+        let b = note_v("df -h", "3-0-b", &["1-0-a"]);
+        assert!(merge(a, b).1.is_none());
+    }
+
+    #[test]
+    fn three_concurrent_edits_keep_the_latest_and_two_copies_in_any_order() {
+        let a = note_v("a", "2-0-a", &["1-0-a"]);
+        let b = note_v("b", "3-0-b", &["1-0-a"]);
+        let c = note_v("c", "4-0-c", &["1-0-a"]);
+        for [x, y, z] in [[&a, &b, &c], [&c, &a, &b], [&b, &c, &a], [&c, &b, &a]] {
+            let (merged, first) = merge(x.clone(), y.clone());
+            let (merged, second) = merge(merged, z.clone());
+            assert_eq!(text_of(&merged), "c");
+            let mut lost: Vec<String> = [first, second].iter().filter_map(lost_text).collect();
+            lost.sort();
+            assert_eq!(lost, ["a", "b"]);
+        }
+    }
+
+    #[test]
+    fn texts_from_before_seen_are_never_lost() {
+        // A device's later edit has seen its earlier one.
+        let (x, y) = (
+            note_before_seen("x", "1-0-a"),
+            note_before_seen("y", "2-0-a"),
+        );
+        assert!(merge(x, y).1.is_none());
+        // Two devices': nothing tells, so both stay.
+        let (x, y) = (
+            note_before_seen("x", "1-0-a"),
+            note_before_seen("y", "2-0-b"),
+        );
+        assert_eq!(lost_text(&merge(x, y).1).as_deref(), Some("x"));
+        // An edit made from one of them has seen it.
+        let x = note_before_seen("x", "1-0-a");
+        assert!(merge(x, note_v("y", "2-0-b", &["1-0-a"])).1.is_none());
+    }
+
+    #[test]
+    fn a_lost_text_is_kept_the_same_way_on_every_device() {
+        let Version::Live(lost) = note_v("df -h /var", "2-0-a", &["1-0-a"]) else {
+            unreachable!()
+        };
+        let (id, copy) = copy_of("0190aa", &lost).expect("copy");
+        let (again, copy_again) = copy_of("0190aa", &lost).expect("copy");
+        assert_eq!(id, again);
+        assert!(Version::Live(copy.clone()).same(&Version::Live(copy_again)));
+        assert_eq!(id.len(), 32);
+        assert!(id.bytes().all(|b| b.is_ascii_hexdigit()));
+        assert_ne!(copy_of("0190bb", &lost).expect("copy").0, id);
+        assert_eq!(copy.name, "Disk usage (from laptop)");
+        assert_eq!(copy.f["title"].val, "Disk usage (from laptop)");
+        assert_eq!(copy.f["text"].val, "df -h /var");
+        assert!(copy.f.values().all(|f| f.t == "2-0-a"));
+        // Deleted since: it stays deleted.
+        let deleted = Version::Gone("9-0-c".into());
+        assert!(matches!(
+            merge(deleted, Version::Live(copy)).0,
+            Version::Gone(_)
+        ));
+    }
+
+    /// Note `id` (new when empty), "Disk usage", holding `text`: its id.
+    fn write_note(v: &Vault, id: &str, text: &str) -> String {
+        let note = crate::Note {
+            id: id.into(),
+            title: "Disk usage".into(),
+            category: String::new(),
+            format: crate::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        v.save_note(&note, Some(text)).expect("note")
+    }
+
+    /// Each note's title and text, in order.
+    fn notes_of(v: &Vault) -> Vec<(String, String)> {
+        let mut notes: Vec<(String, String)> = v
+            .notes()
+            .expect("notes")
+            .into_iter()
+            .map(|n| {
+                let text = v.note_text(&n.id).expect("text").expect("there");
+                (n.title, text.to_string())
+            })
+            .collect();
+        notes.sort();
+        notes
+    }
+
+    /// Two devices that synced note "Disk usage", then changed its text
+    /// before seeing each other's change, B later: the note's id.
+    fn changed_on_both(folder: &Folder, a: &Vault, b: &Vault) -> String {
+        a.set_device_name("desk");
+        b.set_device_name("laptop");
+        let note = write_note(a, "", "df -h");
+        a.sync(folder).expect("sync a");
+        b.sync(folder).expect("sync b");
+        write_note(a, &note, "df -h /var");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        write_note(b, &note, "du -sh /var/log");
+        note
+    }
+
+    fn both_kept() -> Vec<(String, String)> {
+        vec![
+            ("Disk usage".into(), "du -sh /var/log".into()),
+            ("Disk usage (from desk)".into(), "df -h /var".into()),
+        ]
+    }
+
+    #[test]
+    fn a_note_changed_on_two_devices_keeps_both_texts() {
+        let dir = temp("both-texts");
+        let (folder, a, b) = two_devices(&dir);
+        changed_on_both(&folder, &a, &b);
+        assert!(a.sync(&folder).expect("sync a").copies.is_empty());
+        let report = b.sync(&folder).expect("sync b");
+        assert_eq!(report.copies, ["Disk usage (from desk)"]);
+        assert!(
+            a.sync(&folder).expect("sync a").copies.is_empty(),
+            "made once"
+        );
+        assert_eq!(notes_of(&a), both_kept());
+        assert_eq!(notes_of(&b), both_kept());
+        // Nothing new.
+        assert_eq!(a.sync(&folder).expect("again"), SyncReport::default());
+        assert_eq!(b.sync(&folder).expect("again"), SyncReport::default());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Copies folder `from` to `to`, as a sync tool's copy on another device.
+    fn copy_dir(from: &Path, to: &Path) {
+        std::fs::create_dir_all(to).expect("dir");
+        for entry in std::fs::read_dir(from).expect("list") {
+            let path = entry.expect("entry").path();
+            let dest = to.join(path.file_name().expect("name"));
+            if path.is_dir() {
+                copy_dir(&path, &dest);
+            } else {
+                std::fs::copy(&path, &dest).expect("copy");
+            }
+        }
+    }
+
+    /// Both devices sync at once, each with its own copy of the folder; the
+    /// sync tool then puts B's file of the note beside A's, as a
+    /// "conflicted copy". Neither device has found the conflict yet.
+    fn both_write_at_once(dir: &Path, a: &Vault, b: &Vault, note: &str) {
+        let shared = dir.join("shared");
+        copy_dir(&shared, &dir.join("shared-b"));
+        assert!(
+            a.sync(&Folder::new(&shared))
+                .expect("sync a")
+                .copies
+                .is_empty()
+        );
+        let report = b.sync(&Folder::new(&dir.join("shared-b"))).expect("sync b");
+        assert!(report.copies.is_empty());
+        std::fs::copy(
+            dir.join(format!("shared-b/shellwing/records/{note}.sw")),
+            shared.join(format!("shellwing/records/{note} (conflicted copy).sw")),
+        )
+        .expect("conflicted copy");
+    }
+
+    #[test]
+    fn two_devices_writing_at_once_through_a_sync_tool_make_one_copy() {
+        let dir = temp("at-once");
+        let (folder, a, b) = two_devices(&dir);
+        let note = changed_on_both(&folder, &a, &b);
+        both_write_at_once(&dir, &a, &b, &note);
+        let report = a.sync(&folder).expect("sync a");
+        assert_eq!(report.copies, ["Disk usage (from desk)"]);
+        assert!(
+            b.sync(&folder).expect("sync b").copies.is_empty(),
+            "made once"
+        );
+        assert_eq!(notes_of(&a), both_kept());
+        assert_eq!(notes_of(&b), both_kept());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_deleted_copy_stays_deleted_when_another_device_finds_the_loss() {
+        let dir = temp("deleted-copy");
+        let (folder, a, b) = two_devices(&dir);
+        let note = changed_on_both(&folder, &a, &b);
+        both_write_at_once(&dir, &a, &b, &note);
+        // B's sync tool is behind: its folder still holds both files.
+        copy_dir(&dir.join("shared"), &dir.join("shared-late"));
+        a.sync(&folder).expect("sync a");
+        let copy = a
+            .notes()
+            .expect("notes")
+            .into_iter()
+            .find(|n| n.title == "Disk usage (from desk)")
+            .expect("the copy");
+        a.delete(&copy.id).expect("delete the copy");
+        a.sync(&folder).expect("sync a");
+
+        let late = Folder::new(&dir.join("shared-late"));
+        assert_eq!(b.sync(&late).expect("sync b").copies.len(), 1);
+        b.sync(&folder).expect("sync b");
+        let note_only = vec![("Disk usage".to_string(), "du -sh /var/log".to_string())];
+        assert_eq!(notes_of(&b), note_only);
+        a.sync(&folder).expect("sync a");
+        assert_eq!(notes_of(&a), note_only);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_note_open_in_its_window_merges_when_let_go() {
+        let dir = temp("held-note");
+        let (folder, a, b) = two_devices(&dir);
+        let note = changed_on_both(&folder, &a, &b);
+        a.sync(&folder).expect("sync a");
+        let held = BTreeSet::from([note.clone()]);
+        let report = b.sync_holding(&folder, &held).expect("sync b");
+        assert!(report.copies.is_empty());
+        assert_eq!(
+            b.note_text(&note).expect("text").map(|t| t.to_string()),
+            Some("du -sh /var/log".into())
+        );
+        assert_eq!(b.sync(&folder).expect("sync b").copies.len(), 1);
+        assert_eq!(notes_of(&b), both_kept());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_text_lost_to_a_write_made_meanwhile_is_kept() {
+        let dir = temp("lost-meanwhile");
+        let (folder, a, b) = two_devices(&dir);
+        changed_on_both(&folder, &a, &b);
+        let racing = Racing {
+            inner: Folder::new(&dir.join("shared")),
+            meanwhile: std::sync::Mutex::new(Some(Box::new(|| {
+                b.sync(&Folder::new(&dir.join("shared")))
+                    .expect("b meanwhile");
+            }))),
+        };
+        let report = a.sync(&racing).expect("sync a");
+        assert_eq!(report.copies, ["Disk usage (from desk)"]);
+        assert_eq!(notes_of(&a), both_kept());
+        assert!(b.sync(&folder).expect("sync b").copies.is_empty());
+        assert_eq!(notes_of(&b), both_kept());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_images_of_a_lost_text_are_kept() {
+        let dir = temp("lost-images");
+        let (folder, a, b) = two_devices(&dir);
+        let note = changed_on_both(&folder, &a, &b);
+        let image = a.add_attachment(&png(7)).expect("image");
+        write_note(&a, &note, &crate::attachment_line(&image));
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        write_note(&b, &note, "du -sh /var/log");
+        a.sync(&folder).expect("sync a");
+        let report = b.sync(&folder).expect("sync b");
+        assert_eq!(report.copies.len(), 1);
+        assert_eq!(report.images_pulled, 1, "the copy shows it");
+        a.sync(&folder).expect("sync a");
+        // As if no note had shown it for 31 days: the copy still does.
+        a.db.lock()
+            .expect("db")
+            .execute(
+                "UPDATE attachments SET unused_since = 1 WHERE id = ?1",
+                rusqlite::params![image],
+            )
+            .expect("age");
+        a.sync(&folder).expect("sync a");
+        assert!(a.attachment(&image).expect("read").is_some());
+        let stored = dir.join(format!("shared/shellwing/attachments/{image}.sw"));
+        assert!(stored.exists());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

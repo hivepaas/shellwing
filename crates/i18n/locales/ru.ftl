@@ -2797,6 +2797,12 @@ tb9fa7744 =
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = его пароль не сохранён на этом устройстве: подключитесь снова в Настройки › Синхронизация
 
+# {title} (from {device})
+t63a0d436 = { $title } (с устройства { $device })
+
+# {title} (from another device)
+t0e55da75 = { $title } (с другого устройства)
+
 # hosts not synced: {e}
 te7d5212e = хосты не синхронизированы: { $e }
 
@@ -3440,6 +3446,18 @@ tffe9e6a0 =
         [few] Получено { $n } изменения с других устройств.
         [many] Получено { $n } изменений с других устройств.
        *[other] Получено { $n } изменения с других устройств.
+    }
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = Заметка изменена на двух устройствах: другая версия сохранена как { $title }.
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 =
+    { $n ->
+        [one] { $n } заметка изменена на двух устройствах: другая версия сохранена рядом.
+        [few] { $n } заметки изменены на двух устройствах: другие версии сохранены рядом.
+        [many] { $n } заметок изменено на двух устройствах: другие версии сохранены рядом.
+       *[other] { $n } заметки изменено на двух устройствах: другие версии сохранены рядом.
     }
 
 # Sync: {e}

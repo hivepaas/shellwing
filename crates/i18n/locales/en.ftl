@@ -989,6 +989,8 @@ tb9fa7744 =
        *[other] { $n } days ago
     }
 td2fdfc60 = its password is not saved on this device: connect again in Settings › Sync
+t63a0d436 = { $title } (from { $device })
+t0e55da75 = { $title } (from another device)
 te7d5212e = hosts not synced: { $e }
 tf8592ea2 = settings not synced: { $e }
 t60f438b7 = settings not written: { $e }
@@ -1225,6 +1227,12 @@ tffe9e6a0 =
     { $n ->
         [one] Synced { $n } change from other devices.
        *[other] Synced { $n } changes from other devices.
+    }
+t9024ea9c = A note was changed on two devices: the other version is kept as { $title }.
+tbe970732 =
+    { $n ->
+        [one] { $n } note was changed on two devices: the other version is kept beside it.
+       *[other] { $n } notes were changed on two devices: the other versions are kept beside them.
     }
 t8cb8c8c3 = Sync: { $e }
 t1d4ed983 = The other device refused to let this one in.

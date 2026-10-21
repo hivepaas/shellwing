@@ -489,6 +489,18 @@ impl NoteWindow {
         self.unsynced = false;
     }
 
+    /// Between Preview and editing a Markdown note.
+    fn toggle_preview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.preview = !self.preview;
+        // The same editor, read-only: the text stays where it is between the
+        // two.
+        let ro = self.preview;
+        self.text.update(cx, |e, cx| e.set_read_only(ro, cx));
+        let f = self.text.read(cx).focus_handle(cx);
+        window.focus(&f, cx);
+        cx.notify();
+    }
+
     /// Notes the window under the note's id, once it has one.
     fn note_open(&self, cx: &mut App) {
         if let Some(h) = self.handle
@@ -1416,16 +1428,7 @@ impl NoteWindow {
                             },
                             false,
                         )
-                        .on_click(cx.listener(|v, _, w, cx| {
-                            v.preview = !v.preview;
-                            // The same editor, read-only: the text stays where
-                            // it is between the two.
-                            let ro = v.preview;
-                            v.text.update(cx, |e, cx| e.set_read_only(ro, cx));
-                            let f = v.text.read(cx).focus_handle(cx);
-                            w.focus(&f, cx);
-                            cx.notify();
-                        })),
+                        .on_click(cx.listener(|v, _, w, cx| v.toggle_preview(w, cx))),
                     )
                 })
                 .child(
@@ -1787,6 +1790,11 @@ impl NoteWindow {
             e.set_cursor(end, cx);
             e.focus(window, cx);
         });
+    }
+
+    /// "Edit" (or "Preview"), clicked.
+    pub fn click_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.toggle_preview(window, cx);
     }
 
     /// The format's chip, clicked.

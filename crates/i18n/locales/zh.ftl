@@ -2674,6 +2674,12 @@ tb9fa7744 = { $n } 天前
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = 此设备上未保存其密码：请在“设置 › 同步”中重新连接
 
+# {title} (from {device})
+t63a0d436 = { $title }（来自 { $device }）
+
+# {title} (from another device)
+t0e55da75 = { $title }（来自另一台设备）
+
 # hosts not synced: {e}
 te7d5212e = 主机未同步：{ $e }
 
@@ -3261,6 +3267,12 @@ td55512c8 = 此主机使用 hosts.toml 中的主题 `{ $t }`；请在那里修�
 
 # Synced {n} change from other devices. | Synced {n} changes from other devices.
 tffe9e6a0 = 已从其他设备同步 { $n } 项更改。
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = 一条笔记在两台设备上都被修改了：另一个版本已保留为 { $title }。
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 = { $n } 条笔记在两台设备上都被修改了：另一个版本已分别保留在旁边。
 
 # Sync: {e}
 t8cb8c8c3 = 同步：{ $e }
