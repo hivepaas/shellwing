@@ -21,7 +21,7 @@ scenario!(
         ui.connect(&server.spec());
         ui.login();
         answer_offer(ui, true);
-        ui.wait_for_notice("Saved in the vault");
+        ui.wait_for_notice_in("Saved in the vault", crate::notice::Tone::Good);
         ui.palette(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for(WELCOME);

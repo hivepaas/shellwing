@@ -486,17 +486,23 @@ impl Ui {
         self.draw();
     }
 
-    /// The notice showing: Settings', the window's or the active pane's.
-    pub fn notice(&mut self) -> Option<String> {
+    /// The notice showing, with its tone: Settings', the window's or the
+    /// active pane's.
+    pub fn notice_shown(&mut self) -> Option<crate::notice::Notice> {
         self.cx.run_until_parked();
         if let Some(s) = self.ws(|ws, _, _| ws.settings_view()) {
-            return self.cx.read(|cx| s.read(cx).notice_text());
+            return self.cx.read(|cx| s.read(cx).notice_shown());
         }
-        let window = self.ws(|ws, _, _| ws.notice_text());
+        let window = self.ws(|ws, _, _| ws.notice_shown());
         if window.is_some() || self.tabs() == 0 {
             return window;
         }
-        self.view(|v, _| v.notice_text())
+        self.view(|v, _| v.notice_shown())
+    }
+
+    /// The notice showing: its text.
+    pub fn notice(&mut self) -> Option<String> {
+        self.notice_shown().map(|n| n.text.to_string())
     }
 
     /// Waits until a notice containing `text` shows.
@@ -504,6 +510,14 @@ impl Ui {
         self.wait_until(&format!("the notice {text:?}"), |ui| {
             ui.notice().is_some_and(|n| n.contains(text))
         });
+    }
+
+    /// Waits until a notice containing `text` shows, then checks it is
+    /// colored as `tone`.
+    pub fn wait_for_notice_in(&mut self, text: &str, tone: crate::notice::Tone) {
+        self.wait_for_notice(text);
+        let shown = self.notice_shown().expect("a notice");
+        assert_eq!(shown.tone, tone, "{:?}", shown.text);
     }
 
     /// Answers the question the app asked in a dialog with `button`.

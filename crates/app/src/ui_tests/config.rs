@@ -72,7 +72,7 @@ scenario!(
         let path: PathBuf = ui.dir.join("output.txt");
         let chosen = path.clone();
         ui.cx.simulate_new_path_selection(move |_| Some(chosen));
-        ui.wait_for_notice("Saved as text");
+        ui.wait_for_notice_in("Saved as text", crate::notice::Tone::Good);
         let text = std::fs::read_to_string(&path).expect("saved file");
         assert!(text.contains("you said: uptime report"), "{text}");
     }
@@ -161,7 +161,7 @@ scenario!(
         ui.palette("Change theme");
         ui.wait_until("the theme picker", |ui| ui.ws(|ws, _, _| ws.palette_open()));
         ui.line("Nord");
-        ui.wait_for_notice("Theme: Nord");
+        ui.wait_for_notice_in("Theme: Nord", crate::notice::Tone::Info);
         let config = std::fs::read_to_string(ui.config_dir().join("config.toml")).unwrap_or_default();
         assert!(config.contains("\"nord\""), "config.toml:\n{config}");
         ui.wait_until("the terminal's new colors", |ui| {

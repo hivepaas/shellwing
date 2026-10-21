@@ -98,7 +98,7 @@ scenario!(
         ui.wait_until("the reason beside Connect", |ui| {
             ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync"))
         });
-        ui.wait_for_notice("Cannot sync");
+        ui.wait_for_notice_in("Cannot sync", crate::notice::Tone::Bad);
         let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
             .unwrap_or_default();
         assert!(!config.contains("[sync]"), "{config}");
