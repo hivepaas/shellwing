@@ -7,6 +7,7 @@ it is implemented yet. Questions still to settle are marked **Open**.
 | Note | Covers |
 | --- | --- |
 | [config.md](config.md) | Files on disk, their formats, settings precedence |
+| [note-conflicts.md](note-conflicts.md) | A note changed on two devices: both texts kept |
 | [note-images.md](note-images.md) | Images in notes: attachments, their sync and removal |
 | [sync.md](sync.md) | Accounts, the sync engine, backends, host limits |
 | [teams.md](teams.md) | Organizations, sharing, the self-hosted server |
