@@ -88,6 +88,9 @@ scenario!(
     |ui: &mut Ui| {
         let missing = ui.config_dir().join("no-such-repo.git");
         ui.open();
+        // Connect needs the vault open (else it says so, as a notice, and
+        // goes no further); a busy machine opens it later than the click.
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
         ui.palette("Settings");
         ui.wait_until("Settings", |ui| ui.settings_page().is_some());
         ui.click("settings-page:Sync");
@@ -98,13 +101,9 @@ scenario!(
         let path = missing.display().to_string().replace('\\', "/");
         ui.type_text(&format!("file:///{}", path.trim_start_matches('/')));
         ui.click("sync-connect");
-        // git itself, started under a full run's load, can take long on
-        // Windows: up to the 90 s the app gives it.
-        ui.wait_until_within(
-            "the reason beside Connect",
-            std::time::Duration::from_secs(120),
-            |ui| ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync")),
-        );
+        ui.wait_until("the reason beside Connect", |ui| {
+            ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync"))
+        });
         ui.wait_for_notice_in("Cannot sync", crate::notice::Tone::Bad);
         let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
             .unwrap_or_default();
