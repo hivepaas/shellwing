@@ -315,8 +315,10 @@ fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
         s
     });
     let start = Instant::now();
+    eprintln!("DIAG git spawned {:?} pid={}", c.get_args().collect::<Vec<_>>(), child.id());
     let status = loop {
         if let Some(status) = child.try_wait()? {
+            eprintln!("DIAG git exited {status:?} after {:?}", start.elapsed());
             break status;
         }
         if start.elapsed() > limit {
@@ -336,10 +338,14 @@ fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
         }
         std::thread::sleep(Duration::from_millis(20));
     };
+    let stdout = reading_out.join().unwrap_or_default();
+    eprintln!("DIAG git stdout read after {:?}", start.elapsed());
+    let stderr = reading_err.join().unwrap_or_default();
+    eprintln!("DIAG git stderr read after {:?}: {stderr:?}", start.elapsed());
     Ok(Output {
         ok: status.success(),
-        stdout: reading_out.join().unwrap_or_default(),
-        stderr: reading_err.join().unwrap_or_default(),
+        stdout,
+        stderr,
     })
 }
 
