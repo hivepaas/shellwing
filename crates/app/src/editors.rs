@@ -6,6 +6,7 @@ use std::process::{Command, Stdio};
 
 use shellwing_core::command::{which, words};
 use shellwing_i18n::tr;
+use shellwing_spawn::Unblocked;
 
 /// Editors worth offering, by the name shown and the command that starts one.
 #[cfg(target_os = "macos")]
@@ -131,7 +132,9 @@ fn spawn(program: &str, args: &[&std::ffi::OsStr]) -> std::io::Result<()> {
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .spawn()
+        // Not with the background thread's signals blocked: the editor
+        // could not be stopped.
+        .spawn_unblocked()
         .map(|_| ())
 }
 

@@ -1,0 +1,14 @@
+[package]
+name = "shellwing-spawn"
+description = "Starting processes with no signals blocked, whatever thread starts them"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.31", default-features = false, features = ["signal"] }
+
+[lints]
+workspace = true

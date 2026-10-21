@@ -7536,6 +7536,7 @@ dependencies = [
  "shellwing-i18n",
  "shellwing-note-editor",
  "shellwing-remote",
+ "shellwing-spawn",
  "shellwing-ssh",
  "shellwing-term",
  "shellwing-update",
@@ -7625,8 +7626,16 @@ dependencies = [
  "rustls",
  "s3s",
  "s3s-fs",
+ "shellwing-spawn",
  "shellwing-vault",
  "tokio",
+]
+
+[[package]]
+name = "shellwing-spawn"
+version = "0.1.0"
+dependencies = [
+ "nix 0.31.3",
 ]
 
 [[package]]
@@ -7667,6 +7676,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
+ "shellwing-spawn",
  "tar",
  "thiserror 2.0.21",
  "tokio",
