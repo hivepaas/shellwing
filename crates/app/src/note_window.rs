@@ -15,7 +15,7 @@ use gpui::{
     SharedString, Subscription, Window, WindowBounds, WindowDecorations, WindowHandle,
     WindowOptions, anchored, deferred, div, prelude::*, px, rgb, size,
 };
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 use shellwing_vault::{Error as VaultError, Note, NoteFormat};
 
 use crate::chrome;
@@ -233,6 +233,8 @@ pub struct NoteWindow {
     /// What "Insert Image…" in the editor's menu was last set for: whether
     /// images can go in.
     images_item: Option<bool>,
+    /// `data:` images being made attachments: no second round meanwhile.
+    taking_in: bool,
     _subs: Vec<Subscription>,
 }
 
@@ -274,6 +276,24 @@ impl NoteWindow {
             // app's items first.
             e.set_menu_on_select(true);
             note_images::show_in(&mut e, images.clone(), wanted);
+            // An image's own menu: copy it, save it as a file.
+            e.set_image_items(
+                vec![
+                    shellwing_note_editor::HostItem {
+                        id: "copy-image".into(),
+                        label: tr!("Copy Image").into(),
+                        enabled: true,
+                        selection: false,
+                    },
+                    shellwing_note_editor::HostItem {
+                        id: "save-image".into(),
+                        label: tr!("Save Image As…").into(),
+                        enabled: true,
+                        selection: false,
+                    },
+                ],
+                cx,
+            );
             e
         });
         // The images the editor asks for, read and decoded off the UI thread.
@@ -311,7 +331,13 @@ impl NoteWindow {
             EditorEvent::Changed => {
                 v.reveal = 2;
                 v.edited(cx);
+                v.take_in_data_images(cx);
             }
+            EditorEvent::ImageItem { item, src } => match item.as_ref() {
+                "copy-image" => v.copy_image(src, cx),
+                "save-image" => v.save_image(src, cx),
+                _ => {}
+            },
             EditorEvent::SelectionChanged => {
                 v.reveal = 2;
                 cx.notify();
@@ -375,6 +401,7 @@ impl NoteWindow {
             problem: None,
             images,
             images_item: None,
+            taking_in: false,
             scroll: gpui::ScrollHandle::new(),
             drag: Default::default(),
             reveal: 0,
@@ -572,12 +599,292 @@ impl NoteWindow {
         self.add_images(sources, cx);
     }
 
-    /// Files dropped on the window.
-    fn drop_images(&mut self, paths: &ExternalPaths, _: &mut Window, cx: &mut Context<Self>) {
-        self.add_images(
+    /// Files dropped on the window: where they were dropped, at a line's
+    /// start or end.
+    fn drop_images(&mut self, paths: &ExternalPaths, window: &mut Window, cx: &mut Context<Self>) {
+        let editor = self.text.read(cx);
+        let at = note_images::drop_offset(
+            editor.text(),
+            editor.offset_for_position(window.mouse_position()),
+        );
+        self.add_images_at(
             paths.paths().iter().cloned().map(Source::File).collect(),
+            Some(at),
             cx,
         );
+    }
+
+    /// The image `src` names, to the clipboard.
+    fn copy_image(&mut self, src: &str, cx: &mut Context<Self>) {
+        let image = note_images::attachment_id(src)
+            .zip(self.vault.ready())
+            .and_then(|(id, vault)| note_images::image_bytes(&vault, id));
+        match image {
+            Some((bytes, ext)) => {
+                let format = if ext == "png" {
+                    gpui::ImageFormat::Png
+                } else {
+                    gpui::ImageFormat::Jpeg
+                };
+                cx.write_to_clipboard(gpui::ClipboardItem::new_image(&gpui::Image::from_bytes(
+                    format, bytes,
+                )));
+                self.problem = None;
+            }
+            None => self.problem = Some(tr!("The image cannot be shown")),
+        }
+        cx.notify();
+    }
+
+    /// The image `src` names, saved where the user says.
+    fn save_image(&mut self, src: &str, cx: &mut Context<Self>) {
+        let image = note_images::attachment_id(src)
+            .zip(self.vault.ready())
+            .and_then(|(id, vault)| {
+                note_images::image_bytes(&vault, id).map(|b| (id.to_string(), b))
+            });
+        let Some((id, (bytes, ext))) = image else {
+            self.problem = Some(tr!("The image cannot be shown"));
+            cx.notify();
+            return;
+        };
+        let dir = dirs::download_dir()
+            .or_else(dirs::home_dir)
+            .unwrap_or_else(|| std::path::PathBuf::from("."));
+        let title = self.title.read(cx).text().trim().to_string();
+        let stem = if title.is_empty() {
+            format!(
+                "image-{}",
+                id.get(id.len().saturating_sub(6)..).unwrap_or(&id)
+            )
+        } else {
+            title
+        };
+        let name = format!("{stem}.{ext}");
+        let chosen = cx.prompt_for_new_path(&dir, Some(&name));
+        cx.spawn(async move |this, cx| {
+            let Ok(Ok(Some(path))) = chosen.await else {
+                return;
+            };
+            let written = cx
+                .background_spawn(async move { std::fs::write(&path, bytes) })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                v.problem = written
+                    .err()
+                    .map(|e| tr!("Not saved: {e}", e = e.to_string()));
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// Images pasted as `data:` URIs (Markdown from elsewhere) become
+    /// attachments, as pasted images do.
+    fn take_in_data_images(&mut self, cx: &mut Context<Self>) {
+        if self.taking_in
+            || !self.text.read(cx).text().contains("](data:image/")
+            || self.images_refused().is_some()
+        {
+            return;
+        }
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        let text = self.text.read(cx).text().to_string();
+        self.taking_in = true;
+        cx.spawn(async move |this, cx| {
+            let found = cx
+                .background_spawn(async move {
+                    let mut kept = vec![];
+                    for (uri, bytes) in note_images::data_images(&text) {
+                        let (ids, _) = note_images::add(&vault, &text, vec![Source::Bytes(bytes)]);
+                        if let Some((_, id)) = ids.into_iter().next() {
+                            kept.push((uri, id));
+                        }
+                    }
+                    kept
+                })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                v.taking_in = false;
+                if found.is_empty() {
+                    return;
+                }
+                v.text.update(cx, |e, cx| {
+                    for (uri, id) in &found {
+                        if let Some(at) = e.text().find(uri.as_str()) {
+                            e.replace_range(at..at + uri.len(), &format!("attachment:{id}"), cx);
+                        }
+                    }
+                });
+                v.edited(cx);
+            });
+        })
+        .detach();
+    }
+
+    /// "Download Images": the note's web images, downloaded once and kept
+    /// as attachments, their links replaced. Asked first: the hosts learn
+    /// the user's address, and plain http can be altered on the way.
+    fn download_images(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(why) = self.images_refused() {
+            self.problem = Some(why);
+            cx.notify();
+            return;
+        }
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        let text = self.text.read(cx).text().to_string();
+        let urls = note_images::remote_images(&text);
+        if urls.is_empty() {
+            return;
+        }
+        let mut hosts: Vec<String> = urls
+            .iter()
+            .filter_map(|u| note_images::host_of(u))
+            .collect();
+        hosts.sort();
+        hosts.dedup();
+        let mut detail = tr!(
+            "shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.",
+            hosts = hosts.join(", ")
+        );
+        if urls.iter().any(|u| u.starts_with("http://")) {
+            detail.push(' ');
+            detail.push_str(&tr!(
+                "Some come over plain http: they could be altered on the way."
+            ));
+        }
+        let (yes, no) = (tr!("Download"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Info,
+            &tr_n!(
+                urls.len(),
+                "Download the note's image from the web?",
+                "Download the note's {n} images from the web?"
+            ),
+            Some(&detail),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn(async move |this, cx| {
+            if answer.await != Ok(0) {
+                return;
+            }
+            let (kept, problems) = cx
+                .background_spawn(async move {
+                    let (mut sources, mut from, mut problems) = (vec![], vec![], vec![]);
+                    for url in urls {
+                        match note_images::fetch(&url) {
+                            Ok(bytes) => {
+                                from.push(url.clone());
+                                sources.push(Source::Downloaded { url, bytes });
+                            }
+                            Err(e) => problems.push(e.said(&url)),
+                        }
+                    }
+                    let (ids, more) = note_images::add(&vault, &text, sources);
+                    problems.extend(more);
+                    let kept: Vec<(String, String)> = ids
+                        .into_iter()
+                        .filter_map(|(i, id)| from.get(i).map(|u| (u.clone(), id)))
+                        .collect();
+                    (kept, problems)
+                })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                if !kept.is_empty() {
+                    v.text.update(cx, |e, cx| {
+                        for (url, id) in &kept {
+                            let link = format!("]({url})");
+                            while let Some(at) = e.text().find(&link) {
+                                e.replace_range(
+                                    at..at + link.len(),
+                                    &format!("](attachment:{id})"),
+                                    cx,
+                                );
+                            }
+                        }
+                    });
+                    v.edited(cx);
+                }
+                v.problem = (!problems.is_empty()).then(|| problems.join(" "));
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// "Export…": the note and its images, as files, in a folder the user
+    /// chooses. They leave the vault unencrypted, so it asks first.
+    fn export(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        if !self.loaded {
+            return;
+        }
+        let (title, text) = (
+            self.title.read(cx).text().trim().to_string(),
+            self.text.read(cx).text().to_string(),
+        );
+        let (yes, no) = (tr!("Export"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Export the note?"),
+            Some(&tr!(
+                "The note and its images are written as files, not encrypted: anyone who can read the folder can read them."
+            )),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn(async move |this, cx| {
+            if answer.await != Ok(0) {
+                return;
+            }
+            let Ok(chosen) = this.update(cx, |_, cx| {
+                cx.prompt_for_paths(PathPromptOptions {
+                    files: false,
+                    directories: true,
+                    multiple: false,
+                    prompt: Some(tr!("Export").into()),
+                })
+            }) else {
+                return;
+            };
+            let Ok(Ok(Some(dirs))) = chosen.await else {
+                return;
+            };
+            let Some(dir) = dirs.into_iter().next() else {
+                return;
+            };
+            let written = cx
+                .background_spawn(async move { note_images::export(&vault, &title, &text, &dir) })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                match written {
+                    Ok((folder, missing)) => {
+                        v.problem = (missing > 0).then(|| {
+                            tr_n!(
+                                missing,
+                                "Exported without an image not synced yet.",
+                                "Exported without {n} images not synced yet."
+                            )
+                        });
+                        // Shown in the file manager (GPUI's test platform has
+                        // none).
+                        if !cfg!(all(test, feature = "ui-tests")) {
+                            cx.reveal_path(&folder);
+                        }
+                    }
+                    Err(e) => v.problem = Some(tr!("Not exported: {e}", e = e.to_string())),
+                }
+                cx.notify();
+            });
+        })
+        .detach();
     }
 
     /// "Insert Image…": files chosen in the system's dialog.
@@ -606,6 +913,11 @@ impl NoteWindow {
     /// Prepares and keeps `sources` (off the UI thread), then puts a line
     /// for each at the caret.
     fn add_images(&mut self, sources: Vec<Source>, cx: &mut Context<Self>) {
+        self.add_images_at(sources, None, cx);
+    }
+
+    /// As [`Self::add_images`], at offset `at` if given.
+    fn add_images_at(&mut self, sources: Vec<Source>, at: Option<usize>, cx: &mut Context<Self>) {
         if sources.is_empty() {
             return;
         }
@@ -623,9 +935,16 @@ impl NoteWindow {
                 .background_spawn(async move { note_images::add(&vault, &text, sources) })
                 .await;
             let _ = this.update(cx, |v, cx| {
+                let ids: Vec<String> = ids.into_iter().map(|(_, id)| id).collect();
                 if !ids.is_empty() {
                     v.text.update(cx, |e, cx| {
-                        let range = e.selected_range();
+                        let range = match at {
+                            Some(at) => {
+                                let at = at.min(e.text().len());
+                                at..at
+                            }
+                            None => e.selected_range(),
+                        };
                         let lines = note_images::insertion(e.text(), range.clone(), &ids);
                         e.replace_range(range, &lines, cx);
                     });
@@ -1141,6 +1460,25 @@ impl NoteWindow {
                         .child(s),
                 )
             })
+            .when(self.loaded && self.images_refused().is_none(), |d| {
+                let web = note_images::remote_images(self.text.read(cx).text()).len();
+                d.when(web > 0, |d| {
+                    d.child(
+                        Self::chip(
+                            "note-download",
+                            tr_n!(web, "Download Image", "Download {n} Images"),
+                            false,
+                        )
+                        .on_click(cx.listener(|v, _, w, cx| v.download_images(w, cx))),
+                    )
+                })
+            })
+            .when(self.loaded, |d| {
+                d.child(
+                    Self::chip("note-export", tr!("Export…"), false)
+                        .on_click(cx.listener(|v, _, w, cx| v.export(w, cx))),
+                )
+            })
             .child(
                 Self::chip("note-delete", tr!("Delete"), false)
                     .text_color(rgb(colors().bad))
@@ -1470,6 +1808,40 @@ impl NoteWindow {
     /// Saved now, as Ctrl+S does.
     pub fn save_now(&mut self, cx: &mut Context<Self>) {
         self.save(cx);
+    }
+
+    /// An image's menu item, chosen: "copy-image" or "save-image".
+    pub fn image_item(&mut self, item: &str, src: &str, cx: &mut Context<Self>) {
+        match item {
+            "copy-image" => self.copy_image(src, cx),
+            "save-image" => self.save_image(src, cx),
+            _ => {}
+        }
+    }
+
+    /// "Export…", clicked.
+    pub fn click_export(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.export(window, cx);
+    }
+
+    /// "Download Images", clicked.
+    pub fn click_download_images(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.download_images(window, cx);
+    }
+
+    /// The text, replaced (as if typed or pasted).
+    pub fn set_text_for_test(&mut self, text: &str, cx: &mut Context<Self>) {
+        self.text.update(cx, |e, cx| {
+            let all = 0..e.text().len();
+            e.replace_range(all, text, cx);
+        });
+        self.edited(cx);
+    }
+
+    /// Files dropped at byte `at` of the text (where the pointer was).
+    pub fn drop_at(&mut self, paths: Vec<std::path::PathBuf>, at: usize, cx: &mut Context<Self>) {
+        let at = note_images::drop_offset(self.text.read(cx).text(), at);
+        self.add_images_at(paths.into_iter().map(Source::File).collect(), Some(at), cx);
     }
 }
 

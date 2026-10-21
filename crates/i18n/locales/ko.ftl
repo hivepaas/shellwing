@@ -1192,6 +1192,9 @@ tdd571ace = 밝은 따뜻한 톤
 # Your themes
 tb2e83d5c = 내 테마
 
+# Image from {host}
+t4b45629c = { $host }의 이미지
+
 # Loading the image…
 t457184d7 = 이미지를 불러오는 중…
 
@@ -1216,6 +1219,12 @@ t53d0e31f = { $name }은(는) 읽을 수 있는 이미지가 아닙니다.
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name }은(는) 너무 큰 이미지입니다({ $width } × { $height }).
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host }은(는) 사설 네트워크에 있어 이미지를 내려받지 않았습니다.
+
+# {name} could not be downloaded: {e}
+t66ad539b = { $name }을(를) 내려받을 수 없습니다: { $e }
+
 # New note
 t788c7123 = 새 노트
 
@@ -1228,6 +1237,12 @@ t44662d06 = 카테고리 없음
 # Write here; Markdown shows as you type.
 t117b6c23 = 여기에 작성하세요. Markdown은 입력하는 대로 표시됩니다.
 
+# Copy Image
+tf77eb889 = 이미지 복사
+
+# Save Image As…
+t4504c6b5 = 이미지를 다른 이름으로 저장…
+
 # It is not in the vault any more.
 td11af590 = 더 이상 보관함에 없습니다.
 
@@ -1236,6 +1251,36 @@ tb31ba949 = 이미지는 Markdown 노트에서 표시됩니다. 이 노트는 �
 
 # Images go in while the note is edited.
 t6f2c9191 = 이미지는 노트를 편집하는 동안 넣을 수 있습니다.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing은 { $hosts }에서 이미지를 내려받으며, 이 서버들은 사용자의 주소를 알게 됩니다. 이미지는 암호화되어 보관함에 저장되고 노트의 링크는 바뀝니다.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = 일부는 암호화되지 않은 http로 오므로 도중에 변조될 수 있습니다.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] 노트의 이미지 { $n }개를 웹에서 내려받을까요?
+    }
+
+# Export
+te86349d3 = 내보내기
+
+# Export the note?
+t3fc8daf1 = 노트를 내보낼까요?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = 노트와 이미지는 암호화되지 않은 파일로 기록됩니다. 폴더를 읽을 수 있는 사람은 누구나 읽을 수 있습니다.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] 아직 동기화되지 않은 이미지 { $n }개를 빼고 내보냈습니다.
+    }
+
+# Not exported: {e}
+t9d93dffa = 내보내지 못함: { $e }
 
 # Insert
 t0f317948 = 삽입
@@ -1275,6 +1320,15 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] 이미지 { $n }개 내려받기
+    }
+
+# Export…
+tc8865b2d = 내보내기…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 민감 정보: 본인 확인 후 텍스트가 표시됩니다.
@@ -2040,6 +2094,9 @@ t47252d7a = 시크릿 키
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub, GitLab, Gitea 또는 자체 서버의 비공개 저장소를 이 시스템의 git으로 사용합니다. git은 평소와 같은 방식(자격 증명 관리자, SSH 키 및 에이전트)으로 인증합니다. 변경 사항마다 커밋이 하나씩 생성됩니다.
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git은 모든 버전을 보관합니다. 노트의 이미지는 삭제한 뒤에도 암호화된 채 저장소 기록에 남으므로 저장소는 계속 커지기만 합니다.
 
 # Repository
 te763c8b5 = 저장소

@@ -1192,6 +1192,9 @@ tdd571ace = ライト（ウォーム）
 # Your themes
 tb2e83d5c = マイテーマ
 
+# Image from {host}
+t4b45629c = { $host } の画像
+
 # Loading the image…
 t457184d7 = 画像を読み込み中…
 
@@ -1216,6 +1219,12 @@ t53d0e31f = { $name } は読み込める画像ではありません。
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } は大きすぎる画像です（{ $width } × { $height }）。
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } はプライベートネットワーク上にあるため、画像はダウンロードされませんでした。
+
+# {name} could not be downloaded: {e}
+t66ad539b = { $name } をダウンロードできませんでした：{ $e }
+
 # New note
 t788c7123 = 新しいノート
 
@@ -1228,6 +1237,12 @@ t44662d06 = カテゴリなし
 # Write here; Markdown shows as you type.
 t117b6c23 = ここに書きます。Markdown は入力しながら表示されます。
 
+# Copy Image
+tf77eb889 = 画像をコピー
+
+# Save Image As…
+t4504c6b5 = 名前を付けて画像を保存…
+
 # It is not in the vault any more.
 td11af590 = 保管庫にはもうありません。
 
@@ -1236,6 +1251,36 @@ tb31ba949 = 画像は Markdown のノートで表示されます。このノー�
 
 # Images go in while the note is edited.
 t6f2c9191 = 画像はノートの編集中に追加できます。
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing は { $hosts } から画像をダウンロードします。これらのサーバーにはあなたのアドレスが伝わります。画像は暗号化されて保管庫に保存され、ノート内のリンクは置き換えられます。
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = 一部は暗号化されていない http で届くため、途中で改ざんされる可能性があります。
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] ノートの画像 { $n } 枚をウェブからダウンロードしますか？
+    }
+
+# Export
+te86349d3 = 書き出す
+
+# Export the note?
+t3fc8daf1 = ノートを書き出しますか？
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = ノートとその画像は暗号化されずにファイルとして書き出されます。フォルダを読める人は誰でも読めます。
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+       *[other] まだ同期されていない画像 { $n } 枚を除いて書き出しました。
+    }
+
+# Not exported: {e}
+t9d93dffa = 書き出せませんでした：{ $e }
 
 # Insert
 t0f317948 = 挿入
@@ -1275,6 +1320,15 @@ tfdda4cf7 = プレビュー
 
 # Sensitive
 tf603feef = 機密
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] 画像 { $n } 枚をダウンロード
+    }
+
+# Export…
+tc8865b2d = 書き出す…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = 機密: 本人確認後にテキストが表示されます。
@@ -2040,6 +2094,9 @@ t47252d7a = シークレットキー
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea、または自前のサーバー上のプライベートリポジトリを、このシステムの git 経由で使います。git は通常どおりの方法（認証情報マネージャー、SSH 鍵とエージェント）でサインインします。変更はそれぞれ 1 つのコミットになります。
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git はすべての版を残します。ノートの画像は削除した後も暗号化されたままリポジトリの履歴に残るため、リポジトリは大きくなる一方です。
 
 # Repository
 te763c8b5 = リポジトリ

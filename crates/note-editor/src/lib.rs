@@ -555,6 +555,13 @@ pub enum EditorEvent {
     /// shellwing: one of the host's items at the top of the menu was chosen
     /// (its id; see [`EditorState::set_host_items`]). (UPSTREAM.md, change 5.)
     HostItem(SharedString),
+    /// shellwing: one of the host's items in an image's menu was chosen: the
+    /// item's id and the image's `src` (see [`EditorState::set_image_items`]).
+    /// (UPSTREAM.md, change 11.)
+    ImageItem {
+        item: SharedString,
+        src: SharedString,
+    },
     /// A file chip (e.g. a PDF embed) or an inline `[text](url)` link was
     /// left-clicked — the host opens the `src`/url (http externally, files
     /// via its own resolution). A navigation hint; the text is untouched.
@@ -932,6 +939,8 @@ pub struct EditorState {
     /// shellwing: the host's items at the top of the menu, and whether a
     /// selection made with the mouse opens the menu. (UPSTREAM.md, change 5.)
     host_items: Vec<HostItem>,
+    /// shellwing: the host's items in an image's menu (change 11).
+    image_items: Vec<HostItem>,
     menu_on_select: bool,
     /// shellwing: read, not edited: selection and copy only (UPSTREAM.md,
     /// change 6).
@@ -1180,6 +1189,7 @@ impl EditorState {
             labels: Labels::default(),
             menu: None,
             host_items: Vec::new(),
+            image_items: Vec::new(),
             menu_on_select: false,
             read_only: false,
             code_insert: None,
@@ -3970,7 +3980,8 @@ impl EditorState {
         // row renders as a picture, there's no text under the pointer to edit.
         // Only for real `![](src)` rows: mermaid/math rasters share the widget
         // type but delete as text (their menu would silently no-op).
-        if !self.read_only
+        // shellwing: read-only too when the host has items for it (change 11).
+        if (!self.read_only || !self.image_items.is_empty())
             && let Some(&(line, _)) = self
                 .image_rects
                 .iter()
@@ -4249,6 +4260,21 @@ impl EditorState {
 
     /// shellwing: the host's items at the top of the menu (above the format
     /// bar), for the selection. (UPSTREAM.md, change 5.)
+    /// shellwing: the host's items at the top of an image's menu, read-only
+    /// too; choosing one emits [`EditorEvent::ImageItem`]. (UPSTREAM.md,
+    /// change 11.)
+    pub fn set_image_items(&mut self, items: Vec<HostItem>, cx: &mut Context<Self>) {
+        self.image_items = items;
+        cx.notify();
+    }
+
+    /// shellwing: the byte offset in [`Self::text`] at `position` (window
+    /// coordinates), as a click there would place the caret: for a host
+    /// putting something where it was dropped. (UPSTREAM.md, change 11.)
+    pub fn offset_for_position(&self, position: Point<Pixels>) -> usize {
+        self.index_for_mouse_position(position)
+    }
+
     pub fn set_host_items(&mut self, items: Vec<HostItem>, cx: &mut Context<Self>) {
         self.host_items = items;
         cx.notify();
@@ -6361,6 +6387,16 @@ impl Render for EditorState {
                 )
             }))
             .children(self.image_menu.map(|(line, anchor)| {
+                // shellwing: the image's src, for the host's items (change 11).
+                let image_src: SharedString = self
+                    .line_starts()
+                    .get(line)
+                    .and_then(|&start| {
+                        let text = &self.content[start..self.line_end(line)];
+                        markdown_syntax::image_row(text).map(|(src, ..)| src.to_string())
+                    })
+                    .unwrap_or_default()
+                    .into();
                 let st = self.markdown_style.as_ref();
                 let menu_bg = st.map_or(rgb(0x26262b).into(), |s| s.popover_bg);
                 let menu_border = st.map_or(rgb(0x45454c).into(), |s| s.popover_border);
@@ -6385,7 +6421,36 @@ impl Render for EditorState {
                                 editor.image_menu = None;
                                 cx.notify();
                             }))
-                            .child(
+                            // shellwing: the host's items first (change 11).
+                            .children(self.image_items.iter().enumerate().map(|(i, item)| {
+                                let (item_id, src) = (item.id.clone(), image_src.clone());
+                                let row = div()
+                                    .id(("image-host-item", i))
+                                    .px(px(10.))
+                                    .py(px(3.))
+                                    .child(item.label.clone());
+                                if item.enabled {
+                                    row.hover(move |s| s.bg(hover)).on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(move |editor, _: &MouseDownEvent, _, cx| {
+                                            cx.stop_propagation();
+                                            editor.image_menu = None;
+                                            cx.emit(EditorEvent::ImageItem {
+                                                item: item_id.clone(),
+                                                src: src.clone(),
+                                            });
+                                            cx.notify();
+                                        }),
+                                    )
+                                } else {
+                                    row.opacity(0.5)
+                                }
+                            }))
+                            .children(
+                                (!self.image_items.is_empty() && !self.read_only)
+                                    .then(|| div().my(px(4.)).h(px(1.)).bg(menu_border)),
+                            )
+                            .children((!self.read_only).then(|| {
                                 div()
                                     .id("image-menu-delete")
                                     .px(px(10.))
@@ -6399,8 +6464,8 @@ impl Render for EditorState {
                                             editor.image_menu = None;
                                             editor.delete_image_row(line, cx);
                                         }),
-                                    ),
-                            ),
+                                    )
+                            })),
                     ),
                 )
             }))

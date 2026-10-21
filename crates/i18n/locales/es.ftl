@@ -1216,6 +1216,9 @@ tdd571ace = Claro, cálido
 # Your themes
 tb2e83d5c = Tus temas
 
+# Image from {host}
+t4b45629c = Imagen de { $host }
+
 # Loading the image…
 t457184d7 = Cargando la imagen…
 
@@ -1240,6 +1243,12 @@ t53d0e31f = { $name } no es una imagen que se pueda leer.
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } es una imagen demasiado grande ({ $width } × { $height }).
 
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } está en una red privada: su imagen no se descargó.
+
+# {name} could not be downloaded: {e}
+t66ad539b = No se pudo descargar { $name }: { $e }
+
 # New note
 t788c7123 = Nota nueva
 
@@ -1252,6 +1261,12 @@ t44662d06 = Sin categoría
 # Write here; Markdown shows as you type.
 t117b6c23 = Escribe aquí; el Markdown se ve mientras escribes.
 
+# Copy Image
+tf77eb889 = Copiar imagen
+
+# Save Image As…
+t4504c6b5 = Guardar imagen como…
+
 # It is not in the vault any more.
 td11af590 = Ya no está en la bóveda.
 
@@ -1260,6 +1275,38 @@ tb31ba949 = Las imágenes se muestran en notas Markdown; esta nota es texto sin 
 
 # Images go in while the note is edited.
 t6f2c9191 = Las imágenes se añaden mientras se edita la nota.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing las descarga de { $hosts }, que conocen tu dirección. Luego se guardan en la bóveda, cifradas, y se reemplazan los enlaces de la nota.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Algunas llegan por http sin cifrar: podrían alterarse por el camino.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+        [one] ¿Descargar de la web la imagen de la nota?
+       *[other] ¿Descargar de la web las { $n } imágenes de la nota?
+    }
+
+# Export
+te86349d3 = Exportar
+
+# Export the note?
+t3fc8daf1 = ¿Exportar la nota?
+
+# The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
+t599b6331 = La nota y sus imágenes se escriben como archivos, sin cifrar: quien pueda leer la carpeta podrá leerlas.
+
+# Exported without an image not synced yet. | Exported without {n} images not synced yet.
+t9b7fcb65 =
+    { $n ->
+        [one] Exportada sin una imagen aún no sincronizada.
+       *[other] Exportada sin { $n } imágenes aún no sincronizadas.
+    }
+
+# Not exported: {e}
+t9d93dffa = No se exportó: { $e }
 
 # Insert
 t0f317948 = Insertar
@@ -1299,6 +1346,16 @@ tfdda4cf7 = Vista previa
 
 # Sensitive
 tf603feef = Confidencial
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+        [one] Descargar imagen
+       *[other] Descargar { $n } imágenes
+    }
+
+# Export…
+tc8865b2d = Exportar…
 
 # Sensitive: its text shows once it is you.
 tb81fab1b = Confidencial: su texto se muestra al confirmar que eres tú.
@@ -2064,6 +2121,9 @@ t47252d7a = Clave secreta
 
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Un repositorio privado en GitHub, GitLab, Gitea o tu propio servidor, mediante el git de este sistema: inicia sesión como lo hace para ti (su gestor de credenciales, tus claves SSH y tu agente). Cada cambio es un commit.
+
+# Git keeps every version: images in notes stay in the repository's history, encrypted, even after they are removed, so it only grows.
+t7d448954 = Git conserva todas las versiones: las imágenes de las notas quedan cifradas en el historial del repositorio, incluso después de quitarlas, así que solo crece.
 
 # Repository
 te763c8b5 = Repositorio
