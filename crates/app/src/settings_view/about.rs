@@ -383,9 +383,9 @@ fn link_button(
         .on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
 }
 
-/// shellwing's own button: the logo's blue, lighter at the top, in either
-/// mode (amber is HivePaaS's).
-fn shellwing_fill(top: u32, bottom: u32) -> gpui::Background {
+/// A brand button's fill, lighter at the top, the same in either mode:
+/// shellwing's is the logo's blue, HivePaaS's amber.
+fn brand_fill(top: u32, bottom: u32) -> gpui::Background {
     gpui::linear_gradient(
         180.,
         gpui::linear_color_stop(rgb(top), 0.),
@@ -430,8 +430,8 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             &tr!("Visit shellwing.app"),
             SITE,
             (
-                shellwing_fill(0x38b6f3, 0x0f87c9),
-                shellwing_fill(0x5cc6f7, 0x1a95d6),
+                brand_fill(0x38b6f3, 0x0f87c9),
+                brand_fill(0x5cc6f7, 0x1a95d6),
                 0xffffff,
             ),
             cx,
@@ -585,7 +585,11 @@ fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
             "about-hivepaas",
             &tr!("Visit hivepaas.com"),
             HIVEPAAS,
-            (rgb(c.amber).into(), rgb(c.amber_hover).into(), c.on_amber),
+            (
+                brand_fill(0xfbbd2a, 0xf49a12),
+                brand_fill(0xfcca4d, 0xf6a823),
+                0x0b0c10,
+            ),
             cx,
         ))
         .child(link_button(
