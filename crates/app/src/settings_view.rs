@@ -5,6 +5,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, Render,
@@ -133,6 +134,10 @@ pub struct Snap {
 
 pub struct SettingsView {
     focus: FocusHandle,
+    /// What the app has to say while Settings covers the tabs (where it
+    /// would say it otherwise), and which saying it is, to put it away.
+    notice: Option<(String, u64)>,
+    notices: u64,
     /// Gradient themes drawn for their tiles and the preview, by theme and
     /// size: GPUI's own gradients take two stops, these take them all.
     gradients:
@@ -431,6 +436,8 @@ impl SettingsView {
         });
         let sync_form = SyncForm::new(&snap.settings.sync, cx);
         SettingsView {
+            notice: None,
+            notices: 0,
             sync_form,
             gradients: Default::default(),
             focus: cx.focus_handle(),
@@ -609,8 +616,33 @@ impl SettingsView {
     }
 
     /// A notice from the page, through the workspace.
-    fn say(&self, msg: String, cx: &mut Context<Self>) {
-        let _ = self.workspace.update(cx, |ws, cx| ws.notice(msg, cx));
+    fn say(&mut self, msg: String, cx: &mut Context<Self>) {
+        self.show_notice(msg, Duration::from_secs(8), cx);
+    }
+
+    /// Shows `msg` over the page for `shown`.
+    pub fn show_notice(&mut self, msg: String, shown: Duration, cx: &mut Context<Self>) {
+        self.notices += 1;
+        let n = self.notices;
+        self.notice = Some((msg, n));
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(shown).await;
+            let _ = this.update(cx, |v, cx| {
+                if v.notice.as_ref().is_some_and(|(_, at)| *at == n) {
+                    v.notice = None;
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Connecting to the sync place failed: said beside Connect, until the
+    /// next try.
+    pub fn sync_failed(&mut self, why: String, cx: &mut Context<Self>) {
+        self.sync_form.problem = Some(why);
+        cx.notify();
     }
 
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -1892,9 +1924,11 @@ impl SettingsView {
             cx,
         );
         let field = |title: &str, input: &Entity<TextInput>| {
+            let selector = format!("sync-field:{title}");
             labelled(
                 title,
                 div()
+                    .debug_selector(move || selector)
                     .w(px(380.))
                     .h(px(30.))
                     .px(px(10.))
@@ -2453,6 +2487,18 @@ impl SettingsView {
     pub fn page(&self) -> Page {
         self.page
     }
+
+    /// What the Sync page says beside Connect: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn sync_problem(&self) -> Option<String> {
+        self.sync_form.problem.clone()
+    }
+
+    /// The notice over the page: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn notice_text(&self) -> Option<String> {
+        self.notice.as_ref().map(|(m, _)| m.clone())
+    }
 }
 
 impl Focusable for SettingsView {
@@ -2656,6 +2702,23 @@ impl Render for SettingsView {
                         )
                     }),
             )
+            .when_some(self.notice.as_ref().map(|(m, _)| m.clone()), |d, m| {
+                d.child(
+                    div()
+                        .absolute()
+                        .right(px(20.))
+                        .bottom(px(20.))
+                        .max_w(px(460.))
+                        .px(px(12.))
+                        .py(px(8.))
+                        .rounded(px(8.))
+                        .bg(rgb(colors().surface))
+                        .border_1()
+                        .border_color(rgb(colors().line))
+                        .shadow_lg()
+                        .child(m),
+                )
+            })
     }
 }
 

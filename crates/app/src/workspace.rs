@@ -451,6 +451,12 @@ impl Workspace {
         self.settings.as_ref().map(|(v, _)| v.read(cx).page())
     }
 
+    /// Settings, if open: for the UI tests to read.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn settings_view(&self) -> Option<Entity<crate::settings_view::SettingsView>> {
+        self.settings.as_ref().map(|(v, _)| v.clone())
+    }
+
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn host_editor_open(&self) -> bool {
         self.editor.is_some()
@@ -2524,15 +2530,21 @@ impl Workspace {
                     });
                     ws.ask_join_how(window, cx);
                 }
-                Err(e) => ws.say(
-                    tr!("Cannot sync: {e}", e = e.to_string()),
-                    CONFIG_NOTICE,
-                    cx,
-                ),
+                Err(e) => ws.sync_failed(tr!("Cannot sync: {e}", e = e.to_string()), cx),
             },
             window,
             cx,
         );
+    }
+
+    /// Connecting to a sync place failed: said, and kept beside Settings'
+    /// Connect while it is open.
+    fn sync_failed(&mut self, why: String, cx: &mut Context<Self>) {
+        if let Some((s, _)) = &self.settings {
+            let (s, kept) = (s.clone(), why.clone());
+            cx.defer(move |cx| s.update(cx, |v, cx| v.sync_failed(kept, cx)));
+        }
+        self.say(why, CONFIG_NOTICE, cx);
     }
 
     /// Runs `work` against `place` off the UI thread (a server may be slow to
@@ -3759,12 +3771,14 @@ impl Workspace {
         self.say(problems.join("\n"), CONFIG_NOTICE, cx);
     }
 
-    /// A notice, from a view of its own (the Settings page).
-    pub fn notice(&mut self, msg: String, cx: &mut Context<Self>) {
-        self.say(msg, CONFIG_NOTICE, cx);
-    }
-
     fn say(&mut self, msg: String, shown: Duration, cx: &mut Context<Self>) {
+        // Settings covers the tabs: said there, or nobody sees it. Deferred,
+        // as Settings may be what is asking, in the middle of its update.
+        if let Some((s, _)) = &self.settings {
+            let s = s.clone();
+            cx.defer(move |cx| s.update(cx, |v, cx| v.show_notice(msg, shown, cx)));
+            return;
+        }
         match self.active_tab().cloned() {
             Some(tab) => tab.update(cx, |v, cx| v.show_notice(msg, shown, cx)),
             None => {
@@ -5100,6 +5114,7 @@ impl Render for Workspace {
                         .top_0()
                         .left_0()
                         .size_full()
+                        .occlude()
                         .bg(rgba(colors().scrim))
                         // Beside the drawer: closes it, unless that would lose edits.
                         .on_mouse_down(
@@ -5134,6 +5149,7 @@ impl Render for Workspace {
                             .top_0()
                             .left_0()
                             .size_full()
+                            .occlude()
                             .bg(rgba(colors().scrim))
                             .on_mouse_down(
                                 MouseButton::Left,
@@ -5165,6 +5181,9 @@ impl Render for Workspace {
                         .top_0()
                         .left_0()
                         .size_full()
+                        // Nothing under it takes the mouse: a right click
+                        // would open the terminal's menu.
+                        .occlude()
                         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                         .child(s),
                 )
@@ -5221,6 +5240,7 @@ impl Render for Workspace {
                         .top_0()
                         .left_0()
                         .size_full()
+                        .occlude()
                         .flex()
                         .justify_center()
                         // At its own height: a flex row would stretch it to the bottom.

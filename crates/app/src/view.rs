@@ -1531,6 +1531,12 @@ impl TermView {
         self.save_offer.is_some()
     }
 
+    /// Whether the right-click menu is open: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn menu_open(&self) -> bool {
+        self.menu.is_some()
+    }
+
     /// The notice over the pane, if one shows: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn notice_text(&self) -> Option<String> {
@@ -2881,6 +2887,7 @@ impl Render for TermView {
         let mut terminal = term_corners
             .round(div())
             .id("terminal")
+            .debug_selector(|| "terminal".into())
             .relative()
             .flex_1()
             .min_w_0()
