@@ -430,6 +430,7 @@ td685ec1b = Gradient, light
 tf5e42e16 = Light, cool
 tdd571ace = Light, warm
 tb2e83d5c = Your themes
+t4b45629c = Image from { $host }
 t457184d7 = Loading the image…
 tf2f8e6ad = Image not synced yet
 teac0ac18 = The image cannot be shown
@@ -438,6 +439,8 @@ t6bd6209b = { $name } is too large to be an image here.
 teff3eb8d = { $name } cannot be read: { $e }
 t53d0e31f = { $name } is not an image that can be read.
 tad4a609d = { $name } is too large an image ({ $width } × { $height }).
+tf2d8cf64 = { $host } is on a private network: its image was not downloaded.
+t66ad539b = { $name } could not be downloaded: { $e }
 t788c7123 = New note
 t24d471a9 = Title
 t44662d06 = No category
@@ -447,6 +450,13 @@ t4504c6b5 = Save Image As…
 td11af590 = It is not in the vault any more.
 tb31ba949 = Images show in Markdown notes; this note is plain text.
 t6f2c9191 = Images go in while the note is edited.
+t4f35c5e2 = shellwing downloads them from { $hosts }, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+tfe0055bd = Some come over plain http: they could be altered on the way.
+t81c8cf06 =
+    { $n ->
+        [one] Download the note's image from the web?
+       *[other] Download the note's { $n } images from the web?
+    }
 te86349d3 = Export
 t3fc8daf1 = Export the note?
 t599b6331 = The note and its images are written as files, not encrypted: anyone who can read the folder can read them.
@@ -469,6 +479,11 @@ tb7fc0ade = Plain text
 tc2c76cb1 = Edit
 tfdda4cf7 = Preview
 tf603feef = Sensitive
+t2594894c =
+    { $n ->
+        [one] Download Image
+       *[other] Download { $n } Images
+    }
 tc8865b2d = Export…
 tb81fab1b = Sensitive: its text shows once it is you.
 t0ff690fe = Show the text

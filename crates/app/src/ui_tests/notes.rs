@@ -307,3 +307,96 @@ scenario!(
         assert!(folder.join(format!("images/{id}.png")).exists());
     }
 );
+
+/// A web server on this computer that serves `body` at any path, counting
+/// the requests; its base URL.
+fn image_server(body: Vec<u8>) -> (String, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+    let port = listener.local_addr().expect("addr").port();
+    let hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counted = hits.clone();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut s) = stream else { continue };
+            let mut buf = [0u8; 4096];
+            let _ = s.read(&mut buf);
+            counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            let _ = s.write_all(head.as_bytes());
+            let _ = s.write_all(&body);
+        }
+    });
+    (format!("http://127.0.0.1:{port}"), hits)
+}
+
+fn hits(n: &std::sync::Arc<std::sync::atomic::AtomicUsize>) -> usize {
+    n.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+scenario!(
+    /// A note with an image on the web: shown as a label, never fetched by
+    /// itself (opening a note tells no server anything).
+    a_web_image_is_not_fetched_by_itself,
+    |ui| {
+        let (base, served) = image_server(screenshot_png());
+        new_note(ui);
+        ui.note(|n, _, cx| {
+            n.set_text_for_test(&format!("# Dashboard\n![load]({base}/load.png)\n"), cx)
+        });
+        for _ in 0..5 {
+            let window = ui.note_window().expect("window");
+            ui.draw_window(window.into());
+        }
+        ui.settle(std::time::Duration::from_millis(300));
+        assert_eq!(hits(&served), 0, "the server heard from the app");
+        assert_eq!(ui.note(|n, _, _| n.images_ready()), 0);
+    }
+);
+
+scenario!(
+    /// Download Images, for an image on this computer's network: refused,
+    /// said why, nothing asked of the server.
+    a_web_image_on_a_private_network_is_not_downloaded,
+    |ui| {
+        let (base, served) = image_server(screenshot_png());
+        new_note(ui);
+        let written = format!("![router]({base}/admin.png)\n");
+        ui.note(|n, _, cx| n.set_text_for_test(&written, cx));
+        ui.note(|n, window, cx| n.click_download_images(window, cx));
+        ui.answer_prompt("Download");
+        ui.wait_until("a problem said", |ui| ui.note(|n, _, _| n.problem()).is_some());
+        let said = ui.note(|n, _, _| n.problem()).unwrap_or_default();
+        assert!(said.contains("private network"), "{said}");
+        assert_eq!(hits(&served), 0);
+        assert_eq!(text(ui), written);
+    }
+);
+
+scenario!(
+    /// Download Images: once asked, the image is downloaded once, kept as an
+    /// attachment, its link replaced, and drawn; no more requests after.
+    a_web_image_downloaded_into_the_note,
+    |ui| {
+        // The test's server is on this computer, which is otherwise refused.
+        crate::note_images::ALLOW_LOCAL.store(true, std::sync::atomic::Ordering::Relaxed);
+        let (base, served) = image_server(screenshot_png());
+        new_note(ui);
+        ui.note(|n, _, cx| {
+            n.set_text_for_test(&format!("# Dashboard\n![load]({base}/load.png){{width=400}}\n"), cx)
+        });
+        ui.note(|n, window, cx| n.click_download_images(window, cx));
+        ui.answer_prompt("Download");
+        ui.wait_until("the link replaced", |ui| {
+            text(ui).contains("![load](attachment:")
+        });
+        let t = text(ui);
+        assert!(!t.contains(&base), "{t}");
+        assert!(t.contains("{width=400}"), "the width stays: {t}");
+        wait_for_images(ui, 1);
+        assert_eq!(hits(&served), 1);
+    }
+);

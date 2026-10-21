@@ -1216,6 +1216,9 @@ tdd571ace = Hell, warm
 # Your themes
 tb2e83d5c = Deine Designs
 
+# Image from {host}
+t4b45629c = Bild von { $host }
+
 # Loading the image…
 t457184d7 = Bild wird geladen…
 
@@ -1239,6 +1242,12 @@ t53d0e31f = { $name } ist kein lesbares Bild.
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } ist ein zu großes Bild ({ $width } × { $height }).
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } ist in einem privaten Netz: sein Bild wurde nicht heruntergeladen.
+
+# {name} could not be downloaded: {e}
+t66ad539b = { $name } ließ sich nicht herunterladen: { $e }
 
 # New note
 t788c7123 = Neue Notiz
@@ -1266,6 +1275,19 @@ tb31ba949 = Bilder zeigen sich in Markdown-Notizen; diese Notiz ist reiner Text.
 
 # Images go in while the note is edited.
 t6f2c9191 = Bilder kommen hinein, während die Notiz bearbeitet wird.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing lädt sie von { $hosts } herunter, die dabei deine Adresse erfahren. Danach liegen sie verschlüsselt im Tresor, und die Links in der Notiz werden ersetzt.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Manche kommen über einfaches http: Sie könnten unterwegs verändert werden.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+        [one] Das Bild der Notiz aus dem Web herunterladen?
+       *[other] Die { $n } Bilder der Notiz aus dem Web herunterladen?
+    }
 
 # Export
 te86349d3 = Exportieren
@@ -1324,6 +1346,13 @@ tfdda4cf7 = Vorschau
 
 # Sensitive
 tf603feef = Vertraulich
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+        [one] Bild herunterladen
+       *[other] { $n } Bilder herunterladen
+    }
 
 # Export…
 tc8865b2d = Exportieren…

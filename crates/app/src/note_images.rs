@@ -146,6 +146,13 @@ pub fn show_in(
         }
     });
     editor.set_block_chip_provider(move |src| {
+        // On the web: never fetched by itself; a click opens it in the
+        // browser, Download Images keeps a copy.
+        if (src.starts_with("https://") || src.starts_with("http://"))
+            && let Some(host) = host_of(src)
+        {
+            return Some(tr!("Image from {host}", host = host).into());
+        }
         let id = attachment_id(src)?;
         let mut all = images.borrow_mut();
         let label: SharedString = match all.slots.get(id) {
@@ -187,12 +194,15 @@ pub enum Source {
     Bytes(Vec<u8>),
     /// A file, dropped or chosen.
     File(PathBuf),
+    /// Downloaded from `url` (an image of the note's that lived on the web).
+    Downloaded { url: String, bytes: Vec<u8> },
 }
 
 impl Source {
     fn name(&self) -> String {
         match self {
             Source::Bytes(_) => tr!("The pasted image"),
+            Source::Downloaded { url, .. } => url.clone(),
             Source::File(p) => p
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
@@ -202,7 +212,7 @@ impl Source {
 
     fn read(self) -> std::io::Result<Vec<u8>> {
         match self {
-            Source::Bytes(b) => Ok(b),
+            Source::Bytes(b) | Source::Downloaded { bytes: b, .. } => Ok(b),
             Source::File(p) => {
                 use std::io::Read;
                 let mut out = vec![];
@@ -216,11 +226,12 @@ impl Source {
 }
 
 /// Prepares and keeps each of `sources` for a note whose text is `text`
-/// (off the UI thread): the ids kept, and what went wrong with the rest.
-pub fn add(vault: &Vault, text: &str, sources: Vec<Source>) -> (Vec<String>, Vec<String>) {
+/// (off the UI thread): the ids kept, each with its source's index, and
+/// what went wrong with the rest.
+pub fn add(vault: &Vault, text: &str, sources: Vec<Source>) -> (Vec<(usize, String)>, Vec<String>) {
     let (mut kept, mut problems) = (vec![], vec![]);
     let mut total = vault.attachments_size(&attachment_refs(text)).unwrap_or(0);
-    for source in sources {
+    for (index, source) in sources.into_iter().enumerate() {
         let name = source.name();
         let bytes = match source.read() {
             Ok(b) if b.len() as u64 > READ_AT_MOST => {
@@ -253,7 +264,7 @@ pub fn add(vault: &Vault, text: &str, sources: Vec<Source>) -> (Vec<String>, Vec
         match vault.add_attachment(&prepared.bytes) {
             Ok(id) => {
                 total += prepared.bytes.len();
-                kept.push(id);
+                kept.push((index, id));
             }
             Err(e) => problems.push(crate::environment::said_error(&e)),
         }
@@ -372,6 +383,175 @@ pub fn export(
     Ok((folder, missing))
 }
 
+/// A web image downloads this much at most.
+const DOWNLOAD_AT_MOST: u64 = 20 * 1024 * 1024;
+
+/// The images in `text` that live on the web, `![…](http…)`: their URLs,
+/// once each, in order.
+pub fn remote_images(text: &str) -> Vec<String> {
+    let mut out: Vec<String> = vec![];
+    let mut rest = text;
+    while let Some(at) = rest.find("![") {
+        rest = &rest[at + 2..];
+        let Some(open) = rest.find("](") else { break };
+        let tail = &rest[open + 2..];
+        let Some(close) = tail.find(')') else { break };
+        let url = tail[..close].trim();
+        if (url.starts_with("https://") || url.starts_with("http://"))
+            && !out.iter().any(|u| u == url)
+        {
+            out.push(url.to_string());
+        }
+        rest = &tail[close..];
+    }
+    out
+}
+
+/// The host a web image comes from.
+pub fn host_of(url: &str) -> Option<String> {
+    reqwest::Url::parse(url)
+        .ok()?
+        .host_str()
+        .map(|h| h.trim_matches(['[', ']']).to_string())
+}
+
+/// Whether `ip` is on the internet: not this computer, a private or
+/// link-local network, or carrier-grade NAT. A note (perhaps written by
+/// someone else) must not make the app reach into the user's own network.
+pub fn is_public(ip: std::net::IpAddr) -> bool {
+    use std::net::IpAddr;
+    match ip {
+        IpAddr::V4(v4) => {
+            let [a, b, ..] = v4.octets();
+            !(v4.is_private()
+                || v4.is_loopback()
+                || v4.is_link_local()
+                || v4.is_unspecified()
+                || v4.is_broadcast()
+                || v4.is_documentation()
+                || a == 0
+                || (a == 100 && (64..128).contains(&b)))
+        }
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return is_public(IpAddr::V4(v4));
+            }
+            let first = v6.segments()[0];
+            !(v6.is_loopback()
+                || v6.is_unspecified()
+                || (first & 0xfe00) == 0xfc00 // unique local
+                || (first & 0xffc0) == 0xfe80) // link-local
+        }
+    }
+}
+
+/// Why a web image did not come.
+#[derive(Debug, PartialEq, Eq)]
+pub enum FetchError {
+    /// Its host is on a private network (or this computer).
+    Private(String),
+    /// Larger than a note's image could be.
+    TooLarge,
+    Failed(String),
+}
+
+impl FetchError {
+    pub fn said(&self, url: &str) -> String {
+        match self {
+            FetchError::Private(host) => tr!(
+                "{host} is on a private network: its image was not downloaded.",
+                host = host.as_str()
+            ),
+            FetchError::TooLarge => tr!("{name} is too large to be an image here.", name = url),
+            FetchError::Failed(why) => tr!(
+                "{name} could not be downloaded: {e}",
+                name = url,
+                e = why.as_str()
+            ),
+        }
+    }
+}
+
+/// For the UI tests: their web server is on this computer.
+#[cfg(all(test, feature = "ui-tests"))]
+pub static ALLOW_LOCAL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// The public addresses `url`'s host has, or why it may not be reached.
+fn public_addrs(url: &reqwest::Url) -> Result<Vec<std::net::SocketAddr>, FetchError> {
+    use std::net::ToSocketAddrs;
+    let host = url
+        .host_str()
+        .ok_or_else(|| FetchError::Failed("no host".into()))?
+        .trim_matches(['[', ']'])
+        .to_string();
+    let port = url.port_or_known_default().unwrap_or(443);
+    let addrs: Vec<_> = (host.as_str(), port)
+        .to_socket_addrs()
+        .map_err(|e| FetchError::Failed(e.to_string()))?
+        .collect();
+    #[cfg(all(test, feature = "ui-tests"))]
+    if ALLOW_LOCAL.load(std::sync::atomic::Ordering::Relaxed) {
+        return Ok(addrs);
+    }
+    if addrs.is_empty() || addrs.iter().any(|a| !is_public(a.ip())) {
+        return Err(FetchError::Private(host));
+    }
+    Ok(addrs)
+}
+
+/// Downloads a note's web image (off the UI thread): its host must be on
+/// the internet (checked again at each redirect), and the connection goes to
+/// the addresses checked, so a name that changes its answer cannot lead it
+/// elsewhere. 20 MB at most, 30 s in all.
+pub fn fetch(url: &str) -> Result<Vec<u8>, FetchError> {
+    let failed = |e: &dyn std::fmt::Display| FetchError::Failed(e.to_string());
+    let parsed = reqwest::Url::parse(url).map_err(|e| failed(&e))?;
+    if !matches!(parsed.scheme(), "https" | "http") {
+        return Err(FetchError::Failed(parsed.scheme().to_string()));
+    }
+    let addrs = public_addrs(&parsed)?;
+    let host = parsed.host_str().unwrap_or_default().to_string();
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let redirects = reqwest::redirect::Policy::custom(|attempt| {
+        if attempt.previous().len() >= 5 {
+            attempt.error("too many redirects")
+        } else if public_addrs(attempt.url()).is_err() {
+            attempt.error("a redirect to a private network")
+        } else {
+            attempt.follow()
+        }
+    });
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(30))
+        .redirect(redirects)
+        .resolve_to_addrs(&host, &addrs)
+        .user_agent(concat!("shellwing/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|e| failed(&e))?;
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| failed(&e))?;
+    rt.block_on(async move {
+        let mut res = client.get(url).send().await.map_err(|e| failed(&e))?;
+        if !res.status().is_success() {
+            return Err(FetchError::Failed(res.status().to_string()));
+        }
+        if res.content_length().is_some_and(|n| n > DOWNLOAD_AT_MOST) {
+            return Err(FetchError::TooLarge);
+        }
+        let mut out = vec![];
+        while let Some(chunk) = res.chunk().await.map_err(|e| failed(&e))? {
+            out.extend_from_slice(&chunk);
+            if out.len() as u64 > DOWNLOAD_AT_MOST {
+                return Err(FetchError::TooLarge);
+            }
+        }
+        Ok(out)
+    })
+}
+
 /// What to put in place of `range` of `text` for images `ids`: one line each,
 /// on lines of their own (a line break is added before or after when the
 /// text around would share their lines).
@@ -437,6 +617,52 @@ mod tests {
         assert_eq!(found[0].0, "data:image/png;base64,iVBORw0K");
         assert!(found[0].1.starts_with(b"\x89PNG"));
         assert_eq!(found[1].1, [0xFF, 0xD8, 0xFF, 0xE0]);
+    }
+
+    #[test]
+    fn web_images_are_found_once_each() {
+        let text = "![a](https://e.com/a.png)\n![b](http://x.org/b.jpg){width=300}\n\
+                    ![c](attachment:0123456789abcdef0123456789abcdef)\n![a](https://e.com/a.png)\n\
+                    [a link](https://e.com/page)";
+        assert_eq!(
+            remote_images(text),
+            ["https://e.com/a.png", "http://x.org/b.jpg"]
+        );
+        assert_eq!(
+            host_of("https://i.imgur.com/x.png").as_deref(),
+            Some("i.imgur.com")
+        );
+        assert_eq!(host_of("http://[::1]:8080/x.png").as_deref(), Some("::1"));
+    }
+
+    #[test]
+    fn private_networks_are_not_reached() {
+        for ip in [
+            "127.0.0.1",
+            "10.1.2.3",
+            "172.16.0.9",
+            "192.168.1.1",
+            "169.254.169.254",
+            "100.64.0.1",
+            "0.0.0.0",
+            "::1",
+            "fd00::1",
+            "fe80::1",
+            "::ffff:192.168.1.1",
+        ] {
+            assert!(!is_public(ip.parse().expect("ip")), "{ip} is private");
+        }
+        for ip in ["1.1.1.1", "140.82.112.3", "2606:4700:4700::1111"] {
+            assert!(is_public(ip.parse().expect("ip")), "{ip} is public");
+        }
+        assert_eq!(
+            fetch("http://127.0.0.1:9/x.png"),
+            Err(FetchError::Private("127.0.0.1".into()))
+        );
+        assert_eq!(
+            fetch("http://localhost:9/x.png"),
+            Err(FetchError::Private("localhost".into()))
+        );
     }
 
     #[test]

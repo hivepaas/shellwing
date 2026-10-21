@@ -699,7 +699,7 @@ impl NoteWindow {
                     let mut kept = vec![];
                     for (uri, bytes) in note_images::data_images(&text) {
                         let (ids, _) = note_images::add(&vault, &text, vec![Source::Bytes(bytes)]);
-                        if let Some(id) = ids.into_iter().next() {
+                        if let Some((_, id)) = ids.into_iter().next() {
                             kept.push((uri, id));
                         }
                     }
@@ -719,6 +719,99 @@ impl NoteWindow {
                     }
                 });
                 v.edited(cx);
+            });
+        })
+        .detach();
+    }
+
+    /// "Download Images": the note's web images, downloaded once and kept
+    /// as attachments, their links replaced. Asked first: the hosts learn
+    /// the user's address, and plain http can be altered on the way.
+    fn download_images(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(why) = self.images_refused() {
+            self.problem = Some(why);
+            cx.notify();
+            return;
+        }
+        let Some(vault) = self.vault.ready() else {
+            return;
+        };
+        let text = self.text.read(cx).text().to_string();
+        let urls = note_images::remote_images(&text);
+        if urls.is_empty() {
+            return;
+        }
+        let mut hosts: Vec<String> = urls
+            .iter()
+            .filter_map(|u| note_images::host_of(u))
+            .collect();
+        hosts.sort();
+        hosts.dedup();
+        let mut detail = tr!(
+            "shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.",
+            hosts = hosts.join(", ")
+        );
+        if urls.iter().any(|u| u.starts_with("http://")) {
+            detail.push(' ');
+            detail.push_str(&tr!(
+                "Some come over plain http: they could be altered on the way."
+            ));
+        }
+        let (yes, no) = (tr!("Download"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Info,
+            &tr_n!(
+                urls.len(),
+                "Download the note's image from the web?",
+                "Download the note's {n} images from the web?"
+            ),
+            Some(&detail),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn(async move |this, cx| {
+            if answer.await != Ok(0) {
+                return;
+            }
+            let (kept, problems) = cx
+                .background_spawn(async move {
+                    let (mut sources, mut from, mut problems) = (vec![], vec![], vec![]);
+                    for url in urls {
+                        match note_images::fetch(&url) {
+                            Ok(bytes) => {
+                                from.push(url.clone());
+                                sources.push(Source::Downloaded { url, bytes });
+                            }
+                            Err(e) => problems.push(e.said(&url)),
+                        }
+                    }
+                    let (ids, more) = note_images::add(&vault, &text, sources);
+                    problems.extend(more);
+                    let kept: Vec<(String, String)> = ids
+                        .into_iter()
+                        .filter_map(|(i, id)| from.get(i).map(|u| (u.clone(), id)))
+                        .collect();
+                    (kept, problems)
+                })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                if !kept.is_empty() {
+                    v.text.update(cx, |e, cx| {
+                        for (url, id) in &kept {
+                            let link = format!("]({url})");
+                            while let Some(at) = e.text().find(&link) {
+                                e.replace_range(
+                                    at..at + link.len(),
+                                    &format!("](attachment:{id})"),
+                                    cx,
+                                );
+                            }
+                        }
+                    });
+                    v.edited(cx);
+                }
+                v.problem = (!problems.is_empty()).then(|| problems.join(" "));
+                cx.notify();
             });
         })
         .detach();
@@ -842,6 +935,7 @@ impl NoteWindow {
                 .background_spawn(async move { note_images::add(&vault, &text, sources) })
                 .await;
             let _ = this.update(cx, |v, cx| {
+                let ids: Vec<String> = ids.into_iter().map(|(_, id)| id).collect();
                 if !ids.is_empty() {
                     v.text.update(cx, |e, cx| {
                         let range = match at {
@@ -1366,6 +1460,19 @@ impl NoteWindow {
                         .child(s),
                 )
             })
+            .when(self.loaded && self.images_refused().is_none(), |d| {
+                let web = note_images::remote_images(self.text.read(cx).text()).len();
+                d.when(web > 0, |d| {
+                    d.child(
+                        Self::chip(
+                            "note-download",
+                            tr_n!(web, "Download Image", "Download {n} Images"),
+                            false,
+                        )
+                        .on_click(cx.listener(|v, _, w, cx| v.download_images(w, cx))),
+                    )
+                })
+            })
             .when(self.loaded, |d| {
                 d.child(
                     Self::chip("note-export", tr!("Export…"), false)
@@ -1715,6 +1822,20 @@ impl NoteWindow {
     /// "Export…", clicked.
     pub fn click_export(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.export(window, cx);
+    }
+
+    /// "Download Images", clicked.
+    pub fn click_download_images(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.download_images(window, cx);
+    }
+
+    /// The text, replaced (as if typed or pasted).
+    pub fn set_text_for_test(&mut self, text: &str, cx: &mut Context<Self>) {
+        self.text.update(cx, |e, cx| {
+            let all = 0..e.text().len();
+            e.replace_range(all, text, cx);
+        });
+        self.edited(cx);
     }
 
     /// Files dropped at byte `at` of the text (where the pointer was).

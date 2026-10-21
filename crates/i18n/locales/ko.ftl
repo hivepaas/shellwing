@@ -1192,6 +1192,9 @@ tdd571ace = 밝은 따뜻한 톤
 # Your themes
 tb2e83d5c = 내 테마
 
+# Image from {host}
+t4b45629c = { $host }의 이미지
+
 # Loading the image…
 t457184d7 = 이미지를 불러오는 중…
 
@@ -1215,6 +1218,12 @@ t53d0e31f = { $name }은(는) 읽을 수 있는 이미지가 아닙니다.
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name }은(는) 너무 큰 이미지입니다({ $width } × { $height }).
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host }은(는) 사설 네트워크에 있어 이미지를 내려받지 않았습니다.
+
+# {name} could not be downloaded: {e}
+t66ad539b = { $name }을(를) 내려받을 수 없습니다: { $e }
 
 # New note
 t788c7123 = 새 노트
@@ -1242,6 +1251,18 @@ tb31ba949 = 이미지는 Markdown 노트에서 표시됩니다. 이 노트는 �
 
 # Images go in while the note is edited.
 t6f2c9191 = 이미지는 노트를 편집하는 동안 넣을 수 있습니다.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing은 { $hosts }에서 이미지를 내려받으며, 이 서버들은 사용자의 주소를 알게 됩니다. 이미지는 암호화되어 보관함에 저장되고 노트의 링크는 바뀝니다.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = 일부는 암호화되지 않은 http로 오므로 도중에 변조될 수 있습니다.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] 노트의 이미지 { $n }개를 웹에서 내려받을까요?
+    }
 
 # Export
 te86349d3 = 내보내기
@@ -1299,6 +1320,12 @@ tfdda4cf7 = 미리 보기
 
 # Sensitive
 tf603feef = 민감 정보
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] 이미지 { $n }개 내려받기
+    }
 
 # Export…
 tc8865b2d = 내보내기…

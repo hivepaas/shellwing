@@ -1216,6 +1216,9 @@ tdd571ace = Claro, cálido
 # Your themes
 tb2e83d5c = Tus temas
 
+# Image from {host}
+t4b45629c = Imagen de { $host }
+
 # Loading the image…
 t457184d7 = Cargando la imagen…
 
@@ -1239,6 +1242,12 @@ t53d0e31f = { $name } no es una imagen que se pueda leer.
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } es una imagen demasiado grande ({ $width } × { $height }).
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } está en una red privada: su imagen no se descargó.
+
+# {name} could not be downloaded: {e}
+t66ad539b = No se pudo descargar { $name }: { $e }
 
 # New note
 t788c7123 = Nota nueva
@@ -1266,6 +1275,19 @@ tb31ba949 = Las imágenes se muestran en notas Markdown; esta nota es texto sin 
 
 # Images go in while the note is edited.
 t6f2c9191 = Las imágenes se añaden mientras se edita la nota.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing las descarga de { $hosts }, que conocen tu dirección. Luego se guardan en la bóveda, cifradas, y se reemplazan los enlaces de la nota.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Algunas llegan por http sin cifrar: podrían alterarse por el camino.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+        [one] ¿Descargar de la web la imagen de la nota?
+       *[other] ¿Descargar de la web las { $n } imágenes de la nota?
+    }
 
 # Export
 te86349d3 = Exportar
@@ -1324,6 +1346,13 @@ tfdda4cf7 = Vista previa
 
 # Sensitive
 tf603feef = Confidencial
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+        [one] Descargar imagen
+       *[other] Descargar { $n } imágenes
+    }
 
 # Export…
 tc8865b2d = Exportar…

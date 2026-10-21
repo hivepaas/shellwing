@@ -52,6 +52,10 @@ anyhow.workspace = true
 unicode-segmentation = "1"
 # Images pasted into notes as data: URIs.
 base64 = "0.22"
+# A note's web images, downloaded when the user asks: reqwest on rustls with
+# ring, as the sync places and the update check have them.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 # Where downloads go, and file dates in local time.
 dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

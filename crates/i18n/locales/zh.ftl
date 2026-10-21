@@ -1192,6 +1192,9 @@ tdd571ace = 浅色，暖调
 # Your themes
 tb2e83d5c = 你的主题
 
+# Image from {host}
+t4b45629c = 来自 { $host } 的图片
+
 # Loading the image…
 t457184d7 = 正在加载图片…
 
@@ -1215,6 +1218,12 @@ t53d0e31f = { $name } 不是可读取的图片。
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } 图片太大（{ $width } × { $height }）。
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } 位于专用网络：未下载其图片。
+
+# {name} could not be downloaded: {e}
+t66ad539b = 无法下载 { $name }：{ $e }
 
 # New note
 t788c7123 = 新建笔记
@@ -1242,6 +1251,18 @@ tb31ba949 = 图片显示在 Markdown 笔记中；此笔记是纯文本。
 
 # Images go in while the note is edited.
 t6f2c9191 = 图片需在编辑笔记时插入。
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing 从 { $hosts } 下载这些图片，这些服务器会得知你的地址。图片随后加密保存在保险库中，笔记中的链接会被替换。
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = 部分图片通过未加密的 http 传输：可能在途中被篡改。
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] 从网络下载笔记中的 { $n } 张图片？
+    }
 
 # Export
 te86349d3 = 导出
@@ -1299,6 +1320,12 @@ tfdda4cf7 = 预览
 
 # Sensitive
 tf603feef = 敏感
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] 下载 { $n } 张图片
+    }
 
 # Export…
 tc8865b2d = 导出…

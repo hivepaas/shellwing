@@ -2,7 +2,7 @@
 
 A note can show images: a screenshot of an error, a dashboard, a diagram. They
 are kept encrypted in the vault and sync with it, as the note's text does.
-Phases 1 and 2 below are built, but for `http(s)` images. Questions still to settle are
+Phases 1 and 2 below are built. Questions still to settle are
 marked **Open**.
 
 ## What the editor brings
@@ -36,7 +36,7 @@ Ruled out:
 | --- | --- |
 | Base64 inside the note (`data:` URIs) | A screenshot fills the note's 256 KB at once. The editor would lay out megabytes of text, and every edit of the note would sync the images again. |
 | Image files beside `vault.db` | Not encrypted, and not synced. |
-| `http(s)://` images | Loading one tells its server when the note is opened, and needs the network. They stay links unless the user loads them (**Open**: an opt-in per note, phase 2). |
+| `http(s)://` images, loaded when the note opens | Loading one tells its server who opened the note, and when, every time (a 1×1 pixel is enough to track); a note may be someone else's; it needs the network, and the picture can change after it was written about. They are downloaded only when asked, and kept (see Images on the web). |
 | A normal vault record per image | The sync engine reads and merges every record each round; records are assumed small (under 2 KB, [sync.md](sync.md)). Megabytes re-read every minute would be slow on a folder and costly on S3. |
 
 **Ids.** An attachment's id is made as a record's (`new_id`: time, then 80
@@ -181,6 +181,29 @@ not grow.
 - **Sensitive notes:** images show only once the note's text does.
 - **Locked vault:** a note's window holds no text and forgets its images.
 
+## Images on the web
+
+A line `![alt](https://…)` is never fetched by itself: it shows a label,
+*Image from example.com*, and a click opens it in the browser. The note's
+toolbar offers *Download Images* (with their count) while it has any:
+
+1. It asks first, naming the hosts that will be contacted (they learn the
+   user's address), and saying so when some come over plain `http` (they
+   could be altered on the way; the picture is still checked as any is).
+2. Each is downloaded once, off the UI thread, prepared and kept as an
+   attachment, as a pasted image is; its link becomes `attachment:<id>`
+   (a `{width=N}` after it stays). From then on it syncs encrypted, shows
+   offline, and its server is never asked again.
+
+Downloading is held to the internet: a host whose name resolves to this
+computer, a private or link-local network or carrier-grade NAT (IPv4 and
+IPv6) is refused, said why, and not contacted, so a note cannot make the app
+reach into the user's network (a router's page, a cloud's metadata address).
+The connection goes to the addresses checked (`resolve_to_addrs`), so a name
+that answers otherwise the second time leads nowhere else; a redirect is
+checked the same way, five at most. 20 MB, 10 s to connect and 30 s in all,
+`reqwest` on rustls, as the sync places and the update check have it.
+
 ## An image's menu, and export
 
 - Right-click an image: *Copy Image* (the image itself on the clipboard),
@@ -200,8 +223,7 @@ not grow.
    on joining.
 2. **Phase 2 (built):** the image's menu (*Copy Image*, *Save Image As…*),
    *Export…* with `images/`, `data:` URIs pasted in Markdown turned into
-   attachments, dropping at the pointer.
-3. **Still to do:** `http(s)` images loaded on request (**Open**).
+   attachments, dropping at the pointer, web images downloaded when asked.
 
 ## Tests
 
@@ -221,7 +243,12 @@ not grow.
   *Insert Image…* with a file; a copied script is refused, saying why; a plain
   text note says images need Markdown; *Copy Image*; *Save Image As…*; a drop
   in a line goes after it; a pasted `data:` URI becomes an attachment;
-  *Export…* writes `note.md` and `images/`.
+  *Export…* writes `note.md` and `images/`; a web image is not fetched by
+  itself; one on a private network is refused, the server never asked; one
+  downloaded comes once, its link replaced, its width kept.
+- **Web images** (`note_images.rs`): links found once each, hosts read,
+  private addresses (IPv4, IPv6, mapped) refused, `localhost` refused before
+  any connection.
 
 ## Threats
 
@@ -230,3 +257,4 @@ not grow.
 | The backend is read by someone else | They see how many images there are and their sizes, not what they show. |
 | A crafted image is pasted or synced | Its size is checked before decoding, and decoding runs in `image`, off the UI thread. A blob that does not open under its id and this vault's key is not taken. |
 | A note is deleted by mistake | Its images stay 30 days, and come back with the note (from another device or an undo). |
+| A note links images to track who reads it, or to reach the reader's network | Nothing is fetched unless asked; asking names the hosts; private networks are refused, after a redirect too, and the address checked is the one connected to. |

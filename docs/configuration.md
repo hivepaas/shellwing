@@ -802,7 +802,12 @@ Dropped files go where they are dropped, after the line under the pointer.
 Markdown pasted from elsewhere with images as `data:` URIs keeps them, as
 attachments. *Export…*, beside *Delete*, writes the note as `note.md` with
 its images in `images/`, in a folder you choose; it asks first, as the files
-are not encrypted. Design: [docs/design/note-images.md](design/note-images.md).
+are not encrypted. Images linked from the web (`![](https://…)`) are never
+fetched by themselves: they show where they are, a click opens them in the
+browser, and *Download Images* in the note's toolbar keeps a copy of each, as
+an attachment, after saying which servers it contacts. Images on your own
+network (this computer, a LAN) are not downloaded. Design:
+[docs/design/note-images.md](design/note-images.md).
 
 The editor is [zorite-editor](https://crates.io/crates/zorite-editor), taken
 into shellwing (`crates/note-editor`, see its `UPSTREAM.md`): a note loads as

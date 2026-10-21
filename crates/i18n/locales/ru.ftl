@@ -1234,6 +1234,9 @@ tdd571ace = Светлые, тёплые
 # Your themes
 tb2e83d5c = Ваши темы
 
+# Image from {host}
+t4b45629c = Изображение с { $host }
+
 # Loading the image…
 t457184d7 = Загрузка изображения…
 
@@ -1257,6 +1260,12 @@ t53d0e31f = { $name } — не изображение, которое можно
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } — слишком большое изображение ({ $width } × { $height }).
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } находится в частной сети: его изображение не загружено.
+
+# {name} could not be downloaded: {e}
+t66ad539b = Не удалось загрузить { $name }: { $e }
 
 # New note
 t788c7123 = Новая заметка
@@ -1284,6 +1293,21 @@ tb31ba949 = Изображения показываются в заметках 
 
 # Images go in while the note is edited.
 t6f2c9191 = Изображения добавляются, пока заметка редактируется.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing загружает их с { $hosts }, и эти серверы узнают ваш адрес. Затем изображения хранятся в хранилище в зашифрованном виде, а ссылки в заметке заменяются.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Некоторые приходят по обычному http: их могли изменить по пути.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+        [one] Загрузить из интернета { $n } изображение заметки?
+        [few] Загрузить из интернета { $n } изображения заметки?
+        [many] Загрузить из интернета { $n } изображений заметки?
+       *[other] Загрузить из интернета { $n } изображения заметки?
+    }
 
 # Export
 te86349d3 = Экспортировать
@@ -1344,6 +1368,15 @@ tfdda4cf7 = Предпросмотр
 
 # Sensitive
 tf603feef = Конфиденциально
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+        [one] Загрузить { $n } изображение
+        [few] Загрузить { $n } изображения
+        [many] Загрузить { $n } изображений
+       *[other] Загрузить { $n } изображения
+    }
 
 # Export…
 tc8865b2d = Экспортировать…

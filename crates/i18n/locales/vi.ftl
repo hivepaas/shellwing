@@ -1192,6 +1192,9 @@ tdd571ace = Sáng, ấm
 # Your themes
 tb2e83d5c = Chủ đề của bạn
 
+# Image from {host}
+t4b45629c = Ảnh từ { $host }
+
 # Loading the image…
 t457184d7 = Đang tải ảnh…
 
@@ -1215,6 +1218,12 @@ t53d0e31f = { $name } không phải ảnh đọc được.
 
 # {name} is too large an image ({width} × {height}).
 tad4a609d = { $name } là ảnh quá lớn ({ $width } × { $height }).
+
+# {host} is on a private network: its image was not downloaded.
+tf2d8cf64 = { $host } nằm trong mạng nội bộ: không tải ảnh của nó.
+
+# {name} could not be downloaded: {e}
+t66ad539b = Không tải được { $name }: { $e }
 
 # New note
 t788c7123 = Ghi chú mới
@@ -1242,6 +1251,18 @@ tb31ba949 = Ảnh chỉ hiện trong ghi chú Markdown; ghi chú này là văn b
 
 # Images go in while the note is edited.
 t6f2c9191 = Chỉ chèn được ảnh khi đang sửa ghi chú.
+
+# shellwing downloads them from {hosts}, which learn your address. They are then kept in the vault, encrypted, and the links in the note are replaced.
+t4f35c5e2 = shellwing tải ảnh từ { $hosts }, và các máy chủ này sẽ biết địa chỉ của bạn. Sau đó ảnh được lưu trong kho, có mã hoá, và các liên kết trong ghi chú được thay thế.
+
+# Some come over plain http: they could be altered on the way.
+tfe0055bd = Một số ảnh đến qua http thường: chúng có thể bị sửa trên đường đi.
+
+# Download the note's image from the web? | Download the note's {n} images from the web?
+t81c8cf06 =
+    { $n ->
+       *[other] Tải { $n } ảnh của ghi chú từ web?
+    }
 
 # Export
 te86349d3 = Xuất
@@ -1299,6 +1320,12 @@ tfdda4cf7 = Xem trước
 
 # Sensitive
 tf603feef = Nhạy cảm
+
+# Download Image | Download {n} Images
+t2594894c =
+    { $n ->
+       *[other] Tải { $n } ảnh
+    }
 
 # Export…
 tc8865b2d = Xuất…
