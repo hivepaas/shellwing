@@ -205,4 +205,18 @@ mod tests {
             ManifestError::File { .. }
         ));
     }
+
+    /// The repository's own list (signed into the `release` branch's
+    /// release.signed.json, docs/releasing.md) holds together: CI says so
+    /// before it reaches the signing machine.
+    #[test]
+    fn the_repositorys_list_holds_together() {
+        let list = Manifest::parse(include_bytes!("../../../release.json")).expect("release.json");
+        let stable = list.newest(Channel::Stable).expect("a stable release");
+        let shipped = &list.releases[&stable.to_string()];
+        assert!(
+            !shipped.archives.is_empty(),
+            "the stable release names its files"
+        );
+    }
 }
