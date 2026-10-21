@@ -512,3 +512,51 @@ scenario!(
         }
     }
 );
+
+scenario!(
+    /// The filter matches tags too, every word typed, in any case.
+    filter_matches_tags,
+    |ui| {
+        let tagged = |name: &str, tags: &str| {
+            format!("{}tags = [{tags}]\n", host(name, closed_port()))
+        };
+        ui.config_file(
+            "hosts.toml",
+            &[
+                tagged("api", "\"payments\", \"eu\""),
+                tagged("worker", "\"payments\", \"us\""),
+                tagged("web", "\"frontend\", \"eu\""),
+            ]
+            .join("\n"),
+        );
+        ui.open();
+        ui.click("host-filter");
+        ui.type_text("payments");
+        assert_eq!(ui.host_names(), ["api", "worker"]);
+        ui.type_text(" EU");
+        assert_eq!(ui.host_names(), ["api"]);
+    }
+);
+
+scenario!(
+    /// Edit host db… from its connected pane (palette): a theme chosen there
+    /// is saved and colors the pane.
+    edit_host_from_a_connected_pane,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("db", server.port));
+        ui.connect("db");
+        ui.login();
+        let before = ui.view(|v, _| v.latest_frame().background);
+        ui.palette("Edit host db");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        ui.click("theme-select");
+        ui.click("choice:Nord");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("theme = \"nord\""), "{}", ui.hosts_toml());
+        ui.wait_until("the pane's new colors", |ui| {
+            ui.view(|v, _| v.latest_frame().background) != before
+        });
+    }
+);

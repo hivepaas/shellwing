@@ -184,3 +184,25 @@ scenario!(
         assert!(!ui.screen().contains("password:"), "asked again");
     }
 );
+
+scenario!(
+    /// Saved passwords and passphrases… (palette): a saved password forgotten
+    /// (Enter, then Enter again to be sure); the next connection asks again.
+    forget_a_saved_password,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        answer_offer(ui, true);
+        ui.wait_for_notice("Saved in the vault");
+        ui.palette("Saved passwords and passphrases");
+        ui.wait_until("the saved secrets", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.keys("enter");
+        ui.keys("enter");
+        ui.wait_for_notice("Forgotten.");
+        ui.palette(&server.spec());
+        ui.wait_until("a second tab", |ui| ui.tabs() == 2);
+        ui.login();
+    }
+);

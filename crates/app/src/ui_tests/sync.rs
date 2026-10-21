@@ -150,7 +150,8 @@ fn choose_folder(ui: &mut Ui, shared: &std::path::Path) {
     ui.palette("Sync passwords with a folder");
     ui.wait_until("the folder dialog", |ui| ui.cx.did_prompt_for_paths());
     let chosen = shared.to_path_buf();
-    ui.cx.simulate_path_prompt_response(move |_| Some(vec![chosen]));
+    ui.cx
+        .simulate_path_prompt_response(move |_| Some(vec![chosen]));
     ui.wait_until("how to join", |ui| ui.ws(|ws, _, _| ws.palette_open()));
 }
 
@@ -170,7 +171,11 @@ fn joined_with_the_other_devices_records(ui: &mut Ui, server: &crate::ui_tests::
     });
     ui.wait_until("the other device's password", |ui| {
         ui.vault()
-            .and_then(|v| v.password(&format!("{USER}@127.0.0.1:{}", server.port)).ok().flatten())
+            .and_then(|v| {
+                v.password(&format!("{USER}@127.0.0.1:{}", server.port))
+                    .ok()
+                    .flatten()
+            })
             .is_some()
     });
     ui.click("host:db");
