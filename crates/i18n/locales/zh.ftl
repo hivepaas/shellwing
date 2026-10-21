@@ -1894,6 +1894,15 @@ tf7087aa7 = 启动时打开上次的标签页
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = shellwing 在未指定主机的情况下启动时，会打开上次的标签页和拆分窗格。
 
+# Hosts from another app
+tffafddac = 来自其他应用的主机
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY、KiTTY、MobaXterm、SecureCRT、Xshell、Tabby、~/.ssh/config 或 CSV 文件：其中的主机、分组、跳板主机和端口转发会先列出供你选择。不会导入密码。
+
+# Import…
+tecc08160 = 导入…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = 此设备的这些设置。在文件中所做的修改会立即生效。
 

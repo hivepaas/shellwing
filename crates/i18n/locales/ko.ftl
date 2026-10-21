@@ -1894,6 +1894,15 @@ tf7087aa7 = 시작 시 마지막 탭 열기
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = 호스트 없이 shellwing을 시작하면 이전의 탭과 분할 창을 다시 엽니다.
 
+# Hosts from another app
+tffafddac = 다른 앱의 호스트
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config 또는 CSV 파일: 호스트, 그룹, 경유 호스트, 포워딩을 먼저 보여 주고 고르게 합니다. 비밀번호는 가져오지 않습니다.
+
+# Import…
+tecc08160 = 가져오기…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = 이 기기의 설정입니다. 파일을 편집하면 즉시 적용됩니다.
 

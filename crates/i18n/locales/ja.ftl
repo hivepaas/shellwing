@@ -1894,6 +1894,15 @@ tf7087aa7 = 起動時に前回のタブを開く
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = ホストを指定せずに shellwing を起動すると、前回のタブと分割を開きます。
 
+# Hosts from another app
+tffafddac = ほかのアプリのホスト
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY、KiTTY、MobaXterm、SecureCRT、Xshell、Tabby、~/.ssh/config、CSV ファイル: ホスト、グループ、経由ホスト、転送を、まず一覧で選べるように表示します。パスワードはインポートされません。
+
+# Import…
+tecc08160 = インポート…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = このデバイスの設定です。ファイルを編集するとすぐに反映されます。
 

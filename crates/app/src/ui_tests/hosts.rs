@@ -227,3 +227,22 @@ scenario!(
         assert!(vault.notes().expect("notes").is_empty());
     }
 );
+
+scenario!(
+    /// Settings › General opens the import drawer over Settings; closing it
+    /// leaves Settings where it was.
+    import_is_offered_in_settings,
+    |ui| {
+        ui.open();
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:General");
+        ui.click("import-hosts");
+        ui.wait_until("the import drawer", |ui| ui.import(|_, _| ()).is_some());
+        ui.draw();
+        assert!(ui.find("import-file").is_some(), "the drawer is drawn over Settings");
+        ui.keys("escape");
+        ui.wait_until("the drawer to close", |ui| ui.import(|_, _| ()).is_none());
+        assert_eq!(ui.settings_page(), Some(crate::settings_view::Page::General));
+    }
+);

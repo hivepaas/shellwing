@@ -1969,6 +1969,15 @@ tf7087aa7 = Открывать последние вкладки при запу
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = Если shellwing запускается без хоста, он открывает прежние вкладки и разделения.
 
+# Hosts from another app
+tffafddac = Хосты из другого приложения
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config или CSV-файл: их хосты, группы, промежуточные хосты и переадресации сначала показываются для выбора. Пароли не импортируются.
+
+# Import…
+tecc08160 = Импорт…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = Эти настройки, для этого устройства. Изменения в файле применяются сразу.
 

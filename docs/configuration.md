@@ -329,8 +329,8 @@ A user or port typed on the command line (`root@api1:22`) wins over the file.
 behave like the default for now: agent, then key files, then a password prompt,
 as `ssh` does.
 
-**Importing hosts.** *Import hosts from another app…* (in the palette, and
-under an empty host list) reads the hosts another SSH client keeps: PuTTY and
+**Importing hosts.** *Import hosts from another app…* (in the palette, under
+an empty host list, and *Import…* in Settings › General) reads the hosts another SSH client keeps: PuTTY and
 KiTTY, MobaXterm, SecureCRT, Xshell and Tabby where they are installed, or a
 file one of them exported (`.reg`, `.mxtsessions`, SecureCRT's XML or
 `Sessions` folder, `.xts`), `~/.ssh/config`, or a CSV with a header row. It

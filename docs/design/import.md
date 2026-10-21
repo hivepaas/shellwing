@@ -160,8 +160,9 @@ to find them later.
     groups, jump names, duplicates).
 - **`shellwing-config`:** `Store::import` writes the groups and hosts in one
   edit, and `Store::unimport` takes them out.
-- **The app:** *Import hosts from another app…* in the palette and in the
-  empty host list; the drawer (as the host editor's) with the sources and the
+- **The app:** *Import hosts from another app…* in the palette, in the
+  empty host list and in Settings › General (the drawer then shows over
+  Settings); the drawer (as the host editor's) with the sources and the
   preview; the notes; *Undo import from <app>*.
 - **New dependencies:**
   - `zip` (deflate only), for Xshell's `.xts`;

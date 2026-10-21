@@ -1937,6 +1937,15 @@ tf7087aa7 = Abrir las últimas pestañas al iniciar
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = Cuando shellwing se inicia sin un servidor, abre las pestañas y divisiones que tenía.
 
+# Hosts from another app
+tffafddac = Servidores de otra app
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config o un archivo CSV: sus servidores, grupos, servidores de salto y redirecciones, mostrados primero para elegir. Las contraseñas no se importan.
+
+# Import…
+tecc08160 = Importar…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = Estos ajustes, para este dispositivo. Los cambios en el archivo se aplican al instante.
 

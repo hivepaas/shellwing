@@ -1894,6 +1894,15 @@ tf7087aa7 = Mở lại các tab lần trước khi khởi động
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = Khi shellwing khởi động mà không có máy chủ, nó mở lại các tab và các khung chia đã có.
 
+# Hosts from another app
+tffafddac = Máy chủ từ app khác
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config hoặc file CSV: máy chủ, nhóm, máy chủ trung gian và chuyển tiếp cổng của chúng, được hiện trước để chọn. Mật khẩu không được nhập.
+
+# Import…
+tecc08160 = Nhập…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = Các cài đặt này, cho thiết bị này. Sửa trong tệp có hiệu lực ngay.
 

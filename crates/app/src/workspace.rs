@@ -3307,7 +3307,11 @@ impl Workspace {
 
     fn close_import(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.import.take().is_some() {
-            self.activate(self.active, window, cx);
+            // Back to Settings, when it was opened from there.
+            match &self.settings {
+                Some((s, _)) => window.focus(&s.focus_handle(cx), cx),
+                None => self.activate(self.active, window, cx),
+            }
             cx.notify();
         }
     }
@@ -5465,6 +5469,21 @@ impl Render for Workspace {
                     )
                 },
             )
+            .when_some(self.settings.as_ref().map(|(s, _)| s.clone()), |d, s| {
+                d.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        // Nothing under it takes the mouse: a right click
+                        // would open the terminal's menu.
+                        .occlude()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .child(s),
+                )
+            })
+            // Over Settings too, which can open it.
             .when_some(self.import.as_ref().map(|(v, _)| v.clone()), |d, v| {
                 d.child(
                     bottom
@@ -5490,20 +5509,6 @@ impl Render for Workspace {
                                 .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                                 .child(v),
                         ),
-                )
-            })
-            .when_some(self.settings.as_ref().map(|(s, _)| s.clone()), |d, s| {
-                d.child(
-                    div()
-                        .absolute()
-                        .top_0()
-                        .left_0()
-                        .size_full()
-                        // Nothing under it takes the mouse: a right click
-                        // would open the terminal's menu.
-                        .occlude()
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                        .child(s),
                 )
             })
             // Hangs from the tab button; a press elsewhere puts it away.
