@@ -4,6 +4,12 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+# The app's UI tests point the updater at a list and keys of their own
+# (set_test_source); a build without it reads only LIST_URL and the keys
+# built in.
+test-source = []
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

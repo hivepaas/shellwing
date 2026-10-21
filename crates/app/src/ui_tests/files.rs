@@ -203,3 +203,117 @@ scenario!(
         ui.wait_for("you said: shell still here");
     }
 );
+
+scenario!(
+    /// Upload…: the file chosen in the dialog goes to the folder shown, as it
+    /// is, and is listed.
+    upload_a_file,
+    |ui| {
+        let Some((home, _server)) = with_files(ui) else {
+            return;
+        };
+        let local = ui.dir.join("local");
+        std::fs::create_dir_all(&local).expect("local dir");
+        let report = local.join("report.csv");
+        std::fs::write(&report, "day,visits\nmon,42\n").expect("file");
+        ui.click("files-upload");
+        ui.wait_until("the file dialog", |ui| ui.cx.did_prompt_for_paths());
+        ui.cx.simulate_path_prompt_response(move |_| Some(vec![report]));
+        wait_entries(ui, "report.csv listed", |e| e.iter().any(|n| n == "report.csv"));
+        ui.wait_until("the upload to finish", |_| {
+            std::fs::read_to_string(home.join("report.csv")).is_ok_and(|t| t == "day,visits\nmon,42\n")
+        });
+    }
+);
+
+/// Edit in text editor (right click › Edit), with `true` as the editor: the
+/// copy is made and watched, as with a real editor. Returns the copy's path.
+fn edit(ui: &mut Ui, name: &str) -> PathBuf {
+    ui.right_click(&format!("file:{name}"));
+    ui.click("menu-edit");
+    let mut copy = PathBuf::new();
+    ui.wait_until("the copy to be watched", |ui| {
+        let p = panel(ui);
+        let edits = ui.cx.read(|cx| p.read(cx).edits_shown());
+        match edits.iter().find(|(n, ..)| n == name) {
+            Some((_, path, step)) if step == "watching" => {
+                copy = path.clone();
+                true
+            }
+            _ => false,
+        }
+    });
+    copy
+}
+
+/// Where the edit of `name` stands.
+fn edit_step(ui: &mut Ui, name: &str) -> String {
+    let p = panel(ui);
+    let edits = ui.cx.read(|cx| p.read(cx).edits_shown());
+    edits
+        .into_iter()
+        .find(|(n, ..)| n == name)
+        .map(|(_, _, step)| step)
+        .unwrap_or_default()
+}
+
+/// The editor saves `text` into the copy: a later time than it was written
+/// with, as an editor's save has.
+fn save_in_editor(copy: &Path, text: &str) {
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    std::fs::write(copy, text).expect("save the copy");
+}
+
+/// `[files] editor = "true"`: an editor that opens nothing and returns.
+const EDITOR: &str = "[files]\neditor = \"true\"\n";
+
+scenario!(
+    /// Editing a remote file: its copy opens in the editor, and each save is
+    /// written back to the server.
+    edit_a_file_and_save_it,
+    |ui| {
+        ui.config_file("config.toml", EDITOR);
+        let Some((home, _server)) = with_files(ui) else {
+            return;
+        };
+        let copy = edit(ui, "notes.txt");
+        assert_eq!(
+            std::fs::read_to_string(&copy).expect("copy"),
+            "remember the milk\n"
+        );
+        save_in_editor(&copy, "remember the milk\nand the bread\n");
+        ui.wait_until("the save to reach the server", |ui| {
+            // The copy is looked at every second, on the app's clock.
+            ui.advance(std::time::Duration::from_millis(300));
+            std::fs::read_to_string(home.join("notes.txt"))
+                .is_ok_and(|t| t == "remember the milk\nand the bread\n")
+        });
+        ui.wait_until("watching again", |ui| edit_step(ui, "notes.txt") == "watching");
+    }
+);
+
+scenario!(
+    /// A file changed on the server while it is being edited: the save does
+    /// not overwrite it; the edit says it changed there, for the user to
+    /// choose.
+    edit_conflicts_with_a_change_on_the_server,
+    |ui| {
+        ui.config_file("config.toml", EDITOR);
+        let Some((home, _server)) = with_files(ui) else {
+            return;
+        };
+        let copy = edit(ui, "notes.txt");
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        std::fs::write(home.join("notes.txt"), "someone else wrote this\n").expect("write");
+        save_in_editor(&copy, "my change\n");
+        ui.wait_until("the conflict", |ui| {
+            ui.advance(std::time::Duration::from_millis(300));
+            edit_step(ui, "notes.txt") == "conflict"
+        });
+        assert_eq!(
+            std::fs::read_to_string(home.join("notes.txt")).expect("server file"),
+            "someone else wrote this\n",
+            "the server's change was overwritten"
+        );
+    }
+);
