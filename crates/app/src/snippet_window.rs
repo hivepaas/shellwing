@@ -601,8 +601,11 @@ impl SnippetWindow {
         } else {
             (c.button, c.button_hover, c.field_edge)
         };
+        let id = id.into();
+        let selector = id.to_string();
         div()
-            .id(id.into())
+            .id(id)
+            .debug_selector(|| selector)
             .h(px(30.))
             .px(px(12.))
             .flex()
@@ -960,6 +963,7 @@ impl SnippetWindow {
             .child(
                 div()
                     .id("snippet-enter")
+                    .debug_selector(|| "snippet-enter".into())
                     .flex()
                     .items_start()
                     .gap(px(10.))
@@ -1095,6 +1099,7 @@ impl Render for SnippetWindow {
                 .into_any_element()
         } else {
             div()
+                .debug_selector(|| "snippet-command".into())
                 .flex_1()
                 .min_w_0()
                 .min_h_0()

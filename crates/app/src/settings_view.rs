@@ -2435,6 +2435,7 @@ fn toggle(
 ) -> gpui::Stateful<gpui::Div> {
     div()
         .id(id)
+        .debug_selector(|| id.into())
         .flex()
         .gap_3()
         .py(px(10.))

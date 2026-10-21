@@ -33,6 +33,7 @@ use crate::workspace::Workspace;
 pub mod server;
 
 mod config;
+mod config_files;
 mod connect;
 mod files;
 mod forward;
@@ -456,6 +457,27 @@ impl Ui {
                 .iter()
                 .find_map(|w| w.downcast::<crate::library_window::LibraryWindow>())
         })
+    }
+
+    /// The snippet window that is open, once it is.
+    pub fn snippet_window(&mut self) -> Option<WindowHandle<crate::snippet_window::SnippetWindow>> {
+        self.cx.update(|cx| {
+            cx.windows()
+                .iter()
+                .find_map(|w| w.downcast::<crate::snippet_window::SnippetWindow>())
+        })
+    }
+
+    /// Types `text` into another of the app's windows.
+    pub fn type_in(&mut self, window: gpui::AnyWindowHandle, text: &str) {
+        self.cx.simulate_input(window, text);
+        self.cx.run_until_parked();
+    }
+
+    /// Presses keys in another of the app's windows, GPUI's way.
+    pub fn keys_in(&mut self, window: gpui::AnyWindowHandle, keys: &str) {
+        self.cx.simulate_keystrokes(window, keys);
+        self.cx.run_until_parked();
     }
 
     /// Clicks the element marked `selector` in another of the app's windows

@@ -250,3 +250,24 @@ scenario!(
         ui.wait_for_notice("Log saved");
     }
 );
+
+scenario!(
+    /// Save the output as HTML, with colors: the file chosen has the
+    /// session's text, and red text in its color.
+    save_the_output_as_html,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.line("red");
+        ui.wait_for("red text");
+        ui.palette("as HTML, with colors");
+        ui.wait_until("the save dialog", |ui| ui.cx.did_prompt_for_new_path());
+        let path: PathBuf = ui.dir.join("output.html");
+        let chosen = path.clone();
+        ui.cx.simulate_new_path_selection(move |_| Some(chosen));
+        ui.wait_for_notice("Saved as HTML");
+        let html = std::fs::read_to_string(&path).expect("saved file");
+        assert!(html.starts_with("<!doctype html>"), "{}", &html[..80.min(html.len())]);
+        assert!(html.contains("red text"));
+        assert!(html.contains("var(--vt-palette-1)"), "red not in color");
+    }
+);

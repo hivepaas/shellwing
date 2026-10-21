@@ -311,3 +311,34 @@ scenario!(
         assert!(ui.find("file-choose").is_some(), "no new config file's form");
     }
 );
+
+scenario!(
+    /// The snippet window (Settings › Snippets › New snippet…): a name and a
+    /// command typed and saved (Ctrl/Cmd+S) are in the vault; Run in the pane
+    /// runs it there.
+    snippet_written_in_its_window,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Snippets");
+        ui.click("snippet-new");
+        ui.wait_until("the snippet window", |ui| ui.snippet_window().is_some());
+        let w = ui.snippet_window().expect("window").into();
+        // The name has the keys first.
+        ui.type_in(w, "Disk usage");
+        ui.click_in(w, "snippet-command");
+        ui.type_in(w, "df -h /var");
+        ui.keys_in(w, "secondary-s");
+        ui.wait_until("the snippet in the vault", |ui| {
+            ui.vault()
+                .and_then(|v| v.snippets().ok())
+                .is_some_and(|s| s.iter().any(|s| s.name == "Disk usage" && s.command == "df -h /var"))
+        });
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.click_in(w, "snippet-run");
+        ui.wait_for("you said: df -h /var");
+    }
+);
