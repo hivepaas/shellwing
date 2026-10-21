@@ -150,3 +150,22 @@ scenario!(
         });
     }
 );
+
+scenario!(
+    /// Change theme…: the theme picked in the palette colors the terminal at
+    /// once and is written to config.toml.
+    theme_chosen_from_the_palette,
+    |ui| {
+        let _server = signed_in(ui);
+        let before = ui.view(|v, _| v.latest_frame().background);
+        ui.palette("Change theme");
+        ui.wait_until("the theme picker", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.line("Nord");
+        ui.wait_for_notice("Theme: Nord");
+        let config = std::fs::read_to_string(ui.config_dir().join("config.toml")).unwrap_or_default();
+        assert!(config.contains("\"nord\""), "config.toml:\n{config}");
+        ui.wait_until("the terminal's new colors", |ui| {
+            ui.view(|v, _| v.latest_frame().background) != before
+        });
+    }
+);
