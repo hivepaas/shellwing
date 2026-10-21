@@ -78,7 +78,8 @@ Microsoft's Windows 11 Enterprise evaluation image works for testing.
 ## What to check by hand
 
 Connect to any SSH server you can reach (`shellwing user@host`), with the key in
-your ssh-agent (OpenSSH agent or Pageant on Windows) or `SHELLWING_PASSWORD`.
+your ssh-agent (OpenSSH agent or Pageant on Windows) or, in a debug build,
+`SHELLWING_PASSWORD`.
 
 1. Typing, Enter, Backspace, arrows, Ctrl+C; `htop` and `vim` (including the mouse).
 2. Input methods: with an input source that composes text (an IME), the

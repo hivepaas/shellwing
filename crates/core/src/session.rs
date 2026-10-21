@@ -550,7 +550,11 @@ impl Session {
                 target: resolved,
                 auth: Auth {
                     agent: true,
-                    password: std::env::var("SHELLWING_PASSWORD").ok(),
+                    // For scripts and benchmarks on a build of one's own:
+                    // a release never takes a password from the environment.
+                    password: cfg!(debug_assertions)
+                        .then(|| std::env::var("SHELLWING_PASSWORD").ok())
+                        .flatten(),
                     agent_socket: None,
                 },
                 policy,

@@ -191,8 +191,8 @@ hosts are always encrypted.
   - Key pairs: `x25519-dalek`, `ed25519-dalek`.
   - Secrets in memory: `zeroize`, `secrecy`, so secrets leave RAM after use.
   - Storage: `keyring` for the OS keychain, `rusqlite` with the bundled SQLite.
-- **`$SHELLWING_PASSWORD`.** Today's variable is for development only. Remove it
-  from release builds.
+- **`$SHELLWING_PASSWORD`.** For development only: debug builds read it, release
+  builds do not.
 - **Export.** Encrypted by default. Plain-text export needs confirmation and
   shows a warning.
 - **Later (Pro).** shellwing as an SSH agent, so `git`, `ssh` and other tools use

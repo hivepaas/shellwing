@@ -1,0 +1,145 @@
+name: Release
+
+# A tag vX.Y.Z (or vX.Y.Z-betaN) builds shellwing for every platform, packages
+# it (scripts/package_*.sh) and makes a draft release on GitHub with the files
+# and their SHA-256. Nothing reaches users until the draft is published and the
+# signed list of releases moves (docs/releasing.md).
+#
+# A pull request that changes the packaging, or a run by hand (Actions >
+# Release > Run workflow), builds and packages the branch the same way and
+# keeps the files as the run's artifacts: a rehearsal, with no release.
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-beta[0-9]+']
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yml
+      - packaging/**
+      - scripts/package_*.sh
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tag is the workspace's version, or the release would tell its users
+      # of an update to itself.
+      - name: The tag and Cargo.toml agree
+        id: v
+        run: |
+          version="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME, but Cargo.toml says $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  package:
+    name: ${{ matrix.name }}
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux on the oldest Ubuntu GitHub has: the glibc it links is the
+          # oldest the packages run on (2.35: Ubuntu 22.04, Debian 12).
+          - { name: linux-x86_64, runner: ubuntu-22.04 }
+          - { name: linux-aarch64, runner: ubuntu-22.04-arm }
+          - { name: macos-aarch64, runner: macos-15 }
+          - { name: macos-x86_64, runner: macos-15-intel }
+          - { name: windows-x86_64, runner: windows-latest }
+    runs-on: ${{ matrix.runner }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 'Linux packages (GPUI: Wayland, X11, Vulkan, fonts)'
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libfontconfig-dev libfreetype-dev \
+            libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libvulkan-dev libdbus-1-dev libzstd-dev dpkg-dev
+
+      - name: NSIS
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) { choco install nsis -y --no-progress }
+
+      # libghostty-vt is built from source with Zig.
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release --locked -p shellwing
+
+      - name: Package
+        shell: bash
+        run: scripts/package_${{ runner.os == 'macOS' && 'macos' || runner.os == 'Windows' && 'windows' || 'linux' }}.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shellwing-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Draft release
+    needs: [version, package]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: SHA-256
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      # The release's notes are docs/releases/vX.Y.Z.md; a draft, published by
+      # hand once it is checked.
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          notes="docs/releases/$TAG.md"
+          [ -f "$notes" ] || { echo "::error::no $notes"; exit 1; }
+          prerelease=()
+          case "$TAG" in *-beta*) prerelease=(--prerelease) ;; esac
+          gh release create "$TAG" dist/* --draft "${prerelease[@]}" \
+            --title "shellwing $VERSION" --notes-file "$notes" --verify-tag

@@ -31,7 +31,7 @@ ARCH := $(shell uname -m 2>/dev/null)
 
 .DEFAULT_GOAL := help
 .PHONY: help build run dev build-mac build-linux build-windows build-ios-core \
-	build-android-core test lint fmt check install-desktop doctor clean zig
+	build-android-core test lint fmt check install-desktop package doctor clean zig
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-20s %s\n", $$1, $$2}'
@@ -83,6 +83,15 @@ endif
 
 install-desktop: ## Linux: add the built app to the desktop's launcher
 	scripts/install-desktop.sh
+
+package: build ## What a release ships for this computer (docs/releasing.md) -> dist/
+ifeq ($(HOST),Darwin)
+	scripts/package_macos.sh
+else ifeq ($(HOST),Linux)
+	scripts/package_linux.sh
+else
+	scripts/package_windows.sh
+endif
 
 ## The core for phones (no app yet: checks that it builds)
 
