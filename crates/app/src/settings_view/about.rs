@@ -13,6 +13,7 @@ use crate::look::ui;
 use crate::palette::Action;
 use crate::workspace::{UpdateStage, Workspace};
 
+const SITE: &str = "https://shellwing.app";
 const REPO: &str = "https://github.com/hivepaas/shellwing";
 const HIVEPAAS: &str = "https://hivepaas.com";
 const HIVEPAAS_REPO: &str = "https://github.com/hivepaas/hivepaas";
@@ -382,12 +383,22 @@ fn link_button(
         .on_click(cx.listener(move |_, _, _, cx| cx.open_url(&url)))
 }
 
+/// A brand button's fill, lighter at the top, the same in either mode:
+/// shellwing's is the logo's blue, HivePaaS's amber.
+fn brand_fill(top: u32, bottom: u32) -> gpui::Background {
+    gpui::linear_gradient(
+        180.,
+        gpui::linear_color_stop(rgb(top), 0.),
+        gpui::linear_color_stop(rgb(bottom), 1.),
+    )
+}
+
 /// A filled button that opens a web page: the section's main way on.
 fn primary_link(
     id: &'static str,
     text: &str,
     url: &'static str,
-    (bg, hover, fg): (u32, u32, u32),
+    (bg, hover, fg): (gpui::Background, gpui::Background, u32),
     cx: &mut Context<SettingsView>,
 ) -> gpui::Stateful<gpui::Div> {
     div()
@@ -398,50 +409,34 @@ fn primary_link(
         .flex()
         .items_center()
         .rounded(px(6.))
-        .bg(rgb(bg))
+        .bg(bg)
         .text_size(ui(12.))
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(rgb(fg))
         .cursor_pointer()
-        .hover(move |s| s.bg(rgb(hover)))
+        .hover(move |s| s.bg(hover))
         .child(text.to_string())
         .on_click(cx.listener(move |_, _, _, cx| cx.open_url(url)))
 }
 
 /// Where the code is, under which license, and the ways to take part.
 fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
-    let c = colors();
-    let repo_row = div()
-        .flex()
-        .flex_wrap()
-        .items_center()
-        .gap(px(10.))
-        .py(px(6.))
-        .pl(px(12.))
-        .pr(px(6.))
-        .rounded(px(8.))
-        .border_1()
-        .border_color(rgb(c.field_edge))
-        .bg(rgb(c.field))
-        .child(
-            div()
-                .flex_1()
-                .min_w(px(200.))
-                .text_size(ui(12.5))
-                .text_color(rgb(c.text))
-                .child("github.com/hivepaas/shellwing"),
-        )
-        .child(primary_link(
-            "about-github",
-            &tr!("Open on GitHub"),
-            REPO,
-            (c.accent, c.accent_hover, c.on_accent),
-            cx,
-        ));
-    let links = div()
+    let actions = div()
         .flex()
         .flex_wrap()
         .gap(px(8.))
+        .child(primary_link(
+            "about-site",
+            &tr!("Visit shellwing.app"),
+            SITE,
+            (
+                brand_fill(0x38b6f3, 0x0f87c9),
+                brand_fill(0x5cc6f7, 0x1a95d6),
+                0xffffff,
+            ),
+            cx,
+        ))
+        .child(link_button("about-github", "GitHub", REPO.to_string(), cx))
         .child(link_button(
             "about-issue",
             &tr!("Report a problem"),
@@ -453,18 +448,6 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             &tr!("Release notes"),
             repo("releases"),
             cx,
-        ))
-        .child(link_button(
-            "about-contributing",
-            &tr!("Contributing"),
-            repo("blob/main/CONTRIBUTING.md"),
-            cx,
-        ))
-        .child(link_button(
-            "about-license",
-            &tr!("License"),
-            repo("blob/main/LICENSE"),
-            cx,
         ));
     section(
         &tr!("Open source"),
@@ -472,8 +455,7 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
             .child(body_text(tr!(
                 "shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix."
             )))
-            .child(repo_row)
-            .child(links),
+            .child(actions),
     )
 }
 
@@ -603,7 +585,11 @@ fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
             "about-hivepaas",
             &tr!("Visit hivepaas.com"),
             HIVEPAAS,
-            (c.amber, c.amber_hover, c.on_amber),
+            (
+                brand_fill(0xfbbd2a, 0xf49a12),
+                brand_fill(0xfcca4d, 0xf6a823),
+                0x0b0c10,
+            ),
             cx,
         ))
         .child(link_button(

@@ -1591,20 +1591,14 @@ tcc27ace1 = 하루에 한 번 업데이트 확인
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = GitHub에서 릴리스 목록을 읽고, 서명이 검증될 때만 신뢰합니다. 사용자 동의 없이는 아무것도 다운로드하거나 설치하지 않습니다.
 
-# Open on GitHub
-t24804c99 = GitHub에서 열기
+# Visit shellwing.app
+t1d2ed540 = shellwing.app 방문
 
 # Report a problem
 t7b1728e7 = 문제 신고
 
 # Release notes
 tc52ab62f = 릴리스 노트
-
-# Contributing
-ta4fe74dd = 기여하기
-
-# License
-t38e70ee4 = 라이선스
 
 # Open source
 ta04619ce = 오픈 소스

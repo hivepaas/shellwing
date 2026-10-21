@@ -1591,20 +1591,14 @@ tcc27ace1 = 每天检查一次更新
 # It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is downloaded or installed without you.
 t258cdfd9 = 从 GitHub 读取版本列表，仅在其签名验证通过时才采信。未经你的同意，不会下载或安装任何内容。
 
-# Open on GitHub
-t24804c99 = 在 GitHub 上打开
+# Visit shellwing.app
+t1d2ed540 = 访问 shellwing.app
 
 # Report a problem
 t7b1728e7 = 报告问题
 
 # Release notes
 tc52ab62f = 发行说明
-
-# Contributing
-ta4fe74dd = 参与贡献
-
-# License
-t38e70ee4 = 许可证
 
 # Open source
 ta04619ce = 开源

@@ -214,6 +214,7 @@ scenario!(
         ui.click("about");
         ui.wait_until("About", |ui| ui.settings_page() == Some(Page::About));
         for (button, url) in [
+            ("about-site", "https://shellwing.app"),
             ("about-github", "https://github.com/hivepaas/shellwing"),
             (
                 "about-issue",
@@ -222,10 +223,6 @@ scenario!(
             (
                 "about-releases",
                 "https://github.com/hivepaas/shellwing/releases",
-            ),
-            (
-                "about-license",
-                "https://github.com/hivepaas/shellwing/blob/main/LICENSE",
             ),
             ("about-hivepaas", "https://hivepaas.com"),
             ("about-hivepaas-github", "https://github.com/hivepaas/hivepaas"),
