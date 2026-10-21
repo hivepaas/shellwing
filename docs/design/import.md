@@ -11,9 +11,7 @@ settle are marked **Open**.
 - **Reads:** hosts, their folders, ports, users, key files, jump hosts,
   forwards, agent forwarding, colors and descriptions.
 - **Does not read passwords.** A host asks for its password the first time,
-  and the pane offers to keep it in the vault, as it does today. Most of these
-  apps protect saved passwords with a key of their own, a master password or
-  the Windows account; reading them is phase 3, if ever (**Open**).
+  and the pane offers to keep it in the vault, as it does today.
 - **Does not nest groups.** shellwing's groups are one level: a folder
   `Prod › EU` becomes the group `Prod / EU`.
 - **Leaves out** what is not SSH (RDP, VNC, telnet, serial), saying so.
@@ -183,8 +181,8 @@ up files, never real ones.
    Xshell, Tabby; the preview, *Import*, *Undo import*.
 2. **Phase 2:** FinalShell, WindTerm, Electerm, mRemoteNG, WinSCP, Remmina; a
    `.ppk` key converted into the vault.
-3. **Phase 3 (Open):** saved passwords, where the other app lets them be read
-   with what the user has (its master password, the same Windows account).
+
+Saved passwords are not imported in any phase.
 
 ## Tests
 
