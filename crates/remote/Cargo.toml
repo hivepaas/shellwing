@@ -8,6 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+shellwing-spawn.workspace = true
 shellwing-vault.workspace = true
 opendal = { version = "0.59", default-features = false, features = [
     "services-s3",

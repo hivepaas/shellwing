@@ -22,6 +22,7 @@ x11 = ["gpui_platform/x11"]
 ui-tests = ["gpui/test-support", "shellwing-update/test-source"]
 
 [dependencies]
+shellwing-spawn.workspace = true
 shellwing-term.workspace = true
 shellwing-ssh.workspace = true
 shellwing-config.workspace = true

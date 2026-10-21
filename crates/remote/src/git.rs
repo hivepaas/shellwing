@@ -16,6 +16,7 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use shellwing_spawn::Unblocked;
 use shellwing_vault::{Backend, Folder};
 
 /// The oldest git taken: 2.31 reads settings from the environment
@@ -152,7 +153,7 @@ fn command_line_tools() -> bool {
         .arg("-p")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status()
+        .status_unblocked()
         .is_ok_and(|s| s.success())
 }
 
@@ -190,7 +191,7 @@ fn install_here() -> Install {
             .arg("--version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()
+            .status_unblocked()
             .is_ok_and(|s| s.success());
         return if winget {
             Install::Winget
@@ -295,7 +296,7 @@ fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
     // (ssh, a credential helper), which would otherwise live on.
     #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(c, 0);
-    let mut child = c.spawn()?;
+    let mut child = c.spawn_unblocked()?;
     let mut out = child.stdout.take();
     let mut err = child.stderr.take();
     // Read as it comes, so a full pipe never stops the command.
@@ -587,26 +588,14 @@ impl Backend for GitRepo {
             return Ok(());
         }
         let theirs = format!("refs/remotes/origin/{}", self.branch);
-        let ours = format!("refs/heads/{}", self.branch);
-        // Asked first rather than fetched and failed: git fetching a branch
-        // that is not there dies waiting for its ssh, which outside a
-        // terminal does not always end, until the time limit.
-        let there = !self
-            .git(&["ls-remote", "--heads", "origin", &ours])?
-            .trim()
-            .is_empty();
-        let fetched = if there {
-            self.git_said(&[
-                "fetch",
-                "-q",
-                "--depth",
-                "1",
-                "origin",
-                &format!("+{ours}:{theirs}"),
-            ])?
-        } else {
-            Err(format!("couldn't find remote ref {ours}"))
-        };
+        let fetched = self.git_said(&[
+            "fetch",
+            "-q",
+            "--depth",
+            "1",
+            "origin",
+            &format!("+refs/heads/{}:{theirs}", self.branch),
+        ])?;
         match fetched {
             Ok(_) => {
                 self.git(&["reset", "-q", "--hard", &theirs])?;

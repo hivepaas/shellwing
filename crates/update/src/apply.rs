@@ -16,6 +16,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use shellwing_spawn::Unblocked;
+
 use crate::install::Install;
 
 /// Installs the release in `staged` over the app installed as `install`,
@@ -25,14 +27,18 @@ pub fn apply(install: &Install, staged: &Path, relaunch: bool) -> io::Result<()>
         Install::AppImage(image) => {
             replace_file(image, staged)?;
             if relaunch {
-                Command::new(image).spawn()?;
+                // The new app must not start with signals blocked.
+                Command::new(image).spawn_unblocked()?;
             }
             Ok(())
         }
         Install::MacBundle(bundle) => {
             replace_bundle(bundle, staged, signed_alike)?;
             if relaunch {
-                Command::new("open").arg("-n").arg(bundle).spawn()?;
+                Command::new("open")
+                    .arg("-n")
+                    .arg(bundle)
+                    .spawn_unblocked()?;
             }
             Ok(())
         }
