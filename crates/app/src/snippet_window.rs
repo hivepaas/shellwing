@@ -585,6 +585,22 @@ impl SnippetWindow {
     }
 
     fn button(id: impl Into<gpui::ElementId>, label: String) -> gpui::Stateful<gpui::Div> {
+        Self::styled_button(id, label, false)
+    }
+
+    /// A button, or the window's main one in the accent color. Its hover is
+    /// set once: GPUI refuses a second (a panic in debug builds).
+    fn styled_button(
+        id: impl Into<gpui::ElementId>,
+        label: String,
+        primary: bool,
+    ) -> gpui::Stateful<gpui::Div> {
+        let c = colors();
+        let (bg, hover, edge) = if primary {
+            (c.accent, c.accent_hover, c.accent)
+        } else {
+            (c.button, c.button_hover, c.field_edge)
+        };
         div()
             .id(id.into())
             .h(px(30.))
@@ -594,11 +610,15 @@ impl SnippetWindow {
             .gap(px(6.))
             .rounded(px(6.))
             .border_1()
-            .border_color(rgb(colors().field_edge))
-            .bg(rgb(colors().button))
+            .border_color(rgb(edge))
+            .bg(rgb(bg))
             .text_size(ui(12.5))
             .cursor_pointer()
-            .hover(|s| s.bg(rgb(colors().button_hover)))
+            .hover(move |s| s.bg(rgb(hover)))
+            .when(primary, |d| {
+                d.text_color(rgb(c.on_accent))
+                    .font_weight(FontWeight::SEMIBOLD)
+            })
             .child(label)
     }
 
@@ -1023,12 +1043,7 @@ impl SnippetWindow {
                     );
                 }
                 b.child(
-                    Self::button("snippet-run", tr!("Run in {pane}", pane = p))
-                        .border_color(rgb(colors().accent))
-                        .bg(rgb(colors().accent))
-                        .hover(|s| s.bg(rgb(colors().accent_hover)))
-                        .text_color(rgb(colors().on_accent))
-                        .font_weight(FontWeight::SEMIBOLD)
+                    Self::styled_button("snippet-run", tr!("Run in {pane}", pane = p), true)
                         .on_click(cx.listener(|v, _, _, cx| v.run(true, cx))),
                 )
             }
