@@ -9,11 +9,12 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use russh::keys::ssh_key::Algorithm;
+use russh::keys::ssh_key::certificate::{Builder, CertType};
+use russh::keys::ssh_key::{Algorithm, Certificate};
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth, ChannelOpenHandle, Msg, Session};
 use russh::{Channel, ChannelId, MethodKind, MethodSet};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::AbortHandle;
 
@@ -39,6 +40,9 @@ pub struct Policy {
     pub otp: Option<String>,
     /// Accept this key.
     pub key: Option<PublicKey>,
+    /// Accept user certificates this authority signed for [`USER`]
+    /// (`TrustedUserCAKeys`). Expired ones are refused before they get here.
+    pub user_ca: Option<PublicKey>,
     /// Carry -L and -D (direct-tcpip) and -R (tcpip-forward).
     pub forward: bool,
     /// Serve SFTP from this directory with OpenSSH's sftp-server, where it is
@@ -74,6 +78,9 @@ pub struct Seen {
     pub env: Vec<(String, String)>,
     /// Agent forwarding asked for.
     pub agent: bool,
+    /// What the `agent` command got from the forwarded agent: the number of
+    /// keys it holds, or why it got nothing.
+    pub agent_keys: Option<Result<u32, String>>,
     /// Ports opened for -L/-D (host:port) and bound for -R.
     pub forwards: Vec<String>,
 }
@@ -98,6 +105,20 @@ impl Server {
         Self::start_with_key(rt, policy, key, 0)
     }
 
+    /// Starts a server whose new host key `ca` certified for 127.0.0.1, as a
+    /// fleet whose clients trust the authority (`@cert-authority`) and not
+    /// each host's key.
+    pub fn start_certified(
+        rt: &tokio::runtime::Runtime,
+        policy: Policy,
+        ca: &PrivateKey,
+        valid: std::ops::Range<u64>,
+    ) -> Server {
+        let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("host key");
+        let cert = certify(ca, key.public_key(), CertType::Host, "127.0.0.1", valid);
+        Self::start_inner(rt, policy, key, vec![cert], 0)
+    }
+
     /// Starts a server with `key` on `port` (0: any free one).
     pub fn start_with_key(
         rt: &tokio::runtime::Runtime,
@@ -105,9 +126,19 @@ impl Server {
         key: PrivateKey,
         port: u16,
     ) -> Server {
+        Self::start_inner(rt, policy, key, vec![], port)
+    }
+
+    fn start_inner(
+        rt: &tokio::runtime::Runtime,
+        policy: Policy,
+        key: PrivateKey,
+        certificates: Vec<Certificate>,
+        port: u16,
+    ) -> Server {
         let host_key = key.public_key().clone();
         let mut methods = vec![];
-        if policy.key.is_some() {
+        if policy.key.is_some() || policy.user_ca.is_some() {
             methods.push(MethodKind::PublicKey);
         }
         if policy.password.is_some() && !policy.pam {
@@ -119,6 +150,7 @@ impl Server {
         let config = Arc::new(server::Config {
             methods: MethodSet::from(&methods[..]),
             keys: vec![key],
+            certificates,
             auth_rejection_time: Duration::from_millis(1),
             auth_rejection_time_initial: Some(Duration::ZERO),
             inactivity_timeout: None,
@@ -241,6 +273,70 @@ async fn relay(
         }
     }
     let _ = to.shutdown().await;
+}
+
+/// Seconds since the Unix epoch.
+pub fn now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("time")
+        .as_secs()
+}
+
+/// From a minute ago for an hour: a certificate valid now.
+pub fn valid_now() -> std::ops::Range<u64> {
+    now() - 60..now() + 3600
+}
+
+/// A certificate for `key` of `kind`, signed by `ca` for `principal`.
+pub fn certify(
+    ca: &PrivateKey,
+    key: &PublicKey,
+    kind: CertType,
+    principal: &str,
+    valid: std::ops::Range<u64>,
+) -> Certificate {
+    let mut b = Builder::new_with_random_nonce(
+        &mut rand::rng(),
+        key.key_data().clone(),
+        valid.start,
+        valid.end,
+    )
+    .expect("certificate");
+    b.cert_type(kind).expect("type");
+    b.key_id("ui-test").expect("id");
+    b.valid_principal(principal).expect("principal");
+    b.sign(ca).expect("sign")
+}
+
+/// Asks the client's forwarded agent how many keys it holds, over a channel
+/// the server opens back to the client (as `ssh-add -l` on a server does).
+async fn agent_keys(handle: &server::Handle) -> Result<u32, String> {
+    let channel = handle
+        .channel_open_agent()
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut stream = channel.into_stream();
+    // SSH_AGENTC_REQUEST_IDENTITIES
+    stream
+        .write_all(&[0, 0, 0, 1, 11])
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut len = [0u8; 4];
+    stream
+        .read_exact(&mut len)
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut body = vec![0u8; u32::from_be_bytes(len) as usize];
+    stream
+        .read_exact(&mut body)
+        .await
+        .map_err(|e| e.to_string())?;
+    // SSH_AGENT_IDENTITIES_ANSWER, then the number of keys.
+    match body.as_slice() {
+        [12, a, b, c, d, ..] => Ok(u32::from_be_bytes([*a, *b, *c, *d])),
+        _ => Err(format!("unexpected answer {body:?}")),
+    }
 }
 
 /// A port nothing listens on: connecting is refused. Port 1 (tcpmux) is
@@ -399,6 +495,21 @@ impl Shell {
                     .map(|(_, v)| v.clone());
                 format!("{arg}={}\r\n", value.unwrap_or_default())
             }
+            // `ssh-add -l` through agent forwarding: answered once the agent
+            // has.
+            "agent" => {
+                let (handle, seen) = (session.handle(), self.seen.clone());
+                tokio::spawn(async move {
+                    let got = agent_keys(&handle).await;
+                    let out = match &got {
+                        Ok(n) => format!("agent: {n} keys"),
+                        Err(_) => "agent: none forwarded".to_string(),
+                    };
+                    seen.lock().expect("seen").agent_keys = Some(got);
+                    let _ = handle.data(channel, format!("\r\n{out}\r\n{PROMPT}")).await;
+                });
+                return Ok(());
+            }
             "bracketed" => "\x1b[?2004h".into(),
             "bell" => "\x07".into(),
             "red" => "\x1b[31mred text\x1b[0m\r\n".into(),
@@ -435,8 +546,12 @@ impl server::Handler for Shell {
         _user: &str,
         key: &PublicKey,
     ) -> Result<Auth, Self::Error> {
+        // A certificate's key is offered as itself: whether the certificate
+        // holds is for `auth_openssh_certificate`.
         Ok(
-            if self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data()) {
+            if self.policy.user_ca.is_some()
+                || self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data())
+            {
                 Auth::Accept
             } else {
                 Auth::reject()
@@ -452,6 +567,24 @@ impl server::Handler for Shell {
             self.first_factor()
         } else {
             Auth::reject()
+        })
+    }
+
+    async fn auth_openssh_certificate(
+        &mut self,
+        user: &str,
+        certificate: &Certificate,
+    ) -> Result<Auth, Self::Error> {
+        let ok = user == USER
+            && certificate.cert_type() == CertType::User
+            && certificate.valid_principals().iter().any(|p| p == USER)
+            && self.policy.user_ca.as_ref().map(PublicKey::key_data)
+                == Some(certificate.signature_key());
+        self.record(format!("certificate:{}", if ok { "ok" } else { "wrong" }));
+        Ok(if ok {
+            self.first_factor()
+        } else {
+            self.reject()
         })
     }
 

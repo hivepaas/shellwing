@@ -67,6 +67,8 @@ winresource = "0.1.34"
 # The UI tests (src/ui_tests, with the `ui-tests` feature): an SSH server in
 # the test process.
 russh.workspace = true
+# The stand-in ssh-agent's listener, as russh's agent server takes it.
+futures = "0.3"
 rand = { version = "0.10", features = ["thread_rng"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "net", "io-util", "process"] }
 

@@ -10,7 +10,7 @@ use crate::session::Status;
 
 /// A new key pair in the scratch directory, encrypted with `passphrase` if
 /// given; the private key's path.
-fn key_file(ui: &Ui, name: &str, passphrase: Option<&str>) -> (PathBuf, PrivateKey) {
+pub(super) fn key_file(ui: &Ui, name: &str, passphrase: Option<&str>) -> (PathBuf, PrivateKey) {
     let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
     let stored = match passphrase {
         Some(p) => key.encrypt(&mut rand::rng(), p).expect("encrypt"),
@@ -32,7 +32,7 @@ fn key_file(ui: &Ui, name: &str, passphrase: Option<&str>) -> (PathBuf, PrivateK
 }
 
 /// An ssh config entry `alias` for 127.0.0.1:`port`, with more lines.
-fn alias(alias: &str, port: u16, more: &str) -> String {
+pub(super) fn alias(alias: &str, port: u16, more: &str) -> String {
     format!("Host {alias}\n  HostName 127.0.0.1\n  Port {port}\n  User {USER}\n{more}")
 }
 

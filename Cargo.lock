@@ -7519,6 +7519,7 @@ dependencies = [
  "async-channel",
  "chrono",
  "dirs 7.0.0",
+ "futures",
  "gpui-pre",
  "gpui-pre-platform",
  "image",

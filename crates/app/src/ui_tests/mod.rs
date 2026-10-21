@@ -39,6 +39,7 @@ mod host_list;
 mod hosts;
 mod local;
 mod notes;
+mod security;
 mod session_life;
 mod tabs;
 mod terminal;
@@ -96,6 +97,15 @@ pub fn in_child(module: &str) {
     std::fs::create_dir_all(dir.join("config")).expect("scratch dir");
     std::fs::write(dir.join("ssh_config"), "").expect("ssh config");
     std::fs::write(dir.join("known_hosts"), "").expect("known_hosts");
+    // The scenario's ssh-agent socket, on which only a scenario that starts
+    // an agent ([`Ui::agent`]) listens. Not in `dir`: a Unix socket's path is
+    // at most 104 bytes on macOS, whose temporary directory is long.
+    let agent = std::env::temp_dir().join(format!("swa-{:016x}.sock", {
+        use std::hash::{Hash, Hasher};
+        let mut h = std::hash::DefaultHasher::new();
+        dir.hash(&mut h);
+        h.finish()
+    }));
     let out = Command::new(std::env::current_exe().expect("test binary"))
         .args([
             "--exact",
@@ -115,7 +125,9 @@ pub fn in_child(module: &str) {
         // No session bus: nothing can reach the desktop's keychain (the vault
         // keeps its key in memory in tests anyway).
         .env_remove("DBUS_SESSION_BUS_ADDRESS")
-        .env_remove("SSH_AUTH_SOCK")
+        // Never the user's agent; nothing listens there unless the scenario
+        // starts one, and an agent that is not there is passed over.
+        .env("SSH_AUTH_SOCK", &agent)
         .env_remove("SHELLWING_PASSWORD")
         .output()
         .expect("run the scenario");
@@ -123,6 +135,7 @@ pub fn in_child(module: &str) {
         String::from_utf8_lossy(&out.stdout),
         String::from_utf8_lossy(&out.stderr),
     );
+    let _ = std::fs::remove_file(&agent);
     assert!(
         out.status.success() && stdout.contains("1 passed"),
         "scenario {name} failed:\n{stdout}\n{stderr}"
@@ -592,6 +605,31 @@ impl Ui {
     pub fn reload_config(&mut self) {
         self.ws(|ws, _, cx| ws.poll_config(cx));
         self.cx.run_until_parked();
+    }
+
+    /// Starts the user's ssh-agent, holding `keys`, where `$SSH_AUTH_SOCK`
+    /// points.
+    #[cfg(unix)]
+    pub fn agent(&self, keys: &[&russh::keys::PrivateKey]) {
+        let path = PathBuf::from(std::env::var_os("SSH_AUTH_SOCK").expect("set by in_child"));
+        let _ = std::fs::remove_file(&path);
+        let listener = {
+            let _rt = self.rt.enter();
+            tokio::net::UnixListener::bind(&path).expect("agent socket")
+        };
+        let incoming = futures::stream::unfold(listener, |l| async move {
+            Some((l.accept().await.map(|(s, _)| s), l))
+        });
+        self.rt
+            .spawn(russh::keys::agent::server::serve(Box::pin(incoming), ()));
+        self.rt.block_on(async {
+            let mut agent = russh::keys::agent::client::AgentClient::connect_uds(&path)
+                .await
+                .expect("reach the agent");
+            for key in keys {
+                agent.add_identity(key, &[]).await.expect("add a key");
+            }
+        });
     }
 
     /// Starts `server` with `policy` on the scenario's runtime.

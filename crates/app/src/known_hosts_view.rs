@@ -233,6 +233,7 @@ impl Render for KnownHostsView {
                     .child(
                         div()
                             .id(("known-remove", line))
+                            .debug_selector(|| format!("known-remove:{line}"))
                             .h(px(26.))
                             .px(px(10.))
                             .flex()
