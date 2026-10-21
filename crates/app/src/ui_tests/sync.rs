@@ -525,3 +525,107 @@ scenario!(
         assert!(!ui.host_names().contains(&"db".to_string()), "{:?}", ui.host_names());
     }
 );
+
+/// Settings › Sync, shown.
+fn sync_page(ui: &mut Ui) {
+    ui.palette("Settings");
+    ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+    ui.click("settings-page:Sync");
+}
+
+scenario!(
+    /// Let a passphrase join new devices (Settings › Sync): a new device
+    /// joins by typing it, with no recovery key and nobody approving, and
+    /// gets the password saved here.
+    a_passphrase_joins_a_new_device,
+    |ui| {
+        const PASSPHRASE: &str = "a long sync passphrase";
+        ui.open();
+        let (shared, _key) = sync_with_a_new_folder(ui);
+        let target = format!("{USER}@127.0.0.1:2201");
+        ui.vault()
+            .expect("vault")
+            .set_password(&target, "made here")
+            .expect("password");
+        sync_now(ui);
+        sync_page(ui);
+        ui.click("sync-passphrase");
+        ui.wait_until("the passphrase asked for", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.line(PASSPHRASE);
+        ui.line(PASSPHRASE);
+        ui.wait_for_notice("New devices can join with the sync passphrase now.");
+        let new_dir = ui.dir.join("new-device");
+        std::fs::create_dir_all(&new_dir).expect("dir");
+        let new = Vault::open(&new_dir.join("vault.db"), &MemoryKeys::default()).expect("vault");
+        let folder = Folder::new(&shared);
+        assert!(new.join_with_passphrase(&folder, "not it at all").is_err());
+        new.join_with_passphrase(&folder, PASSPHRASE).expect("join");
+        ui.wait_until("the password there", |_| {
+            let _ = new.sync(&folder);
+            new.password(&target)
+                .ok()
+                .flatten()
+                .is_some_and(|p| p.as_str() == "made here")
+        });
+    }
+);
+
+scenario!(
+    /// Settings sync too, as they do unless turned off (Settings › Sync ›
+    /// Sync settings too): the theme chosen here reaches the other device,
+    /// and one chosen there comes here.
+    settings_travel_both_ways,
+    |ui| {
+        ui.config_file("config.toml", "[appearance]\ntheme = \"nord\"\n");
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        sync_now(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        let settings = |other: &Vault| {
+            let _ = other.sync(&folder);
+            other
+                .entries("settings")
+                .unwrap_or_default()
+                .into_iter()
+                .next()
+        };
+        ui.wait_until("the theme there", |_| {
+            settings(&other).is_some_and(|(_, f)| {
+                f.get("appearance.theme").is_some_and(|t| t.contains("nord"))
+            })
+        });
+        let (id, mut fields) = settings(&other).expect("settings there");
+        fields.insert("appearance.theme".into(), "\"dracula\"".into());
+        other.update(&id, "settings", "Settings", &fields).expect("edit there");
+        other.sync(&folder).expect("sync there");
+        sync_now(ui);
+        ui.wait_until("the theme here", |ui| {
+            std::fs::read_to_string(ui.config_dir().join("config.toml"))
+                .is_ok_and(|c| c.contains("theme = \"dracula\""))
+        });
+    }
+);
+
+scenario!(
+    /// A hosts.toml with a mistake does not stop passwords syncing: the
+    /// other device's saved password still comes, and the file is left as it
+    /// is.
+    a_broken_hosts_file_does_not_stop_passwords,
+    |ui| {
+        const BROKEN: &str = "[[host]]\nname = \"half\nport = oops\n";
+        ui.config_file("hosts.toml", BROKEN);
+        ui.open();
+        let (shared, key) = sync_with_a_new_folder(ui);
+        let (other, folder) = other_device_joins(ui, &shared, &key);
+        let target = format!("{USER}@127.0.0.1:2201");
+        other.set_password(&target, "made there").expect("password");
+        other.sync(&folder).expect("sync there");
+        sync_now(ui);
+        ui.wait_until("the password here", |ui| {
+            ui.vault()
+                .and_then(|v| v.password(&target).ok().flatten())
+                .is_some_and(|p| p.as_str() == "made there")
+        });
+        assert_eq!(ui.hosts_toml(), BROKEN, "hosts.toml was changed");
+    }
+);
