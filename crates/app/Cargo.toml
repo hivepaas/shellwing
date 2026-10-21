@@ -42,8 +42,9 @@ zorite-markdown = { version = "=0.10.0", default-features = false }
 # The notes' editor: zorite-editor, taken in (crates/note-editor/UPSTREAM.md).
 shellwing-note-editor = { path = "../note-editor" }
 gpui.workspace = true
-# Only to hand GPUI a rendered gradient; the same version GPUI uses.
-image = { version = "0.25", default-features = false }
+# To hand GPUI a rendered gradient, and to decode a note's images; the
+# same version GPUI uses.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 gpui_platform.workspace = true
 tokio.workspace = true
 async-channel.workspace = true

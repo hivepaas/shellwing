@@ -38,6 +38,15 @@ tf2bc7ef2 = Die Datei hat { $size } KB; höchstens { $max } KB.
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = Die Notiz hat { $size } KB; höchstens { $max } KB.
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = Das Bild hat { $size } KB; höchstens { $max } KB.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Die Bilder der Notiz haben { $size } MB; höchstens { $max } MB.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = Kein Bild, das sich aufbewahren lässt: ein PNG oder ein JPEG.
+
 # Name
 t0fe07306 = Name
 
@@ -1207,6 +1216,30 @@ tdd571ace = Hell, warm
 # Your themes
 tb2e83d5c = Deine Designs
 
+# Loading the image…
+t457184d7 = Bild wird geladen…
+
+# Image not synced yet
+tf2f8e6ad = Bild noch nicht synchronisiert
+
+# The image cannot be shown
+teac0ac18 = Das Bild lässt sich nicht anzeigen
+
+# The pasted image
+t10124f90 = Das eingefügte Bild
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } ist zu groß für ein Bild hier.
+
+# {name} cannot be read: {e}
+teff3eb8d = { $name } lässt sich nicht lesen: { $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } ist kein lesbares Bild.
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } ist ein zu großes Bild ({ $width } × { $height }).
+
 # New note
 t788c7123 = Neue Notiz
 
@@ -1221,6 +1254,15 @@ t117b6c23 = Hier schreiben; Markdown erscheint beim Tippen.
 
 # It is not in the vault any more.
 td11af590 = Sie ist nicht mehr im Tresor.
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = Bilder zeigen sich in Markdown-Notizen; diese Notiz ist reiner Text.
+
+# Images go in while the note is edited.
+t6f2c9191 = Bilder kommen hinein, während die Notiz bearbeitet wird.
+
+# Insert
+t0f317948 = Einfügen
 
 # this note
 t4545c373 = diese Notiz
@@ -1276,8 +1318,8 @@ t3d5eaffc = In { $pane } einfügen
 # No shell to insert into
 t825e7370 = Keine Shell zum Einfügen
 
-# Insert
-t0f317948 = Einfügen
+# Insert Image…
+t012e861b = Bild einfügen…
 
 # Cut
 t58e25863 = Ausschneiden

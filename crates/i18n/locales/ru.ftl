@@ -40,6 +40,15 @@ tf2bc7ef2 = Файл занимает { $size } КБ; не больше { $max }
 # The note is {size} KB; {max} KB at most.
 td5e1ea7c = Заметка занимает { $size } КБ; не больше { $max } КБ.
 
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = Изображение занимает { $size } КБ; не больше { $max } КБ.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Изображения заметки занимают { $size } МБ; не больше { $max } МБ.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = Это не изображение, которое можно сохранить: нужен PNG или JPEG.
+
 # Name
 t0fe07306 = Имя
 
@@ -1225,6 +1234,30 @@ tdd571ace = Светлые, тёплые
 # Your themes
 tb2e83d5c = Ваши темы
 
+# Loading the image…
+t457184d7 = Загрузка изображения…
+
+# Image not synced yet
+tf2f8e6ad = Изображение ещё не синхронизировано
+
+# The image cannot be shown
+teac0ac18 = Не удаётся показать изображение
+
+# The pasted image
+t10124f90 = Вставленное изображение
+
+# {name} is too large to be an image here.
+t6bd6209b = { $name } слишком велико для изображения здесь.
+
+# {name} cannot be read: {e}
+teff3eb8d = Не удаётся прочитать { $name }: { $e }
+
+# {name} is not an image that can be read.
+t53d0e31f = { $name } — не изображение, которое можно прочитать.
+
+# {name} is too large an image ({width} × {height}).
+tad4a609d = { $name } — слишком большое изображение ({ $width } × { $height }).
+
 # New note
 t788c7123 = Новая заметка
 
@@ -1239,6 +1272,15 @@ t117b6c23 = Пишите здесь; Markdown виден по мере ввод�
 
 # It is not in the vault any more.
 td11af590 = Его больше нет в хранилище.
+
+# Images show in Markdown notes; this note is plain text.
+tb31ba949 = Изображения показываются в заметках Markdown; эта заметка — обычный текст.
+
+# Images go in while the note is edited.
+t6f2c9191 = Изображения добавляются, пока заметка редактируется.
+
+# Insert
+t0f317948 = Вставить
 
 # this note
 t4545c373 = эту заметку
@@ -1294,8 +1336,8 @@ t3d5eaffc = Вставить в { $pane }
 # No shell to insert into
 t825e7370 = Нет оболочки для вставки
 
-# Insert
-t0f317948 = Вставить
+# Insert Image…
+t012e861b = Вставить изображение…
 
 # Cut
 t58e25863 = Вырезать

@@ -393,7 +393,7 @@ mod tests {
         );
         assert_eq!(
             v.tend_attachments(&used, 1_071 * day).expect("tend"),
-            [dropped.clone()]
+            std::slice::from_ref(&dropped)
         );
         assert!(v.attachment(&dropped).expect("read").is_none());
         assert!(v.attachment(&kept).expect("read").is_some());

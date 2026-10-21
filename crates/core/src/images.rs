@@ -29,7 +29,7 @@ pub struct Prepared {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PrepareError {
-    /// Not an image this can read (PNG, JPEG, GIF, WebP, BMP).
+    /// Not an image this can read (PNG, JPEG, GIF, WebP, BMP, TIFF).
     Unreadable(String),
     /// More pixels than [`MAX_PIXELS`].
     TooManyPixels { width: u32, height: u32 },
@@ -65,6 +65,7 @@ fn readable(format: ImageFormat) -> bool {
             | ImageFormat::Gif
             | ImageFormat::WebP
             | ImageFormat::Bmp
+            | ImageFormat::Tiff
     )
 }
 

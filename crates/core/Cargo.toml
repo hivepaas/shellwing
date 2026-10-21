@@ -23,7 +23,7 @@ dirs = "7"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 # Images for notes: read, scaled and written again (images.rs). GPUI takes in
 # the same crate with these formats and more, so the app grows by nothing.
-image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff"] }
 
 [dev-dependencies]
 toml = "1"
