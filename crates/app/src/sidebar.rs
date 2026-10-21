@@ -12,6 +12,7 @@ use crate::input::{Changed, TextInput};
 
 use crate::colors::colors;
 use crate::session::Status;
+use crate::settings_view::Page;
 use crate::workspace::{EditTarget, Workspace};
 
 /// The host list's width by default, and how far its edge can be dragged.
@@ -637,7 +638,11 @@ impl Render for Sidebar {
                     )),
             );
         }
-        let (workspace, for_group) = (self.workspace.clone(), self.workspace.clone());
+        let (workspace, for_group, for_about) = (
+            self.workspace.clone(),
+            self.workspace.clone(),
+            self.workspace.clone(),
+        );
         let footer = div()
             .p_2()
             .flex()
@@ -662,7 +667,7 @@ impl Render for Sidebar {
                         let _ = workspace
                             .update(cx, |ws, cx| ws.edit_host(EditTarget::New, window, cx));
                     })
-                    .child(tr!("+ New host")),
+                    .child(tr!("+ Host")),
             )
             .child(
                 div()
@@ -682,6 +687,37 @@ impl Render for Sidebar {
                         let _ = for_group.update(cx, |ws, cx| ws.edit_group(None, window, cx));
                     })
                     .child(tr!("+ Group")),
+            )
+            .child(
+                div()
+                    .id("about")
+                    .size(px(32.))
+                    .flex_shrink_0()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_md()
+                    .border_1()
+                    .border_color(rgb(colors().field_edge))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().hover)))
+                    .tooltip(|_, cx| {
+                        cx.new(|_| Tip {
+                            title: tr!("About shellwing").into(),
+                            detail: SharedString::default(),
+                        })
+                        .into()
+                    })
+                    .on_click(move |_, window, cx| {
+                        let _ = for_about
+                            .update(cx, |ws, cx| ws.open_settings(Page::About, window, cx));
+                    })
+                    .child(
+                        svg()
+                            .path("icons/info.svg")
+                            .size(px(16.))
+                            .text_color(rgb(colors().soft)),
+                    ),
             );
         let collapse = self.workspace.clone();
         // The ground is the workspace's, which rounds the window's corner.

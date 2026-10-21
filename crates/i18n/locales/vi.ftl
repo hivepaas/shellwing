@@ -2152,11 +2152,14 @@ t2a8f8871 = Không có máy chủ nào khớp.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Chưa có máy chủ. Hãy thêm một máy chủ, hoặc các khối Host vào ~/.ssh/config.
 
-# + New host
-tc7a909aa = + Máy chủ mới
+# + Host
+t0e963f08 = + Máy chủ
 
 # + Group
 t9585c651 = + Nhóm
+
+# About shellwing
+t884dc61f = Giới thiệu shellwing
 
 # HOSTS
 t0d325d34 = MÁY CHỦ

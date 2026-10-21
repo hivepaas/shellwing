@@ -2180,11 +2180,14 @@ t2a8f8871 = Aucun serveur ne correspond.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Aucun serveur pour l'instant. Ajoutez-en un, ou ajoutez des blocs Host à ~/.ssh/config.
 
-# + New host
-tc7a909aa = + Nouveau serveur
+# + Host
+t0e963f08 = + Serveur
 
 # + Group
 t9585c651 = + Groupe
+
+# About shellwing
+t884dc61f = À propos de shellwing
 
 # HOSTS
 t0d325d34 = SERVEURS
