@@ -1,0 +1,194 @@
+//! Snippets and environments, kept in the vault and used from the palette:
+//! a command run (or only typed) in the pane, its holes asked for, run in
+//! every pane; variables loaded into the shell without showing their values,
+//! unloaded, and given to one snippet alone.
+
+use std::time::Duration;
+
+use shellwing_vault::Snippet;
+
+use super::{Policy, Server, USER, Ui, scenario};
+
+/// A secret value with what a terminal must not take as typed text: spaces,
+/// a backslash, a newline and Vietnamese (bytes past ASCII).
+const SECRET: &str = "p@ss w0rd\\x\nTiếng Việt";
+
+/// Once the vault is open, keeps a snippet in it.
+fn snippet(ui: &mut Ui, name: &str, command: &str, enter: bool, needs: Vec<String>) {
+    ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+    let vault = ui.vault().expect("vault");
+    vault
+        .save_snippet(&Snippet {
+            id: String::new(),
+            name: name.into(),
+            command: command.into(),
+            scope: String::new(),
+            enter,
+            category: String::new(),
+            needs,
+            origin: String::new(),
+        })
+        .expect("snippet saved");
+}
+
+/// Once the vault is open, keeps the environment `name` with `DB_PASSWORD`
+/// = [`SECRET`] and `DB_USER` = `admin`; its id.
+fn environment(ui: &mut Ui, name: &str) -> String {
+    ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+    let vault = ui.vault().expect("vault");
+    vault
+        .save_environment(
+            "",
+            name,
+            "",
+            &[
+                ("DB_PASSWORD".into(), Some(SECRET.into())),
+                ("DB_USER".into(), Some("admin".into())),
+            ],
+        )
+        .expect("environment saved")
+}
+
+/// The host `web` in hosts.toml, connected and signed in to.
+fn signed_in(ui: &mut Ui) -> Server {
+    let server = ui.server(Policy::password());
+    ui.trust(&server);
+    ui.config_file(
+        "hosts.toml",
+        &format!(
+            "[[host]]\nname = \"web\"\naddress = \"127.0.0.1\"\nport = {}\nuser = \"{USER}\"\n",
+            server.port
+        ),
+    );
+    ui.connect("web");
+    ui.login();
+    server
+}
+
+/// How many times the shell ran `line`.
+fn ran(server: &Server, line: &str) -> usize {
+    server.seen(|s| s.lines.iter().filter(|l| l.as_str() == line).count())
+}
+
+scenario!(
+    /// A snippet chosen in the palette is typed into the pane and run.
+    snippet_runs_from_the_palette,
+    |ui| {
+        let server = signed_in(ui);
+        snippet(ui, "Disk usage", "df -h /var", true, vec![]);
+        ui.palette("Disk usage");
+        ui.wait_for("you said: df -h /var");
+        assert_eq!(ran(&server, "df -h /var"), 1);
+    }
+);
+
+scenario!(
+    /// A snippet set not to run is only typed: the user reads it, then
+    /// presses Enter.
+    snippet_only_typed_waits_for_enter,
+    |ui| {
+        let server = signed_in(ui);
+        snippet(ui, "Drop the cache", "rm -rf /tmp/cache", false, vec![]);
+        ui.palette("Drop the cache");
+        ui.wait_for("$ rm -rf /tmp/cache");
+        ui.settle(Duration::from_millis(200));
+        assert_eq!(ran(&server, "rm -rf /tmp/cache"), 0, "it ran by itself");
+        ui.keys("enter");
+        ui.wait_for("you said: rm -rf /tmp/cache");
+    }
+);
+
+scenario!(
+    /// A snippet's holes: `{{host}}` and `{{user}}` are filled in from the
+    /// pane; another is asked for in the palette, then the command runs.
+    snippet_asks_for_its_holes,
+    |ui| {
+        signed_in(ui);
+        snippet(
+            ui,
+            "Restart a service",
+            "systemctl restart {{service}} # on {{host}} as {{user}}",
+            true,
+            vec![],
+        );
+        ui.palette("Restart a service");
+        ui.wait_until("the question", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.line("nginx");
+        ui.wait_for(&format!(
+            "you said: systemctl restart nginx # on web as {USER}"
+        ));
+    }
+);
+
+scenario!(
+    /// Alt+Enter on a snippet runs it in every pane of the tab.
+    snippet_runs_in_every_pane,
+    |ui| {
+        let server = signed_in(ui);
+        snippet(ui, "Uptime", "uptime -p", true, vec![]);
+        ui.shortcut("d");
+        ui.wait_until("a second pane", |ui| ui.panes() == 2);
+        ui.login();
+        ui.shortcut("k");
+        ui.type_text("Uptime");
+        ui.keys("alt-enter");
+        ui.wait_until("both panes to run it", |_| ran(&server, "uptime -p") == 2);
+    }
+);
+
+scenario!(
+    /// An environment loaded from the palette: its variables are in the
+    /// shell, and their values never show on the screen or as a command line
+    /// the shell keeps; unloading takes them out again.
+    environment_loads_without_showing_its_values,
+    |ui| {
+        let server = signed_in(ui);
+        environment(ui, "Staging database");
+        ui.palette("Staging database");
+        ui.wait_for_notice("Staging database is loaded into this shell.");
+        let screen = ui.screen();
+        assert!(!screen.contains("p@ss"), "the value showed:\n{screen}");
+        let lines = server.seen(|s| s.lines.clone());
+        assert!(
+            !lines.iter().any(|l| l.contains("p@ss")),
+            "the value was a command line: {lines:?}"
+        );
+        ui.line("printenv DB_USER");
+        ui.wait_for("admin");
+        ui.line("printenv DB_PASSWORD");
+        ui.wait_for("p@ss w0rd\\x");
+        ui.wait_for("Tiếng Việt");
+        // Unloaded from the palette: gone from the shell.
+        ui.palette("Unload environment");
+        ui.wait_until("the unload", |_| {
+            ran(&server, " unset DB_PASSWORD DB_USER") == 1
+                || ran(&server, " unset DB_USER DB_PASSWORD") == 1
+        });
+        ui.line("printenv DB_USER");
+        ui.settle(Duration::from_millis(200));
+        let after = ui.screen();
+        let tail = after.rsplit("printenv DB_USER").next().unwrap_or_default();
+        assert!(!tail.contains("admin"), "still set:\n{after}");
+    }
+);
+
+scenario!(
+    /// A snippet that needs an environment runs in a subshell that has its
+    /// variables; the pane's own shell does not get them.
+    snippet_with_an_environment,
+    |ui| {
+        let server = signed_in(ui);
+        let env = environment(ui, "Staging database");
+        snippet(ui, "Who am I on the database", "printenv DB_USER", true, vec![env]);
+        ui.palette("Who am I on the database");
+        ui.wait_for("admin");
+        let screen = ui.screen();
+        assert!(!screen.contains("p@ss"), "the value showed:\n{screen}");
+        ui.line("printenv DB_USER");
+        ui.settle(Duration::from_millis(200));
+        let after = ui.screen();
+        let tail = after.rsplit("printenv DB_USER").next().unwrap_or_default();
+        assert!(!tail.contains("admin"), "the pane's shell has it:\n{after}");
+        assert_eq!(ran(&server, "printenv DB_USER"), 2);
+    }
+);

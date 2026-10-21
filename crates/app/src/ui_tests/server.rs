@@ -13,7 +13,7 @@ use russh::keys::ssh_key::certificate::{Builder, CertType};
 use russh::keys::ssh_key::{Algorithm, Certificate};
 use russh::keys::{PrivateKey, PublicKey};
 use russh::server::{self, Auth, ChannelOpenHandle, Msg, Session};
-use russh::{Channel, ChannelId, MethodKind, MethodSet};
+use russh::{Channel, ChannelId, ChannelMsg, MethodKind, MethodSet};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::AbortHandle;
@@ -40,6 +40,9 @@ pub struct Policy {
     pub otp: Option<String>,
     /// Accept this key.
     pub key: Option<PublicKey>,
+    /// Keep an authorized_keys: a key installed with shellwing's script
+    /// (`Install on…`, through exec) is accepted from then on.
+    pub install: bool,
     /// Accept user certificates this authority signed for [`USER`]
     /// (`TrustedUserCAKeys`). Expired ones are refused before they get here.
     pub user_ca: Option<PublicKey>,
@@ -81,6 +84,8 @@ pub struct Seen {
     /// What the `agent` command got from the forwarded agent: the number of
     /// keys it holds, or why it got nothing.
     pub agent_keys: Option<Result<u32, String>>,
+    /// Keys installed through `Install on…`, as their lines.
+    pub installed: Vec<String>,
     /// Ports opened for -L/-D (host:port) and bound for -R.
     pub forwards: Vec<String>,
 }
@@ -138,7 +143,7 @@ impl Server {
     ) -> Server {
         let host_key = key.public_key().clone();
         let mut methods = vec![];
-        if policy.key.is_some() || policy.user_ca.is_some() {
+        if policy.key.is_some() || policy.user_ca.is_some() || policy.install {
             methods.push(MethodKind::PublicKey);
         }
         if policy.password.is_some() && !policy.pam {
@@ -161,10 +166,12 @@ impl Server {
         let inner_port = inner.local_addr().expect("addr").port();
         let seen = Arc::new(Mutex::new(Seen::default()));
         let seen2 = seen.clone();
+        let authorized: Arc<Mutex<Vec<PublicKey>>> = Arc::default();
         rt.spawn(async move {
             while let Ok((socket, _)) = inner.accept().await {
                 seen2.lock().expect("seen").connections += 1;
                 let shell = Shell {
+                    authorized: authorized.clone(),
                     policy: policy.clone(),
                     methods: methods.clone(),
                     seen: seen2.clone(),
@@ -183,10 +190,26 @@ impl Server {
                 });
             }
         });
-        // The relay clients connect to.
-        let listener = rt
-            .block_on(TcpListener::bind(("127.0.0.1", port)))
-            .expect("bind");
+        // The relay clients connect to. A server started again on the port
+        // of one just killed waits for it to be let go: aborting the old
+        // relay closes its socket a moment later (macOS refuses the port
+        // until then).
+        let listener = rt.block_on(async {
+            let mut tries = 0;
+            loop {
+                match TcpListener::bind(("127.0.0.1", port)).await {
+                    Err(e)
+                        if e.kind() == std::io::ErrorKind::AddrInUse
+                            && port != 0
+                            && tries < 100 =>
+                    {
+                        tries += 1;
+                        tokio::time::sleep(Duration::from_millis(20)).await;
+                    }
+                    other => break other.expect("bind"),
+                }
+            }
+        });
         let port = listener.local_addr().expect("addr").port();
         let tasks: Arc<Mutex<Vec<AbortHandle>>> = Arc::default();
         let stalled = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -339,6 +362,46 @@ async fn agent_keys(handle: &server::Handle) -> Result<u32, String> {
     }
 }
 
+/// Reads the key the install script is given on its input, adds it to the
+/// authorized keys, and answers as the script does: `added` or `present`.
+async fn install(
+    mut ch: Channel<Msg>,
+    authorized: Arc<Mutex<Vec<PublicKey>>>,
+    seen: Arc<Mutex<Seen>>,
+) {
+    let mut got = Vec::new();
+    while let Some(msg) = ch.wait().await {
+        match msg {
+            ChannelMsg::Data { data } => {
+                got.extend_from_slice(&data);
+                if got.contains(&b'\n') {
+                    break;
+                }
+            }
+            ChannelMsg::Eof => break,
+            _ => {}
+        }
+    }
+    let line = String::from_utf8_lossy(&got).trim().to_string();
+    let (answer, status) = match PublicKey::from_openssh(&line) {
+        Ok(key) => {
+            let mut keys = authorized.lock().expect("keys");
+            if keys.iter().any(|k| k.key_data() == key.key_data()) {
+                ("present\n", 0)
+            } else {
+                keys.push(key);
+                seen.lock().expect("seen").installed.push(line);
+                ("added\n", 0)
+            }
+        }
+        Err(_) => ("", 3),
+    };
+    let _ = ch.data(answer.as_bytes()).await;
+    let _ = ch.exit_status(status).await;
+    let _ = ch.eof().await;
+    let _ = ch.close().await;
+}
+
 /// A port nothing listens on: connecting is refused. Port 1 (tcpmux) is
 /// privileged and unused everywhere; a port freed by the test could be taken
 /// by another scenario running at the same time.
@@ -409,10 +472,81 @@ pub fn has_sftp() -> bool {
 struct ShellState {
     line: Vec<u8>,
     alternate: bool,
+    /// Its variables, exported: what `printenv` prints.
+    vars: HashMap<String, String>,
+    /// A `( … )` being typed over several lines, until its `)`.
+    compound: Option<Vec<String>>,
+    /// Values read with the echo off, as shellwing's environments send them.
+    reading: Option<Reading>,
+}
+
+/// shellwing loading variables: their names, the values read so far, the
+/// one being read, and what comes once all are in.
+struct Reading {
+    names: Vec<String>,
+    values: Vec<(String, String)>,
+    current: String,
+    then: AfterReading,
+}
+
+enum AfterReading {
+    /// Exported, then this signal sent.
+    Export { done: String },
+    /// Set for these lines of a subshell only.
+    Subshell { lines: Vec<String> },
+}
+
+/// The payload of the shellwing signal `kind` (`ready-`, `done-`) that a
+/// `printf '\033]777;shellwing;<payload>\007'` in `line` sends.
+fn signal_in(line: &str, kind: &str) -> Option<String> {
+    let from = line.find(&format!("shellwing;{kind}"))? + "shellwing;".len();
+    let len = line[from..].find("\\007")?;
+    Some(line[from..from + len].to_string())
+}
+
+/// The variables a load reads, in order: each `NAME=$(printf '%bX' …`.
+fn names_read(line: &str) -> Vec<String> {
+    let mark = "=$(printf '%bX'";
+    let mut names = vec![];
+    let mut rest = line;
+    while let Some(at) = rest.find(mark) {
+        let before = &rest[..at];
+        let start = before
+            .rfind(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .map_or(0, |i| i + 1);
+        names.push(before[start..].to_string());
+        rest = &rest[at + mark.len()..];
+    }
+    names
+}
+
+/// What `printf %b` makes of a value's `\0ooo` escapes.
+fn decode(value: &str) -> String {
+    let b = value.as_bytes();
+    let (mut out, mut i) = (vec![], 0);
+    while i < b.len() {
+        if b[i] == b'\\' && b.get(i + 1) == Some(&b'0') {
+            let digits: Vec<u8> = b[i + 2..]
+                .iter()
+                .take(3)
+                .take_while(|d| (b'0'..=b'7').contains(d))
+                .copied()
+                .collect();
+            let n = digits.iter().fold(0u32, |n, d| n * 8 + u32::from(d - b'0'));
+            out.push(n as u8);
+            i += 2 + digits.len();
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 struct Shell {
     policy: Policy,
+    /// The keys installed so far ([`Policy::install`]), for every connection.
+    authorized: Arc<Mutex<Vec<PublicKey>>>,
     methods: Vec<MethodKind>,
     seen: Arc<Mutex<Seen>>,
     first_factor_done: bool,
@@ -422,6 +556,17 @@ struct Shell {
 }
 
 impl Shell {
+    /// Whether `key` gets in: the policy's, or one installed.
+    fn accepts(&self, key: &PublicKey) -> bool {
+        self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data())
+            || self
+                .authorized
+                .lock()
+                .expect("keys")
+                .iter()
+                .any(|k| k.key_data() == key.key_data())
+    }
+
     fn record(&self, what: String) {
         self.seen.lock().expect("seen").auth.push(what);
     }
@@ -454,9 +599,46 @@ impl Shell {
         session: &mut Session,
     ) -> Result<(), russh::Error> {
         self.seen.lock().expect("seen").lines.push(line.to_string());
-        let (cmd, arg) = line.split_once(' ').unwrap_or((line, ""));
+        // shellwing loading variables: the echo goes off, the values are
+        // read, then exported and a signal sent.
+        if let (Some(ready), Some(done)) = (signal_in(line, "ready-"), signal_in(line, "done-")) {
+            return self.start_reading(
+                channel,
+                ready,
+                names_read(line),
+                AfterReading::Export { done },
+                session,
+            );
+        }
+        // A subshell over several lines: read to its `)`.
+        if line.trim_start().starts_with("( ") {
+            if let Some(s) = self.shells.get_mut(&channel) {
+                s.compound = Some(vec![line.to_string()]);
+            }
+            return session.data(channel, "\r\n> ");
+        }
+        // Leading spaces (a command kept out of the history) are the shell's
+        // to skip.
+        let (cmd, arg) = line
+            .trim_start()
+            .split_once(' ')
+            .unwrap_or((line.trim(), ""));
         let out: String = match cmd {
             "" => String::new(),
+            "printenv" => self
+                .shells
+                .get(&channel)
+                .and_then(|s| s.vars.get(arg))
+                .map(|v| format!("{v}\r\n"))
+                .unwrap_or_default(),
+            "unset" => {
+                if let Some(s) = self.shells.get_mut(&channel) {
+                    for name in arg.split_whitespace() {
+                        s.vars.remove(name);
+                    }
+                }
+                String::new()
+            }
             "exit" => {
                 let code = arg.parse().unwrap_or(0);
                 session.data(channel, "\r\n")?;
@@ -528,6 +710,113 @@ impl Shell {
     }
 }
 
+impl Shell {
+    /// Sends `ready` and reads `names`' values from the lines that follow,
+    /// with the echo off.
+    fn start_reading(
+        &mut self,
+        channel: ChannelId,
+        ready: String,
+        names: Vec<String>,
+        then: AfterReading,
+        session: &mut Session,
+    ) -> Result<(), russh::Error> {
+        if let Some(s) = self.shells.get_mut(&channel) {
+            s.reading = Some(Reading {
+                names,
+                values: vec![],
+                current: String::new(),
+                then,
+            });
+        }
+        session.data(channel, format!("\r\n\x1b]777;shellwing;{ready}\x07"))
+    }
+
+    /// A line typed while values are read: part of one (`>…`), or its end
+    /// (`.`); once all are in, what was to follow.
+    fn read_value(
+        &mut self,
+        channel: ChannelId,
+        line: &str,
+        session: &mut Session,
+    ) -> Result<(), russh::Error> {
+        let Some(r) = self
+            .shells
+            .get_mut(&channel)
+            .and_then(|s| s.reading.as_mut())
+        else {
+            return Ok(());
+        };
+        match line.strip_prefix('>') {
+            Some(part) => r.current.push_str(part),
+            None if line == "." => {
+                let name = r.names[r.values.len()].clone();
+                let value = decode(&std::mem::take(&mut r.current));
+                r.values.push((name, value));
+            }
+            None => {}
+        }
+        if r.values.len() < r.names.len() {
+            return Ok(());
+        }
+        let Some(r) = self.shells.get_mut(&channel).and_then(|s| s.reading.take()) else {
+            return Ok(());
+        };
+        match r.then {
+            AfterReading::Export { done } => {
+                if let Some(s) = self.shells.get_mut(&channel) {
+                    s.vars.extend(r.values);
+                }
+                session.data(
+                    channel,
+                    format!("\x1b]777;shellwing;{done}\x07\r\n{PROMPT}"),
+                )
+            }
+            AfterReading::Subshell { lines } => {
+                let before = self.shells.get(&channel).map(|s| s.vars.clone());
+                if let Some(s) = self.shells.get_mut(&channel) {
+                    s.vars.extend(r.values);
+                }
+                for l in &lines {
+                    self.run(channel, l, session)?;
+                }
+                // The subshell's variables end with it.
+                if let (Some(s), Some(before)) = (self.shells.get_mut(&channel), before) {
+                    s.vars = before;
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// A `( … )` typed in full: its lines run, after its variables are read
+    /// when it reads some (a snippet that needs an environment).
+    fn run_subshell(
+        &mut self,
+        channel: ChannelId,
+        lines: Vec<String>,
+        session: &mut Session,
+    ) -> Result<(), russh::Error> {
+        let first = lines.first().cloned().unwrap_or_default();
+        let inner: Vec<String> = lines[1..lines.len().saturating_sub(1)].to_vec();
+        match signal_in(&first, "ready-") {
+            Some(ready) => self.start_reading(
+                channel,
+                ready,
+                names_read(&first),
+                AfterReading::Subshell { lines: inner },
+                session,
+            ),
+            None => {
+                for l in &inner {
+                    self.run(channel, l, session)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 impl server::Handler for Shell {
     type Error = russh::Error;
 
@@ -548,20 +837,15 @@ impl server::Handler for Shell {
     ) -> Result<Auth, Self::Error> {
         // A certificate's key is offered as itself: whether the certificate
         // holds is for `auth_openssh_certificate`.
-        Ok(
-            if self.policy.user_ca.is_some()
-                || self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data())
-            {
-                Auth::Accept
-            } else {
-                Auth::reject()
-            },
-        )
+        Ok(if self.policy.user_ca.is_some() || self.accepts(key) {
+            Auth::Accept
+        } else {
+            Auth::reject()
+        })
     }
 
     async fn auth_publickey(&mut self, user: &str, key: &PublicKey) -> Result<Auth, Self::Error> {
-        let ok = user == USER
-            && self.policy.key.as_ref().map(PublicKey::key_data) == Some(key.key_data());
+        let ok = user == USER && self.accepts(key);
         self.record(format!("publickey:{}", if ok { "ok" } else { "wrong" }));
         Ok(if ok {
             self.first_factor()
@@ -734,7 +1018,24 @@ impl server::Handler for Shell {
                         .map(|s| std::mem::take(&mut s.line))
                         .unwrap_or_default();
                     let line = String::from_utf8_lossy(&line).into_owned();
-                    self.run(channel, &line, session)?;
+                    let state = self.shells.get_mut(&channel);
+                    if state.as_ref().is_some_and(|s| s.reading.is_some()) {
+                        self.read_value(channel, &line, session)?;
+                    } else if let Some(lines) = state.and_then(|s| s.compound.as_mut()) {
+                        lines.push(line.clone());
+                        if line.trim() == ")" {
+                            let lines = self
+                                .shells
+                                .get_mut(&channel)
+                                .and_then(|s| s.compound.take())
+                                .unwrap_or_default();
+                            self.run_subshell(channel, lines, session)?;
+                        } else {
+                            session.data(channel, "\r\n> ")?;
+                        }
+                    } else {
+                        self.run(channel, &line, session)?;
+                    }
                 }
                 // Backspace.
                 0x7f | 0x08 => {
@@ -764,13 +1065,36 @@ impl server::Handler for Shell {
                 // Escape sequences (arrows, bracketed paste marks) are not part of a line.
                 0x1b => {}
                 _ => {
+                    let mut echo = true;
                     if let Some(s) = self.shells.get_mut(&channel) {
                         s.line.push(b);
+                        // `stty -echo` while values are read.
+                        echo = s.reading.is_none();
                     }
-                    session.data(channel, vec![b])?;
+                    if echo {
+                        session.data(channel, vec![b])?;
+                    }
                 }
             }
         }
+        Ok(())
+    }
+
+    /// shellwing's key install script (`Install on…`) adds the key it reads
+    /// to the server's authorized keys, as the real script does to
+    /// ~/.ssh/authorized_keys; any other command is refused.
+    async fn exec_request(
+        &mut self,
+        channel: ChannelId,
+        data: &[u8],
+        session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        let installing = self.policy.install && data == shellwing_ssh::keys::INSTALL.as_bytes();
+        let Some(ch) = self.opened.remove(&channel).filter(|_| installing) else {
+            return session.channel_failure(channel);
+        };
+        session.channel_success(channel)?;
+        tokio::spawn(install(ch, self.authorized.clone(), self.seen.clone()));
         Ok(())
     }
 

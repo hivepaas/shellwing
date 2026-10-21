@@ -2,7 +2,7 @@
 //! without asking. (The vault keeps its key in memory in tests, as with a
 //! system keychain.)
 
-use super::{Policy, Ui, WELCOME, scenario};
+use super::{Policy, USER, Ui, WELCOME, scenario};
 
 /// Waits for the offer to save the password and answers it.
 fn answer_offer(ui: &mut Ui, save: bool) {
@@ -83,5 +83,55 @@ scenario!(
         ui.line("new-password");
         ui.wait_for(WELCOME);
         assert_eq!(changed.seen(|s| s.auth.clone()), ["password:wrong", "password:ok"]);
+    }
+);
+
+scenario!(
+    /// A vault with a passphrase, out of the system keychain, locked: a
+    /// connection then asks for the password (the saved one is in the locked
+    /// vault); once the passphrase unlocks it, the next connection signs in
+    /// with the saved password again.
+    locked_vault_keeps_its_passwords_until_unlocked,
+    |ui| {
+        const PASSPHRASE: &str = "correct horse battery";
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        answer_offer(ui, true);
+        ui.wait_for_notice("Saved in the vault");
+        // Settings › Vault: a passphrase (typed twice), then out of the
+        // keychain, so that it can lock.
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Vault");
+        ui.click("vault-pass");
+        ui.line(PASSPHRASE);
+        ui.line(PASSPHRASE);
+        ui.wait_for_notice("The passphrase opens the vault too now.");
+        ui.click("vault-leave");
+        ui.wait_for_notice("out of the system keychain");
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette("Lock the vault");
+        ui.wait_for_notice("The vault is locked.");
+        // Locked: the password is asked for.
+        ui.palette(&server.spec());
+        ui.wait_until("a second tab", |ui| ui.tabs() == 2);
+        ui.wait_for(&format!("{USER}@127.0.0.1's password:"));
+        ui.keys("ctrl-c");
+        // Unlocked: the saved password signs in again.
+        ui.palette("Unlock the vault");
+        ui.wait_until("the passphrase asked for", |ui| {
+            ui.ws(|ws, _, _| ws.palette_open())
+        });
+        ui.line(PASSPHRASE);
+        ui.wait_for_notice("The vault is open.");
+        ui.palette(&server.spec());
+        ui.wait_until("a third tab", |ui| ui.tabs() == 3);
+        ui.wait_for(WELCOME);
+        assert!(!ui.screen().contains("password:"), "asked again");
+        let auth = server.seen(|s| s.auth.clone());
+        assert_eq!(auth.last().map(String::as_str), Some("password:ok"), "{auth:?}");
     }
 );

@@ -1159,6 +1159,7 @@ impl TermView {
         let button = |id: &'static str, label: String, primary: bool| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .px_3()
                 .py_1()
                 .rounded_md()

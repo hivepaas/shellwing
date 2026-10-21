@@ -1122,6 +1122,7 @@ fn header(title: &str, note: &str, color: Option<u32>, cx: &mut Context<HostEdit
 pub(crate) fn text_button(id: &str, label: &str, color: u32) -> gpui::Stateful<gpui::Div> {
     div()
         .id(SharedString::from(id.to_string()))
+        .debug_selector(|| id.to_string())
         .h(px(32.))
         .px(px(12.))
         .flex()
@@ -1143,6 +1144,7 @@ pub(crate) fn outline_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div>
 pub(crate) fn primary_button(id: &str, label: &str) -> gpui::Stateful<gpui::Div> {
     div()
         .id(SharedString::from(id.to_string()))
+        .debug_selector(|| id.to_string())
         .h(px(32.))
         .px(px(14.))
         .flex()
