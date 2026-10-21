@@ -1997,8 +1997,59 @@ ta18da274 = Bei Inaktivität sperren
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Nach dieser Zeit ohne Tastendruck oder Klick sperrt sich der Tresor, bis seine Passphrase eingegeben wird. Nur solange der Schlüsselbund des Systems seinen Schlüssel nicht enthält: dann fragt jeder Start nach der Passphrase.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Diesem Build fehlen die Release-Schlüssel, daher kann er nicht über Updates informieren.
+
+# Looking for a newer version…
+tf1905fe9 = Suche nach einer neueren Version…
+
+# How to update
+t3603428f = So aktualisierst du
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } ist verfügbar
+
+# {by} updates it: {command}
+tdf2cab9c = Das Update übernimmt { $by }: { $command }
+
+# {by} updates it.
+t84b27295 = Das Update übernimmt { $by }.
+
+# Download it, and install it in place of this one.
+t39312eae = Lade sie herunter und installiere sie anstelle dieser Version.
+
+# Skip this version
+t2c33d756 = Diese Version überspringen
+
+# The last look failed: {why}
+td122a092 = Die letzte Prüfung ist fehlgeschlagen: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Auf dem neuesten Stand (geprüft { $when }).
+
+# Not looked yet.
+t5a3ba058 = Noch nicht geprüft.
+
 # A native SSH client.
 tdb654976 = Ein nativer SSH-Client.
+
+# Updates
+t483075a5 = Updates
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Dies ist eine Beta: Du erfährst von neueren Betas und von der stabilen Version, die auf sie folgt.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Dies ist eine stabile Version: Du erfährst von neueren stabilen Versionen, nicht von Betas.
+
+# Check now
+t4f0e0677 = Jetzt prüfen
+
+# Look for updates once a day
+tcc27ace1 = Einmal täglich nach Updates suchen
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = Liest die Liste der Versionen von GitHub und vertraut ihr nur, wenn ihre Signaturen gültig sind. Ohne dich wird nichts installiert.
 
 # Open config.toml
 t07a52335 = config.toml öffnen
@@ -2863,6 +2914,21 @@ ta77bd589 = Notizen für { $host }
 # Notes · {category}
 tbb112cdf = Notizen · { $category }
 
+# the system's package manager
+t11465c20 = der Paketmanager des Systems
+
+# the App Store
+ta8cbd72e = der App Store
+
+# the Microsoft Store
+t1df799a1 = der Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version } ist verfügbar: Das Update übernimmt { $by } ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version } ist verfügbar: Das Update übernimmt { $by }.
+
 # Over SSH only
 t14e43465 = Nur über SSH
 
@@ -3032,6 +3098,12 @@ tc73a9bf6 = Passwörter mit einem Server synchronisieren…
 
 # Settings…
 t64d0d0b4 = Einstellungen…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } ist verfügbar…
+
+# Check for updates
+t70ad7706 = Nach Updates suchen
 
 # New host…
 t13806b73 = Neuer Host…

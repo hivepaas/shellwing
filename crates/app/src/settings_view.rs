@@ -126,6 +126,8 @@ pub struct Snap {
     pub passphrase_joins: Option<bool>,
     /// How sync stands, as the cloud's panel says.
     pub sync: crate::sync_panel::SyncSnap,
+    /// Whether a newer shellwing is out.
+    pub update: crate::workspace::UpdateSnap,
 }
 
 pub struct SettingsView {
@@ -2289,14 +2291,115 @@ impl SettingsView {
         div().child(view)
     }
 
-    fn about(&self) -> gpui::Div {
+    fn about(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let u = &self.snap.update;
+        let on = u.check;
+        let status: gpui::Div = if !u.keys {
+            label(&tr!(
+                "This build has no release keys, so it cannot tell of updates."
+            ))
+        } else if u.checking {
+            label(&tr!("Looking for a newer version…"))
+        } else if let Some(v) = &u.offered {
+            let get = match u.managed {
+                None => tr!("Download"),
+                Some(_) => tr!("How to update"),
+            };
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap(px(10.))
+                .p(px(12.))
+                .rounded(px(8.))
+                .border_1()
+                .border_color(rgb(colors().accent))
+                .bg(rgb(colors().selected))
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(220.))
+                        .flex()
+                        .flex_col()
+                        .gap(px(2.))
+                        .child(
+                            div()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(tr!("shellwing {version} is out", version = v.clone())),
+                        )
+                        .child(label(&match u.managed {
+                            Some((by, Some(command))) => {
+                                tr!(
+                                    "{by} updates it: {command}",
+                                    by = crate::workspace::by_said(by),
+                                    command = command
+                                )
+                            }
+                            Some((by, None)) => {
+                                tr!("{by} updates it.", by = crate::workspace::by_said(by))
+                            }
+                            None => tr!("Download it, and install it in place of this one."),
+                        })),
+                )
+                .child(
+                    small_button("update-get", &get)
+                        .on_click(cx.listener(|v, _, w, cx| v.run(Action::Update, w, cx))),
+                )
+                .child(
+                    small_button("update-skip", &tr!("Skip this version")).on_click(cx.listener(
+                        |v, _, _, cx| {
+                            let _ = v.workspace.update(cx, |ws, cx| ws.skip_update(cx));
+                        },
+                    )),
+                )
+        } else if let Some(p) = &u.problem {
+            div()
+                .text_size(ui(12.))
+                .text_color(rgb(colors().bad))
+                .child(tr!("The last look failed: {why}", why = p.clone()))
+        } else if let Some(t) = u.checked_at {
+            label(&tr!(
+                "Up to date (looked {when}).",
+                when = crate::sync_panel::ago(t)
+            ))
+        } else {
+            label(&tr!("Not looked yet."))
+        };
         page(&tr!("About"))
             .child(
                 div()
                     .text_size(ui(15.))
-                    .child(format!("shellwing {}", env!("CARGO_PKG_VERSION"))),
+                    .child(format!("shellwing {}", u.current)),
             )
             .child(label(&tr!("A native SSH client.")))
+            .child(heading(&tr!("Updates")).pt(px(6.)))
+            .child(label(&match u.channel {
+                "beta" => tr!(
+                    "This is a beta: you are told of newer betas, and of the release that follows them."
+                ),
+                _ => tr!("This is a release: you are told of newer releases, not of betas."),
+            }))
+            .child(status)
+            .when(u.keys, |d| d.child(
+                div()
+                    .flex()
+                    .child(
+                        small_button("update-check", &tr!("Check now"))
+                            .when(u.checking, |d| d.opacity(0.5))
+                            .on_click(cx.listener(|v, _, _, cx| {
+                                let _ = v.workspace.update(cx, |ws, cx| ws.check_updates(cx));
+                            })),
+                    ),
+            ))
+            .when(u.keys, |d| d.child(toggle(
+                "update-auto",
+                on,
+                &tr!("Look for updates once a day"),
+                &tr!("It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you."),
+                cx.listener(move |v, _, _, cx| {
+                    v.change(&["updates", "check"], Some(SettingValue::Bool(!on)), cx)
+                }),
+            )))
     }
 }
 
@@ -2595,7 +2698,7 @@ impl Render for SettingsView {
             }
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
-            Page::About => self.about(),
+            Page::About => self.about(cx),
         };
         corners
             .round(div())

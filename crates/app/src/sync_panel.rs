@@ -599,7 +599,7 @@ fn small(id: &'static str, label: &str) -> gpui::Stateful<gpui::Div> {
 }
 
 /// "2 minutes ago", for a sync.
-fn ago(t: SystemTime) -> String {
+pub fn ago(t: SystemTime) -> String {
     let s = SystemTime::now()
         .duration_since(t)
         .map(|d| d.as_secs())

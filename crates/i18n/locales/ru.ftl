@@ -2017,8 +2017,59 @@ ta18da274 = Блокировать при бездействии
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Если столько времени не нажимать клавиши и не щёлкать, хранилище блокируется до ввода парольной фразы. Только пока системная связка ключей не хранит его ключ: тогда каждый запуск запрашивает парольную фразу.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = В этой сборке нет ключей выпуска, поэтому она не может сообщать об обновлениях.
+
+# Looking for a newer version…
+tf1905fe9 = Поиск новой версии…
+
+# How to update
+t3603428f = Как обновить
+
+# shellwing {version} is out
+t5b33836c = Вышел shellwing { $version }
+
+# {by} updates it: {command}
+tdf2cab9c = Обновляется через { $by }: { $command }
+
+# {by} updates it.
+t84b27295 = Обновляется через { $by }.
+
+# Download it, and install it in place of this one.
+t39312eae = Скачайте её и установите вместо текущей.
+
+# Skip this version
+t2c33d756 = Пропустить эту версию
+
+# The last look failed: {why}
+td122a092 = Последняя проверка не удалась: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Обновлений нет (проверено { $when }).
+
+# Not looked yet.
+t5a3ba058 = Ещё не проверялось.
+
 # A native SSH client.
 tdb654976 = Нативный SSH-клиент.
+
+# Updates
+t483075a5 = Обновления
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Это бета-версия: вы узнаете о новых бета-версиях и о стабильной версии, которая за ними последует.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Это стабильная версия: вы узнаете о новых стабильных версиях, но не о бета-версиях.
+
+# Check now
+t4f0e0677 = Проверить сейчас
+
+# Look for updates once a day
+tcc27ace1 = Проверять обновления раз в день
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = Список версий читается с GitHub и принимается, только если его подписи верны. Без вас ничего не устанавливается.
 
 # Open config.toml
 t07a52335 = Открыть config.toml
@@ -2923,6 +2974,21 @@ ta77bd589 = Заметки для { $host }
 # Notes · {category}
 tbb112cdf = Заметки · { $category }
 
+# the system's package manager
+t11465c20 = системный менеджер пакетов
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = Вышел shellwing { $version }: обновляется через { $by } ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = Вышел shellwing { $version }: обновляется через { $by }.
+
 # Over SSH only
 t14e43465 = Только по SSH
 
@@ -3102,6 +3168,12 @@ tc73a9bf6 = Синхронизировать пароли через серве�
 
 # Settings…
 t64d0d0b4 = Настройки…
+
+# shellwing {version} is out…
+tab699ac8 = Вышел shellwing { $version }…
+
+# Check for updates
+t70ad7706 = Проверить обновления
 
 # New host…
 t13806b73 = Новый хост…

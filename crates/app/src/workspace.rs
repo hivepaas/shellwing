@@ -38,6 +38,8 @@ use crate::target;
 mod config_files;
 mod notes;
 mod snippet_windows;
+mod updates;
+pub(crate) use updates::{UpdateSnap, by_said};
 
 use crate::view::{
     CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
@@ -156,6 +158,8 @@ pub struct Workspace {
     vault_reported: bool,
     /// The locked vault was asked about at start.
     vault_asked: bool,
+    /// Looking for a newer shellwing, and what was found.
+    updates: updates::Updates,
     /// The last key pressed or click, for locking the vault when idle.
     last_input: std::time::Instant,
     /// Windows Hello or Touch ID is asking now, to open the vault.
@@ -334,6 +338,7 @@ impl Workspace {
             vault,
             vault_reported: false,
             vault_asked: false,
+            updates: Default::default(),
             last_input: std::time::Instant::now(),
             presence_asking: false,
             sync,
@@ -361,6 +366,7 @@ impl Workspace {
             }
         }
         ws.share_settings(cx);
+        ws.start_update_checks(cx);
         // The system editor's name is read from the desktop: once, off the UI thread.
         std::thread::spawn(crate::editors::system_name);
         // Edited copies an earlier run left behind: those holding changes
@@ -1685,6 +1691,18 @@ impl Workspace {
             tr!("Settings…"),
             keys.hint(Hotkey::Settings),
         );
+        if let Some(v) = self.update_offered() {
+            setting(
+                Action::Update,
+                tr!("shellwing {version} is out…", version = v.to_string()),
+                String::new(),
+            );
+        }
+        setting(
+            Action::CheckUpdates,
+            tr!("Check for updates"),
+            String::new(),
+        );
         action(Action::NewHost, tr!("New host…"), String::new());
         action(Action::NewGroup, tr!("New group…"), String::new());
         if let Some(target) = self.active_tab().map(|t| {
@@ -2597,6 +2615,7 @@ impl Workspace {
             },
             passphrase_joins: self.sync.place().and(self.passphrase_joins),
             sync: self.sync_snap(),
+            update: self.update_snap(),
             secrets: self
                 .vault
                 .ready()
@@ -3466,6 +3485,11 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
+            Action::Update => self.get_update(cx),
+            Action::CheckUpdates => {
+                self.check_updates(cx);
+                self.open_settings(Page::About, window, cx);
+            }
             Action::SnippetLibrary => self.open_library(cx),
             Action::UnloadEnv => {
                 if let Some(view) = self.active_tab().cloned()
@@ -4433,6 +4457,7 @@ impl Workspace {
             .child(
                 div()
                     .id("settings-button")
+                    .relative()
                     .flex_shrink_0()
                     .size(px(30.))
                     .mr(px(4.))
@@ -4456,7 +4481,19 @@ impl Workspace {
                             .path("icons/settings.svg")
                             .size(px(16.))
                             .text_color(rgb(if open { colors().text } else { colors().soft })),
-                    ),
+                    )
+                    // A newer shellwing is out (Settings › About says which).
+                    .when(self.update_offered().is_some(), |d| {
+                        d.child(
+                            div()
+                                .absolute()
+                                .top(px(5.))
+                                .right(px(5.))
+                                .size(px(7.))
+                                .rounded_full()
+                                .bg(rgb(colors().accent)),
+                        )
+                    }),
             )
             .child(self.sync_button(cx))
     }

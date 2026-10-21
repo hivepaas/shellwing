@@ -1969,8 +1969,59 @@ ta18da274 = Khoá khi không dùng
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = Sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, kho sẽ khoá cho tới khi nhập cụm mật khẩu. Chỉ khi kho khoá của hệ thống không giữ khoá của nó: khi đó mỗi lần khởi động đều hỏi cụm mật khẩu.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = Bản build này không có khoá phát hành, nên không thể báo khi có bản cập nhật.
+
+# Looking for a newer version…
+tf1905fe9 = Đang tìm phiên bản mới hơn…
+
+# How to update
+t3603428f = Cách cập nhật
+
+# shellwing {version} is out
+t5b33836c = Đã có shellwing { $version }
+
+# {by} updates it: {command}
+tdf2cab9c = { $by } sẽ cập nhật nó: { $command }
+
+# {by} updates it.
+t84b27295 = { $by } sẽ cập nhật nó.
+
+# Download it, and install it in place of this one.
+t39312eae = Tải về và cài đè lên bản này.
+
+# Skip this version
+t2c33d756 = Bỏ qua phiên bản này
+
+# The last look failed: {why}
+td122a092 = Lần kiểm tra trước bị lỗi: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = Đang là bản mới nhất (kiểm tra { $when }).
+
+# Not looked yet.
+t5a3ba058 = Chưa kiểm tra lần nào.
+
 # A native SSH client.
 tdb654976 = Một ứng dụng SSH gốc.
+
+# Updates
+t483075a5 = Cập nhật
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = Đây là bản beta: bạn sẽ được báo khi có beta mới hơn, và khi có bản chính thức tiếp theo.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = Đây là bản chính thức: bạn chỉ được báo khi có bản chính thức mới hơn, không báo bản beta.
+
+# Check now
+t4f0e0677 = Kiểm tra ngay
+
+# Look for updates once a day
+tcc27ace1 = Kiểm tra cập nhật mỗi ngày một lần
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = App đọc danh sách phát hành từ GitHub, và chỉ tin khi chữ ký hợp lệ. Không có gì được cài nếu bạn không đồng ý.
 
 # Open config.toml
 t07a52335 = Mở config.toml
@@ -2785,6 +2836,21 @@ ta77bd589 = Ghi chú cho { $host }
 # Notes · {category}
 tbb112cdf = Ghi chú · { $category }
 
+# the system's package manager
+t11465c20 = trình quản lý gói của hệ thống
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = Đã có shellwing { $version }: { $by } sẽ cập nhật nó ({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = Đã có shellwing { $version }: { $by } sẽ cập nhật nó.
+
 # Over SSH only
 t14e43465 = Chỉ qua SSH
 
@@ -2937,6 +3003,12 @@ tc73a9bf6 = Đồng bộ mật khẩu qua một máy chủ…
 
 # Settings…
 t64d0d0b4 = Cài đặt…
+
+# shellwing {version} is out…
+tab699ac8 = Đã có shellwing { $version }…
+
+# Check for updates
+t70ad7706 = Kiểm tra cập nhật
 
 # New host…
 t13806b73 = Máy chủ mới…

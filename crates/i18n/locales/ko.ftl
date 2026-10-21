@@ -1969,8 +1969,59 @@ ta18da274 = 유휴 시 잠금
 # After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 tf6c5f76d = 키 입력이나 클릭 없이 이 시간이 지나면 암호 문구를 입력할 때까지 보관함이 잠깁니다. 시스템 키체인에 키가 보관되지 않은 경우에만 적용되며, 이때는 시작할 때마다 암호 문구를 묻습니다.
 
+# This build has no release keys, so it cannot tell of updates.
+t378182cb = 이 빌드에는 릴리스 키가 없어 업데이트를 알릴 수 없습니다.
+
+# Looking for a newer version…
+tf1905fe9 = 새 버전을 확인하는 중…
+
+# How to update
+t3603428f = 업데이트 방법
+
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 출시
+
+# {by} updates it: {command}
+tdf2cab9c = { $by }에서 업데이트합니다: { $command }
+
+# {by} updates it.
+t84b27295 = { $by }에서 업데이트합니다.
+
+# Download it, and install it in place of this one.
+t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
+
+# Skip this version
+t2c33d756 = 이 버전 건너뛰기
+
+# The last look failed: {why}
+td122a092 = 마지막 확인에 실패했습니다: { $why }
+
+# Up to date (looked {when}).
+t4665ef60 = 최신 버전입니다({ $when } 확인).
+
+# Not looked yet.
+t5a3ba058 = 아직 확인하지 않았습니다.
+
 # A native SSH client.
 tdb654976 = 네이티브 SSH 클라이언트.
+
+# Updates
+t483075a5 = 업데이트
+
+# This is a beta: you are told of newer betas, and of the release that follows them.
+t1d6a96bc = 베타 버전입니다: 새 베타 버전과 그 뒤에 나오는 정식 버전의 알림을 받습니다.
+
+# This is a release: you are told of newer releases, not of betas.
+t9d2d8250 = 정식 버전입니다: 새 정식 버전의 알림을 받으며, 베타 버전 알림은 받지 않습니다.
+
+# Check now
+t4f0e0677 = 지금 확인
+
+# Look for updates once a day
+tcc27ace1 = 하루에 한 번 업데이트 확인
+
+# It reads the list of releases from GitHub, and believes it only when its signatures verify. Nothing is installed without you.
+t64b22a53 = GitHub에서 릴리스 목록을 읽고, 서명이 검증된 경우에만 신뢰합니다. 직접 승인하지 않으면 아무것도 설치되지 않습니다.
 
 # Open config.toml
 t07a52335 = config.toml 열기
@@ -2785,6 +2836,21 @@ ta77bd589 = { $host }용 노트
 # Notes · {category}
 tbb112cdf = 노트 · { $category }
 
+# the system's package manager
+t11465c20 = 시스템 패키지 관리자
+
+# the App Store
+ta8cbd72e = App Store
+
+# the Microsoft Store
+t1df799a1 = Microsoft Store
+
+# shellwing {version} is out: {by} updates it ({command}).
+t270e30ba = shellwing { $version }이(가) 출시되었습니다: { $by }에서 업데이트합니다({ $command }).
+
+# shellwing {version} is out: {by} updates it.
+t34c8e3f2 = shellwing { $version }이(가) 출시되었습니다: { $by }에서 업데이트합니다.
+
 # Over SSH only
 t14e43465 = SSH 전용
 
@@ -2937,6 +3003,12 @@ tc73a9bf6 = 서버와 비밀번호 동기화…
 
 # Settings…
 t64d0d0b4 = 설정…
+
+# shellwing {version} is out…
+tab699ac8 = shellwing { $version } 출시…
+
+# Check for updates
+t70ad7706 = 업데이트 확인
 
 # New host…
 t13806b73 = 새 호스트…

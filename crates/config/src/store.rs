@@ -31,6 +31,7 @@ const SESSION: &str = "session.json";
 const PLACED: &str = "placed.json";
 const NOTE_WINDOW: &str = "note-window.json";
 const SNIPPET_WINDOW: &str = "snippet-window.json";
+const UPDATES: &str = "updates.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -479,6 +480,15 @@ impl Store {
 
     pub fn save_note_window(&self, state: &crate::NoteWindowState) -> io::Result<()> {
         self.save_state(NOTE_WINDOW, state)
+    }
+
+    /// What the last look for a newer release found (`state/updates.json`).
+    pub fn update_state(&self) -> crate::UpdateState {
+        self.load_state(UPDATES).unwrap_or_default()
+    }
+
+    pub fn save_update_state(&self, state: &crate::UpdateState) -> io::Result<()> {
+        self.save_state(UPDATES, state)
     }
 
     /// A snippet's window's size when one last closed

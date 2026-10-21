@@ -15,9 +15,25 @@ pub struct Settings {
     pub files: Files,
     pub log: Log,
     pub vault: VaultSettings,
+    pub updates: Updates,
     /// `[shortcuts]`: keys for the window's shortcuts, by name, over the
     /// defaults. This device's own: keys differ between systems.
     pub shortcuts: crate::ShortcutSettings,
+}
+
+/// Telling when a newer shellwing is out.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct Updates {
+    /// Look once a day (reading the signed list of releases); off: only when
+    /// asked to, in Settings › About.
+    pub check: bool,
+}
+
+impl Default for Updates {
+    fn default() -> Self {
+        Updates { check: true }
+    }
 }
 
 /// The vault on this device.

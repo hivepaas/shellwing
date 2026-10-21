@@ -29,6 +29,7 @@ shellwing-vault.workspace = true
 shellwing-core.workspace = true
 shellwing-remote.workspace = true
 shellwing-i18n.workspace = true
+shellwing-update.workspace = true
 # Values of environments, wiped from memory when dropped.
 zeroize = "1"
 sha2 = "0.10"

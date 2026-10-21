@@ -149,3 +149,26 @@ jobs:
 
       - name: Clippy (core, iOS Simulator)
         run: cargo clippy -p shellwing-core --target aarch64-apple-ios-sim -- -D warnings
+
+  releasesign:
+    name: releasesign (Go)
+    # The release signing tool: with the Linux build, wherever that runs.
+    if: github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","linux"]'), inputs.platforms)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/releasesign
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/releasesign/go.mod
+
+      - name: Vet and test
+        run: |
+          go vet .
+          go test .
+          # One file, the standard library only: as scripts/release_sign.sh builds it.
+          cp main.go "$RUNNER_TEMP/main.go"
+          cd "$RUNNER_TEMP" && env GOFLAGS= GOWORK=off GOPROXY=off go build -o releasesign main.go
