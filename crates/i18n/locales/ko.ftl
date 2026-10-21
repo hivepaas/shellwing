@@ -2152,11 +2152,14 @@ t2a8f8871 = 일치하는 호스트가 없습니다.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = 아직 호스트가 없습니다. 호스트를 추가하거나 ~/.ssh/config에 Host 블록을 추가하세요.
 
-# + New host
-tc7a909aa = + 새 호스트
+# + Host
+t0e963f08 = + 호스트
 
 # + Group
 t9585c651 = + 그룹
+
+# About shellwing
+t884dc61f = shellwing 정보
 
 # HOSTS
 t0d325d34 = 호스트

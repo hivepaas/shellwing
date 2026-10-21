@@ -2152,11 +2152,14 @@ t2a8f8871 = 没有匹配的主机。
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = 还没有主机。添加一台，或在 ~/.ssh/config 中添加 Host 块。
 
-# + New host
-tc7a909aa = + 新建主机
+# + Host
+t0e963f08 = + 主机
 
 # + Group
 t9585c651 = + 分组
+
+# About shellwing
+t884dc61f = 关于 shellwing
 
 # HOSTS
 t0d325d34 = 主机

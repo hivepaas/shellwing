@@ -2152,11 +2152,14 @@ t2a8f8871 = 一致するホストがありません。
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = まだホストはありません。ホストを追加するか、~/.ssh/config に Host ブロックを追加してください。
 
-# + New host
-tc7a909aa = + 新しいホスト
+# + Host
+t0e963f08 = + ホスト
 
 # + Group
 t9585c651 = + グループ
+
+# About shellwing
+t884dc61f = shellwing について
 
 # HOSTS
 t0d325d34 = ホスト

@@ -2200,11 +2200,14 @@ t2a8f8871 = Нет подходящих хостов.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Хостов пока нет. Добавьте хост или блоки Host в ~/.ssh/config.
 
-# + New host
-tc7a909aa = + Новый хост
+# + Host
+t0e963f08 = + Хост
 
 # + Group
 t9585c651 = + Группа
+
+# About shellwing
+t884dc61f = О программе shellwing
 
 # HOSTS
 t0d325d34 = ХОСТЫ
