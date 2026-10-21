@@ -291,6 +291,10 @@ struct Output {
 
 /// Runs `c`, stopped after `limit`.
 fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
+    // A group of its own, so that stopping it stops what it started too
+    // (ssh, a credential helper), which would otherwise live on.
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(c, 0);
     let mut child = c.spawn()?;
     let mut out = child.stdout.take();
     let mut err = child.stderr.take();
@@ -315,6 +319,13 @@ fn run(c: &mut Command, limit: Duration) -> io::Result<Output> {
             break status;
         }
         if start.elapsed() > limit {
+            #[cfg(unix)]
+            let _ = Command::new("kill")
+                .args(["-KILL", "--", &format!("-{}", child.id())])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
             let _ = child.kill();
             let _ = child.wait();
             return Err(io::Error::new(
@@ -576,14 +587,26 @@ impl Backend for GitRepo {
             return Ok(());
         }
         let theirs = format!("refs/remotes/origin/{}", self.branch);
-        let fetched = self.git_said(&[
-            "fetch",
-            "-q",
-            "--depth",
-            "1",
-            "origin",
-            &format!("+refs/heads/{}:{theirs}", self.branch),
-        ])?;
+        let ours = format!("refs/heads/{}", self.branch);
+        // Asked first rather than fetched and failed: git fetching a branch
+        // that is not there dies waiting for its ssh, which outside a
+        // terminal does not always end, until the time limit.
+        let there = !self
+            .git(&["ls-remote", "--heads", "origin", &ours])?
+            .trim()
+            .is_empty();
+        let fetched = if there {
+            self.git_said(&[
+                "fetch",
+                "-q",
+                "--depth",
+                "1",
+                "origin",
+                &format!("+{ours}:{theirs}"),
+            ])?
+        } else {
+            Err(format!("couldn't find remote ref {ours}"))
+        };
         match fetched {
             Ok(_) => {
                 self.git(&["reset", "-q", "--hard", &theirs])?;
@@ -842,6 +865,70 @@ mod tests {
             "A's still went"
         );
         assert_eq!(pw(&b, "deploy@web").as_deref(), Some("from-b"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Two devices that synced note "Disk usage" through a repository, then
+    /// changed its text without seeing each other's change, B later.
+    fn note_changed_on_both(dir: &Path, a_side: &GitRepo, b_side: &GitRepo) -> (Vault, Vault) {
+        use crate::tests::write_note;
+        let a = Vault::open(&dir.join("a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &MemoryKeys::default()).expect("b");
+        a.set_device_name("desk");
+        b.set_device_name("laptop");
+        let note = write_note(&a, "", "df -h");
+        let rk = shellwing_vault::transact(a_side, |s| a.start_sync(s))
+            .expect("start")
+            .to_string();
+        a.sync(a_side).expect("sync a");
+        shellwing_vault::transact(b_side, |s| b.join(s, &rk)).expect("join");
+        b.sync(b_side).expect("sync b");
+        write_note(&a, &note, "df -h /var");
+        std::thread::sleep(Duration::from_millis(5));
+        write_note(&b, &note, "du -sh /var/log");
+        (a, b)
+    }
+
+    #[test]
+    fn a_note_changed_on_two_devices_keeps_both_texts() {
+        use crate::tests::{both_kept, notes_of};
+        let dir = std::env::temp_dir().join(format!("shellwing-git-note-{}", std::process::id()));
+        let (a_side, b_side) = two_clones(&dir);
+        let (a, b) = note_changed_on_both(&dir, &a_side, &b_side);
+        assert!(a.sync(&a_side).expect("sync a").copies.is_empty());
+        let report = b.sync(&b_side).expect("sync b");
+        assert_eq!(report.copies, ["Disk usage (from desk)"]);
+        assert!(
+            a.sync(&a_side).expect("sync a").copies.is_empty(),
+            "made once"
+        );
+        assert_eq!(notes_of(&a), both_kept());
+        assert_eq!(notes_of(&b), both_kept());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_copy_made_in_a_round_whose_push_was_refused_is_kept_and_said() {
+        use crate::tests::{both_kept, notes_of};
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-git-note-race-{}", std::process::id()));
+        let (a_side, b_side) = two_clones(&dir);
+        let (a, b) = note_changed_on_both(&dir, &a_side, &b_side);
+        // B's text is out first: A finds the loss, then B pushes again
+        // before A does.
+        b.sync(&b_side).expect("sync b");
+        let racing = Racing {
+            inner: &a_side,
+            meanwhile: Mutex::new(Some(Box::new(|| {
+                b.set_password("root@db", "from-b").expect("save");
+                b.sync(&b_side).expect("b pushes first");
+            }))),
+        };
+        let report = a.sync(&racing).expect("sync a");
+        assert_eq!(report.copies, ["Disk usage (from desk)"]);
+        b.sync(&b_side).expect("sync b");
+        assert_eq!(notes_of(&a), both_kept());
+        assert_eq!(notes_of(&b), both_kept());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

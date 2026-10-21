@@ -2674,6 +2674,12 @@ tb9fa7744 = { $n }일 전
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = 이 기기에 비밀번호가 저장되어 있지 않음: 설정 › 동기화에서 다시 연결하세요
 
+# {title} (from {device})
+t63a0d436 = { $title } ({ $device }에서)
+
+# {title} (from another device)
+t0e55da75 = { $title } (다른 기기에서)
+
 # hosts not synced: {e}
 te7d5212e = 호스트가 동기화되지 않음: { $e }
 
@@ -3261,6 +3267,12 @@ td55512c8 = 이 호스트는 hosts.toml에 지정된 `{ $t }` 테마를 사용�
 
 # Synced {n} change from other devices. | Synced {n} changes from other devices.
 tffe9e6a0 = 다른 기기의 변경 사항 { $n }개를 동기화했습니다.
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = 노트가 두 기기에서 변경되었습니다. 다른 버전은 { $title }(으)로 보관했습니다.
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 = 노트 { $n }개가 두 기기에서 변경되었습니다. 다른 버전은 옆에 보관했습니다.
 
 # Sync: {e}
 t8cb8c8c3 = 동기화: { $e }

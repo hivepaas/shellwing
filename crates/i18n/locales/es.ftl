@@ -2741,6 +2741,12 @@ tb9fa7744 =
 # its password is not saved on this device: connect again in Settings › Sync
 td2fdfc60 = su contraseña no está guardada en este dispositivo: vuelve a conectar en Ajustes › Sincronización
 
+# {title} (from {device})
+t63a0d436 = { $title } (de { $device })
+
+# {title} (from another device)
+t0e55da75 = { $title } (de otro dispositivo)
+
 # hosts not synced: {e}
 te7d5212e = servidores sin sincronizar: { $e }
 
@@ -3362,6 +3368,16 @@ tffe9e6a0 =
     { $n ->
         [one] Se sincronizó { $n } cambio de otros dispositivos.
        *[other] Se sincronizaron { $n } cambios de otros dispositivos.
+    }
+
+# A note was changed on two devices: the other version is kept as {title}.
+t9024ea9c = Una nota se cambió en dos dispositivos: la otra versión se conserva como { $title }.
+
+# {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
+tbe970732 =
+    { $n ->
+        [one] { $n } nota se cambió en dos dispositivos: la otra versión se conserva a su lado.
+       *[other] { $n } notas se cambiaron en dos dispositivos: las otras versiones se conservan a su lado.
     }
 
 # Sync: {e}

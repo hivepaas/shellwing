@@ -234,7 +234,8 @@ checked the same way, five at most. 20 MB, 10 s to connect and 30 s in all,
 - **Sync** (`sync.rs`): an image goes with its note, written before it, and
   nothing is sent or fetched again; a missing image is put back; a damaged one
   is not taken; joining another vault keeps the images; one no note shows for
-  30 days goes from the store. Over WebDAV (`crates/remote`): an image travels,
+  30 days goes from the store; no 16 bytes of an image are in the clear in any
+  file, the store's or either device's `vault.db`. Over WebDAV (`crates/remote`): an image travels,
   and is read once.
 - **Preparing** (`images.rs`): a screenshot stays PNG, a photo becomes JPEG,
   transparency stays PNG, large images are scaled, EXIF and GPS are gone, a

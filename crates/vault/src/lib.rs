@@ -439,11 +439,20 @@ pub struct Environment {
     pub names: Vec<String>,
 }
 
-/// A field and when it was set (a clock stamp), for merging edits.
-#[derive(Clone, Serialize, Deserialize)]
+/// A field and when it was set (a clock stamp), for merging edits. A note's
+/// text also says what it was written from, so merging can tell an edit made
+/// without seeing another (docs/design/note-conflicts.md).
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub(crate) struct Field {
     val: String,
     t: String,
+    /// The name of the device that wrote it.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    by: String,
+    /// For each device, the stamp of its newest edit this value builds on,
+    /// its own included.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    seen: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -483,6 +492,42 @@ fn new_id() -> Result<String> {
     Ok(format!("{:012x}{hex}", now_ms()))
 }
 
+/// This computer's name, as the system gives it; None when it gives none.
+pub fn host_name() -> Option<String> {
+    static NAME: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    NAME.get_or_init(|| {
+        let from_env = std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME"));
+        let name = from_env.ok().or_else(|| {
+            std::fs::read_to_string("/etc/hostname").ok().or_else(|| {
+                std::process::Command::new("hostname")
+                    .output()
+                    .ok()
+                    .and_then(|o| String::from_utf8(o.stdout).ok())
+            })
+        });
+        name.map(|n| n.trim().to_string()).filter(|n| !n.is_empty())
+    })
+    .clone()
+}
+
+static COPY_TITLE: std::sync::OnceLock<fn(&str, Option<&str>) -> String> =
+    std::sync::OnceLock::new();
+
+/// How a note's text kept as a copy is titled, from the note's title and the
+/// name of the device that wrote the text (None when unknown): set once by
+/// the app, in its language (docs/design/note-conflicts.md).
+pub fn title_copies(title: fn(&str, Option<&str>) -> String) {
+    let _ = COPY_TITLE.set(title);
+}
+
+pub(crate) fn copy_title(title: &str, device: Option<&str>) -> String {
+    match (COPY_TITLE.get(), device) {
+        (Some(f), _) => f(title, device),
+        (None, Some(d)) => format!("{title} (from {d})"),
+        (None, None) => format!("{title} (from another device)"),
+    }
+}
+
 fn record_aad(id: &str, kind: &str) -> Vec<u8> {
     format!("{id}\0{kind}\0{SPACE}\0{KEY_VERSION}").into_bytes()
 }
@@ -498,6 +543,8 @@ pub struct Vault {
     /// What new values are sealed with; old ones open whatever they used.
     cipher: Cipher,
     clock: hlc::Clock,
+    /// This device's name, kept with the notes' texts it writes.
+    device_name: std::sync::RwLock<String>,
 }
 
 /// A record row as stored: sealed data, its newest stamp, and whether deleted.
@@ -903,6 +950,7 @@ impl Vault {
             space_key: std::sync::RwLock::new(space_key),
             cipher,
             clock,
+            device_name: std::sync::RwLock::new(host_name().unwrap_or_default()),
         };
         vault.upgrade_untagged()?;
         // A recovery key always opens it, synced or not: made now if there is
@@ -1153,6 +1201,7 @@ impl Vault {
                 Field {
                     val: v.to_string(),
                     t: t.clone(),
+                    ..Default::default()
                 },
             );
         }
@@ -1460,6 +1509,21 @@ impl Vault {
             .collect())
     }
 
+    /// The name this device's edits of a note's text carry.
+    fn device_name(&self) -> String {
+        self.device_name
+            .read()
+            .map(|n| n.clone())
+            .unwrap_or_default()
+    }
+
+    /// Names this device otherwise than its host name does.
+    pub fn set_device_name(&self, name: &str) {
+        if let Ok(mut n) = self.device_name.write() {
+            *n = name.to_string();
+        }
+    }
+
     /// A note's text.
     pub fn note_text(&self, id: &str) -> Result<Option<Zeroizing<String>>> {
         Ok(self
@@ -1622,13 +1686,21 @@ impl Vault {
         let t = self.clock.tick();
         for (k, v) in values {
             if f.get(k).is_none_or(|old| &old.val != v) {
-                f.insert(
-                    k.clone(),
-                    Field {
-                        val: v.clone(),
-                        t: t.clone(),
-                    },
-                );
+                let mut field = Field {
+                    val: v.clone(),
+                    t: t.clone(),
+                    ..Default::default()
+                };
+                // What a note's text was written from
+                // (docs/design/note-conflicts.md).
+                if record_type == "note" && k == "text" {
+                    field.seen = f.get(k).map(Field::seen_all).unwrap_or_default();
+                    field
+                        .seen
+                        .insert(self.clock.device().to_string(), t.clone());
+                    field.by = self.device_name();
+                }
+                f.insert(k.clone(), field);
                 changed = true;
             }
         }
@@ -1637,6 +1709,7 @@ impl Vault {
                 *old = Field {
                     val: String::new(),
                     t: t.clone(),
+                    ..Default::default()
                 };
                 changed = true;
             }
