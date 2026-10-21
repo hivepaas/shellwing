@@ -303,6 +303,9 @@ pub struct HostItem {
     pub label: SharedString,
     /// Shown faint, choosing nothing, when not.
     pub enabled: bool,
+    /// Shown only with a selection (an action on it); otherwise at the
+    /// caret too. (UPSTREAM.md, change 10.)
+    pub selection: bool,
 }
 
 /// shellwing: an inline format of [`EditorState::toggle_inline`].
@@ -5643,9 +5646,16 @@ impl Render for EditorState {
                 };
                 // shellwing: the host's items, for a selection (UPSTREAM.md,
                 // change 5).
-                let host_rows = (has_sel && !self.host_items.is_empty()).then(|| {
+                // Those for a selection only with one (change 10).
+                let shown_items: Vec<(usize, &HostItem)> = self
+                    .host_items
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, item)| has_sel || !item.selection)
+                    .collect();
+                let host_rows = (!shown_items.is_empty()).then(|| {
                     let mut rows = div().flex().flex_col().py(px(4.));
-                    for (i, item) in self.host_items.iter().enumerate() {
+                    for (i, item) in shown_items {
                         let id = item.id.clone();
                         let row = div()
                             .id(("host-item", i))
@@ -5722,7 +5732,9 @@ impl Render for EditorState {
                         cx.listener(|editor, _: &MouseDownEvent, window, cx| {
                             cx.stop_propagation();
                             editor.menu = None;
-                            editor.paste(&Paste, window, cx);
+                            // As the keys do: what the editor does not paste
+                            // (an image) goes on to the host (change 10).
+                            window.dispatch_action(Box::new(Paste), cx);
                         }),
                     )
                 }));

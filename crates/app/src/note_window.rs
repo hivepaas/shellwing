@@ -1272,11 +1272,13 @@ impl NoteWindow {
                 None => tr!("No shell to insert into").into(),
             },
             enabled: pane.is_some(),
+            selection: true,
         };
         let image = shellwing_note_editor::HostItem {
             id: "image".into(),
             label: tr!("Insert Image…").into(),
             enabled: images,
+            selection: false,
         };
         // A code block's Insert too, while a pane can take it.
         let code = pane.as_ref().map(|_| tr!("Insert").into());
