@@ -402,6 +402,41 @@ async fn install(
     let _ = ch.close().await;
 }
 
+/// A web server on 127.0.0.1 answering every request with `body`, or 404
+/// when there is none (a list of releases not published yet); its port.
+pub fn http_file(rt: &tokio::runtime::Runtime, body: Option<Vec<u8>>) -> u16 {
+    let listener = rt.block_on(TcpListener::bind("127.0.0.1:0")).expect("bind");
+    let port = listener.local_addr().expect("addr").port();
+    rt.spawn(async move {
+        while let Ok((mut sock, _)) = listener.accept().await {
+            let body = body.clone();
+            tokio::spawn(async move {
+                // The request, to its blank line.
+                let mut got = Vec::new();
+                let mut buf = [0u8; 1024];
+                while !got.windows(4).any(|w| w == b"\r\n\r\n") {
+                    match sock.read(&mut buf).await {
+                        Ok(0) | Err(_) => return,
+                        Ok(n) => got.extend_from_slice(&buf[..n]),
+                    }
+                }
+                let (status, body) = match body {
+                    Some(b) => ("200 OK", b),
+                    None => ("404 Not Found", Vec::new()),
+                };
+                let head = format!(
+                    "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    body.len()
+                );
+                let _ = sock.write_all(head.as_bytes()).await;
+                let _ = sock.write_all(&body).await;
+                let _ = sock.shutdown().await;
+            });
+        }
+    });
+    port
+}
+
 /// A port nothing listens on: connecting is refused. Port 1 (tcpmux) is
 /// privileged and unused everywhere; a port freed by the test could be taken
 /// by another scenario running at the same time.

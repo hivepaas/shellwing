@@ -47,6 +47,7 @@ mod session_life;
 mod snippets;
 mod tabs;
 mod terminal;
+mod updates;
 mod vault;
 
 pub use server::{OTP, PASSWORD, PROMPT, Policy, Server, USER, WELCOME};
@@ -185,6 +186,9 @@ impl Ui {
         let dir = std::env::var_os("SHELLWING_UI_TEST_DIR")
             .map(PathBuf::from)
             .expect("run through in_child");
+        // Never the real list of releases: a scenario that looks for updates
+        // names its own ([`shellwing_update::set_test_source`]).
+        shellwing_update::set_test_source("http://127.0.0.1:1/release.signed.json", &[]);
         let cx = TestAppContext::single();
         cx.executor().allow_parking();
         // As main does: the notes' editor keys.

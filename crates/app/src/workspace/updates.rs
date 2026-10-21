@@ -175,9 +175,10 @@ impl Workspace {
         }
         self.updates.checking = true;
         self.refresh_settings(cx);
+        let url = shellwing_update::list_url();
         let job = self
             .rt
-            .spawn(shellwing_update::fetch(shellwing_update::LIST_URL));
+            .spawn(async move { shellwing_update::fetch(&url).await });
         cx.spawn(async move |this, cx| {
             let found = match job.await {
                 Ok(Ok(list)) => shellwing_update::offer(&list, &shellwing_update::current())
@@ -203,6 +204,18 @@ impl Workspace {
             });
         })
         .detach();
+    }
+
+    /// Why the last look for updates failed, if it did: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn update_problem(&self) -> Option<String> {
+        self.updates.problem.clone()
+    }
+
+    /// A look for updates is under way: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn update_checking(&self) -> bool {
+        self.updates.checking
     }
 
     /// The release offered, unless skipped or already running.
@@ -254,7 +267,7 @@ impl Workspace {
         let (got, total) = (Arc::new(AtomicU64::new(0)), Arc::new(AtomicU64::new(0)));
         let (job_got, job_total, wanted) = (got.clone(), total.clone(), v.clone());
         let job = self.rt.spawn(async move {
-            let list = shellwing_update::fetch(shellwing_update::LIST_URL).await?;
+            let list = shellwing_update::fetch(&shellwing_update::list_url()).await?;
             let file = shellwing_update::release_file(&list, &wanted)?;
             let dest = dir.join(&file.file);
             shellwing_update::download::download(&file.url, &file.sha256, &dest, |n, of| {

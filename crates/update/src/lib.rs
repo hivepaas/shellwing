@@ -65,9 +65,49 @@ pub fn has_keys() -> bool {
     !KEYS.is_empty()
 }
 
-/// The release keys this app trusts (keys/README.md).
+/// The release keys this app trusts (keys/README.md), or the test's.
 pub fn trusted_keys() -> Result<PublicKeys, SignatureError> {
+    #[cfg(feature = "test-source")]
+    if let Some((_, keys)) = test_source() {
+        let pems: Vec<(&str, &str)> = keys.iter().map(|(i, p)| (i.as_str(), p.as_str())).collect();
+        return envelope::parse_keys(&pems);
+    }
     envelope::parse_keys(KEYS)
+}
+
+/// Where the signed list is read: [`LIST_URL`], or the test's.
+pub fn list_url() -> String {
+    #[cfg(feature = "test-source")]
+    if let Some((url, _)) = test_source() {
+        return url;
+    }
+    LIST_URL.to_string()
+}
+
+/// A list and keys of a test's own: the url, and each key's id and PEM.
+#[cfg(feature = "test-source")]
+type Source = (String, Vec<(String, String)>);
+
+#[cfg(feature = "test-source")]
+static TEST_SOURCE: std::sync::Mutex<Option<Source>> = std::sync::Mutex::new(None);
+
+#[cfg(feature = "test-source")]
+fn test_source() -> Option<Source> {
+    TEST_SOURCE.lock().ok()?.clone()
+}
+
+/// Reads the signed list at `url` and checks it with `keys` (id, PEM), in
+/// place of the release's: for the app's UI tests.
+#[cfg(feature = "test-source")]
+pub fn set_test_source(url: &str, keys: &[(&str, &str)]) {
+    if let Ok(mut s) = TEST_SOURCE.lock() {
+        *s = Some((
+            url.to_string(),
+            keys.iter()
+                .map(|(i, p)| (i.to_string(), p.to_string()))
+                .collect(),
+        ));
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

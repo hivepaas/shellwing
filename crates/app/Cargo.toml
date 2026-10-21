@@ -19,7 +19,7 @@ wayland = ["gpui_platform/wayland"]
 x11 = ["gpui_platform/x11"]
 # The UI tests (src/ui_tests): longer than the unit tests, so CI runs them
 # daily and by hand. `cargo test -p shellwing --features ui-tests ui_tests`.
-ui-tests = ["gpui/test-support"]
+ui-tests = ["gpui/test-support", "shellwing-update/test-source"]
 
 [dependencies]
 shellwing-term.workspace = true
