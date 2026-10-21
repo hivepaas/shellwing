@@ -857,8 +857,11 @@ impl KeysView {
     }
 
     fn small(id: impl Into<gpui::ElementId>, label: &str) -> gpui::Stateful<gpui::Div> {
+        let id = id.into();
+        let selector = id.to_string();
         div()
-            .id(id.into())
+            .id(id)
+            .debug_selector(|| selector)
             .h(px(26.))
             .px(px(10.))
             .flex()
@@ -1182,6 +1185,7 @@ impl KeysView {
         let item = |id: &'static str, label: &str, danger: bool| {
             div()
                 .id(id)
+                .debug_selector(|| id.into())
                 .px(px(10.))
                 .h(px(30.))
                 .flex()
@@ -1380,6 +1384,7 @@ impl KeysView {
             .child(label_text(title))
             .child(
                 div()
+                    .debug_selector(|| format!("field:{title}"))
                     .h(px(32.))
                     .px(px(10.))
                     .flex()

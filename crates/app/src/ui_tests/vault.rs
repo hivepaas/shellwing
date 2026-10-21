@@ -135,3 +135,52 @@ scenario!(
         assert_eq!(auth.last().map(String::as_str), Some("password:ok"), "{auth:?}");
     }
 );
+
+scenario!(
+    /// The recovery key, shown in Settings › Vault and copied, opens the
+    /// locked vault in place of its passphrase; the saved password signs in
+    /// again.
+    recovery_key_unlocks_the_vault,
+    |ui| {
+        const PASSPHRASE: &str = "correct horse battery";
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.connect(&server.spec());
+        ui.login();
+        answer_offer(ui, true);
+        ui.wait_for_notice("Saved in the vault");
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Vault");
+        // Show the recovery key; Enter copies it.
+        ui.click("vault-rk");
+        ui.wait_until("the key shown", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.keys("enter");
+        ui.wait_until("the key copied", |ui| ui.clipboard().is_some());
+        let key = ui.clipboard().unwrap_or_default();
+        assert_eq!(key.split('-').count(), 13, "{key}");
+        // A passphrase, out of the keychain, locked.
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Vault");
+        ui.click("vault-pass");
+        ui.line(PASSPHRASE);
+        ui.line(PASSPHRASE);
+        ui.wait_for_notice("The passphrase opens the vault too now.");
+        ui.click("vault-leave");
+        ui.wait_for_notice("out of the system keychain");
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette("Lock the vault");
+        ui.wait_for_notice("The vault is locked.");
+        // The recovery key, typed where the passphrase is asked.
+        ui.palette("Unlock the vault");
+        ui.wait_until("the question", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        ui.line(&key);
+        ui.wait_for_notice("The vault is open.");
+        ui.palette(&server.spec());
+        ui.wait_until("a second tab", |ui| ui.tabs() == 2);
+        ui.wait_for(WELCOME);
+        assert!(!ui.screen().contains("password:"), "asked again");
+    }
+);

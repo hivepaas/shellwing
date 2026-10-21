@@ -380,3 +380,135 @@ scenario!(
         assert!(!list.iter().any(|(t, _)| t == "~/.ssh/config"), "{list:?}");
     }
 );
+
+/// hosts.toml: the group Databases with db1 and db2, and web on its own.
+fn grouped(ui: &crate::ui_tests::Ui) {
+    let in_group = |name: &str| format!("{}group = \"Databases\"\n", host(name, closed_port()));
+    ui.config_file(
+        "hosts.toml",
+        &format!(
+            "[[group]]\nname = \"Databases\"\n\n{}\n{}\n{}",
+            in_group("db1"),
+            in_group("db2"),
+            host("web", closed_port())
+        ),
+    );
+}
+
+/// Opens the group editor, as hovering the group's header and clicking
+/// Edit does.
+fn edit_group(ui: &mut crate::ui_tests::Ui, name: &str) {
+    ui.hover(&format!("section:{name}"));
+    ui.click(&format!("edit-group:{name}"));
+    ui.wait_until("the group editor", |ui| ui.group_editor_open());
+}
+
+scenario!(
+    /// A group renamed in its editor takes its hosts along.
+    rename_a_group_takes_its_hosts_along,
+    |ui| {
+        grouped(ui);
+        ui.open();
+        edit_group(ui, "Databases");
+        ui.keys("secondary-a");
+        ui.type_text("Data stores");
+        ui.keys("enter");
+        ui.wait_until("the editor to close", |ui| !ui.group_editor_open());
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("name = \"Data stores\""), "{hosts}");
+        assert_eq!(hosts.matches("group = \"Data stores\"").count(), 2, "{hosts}");
+        assert!(!hosts.contains("Databases"), "{hosts}");
+        let list = ui.host_list();
+        assert!(
+            list.iter().any(|(t, h)| t == "Data stores" && h == &["db1", "db2"]),
+            "{list:?}"
+        );
+    }
+);
+
+scenario!(
+    /// A group deleted (after its editor asks) keeps its hosts, with no group.
+    delete_a_group_keeps_its_hosts,
+    |ui| {
+        grouped(ui);
+        ui.open();
+        edit_group(ui, "Databases");
+        ui.click("group-delete");
+        ui.click("group-delete-yes");
+        ui.wait_until("the editor to close", |ui| !ui.group_editor_open());
+        let hosts = ui.hosts_toml();
+        assert!(!hosts.contains("[[group]]") && !hosts.contains("group ="), "{hosts}");
+        for name in ["db1", "db2", "web"] {
+            assert!(hosts.contains(&format!("name = \"{name}\"")), "{name} is gone:\n{hosts}");
+        }
+        let list = ui.host_list();
+        assert!(
+            list.iter().any(|(t, h)| t == "Hosts" && h.len() == 3),
+            "{list:?}"
+        );
+    }
+);
+
+scenario!(
+    /// Delete, in the host editor, asks, then takes the host out of
+    /// hosts.toml; the others stay.
+    delete_a_host,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &[host("web", closed_port()), host("db", closed_port())].join("\n"),
+        );
+        ui.open();
+        edit_host(ui, "web");
+        ui.click("delete");
+        ui.click("delete-yes");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        let hosts = ui.hosts_toml();
+        assert!(!hosts.contains("name = \"web\""), "{hosts}");
+        assert!(hosts.contains("name = \"db\""), "{hosts}");
+        assert_eq!(ui.host_names(), [LOCAL, "db"]);
+    }
+);
+
+scenario!(
+    /// Duplicate, in the host editor: a copy named "web copy", saved beside
+    /// the original.
+    duplicate_a_host,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", closed_port()));
+        ui.open();
+        edit_host(ui, "web");
+        ui.click("duplicate");
+        save_host(ui);
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("name = \"web copy\""), "{hosts}");
+        assert!(hosts.contains("name = \"web\""), "{hosts}");
+        let names = ui.host_names();
+        assert!(names.contains(&"web copy".to_string()), "{names:?}");
+    }
+);
+
+scenario!(
+    /// The editor's options: kept on this device only, the agent forwarded,
+    /// a keepalive; hosts.toml gets each.
+    host_options_written,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", closed_port()));
+        ui.open();
+        edit_host(ui, "web");
+        ui.click("local-only");
+        ui.click("forward-agent");
+        ui.click("save");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        edit_host(ui, "web");
+        // From the name, Shift+Tab wraps to the last field: the keepalive.
+        ui.keys("shift-tab");
+        ui.type_text("30");
+        ui.keys("enter");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        let hosts = ui.hosts_toml();
+        for line in ["local_only = true", "forward_agent = true", "keepalive = 30"] {
+            assert!(hosts.contains(line), "{line} in:\n{hosts}");
+        }
+    }
+);

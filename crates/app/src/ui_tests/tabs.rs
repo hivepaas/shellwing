@@ -213,3 +213,26 @@ scenario!(
         assert_eq!(ui.status(), Status::Connected);
     }
 );
+
+scenario!(
+    /// The tab overview (All 2 tabs, by host…): typing a host's name and
+    /// Enter goes to its tab.
+    tab_overview_goes_to_a_tab,
+    |ui| {
+        let web_server = web(ui);
+        let db_server = ui.server(Policy::password());
+        ui.trust(&db_server);
+        ui.palette(&db_server.spec());
+        ui.wait_until("a second tab", |ui| ui.tabs() == 2);
+        ui.login();
+        assert_eq!(ui.ws(|ws, _, _| ws.active_index()), 1);
+        ui.palette("All 2 tabs");
+        ui.wait_until("the overview", |ui| ui.ws(|ws, _, _| ws.overview_open()));
+        ui.type_text("web");
+        ui.keys("enter");
+        ui.wait_until("the overview to close", |ui| !ui.ws(|ws, _, _| ws.overview_open()));
+        assert_eq!(ui.ws(|ws, _, _| ws.active_index()), 0);
+        assert_eq!(ui.view(|v, _| v.session().title.clone()), "web");
+        drop(web_server);
+    }
+);

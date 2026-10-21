@@ -160,3 +160,37 @@ scenario!(
         assert_eq!(talk(local, "from the config"), "echo: from the config");
     }
 );
+
+scenario!(
+    /// A forward added in the host editor starts with the host.
+    forward_added_in_the_editor_starts_with_the_host,
+    |ui| {
+        let service = echo_service(&ui.rt);
+        let server = forwarding_server(ui);
+        let local = free_port();
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "[[host]]\nname = \"web\"\naddress = \"127.0.0.1\"\nport = {}\nuser = \"{}\"\n",
+                server.port,
+                crate::ui_tests::USER
+            ),
+        );
+        ui.open();
+        ui.hover("host:web");
+        ui.click("edit-host:web");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        ui.click("add-forward");
+        ui.type_text(&format!("-L {local}:127.0.0.1:{service}"));
+        ui.keys("enter");
+        ui.keys("escape");
+        ui.click("save");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        let hosts = std::fs::read_to_string(ui.config_dir().join("hosts.toml")).unwrap_or_default();
+        assert!(hosts.contains(&format!("\"-L {local}:127.0.0.1:{service}\"")), "{hosts}");
+        ui.click("host:web");
+        ui.login();
+        ui.wait_for(&format!("forwarding localhost:{local}"));
+        assert_eq!(talk(local, "set in the editor"), "echo: set in the editor");
+    }
+);
