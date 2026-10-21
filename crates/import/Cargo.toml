@@ -1,0 +1,25 @@
+[package]
+name = "shellwing-import"
+description = "Hosts read from other SSH clients' files (docs/design/import.md)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+shellwing-config.workspace = true
+thiserror.workspace = true
+encoding_rs = "0.8.42"
+quick-xml = "0.42.0"
+yaml-rust2 = "0.13.0"
+zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
+
+[lints]
+workspace = true
+
+[target."cfg(windows)".dependencies]
+winreg = "0.56.0"
+
+[dev-dependencies]
+toml = "1"

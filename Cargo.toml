@@ -23,6 +23,7 @@ shellwing-presence = { path = "crates/presence" }
 shellwing-i18n = { path = "crates/i18n" }
 shellwing-update = { path = "crates/update" }
 shellwing-spawn = { path = "crates/spawn" }
+shellwing-import = { path = "crates/import" }
 # GPUI as published by Longbridge (the same snapshot tern and gpui-kit use).
 gpui = { package = "gpui-pre", version = "=0.3.9" }
 # font-kit and runtime_shaders only affect macOS; the Linux backends are app features.

@@ -697,6 +697,93 @@ te833da37 = config.toml, [shortcuts]: `{ $key }`이(가) { $kept }과(와) { $lo
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }`은(는) 쓸 수 없습니다. `digit`(1–9)은 go_to_tab에만 쓸 수 있고, go_to_tab에는 그 밖의 것을 쓸 수 없습니다.
 
+# Import
+t573e0af4 = 가져오기
+
+# No hosts in it.
+tbb05fee9 = 호스트가 없습니다.
+
+# Looking for other SSH apps…
+tb71f4415 = 다른 SSH 앱을 찾는 중…
+
+# No other SSH app with hosts was found here.
+tecba4271 = 호스트가 있는 다른 SSH 앱을 찾지 못했습니다.
+
+# {n} host | {n} hosts
+t2489674e = 호스트 { $n }개
+
+# Import hosts
+t956d1e67 = 호스트 가져오기
+
+# Found on this computer
+td811df9d = 이 컴퓨터에서 찾음
+
+# Or a file another app exported
+t9e7f0266 = 또는 다른 앱에서 내보낸 파일
+
+# Choose a file or folder…
+t379a2c2c = 파일 또는 폴더 선택…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = PuTTY 또는 KiTTY의 .reg, MobaXterm의 .mxtsessions, SecureCRT의 XML 또는 Sessions 폴더, Xshell의 .xts 또는 Sessions 폴더, Tabby의 config.yaml, ssh config, 머리글이 있는 CSV.
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = 비밀번호는 가져오지 않습니다. 각 호스트가 처음 접속할 때 비밀번호를 묻고 보관함에 저장할지 제안합니다.
+
+# Import from {app}
+tb591e273 = { $app }에서 가져오기
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c = { $total }개 중 { $n }개 호스트 선택됨.
+
+# {was} here is another host: named apart.
+t3dd0ab4e = { $was }(이)라는 다른 호스트가 이미 있어 이름을 바꿨습니다.
+
+# Already here as {name}.
+t536acaec = 이미 { $name }(으)로 있습니다.
+
+# Added: other hosts go through it.
+te8d2ba16 = 추가됨: 다른 호스트가 이 호스트를 경유합니다.
+
+# No group
+t2721e1c1 = 그룹 없음
+
+# {n} left out | {n} left out
+t1e072c4b = { $n }개 제외됨
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = 이 파일에서는 호스트를 가져올 수 없습니다.
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app }이(가) 이 파일을 암호화해 두어 여기서 읽을 수 없습니다.
+
+# Cannot read it: {e}
+t4fd94e68 = 읽을 수 없습니다: { $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = 키가 PuTTY의 .ppk입니다. 로그인에 쓰려면 puttygen으로 OpenSSH 형식으로 변환하세요.
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = 키 { $name }은(는) { $app }의 자체 저장소에 있습니다. 거기서 내보낸 뒤 키에 추가하세요.
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = 경유 호스트 { $name }이(가) 호스트 목록에 없어 제외했습니다.
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name }: SSH 아님 ({ $protocol })
+
+# {name}: no address
+t9f701d25 = { $name }: 주소 없음
+
+# Reading…
+t6aad8485 = 읽는 중…
+
+# Back
+tc2954bc2 = 뒤로
+
+# Import {n} host | Import {n} hosts
+t040b2da6 = 호스트 { $n }개 가져오기
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (권장)
 
@@ -774,9 +861,6 @@ t4b242af5 = { $path }의 저장된 암호 문구를 삭제했습니다. 다시 �
 
 # Not forgotten: {e}
 t0e3fb3a1 = 삭제되지 않음: { $e }
-
-# Import
-t573e0af4 = 가져오기
 
 # not used by a host yet
 t7a67a5ad = 아직 사용하는 호스트 없음
@@ -1810,6 +1894,15 @@ tf7087aa7 = 시작 시 마지막 탭 열기
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = 호스트 없이 shellwing을 시작하면 이전의 탭과 분할 창을 다시 엽니다.
 
+# Hosts from another app
+tffafddac = 다른 앱의 호스트
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config 또는 CSV 파일: 호스트, 그룹, 경유 호스트, 포워딩을 먼저 보여 주고 고르게 합니다. 비밀번호는 가져오지 않습니다.
+
+# Import…
+tecc08160 = 가져오기…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = 이 기기의 설정입니다. 파일을 편집하면 즉시 적용됩니다.
 
@@ -2245,6 +2338,9 @@ t2a8f8871 = 일치하는 호스트가 없습니다.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = 아직 호스트가 없습니다. 호스트를 추가하거나 ~/.ssh/config에 Host 블록을 추가하세요.
 
+# Import hosts from another app…
+tb00d665f = 다른 앱에서 호스트 가져오기…
+
 # + Host
 t0e963f08 = + 호스트
 
@@ -2541,9 +2637,6 @@ t1d5d16cc = 배치된 파일은 권한과 함께 서버 디스크에 있으며, 
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 창의 호스트에 맞게 채워지며, 그 밖의 {"{{"}name{"}}"}은 스니펫을 실행할 때 묻습니다.
-
-# {n} host | {n} hosts
-t2489674e = 호스트 { $n }개
 
 # {n} password | {n} passwords
 tf07ec59c = 비밀번호 { $n }개
@@ -3142,6 +3235,9 @@ tb66945de = 종료하기 전에 노트를 동기화하는 중…
 # Choose a host on the left to connect.
 tf7759ebb = 연결하려면 왼쪽에서 호스트를 선택하세요.
 
+# New host…
+t13806b73 = 새 호스트…
+
 # Unlock the vault…
 tdf659182 = 보관함 잠금 해제…
 
@@ -3232,11 +3328,11 @@ tab699ac8 = shellwing { $version } 출시…
 # Check for updates
 t70ad7706 = 업데이트 확인
 
-# New host…
-t13806b73 = 새 호스트…
-
 # New group…
 t2c0113fa = 새 그룹…
+
+# Undo import from {app}
+t971f8deb = { $app }에서 가져오기 취소
 
 # Edit host {name}…
 te6b404e6 = 호스트 { $name } 편집…
@@ -3516,6 +3612,18 @@ t58507cbd = { $name } 그룹을 저장했습니다.
 
 # Deleted the group {name}.
 t2dbe70db = { $name } 그룹을 삭제했습니다.
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 = { $app }에서 호스트 { $n }개를 가져왔습니다.
+
+# {n} left out. | {n} left out.
+t96ae7881 = { $n }개는 제외했습니다.
+
+# The palette can undo it.
+t21bfdf84 = 팔레트에서 취소할 수 있습니다.
+
+# The import from {app} is undone.
+t5f37b9b7 = { $app }에서 가져온 것을 취소했습니다.
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = 이 컴퓨터의 포트 8080이 서버 기준 localhost:80으로 연결됩니다.

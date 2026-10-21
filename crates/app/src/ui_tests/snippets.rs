@@ -258,6 +258,61 @@ scenario!(
 );
 
 scenario!(
+    /// The palette's badges are all there with nothing in a section: a
+    /// click on an empty one scrolls to its heading, with nothing under it.
+    palette_badges_with_empty_sections,
+    |ui| {
+        ui.open();
+        ui.shortcut("k");
+        ui.wait_until("the palette", |ui| ui.ws(|ws, _, _| ws.palette_open()));
+        for part in [
+            "Hosts",
+            "Recent",
+            "Snippets",
+            "Environments",
+            "ConfigFiles",
+            "Notes",
+            "Actions",
+            "Settings",
+        ] {
+            assert!(ui.find(&format!("palette-section:{part}")).is_some(), "{part}");
+        }
+        // Nothing can be made under Recent: it stays empty.
+        let before = ui.bounds("palette-empty:Recent").top();
+        ui.click("palette-section:Recent");
+        let list = ui.bounds("palette-list");
+        ui.wait_until("the empty heading scrolled into view", |ui| {
+            let b = ui.bounds("palette-empty:Recent");
+            b.top() < before && b.top() >= list.top() && b.bottom() <= list.bottom()
+        });
+    }
+);
+
+scenario!(
+    /// With no environment or config file yet, their sections in the
+    /// palette offer a new one, which opens its form in Settings.
+    palette_offers_the_first_environment_and_config_file,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("New environment");
+        ui.wait_until("Settings › Environments", |ui| {
+            ui.settings_page() == Some(crate::settings_view::Page::Environments)
+        });
+        assert!(ui.find("env-paste").is_some(), "no new environment's form");
+        ui.keys("escape");
+        ui.wait_until("the form to close", |ui| ui.find("env-paste").is_none());
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        ui.palette("New config file");
+        ui.wait_until("Settings › Config files", |ui| {
+            ui.settings_page() == Some(crate::settings_view::Page::ConfigFiles)
+        });
+        assert!(ui.find("file-choose").is_some(), "no new config file's form");
+    }
+);
+
+scenario!(
     /// The snippet window (Settings › Snippets › New snippet…): a name and a
     /// command typed and saved (Ctrl/Cmd+S) are in the vault; Run in the pane
     /// runs it there.

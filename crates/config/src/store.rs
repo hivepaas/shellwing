@@ -274,6 +274,48 @@ impl Store {
         Ok(id)
     }
 
+    /// Writes `groups` and `hosts` into `hosts.toml` as new ones, in one edit
+    /// that keeps the file's comments: an import. Returns their ids, groups
+    /// then hosts.
+    pub fn import(
+        &self,
+        groups: &[crate::Group],
+        hosts: &[crate::Host],
+    ) -> Result<(Vec<String>, Vec<String>), WriteError> {
+        let group_ids: Vec<String> = groups.iter().map(|_| crate::hosts_sync::new_id()).collect();
+        let host_ids: Vec<String> = hosts.iter().map(|_| crate::hosts_sync::new_id()).collect();
+        self.edit_if(HOSTS, |doc| {
+            let mut changed = crate::hosts_sync::assign_ids(doc);
+            for (g, id) in groups.iter().zip(&group_ids) {
+                changed |= crate::hosts_sync::save_group(doc, id, g, None);
+            }
+            for (h, id) in hosts.iter().zip(&host_ids) {
+                changed |= crate::hosts_sync::save_host(doc, id, h);
+            }
+            Ok(changed)
+        })?;
+        Ok((group_ids, host_ids))
+    }
+
+    /// Takes out what an import put in, in one edit: the hosts with these ids,
+    /// and the groups with these ids and names.
+    pub fn unimport(
+        &self,
+        groups: &[(String, String)],
+        hosts: &[String],
+    ) -> Result<(), WriteError> {
+        self.edit_if(HOSTS, |doc| {
+            let mut changed = false;
+            for id in hosts {
+                changed |= crate::hosts_sync::delete_host(doc, id);
+            }
+            for (id, name) in groups {
+                changed |= crate::hosts_sync::delete_group(doc, id, name);
+            }
+            Ok(changed)
+        })
+    }
+
     /// Removes a group from `hosts.toml`; its hosts stay, without a group.
     pub fn delete_group(&self, id: &str, name: &str) -> Result<(), WriteError> {
         self.edit_if(HOSTS, |doc| {
@@ -907,5 +949,44 @@ mod tests {
         assert_eq!(first, s.stamp());
         s.set_theme("nord").expect("write");
         assert_ne!(first, s.stamp());
+    }
+
+    #[test]
+    fn an_import_is_one_edit_and_comes_out_whole() {
+        let store = temp("import");
+        fs::create_dir_all(store.dir()).expect("dir");
+        let mine = "# My hosts.\n[[host]]\nname = \"web\"  # the front\naddress = \"10.0.0.1\"\n";
+        fs::write(store.dir().join(HOSTS), mine).expect("write");
+        let group = crate::Group {
+            id: None,
+            name: "Lab".into(),
+            color: None,
+            theme: None,
+        };
+        let mut host = store.hosts().expect("hosts").hosts[0].clone();
+        host.id = None;
+        host.name = "db".into();
+        host.address = "10.0.0.2".into();
+        host.group = Some("Lab".into());
+        host.tags = vec!["imported:csv".into()];
+        let (groups, hosts) = store.import(&[group], &[host]).expect("import");
+        let text = fs::read_to_string(store.dir().join(HOSTS)).expect("read");
+        assert!(
+            text.contains("# My hosts.") && text.contains("# the front"),
+            "{text}"
+        );
+        let read = store.hosts().expect("hosts");
+        assert_eq!(read.hosts.len(), 2);
+        assert_eq!(read.hosts[1].group.as_deref(), Some("Lab"));
+        assert_eq!(read.hosts[1].tags, ["imported:csv"]);
+        assert_eq!(read.groups[0].id.as_deref(), Some(groups[0].as_str()));
+
+        let named: Vec<(String, String)> =
+            groups.into_iter().map(|id| (id, "Lab".into())).collect();
+        store.unimport(&named, &hosts).expect("undo");
+        let read = store.hosts().expect("hosts");
+        assert_eq!((read.hosts.len(), read.groups.len()), (1, 0));
+        let text = fs::read_to_string(store.dir().join(HOSTS)).expect("read");
+        assert!(text.contains("# the front"), "{text}");
     }
 }

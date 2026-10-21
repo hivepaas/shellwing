@@ -697,6 +697,93 @@ te833da37 = config.toml, [shortcuts]：`{ $key }` が { $kept } と { $lost } �
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name }：`{ $key }` は使えません。`digit`（1〜9）を使えるのは go_to_tab だけで、go_to_tab にはそれ以外を使えません。
 
+# Import
+t573e0af4 = インポート
+
+# No hosts in it.
+tbb05fee9 = ホストが含まれていません。
+
+# Looking for other SSH apps…
+tb71f4415 = ほかの SSH アプリを探しています…
+
+# No other SSH app with hosts was found here.
+tecba4271 = ホストを持つほかの SSH アプリは見つかりませんでした。
+
+# {n} host | {n} hosts
+t2489674e = ホスト { $n } 件
+
+# Import hosts
+t956d1e67 = ホストをインポート
+
+# Found on this computer
+td811df9d = このコンピュータで見つかったもの
+
+# Or a file another app exported
+t9e7f0266 = またはほかのアプリが書き出したファイル
+
+# Choose a file or folder…
+t379a2c2c = ファイルまたはフォルダを選択…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = PuTTY / KiTTY の .reg、MobaXterm の .mxtsessions、SecureCRT の XML または Sessions フォルダ、Xshell の .xts または Sessions フォルダ、Tabby の config.yaml、ssh config、見出し行のある CSV。
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = パスワードはインポートされません。各ホストは初回にパスワードを尋ね、保管庫への保存を提案します。
+
+# Import from {app}
+tb591e273 = { $app } からインポート
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c = { $total } 件中 { $n } 件のホストを選択中。
+
+# {was} here is another host: named apart.
+t3dd0ab4e = ここには { $was } という別のホストがあるため、別の名前にしました。
+
+# Already here as {name}.
+t536acaec = { $name } としてすでにあります。
+
+# Added: other hosts go through it.
+te8d2ba16 = 追加: ほかのホストがこれを経由します。
+
+# No group
+t2721e1c1 = グループなし
+
+# {n} left out | {n} left out
+t1e072c4b = { $n } 件を除外
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = このファイルからはホストをインポートできません。
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app } がこのファイルを暗号化しているため、ここでは読み取れません。
+
+# Cannot read it: {e}
+t4fd94e68 = 読み取れません: { $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = 鍵は PuTTY の .ppk です。サインインに使うには puttygen で OpenSSH 形式に変換してください。
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = 鍵 { $name } は { $app } 独自の保存場所にあります。そこで書き出してから「鍵」に追加してください。
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = 経由ホスト { $name } はホストの中にありません。除外しました。
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name }: SSH ではありません（{ $protocol }）
+
+# {name}: no address
+t9f701d25 = { $name }: アドレスがありません
+
+# Reading…
+t6aad8485 = 読み取り中…
+
+# Back
+tc2954bc2 = 戻る
+
+# Import {n} host | Import {n} hosts
+t040b2da6 = { $n } 件のホストをインポート
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推奨）
 
@@ -774,9 +861,6 @@ t4b242af5 = { $path } のパスフレーズを消去しました。次回から�
 
 # Not forgotten: {e}
 t0e3fb3a1 = 消去できませんでした：{ $e }
-
-# Import
-t573e0af4 = インポート
 
 # not used by a host yet
 t7a67a5ad = まだどのホストでも使われていません
@@ -1810,6 +1894,15 @@ tf7087aa7 = 起動時に前回のタブを開く
 # When shellwing starts without a host, it opens the tabs and splits it had.
 t2b27326b = ホストを指定せずに shellwing を起動すると、前回のタブと分割を開きます。
 
+# Hosts from another app
+tffafddac = ほかのアプリのホスト
+
+# PuTTY, KiTTY, MobaXterm, SecureCRT, Xshell, Tabby, ~/.ssh/config or a CSV file: their hosts, groups, jump hosts and forwards, shown first to choose from. Passwords are not imported.
+tdd2c4842 = PuTTY、KiTTY、MobaXterm、SecureCRT、Xshell、Tabby、~/.ssh/config、CSV ファイル: ホスト、グループ、経由ホスト、転送を、まず一覧で選べるように表示します。パスワードはインポートされません。
+
+# Import…
+tecc08160 = インポート…
+
 # These settings, for this device. Edits in the file apply at once.
 ta0344de9 = このデバイスの設定です。ファイルを編集するとすぐに反映されます。
 
@@ -2245,6 +2338,9 @@ t2a8f8871 = 一致するホストがありません。
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = まだホストはありません。ホストを追加するか、~/.ssh/config に Host ブロックを追加してください。
 
+# Import hosts from another app…
+tb00d665f = ほかのアプリからホストをインポート…
+
 # + Host
 t0e963f08 = + ホスト
 
@@ -2541,9 +2637,6 @@ t1d5d16cc = 配置したファイルはサーバーのディスク上にパー�
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} にはペインのホストの値が入ります。それ以外の {"{{"}name{"}}"} はスニペットの実行時に尋ねられます。
-
-# {n} host | {n} hosts
-t2489674e = ホスト { $n } 件
 
 # {n} password | {n} passwords
 tf07ec59c = パスワード { $n } 件
@@ -3142,6 +3235,9 @@ tb66945de = 終了する前にノートを同期しています…
 # Choose a host on the left to connect.
 tf7759ebb = 左のホストを選んで接続してください。
 
+# New host…
+t13806b73 = 新しいホスト…
+
 # Unlock the vault…
 tdf659182 = 保管庫のロックを解除…
 
@@ -3232,11 +3328,11 @@ tab699ac8 = shellwing { $version } が公開されました…
 # Check for updates
 t70ad7706 = アップデートを確認
 
-# New host…
-t13806b73 = 新しいホスト…
-
 # New group…
 t2c0113fa = 新しいグループ…
+
+# Undo import from {app}
+t971f8deb = { $app } からのインポートを取り消す
 
 # Edit host {name}…
 te6b404e6 = ホスト { $name } を編集…
@@ -3516,6 +3612,18 @@ t58507cbd = グループ { $name } を保存しました。
 
 # Deleted the group {name}.
 t2dbe70db = グループ { $name } を削除しました。
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 = { $app } から { $n } 件のホストをインポートしました。
+
+# {n} left out. | {n} left out.
+t96ae7881 = { $n } 件を除外しました。
+
+# The palette can undo it.
+t21bfdf84 = パレットから取り消せます。
+
+# The import from {app} is undone.
+t5f37b9b7 = { $app } からのインポートを取り消しました。
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = ここのポート 8080 が、サーバーから見た localhost:80 につながります。

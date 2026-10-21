@@ -652,15 +652,31 @@ impl Render for Sidebar {
                     .child(tr!("No host matches.")),
             );
         } else if self.sections.is_empty() {
-            list = list.child(
-                div()
-                    .px_3()
-                    .pt_3()
-                    .text_color(rgb(colors().muted))
-                    .child(tr!(
-                        "No hosts yet. Add one, or Host blocks to ~/.ssh/config."
-                    )),
-            );
+            let ws = self.workspace.clone();
+            list = list
+                .child(
+                    div()
+                        .px_3()
+                        .pt_3()
+                        .text_color(rgb(colors().muted))
+                        .child(tr!(
+                            "No hosts yet. Add one, or Host blocks to ~/.ssh/config."
+                        )),
+                )
+                .child(
+                    div()
+                        .id("import-hosts")
+                        .debug_selector(|| "import-hosts".into())
+                        .mx_3()
+                        .mt_2()
+                        .text_color(rgb(colors().accent))
+                        .cursor_pointer()
+                        .hover(|s| s.underline())
+                        .on_click(move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open_import(window, cx));
+                        })
+                        .child(tr!("Import hosts from another app…")),
+                );
         }
         let (workspace, for_group, for_about) = (
             self.workspace.clone(),
