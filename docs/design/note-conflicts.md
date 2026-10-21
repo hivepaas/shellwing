@@ -88,6 +88,8 @@ the other version is kept as Disk usage (from laptop).*
 - **Every merge of a note:** a sync round merging this device's version with
   each file of it in the store (a "conflicted copy" left by a sync tool
   included), and a write refused because another device wrote meanwhile.
+  With Git, a refused push runs the round again over theirs; a copy made in
+  the first is kept, goes out in the second, and is still said.
 - **A note open in its window** is held out of sync, as now, and merged when
   the window closes; it shows the merged text the next time it opens.
 - **The text only.** The title, category, hosts and flags stay as they are
@@ -118,6 +120,9 @@ Snippets' bodies could be handled the same way later.
   - a deleted copy stays deleted when a third device syncs an old version;
   - a note held open merges when let go;
   - the images of the losing text are kept.
+- **Sync over WebDAV and Git** (`crates/remote`): two devices, and a write
+  refused because the other wrote meanwhile (a WebDAV write refused; a Git
+  push refused after the copy was made).
 - **UI scenario** (`ui_tests/notes.rs`): a note edited in its window while
   another vault on the same folder changes it; when the window closes it
   syncs, the window says so, and both devices hold the note and the copy.

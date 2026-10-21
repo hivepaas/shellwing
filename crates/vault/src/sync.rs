@@ -568,7 +568,17 @@ impl Vault {
     /// As [`Vault::sync`], leaving the records `held` alone both ways (a
     /// note open in its window: it syncs when the window closes).
     pub fn sync_holding(&self, b: &dyn Backend, held: &BTreeSet<String>) -> Result<SyncReport> {
-        transact(b, |b| self.sync_round(b, held))
+        // A copy made in a round whose publishing was refused is kept here,
+        // and goes out in the next round, which finds it made: it is still
+        // said.
+        let mut copies = Vec::new();
+        let mut report = transact(b, |b| {
+            let round = self.sync_round(b, held)?;
+            copies.extend(round.copies.iter().cloned());
+            Ok(round)
+        })?;
+        report.copies = copies;
+        Ok(report)
     }
 
     /// One sync, over the files as they are now.
