@@ -1889,6 +1889,12 @@ impl TermView {
         Bounds::new(self.grid_origin.get(), self.area.get())
     }
 
+    /// A cell's width and height as drawn: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn cell_size(&self) -> (Pixels, Pixels) {
+        self.cell
+    }
+
     /// The newest frame, taken as painting takes it: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn latest_frame(&mut self) -> Arc<Frame> {

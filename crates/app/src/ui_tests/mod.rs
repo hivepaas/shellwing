@@ -39,6 +39,7 @@ mod host_list;
 mod hosts;
 mod keys;
 mod local;
+mod mouse;
 mod notes;
 mod security;
 mod session_life;
@@ -551,6 +552,60 @@ impl Ui {
         let at = self.reach(selector);
         let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
         vcx.simulate_mouse_move(at, None, gpui::Modifiers::none());
+        self.cx.run_until_parked();
+    }
+
+    /// The middle of the active terminal's cell at `row`, `col` (from the
+    /// top left of the screen), where it is drawn.
+    pub fn cell_point(&mut self, row: usize, col: usize) -> gpui::Point<gpui::Pixels> {
+        self.draw();
+        let (origin, (w, h)) = self.view(|v, _| (v.bounds().origin, v.cell_size()));
+        gpui::point(
+            origin.x + w * (col as f32 + 0.5),
+            origin.y + h * (row as f32 + 0.5),
+        )
+    }
+
+    /// Where `text` is on the active terminal's screen: its row and the
+    /// column it starts at (one character per cell, as for ASCII).
+    pub fn find_text(&mut self, text: &str) -> (usize, usize) {
+        self.cx.run_until_parked();
+        let frame = self.view(|v, _| v.latest_frame());
+        for (row, r) in frame.rows.iter().enumerate() {
+            if let Some(at) = r.text.find(text) {
+                return (row, r.text[..at].chars().count());
+            }
+        }
+        panic!("{text:?} is not on the screen:\n{}", self.screen());
+    }
+
+    /// Presses the mouse's `button` on one cell and lets it go on another,
+    /// moving over the cells between, with `modifiers` held.
+    pub fn drag(
+        &mut self,
+        from: (usize, usize),
+        to: (usize, usize),
+        modifiers: gpui::Modifiers,
+    ) {
+        let (a, b) = (self.cell_point(from.0, from.1), self.cell_point(to.0, to.1));
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        let left = gpui::MouseButton::Left;
+        vcx.simulate_mouse_move(a, None, modifiers);
+        vcx.simulate_mouse_down(a, left, modifiers);
+        for i in 1..=4 {
+            let t = i as f32 / 4.;
+            vcx.simulate_mouse_move(a + (b - a) * t, left, modifiers);
+        }
+        vcx.simulate_mouse_up(b, left, modifiers);
+        self.cx.run_until_parked();
+    }
+
+    /// Clicks a cell of the active terminal with `modifiers` held.
+    pub fn click_cell(&mut self, row: usize, col: usize, modifiers: gpui::Modifiers) {
+        let at = self.cell_point(row, col);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.simulate_mouse_move(at, None, modifiers);
+        vcx.simulate_click(at, modifiers);
         self.cx.run_until_parked();
     }
 
