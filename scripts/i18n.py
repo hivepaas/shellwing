@@ -27,9 +27,12 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LOCALES = ROOT / "crates" / "i18n" / "locales"
-# The i18n crate's own examples are not messages.
+# The i18n crate's own examples are not messages, nor what the UI tests say
+# (they look words up with tr! to check the app speaks a language).
 SOURCES = sorted(
-    p for p in (ROOT / "crates").glob("*/src/**/*.rs") if p.parts[-3] != "i18n"
+    p
+    for p in (ROOT / "crates").glob("*/src/**/*.rs")
+    if p.parts[-3] != "i18n" and "ui_tests" not in p.parts
 )
 
 STRING = r'"((?:[^"\\]|\\.)*)"'
