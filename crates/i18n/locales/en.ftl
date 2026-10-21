@@ -245,6 +245,51 @@ tb915b010 = config.toml, [shortcuts] { $name }: `{ $key }`: { $error }
 t71adda1f = config.toml, [shortcuts] { $name }: { $why }
 te833da37 = config.toml, [shortcuts]: `{ $key }` is given to both { $kept } and { $lost }; { $kept } keeps it.
 ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
+t573e0af4 = Import
+tbb05fee9 = No hosts in it.
+tb71f4415 = Looking for other SSH apps…
+tecba4271 = No other SSH app with hosts was found here.
+t2489674e =
+    { $n ->
+        [one] { $n } host
+       *[other] { $n } hosts
+    }
+t956d1e67 = Import hosts
+td811df9d = Found on this computer
+t9e7f0266 = Or a file another app exported
+t379a2c2c = Choose a file or folder…
+tf846074b = PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+t1b7a0685 = Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+tb591e273 = Import from { $app }
+t18f6360c =
+    { $n ->
+        [one] { $n } host checked, of { $total }.
+       *[other] { $n } hosts checked, of { $total }.
+    }
+t3dd0ab4e = { $was } here is another host: named apart.
+t536acaec = Already here as { $name }.
+te8d2ba16 = Added: other hosts go through it.
+t2721e1c1 = No group
+t1e072c4b =
+    { $n ->
+        [one] { $n } left out
+       *[other] { $n } left out
+    }
+tad56c9e9 = This is not a file hosts can be imported from.
+t63a77bb5 = { $app } keeps this file encrypted, so it cannot be read here.
+t4fd94e68 = Cannot read it: { $e }
+t484769a7 = Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t09682d64 = Its key { $name } is in { $app }'s own store: export it there, then add it under Keys.
+t00d9e5b4 = Its jump host { $name } is not among the hosts: left out.
+te0c47344 = { $name }: not SSH ({ $protocol })
+t9f701d25 = { $name }: no address
+t6aad8485 = Reading…
+tc2954bc2 = Back
+t040b2da6 =
+    { $n ->
+        [one] Import { $n } host
+       *[other] Import { $n } hosts
+    }
 t7294b934 = Ed25519 (recommended)
 t6c2bbece = A name, to tell your keys apart
 t66ef7116 = Copied the public key.
@@ -271,7 +316,6 @@ t7b4feb23 = Not removed: { $e }
 t16ca2ffe = The key is not in the vault.
 t4b242af5 = Forgot the passphrase of { $path }: it is asked for again.
 t0e3fb3a1 = Not forgotten: { $e }
-t573e0af4 = Import
 t7a67a5ad = not used by a host yet
 tefe52e8f = used by { $one }
 t72e17f0a = used by { $a }, { $b }
@@ -794,6 +838,7 @@ tebee50c5 = closed
 ta58f36ff = No hosts yet
 t2a8f8871 = No host matches.
 tbbe50baa = No hosts yet. Add one, or Host blocks to ~/.ssh/config.
+tb00d665f = Import hosts from another app…
 t0e963f08 = + Host
 t9585c651 = + Group
 t884dc61f = About shellwing
@@ -908,11 +953,6 @@ t87b5db80 = Values are sent with the echo off and kept out of the shell's histor
 t16991c40 = Load them on servers you trust, unload them when done, and prefer keys that expire or can do little, such as short-lived tokens or a role with only what the work needs.
 t1d5d16cc = A placed file is on the server's disk, with its permissions: whoever has root there can read it until it is removed. Place secrets on servers you trust, until the tab closes.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} are filled in for the pane's host; any other {"{{"}name{"}}"} is asked for when the snippet runs.
-t2489674e =
-    { $n ->
-        [one] { $n } host
-       *[other] { $n } hosts
-    }
 tf07ec59c =
     { $n ->
         [one] { $n } password
@@ -1214,6 +1254,7 @@ taadea299 = Restart to install shellwing { $version }
 tab699ac8 = shellwing { $version } is out…
 t70ad7706 = Check for updates
 t2c0113fa = New group…
+t971f8deb = Undo import from { $app }
 te6b404e6 = Edit host { $name }…
 tbfa1762c = Edit hosts.toml
 tf108a14d = Edit config.toml
@@ -1315,6 +1356,18 @@ t917924da = Cannot edit hosts.toml: { $e }
 t966c9f6d = Saved { $name }.
 t58507cbd = Saved the group { $name }.
 t2dbe70db = Deleted the group { $name }.
+t57e0e370 =
+    { $n ->
+        [one] Imported { $n } host from { $app }.
+       *[other] Imported { $n } hosts from { $app }.
+    }
+t96ae7881 =
+    { $n ->
+        [one] { $n } left out.
+       *[other] { $n } left out.
+    }
+t21bfdf84 = The palette can undo it.
+t5f37b9b7 = The import from { $app } is undone.
 t51796bc3 = Port 8080 here reaches localhost:80 as the server sees it.
 t79226dc9 = Port 9000 on the server reaches localhost:3000 here.
 t8be5905e = A SOCKS proxy on port 1080 here; connections go out from the server.

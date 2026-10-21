@@ -158,3 +158,72 @@ scenario!(
         ui.login();
     }
 );
+
+/// A MobaXterm export: a host already in hosts.toml, one in a folder in a
+/// folder going through a jump host, and a remote desktop.
+const MOBAXTERM: &str = "[Bookmarks]\r\nSubRep=\r\nImgNum=42\r\n\
+web=#109#0%10.0.1.11%22%deploy%#MobaFont%10#0# #-1\r\n\r\n\
+[Bookmarks_1]\r\nSubRep=Prod\\EU\r\nImgNum=41\r\n\
+api=#109#0%10.0.1.12%2222%ops%%%%%bastion.example.com%22%admin#MobaFont%10#0#Order API#-1\r\n\
+desktop=#91#4%10.0.2.5%3389#MobaFont%10#0# #-1\r\n";
+
+scenario!(
+    /// Hosts imported from a MobaXterm export chosen in the file dialog: the
+    /// preview leaves the host already here unchecked and adds the jump host;
+    /// Import writes the rest with their group, keeping hosts.toml's
+    /// comments, and the description as a note; Undo import takes it all out
+    /// (`docs/design/import.md`).
+    hosts_are_imported_from_another_app_and_undone,
+    |ui| {
+        use shellwing_import::State;
+        ui.config_file(
+            "hosts.toml",
+            "# Mine.\n[[host]]\nname = \"web\"\naddress = \"10.0.1.11\"\nuser = \"deploy\"\n",
+        );
+        let export = ui.dir.join("sessions.mxtsessions");
+        std::fs::write(&export, MOBAXTERM).expect("export");
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Import hosts from another app");
+        ui.wait_until("the import drawer", |ui| ui.import(|_, _| ()).is_some());
+        ui.import(|v, cx| v.click_choose_file(cx));
+        ui.wait_until("the file dialog", |ui| ui.cx.did_prompt_for_paths());
+        let chosen = export.clone();
+        ui.cx.simulate_path_prompt_response(move |_| Some(vec![chosen]));
+        ui.wait_until("the preview", |ui| ui.import(|v, _| v.rows()).flatten().is_some());
+        let rows = ui.import(|v, _| v.rows()).flatten().expect("rows");
+        assert_eq!(
+            rows,
+            [
+                ("web".to_string(), false, State::Here("web".into())),
+                ("api".to_string(), true, State::New),
+                ("bastion.example.com".to_string(), true, State::ForJump),
+            ]
+        );
+        ui.import(|v, cx| v.click_import(cx));
+        ui.wait_for_notice("Imported 2 hosts from MobaXterm. 1 left out.");
+        assert!(ui.import(|_, _| ()).is_none(), "the drawer closed");
+        let hosts = ui.hosts_toml();
+        assert!(hosts.starts_with("# Mine."), "{hosts}");
+        for line in [
+            "name = \"api\"",
+            "group = \"Prod / EU\"",
+            "jump = [\"bastion.example.com\"]",
+            "tags = [\"imported:mobaxterm\"]",
+        ] {
+            assert!(hosts.contains(line), "{line} in:\n{hosts}");
+        }
+        ui.wait_until("the hosts listed", |ui| ui.host_names().contains(&"api".to_string()));
+        let vault = ui.vault().expect("vault");
+        let notes = vault.notes().expect("notes");
+        assert_eq!(notes.len(), 1);
+        assert_eq!((notes[0].title.as_str(), notes[0].hosts.as_slice()), ("api", &["api".to_string()][..]));
+
+        ui.palette("Undo import from MobaXterm");
+        ui.wait_for_notice("The import from MobaXterm is undone.");
+        let hosts = ui.hosts_toml();
+        assert!(!hosts.contains("api") && !hosts.contains("Prod / EU"), "{hosts}");
+        assert!(hosts.contains("name = \"web\""), "{hosts}");
+        assert!(vault.notes().expect("notes").is_empty());
+    }
+);

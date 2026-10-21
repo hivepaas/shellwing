@@ -715,6 +715,117 @@ te833da37 = config.toml, [shortcuts]: `{ $key }` используется и в 
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name }: `{ $key }` не подходит; `digit` (от 1 до 9) принимает только go_to_tab, и ничего другого он не принимает.
 
+# Import
+t573e0af4 = Импорт
+
+# No hosts in it.
+tbb05fee9 = В нём нет хостов.
+
+# Looking for other SSH apps…
+tb71f4415 = Поиск других SSH-приложений…
+
+# No other SSH app with hosts was found here.
+tecba4271 = Других SSH-приложений с хостами здесь не найдено.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } хост
+        [few] { $n } хоста
+        [many] { $n } хостов
+       *[other] { $n } хоста
+    }
+
+# Import hosts
+t956d1e67 = Импорт хостов
+
+# Found on this computer
+td811df9d = Найдено на этом компьютере
+
+# Or a file another app exported
+t9e7f0266 = Или файл, экспортированный другим приложением
+
+# Choose a file or folder…
+t379a2c2c = Выбрать файл или папку…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = .reg из PuTTY или KiTTY, .mxtsessions из MobaXterm, XML или папка Sessions из SecureCRT, .xts или папка Sessions из Xshell, config.yaml из Tabby, файл ssh config или CSV с заголовком.
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = Пароли не импортируются: при первом подключении хост спросит пароль и предложит сохранить его в хранилище.
+
+# Import from {app}
+tb591e273 = Импорт из { $app }
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c =
+    { $n ->
+        [one] Отмечен { $n } хост из { $total }.
+        [few] Отмечено { $n } хоста из { $total }.
+        [many] Отмечено { $n } хостов из { $total }.
+       *[other] Отмечено { $n } хоста из { $total }.
+    }
+
+# {was} here is another host: named apart.
+t3dd0ab4e = Здесь уже есть другой хост { $was }: назван иначе.
+
+# Already here as {name}.
+t536acaec = Уже есть здесь как { $name }.
+
+# Added: other hosts go through it.
+te8d2ba16 = Добавлен: через него подключаются другие хосты.
+
+# No group
+t2721e1c1 = Без группы
+
+# {n} left out | {n} left out
+t1e072c4b =
+    { $n ->
+        [one] Пропущен { $n }
+        [few] Пропущено { $n }
+        [many] Пропущено { $n }
+       *[other] Пропущено { $n }
+    }
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = Из этого файла нельзя импортировать хосты.
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app } хранит этот файл в зашифрованном виде, поэтому здесь его не прочитать.
+
+# Cannot read it: {e}
+t4fd94e68 = Не удаётся прочитать: { $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = Его ключ — .ppk из PuTTY: чтобы входить с ним, преобразуйте его в формат OpenSSH через puttygen.
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = Его ключ { $name } хранится в собственном хранилище { $app }: экспортируйте его там, затем добавьте в разделе «Ключи».
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = Его промежуточный хост { $name } не входит в список хостов: пропущен.
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name }: не SSH ({ $protocol })
+
+# {name}: no address
+t9f701d25 = { $name }: нет адреса
+
+# Reading…
+t6aad8485 = Чтение…
+
+# Back
+tc2954bc2 = Назад
+
+# Import {n} host | Import {n} hosts
+t040b2da6 =
+    { $n ->
+        [one] Импортировать { $n } хост
+        [few] Импортировать { $n } хоста
+        [many] Импортировать { $n } хостов
+       *[other] Импортировать { $n } хоста
+    }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (рекомендуется)
 
@@ -792,9 +903,6 @@ t4b242af5 = Парольная фраза { $path } забыта: она буд�
 
 # Not forgotten: {e}
 t0e3fb3a1 = Не забыто: { $e }
-
-# Import
-t573e0af4 = Импорт
 
 # not used by a host yet
 t7a67a5ad = пока не используется хостами
@@ -2302,6 +2410,9 @@ t2a8f8871 = Нет подходящих хостов.
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = Хостов пока нет. Добавьте хост или блоки Host в ~/.ssh/config.
 
+# Import hosts from another app…
+tb00d665f = Импорт хостов из другого приложения…
+
 # + Host
 t0e963f08 = + Хост
 
@@ -2613,15 +2724,6 @@ t1d5d16cc = Размещённый файл лежит на диске серв�
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} подставляются для хоста панели; любое другое {"{{"}name{"}}"} запрашивается при запуске сниппета.
-
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } хост
-        [few] { $n } хоста
-        [many] { $n } хостов
-       *[other] { $n } хоста
-    }
 
 # {n} password | {n} passwords
 tf07ec59c =
@@ -3412,6 +3514,9 @@ t70ad7706 = Проверить обновления
 # New group…
 t2c0113fa = Новая группа…
 
+# Undo import from {app}
+t971f8deb = Отменить импорт из { $app }
+
 # Edit host {name}…
 te6b404e6 = Изменить хост { $name }…
 
@@ -3702,6 +3807,30 @@ t58507cbd = Группа { $name } сохранена.
 
 # Deleted the group {name}.
 t2dbe70db = Группа { $name } удалена.
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 =
+    { $n ->
+        [one] Импортирован { $n } хост из { $app }.
+        [few] Импортировано { $n } хоста из { $app }.
+        [many] Импортировано { $n } хостов из { $app }.
+       *[other] Импортировано { $n } хоста из { $app }.
+    }
+
+# {n} left out. | {n} left out.
+t96ae7881 =
+    { $n ->
+        [one] Пропущен { $n }.
+        [few] Пропущено { $n }.
+        [many] Пропущено { $n }.
+       *[other] Пропущено { $n }.
+    }
+
+# The palette can undo it.
+t21bfdf84 = Отменить можно из палитры.
+
+# The import from {app} is undone.
+t5f37b9b7 = Импорт из { $app } отменён.
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = Порт 8080 здесь ведёт на localhost:80 с точки зрения сервера.

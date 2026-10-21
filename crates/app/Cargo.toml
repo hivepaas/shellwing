@@ -26,6 +26,7 @@ shellwing-spawn.workspace = true
 shellwing-term.workspace = true
 shellwing-ssh.workspace = true
 shellwing-config.workspace = true
+shellwing-import.workspace = true
 shellwing-vault.workspace = true
 shellwing-core.workspace = true
 shellwing-remote.workspace = true

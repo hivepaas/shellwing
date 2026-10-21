@@ -8,6 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+shellwing-config.workspace = true
 thiserror.workspace = true
 encoding_rs = "0.8.42"
 quick-xml = "0.42.0"
@@ -19,3 +20,6 @@ workspace = true
 
 [target."cfg(windows)".dependencies]
 winreg = "0.56.0"
+
+[dev-dependencies]
+toml = "1"

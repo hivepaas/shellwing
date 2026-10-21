@@ -23,6 +23,7 @@ use crate::colors::colors;
 use crate::files::EditorCommand;
 use crate::group_editor::{GroupEditor, GroupEvent};
 use crate::host_editor::{self, EditorContext, EditorEvent, HostEditor};
+use crate::import_view::{ImportEvent, ImportView, Imported};
 use crate::look::{self, Live, rgb as theme_rgb};
 use crate::notice::{Notice, colored};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent, Part};
@@ -177,6 +178,11 @@ pub struct Workspace {
     editor: Option<(Entity<HostEditor>, Subscription)>,
     /// The group editor drawer, while open.
     group_editor: Option<(Entity<GroupEditor>, Subscription)>,
+    /// Importing hosts from another app.
+    import: Option<(Entity<ImportView>, Subscription)>,
+    /// What the last import put in, with its notes' ids: *Undo import* takes
+    /// it out, until the app quits.
+    last_import: Option<(Imported, Vec<String>)>,
     /// The settings page, while open, and the fonts it offers.
     settings: Option<(Entity<SettingsView>, Subscription)>,
     /// Code fonts, the default terminal font, and every installed font.
@@ -348,6 +354,8 @@ impl Workspace {
             asking: None,
             editor: None,
             group_editor: None,
+            import: None,
+            last_import: None,
             settings: None,
             fonts: (vec![], String::new(), vec![]),
             editors: vec![],
@@ -477,6 +485,12 @@ impl Workspace {
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn group_editor_open(&self) -> bool {
         self.group_editor.is_some()
+    }
+
+    /// The import drawer, while open.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn import_view(&self) -> Option<Entity<ImportView>> {
+        self.import.as_ref().map(|(v, _)| v.clone())
     }
 
     /// The host list as shown: each section's title and its hosts' names.
@@ -1830,6 +1844,18 @@ impl Workspace {
         );
         action(Action::NewHost, tr!("New host…"), String::new());
         action(Action::NewGroup, tr!("New group…"), String::new());
+        action(
+            Action::ImportHosts,
+            tr!("Import hosts from another app…"),
+            "PuTTY, MobaXterm, SecureCRT, Xshell, Tabby, CSV".into(),
+        );
+        if let Some((done, _)) = &self.last_import {
+            action(
+                Action::UndoImport,
+                tr!("Undo import from {app}", app = done.app),
+                String::new(),
+            );
+        }
         if let Some(target) = self.active_tab().map(|t| {
             let s = t.read(cx).session();
             match &s.entry {
@@ -3259,6 +3285,103 @@ impl Workspace {
         cx.notify();
     }
 
+    /// The drawer that imports hosts from another app.
+    pub fn open_import(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.palette.is_some() {
+            self.close_palette(window, cx);
+        }
+        self.poll_config(cx);
+        let (store, hosts) = (self.live.store().cloned(), self.live.hosts().clone());
+        let view = cx.new(|cx| ImportView::new(store, hosts, cx));
+        let sub = cx.subscribe_in(&view, window, |ws, _, ev: &ImportEvent, window, cx| {
+            if let ImportEvent::Imported(done) = ev {
+                ws.imported(done.clone(), cx);
+            }
+            ws.close_import(window, cx);
+        });
+        let first = view.read(cx).first_focus();
+        self.import = Some((view, sub));
+        window.focus(&first, cx);
+        cx.notify();
+    }
+
+    fn close_import(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.import.take().is_some() {
+            self.activate(self.active, window, cx);
+            cx.notify();
+        }
+    }
+
+    /// Hosts were imported: their descriptions kept as notes, and said.
+    fn imported(&mut self, done: Imported, cx: &mut Context<Self>) {
+        let mut notes = vec![];
+        if let Some(vault) = self.vault.ready() {
+            for (host, text) in &done.notes {
+                let note = shellwing_vault::Note {
+                    id: String::new(),
+                    title: host.clone(),
+                    category: String::new(),
+                    format: shellwing_vault::NoteFormat::Markdown,
+                    hosts: vec![host.clone()],
+                    sensitive: false,
+                    changed: String::new(),
+                    size: 0,
+                };
+                if let Ok(id) = vault.save_note(&note, Some(text)) {
+                    notes.push(id);
+                }
+            }
+        }
+        self.poll_config(cx);
+        self.sync.now();
+        let n = done.hosts.len();
+        let mut said = tr_n!(
+            n,
+            "Imported {n} host from {app}.",
+            "Imported {n} hosts from {app}.",
+            app = done.app
+        );
+        if done.left_out > 0 {
+            said.push(' ');
+            said.push_str(&tr_n!(done.left_out, "{n} left out.", "{n} left out."));
+        }
+        said.push(' ');
+        said.push_str(&tr!("The palette can undo it."));
+        self.last_import = Some((done, notes));
+        self.say(Notice::good(said), CONFIG_NOTICE, cx);
+    }
+
+    /// Takes out what the last import put in: its hosts, groups and notes.
+    fn undo_import(&mut self, cx: &mut Context<Self>) {
+        let Some((done, notes)) = self.last_import.take() else {
+            return;
+        };
+        let Some(store) = self.live.store().cloned() else {
+            return;
+        };
+        if let Err(e) = store.unimport(&done.groups, &done.hosts) {
+            self.last_import = Some((done, notes));
+            self.say(
+                Notice::bad(tr!("Cannot edit hosts.toml: {e}", e = e.to_string())),
+                CONFIG_NOTICE,
+                cx,
+            );
+            return;
+        }
+        if let Some(vault) = self.vault.ready() {
+            for id in &notes {
+                let _ = vault.delete(id);
+            }
+        }
+        self.poll_config(cx);
+        self.sync.now();
+        self.say(
+            Notice::good(tr!("The import from {app} is undone.", app = done.app)),
+            CONFIG_NOTICE,
+            cx,
+        );
+    }
+
     fn close_group_editor(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.group_editor.take().is_some() {
             self.activate(self.active, window, cx);
@@ -3720,6 +3843,8 @@ impl Workspace {
             Action::SaveOutput { html } => self.save_output(html, window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
+            Action::ImportHosts => self.open_import(window, cx),
+            Action::UndoImport => self.undo_import(cx),
             Action::Settings => self.open_settings(Page::Appearance, window, cx),
             Action::EditHost(target) => self.edit_host(target, window, cx),
             Action::ManageSecrets => self.open_secrets(window, cx),
@@ -5340,6 +5465,33 @@ impl Render for Workspace {
                     )
                 },
             )
+            .when_some(self.import.as_ref().map(|(v, _)| v.clone()), |d, v| {
+                d.child(
+                    bottom
+                        .round(div())
+                        .id("import-backdrop")
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .occlude()
+                        .bg(rgba(colors().scrim))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|ws, _, window, cx| ws.close_import(window, cx)),
+                        )
+                        .child(
+                            div()
+                                .absolute()
+                                .top_0()
+                                .right_0()
+                                .h_full()
+                                .w(px(host_editor::WIDTH))
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                                .child(v),
+                        ),
+                )
+            })
             .when_some(self.settings.as_ref().map(|(s, _)| s.clone()), |d, s| {
                 d.child(
                     div()

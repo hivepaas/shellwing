@@ -7555,6 +7555,7 @@ dependencies = [
  "shellwing-config",
  "shellwing-core",
  "shellwing-i18n",
+ "shellwing-import",
  "shellwing-note-editor",
  "shellwing-remote",
  "shellwing-spawn",
@@ -7618,7 +7619,9 @@ version = "0.1.0"
 dependencies = [
  "encoding_rs 0.8.42",
  "quick-xml 0.42.0",
+ "shellwing-config",
  "thiserror 2.0.21",
+ "toml 1.1.8+spec-1.1.0",
  "winreg 0.56.0",
  "yaml-rust2",
  "zip",

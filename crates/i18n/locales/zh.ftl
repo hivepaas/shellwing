@@ -697,6 +697,93 @@ te833da37 = config.toml, [shortcuts]：`{ $key }` 同时分配给了 { $kept } �
 # config.toml, [shortcuts] {name}: `{key}` does not fit; only go_to_tab takes `digit` (1 to 9), and it takes nothing else.
 ta357f31b = config.toml, [shortcuts] { $name }：`{ $key }` 不适用；只有 go_to_tab 接受 `digit`（1 到 9），且它不接受其他任何值。
 
+# Import
+t573e0af4 = 导入
+
+# No hosts in it.
+tbb05fee9 = 其中没有主机。
+
+# Looking for other SSH apps…
+tb71f4415 = 正在查找其他 SSH 应用…
+
+# No other SSH app with hosts was found here.
+tecba4271 = 此电脑上没有找到其他包含主机的 SSH 应用。
+
+# {n} host | {n} hosts
+t2489674e = { $n } 台主机
+
+# Import hosts
+t956d1e67 = 导入主机
+
+# Found on this computer
+td811df9d = 在此电脑上找到
+
+# Or a file another app exported
+t9e7f0266 = 或其他应用导出的文件
+
+# Choose a file or folder…
+t379a2c2c = 选择文件或文件夹…
+
+# PuTTY or KiTTY .reg, MobaXterm .mxtsessions, SecureCRT's XML or Sessions folder, Xshell .xts or Sessions folder, Tabby's config.yaml, an ssh config, or CSV with a header.
+tf846074b = PuTTY 或 KiTTY 的 .reg、MobaXterm 的 .mxtsessions、SecureCRT 的 XML 或 Sessions 文件夹、Xshell 的 .xts 或 Sessions 文件夹、Tabby 的 config.yaml、ssh 配置，或带表头的 CSV。
+
+# Passwords are not imported: a host asks for its own the first time, and offers to keep it in the vault.
+t1b7a0685 = 不会导入密码：每台主机首次连接时会询问密码，并提议保存到保险库。
+
+# Import from {app}
+tb591e273 = 从 { $app } 导入
+
+# {n} host checked, of {total}. | {n} hosts checked, of {total}.
+t18f6360c = 已勾选 { $n } 台主机，共 { $total } 台。
+
+# {was} here is another host: named apart.
+t3dd0ab4e = 这里已有另一台名为 { $was } 的主机：已改用其他名称。
+
+# Already here as {name}.
+t536acaec = 已存在，名为 { $name }。
+
+# Added: other hosts go through it.
+te8d2ba16 = 已添加：其他主机经由它跳转。
+
+# No group
+t2721e1c1 = 无分组
+
+# {n} left out | {n} left out
+t1e072c4b = 已略过 { $n } 项
+
+# This is not a file hosts can be imported from.
+tad56c9e9 = 无法从此文件导入主机。
+
+# {app} keeps this file encrypted, so it cannot be read here.
+t63a77bb5 = { $app } 对此文件进行了加密，因此无法在这里读取。
+
+# Cannot read it: {e}
+t4fd94e68 = 无法读取：{ $e }
+
+# Its key is PuTTY's .ppk: convert it with puttygen (OpenSSH format) to sign in with it.
+t484769a7 = 其密钥是 PuTTY 的 .ppk：请用 puttygen 转换为 OpenSSH 格式后再用它登录。
+
+# Its key {name} is in {app}'s own store: export it there, then add it under Keys.
+t09682d64 = 其密钥 { $name } 保存在 { $app } 自己的存储中：请在那里导出，然后在“密钥”中添加。
+
+# Its jump host {name} is not among the hosts: left out.
+t00d9e5b4 = 其跳板主机 { $name } 不在主机列表中：已略过。
+
+# {name}: not SSH ({protocol})
+te0c47344 = { $name }：不是 SSH（{ $protocol }）
+
+# {name}: no address
+t9f701d25 = { $name }：没有地址
+
+# Reading…
+t6aad8485 = 正在读取…
+
+# Back
+tc2954bc2 = 返回
+
+# Import {n} host | Import {n} hosts
+t040b2da6 = 导入 { $n } 台主机
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推荐）
 
@@ -774,9 +861,6 @@ t4b242af5 = 已忘记 { $path } 的密码短语：下次会再次询问。
 
 # Not forgotten: {e}
 t0e3fb3a1 = 未能忘记：{ $e }
-
-# Import
-t573e0af4 = 导入
 
 # not used by a host yet
 t7a67a5ad = 尚未被主机使用
@@ -2245,6 +2329,9 @@ t2a8f8871 = 没有匹配的主机。
 # No hosts yet. Add one, or Host blocks to ~/.ssh/config.
 tbbe50baa = 还没有主机。添加一台，或在 ~/.ssh/config 中添加 Host 块。
 
+# Import hosts from another app…
+tb00d665f = 从其他应用导入主机…
+
 # + Host
 t0e963f08 = + 主机
 
@@ -2541,9 +2628,6 @@ t1d5d16cc = 放置的文件位于服务器磁盘上，并带有其权限：在�
 
 # {{host}}, {{user}} and {{address}} are filled in for the pane's host; any other {{name}} is asked for when the snippet runs.
 t95cfcc45 = {"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 会按窗格的主机自动填入；其他 {"{{"}name{"}}"} 会在代码片段运行时询问。
-
-# {n} host | {n} hosts
-t2489674e = { $n } 台主机
 
 # {n} password | {n} passwords
 tf07ec59c = { $n } 个密码
@@ -3238,6 +3322,9 @@ t70ad7706 = 检查更新
 # New group…
 t2c0113fa = 新建分组…
 
+# Undo import from {app}
+t971f8deb = 撤销从 { $app } 的导入
+
 # Edit host {name}…
 te6b404e6 = 编辑主机 { $name }…
 
@@ -3516,6 +3603,18 @@ t58507cbd = 已保存分组 { $name }。
 
 # Deleted the group {name}.
 t2dbe70db = 已删除分组 { $name }。
+
+# Imported {n} host from {app}. | Imported {n} hosts from {app}.
+t57e0e370 = 已从 { $app } 导入 { $n } 台主机。
+
+# {n} left out. | {n} left out.
+t96ae7881 = 已略过 { $n } 项。
+
+# The palette can undo it.
+t21bfdf84 = 可以在命令面板中撤销。
+
+# The import from {app} is undone.
+t5f37b9b7 = 已撤销从 { $app } 的导入。
 
 # Port 8080 here reaches localhost:80 as the server sees it.
 t51796bc3 = 本机的 8080 端口可访问服务器视角下的 localhost:80。
