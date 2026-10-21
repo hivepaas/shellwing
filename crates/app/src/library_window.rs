@@ -353,6 +353,22 @@ impl LibraryWindow {
     }
 
     fn button(id: impl Into<gpui::ElementId>, label: String) -> gpui::Stateful<gpui::Div> {
+        Self::styled_button(id, label, false)
+    }
+
+    /// A button, or the window's main one in the accent color. Its hover is
+    /// set once: GPUI refuses a second (a panic in debug builds).
+    fn styled_button(
+        id: impl Into<gpui::ElementId>,
+        label: String,
+        primary: bool,
+    ) -> gpui::Stateful<gpui::Div> {
+        let c = colors();
+        let (bg, hover, edge) = if primary {
+            (c.accent, c.accent_hover, c.accent)
+        } else {
+            (c.button, c.button_hover, c.field_edge)
+        };
         div()
             .id(id.into())
             .h(px(30.))
@@ -361,11 +377,15 @@ impl LibraryWindow {
             .items_center()
             .rounded(px(6.))
             .border_1()
-            .border_color(rgb(colors().field_edge))
-            .bg(rgb(colors().button))
+            .border_color(rgb(edge))
+            .bg(rgb(bg))
             .text_size(ui(12.5))
             .cursor_pointer()
-            .hover(|s| s.bg(rgb(colors().button_hover)))
+            .hover(move |s| s.bg(rgb(hover)))
+            .when(primary, |d| {
+                d.text_color(rgb(c.on_accent))
+                    .font_weight(FontWeight::SEMIBOLD)
+            })
             .child(label)
     }
 
@@ -1051,21 +1071,17 @@ impl LibraryWindow {
             // Above the button: the window's foot is below it.
             under = under.child(deferred(anchored().child(div().mt(px(-140.)).child(list))));
         }
-        let add = Self::button(
+        let add = Self::styled_button(
             "library-add",
             if picked > 0 {
                 tr_n!(picked, "Add {n} to my snippets", "Add {n} to my snippets")
             } else {
                 tr!("Add to my snippets")
             },
+            picked > 0,
         );
         let add = if picked > 0 {
-            add.border_color(rgb(colors().accent))
-                .bg(rgb(colors().accent))
-                .hover(|s| s.bg(rgb(colors().accent_hover)))
-                .text_color(rgb(colors().on_accent))
-                .font_weight(FontWeight::SEMIBOLD)
-                .on_click(cx.listener(|v, _, _, cx| v.add(cx)))
+            add.on_click(cx.listener(|v, _, _, cx| v.add(cx)))
         } else {
             add.opacity(0.5).cursor_default()
         };
