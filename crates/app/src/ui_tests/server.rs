@@ -190,10 +190,26 @@ impl Server {
                 });
             }
         });
-        // The relay clients connect to.
-        let listener = rt
-            .block_on(TcpListener::bind(("127.0.0.1", port)))
-            .expect("bind");
+        // The relay clients connect to. A server started again on the port
+        // of one just killed waits for it to be let go: aborting the old
+        // relay closes its socket a moment later (macOS refuses the port
+        // until then).
+        let listener = rt.block_on(async {
+            let mut tries = 0;
+            loop {
+                match TcpListener::bind(("127.0.0.1", port)).await {
+                    Err(e)
+                        if e.kind() == std::io::ErrorKind::AddrInUse
+                            && port != 0
+                            && tries < 100 =>
+                    {
+                        tries += 1;
+                        tokio::time::sleep(Duration::from_millis(20)).await;
+                    }
+                    other => break other.expect("bind"),
+                }
+            }
+        });
         let port = listener.local_addr().expect("addr").port();
         let tasks: Arc<Mutex<Vec<AbortHandle>>> = Arc::default();
         let stalled = Arc::new(std::sync::atomic::AtomicBool::new(false));
