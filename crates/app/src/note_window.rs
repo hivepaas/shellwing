@@ -1239,7 +1239,11 @@ impl NoteWindow {
                     .track_scroll(&self.scroll)
                     .child(
                         div()
-                            .px(px(12.))
+                            // While Markdown is edited, room on the left for
+                            // the editor's grip (22 px out from the text), to
+                            // drag a block, an image's among them, elsewhere.
+                            .pl(px(if md && !self.preview { 30. } else { 12. }))
+                            .pr(px(12.))
                             .py(px(10.))
                             .text_size(ui(13.5))
                             .text_color(rgb(colors().text))
