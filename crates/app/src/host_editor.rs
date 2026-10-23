@@ -1873,11 +1873,17 @@ impl Render for HostEditor {
         if !self.problems.is_empty() {
             footer = footer.child(problem_text(&tr!("Some fields need a look.")));
         }
-        let mut buttons = div().flex().items_center().gap_2();
-        if self.confirm_delete {
-            buttons = buttons
+        let buttons = if self.confirm_delete {
+            // The question and its answers alone: a long name wraps, and
+            // saving waits for the answer.
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
                 .child(
                     div()
+                        .flex_1()
+                        .min_w_0()
                         .text_size(ui(12.5))
                         .child(tr!("Delete {title} from hosts.toml?", title = &title)),
                 )
@@ -1892,28 +1898,43 @@ impl Render for HostEditor {
                             cx.notify();
                         },
                     )),
-                );
-        } else if self.original.is_some() {
-            buttons = buttons
+                )
+        } else {
+            let mut others = div().flex().items_center().gap_2();
+            if self.original.is_some() {
+                others = others
+                    .child(
+                        text_button("delete", &tr!("Delete"), colors().bad)
+                            .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                    )
+                    .child(
+                        text_button("duplicate", &tr!("Duplicate"), colors().label)
+                            .on_click(cx.listener(|e, _, window, cx| e.duplicate(window, cx))),
+                    );
+            }
+            let saving = div()
+                .ml_auto()
+                .flex()
+                .items_center()
+                .gap_2()
                 .child(
-                    text_button("delete", &tr!("Delete"), colors().bad)
-                        .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                    outline_button("save", &tr!("Save"))
+                        .on_click(cx.listener(|e, _, _, cx| e.save(false, cx))),
                 )
                 .child(
-                    text_button("duplicate", &tr!("Duplicate"), colors().label)
-                        .on_click(cx.listener(|e, _, window, cx| e.duplicate(window, cx))),
+                    primary_button("save-connect", &tr!("Save and connect"))
+                        .on_click(cx.listener(|e, _, _, cx| e.save(true, cx))),
                 );
-        }
-        buttons = buttons
-            .child(div().flex_1())
-            .child(
-                outline_button("save", &tr!("Save"))
-                    .on_click(cx.listener(|e, _, _, cx| e.save(false, cx))),
-            )
-            .child(
-                primary_button("save-connect", &tr!("Save and connect"))
-                    .on_click(cx.listener(|e, _, _, cx| e.save(true, cx))),
-            );
+            // Too long for one line (a long translation): the saving buttons
+            // go to the next, still on the right.
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_2()
+                .child(others)
+                .child(saving)
+        };
         footer = footer.child(buttons);
 
         shell
