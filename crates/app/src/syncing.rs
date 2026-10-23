@@ -93,7 +93,8 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
             branch: g.branch.clone(),
             user: g.user.clone(),
             token: token()?,
-            device: device_name(),
+            // In every commit: the random id, not the computer's name.
+            device: vault.device_id().to_string(),
         },
     })
 }

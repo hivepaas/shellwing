@@ -3556,6 +3556,18 @@ tcf7fa2ce = 无法保存密码：{ $e }
 # Connecting to {place}…
 tea99befd = 正在连接到 { $place }…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = 保险库存放在那里的内容是加密的，但任何人都能看到其中有多少台主机，以及你的设备何时同步。私有仓库更安全。
+
+# Use another repository
+tbbd1ade5 = 使用其他仓库
+
+# Anyone can read this repository
+t8df04abb = 任何人都能读取此仓库
+
+# Not connected: anyone can read this repository.
+t649a5b7d = 未连接：任何人都能读取此仓库。
+
 # Cannot sync: {e}
 td3aecb42 = 无法同步：{ $e }
 

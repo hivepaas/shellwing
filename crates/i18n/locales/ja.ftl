@@ -3556,6 +3556,18 @@ tcf7fa2ce = パスワードを保存できません：{ $e }
 # Connecting to {place}…
 tea99befd = { $place } に接続中…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = 保管庫がそこに置くデータは暗号化されていますが、ホストの数やデバイスが同期するタイミングは誰でも見ることができます。プライベートリポジトリのほうが安全です。
+
+# Use another repository
+tbbd1ade5 = 別のリポジトリを使う
+
+# Anyone can read this repository
+t8df04abb = このリポジトリは誰でも読めます
+
+# Not connected: anyone can read this repository.
+t649a5b7d = 接続されていません。このリポジトリは誰でも読めます。
+
 # Cannot sync: {e}
 td3aecb42 = 同期できません：{ $e }
 

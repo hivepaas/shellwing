@@ -2619,7 +2619,85 @@ impl Workspace {
                 cx,
             );
         }
-        self.sync_with(place, window, cx);
+        match &place {
+            SyncPlace::Git(g) => {
+                let url = g.url.clone();
+                self.sync_with_git(place, url, window, cx)
+            }
+            _ => self.sync_with(place, window, cx),
+        }
+    }
+
+    /// Starts syncing with a Git repository, asking first when anyone can
+    /// read it: the vault is encrypted there, but how many hosts it holds
+    /// and when devices sync are not. The check asks the server, so it is
+    /// made off the UI thread.
+    fn sync_with_git(
+        &mut self,
+        place: SyncPlace,
+        url: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.say(
+            tr!(
+                "Connecting to {place}…",
+                place = crate::syncing::describe(&place)
+            ),
+            THEME_NOTICE,
+            cx,
+        );
+        let check = cx.background_spawn(async move {
+            shellwing_remote::Git::find().is_ok_and(|git| git.readable_by_anyone(&url))
+        });
+        cx.spawn_in(window, async move |this, cx| {
+            let public = check.await;
+            let _ = this.update_in(cx, |ws, window, cx| {
+                if public {
+                    ws.ask_about_public_repository(place, window, cx)
+                } else {
+                    ws.sync_with(place, window, cx)
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Anyone can read the repository: synced there only if the user says
+    /// so, another one being the first answer.
+    fn ask_about_public_repository(
+        &mut self,
+        place: SyncPlace,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.prompting {
+            return;
+        }
+        self.prompting = true;
+        let detail = tr!(
+            "What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer."
+        );
+        let (another, anyway) = (tr!("Use another repository"), tr!("Use it anyway"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Anyone can read this repository"),
+            Some(&detail),
+            &[another.as_str(), anyway.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let anyway = matches!(answer.await, Ok(1));
+            let _ = this.update_in(cx, |ws, window, cx| {
+                ws.prompting = false;
+                if anyway {
+                    ws.sync_with(place, window, cx)
+                } else {
+                    ws.sync_failed(tr!("Not connected: anyone can read this repository."), cx)
+                }
+            });
+        })
+        .detach();
     }
 
     /// Starts syncing with `place`, or joins the vault there.

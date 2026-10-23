@@ -58,6 +58,8 @@ pub enum Place {
         branch: String,
         user: String,
         token: String,
+        /// How this device signs its commits: an id, not its name, since
+        /// others may read the repository.
         device: String,
     },
 }

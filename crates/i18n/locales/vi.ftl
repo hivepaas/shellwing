@@ -3556,6 +3556,18 @@ tcf7fa2ce = Không giữ được mật khẩu: { $e }
 # Connecting to {place}…
 tea99befd = Đang kết nối tới { $place }…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = Những gì Kho lưu ở đó đều được mã hoá, nhưng ai cũng thấy được Kho có bao nhiêu máy chủ và các thiết bị của bạn đồng bộ lúc nào. Một repository riêng tư sẽ an toàn hơn.
+
+# Use another repository
+tbbd1ade5 = Dùng repository khác
+
+# Anyone can read this repository
+t8df04abb = Ai cũng đọc được repository này
+
+# Not connected: anyone can read this repository.
+t649a5b7d = Chưa kết nối: ai cũng đọc được repository này.
+
 # Cannot sync: {e}
 td3aecb42 = Không đồng bộ được: { $e }
 

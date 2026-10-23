@@ -3674,6 +3674,18 @@ tcf7fa2ce = Passwort kann nicht gespeichert werden: { $e }
 # Connecting to {place}…
 tea99befd = Verbinde mit { $place }…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = Was der Tresor dort ablegt, ist verschlüsselt, aber jeder kann sehen, wie viele Hosts er enthält und wann deine Geräte synchronisieren. Ein privates Repository ist sicherer.
+
+# Use another repository
+tbbd1ade5 = Anderes Repository verwenden
+
+# Anyone can read this repository
+t8df04abb = Dieses Repository kann jeder lesen
+
+# Not connected: anyone can read this repository.
+t649a5b7d = Nicht verbunden: Dieses Repository kann jeder lesen.
+
 # Cannot sync: {e}
 td3aecb42 = Synchronisierung nicht möglich: { $e }
 
