@@ -68,6 +68,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       MACOSX_DEPLOYMENT_TARGET: '11.0'
+      # Whether the repository holds a Developer ID (not the secret itself).
+      MACOS_SIGNING: ${{ secrets.MACOS_CERTIFICATE != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -97,9 +99,57 @@ jobs:
       - name: Build
         run: cargo build --release --locked -p shellwing
 
+      # A Developer ID for macOS, when the repository has one (docs/releasing.md):
+      # a keychain of this run's own, and the profile and the notary's key in
+      # files the packaging script is told of. Without it, signed ad hoc.
+      - name: Signing keys (macOS)
+        if: runner.os == 'macOS' && env.MACOS_SIGNING == 'true'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_PROVISIONING_PROFILE: ${{ secrets.MACOS_PROVISIONING_PROFILE }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(openssl rand -hex 24)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          # Apple's intermediate, should the runner lack it: the chain must build.
+          curl -fsSL -o "$RUNNER_TEMP/DeveloperIDG2CA.cer" https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$keychain" || true
+          printf '%s' "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$keychain" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity="$(security find-identity -v -p codesigning "$keychain" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -n 1)"
+          if [ -z "$identity" ]; then
+            echo "::error::MACOS_CERTIFICATE holds no valid Developer ID Application identity"
+            exit 1
+          fi
+          echo "MACOS_SIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+          if [ -n "$MACOS_PROVISIONING_PROFILE" ]; then
+            printf '%s' "$MACOS_PROVISIONING_PROFILE" | base64 --decode > "$RUNNER_TEMP/shellwing.provisionprofile"
+            echo "MACOS_PROVISIONING_PROFILE=$RUNNER_TEMP/shellwing.provisionprofile" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$APPLE_API_KEY" ]; then
+            printf '%s' "$APPLE_API_KEY" > "$RUNNER_TEMP/notary.p8"
+            echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
+          fi
+
       - name: Package
         shell: bash
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: scripts/package_${{ runner.os == 'macOS' && 'macos' || runner.os == 'Windows' && 'windows' || 'linux' }}.sh
+
+      - name: Forget the signing keys (macOS)
+        if: always() && runner.os == 'macOS' && env.MACOS_SIGNING == 'true'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/shellwing.provisionprofile"
 
       - uses: actions/upload-artifact@v4
         with:

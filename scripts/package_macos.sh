@@ -10,12 +10,21 @@
 #   dist/shellwing_0.1.0_macos_aarch64.app.tar.gz
 #   dist/shellwing_0.1.0_macos_aarch64.dmg
 #
-# The signature is ad hoc (no Developer ID yet): Gatekeeper asks the first time
-# the app opens (Control-click > Open), and the updater accepts a new .app whose
-# signature verifies, as it does for any app not signed by a team.
+# Signed ad hoc unless a Developer ID is given: then Gatekeeper asks the first
+# time the app opens (Control-click > Open), and the updater accepts a new .app
+# whose signature verifies, as it does for any app not signed by a team.
 #
 # Environment: BIN (default target/release/shellwing), ARCH (default the
-# machine's: aarch64 or x86_64), DIST (default dist).
+# machine's: aarch64 or x86_64), DIST (default dist). To sign for people
+# (docs/releasing.md):
+#
+#   MACOS_SIGN_IDENTITY         "Developer ID Application: Name (TEAMID)", in a
+#                               keychain this user can use; none: ad hoc
+#   MACOS_PROVISIONING_PROFILE  its Developer ID profile for the app, which
+#                               allows the keychain entitlement that Touch ID
+#                               or the Mac's password opens the vault with
+#   APPLE_API_KEY_PATH, APPLE_API_KEY_ID, APPLE_API_ISSUER_ID
+#                               an App Store Connect API key, to notarize
 
 set -euo pipefail
 
@@ -49,18 +58,77 @@ strip -x "$APP/Contents/MacOS/shellwing"
 cp "$WORK/shellwing.icns" "$APP/Contents/Resources/shellwing.icns"
 sed "s/@VERSION@/$VERSION/g" packaging/macos/Info.plist >"$APP/Contents/Info.plist"
 plutil -lint "$APP/Contents/Info.plist"
-codesign --force --sign - --timestamp=none "$APP"
+
+IDENTITY="${MACOS_SIGN_IDENTITY:-}"
+if [ -z "$IDENTITY" ]; then
+	codesign --force --sign - --timestamp=none "$APP"
+else
+	# The hardened runtime and a secure timestamp, as notarizing requires.
+	SIGN=(codesign --force --sign "$IDENTITY" --options runtime --timestamp)
+	if [ -n "${MACOS_PROVISIONING_PROFILE:-}" ]; then
+		BUNDLE="$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")"
+		TEAM="$(sed -n 's/.*(\([A-Z0-9]\{10\}\))$/\1/p' <<<"$IDENTITY")"
+		[ -n "$TEAM" ] || { echo "no team id at the end of $IDENTITY" >&2; exit 1; }
+		cp "$MACOS_PROVISIONING_PROFILE" "$APP/Contents/embedded.provisionprofile"
+		sed -e "s/@TEAM@/$TEAM/g" -e "s/@BUNDLE@/$BUNDLE/g" \
+			packaging/macos/shellwing.entitlements >"$WORK/shellwing.entitlements"
+		SIGN+=(--entitlements "$WORK/shellwing.entitlements")
+	else
+		echo "warning: no MACOS_PROVISIONING_PROFILE: Touch ID will not open the vault" >&2
+	fi
+	"${SIGN[@]}" "$APP"
+fi
 codesign --verify --deep --strict "$APP"
 
-## For the updater: the .app, tarred
-tar -C "$WORK" -czf "$DIST/shellwing_${VERSION}_macos_${ARCH}.app.tar.gz" shellwing.app
+# Apple checks what it is given and keeps a ticket for it, stapled here so
+# Gatekeeper lets it open offline too.
+notarize() {
+	local file="$1" result status id
+	result="$(xcrun notarytool submit "$file" --wait --output-format json \
+		--key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")"
+	status="$(plutil -extract status raw - <<<"$result" 2>/dev/null || true)"
+	if [ "$status" != "Accepted" ]; then
+		echo "notarizing $file: ${status:-no answer}" >&2
+		id="$(plutil -extract id raw - <<<"$result" 2>/dev/null || true)"
+		[ -z "$id" ] || xcrun notarytool log "$id" \
+			--key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" >&2
+		exit 1
+	fi
+}
+NOTARIZE=""
+if [ -n "$IDENTITY" ] && [ -n "${APPLE_API_KEY_PATH:-}" ]; then
+	NOTARIZE=1
+elif [ -n "$IDENTITY" ]; then
+	echo "warning: not notarized (no APPLE_API_KEY_PATH): Gatekeeper refuses it downloaded" >&2
+fi
+
+## Notarized, the app first: the disk image and the updater's tarball carry
+## it with its ticket.
+if [ -n "$NOTARIZE" ]; then
+	ditto -c -k --keepParent "$APP" "$WORK/shellwing.zip"
+	notarize "$WORK/shellwing.zip"
+	xcrun stapler staple "$APP"
+	spctl --assess --type execute --verbose=2 "$APP"
+fi
 
 ## For people: a disk image with the app and a link to /Applications
 STAGE="$WORK/dmg"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -volname "shellwing $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov \
-	"$DIST/shellwing_${VERSION}_macos_${ARCH}.dmg"
+DMG="$DIST/shellwing_${VERSION}_macos_${ARCH}.dmg"
+hdiutil create -volname "shellwing $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "$DMG"
+
+## The disk image signed, and notarized too.
+if [ -n "$IDENTITY" ]; then
+	codesign --force --sign "$IDENTITY" --timestamp "$DMG"
+fi
+if [ -n "$NOTARIZE" ]; then
+	notarize "$DMG"
+	xcrun stapler staple "$DMG"
+fi
+
+## For the updater: the .app, tarred
+tar -C "$WORK" -czf "$DIST/shellwing_${VERSION}_macos_${ARCH}.app.tar.gz" shellwing.app
 
 ls -l "$DIST"
