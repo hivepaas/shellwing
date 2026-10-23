@@ -1,6 +1,48 @@
 # shellwing in ko. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = 창 잠금 해제
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = shellwing 잠금을 해제하려면 본인임을 확인하세요.
+
+# Checking…
+t87f62cb7 = 확인 중…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = 확인되지 않았습니다. shellwing은 잠긴 상태로 유지됩니다.
+
+# That is not the password.
+t06b4bdb7 = 비밀번호가 올바르지 않습니다.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = 본인임을 확인할 수 없습니다: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello 또는 Windows 비밀번호로 잠금을 해제할 수 있습니다.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID 또는 Mac 비밀번호로 잠금을 해제할 수 있습니다.
+
+# Your login password unlocks it.
+t8eeb5228 = 로그인 비밀번호로 잠금을 해제할 수 있습니다.
+
+# Unlock
+t9c799975 = 잠금 해제
+
+# Quit shellwing
+t8857c967 = shellwing 종료
+
+# shellwing is locked
+t665c7b6c = shellwing이 잠겨 있습니다
+
+# Your login password
+t2348e42c = 로그인 비밀번호
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = { $remote }의 편집 내용이 서버에 반영되지 않았습니다. 파일은 { $path }에 보관됩니다.
 
@@ -2272,6 +2314,24 @@ tc153db4a = 암호 문구 제거
 # Keep it in the system keychain
 tc01bbcf0 = 시스템 키체인에 보관
 
+# 1 hour
+t0c43fb4a = 1시간
+
+# {m} min
+t7eebb6a4 = { $m }분
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = shellwing이 시작될 때, 그리고 키 입력이나 클릭 없이 이 시간이 지나면 Touch ID 또는 Mac 비밀번호로 본인임이 확인될 때까지 창이 숨겨집니다. 화면 잠금을 잊었을 때를 위한 가벼운 보호 장치이며, 세션은 그 아래에서 계속 실행됩니다.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = shellwing이 시작될 때, 그리고 키 입력이나 클릭 없이 이 시간이 지나면 Windows Hello 또는 Windows 비밀번호로 본인임이 확인될 때까지 창이 숨겨집니다. 화면 잠금을 잊었을 때를 위한 가벼운 보호 장치이며, 세션은 그 아래에서 계속 실행됩니다.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = shellwing이 시작될 때, 그리고 키 입력이나 클릭 없이 이 시간이 지나면 로그인 비밀번호로 본인임이 확인될 때까지 창이 숨겨집니다. 화면 잠금을 잊었을 때를 위한 가벼운 보호 장치이며, 세션은 그 아래에서 계속 실행됩니다.
+
+# Lock shellwing when away
+t7ad7e7d1 = 자리를 비우면 shellwing 잠그기
+
 # Saved passwords and passphrases
 t4b07c4a2 = 저장된 비밀번호 및 암호 문구
 
@@ -2295,12 +2355,6 @@ t0baa8f35 = 보관함이 잠겨 있으면 암호 문구뿐 아니라 { $name }(�
 
 # Unlock with {name}
 t7c964cc4 = { $name }(으)로 잠금 해제
-
-# 1 hour
-t0c43fb4a = 1시간
-
-# {m} min
-t7eebb6a4 = { $m }분
 
 # Lock when idle
 ta18da274 = 유휴 시 잠금
@@ -3214,6 +3268,9 @@ tbac763bb = 연결 { $n }개가 열려 있습니다. 닫으면 연결이 종료�
 # Cannot open a terminal: {e}
 t3ffc1c98 = 터미널을 열 수 없습니다: { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = 여기서는 shellwing을 잠글 수 없습니다. 이 시스템에는 본인임을 확인할 방법이 없습니다.
+
 # A connection is open; quitting closes it.
 tf3732b18 = 연결이 열려 있습니다. 종료하면 연결이 닫힙니다.
 
@@ -3306,6 +3363,9 @@ tdfc17c92 = 저장된 비밀번호 및 암호 문구…
 
 # Lock the vault
 tc05449a1 = 보관함 잠그기
+
+# Lock shellwing
+ta4580143 = shellwing 잠그기
 
 # Sync now with {place}
 t8aad97ad = 지금 { $place }과(와) 동기화

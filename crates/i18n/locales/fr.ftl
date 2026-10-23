@@ -1,6 +1,48 @@
 # shellwing in fr. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = déverrouiller ses fenêtres
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = Confirmez que c'est bien vous pour déverrouiller shellwing.
+
+# Checking…
+t87f62cb7 = Vérification…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = Non confirmé : shellwing reste verrouillé.
+
+# That is not the password.
+t06b4bdb7 = Ce n'est pas le mot de passe.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = Impossible de confirmer que c'est vous : { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello ou votre mot de passe Windows le déverrouille.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID ou le mot de passe de votre Mac le déverrouille.
+
+# Your login password unlocks it.
+t8eeb5228 = Votre mot de passe de connexion le déverrouille.
+
+# Unlock
+t9c799975 = Déverrouiller
+
+# Quit shellwing
+t8857c967 = Quitter shellwing
+
+# shellwing is locked
+t665c7b6c = shellwing est verrouillé
+
+# Your login password
+t2348e42c = Votre mot de passe de connexion
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing est verrouillé : déverrouillez-le dans sa fenêtre principale.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Une modification de { $remote } n'a pas été renvoyée au serveur ; le fichier est conservé sous { $path }.
 
@@ -2319,6 +2361,24 @@ tc153db4a = Supprimer la phrase secrète
 # Keep it in the system keychain
 tc01bbcf0 = La conserver dans le trousseau du système
 
+# 1 hour
+t0c43fb4a = 1 heure
+
+# {m} min
+t7eebb6a4 = { $m } min
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = Au démarrage de shellwing, et après ce délai sans touche pressée ni clic, ses fenêtres sont masquées jusqu'à ce que Touch ID ou le mot de passe de votre Mac confirme que c'est vous. Une protection légère pour un écran resté déverrouillé : les sessions continuent en dessous.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = Au démarrage de shellwing, et après ce délai sans touche pressée ni clic, ses fenêtres sont masquées jusqu'à ce que Windows Hello ou votre mot de passe Windows confirme que c'est vous. Une protection légère pour un écran resté déverrouillé : les sessions continuent en dessous.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = Au démarrage de shellwing, et après ce délai sans touche pressée ni clic, ses fenêtres sont masquées jusqu'à ce que votre mot de passe de connexion confirme que c'est vous. Une protection légère pour un écran resté déverrouillé : les sessions continuent en dessous.
+
+# Lock shellwing when away
+t7ad7e7d1 = Verrouiller shellwing en votre absence
+
 # Saved passwords and passphrases
 t4b07c4a2 = Mots de passe et phrases secrètes enregistrés
 
@@ -2342,12 +2402,6 @@ t0baa8f35 = Quand le coffre est verrouillé, { $name } (une empreinte digitale, 
 
 # Unlock with {name}
 t7c964cc4 = Déverrouiller avec { $name }
-
-# 1 hour
-t0c43fb4a = 1 heure
-
-# {m} min
-t7eebb6a4 = { $m } min
 
 # Lock when idle
 ta18da274 = Verrouiller en cas d'inactivité
@@ -3320,6 +3374,9 @@ tbac763bb =
 # Cannot open a terminal: {e}
 t3ffc1c98 = Impossible d'ouvrir un terminal : { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing ne peut pas se verrouiller ici : ce système n'a aucun moyen de confirmer que c'est vous.
+
 # A connection is open; quitting closes it.
 tf3732b18 = Une connexion est ouverte ; quitter la ferme.
 
@@ -3416,6 +3473,9 @@ tdfc17c92 = Mots de passe et phrases secrètes enregistrés…
 
 # Lock the vault
 tc05449a1 = Verrouiller le coffre
+
+# Lock shellwing
+ta4580143 = Verrouiller shellwing
 
 # Sync now with {place}
 t8aad97ad = Synchroniser maintenant avec { $place }

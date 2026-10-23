@@ -114,6 +114,8 @@ pub enum Action {
     LeaveKeychain,
     /// Close the open vault until its passphrase is typed again.
     LockVault,
+    /// Hide shellwing's windows until the system says it is the user.
+    LockApp,
     /// Let Windows Hello or Touch ID open the vault, or stop.
     TogglePresence,
     /// Let a passphrase join new devices through the sync folder, or stop.

@@ -346,7 +346,8 @@ impl SnippetWindow {
     }
 
     fn watch(&mut self, cx: &mut Context<Self>) {
-        let open = self.vault.ready().is_some();
+        // Locked, shellwing shows nothing: as with the vault shut.
+        let open = self.vault.ready().is_some() && !crate::app_lock::is_locked(cx);
         if !open && self.loaded {
             self.unload(cx);
         } else if open && !self.loaded {
@@ -1158,6 +1159,7 @@ impl Render for SnippetWindow {
         let content = div().flex_1().min_h_0().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
+            .children(crate::app_lock::cover(cx))
     }
 }
 

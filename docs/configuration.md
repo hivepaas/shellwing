@@ -74,6 +74,9 @@ timestamps = true            # each line of a text log starts with the time
 
 [vault]                      # this device's own; does not sync
 lock_after = 15              # minutes idle before the vault locks; 0: never
+
+[lock]                       # see Locking shellwing; this device's own
+after = 5                    # minutes idle before shellwing locks; 0: never (the default)
 ```
 
 When a connection ends, the pane shows a bar saying why and offers to connect
@@ -492,6 +495,31 @@ working.
   again. Apple lets only signed apps keep such items: an unsigned build of
   shellwing says so.
 - Linux has no such thing for keys: the passphrase it is.
+
+## Locking shellwing
+
+For a screen left unlocked: with *Settings › Vault › Lock shellwing when away*
+(`after` under `[lock]`, in minutes), shellwing's windows hide when it starts,
+and after that long without a key pressed or a click in it, until the system
+says it is you:
+
+- **macOS:** Touch ID or your Mac's password, in the system's dialog. No
+  signed build needed.
+- **Windows:** Windows Hello (a fingerprint, the face or the PIN), or your
+  Windows password where Hello is not set up, in the system's dialog.
+- **Linux:** your login password, typed on the lock and checked by PAM's
+  `login` service, as screen lockers check it. Where PAM asks for a
+  fingerprint first, the lock says so. A wrong password counts toward the
+  system's own limit, where it has one (`pam_faillock`).
+
+*Lock shellwing* in the palette locks it at once. While it is locked, notes
+and the snippet library hide too, keys and shortcuts reach only the lock, and
+*Quit shellwing* on it quits (asking first if tabs are connected).
+
+It is a light guard, not encryption: connections, port forwards and logs go
+on underneath, and anyone using your account can still read your files or run
+`ssh`. Lock the screen when you leave; the vault has its own lock for the
+secrets it keeps. Each device has its own setting: it does not sync.
 
 ## Local terminal
 

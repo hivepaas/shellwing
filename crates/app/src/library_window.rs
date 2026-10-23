@@ -1180,5 +1180,6 @@ impl Render for LibraryWindow {
         let bar = chrome::title_bar(tr!("Snippet library"));
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
+            .children(crate::app_lock::cover(cx))
     }
 }

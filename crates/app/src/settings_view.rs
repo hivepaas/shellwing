@@ -2190,7 +2190,44 @@ impl SettingsView {
                     .on_click(cx.listener(|v, _, w, cx| v.run(Action::ShowRecoveryKey, w, cx))),
             );
         }
+        // shellwing's own lock, where this system can ask that it is the user.
+        let lock = shellwing_presence::confirm::how().map(|_| {
+            let after = self.snap.settings.lock.after.unwrap_or(0);
+            let options = [0, 1, 5, 15, 30, 60]
+                .into_iter()
+                .map(|m| {
+                    let label = match m {
+                        0 => tr!("Off"),
+                        60 => tr!("1 hour"),
+                        m => tr!("{m} min", m = m),
+                    };
+                    (m, label)
+                })
+                .collect();
+            let what = if cfg!(target_os = "macos") {
+                tr!("When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.")
+            } else if cfg!(windows) {
+                tr!("When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.")
+            } else {
+                tr!("When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.")
+            };
+            setting(
+                &tr!("Lock shellwing when away"),
+                &what,
+                self.pills(
+                    "app-lock-after",
+                    options,
+                    after,
+                    |v, m, cx| {
+                        let value = (m > 0).then_some(SettingValue::Int(i64::from(m)));
+                        v.change(&["lock", "after"], value, cx)
+                    },
+                    cx,
+                ),
+            )
+        });
         page(&tr!("Vault"))
+            .children(lock)
             .child(setting(
                 &tr!("Saved passwords and passphrases"),
                 &tr!("Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted."),

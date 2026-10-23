@@ -16,6 +16,7 @@
 // A GUI program on Windows: no console window opens beside it.
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+mod app_lock;
 mod chrome;
 mod colors;
 mod copies;
@@ -269,6 +270,7 @@ fn main() -> anyhow::Result<()> {
             cx.set_prompt_builder(prompt::render);
             // The notes' editor: its keys, while it has the focus.
             shellwing_note_editor::bind_keys(cx);
+            app_lock::guard_other_windows(cx);
             let window_bounds = placement::initial(live.store().and_then(|s| s.window_state()), cx);
             // GNOME's Wayland compositor draws no window frame, so Linux gets
             // client-side decorations. macOS and Windows keep the system's frame

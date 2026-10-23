@@ -1,6 +1,48 @@
 # shellwing in zh. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = 解锁其窗口
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = 请确认是你本人，以解锁 shellwing。
+
+# Checking…
+t87f62cb7 = 正在检查…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = 未确认：shellwing 仍处于锁定状态。
+
+# That is not the password.
+t06b4bdb7 = 密码不正确。
+
+# Cannot confirm it is you: {e}
+t0a90c137 = 无法确认是你本人：{ $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = 可使用 Windows Hello 或你的 Windows 密码解锁。
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = 可使用 Touch ID 或你的 Mac 密码解锁。
+
+# Your login password unlocks it.
+t8eeb5228 = 可使用你的登录密码解锁。
+
+# Unlock
+t9c799975 = 解锁
+
+# Quit shellwing
+t8857c967 = 退出 shellwing
+
+# shellwing is locked
+t665c7b6c = shellwing 已锁定
+
+# Your login password
+t2348e42c = 你的登录密码
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing 已锁定：请在其主窗口中解锁。
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = 对 { $remote } 的修改未回写到服务器；文件保留为 { $path }。
 
@@ -2272,6 +2314,24 @@ tc153db4a = 移除密码短语
 # Keep it in the system keychain
 tc01bbcf0 = 保存在系统钥匙串中
 
+# 1 hour
+t0c43fb4a = 1 小时
+
+# {m} min
+t7eebb6a4 = { $m } 分钟
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = shellwing 启动时，以及超过这段时间没有按键或点击时，其窗口会隐藏，直到 Touch ID 或你的 Mac 密码确认是你本人。这是针对忘记锁屏的轻量防护：会话仍在后台继续运行。
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = shellwing 启动时，以及超过这段时间没有按键或点击时，其窗口会隐藏，直到 Windows Hello 或你的 Windows 密码确认是你本人。这是针对忘记锁屏的轻量防护：会话仍在后台继续运行。
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = shellwing 启动时，以及超过这段时间没有按键或点击时，其窗口会隐藏，直到你的登录密码确认是你本人。这是针对忘记锁屏的轻量防护：会话仍在后台继续运行。
+
+# Lock shellwing when away
+t7ad7e7d1 = 离开时锁定 shellwing
+
 # Saved passwords and passphrases
 t4b07c4a2 = 已保存的密码和密码短语
 
@@ -2295,12 +2355,6 @@ t0baa8f35 = 保险库锁定时，{ $name }（指纹、面容或此设备的 PIN�
 
 # Unlock with {name}
 t7c964cc4 = 使用 { $name } 解锁
-
-# 1 hour
-t0c43fb4a = 1 小时
-
-# {m} min
-t7eebb6a4 = { $m } 分钟
 
 # Lock when idle
 ta18da274 = 空闲时锁定
@@ -3214,6 +3268,9 @@ tbac763bb = { $n } 个连接处于打开状态；关闭将断开这些连接。
 # Cannot open a terminal: {e}
 t3ffc1c98 = 无法打开终端：{ $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing 无法在此锁定：此系统无法确认是你本人。
+
 # A connection is open; quitting closes it.
 tf3732b18 = 有一个连接处于打开状态；退出将关闭它。
 
@@ -3306,6 +3363,9 @@ tdfc17c92 = 已保存的密码和密码短语…
 
 # Lock the vault
 tc05449a1 = 锁定保险库
+
+# Lock shellwing
+ta4580143 = 锁定 shellwing
 
 # Sync now with {place}
 t8aad97ad = 立即与 { $place } 同步

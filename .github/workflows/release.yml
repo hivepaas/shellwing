@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 'Linux packages (GPUI: Wayland, X11, Vulkan, fonts)'
+      - name: 'Linux packages (GPUI: Wayland, X11, Vulkan, fonts; PAM)'
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -79,7 +79,7 @@ jobs:
             build-essential pkg-config libfontconfig-dev libfreetype-dev \
             libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
             libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev \
-            libvulkan-dev libdbus-1-dev libzstd-dev dpkg-dev
+            libvulkan-dev libdbus-1-dev libzstd-dev libpam0g-dev dpkg-dev
 
       - name: NSIS
         if: runner.os == 'Windows'

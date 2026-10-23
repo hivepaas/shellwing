@@ -153,6 +153,9 @@ pub struct Workspace {
     window_handle: Option<gpui::AnyWindowHandle>,
     /// Pairing requests already put to the user.
     prompted: std::collections::HashSet<String>,
+    /// Devices asking to join while shellwing is locked: asked about once
+    /// it is the user again.
+    held_requests: Vec<Request>,
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
     vault: VaultSlot,
@@ -162,8 +165,12 @@ pub struct Workspace {
     vault_asked: bool,
     /// Looking for a newer shellwing, and what was found.
     updates: updates::Updates,
-    /// The last key pressed or click, for locking the vault when idle.
+    /// The last key pressed or click, for locking the vault, and shellwing,
+    /// when idle.
     last_input: std::time::Instant,
+    /// shellwing locked (`[lock]`): what covers the window until the system
+    /// says it is the user.
+    lock: Option<(Entity<crate::app_lock::LockView>, Subscription)>,
     /// Windows Hello or Touch ID is asking now, to open the vault.
     presence_asking: bool,
     sync: SyncWorker,
@@ -341,12 +348,14 @@ impl Workspace {
             system_light: false,
             window_handle: None,
             prompted: Default::default(),
+            held_requests: Vec::new(),
             layout_change: 0,
             vault,
             vault_reported: false,
             vault_asked: false,
             updates: Default::default(),
             last_input: std::time::Instant::now(),
+            lock: None,
             presence_asking: false,
             sync,
             sync_error: None,
@@ -469,6 +478,32 @@ impl Workspace {
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn settings_page(&self, cx: &gpui::App) -> Option<Page> {
         self.settings.as_ref().map(|(v, _)| v.read(cx).page())
+    }
+
+    /// Whether shellwing is locked: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn app_locked(&self) -> bool {
+        self.lock.is_some()
+    }
+
+    /// Devices asking to join, held while locked: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn held_requests(&self) -> usize {
+        self.held_requests.len()
+    }
+
+    /// What the lock says now: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn lock_said(&self, cx: &gpui::App) -> Option<String> {
+        self.lock.as_ref().and_then(|(v, _)| v.read(cx).said())
+    }
+
+    /// As if nothing was pressed or clicked for `d`: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn away_for(&mut self, d: std::time::Duration) {
+        if let Some(then) = std::time::Instant::now().checked_sub(d) {
+            self.last_input = then;
+        }
     }
 
     /// Settings, if open: for the UI tests to read.
@@ -1280,6 +1315,92 @@ impl Workspace {
             None => {}
         }
         cx.on_release(|ws, cx| ws.save_layout(cx)).detach();
+        // Locked from the start: whoever opens it is asked, at once.
+        if self.lock_after() > 0 {
+            self.lock_app(true, window, cx);
+        }
+    }
+
+    /// Minutes away before shellwing locks itself (`[lock] after`); 0:
+    /// never by itself.
+    fn lock_after(&self) -> u32 {
+        self.live.settings().lock.after.unwrap_or(0)
+    }
+
+    /// Locks shellwing: its windows hidden, and the keyboard kept from them,
+    /// until the system says it is the user. With `ask_now` the system asks
+    /// at once; else when the user comes back and asks.
+    pub fn lock_app(&mut self, ask_now: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if self.lock.is_some() {
+            return;
+        }
+        let confirmer = crate::app_lock::confirmer(cx);
+        let Some(how) = confirmer.how() else {
+            return self.say(
+                Notice::warn(tr!(
+                    "shellwing cannot lock here: this system has no way to ask that it is you."
+                )),
+                CONFIG_NOTICE,
+                cx,
+            );
+        };
+        // A question drawn over the lock would still take an answer. The
+        // palette, under it, stays: what it asks (the vault's passphrase) is
+        // asked again after.
+        crate::prompt::dismiss_all(cx);
+        crate::note_window::before_lock(cx);
+        crate::snippet_window::before_lock(cx);
+        cx.set_global(crate::app_lock::Locked(true));
+        let view = cx.new(|cx| crate::app_lock::LockView::new(confirmer, how, ask_now, window, cx));
+        let events = cx.subscribe_in(
+            &view,
+            window,
+            |ws, _, e: &crate::app_lock::LockEvent, window, cx| match e {
+                crate::app_lock::LockEvent::Unlocked => ws.unlock_app(window, cx),
+                // As any quit: asking first while connected.
+                crate::app_lock::LockEvent::Quit => {
+                    if ws.may_quit(window, cx) {
+                        cx.quit();
+                    }
+                }
+            },
+        );
+        self.lock = Some((view, events));
+        self.title_window(window, cx);
+        cx.refresh_windows();
+        cx.notify();
+    }
+
+    /// It is the user: the windows show again.
+    fn unlock_app(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.lock = None;
+        cx.set_global(crate::app_lock::Locked(false));
+        self.last_input = std::time::Instant::now();
+        let active = self.active;
+        self.activate(active, window, cx);
+        if let Some((palette, ..)) = &self.palette {
+            window.focus(&palette.focus_handle(cx), cx);
+        }
+        for r in std::mem::take(&mut self.held_requests) {
+            if self.prompted.insert(r.id.clone()) {
+                self.in_window(cx, move |ws, window, cx| ws.prompt_pairing(r, window, cx));
+            }
+        }
+        cx.refresh_windows();
+    }
+
+    /// While locked, the lock has the keyboard, whatever took it meanwhile;
+    /// not a question asked over it (quitting), drawn outside the window's
+    /// tree.
+    fn keep_keys_locked(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((lock, _)) = &self.lock else {
+            return;
+        };
+        let lock = lock.clone();
+        let here = self.focus.contains_focused(window, cx) || window.focused(cx).is_none();
+        if here && !lock.read(cx).focus_handle(cx).contains_focused(window, cx) {
+            lock.update(cx, |v, cx| v.take_keys(window, cx));
+        }
     }
 
     /// Opens the tabs and panes saved in `state/session.json`.
@@ -1392,6 +1513,7 @@ impl Workspace {
         } else {
             window.focus(&self.focus, cx);
         }
+        self.keep_keys_locked(window, cx);
         self.title_window(window, cx);
         cx.notify();
     }
@@ -1418,6 +1540,10 @@ impl Workspace {
 
     /// The window's title: the active tab's host, and what its shell says.
     fn title_window(&self, window: &mut Window, cx: &mut Context<Self>) {
+        // Locked, it says no host.
+        if self.lock.is_some() {
+            return window.set_window_title("shellwing");
+        }
         let title = match self.active_tab() {
             Some(t) => {
                 let v = t.read(cx);
@@ -1786,6 +1912,9 @@ impl Workspace {
         if self.vault.can_lock() {
             setting(Action::LockVault, tr!("Lock the vault"), String::new());
         }
+        if crate::app_lock::confirmer(cx).how().is_some() {
+            setting(Action::LockApp, tr!("Lock shellwing"), String::new());
+        }
         match self.sync.place() {
             Some(f) => {
                 setting(
@@ -2045,6 +2174,13 @@ impl Workspace {
             }
             SyncEvent::Requests(requests) => {
                 for r in requests {
+                    // Nobody lets a device in from under the lock.
+                    if self.lock.is_some() {
+                        if !self.held_requests.iter().any(|h| h.id == r.id) {
+                            self.held_requests.push(r);
+                        }
+                        continue;
+                    }
                     if self.prompted.insert(r.id.clone()) {
                         self.in_window(cx, move |ws, window, cx| ws.prompt_pairing(r, window, cx));
                     }
@@ -3879,7 +4015,11 @@ impl Workspace {
     }
 
     fn run(&mut self, a: Action, window: &mut Window, cx: &mut Context<Self>) {
+        if self.lock.is_some() {
+            return;
+        }
         match a {
+            Action::LockApp => self.lock_app(false, window, cx),
             Action::Duplicate => self.duplicate(window, cx),
             Action::SplitRight => self.split(Axis::Horizontal, window, cx),
             Action::SplitDown => self.split(Axis::Vertical, window, cx),
@@ -4201,6 +4341,13 @@ impl Workspace {
 
     /// Called periodically: picks up edits to the config files.
     pub fn poll_config(&mut self, cx: &mut Context<Self>) {
+        let away = self.lock_after();
+        if away > 0
+            && self.lock.is_none()
+            && self.last_input.elapsed() >= std::time::Duration::from_secs(u64::from(away) * 60)
+        {
+            self.in_window(cx, |ws, window, cx| ws.lock_app(false, window, cx));
+        }
         let idle = self.live.settings().vault.lock_after.unwrap_or(0);
         let idle_now = idle > 0
             && self.last_input.elapsed() >= std::time::Duration::from_secs(u64::from(idle) * 60)
@@ -4372,6 +4519,15 @@ impl Workspace {
     /// Runs before the terminal sees the key, so these never reach the host.
     fn shortcut(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         self.last_input = std::time::Instant::now();
+        // Locked: keys go to the lock (its password), no shortcut to
+        // anything, and none to what took the focus from it meanwhile.
+        if let Some((lock, _)) = &self.lock {
+            if !lock.read(cx).focus_handle(cx).contains_focused(window, cx) {
+                cx.stop_propagation();
+                self.keep_keys_locked(window, cx);
+            }
+            return;
+        }
         // The Keyboard page is taking a key for a shortcut.
         if self
             .settings
@@ -5677,7 +5833,23 @@ impl Render for Workspace {
                 )
                 .child(body)
         };
+        self.keep_keys_locked(window, cx);
+        let lock = self.lock.as_ref().map(|(v, _)| v.clone());
         root.when_some(ui_font.family, |d, f| d.font_family(f))
+            .when_some(lock, |d, lock| {
+                d.child(
+                    gpui::deferred(
+                        div()
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full()
+                            .occlude()
+                            .child(lock),
+                    )
+                    .with_priority(100),
+                )
+            })
             .track_focus(&self.focus)
             .capture_key_down(cx.listener(Self::shortcut))
             .capture_any_mouse_down(cx.listener(|ws, _, _, _| {

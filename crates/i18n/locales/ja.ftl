@@ -1,6 +1,48 @@
 # shellwing in ja. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = ウィンドウのロックを解除
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = shellwing のロックを解除するには、本人であることを確認してください。
+
+# Checking…
+t87f62cb7 = 確認中…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = 確認されませんでした。shellwing はロックされたままです。
+
+# That is not the password.
+t06b4bdb7 = パスワードが違います。
+
+# Cannot confirm it is you: {e}
+t0a90c137 = 本人であることを確認できません: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello または Windows のパスワードでロックを解除できます。
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID または Mac のパスワードでロックを解除できます。
+
+# Your login password unlocks it.
+t8eeb5228 = ログインパスワードでロックを解除できます。
+
+# Unlock
+t9c799975 = ロックを解除
+
+# Quit shellwing
+t8857c967 = shellwing を終了
+
+# shellwing is locked
+t665c7b6c = shellwing はロックされています
+
+# Your login password
+t2348e42c = ログインパスワード
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing はロックされています。メインウィンドウでロックを解除してください。
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = { $remote } の編集内容はサーバーに書き戻されませんでした。ファイルは { $path } に保存されています。
 
@@ -2272,6 +2314,24 @@ tc153db4a = パスフレーズを削除
 # Keep it in the system keychain
 tc01bbcf0 = システムのキーチェーンに保存
 
+# 1 hour
+t0c43fb4a = 1 時間
+
+# {m} min
+t7eebb6a4 = { $m } 分
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = shellwing の起動時、およびキー入力やクリックがないままこの時間が経過すると、Touch ID または Mac のパスワードで本人と確認されるまでウィンドウが隠れます。画面のロックし忘れに備える軽い保護です。セッションは裏で動き続けます。
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = shellwing の起動時、およびキー入力やクリックがないままこの時間が経過すると、Windows Hello または Windows のパスワードで本人と確認されるまでウィンドウが隠れます。画面のロックし忘れに備える軽い保護です。セッションは裏で動き続けます。
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = shellwing の起動時、およびキー入力やクリックがないままこの時間が経過すると、ログインパスワードで本人と確認されるまでウィンドウが隠れます。画面のロックし忘れに備える軽い保護です。セッションは裏で動き続けます。
+
+# Lock shellwing when away
+t7ad7e7d1 = 離席時に shellwing をロック
+
 # Saved passwords and passphrases
 t4b07c4a2 = 保存済みのパスワードとパスフレーズ
 
@@ -2295,12 +2355,6 @@ t0baa8f35 = 保管庫がロックされているとき、パスフレーズと�
 
 # Unlock with {name}
 t7c964cc4 = { $name } でロック解除
-
-# 1 hour
-t0c43fb4a = 1 時間
-
-# {m} min
-t7eebb6a4 = { $m } 分
 
 # Lock when idle
 ta18da274 = アイドル時にロック
@@ -3214,6 +3268,9 @@ tbac763bb = { $n } 件の接続が開いています。閉じると切断され�
 # Cannot open a terminal: {e}
 t3ffc1c98 = ターミナルを開けません：{ $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = ここでは shellwing をロックできません。このシステムには本人確認の手段がありません。
+
 # A connection is open; quitting closes it.
 tf3732b18 = 接続が開いています。終了すると切断されます。
 
@@ -3306,6 +3363,9 @@ tdfc17c92 = 保存済みのパスワードとパスフレーズ…
 
 # Lock the vault
 tc05449a1 = 保管庫をロック
+
+# Lock shellwing
+ta4580143 = shellwing をロック
 
 # Sync now with {place}
 t8aad97ad = { $place } と今すぐ同期

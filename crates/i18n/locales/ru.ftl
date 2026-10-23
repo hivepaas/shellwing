@@ -1,6 +1,48 @@
 # shellwing in ru. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = разблокировать свои окна
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = Подтвердите, что это вы, чтобы разблокировать shellwing.
+
+# Checking…
+t87f62cb7 = Проверка…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = Не подтверждено: shellwing остаётся заблокированным.
+
+# That is not the password.
+t06b4bdb7 = Это не тот пароль.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = Не удаётся подтвердить, что это вы: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Его разблокирует Windows Hello или ваш пароль Windows.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Его разблокирует Touch ID или пароль вашего Mac.
+
+# Your login password unlocks it.
+t8eeb5228 = Его разблокирует ваш пароль для входа в систему.
+
+# Unlock
+t9c799975 = Разблокировать
+
+# Quit shellwing
+t8857c967 = Выйти из shellwing
+
+# shellwing is locked
+t665c7b6c = shellwing заблокирован
+
+# Your login password
+t2348e42c = Ваш пароль для входа в систему
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing заблокирован: разблокируйте его в его главном окне.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Изменение { $remote } не записано на сервер; файл сохранён как { $path }.
 
@@ -2353,6 +2395,24 @@ tc153db4a = Удалить парольную фразу
 # Keep it in the system keychain
 tc01bbcf0 = Хранить в системной связке ключей
 
+# 1 hour
+t0c43fb4a = 1 час
+
+# {m} min
+t7eebb6a4 = { $m } мин
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = При запуске shellwing, а также если столько времени не нажимать клавиши и не щёлкать, его окна скрываются, пока Touch ID или пароль вашего Mac не подтвердит, что это вы. Лёгкая защита на случай незаблокированного экрана: сеансы продолжают работать в фоне.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = При запуске shellwing, а также если столько времени не нажимать клавиши и не щёлкать, его окна скрываются, пока Windows Hello или ваш пароль Windows не подтвердит, что это вы. Лёгкая защита на случай незаблокированного экрана: сеансы продолжают работать в фоне.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = При запуске shellwing, а также если столько времени не нажимать клавиши и не щёлкать, его окна скрываются, пока ваш пароль для входа в систему не подтвердит, что это вы. Лёгкая защита на случай незаблокированного экрана: сеансы продолжают работать в фоне.
+
+# Lock shellwing when away
+t7ad7e7d1 = Блокировать shellwing в ваше отсутствие
+
 # Saved passwords and passphrases
 t4b07c4a2 = Сохранённые пароли и парольные фразы
 
@@ -2376,12 +2436,6 @@ t0baa8f35 = Когда хранилище заблокировано, { $name } 
 
 # Unlock with {name}
 t7c964cc4 = Разблокировать с { $name }
-
-# 1 hour
-t0c43fb4a = 1 час
-
-# {m} min
-t7eebb6a4 = { $m } мин
 
 # Lock when idle
 ta18da274 = Блокировать при бездействии
@@ -3400,6 +3454,9 @@ tbac763bb =
 # Cannot open a terminal: {e}
 t3ffc1c98 = Не удалось открыть терминал: { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing не может заблокироваться здесь: в этой системе нет способа подтвердить, что это вы.
+
 # A connection is open; quitting closes it.
 tf3732b18 = Соединение открыто; выход закроет его.
 
@@ -3498,6 +3555,9 @@ tdfc17c92 = Сохранённые пароли и парольные фразы
 
 # Lock the vault
 tc05449a1 = Заблокировать хранилище
+
+# Lock shellwing
+ta4580143 = Заблокировать shellwing
 
 # Sync now with {place}
 t8aad97ad = Синхронизировать с { $place }
