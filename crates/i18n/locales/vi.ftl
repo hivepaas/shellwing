@@ -2347,8 +2347,8 @@ td09ac71d = Khoá của kho
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = Thứ mở được vault.db. Cụm mật khẩu giữ nó ở nơi không có kho khoá của hệ thống (hoặc cùng với kho khoá đó); khoá khôi phục luôn mở được, khi quên cụm mật khẩu hoặc kho khoá làm mất nó.
 
-# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
-t061af0c4 = Khi kho bị khoá, { $name } sẽ mở nó, hoặc mật khẩu đăng nhập của máy Mac này khi không dùng được Touch ID, như cụm mật khẩu (vẫn dùng được). Cần bản shellwing đã được ký.
+# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
+t056f7fb9 = Khi kho bị khoá, { $name } sẽ mở nó, như cụm mật khẩu (vẫn dùng được). Theo các ngón tay đang đăng ký: thêm một ngón thì cách này ngừng hoạt động, cho tới khi bật lại. Cần bản shellwing đã được ký.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Khi kho bị khoá, { $name } (vân tay, khuôn mặt hoặc mã PIN của thiết bị này) sẽ mở nó, như cụm mật khẩu (vẫn dùng được). Khoá được chip bảo mật của thiết bị này giữ.

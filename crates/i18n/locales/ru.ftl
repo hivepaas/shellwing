@@ -2428,8 +2428,8 @@ td09ac71d = Ключ хранилища
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = То, что открывает vault.db. Парольная фраза хранит его там, где нет системной связки ключей (или вместе с ней); ключ восстановления открывает его всегда, если парольная фраза забыта или связка ключей его потеряла.
 
-# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
-t061af0c4 = Когда хранилище заблокировано, { $name } открывает его — или пароль входа этого Mac, если Touch ID под рукой нет, — как и парольная фраза (она по-прежнему работает). Нужна подписанная сборка shellwing.
+# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
+t056f7fb9 = Когда хранилище заблокировано, { $name } открывает его, как и парольная фраза (она по-прежнему работает). Только отпечатки, зарегистрированные сейчас: добавление нового отключает функцию, пока её не включат снова. Нужна подписанная сборка shellwing.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Когда хранилище заблокировано, { $name } (отпечаток пальца, лицо или PIN-код этого устройства) открывает его, как и парольная фраза (она по-прежнему работает). Ключ хранится в чипе безопасности этого устройства.

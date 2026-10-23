@@ -6,11 +6,11 @@
 //!   one challenge, always the same; the secret is the signature's SHA-256
 //!   (RSA PKCS#1 v1.5 signatures do not change). KeePass's Windows Hello
 //!   plugins do the same.
-//! - **Touch ID** (macOS): the secret is a Keychain item that opens to the
-//!   user's presence, as Apple calls it: Touch ID, or the Mac's login
-//!   password where there is no Touch ID or it is not at hand. The data
-//!   protection keychain takes such items only from apps signed with a
-//!   Developer ID and its keychain entitlement: an unsigned build is told so.
+//! - **Touch ID** (macOS): the secret is a Keychain item that opens only to
+//!   Touch ID with the fingers enrolled now (a finger added makes it gone,
+//!   and the passphrase is asked for). The data protection keychain takes
+//!   such items only from apps signed with a Developer ID: an unsigned build
+//!   is told so.
 //!
 //! Elsewhere there is none. Calls block on the system's prompt: never on
 //! the UI thread.
@@ -225,8 +225,7 @@ mod touch_id {
     fn err(e: security_framework::base::Error) -> String {
         match e.code() {
             MISSING_ENTITLEMENT => {
-                "Touch ID needs a build of shellwing signed with its Developer ID (this one is not)"
-                    .into()
+                "Touch ID needs a signed build of shellwing (this one is not)".into()
             }
             _ => e
                 .message()
@@ -238,8 +237,7 @@ mod touch_id {
         let mut secret = [0u8; 32];
         getrandom::fill(&mut secret).map_err(|e| e.to_string())?;
         let _ = forget(id);
-        // Touch ID, or the login password: the user, at this Mac.
-        let flags = AccessControlOptions::USER_PRESENCE.bits();
+        let flags = AccessControlOptions::BIOMETRY_CURRENT_SET.bits();
         let access = SecAccessControl::create_with_protection(
             Some(ProtectionMode::AccessibleWhenPasscodeSetThisDeviceOnly),
             flags,
@@ -247,7 +245,7 @@ mod touch_id {
         .map_err(err)?;
         let mut o = options(id);
         o.set_access_control(access);
-        o.set_label("shellwing: opens the vault with Touch ID or your password");
+        o.set_label("shellwing: opens the vault with Touch ID");
         set_generic_password_options(&secret, o).map_err(err)?;
         // Read back at once: the user confirms with Touch ID now, and a
         // Mac without it says so here, not at the next lock.

@@ -2394,8 +2394,8 @@ td09ac71d = Schlüssel des Tresors
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = Was vault.db öffnet. Eine Passphrase bewahrt ihn, wo es keinen Schlüsselbund des Systems gibt (oder zusätzlich dazu); der Wiederherstellungsschlüssel öffnet ihn immer, falls die Passphrase vergessen ist oder der Schlüsselbund ihn verliert.
 
-# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
-t061af0c4 = Ist der Tresor gesperrt, öffnet { $name } ihn – oder das Anmeldepasswort dieses Macs, wo Touch ID nicht zur Hand ist – wie seine Passphrase (die weiterhin funktioniert). Erfordert einen signierten Build von shellwing.
+# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
+t056f7fb9 = Ist der Tresor gesperrt, öffnet { $name } ihn wie seine Passphrase (die weiterhin funktioniert). Gilt für die jetzt registrierten Finger: Fügst du einen hinzu, wird es deaktiviert, bis du es wieder einschaltest. Erfordert einen signierten Build von shellwing.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Ist der Tresor gesperrt, öffnet { $name } (Fingerabdruck, Gesicht oder die PIN dieses Geräts) ihn wie seine Passphrase (die weiterhin funktioniert). Der Schlüssel liegt im Sicherheitschip dieses Geräts.

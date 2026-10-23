@@ -2249,7 +2249,7 @@ impl SettingsView {
                     .filter(|_| self.snap.vault_passphrase == Some(true)),
                 |d, (name, on)| {
                     let what = if cfg!(target_os = "macos") {
-                        tr!("When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.", name = name)
+                        tr!("When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.", name = name)
                     } else {
                         tr!("When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.", name = name)
                     };

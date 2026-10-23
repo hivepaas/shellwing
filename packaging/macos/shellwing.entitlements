@@ -2,9 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- What shellwing.app is entitled to when signed with a Developer ID and its
      provisioning profile (scripts/package_macos.sh puts the team in): the
-     data protection keychain, which keeps the item that Touch ID or the Mac's
-     password opens the vault with. Restricted entitlements: the profile must
-     allow them. -->
+     data protection keychain, which keeps the item that Touch ID opens the
+     vault with. Restricted entitlements: the profile must allow them. -->
 <plist version="1.0">
 <dict>
 	<key>com.apple.application-identifier</key>

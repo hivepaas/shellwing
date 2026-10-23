@@ -36,8 +36,8 @@ installer; the others are for people.
 ## Signing for macOS
 
 With a Developer ID, the app opens without Gatekeeper's question, and Touch ID
-(or the Mac's password) can open the vault: its Keychain item needs an
-entitlement only a signed app with a provisioning profile has. Once:
+can open the vault: its Keychain item needs an entitlement only a signed app
+with a provisioning profile has. Once:
 
 1. **Apple's side** (developer.apple.com, an Apple Developer Program account):
    - a **Developer ID Application** certificate, made from a signing request
