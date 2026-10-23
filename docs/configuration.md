@@ -770,8 +770,9 @@ Config files are files to place on hosts, such as `~/.kube/config`,
 `~/.aws/credentials` or `~/.npmrc`. They are kept in the vault, encrypted, and
 sync with it; one holds 1 MB at most, text or not. Make them in *Settings ›
 Config files*: a name, a category, where the file goes on the host (from `/` or
-`~/`), its permissions (`600` by default), the hosts it is offered for, and its
-content. Text up to 64 KB is edited there; **Choose a file…** takes any file up
+`~/`), its permissions (`600` by default), *When placed* (whether placing it
+offers *until the tab closes* or *to stay* first), the hosts it is offered for,
+and its content. Text up to 64 KB is edited there; **Choose a file…** takes any file up
 to 1 MB from this computer (one under your home folder goes to the same place
 under the host's). *Keep a File in the Vault…* in the pane's right-click menu
 takes one from the host instead.
@@ -782,11 +783,13 @@ for an environment's values.
 **Placing one.** The palette lists the focused pane's host's under *Config
 files*, while it is connected (*Place Config File…* in the pane's right-click
 menu opens it there). Enter asks where (the file's own path, to change if
-need be), then how:
+need be), then how, the file's *When placed* first (Enter):
 
 - **Until the tab closes** (the default): the pane shows a badge; closing the
   tab, the pane or the app takes the file away, as does the badge's ✕ or
-  *Remove …* in the menu.
+  *Remove …* in the menu. The badge's **Keep** (or *Keep … on the host* in the
+  menu, or placing it again) leaves it there for good instead: what it set
+  aside becomes `….bak`.
 - **To stay**: it is left there.
 
 If a file is there already (and differs), it asks: replace it until the tab

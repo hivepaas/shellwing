@@ -2586,6 +2586,18 @@ tc1679f62 = Contenido
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = El texto de hasta { $edited } se edita aquí; cualquier archivo de hasta { $max } puede tomarse de este equipo.
 
+# Until the tab closes
+t5ad5ff54 = Hasta que se cierre la pestaña
+
+# To stay
+t89fb6375 = Para que se quede
+
+# When placed
+t82fcea82 = Al colocarlo
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = Lo que colocarlo ofrece primero, para Enter: se quita al cerrar la pestaña, o se queda en el servidor.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = La paleta solo lo ofrece en los paneles de esos servidores.
 
@@ -2960,6 +2972,22 @@ t0f179fa4 =
        *[other] Se eliminaron { $n } archivos.
     }
 
+# Not kept: {e}
+tc12e4203 = No se guardó: { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } se queda al cerrar la pestaña.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+        [one] { $n } archivo se queda al cerrar la pestaña.
+       *[other] { $n } archivos se quedan al cerrar la pestaña.
+    }
+
+# What was there before is {path}.
+td07a4718 = Lo que había antes ahora es { $path }.
+
 # It has no variables.
 t0993a534 = No tiene variables.
 
@@ -2986,6 +3014,9 @@ t21558f46 = Guardado como HTML: { $path }
 
 # Saved as text: {path}
 t17977298 = Guardado como texto: { $path }
+
+# Keep
+t555cbe68 = Conservar
 
 # logging
 t897ecb9e = registrando
@@ -3129,6 +3160,9 @@ t49f82f0c = Colocar archivo de configuración…
 # Keep a File in the Vault…
 t25c07703 = Guardar un archivo en la bóveda…
 
+# Keep {names} on the host
+t80142336 = Conservar { $names } en el servidor
+
 # Remove {names}
 t4efeb00b = Eliminar { $names }
 
@@ -3195,26 +3229,23 @@ t5ca1c37e = Reemplazar el colocado aquí hasta que se cierre la pestaña
 # What was there before still comes back when the tab closes.
 t55130ddc = Lo que había antes vuelve al cerrar la pestaña.
 
+# Keep the one placed here
+t840a8b5a = Conservar el colocado aquí
+
+# It stays when the tab closes.
+tb2bc8f3b = Se queda al cerrar la pestaña.
+
 # {path} holds it already.
 t3ec4172b = { $path } ya lo contiene.
+
+# Place it to stay
+t698a38cf = Colocarlo para que se quede
 
 # Place it until the tab closes
 t19537c52 = Colocarlo hasta que se cierre la pestaña
 
 # Then it is taken away.
 t1302797a = Después se quita.
-
-# Place it to stay
-t698a38cf = Colocarlo para que se quede
-
-# It stays when the tab closes.
-tb2bc8f3b = Se queda al cerrar la pestaña.
-
-# Replace the file there until the tab closes
-t7e646019 = Reemplazar el archivo de allí hasta que se cierre la pestaña
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = El actual se aparta y vuelve al cerrar la pestaña.
 
 # Replace it, keeping the old one
 tc95f7291 = Reemplazarlo, conservando el anterior
@@ -3227,6 +3258,12 @@ t1e17fc0c = Reemplazarlo
 
 # The one there now is gone.
 t7fa127b9 = El actual desaparece.
+
+# Replace the file there until the tab closes
+t7e646019 = Reemplazar el archivo de allí hasta que se cierre la pestaña
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = El actual se aparta y vuelve al cerrar la pestaña.
 
 # {path} is there already…
 td716b366 = { $path } ya existe…
@@ -3258,9 +3295,6 @@ t63904f7b = Un archivo de { $host } para guardar en la bóveda
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path } guardado en la bóveda: consulta Ajustes › Archivos de configuración.
-
-# Not kept: {e}
-tc12e4203 = No se guardó: { $e }
 
 # Removing the config files placed…
 tbd123099 = Quitando los archivos de configuración colocados…

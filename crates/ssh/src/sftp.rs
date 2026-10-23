@@ -424,6 +424,20 @@ impl Sftp {
         Ok(())
     }
 
+    /// A file placed with what was there set `aside`, kept for good: what
+    /// was set aside becomes `backup`, over what is there (as placing with
+    /// a backup does). False when nothing was set aside any more.
+    pub async fn keep_aside(&self, aside: &str, backup: &str) -> Result<bool, Error> {
+        if self.lstat(aside).await?.is_none() {
+            return Ok(false);
+        }
+        if self.lstat(backup).await?.is_some() {
+            self.0.remove_file(backup).await.map_err(err)?;
+        }
+        self.0.rename(aside, backup).await.map_err(err)?;
+        Ok(true)
+    }
+
     /// The kind of what is at `path` itself (a link is a link); None when nothing is.
     async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
         use russh_sftp::client::error::Error as E;

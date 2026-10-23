@@ -163,17 +163,35 @@ impl Workspace {
             Entry::new(Kind::Choice(id.into()), "", title).detail(detail)
         };
         // Placed here already until the tab closes: what was there before
-        // stays set aside, to come back.
+        // stays set aside, to come back, unless it is kept there now.
         let ours = view.read(cx).placed_files().iter().any(|p| p.path == full);
-        let entries = match there {
-            _ if ours && there != There::Same => vec![
-                choice(
-                    "again",
-                    tr!("Replace the one placed here until the tab closes"),
-                    tr!("What was there before still comes back when the tab closes."),
-                ),
-                choice("cancel", tr!("Cancel"), String::new()),
-            ],
+        // The file's own way first, for Enter: to stay, or until the tab closes.
+        let first = |stay: Vec<Entry>, until: Vec<Entry>| {
+            let (mut a, b) = if file.stays {
+                (stay, until)
+            } else {
+                (until, stay)
+            };
+            a.extend(b);
+            a
+        };
+        let cancel = || choice("cancel", tr!("Cancel"), String::new());
+        let mut entries = match there {
+            _ if ours => {
+                let again = (there != There::Same).then(|| {
+                    choice(
+                        "again",
+                        tr!("Replace the one placed here until the tab closes"),
+                        tr!("What was there before still comes back when the tab closes."),
+                    )
+                });
+                let keep = choice(
+                    "keep-placed",
+                    tr!("Keep the one placed here"),
+                    tr!("It stays when the tab closes."),
+                );
+                first(vec![keep], again.into_iter().collect())
+            }
             There::Same => {
                 return self.say(
                     tr!("{path} holds it already.", path = full.as_str()),
@@ -181,33 +199,37 @@ impl Workspace {
                     cx,
                 );
             }
-            There::Nothing => vec![
-                choice(
-                    "until",
-                    tr!("Place it until the tab closes"),
-                    tr!("Then it is taken away."),
-                ),
-                choice(
+            There::Nothing => first(
+                vec![choice(
                     "keep",
                     tr!("Place it to stay"),
                     tr!("It stays when the tab closes."),
-                ),
-            ],
-            There::Other => vec![
-                choice(
+                )],
+                vec![choice(
+                    "until",
+                    tr!("Place it until the tab closes"),
+                    tr!("Then it is taken away."),
+                )],
+            ),
+            There::Other => first(
+                vec![
+                    choice(
+                        "bak",
+                        tr!("Replace it, keeping the old one"),
+                        tr!("As {path}", path = placing::backup_of(&full)),
+                    ),
+                    choice("over", tr!("Replace it"), tr!("The one there now is gone.")),
+                ],
+                vec![choice(
                     "until-over",
                     tr!("Replace the file there until the tab closes"),
                     tr!("The one there now is set aside, and comes back when the tab closes."),
-                ),
-                choice(
-                    "bak",
-                    tr!("Replace it, keeping the old one"),
-                    tr!("As {path}", path = placing::backup_of(&full)),
-                ),
-                choice("over", tr!("Replace it"), tr!("The one there now is gone.")),
-                choice("cancel", tr!("Cancel"), String::new()),
-            ],
+                )],
+            ),
         };
+        if ours || there == There::Other {
+            entries.push(cancel());
+        }
         self.asking = Some(Asking::PlaceHow {
             file,
             full: full.clone(),
@@ -227,6 +249,12 @@ impl Workspace {
             return;
         };
         self.close_palette(window, cx);
+        if how == "keep-placed" {
+            if let Some(view) = view.upgrade() {
+                view.update(cx, |v, cx| v.keep_placed(Some(&full), cx));
+            }
+            return;
+        }
         let before = view
             .upgrade()
             .and_then(|v| {
@@ -483,6 +511,7 @@ impl Workspace {
                         scope,
                         size: 0,
                         binary: false,
+                        stays: false,
                     };
                     ws.vault
                         .ready()

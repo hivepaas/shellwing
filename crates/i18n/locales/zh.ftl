@@ -2536,6 +2536,18 @@ tc1679f62 = 内容
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = 不超过 { $edited } 的文本可在此编辑；不超过 { $max } 的任何文件都可从这台电脑导入。
 
+# Until the tab closes
+t5ad5ff54 = 直到标签页关闭
+
+# To stay
+t89fb6375 = 保留
+
+# When placed
+t82fcea82 = 放置时
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = 放置时首先提供的方式（按 Enter 选择）：标签页关闭时移除，或留在主机上。
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = 命令面板只会在这些主机的窗格中提供放置它。
 
@@ -2872,6 +2884,21 @@ t0f179fa4 =
        *[other] 已移除 { $n } 个文件。
     }
 
+# Not kept: {e}
+tc12e4203 = 未保存：{ $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = 标签页关闭后 { $path } 仍会保留。
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+       *[other] 标签页关闭后 { $n } 个文件仍会保留。
+    }
+
+# What was there before is {path}.
+td07a4718 = 原来的文件现在是 { $path }。
+
 # It has no variables.
 t0993a534 = 它没有变量。
 
@@ -2898,6 +2925,9 @@ t21558f46 = 已保存为 HTML：{ $path }
 
 # Saved as text: {path}
 t17977298 = 已保存为文本：{ $path }
+
+# Keep
+t555cbe68 = 保留
 
 # logging
 t897ecb9e = 正在记录
@@ -3037,6 +3067,9 @@ t49f82f0c = 放置配置文件…
 # Keep a File in the Vault…
 t25c07703 = 将文件保存到保险库…
 
+# Keep {names} on the host
+t80142336 = 将 { $names } 保留在主机上
+
 # Remove {names}
 t4efeb00b = 删除 { $names }
 
@@ -3103,26 +3136,23 @@ t5ca1c37e = 替换此处已放置的文件，直到标签页关闭
 # What was there before still comes back when the tab closes.
 t55130ddc = 之前的文件会在标签页关闭时恢复。
 
+# Keep the one placed here
+t840a8b5a = 保留此处已放置的文件
+
+# It stays when the tab closes.
+tb2bc8f3b = 标签页关闭后它仍会保留。
+
 # {path} holds it already.
 t3ec4172b = { $path } 已包含它。
+
+# Place it to stay
+t698a38cf = 放置并保留
 
 # Place it until the tab closes
 t19537c52 = 放置到标签页关闭为止
 
 # Then it is taken away.
 t1302797a = 之后它会被移除。
-
-# Place it to stay
-t698a38cf = 放置并保留
-
-# It stays when the tab closes.
-tb2bc8f3b = 标签页关闭后它仍会保留。
-
-# Replace the file there until the tab closes
-t7e646019 = 替换那里的文件，直到标签页关闭
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = 现有的文件会被移到一旁，并在标签页关闭时恢复。
 
 # Replace it, keeping the old one
 tc95f7291 = 替换，并保留旧文件
@@ -3135,6 +3165,12 @@ t1e17fc0c = 替换
 
 # The one there now is gone.
 t7fa127b9 = 现有的文件将消失。
+
+# Replace the file there until the tab closes
+t7e646019 = 替换那里的文件，直到标签页关闭
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 现有的文件会被移到一旁，并在标签页关闭时恢复。
 
 # {path} is there already…
 td716b366 = { $path } 已存在…
@@ -3165,9 +3201,6 @@ t63904f7b = { $host } 上要保存到保险库的文件
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = 已将 { $path } 保存到保险库：请参阅 设置 › 配置文件。
-
-# Not kept: {e}
-tc12e4203 = 未保存：{ $e }
 
 # Removing the config files placed…
 tbd123099 = 正在移除已放置的配置文件…

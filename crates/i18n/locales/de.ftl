@@ -2586,6 +2586,18 @@ tc1679f62 = Inhalt
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = Text bis { $edited } wird hier bearbeitet; jede Datei bis { $max } kann von diesem Computer übernommen werden.
 
+# Until the tab closes
+t5ad5ff54 = Bis der Tab geschlossen wird
+
+# To stay
+t89fb6375 = Dauerhaft
+
+# When placed
+t82fcea82 = Beim Ablegen
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = Was das Ablegen zuerst anbietet, für Enter: entfernt, wenn der Tab geschlossen wird, oder auf dem Host gelassen.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = Die Palette bietet sie nur in Panes dieser Hosts an.
 
@@ -2960,6 +2972,22 @@ t0f179fa4 =
        *[other] { $n } Dateien entfernt.
     }
 
+# Not kept: {e}
+tc12e4203 = Nicht abgelegt: { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } bleibt, wenn der Tab geschlossen wird.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+        [one] { $n } Datei bleibt, wenn der Tab geschlossen wird.
+       *[other] { $n } Dateien bleiben, wenn der Tab geschlossen wird.
+    }
+
+# What was there before is {path}.
+td07a4718 = Was vorher dort war, ist jetzt { $path }.
+
 # It has no variables.
 t0993a534 = Sie hat keine Variablen.
 
@@ -2986,6 +3014,9 @@ t21558f46 = Als HTML gespeichert: { $path }
 
 # Saved as text: {path}
 t17977298 = Als Text gespeichert: { $path }
+
+# Keep
+t555cbe68 = Behalten
 
 # logging
 t897ecb9e = protokolliert
@@ -3129,6 +3160,9 @@ t49f82f0c = Konfigurationsdatei ablegen…
 # Keep a File in the Vault…
 t25c07703 = Datei im Tresor speichern…
 
+# Keep {names} on the host
+t80142336 = { $names } auf dem Host behalten
+
 # Remove {names}
 t4efeb00b = { $names } entfernen
 
@@ -3195,26 +3229,23 @@ t5ca1c37e = Die hier abgelegte ersetzen, bis der Tab geschlossen wird
 # What was there before still comes back when the tab closes.
 t55130ddc = Was vorher dort war, kommt beim Schließen des Tabs zurück.
 
+# Keep the one placed here
+t840a8b5a = Die hier abgelegte behalten
+
+# It stays when the tab closes.
+tb2bc8f3b = Sie bleibt, wenn der Tab geschlossen wird.
+
 # {path} holds it already.
 t3ec4172b = { $path } enthält sie bereits.
+
+# Place it to stay
+t698a38cf = Dauerhaft ablegen
 
 # Place it until the tab closes
 t19537c52 = Ablegen, bis der Tab geschlossen wird
 
 # Then it is taken away.
 t1302797a = Danach wird sie entfernt.
-
-# Place it to stay
-t698a38cf = Dauerhaft ablegen
-
-# It stays when the tab closes.
-tb2bc8f3b = Sie bleibt, wenn der Tab geschlossen wird.
-
-# Replace the file there until the tab closes
-t7e646019 = Die Datei dort ersetzen, bis der Tab geschlossen wird
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = Die jetzige wird beiseitegelegt und kommt beim Schließen des Tabs zurück.
 
 # Replace it, keeping the old one
 tc95f7291 = Ersetzen und die alte behalten
@@ -3227,6 +3258,12 @@ t1e17fc0c = Ersetzen
 
 # The one there now is gone.
 t7fa127b9 = Die jetzige ist dann weg.
+
+# Replace the file there until the tab closes
+t7e646019 = Die Datei dort ersetzen, bis der Tab geschlossen wird
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Die jetzige wird beiseitegelegt und kommt beim Schließen des Tabs zurück.
 
 # {path} is there already…
 td716b366 = { $path } existiert bereits…
@@ -3258,9 +3295,6 @@ t63904f7b = Eine Datei auf { $host }, die im Tresor gespeichert werden soll
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path } im Tresor gespeichert: siehe Einstellungen › Konfigurationsdateien.
-
-# Not kept: {e}
-tc12e4203 = Nicht abgelegt: { $e }
 
 # Removing the config files placed…
 tbd123099 = Die abgelegten Konfigurationsdateien werden entfernt…

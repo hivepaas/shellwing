@@ -107,6 +107,20 @@ pub async fn unplace(sftp: &Sftp, path: &str, aside: Option<&str>) -> Result<(),
     sftp.unplace(path, aside).await.map_err(|e| e.to_string())
 }
 
+/// A file placed until its tab closes, left there for good: what it set
+/// aside becomes its backup (`….bak`). That backup's path, if there is one.
+pub async fn keep(sftp: &Sftp, path: &str, aside: Option<&str>) -> Result<Option<String>, String> {
+    let Some(aside) = aside else {
+        return Ok(None);
+    };
+    let backup = backup_of(path);
+    let moved = sftp
+        .keep_aside(aside, &backup)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(moved.then_some(backup))
+}
+
 /// A file left on the host from before: taken away (what it set aside put
 /// back) if it is still as placed; left alone if it was changed since.
 /// True when it was taken away.

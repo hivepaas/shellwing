@@ -916,6 +916,10 @@ t28a576c9 = Choose a file…
 t9e564235 = { $file }: { $size }, kept as it is
 tc1679f62 = Content
 t992520da = Text up to { $edited } is edited here; any file up to { $max } can be taken from this computer.
+t5ad5ff54 = Until the tab closes
+t89fb6375 = To stay
+t82fcea82 = When placed
+t9867bbe6 = What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
 tdc9acac2 = The palette offers to place it in panes of those hosts only.
 taf38972d = Where it goes on the host
 t8700fd83 = Permissions
@@ -1078,6 +1082,14 @@ t0f179fa4 =
         [one] Removed { $n } file.
        *[other] Removed { $n } files.
     }
+tc12e4203 = Not kept: { $e }
+t4d349d57 = { $path } stays when the tab closes.
+t500558bd =
+    { $n ->
+        [one] { $n } file stays when the tab closes.
+       *[other] { $n } files stay when the tab closes.
+    }
+td07a4718 = What was there before is { $path }.
 t0993a534 = It has no variables.
 t3883bd87 = With the ones loaded, that comes to { $size } KB; a shell takes { $max } KB at most: unload one first.
 ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
@@ -1087,6 +1099,7 @@ td2342a94 = Logging to { $path }
 tb673f869 = Cannot log: { $e }
 t21558f46 = Saved as HTML: { $path }
 t17977298 = Saved as text: { $path }
+t555cbe68 = Keep
 t897ecb9e = logging
 t77104bea = listening
 t73aeedd4 = left out
@@ -1137,6 +1150,7 @@ t2b3c5b61 = Snippets…
 td34b2cc0 = Load Environment…
 t49f82f0c = Place Config File…
 t25c07703 = Keep a File in the Vault…
+t80142336 = Keep { $names } on the host
 t4efeb00b = Remove { $names }
 t362b9a48 = Unload { $names }
 t1ecb565a = Find…
@@ -1159,17 +1173,18 @@ t0f76d445 = Where on { $host }
 t1383f29b = Cannot place { $name }: { $e }
 t5ca1c37e = Replace the one placed here until the tab closes
 t55130ddc = What was there before still comes back when the tab closes.
+t840a8b5a = Keep the one placed here
+tb2bc8f3b = It stays when the tab closes.
 t3ec4172b = { $path } holds it already.
+t698a38cf = Place it to stay
 t19537c52 = Place it until the tab closes
 t1302797a = Then it is taken away.
-t698a38cf = Place it to stay
-tb2bc8f3b = It stays when the tab closes.
-t7e646019 = Replace the file there until the tab closes
-t8c121382 = The one there now is set aside, and comes back when the tab closes.
 tc95f7291 = Replace it, keeping the old one
 tfb10a76a = As { $path }
 t1e17fc0c = Replace it
 t7fa127b9 = The one there now is gone.
+t7e646019 = Replace the file there until the tab closes
+t8c121382 = The one there now is set aside, and comes back when the tab closes.
 td716b366 = { $path } is there already…
 tdcc97a76 = Place at { $path }…
 t59328aae = Placed { $name } at { $path } until the tab closes.
@@ -1183,7 +1198,6 @@ tccbb9d92 = Left { $path } as it is: it changed since it was placed.
 tf7742770 = Kept encrypted as a config file, for this host, up to { $max } KB.
 t63904f7b = A file on { $host } to keep in the vault
 t8589664d = Kept { $path } in the vault: see Settings › Config files.
-tc12e4203 = Not kept: { $e }
 tbd123099 = Removing the config files placed…
 t6460fddf = Open a tab first
 t0b55252f = Connect first

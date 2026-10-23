@@ -38,6 +38,9 @@ pub(super) struct FileEdit {
     pub(super) scope: Scope,
     pub(super) pick: Option<Pick>,
     content: Content,
+    /// Placed to stay, rather than until the tab closes, unless the user
+    /// chooses otherwise when placing it.
+    stays: bool,
     problem: Option<String>,
 }
 
@@ -85,6 +88,7 @@ impl SnippetsView {
             scope: String::new(),
             size: 0,
             binary: false,
+            stays: false,
         });
         let name = Self::input(|| tr!("What it is, such as kube prod"), &f.name, cx);
         let category = Self::input(|| tr!("None"), &f.category, cx);
@@ -107,6 +111,7 @@ impl SnippetsView {
             scope: Scope::parse(&f.scope),
             pick: None,
             content,
+            stays: f.stays,
             problem: None,
         })));
         let first = name.read(cx).focus_handle(cx);
@@ -272,6 +277,7 @@ impl SnippetsView {
             scope: f.scope.field(),
             size: 0,
             binary: false,
+            stays: f.stays,
         };
         let saved = self
             .vault
@@ -504,6 +510,52 @@ impl SnippetsView {
             )
     }
 
+    /// How placing it goes first: until the tab closes, or to stay.
+    fn placing_box(&self, stays: bool, cx: &mut Context<Self>) -> gpui::Div {
+        let mut pills = div().flex().gap(px(4.));
+        let choices = [(false, tr!("Until the tab closes")), (true, tr!("To stay"))];
+        for (n, (value, label)) in choices.into_iter().enumerate() {
+            let on = value == stays;
+            pills = pills.child(
+                div()
+                    .id(("file-placing", n))
+                    .debug_selector(move || format!("file-placing:{n}"))
+                    .h(px(28.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(if on {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(if on { colors().selected } else { colors().page }))
+                    .text_size(ui(12.5))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
+                    .cursor_pointer()
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        if let Some(f) = v.file_edit() {
+                            f.stays = value;
+                        }
+                        cx.notify();
+                    }))
+                    .child(label),
+            );
+        }
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(5.))
+            .child(label_text(&tr!("When placed")))
+            .child(pills)
+            .child(hint_text(&tr!(
+                "What placing it offers first, for Enter: taken away when the tab closes, or left on the host."
+            )))
+    }
+
     pub(super) fn file_card(
         &self,
         f: &FileEdit,
@@ -543,6 +595,7 @@ impl SnippetsView {
                 .w(px(110.)),
             );
         let content = self.content_box(f, window, cx);
+        let when = self.placing_box(f.stays, cx);
         let mut b = card
             .child(dialog_title(&if f.id.is_empty() {
                 tr!("New config file")
@@ -557,6 +610,7 @@ impl SnippetsView {
                     .child(Self::field(&tr!("Category"), &f.category, cat_on, None).w(px(200.))),
             )
             .child(place)
+            .child(when)
             .child(content);
         if let Some(line) = self.confirm_line(window, cx) {
             b = b.child(line);

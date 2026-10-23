@@ -2536,6 +2536,18 @@ tc1679f62 = 내용
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = { $edited }까지의 텍스트는 여기서 편집합니다. { $max }까지의 파일은 이 컴퓨터에서 가져올 수 있습니다.
 
+# Until the tab closes
+t5ad5ff54 = 탭을 닫을 때까지
+
+# To stay
+t89fb6375 = 계속 남기기
+
+# When placed
+t82fcea82 = 배치할 때
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = 배치할 때 먼저 제안되는 방식(Enter로 선택): 탭을 닫으면 제거하거나 호스트에 남겨 둡니다.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = 팔레트는 이 호스트들의 창에서만 배치하도록 제안합니다.
 
@@ -2872,6 +2884,21 @@ t0f179fa4 =
        *[other] 파일 { $n }개를 삭제했습니다.
     }
 
+# Not kept: {e}
+tc12e4203 = 보관되지 않음: { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = 탭을 닫아도 { $path }은(는) 남습니다.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+       *[other] 탭을 닫아도 파일 { $n }개가 남습니다.
+    }
+
+# What was there before is {path}.
+td07a4718 = 이전에 있던 파일은 이제 { $path }입니다.
+
 # It has no variables.
 t0993a534 = 변수가 없습니다.
 
@@ -2898,6 +2925,9 @@ t21558f46 = HTML로 저장됨: { $path }
 
 # Saved as text: {path}
 t17977298 = 텍스트로 저장됨: { $path }
+
+# Keep
+t555cbe68 = 남기기
 
 # logging
 t897ecb9e = 기록 중
@@ -3037,6 +3067,9 @@ t49f82f0c = 설정 파일 배치…
 # Keep a File in the Vault…
 t25c07703 = 보관함에 파일 보관…
 
+# Keep {names} on the host
+t80142336 = { $names }을(를) 호스트에 남기기
+
 # Remove {names}
 t4efeb00b = { $names } 삭제
 
@@ -3103,26 +3136,23 @@ t5ca1c37e = 탭을 닫을 때까지 여기에 배치된 파일 교체
 # What was there before still comes back when the tab closes.
 t55130ddc = 이전에 있던 파일은 탭을 닫으면 돌아옵니다.
 
+# Keep the one placed here
+t840a8b5a = 여기에 배치된 파일 남기기
+
+# It stays when the tab closes.
+tb2bc8f3b = 탭을 닫아도 남습니다.
+
 # {path} holds it already.
 t3ec4172b = { $path }에 이미 있습니다.
+
+# Place it to stay
+t698a38cf = 계속 남도록 배치
 
 # Place it until the tab closes
 t19537c52 = 탭을 닫을 때까지 배치
 
 # Then it is taken away.
 t1302797a = 그다음 제거됩니다.
-
-# Place it to stay
-t698a38cf = 계속 남도록 배치
-
-# It stays when the tab closes.
-tb2bc8f3b = 탭을 닫아도 남습니다.
-
-# Replace the file there until the tab closes
-t7e646019 = 탭을 닫을 때까지 그곳의 파일 교체
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = 지금 있는 파일은 따로 옮겨 두었다가 탭을 닫으면 돌아옵니다.
 
 # Replace it, keeping the old one
 tc95f7291 = 교체하고 기존 파일 보관
@@ -3135,6 +3165,12 @@ t1e17fc0c = 교체
 
 # The one there now is gone.
 t7fa127b9 = 지금 있는 파일은 사라집니다.
+
+# Replace the file there until the tab closes
+t7e646019 = 탭을 닫을 때까지 그곳의 파일 교체
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 지금 있는 파일은 따로 옮겨 두었다가 탭을 닫으면 돌아옵니다.
 
 # {path} is there already…
 td716b366 = { $path }이(가) 이미 있습니다…
@@ -3165,9 +3201,6 @@ t63904f7b = 보관함에 보관할 { $host }의 파일
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path }을(를) 보관함에 보관했습니다: 설정 › 설정 파일을 확인하세요.
-
-# Not kept: {e}
-tc12e4203 = 보관되지 않음: { $e }
 
 # Removing the config files placed…
 tbd123099 = 배치된 설정 파일을 삭제하는 중…

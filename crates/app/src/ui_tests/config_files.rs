@@ -45,6 +45,7 @@ fn kept(ui: &mut Ui, name: &str, path: &str, mode: u32, content: &[u8]) {
                 scope: String::new(),
                 size: content.len(),
                 binary: false,
+                stays: false,
             },
             Some(content),
         )
@@ -149,5 +150,106 @@ scenario!(
             .filter(|n| n.contains("shellwing"))
             .collect();
         assert!(left.is_empty(), "left behind: {left:?}");
+    }
+);
+
+/// What `state/placed.json` notes, to take away later.
+fn noted(ui: &Ui) -> String {
+    std::fs::read_to_string(ui.config_dir().join("state/placed.json")).unwrap_or_default()
+}
+
+/// Closes the tab, connected (Close, asked), and waits for it to go.
+fn close_tab(ui: &mut Ui) {
+    ui.shortcut("w");
+    ui.answer_prompt("Close");
+    ui.wait_until("the tab to close", |ui| ui.tabs() == 0);
+}
+
+scenario!(
+    /// Placed over a file until the tab closes, then kept (the pane's menu):
+    /// the server's old file becomes its backup, and closing the tab leaves
+    /// the placed one.
+    placed_over_a_file_then_kept,
+    |ui| {
+        let Some((home, _server)) = with_sftp(ui) else {
+            return;
+        };
+        kept(ui, "notes.txt", "~/notes.txt", 0o600, b"from the vault\n");
+        place(ui, "Replace the file there until the tab closes");
+        ui.wait_for_notice("until the tab closes");
+        ui.right_click("terminal");
+        ui.click("menu-keep-files");
+        ui.wait_for_notice("stays when the tab closes. What was there before is");
+        assert!(ui.view(|v, _| v.placed_files().is_empty()));
+        assert!(!noted(ui).contains("notes.txt"), "still noted to take away");
+        assert_eq!(
+            std::fs::read_to_string(home.join("notes.txt.bak")).expect("backup"),
+            "remember the milk\n"
+        );
+        assert!(!home.join("notes.txt.shellwing-saved").exists());
+        close_tab(ui);
+        assert_eq!(
+            std::fs::read_to_string(home.join("notes.txt")).expect("kept"),
+            "from the vault\n",
+            "taken away though kept"
+        );
+    }
+);
+
+scenario!(
+    /// Placed until the tab closes, then kept with its badge's Keep: closing
+    /// the tab leaves it.
+    kept_from_its_badge,
+    |ui| {
+        let Some((home, _server)) = with_sftp(ui) else {
+            return;
+        };
+        kept(ui, "npmrc", "~/.npmrc", 0o600, b"registry=https://r.example\n");
+        place(ui, "Place it until the tab closes");
+        ui.wait_for_notice("until the tab closes");
+        assert!(noted(ui).contains(".npmrc"));
+        ui.click("file-keep-0");
+        ui.wait_for_notice("stays when the tab closes.");
+        assert!(!noted(ui).contains(".npmrc"), "still noted to take away");
+        close_tab(ui);
+        assert_eq!(
+            std::fs::read_to_string(home.join(".npmrc")).expect("kept"),
+            "registry=https://r.example\n"
+        );
+    }
+);
+
+scenario!(
+    /// A file set to stay (Settings › Config files › When placed): Enter,
+    /// placing it, places it to stay.
+    a_file_set_to_stay_is_placed_to_stay,
+    |ui| {
+        let Some((home, _server)) = with_sftp(ui) else {
+            return;
+        };
+        // Not named like Settings, which the palette would find first.
+        kept(ui, "tool.ini", "~/.config/tool/tool.ini", 0o600, b"[tool]\n");
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:ConfigFiles");
+        ui.wait_until("it listed", |ui| ui.find("file-edit-0").is_some());
+        ui.click("file-edit-0");
+        ui.click("file-placing:1");
+        ui.click("snippet-ok");
+        ui.wait_until("it set to stay", |ui| {
+            ui.vault()
+                .and_then(|v| v.config_files().ok())
+                .is_some_and(|f| f.first().is_some_and(|f| f.stays))
+        });
+        ui.click("settings-close");
+        ui.wait_until("Settings to close", |ui| ui.settings_page().is_none());
+        // Enter only: the file's own way.
+        place(ui, "");
+        ui.wait_for_notice("Placed tool.ini at");
+        assert!(
+            ui.view(|v, _| v.placed_files().is_empty()),
+            "placed until the tab closes"
+        );
+        assert!(home.join(".config/tool/tool.ini").exists());
     }
 );
