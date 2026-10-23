@@ -2334,8 +2334,8 @@ td09ac71d = A chave do cofre
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = O que abre o vault.db. Uma frase secreta a guarda onde não há chaveiro do sistema (ou além dele); a chave de recuperação sempre o abre, se a frase secreta for esquecida ou o chaveiro a perder.
 
-# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
-t056f7fb9 = Quando o cofre está bloqueado, { $name } o abre, como a frase secreta (que continua funcionando). Valem os dedos cadastrados agora: cadastrar outro desativa o recurso até ele ser ativado de novo. Requer uma versão assinada do shellwing.
+# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
+t061af0c4 = Quando o cofre está bloqueado, { $name } o abre, ou a senha de login deste Mac quando o Touch ID não está à mão, como a frase secreta (que continua funcionando). Requer uma versão assinada do shellwing.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Quando o cofre está bloqueado, { $name } (uma impressão digital, o rosto ou o PIN deste dispositivo) o abre, como a frase secreta (que continua funcionando). A chave é guardada pelo chip de segurança deste dispositivo.

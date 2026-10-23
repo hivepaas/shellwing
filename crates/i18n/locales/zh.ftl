@@ -2287,8 +2287,8 @@ td09ac71d = 保险库的密钥
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = 用于打开 vault.db。密码短语可在没有系统钥匙串的地方保护它（也可与钥匙串同时使用）；如果忘记了密码短语或钥匙串丢失了密钥，恢复密钥始终可以打开它。
 
-# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
-t056f7fb9 = 保险库锁定时，{ $name } 可将其打开，与密码短语的作用相同（密码短语仍然有效）。仅限当前已录入的指纹：添加新指纹会使其停用，直到再次开启。需要已签名的 shellwing 版本。
+# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
+t061af0c4 = 保险库锁定时，{ $name } 可将其打开；无法使用 Touch ID 时，也可用这台 Mac 的登录密码打开，与密码短语的作用相同（密码短语仍然有效）。需要已签名的 shellwing 版本。
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = 保险库锁定时，{ $name }（指纹、面容或此设备的 PIN）可将其打开，与密码短语的作用相同（密码短语仍然有效）。密钥由此设备的安全芯片保存。

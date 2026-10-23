@@ -20,16 +20,61 @@ installer; the others are for people.
   when it starts. The `.deb` puts it in `/opt/shellwing` (linked from
   `/usr/bin`): under `/usr` the updater would take it for a distribution's own
   package and leave it to apt.
-- **macOS**: `shellwing.app`, signed ad hoc. With no Developer ID, Gatekeeper
-  asks the first time it opens (*Open Anyway* in *System Settings › Privacy &
-  Security*; Control-click › Open on macOS 14 and older). The updater accepts a new `.app`
-  whose signature verifies, as it does while the app is signed by no team.
+- **macOS**: `shellwing.app`, signed with the Developer ID and notarized when the
+  repository holds one ([Signing for macOS](#signing-for-macos)), else signed ad
+  hoc: then Gatekeeper asks the first time it opens (*Open Anyway* in *System
+  Settings › Privacy & Security*; Control-click › Open on macOS 14 and older).
+  The updater accepts a new `.app` whose signature verifies, by the team that
+  signed the running one (any, while that one is signed by no team).
 - **Windows**: an NSIS installer, for the user, into
   `%LOCALAPPDATA%\Programs\shellwing` (where the updater looks for it), with a
   Start menu entry and an uninstaller. It is not signed: SmartScreen asks the
   first time (More info › Run anyway).
 
 `make package` makes them for the computer it runs on, into `dist/`.
+
+## Signing for macOS
+
+With a Developer ID, the app opens without Gatekeeper's question, and Touch ID
+(or the Mac's password) can open the vault: its Keychain item needs an
+entitlement only a signed app with a provisioning profile has. Once:
+
+1. **Apple's side** (developer.apple.com, an Apple Developer Program account):
+   - a **Developer ID Application** certificate, made from a signing request
+     (Keychain Access › Certificate Assistant), installed in the login
+     keychain, and exported with its private key as a `.p12`;
+   - an **App ID** `app.shellwing` (the `CFBundleIdentifier` in
+     `packaging/macos/Info.plist`) and a **Developer ID provisioning profile**
+     for it, which allows `keychain-access-groups`;
+   - an **App Store Connect API key** for notarizing (Users and Access ›
+     Integrations › Keys): its `.p8`, key ID and issuer ID.
+2. **The repository's secrets** (Settings › Secrets and variables › Actions):
+
+   | Secret | What |
+   | --- | --- |
+   | `MACOS_CERTIFICATE` | the `.p12`, as `base64 -i developer-id.p12` |
+   | `MACOS_CERTIFICATE_PASSWORD` | the `.p12`'s password |
+   | `MACOS_PROVISIONING_PROFILE` | the profile, as `base64 -i shellwing.provisionprofile` |
+   | `APPLE_API_KEY` | the `.p8`'s text |
+   | `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID` | the key's ID and the issuer ID |
+
+The Release workflow then signs with a keychain of its own for the run (the
+team is read from the certificate), notarizes the app and the disk image, and
+staples their tickets. Without `MACOS_CERTIFICATE` it signs ad hoc, as before;
+without the profile, Touch ID does not open the vault; without the API key,
+the app is not notarized, and Gatekeeper refuses it downloaded.
+
+**On a Mac**, with the certificate in the login keychain:
+
+```sh
+MACOS_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" \
+MACOS_PROVISIONING_PROFILE=shellwing.provisionprofile \
+APPLE_API_KEY_PATH=AuthKey_XXXX.p8 APPLE_API_KEY_ID=XXXX APPLE_API_ISSUER_ID=… \
+scripts/package_macos.sh
+```
+
+The private key stays in the keychain and in the repository's secrets: never
+in the repository, nor anywhere else.
 
 ## Making one
 

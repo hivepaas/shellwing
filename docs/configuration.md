@@ -487,10 +487,10 @@ working.
 
 - **Windows Hello** (a fingerprint, the face or the device's PIN): the key is
   kept by the device's security chip (TPM) and used only after Hello.
-- **Touch ID** (macOS): the key is a Keychain item that opens only to Touch ID
-  with the fingers enrolled now; adding one stops it until it is turned on
-  again. Apple lets only signed apps keep such items: an unsigned build of
-  shellwing says so.
+- **Touch ID** (macOS): the key is a Keychain item that opens to Touch ID, or
+  to the Mac's login password where there is no Touch ID or it is not at hand.
+  Apple lets only apps signed with a Developer ID keep such items: an unsigned
+  build of shellwing says so.
 - Linux has no such thing for keys: the passphrase it is.
 
 ## Local terminal
