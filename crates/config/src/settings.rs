@@ -15,6 +15,7 @@ pub struct Settings {
     pub files: Files,
     pub log: Log,
     pub vault: VaultSettings,
+    pub lock: LockSettings,
     pub updates: Updates,
     /// `[shortcuts]`: keys for the window's shortcuts, by name, over the
     /// defaults. This device's own: keys differ between systems.
@@ -44,6 +45,18 @@ pub struct VaultSettings {
     /// its key is not in the keychain (only its passphrase opens it). None
     /// or 0: it stays open.
     pub lock_after: Option<u32>,
+}
+
+/// shellwing locked while its user is away: a light guard for a screen left
+/// unlocked. This device's own.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct LockSettings {
+    /// Minutes without a key pressed or a click before shellwing hides its
+    /// windows until the system says it is the user (Touch ID or the login
+    /// password, Windows Hello, the Linux password); it asks when shellwing
+    /// starts too. None or 0: it never locks by itself.
+    pub after: Option<u32>,
 }
 
 /// Session logs: what a pane was sent, written to a file as it comes.

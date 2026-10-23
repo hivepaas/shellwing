@@ -42,6 +42,7 @@ mod hosts;
 mod keyboard;
 mod keys;
 mod local;
+mod lock;
 mod mouse;
 mod notes;
 mod overlays;
@@ -195,8 +196,10 @@ impl Ui {
         shellwing_update::set_test_source("http://127.0.0.1:1/release.signed.json", &[]);
         let cx = TestAppContext::single();
         cx.executor().allow_parking();
-        // As main does: the notes' editor keys.
+        // As main does: the notes' editor keys, and none for other windows
+        // while shellwing is locked.
         cx.update(shellwing_note_editor::bind_keys);
+        cx.update(crate::app_lock::guard_other_windows);
         Ui {
             cx,
             rt: tokio::runtime::Runtime::new().expect("runtime"),

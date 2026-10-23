@@ -1,6 +1,20 @@
 # shellwing's English, from the code (scripts/i18n.py update writes it:
 # do not edit). The source for translations.
 
+t7c69953e = unlock its windows
+t31ace1f1 = Confirm it is you to unlock shellwing.
+t87f62cb7 = Checking…
+t1db04c44 = Not confirmed: shellwing stays locked.
+t06b4bdb7 = That is not the password.
+t0a90c137 = Cannot confirm it is you: { $e }
+tfe68d2e0 = Windows Hello or your Windows password unlocks it.
+tdd855245 = Touch ID or your Mac's password unlocks it.
+t8eeb5228 = Your login password unlocks it.
+t9c799975 = Unlock
+t8857c967 = Quit shellwing
+t665c7b6c = shellwing is locked
+t2348e42c = Your login password
+tf4ae07e3 = shellwing is locked: unlock it in its main window.
 t62769e5b = An edit of { $remote } was not written back to the server; the file is kept as { $path }.
 td8a345bd =
     { $n ->
@@ -819,6 +833,12 @@ t1aa78686 = Lock now
 t1535bdfc = Ask for it at every start
 tc153db4a = Remove the passphrase
 tc01bbcf0 = Keep it in the system keychain
+t0c43fb4a = 1 hour
+t7eebb6a4 = { $m } min
+ta9231ed4 = When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t7ad7e7d1 = Lock shellwing when away
 t4b07c4a2 = Saved passwords and passphrases
 ta9eeda13 = Offered for saving after you type one that works, and tried before asking next time. Kept in vault.db, encrypted.
 t4f2e18b6 = Manage…
@@ -827,8 +847,6 @@ t6a54a5a7 = What opens vault.db. A passphrase keeps it where there is no system 
 t056f7fb9 = When the vault is locked, { $name } opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
 t0baa8f35 = When the vault is locked, { $name } (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t7c964cc4 = Unlock with { $name }
-t0c43fb4a = 1 hour
-t7eebb6a4 = { $m } min
 ta18da274 = Lock when idle
 tf6c5f76d = After this long without a key pressed or a click, the vault locks until its passphrase is typed. Only while the system keychain does not hold its key: each start asks for the passphrase then.
 t07a52335 = Open config.toml
@@ -1214,6 +1232,7 @@ tbac763bb =
        *[other] { $n } connections are open; closing ends them.
     }
 t3ffc1c98 = Cannot open a terminal: { $e }
+t222eeef4 = shellwing cannot lock here: this system has no way to ask that it is you.
 tf3732b18 = A connection is open; quitting closes it.
 td41065cb =
     { $n ->
@@ -1249,6 +1268,7 @@ td7560c88 = Hide the host list
 t4754a8f9 = Show the host list
 tdfc17c92 = Saved passwords and passphrases…
 tc05449a1 = Lock the vault
+ta4580143 = Lock shellwing
 t8aad97ad = Sync now with { $place }
 t74de6b57 = Sync passwords with a folder…
 tc73a9bf6 = Sync passwords with a server…

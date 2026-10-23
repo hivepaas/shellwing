@@ -6,7 +6,7 @@
 use gpui::{
     App, Context, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton,
     PromptButton, PromptHandle, PromptLevel, PromptResponse, Render, RenderablePromptHandle,
-    SharedString, Window, div, prelude::*, px, rgb, rgba,
+    SharedString, WeakEntity, Window, div, prelude::*, px, rgb, rgba,
 };
 
 use crate::colors::colors;
@@ -115,6 +115,7 @@ impl Render for AppPrompt {
             );
         let card = div()
             .id("prompt-card")
+            .debug_selector(|| "prompt-card".into())
             .w(px(440.))
             .flex()
             .flex_col()
@@ -172,6 +173,12 @@ impl Render for AppPrompt {
     }
 }
 
+/// The questions open, in every window: see [`dismiss_all`].
+#[derive(Default)]
+struct Open(Vec<WeakEntity<AppPrompt>>);
+
+impl gpui::Global for Open {}
+
 /// For [`App::set_prompt_builder`].
 pub fn render(
     level: PromptLevel,
@@ -189,5 +196,22 @@ pub fn render(
         actions: actions.to_vec(),
         focus: cx.focus_handle(),
     });
+    let open = &mut cx.default_global::<Open>().0;
+    open.retain(|p| p.upgrade().is_some());
+    open.push(view.downgrade());
     handle.with_view(view, window, cx)
+}
+
+/// Answers every question open as Escape does: shellwing locking, nobody
+/// may answer one drawn over the lock (letting a device into the vault,
+/// deleting a note).
+pub fn dismiss_all(cx: &mut App) {
+    let open = std::mem::take(&mut cx.default_global::<Open>().0);
+    for p in open.into_iter().filter_map(|p| p.upgrade()) {
+        p.update(cx, |p, cx| {
+            if let Some(ix) = p.cancel() {
+                cx.emit(PromptResponse(ix));
+            }
+        });
+    }
 }

@@ -1,6 +1,48 @@
 # shellwing in de. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = seine Fenster zu entsperren
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = Bestätige, dass du es bist, um shellwing zu entsperren.
+
+# Checking…
+t87f62cb7 = Wird geprüft…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = Nicht bestätigt: shellwing bleibt gesperrt.
+
+# That is not the password.
+t06b4bdb7 = Das ist nicht das Passwort.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = Es lässt sich nicht bestätigen, dass du es bist: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello oder dein Windows-Passwort entsperrt es.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID oder das Passwort deines Macs entsperrt es.
+
+# Your login password unlocks it.
+t8eeb5228 = Dein Anmeldepasswort entsperrt es.
+
+# Unlock
+t9c799975 = Entsperren
+
+# Quit shellwing
+t8857c967 = shellwing beenden
+
+# shellwing is locked
+t665c7b6c = shellwing ist gesperrt
+
+# Your login password
+t2348e42c = Dein Anmeldepasswort
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing ist gesperrt: Entsperre es in seinem Hauptfenster.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Eine Bearbeitung von { $remote } wurde nicht auf den Server zurückgeschrieben; die Datei liegt unter { $path }.
 
@@ -2319,6 +2361,24 @@ tc153db4a = Passphrase entfernen
 # Keep it in the system keychain
 tc01bbcf0 = Im Schlüsselbund des Systems behalten
 
+# 1 hour
+t0c43fb4a = 1 Stunde
+
+# {m} min
+t7eebb6a4 = { $m } Min.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = Beim Start von shellwing und nach dieser Zeit ohne Tastendruck oder Klick werden seine Fenster ausgeblendet, bis Touch ID oder das Passwort deines Macs bestätigt, dass du es bist. Ein leichter Schutz für einen Bildschirm, der nicht gesperrt wurde: Die Sitzungen laufen darunter weiter.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = Beim Start von shellwing und nach dieser Zeit ohne Tastendruck oder Klick werden seine Fenster ausgeblendet, bis Windows Hello oder dein Windows-Passwort bestätigt, dass du es bist. Ein leichter Schutz für einen Bildschirm, der nicht gesperrt wurde: Die Sitzungen laufen darunter weiter.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = Beim Start von shellwing und nach dieser Zeit ohne Tastendruck oder Klick werden seine Fenster ausgeblendet, bis dein Anmeldepasswort bestätigt, dass du es bist. Ein leichter Schutz für einen Bildschirm, der nicht gesperrt wurde: Die Sitzungen laufen darunter weiter.
+
+# Lock shellwing when away
+t7ad7e7d1 = shellwing sperren, wenn du weg bist
+
 # Saved passwords and passphrases
 t4b07c4a2 = Gespeicherte Passwörter und Passphrasen
 
@@ -2342,12 +2402,6 @@ t0baa8f35 = Ist der Tresor gesperrt, öffnet { $name } (Fingerabdruck, Gesicht o
 
 # Unlock with {name}
 t7c964cc4 = Mit { $name } entsperren
-
-# 1 hour
-t0c43fb4a = 1 Stunde
-
-# {m} min
-t7eebb6a4 = { $m } Min.
 
 # Lock when idle
 ta18da274 = Bei Inaktivität sperren
@@ -3320,6 +3374,9 @@ tbac763bb =
 # Cannot open a terminal: {e}
 t3ffc1c98 = Terminal kann nicht geöffnet werden: { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing kann sich hier nicht sperren: Dieses System kann nicht prüfen, ob du es bist.
+
 # A connection is open; quitting closes it.
 tf3732b18 = Eine Verbindung ist offen; Beenden schließt sie.
 
@@ -3416,6 +3473,9 @@ tdfc17c92 = Gespeicherte Passwörter und Passphrasen…
 
 # Lock the vault
 tc05449a1 = Tresor sperren
+
+# Lock shellwing
+ta4580143 = shellwing sperren
 
 # Sync now with {place}
 t8aad97ad = Jetzt mit { $place } synchronisieren

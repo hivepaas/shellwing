@@ -5,9 +5,10 @@
 
 use std::collections::BTreeMap;
 
+use shellwing_presence::confirm::How;
 use shellwing_vault::{Folder, MemoryKeys, Snippet, Vault};
 
-use super::{Policy, USER, Ui, scenario};
+use super::{Policy, USER, Ui, lock, scenario};
 
 scenario!(
     /// A folder chosen to sync with; another device joins it and adds a host
@@ -587,6 +588,42 @@ scenario!(
             matches!(ask.step(&new, &folder), Ok(shellwing_vault::AskState::Refused))
         });
         assert!(new.sync(&folder).is_err(), "a refused device could sync");
+    }
+);
+
+scenario!(
+    /// A device asking to join while shellwing is locked is not asked about
+    /// over the lock, where anyone could approve it: the question waits for
+    /// the user.
+    a_device_asking_while_locked_waits_for_the_user,
+    |ui| {
+        let _answers = lock::answering(ui, How::System, true, 5);
+        ui.open();
+        ui.wait_until("unlocked at start", |ui| !lock::locked(ui));
+        let (shared, _key) = sync_with_a_new_folder(ui);
+        ui.palette("Lock shellwing");
+        assert!(lock::locked(ui));
+
+        let new_dir = ui.dir.join("new-device");
+        std::fs::create_dir_all(&new_dir).expect("new device dir");
+        let new = Vault::open(&new_dir.join("vault.db"), &MemoryKeys::default()).expect("vault");
+        let folder = Folder::new(&shared);
+        let mut ask = shellwing_vault::Ask::new(&folder, "Desktop").expect("ask");
+        ui.ws(|ws, _, _| ws.sync_now());
+        ui.wait_until("the request held", |ui| {
+            let _ = ask.step(&new, &folder);
+            ui.ws(|ws, _, _| ws.held_requests()) == 1
+        });
+        assert!(!ui.cx.has_pending_prompt(), "asked over the lock");
+
+        ui.click("lock-unlock");
+        ui.wait_until("the question, unlocked", |ui| ui.cx.has_pending_prompt());
+        let (message, _) = ui.cx.pending_prompt().expect("a prompt");
+        assert_eq!(message, "Let Desktop into this vault?");
+        ui.answer_prompt("Refuse");
+        ui.wait_until("the new device refused", |_| {
+            matches!(ask.step(&new, &folder), Ok(shellwing_vault::AskState::Refused))
+        });
     }
 );
 

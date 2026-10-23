@@ -1,6 +1,48 @@
 # shellwing in Vietnamese. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = mở khoá các cửa sổ của nó
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = Xác nhận đó là bạn để mở khoá shellwing.
+
+# Checking…
+t87f62cb7 = Đang kiểm tra…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = Chưa xác nhận: shellwing vẫn khoá.
+
+# That is not the password.
+t06b4bdb7 = Mật khẩu không đúng.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = Không thể xác nhận đó là bạn: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello hoặc mật khẩu Windows của bạn sẽ mở khoá.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID hoặc mật khẩu máy Mac của bạn sẽ mở khoá.
+
+# Your login password unlocks it.
+t8eeb5228 = Mật khẩu đăng nhập của bạn sẽ mở khoá.
+
+# Unlock
+t9c799975 = Mở khoá
+
+# Quit shellwing
+t8857c967 = Thoát shellwing
+
+# shellwing is locked
+t665c7b6c = shellwing đang khoá
+
+# Your login password
+t2348e42c = Mật khẩu đăng nhập của bạn
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing đang khoá: hãy mở khoá ở cửa sổ chính của nó.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Bản sửa của { $remote } chưa được ghi lại lên máy chủ; tệp được giữ ở { $path }.
 
@@ -2272,6 +2314,24 @@ tc153db4a = Bỏ cụm mật khẩu
 # Keep it in the system keychain
 tc01bbcf0 = Giữ trong kho khoá của hệ thống
 
+# 1 hour
+t0c43fb4a = 1 giờ
+
+# {m} min
+t7eebb6a4 = { $m } phút
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = Khi shellwing khởi động, và sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, các cửa sổ của nó sẽ ẩn đi cho tới khi Touch ID hoặc mật khẩu máy Mac xác nhận đó là bạn. Một lớp bảo vệ nhẹ khi quên khoá màn hình: các phiên vẫn tiếp tục chạy bên dưới.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = Khi shellwing khởi động, và sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, các cửa sổ của nó sẽ ẩn đi cho tới khi Windows Hello hoặc mật khẩu Windows xác nhận đó là bạn. Một lớp bảo vệ nhẹ khi quên khoá màn hình: các phiên vẫn tiếp tục chạy bên dưới.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = Khi shellwing khởi động, và sau khoảng thời gian này không có phím nào được nhấn hay cú nhấp nào, các cửa sổ của nó sẽ ẩn đi cho tới khi mật khẩu đăng nhập xác nhận đó là bạn. Một lớp bảo vệ nhẹ khi quên khoá màn hình: các phiên vẫn tiếp tục chạy bên dưới.
+
+# Lock shellwing when away
+t7ad7e7d1 = Khoá shellwing khi vắng mặt
+
 # Saved passwords and passphrases
 t4b07c4a2 = Mật khẩu và cụm mật khẩu đã lưu
 
@@ -2295,12 +2355,6 @@ t0baa8f35 = Khi kho bị khoá, { $name } (vân tay, khuôn mặt hoặc mã PIN
 
 # Unlock with {name}
 t7c964cc4 = Mở khoá bằng { $name }
-
-# 1 hour
-t0c43fb4a = 1 giờ
-
-# {m} min
-t7eebb6a4 = { $m } phút
 
 # Lock when idle
 ta18da274 = Khoá khi không dùng
@@ -3214,6 +3268,9 @@ tbac763bb = { $n } kết nối đang mở; đóng sẽ ngắt các kết nối �
 # Cannot open a terminal: {e}
 t3ffc1c98 = Không mở được terminal: { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing không thể khoá ở đây: hệ thống này không có cách nào để xác nhận đó là bạn.
+
 # A connection is open; quitting closes it.
 tf3732b18 = Một kết nối đang mở; thoát sẽ đóng nó.
 
@@ -3306,6 +3363,9 @@ tdfc17c92 = Mật khẩu và cụm mật khẩu đã lưu…
 
 # Lock the vault
 tc05449a1 = Khoá kho
+
+# Lock shellwing
+ta4580143 = Khoá shellwing
 
 # Sync now with {place}
 t8aad97ad = Đồng bộ ngay với { $place }

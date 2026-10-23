@@ -533,7 +533,8 @@ impl NoteWindow {
     }
 
     fn watch(&mut self, cx: &mut Context<Self>) {
-        let open = self.vault.ready().is_some();
+        // Locked, shellwing shows nothing: as with the vault shut.
+        let open = self.vault.ready().is_some() && !crate::app_lock::is_locked(cx);
         if !open && self.loaded {
             self.unload(cx);
         } else if open && !self.loaded {
@@ -1806,6 +1807,15 @@ impl NoteWindow {
         self.note.id.clone()
     }
 
+    pub fn title_text(&self, cx: &App) -> String {
+        self.title.read(cx).text().to_string()
+    }
+
+    /// The title's field, clicked.
+    pub fn focus_title(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus(&self.title.read(cx).focus_handle(cx), cx);
+    }
+
     /// The caret at the end of the text, in the editor.
     pub fn focus_text_end(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let end = self.text.read(cx).text().len();
@@ -1949,6 +1959,7 @@ impl Render for NoteWindow {
         let content = div().size_full().flex().flex_col().child(content);
         let root = chrome::window_chrome(bar, content, rgb(colors().surface).into(), window);
         root.when_some(look.and_then(|l| l.family), |d, f| d.font_family(f))
+            .children(crate::app_lock::cover(cx))
     }
 }
 

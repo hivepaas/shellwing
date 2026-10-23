@@ -15,6 +15,8 @@
 //! Elsewhere there is none. Calls block on the system's prompt: never on
 //! the UI thread.
 
+pub mod confirm;
+
 /// Windows Hello or Touch ID, where this system has it.
 pub struct System(Kind);
 

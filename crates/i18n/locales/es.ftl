@@ -1,6 +1,48 @@
 # shellwing in es. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# unlock its windows
+t7c69953e = desbloquear sus ventanas
+
+# Confirm it is you to unlock shellwing.
+t31ace1f1 = Confirma que eres tú para desbloquear shellwing.
+
+# Checking…
+t87f62cb7 = Comprobando…
+
+# Not confirmed: shellwing stays locked.
+t1db04c44 = No confirmado: shellwing sigue bloqueado.
+
+# That is not the password.
+t06b4bdb7 = Esa no es la contraseña.
+
+# Cannot confirm it is you: {e}
+t0a90c137 = No se puede confirmar que eres tú: { $e }
+
+# Windows Hello or your Windows password unlocks it.
+tfe68d2e0 = Windows Hello o tu contraseña de Windows lo desbloquean.
+
+# Touch ID or your Mac's password unlocks it.
+tdd855245 = Touch ID o la contraseña de tu Mac lo desbloquean.
+
+# Your login password unlocks it.
+t8eeb5228 = Tu contraseña de inicio de sesión lo desbloquea.
+
+# Unlock
+t9c799975 = Desbloquear
+
+# Quit shellwing
+t8857c967 = Salir de shellwing
+
+# shellwing is locked
+t665c7b6c = shellwing está bloqueado
+
+# Your login password
+t2348e42c = Tu contraseña de inicio de sesión
+
+# shellwing is locked: unlock it in its main window.
+tf4ae07e3 = shellwing está bloqueado: desbloquéalo en su ventana principal.
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Una edición de { $remote } no se guardó en el servidor; el archivo se conserva como { $path }.
 
@@ -2319,6 +2361,24 @@ tc153db4a = Quitar la frase de contraseña
 # Keep it in the system keychain
 tc01bbcf0 = Guardarla en el llavero del sistema
 
+# 1 hour
+t0c43fb4a = 1 hora
+
+# {m} min
+t7eebb6a4 = { $m } min
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Touch ID or your Mac's password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+ta9231ed4 = Al iniciarse shellwing, y tras este tiempo sin pulsar una tecla ni hacer clic, sus ventanas se ocultan hasta que Touch ID o la contraseña de tu Mac confirmen que eres tú. Una protección ligera para una pantalla que quedó sin bloquear: las sesiones siguen debajo.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until Windows Hello or your Windows password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+t34186d03 = Al iniciarse shellwing, y tras este tiempo sin pulsar una tecla ni hacer clic, sus ventanas se ocultan hasta que Windows Hello o tu contraseña de Windows confirmen que eres tú. Una protección ligera para una pantalla que quedó sin bloquear: las sesiones siguen debajo.
+
+# When shellwing starts, and after this long without a key pressed or a click, its windows hide until your login password says it is you. A light guard for a screen left unlocked: the sessions go on underneath.
+teb40e26b = Al iniciarse shellwing, y tras este tiempo sin pulsar una tecla ni hacer clic, sus ventanas se ocultan hasta que tu contraseña de inicio de sesión confirme que eres tú. Una protección ligera para una pantalla que quedó sin bloquear: las sesiones siguen debajo.
+
+# Lock shellwing when away
+t7ad7e7d1 = Bloquear shellwing en tu ausencia
+
 # Saved passwords and passphrases
 t4b07c4a2 = Contraseñas y frases de contraseña guardadas
 
@@ -2342,12 +2402,6 @@ t0baa8f35 = Cuando la bóveda está bloqueada, { $name } (una huella, el rostro 
 
 # Unlock with {name}
 t7c964cc4 = Desbloquear con { $name }
-
-# 1 hour
-t0c43fb4a = 1 hora
-
-# {m} min
-t7eebb6a4 = { $m } min
 
 # Lock when idle
 ta18da274 = Bloquear por inactividad
@@ -3320,6 +3374,9 @@ tbac763bb =
 # Cannot open a terminal: {e}
 t3ffc1c98 = No se puede abrir una terminal: { $e }
 
+# shellwing cannot lock here: this system has no way to ask that it is you.
+t222eeef4 = shellwing no puede bloquearse aquí: este sistema no tiene forma de confirmar que eres tú.
+
 # A connection is open; quitting closes it.
 tf3732b18 = Hay una conexión abierta; al salir, se cerrará.
 
@@ -3416,6 +3473,9 @@ tdfc17c92 = Contraseñas y frases de contraseña guardadas…
 
 # Lock the vault
 tc05449a1 = Bloquear la bóveda
+
+# Lock shellwing
+ta4580143 = Bloquear shellwing
 
 # Sync now with {place}
 t8aad97ad = Sincronizar ahora con { $place }
