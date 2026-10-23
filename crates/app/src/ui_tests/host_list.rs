@@ -447,6 +447,26 @@ scenario!(
 );
 
 scenario!(
+    /// The editor's buttons stay within it: asking to delete a host with a
+    /// long name, in a language whose labels are long.
+    the_editors_buttons_stay_within_it,
+    |ui| {
+        ui.config_file("config.toml", "[general]\nlanguage = \"fr\"\n");
+        let name = "a-rather-long-name-for-the-database-host.example.internal";
+        ui.config_file("hosts.toml", &host(name, closed_port()));
+        ui.open();
+        edit_host(ui, name);
+        let edge = ui.bounds("editor-body").right();
+        assert!(ui.bounds("save-connect").right() <= edge, "Save and connect past the edge");
+        ui.click("delete");
+        assert!(ui.bounds("delete-no").right() <= edge, "Cancel past the edge");
+        assert!(ui.find("save-connect").is_none(), "saving beside the question");
+        ui.click("delete-no");
+        assert!(ui.bounds("save-connect").right() <= edge);
+    }
+);
+
+scenario!(
     /// Delete, in the host editor, asks, then takes the host out of
     /// hosts.toml; the others stay.
     delete_a_host,
