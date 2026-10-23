@@ -2334,8 +2334,8 @@ td09ac71d = La clave de la bóveda
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = Lo que abre vault.db. Una frase de contraseña la protege donde no hay llavero del sistema (o además de este); la clave de recuperación siempre la abre, si se olvida la frase de contraseña o el llavero la pierde.
 
-# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
-t061af0c4 = Cuando la bóveda está bloqueada, { $name } la abre, o la contraseña de inicio de sesión de este Mac si Touch ID no está a mano, igual que su frase de contraseña (que sigue funcionando). Requiere una versión firmada de shellwing.
+# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
+t056f7fb9 = Cuando la bóveda está bloqueada, { $name } la abre, igual que su frase de contraseña (que sigue funcionando). Solo los dedos registrados ahora: añadir uno lo desactiva hasta que se vuelva a activar. Requiere una versión firmada de shellwing.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Cuando la bóveda está bloqueada, { $name } (una huella, el rostro o el PIN de este dispositivo) la abre, igual que su frase de contraseña (que sigue funcionando). La clave la guarda el chip de seguridad de este dispositivo.
