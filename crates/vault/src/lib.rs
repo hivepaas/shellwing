@@ -1517,6 +1517,12 @@ impl Vault {
             .unwrap_or_default()
     }
 
+    /// This device's id: random, made once, the same as its clock stamps
+    /// carry. Nothing about the computer or its user.
+    pub fn device_id(&self) -> &str {
+        self.clock.device()
+    }
+
     /// Names this device otherwise than its host name does.
     pub fn set_device_name(&self, name: &str) {
         if let Ok(mut n) = self.device_name.write() {

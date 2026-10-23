@@ -989,9 +989,14 @@ git = { url = "git@github.com:me/vault.git" }   # or https://…; branch = "…"
   terminal. A git that is too old or does not work is said too.
 - shellwing keeps a clone of its own in the cache folder and never merges with
   Git: each sync fetches, sets the clone to what the repository has, merges
-  field by field as with a folder, then commits (`Sync from <device>`, as
+  field by field as with a folder, then commits (`Sync from <id>`, as
   `shellwing`) and pushes. A push refused because another device pushed first
-  is done again over theirs.
+  is done again over theirs. The commits name each device by a random id, not
+  its name, and carry the time in UTC, not your time zone.
+- **A repository anyone can read** is asked about at Connect: the vault is
+  encrypted there, but anyone can see how many hosts it holds and when your
+  devices sync. *Use another repository* connects nothing; *Use it anyway*
+  goes on.
 - git never waits for a password where nobody can type it: SSH runs with
   `BatchMode` (unless you set how SSH runs for git), so a server whose key SSH
   does not know yet is said; connect to it once with ssh to accept it. Your

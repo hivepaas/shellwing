@@ -94,6 +94,46 @@ impl Git {
         &self.version
     }
 
+    /// Whether anyone can read the repository at `url`: git lists it with
+    /// no sign-in at all, none of the user's settings, credential helpers,
+    /// URL rewrites or keys. False when that cannot be told (a local path,
+    /// an SSH alias, no answer): only a yes is sure.
+    pub fn readable_by_anyone(&self, url: &str) -> bool {
+        let Some(anonymous) = anonymous_url(url) else {
+            return false;
+        };
+        // An empty home: ~/.gitconfig (a rewrite to SSH, a helper with the
+        // user's password) must not sign in for us.
+        let home = std::env::temp_dir().join(format!(
+            "shellwing-anonymous-{}-{:?}",
+            std::process::id(),
+            Instant::now()
+        ));
+        if std::fs::create_dir_all(&home).is_err() {
+            return false;
+        }
+        let mut c = self.command(None);
+        c.args([
+            "-c",
+            "credential.helper=",
+            "ls-remote",
+            "--heads",
+            &anonymous,
+        ])
+        .env("HOME", &home)
+        .env("XDG_CONFIG_HOME", &home)
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        // Not even an editor's prompt (VS Code sets GIT_ASKPASS).
+        .env("GIT_ASKPASS", "")
+        .env("SSH_ASKPASS", "")
+        .env_remove("GIT_CONFIG_GLOBAL")
+        .env_remove("GIT_CONFIG_COUNT")
+        .env_remove("GIT_CONFIG_PARAMETERS");
+        let readable = run(&mut c, Duration::from_secs(20)).is_ok_and(|o| o.ok);
+        let _ = std::fs::remove_dir_all(&home);
+        readable
+    }
+
     /// A git command, run where nothing can be typed: no terminal prompt
     /// (a credential manager's own window still shows), messages in
     /// English to tell errors apart, and on Windows no console window.
@@ -155,6 +195,48 @@ fn command_line_tools() -> bool {
         .stderr(Stdio::null())
         .status_unblocked()
         .is_ok_and(|s| s.success())
+}
+
+/// Where `url` is read with no sign-in: itself over HTTP(S) or git://,
+/// without a user or password in it; an SSH address (`ssh://git@host/path`,
+/// `git@host:path`) as `https://host/path`, as GitHub, GitLab, Gitea and the
+/// like serve it. None for what has no such address: a local path, file://,
+/// a path from the SSH user's home.
+fn anonymous_url(url: &str) -> Option<String> {
+    let url = url.trim();
+    // `user[:password]@` before the host.
+    let without_user = |rest: &str| -> String {
+        let end = rest.find('/').unwrap_or(rest.len());
+        match rest[..end].rfind('@') {
+            Some(at) => rest[at + 1..].to_string(),
+            None => rest.to_string(),
+        }
+    };
+    let as_https = |host: &str, path: &str| -> Option<String> {
+        let path = path.trim_start_matches('/');
+        (!host.is_empty() && !path.is_empty() && !path.starts_with('~'))
+            .then(|| format!("https://{host}/{path}"))
+    };
+    if let Some((scheme, rest)) = url.split_once("://") {
+        let rest = without_user(rest);
+        return match scheme.to_ascii_lowercase().as_str() {
+            "https" | "http" | "git" => Some(format!("{scheme}://{rest}")),
+            "ssh" | "git+ssh" | "ssh+git" => {
+                let (host, path) = rest.split_once('/')?;
+                // SSH's port, not HTTPS's.
+                as_https(host.split(':').next()?, path)
+            }
+            _ => None,
+        };
+    }
+    // `[user@]host:path`, as git reads it: a colon before any slash.
+    let (before, path) = url.split_once(':')?;
+    let host = before.rsplit('@').next()?;
+    // `C:\…` is a Windows drive, not a host.
+    if before.contains('/') || before.contains('\\') || host.len() < 2 {
+        return None;
+    }
+    as_https(host, path)
 }
 
 /// `git --version`'s number.
@@ -428,8 +510,9 @@ pub struct GitRepo {
     /// The files in it, as a folder backend has them.
     folder: Folder,
     branch: String,
-    /// Settings for each command: a token, how SSH runs.
+    /// Settings for each command: a token, how SSH runs, the time zone.
     env: Vec<(String, String)>,
+    /// This device in commits: an id, never its name.
     device: String,
     /// See [`FRESH_FOR`].
     fresh_for: Duration,
@@ -457,7 +540,8 @@ impl GitRepo {
         token: Option<(&str, &str)>,
         device: &str,
     ) -> io::Result<GitRepo> {
-        let mut env = vec![];
+        // Commits in UTC: a local time would say where the device is.
+        let mut env = vec![("TZ".to_string(), "UTC".to_string())];
         if let Some((user, token)) = token {
             use base64::Engine as _;
             let basic = base64::engine::general_purpose::STANDARD.encode(format!(
@@ -729,6 +813,106 @@ mod tests {
         assert_eq!(e.to_string(), "git: something odd");
     }
 
+    #[test]
+    fn anonymous_addresses_follow_the_url() {
+        let a = |u: &str| anonymous_url(u);
+        assert_eq!(
+            a("https://github.com/me/vault").as_deref(),
+            Some("https://github.com/me/vault")
+        );
+        assert_eq!(
+            a("https://me:ghp_secret@github.com/me/vault.git").as_deref(),
+            Some("https://github.com/me/vault.git")
+        );
+        assert_eq!(
+            a("git@github.com:me/vault.git").as_deref(),
+            Some("https://github.com/me/vault.git")
+        );
+        assert_eq!(
+            a("ssh://git@gitlab.example.com:2222/team/vault.git").as_deref(),
+            Some("https://gitlab.example.com/team/vault.git")
+        );
+        assert_eq!(
+            a("git://example.com/vault.git").as_deref(),
+            Some("git://example.com/vault.git")
+        );
+        for none in [
+            "/srv/git/vault.git",
+            "file:///srv/git/vault.git",
+            "C:\\git\\vault.git",
+            "C:/git/vault.git",
+            "me@box:~/vault.git",
+            "../vault.git",
+        ] {
+            assert_eq!(a(none), None, "{none}");
+        }
+    }
+
+    /// Serves `root` over plain HTTP, as git's dumb protocol reads it; with
+    /// `private`, every request is asked to sign in. The port.
+    fn serve(root: PathBuf, private: bool) -> u16 {
+        use std::io::Write;
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let port = listener.local_addr().expect("addr").port();
+        std::thread::spawn(move || {
+            for mut s in listener.incoming().flatten() {
+                let mut buf = [0u8; 8192];
+                let n = s.read(&mut buf).unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]).to_string();
+                let path = request.split_whitespace().nth(1).unwrap_or("/");
+                let path = path
+                    .split('?')
+                    .next()
+                    .unwrap_or("/")
+                    .trim_start_matches('/');
+                let answer = match std::fs::read(root.join(path)) {
+                    _ if private => b"HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"git\"\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec(),
+                    Ok(body) => [
+                        format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).into_bytes(),
+                        body,
+                    ]
+                    .concat(),
+                    Err(_) => b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec(),
+                };
+                let _ = s.write_all(&answer);
+            }
+        });
+        port
+    }
+
+    #[test]
+    fn a_repository_served_to_anyone_is_found_readable() {
+        let dir = std::env::temp_dir().join(format!("shellwing-anyone-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let git = Git::find().expect("git, to run these tests");
+        let bare = dir.join("vault.git");
+        for args in [
+            vec![
+                "-c",
+                "init.defaultBranch=main",
+                "init",
+                "-q",
+                "--bare",
+                "vault.git",
+            ],
+            vec!["-C", "vault.git", "update-server-info"],
+        ] {
+            let done = run(git.command(Some(&dir)).args(&args), TIMEOUT).expect("git");
+            assert!(done.ok, "{}", done.stderr);
+        }
+        assert!(bare.join("info/refs").is_file());
+        let public = serve(dir.clone(), false);
+        let private = serve(dir.clone(), true);
+        assert!(git.readable_by_anyone(&format!("http://127.0.0.1:{public}/vault.git")));
+        assert!(!git.readable_by_anyone(&format!("http://127.0.0.1:{private}/vault.git")));
+        // Signing in as the user is never tried: a password in the address
+        // is left out, as the user's own settings are.
+        assert!(!git.readable_by_anyone(&format!("http://me:pw@127.0.0.1:{private}/vault.git")));
+        assert!(!git.readable_by_anyone(&bare.display().to_string()));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     use shellwing_vault::{MemoryKeys, Vault};
 
     /// A bare repository in `dir`, as a server's would be, and clones of it
@@ -777,6 +961,17 @@ mod tests {
         let pw = |v: &Vault, t: &str| v.password(t).expect("read").map(|p| p.to_string());
         assert_eq!(pw(&b, "deploy@web").as_deref(), Some("from-a"));
         assert_eq!(pw(&a, "root@db").as_deref(), Some("from-b"));
+        // Each commit signed with its device's id, in UTC: nothing of the
+        // computer, nor where it is.
+        let commits = a_side
+            .git(&["log", "--format=%an|%ae|%s|%ai"])
+            .expect("log");
+        for c in commits.lines() {
+            let by_one_of_them = ["laptop", "desktop"]
+                .iter()
+                .any(|d| c.starts_with(&format!("shellwing|shellwing@{d}|Sync from {d}|")));
+            assert!(by_one_of_them && c.ends_with("+0000"), "{c}");
+        }
         // Nothing new: no commit.
         let log = |r: &GitRepo| r.git(&["rev-list", "--count", "HEAD"]).expect("log");
         let before = log(&a_side);

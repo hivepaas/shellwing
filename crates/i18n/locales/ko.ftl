@@ -3556,6 +3556,18 @@ tcf7fa2ce = 비밀번호를 보관할 수 없습니다: { $e }
 # Connecting to {place}…
 tea99befd = { $place }에 연결하는 중…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = 보관함이 그곳에 저장하는 내용은 암호화되어 있지만, 호스트가 몇 개인지와 기기가 언제 동기화하는지는 누구나 볼 수 있습니다. 비공개 저장소가 더 안전합니다.
+
+# Use another repository
+tbbd1ade5 = 다른 저장소 사용
+
+# Anyone can read this repository
+t8df04abb = 이 저장소는 누구나 읽을 수 있습니다
+
+# Not connected: anyone can read this repository.
+t649a5b7d = 연결되지 않음: 이 저장소는 누구나 읽을 수 있습니다.
+
 # Cannot sync: {e}
 td3aecb42 = 동기화할 수 없습니다: { $e }
 

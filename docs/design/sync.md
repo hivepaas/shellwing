@@ -208,6 +208,18 @@ Build order:
   `add`, `commit --no-verify` (no signing, as `shellwing`), `push`. Never a
   Git merge: a refused push starts the round again over the new commits
   (`Backend::refresh` / `publish`, run by `transact`).
+- **Commits say nothing of the device:** `Sync from <id>` by
+  `shellwing@<id>`, the vault's random device id (its clock stamps' own),
+  never the host name, which pairing still shows; and `TZ=UTC`, as a local
+  offset says where the device is. A repository may be public, or made so
+  later.
+- **A public repository** is asked about before the first sync
+  (`Git::readable_by_anyone`): `git ls-remote --heads` of the anonymous address
+  (an SSH address as `https://host/path`, a user and password left out), with
+  an empty `HOME`, `GIT_CONFIG_NOSYSTEM`, no credential helper and no askpass,
+  so nothing of the user's signs in (a `url.insteadOf` to SSH would). Only a
+  yes counts: a repository that cannot be told (an SSH alias, a local path,
+  no answer) is not asked about.
 - An empty repository, or one without the branch, starts at the first push.
   A refresh within 2 s of the last with nothing written fetches nothing, as
   pairing and the sync look several times a minute; pairing looks every 5 s

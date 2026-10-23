@@ -115,6 +115,95 @@ scenario!(
     }
 );
 
+/// A bare repository anyone can read, served over plain HTTP as git's dumb
+/// protocol reads it (it takes no push): its address.
+fn public_repository(ui: &Ui) -> String {
+    use std::io::{Read, Write};
+    let root = ui.dir.join("public-git");
+    std::fs::create_dir_all(&root).expect("dir");
+    for args in [
+        &[
+            "-c",
+            "init.defaultBranch=main",
+            "init",
+            "-q",
+            "--bare",
+            "vault.git",
+        ][..],
+        &["-C", "vault.git", "update-server-info"],
+    ] {
+        let made = std::process::Command::new("git")
+            .args(args)
+            .current_dir(&root)
+            .status()
+            .expect("git");
+        assert!(made.success(), "git {args:?}");
+    }
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+    let port = listener.local_addr().expect("addr").port();
+    std::thread::spawn(move || {
+        for mut s in listener.incoming().flatten() {
+            let mut buf = [0u8; 8192];
+            let n = s.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..n]).to_string();
+            let path = request.split_whitespace().nth(1).unwrap_or("/");
+            let path = path
+                .split('?')
+                .next()
+                .unwrap_or("/")
+                .trim_start_matches('/');
+            let answer = match std::fs::read(root.join(path)) {
+                Ok(body) => [
+                    format!(
+                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    )
+                    .into_bytes(),
+                    body,
+                ]
+                .concat(),
+                Err(_) => b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec(),
+            };
+            let _ = s.write_all(&answer);
+        }
+    });
+    format!("http://127.0.0.1:{port}/vault.git")
+}
+
+scenario!(
+    /// A Git repository anyone can read: Connect asks first. Another one, the
+    /// first answer, connects nothing and says why beside Connect; Use it
+    /// anyway goes on to sync there (refused here: the test's server takes no
+    /// push).
+    a_public_git_repository_is_asked_about_first,
+    |ui: &mut Ui| {
+        let url = public_repository(ui);
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        sync_page(ui);
+        ui.click("sync-kind:3");
+        ui.click("sync-field:Repository");
+        ui.type_text(&url);
+        ui.click("sync-connect");
+        ui.answer_prompt("Use another repository");
+        ui.wait_until("the reason beside Connect", |ui| {
+            ui.sync_problem()
+                .is_some_and(|p| p.contains("anyone can read this repository"))
+        });
+        let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
+            .unwrap_or_default();
+        assert!(!config.contains("[sync]"), "{config}");
+
+        ui.click("sync-connect");
+        ui.answer_prompt("Use it anyway");
+        ui.wait_until_within(
+            "the sync to be tried there",
+            std::time::Duration::from_secs(120),
+            |ui| ui.sync_problem().is_some_and(|p| p.starts_with("Cannot sync")),
+        );
+    }
+);
+
 /// Another device that has synced with `shared` already, holding the host
 /// `db` for `server` and its saved password; its vault, the folder, and its
 /// recovery key.

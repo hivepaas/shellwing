@@ -3760,6 +3760,18 @@ tcf7fa2ce = Не удалось сохранить пароль: { $e }
 # Connecting to {place}…
 tea99befd = Подключение к { $place }…
 
+# What the vault keeps there is encrypted, but anyone can see how many hosts it holds and when your devices sync. A private repository is safer.
+t5376e59a = То, что хранилище держит там, зашифровано, но любой может увидеть, сколько в нём хостов и когда синхронизируются ваши устройства. Приватный репозиторий надёжнее.
+
+# Use another repository
+tbbd1ade5 = Использовать другой репозиторий
+
+# Anyone can read this repository
+t8df04abb = Этот репозиторий может прочитать любой
+
+# Not connected: anyone can read this repository.
+t649a5b7d = Нет подключения: этот репозиторий может прочитать любой.
+
 # Cannot sync: {e}
 td3aecb42 = Не удалось синхронизировать: { $e }
 
