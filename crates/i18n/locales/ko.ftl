@@ -2347,8 +2347,8 @@ td09ac71d = 보관함 키
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = vault.db를 여는 키입니다. 시스템 키체인이 없는 경우(또는 키체인과 함께) 암호 문구로 보호할 수 있습니다. 암호 문구를 잊거나 키체인에서 키가 사라져도 복구 키로는 항상 열 수 있습니다.
 
-# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
-t056f7fb9 = 보관함이 잠겨 있으면 암호 문구뿐 아니라 { $name }(으)로도 열 수 있습니다(암호 문구도 계속 사용 가능). 현재 등록된 지문만 사용할 수 있으며, 지문을 추가하면 다시 켤 때까지 사용이 중지됩니다. 서명된 shellwing 빌드가 필요합니다.
+# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
+t061af0c4 = 보관함이 잠겨 있으면 암호 문구뿐 아니라 { $name }(으)로도 열 수 있으며, Touch ID를 쓸 수 없을 때는 이 Mac의 로그인 암호로도 열 수 있습니다(암호 문구도 계속 사용 가능). 서명된 shellwing 빌드가 필요합니다.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = 보관함이 잠겨 있으면 암호 문구뿐 아니라 { $name }(지문, 얼굴 또는 이 기기의 PIN)으로도 열 수 있습니다(암호 문구도 계속 사용 가능). 키는 이 기기의 보안 칩에 보관됩니다.

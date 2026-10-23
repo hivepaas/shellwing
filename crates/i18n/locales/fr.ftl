@@ -2394,8 +2394,8 @@ td09ac71d = La clé du coffre
 # What opens vault.db. A passphrase keeps it where there is no system keychain (or as well as one); the recovery key always opens it, if the passphrase is forgotten or the keychain loses it.
 t6a54a5a7 = Ce qui ouvre vault.db. Une phrase secrète la conserve là où il n'y a pas de trousseau du système (ou en plus de celui-ci) ; la clé de récupération l'ouvre toujours, si la phrase secrète est oubliée ou si le trousseau la perd.
 
-# When the vault is locked, {name} opens it, as its passphrase does (which still works). The fingers enrolled now: adding one stops it, until it is turned on again. Needs a signed build of shellwing.
-t056f7fb9 = Quand le coffre est verrouillé, { $name } l'ouvre, comme sa phrase secrète (qui fonctionne toujours). Seuls les doigts enregistrés actuellement : en ajouter un le désactive, jusqu'à ce qu'il soit réactivé. Nécessite une version signée de shellwing.
+# When the vault is locked, {name} opens it, or this Mac's login password where Touch ID is not at hand, as its passphrase does (which still works). Needs a signed build of shellwing.
+t061af0c4 = Quand le coffre est verrouillé, { $name } l'ouvre, ou le mot de passe de session de ce Mac quand Touch ID n'est pas à portée, comme sa phrase secrète (qui fonctionne toujours). Nécessite une version signée de shellwing.
 
 # When the vault is locked, {name} (a fingerprint, the face or this device's PIN) opens it, as its passphrase does (which still works). The key is kept by this device's security chip.
 t0baa8f35 = Quand le coffre est verrouillé, { $name } (une empreinte digitale, le visage ou le code PIN de cet appareil) l'ouvre, comme sa phrase secrète (qui fonctionne toujours). La clé est conservée par la puce de sécurité de cet appareil.
