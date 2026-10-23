@@ -424,6 +424,34 @@ scenario!(
 );
 
 scenario!(
+    /// The group editor's buttons stay within it: asking to delete a group
+    /// with a long name and hosts, in a language whose labels are long.
+    the_group_editors_buttons_stay_within_it,
+    |ui| {
+        ui.config_file("config.toml", "[general]\nlanguage = \"fr\"\n");
+        let group = "Production databases in the Frankfurt region";
+        let in_group = |name: &str| format!("{}group = \"{group}\"\n", host(name, closed_port()));
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "[[group]]\nname = \"{group}\"\n\n{}\n{}",
+                in_group("db1"),
+                in_group("db2")
+            ),
+        );
+        ui.open();
+        edit_group(ui, group);
+        let edge = ui.bounds("group-body").right();
+        assert!(ui.bounds("group-save").right() <= edge, "Save past the edge");
+        ui.click("group-delete");
+        assert!(ui.bounds("group-delete-no").right() <= edge, "Cancel past the edge");
+        assert!(ui.find("group-save").is_none(), "saving beside the question");
+        ui.click("group-delete-no");
+        assert!(ui.bounds("group-save").right() <= edge);
+    }
+);
+
+scenario!(
     /// A group deleted (after its editor asks) keeps its hosts, with no group.
     delete_a_group_keeps_its_hosts,
     |ui| {

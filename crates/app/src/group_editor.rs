@@ -422,20 +422,30 @@ impl Render for GroupEditor {
                     .child(who),
             );
 
-        let mut buttons = div().flex().items_center().gap_2();
-        if self.confirm_delete {
+        let buttons = if self.confirm_delete {
+            // The question and its answers alone: a long name wraps, and
+            // saving waits for the answer.
             let n = members.len();
-            buttons = buttons
-                .child(div().text_size(ui(12.5)).child(if n == 0 {
-                    tr!("Delete {title}?", title = title.as_str())
-                } else {
-                    tr_n!(
-                        n,
-                        "Delete {title}? Its {n} host stay.",
-                        "Delete {title}? Its {n} hosts stay.",
-                        title = title.as_str()
-                    )
-                }))
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .text_size(ui(12.5))
+                        .child(if n == 0 {
+                            tr!("Delete {title}?", title = title.as_str())
+                        } else {
+                            tr_n!(
+                                n,
+                                "Delete {title}? Its {n} host stay.",
+                                "Delete {title}? Its {n} hosts stay.",
+                                title = title.as_str()
+                            )
+                        }),
+                )
                 .child(
                     text_button("group-delete-yes", &tr!("Delete"), colors().bad)
                         .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
@@ -447,23 +457,40 @@ impl Render for GroupEditor {
                             cx.notify();
                         }),
                     ),
+                )
+        } else {
+            let others = div()
+                .flex()
+                .items_center()
+                .when(self.original.is_some(), |d| {
+                    d.child(
+                        text_button("group-delete", &tr!("Delete"), colors().bad)
+                            .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
+                    )
+                });
+            let saving = div()
+                .ml_auto()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(
+                    outline_button("group-cancel", &tr!("Cancel"))
+                        .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close))),
+                )
+                .child(
+                    primary_button("group-save", &tr!("Save"))
+                        .on_click(cx.listener(|e, _, _, cx| e.save(cx))),
                 );
-        } else if self.original.is_some() {
-            buttons = buttons.child(
-                text_button("group-delete", &tr!("Delete"), colors().bad)
-                    .on_click(cx.listener(|e, _, _, cx| e.delete(cx))),
-            );
-        }
-        buttons = buttons
-            .child(div().flex_1())
-            .child(
-                outline_button("group-cancel", &tr!("Cancel"))
-                    .on_click(cx.listener(|_, _, _, cx| cx.emit(GroupEvent::Close))),
-            )
-            .child(
-                primary_button("group-save", &tr!("Save"))
-                    .on_click(cx.listener(|e, _, _, cx| e.save(cx))),
-            );
+            // Too long for one line (a long translation): the saving buttons
+            // go to the next, still on the right.
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_2()
+                .child(others)
+                .child(saving)
+        };
 
         // At the window's right edge: its bottom corner is the window's.
         let corner = crate::chrome::BottomCorners::current(cx).right;
@@ -484,6 +511,7 @@ impl Render for GroupEditor {
             .child(
                 div()
                     .id("group-body")
+                    .debug_selector(|| "group-body".into())
                     .flex_1()
                     .min_h_0()
                     .overflow_y_scroll()

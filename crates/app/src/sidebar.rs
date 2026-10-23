@@ -483,8 +483,12 @@ impl Render for Sidebar {
                             cx.notify();
                         }
                     }))
+                    // A long name ends in an ellipsis: the count and Edit
+                    // stay in sight.
                     .child(
                         div()
+                            .flex_1()
+                            .min_w_0()
                             .flex()
                             .items_center()
                             .gap(px(7.))
@@ -497,11 +501,20 @@ impl Render for Sidebar {
                                         .bg(rgb(c)),
                                 )
                             })
-                            .child(section.title.to_uppercase()),
+                            .child(
+                                div()
+                                    .min_w_0()
+                                    .overflow_hidden()
+                                    .text_ellipsis()
+                                    .whitespace_nowrap()
+                                    .child(section.title.to_uppercase()),
+                            ),
                     )
                     .when(!over, |d| {
                         d.child(
                             div()
+                                .flex_shrink_0()
+                                .pl_2()
                                 .font_weight(FontWeight::NORMAL)
                                 .child(section.note.clone()),
                         )
@@ -511,6 +524,8 @@ impl Render for Sidebar {
                             div()
                                 .id(("edit-group", n))
                                 .debug_selector(|| format!("edit-group:{}", section.title))
+                                .flex_shrink_0()
+                                .ml_2()
                                 .px_2()
                                 .py(px(1.))
                                 .rounded_md()
