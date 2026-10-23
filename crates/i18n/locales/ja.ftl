@@ -2536,6 +2536,18 @@ tc1679f62 = 内容
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = { $edited } までのテキストはここで編集できます。{ $max } までの任意のファイルをこのコンピューターから取り込めます。
 
+# Until the tab closes
+t5ad5ff54 = タブを閉じるまで
+
+# To stay
+t89fb6375 = 残す
+
+# When placed
+t82fcea82 = 配置するとき
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = 配置時に最初に提示される方法（Enter で選択）：タブを閉じると削除、またはホストに残します。
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = パレットには、これらのホストのペインにのみ配置の候補が表示されます。
 
@@ -2872,6 +2884,21 @@ t0f179fa4 =
        *[other] { $n } 件のファイルを削除しました。
     }
 
+# Not kept: {e}
+tc12e4203 = 保存できませんでした：{ $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } はタブを閉じても残ります。
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+       *[other] { $n } 個のファイルはタブを閉じても残ります。
+    }
+
+# What was there before is {path}.
+td07a4718 = 以前あったファイルは { $path } になりました。
+
 # It has no variables.
 t0993a534 = 変数がありません。
 
@@ -2898,6 +2925,9 @@ t21558f46 = HTML として保存しました：{ $path }
 
 # Saved as text: {path}
 t17977298 = テキストとして保存しました：{ $path }
+
+# Keep
+t555cbe68 = 残す
 
 # logging
 t897ecb9e = 記録中
@@ -3037,6 +3067,9 @@ t49f82f0c = 設定ファイルを配置…
 # Keep a File in the Vault…
 t25c07703 = ファイルを保管庫に保存…
 
+# Keep {names} on the host
+t80142336 = { $names } をホストに残す
+
 # Remove {names}
 t4efeb00b = { $names } を削除
 
@@ -3103,26 +3136,23 @@ t5ca1c37e = ここに配置済みのファイルをタブを閉じるまで置�
 # What was there before still comes back when the tab closes.
 t55130ddc = 以前あったファイルは、タブを閉じると元に戻ります。
 
+# Keep the one placed here
+t840a8b5a = ここに配置済みのファイルを残す
+
+# It stays when the tab closes.
+tb2bc8f3b = タブを閉じても残ります。
+
 # {path} holds it already.
 t3ec4172b = { $path } にはすでに同じものがあります。
+
+# Place it to stay
+t698a38cf = そのまま残るように配置する
 
 # Place it until the tab closes
 t19537c52 = タブを閉じるまで配置する
 
 # Then it is taken away.
 t1302797a = その後、削除されます。
-
-# Place it to stay
-t698a38cf = そのまま残るように配置する
-
-# It stays when the tab closes.
-tb2bc8f3b = タブを閉じても残ります。
-
-# Replace the file there until the tab closes
-t7e646019 = そこにあるファイルをタブを閉じるまで置き換える
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = 現在のファイルは別名で退避され、タブを閉じると元に戻ります。
 
 # Replace it, keeping the old one
 tc95f7291 = 置き換えて、古いファイルを残す
@@ -3135,6 +3165,12 @@ t1e17fc0c = 置き換える
 
 # The one there now is gone.
 t7fa127b9 = 現在のファイルは失われます。
+
+# Replace the file there until the tab closes
+t7e646019 = そこにあるファイルをタブを閉じるまで置き換える
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = 現在のファイルは別名で退避され、タブを閉じると元に戻ります。
 
 # {path} is there already…
 td716b366 = { $path } はすでに存在します…
@@ -3165,9 +3201,6 @@ t63904f7b = 保管庫に保存する { $host } 上のファイル
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path } を保管庫に保存しました：設定 › 設定ファイル をご覧ください。
-
-# Not kept: {e}
-tc12e4203 = 保存できませんでした：{ $e }
 
 # Removing the config files placed…
 tbd123099 = 配置した設定ファイルを削除しています…

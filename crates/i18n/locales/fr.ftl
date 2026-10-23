@@ -2586,6 +2586,18 @@ tc1679f62 = Contenu
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = Un texte jusqu'à { $edited } se modifie ici ; tout fichier jusqu'à { $max } peut être pris sur cet ordinateur.
 
+# Until the tab closes
+t5ad5ff54 = Jusqu'à la fermeture de l'onglet
+
+# To stay
+t89fb6375 = Pour qu'il reste
+
+# When placed
+t82fcea82 = Au dépôt
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = Ce que le dépôt propose d'abord, pour Enter : retiré à la fermeture de l'onglet, ou laissé sur le serveur.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = La palette ne le propose que dans les volets de ces serveurs.
 
@@ -2960,6 +2972,22 @@ t0f179fa4 =
        *[other] { $n } fichiers supprimés.
     }
 
+# Not kept: {e}
+tc12e4203 = Non conservée : { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } reste à la fermeture de l'onglet.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+        [one] { $n } fichier reste à la fermeture de l'onglet.
+       *[other] { $n } fichiers restent à la fermeture de l'onglet.
+    }
+
+# What was there before is {path}.
+td07a4718 = Ce qui s'y trouvait avant est maintenant { $path }.
+
 # It has no variables.
 t0993a534 = Il n'a pas de variables.
 
@@ -2986,6 +3014,9 @@ t21558f46 = Enregistré en HTML : { $path }
 
 # Saved as text: {path}
 t17977298 = Enregistré en texte : { $path }
+
+# Keep
+t555cbe68 = Garder
 
 # logging
 t897ecb9e = journalisation
@@ -3129,6 +3160,9 @@ t49f82f0c = Déposer un fichier de configuration…
 # Keep a File in the Vault…
 t25c07703 = Conserver un fichier dans le coffre…
 
+# Keep {names} on the host
+t80142336 = Garder { $names } sur le serveur
+
 # Remove {names}
 t4efeb00b = Supprimer { $names }
 
@@ -3195,26 +3229,23 @@ t5ca1c37e = Remplacer celui déposé ici jusqu'à la fermeture de l'onglet
 # What was there before still comes back when the tab closes.
 t55130ddc = Ce qui était là avant revient à la fermeture de l'onglet.
 
+# Keep the one placed here
+t840a8b5a = Garder celui déposé ici
+
+# It stays when the tab closes.
+tb2bc8f3b = Il reste à la fermeture de l'onglet.
+
 # {path} holds it already.
 t3ec4172b = { $path } le contient déjà.
+
+# Place it to stay
+t698a38cf = Le déposer pour qu'il reste
 
 # Place it until the tab closes
 t19537c52 = Le déposer jusqu'à la fermeture de l'onglet
 
 # Then it is taken away.
 t1302797a = Il est ensuite retiré.
-
-# Place it to stay
-t698a38cf = Le déposer pour qu'il reste
-
-# It stays when the tab closes.
-tb2bc8f3b = Il reste à la fermeture de l'onglet.
-
-# Replace the file there until the tab closes
-t7e646019 = Remplacer le fichier là jusqu'à la fermeture de l'onglet
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = Celui d'à présent est mis de côté, et revient à la fermeture de l'onglet.
 
 # Replace it, keeping the old one
 tc95f7291 = Le remplacer en gardant l'ancien
@@ -3227,6 +3258,12 @@ t1e17fc0c = Le remplacer
 
 # The one there now is gone.
 t7fa127b9 = Celui d'à présent disparaît.
+
+# Replace the file there until the tab closes
+t7e646019 = Remplacer le fichier là jusqu'à la fermeture de l'onglet
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Celui d'à présent est mis de côté, et revient à la fermeture de l'onglet.
 
 # {path} is there already…
 td716b366 = { $path } existe déjà…
@@ -3258,9 +3295,6 @@ t63904f7b = Un fichier sur { $host } à conserver dans le coffre
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path } conservé dans le coffre : voir Réglages › Fichiers de configuration.
-
-# Not kept: {e}
-tc12e4203 = Non conservée : { $e }
 
 # Removing the config files placed…
 tbd123099 = Suppression des fichiers de configuration déposés…

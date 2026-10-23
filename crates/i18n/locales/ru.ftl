@@ -2626,6 +2626,18 @@ tc1679f62 = Содержимое
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = Текст до { $edited } редактируется здесь; любой файл до { $max } можно взять с этого компьютера.
 
+# Until the tab closes
+t5ad5ff54 = До закрытия вкладки
+
+# To stay
+t89fb6375 = Насовсем
+
+# When placed
+t82fcea82 = При размещении
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = Что размещение предлагает первым, для Enter: удаляется при закрытии вкладки или остаётся на хосте.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = Палитра предлагает разместить его только в панелях этих хостов.
 
@@ -3028,6 +3040,24 @@ t0f179fa4 =
        *[other] Удалено { $n } файла.
     }
 
+# Not kept: {e}
+tc12e4203 = Не сохранено: { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } останется после закрытия вкладки.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+        [one] { $n } файл останется после закрытия вкладки.
+        [few] { $n } файла останутся после закрытия вкладки.
+        [many] { $n } файлов останутся после закрытия вкладки.
+       *[other] { $n } файла останутся после закрытия вкладки.
+    }
+
+# What was there before is {path}.
+td07a4718 = То, что было там раньше, теперь { $path }.
+
 # It has no variables.
 t0993a534 = В нём нет переменных.
 
@@ -3054,6 +3084,9 @@ t21558f46 = Сохранено как HTML: { $path }
 
 # Saved as text: {path}
 t17977298 = Сохранено как текст: { $path }
+
+# Keep
+t555cbe68 = Оставить
 
 # logging
 t897ecb9e = запись журнала
@@ -3199,6 +3232,9 @@ t49f82f0c = Разместить файл конфигурации…
 # Keep a File in the Vault…
 t25c07703 = Сохранить файл в хранилище…
 
+# Keep {names} on the host
+t80142336 = Оставить { $names } на хосте
+
 # Remove {names}
 t4efeb00b = Удалить { $names }
 
@@ -3265,26 +3301,23 @@ t5ca1c37e = Заменить размещённый здесь до закрыт
 # What was there before still comes back when the tab closes.
 t55130ddc = То, что было раньше, вернётся при закрытии вкладки.
 
+# Keep the one placed here
+t840a8b5a = Оставить размещённый здесь
+
+# It stays when the tab closes.
+tb2bc8f3b = Он останется после закрытия вкладки.
+
 # {path} holds it already.
 t3ec4172b = { $path } уже содержит его.
+
+# Place it to stay
+t698a38cf = Разместить насовсем
 
 # Place it until the tab closes
 t19537c52 = Разместить до закрытия вкладки
 
 # Then it is taken away.
 t1302797a = Затем он будет удалён.
-
-# Place it to stay
-t698a38cf = Разместить насовсем
-
-# It stays when the tab closes.
-tb2bc8f3b = Он останется после закрытия вкладки.
-
-# Replace the file there until the tab closes
-t7e646019 = Заменить файл там до закрытия вкладки
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = Текущий откладывается в сторону и возвращается при закрытии вкладки.
 
 # Replace it, keeping the old one
 tc95f7291 = Заменить, сохранив старый
@@ -3297,6 +3330,12 @@ t1e17fc0c = Заменить
 
 # The one there now is gone.
 t7fa127b9 = Текущий будет потерян.
+
+# Replace the file there until the tab closes
+t7e646019 = Заменить файл там до закрытия вкладки
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Текущий откладывается в сторону и возвращается при закрытии вкладки.
 
 # {path} is there already…
 td716b366 = { $path } уже существует…
@@ -3330,9 +3369,6 @@ t63904f7b = Файл на { $host }, который нужно сохранит�
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = { $path } сохранён в хранилище: см. Настройки › Файлы конфигурации.
-
-# Not kept: {e}
-tc12e4203 = Не сохранено: { $e }
 
 # Removing the config files placed…
 tbd123099 = Удаление размещённых файлов конфигурации…

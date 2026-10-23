@@ -2536,6 +2536,18 @@ tc1679f62 = Nội dung
 # Text up to {edited} is edited here; any file up to {max} can be taken from this computer.
 t992520da = Văn bản tới { $edited } sửa được ngay ở đây; mọi tệp tới { $max } đều lấy được từ máy này.
 
+# Until the tab closes
+t5ad5ff54 = Tới khi đóng tab
+
+# To stay
+t89fb6375 = Giữ lại luôn
+
+# When placed
+t82fcea82 = Khi đặt
+
+# What placing it offers first, for Enter: taken away when the tab closes, or left on the host.
+t9867bbe6 = Cách đặt mà Enter chọn: gỡ đi khi đóng tab, hoặc để lại trên máy chủ.
+
 # The palette offers to place it in panes of those hosts only.
 tdc9acac2 = Bảng lệnh chỉ đề nghị đặt nó trong các pane của những máy chủ đó.
 
@@ -2872,6 +2884,21 @@ t0f179fa4 =
        *[other] Đã gỡ { $n } tệp.
     }
 
+# Not kept: {e}
+tc12e4203 = Chưa giữ: { $e }
+
+# {path} stays when the tab closes.
+t4d349d57 = { $path } vẫn ở đó khi đóng tab.
+
+# {n} file stays when the tab closes. | {n} files stay when the tab closes.
+t500558bd =
+    { $n ->
+       *[other] { $n } tệp vẫn ở đó khi đóng tab.
+    }
+
+# What was there before is {path}.
+td07a4718 = Tệp có ở đó trước kia giờ là { $path }.
+
 # It has no variables.
 t0993a534 = Nó không có biến nào.
 
@@ -2898,6 +2925,9 @@ t21558f46 = Đã lưu dạng HTML: { $path }
 
 # Saved as text: {path}
 t17977298 = Đã lưu dạng văn bản: { $path }
+
+# Keep
+t555cbe68 = Giữ
 
 # logging
 t897ecb9e = đang ghi nhật ký
@@ -3037,6 +3067,9 @@ t49f82f0c = Đặt tệp cấu hình…
 # Keep a File in the Vault…
 t25c07703 = Lưu một tệp vào kho…
 
+# Keep {names} on the host
+t80142336 = Giữ { $names } trên máy chủ
+
 # Remove {names}
 t4efeb00b = Gỡ { $names }
 
@@ -3103,26 +3136,23 @@ t5ca1c37e = Thay tệp đã đặt ở đây, tới khi đóng tab
 # What was there before still comes back when the tab closes.
 t55130ddc = Tệp có sẵn trước đó vẫn được trả lại khi đóng tab.
 
+# Keep the one placed here
+t840a8b5a = Giữ tệp đã đặt ở đây
+
+# It stays when the tab closes.
+tb2bc8f3b = Tệp vẫn ở đó khi đóng tab.
+
 # {path} holds it already.
 t3ec4172b = { $path } đã có đúng tệp này.
+
+# Place it to stay
+t698a38cf = Đặt và giữ lại luôn
 
 # Place it until the tab closes
 t19537c52 = Đặt tới khi đóng tab
 
 # Then it is taken away.
 t1302797a = Sau đó tệp được gỡ đi.
-
-# Place it to stay
-t698a38cf = Đặt và giữ lại luôn
-
-# It stays when the tab closes.
-tb2bc8f3b = Tệp vẫn ở đó khi đóng tab.
-
-# Replace the file there until the tab closes
-t7e646019 = Thay tệp đang có, tới khi đóng tab
-
-# The one there now is set aside, and comes back when the tab closes.
-t8c121382 = Tệp đang có được cất sang bên, và trả lại khi đóng tab.
 
 # Replace it, keeping the old one
 tc95f7291 = Thay, giữ lại bản cũ
@@ -3135,6 +3165,12 @@ t1e17fc0c = Thay luôn
 
 # The one there now is gone.
 t7fa127b9 = Tệp đang có sẽ mất.
+
+# Replace the file there until the tab closes
+t7e646019 = Thay tệp đang có, tới khi đóng tab
+
+# The one there now is set aside, and comes back when the tab closes.
+t8c121382 = Tệp đang có được cất sang bên, và trả lại khi đóng tab.
 
 # {path} is there already…
 td716b366 = { $path } đã có tệp…
@@ -3165,9 +3201,6 @@ t63904f7b = Tệp trên { $host } để lưu vào kho
 
 # Kept {path} in the vault: see Settings › Config files.
 t8589664d = Đã lưu { $path } vào kho: xem Cài đặt › Tệp cấu hình.
-
-# Not kept: {e}
-tc12e4203 = Chưa giữ: { $e }
 
 # Removing the config files placed…
 tbd123099 = Đang gỡ các tệp cấu hình đã đặt…

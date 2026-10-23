@@ -270,8 +270,8 @@ pub struct TitleChanged;
 /// A secret was saved in the vault.
 pub struct VaultChanged;
 
-/// Config files taken away from the pane's host (their full paths): no
-/// longer to tidy up later.
+/// Config files no longer placed until the tab closes on the pane's host
+/// (their full paths), taken away or kept there: no longer to tidy up later.
 pub struct Unplaced(pub Vec<String>);
 
 /// The Files panel's edge was dragged to a new width, to be remembered.
@@ -630,7 +630,8 @@ impl TermView {
         }))
     }
 
-    /// The placed files at `paths` are gone from the host.
+    /// The placed files at `paths` are no longer this pane's to take away:
+    /// gone from the host, or kept there.
     pub fn took_down(&mut self, paths: &[String], cx: &mut Context<Self>) {
         self.placed.retain(|p| !paths.contains(&p.path));
         if !paths.is_empty() {
@@ -661,6 +662,89 @@ impl TermView {
             });
         })
         .detach();
+    }
+
+    /// Leaves the placed file at `path` (None: all) on the host: closing the
+    /// tab no longer takes it away. What it set aside becomes its backup,
+    /// `….bak`, which needs the connection. Says so.
+    pub fn keep_placed(&mut self, path: Option<&str>, cx: &mut Context<Self>) {
+        let todo: Vec<crate::placing::Placed> = self
+            .placed
+            .iter()
+            .filter(|p| path.is_none_or(|x| p.path == x))
+            .cloned()
+            .collect();
+        if todo.is_empty() {
+            return;
+        }
+        if todo.iter().all(|p| p.aside.is_none()) {
+            let paths: Vec<String> = todo.into_iter().map(|p| p.path).collect();
+            return self.kept_placed(paths, vec![], None, cx);
+        }
+        let remote = self.session.remote();
+        let answer = (self.session.status() == Status::Connected)
+            .then(|| remote.sftp())
+            .flatten();
+        let Some(answer) = answer else {
+            return self.show_notice(Notice::warn(tr!("Not connected.")), LOG_NOTICE, cx);
+        };
+        let job = async move {
+            let sftp = match crate::placing::open(answer).await {
+                Ok(s) => s,
+                Err(e) => return (vec![], vec![], Some(e)),
+            };
+            let (mut kept, mut backups, mut problem) = (vec![], vec![], None);
+            for p in todo {
+                match crate::placing::keep(&sftp, &p.path, p.aside.as_deref()).await {
+                    Ok(backup) => {
+                        kept.push(p.path);
+                        backups.extend(backup);
+                    }
+                    Err(e) => problem = Some(e),
+                }
+            }
+            (kept, backups, problem)
+        };
+        let job = remote.rt.spawn(async move {
+            tokio::time::timeout(std::time::Duration::from_secs(10), job)
+                .await
+                .unwrap_or_else(|_| (vec![], vec![], Some("no answer".into())))
+        });
+        cx.spawn(async move |this, cx| {
+            let (kept, backups, problem) = job
+                .await
+                .unwrap_or_else(|e| (vec![], vec![], Some(e.to_string())));
+            let _ = this.update(cx, |v, cx| v.kept_placed(kept, backups, problem, cx));
+        })
+        .detach();
+    }
+
+    /// The placed files at `paths` stay on the host; what they set aside is
+    /// at `backups`.
+    fn kept_placed(
+        &mut self,
+        paths: Vec<String>,
+        backups: Vec<String>,
+        problem: Option<String>,
+        cx: &mut Context<Self>,
+    ) {
+        self.took_down(&paths, cx);
+        if let Some(e) = problem {
+            let said = Notice::bad(tr!("Not kept: {e}", e = e));
+            return self.show_notice(said, LOG_NOTICE, cx);
+        }
+        let mut said = vec![match paths.as_slice() {
+            [one] => tr!("{path} stays when the tab closes.", path = one.as_str()),
+            all => tr_n!(
+                all.len(),
+                "{n} file stays when the tab closes.",
+                "{n} files stay when the tab closes."
+            ),
+        }];
+        for b in &backups {
+            said.push(tr!("What was there before is {path}.", path = b.as_str()));
+        }
+        self.show_notice(Notice::good(said.join(" ")), LOG_NOTICE, cx);
     }
 
     /// The environments loaded into this pane's shell.
@@ -992,32 +1076,60 @@ impl TermView {
             .collect()
     }
 
-    /// A config file placed until the tab closes: its name; a click takes
-    /// it away.
+    /// A config file placed until the tab closes: its name; Keep leaves it
+    /// on the host, ✕ takes it away.
     fn file_badges(&self, cx: &mut Context<Self>) -> Vec<gpui::Stateful<gpui::Div>> {
         self.placed
             .iter()
-            .map(|p| {
-                let path = p.path.clone();
+            .enumerate()
+            .map(|(i, p)| {
+                let (keep, remove) = (p.path.clone(), p.path.clone());
+                let button = |id: &'static str| {
+                    div()
+                        .id((id, i))
+                        .debug_selector(move || format!("{id}-{i}"))
+                        .h(px(18.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded_full()
+                        .text_color(rgb(colors().soft))
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
+                };
                 div()
                     .id(SharedString::from(format!("file-badge-{}", p.path)))
                     .flex()
                     .items_center()
-                    .gap(px(6.))
+                    .gap(px(4.))
                     .h(px(22.))
-                    .px(px(8.))
+                    .pl(px(8.))
+                    .pr(px(2.))
                     .rounded_full()
                     .border_1()
                     .border_color(rgb(colors().field_edge))
                     .bg(rgb(colors().chip))
                     .text_xs()
                     .text_color(rgb(colors().text))
-                    .cursor_pointer()
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                    .on_click(cx.listener(move |v, _, _, cx| v.remove_placed(Some(&path), cx)))
                     .child(div().size(px(6.)).rounded_full().bg(rgb(colors().accent)))
-                    .child(p.name.clone())
-                    .child("✕")
+                    .child(div().pr(px(2.)).child(p.name.clone()))
+                    .child(
+                        button("file-keep")
+                            .px(px(6.))
+                            .on_click(
+                                cx.listener(move |v, _, _, cx| v.keep_placed(Some(&keep), cx)),
+                            )
+                            .child(tr!("Keep")),
+                    )
+                    .child(
+                        button("file-remove")
+                            .w(px(18.))
+                            .on_click(
+                                cx.listener(move |v, _, _, cx| v.remove_placed(Some(&remove), cx)),
+                            )
+                            .child("✕"),
+                    )
             })
             .collect()
     }
@@ -2199,11 +2311,25 @@ impl TermView {
                 )
             })
             .when(!self.placed.is_empty(), |d| {
-                let names: Vec<String> = self.placed.iter().map(|p| p.name.clone()).collect();
+                let names = self
+                    .placed
+                    .iter()
+                    .map(|p| p.name.clone())
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 d.child(
                     item(
+                        "menu-keep-files",
+                        &tr!("Keep {names} on the host", names = names.as_str()),
+                        String::new(),
+                        true,
+                    )
+                    .on_click(act(|v, _, cx| v.keep_placed(None, cx))),
+                )
+                .child(
+                    item(
                         "menu-remove-files",
-                        &tr!("Remove {names}", names = names.join(", ")),
+                        &tr!("Remove {names}", names = names.as_str()),
                         String::new(),
                         true,
                     )

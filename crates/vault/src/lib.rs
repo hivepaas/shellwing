@@ -388,6 +388,9 @@ pub struct ConfigFile {
     pub size: usize,
     /// Not text (not UTF-8, or holding a NUL): replaced whole, not edited.
     pub binary: bool,
+    /// Placed to stay, rather than until the tab closes: what placing it
+    /// offers first.
+    pub stays: bool,
 }
 
 /// A note's format.
@@ -1409,6 +1412,7 @@ impl Vault {
                     scope: get("scope"),
                     size: get("size").parse().unwrap_or(0),
                     binary: get("binary") == "yes",
+                    stays: get("stays") == "yes",
                     id,
                 }
             })
@@ -1463,6 +1467,10 @@ impl Vault {
             (
                 "binary".to_string(),
                 if is_text(content) { "no" } else { "yes" }.to_string(),
+            ),
+            (
+                "stays".to_string(),
+                if f.stays { "yes" } else { "no" }.to_string(),
             ),
             (
                 "content".to_string(),
@@ -2355,6 +2363,7 @@ mod tests {
             scope: "group:prod".into(),
             size: 0,
             binary: false,
+            stays: false,
         };
         let id = v
             .save_config_file(&f, Some(b"apiVersion: v1\n"))
@@ -2377,6 +2386,11 @@ mod tests {
                 .map(|c| &c[..]),
             Some(&b"apiVersion: v1\n"[..])
         );
+        // Placed to stay, as chosen.
+        assert!(!listed[0].stays);
+        f.stays = true;
+        v.save_config_file(&f, None).expect("to stay");
+        assert!(v.config_files().expect("listed")[0].stays);
         // Bytes that are not text.
         v.save_config_file(&f, Some(&[0x30, 0x82, 0, 1]))
             .expect("binary");
