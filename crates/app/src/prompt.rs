@@ -24,6 +24,9 @@ struct AppPrompt {
     message: String,
     detail: Option<String>,
     actions: Vec<PromptButton>,
+    /// The button Enter presses, drawn as the main one: the main answer at
+    /// first; Tab moves it along the row.
+    chosen: usize,
     focus: FocusHandle,
 }
 
@@ -36,7 +39,7 @@ impl Focusable for AppPrompt {
 }
 
 impl AppPrompt {
-    /// Enter's answer: the first that is not Cancel.
+    /// The main answer, chosen at first: the first that is not Cancel.
     fn main(&self) -> Option<usize> {
         self.actions.iter().position(|a| !a.is_cancel())
     }
@@ -49,10 +52,36 @@ impl AppPrompt {
             .or(self.actions.len().checked_sub(1))
     }
 
+    /// The buttons as drawn, left to right: Cancel first, the main answer
+    /// last.
+    fn order(&self) -> Vec<usize> {
+        let main = self.main();
+        let mut order: Vec<usize> = (0..self.actions.len()).collect();
+        order.sort_by_key(|&i| (Some(i) == main, !self.actions[i].is_cancel()));
+        order
+    }
+
+    /// The next button along the row (`back`: the one before), round.
+    fn step(&mut self, back: bool) {
+        let order = self.order();
+        let n = order.len();
+        if n == 0 {
+            return;
+        }
+        let at = order.iter().position(|&i| i == self.chosen).unwrap_or(0);
+        self.chosen = order[if back { (at + n - 1) % n } else { (at + 1) % n }];
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
-        let answer = match ev.keystroke.key.as_str() {
-            "enter" => self.main(),
+        let k = &ev.keystroke;
+        let answer = match k.key.as_str() {
+            "enter" => (self.chosen < self.actions.len()).then_some(self.chosen),
             "escape" => self.cancel(),
+            "tab" | "left" | "right" => {
+                self.step(k.key == "left" || (k.key == "tab" && k.modifiers.shift));
+                cx.notify();
+                None
+            }
             _ => return,
         };
         if let Some(ix) = answer {
@@ -64,21 +93,24 @@ impl AppPrompt {
 
 impl Render for AppPrompt {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // It has the keys while it is up: what took them meanwhile (a pane
+        // focused as another closed) gives them back.
+        if !self.focus.is_focused(window) {
+            window.focus(&self.focus, cx);
+        }
         let font = cx.try_global::<PromptFont>().and_then(|f| f.0.clone());
         let mark = match self.level {
             PromptLevel::Info => None,
             PromptLevel::Warning => Some((colors().amber, colors().warn_bg)),
             PromptLevel::Critical => Some((colors().bad, colors().bad_bg)),
         };
-        // Cancel first, at the left of the row; the main answer last.
-        let main = self.main();
-        let mut order: Vec<usize> = (0..self.actions.len()).collect();
-        order.sort_by_key(|&i| (Some(i) == main, !self.actions[i].is_cancel()));
+        // Cancel first, at the left of the row; the main answer last. The
+        // one Enter presses is drawn as the main one.
         let mut buttons = div().flex().justify_end().gap(px(8.)).pt(px(4.));
-        for ix in order {
+        for ix in self.order() {
             let label = self.actions[ix].label().to_string();
             let id = format!("prompt-{ix}");
-            let button = if Some(ix) == main {
+            let button = if ix == self.chosen {
                 primary_button(&id, &label)
             } else {
                 outline_button(&id, &label)
@@ -148,6 +180,8 @@ impl Render for AppPrompt {
             .id("prompt")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
+            // Nothing under it takes a click, nor so the keys after it.
+            .occlude()
             .size_full()
             .pt(margin.top)
             .pr(margin.right)
@@ -189,12 +223,17 @@ pub fn render(
     window: &mut Window,
     cx: &mut App,
 ) -> RenderablePromptHandle {
-    let view = cx.new(|cx| AppPrompt {
-        level,
-        message: message.to_string(),
-        detail: detail.map(str::to_string),
-        actions: actions.to_vec(),
-        focus: cx.focus_handle(),
+    let view = cx.new(|cx| {
+        let mut p = AppPrompt {
+            level,
+            message: message.to_string(),
+            detail: detail.map(str::to_string),
+            actions: actions.to_vec(),
+            chosen: 0,
+            focus: cx.focus_handle(),
+        };
+        p.chosen = p.main().unwrap_or(0);
+        p
     });
     let open = &mut cx.default_global::<Open>().0;
     open.retain(|p| p.upgrade().is_some());

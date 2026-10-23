@@ -66,6 +66,63 @@ scenario!(
 );
 
 scenario!(
+    /// The app's own question (as drawn outside tests) takes Tab and Shift+Tab
+    /// along its buttons, and Enter presses the one chosen: Close at first.
+    a_question_takes_tab,
+    |ui| {
+        ui.cx.update(|cx| cx.set_prompt_builder(crate::prompt::render));
+        ui.connect("local:");
+        ui.wait_until("the shell to start", |ui| ui.status() == Status::Connected);
+        ui.shortcut("w");
+        ui.wait_until("the question", |ui| ui.find("prompt-card").is_some());
+        ui.keys("tab");
+        ui.keys("enter");
+        ui.wait_until("it answered", |ui| ui.find("prompt-card").is_none());
+        assert_eq!(ui.tabs(), 1, "closed with Cancel chosen");
+
+        ui.shortcut("w");
+        ui.wait_until("the question", |ui| ui.find("prompt-card").is_some());
+        ui.keys("tab");
+        ui.keys("shift-tab");
+        ui.keys("enter");
+        ui.wait_until("the tab to close", |ui| ui.tabs() == 0);
+    }
+);
+
+scenario!(
+    /// While the app's own question is up, nothing under it takes a click or
+    /// a key: clicked, the terminal does not get what is typed after, and the
+    /// question keeps Escape.
+    nothing_under_a_question_takes_a_click,
+    |ui| {
+        ui.cx.update(|cx| cx.set_prompt_builder(crate::prompt::render));
+        ui.connect("local:");
+        ui.wait_until("the shell to start", |ui| ui.status() == Status::Connected);
+        ui.shortcut("w");
+        ui.wait_until("the question", |ui| ui.find("prompt-card").is_some());
+        // The terminal's corner, beside the question's card.
+        ui.click_cell(0, 0, gpui::Modifiers::none());
+        ui.type_text("zz-under-the-question");
+        ui.settle(std::time::Duration::from_millis(300));
+        assert!(
+            !ui.screen().contains("zz-under-the-question"),
+            "the terminal took keys under the question"
+        );
+        // The pane given the focus meanwhile, as when another closes.
+        ui.ws(|ws, window, cx| ws.activate(0, window, cx));
+        ui.type_text("zz-focused-meanwhile");
+        ui.settle(std::time::Duration::from_millis(300));
+        assert!(
+            !ui.screen().contains("zz-focused-meanwhile"),
+            "the terminal took keys once focused under the question"
+        );
+        ui.keys("escape");
+        ui.wait_until("it answered", |ui| ui.find("prompt-card").is_none());
+        assert_eq!(ui.tabs(), 1);
+    }
+);
+
+scenario!(
     /// Closing a pane whose session is open asks first; Cancel keeps it,
     /// Close ends it.
     closing_an_open_session_asks_first,
