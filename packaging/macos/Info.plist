@@ -12,7 +12,7 @@
 	<key>CFBundleIconFile</key>
 	<string>shellwing</string>
 	<key>CFBundleIdentifier</key>
-	<string>app.shellwing</string>
+	<string>com.hivepaas.shellwing</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

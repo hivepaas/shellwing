@@ -43,7 +43,7 @@ with a provisioning profile has. Once:
    - a **Developer ID Application** certificate, made from a signing request
      (Keychain Access › Certificate Assistant), installed in the login
      keychain, and exported with its private key as a `.p12`;
-   - an **App ID** `app.shellwing` (the `CFBundleIdentifier` in
+   - an **App ID** `com.hivepaas.shellwing` (the `CFBundleIdentifier` in
      `packaging/macos/Info.plist`) and a **Developer ID provisioning profile**
      for it, which allows `keychain-access-groups`;
    - an **App Store Connect API key** for notarizing (Users and Access ›
