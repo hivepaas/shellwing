@@ -9,3 +9,6 @@
 
 # make build puts the binaries here.
 /dist
+
+# A shell history left by a session run with the repository as its home.
+.bash_history
