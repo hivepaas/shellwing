@@ -419,3 +419,59 @@ private struct SetUpSyncView: View {
         }
     }
 }
+
+/// The sync at a glance, in the host list's toolbar as the design has it:
+/// a cloud green when synced, turning while it syncs, amber when a device
+/// asks to join, red when it cannot sync, crossed out when off. A tap opens
+/// Sync; held, Sync now.
+struct SyncButton: View {
+    @EnvironmentObject private var app: AppModel
+    @State private var open = false
+
+    var body: some View {
+        Button { open = true } label: {
+            Image(systemName: look.symbol)
+                .foregroundStyle(look.color)
+                .symbolEffect(.pulse, isActive: app.sync?.syncing == true)
+        }
+        .accessibilityLabel(look.said)
+        .contextMenu {
+            if app.sync?.place != nil {
+                Button(tr("Sync now"), systemImage: "arrow.triangle.2.circlepath") { app.core?.syncNow() }
+            }
+            Button(tr("Sync"), systemImage: "icloud") { open = true }
+        }
+        .sheet(isPresented: $open) {
+            NavigationStack {
+                SyncView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button(tr("Done")) { open = false } }
+                    }
+            }
+            .environmentObject(app)
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    private var look: (symbol: String, color: Color, said: String) {
+        guard let s = app.sync, s.place != nil else {
+            return ("icloud.slash", Dusk.muted, tr("Not synced"))
+        }
+        if let r = s.requests.first {
+            return ("person.crop.circle.badge.plus", Dusk.amber, tr("{device} asks to join", ["device": r.device]))
+        }
+        if let e = s.error {
+            return ("exclamationmark.icloud", Dusk.bad, tr("Cannot sync: {e}", ["e": e]))
+        }
+        if s.syncing {
+            return ("arrow.triangle.2.circlepath.icloud", Dusk.accent, tr("Syncing…"))
+        }
+        guard let last = s.last else {
+            return ("icloud", Dusk.soft, tr("Not synced"))
+        }
+        let when = RelativeDateTimeFormatter()
+        when.locale = Locale(identifier: app.language)
+        let ago = when.localizedString(for: Date(timeIntervalSince1970: TimeInterval(last)), relativeTo: Date())
+        return ("checkmark.icloud", Dusk.ok, tr("Synced · {when}", ["when": ago]))
+    }
+}

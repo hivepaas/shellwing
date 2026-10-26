@@ -96,6 +96,7 @@ struct HostsView: View {
             .searchable(text: $filter, prompt: tr("Filter by name, tag or address"))
             .navigationTitle("shellwing")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { SyncButton() }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button(tr("New host"), systemImage: "server.rack") {
