@@ -1,0 +1,38 @@
+[package]
+name = "shellwing-mobile"
+description = "The phone apps' way into shellwing-core: bindings for Swift (UniFFI)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "shellwing_mobile"
+# The iOS app links the static library; `lib` is for the tests and the
+# bindings generator, which reads the library's metadata.
+crate-type = ["lib", "staticlib"]
+
+# Writes the Swift side of the bindings (scripts/build_ios.sh runs it).
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+required-features = ["bindgen"]
+
+[features]
+bindgen = ["uniffi/cli"]
+
+[dependencies]
+shellwing-core.workspace = true
+shellwing-config.workspace = true
+shellwing-term.workspace = true
+tokio.workspace = true
+thiserror.workspace = true
+uniffi = "0.32"
+
+# The workspace's, but for `unsafe_code`: UniFFI's scaffolding is `extern "C"`
+# and `no_mangle`, which the lint counts as unsafe though it is generated, not
+# written here. This crate's own code has none.
+[lints.clippy]
+unwrap_used = "warn"
+dbg_macro = "deny"
