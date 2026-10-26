@@ -4186,6 +4186,9 @@ tf81b77f9 = スニペットはまだありません。+ で作成するか、他
 # No snippets for this host.
 tbf3767c5 = このホスト用のスニペットはありません。
 
+# Browse the snippet library
+t63787b2e = スニペットライブラリを見る
+
 # Filter snippets
 tbb9b10c7 = スニペットを絞り込み
 
@@ -4365,6 +4368,21 @@ t6e3fab8c = 消去
 
 # Filter by name
 tbcb12ca7 = 名前で絞り込み
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] { $n } 件のスニペットを追加しました。セッションのスニペットキーから実行できます。
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = 実行時に入力：{ $names }。追加すると自分のスニペットになり、編集できます。
+
+# None yet: add one in Library › Envs.
+te4d214e4 = まだありません: ライブラリ › 環境 で追加してください。
+
+# Picked
+t71962a99 = 選択済み
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing はそのフォルダを使用できません。

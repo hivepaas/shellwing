@@ -4325,6 +4325,9 @@ tf81b77f9 = Aucun extrait pour l'instant. Créez-en un avec +, ou synchronisez c
 # No snippets for this host.
 tbf3767c5 = Aucun extrait pour ce serveur.
 
+# Browse the snippet library
+t63787b2e = Parcourir la bibliothèque d'extraits
+
 # Filter snippets
 tbb9b10c7 = Filtrer les extraits
 
@@ -4506,6 +4509,22 @@ t6e3fab8c = Oublier
 
 # Filter by name
 tbcb12ca7 = Filtrer par nom
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] { $n } extrait ajouté : lancez-le depuis la touche Extraits d'une session.
+       *[other] { $n } extraits ajoutés : lancez-les depuis la touche Extraits d'une session.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Demandé à l'exécution : { $names }. Une fois ajouté, il est à vous et vous pouvez le modifier.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Aucun pour l'instant : ajoutez-en un dans Bibliothèque › Env.
+
+# Picked
+t71962a99 = Coché
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing n'a pas le droit d'utiliser ce dossier.

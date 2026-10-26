@@ -4186,6 +4186,9 @@ tf81b77f9 = Chưa có đoạn lệnh nào. Tạo bằng +, hoặc đồng bộ �
 # No snippets for this host.
 tbf3767c5 = Không có đoạn lệnh nào cho máy chủ này.
 
+# Browse the snippet library
+t63787b2e = Xem thư viện đoạn lệnh
+
 # Filter snippets
 tbb9b10c7 = Lọc đoạn lệnh
 
@@ -4365,6 +4368,21 @@ t6e3fab8c = Quên
 
 # Filter by name
 tbcb12ca7 = Lọc theo tên
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] Đã thêm { $n } đoạn lệnh: chạy bằng phím Đoạn lệnh trong phiên.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Hỏi khi chạy: { $names }. Thêm rồi là của bạn, sửa tuỳ ý.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Chưa có: thêm trong Thư viện › Biến.
+
+# Picked
+t71962a99 = Đã chọn
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing không được phép dùng thư mục đó.

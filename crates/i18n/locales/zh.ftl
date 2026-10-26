@@ -4186,6 +4186,9 @@ tf81b77f9 = 还没有代码片段。用 + 新建，或同步你其他设备上�
 # No snippets for this host.
 tbf3767c5 = 此主机没有代码片段。
 
+# Browse the snippet library
+t63787b2e = 浏览代码片段库
+
 # Filter snippets
 tbb9b10c7 = 筛选代码片段
 
@@ -4365,6 +4368,21 @@ t6e3fab8c = 忘记
 
 # Filter by name
 tbcb12ca7 = 按名称筛选
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] 已添加 { $n } 个代码片段：可在会话中通过“代码片段”键运行。
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = 运行时询问：{ $names }。添加后它就归你了，可以随意编辑。
+
+# None yet: add one in Library › Envs.
+te4d214e4 = 暂无：请在 资料库 › 环境 中添加。
+
+# Picked
+t71962a99 = 已选
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing 无权使用该文件夹。

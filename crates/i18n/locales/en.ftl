@@ -1581,6 +1581,7 @@ te3596034 = Part
 ta8532270 = Library
 tf81b77f9 = No snippets yet. Make one with +, or sync those of your other devices.
 tbf3767c5 = No snippets for this host.
+t63787b2e = Browse the snippet library
 tbb9b10c7 = Filter snippets
 t2bd643c4 = Offered
 t327a596f = Everywhere
@@ -1647,6 +1648,14 @@ ta5bda1d5 = No host keys known yet: a host's is kept the first time you connect.
 t97c138ac = A hashed name
 t6e3fab8c = Forget
 tbcb12ca7 = Filter by name
+tcc9793a7 =
+    { $n ->
+        [one] { $n } snippet added: run it from a session's Snippets key.
+       *[other] { $n } snippets added: run them from a session's Snippets key.
+    }
+t2b67b8d3 = Asked when it runs: { $names }. Once added, it is yours to edit.
+te4d214e4 = None yet: add one in Library › Envs.
+t71962a99 = Picked
 t39f14b58 = shellwing may not use that folder.
 t9ad2489c = Place
 t2d4f851d = Last synced

@@ -4325,6 +4325,9 @@ tf81b77f9 = Aún no hay fragmentos. Crea uno con +, o sincroniza los de tus otro
 # No snippets for this host.
 tbf3767c5 = No hay fragmentos para este servidor.
 
+# Browse the snippet library
+t63787b2e = Explorar la biblioteca de fragmentos
+
 # Filter snippets
 tbb9b10c7 = Filtrar fragmentos
 
@@ -4506,6 +4509,22 @@ t6e3fab8c = Olvidar
 
 # Filter by name
 tbcb12ca7 = Filtrar por nombre
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] { $n } fragmento añadido: ejecútalo desde la tecla Fragmentos de una sesión.
+       *[other] { $n } fragmentos añadidos: ejecútalos desde la tecla Fragmentos de una sesión.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Se pregunta al ejecutarlo: { $names }. Una vez añadido, es tuyo y puedes editarlo.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Ninguno todavía: añade uno en Biblioteca › Entornos.
+
+# Picked
+t71962a99 = Marcado
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing no tiene permiso para usar esa carpeta.

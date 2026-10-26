@@ -365,3 +365,182 @@ impl Shellwing {
         }
     }
 }
+
+/// A ready command of the snippet library (`shellwing_core::library`), as
+/// the desktop's library window lists it.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct LibraryItem {
+    /// Its place in the library: what [`Shellwing::add_from_library`] takes.
+    pub index: u32,
+    pub id: String,
+    /// `PostgreSQL`.
+    pub tool: String,
+    /// `Backup`.
+    pub task: String,
+    pub name: String,
+    pub about: String,
+    /// Options to add to its command.
+    pub options: Vec<String>,
+    /// The variable it reads its password from (`PGPASSWORD`).
+    pub password: Option<String>,
+    /// It changes things: added, it is typed and waits for Enter.
+    pub changes_data: bool,
+    /// It needs root: added with sudo unless told not.
+    pub sudo: bool,
+    /// It can run in a Docker container rather than on the host.
+    pub can_contain: bool,
+    pub docs: Option<String>,
+    /// How many of the user's snippets were made from it.
+    pub added: u32,
+}
+
+/// How an item becomes a snippet.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct LibraryPick {
+    pub index: u32,
+    /// The options taken, by index.
+    pub options: Vec<u32>,
+    /// In a Docker container (`{{container}}`) rather than on the host.
+    pub container: bool,
+    /// None: as the item has it.
+    pub sudo: Option<bool>,
+    /// The environment that has its password: None, the one found for it
+    /// ([`Shellwing::library_env`]); `Some("")`: none.
+    pub env: Option<String>,
+}
+
+/// The category snippets from the library go under.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum FileUnder {
+    /// `PostgreSQL`.
+    Tool,
+    /// `Backup`; the name says its tool: `PostgreSQL: Ping`.
+    Task,
+    /// `PostgreSQL · Backup`.
+    Both,
+}
+
+/// The library's tasks, in its order.
+#[uniffi::export]
+pub fn library_tasks() -> Vec<String> {
+    shellwing_core::library::TASKS
+        .iter()
+        .map(|t| t.to_string())
+        .collect()
+}
+
+/// The command `pick` makes of its item, as it would be added.
+#[uniffi::export]
+pub fn library_command(pick: LibraryPick) -> String {
+    let Some(i) = shellwing_core::library::items().get(pick.index as usize) else {
+        return String::new();
+    };
+    i.command(&choice(&pick))
+}
+
+#[uniffi::export]
+impl Shellwing {
+    /// The library's items, by tool then task, with how many times each was
+    /// added.
+    pub fn library_items(&self) -> Vec<LibraryItem> {
+        let mine: Vec<String> = self
+            .vault
+            .get()
+            .and_then(|v| v.snippets().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|s| s.origin)
+            .collect();
+        shellwing_core::library::items()
+            .iter()
+            .enumerate()
+            .map(|(n, i)| LibraryItem {
+                index: n as u32,
+                added: mine.iter().filter(|o| **o == i.origin()).count() as u32,
+                id: i.id.clone(),
+                tool: i.tool.clone(),
+                task: i.task.clone(),
+                name: i.name.clone(),
+                about: i.about.clone(),
+                options: i.options.clone(),
+                password: i.password.clone(),
+                changes_data: i.changes_data,
+                sudo: i.sudo,
+                can_contain: i.can_contain(),
+                docs: i.docs.clone(),
+            })
+            .collect()
+    }
+
+    /// The environment item `index` is given for its password, unless told
+    /// otherwise: the only one that has its variable.
+    pub fn library_env(&self, index: u32) -> Option<String> {
+        let var = shellwing_core::library::items()
+            .get(index as usize)?
+            .password
+            .as_deref()?;
+        let envs = self.vault.get()?.environments().ok()?;
+        let mut having = envs.iter().filter(|e| e.names.iter().any(|v| v == var));
+        match (having.next(), having.next()) {
+            (Some(e), None) => Some(e.id.clone()),
+            _ => None,
+        }
+    }
+
+    /// Adds `picks` to the user's snippets, filed `under`. Returns how many.
+    pub fn add_from_library(
+        &self,
+        picks: Vec<LibraryPick>,
+        under: FileUnder,
+    ) -> Result<u32, MobileError> {
+        let vault = self.open_vault()?;
+        let mut done = 0;
+        for pick in picks {
+            let Some(i) = shellwing_core::library::items().get(pick.index as usize) else {
+                continue;
+            };
+            let env = match &pick.env {
+                Some(e) => (!e.is_empty()).then(|| e.clone()),
+                None => self.library_env(pick.index),
+            };
+            let s = Snippet {
+                id: String::new(),
+                name: match under {
+                    FileUnder::Task => format!("{}: {}", i.tool, i.name),
+                    _ => i.name.clone(),
+                },
+                command: i.command(&choice(&pick)),
+                scope: String::new(),
+                // What changes data is typed, and waits for Enter.
+                enter: !i.changes_data,
+                category: match under {
+                    FileUnder::Tool => i.tool.clone(),
+                    FileUnder::Task => i.task.clone(),
+                    FileUnder::Both => format!("{} · {}", i.tool, i.task),
+                },
+                needs: env.into_iter().collect(),
+                origin: i.origin(),
+            };
+            vault
+                .save_snippet(&s)
+                .map_err(|e| MobileError::Failed(environment::said_error(&e)))?;
+            done += 1;
+        }
+        Ok(done)
+    }
+}
+
+fn choice(pick: &LibraryPick) -> shellwing_core::library::Choice {
+    shellwing_core::library::Choice {
+        options: pick.options.iter().map(|o| *o as usize).collect(),
+        container: pick.container,
+        sudo: pick.sudo,
+    }
+}
+
+/// The values `command` asks for when it runs, in order (not host, user,
+/// address: those come from the session).
+#[uniffi::export]
+pub fn snippet_asked(command: String) -> Vec<String> {
+    snippets::asked(&command)
+}

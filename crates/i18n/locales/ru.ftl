@@ -4429,6 +4429,9 @@ tf81b77f9 = Сниппетов пока нет. Создайте сниппет 
 # No snippets for this host.
 tbf3767c5 = Для этого хоста нет сниппетов.
 
+# Browse the snippet library
+t63787b2e = Открыть библиотеку сниппетов
+
 # Filter snippets
 tbb9b10c7 = Фильтр сниппетов
 
@@ -4614,6 +4617,24 @@ t6e3fab8c = Забыть
 
 # Filter by name
 tbcb12ca7 = Фильтр по имени
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] Добавлен { $n } сниппет: запускайте его клавишей «Сниппеты» в сеансе.
+        [few] Добавлено { $n } сниппета: запускайте их клавишей «Сниппеты» в сеансе.
+        [many] Добавлено { $n } сниппетов: запускайте их клавишей «Сниппеты» в сеансе.
+       *[other] Добавлено { $n } сниппета: запускайте их клавишей «Сниппеты» в сеансе.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Спрашивается при запуске: { $names }. После добавления он ваш, и его можно менять.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Пока нет: добавьте в Библиотека › Окружения.
+
+# Picked
+t71962a99 = Отмечено
 
 # shellwing may not use that folder.
 t39f14b58 = У shellwing нет доступа к этой папке.

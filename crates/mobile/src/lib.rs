@@ -27,7 +27,7 @@ use shellwing_core::session::{Opens, Session};
 pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
 pub use files::FileEntry;
 pub use i18n::LanguageRow;
-pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
+pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
@@ -717,6 +717,61 @@ mod tests {
         assert_eq!(app.groups(), ["Staging"]);
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn library_items_become_snippets() {
+        let (dir, app) = store_with("");
+        let items = app.library_items();
+        assert!(items.len() >= 90);
+        assert!(crate::library::library_tasks().contains(&"Backup".to_string()));
+        let dump = items
+            .iter()
+            .find(|i| i.id == "backup/pg_dump")
+            .expect("pg_dump");
+        assert_eq!(dump.password.as_deref(), Some("PGPASSWORD"));
+        let pick = |env: Option<String>| LibraryPick {
+            index: dump.index,
+            options: vec![],
+            container: true,
+            sudo: None,
+            env,
+        };
+        assert!(
+            crate::library::library_command(pick(None))
+                .starts_with("docker exec -it -e PGPASSWORD {{container}} pg_dump")
+        );
+        // The only environment with its variable is found for it.
+        let env = app
+            .save_environment(
+                String::new(),
+                "db".into(),
+                String::new(),
+                "PGPASSWORD=x\n".into(),
+            )
+            .expect("env");
+        assert_eq!(app.library_env(dump.index), Some(env.clone()));
+        assert_eq!(
+            app.add_from_library(vec![pick(None)], FileUnder::Both)
+                .expect("added"),
+            1
+        );
+        assert_eq!(
+            app.add_from_library(vec![pick(Some(String::new()))], FileUnder::Task)
+                .expect("added"),
+            1
+        );
+        let mine = app.snippets(None);
+        let both = mine
+            .iter()
+            .find(|s| s.category == "PostgreSQL · Backup")
+            .expect("both");
+        assert_eq!(both.needs, [env]);
+        let task = mine.iter().find(|s| s.category == "Backup").expect("task");
+        assert!(task.name.starts_with("PostgreSQL: ") && task.needs.is_empty());
+        let again = app.library_items();
+        assert_eq!(again[dump.index as usize].added, 2);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

@@ -4186,6 +4186,9 @@ tf81b77f9 = 아직 스니펫이 없습니다. +로 만들거나, 다른 기기�
 # No snippets for this host.
 tbf3767c5 = 이 호스트용 스니펫이 없습니다.
 
+# Browse the snippet library
+t63787b2e = 스니펫 라이브러리 둘러보기
+
 # Filter snippets
 tbb9b10c7 = 스니펫 필터링
 
@@ -4365,6 +4368,21 @@ t6e3fab8c = 삭제
 
 # Filter by name
 tbcb12ca7 = 이름으로 필터링
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] 스니펫 { $n }개를 추가했습니다. 세션의 스니펫 키로 실행하세요.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = 실행할 때 묻기: { $names }. 추가하면 내 스니펫이 되어 편집할 수 있습니다.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = 아직 없음: 라이브러리 › 환경에서 추가하세요.
+
+# Picked
+t71962a99 = 선택됨
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing은 이 폴더를 사용할 수 없습니다.

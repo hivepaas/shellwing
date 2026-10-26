@@ -54,6 +54,7 @@ struct SnippetsList: View {
     let run: ((SnippetRow) -> Void)?
     @State private var snippets: [SnippetRow] = []
     @State private var editing: SnippetEdit?
+    @State private var browsing = UserDefaults.standard.string(forKey: "screen") == "library"
     @State private var filter = ""
 
     var body: some View {
@@ -64,6 +65,10 @@ struct SnippetsList: View {
                     : tr("No snippets for this host."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
+                if run == nil {
+                    Button(tr("Browse the snippet library"), systemImage: "books.vertical") { browsing = true }
+                        .listRowBackground(Dusk.surface)
+                }
             }
             ForEach(categories, id: \.self) { cat in
                 Section {
@@ -96,6 +101,10 @@ struct SnippetsList: View {
         .scrollContentBackground(.hidden)
         .searchable(text: $filter, prompt: tr("Filter snippets"))
         .toolbar {
+            if run == nil {
+                Button { browsing = true } label: { Image(systemName: "books.vertical") }
+                    .accessibilityLabel(tr("Snippet library"))
+            }
             Button {
                 editing = SnippetEdit(id: "", name: "", category: "", command: "", enter: true, scope: "", needs: [])
             } label: { Image(systemName: "plus") }
@@ -103,6 +112,9 @@ struct SnippetsList: View {
         }
         .sheet(item: $editing, onDismiss: reload) { e in
             SnippetEditor(edit: e)
+        }
+        .sheet(isPresented: $browsing, onDismiss: reload) {
+            SnippetLibraryView().environmentObject(app)
         }
         .onAppear(perform: reload)
     }

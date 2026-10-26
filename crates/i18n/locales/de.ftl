@@ -4325,6 +4325,9 @@ tf81b77f9 = Noch keine Snippets. Erstelle eines mit + oder synchronisiere die de
 # No snippets for this host.
 tbf3767c5 = Keine Snippets für diesen Host.
 
+# Browse the snippet library
+t63787b2e = Snippet-Bibliothek durchsuchen
+
 # Filter snippets
 tbb9b10c7 = Snippets filtern
 
@@ -4506,6 +4509,22 @@ t6e3fab8c = Vergessen
 
 # Filter by name
 tbcb12ca7 = Nach Name filtern
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] { $n } Snippet hinzugefügt: Führe es in einer Sitzung über die Snippets-Taste aus.
+       *[other] { $n } Snippets hinzugefügt: Führe sie in einer Sitzung über die Snippets-Taste aus.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Beim Ausführen gefragt: { $names }. Nach dem Hinzufügen gehört es dir und du kannst es bearbeiten.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Noch keine: Füge in Bibliothek › Umgeb. eine hinzu.
+
+# Picked
+t71962a99 = Ausgewählt
 
 # shellwing may not use that folder.
 t39f14b58 = shellwing darf diesen Ordner nicht verwenden.

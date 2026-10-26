@@ -4325,6 +4325,9 @@ tf81b77f9 = Nenhum trecho ainda. Crie um com + ou sincronize os dos seus outros 
 # No snippets for this host.
 tbf3767c5 = Nenhum trecho para este servidor.
 
+# Browse the snippet library
+t63787b2e = Explorar a biblioteca de trechos
+
 # Filter snippets
 tbb9b10c7 = Filtrar trechos
 
@@ -4506,6 +4509,22 @@ t6e3fab8c = Esquecer
 
 # Filter by name
 tbcb12ca7 = Filtrar por nome
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] { $n } trecho adicionado: execute-o pela tecla Trechos de uma sessão.
+       *[other] { $n } trechos adicionados: execute-os pela tecla Trechos de uma sessão.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Perguntado ao executar: { $names }. Depois de adicionado, ele é seu e você pode editá-lo.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Nenhum ainda: adicione um em Biblioteca › Ambientes.
+
+# Picked
+t71962a99 = Marcado
 
 # shellwing may not use that folder.
 t39f14b58 = O shellwing não tem permissão para usar essa pasta.
