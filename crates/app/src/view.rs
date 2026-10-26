@@ -222,44 +222,7 @@ fn gradient_image(
 /// The session's status changed (connected, closed, failed).
 pub struct StatusChanged;
 
-/// An environment loaded into a pane's shell.
-#[derive(Clone, Debug, PartialEq)]
-pub struct LoadedEnv {
-    pub id: String,
-    pub name: String,
-    pub names: Vec<String>,
-    /// Its `NAME=value`s, in bytes.
-    pub bytes: usize,
-}
-
-/// Values waiting to go to the shell: when it signals `ready` (its echo
-/// off), and, for one loaded into the shell, `done`.
-struct EnvLoad {
-    ready: String,
-    done: Option<String>,
-    values: Vec<zeroize::Zeroizing<String>>,
-    env: Option<LoadedEnv>,
-}
-
-/// How long the shell has to say it is ready before a load is given up:
-/// not a POSIX shell (fish), or not at its prompt.
-const ENV_WAIT: Duration = Duration::from_secs(15);
-
-/// A word for one load's signals, unlike any other in the pane.
-/// The lines that carry `sent`'s values, in turn.
-fn lines(sent: Vec<crate::environment::Sent>) -> Vec<zeroize::Zeroizing<String>> {
-    sent.into_iter().flat_map(|s| s.lines).collect()
-}
-
-fn env_nonce() -> String {
-    static N: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let t = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.subsec_nanos())
-        .unwrap_or(0);
-    format!("{t:x}{n:x}")
-}
+pub use shellwing_core::envs::LoadedEnv;
 
 /// The session ended and the settings say to close the pane.
 pub struct CloseRequested;
@@ -332,11 +295,9 @@ pub struct TermView {
     marked: Option<String>,
     /// A paste the terminal refused as unsafe, waiting for confirmation.
     pending_paste: Option<(String, Instant)>,
-    /// Environments typed for, waiting for the shell to say its echo is
-    /// off before their values go.
-    env_pending: Vec<EnvLoad>,
-    /// Environments loaded into this pane's shell.
-    env_loaded: Vec<LoadedEnv>,
+    /// Environments loaded into the shell, and those waiting for its
+    /// signals.
+    envs: shellwing_core::envs::Envs,
     /// Config files placed on the host until the tab closes.
     placed: Vec<crate::placing::Placed>,
     notice: Option<Notice>,
@@ -485,8 +446,7 @@ impl TermView {
             area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
-            env_pending: vec![],
-            env_loaded: vec![],
+            envs: Default::default(),
             placed: vec![],
             notice: None,
             last_mouse: None,
@@ -749,7 +709,7 @@ impl TermView {
 
     /// The environments loaded into this pane's shell.
     pub fn loaded_envs(&self) -> &[LoadedEnv] {
-        &self.env_loaded
+        self.envs.loaded()
     }
 
     /// Loads `env` (its `values`) into the shell: a command that reads them
@@ -763,29 +723,8 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (names, sent, bytes) = Self::env_values(values)?;
-        let others = self.env_bytes(Some(&env.id));
-        Self::fits(others, bytes)?;
-        let (ready, done) = (
-            format!("ready-{}", env_nonce()),
-            format!("done-{}", env_nonce()),
-        );
-        self.term
-            .text(crate::environment::load(&sent, &ready, &done));
-        self.term.key(NamedKey::Enter, Mods::default());
-        self.wait_for(
-            EnvLoad {
-                ready,
-                done: Some(done),
-                values: lines(sent),
-                env: Some(LoadedEnv {
-                    names,
-                    bytes,
-                    ..env
-                }),
-            },
-            cx,
-        );
+        let ready = self.envs.load(&self.term, env, values)?;
+        self.wait_for(ready, cx);
         Ok(())
     }
 
@@ -801,25 +740,8 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (_, sent, bytes) = Self::env_values(values)?;
-        // The subshell has the ones loaded too.
-        Self::fits(self.env_bytes(None), bytes)?;
-        let ready = format!("ready-{}", env_nonce());
-        let text = crate::environment::wrapped(&sent, &ready, command.trim_end_matches('\n'));
-        // Several lines: one paste, so it runs whole at the Enter.
-        self.term.paste(text, true);
-        if enter {
-            self.term.key(NamedKey::Enter, Mods::default());
-        }
-        self.wait_for(
-            EnvLoad {
-                ready,
-                done: None,
-                values: lines(sent),
-                env: None,
-            },
-            cx,
-        );
+        let ready = self.envs.run_with(&self.term, values, command, enter)?;
+        self.wait_for(ready, cx);
         Ok(())
     }
 
@@ -828,81 +750,21 @@ impl TermView {
         if let Some(why) = self.shell_unready() {
             return Err(why);
         }
-        let (gone, kept): (Vec<_>, Vec<_>) = std::mem::take(&mut self.env_loaded)
-            .into_iter()
-            .partition(|e| id.is_none_or(|id| e.id == id));
-        self.env_loaded = kept;
-        let names: Vec<String> = gone.iter().flat_map(|e| e.names.clone()).collect();
-        if !names.is_empty() {
-            self.term.text(crate::environment::unload(&names));
-            self.term.key(NamedKey::Enter, Mods::default());
-        }
+        self.envs.unload(&self.term, id);
         cx.notify();
         Ok(())
     }
 
-    /// The variables to send, each value as its lines; the names too.
-    fn env_values(
-        values: shellwing_vault::EnvValues,
-    ) -> Result<(Vec<String>, Vec<crate::environment::Sent>, usize), String> {
-        if values.is_empty() {
-            return Err(tr!("It has no variables."));
-        }
-        // Kept within the limits, whatever device saved it.
-        if let Some(o) = shellwing_vault::environment_oversize(
-            values.iter().map(|(n, v)| (n.as_str(), v.as_str())),
-        ) {
-            return Err(crate::environment::said_oversize(&o));
-        }
-        let bytes = values.iter().map(|(n, v)| n.len() + 1 + v.len()).sum();
-        if let Some((n, _)) = values
-            .iter()
-            .find(|(n, _)| !crate::environment::valid_name(n))
-        {
-            return Err(tr!("{name} is not a variable's name.", name = n.clone()));
-        }
-        let names = values.iter().map(|(n, _)| n.clone()).collect();
-        let sent = values
-            .iter()
-            .map(|(n, v)| crate::environment::encode(n, v))
-            .collect();
-        Ok((names, sent, bytes))
-    }
-
-    /// The bytes of the environments loaded here, but `except`'s.
-    fn env_bytes(&self, except: Option<&str>) -> usize {
-        self.env_loaded
-            .iter()
-            .filter(|e| except.is_none_or(|x| e.id != x))
-            .map(|e| e.bytes)
-            .sum()
-    }
-
-    /// Whether `bytes` more fit in the shell beside `loaded`.
-    fn fits(loaded: usize, bytes: usize) -> Result<(), String> {
-        let max = shellwing_vault::limits::LOADED;
-        if loaded + bytes <= max {
-            return Ok(());
-        }
-        Err(tr!(
-            "With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.",
-            size = (loaded + bytes).div_ceil(1024),
-            max = max / 1024
-        ))
-    }
-
-    /// Keeps `load` until the shell signals, or gives it up after a while.
-    fn wait_for(&mut self, load: EnvLoad, cx: &mut Context<Self>) {
-        let ready = load.ready.clone();
-        self.env_pending.push(load);
+    /// Gives up on `ready` if the shell has not signalled it by then.
+    fn wait_for(&mut self, ready: String, cx: &mut Context<Self>) {
         cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(ENV_WAIT).await;
+            cx.background_executor()
+                .timer(shellwing_core::envs::WAIT)
+                .await;
             let _ = this.update(cx, |v, cx| {
-                let before = v.env_pending.len();
-                v.env_pending.retain(|p| p.ready != ready);
-                if v.env_pending.len() < before {
+                if v.envs.give_up(&ready) {
                     v.show_notice(
-                        Notice::warn(tr!("The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).")),
+                        Notice::warn(shellwing_core::envs::gave_up()),
                         LOG_NOTICE,
                         cx,
                     );
@@ -915,34 +777,14 @@ impl TermView {
     /// A signal from a command shellwing typed: the shell is ready for the
     /// values, or has them.
     fn env_signal(&mut self, signal: &str, cx: &mut Context<Self>) {
-        if let Some(i) = self.env_pending.iter().position(|p| p.ready == signal) {
-            for value in std::mem::take(&mut self.env_pending[i].values) {
-                self.term.text(value.to_string());
-                self.term.key(NamedKey::Enter, Mods::default());
-            }
-            if self.env_pending[i].done.is_none() {
-                self.env_pending.remove(i);
-            }
-            return;
+        if let Some(name) = self.envs.signal(&self.term, signal) {
+            self.show_notice(
+                Notice::good(tr!("{name} is loaded into this shell.", name = name)),
+                LOG_NOTICE,
+                cx,
+            );
         }
-        if let Some(i) = self
-            .env_pending
-            .iter()
-            .position(|p| p.done.as_deref() == Some(signal))
-        {
-            let load = self.env_pending.remove(i);
-            if let Some(env) = load.env {
-                let name = env.name.clone();
-                self.env_loaded.retain(|e| e.id != env.id);
-                self.env_loaded.push(env);
-                self.show_notice(
-                    Notice::good(tr!("{name} is loaded into this shell.", name = name)),
-                    LOG_NOTICE,
-                    cx,
-                );
-            }
-            cx.notify();
-        }
+        cx.notify();
     }
 
     /// Starts logging the pane to a new file, or stops, and says where.
@@ -1045,7 +887,8 @@ impl TermView {
 
     /// An environment loaded into the shell: its name; a click unloads it.
     fn env_badges(&self, cx: &mut Context<Self>) -> Vec<gpui::Stateful<gpui::Div>> {
-        self.env_loaded
+        self.envs
+            .loaded()
             .iter()
             .map(|e| {
                 let id = e.id.clone();
@@ -1677,8 +1520,7 @@ impl TermView {
     fn status_changed(&mut self, status: Status, cx: &mut Context<Self>) {
         // A shell that ended took its variables with it.
         if status != Status::Connected {
-            self.env_pending.clear();
-            self.env_loaded.clear();
+            self.envs.clear();
             // Placed files stay on the host: back with the connection, or
             // taken away when the tab closes (or, failing that, when the
             // host connects next).
@@ -2336,8 +2178,9 @@ impl TermView {
                     .on_click(act(|v, _, cx| v.remove_placed(None, cx))),
                 )
             })
-            .when(!self.env_loaded.is_empty(), |d| {
-                let names: Vec<String> = self.env_loaded.iter().map(|e| e.name.clone()).collect();
+            .when(!self.envs.loaded().is_empty(), |d| {
+                let names: Vec<String> =
+                    self.envs.loaded().iter().map(|e| e.name.clone()).collect();
                 d.child(
                     item(
                         "menu-unload-env",

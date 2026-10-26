@@ -13,8 +13,8 @@ struct SessionsView: View {
                 if app.sessions.isEmpty {
                     VStack(spacing: 10) {
                         Image(systemName: "terminal").font(.system(size: 34)).foregroundStyle(Dusk.muted)
-                        Text("No sessions open").font(.headline).foregroundStyle(Dusk.text)
-                        Text("Open one from Hosts.").font(.subheadline).foregroundStyle(Dusk.muted)
+                        Text(tr("No sessions open")).font(.headline).foregroundStyle(Dusk.text)
+                        Text(tr("Open one from Hosts.")).font(.subheadline).foregroundStyle(Dusk.muted)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 80)
@@ -29,7 +29,7 @@ struct SessionsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Dusk.panel.ignoresSafeArea())
-            .navigationTitle("Sessions")
+            .navigationTitle(tr("Sessions"))
             .navigationDestination(for: SessionModel.self) { s in
                 TerminalScreen(model: s)
             }
@@ -66,9 +66,9 @@ struct SessionCard: View {
         }
         .contextMenu {
             if model.status != .connected && model.status != .connecting {
-                Button("Connect again", systemImage: "arrow.clockwise") { model.reconnect() }
+                Button(tr("Connect again"), systemImage: "arrow.clockwise") { model.reconnect() }
             }
-            Button("Close", systemImage: "xmark", role: .destructive, action: close)
+            Button(tr("Close"), systemImage: "xmark", role: .destructive, action: close)
         }
     }
 

@@ -23,16 +23,6 @@ td8a345bd =
     }
 tbf2a5d3a = no editor command
 t6256b3da = no text editor found
-ta78b9fbd = The command is { $size } KB; { $max } KB at most.
-t190cce46 = { $name }: a name takes { $max } characters at most.
-t8a0064ca = { $name } is { $size } KB; a value takes { $max } KB at most.
-t1c9f770c = { $count } variables; { $max } at most.
-tdbf76954 = The variables come to { $size } KB; { $max } KB at most.
-tf2bc7ef2 = The file is { $size } KB; { $max } KB at most.
-td5e1ea7c = The note is { $size } KB; { $max } KB at most.
-t7bb41ed9 = The image is { $size } KB; { $max } KB at most.
-t085c57f3 = The note's images come to { $size } MB; { $max } MB at most.
-tccae79a4 = Not an image that can be kept: a PNG or a JPEG.
 t0fe07306 = Name
 tc85117e2 = The connection ended.
 t424caf2a = The connection ended while writing back.
@@ -896,7 +886,6 @@ t5c4bb67a =
     }
 t27e0e0f9 = Run in { $pane }
 tc580324f = Connect a tab in the main window to run it there.
-t444612de = every host
 te8f231ba =
     { $n ->
         [one] { $n } byte
@@ -1051,13 +1040,6 @@ tb9fa7744 =
         [one] { $n } day ago
        *[other] { $n } days ago
     }
-td2fdfc60 = its password is not saved on this device: connect again in Settings › Sync
-t63a0d436 = { $title } (from { $device })
-t0e55da75 = { $title } (from another device)
-te7d5212e = hosts not synced: { $e }
-tf8592ea2 = settings not synced: { $e }
-t60f438b7 = settings not written: { $e }
-t00f3a4eb = hosts not written: { $e }
 t187bd0b5 = Find a tab: host, user, title
 t09a24eca =
     { $n ->
@@ -1090,9 +1072,6 @@ t500558bd =
        *[other] { $n } files stay when the tab closes.
     }
 td07a4718 = What was there before is { $path }.
-t0993a534 = It has no variables.
-t3883bd87 = With the ones loaded, that comes to { $size } KB; a shell takes { $max } KB at most: unload one first.
-ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
 t5bc879d1 = { $name } is loaded into this shell.
 tcc43a8d9 = Log saved: { $path }
 td2342a94 = Logging to { $path }
@@ -1469,3 +1448,288 @@ tf70ede40 = go to a tab
 t9489dcc2 = show or hide the host list
 t8354c717 = Choose a host on the left to connect
 t4f67c373 = or press { $keys } to find one, or to connect to user@host
+ta78b9fbd = The command is { $size } KB; { $max } KB at most.
+t190cce46 = { $name }: a name takes { $max } characters at most.
+t8a0064ca = { $name } is { $size } KB; a value takes { $max } KB at most.
+t1c9f770c = { $count } variables; { $max } at most.
+tdbf76954 = The variables come to { $size } KB; { $max } KB at most.
+tf2bc7ef2 = The file is { $size } KB; { $max } KB at most.
+td5e1ea7c = The note is { $size } KB; { $max } KB at most.
+t7bb41ed9 = The image is { $size } KB; { $max } KB at most.
+t085c57f3 = The note's images come to { $size } MB; { $max } MB at most.
+tccae79a4 = Not an image that can be kept: a PNG or a JPEG.
+ta1a9b215 = The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+t0993a534 = It has no variables.
+t3883bd87 = With the ones loaded, that comes to { $size } KB; a shell takes { $max } KB at most: unload one first.
+t444612de = every host
+td2fdfc60 = its password is not saved on this device: connect again in Settings › Sync
+t63a0d436 = { $title } (from { $device })
+t0e55da75 = { $title } (from another device)
+te7d5212e = hosts not synced: { $e }
+tf8592ea2 = settings not synced: { $e }
+t60f438b7 = settings not written: { $e }
+t00f3a4eb = hosts not written: { $e }
+t37ca034c = Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
+ta5cf42ea = Nothing is at { $path }.
+t3f9c8dd7 = Address: an address is needed.
+t1a9d2c69 = Address: no spaces.
+tcf956656 = Name: another host has this name.
+t240468fd = Alias: no spaces.
+t6d4194b8 = Alias: another host uses this.
+t48e7bff2 = Port: 1 to 65535.
+t7b146164 = User: no spaces.
+t96503d0f = Key: choose a key.
+t868fa0cd = Keepalive: seconds, 0 to 3600 (0: none).
+tf5b576a7 = Jump: a host cannot jump through itself.
+t575e8c34 = Forward { $forward }: { $e }
+t33a923dd = the password for { $target }
+t847f4536 = the passphrase of { $path }
+t1dca493f = A full-screen program is running: leave it, then try again.
+t25d6e4bc = Unlock shellwing
+t22b7de26 = { $biometry } or your passcode unlocks it.
+t22c93782 = Your passcode unlocks it.
+t8f2f0709 =
+    { $n ->
+        [one] { $n } session stays connected underneath.
+       *[other] { $n } sessions stay connected underneath.
+    }
+t773e80be = No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
+t6210bca9 = stays
+t326d488a = Placed to stay
+t596dc3ba = Placed, it stays when the session ends.
+tcb169849 = Placed, it is taken away when the session ends.
+td3506722 = Binary, { $size }: kept as it is.
+t910b03ca = Replace from Files…
+t94955dee = Only a text file can be imported here.
+tad710134 = Permissions: three digits from 0 to 7, such as 600.
+t31aa06de = No config files for this host. Keep them in Library › Files.
+t2bd139bb = Place a config file
+t72427900 = Replace the one placed until the session ends
+tf442be28 = Place it until the session ends
+t96406163 = Replace it until the session ends
+t816e11b0 = Cannot place { $name }: { $error }
+t10182ed5 = { $name } is at { $path } until the session ends.
+t3b2e2230 = { $name } is at { $path }.
+t3c800198 = If the vault syncs, it goes from your other devices too.
+ta7006e9a = Nothing here.
+t200fdede = The folder and everything in it are deleted on { $host }.
+td57ed776 = It is deleted on { $host }.
+t3efaa7bd = Upload from Files…
+t3f0de492 = Hidden files
+t9dc3aa14 = Add
+t486bedcf = Make
+t1c6b8ca2 = Download the folder
+t08dcb490 = Keep in the vault
+t095d064e = Copy the path
+t7055c52a = A name without /, please.
+t431597d3 = Making { $name }…
+t87125000 = Renaming…
+ta17d02e6 = Deleting { $name }…
+tf36570a5 = { $name } deleted.
+t49917320 = Downloading { $name }…
+t24b03450 = Opening { $name }…
+t763593ef = Uploading { $name }…
+t4d21b20c =
+    { $n ->
+        [one] Uploading { $n } item…
+       *[other] Uploading { $n } items…
+    }
+t0b81da1e = { $name } uploaded.
+tbf7cc840 =
+    { $n ->
+        [one] { $n } item uploaded.
+       *[other] { $n } items uploaded.
+    }
+tbb0f5ffb = Keeping { $name }…
+t71be4d4c = { $name } is in the vault: Library › Files.
+ta4924204 = { $path } changed on { $host } since it was opened.
+tf329d9b0 = Replace it with this
+t2fe29775 = Not saved: { $error }
+t3ff468c2 = A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
+t6801beba = Delete { $group }?
+t8d5eff39 =
+    { $n ->
+        [one] Delete { $group }? Its { $n } host stays, in no group.
+       *[other] Delete { $group }? Its { $n } hosts stay, in no group.
+    }
+te96206b1 = No color
+ta204abe7 = as the server says
+t22e1f2f7 = Alias
+tfc47113a = Make a key for this host
+tc4091336 = Make a key for { $host }
+t14c6a565 = { $name } is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
+t4c5dd8b2 = Tries the keys in the vault, then asks for a password, like ssh.
+t85abc601 = A key file of another device: this phone signs in with the vault's keys.
+t4b96b415 = Uses the keys in an ssh-agent: a desktop's; a phone has none.
+t16c79e2d = Add a jump
+t31e98c98 = Straight to the host. A jump goes through another host first (a bastion).
+t7bd2a9c8 = Favorite: listed first
+t2f5a3205 = Host keys
+t46210079 = As in Settings
+tc99d0b88 = Accept new ones
+t2234971d = Known ones only
+t13e524f5 = Keepalive (s)
+tf8e77e19 = as in Settings
+t4d6f66b8 = Another session
+t4688b082 = Edit { $name }
+t38d39c8f = Add a host
+t85e4b82f = OK
+tceb03600 = Add one with +, or sync the hosts of your other devices.
+tc1738579 = the Keychain said { $status }
+tf645a165 = Envs
+te3596034 = Part
+ta8532270 = Library
+tf81b77f9 = No snippets yet. Make one with +, or sync those of your other devices.
+tbf3767c5 = No snippets for this host.
+t63787b2e = Browse the snippet library
+tbb9b10c7 = Filter snippets
+t2bd643c4 = Offered
+t327a596f = Everywhere
+t0d904ce9 = Group: { $group }
+t3fb3f6b3 = Host: { $host }
+te4ce8331 = Press Enter after it
+tc67c8f52 = Command
+td02256f4 = {"{{"}name{"}}"} asks for a value when it runs; {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} come from the session.
+te90c2175 = Runs with
+t4ef64333 = Their variables are given to it alone, in a subshell, without showing their values.
+t8d57e66a = Run
+tbcdba796 = No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
+t36bfa774 = NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
+t4be168d5 = No notes yet.
+t2e35a678 = Untitled
+t4b4cbe3d = this host
+t9d3e3253 = Delete this note?
+tde67183a = Filter notes
+tf651116c = Markdown
+t905684dd = Show a sensitive note
+t4d6ecc3d = For hosts…
+t2d3653b2 = Insert an image…
+t1440c15d = Note
+tc5fceb9b = That image cannot be read.
+t350fa483 = For hosts
+t590ca79a = Image
+t483ac645 = No sessions open
+t7a72807e = Open one from Hosts.
+tb69a8aec = Sessions
+t05dc6981 = Connect again
+tf77c9aaa =
+    { $n ->
+        [one] { $n } minute
+       *[other] { $n } minutes
+    }
+t71b42d62 = Lock
+taaa2c58c = When shellwing starts, and after this long in the background, it hides until { $biometry } or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+td366e372 = This phone has no passcode, so nothing could ask that it is you.
+t8ad2f046 = As the phone
+t2c041143 = Text size
+t7d96597f = History
+tde3581cd = Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
+t48a98987 = New host keys
+t2dd33559 = Accept them
+t2483aa25 = Refuse them
+t0877f108 =
+    { $n ->
+        [one] Every { $n } second
+       *[other] Every { $n } seconds
+    }
+t25db363e = Connections
+t25360db5 = A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
+t7e7cad2b = SSH keys
+tcdae5fca = Saved passwords
+t12986dd4 = The vault is opening…
+t8cae68cf = Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
+t1a5ee459 = Configuration
+tcdaeae19 = hosts.toml, in the app's own folder
+t5dcdd537 = Version
+t1fcb667e = shellwing on GitHub
+t448c5c7c = Problem
+ta5bda1d5 = No host keys known yet: a host's is kept the first time you connect.
+t97c138ac = A hashed name
+t6e3fab8c = Forget
+t25034152 = Forget the key of { $host }?
+t51c13890 = It is shown to check again the next time you connect.
+tbcb12ca7 = Filter by name
+tcc9793a7 =
+    { $n ->
+        [one] { $n } snippet added: run it from a session's Snippets key.
+       *[other] { $n } snippets added: run them from a session's Snippets key.
+    }
+t2b67b8d3 = Asked when it runs: { $names }. Once added, it is yours to edit.
+te4d214e4 = None yet: add one in Library › Envs.
+t71962a99 = Picked
+t39f14b58 = shellwing may not use that folder.
+t9ad2489c = Place
+t2d4f851d = Last synced
+t6d9d33dc = not yet
+tac696b8b = End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
+tf44b389c = { $device } asks to join
+t329319cf = Approve only if it shows { $code }. It gets everything the vault holds: passwords, keys, snippets and hosts.
+t49658daf = Devices asking
+t7ca0b094 = Stop syncing on this phone?
+t7b47ff6d = The vault stays here, and the copy at the place stays for your other devices.
+tb119de8b = Waiting for a device that syncs there…
+t5b4d0d2f = Open shellwing on it: it asks whether to let this phone in.
+t89d183da = { $device } answered
+tbc9bc44d = Approve on { $device } if it shows the same code.
+tfb82a94e = Joined: this phone syncs there now.
+t237ca793 = This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t91dad0f8 = Where
+t9cc53273 = Password or app password
+t9deef30d = Endpoint: https://s3.eu-west-1.amazonaws.com
+t6689bdf6 = Region (empty: auto)
+t7c04f452 = Folder in the bucket (optional)
+t3a355bd2 = Token
+tcba15eff = Choose another folder…
+tff5adbd9 = Sync the vault
+tfd5abd9b = Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
+tb3c83579 = Pair with a device that syncs there
+t30025399 = Join
+t1d59283c = XXXX-XXXX-…, 13 groups of 4
+t20a260d4 = Join with the recovery key
+t71d27652 = The passphrase set on the other device
+t97bef16c = Join with the passphrase
+t679b365b = A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t9526bd07 = A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t76c422df = The password is kept in this phone's vault, never in the place.
+td364ab30 = shellwing did not start.
+tfd1fc961 = Load an environment
+t3cd7dd37 = Keep it there
+te025e6eb = Take it away now
+t7fad2b94 = { $name }, placed until the session ends
+t4f418d0b = Unload { $name }
+t3ef97d99 = { $path } stays when the session ends.
+tb65f4b23 = { $path } taken away.
+t3fd5ca20 = Save { $offer } in the vault? It is tried first next time.
+t8b267127 = Load an environment…
+te20662aa = Notes…
+t4b68cf4c = Files…
+tdc9941e5 = Place a config file…
+te5f3e2ad = Install a key on this host…
+t92773890 = Left
+t42f35940 = Up
+ta4995035 = Down
+t1e9e9f85 = Right
+t5cadc433 = Hide the keyboard
+t6884a1b4 = Show the keyboard
+t9c92000f = Keys in the vault
+t1913ae2f = Make an Ed25519 key and install it
+t93b96abd = A new key
+teb44b03c = Kept in the vault, encrypted; only its public line goes to { $host }.
+td8f1fd20 = Install a key
+tcc1f38f4 = { $name } is on { $host }: it signs in from now on.
+t1b42e91e = { $name } was on { $host } already.
+td823bccd = No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
+t8dc21305 = Copied
+t4f856dd8 = Share
+te6d5f68b = Hosts that sign in with it need another way in.
+ta2572fcb = Make a key
+t97812638 = A new Ed25519 key
+t698b5927 = Kept in the vault, encrypted, with your other secrets.
+t8e21fd8c = Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
+tdf0a144f = A key's passphrase
+t5b101fa2 = Forget { $name }?
+t736fd9ad = It is asked for again next time.
+t91c53986 = Write it down and keep it apart from this phone. It opens the vault where nothing else can.
+t45dffa07 = Show the vault's recovery key
+t899a4de3 = Not confirmed: the key stays hidden.

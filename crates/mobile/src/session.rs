@@ -1,10 +1,16 @@
 //! A session as the phone sees it: what it is doing, the terminal's latest
 //! frame as rows of styled text, and the keys and text sent to it.
 
+use shellwing_i18n::tr;
 use std::sync::{Arc, Mutex, Weak};
 
+use shellwing_core::envs::{self, Envs, LoadedEnv};
 use shellwing_core::session::{Session, Status};
+use shellwing_ssh::Learned;
+use shellwing_ssh::keys::{self, Installed};
 use shellwing_term::{Event, Frame, Mods, NamedKey, Rgb};
+
+use crate::MobileError;
 
 /// Told when a session has something new to show: a frame, its status, its
 /// title. Called off the main thread; the app reads them on its own.
@@ -110,6 +116,24 @@ pub struct MobileSession {
     title: Mutex<String>,
     /// The last frame taken: a new one only replaces it.
     frame: Mutex<Option<FrameData>>,
+    /// A password or passphrase typed at a prompt that worked: offered to
+    /// keep in the vault.
+    offer: Mutex<Option<Learned>>,
+    /// Environments loaded into the shell, and those waiting for it.
+    envs: Mutex<Envs>,
+    /// What to say once: an environment loaded, a load given up.
+    notice: Mutex<Option<String>>,
+    /// The session's SFTP, opened the first time Files asks.
+    pub(crate) sftp: tokio::sync::Mutex<Option<shellwing_ssh::Sftp>>,
+    /// Config files placed on the host until the session ends.
+    placed: Mutex<Vec<shellwing_core::placing::Placed>>,
+}
+
+/// An environment loaded into a session's shell.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct LoadedEnvRow {
+    pub id: String,
+    pub name: String,
 }
 
 impl MobileSession {
@@ -118,11 +142,20 @@ impl MobileSession {
         listener: Arc<dyn SessionListener>,
         rt: &tokio::runtime::Handle,
     ) -> Arc<Self> {
-        let (wake, events) = (session.wake.clone(), session.events.clone());
+        let (wake, events, learned) = (
+            session.wake.clone(),
+            session.events.clone(),
+            session.learned.clone(),
+        );
         let me = Arc::new(MobileSession {
             title: Mutex::new(session.title.clone()),
             session: Mutex::new(session),
             frame: Mutex::new(None),
+            offer: Mutex::new(None),
+            envs: Mutex::default(),
+            notice: Mutex::new(None),
+            sftp: tokio::sync::Mutex::new(None),
+            placed: Mutex::default(),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
@@ -140,7 +173,21 @@ impl MobileSession {
                                 *lock(&me.title) = t;
                             }
                         }
+                        Ok(Event::Signal(signal)) => {
+                            let Some(me) = weak.upgrade() else { break };
+                            let term = lock(&me.session).term.clone();
+                            if let Some(name) = lock(&me.envs).signal(&term, &signal) {
+                                *lock(&me.notice) = Some(tr!("{name} is loaded into this shell.", name = name));
+                            }
+                        }
                         Ok(_) => {}
+                        Err(_) => break,
+                    },
+                    typed = learned.recv() => match typed {
+                        Ok(l) => {
+                            let Some(me) = weak.upgrade() else { break };
+                            *lock(&me.offer) = Some(l);
+                        }
                         Err(_) => break,
                     },
                 }
@@ -242,6 +289,197 @@ impl MobileSession {
     /// Connects again, after it was lost or closed.
     pub fn reconnect(&self) {
         lock(&self.session).reconnect();
+    }
+
+    /// Something to say once (an environment loaded, a load given up); taken.
+    pub fn notice(&self) -> Option<String> {
+        lock(&self.notice).take()
+    }
+
+    /// The environments loaded into the shell.
+    pub fn loaded_envs(&self) -> Vec<LoadedEnvRow> {
+        lock(&self.envs)
+            .loaded()
+            .iter()
+            .map(|e| LoadedEnvRow {
+                id: e.id.clone(),
+                name: e.name.clone(),
+            })
+            .collect()
+    }
+
+    /// Unloads environment `id` from the shell (None: all of them).
+    pub fn unload_env(&self, id: Option<String>) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        lock(&self.envs).unload(&term, id.as_deref());
+        Ok(())
+    }
+
+    /// What a prompt that worked would keep in the vault, said for the
+    /// question: `the password for deploy@web-1`.
+    pub fn offer(&self) -> Option<String> {
+        lock(&self.offer).as_ref().map(|l| match l {
+            Learned::Password { target, .. } => {
+                tr!("the password for {target}", target = target.to_string())
+            }
+            Learned::Passphrase { key_path, .. } => {
+                tr!("the passphrase of {path}", path = key_path.to_string())
+            }
+        })
+    }
+
+    /// Keeps what was offered in the vault: tried first next time.
+    pub fn save_offer(&self) -> Result<(), MobileError> {
+        let Some(l) = lock(&self.offer).take() else {
+            return Ok(());
+        };
+        lock(&self.session).save(&l).map_err(MobileError::Failed)
+    }
+
+    pub fn dismiss_offer(&self) {
+        lock(&self.offer).take();
+    }
+
+    /// Adds `public` (one line, as `authorized_keys` takes it) to the host's
+    /// `~/.ssh/authorized_keys`, over this session's connection. True when
+    /// it was added, false when it was there already.
+    pub async fn install_key(&self, public: String) -> Result<bool, MobileError> {
+        let answer = lock(&self.session)
+            .remote()
+            .exec(keys::INSTALL, format!("{}\n", public.trim()).into_bytes())
+            .ok_or_else(|| MobileError::Failed(tr!("Not connected.")))?;
+        let ran = answer
+            .await
+            .map_err(|_| MobileError::Failed(tr!("the connection ended")))?
+            .map_err(MobileError::of)?;
+        match keys::installed(ran.status, &ran.stdout, &ran.stderr) {
+            Ok(Installed::Added) => Ok(true),
+            Ok(Installed::Present) => Ok(false),
+            Err(e) => Err(MobileError::Failed(e)),
+        }
+    }
+}
+
+impl MobileSession {
+    /// Why nothing can be typed into the shell now: not connected, or a
+    /// full-screen program has the keys.
+    fn ready(&self) -> Result<(), MobileError> {
+        if lock(&self.session).status() != Status::Connected {
+            return Err(MobileError::Failed(tr!("Not connected.")));
+        }
+        if lock(&self.frame).as_ref().is_some_and(|f| f.alternate) {
+            return Err(MobileError::Failed(tr!(
+                "A full-screen program is running: leave it, then try again."
+            )));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn placed_now(&self) -> Vec<shellwing_core::placing::Placed> {
+        lock(&self.placed).clone()
+    }
+
+    /// The placed file at `path`, or all of them.
+    pub(crate) fn placed_matching(
+        &self,
+        path: Option<&str>,
+    ) -> Vec<shellwing_core::placing::Placed> {
+        lock(&self.placed)
+            .iter()
+            .filter(|p| path.is_none_or(|x| p.path == x))
+            .cloned()
+            .collect()
+    }
+
+    pub(crate) fn add_placed(&self, p: shellwing_core::placing::Placed) {
+        let mut all = lock(&self.placed);
+        all.retain(|x| x.path != p.path);
+        all.push(p);
+    }
+
+    /// No longer placed until the session ends: taken away, or kept.
+    pub(crate) fn drop_placed(&self, paths: &[String]) {
+        lock(&self.placed).retain(|p| !paths.contains(&p.path));
+    }
+
+    /// What runs beside the shell: SFTP, commands.
+    pub(crate) fn remote(&self) -> shellwing_core::session::Remote {
+        lock(&self.session).remote()
+    }
+
+    /// `host`, `user` and `address`, as snippets name them.
+    pub(crate) fn built_ins(&self) -> Vec<(String, String)> {
+        let s = lock(&self.session);
+        let mut out = vec![(
+            "host".to_string(),
+            s.entry.clone().unwrap_or_else(|| s.title.clone()),
+        )];
+        if let Some(t) = s.reached() {
+            out.push(("user".into(), t.user.clone()));
+            out.push(("address".into(), t.host.clone()));
+        }
+        out
+    }
+
+    /// Types `text` (several lines as one paste), and Enter if `enter`.
+    pub(crate) fn type_text(&self, text: &str, enter: bool) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let text = text.trim_end_matches('\n');
+        if text.contains('\n') {
+            term.paste(text.to_string(), true);
+        } else {
+            term.text(text.to_string());
+        }
+        if enter {
+            term.key(NamedKey::Enter, Mods::default());
+        }
+        Ok(())
+    }
+
+    pub(crate) fn run_with_env(
+        self: &Arc<Self>,
+        values: shellwing_vault::EnvValues,
+        command: &str,
+        enter: bool,
+        rt: &tokio::runtime::Runtime,
+    ) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let ready = lock(&self.envs)
+            .run_with(&term, values, command, enter)
+            .map_err(MobileError::Failed)?;
+        self.give_up_later(ready, rt);
+        Ok(())
+    }
+
+    pub(crate) fn load_env(
+        self: &Arc<Self>,
+        env: LoadedEnv,
+        values: shellwing_vault::EnvValues,
+        rt: &tokio::runtime::Runtime,
+    ) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let ready = lock(&self.envs)
+            .load(&term, env, values)
+            .map_err(MobileError::Failed)?;
+        self.give_up_later(ready, rt);
+        Ok(())
+    }
+
+    /// Gives up on `ready` if the shell has not signalled it by then.
+    fn give_up_later(self: &Arc<Self>, ready: String, rt: &tokio::runtime::Runtime) {
+        let me = Arc::downgrade(self);
+        rt.spawn(async move {
+            tokio::time::sleep(envs::WAIT).await;
+            if let Some(me) = me.upgrade()
+                && lock(&me.envs).give_up(&ready)
+            {
+                *lock(&me.notice) = Some(envs::gave_up());
+            }
+        });
     }
 }
 

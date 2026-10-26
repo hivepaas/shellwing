@@ -97,7 +97,8 @@ jobs:
 
   # The UI-free core (term, ssh, config, vault) for the phones, built, not run:
   # a mobile front end links it. Android cross-builds on Linux with the
-  # runner's NDK; iOS needs Xcode, so it runs only when started by hand.
+  # runner's NDK; iOS needs Xcode, so it runs only when started by hand, and
+  # builds the iPhone app (ios/) too.
   android:
     name: android-aarch64 (core)
     if: github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","android"]'), inputs.platforms)
@@ -128,7 +129,7 @@ jobs:
           cargo clippy -p shellwing-core --target aarch64-linux-android -- -D warnings
 
   ios:
-    name: ios-sim-arm64 (core)
+    name: ios-sim-arm64 (app)
     if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["all","ios"]'), inputs.platforms)
     runs-on: macos-latest
     steps:
@@ -140,15 +141,26 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-ios-sim
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim
           components: clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
           key: ios-sim-arm64
 
-      - name: Clippy (core, iOS Simulator)
-        run: cargo clippy -p shellwing-core --target aarch64-apple-ios-sim -- -D warnings
+      - name: Clippy (core and the app's bindings, iOS Simulator)
+        run: cargo clippy -p shellwing-core -p shellwing-mobile --target aarch64-apple-ios-sim -- -D warnings
+
+      # The app itself, for the Simulator, unsigned: what it links and the
+      # Swift UniFFI generates, then the SwiftUI around them.
+      - name: Build the iOS app
+        run: |
+          brew install xcodegen
+          scripts/build_ios.sh --debug
+          (cd ios && xcodegen generate --quiet)
+          xcodebuild -project ios/Shellwing.xcodeproj -scheme Shellwing \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath target/ios \
+            CODE_SIGNING_ALLOWED=NO build
 
   releasesign:
     name: releasesign (Go)

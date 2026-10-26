@@ -8,18 +8,32 @@
 
 uniffi::setup_scaffolding!();
 
+mod config_files;
+mod files;
+mod i18n;
+mod library;
 mod session;
+mod settings;
+mod sync;
+mod vault;
 
+use shellwing_i18n::tr;
 use std::sync::Arc;
 
-use shellwing_config::{Auth, Host, Hosts, Store};
+use shellwing_config::{Auth, AuthMethod, Host, Hosts, Store};
 use shellwing_core::secrets::VaultSlot;
 use shellwing_core::session::{Opens, Session};
-use shellwing_term::{Colors, Rgb};
 
+pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
+pub use files::FileEntry;
+pub use i18n::LanguageRow;
+pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
-    FrameData, Key, MobileSession, RowData, RunData, SessionListener, SessionStatus,
+    FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
+pub use settings::{HostKeyWay, KnownHostRow, SettingsRow, ThemeRow};
+pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
+pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum MobileError {
@@ -44,6 +58,8 @@ pub struct HostRow {
     pub color: Option<u32>,
     /// What opens it: its alias, else its name.
     pub spec: String,
+    pub tags: Vec<String>,
+    pub favorite: bool,
 }
 
 /// A group of hosts, in the file's order; `name` None: the hosts in no group.
@@ -52,47 +68,135 @@ pub struct HostSection {
     pub name: Option<String>,
     pub color: Option<u32>,
     pub hosts: Vec<HostRow>,
+    /// The favorites, first: they are in their groups too.
+    pub favorites: bool,
 }
 
-/// The fields the phone edits; the rest of a host (jumps, forwards, a theme)
-/// stays as `hosts.toml` has it.
+/// A group as its editor has it.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct GroupEdit {
+    /// None: not in hosts.toml yet (new, or only named by its hosts).
+    pub id: Option<String>,
+    pub name: String,
+    pub color: Option<String>,
+    /// The theme of its hosts, unless a host has its own.
+    pub theme: Option<String>,
+}
+
+/// A host as its editor has it, as on the desktop; what the phone does not
+/// edit (the session log) stays as `hosts.toml` has it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct HostEdit {
     /// None: a new host.
     pub id: Option<String>,
     pub name: String,
+    /// A short name to open it by.
+    pub alias: Option<String>,
     pub address: String,
     pub port: Option<u16>,
     pub user: Option<String>,
     pub group: Option<String>,
+    pub tags: Vec<String>,
+    /// Hosts to go through first, outermost first.
+    pub jump: Vec<String>,
+    /// Ports forwarded while connected: `-L 8080:localhost:80`, `-R …`, `-D 1080`.
+    pub forward: Vec<String>,
+    pub auth: AuthWay,
+    /// With `auth` Key: `vault:<id>` for a key in the vault, else a key file.
+    pub key: Option<String>,
+    /// The terminal's theme on this host, by id; None: the app's.
+    pub theme: Option<String>,
+    /// A name of [`host_colors`] or `#rrggbb`.
+    pub color: Option<String>,
+    pub favorite: bool,
+    /// Not synced to other devices.
+    pub local_only: bool,
+    pub forward_agent: bool,
+    /// Seconds between keepalives (0: none); None: the app's setting.
+    pub keepalive: Option<u64>,
+    /// None: the app's setting.
+    pub host_key: Option<HostKeyWay>,
+    /// Typed into the shell once it is ready, after every connect.
+    pub run: Option<String>,
+}
+
+/// How a host is signed in to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum AuthWay {
+    /// As ssh does: keys in the vault, then a password.
+    Auto,
+    Key,
+    Password,
+    /// The ssh-agent's keys (on a desktop: none on a phone).
+    Agent,
+}
+
+/// A color a host can be marked with.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct HostColor {
+    pub name: String,
+    pub rgb: u32,
+}
+
+/// The colors a host or a group can be marked with, by name.
+#[uniffi::export]
+pub fn host_colors() -> Vec<HostColor> {
+    shellwing_config::HOST_COLORS
+        .iter()
+        .map(|(n, v)| HostColor {
+            name: n.to_string(),
+            rgb: *v,
+        })
+        .collect()
+}
+
+/// Why a port forward cannot be, if it cannot: `-L 8080:localhost:80`.
+#[uniffi::export]
+pub fn forward_problem(spec: String) -> Option<String> {
+    spec.trim()
+        .parse::<shellwing_ssh::Forward>()
+        .err()
+        .map(|e| e.to_string())
 }
 
 #[derive(uniffi::Object)]
 pub struct Shellwing {
     store: Store,
     rt: tokio::runtime::Runtime,
-    colors: Colors,
+    /// Saved passwords and SSH keys: `vault.db` beside hosts.toml, its key
+    /// in the platform's keychain.
+    vault: VaultSlot,
+    sync: sync::Syncing,
 }
 
 #[uniffi::export]
 impl Shellwing {
     /// Keeps the configuration in `config_dir` (the app's own folder),
-    /// making it if need be.
+    /// making it if need be; the vault's key in `keys`.
     #[uniffi::constructor]
-    pub fn new(config_dir: String) -> Result<Arc<Self>, MobileError> {
+    pub fn new(config_dir: String, keys: Arc<dyn PlatformKeys>) -> Result<Arc<Self>, MobileError> {
         std::fs::create_dir_all(&config_dir).map_err(MobileError::of)?;
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .thread_name("shellwing-net")
             .build()
             .map_err(MobileError::of)?;
+        let vault = VaultSlot::open_with(
+            std::path::Path::new(&config_dir).join("vault.db"),
+            vault::Keys(keys),
+        );
         let store = Store::new(config_dir);
+        // The app's own choice, else the phone's language.
+        let settings = store.settings().unwrap_or_default();
+        shellwing_i18n::set_language(settings.general.language.as_deref());
         // Hosts written by hand have no id yet; editing one finds it by it.
         store.assign_host_ids().map_err(MobileError::of)?;
+        let sync = sync::Syncing::start(vault.clone(), store.clone(), rt.handle());
         Ok(Arc::new(Shellwing {
             store,
             rt,
-            colors: dusk(),
+            vault,
+            sync,
         }))
     }
 
@@ -109,11 +213,41 @@ impl Shellwing {
         Some(HostEdit {
             id: h.id.clone(),
             name: h.name.clone(),
+            alias: h.alias.clone(),
             address: h.address.clone(),
             port: h.port,
             user: h.user.clone(),
             group: h.group.clone(),
+            tags: h.tags.clone(),
+            jump: h.jump.clone(),
+            forward: h.forward.clone(),
+            auth: match h.auth.method {
+                AuthMethod::Auto => AuthWay::Auto,
+                AuthMethod::Key => AuthWay::Key,
+                AuthMethod::Password => AuthWay::Password,
+                AuthMethod::Agent => AuthWay::Agent,
+            },
+            key: h.auth.key.clone(),
+            theme: h.theme.clone(),
+            color: h.color.clone(),
+            favorite: h.favorite,
+            local_only: h.local_only,
+            forward_agent: h.forward_agent,
+            keepalive: h.keepalive,
+            host_key: h.host_key.map(Into::into),
+            run: h.run.clone(),
         })
+    }
+
+    /// The hosts another can jump through: all but `except` (its name).
+    pub fn jump_choices(&self, except: Option<String>) -> Vec<String> {
+        self.hosts()
+            .map(|h| h.hosts)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|h| h.name)
+            .filter(|n| except.as_deref() != Some(n.as_str()))
+            .collect()
     }
 
     /// The groups hosts can go in.
@@ -135,36 +269,65 @@ impl Shellwing {
     /// Writes `edit` into `hosts.toml`, over the host with its id or as a new
     /// one; returns its id.
     pub fn save_host(&self, edit: HostEdit) -> Result<String, MobileError> {
-        let name = edit.name.trim().to_string();
-        let address = edit.address.trim().to_string();
-        if address.is_empty() {
-            return Err(MobileError::Failed("An address is needed.".into()));
-        }
-        let old = edit.id.as_ref().and_then(|id| {
-            self.hosts()
-                .ok()?
-                .hosts
-                .into_iter()
-                .find(|h| h.id.as_ref() == Some(id))
-        });
-        let mut host = old.unwrap_or_else(|| new_host(&address));
-        host.id = edit.id;
-        host.name = if name.is_empty() {
-            address.clone()
-        } else {
-            name
-        };
-        host.address = address;
-        host.port = edit.port;
-        host.user = edit
-            .user
-            .map(|u| u.trim().to_string())
-            .filter(|u| !u.is_empty());
-        host.group = edit
-            .group
-            .map(|g| g.trim().to_string())
-            .filter(|g| !g.is_empty());
+        let hosts = self.hosts()?;
+        let host = checked(edit, &hosts).map_err(MobileError::Failed)?;
         self.store.save_host(&host).map_err(MobileError::of)
+    }
+
+    /// The group named `name`, to edit.
+    pub fn group(&self, name: String) -> GroupEdit {
+        let hosts = self.hosts().unwrap_or_default();
+        match hosts.groups.into_iter().find(|g| g.name == name) {
+            Some(g) => GroupEdit {
+                id: g.id,
+                name: g.name,
+                color: g.color,
+                theme: g.theme,
+            },
+            None => GroupEdit {
+                id: None,
+                name,
+                color: None,
+                theme: None,
+            },
+        }
+    }
+
+    /// Saves a group; renamed (from `old_name`), its hosts move with it.
+    pub fn save_group(
+        &self,
+        edit: GroupEdit,
+        old_name: Option<String>,
+    ) -> Result<String, MobileError> {
+        let name = edit.name.trim().to_string();
+        if name.is_empty() {
+            return Err(MobileError::Failed(tr!("A name is needed.")));
+        }
+        let hosts = self.hosts()?;
+        let mine = |g: &shellwing_config::Group| match &edit.id {
+            Some(id) => g.id.as_ref() == Some(id),
+            None => old_name.as_deref() == Some(g.name.as_str()),
+        };
+        if hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
+            return Err(MobileError::Failed(tr!("Another group has this name.")));
+        }
+        let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+        let group = shellwing_config::Group {
+            id: edit.id,
+            name,
+            color: clean(edit.color),
+            theme: clean(edit.theme),
+        };
+        self.store
+            .save_group(&group, old_name.as_deref())
+            .map_err(MobileError::of)
+    }
+
+    /// Deletes the group named `name`; its hosts stay, in no group.
+    pub fn delete_group(&self, name: String) -> Result<(), MobileError> {
+        // One only named by its hosts has no id: they leave it all the same.
+        let id = self.group(name.clone()).id.unwrap_or_default();
+        self.store.delete_group(&id, &name).map_err(MobileError::of)
     }
 
     pub fn delete_host(&self, id: String) -> Result<(), MobileError> {
@@ -187,10 +350,19 @@ impl Shellwing {
             &settings,
             self.rt.handle(),
             None,
-            VaultSlot::none(),
+            self.vault.clone(),
         )
         .map_err(MobileError::of)?;
-        session.term.set_colors(self.colors.clone());
+        let name = shellwing_ssh::config::split(&spec)
+            .map(|(_, n, _)| n)
+            .unwrap_or_default();
+        // The host's own theme, else its group's.
+        let theme = hosts.find(&name).and_then(|h| {
+            h.theme
+                .clone()
+                .or_else(|| hosts.group_of(h).and_then(|g| g.theme.clone()))
+        });
+        session.term.set_colors(self.colors(theme.as_deref()));
         Ok(MobileSession::new(session, listener, self.rt.handle()))
     }
 }
@@ -199,6 +371,107 @@ impl Shellwing {
     fn hosts(&self) -> Result<Hosts, MobileError> {
         self.store.hosts().map_err(MobileError::of)
     }
+}
+
+/// `edit` as the host to write over the one with its id (or a new one), or
+/// what is wrong with it, as the desktop's editor says.
+fn checked(edit: HostEdit, hosts: &Hosts) -> Result<Host, String> {
+    let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let spaced = |s: &str| s.chars().any(char::is_whitespace);
+    let address = edit.address.trim().to_string();
+    let name = match edit.name.trim() {
+        "" => address.clone(),
+        n => n.to_string(),
+    };
+    let old = edit
+        .id
+        .as_ref()
+        .and_then(|id| hosts.hosts.iter().find(|h| h.id.as_ref() == Some(id)));
+    let me = |h: &Host| edit.id.is_some() && h.id == edit.id;
+    let taken = |n: &str| {
+        hosts
+            .hosts
+            .iter()
+            .any(|h| !me(h) && (h.name == n || h.alias.as_deref() == Some(n)))
+    };
+    if address.is_empty() {
+        return Err(tr!("Address: an address is needed."));
+    }
+    if spaced(&address) {
+        return Err(tr!("Address: no spaces."));
+    }
+    if taken(&name) {
+        return Err(tr!("Name: another host has this name."));
+    }
+    let alias = clean(edit.alias);
+    if let Some(a) = &alias {
+        if spaced(a) {
+            return Err(tr!("Alias: no spaces."));
+        }
+        if taken(a) {
+            return Err(tr!("Alias: another host uses this."));
+        }
+    }
+    if edit.port == Some(0) {
+        return Err(tr!("Port: 1 to 65535."));
+    }
+    let user = clean(edit.user);
+    if user.as_deref().is_some_and(spaced) {
+        return Err(tr!("User: no spaces."));
+    }
+    let key = clean(edit.key);
+    if edit.auth == AuthWay::Key && key.is_none() {
+        return Err(tr!("Key: choose a key."));
+    }
+    if edit.keepalive.is_some_and(|k| k > 3600) {
+        return Err(tr!("Keepalive: seconds, 0 to 3600 (0: none)."));
+    }
+    if edit.jump.contains(&name) {
+        return Err(tr!("Jump: a host cannot jump through itself."));
+    }
+    for f in &edit.forward {
+        if let Some(e) = forward_problem(f.clone()) {
+            return Err(tr!("Forward {forward}: {e}", forward = f.as_str(), e = e));
+        }
+    }
+    let mut host = old.cloned().unwrap_or_else(|| new_host(&address));
+    host.id = edit.id;
+    host.name = name;
+    host.alias = alias;
+    host.address = address;
+    host.port = edit.port;
+    host.user = user;
+    host.group = clean(edit.group);
+    host.tags = edit
+        .tags
+        .into_iter()
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty())
+        .collect();
+    host.jump = edit.jump;
+    host.forward = edit
+        .forward
+        .into_iter()
+        .map(|f| f.trim().to_string())
+        .collect();
+    host.auth = Auth {
+        method: match edit.auth {
+            AuthWay::Auto => AuthMethod::Auto,
+            AuthWay::Key => AuthMethod::Key,
+            AuthWay::Password => AuthMethod::Password,
+            AuthWay::Agent => AuthMethod::Agent,
+        },
+        key: if edit.auth == AuthWay::Key { key } else { None },
+    };
+    host.theme = clean(edit.theme);
+    host.color = clean(edit.color);
+    host.favorite = edit.favorite;
+    host.local_only = edit.local_only;
+    host.forward_agent = edit.forward_agent;
+    host.keepalive = edit.keepalive;
+    host.host_key = edit.host_key.map(Into::into);
+    host.run = clean(edit.run);
+    Ok(host)
 }
 
 /// A host with nothing set but its address.
@@ -243,6 +516,8 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
             detail,
             color: h.color_rgb().or(group_color),
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
+            tags: h.tags.clone(),
+            favorite: h.favorite,
         }
     };
     let mut names: Vec<String> = hosts.groups.iter().map(|g| g.name.clone()).collect();
@@ -268,8 +543,21 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
                 .map(row)
                 .collect(),
             name: Some(name),
+            favorites: false,
         })
         .collect();
+    let favorites: Vec<HostRow> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
+    if !favorites.is_empty() {
+        out.insert(
+            0,
+            HostSection {
+                name: Some("Favorites".into()),
+                color: None,
+                hosts: favorites,
+                favorites: true,
+            },
+        );
+    }
     let loose: Vec<HostRow> = hosts
         .hosts
         .iter()
@@ -281,61 +569,49 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
             name: None,
             color: None,
             hosts: loose,
+            favorites: false,
         });
     }
     out
-}
-
-/// The terminal's colors: Dusk, the desktop's default dark theme.
-fn dusk() -> Colors {
-    let themes = shellwing_config::Themes::builtin();
-    let rgb = |c: shellwing_config::Color| Rgb {
-        r: c.r,
-        g: c.g,
-        b: c.b,
-    };
-    match themes.find(shellwing_config::DEFAULT_THEME) {
-        Some(t) => Colors {
-            foreground: rgb(t.foreground),
-            background: rgb(t.background),
-            cursor: rgb(t.cursor),
-            palette: t.palette.map(rgb),
-        },
-        None => Colors {
-            foreground: Rgb {
-                r: 0xe2,
-                g: 0xe8,
-                b: 0xf0,
-            },
-            background: Rgb {
-                r: 0x27,
-                g: 0x2e,
-                b: 0x38,
-            },
-            cursor: Rgb {
-                r: 0x4c,
-                g: 0xc4,
-                b: 0xf9,
-            },
-            palette: [Rgb::default(); 16],
-        },
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// The platform's keychain, in memory.
+    #[derive(Default)]
+    struct MemKeys(std::sync::Mutex<Option<Vec<u8>>>);
+
+    impl PlatformKeys for MemKeys {
+        fn load(&self) -> Result<Option<Vec<u8>>, MobileError> {
+            Ok(self.0.lock().map_err(MobileError::of)?.clone())
+        }
+        fn save(&self, key: Vec<u8>) -> Result<(), MobileError> {
+            *self.0.lock().map_err(MobileError::of)? = Some(key);
+            Ok(())
+        }
+        fn forget(&self) -> Result<(), MobileError> {
+            *self.0.lock().map_err(MobileError::of)? = None;
+            Ok(())
+        }
+    }
+
     fn store_with(text: &str) -> (std::path::PathBuf, Arc<Shellwing>) {
-        let dir = std::env::temp_dir().join(format!(
-            "shellwing-mobile-{}-{}",
-            std::process::id(),
-            text.len()
-        ));
+        // One folder per test: they run at once.
+        static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("shellwing-mobile-{}-{n}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("dir");
         std::fs::write(dir.join("hosts.toml"), text).expect("hosts");
-        let app = Shellwing::new(dir.to_string_lossy().into_owned()).expect("app");
+        // What the tests read is the English, whatever the system speaks.
+        std::fs::write(dir.join("config.toml"), "[general]\nlanguage = \"en\"\n").expect("config");
+        let app = Shellwing::new(
+            dir.to_string_lossy().into_owned(),
+            Arc::new(MemKeys::default()),
+        )
+        .expect("app");
         (dir, app)
     }
 
@@ -359,8 +635,9 @@ mod tests {
 
     #[test]
     fn a_host_saved_keeps_what_the_phone_does_not_edit() {
-        let (dir, app) =
-            store_with("[[host]]\nname = \"db\"\naddress = \"10.0.2.5\"\njump = [\"bastion\"]\n");
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"db\"\naddress = \"10.0.2.5\"\njump = [\"bastion\"]\nlog = true\n",
+        );
         let id = app.sections().expect("sections")[0].hosts[0].id.clone();
         let mut edit = app.host(id.clone()).expect("host");
         edit.user = Some("postgres".into());
@@ -369,21 +646,425 @@ mod tests {
         let text = std::fs::read_to_string(dir.join("hosts.toml")).expect("read");
         assert!(text.contains("bastion"), "{text}");
         assert!(text.contains("postgres") && text.contains("2201"), "{text}");
+        assert!(text.contains("log = true"), "{text}");
 
+        let blank = HostEdit {
+            id: None,
+            name: String::new(),
+            alias: None,
+            address: "new.example".into(),
+            port: None,
+            user: None,
+            group: Some("Staging".into()),
+            tags: vec![],
+            jump: vec![],
+            forward: vec![],
+            auth: AuthWay::Auto,
+            key: None,
+            theme: None,
+            color: None,
+            favorite: false,
+            local_only: false,
+            forward_agent: false,
+            keepalive: None,
+            host_key: None,
+            run: None,
+        };
+        let refused = |e: HostEdit| app.save_host(e).expect_err("saved").to_string();
+        assert!(
+            refused(HostEdit {
+                name: "db".into(),
+                ..blank.clone()
+            })
+            .starts_with("Name")
+        );
+        assert!(
+            refused(HostEdit {
+                auth: AuthWay::Key,
+                ..blank.clone()
+            })
+            .starts_with("Key")
+        );
+        assert!(
+            refused(HostEdit {
+                forward: vec!["-L x".into()],
+                ..blank.clone()
+            })
+            .starts_with("Forward")
+        );
+        assert!(forward_problem("-L 8080:localhost:80".into()).is_none());
         let new = app
             .save_host(HostEdit {
-                id: None,
-                name: String::new(),
-                address: "new.example".into(),
-                port: None,
-                user: None,
-                group: Some("Staging".into()),
+                auth: AuthWay::Key,
+                key: Some("vault:k1".into()),
+                theme: Some("nord".into()),
+                tags: vec![" web ".into(), String::new()],
+                host_key: Some(HostKeyWay::Strict),
+                ..blank
             })
             .expect("new");
         assert!(!new.is_empty());
+        let back = app.host(new.clone()).expect("new host");
+        assert_eq!(back.name, "new.example");
+        assert_eq!(
+            (back.key.as_deref(), back.tags.as_slice()),
+            (Some("vault:k1"), &["web".to_string()][..])
+        );
+        assert_eq!(
+            (back.theme.as_deref(), back.host_key),
+            (Some("nord"), Some(HostKeyWay::Strict))
+        );
         assert_eq!(app.groups(), ["Staging"]);
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn library_items_become_snippets() {
+        let (dir, app) = store_with("");
+        let items = app.library_items();
+        assert!(items.len() >= 90);
+        assert!(crate::library::library_tasks().contains(&"Backup".to_string()));
+        let dump = items
+            .iter()
+            .find(|i| i.id == "backup/pg_dump")
+            .expect("pg_dump");
+        assert_eq!(dump.password.as_deref(), Some("PGPASSWORD"));
+        let pick = |env: Option<String>| LibraryPick {
+            index: dump.index,
+            options: vec![],
+            container: true,
+            sudo: None,
+            env,
+        };
+        assert!(
+            crate::library::library_command(pick(None))
+                .starts_with("docker exec -it -e PGPASSWORD {{container}} pg_dump")
+        );
+        // The only environment with its variable is found for it.
+        let env = app
+            .save_environment(
+                String::new(),
+                "db".into(),
+                String::new(),
+                "PGPASSWORD=x\n".into(),
+            )
+            .expect("env");
+        assert_eq!(app.library_env(dump.index), Some(env.clone()));
+        assert_eq!(
+            app.add_from_library(vec![pick(None)], FileUnder::Both)
+                .expect("added"),
+            1
+        );
+        assert_eq!(
+            app.add_from_library(vec![pick(Some(String::new()))], FileUnder::Task)
+                .expect("added"),
+            1
+        );
+        let mine = app.snippets(None);
+        let both = mine
+            .iter()
+            .find(|s| s.category == "PostgreSQL · Backup")
+            .expect("both");
+        assert_eq!(both.needs, [env]);
+        let task = mine.iter().find(|s| s.category == "Backup").expect("task");
+        assert!(task.name.starts_with("PostgreSQL: ") && task.needs.is_empty());
+        let again = app.library_items();
+        assert_eq!(again[dump.index as usize].added, 2);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn favorites_come_first_and_groups_are_edited() {
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"a\"\naddress = \"a.example\"\ngroup = \"Lab\"\nfavorite = true\ntags = [\"pi\"]\n",
+        );
+        let s = app.sections().expect("sections");
+        assert!(s[0].favorites && s[0].hosts[0].tags == ["pi"]);
+        assert_eq!(s[1].name.as_deref(), Some("Lab"));
+        let mut g = app.group("Lab".into());
+        assert!(g.id.is_none(), "only named by its host");
+        g.name = "Home lab".into();
+        g.theme = Some("nord".into());
+        app.save_group(g, Some("Lab".into())).expect("saved");
+        assert_eq!(app.groups(), ["Home lab"]);
+        assert_eq!(app.group("Home lab".into()).theme.as_deref(), Some("nord"));
+        // A new one, with no hosts yet: listed all the same.
+        let empty = GroupEdit {
+            id: None,
+            name: "Staging".into(),
+            color: Some("sky".into()),
+            theme: None,
+        };
+        app.save_group(empty.clone(), None).expect("new group");
+        assert!(app.save_group(empty, None).is_err(), "a second Staging");
+        let s = app.sections().expect("sections");
+        assert!(
+            s.iter()
+                .any(|x| x.name.as_deref() == Some("Staging") && x.hosts.is_empty())
+        );
+        app.delete_group("Staging".into()).expect("deleted");
+        app.delete_group("Home lab".into()).expect("deleted");
+        assert!(app.groups().is_empty());
+        assert_eq!(
+            app.sections().expect("sections").len(),
+            2,
+            "favorites, then no group"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn settings_are_read_and_written_as_the_desktop_does() {
+        let (dir, app) = store_with("");
+        let s = app.settings();
+        assert_eq!(
+            (s.scrollback, s.keepalive, s.host_key),
+            (10_000, 30, HostKeyWay::Ask)
+        );
+        let themes = app.themes();
+        assert!(themes.iter().any(|t| t.id == s.theme), "{}", s.theme);
+        let other = themes
+            .iter()
+            .find(|t| t.id != s.theme)
+            .expect("another")
+            .id
+            .clone();
+        app.set_theme(other.clone()).expect("theme");
+        app.set_scrollback(5).expect("scrollback");
+        app.set_host_key(HostKeyWay::AcceptNew).expect("host key");
+        app.set_keepalive(15).expect("keepalive");
+        let s = app.settings();
+        assert_eq!((s.theme, s.scrollback, s.keepalive), (other, 100, 15));
+        assert_eq!(s.host_key, HostKeyWay::AcceptNew);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_vault_keeps_its_key_in_the_platform_keychain_and_keys_in_it() {
+        let (dir, app) = store_with("");
+        assert!(app.vault_state().ready, "{:?}", app.vault_state());
+        assert!(
+            app.recovery_key()
+                .is_some_and(|k| k.split('-').count() == 13)
+        );
+        assert!(app.generate_key("  ".into()).is_err());
+        let key = app.generate_key("phone".into()).expect("key");
+        assert_eq!(key.kind, "ED25519");
+        assert!(key.public.starts_with("ssh-ed25519 "), "{}", key.public);
+        assert_eq!(app.keys(), std::slice::from_ref(&key));
+        app.forget(key.id).expect("deleted");
+        assert!(app.keys().is_empty());
+        assert!(app.saved_secrets().is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Waits up to 20 s for `done`.
+    fn within(what: &str, mut done: impl FnMut() -> bool) {
+        let start = std::time::Instant::now();
+        while !done() {
+            assert!(start.elapsed().as_secs() < 20, "waited for {what}");
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    }
+
+    #[test]
+    fn a_phone_joins_with_the_recovery_key_and_gets_the_hosts() {
+        let base =
+            std::env::temp_dir().join(format!("shellwing-mobile-sync-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let (shared, a_dir, b_dir) = (base.join("drive"), base.join("a"), base.join("b"));
+        for d in [&shared, &a_dir, &b_dir] {
+            std::fs::create_dir_all(d).expect("dir");
+        }
+        std::fs::write(
+            a_dir.join("hosts.toml"),
+            "[[host]]\nname = \"web-1\"\naddress = \"10.0.1.11\"\n",
+        )
+        .expect("hosts");
+        let open = |d: &std::path::Path| {
+            Shellwing::new(
+                d.to_string_lossy().into_owned(),
+                Arc::new(MemKeys::default()),
+            )
+            .expect("app")
+        };
+        let (a, b) = (open(&a_dir), open(&b_dir));
+        let place = Place::Folder {
+            path: shared.to_string_lossy().into_owned(),
+        };
+
+        let Connected::Started { recovery_key } =
+            a.connect_sync(place.clone(), None).expect("started")
+        else {
+            panic!("the empty folder was not started");
+        };
+        within("the first sync", || a.sync_status().last.is_some());
+        assert!(a.sync_status().said.is_some());
+
+        assert_eq!(
+            b.connect_sync(place.clone(), None).expect("found"),
+            Connected::Other { passphrase: false }
+        );
+        b.join_with_recovery_key(place, recovery_key)
+            .expect("joined");
+        within("web-1 on the phone", || {
+            b.sections()
+                .is_ok_and(|s| s.iter().flat_map(|s| &s.hosts).any(|h| h.name == "web-1"))
+        });
+        assert!(b.sync_status().place.is_some());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn snippets_environments_and_notes_from_the_vault() {
+        let (dir, app) = store_with(
+            "[[group]]\nname = \"Production\"\n\n\
+             [[host]]\nname = \"web-1\"\naddress = \"10.0.1.11\"\ngroup = \"Production\"\n\n\
+             [[host]]\nname = \"pi\"\naddress = \"pi.local\"\n",
+        );
+        let id = app
+            .save_snippet(SnippetEdit {
+                id: String::new(),
+                name: "Restart".into(),
+                category: "Kubernetes".into(),
+                command: "kubectl rollout restart deploy/{{name}} -n {{ns}} # on {{host}}".into(),
+                enter: true,
+                scope: "group:Production".into(),
+                needs: vec![],
+            })
+            .expect("snippet");
+        let all = app.snippets(None);
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0].id, id);
+        assert_eq!(all[0].asked, ["name", "ns"]);
+        assert_eq!(app.snippets(Some("web-1".into())).len(), 1);
+        assert!(
+            app.snippets(Some("pi".into())).is_empty(),
+            "offered outside its group"
+        );
+
+        let env = app
+            .save_environment(
+                String::new(),
+                "Staging".into(),
+                String::new(),
+                "export API=x\nTOKEN='t'\n".into(),
+            )
+            .expect("env");
+        assert_eq!(app.environments()[0].names, ["API", "TOKEN"]);
+        let mut edit = SnippetEdit {
+            id: id.clone(),
+            name: all[0].name.clone(),
+            category: all[0].category.clone(),
+            command: all[0].command.clone(),
+            enter: true,
+            scope: all[0].scope.clone(),
+            needs: vec![env.clone()],
+        };
+        app.save_snippet(edit.clone()).expect("needs");
+        assert_eq!(app.snippets(None)[0].needs, [env]);
+        edit.needs.clear();
+        app.save_snippet(edit).expect("needs none");
+        assert!(app.snippets(None)[0].needs.is_empty());
+        assert!(
+            app.save_environment(
+                String::new(),
+                "Bad".into(),
+                String::new(),
+                "not a line".into()
+            )
+            .is_err()
+        );
+
+        let note = app
+            .save_note(
+                String::new(),
+                "Disk".into(),
+                "Ops".into(),
+                true,
+                vec![],
+                false,
+                Some("# df -h".into()),
+            )
+            .expect("note");
+        assert_eq!(app.notes(None)[0].title, "Disk");
+        assert!(app.notes(None)[0].markdown);
+        assert_eq!(app.note_text(note.clone()).expect("text"), "# df -h");
+        let pi = app
+            .save_note(
+                String::new(),
+                "The Pi".into(),
+                "Ops".into(),
+                false,
+                vec!["pi".into()],
+                true,
+                Some("secret".into()),
+            )
+            .expect("note");
+        let here = app.notes(Some("pi".into()));
+        assert!(here[0].here && here[0].sensitive && here[0].hosts == ["pi"]);
+        assert_eq!(app.notes(Some("web-1".into()))[0].title, "Disk");
+        // Saved again unshown: its text stays.
+        app.save_note(
+            pi.clone(),
+            "Pi".into(),
+            "Ops".into(),
+            false,
+            vec![],
+            true,
+            None,
+        )
+        .expect("saved");
+        assert_eq!(app.note_text(pi).expect("text"), "secret");
+
+        const PNG: &[u8] = &[
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48,
+            0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+            0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78,
+            0x9c, 0x63, 0xf8, 0xcf, 0xc0, 0xf0, 0x1f, 0x00, 0x05, 0x00, 0x01, 0xff, 0x89, 0x99,
+            0x3d, 0x1d, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+        ];
+        assert!(app.add_note_image(b"not an image".to_vec()).is_err());
+        let line = app.add_note_image(PNG.to_vec()).expect("image");
+        let id = line
+            .strip_prefix("![](attachment:")
+            .and_then(|l| l.strip_suffix(')'))
+            .expect("a line");
+        assert!(
+            app.note_image(id.into())
+                .is_some_and(|b| b.starts_with(b"\x89PNG"))
+        );
+
+        let row = |path: &str| ConfigFileRow {
+            id: String::new(),
+            name: "kube prod".into(),
+            category: "Kubernetes".into(),
+            path: path.into(),
+            mode: 0o600,
+            size: 0,
+            binary: false,
+            stays: true,
+            scope: "host:web-1".into(),
+        };
+        assert!(
+            app.save_config_file(row("kube/config"), Some("x".into()))
+                .is_err(),
+            "a relative path"
+        );
+        let file = app
+            .save_config_file(row("~/.kube/config"), Some("apiVersion: v1\n".into()))
+            .expect("file");
+        assert!(app.config_files(Some("web-1".into()))[0].stays);
+        assert!(
+            app.config_files(Some("pi".into())).is_empty(),
+            "offered on another host"
+        );
+        assert_eq!(
+            app.config_file_text(file).expect("text").as_deref(),
+            Some("apiVersion: v1\n")
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

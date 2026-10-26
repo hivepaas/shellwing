@@ -6,6 +6,8 @@ struct TerminalView: UIViewRepresentable {
     @ObservedObject var model: SessionModel
     /// Whether the keyboard is up; a tap on the terminal raises it.
     @Binding var typing: Bool
+    /// This phone's own: the desktop's size is too large here.
+    @AppStorage(TerminalCanvas.fontSizeKey) private var fontSize = TerminalCanvas.defaultFontSize
 
     func makeUIView(context: Context) -> TerminalCanvas {
         let view = TerminalCanvas()
@@ -20,6 +22,7 @@ struct TerminalView: UIViewRepresentable {
 
     func updateUIView(_ view: TerminalCanvas, context: Context) {
         view.model = model
+        view.fontSize = CGFloat(fontSize)
         view.frameData = model.frame
         if typing, !view.isFirstResponder {
             _ = view.becomeFirstResponder()
@@ -41,10 +44,25 @@ final class TerminalCanvas: UIView, UIKeyInput {
         }
     }
 
-    /// The desktop's default size, readable on a phone.
-    private let font = UIFont.monospacedSystemFont(ofSize: 12.5, weight: .regular)
-    private let bold = UIFont.monospacedSystemFont(ofSize: 12.5, weight: .bold)
+    static let fontSizeKey = "terminal.fontSize"
+    static let defaultFontSize = 12.5
+    static let fontSizes: ClosedRange<Double> = 8...24
+
+    /// Text size in points; a pinch changes it.
+    var fontSize: CGFloat = CGFloat(TerminalCanvas.defaultFontSize) {
+        didSet {
+            guard fontSize != oldValue else { return }
+            measure()
+            size = (0, 0)
+            setNeedsLayout()
+            setNeedsDisplay()
+        }
+    }
+    private var font = UIFont.monospacedSystemFont(ofSize: 12.5, weight: .regular)
+    private var bold = UIFont.monospacedSystemFont(ofSize: 12.5, weight: .bold)
     private var cell = CGSize(width: 7.5, height: 16)
+    /// The size when a pinch began.
+    private var pinchedFrom: CGFloat = 0
     private var size: (cols: UInt16, rows: UInt16) = (0, 0)
     /// Rows of the history scrolled but not yet sent, a pan's leftover.
     private var scrollRest: CGFloat = 0
@@ -55,16 +73,35 @@ final class TerminalCanvas: UIView, UIKeyInput {
         backgroundColor = UIColor(hex: 0x272e38)
         isOpaque = true
         contentMode = .redraw
-        let w = ("M" as NSString).size(withAttributes: [.font: font]).width
-        cell = CGSize(width: w, height: ceil(font.lineHeight + 2))
+        measure()
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapped)))
+        addGestureRecognizer(UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:))))
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(panned(_:))))
         isAccessibilityElement = true
-        accessibilityLabel = "Terminal"
+        accessibilityLabel = tr("Terminal")
         accessibilityTraits = .allowsDirectInteraction
     }
 
     required init?(coder: NSCoder) { fatalError("not from a storyboard") }
+
+    private func measure() {
+        font = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        bold = UIFont.monospacedSystemFont(ofSize: fontSize, weight: .bold)
+        let w = ("M" as NSString).size(withAttributes: [.font: font]).width
+        cell = CGSize(width: w, height: ceil(font.lineHeight + 2))
+    }
+
+    /// Larger or smaller text, kept for next time.
+    @objc private func pinched(_ pinch: UIPinchGestureRecognizer) {
+        if pinch.state == .began { pinchedFrom = fontSize }
+        let r = Self.fontSizes
+        let next = (Double(pinchedFrom * pinch.scale) * 2).rounded() / 2
+        let size = min(max(next, r.lowerBound), r.upperBound)
+        if CGFloat(size) != fontSize {
+            fontSize = CGFloat(size)
+            UserDefaults.standard.set(size, forKey: Self.fontSizeKey)
+        }
+    }
 
     // MARK: Size
 

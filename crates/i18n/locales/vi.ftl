@@ -55,36 +55,6 @@ tbf2a5d3a = chưa có lệnh mở trình soạn thảo
 # no text editor found
 t6256b3da = không tìm thấy trình soạn thảo văn bản
 
-# The command is {size} KB; {max} KB at most.
-ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.
-
-# {name}: a name takes {max} characters at most.
-t190cce46 = { $name }: tên biến tối đa { $max } ký tự.
-
-# {name} is {size} KB; a value takes {max} KB at most.
-t8a0064ca = { $name } dài { $size } KB; mỗi giá trị tối đa { $max } KB.
-
-# {count} variables; {max} at most.
-t1c9f770c = { $count } biến; tối đa { $max }.
-
-# The variables come to {size} KB; {max} KB at most.
-tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
-
-# The file is {size} KB; {max} KB at most.
-tf2bc7ef2 = Tệp dài { $size } KB; tối đa { $max } KB.
-
-# The note is {size} KB; {max} KB at most.
-td5e1ea7c = Ghi chú dài { $size } KB; tối đa { $max } KB.
-
-# The image is {size} KB; {max} KB at most.
-t7bb41ed9 = Ảnh dài { $size } KB; tối đa { $max } KB.
-
-# The note's images come to {size} MB; {max} MB at most.
-t085c57f3 = Ảnh của ghi chú tổng cộng { $size } MB; tối đa { $max } MB.
-
-# Not an image that can be kept: a PNG or a JPEG.
-tccae79a4 = Không phải ảnh có thể lưu: chỉ PNG hoặc JPEG.
-
 # Name
 t0fe07306 = Tên
 
@@ -2485,9 +2455,6 @@ t27e0e0f9 = Chạy trong { $pane }
 # Connect a tab in the main window to run it there.
 tc580324f = Kết nối một tab ở cửa sổ chính để chạy ở đó.
 
-# every host
-t444612de = mọi máy chủ
-
 # {n} byte | {n} bytes
 te8f231ba =
     { $n ->
@@ -2824,27 +2791,6 @@ t137b052e = { $n } giờ trước
 # {n} day ago | {n} days ago
 tb9fa7744 = { $n } ngày trước
 
-# its password is not saved on this device: connect again in Settings › Sync
-td2fdfc60 = mật khẩu của nó chưa được lưu trên thiết bị này: hãy kết nối lại trong Cài đặt › Đồng bộ
-
-# {title} (from {device})
-t63a0d436 = { $title } (từ { $device })
-
-# {title} (from another device)
-t0e55da75 = { $title } (từ thiết bị khác)
-
-# hosts not synced: {e}
-te7d5212e = chưa đồng bộ được máy chủ: { $e }
-
-# settings not synced: {e}
-tf8592ea2 = chưa đồng bộ được cài đặt: { $e }
-
-# settings not written: {e}
-t60f438b7 = chưa ghi được cài đặt: { $e }
-
-# hosts not written: {e}
-t00f3a4eb = chưa ghi được máy chủ: { $e }
-
 # Find a tab: host, user, title
 t187bd0b5 = Tìm tab: máy chủ, người dùng, tiêu đề
 
@@ -2898,15 +2844,6 @@ t500558bd =
 
 # What was there before is {path}.
 td07a4718 = Tệp có ở đó trước kia giờ là { $path }.
-
-# It has no variables.
-t0993a534 = Nó không có biến nào.
-
-# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
-t3883bd87 = Cộng với các bộ đang nạp là { $size } KB; một shell nhận tối đa { $max } KB: hãy gỡ bớt một bộ trước.
-
-# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
-ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).
 
 # {name} is loaded into this shell.
 t5bc879d1 = Đã nạp { $name } vào shell này.
@@ -3885,3 +3822,795 @@ t8354c717 = Chọn một máy chủ bên trái để kết nối
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host
+
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: tên biến tối đa { $max } ký tự.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } dài { $size } KB; mỗi giá trị tối đa { $max } KB.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } biến; tối đa { $max }.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Tổng các biến là { $size } KB; tối đa { $max } KB.
+
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = Tệp dài { $size } KB; tối đa { $max } KB.
+
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = Ghi chú dài { $size } KB; tối đa { $max } KB.
+
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = Ảnh dài { $size } KB; tối đa { $max } KB.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Ảnh của ghi chú tổng cộng { $size } MB; tối đa { $max } MB.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = Không phải ảnh có thể lưu: chỉ PNG hoặc JPEG.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = Shell không nhận các biến: nó không ở dấu nhắc lệnh, hoặc không phải shell POSIX (sh, bash, zsh).
+
+# It has no variables.
+t0993a534 = Nó không có biến nào.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Cộng với các bộ đang nạp là { $size } KB; một shell nhận tối đa { $max } KB: hãy gỡ bớt một bộ trước.
+
+# every host
+t444612de = mọi máy chủ
+
+# its password is not saved on this device: connect again in Settings › Sync
+td2fdfc60 = mật khẩu của nó chưa được lưu trên thiết bị này: hãy kết nối lại trong Cài đặt › Đồng bộ
+
+# {title} (from {device})
+t63a0d436 = { $title } (từ { $device })
+
+# {title} (from another device)
+t0e55da75 = { $title } (từ thiết bị khác)
+
+# hosts not synced: {e}
+te7d5212e = chưa đồng bộ được máy chủ: { $e }
+
+# settings not synced: {e}
+tf8592ea2 = chưa đồng bộ được cài đặt: { $e }
+
+# settings not written: {e}
+t60f438b7 = chưa ghi được cài đặt: { $e }
+
+# hosts not written: {e}
+t00f3a4eb = chưa ghi được máy chủ: { $e }
+
+# Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
+t37ca034c = Vị trí đặt: đường dẫn tệp bắt đầu bằng / hoặc ~/, ví dụ ~/.kube/config.
+
+# Nothing is at {path}.
+ta5cf42ea = Không có gì ở { $path }.
+
+# Address: an address is needed.
+t3f9c8dd7 = Địa chỉ: cần có địa chỉ.
+
+# Address: no spaces.
+t1a9d2c69 = Địa chỉ: không có khoảng trắng.
+
+# Name: another host has this name.
+tcf956656 = Tên: đã có máy chủ khác tên này.
+
+# Alias: no spaces.
+t240468fd = Tên gọi: không có khoảng trắng.
+
+# Alias: another host uses this.
+t6d4194b8 = Tên gọi: máy chủ khác đã dùng.
+
+# Port: 1 to 65535.
+t48e7bff2 = Cổng: từ 1 đến 65535.
+
+# User: no spaces.
+t7b146164 = Người dùng: không có khoảng trắng.
+
+# Key: choose a key.
+t96503d0f = Khoá: hãy chọn một khoá.
+
+# Keepalive: seconds, 0 to 3600 (0: none).
+t868fa0cd = Giữ kết nối: số giây, từ 0 đến 3600 (0: không dùng).
+
+# Jump: a host cannot jump through itself.
+tf5b576a7 = Máy nhảy: máy chủ không thể nhảy qua chính nó.
+
+# Forward {forward}: {e}
+t575e8c34 = Chuyển tiếp { $forward }: { $e }
+
+# the password for {target}
+t33a923dd = mật khẩu cho { $target }
+
+# the passphrase of {path}
+t847f4536 = cụm mật khẩu của { $path }
+
+# A full-screen program is running: leave it, then try again.
+t1dca493f = Một chương trình toàn màn hình đang chạy: thoát nó rồi thử lại.
+
+# Unlock shellwing
+t25d6e4bc = Mở khoá shellwing
+
+# {biometry} or your passcode unlocks it.
+t22b7de26 = { $biometry } hoặc mật mã của bạn sẽ mở khoá.
+
+# Your passcode unlocks it.
+t22c93782 = Mật mã của bạn sẽ mở khoá.
+
+# {n} session stays connected underneath. | {n} sessions stay connected underneath.
+t8f2f0709 =
+    { $n ->
+       *[other] { $n } phiên vẫn kết nối bên dưới.
+    }
+
+# No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
+t773e80be = Chưa có tệp cấu hình nào: các tệp giữ trong kho (một kubeconfig, một .npmrc), đặt lên máy chủ từ một phiên.
+
+# stays
+t6210bca9 = giữ lại
+
+# Placed to stay
+t326d488a = Đặt và giữ lại luôn
+
+# Placed, it stays when the session ends.
+t596dc3ba = Khi đặt, tệp vẫn ở đó khi phiên kết thúc.
+
+# Placed, it is taken away when the session ends.
+tcb169849 = Khi đặt, tệp được gỡ đi khi phiên kết thúc.
+
+# Binary, {size}: kept as it is.
+td3506722 = Nhị phân, { $size }: giữ nguyên.
+
+# Replace from Files…
+t910b03ca = Thay bằng tệp từ Tệp…
+
+# Only a text file can be imported here.
+t94955dee = Chỉ nhập được tệp văn bản ở đây.
+
+# Permissions: three digits from 0 to 7, such as 600.
+tad710134 = Quyền: ba chữ số từ 0 đến 7, ví dụ 600.
+
+# No config files for this host. Keep them in Library › Files.
+t31aa06de = Không có tệp cấu hình nào cho máy chủ này. Hãy lưu chúng trong Thư viện › Tệp.
+
+# Place a config file
+t2bd139bb = Đặt một tệp cấu hình
+
+# Replace the one placed until the session ends
+t72427900 = Thay tệp đã đặt, tới khi phiên kết thúc
+
+# Place it until the session ends
+tf442be28 = Đặt tới khi phiên kết thúc
+
+# Replace it until the session ends
+t96406163 = Thay tới khi phiên kết thúc
+
+# Cannot place {name}: {error}
+t816e11b0 = Không đặt được { $name }: { $error }
+
+# {name} is at {path} until the session ends.
+t10182ed5 = { $name } nằm ở { $path } tới khi phiên kết thúc.
+
+# {name} is at {path}.
+t3b2e2230 = { $name } nằm ở { $path }.
+
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Nếu kho đang đồng bộ, nó cũng bị xoá khỏi các thiết bị khác của bạn.
+
+# Nothing here.
+ta7006e9a = Không có gì ở đây.
+
+# The folder and everything in it are deleted on {host}.
+t200fdede = Thư mục và mọi thứ bên trong sẽ bị xoá trên { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Nó sẽ bị xoá trên { $host }.
+
+# Upload from Files…
+t3efaa7bd = Tải lên từ Tệp…
+
+# Hidden files
+t3f0de492 = Tệp ẩn
+
+# Add
+t9dc3aa14 = Thêm
+
+# Make
+t486bedcf = Tạo
+
+# Download the folder
+t1c6b8ca2 = Tải xuống thư mục
+
+# Keep in the vault
+t08dcb490 = Lưu vào kho
+
+# Copy the path
+t095d064e = Sao chép đường dẫn
+
+# A name without /, please.
+t7055c52a = Hãy đặt tên không có dấu /.
+
+# Making {name}…
+t431597d3 = Đang tạo { $name }…
+
+# Renaming…
+t87125000 = Đang đổi tên…
+
+# Deleting {name}…
+ta17d02e6 = Đang xoá { $name }…
+
+# {name} deleted.
+tf36570a5 = Đã xoá { $name }.
+
+# Downloading {name}…
+t49917320 = Đang tải xuống { $name }…
+
+# Opening {name}…
+t24b03450 = Đang mở { $name }…
+
+# Uploading {name}…
+t763593ef = Đang tải lên { $name }…
+
+# Uploading {n} item… | Uploading {n} items…
+t4d21b20c =
+    { $n ->
+       *[other] Đang tải lên { $n } mục…
+    }
+
+# {name} uploaded.
+t0b81da1e = Đã tải lên { $name }.
+
+# {n} item uploaded. | {n} items uploaded.
+tbf7cc840 =
+    { $n ->
+       *[other] Đã tải lên { $n } mục.
+    }
+
+# Keeping {name}…
+tbb0f5ffb = Đang lưu { $name } vào kho…
+
+# {name} is in the vault: Library › Files.
+t71be4d4c = { $name } đã ở trong kho: Thư viện › Tệp.
+
+# {path} changed on {host} since it was opened.
+ta4924204 = { $path } đã thay đổi trên { $host } từ lúc được mở.
+
+# Replace it with this
+tf329d9b0 = Thay bằng bản này
+
+# Not saved: {error}
+t2fe29775 = Chưa lưu: { $error }
+
+# A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
+t3ff468c2 = Chủ đề riêng của máy chủ được ưu tiên hơn của nhóm. Chọn nhóm trong trình sửa của máy chủ để đưa máy chủ vào nhóm.
+
+# Delete {group}?
+t6801beba = Xoá { $group }?
+
+# Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
+t8d5eff39 =
+    { $n ->
+       *[other] Xoá { $group }? { $n } máy chủ của nhóm vẫn được giữ, không thuộc nhóm nào.
+    }
+
+# No color
+te96206b1 = Không màu
+
+# as the server says
+ta204abe7 = theo máy chủ
+
+# Alias
+t22e1f2f7 = Tên gọi
+
+# Make a key for this host
+tfc47113a = Tạo khoá cho máy chủ này
+
+# Make a key for {host}
+tc4091336 = Tạo khoá cho { $host }
+
+# {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
+t14c6a565 = { $name } là khoá mới: máy chủ chưa có nó. Hãy kết nối một lần bằng cách khác (mật khẩu), rồi cài nó từ menu của phiên.
+
+# Tries the keys in the vault, then asks for a password, like ssh.
+t4c5dd8b2 = Thử các khoá trong kho, rồi hỏi mật khẩu, như ssh.
+
+# A key file of another device: this phone signs in with the vault's keys.
+t85abc601 = Tệp khoá của thiết bị khác: điện thoại này đăng nhập bằng các khoá trong kho.
+
+# Uses the keys in an ssh-agent: a desktop's; a phone has none.
+t4b96b415 = Dùng các khoá trong ssh-agent: của máy tính; điện thoại không có agent.
+
+# Add a jump
+t16c79e2d = Thêm máy nhảy
+
+# Straight to the host. A jump goes through another host first (a bastion).
+t31e98c98 = Kết nối thẳng tới máy chủ. Với máy nhảy, kết nối đi qua một máy chủ khác trước (bastion).
+
+# Favorite: listed first
+t7bd2a9c8 = Yêu thích: xếp đầu danh sách
+
+# Host keys
+t2f5a3205 = Khoá máy chủ
+
+# As in Settings
+t46210079 = Như trong Cài đặt
+
+# Accept new ones
+tc99d0b88 = Chấp nhận khoá mới
+
+# Known ones only
+t2234971d = Chỉ khoá đã biết
+
+# Keepalive (s)
+t13e524f5 = Giữ kết nối (giây)
+
+# as in Settings
+tf8e77e19 = như trong Cài đặt
+
+# Another session
+t4d6f66b8 = Phiên khác
+
+# Edit {name}
+t4688b082 = Sửa { $name }
+
+# Add a host
+t38d39c8f = Thêm máy chủ
+
+# OK
+t85e4b82f = OK
+
+# Add one with +, or sync the hosts of your other devices.
+tceb03600 = Thêm bằng +, hoặc đồng bộ máy chủ từ các thiết bị khác của bạn.
+
+# the Keychain said {status}
+tc1738579 = Keychain báo { $status }
+
+# Envs
+tf645a165 = Biến
+
+# Part
+te3596034 = Mục
+
+# Library
+ta8532270 = Thư viện
+
+# No snippets yet. Make one with +, or sync those of your other devices.
+tf81b77f9 = Chưa có đoạn lệnh nào. Tạo bằng +, hoặc đồng bộ đoạn lệnh từ các thiết bị khác của bạn.
+
+# No snippets for this host.
+tbf3767c5 = Không có đoạn lệnh nào cho máy chủ này.
+
+# Browse the snippet library
+t63787b2e = Xem thư viện đoạn lệnh
+
+# Filter snippets
+tbb9b10c7 = Lọc đoạn lệnh
+
+# Offered
+t2bd643c4 = Dành cho
+
+# Everywhere
+t327a596f = Mọi nơi
+
+# Group: {group}
+t0d904ce9 = Nhóm: { $group }
+
+# Host: {host}
+t3fb3f6b3 = Máy chủ: { $host }
+
+# Press Enter after it
+te4ce8331 = Nhấn Enter sau khi gõ
+
+# Command
+tc67c8f52 = Lệnh
+
+# {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
+td02256f4 = {"{{"}name{"}}"} sẽ hỏi giá trị khi chạy; {"{{"}host{"}}"}, {"{{"}user{"}}"} và {"{{"}address{"}}"} lấy từ phiên.
+
+# Runs with
+te90c2175 = Chạy kèm
+
+# Their variables are given to it alone, in a subshell, without showing their values.
+t4ef64333 = Các biến của chúng chỉ được cấp riêng cho nó, trong một subshell, không hiện giá trị.
+
+# Run
+t8d57e66a = Chạy
+
+# No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
+tbcdba796 = Chưa có bộ biến nào: các biến giữ trong kho, được nạp vào shell của một phiên mà không hiện giá trị.
+
+# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
+t36bfa774 = NAME=value, mỗi dòng một biến. Tên không có gì sau dấu = sẽ giữ giá trị hiện có; giá trị không bao giờ hiện ở đây.
+
+# No notes yet.
+t4be168d5 = Chưa có ghi chú nào.
+
+# Untitled
+t2e35a678 = Chưa đặt tên
+
+# this host
+t4b4cbe3d = máy chủ này
+
+# Delete this note?
+t9d3e3253 = Xoá ghi chú này?
+
+# Filter notes
+tde67183a = Lọc ghi chú
+
+# Markdown
+tf651116c = Markdown
+
+# Show a sensitive note
+t905684dd = Hiện ghi chú nhạy cảm
+
+# For hosts…
+t4d6ecc3d = Cho máy chủ…
+
+# Insert an image…
+t2d3653b2 = Chèn ảnh…
+
+# Note
+t1440c15d = Ghi chú
+
+# That image cannot be read.
+tc5fceb9b = Không đọc được ảnh đó.
+
+# For hosts
+t350fa483 = Cho máy chủ
+
+# Image
+t590ca79a = Ảnh
+
+# No sessions open
+t483ac645 = Chưa có phiên nào đang mở
+
+# Open one from Hosts.
+t7a72807e = Mở một phiên từ Máy chủ.
+
+# Sessions
+tb69a8aec = Phiên
+
+# Connect again
+t05dc6981 = Kết nối lại
+
+# {n} minute | {n} minutes
+tf77c9aaa =
+    { $n ->
+       *[other] { $n } phút
+    }
+
+# Lock
+t71b42d62 = Khoá
+
+# When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+taaa2c58c = Khi shellwing khởi động, và sau khoảng thời gian này ở chế độ nền, nó sẽ ẩn đi cho tới khi { $biometry } hoặc mật mã xác nhận đó là bạn. Một lớp bảo vệ nhẹ khi quên khoá điện thoại: các phiên vẫn tiếp tục chạy bên dưới.
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = Khi shellwing khởi động, và sau khoảng thời gian này ở chế độ nền, nó sẽ ẩn đi cho tới khi mật mã xác nhận đó là bạn. Một lớp bảo vệ nhẹ khi quên khoá điện thoại: các phiên vẫn tiếp tục chạy bên dưới.
+
+# This phone has no passcode, so nothing could ask that it is you.
+td366e372 = Điện thoại này không có mật mã, nên không có cách nào để xác nhận đó là bạn.
+
+# As the phone
+t8ad2f046 = Theo điện thoại
+
+# Text size
+t2c041143 = Cỡ chữ
+
+# History
+t7d96597f = Lịch sử cuộn
+
+# Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
+tde3581cd = Các phiên mở sau khi thay đổi sẽ dùng giá trị mới. Chụm hai ngón trên terminal cũng đổi được cỡ chữ; cỡ chữ là riêng của điện thoại này.
+
+# New host keys
+t48a98987 = Khoá máy chủ mới
+
+# Accept them
+t2dd33559 = Chấp nhận
+
+# Refuse them
+t2483aa25 = Từ chối
+
+# Every {n} second | Every {n} seconds
+t0877f108 =
+    { $n ->
+       *[other] Mỗi { $n } giây
+    }
+
+# Connections
+t25db363e = Kết nối
+
+# A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
+t25360db5 = Cài đặt riêng của máy chủ, trong trình sửa của nó, được ưu tiên. Khoá đã thay đổi luôn bị từ chối: hãy quên máy chủ trong Máy chủ đã biết để chấp nhận khoá mới của nó.
+
+# SSH keys
+t7e7cad2b = Khoá SSH
+
+# Saved passwords
+tcdae5fca = Mật khẩu đã lưu
+
+# The vault is opening…
+t12986dd4 = Kho đang mở…
+
+# Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
+t8cae68cf = Mật khẩu và khoá, được mã hoá trên điện thoại này; khoá của kho nằm trong iOS Keychain, chỉ trên điện thoại này.
+
+# Configuration
+t1a5ee459 = Cấu hình
+
+# hosts.toml, in the app's own folder
+tcdaeae19 = hosts.toml, trong thư mục riêng của ứng dụng
+
+# Version
+t5dcdd537 = Phiên bản
+
+# shellwing on GitHub
+t1fcb667e = shellwing trên GitHub
+
+# Problem
+t448c5c7c = Sự cố
+
+# No host keys known yet: a host's is kept the first time you connect.
+ta5bda1d5 = Chưa biết khoá máy chủ nào: khoá của một máy chủ được lưu lần đầu bạn kết nối.
+
+# A hashed name
+t97c138ac = Một tên đã băm
+
+# Forget
+t6e3fab8c = Quên
+
+# Forget the key of {host}?
+t25034152 = Quên khoá của { $host }?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Lần kết nối tới, khoá sẽ được hiện ra để bạn kiểm tra lại.
+
+# Filter by name
+tbcb12ca7 = Lọc theo tên
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] Đã thêm { $n } đoạn lệnh: chạy bằng phím Đoạn lệnh trong phiên.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Hỏi khi chạy: { $names }. Thêm rồi là của bạn, sửa tuỳ ý.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Chưa có: thêm trong Thư viện › Biến.
+
+# Picked
+t71962a99 = Đã chọn
+
+# shellwing may not use that folder.
+t39f14b58 = shellwing không được phép dùng thư mục đó.
+
+# Place
+t9ad2489c = Chỗ đồng bộ
+
+# Last synced
+t2d4f851d = Lần đồng bộ cuối
+
+# not yet
+t6d9d33dc = chưa có
+
+# End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
+tac696b8b = Mã hoá đầu-cuối: chỗ đồng bộ chỉ chứa những gì khoá của kho mở được. Đồng bộ mỗi phút khi shellwing đang mở, và khi có thay đổi.
+
+# {device} asks to join
+tf44b389c = { $device } xin tham gia
+
+# Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
+t329319cf = Chỉ đồng ý nếu nó hiện mã { $code }. Thiết bị đó sẽ nhận mọi thứ trong kho: mật khẩu, khoá, đoạn lệnh và máy chủ.
+
+# Devices asking
+t49658daf = Thiết bị đang xin tham gia
+
+# Stop syncing on this phone?
+t7ca0b094 = Ngừng đồng bộ trên điện thoại này?
+
+# The vault stays here, and the copy at the place stays for your other devices.
+t7b47ff6d = Kho vẫn ở đây, và bản ở chỗ đồng bộ vẫn được giữ cho các thiết bị khác của bạn.
+
+# Waiting for a device that syncs there…
+tb119de8b = Đang chờ một thiết bị đồng bộ ở đó…
+
+# Open shellwing on it: it asks whether to let this phone in.
+t5b4d0d2f = Mở shellwing trên thiết bị đó: nó sẽ hỏi có cho điện thoại này vào không.
+
+# {device} answered
+t89d183da = { $device } đã trả lời
+
+# Approve on {device} if it shows the same code.
+tbc9bc44d = Hãy đồng ý trên { $device } nếu nó hiện cùng mã.
+
+# Joined: this phone syncs there now.
+tfb82a94e = Đã tham gia: giờ điện thoại này đồng bộ ở đó.
+
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Giờ điện thoại này đồng bộ ở đó. Khoá khôi phục mở được kho trên các thiết bị khác của bạn: hãy ghi lại.
+
+# Where
+t91dad0f8 = Nơi đồng bộ
+
+# Password or app password
+t9cc53273 = Mật khẩu hoặc mật khẩu ứng dụng
+
+# Endpoint: https://s3.eu-west-1.amazonaws.com
+t9deef30d = Endpoint: https://s3.eu-west-1.amazonaws.com
+
+# Region (empty: auto)
+t6689bdf6 = Region (để trống: tự động)
+
+# Folder in the bucket (optional)
+t7c04f452 = Thư mục trong bucket (không bắt buộc)
+
+# Token
+t3a355bd2 = Token
+
+# Choose another folder…
+tcba15eff = Chọn thư mục khác…
+
+# Sync the vault
+tff5adbd9 = Đồng bộ kho
+
+# Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
+tfd5abd9b = Ở đó có kho của một thiết bị khác. Hãy tham gia để có máy chủ, khoá, mật khẩu và đoạn lệnh của nó trên điện thoại này.
+
+# Pair with a device that syncs there
+tb3c83579 = Ghép với một thiết bị đồng bộ ở đó
+
+# Join
+t30025399 = Tham gia
+
+# XXXX-XXXX-…, 13 groups of 4
+t1d59283c = XXXX-XXXX-…, 13 nhóm 4 ký tự
+
+# Join with the recovery key
+t20a260d4 = Tham gia bằng khoá khôi phục
+
+# The passphrase set on the other device
+t71d27652 = Cụm mật khẩu đã đặt trên thiết bị kia
+
+# Join with the passphrase
+t97bef16c = Tham gia bằng cụm mật khẩu
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Một thư mục mà thiết bị khác cũng đồng bộ, như thư mục của shellwing trong iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Một repository riêng tư trên GitHub, GitLab, Gitea hoặc máy chủ của bạn, theo địa chỉ https://, với một token được phép push lên đó (trên GitHub là token fine-grained có quyền Contents: đọc và ghi). Mỗi thay đổi là một commit. Token được giữ trong kho của điện thoại này.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Mật khẩu được giữ trong kho của điện thoại này, không bao giờ ở chỗ đồng bộ.
+
+# shellwing did not start.
+td364ab30 = shellwing không khởi động được.
+
+# Load an environment
+tfd1fc961 = Nạp một bộ biến
+
+# Keep it there
+t3cd7dd37 = Giữ lại ở đó
+
+# Take it away now
+te025e6eb = Gỡ đi ngay
+
+# {name}, placed until the session ends
+t7fad2b94 = { $name }, đã đặt tới khi phiên kết thúc
+
+# Unload {name}
+t4f418d0b = Gỡ { $name }
+
+# {path} stays when the session ends.
+t3ef97d99 = { $path } vẫn ở đó khi phiên kết thúc.
+
+# {path} taken away.
+tb65f4b23 = Đã gỡ { $path }.
+
+# Save {offer} in the vault? It is tried first next time.
+t3fd5ca20 = Lưu { $offer } vào kho? Lần sau sẽ được thử trước tiên.
+
+# Load an environment…
+t8b267127 = Nạp một bộ biến…
+
+# Notes…
+te20662aa = Ghi chú…
+
+# Files…
+t4b68cf4c = Tệp…
+
+# Place a config file…
+tdc9941e5 = Đặt một tệp cấu hình…
+
+# Install a key on this host…
+te5f3e2ad = Cài một khoá lên máy chủ này…
+
+# Left
+t92773890 = Trái
+
+# Up
+t42f35940 = Lên
+
+# Down
+ta4995035 = Xuống
+
+# Right
+t1e9e9f85 = Phải
+
+# Hide the keyboard
+t5cadc433 = Ẩn bàn phím
+
+# Show the keyboard
+t6884a1b4 = Hiện bàn phím
+
+# Keys in the vault
+t9c92000f = Khoá trong kho
+
+# Make an Ed25519 key and install it
+t1913ae2f = Tạo khoá Ed25519 và cài lên
+
+# A new key
+t93b96abd = Khoá mới
+
+# Kept in the vault, encrypted; only its public line goes to {host}.
+teb44b03c = Giữ trong kho, đã mã hoá; chỉ dòng khoá công khai được gửi tới { $host }.
+
+# Install a key
+td8f1fd20 = Cài khoá
+
+# {name} is on {host}: it signs in from now on.
+tcc1f38f4 = { $name } đã có trên { $host }: từ giờ sẽ đăng nhập bằng khoá này.
+
+# {name} was on {host} already.
+t1b42e91e = { $name } đã có sẵn trên { $host }.
+
+# No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
+td823bccd = Chưa có khoá nào. Hãy tạo một khoá, rồi cài lên máy chủ từ menu của phiên: từ đó sẽ đăng nhập bằng khoá, không cần mật khẩu.
+
+# Copied
+t8dc21305 = Đã sao chép
+
+# Share
+t4f856dd8 = Chia sẻ
+
+# Hosts that sign in with it need another way in.
+te6d5f68b = Các máy chủ đăng nhập bằng khoá này sẽ cần cách đăng nhập khác.
+
+# Make a key
+ta2572fcb = Tạo khoá
+
+# A new Ed25519 key
+t97812638 = Khoá Ed25519 mới
+
+# Kept in the vault, encrypted, with your other secrets.
+t698b5927 = Giữ trong kho, đã mã hoá, cùng các bí mật khác của bạn.
+
+# Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
+t8e21fd8c = Chưa lưu gì. Khi mật khẩu nhập trong một phiên dùng được, shellwing sẽ đề nghị lưu lại.
+
+# A key's passphrase
+tdf0a144f = Cụm mật khẩu của khoá
+
+# Forget {name}?
+t5b101fa2 = Quên { $name }?
+
+# It is asked for again next time.
+t736fd9ad = Lần sau sẽ được hỏi lại.
+
+# Write it down and keep it apart from this phone. It opens the vault where nothing else can.
+t91c53986 = Hãy ghi lại và cất ở nơi tách biệt với điện thoại này. Nó mở được kho khi không còn cách nào khác.
+
+# Show the vault's recovery key
+t45dffa07 = Hiện khoá khôi phục của kho
+
+# Not confirmed: the key stays hidden.
+t899a4de3 = Chưa xác nhận: khoá vẫn được ẩn.

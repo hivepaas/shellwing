@@ -13,6 +13,16 @@ shellwing-ssh.workspace = true
 shellwing-config.workspace = true
 shellwing-vault.workspace = true
 shellwing-presence.workspace = true
+# Syncing the vault: its places (WebDAV, S3, Git) and what it says.
+shellwing-remote.workspace = true
+shellwing-i18n.workspace = true
+# Snippets, environments, config files and the snippet library (the phone
+# apps share them with the desktop).
+sha2 = "0.10"
+zeroize = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
 tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
@@ -26,7 +36,6 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff"] }
 
 [dev-dependencies]
-toml = "1"
 russh.workspace = true
 
 [lints]

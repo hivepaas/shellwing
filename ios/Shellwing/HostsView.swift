@@ -6,6 +6,8 @@ struct HostsView: View {
     @State private var filter = ""
     @State private var path: [SessionModel] = []
     @State private var editing: HostEdit?
+    @State private var editingGroup: GroupSheet?
+    @State private var doomed: Doomed?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -23,11 +25,17 @@ struct HostsView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                     } header: {
-                        SectionHeading(text: "Open")
+                        SectionHeading(text: tr("Open"))
                     }
                 }
-                ForEach(shown, id: \.name) { section in
+                ForEach(shown, id: \.self) { section in
                     Section {
+                        if section.hosts.isEmpty {
+                            Text(tr("No hosts yet. Choose this group in a host's editor."))
+                                .font(.system(size: 14))
+                                .foregroundStyle(Dusk.muted)
+                                .listRowBackground(Dusk.surface)
+                        }
                         ForEach(section.hosts, id: \.id) { host in
                             Button {
                                 if let s = app.session(for: host.spec) { path = [s] }
@@ -35,14 +43,19 @@ struct HostsView: View {
                                 HostRowView(host: host, status: status(of: host))
                             }
                             .listRowBackground(Dusk.surface)
+                            .confirming($doomed, about: rowKey(section, host))
                             .swipeActions {
-                                Button("Delete", role: .destructive) { app.delete(hostId: host.id) }
-                                Button("Edit") { editing = app.host(id: host.id) }
+                                DeleteSwipe {
+                                    doomed = Doomed(key: rowKey(section, host), title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {
+                                        app.delete(hostId: host.id)
+                                    }
+                                }
+                                Button(tr("Edit")) { editing = app.host(id: host.id) }
                                     .tint(Dusk.button)
                             }
                             .contextMenu {
-                                Button("Edit", systemImage: "pencil") { editing = app.host(id: host.id) }
-                                Button("Another session", systemImage: "plus.rectangle.on.rectangle") {
+                                Button(tr("Edit"), systemImage: "pencil") { editing = app.host(id: host.id) }
+                                Button(tr("Another session"), systemImage: "plus.rectangle.on.rectangle") {
                                     if let s = app.open(host.spec) { path = [s] }
                                 }
                             }
@@ -52,9 +65,22 @@ struct HostsView: View {
                             if let c = section.color {
                                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: c)).frame(width: 8, height: 8)
                             }
-                            SectionHeading(text: section.name ?? "Hosts")
+                            if section.favorites {
+                                Image(systemName: "star.fill").font(.system(size: 10)).foregroundStyle(Dusk.amber)
+                            }
+                            SectionHeading(text: section.name ?? tr("Hosts"))
+                            if let name = section.name, !section.favorites {
+                                Button {
+                                    if let g = app.core?.group(name: name) { editingGroup = GroupSheet(edit: g) }
+                                } label: {
+                                    Image(systemName: "pencil").font(.system(size: 11, weight: .semibold))
+                                        .frame(width: 28, height: 22)
+                                }
+                                .foregroundStyle(Dusk.muted)
+                                .accessibilityLabel(tr("Edit {name}", ["name": "\(name)"]))
+                            }
                             Spacer()
-                            Text(section.hosts.count == 1 ? "1 host" : "\(section.hosts.count) hosts")
+                            Text(trN(section.hosts.count, "{n} host", "{n} hosts"))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Dusk.muted)
                         }
@@ -67,16 +93,21 @@ struct HostsView: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Dusk.panel.ignoresSafeArea())
-            .searchable(text: $filter, prompt: "Filter by name, tag or address")
+            .searchable(text: $filter, prompt: tr("Filter by name, tag or address"))
             .navigationTitle("shellwing")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        editing = HostEdit(id: nil, name: "", address: "", port: nil, user: nil, group: nil)
+                    Menu {
+                        Button(tr("New host"), systemImage: "server.rack") {
+                            editing = HostEditorView.blank()
+                        }
+                        Button(tr("New group"), systemImage: "folder.badge.plus") {
+                            editingGroup = GroupSheet(edit: GroupEdit(id: nil, name: "", color: nil, theme: nil))
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .accessibilityLabel("Add a host")
+                    .accessibilityLabel(tr("Add a host"))
                 }
             }
             .navigationDestination(for: SessionModel.self) { s in
@@ -90,6 +121,20 @@ struct HostsView: View {
                    let s = app.session(for: spec) {
                     path = [s]
                 }
+                // `-ask delete`: the question for the last host, as its swipe asks.
+                if UserDefaults.standard.string(forKey: "ask") == "delete",
+                   let section = app.sections.last, let host = section.hosts.last {
+                    doomed = Doomed(key: rowKey(section, host), title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {}
+                }
+                // `-ask newgroup`: a new group's editor.
+                if UserDefaults.standard.string(forKey: "ask") == "newgroup" {
+                    editingGroup = GroupSheet(edit: GroupEdit(id: nil, name: "", color: nil, theme: nil))
+                }
+                // `-edit <host>` (or `new`): its editor.
+                if let name = UserDefaults.standard.string(forKey: "edit") {
+                    let id = app.sections.flatMap(\.hosts).first { $0.name == name }?.id
+                    editing = id.flatMap { app.host(id: $0) } ?? HostEditorView.blank()
+                }
             }
             #endif
             .sheet(item: $editing) { edit in
@@ -100,11 +145,14 @@ struct HostsView: View {
                     }
                 }
             }
+            .sheet(item: $editingGroup) { g in
+                GroupEditorView(edit: g.edit) { editingGroup = nil }
+            }
             .alert("shellwing", isPresented: Binding(
                 get: { app.error != nil },
                 set: { if !$0 { app.error = nil } }
             )) {
-                Button("OK") { app.error = nil }
+                Button(tr("OK")) { app.error = nil }
             } message: {
                 Text(app.error ?? "")
             }
@@ -117,9 +165,15 @@ struct HostsView: View {
         return app.sections.compactMap { s in
             let hosts = s.hosts.filter {
                 $0.name.lowercased().contains(q) || $0.detail.lowercased().contains(q)
+                    || $0.tags.contains { $0.lowercased().contains(q) }
             }
-            return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts)
+            return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts, favorites: s.favorites)
         }
+    }
+
+    /// A row's own: a favorite is listed twice, first and in its group.
+    private func rowKey(_ section: HostSection, _ host: HostRow) -> String {
+        (section.favorites ? "favorite:" : "") + host.id
     }
 
     private func status(of host: HostRow) -> SessionStatus? {
@@ -133,8 +187,8 @@ struct HostsView: View {
     private var empty: some View {
         VStack(spacing: 10) {
             Image(systemName: "server.rack").font(.system(size: 34)).foregroundStyle(Dusk.muted)
-            Text("No hosts yet").font(.headline).foregroundStyle(Dusk.text)
-            Text("Add one with +, or sync the hosts of your other devices.")
+            Text(tr("No hosts yet")).font(.headline).foregroundStyle(Dusk.text)
+            Text(tr("Add one with +, or sync the hosts of your other devices."))
                 .font(.subheadline)
                 .foregroundStyle(Dusk.muted)
                 .multilineTextAlignment(.center)
@@ -208,3 +262,9 @@ extension SessionModel: Hashable {
 
 /// For `.sheet(item:)`: a host is its id; a new one has none.
 extension HostEdit: Identifiable {}
+
+/// A group's editor, open.
+struct GroupSheet: Identifiable {
+    let id = UUID()
+    let edit: GroupEdit
+}

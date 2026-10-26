@@ -17,17 +17,22 @@ struct ShellwingApp: App {
             ZStack {
                 TabView(selection: $tab) {
                     HostsView()
-                        .tabItem { Label("Hosts", systemImage: "server.rack") }
+                        .tabItem { Label(tr("Hosts"), systemImage: "server.rack") }
                         .tag("hosts")
                     SessionsView()
-                        .tabItem { Label("Sessions", systemImage: "terminal") }
+                        .tabItem { Label(tr("Sessions"), systemImage: "terminal") }
                         .badge(app.sessions.count)
                         .tag("sessions")
+                    LibraryView()
+                        .tabItem { Label(tr("Library"), systemImage: "books.vertical") }
+                        .tag("library")
                     SettingsView()
-                        .tabItem { Label("Settings", systemImage: "gearshape") }
+                        .tabItem { Label(tr("Settings"), systemImage: "gearshape") }
                         .tag("settings")
                 }
                 .tint(Dusk.accent)
+                // Drawn again in a language chosen in Settings.
+                .id(app.language)
                 if lock.locked {
                     LockView(lock: lock, sessions: app.sessions.count)
                         .transition(.opacity)
@@ -35,6 +40,7 @@ struct ShellwingApp: App {
             }
             .environmentObject(app)
             .environmentObject(lock)
+            .environment(\.locale, Locale(identifier: app.language))
             #if DEBUG
             // `-open <host>` at launch: the session opens whichever tab shows.
             .task {

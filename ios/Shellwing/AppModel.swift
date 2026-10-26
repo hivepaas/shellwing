@@ -10,21 +10,51 @@ final class AppModel: ObservableObject {
 
     @Published private(set) var sections: [HostSection] = []
     @Published private(set) var sessions: [SessionModel] = []
+    @Published private(set) var sync: SyncStatus?
     @Published var error: String?
+    /// The language spoken, by tag: the core's choice, from Settings or the phone.
+    @Published private(set) var language = languageInUse()
+    private let syncHears = SyncHears()
 
     init() {
         let dir = AppModel.configDir()
         // known_hosts goes beside the configuration: the app's home is not
         // its to write in.
         setenv("SHELLWING_KNOWN_HOSTS", dir.appendingPathComponent("known_hosts").path, 1)
+        // A sync folder the user gave (iCloud Drive): open to the app again
+        // before the sync worker looks at it.
+        SyncFolder.resume()
         do {
-            core = try Shellwing(configDir: dir.path)
+            core = try Shellwing(configDir: dir.path, keys: KeychainKeys())
             problem = nil
         } catch {
             core = nil
             problem = "\(error)"
         }
+        language = languageInUse()
+        syncHears.app = self
+        core?.setSyncListener(listener: syncHears)
         reload()
+        refreshSync()
+    }
+
+    /// Speaks `tag` (nil: the phone's language) from now on.
+    func setLanguage(_ tag: String?) {
+        do {
+            try core?.setLanguage(tag: tag)
+        } catch {
+            self.error = "\(error)"
+        }
+        language = languageInUse()
+        reload()
+    }
+
+    /// The sync's state, read again; a sync done may have brought hosts.
+    func refreshSync() {
+        guard let core else { return }
+        let now = core.syncStatus()
+        if now.last != sync?.last { reload() }
+        sync = now
     }
 
     /// Application Support/shellwing: kept, backed up, never shown in Files.
@@ -64,6 +94,14 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Saves the host: its id, or why not.
+    func trySave(_ edit: HostEdit) throws -> String {
+        guard let core else { throw MobileError.Failed(problem ?? "") }
+        let id = try core.saveHost(edit: edit)
+        reload()
+        return id
+    }
+
     func delete(hostId: String) {
         guard let core else { return }
         do {
@@ -89,6 +127,13 @@ final class AppModel: ObservableObject {
         do {
             let session = try core.open(spec: spec, listener: model)
             model.attach(session)
+            // Config files left on the host by a session that could not take
+            // them away (the app was stopped): tidied once it connects.
+            model.connected = { [weak model] in
+                Task { @MainActor in
+                    if let said = await core.tidyPlaced(session: session) { model?.notice = said }
+                }
+            }
             sessions.append(model)
             return model
         } catch {
@@ -97,8 +142,157 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Closes a session: the config files it placed until it ends go first
+    /// (those it cannot take away are tidied when the host connects next).
     func close(_ model: SessionModel) {
         sessions.removeAll { $0 === model }
+        guard let core, let handle = model.handle, !model.placed.isEmpty else { return }
+        Task { try? await core.removePlaced(session: handle, path: nil) }
+    }
+
+    // The vault: saved passwords and SSH keys. Opening it waits on its own
+    // thread the first time; after, these return at once.
+
+    func vaultState() -> VaultState {
+        core?.vaultState() ?? VaultState(ready: false, problem: problem)
+    }
+
+    func recoveryKey() -> String? {
+        core?.recoveryKey()
+    }
+
+    func savedSecrets() -> [SavedSecret] {
+        core?.savedSecrets() ?? []
+    }
+
+    func keys() -> [KeyRow] {
+        core?.keys() ?? []
+    }
+
+    /// Forgets a saved password or passphrase, or deletes a key.
+    func forget(_ id: String) {
+        do {
+            try core?.forget(id: id)
+        } catch {
+            self.error = "\(error)"
+        }
+    }
+
+    // The library: snippets, environments, notes.
+
+    func snippets(for spec: String?) -> [SnippetRow] {
+        core?.snippets(spec: spec) ?? []
+    }
+
+    @discardableResult
+    func save(snippet: SnippetEdit) -> Bool {
+        do {
+            _ = try core?.saveSnippet(edit: snippet)
+            return true
+        } catch {
+            self.error = "\(error)"
+            return false
+        }
+    }
+
+    /// Runs snippet `id` in `session` with the values asked for: nil, or why not.
+    func run(snippet id: String, in session: SessionModel, values: [String: String]) -> String? {
+        guard let core, let handle = session.handle else { return tr("Not connected.") }
+        do {
+            try core.runSnippet(session: handle, id: id, values: values)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    func environments() -> [EnvRow] {
+        core?.environments() ?? []
+    }
+
+    @discardableResult
+    func saveEnvironment(id: String, name: String, scope: String, dotenv: String) -> Bool {
+        do {
+            _ = try core?.saveEnvironment(id: id, name: name, scope: scope, dotenv: dotenv)
+            return true
+        } catch {
+            self.error = "\(error)"
+            return false
+        }
+    }
+
+    /// Loads environment `id` into `session`'s shell: nil, or why not.
+    func load(env id: String, in session: SessionModel) -> String? {
+        guard let core, let handle = session.handle else { return tr("Not connected.") }
+        do {
+            try core.loadEnv(session: handle, id: id)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    /// The notes; with `spec`, those about its host first.
+    func notes(for spec: String? = nil) -> [NoteRow] {
+        core?.notes(spec: spec) ?? []
+    }
+
+    func noteText(_ id: String) -> String {
+        (try? core?.noteText(id: id)) ?? ""
+    }
+
+    /// Saves a note (`text` nil keeps its text); its id, or why not.
+    func saveNote(
+        id: String, title: String, category: String, markdown: Bool,
+        hosts: [String], sensitive: Bool, text: String?
+    ) -> Result<String, Error> {
+        guard let core else { return .failure(MobileError.Failed(problem ?? "")) }
+        return Result {
+            try core.saveNote(
+                id: id, title: title, category: category, markdown: markdown,
+                hosts: hosts, sensitive: sensitive, text: text
+            )
+        }
+    }
+
+    /// The image `attachment:<id>` names, decoded once and kept.
+    func noteImage(_ id: String) -> UIImage? {
+        if let seen = images.object(forKey: id as NSString) { return seen }
+        guard let bytes = core?.noteImage(id: id), let image = UIImage(data: bytes) else { return nil }
+        images.setObject(image, forKey: id as NSString)
+        return image
+    }
+
+    private let images = NSCache<NSString, UIImage>()
+
+    // Config files: kept in the vault, placed on a session's host.
+
+    func configFiles(for spec: String?) -> [ConfigFileRow] {
+        core?.configFiles(spec: spec) ?? []
+    }
+
+    func configFileText(_ id: String) -> String? {
+        (try? core?.configFileText(id: id)) ?? nil
+    }
+
+    /// Saves a config file (`content` nil keeps the one it has): nil, or why not.
+    func save(configFile row: ConfigFileRow, content: String?) -> String? {
+        guard let core else { return problem }
+        do {
+            _ = try core.saveConfigFile(row: row, content: content)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    func generateKey(name: String) -> KeyRow? {
+        do {
+            return try core?.generateKey(name: name)
+        } catch {
+            self.error = "\(error)"
+            return nil
+        }
     }
 }
 
@@ -109,11 +303,22 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     let id = UUID()
     let spec: String
     private var session: MobileSession?
+    /// For what runs through the core (snippets, environments).
+    var handle: MobileSession? { session }
 
     @MainActor @Published private(set) var frame: FrameData?
     @MainActor @Published private(set) var status: SessionStatus = .connecting
     @MainActor @Published private(set) var title: String
     @MainActor @Published private(set) var ended: String?
+    /// A password that worked, offered to keep: `the password for deploy@web-1`.
+    @MainActor @Published private(set) var offer: String?
+    /// Something said once: an environment loaded, a load given up.
+    @MainActor @Published var notice: String?
+    @MainActor @Published private(set) var envs: [LoadedEnvRow] = []
+    /// Config files placed on the host until the session ends.
+    @MainActor @Published private(set) var placed: [PlacedRow] = []
+    /// Called on the main thread each time the session connects.
+    @MainActor var connected: (() -> Void)?
     /// Ctrl or Alt, pressed on the row above the keyboard: held for the next key.
     @MainActor @Published var ctrl = false
     @MainActor @Published var alt = false
@@ -155,11 +360,26 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
             frame = f
         }
         let s = session.status()
-        if s != status { status = s }
+        if s != status {
+            status = s
+            if s == .connected { connected?() }
+        }
         let t = session.title()
         if t != title { title = t }
         let e = session.ended()
         if e != ended { ended = e }
+        let o = session.offer()
+        if o != offer { offer = o }
+        if let n = session.notice() { notice = n }
+        let loaded = session.loadedEnvs()
+        if loaded != envs { envs = loaded }
+        refreshPlaced()
+    }
+
+    @MainActor
+    func refreshPlaced() {
+        let now = session?.placed() ?? []
+        if now != placed { placed = now }
     }
 
     // What the keyboard and the keys row send.
@@ -210,6 +430,35 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     func reconnect() {
         session?.reconnect()
     }
+
+    @MainActor
+    func unload(env id: String?) {
+        do {
+            try session?.unloadEnv(id: id)
+            envs = session?.loadedEnvs() ?? []
+        } catch {
+            notice = "\(error)"
+        }
+    }
+
+    @MainActor
+    func keepOffer() throws {
+        try session?.saveOffer()
+        offer = nil
+    }
+
+    @MainActor
+    func dismissOffer() {
+        session?.dismissOffer()
+        offer = nil
+    }
+
+    /// Puts the public key `line` in the host's authorized_keys: true when added, false
+    /// when it was there.
+    func install(key line: String) async throws -> Bool {
+        guard let session else { throw MobileError.Failed(tr("Not connected.")) }
+        return try await session.installKey(public: line)
+    }
 }
 
 extension SessionStatus {
@@ -225,11 +474,22 @@ extension SessionStatus {
 
     var said: String {
         switch self {
-        case .connected: return "connected"
-        case .connecting: return "connecting"
-        case .lost: return "connection lost"
-        case .failed: return "could not connect"
-        case .closed: return "closed"
+        case .connected: return tr("connected")
+        case .connecting: return tr("connecting")
+        case .lost: return tr("connection lost")
+        case .failed: return tr("could not connect")
+        case .closed: return tr("closed")
+        }
+    }
+}
+
+/// Hears the sync worker (off the main thread) and refreshes the app on it.
+final class SyncHears: SyncListener, @unchecked Sendable {
+    weak var app: AppModel?
+
+    func changed() {
+        DispatchQueue.main.async { [weak self] in
+            self?.app?.refreshSync()
         }
     }
 }

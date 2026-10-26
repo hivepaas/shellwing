@@ -59,36 +59,6 @@ tbf2a5d3a = aucune commande d'éditeur
 # no text editor found
 t6256b3da = aucun éditeur de texte trouvé
 
-# The command is {size} KB; {max} KB at most.
-ta78b9fbd = La commande fait { $size } Ko ; { $max } Ko au maximum.
-
-# {name}: a name takes {max} characters at most.
-t190cce46 = { $name } : un nom compte { $max } caractères au maximum.
-
-# {name} is {size} KB; a value takes {max} KB at most.
-t8a0064ca = { $name } fait { $size } Ko ; une valeur fait { $max } Ko au maximum.
-
-# {count} variables; {max} at most.
-t1c9f770c = { $count } variables ; { $max } au maximum.
-
-# The variables come to {size} KB; {max} KB at most.
-tdbf76954 = Les variables font { $size } Ko ; { $max } Ko au maximum.
-
-# The file is {size} KB; {max} KB at most.
-tf2bc7ef2 = Le fichier fait { $size } Ko ; { $max } Ko au maximum.
-
-# The note is {size} KB; {max} KB at most.
-td5e1ea7c = La note fait { $size } Ko ; { $max } Ko au maximum.
-
-# The image is {size} KB; {max} KB at most.
-t7bb41ed9 = L'image fait { $size } Ko ; { $max } Ko au maximum.
-
-# The note's images come to {size} MB; {max} MB at most.
-t085c57f3 = Les images de la note font { $size } Mo ; { $max } Mo au maximum.
-
-# Not an image that can be kept: a PNG or a JPEG.
-tccae79a4 = Ce n'est pas une image qui peut être gardée : un PNG ou un JPEG.
-
 # Name
 t0fe07306 = Nom
 
@@ -2534,9 +2504,6 @@ t27e0e0f9 = Exécuter dans { $pane }
 # Connect a tab in the main window to run it there.
 tc580324f = Connectez un onglet dans la fenêtre principale pour l'y exécuter.
 
-# every host
-t444612de = tous les serveurs
-
 # {n} byte | {n} bytes
 te8f231ba =
     { $n ->
@@ -2903,27 +2870,6 @@ tb9fa7744 =
        *[other] il y a { $n } jours
     }
 
-# its password is not saved on this device: connect again in Settings › Sync
-td2fdfc60 = son mot de passe n'est pas enregistré sur cet appareil : reconnectez-vous dans Réglages › Synchronisation
-
-# {title} (from {device})
-t63a0d436 = { $title } (de { $device })
-
-# {title} (from another device)
-t0e55da75 = { $title } (d'un autre appareil)
-
-# hosts not synced: {e}
-te7d5212e = serveurs non synchronisés : { $e }
-
-# settings not synced: {e}
-tf8592ea2 = réglages non synchronisés : { $e }
-
-# settings not written: {e}
-t60f438b7 = réglages non écrits : { $e }
-
-# hosts not written: {e}
-t00f3a4eb = serveurs non écrits : { $e }
-
 # Find a tab: host, user, title
 t187bd0b5 = Cherchez un onglet : serveur, utilisateur, titre
 
@@ -2987,15 +2933,6 @@ t500558bd =
 
 # What was there before is {path}.
 td07a4718 = Ce qui s'y trouvait avant est maintenant { $path }.
-
-# It has no variables.
-t0993a534 = Il n'a pas de variables.
-
-# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
-t3883bd87 = Avec ceux déjà chargés, cela fait { $size } Ko ; un shell en accepte { $max } Ko au maximum : déchargez-en un d'abord.
-
-# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
-ta1a9b215 = Le shell n'a pas pris les variables : il n'est pas à son invite, ou n'est pas un shell POSIX (sh, bash, zsh).
 
 # {name} is loaded into this shell.
 t5bc879d1 = { $name } est chargé dans ce shell.
@@ -4020,3 +3957,802 @@ t8354c717 = Choisissez un serveur à gauche pour vous connecter
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ou appuyez sur { $keys } pour en trouver un, ou pour vous connecter à user@host
+
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = La commande fait { $size } Ko ; { $max } Ko au maximum.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name } : un nom compte { $max } caractères au maximum.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name } fait { $size } Ko ; une valeur fait { $max } Ko au maximum.
+
+# {count} variables; {max} at most.
+t1c9f770c = { $count } variables ; { $max } au maximum.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = Les variables font { $size } Ko ; { $max } Ko au maximum.
+
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = Le fichier fait { $size } Ko ; { $max } Ko au maximum.
+
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = La note fait { $size } Ko ; { $max } Ko au maximum.
+
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = L'image fait { $size } Ko ; { $max } Ko au maximum.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = Les images de la note font { $size } Mo ; { $max } Mo au maximum.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = Ce n'est pas une image qui peut être gardée : un PNG ou un JPEG.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = Le shell n'a pas pris les variables : il n'est pas à son invite, ou n'est pas un shell POSIX (sh, bash, zsh).
+
+# It has no variables.
+t0993a534 = Il n'a pas de variables.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = Avec ceux déjà chargés, cela fait { $size } Ko ; un shell en accepte { $max } Ko au maximum : déchargez-en un d'abord.
+
+# every host
+t444612de = tous les serveurs
+
+# its password is not saved on this device: connect again in Settings › Sync
+td2fdfc60 = son mot de passe n'est pas enregistré sur cet appareil : reconnectez-vous dans Réglages › Synchronisation
+
+# {title} (from {device})
+t63a0d436 = { $title } (de { $device })
+
+# {title} (from another device)
+t0e55da75 = { $title } (d'un autre appareil)
+
+# hosts not synced: {e}
+te7d5212e = serveurs non synchronisés : { $e }
+
+# settings not synced: {e}
+tf8592ea2 = réglages non synchronisés : { $e }
+
+# settings not written: {e}
+t60f438b7 = réglages non écrits : { $e }
+
+# hosts not written: {e}
+t00f3a4eb = serveurs non écrits : { $e }
+
+# Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
+t37ca034c = Où il va : le chemin d'un fichier commençant par / ou par ~/, par exemple ~/.kube/config.
+
+# Nothing is at {path}.
+ta5cf42ea = Il n'y a rien à { $path }.
+
+# Address: an address is needed.
+t3f9c8dd7 = Adresse : une adresse est requise.
+
+# Address: no spaces.
+t1a9d2c69 = Adresse : sans espaces.
+
+# Name: another host has this name.
+tcf956656 = Nom : un autre serveur porte ce nom.
+
+# Alias: no spaces.
+t240468fd = Alias : sans espaces.
+
+# Alias: another host uses this.
+t6d4194b8 = Alias : un autre serveur l'utilise.
+
+# Port: 1 to 65535.
+t48e7bff2 = Port : de 1 à 65535.
+
+# User: no spaces.
+t7b146164 = Utilisateur : sans espaces.
+
+# Key: choose a key.
+t96503d0f = Clé : choisissez une clé.
+
+# Keepalive: seconds, 0 to 3600 (0: none).
+t868fa0cd = Maintien de connexion : secondes, de 0 à 3600 (0 : aucun).
+
+# Jump: a host cannot jump through itself.
+tf5b576a7 = Rebond : un serveur ne peut pas passer par lui-même.
+
+# Forward {forward}: {e}
+t575e8c34 = Redirection { $forward } : { $e }
+
+# the password for {target}
+t33a923dd = le mot de passe de { $target }
+
+# the passphrase of {path}
+t847f4536 = la phrase secrète de { $path }
+
+# A full-screen program is running: leave it, then try again.
+t1dca493f = Un programme plein écran s'exécute : quittez-le, puis réessayez.
+
+# Unlock shellwing
+t25d6e4bc = Déverrouiller shellwing
+
+# {biometry} or your passcode unlocks it.
+t22b7de26 = { $biometry } ou votre code le déverrouille.
+
+# Your passcode unlocks it.
+t22c93782 = Votre code le déverrouille.
+
+# {n} session stays connected underneath. | {n} sessions stay connected underneath.
+t8f2f0709 =
+    { $n ->
+        [one] { $n } session reste connectée en dessous.
+       *[other] { $n } sessions restent connectées en dessous.
+    }
+
+# No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
+t773e80be = Aucun fichier de configuration pour l'instant : des fichiers conservés dans le coffre (un kubeconfig, un .npmrc), déposés sur un serveur depuis une session.
+
+# stays
+t6210bca9 = reste
+
+# Placed to stay
+t326d488a = Déposé pour rester
+
+# Placed, it stays when the session ends.
+t596dc3ba = Une fois déposé, il reste à la fin de la session.
+
+# Placed, it is taken away when the session ends.
+tcb169849 = Une fois déposé, il est retiré à la fin de la session.
+
+# Binary, {size}: kept as it is.
+td3506722 = Binaire, { $size } : conservé tel quel.
+
+# Replace from Files…
+t910b03ca = Remplacer depuis Fichiers…
+
+# Only a text file can be imported here.
+t94955dee = Seul un fichier texte peut être importé ici.
+
+# Permissions: three digits from 0 to 7, such as 600.
+tad710134 = Permissions : trois chiffres de 0 à 7, par exemple 600.
+
+# No config files for this host. Keep them in Library › Files.
+t31aa06de = Aucun fichier de configuration pour ce serveur. Conservez-les dans Bibliothèque › Fichiers.
+
+# Place a config file
+t2bd139bb = Déposer un fichier de configuration
+
+# Replace the one placed until the session ends
+t72427900 = Remplacer celui déposé jusqu'à la fin de la session
+
+# Place it until the session ends
+tf442be28 = Le déposer jusqu'à la fin de la session
+
+# Replace it until the session ends
+t96406163 = Le remplacer jusqu'à la fin de la session
+
+# Cannot place {name}: {error}
+t816e11b0 = Impossible de déposer { $name } : { $error }
+
+# {name} is at {path} until the session ends.
+t10182ed5 = { $name } est déposé sous { $path } jusqu'à la fin de la session.
+
+# {name} is at {path}.
+t3b2e2230 = { $name } est déposé sous { $path }.
+
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Si le coffre est synchronisé, il disparaît aussi de vos autres appareils.
+
+# Nothing here.
+ta7006e9a = Rien ici.
+
+# The folder and everything in it are deleted on {host}.
+t200fdede = Le dossier et tout son contenu sont supprimés sur { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Il est supprimé sur { $host }.
+
+# Upload from Files…
+t3efaa7bd = Téléverser depuis Fichiers…
+
+# Hidden files
+t3f0de492 = Fichiers masqués
+
+# Add
+t9dc3aa14 = Ajouter
+
+# Make
+t486bedcf = Créer
+
+# Download the folder
+t1c6b8ca2 = Télécharger le dossier
+
+# Keep in the vault
+t08dcb490 = Conserver dans le coffre
+
+# Copy the path
+t095d064e = Copier le chemin
+
+# A name without /, please.
+t7055c52a = Un nom sans /, s'il vous plaît.
+
+# Making {name}…
+t431597d3 = Création de { $name }…
+
+# Renaming…
+t87125000 = Renommage…
+
+# Deleting {name}…
+ta17d02e6 = Suppression de { $name }…
+
+# {name} deleted.
+tf36570a5 = { $name } supprimé.
+
+# Downloading {name}…
+t49917320 = Téléchargement de { $name }…
+
+# Opening {name}…
+t24b03450 = Ouverture de { $name }…
+
+# Uploading {name}…
+t763593ef = Téléversement de { $name }…
+
+# Uploading {n} item… | Uploading {n} items…
+t4d21b20c =
+    { $n ->
+        [one] Téléversement de { $n } élément…
+       *[other] Téléversement de { $n } éléments…
+    }
+
+# {name} uploaded.
+t0b81da1e = { $name } téléversé.
+
+# {n} item uploaded. | {n} items uploaded.
+tbf7cc840 =
+    { $n ->
+        [one] { $n } élément téléversé.
+       *[other] { $n } éléments téléversés.
+    }
+
+# Keeping {name}…
+tbb0f5ffb = Conservation de { $name } dans le coffre…
+
+# {name} is in the vault: Library › Files.
+t71be4d4c = { $name } est dans le coffre : Bibliothèque › Fichiers.
+
+# {path} changed on {host} since it was opened.
+ta4924204 = { $path } a été modifié sur { $host } depuis son ouverture.
+
+# Replace it with this
+tf329d9b0 = Le remplacer par celui-ci
+
+# Not saved: {error}
+t2fe29775 = Non enregistré : { $error }
+
+# A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
+t3ff468c2 = Le thème propre d'un serveur l'emporte sur celui de son groupe. Choisissez le groupe dans l'éditeur d'un serveur pour y placer ce serveur.
+
+# Delete {group}?
+t6801beba = Supprimer { $group } ?
+
+# Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
+t8d5eff39 =
+    { $n ->
+        [one] Supprimer { $group } ? Son serveur ({ $n }) est conservé, sans groupe.
+       *[other] Supprimer { $group } ? Ses { $n } serveurs sont conservés, sans groupe.
+    }
+
+# No color
+te96206b1 = Aucune couleur
+
+# as the server says
+ta204abe7 = selon le serveur
+
+# Alias
+t22e1f2f7 = Alias
+
+# Make a key for this host
+tfc47113a = Générer une clé pour ce serveur
+
+# Make a key for {host}
+tc4091336 = Générer une clé pour { $host }
+
+# {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
+t14c6a565 = { $name } est nouvelle : le serveur ne l'a pas encore. Connectez-vous une fois autrement (par mot de passe), puis installez-la depuis le menu de la session.
+
+# Tries the keys in the vault, then asks for a password, like ssh.
+t4c5dd8b2 = Essaie les clés du coffre, puis demande un mot de passe, comme ssh.
+
+# A key file of another device: this phone signs in with the vault's keys.
+t85abc601 = Un fichier de clé d'un autre appareil : ce téléphone se connecte avec les clés du coffre.
+
+# Uses the keys in an ssh-agent: a desktop's; a phone has none.
+t4b96b415 = Utilise les clés d'un ssh-agent : celui d'un ordinateur ; un téléphone n'en a pas.
+
+# Add a jump
+t16c79e2d = Ajouter un rebond
+
+# Straight to the host. A jump goes through another host first (a bastion).
+t31e98c98 = Directement vers le serveur. Un rebond passe d'abord par un autre serveur (un bastion).
+
+# Favorite: listed first
+t7bd2a9c8 = Favori : listé en premier
+
+# Host keys
+t2f5a3205 = Clés de serveur
+
+# As in Settings
+t46210079 = Comme dans Réglages
+
+# Accept new ones
+tc99d0b88 = Accepter les nouvelles
+
+# Known ones only
+t2234971d = Connues uniquement
+
+# Keepalive (s)
+t13e524f5 = Maintien de connexion (s)
+
+# as in Settings
+tf8e77e19 = comme dans Réglages
+
+# Another session
+t4d6f66b8 = Une autre session
+
+# Edit {name}
+t4688b082 = Modifier { $name }
+
+# Add a host
+t38d39c8f = Ajouter un serveur
+
+# OK
+t85e4b82f = OK
+
+# Add one with +, or sync the hosts of your other devices.
+tceb03600 = Ajoutez-en un avec +, ou synchronisez les serveurs de vos autres appareils.
+
+# the Keychain said {status}
+tc1738579 = le trousseau a répondu { $status }
+
+# Envs
+tf645a165 = Env.
+
+# Part
+te3596034 = Section
+
+# Library
+ta8532270 = Bibliothèque
+
+# No snippets yet. Make one with +, or sync those of your other devices.
+tf81b77f9 = Aucun extrait pour l'instant. Créez-en un avec +, ou synchronisez ceux de vos autres appareils.
+
+# No snippets for this host.
+tbf3767c5 = Aucun extrait pour ce serveur.
+
+# Browse the snippet library
+t63787b2e = Parcourir la bibliothèque d'extraits
+
+# Filter snippets
+tbb9b10c7 = Filtrer les extraits
+
+# Offered
+t2bd643c4 = Proposé
+
+# Everywhere
+t327a596f = Partout
+
+# Group: {group}
+t0d904ce9 = Groupe : { $group }
+
+# Host: {host}
+t3fb3f6b3 = Serveur : { $host }
+
+# Press Enter after it
+te4ce8331 = Appuyer sur Enter après
+
+# Command
+tc67c8f52 = Commande
+
+# {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
+td02256f4 = {"{{"}name{"}}"} demande une valeur à l'exécution ; {"{{"}host{"}}"}, {"{{"}user{"}}"} et {"{{"}address{"}}"} viennent de la session.
+
+# Runs with
+te90c2175 = S'exécute avec
+
+# Their variables are given to it alone, in a subshell, without showing their values.
+t4ef64333 = Leurs variables lui sont données à lui seul, dans un sous-shell, sans afficher leurs valeurs.
+
+# Run
+t8d57e66a = Exécuter
+
+# No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
+tbcdba796 = Aucun environnement pour l'instant : des variables conservées dans le coffre, chargées dans le shell d'une session sans afficher leurs valeurs.
+
+# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
+t36bfa774 = NOM=valeur, une par ligne. Un nom sans rien après = garde sa valeur actuelle ; les valeurs ne s'affichent jamais ici.
+
+# No notes yet.
+t4be168d5 = Aucune note pour l'instant.
+
+# Untitled
+t2e35a678 = Sans titre
+
+# this host
+t4b4cbe3d = ce serveur
+
+# Delete this note?
+t9d3e3253 = Supprimer cette note ?
+
+# Filter notes
+tde67183a = Filtrer les notes
+
+# Markdown
+tf651116c = Markdown
+
+# Show a sensitive note
+t905684dd = Afficher une note sensible
+
+# For hosts…
+t4d6ecc3d = Pour les serveurs…
+
+# Insert an image…
+t2d3653b2 = Insérer une image…
+
+# Note
+t1440c15d = Note
+
+# That image cannot be read.
+tc5fceb9b = Cette image est illisible.
+
+# For hosts
+t350fa483 = Pour les serveurs
+
+# Image
+t590ca79a = Image
+
+# No sessions open
+t483ac645 = Aucune session ouverte
+
+# Open one from Hosts.
+t7a72807e = Ouvrez-en une depuis Serveurs.
+
+# Sessions
+tb69a8aec = Sessions
+
+# Connect again
+t05dc6981 = Se reconnecter
+
+# {n} minute | {n} minutes
+tf77c9aaa =
+    { $n ->
+        [one] { $n } minute
+       *[other] { $n } minutes
+    }
+
+# Lock
+t71b42d62 = Verrouillage
+
+# When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+taaa2c58c = Au démarrage de shellwing, et après ce délai en arrière-plan, il est masqué jusqu'à ce que { $biometry } ou votre code confirme que c'est vous. Une protection légère pour un téléphone resté déverrouillé : les sessions continuent en dessous.
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = Au démarrage de shellwing, et après ce délai en arrière-plan, il est masqué jusqu'à ce que votre code confirme que c'est vous. Une protection légère pour un téléphone resté déverrouillé : les sessions continuent en dessous.
+
+# This phone has no passcode, so nothing could ask that it is you.
+td366e372 = Ce téléphone n'a pas de code : rien ne pourrait donc confirmer que c'est vous.
+
+# As the phone
+t8ad2f046 = Comme le téléphone
+
+# Text size
+t2c041143 = Taille du texte
+
+# History
+t7d96597f = Historique
+
+# Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
+tde3581cd = Les sessions ouvertes après une modification l'appliquent. Un pincement sur le terminal règle aussi la taille du texte ; cette taille est propre à ce téléphone.
+
+# New host keys
+t48a98987 = Nouvelles clés de serveur
+
+# Accept them
+t2dd33559 = Les accepter
+
+# Refuse them
+t2483aa25 = Les refuser
+
+# Every {n} second | Every {n} seconds
+t0877f108 =
+    { $n ->
+        [one] Toutes les { $n } seconde
+       *[other] Toutes les { $n } secondes
+    }
+
+# Connections
+t25db363e = Connexions
+
+# A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
+t25360db5 = Le réglage propre d'un serveur, dans son éditeur, l'emporte. Une clé modifiée est toujours refusée : oubliez le serveur dans Serveurs connus pour accepter sa nouvelle clé.
+
+# SSH keys
+t7e7cad2b = Clés SSH
+
+# Saved passwords
+tcdae5fca = Mots de passe enregistrés
+
+# The vault is opening…
+t12986dd4 = Ouverture du coffre…
+
+# Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
+t8cae68cf = Mots de passe et clés, chiffrés sur ce téléphone ; sa clé est dans le trousseau iOS, sur ce téléphone uniquement.
+
+# Configuration
+t1a5ee459 = Configuration
+
+# hosts.toml, in the app's own folder
+tcdaeae19 = hosts.toml, dans le dossier propre à l'application
+
+# Version
+t5dcdd537 = Version
+
+# shellwing on GitHub
+t1fcb667e = shellwing sur GitHub
+
+# Problem
+t448c5c7c = Problème
+
+# No host keys known yet: a host's is kept the first time you connect.
+ta5bda1d5 = Aucune clé de serveur connue pour l'instant : celle d'un serveur est conservée à la première connexion.
+
+# A hashed name
+t97c138ac = Un nom haché
+
+# Forget
+t6e3fab8c = Oublier
+
+# Forget the key of {host}?
+t25034152 = Oublier la clé de { $host } ?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Elle vous sera montrée pour vérification à la prochaine connexion.
+
+# Filter by name
+tbcb12ca7 = Filtrer par nom
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+        [one] { $n } extrait ajouté : lancez-le depuis la touche Extraits d'une session.
+       *[other] { $n } extraits ajoutés : lancez-les depuis la touche Extraits d'une session.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = Demandé à l'exécution : { $names }. Une fois ajouté, il est à vous et vous pouvez le modifier.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = Aucun pour l'instant : ajoutez-en un dans Bibliothèque › Env.
+
+# Picked
+t71962a99 = Coché
+
+# shellwing may not use that folder.
+t39f14b58 = shellwing n'a pas le droit d'utiliser ce dossier.
+
+# Place
+t9ad2489c = Emplacement
+
+# Last synced
+t2d4f851d = Dernière synchronisation
+
+# not yet
+t6d9d33dc = pas encore
+
+# End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
+tac696b8b = Chiffré de bout en bout : l'emplacement ne contient que ce que la clé du coffre ouvre. La synchronisation a lieu chaque minute tant que shellwing est ouvert, et à chaque modification.
+
+# {device} asks to join
+tf44b389c = { $device } demande à rejoindre le coffre
+
+# Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
+t329319cf = N'approuvez que s'il affiche { $code }. Il obtient tout ce que contient le coffre : mots de passe, clés, extraits et serveurs.
+
+# Devices asking
+t49658daf = Appareils en attente
+
+# Stop syncing on this phone?
+t7ca0b094 = Arrêter la synchronisation sur ce téléphone ?
+
+# The vault stays here, and the copy at the place stays for your other devices.
+t7b47ff6d = Le coffre reste ici, et la copie à l'emplacement reste pour vos autres appareils.
+
+# Waiting for a device that syncs there…
+tb119de8b = En attente d'un appareil qui s'y synchronise…
+
+# Open shellwing on it: it asks whether to let this phone in.
+t5b4d0d2f = Ouvrez shellwing sur celui-ci : il demande s'il faut ajouter ce téléphone.
+
+# {device} answered
+t89d183da = { $device } a répondu
+
+# Approve on {device} if it shows the same code.
+tbc9bc44d = Approuvez sur { $device } s'il affiche le même code.
+
+# Joined: this phone syncs there now.
+tfb82a94e = Ajouté : ce téléphone s'y synchronise désormais.
+
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Ce téléphone s'y synchronise désormais. La clé de récupération ouvre le coffre sur vos autres appareils : notez-la.
+
+# Where
+t91dad0f8 = Où
+
+# Password or app password
+t9cc53273 = Mot de passe ou mot de passe d'application
+
+# Endpoint: https://s3.eu-west-1.amazonaws.com
+t9deef30d = Endpoint : https://s3.eu-west-1.amazonaws.com
+
+# Region (empty: auto)
+t6689bdf6 = Région (vide : auto)
+
+# Folder in the bucket (optional)
+t7c04f452 = Dossier dans le bucket (facultatif)
+
+# Token
+t3a355bd2 = Token
+
+# Choose another folder…
+tcba15eff = Choisir un autre dossier…
+
+# Sync the vault
+tff5adbd9 = Synchroniser le coffre
+
+# Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
+tfd5abd9b = Le coffre d'un autre appareil s'y trouve. Rejoignez-le pour obtenir ses serveurs, clés, mots de passe et extraits sur ce téléphone.
+
+# Pair with a device that syncs there
+tb3c83579 = S'associer à un appareil qui s'y synchronise
+
+# Join
+t30025399 = Rejoindre
+
+# XXXX-XXXX-…, 13 groups of 4
+t1d59283c = XXXX-XXXX-…, 13 groupes de 4
+
+# Join with the recovery key
+t20a260d4 = Rejoindre avec la clé de récupération
+
+# The passphrase set on the other device
+t71d27652 = La phrase secrète définie sur l'autre appareil
+
+# Join with the passphrase
+t97bef16c = Rejoindre avec la phrase secrète
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Un dossier où un autre appareil se synchronise aussi, comme celui de shellwing dans iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Un dépôt privé sur GitHub, GitLab, Gitea ou votre propre serveur, par son adresse https://, avec un token autorisé à y pousser (sur GitHub, un token à granularité fine avec Contents : lecture et écriture). Chaque modification est un commit. Le token est conservé dans le coffre de ce téléphone.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Le mot de passe est conservé dans le coffre de ce téléphone, jamais à l'emplacement.
+
+# shellwing did not start.
+td364ab30 = shellwing n'a pas démarré.
+
+# Load an environment
+tfd1fc961 = Charger un environnement
+
+# Keep it there
+t3cd7dd37 = Le laisser là
+
+# Take it away now
+te025e6eb = Le retirer maintenant
+
+# {name}, placed until the session ends
+t7fad2b94 = { $name }, déposé jusqu'à la fin de la session
+
+# Unload {name}
+t4f418d0b = Décharger { $name }
+
+# {path} stays when the session ends.
+t3ef97d99 = { $path } reste à la fin de la session.
+
+# {path} taken away.
+tb65f4b23 = { $path } retiré.
+
+# Save {offer} in the vault? It is tried first next time.
+t3fd5ca20 = Enregistrer { $offer } dans le coffre ? La prochaine fois, shellwing l'essaie en premier.
+
+# Load an environment…
+t8b267127 = Charger un environnement…
+
+# Notes…
+te20662aa = Notes…
+
+# Files…
+t4b68cf4c = Fichiers…
+
+# Place a config file…
+tdc9941e5 = Déposer un fichier de configuration…
+
+# Install a key on this host…
+te5f3e2ad = Installer une clé sur ce serveur…
+
+# Left
+t92773890 = Gauche
+
+# Up
+t42f35940 = Haut
+
+# Down
+ta4995035 = Bas
+
+# Right
+t1e9e9f85 = Droite
+
+# Hide the keyboard
+t5cadc433 = Masquer le clavier
+
+# Show the keyboard
+t6884a1b4 = Afficher le clavier
+
+# Keys in the vault
+t9c92000f = Clés du coffre
+
+# Make an Ed25519 key and install it
+t1913ae2f = Générer une clé Ed25519 et l'installer
+
+# A new key
+t93b96abd = Une nouvelle clé
+
+# Kept in the vault, encrypted; only its public line goes to {host}.
+teb44b03c = Conservée dans le coffre, chiffrée ; seule sa ligne publique est envoyée à { $host }.
+
+# Install a key
+td8f1fd20 = Installer une clé
+
+# {name} is on {host}: it signs in from now on.
+tcc1f38f4 = { $name } est sur { $host } : elle sert désormais à se connecter.
+
+# {name} was on {host} already.
+t1b42e91e = { $name } était déjà sur { $host }.
+
+# No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
+td823bccd = Aucune clé pour l'instant. Générez-en une, puis installez-la sur un serveur depuis le menu d'une session : elle sert ensuite à se connecter, sans mot de passe.
+
+# Copied
+t8dc21305 = Copié
+
+# Share
+t4f856dd8 = Partager
+
+# Hosts that sign in with it need another way in.
+te6d5f68b = Les serveurs qui s'y connectent avec elle devront passer par un autre moyen.
+
+# Make a key
+ta2572fcb = Générer une clé
+
+# A new Ed25519 key
+t97812638 = Une nouvelle clé Ed25519
+
+# Kept in the vault, encrypted, with your other secrets.
+t698b5927 = Conservée dans le coffre, chiffrée, avec vos autres secrets.
+
+# Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
+t8e21fd8c = Rien d'enregistré pour l'instant. Quand un mot de passe saisi dans une session fonctionne, shellwing propose de le conserver.
+
+# A key's passphrase
+tdf0a144f = La phrase secrète d'une clé
+
+# Forget {name}?
+t5b101fa2 = Oublier { $name } ?
+
+# It is asked for again next time.
+t736fd9ad = Il sera redemandé la prochaine fois.
+
+# Write it down and keep it apart from this phone. It opens the vault where nothing else can.
+t91c53986 = Notez-la et conservez-la loin de ce téléphone. Elle ouvre le coffre là où rien d'autre ne le peut.
+
+# Show the vault's recovery key
+t45dffa07 = Afficher la clé de récupération du coffre
+
+# Not confirmed: the key stays hidden.
+t899a4de3 = Non confirmé : la clé reste masquée.

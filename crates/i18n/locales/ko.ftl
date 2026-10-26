@@ -55,36 +55,6 @@ tbf2a5d3a = 편집기 명령 없음
 # no text editor found
 t6256b3da = 텍스트 편집기를 찾을 수 없음
 
-# The command is {size} KB; {max} KB at most.
-ta78b9fbd = 명령이 { $size }KB입니다. 최대 { $max }KB입니다.
-
-# {name}: a name takes {max} characters at most.
-t190cce46 = { $name }: 이름은 최대 { $max }자입니다.
-
-# {name} is {size} KB; a value takes {max} KB at most.
-t8a0064ca = { $name }이(가) { $size }KB입니다. 값은 최대 { $max }KB입니다.
-
-# {count} variables; {max} at most.
-t1c9f770c = 변수가 { $count }개입니다. 최대 { $max }개입니다.
-
-# The variables come to {size} KB; {max} KB at most.
-tdbf76954 = 변수 합계가 { $size }KB입니다. 최대 { $max }KB입니다.
-
-# The file is {size} KB; {max} KB at most.
-tf2bc7ef2 = 파일이 { $size }KB입니다. 최대 { $max }KB입니다.
-
-# The note is {size} KB; {max} KB at most.
-td5e1ea7c = 노트가 { $size }KB입니다. 최대 { $max }KB입니다.
-
-# The image is {size} KB; {max} KB at most.
-t7bb41ed9 = 이미지가 { $size }KB입니다. 최대 { $max }KB입니다.
-
-# The note's images come to {size} MB; {max} MB at most.
-t085c57f3 = 노트의 이미지가 모두 { $size }MB입니다. 최대 { $max }MB입니다.
-
-# Not an image that can be kept: a PNG or a JPEG.
-tccae79a4 = 보관할 수 있는 이미지가 아닙니다: PNG 또는 JPEG만 됩니다.
-
 # Name
 t0fe07306 = 이름
 
@@ -2485,9 +2455,6 @@ t27e0e0f9 = { $pane }에서 실행
 # Connect a tab in the main window to run it there.
 tc580324f = 기본 창에서 탭을 연결하면 그곳에서 실행할 수 있습니다.
 
-# every host
-t444612de = 모든 호스트
-
 # {n} byte | {n} bytes
 te8f231ba =
     { $n ->
@@ -2824,27 +2791,6 @@ t137b052e = { $n }시간 전
 # {n} day ago | {n} days ago
 tb9fa7744 = { $n }일 전
 
-# its password is not saved on this device: connect again in Settings › Sync
-td2fdfc60 = 이 기기에 비밀번호가 저장되어 있지 않음: 설정 › 동기화에서 다시 연결하세요
-
-# {title} (from {device})
-t63a0d436 = { $title } ({ $device }에서)
-
-# {title} (from another device)
-t0e55da75 = { $title } (다른 기기에서)
-
-# hosts not synced: {e}
-te7d5212e = 호스트가 동기화되지 않음: { $e }
-
-# settings not synced: {e}
-tf8592ea2 = 설정이 동기화되지 않음: { $e }
-
-# settings not written: {e}
-t60f438b7 = 설정이 저장되지 않음: { $e }
-
-# hosts not written: {e}
-t00f3a4eb = 호스트가 저장되지 않음: { $e }
-
 # Find a tab: host, user, title
 t187bd0b5 = 탭 찾기: 호스트, 사용자, 제목
 
@@ -2898,15 +2844,6 @@ t500558bd =
 
 # What was there before is {path}.
 td07a4718 = 이전에 있던 파일은 이제 { $path }입니다.
-
-# It has no variables.
-t0993a534 = 변수가 없습니다.
-
-# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
-t3883bd87 = 불러온 것과 합치면 { $size }KB입니다. 셸은 최대 { $max }KB까지 받습니다. 먼저 하나를 해제하세요.
-
-# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
-ta1a9b215 = 셸이 변수를 받지 않았습니다. 프롬프트 상태가 아니거나 POSIX 셸(sh, bash, zsh)이 아닙니다.
 
 # {name} is loaded into this shell.
 t5bc879d1 = { $name }을(를) 이 셸에 불러왔습니다.
@@ -3885,3 +3822,795 @@ t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요
+
+# The command is {size} KB; {max} KB at most.
+ta78b9fbd = 명령이 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# {name}: a name takes {max} characters at most.
+t190cce46 = { $name }: 이름은 최대 { $max }자입니다.
+
+# {name} is {size} KB; a value takes {max} KB at most.
+t8a0064ca = { $name }이(가) { $size }KB입니다. 값은 최대 { $max }KB입니다.
+
+# {count} variables; {max} at most.
+t1c9f770c = 변수가 { $count }개입니다. 최대 { $max }개입니다.
+
+# The variables come to {size} KB; {max} KB at most.
+tdbf76954 = 변수 합계가 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# The file is {size} KB; {max} KB at most.
+tf2bc7ef2 = 파일이 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# The note is {size} KB; {max} KB at most.
+td5e1ea7c = 노트가 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# The image is {size} KB; {max} KB at most.
+t7bb41ed9 = 이미지가 { $size }KB입니다. 최대 { $max }KB입니다.
+
+# The note's images come to {size} MB; {max} MB at most.
+t085c57f3 = 노트의 이미지가 모두 { $size }MB입니다. 최대 { $max }MB입니다.
+
+# Not an image that can be kept: a PNG or a JPEG.
+tccae79a4 = 보관할 수 있는 이미지가 아닙니다: PNG 또는 JPEG만 됩니다.
+
+# The shell did not take the variables: it is not at its prompt, or not a POSIX shell (sh, bash, zsh).
+ta1a9b215 = 셸이 변수를 받지 않았습니다. 프롬프트 상태가 아니거나 POSIX 셸(sh, bash, zsh)이 아닙니다.
+
+# It has no variables.
+t0993a534 = 변수가 없습니다.
+
+# With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
+t3883bd87 = 불러온 것과 합치면 { $size }KB입니다. 셸은 최대 { $max }KB까지 받습니다. 먼저 하나를 해제하세요.
+
+# every host
+t444612de = 모든 호스트
+
+# its password is not saved on this device: connect again in Settings › Sync
+td2fdfc60 = 이 기기에 비밀번호가 저장되어 있지 않음: 설정 › 동기화에서 다시 연결하세요
+
+# {title} (from {device})
+t63a0d436 = { $title } ({ $device }에서)
+
+# {title} (from another device)
+t0e55da75 = { $title } (다른 기기에서)
+
+# hosts not synced: {e}
+te7d5212e = 호스트가 동기화되지 않음: { $e }
+
+# settings not synced: {e}
+tf8592ea2 = 설정이 동기화되지 않음: { $e }
+
+# settings not written: {e}
+t60f438b7 = 설정이 저장되지 않음: { $e }
+
+# hosts not written: {e}
+t00f3a4eb = 호스트가 저장되지 않음: { $e }
+
+# Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
+t37ca034c = 놓을 위치: /로 시작하거나 ~/로 시작하는 파일 경로, 예: ~/.kube/config.
+
+# Nothing is at {path}.
+ta5cf42ea = { $path }에 아무것도 없습니다.
+
+# Address: an address is needed.
+t3f9c8dd7 = 주소: 주소가 필요합니다.
+
+# Address: no spaces.
+t1a9d2c69 = 주소: 공백을 넣을 수 없습니다.
+
+# Name: another host has this name.
+tcf956656 = 이름: 다른 호스트가 이미 이 이름을 사용합니다.
+
+# Alias: no spaces.
+t240468fd = 별칭: 공백을 넣을 수 없습니다.
+
+# Alias: another host uses this.
+t6d4194b8 = 별칭: 다른 호스트가 이미 사용합니다.
+
+# Port: 1 to 65535.
+t48e7bff2 = 포트: 1에서 65535 사이.
+
+# User: no spaces.
+t7b146164 = 사용자: 공백을 넣을 수 없습니다.
+
+# Key: choose a key.
+t96503d0f = 키: 키를 선택하세요.
+
+# Keepalive: seconds, 0 to 3600 (0: none).
+t868fa0cd = 연결 유지: 초 단위, 0에서 3600 사이 (0: 사용 안 함).
+
+# Jump: a host cannot jump through itself.
+tf5b576a7 = 경유: 호스트는 자기 자신을 경유할 수 없습니다.
+
+# Forward {forward}: {e}
+t575e8c34 = 포워딩 { $forward }: { $e }
+
+# the password for {target}
+t33a923dd = { $target }의 비밀번호
+
+# the passphrase of {path}
+t847f4536 = { $path }의 암호 문구
+
+# A full-screen program is running: leave it, then try again.
+t1dca493f = 전체 화면 프로그램이 실행 중입니다. 프로그램을 나간 뒤 다시 시도하세요.
+
+# Unlock shellwing
+t25d6e4bc = shellwing 잠금 해제
+
+# {biometry} or your passcode unlocks it.
+t22b7de26 = { $biometry } 또는 기기 암호로 잠금을 해제할 수 있습니다.
+
+# Your passcode unlocks it.
+t22c93782 = 기기 암호로 잠금을 해제할 수 있습니다.
+
+# {n} session stays connected underneath. | {n} sessions stay connected underneath.
+t8f2f0709 =
+    { $n ->
+       *[other] 세션 { $n }개는 뒤에서 연결된 상태로 유지됩니다.
+    }
+
+# No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
+t773e80be = 아직 설정 파일이 없습니다. 보관함에 보관되는 파일(kubeconfig, .npmrc 등)로, 세션에서 호스트에 배치합니다.
+
+# stays
+t6210bca9 = 유지
+
+# Placed to stay
+t326d488a = 계속 남도록 배치됨
+
+# Placed, it stays when the session ends.
+t596dc3ba = 배치되었으며, 세션이 끝나도 남습니다.
+
+# Placed, it is taken away when the session ends.
+tcb169849 = 배치되었으며, 세션이 끝나면 삭제됩니다.
+
+# Binary, {size}: kept as it is.
+td3506722 = 바이너리, { $size }: 그대로 보관됩니다.
+
+# Replace from Files…
+t910b03ca = 파일 앱에서 바꾸기…
+
+# Only a text file can be imported here.
+t94955dee = 여기서는 텍스트 파일만 가져올 수 있습니다.
+
+# Permissions: three digits from 0 to 7, such as 600.
+tad710134 = 권한: 0에서 7 사이의 숫자 세 자리, 예: 600.
+
+# No config files for this host. Keep them in Library › Files.
+t31aa06de = 이 호스트용 설정 파일이 없습니다. 라이브러리 › 파일에 보관하세요.
+
+# Place a config file
+t2bd139bb = 설정 파일 배치
+
+# Replace the one placed until the session ends
+t72427900 = 배치된 파일을 세션이 끝날 때까지 바꾸기
+
+# Place it until the session ends
+tf442be28 = 세션이 끝날 때까지 배치
+
+# Replace it until the session ends
+t96406163 = 세션이 끝날 때까지 바꾸기
+
+# Cannot place {name}: {error}
+t816e11b0 = { $name }을(를) 배치할 수 없습니다: { $error }
+
+# {name} is at {path} until the session ends.
+t10182ed5 = 세션이 끝날 때까지 { $name }이(가) { $path }에 있습니다.
+
+# {name} is at {path}.
+t3b2e2230 = { $name }이(가) { $path }에 있습니다.
+
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = 보관함을 동기화하고 있다면 다른 기기에서도 삭제됩니다.
+
+# Nothing here.
+ta7006e9a = 아무것도 없습니다.
+
+# The folder and everything in it are deleted on {host}.
+t200fdede = { $host }에서 폴더와 그 안의 모든 항목이 삭제됩니다.
+
+# It is deleted on {host}.
+td57ed776 = { $host }에서 삭제됩니다.
+
+# Upload from Files…
+t3efaa7bd = 파일 앱에서 업로드…
+
+# Hidden files
+t3f0de492 = 숨김 파일
+
+# Add
+t9dc3aa14 = 추가
+
+# Make
+t486bedcf = 만들기
+
+# Download the folder
+t1c6b8ca2 = 폴더 다운로드
+
+# Keep in the vault
+t08dcb490 = 보관함에 보관
+
+# Copy the path
+t095d064e = 경로 복사
+
+# A name without /, please.
+t7055c52a = /가 없는 이름을 입력하세요.
+
+# Making {name}…
+t431597d3 = { $name } 만드는 중…
+
+# Renaming…
+t87125000 = 이름 바꾸는 중…
+
+# Deleting {name}…
+ta17d02e6 = { $name } 삭제하는 중…
+
+# {name} deleted.
+tf36570a5 = { $name }을(를) 삭제했습니다.
+
+# Downloading {name}…
+t49917320 = { $name } 다운로드 중…
+
+# Opening {name}…
+t24b03450 = { $name } 여는 중…
+
+# Uploading {name}…
+t763593ef = { $name } 업로드 중…
+
+# Uploading {n} item… | Uploading {n} items…
+t4d21b20c =
+    { $n ->
+       *[other] 항목 { $n }개 업로드 중…
+    }
+
+# {name} uploaded.
+t0b81da1e = { $name }을(를) 업로드했습니다.
+
+# {n} item uploaded. | {n} items uploaded.
+tbf7cc840 =
+    { $n ->
+       *[other] 항목 { $n }개를 업로드했습니다.
+    }
+
+# Keeping {name}…
+tbb0f5ffb = { $name } 보관하는 중…
+
+# {name} is in the vault: Library › Files.
+t71be4d4c = { $name }이(가) 보관함에 있습니다: 라이브러리 › 파일.
+
+# {path} changed on {host} since it was opened.
+ta4924204 = 연 이후 { $host }에서 { $path }이(가) 변경되었습니다.
+
+# Replace it with this
+tf329d9b0 = 이 내용으로 바꾸기
+
+# Not saved: {error}
+t2fe29775 = 저장되지 않음: { $error }
+
+# A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
+t3ff468c2 = 호스트 자체의 테마가 그룹의 테마보다 우선합니다. 호스트를 그룹에 넣으려면 호스트 편집기에서 그룹을 선택하세요.
+
+# Delete {group}?
+t6801beba = { $group }을(를) 삭제하시겠습니까?
+
+# Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
+t8d5eff39 =
+    { $n ->
+       *[other] { $group }을(를) 삭제하시겠습니까? 소속 호스트 { $n }개는 그룹 없이 유지됩니다.
+    }
+
+# No color
+te96206b1 = 색 없음
+
+# as the server says
+ta204abe7 = 서버가 정한 대로
+
+# Alias
+t22e1f2f7 = 별칭
+
+# Make a key for this host
+tfc47113a = 이 호스트용 키 생성
+
+# Make a key for {host}
+tc4091336 = { $host }용 키 생성
+
+# {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
+t14c6a565 = { $name }은(는) 새 키입니다. 아직 호스트에 설치되지 않았습니다. 다른 방법(비밀번호)으로 한 번 접속한 뒤 세션 메뉴에서 설치하세요.
+
+# Tries the keys in the vault, then asks for a password, like ssh.
+t4c5dd8b2 = ssh와 마찬가지로 보관함의 키를 시도한 뒤 비밀번호를 묻습니다.
+
+# A key file of another device: this phone signs in with the vault's keys.
+t85abc601 = 다른 기기의 키 파일입니다. 이 휴대폰은 보관함의 키로 로그인합니다.
+
+# Uses the keys in an ssh-agent: a desktop's; a phone has none.
+t4b96b415 = ssh-agent의 키를 사용합니다. 데스크톱용이며 휴대폰에는 ssh-agent가 없습니다.
+
+# Add a jump
+t16c79e2d = 경유 호스트 추가
+
+# Straight to the host. A jump goes through another host first (a bastion).
+t31e98c98 = 호스트에 바로 연결합니다. 경유 호스트를 두면 먼저 다른 호스트(배스천)를 거칩니다.
+
+# Favorite: listed first
+t7bd2a9c8 = 즐겨찾기: 맨 위에 표시
+
+# Host keys
+t2f5a3205 = 호스트 키
+
+# As in Settings
+t46210079 = 설정과 같게
+
+# Accept new ones
+tc99d0b88 = 새 키 수락
+
+# Known ones only
+t2234971d = 알려진 키만
+
+# Keepalive (s)
+t13e524f5 = 연결 유지 (초)
+
+# as in Settings
+tf8e77e19 = 설정과 같게
+
+# Another session
+t4d6f66b8 = 다른 세션
+
+# Edit {name}
+t4688b082 = { $name } 편집
+
+# Add a host
+t38d39c8f = 호스트 추가
+
+# OK
+t85e4b82f = 확인
+
+# Add one with +, or sync the hosts of your other devices.
+tceb03600 = +로 추가하거나, 다른 기기의 호스트를 동기화하세요.
+
+# the Keychain said {status}
+tc1738579 = 키체인 응답: { $status }
+
+# Envs
+tf645a165 = 환경
+
+# Part
+te3596034 = 구분
+
+# Library
+ta8532270 = 라이브러리
+
+# No snippets yet. Make one with +, or sync those of your other devices.
+tf81b77f9 = 아직 스니펫이 없습니다. +로 만들거나, 다른 기기의 스니펫을 동기화하세요.
+
+# No snippets for this host.
+tbf3767c5 = 이 호스트용 스니펫이 없습니다.
+
+# Browse the snippet library
+t63787b2e = 스니펫 라이브러리 둘러보기
+
+# Filter snippets
+tbb9b10c7 = 스니펫 필터링
+
+# Offered
+t2bd643c4 = 사용 대상
+
+# Everywhere
+t327a596f = 모든 곳
+
+# Group: {group}
+t0d904ce9 = 그룹: { $group }
+
+# Host: {host}
+t3fb3f6b3 = 호스트: { $host }
+
+# Press Enter after it
+te4ce8331 = 입력 후 Enter 누르기
+
+# Command
+tc67c8f52 = 명령
+
+# {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
+td02256f4 = {"{{"}name{"}}"}은 실행할 때 값을 묻고, {"{{"}host{"}}"}, {"{{"}user{"}}"}, {"{{"}address{"}}"}는 세션에서 가져옵니다.
+
+# Runs with
+te90c2175 = 함께 쓰는 환경
+
+# Their variables are given to it alone, in a subshell, without showing their values.
+t4ef64333 = 해당 변수는 값을 보여 주지 않고 서브셸에서 이 스니펫에만 전달됩니다.
+
+# Run
+t8d57e66a = 실행
+
+# No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
+tbcdba796 = 아직 환경이 없습니다. 보관함에 보관되는 변수로, 값을 보여 주지 않고 세션의 셸에 불러옵니다.
+
+# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
+t36bfa774 = 한 줄에 NAME=value 하나. = 뒤에 아무것도 없는 이름은 기존 값을 유지합니다. 값은 여기에 표시되지 않습니다.
+
+# No notes yet.
+t4be168d5 = 아직 노트가 없습니다.
+
+# Untitled
+t2e35a678 = 제목 없음
+
+# this host
+t4b4cbe3d = 이 호스트
+
+# Delete this note?
+t9d3e3253 = 이 노트를 삭제하시겠습니까?
+
+# Filter notes
+tde67183a = 노트 필터링
+
+# Markdown
+tf651116c = Markdown
+
+# Show a sensitive note
+t905684dd = 민감 정보 노트 보기
+
+# For hosts…
+t4d6ecc3d = 사용 호스트…
+
+# Insert an image…
+t2d3653b2 = 이미지 삽입…
+
+# Note
+t1440c15d = 노트
+
+# That image cannot be read.
+tc5fceb9b = 이미지를 읽을 수 없습니다.
+
+# For hosts
+t350fa483 = 사용 호스트
+
+# Image
+t590ca79a = 이미지
+
+# No sessions open
+t483ac645 = 열린 세션 없음
+
+# Open one from Hosts.
+t7a72807e = 호스트에서 세션을 여세요.
+
+# Sessions
+tb69a8aec = 세션
+
+# Connect again
+t05dc6981 = 다시 연결
+
+# {n} minute | {n} minutes
+tf77c9aaa =
+    { $n ->
+       *[other] { $n }분
+    }
+
+# Lock
+t71b42d62 = 잠금
+
+# When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+taaa2c58c = shellwing을 시작할 때와 이 시간만큼 백그라운드에 있은 뒤에는, { $biometry } 또는 기기 암호로 본인임을 확인할 때까지 숨겨집니다. 잠그지 않고 둔 휴대폰을 위한 가벼운 보호이며, 세션은 뒤에서 계속 유지됩니다.
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = shellwing을 시작할 때와 이 시간만큼 백그라운드에 있은 뒤에는, 기기 암호로 본인임을 확인할 때까지 숨겨집니다. 잠그지 않고 둔 휴대폰을 위한 가벼운 보호이며, 세션은 뒤에서 계속 유지됩니다.
+
+# This phone has no passcode, so nothing could ask that it is you.
+td366e372 = 이 휴대폰에 기기 암호가 없어 본인 확인을 요청할 수 없습니다.
+
+# As the phone
+t8ad2f046 = 휴대폰 설정과 같게
+
+# Text size
+t2c041143 = 텍스트 크기
+
+# History
+t7d96597f = 스크롤백
+
+# Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
+tde3581cd = 변경 후 연 세션에 적용됩니다. 터미널을 핀치해도 텍스트 크기를 바꿀 수 있으며, 이 크기는 이 휴대폰에만 적용됩니다.
+
+# New host keys
+t48a98987 = 새 호스트 키
+
+# Accept them
+t2dd33559 = 수락
+
+# Refuse them
+t2483aa25 = 거부
+
+# Every {n} second | Every {n} seconds
+t0877f108 =
+    { $n ->
+       *[other] { $n }초마다
+    }
+
+# Connections
+t25db363e = 연결
+
+# A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
+t25360db5 = 호스트 편집기에서 지정한 값이 우선합니다. 변경된 키는 항상 거부됩니다. 새 키를 수락하려면 알려진 호스트에서 해당 호스트를 삭제하세요.
+
+# SSH keys
+t7e7cad2b = SSH 키
+
+# Saved passwords
+tcdae5fca = 저장된 비밀번호
+
+# The vault is opening…
+t12986dd4 = 보관함을 여는 중…
+
+# Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
+t8cae68cf = 비밀번호와 키는 이 휴대폰에 암호화되어 보관되며, 그 키는 이 휴대폰에만 있는 iOS 키체인에 있습니다.
+
+# Configuration
+t1a5ee459 = 구성
+
+# hosts.toml, in the app's own folder
+tcdaeae19 = hosts.toml, 앱 전용 폴더에 있음
+
+# Version
+t5dcdd537 = 버전
+
+# shellwing on GitHub
+t1fcb667e = GitHub의 shellwing
+
+# Problem
+t448c5c7c = 문제
+
+# No host keys known yet: a host's is kept the first time you connect.
+ta5bda1d5 = 아직 알려진 호스트 키가 없습니다. 처음 접속할 때 호스트의 키가 보관됩니다.
+
+# A hashed name
+t97c138ac = 해시된 이름
+
+# Forget
+t6e3fab8c = 삭제
+
+# Forget the key of {host}?
+t25034152 = { $host }의 키를 삭제할까요?
+
+# It is shown to check again the next time you connect.
+t51c13890 = 다음에 연결할 때 확인하도록 다시 표시됩니다.
+
+# Filter by name
+tbcb12ca7 = 이름으로 필터링
+
+# {n} snippet added: run it from a session's Snippets key. | {n} snippets added: run them from a session's Snippets key.
+tcc9793a7 =
+    { $n ->
+       *[other] 스니펫 { $n }개를 추가했습니다. 세션의 스니펫 키로 실행하세요.
+    }
+
+# Asked when it runs: {names}. Once added, it is yours to edit.
+t2b67b8d3 = 실행할 때 묻기: { $names }. 추가하면 내 스니펫이 되어 편집할 수 있습니다.
+
+# None yet: add one in Library › Envs.
+te4d214e4 = 아직 없음: 라이브러리 › 환경에서 추가하세요.
+
+# Picked
+t71962a99 = 선택됨
+
+# shellwing may not use that folder.
+t39f14b58 = shellwing은 이 폴더를 사용할 수 없습니다.
+
+# Place
+t9ad2489c = 위치
+
+# Last synced
+t2d4f851d = 마지막 동기화
+
+# not yet
+t6d9d33dc = 아직 없음
+
+# End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
+tac696b8b = 종단 간 암호화: 그 위치에는 보관함의 키로만 열 수 있는 내용만 저장됩니다. shellwing이 열려 있는 동안 1분마다, 그리고 변경 사항이 있을 때 동기화합니다.
+
+# {device} asks to join
+tf44b389c = { $device }에서 참여를 요청합니다
+
+# Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
+t329319cf = { $code }가 표시된 경우에만 승인하세요. 이 기기는 보관함의 모든 항목(비밀번호, 키, 스니펫, 호스트)을 받게 됩니다.
+
+# Devices asking
+t49658daf = 요청 중인 기기
+
+# Stop syncing on this phone?
+t7ca0b094 = 이 휴대폰에서 동기화를 중지하시겠습니까?
+
+# The vault stays here, and the copy at the place stays for your other devices.
+t7b47ff6d = 보관함은 이곳에 남고, 그 위치의 사본도 다른 기기를 위해 남습니다.
+
+# Waiting for a device that syncs there…
+tb119de8b = 그 위치를 동기화하는 기기를 기다리는 중…
+
+# Open shellwing on it: it asks whether to let this phone in.
+t5b4d0d2f = 그 기기에서 shellwing을 여세요. 이 휴대폰의 참여를 허용할지 묻습니다.
+
+# {device} answered
+t89d183da = { $device }에서 응답했습니다
+
+# Approve on {device} if it shows the same code.
+tbc9bc44d = 같은 코드가 표시되면 { $device }에서 승인하세요.
+
+# Joined: this phone syncs there now.
+tfb82a94e = 참여했습니다. 이제 이 휴대폰은 그 위치와 동기화합니다.
+
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = 이제 이 휴대폰은 그 위치와 동기화합니다. 복구 키로 다른 기기에서 보관함을 열 수 있으니 적어 두세요.
+
+# Where
+t91dad0f8 = 위치
+
+# Password or app password
+t9cc53273 = 비밀번호 또는 앱 비밀번호
+
+# Endpoint: https://s3.eu-west-1.amazonaws.com
+t9deef30d = 엔드포인트: https://s3.eu-west-1.amazonaws.com
+
+# Region (empty: auto)
+t6689bdf6 = 리전 (비워 두면 자동)
+
+# Folder in the bucket (optional)
+t7c04f452 = 버킷 내 폴더 (선택 사항)
+
+# Token
+t3a355bd2 = 토큰
+
+# Choose another folder…
+tcba15eff = 다른 폴더 선택…
+
+# Sync the vault
+tff5adbd9 = 보관함 동기화
+
+# Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
+tfd5abd9b = 다른 기기의 보관함이 있습니다. 참여하면 그 호스트, 키, 비밀번호, 스니펫을 이 휴대폰에서 쓸 수 있습니다.
+
+# Pair with a device that syncs there
+tb3c83579 = 그 위치를 동기화하는 기기와 페어링
+
+# Join
+t30025399 = 참여
+
+# XXXX-XXXX-…, 13 groups of 4
+t1d59283c = XXXX-XXXX-…, 4자씩 13묶음
+
+# Join with the recovery key
+t20a260d4 = 복구 키로 참여
+
+# The passphrase set on the other device
+t71d27652 = 다른 기기에서 설정한 암호 문구
+
+# Join with the passphrase
+t97bef16c = 암호 문구로 참여
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = 다른 기기도 동기화하는 폴더, 예: iCloud Drive의 shellwing 폴더.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = GitHub, GitLab, Gitea 또는 자체 서버의 비공개 저장소를 https:// 주소와 그곳에 푸시할 수 있는 토큰으로 사용합니다 (GitHub에서는 Contents 읽기 및 쓰기 권한이 있는 세분화된 토큰). 변경 사항마다 커밋이 하나씩 생성됩니다. 토큰은 이 휴대폰의 보관함에 보관됩니다.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = 비밀번호는 이 휴대폰의 보관함에 보관되며, 위치에는 절대 저장되지 않습니다.
+
+# shellwing did not start.
+td364ab30 = shellwing이 시작되지 않았습니다.
+
+# Load an environment
+tfd1fc961 = 환경 불러오기
+
+# Keep it there
+t3cd7dd37 = 그대로 두기
+
+# Take it away now
+te025e6eb = 지금 삭제
+
+# {name}, placed until the session ends
+t7fad2b94 = { $name }, 세션이 끝날 때까지 배치됨
+
+# Unload {name}
+t4f418d0b = { $name } 해제
+
+# {path} stays when the session ends.
+t3ef97d99 = 세션이 끝나도 { $path }은(는) 남습니다.
+
+# {path} taken away.
+tb65f4b23 = { $path }을(를) 삭제했습니다.
+
+# Save {offer} in the vault? It is tried first next time.
+t3fd5ca20 = { $offer }을(를) 보관함에 저장하시겠습니까? 다음에는 먼저 시도합니다.
+
+# Load an environment…
+t8b267127 = 환경 불러오기…
+
+# Notes…
+te20662aa = 노트…
+
+# Files…
+t4b68cf4c = 파일…
+
+# Place a config file…
+tdc9941e5 = 설정 파일 배치…
+
+# Install a key on this host…
+te5f3e2ad = 이 호스트에 키 설치…
+
+# Left
+t92773890 = 왼쪽
+
+# Up
+t42f35940 = 위
+
+# Down
+ta4995035 = 아래
+
+# Right
+t1e9e9f85 = 오른쪽
+
+# Hide the keyboard
+t5cadc433 = 키보드 숨기기
+
+# Show the keyboard
+t6884a1b4 = 키보드 보기
+
+# Keys in the vault
+t9c92000f = 보관함의 키
+
+# Make an Ed25519 key and install it
+t1913ae2f = Ed25519 키를 생성해 설치
+
+# A new key
+t93b96abd = 새 키
+
+# Kept in the vault, encrypted; only its public line goes to {host}.
+teb44b03c = 보관함에 암호화되어 보관되며, 공개 키 줄만 { $host }에 전달됩니다.
+
+# Install a key
+td8f1fd20 = 키 설치
+
+# {name} is on {host}: it signs in from now on.
+tcc1f38f4 = { $name }이(가) { $host }에 설치되었습니다. 이제부터 이 키로 로그인합니다.
+
+# {name} was on {host} already.
+t1b42e91e = { $name }은(는) 이미 { $host }에 있습니다.
+
+# No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
+td823bccd = 아직 키가 없습니다. 키를 생성한 뒤 세션 메뉴에서 호스트에 설치하세요. 그때부터 비밀번호 없이 로그인합니다.
+
+# Copied
+t8dc21305 = 복사됨
+
+# Share
+t4f856dd8 = 공유
+
+# Hosts that sign in with it need another way in.
+te6d5f68b = 이 키로 로그인하는 호스트에는 다른 로그인 방법이 필요합니다.
+
+# Make a key
+ta2572fcb = 키 생성
+
+# A new Ed25519 key
+t97812638 = 새 Ed25519 키
+
+# Kept in the vault, encrypted, with your other secrets.
+t698b5927 = 다른 비밀 정보와 함께 보관함에 암호화되어 보관됩니다.
+
+# Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
+t8e21fd8c = 아직 저장된 항목이 없습니다. 세션에서 입력한 비밀번호가 통하면 shellwing이 저장할지 묻습니다.
+
+# A key's passphrase
+tdf0a144f = 키의 암호 문구
+
+# Forget {name}?
+t5b101fa2 = { $name }을(를) 삭제할까요?
+
+# It is asked for again next time.
+t736fd9ad = 다음에 다시 물어봅니다.
+
+# Write it down and keep it apart from this phone. It opens the vault where nothing else can.
+t91c53986 = 적어서 이 휴대폰과 따로 보관하세요. 다른 방법이 통하지 않을 때 보관함을 열 수 있습니다.
+
+# Show the vault's recovery key
+t45dffa07 = 보관함 복구 키 보기
+
+# Not confirmed: the key stays hidden.
+t899a4de3 = 확인되지 않음: 키가 숨겨진 상태로 유지됩니다.

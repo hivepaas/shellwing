@@ -28,6 +28,9 @@ targets:
       path: Shellwing/Info.plist
       properties:
         CFBundleDisplayName: shellwing
+        # The languages of crates/i18n: iOS offers them in the app's settings.
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, de, es, fr, pt-BR, vi, ru, ja, ko, zh-Hans]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
@@ -54,4 +57,4 @@ targets:
         # The Rust library is built for Apple silicon's Simulator only.
         EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
         # What the Rust library needs from the system.
-        OTHER_LDFLAGS: ["-lc++", "-framework", "Security", "-framework", "SystemConfiguration"]
+        OTHER_LDFLAGS: ["-lc++", "-lz", "-liconv", "-framework", "Security", "-framework", "SystemConfiguration"]
