@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Keeps shellwing's translations in step with the code.
 
-The English is in the code (`tr!("…")`, `tr_n!(n, "…", "…")`); each message's
-id is the FNV-1a hash of its English, as crates/i18n computes it.
+The English is in the code (`tr!("…")`, `tr_n!(n, "…", "…")`, and in the iOS
+app's Swift `tr("…")`, `trN(n, "…", "…")`); each message's id is the FNV-1a
+hash of its English, as crates/i18n computes it.
 
     scripts/i18n.py update   writes locales/en.ftl from the code, and brings
                              each translation up to date: kept where its
@@ -35,9 +36,15 @@ SOURCES = sorted(
     if p.parts[-3] != "i18n" and "ui_tests" not in p.parts
 )
 
+# The iOS app says its English through the same catalogs (crates/mobile's
+# tr and tr_n).
+SWIFT_SOURCES = sorted((ROOT / "ios" / "Shellwing").glob("**/*.swift"))
+
 STRING = r'"((?:[^"\\]|\\.)*)"'
 TR = re.compile(r"\btr!\(\s*" + STRING, re.S)
 TR_N = re.compile(r"\btr_n!\(\s*[^;]*?,\s*" + STRING + r"\s*,\s*" + STRING, re.S)
+SWIFT_TR = re.compile(r"(?<![\w.])tr\(\s*" + STRING, re.S)
+SWIFT_TR_N = re.compile(r"(?<![\w.])trN\(\s*[^\n]*?,\s*" + STRING + r"\s*,\s*" + STRING, re.S)
 ENTRY = re.compile(r"^(t[0-9a-f]{8})\s*=")
 
 
@@ -77,16 +84,17 @@ def id_of(english):
 def messages():
     """The code's messages in order of first use: id -> (english, plural)."""
     found = {}
-    for path in SOURCES:
+    for path in SOURCES + SWIFT_SOURCES:
         # Comments (docs that show tr! at work) are not code.
         text = "\n".join(
             "" if l.lstrip().startswith("//") else l
             for l in path.read_text(encoding="utf-8").splitlines()
         )
-        hits = [(m.start(), unescape(m.group(1)), None) for m in TR.finditer(text)]
+        tr, tr_n = (SWIFT_TR, SWIFT_TR_N) if path.suffix == ".swift" else (TR, TR_N)
+        hits = [(m.start(), unescape(m.group(1)), None) for m in tr.finditer(text)]
         hits += [
             (m.start(), unescape(m.group(1)), unescape(m.group(2)))
-            for m in TR_N.finditer(text)
+            for m in tr_n.finditer(text)
         ]
         for _, one, other in sorted(hits, key=lambda h: h[0]):
             english = one if other is None else one + "\n" + other

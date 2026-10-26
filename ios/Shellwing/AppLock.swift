@@ -44,15 +44,15 @@ final class AppLock: ObservableObject {
             locked = false
             return
         }
-        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock shellwing") { ok, err in
+        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: tr("Unlock shellwing")) { ok, err in
             Task { @MainActor in
                 if ok {
                     self.locked = false
                     self.said = nil
                 } else if let e = err as? LAError, e.code == .userCancel || e.code == .appCancel || e.code == .systemCancel {
-                    self.said = "Not confirmed: shellwing stays locked."
+                    self.said = tr("Not confirmed: shellwing stays locked.")
                 } else {
-                    self.said = err?.localizedDescription ?? "Not confirmed: shellwing stays locked."
+                    self.said = err?.localizedDescription ?? tr("Not confirmed: shellwing stays locked.")
                 }
             }
         }
@@ -70,7 +70,7 @@ final class AppLock: ObservableObject {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
-        default: return "Your passcode"
+        default: return tr("Your passcode")
         }
     }
 }
@@ -87,8 +87,8 @@ struct LockView: View {
                 .frame(width: 84, height: 84)
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(Dusk.edge))
                 .overlay(Wing().fill(Dusk.accent).frame(width: 48, height: 48))
-            Text("shellwing is locked").font(.system(size: 24, weight: .semibold))
-            Text("\(lock.biometry) or your passcode unlocks it.")
+            Text(tr("shellwing is locked")).font(.system(size: 24, weight: .semibold))
+            Text(tr("{biometry} or your passcode unlocks it.", ["biometry": "\(lock.biometry)"]))
                 .font(.system(size: 16))
                 .foregroundStyle(Dusk.label)
                 .multilineTextAlignment(.center)
@@ -103,14 +103,14 @@ struct LockView: View {
             }
             Spacer()
             if sessions > 0 {
-                Text(sessions == 1 ? "1 session stays connected underneath." : "\(sessions) sessions stay connected underneath.")
+                Text(trN(sessions, "{n} session stays connected underneath.", "{n} sessions stay connected underneath."))
                     .font(.system(size: 13))
                     .foregroundStyle(Dusk.muted)
             }
             Button {
                 lock.unlock()
             } label: {
-                Label("Unlock", systemImage: "faceid")
+                Label(tr("Unlock"), systemImage: "faceid")
                     .font(.system(size: 17, weight: .semibold))
                     .frame(maxWidth: .infinity, minHeight: 54)
             }

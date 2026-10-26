@@ -35,14 +35,14 @@ struct FilesScreen: View {
                     Text(problem).foregroundStyle(Dusk.badText).listRowBackground(Dusk.badBg)
                 }
                 if !loading && entries.isEmpty && problem == nil {
-                    Text("Nothing here.").foregroundStyle(Dusk.muted).listRowBackground(Dusk.surface)
+                    Text(tr("Nothing here.")).foregroundStyle(Dusk.muted).listRowBackground(Dusk.surface)
                 }
                 ForEach(shown, id: \.name) { e in
                     row(e)
                         .listRowBackground(Dusk.surface)
                         .swipeActions {
-                            Button("Delete", role: .destructive) { removing = e }
-                            Button("Rename") { naming = Naming(renaming: e, text: e.name) }.tint(Dusk.button)
+                            Button(tr("Delete"), role: .destructive) { removing = e }
+                            Button(tr("Rename")) { naming = Naming(renaming: e, text: e.name) }.tint(Dusk.button)
                         }
                         .contextMenu { menu(e) }
                 }
@@ -67,47 +67,47 @@ struct FilesScreen: View {
             .navigationTitle(name(of: dir))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Done")) { dismiss() } }
                 ToolbarItem(placement: .principal) { pathMenu }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Button("Upload from Files…", systemImage: "square.and.arrow.up") { importing = true }
-                        Button("New folder", systemImage: "folder.badge.plus") {
+                        Button(tr("Upload from Files…"), systemImage: "square.and.arrow.up") { importing = true }
+                        Button(tr("New folder"), systemImage: "folder.badge.plus") {
                             naming = Naming(renaming: nil, text: "")
                         }
-                        Toggle("Hidden files", systemImage: "eye", isOn: $showHidden)
-                        Button("Refresh", systemImage: "arrow.clockwise") { Task { await list(dir) } }
+                        Toggle(tr("Hidden files"), systemImage: "eye", isOn: $showHidden)
+                        Button(tr("Refresh"), systemImage: "arrow.clockwise") { Task { await list(dir) } }
                     } label: { Image(systemName: "plus") }
                     .disabled(busy != nil || dir.isEmpty)
-                    .accessibilityLabel("Add")
+                    .accessibilityLabel(tr("Add"))
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item, .folder], allowsMultipleSelection: true) { result in
                 if case .success(let urls) = result { upload(urls) }
             }
-            .alert(naming?.renaming == nil ? "New folder" : "Rename", isPresented: Binding(
+            .alert(naming?.renaming == nil ? tr("New folder") : tr("Rename"), isPresented: Binding(
                 get: { naming != nil },
                 set: { if !$0 { naming = nil } }
             )) {
-                TextField("Name", text: Binding(
+                TextField(tr("Name"), text: Binding(
                     get: { naming?.text ?? "" },
                     set: { naming?.text = $0 }
                 ))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                Button("Cancel", role: .cancel) { naming = nil }
-                Button(naming?.renaming == nil ? "Make" : "Rename") { named() }
+                Button(tr("Cancel"), role: .cancel) { naming = nil }
+                Button(naming?.renaming == nil ? tr("Make") : tr("Rename")) { named() }
             }
             .confirmationDialog(
-                "Delete \(removing?.name ?? "")?",
+                tr("Delete {name}?", ["name": removing?.name ?? ""]),
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
                 titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) {
+                Button(tr("Delete"), role: .destructive) {
                     if let e = removing { remove(e) }
                 }
             } message: {
-                Text(removing?.dir == true ? "The folder and everything in it are deleted on \(model.spec)." : "It is deleted on \(model.spec).")
+                Text(removing?.dir == true ? tr("The folder and everything in it are deleted on {host}.", ["host": model.spec]) : tr("It is deleted on {host}.", ["host": model.spec]))
             }
             .sheet(item: $sharing) { f in
                 ShareSheet(items: [f.url]).ignoresSafeArea()
@@ -179,15 +179,15 @@ struct FilesScreen: View {
     @ViewBuilder
     private func menu(_ e: FileEntry) -> some View {
         if !e.dir && e.size <= RemoteText.most {
-            Button("Edit", systemImage: "square.and.pencil") { edit(e) }
+            Button(tr("Edit"), systemImage: "square.and.pencil") { edit(e) }
         }
-        Button(e.dir ? "Download the folder" : "Download", systemImage: "square.and.arrow.down") { download(e) }
+        Button(e.dir ? tr("Download the folder") : tr("Download"), systemImage: "square.and.arrow.down") { download(e) }
         if !e.dir {
-            Button("Keep in the vault", systemImage: "lock.doc") { keep(e) }
+            Button(tr("Keep in the vault"), systemImage: "lock.doc") { keep(e) }
         }
-        Button("Rename", systemImage: "pencil") { naming = Naming(renaming: e, text: e.name) }
-        Button("Copy the path", systemImage: "doc.on.doc") { UIPasteboard.general.string = join(dir, e.name) }
-        Button("Delete", systemImage: "trash", role: .destructive) { removing = e }
+        Button(tr("Rename"), systemImage: "pencil") { naming = Naming(renaming: e, text: e.name) }
+        Button(tr("Copy the path"), systemImage: "doc.on.doc") { UIPasteboard.general.string = join(dir, e.name) }
+        Button(tr("Delete"), systemImage: "trash", role: .destructive) { removing = e }
     }
 
     private func detail(_ e: FileEntry) -> String {
@@ -196,13 +196,13 @@ struct FilesScreen: View {
         if let m = e.modified {
             parts.append(Date(timeIntervalSince1970: TimeInterval(m)).formatted(date: .abbreviated, time: .shortened))
         }
-        return parts.isEmpty ? (e.dir ? "Folder" : "") : parts.joined(separator: " · ")
+        return parts.isEmpty ? (e.dir ? tr("Folder") : "") : parts.joined(separator: " · ")
     }
 
     // MARK: Doing
 
     private func handle() throws -> MobileSession {
-        guard let h = model.handle, model.status == .connected else { throw MobileError.Failed("Not connected.") }
+        guard let h = model.handle, model.status == .connected else { throw MobileError.Failed(tr("Not connected.")) }
         return h
     }
 
@@ -224,10 +224,10 @@ struct FilesScreen: View {
         naming = nil
         let text = n.text.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty, !text.contains("/") else {
-            show("A name without /, please.")
+            show(tr("A name without /, please."))
             return
         }
-        run(n.renaming == nil ? "Making \(text)…" : "Renaming…") {
+        run(n.renaming == nil ? tr("Making {name}…", ["name": text]) : tr("Renaming…")) {
             if let old = n.renaming {
                 try await handle().filesRename(from: join(dir, old.name), to: join(dir, text))
             } else {
@@ -239,9 +239,9 @@ struct FilesScreen: View {
 
     private func remove(_ e: FileEntry) {
         removing = nil
-        run("Deleting \(e.name)…") {
+        run(tr("Deleting {name}…", ["name": e.name])) {
             try await handle().filesRemove(path: join(dir, e.name))
-            return "\(e.name) deleted."
+            return tr("{name} deleted.", ["name": "\(e.name)"])
         }
     }
 
@@ -252,7 +252,7 @@ struct FilesScreen: View {
             .appendingPathComponent("downloads", isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let local = into.appendingPathComponent(e.name)
-        run("Downloading \(e.name)…", reload: false) {
+        run(tr("Downloading {name}…", ["name": e.name]), reload: false) {
             try FileManager.default.createDirectory(at: into, withIntermediateDirectories: true)
             try await handle().filesDownload(remote: join(dir, e.name), local: local.path)
             sharing = SharedFile(url: local)
@@ -267,7 +267,7 @@ struct FilesScreen: View {
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let local = into.appendingPathComponent(e.name)
         let remote = join(dir, e.name)
-        run("Opening \(e.name)…", reload: false) {
+        run(tr("Opening {name}…", ["name": e.name]), reload: false) {
             try FileManager.default.createDirectory(at: into, withIntermediateDirectories: true)
             try await handle().filesDownload(remote: remote, local: local.path)
             let data = try Data(contentsOf: local)
@@ -282,22 +282,22 @@ struct FilesScreen: View {
 
     private func upload(_ urls: [URL]) {
         let names = urls.map(\.lastPathComponent)
-        run(urls.count == 1 ? "Uploading \(names[0])…" : "Uploading \(urls.count) items…") {
+        run(urls.count == 1 ? tr("Uploading {name}…", ["name": names[0]]) : trN(urls.count, "Uploading {n} item…", "Uploading {n} items…")) {
             for url in urls {
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                 try await handle().filesUpload(local: url.path, remote: join(dir, url.lastPathComponent))
             }
-            return urls.count == 1 ? "\(names[0]) uploaded." : "\(urls.count) items uploaded."
+            return urls.count == 1 ? tr("{name} uploaded.", ["name": names[0]]) : trN(urls.count, "{n} item uploaded.", "{n} items uploaded.")
         }
     }
 
     /// The file kept in the vault as a config file, to place on other hosts.
     private func keep(_ e: FileEntry) {
         guard let core = app.core, let h = model.handle else { return }
-        run("Keeping \(e.name)…", reload: false) {
+        run(tr("Keeping {name}…", ["name": e.name]), reload: false) {
             _ = try await core.keepHostFile(session: h, path: join(dir, e.name))
-            return "\(e.name) is in the vault: Library › Files."
+            return tr("{name} is in the vault: Library › Files.", ["name": "\(e.name)"])
         }
     }
 
@@ -349,7 +349,7 @@ func join(_ dir: String, _ name: String) -> String {
 
 /// A path's last part; `/` for the root.
 private func name(of path: String) -> String {
-    if path.isEmpty { return "Files" }
+    if path.isEmpty { return tr("Files") }
     let last = path.split(separator: "/").last.map(String.init)
     return last ?? "/"
 }
@@ -414,19 +414,19 @@ struct RemoteTextEditor: View {
             .navigationTitle(file.remote.split(separator: "/").last.map(String.init) ?? file.remote)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     if saving { ProgressView() } else {
-                        Button("Save") { save(force: false) }.disabled(text == file.text)
+                        Button(tr("Save")) { save(force: false) }.disabled(text == file.text)
                     }
                 }
             }
             .confirmationDialog(
-                "\(file.remote) changed on \(model.spec) since it was opened.",
+                tr("{path} changed on {host} since it was opened.", ["path": file.remote, "host": model.spec]),
                 isPresented: $changedThere,
                 titleVisibility: .visible
             ) {
-                Button("Replace it with this", role: .destructive) { save(force: true) }
+                Button(tr("Replace it with this"), role: .destructive) { save(force: true) }
             }
             .onAppear {
                 if !asked { text = file.text; asked = true }
@@ -455,7 +455,7 @@ struct RemoteTextEditor: View {
                 try await h.filesUpload(local: file.local.path, remote: file.remote)
                 dismiss()
             } catch {
-                problem = "Not saved: \(error)"
+                problem = tr("Not saved: {error}", ["error": "\(error)"])
             }
         }
     }

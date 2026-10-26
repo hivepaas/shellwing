@@ -2,6 +2,7 @@
 //! the desktop's Files panel has them: listed, made, renamed, removed,
 //! downloaded to the phone and uploaded from it.
 
+use shellwing_i18n::tr;
 use std::path::Path;
 
 use shellwing_ssh::Sftp;
@@ -92,10 +93,10 @@ impl MobileSession {
         let answer = self
             .remote()
             .sftp()
-            .ok_or_else(|| MobileError::Failed("Not connected.".into()))?;
+            .ok_or_else(|| MobileError::Failed(tr!("Not connected.")))?;
         let sftp = answer
             .await
-            .map_err(|_| MobileError::Failed("the connection ended".into()))?
+            .map_err(|_| MobileError::Failed(tr!("the connection ended")))?
             .map_err(MobileError::of)?;
         *self.sftp.lock().await = Some(sftp.clone());
         Ok(sftp)

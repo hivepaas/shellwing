@@ -45,6 +45,6 @@ final class KeychainKeys: PlatformKeys, @unchecked Sendable {
     }
 
     private static func said(_ status: OSStatus) -> String {
-        (SecCopyErrorMessageString(status, nil) as String?) ?? "the Keychain said \(status)"
+        (SecCopyErrorMessageString(status, nil) as String?) ?? tr("the Keychain said {status}", ["status": "\(status)"])
     }
 }

@@ -8,6 +8,15 @@ struct LibraryView: View {
     enum Part: String, CaseIterable, Identifiable {
         case snippets = "Snippets", envs = "Envs", notes = "Notes", files = "Files", keys = "Keys"
         var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .snippets: return tr("Snippets")
+            case .envs: return tr("Envs")
+            case .notes: return tr("Notes")
+            case .files: return tr("Files")
+            case .keys: return tr("Keys")
+            }
+        }
     }
 
     @State private var part: Part = .snippets
@@ -15,8 +24,8 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("Part", selection: $part) {
-                    ForEach(Part.allCases) { Text($0.rawValue).tag($0) }
+                Picker(tr("Part"), selection: $part) {
+                    ForEach(Part.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -30,7 +39,7 @@ struct LibraryView: View {
                 }
             }
             .background(Dusk.panel.ignoresSafeArea())
-            .navigationTitle("Library")
+            .navigationTitle(tr("Library"))
         }
     }
 }
@@ -51,8 +60,8 @@ struct SnippetsList: View {
         List {
             if snippets.isEmpty {
                 Text(spec == nil
-                    ? "No snippets yet. Make one with +, or sync those of your other devices."
-                    : "No snippets for this host.")
+                    ? tr("No snippets yet. Make one with +, or sync those of your other devices.")
+                    : tr("No snippets for this host."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
             }
@@ -72,25 +81,25 @@ struct SnippetsList: View {
                         }
                         .listRowBackground(Dusk.surface)
                         .swipeActions {
-                            Button("Delete", role: .destructive) {
+                            Button(tr("Delete"), role: .destructive) {
                                 app.forget(s.id)
                                 reload()
                             }
-                            Button("Edit") { editing = edit(s) }.tint(Dusk.button)
+                            Button(tr("Edit")) { editing = edit(s) }.tint(Dusk.button)
                         }
                     }
                 } header: {
-                    SectionHeading(text: cat.isEmpty ? "No category" : cat)
+                    SectionHeading(text: cat.isEmpty ? tr("No category") : cat)
                 }
             }
         }
         .scrollContentBackground(.hidden)
-        .searchable(text: $filter, prompt: "Filter snippets")
+        .searchable(text: $filter, prompt: tr("Filter snippets"))
         .toolbar {
             Button {
                 editing = SnippetEdit(id: "", name: "", category: "", command: "", enter: true, scope: "", needs: [])
             } label: { Image(systemName: "plus") }
-            .accessibilityLabel("New snippet")
+            .accessibilityLabel(tr("New snippet"))
         }
         .sheet(item: $editing, onDismiss: reload) { e in
             SnippetEditor(edit: e)
@@ -128,10 +137,10 @@ struct ScopePicker: View {
     @Binding var scope: String
 
     var body: some View {
-        Picker("Offered", selection: $scope) {
-            Text("Everywhere").tag("")
-            ForEach(app.groups(), id: \.self) { g in Text("Group: \(g)").tag("group:\(g)") }
-            ForEach(hostNames, id: \.self) { h in Text("Host: \(h)").tag("host:\(h)") }
+        Picker(tr("Offered"), selection: $scope) {
+            Text(tr("Everywhere")).tag("")
+            ForEach(app.groups(), id: \.self) { g in Text(tr("Group: {group}", ["group": g])).tag("group:\(g)") }
+            ForEach(hostNames, id: \.self) { h in Text(tr("Host: {host}", ["host": h])).tag("host:\(h)") }
             // One no longer here (synced, or renamed): kept as it is.
             if !scope.isEmpty, !known { Text(scope).tag(scope) }
         }
@@ -155,19 +164,19 @@ struct SnippetEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $edit.name)
-                    TextField("Category", text: $edit.category)
+                    TextField(tr("Name"), text: $edit.name)
+                    TextField(tr("Category"), text: $edit.category)
                 }
                 .listRowBackground(Dusk.surface)
                 Section {
                     TextEditor(text: $edit.command)
                         .font(.system(size: 14, design: .monospaced))
                         .frame(minHeight: 120)
-                    Toggle("Press Enter after it", isOn: $edit.enter)
+                    Toggle(tr("Press Enter after it"), isOn: $edit.enter)
                 } header: {
-                    SectionHeading(text: "Command")
+                    SectionHeading(text: tr("Command"))
                 } footer: {
-                    Text("{{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.")
+                    Text(tr("{{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session."))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
@@ -196,9 +205,9 @@ struct SnippetEditor: View {
                             }
                         }
                     } header: {
-                        SectionHeading(text: "Runs with")
+                        SectionHeading(text: tr("Runs with"))
                     } footer: {
-                        Text("Their variables are given to it alone, in a subshell, without showing their values.")
+                        Text(tr("Their variables are given to it alone, in a subshell, without showing their values."))
                             .foregroundStyle(Dusk.muted)
                     }
                     .listRowBackground(Dusk.surface)
@@ -208,12 +217,12 @@ struct SnippetEditor: View {
             .background(Dusk.page.ignoresSafeArea())
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .navigationTitle(edit.id.isEmpty ? "New snippet" : edit.name)
+            .navigationTitle(edit.id.isEmpty ? tr("New snippet") : edit.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { if app.save(snippet: edit) { dismiss() } }
+                    Button(tr("Save")) { if app.save(snippet: edit) { dismiss() } }
                         .disabled(edit.name.isEmpty || edit.command.isEmpty)
                 }
             }
@@ -250,7 +259,7 @@ struct RunSnippetSheet: View {
                             .font(.system(.body, design: .monospaced))
                         }
                     } header: {
-                        SectionHeading(text: "Values")
+                        SectionHeading(text: tr("Values"))
                     }
                     .listRowBackground(Dusk.surface)
                 }
@@ -265,9 +274,9 @@ struct RunSnippetSheet: View {
             .navigationTitle(snippet.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Run") {
+                    Button(tr("Run")) {
                         if let why = app.run(snippet: snippet.id, in: session, values: values) {
                             problem = why
                         } else {
@@ -293,7 +302,7 @@ struct EnvironmentsList: View {
     var body: some View {
         List {
             if envs.isEmpty {
-                Text("No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.")
+                Text(tr("No environments yet: variables kept in the vault, loaded into a session's shell without showing their values."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
             }
@@ -309,7 +318,7 @@ struct EnvironmentsList: View {
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button("Delete", role: .destructive) {
+                    Button(tr("Delete"), role: .destructive) {
                         app.forget(e.id)
                         envs = app.environments()
                     }
@@ -319,7 +328,7 @@ struct EnvironmentsList: View {
         .scrollContentBackground(.hidden)
         .toolbar {
             Button { editing = EnvRow(id: "", name: "", scope: "", names: []) } label: { Image(systemName: "plus") }
-                .accessibilityLabel("New environment")
+                .accessibilityLabel(tr("New environment"))
         }
         .sheet(item: $editing, onDismiss: { envs = app.environments() }) { e in
             EnvEditor(env: e)
@@ -344,7 +353,7 @@ struct EnvEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $name)
+                    TextField(tr("Name"), text: $name)
                     ScopePicker(scope: $scope)
                 }
                 .listRowBackground(Dusk.surface)
@@ -353,9 +362,9 @@ struct EnvEditor: View {
                         .font(.system(size: 14, design: .monospaced))
                         .frame(minHeight: 180)
                 } header: {
-                    SectionHeading(text: "Variables")
+                    SectionHeading(text: tr("Variables"))
                 } footer: {
-                    Text("NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.")
+                    Text(tr("NAME=value, a line. A name with nothing after = keeps the value it has; values never show here."))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
@@ -364,12 +373,12 @@ struct EnvEditor: View {
             .background(Dusk.page.ignoresSafeArea())
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .navigationTitle(env.id.isEmpty ? "New environment" : env.name)
+            .navigationTitle(env.id.isEmpty ? tr("New environment") : env.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(tr("Save")) {
                         if app.saveEnvironment(id: env.id, name: name, scope: scope, dotenv: text) { dismiss() }
                     }
                     .disabled(name.isEmpty)
@@ -398,7 +407,7 @@ struct NotesList: View {
     var body: some View {
         List {
             if notes.isEmpty {
-                Text("No notes yet.").foregroundStyle(Dusk.muted).listRowBackground(Dusk.surface)
+                Text(tr("No notes yet.")).foregroundStyle(Dusk.muted).listRowBackground(Dusk.surface)
             }
             ForEach(shown, id: \.id) { n in
                 NavigationLink {
@@ -411,9 +420,9 @@ struct NotesList: View {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             if n.sensitive { Image(systemName: "lock.fill").font(.system(size: 11)).foregroundStyle(Dusk.amber) }
-                            Text(n.title.isEmpty ? "Untitled" : n.title).font(.system(size: 15, weight: .medium))
+                            Text(n.title.isEmpty ? tr("Untitled") : n.title).font(.system(size: 15, weight: .medium))
                             if n.here {
-                                Text("this host").font(.system(size: 11)).foregroundStyle(Dusk.accent)
+                                Text(tr("this host")).font(.system(size: 11)).foregroundStyle(Dusk.accent)
                             }
                         }
                         Text(detail(n))
@@ -425,7 +434,7 @@ struct NotesList: View {
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
                     if session == nil {
-                        Button("Delete", role: .destructive) {
+                        Button(tr("Delete"), role: .destructive) {
                             app.forget(n.id)
                             reload()
                         }
@@ -434,13 +443,13 @@ struct NotesList: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .searchable(text: $filter, prompt: "Filter notes")
+        .searchable(text: $filter, prompt: tr("Filter notes"))
         .toolbar {
             if session == nil {
                 NavigationLink {
                     NoteEditor(note: NoteRow(id: "", title: "", category: "", markdown: true, sensitive: false, size: 0, hosts: [], here: false))
                 } label: { Image(systemName: "plus") }
-                .accessibilityLabel("New note")
+                .accessibilityLabel(tr("New note"))
             }
         }
         .onAppear(perform: reload)
@@ -456,7 +465,7 @@ struct NotesList: View {
     }
 
     private func detail(_ n: NoteRow) -> String {
-        var parts = [n.category.isEmpty ? (n.markdown ? "Markdown" : "Text") : n.category]
+        var parts = [n.category.isEmpty ? (n.markdown ? tr("Markdown") : tr("Text")) : n.category]
         if !n.hosts.isEmpty { parts.append(n.hosts.joined(separator: ", ")) }
         return parts.joined(separator: " · ")
     }
@@ -506,12 +515,12 @@ struct NoteEditor: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Title", text: $title)
+            TextField(tr("Title"), text: $title)
                 .font(.system(size: 20, weight: .semibold))
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
             HStack(spacing: 8) {
-                TextField("No category", text: $category)
+                TextField(tr("No category"), text: $category)
                     .font(.system(size: 13))
                     .foregroundStyle(Dusk.muted)
                 if !hosts.isEmpty {
@@ -535,8 +544,8 @@ struct NoteEditor: View {
             if !canRead {
                 VStack(spacing: 12) {
                     Image(systemName: "lock.fill").font(.system(size: 28)).foregroundStyle(Dusk.amber)
-                    Text("Sensitive: its text shows once it is you.").foregroundStyle(Dusk.muted)
-                    Button("Show the text") { confirmOwner("Show a sensitive note") { ok in if ok { reveal() } } }
+                    Text(tr("Sensitive: its text shows once it is you.")).foregroundStyle(Dusk.muted)
+                    Button(tr("Show the text")) { confirmOwner(tr("Show a sensitive note")) { ok in if ok { reveal() } } }
                         .buttonStyle(.bordered)
                 }
                 .padding(.top, 40)
@@ -560,27 +569,27 @@ struct NoteEditor: View {
         .toolbar {
             if markdown && canRead {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(preview ? "Edit" : "Preview") { preview.toggle() }
+                    Button(preview ? tr("Edit") : tr("Preview")) { preview.toggle() }
                 }
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("For hosts…", systemImage: "server.rack") { choosingHosts = true }
-                    Toggle("Sensitive", systemImage: "lock", isOn: $sensitive)
-                    Toggle("Markdown", systemImage: "textformat", isOn: $markdown)
+                    Button(tr("For hosts…"), systemImage: "server.rack") { choosingHosts = true }
+                    Toggle(tr("Sensitive"), systemImage: "lock", isOn: $sensitive)
+                    Toggle(tr("Markdown"), systemImage: "textformat", isOn: $markdown)
                     if canRead {
                         if markdown {
-                            Button("Insert an image…", systemImage: "photo") { picking = true }
+                            Button(tr("Insert an image…"), systemImage: "photo") { picking = true }
                         }
-                        ShareLink(item: exported, preview: SharePreview(title.isEmpty ? "Note" : title)) {
-                            Label("Export…", systemImage: "square.and.arrow.up")
+                        ShareLink(item: exported, preview: SharePreview(title.isEmpty ? tr("Note") : title)) {
+                            Label(tr("Export…"), systemImage: "square.and.arrow.up")
                         }
                     }
                     if !id.isEmpty {
-                        Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                        Button(tr("Delete"), systemImage: "trash", role: .destructive) { confirmDelete = true }
                     }
                 } label: { Image(systemName: "ellipsis.circle") }
-                .accessibilityLabel("Note")
+                .accessibilityLabel(tr("Note"))
             }
         }
         .photosPicker(isPresented: $picking, selection: $photo, matching: .images)
@@ -592,8 +601,8 @@ struct NoteEditor: View {
         .sheet(isPresented: $choosingHosts) {
             HostsChooser(chosen: $hosts).environmentObject(app)
         }
-        .confirmationDialog("Delete \(title.isEmpty ? "this note" : title)?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
+        .confirmationDialog(title.isEmpty ? tr("Delete this note?") : tr("Delete {title}?", ["title": title]), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(tr("Delete"), role: .destructive) {
                 app.forget(id)
                 deleted = true
                 dismiss()
@@ -631,7 +640,7 @@ struct NoteEditor: View {
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data),
               let jpeg = image.jpegData(compressionQuality: 0.85) else {
-            problem = "That image cannot be read."
+            problem = tr("That image cannot be read.")
             return
         }
         do {
@@ -653,7 +662,7 @@ struct NoteEditor: View {
             hosts: hosts, sensitive: sensitive, text: body
         ) {
         case .success(let saved): id = saved
-        case .failure(let e): app.error = "Not saved: \(e)"
+        case .failure(let e): app.error = tr("Not saved: {error}", ["error": "\(e)"])
         }
     }
 }
@@ -683,9 +692,9 @@ struct HostsChooser: View {
             }
             .scrollContentBackground(.hidden)
             .background(Dusk.page.ignoresSafeArea())
-            .navigationTitle("For hosts")
+            .navigationTitle(tr("For hosts"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Done") { dismiss() } }
+            .toolbar { Button(tr("Done")) { dismiss() } }
         }
         .presentationDetents([.medium, .large])
         .preferredColorScheme(.dark)
@@ -703,7 +712,7 @@ struct NoteReader: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text(note.title.isEmpty ? "Untitled" : note.title)
+                Text(note.title.isEmpty ? tr("Untitled") : note.title)
                     .font(.system(size: 22, weight: .semibold))
                 if let text {
                     if note.markdown {
@@ -715,8 +724,8 @@ struct NoteReader: View {
                         Text(text).font(.system(size: 14, design: .monospaced)).textSelection(.enabled)
                     }
                 } else {
-                    Button("Show the text") {
-                        confirmOwner("Show a sensitive note") { ok in if ok { text = app.noteText(note.id) } }
+                    Button(tr("Show the text")) {
+                        confirmOwner(tr("Show a sensitive note")) { ok in if ok { text = app.noteText(note.id) } }
                     }
                     .buttonStyle(.bordered)
                 }

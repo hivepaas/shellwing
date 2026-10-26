@@ -26,6 +26,7 @@ bindgen = ["uniffi/cli"]
 shellwing-core.workspace = true
 shellwing-config.workspace = true
 shellwing-term.workspace = true
+shellwing-i18n.workspace = true
 shellwing-ssh.workspace = true
 shellwing-vault.workspace = true
 tokio.workspace = true

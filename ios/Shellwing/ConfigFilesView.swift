@@ -13,7 +13,7 @@ struct ConfigFilesList: View {
     var body: some View {
         List {
             if files.isEmpty {
-                Text("No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.")
+                Text(tr("No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
             }
@@ -23,14 +23,14 @@ struct ConfigFilesList: View {
                         Button { editing = f } label: { ConfigFileLabel(file: f) }
                             .listRowBackground(Dusk.surface)
                             .swipeActions {
-                                Button("Delete", role: .destructive) {
+                                Button(tr("Delete"), role: .destructive) {
                                     app.forget(f.id)
                                     reload()
                                 }
                             }
                     }
                 } header: {
-                    SectionHeading(text: cat.isEmpty ? "No category" : cat)
+                    SectionHeading(text: cat.isEmpty ? tr("No category") : cat)
                 }
             }
         }
@@ -39,7 +39,7 @@ struct ConfigFilesList: View {
             Button {
                 editing = ConfigFileRow(id: "", name: "", category: "", path: "~/", mode: 0o600, size: 0, binary: false, stays: false, scope: "")
             } label: { Image(systemName: "plus") }
-            .accessibilityLabel("New config file")
+            .accessibilityLabel(tr("New config file"))
         }
         .sheet(item: $editing, onDismiss: reload) { f in
             ConfigFileEditor(file: f)
@@ -68,7 +68,7 @@ struct ConfigFileLabel: View {
             HStack(spacing: 6) {
                 Text(file.name).font(.system(size: 15, weight: .medium)).foregroundStyle(Dusk.text)
                 if file.stays {
-                    Text("stays").font(.system(size: 11)).foregroundStyle(Dusk.muted)
+                    Text(tr("stays")).font(.system(size: 11)).foregroundStyle(Dusk.muted)
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Dusk.chip, in: Capsule())
                 }
@@ -98,15 +98,15 @@ struct ConfigFileEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $file.name)
-                    TextField("Category", text: $file.category)
+                    TextField(tr("Name"), text: $file.name)
+                    TextField(tr("Category"), text: $file.category)
                 }
                 .listRowBackground(Dusk.surface)
                 Section {
                     TextField("~/.kube/config", text: $file.path)
                         .font(.system(.body, design: .monospaced))
                     HStack {
-                        Text("Permissions")
+                        Text(tr("Permissions"))
                         Spacer()
                         TextField("600", text: $mode)
                             .font(.system(.body, design: .monospaced))
@@ -114,13 +114,13 @@ struct ConfigFileEditor: View {
                             .keyboardType(.numberPad)
                             .frame(width: 80)
                     }
-                    Toggle("Placed to stay", isOn: $file.stays)
+                    Toggle(tr("Placed to stay"), isOn: $file.stays)
                 } header: {
-                    SectionHeading(text: "On the host")
+                    SectionHeading(text: tr("On the host"))
                 } footer: {
                     Text(file.stays
-                        ? "Placed, it stays when the session ends."
-                        : "Placed, it is taken away when the session ends.")
+                        ? tr("Placed, it stays when the session ends.")
+                        : tr("Placed, it is taken away when the session ends."))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
@@ -130,16 +130,16 @@ struct ConfigFileEditor: View {
                 .listRowBackground(Dusk.surface)
                 Section {
                     if file.binary && !changed {
-                        Text("Binary, \(ByteCountFormatter.string(fromByteCount: Int64(file.size), countStyle: .file)): kept as it is.")
+                        Text(tr("Binary, {size}: kept as it is.", ["size": ByteCountFormatter.string(fromByteCount: Int64(file.size), countStyle: .file)]))
                             .foregroundStyle(Dusk.muted)
                     } else {
                         TextEditor(text: Binding(get: { text }, set: { text = $0; changed = true }))
                             .font(.system(size: 13, design: .monospaced))
                             .frame(minHeight: 200)
                     }
-                    Button("Replace from Files…", systemImage: "doc.badge.arrow.up") { importing = true }
+                    Button(tr("Replace from Files…"), systemImage: "doc.badge.arrow.up") { importing = true }
                 } header: {
-                    SectionHeading(text: "Content")
+                    SectionHeading(text: tr("Content"))
                 }
                 .listRowBackground(Dusk.surface)
                 if let problem {
@@ -150,12 +150,12 @@ struct ConfigFileEditor: View {
             .background(Dusk.page.ignoresSafeArea())
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .navigationTitle(file.id.isEmpty ? "New config file" : file.name)
+            .navigationTitle(file.id.isEmpty ? tr("New config file") : file.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(file.name.isEmpty || file.path.isEmpty)
+                    Button(tr("Save"), action: save).disabled(file.name.isEmpty || file.path.isEmpty)
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
@@ -163,7 +163,7 @@ struct ConfigFileEditor: View {
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                 guard let data = try? Data(contentsOf: url), let s = String(data: data, encoding: .utf8) else {
-                    problem = "Only a text file can be imported here."
+                    problem = tr("Only a text file can be imported here.")
                     return
                 }
                 text = s
@@ -180,7 +180,7 @@ struct ConfigFileEditor: View {
 
     private func save() {
         guard let m = UInt32(mode, radix: 8), m <= 0o777 else {
-            problem = "Permissions: three digits from 0 to 7, such as 600."
+            problem = tr("Permissions: three digits from 0 to 7, such as 600.")
             return
         }
         file.mode = m
@@ -219,7 +219,7 @@ struct PlaceConfigSheet: View {
         NavigationStack {
             List {
                 if files.isEmpty {
-                    Text("No config files for this host. Keep them in Library › Files.")
+                    Text(tr("No config files for this host. Keep them in Library › Files."))
                         .foregroundStyle(Dusk.muted)
                         .listRowBackground(Dusk.surface)
                 }
@@ -234,10 +234,10 @@ struct PlaceConfigSheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(Dusk.panel.ignoresSafeArea())
-            .navigationTitle("Place a config file")
+            .navigationTitle(tr("Place a config file"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { done(nil) } }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { done(nil) } }
                 if busy { ToolbarItem(placement: .confirmationAction) { ProgressView() } }
             }
             .confirmationDialog(
@@ -249,7 +249,7 @@ struct PlaceConfigSheet: View {
                 ForEach(choices(a), id: \.label) { c in
                     Button(c.label) { place(a, c.how) }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(tr("Cancel"), role: .cancel) {}
             }
             .onAppear { files = app.configFiles(for: model.spec) }
         }
@@ -259,8 +259,8 @@ struct PlaceConfigSheet: View {
     private var title: String {
         guard let a = asking else { return "" }
         return a.looked.found == .other && !a.looked.ours
-            ? "\(a.looked.full) is there already…"
-            : "Place at \(a.looked.full)…"
+            ? tr("{path} is there already…", ["path": a.looked.full])
+            : tr("Place at {path}…", ["path": a.looked.full])
     }
 
     /// A way to place it; `how` nil keeps the one placed already.
@@ -276,29 +276,29 @@ struct PlaceConfigSheet: View {
             stays ? stay + until : until + stay
         }
         if a.looked.ours {
-            let again = a.looked.found == .same ? [] : [Choice(label: "Replace the one placed until the session ends", how: .until)]
-            return first([Choice(label: "Keep the one placed here", how: nil)], again)
+            let again = a.looked.found == .same ? [] : [Choice(label: tr("Replace the one placed until the session ends"), how: .until)]
+            return first([Choice(label: tr("Keep the one placed here"), how: nil)], again)
         }
         switch a.looked.found {
         case .nothing, .same:
             return first(
-                [Choice(label: "Place it to stay", how: .stay)],
-                [Choice(label: "Place it until the session ends", how: .until)]
+                [Choice(label: tr("Place it to stay"), how: .stay)],
+                [Choice(label: tr("Place it until the session ends"), how: .until)]
             )
         case .other:
             return first(
                 [
-                    Choice(label: "Replace it, keeping the old one", how: .backup),
-                    Choice(label: "Replace it", how: .over),
+                    Choice(label: tr("Replace it, keeping the old one"), how: .backup),
+                    Choice(label: tr("Replace it"), how: .over),
                 ],
-                [Choice(label: "Replace it until the session ends", how: .untilOver)]
+                [Choice(label: tr("Replace it until the session ends"), how: .untilOver)]
             )
         }
     }
 
     private func look(_ f: ConfigFileRow) {
         guard let core = app.core, let h = model.handle, model.status == .connected else {
-            problem = "Not connected."
+            problem = tr("Not connected.")
             return
         }
         busy = true
@@ -308,12 +308,12 @@ struct PlaceConfigSheet: View {
             do {
                 let looked = try await core.lookToPlace(session: h, id: f.id, path: f.path)
                 if looked.found == .same && !looked.ours {
-                    done("\(looked.full) holds it already.")
+                    done(tr("{path} holds it already.", ["path": looked.full]))
                 } else {
                     asking = Asking(file: f, looked: looked)
                 }
             } catch {
-                problem = "Cannot place \(f.name): \(error)"
+                problem = tr("Cannot place {name}: {error}", ["name": "\(f.name)", "error": "\(error)"])
             }
         }
     }
@@ -332,10 +332,10 @@ struct PlaceConfigSheet: View {
                 model.refreshPlaced()
                 let until = how == .until || how == .untilOver
                 done(until
-                    ? "\(a.file.name) is at \(a.looked.full) until the session ends."
-                    : "\(a.file.name) is at \(a.looked.full).")
+                    ? tr("{name} is at {path} until the session ends.", ["name": "\(a.file.name)", "path": a.looked.full])
+                    : tr("{name} is at {path}.", ["name": "\(a.file.name)", "path": a.looked.full]))
             } catch {
-                problem = "Cannot place \(a.file.name): \(error)"
+                problem = tr("Cannot place {name}: {error}", ["name": "\(a.file.name)", "error": "\(error)"])
             }
         }
     }

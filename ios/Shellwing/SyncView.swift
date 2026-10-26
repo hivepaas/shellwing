@@ -9,7 +9,7 @@ enum SyncFolder {
     /// Keeps `url` (from the folder picker) for the next starts; its path.
     static func keep(_ url: URL) throws -> String {
         guard url.startAccessingSecurityScopedResource() else {
-            throw MobileError.Failed("shellwing may not use that folder.")
+            throw MobileError.Failed(tr("shellwing may not use that folder."))
         }
         let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
         UserDefaults.standard.set(data, forKey: key)
@@ -47,7 +47,7 @@ struct SyncView: View {
                 SetUpSyncView()
             }
         }
-        .navigationTitle("Sync")
+        .navigationTitle(tr("Sync"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -61,24 +61,24 @@ private struct SyncingView: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("Place") { Text(status.said ?? "").foregroundStyle(Dusk.soft) }
-                LabeledContent("Last synced") {
+                LabeledContent(tr("Place")) { Text(status.said ?? "").foregroundStyle(Dusk.soft) }
+                LabeledContent(tr("Last synced")) {
                     if status.syncing {
                         ProgressView()
                     } else if let last = status.last {
                         Text(Date(timeIntervalSince1970: TimeInterval(last)), style: .relative)
                             .foregroundStyle(Dusk.soft)
                     } else {
-                        Text("not yet").foregroundStyle(Dusk.muted)
+                        Text(tr("not yet")).foregroundStyle(Dusk.muted)
                     }
                 }
                 if let error = status.error {
                     Text(error).foregroundStyle(Dusk.badText).font(.system(size: 14))
                 }
-                Button("Sync now") { app.core?.syncNow() }
+                Button(tr("Sync now")) { app.core?.syncNow() }
                     .disabled(status.syncing)
             } footer: {
-                Text("End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.")
+                Text(tr("End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes."))
                     .foregroundStyle(Dusk.muted)
             }
             .listRowBackground(Dusk.surface)
@@ -87,17 +87,17 @@ private struct SyncingView: View {
                 Section {
                     ForEach(status.requests, id: \.id) { r in
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("\(r.device) asks to join").font(.system(size: 15, weight: .semibold))
-                            Text("Approve only if it shows \(r.code). It gets everything the vault holds: passwords, keys, snippets and hosts.")
+                            Text(tr("{device} asks to join", ["device": "\(r.device)"])).font(.system(size: 15, weight: .semibold))
+                            Text(tr("Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.", ["code": "\(r.code)"]))
                                 .font(.system(size: 13))
                                 .foregroundStyle(Dusk.label)
                             HStack {
-                                Button("Refuse", role: .destructive) {
+                                Button(tr("Refuse"), role: .destructive) {
                                     app.core?.refuse(id: r.id)
                                     app.refreshSync()
                                 }
                                 Spacer()
-                                Button("Approve") {
+                                Button(tr("Approve")) {
                                     app.core?.approve(id: r.id)
                                     app.refreshSync()
                                 }
@@ -107,20 +107,20 @@ private struct SyncingView: View {
                         .padding(.vertical, 4)
                     }
                 } header: {
-                    SectionHeading(text: "Devices asking")
+                    SectionHeading(text: tr("Devices asking"))
                 }
                 .listRowBackground(Dusk.surface)
             }
 
             Section {
-                Button("Stop syncing", role: .destructive) { stopping = true }
+                Button(tr("Stop syncing"), role: .destructive) { stopping = true }
             }
             .listRowBackground(Dusk.surface)
         }
         .scrollContentBackground(.hidden)
         .background(Dusk.panel.ignoresSafeArea())
-        .confirmationDialog("Stop syncing on this phone?", isPresented: $stopping, titleVisibility: .visible) {
-            Button("Stop syncing", role: .destructive) {
+        .confirmationDialog(tr("Stop syncing on this phone?"), isPresented: $stopping, titleVisibility: .visible) {
+            Button(tr("Stop syncing"), role: .destructive) {
                 do {
                     try app.core?.stopSync()
                     SyncFolder.forget()
@@ -130,7 +130,7 @@ private struct SyncingView: View {
                 app.refreshSync()
             }
         } message: {
-            Text("The vault stays here, and the copy at the place stays for your other devices.")
+            Text(tr("The vault stays here, and the copy at the place stays for your other devices."))
         }
     }
 }
@@ -145,28 +145,28 @@ private struct PairingView: View {
             switch pairing {
             case .waiting:
                 ProgressView()
-                Text("Waiting for a device that syncs there…").font(.headline)
-                Text("Open shellwing on it: it asks whether to let this phone in.")
+                Text(tr("Waiting for a device that syncs there…")).font(.headline)
+                Text(tr("Open shellwing on it: it asks whether to let this phone in."))
                     .foregroundStyle(Dusk.label)
             case .compare(let device, let code):
-                Text("\(device) answered").font(.headline)
+                Text(tr("{device} answered", ["device": "\(device)"])).font(.headline)
                 Text(code)
                     .font(.system(size: 34, weight: .semibold, design: .monospaced))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
                     .background(Dusk.field, in: RoundedRectangle(cornerRadius: 12))
-                Text("Approve on \(device) if it shows the same code.")
+                Text(tr("Approve on {device} if it shows the same code.", ["device": "\(device)"]))
                     .foregroundStyle(Dusk.label)
             case .joined:
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 44)).foregroundStyle(Dusk.ok)
-                Text("Joined: this phone syncs there now.").font(.headline)
+                Text(tr("Joined: this phone syncs there now.")).font(.headline)
             case .refused:
-                Text("The other device refused to let this one in.").foregroundStyle(Dusk.badText)
+                Text(tr("The other device refused to let this one in.")).foregroundStyle(Dusk.badText)
             case .expired:
-                Text("No device let this one in within 10 minutes. Ask again, or use the recovery key.")
+                Text(tr("No device let this one in within 10 minutes. Ask again, or use the recovery key."))
                     .foregroundStyle(Dusk.badText)
             }
-            Button(pairing == .waiting || isCompare ? "Cancel" : "Done") {
+            Button(pairing == .waiting || isCompare ? tr("Cancel") : tr("Done")) {
                 app.core?.cancelJoin()
                 app.refreshSync()
             }
@@ -219,14 +219,14 @@ private struct SetUpSyncView: View {
         Form {
             if let started {
                 Section {
-                    Text("This phone syncs there now. The recovery key opens the vault on your other devices: write it down.")
+                    Text(tr("This phone syncs there now. The recovery key opens the vault on your other devices: write it down."))
                         .foregroundStyle(Dusk.label)
                     Text(started)
                         .font(.system(size: 15, design: .monospaced))
                         .textSelection(.enabled)
-                    Button("Copy") { UIPasteboard.general.string = started }
+                    Button(tr("Copy")) { UIPasteboard.general.string = started }
                 } header: {
-                    SectionHeading(text: "Recovery key")
+                    SectionHeading(text: tr("Recovery key"))
                 }
                 .listRowBackground(Dusk.surface)
             } else if let other {
@@ -257,37 +257,37 @@ private struct SetUpSyncView: View {
     @ViewBuilder
     private var placeSection: some View {
         Section {
-            Picker("Where", selection: $kind) {
-                ForEach(Kind.allCases) { Text($0.rawValue).tag($0) }
+            Picker(tr("Where"), selection: $kind) {
+                ForEach(Kind.allCases) { Text($0 == .folder ? tr("Folder") : $0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
             switch kind {
             case .webdav:
                 TextField("https://cloud.example.com/remote.php/dav/files/me/shellwing", text: $url)
                     .keyboardType(.URL)
-                TextField("User", text: $user)
-                SecureField("Password or app password", text: $password)
+                TextField(tr("User"), text: $user)
+                SecureField(tr("Password or app password"), text: $password)
             case .s3:
-                TextField("Endpoint: https://s3.eu-west-1.amazonaws.com", text: $endpoint).keyboardType(.URL)
-                TextField("Region (empty: auto)", text: $region)
-                TextField("Bucket", text: $bucket)
-                TextField("Folder in the bucket (optional)", text: $prefix)
-                TextField("Access key", text: $accessKey)
-                SecureField("Secret key", text: $secretKey)
+                TextField(tr("Endpoint: https://s3.eu-west-1.amazonaws.com"), text: $endpoint).keyboardType(.URL)
+                TextField(tr("Region (empty: auto)"), text: $region)
+                TextField(tr("Bucket"), text: $bucket)
+                TextField(tr("Folder in the bucket (optional)"), text: $prefix)
+                TextField(tr("Access key"), text: $accessKey)
+                SecureField(tr("Secret key"), text: $secretKey)
             case .folder:
-                Button(folder == nil ? "Choose a folder…" : "Choose another folder…") { picking = true }
+                Button(folder == nil ? tr("Choose a folder…") : tr("Choose another folder…")) { picking = true }
                 if let folder {
                     Text(folder).font(.system(size: 12, design: .monospaced)).foregroundStyle(Dusk.muted)
                 }
             }
-            Button("Connect") { connect() }
+            Button(tr("Connect")) { connect() }
                 .disabled(!ready)
         } header: {
-            SectionHeading(text: "Sync the vault")
+            SectionHeading(text: tr("Sync the vault"))
         } footer: {
             Text(kind == .folder
-                ? "A folder another device syncs in too, such as shellwing's in iCloud Drive."
-                : "The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.")
+                ? tr("A folder another device syncs in too, such as shellwing's in iCloud Drive.")
+                : tr("The password is kept in this phone's vault, never in the place. Git is not offered on iPhone."))
                 .foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
@@ -296,36 +296,36 @@ private struct SetUpSyncView: View {
     @ViewBuilder
     private func joinSection(_ place: Place, passphrase: Bool) -> some View {
         Section {
-            Text("Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.")
+            Text(tr("Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone."))
                 .foregroundStyle(Dusk.label)
-            Button("Pair with a device that syncs there") {
+            Button(tr("Pair with a device that syncs there")) {
                 app.core?.askToJoin(place: place)
                 app.refreshSync()
             }
         } header: {
-            SectionHeading(text: "Join")
+            SectionHeading(text: tr("Join"))
         }
         .listRowBackground(Dusk.surface)
         Section {
-            TextField("XXXX-XXXX-…, 13 groups of 4", text: $joinKey)
+            TextField(tr("XXXX-XXXX-…, 13 groups of 4"), text: $joinKey)
                 .font(.system(.body, design: .monospaced))
-            Button("Join with the recovery key") {
+            Button(tr("Join with the recovery key")) {
                 run { try $0.joinWithRecoveryKey(place: place, key: joinKey) }
             }
             .disabled(joinKey.count < 20)
         } header: {
-            SectionHeading(text: "Recovery key")
+            SectionHeading(text: tr("Recovery key"))
         }
         .listRowBackground(Dusk.surface)
         if passphrase {
             Section {
-                SecureField("The passphrase set on the other device", text: $joinPassphrase)
-                Button("Join with the passphrase") {
+                SecureField(tr("The passphrase set on the other device"), text: $joinPassphrase)
+                Button(tr("Join with the passphrase")) {
                     run { try $0.joinWithPassphrase(place: place, passphrase: joinPassphrase) }
                 }
                 .disabled(joinPassphrase.isEmpty)
             } header: {
-                SectionHeading(text: "Passphrase")
+                SectionHeading(text: tr("Passphrase"))
             }
             .listRowBackground(Dusk.surface)
         }
@@ -357,7 +357,7 @@ private struct SetUpSyncView: View {
         let core = app.core
         Task.detached {
             do {
-                guard let core else { throw MobileError.Failed("shellwing did not start.") }
+                guard let core else { throw MobileError.Failed(tr("shellwing did not start.")) }
                 let found = try core.connectSync(place: p, secret: secret)
                 await MainActor.run {
                     busy = false
@@ -383,7 +383,7 @@ private struct SetUpSyncView: View {
         let core = app.core
         Task.detached {
             do {
-                guard let core else { throw MobileError.Failed("shellwing did not start.") }
+                guard let core else { throw MobileError.Failed(tr("shellwing did not start.")) }
                 try join(core)
                 await MainActor.run {
                     busy = false

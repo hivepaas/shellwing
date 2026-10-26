@@ -1,6 +1,7 @@
 //! A session as the phone sees it: what it is doing, the terminal's latest
 //! frame as rows of styled text, and the keys and text sent to it.
 
+use shellwing_i18n::tr;
 use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_core::envs::{self, Envs, LoadedEnv};
@@ -176,7 +177,7 @@ impl MobileSession {
                             let Some(me) = weak.upgrade() else { break };
                             let term = lock(&me.session).term.clone();
                             if let Some(name) = lock(&me.envs).signal(&term, &signal) {
-                                *lock(&me.notice) = Some(format!("{name} is loaded into this shell."));
+                                *lock(&me.notice) = Some(tr!("{name} is loaded into this shell.", name = name));
                             }
                         }
                         Ok(_) => {}
@@ -319,8 +320,12 @@ impl MobileSession {
     /// question: `the password for deploy@web-1`.
     pub fn offer(&self) -> Option<String> {
         lock(&self.offer).as_ref().map(|l| match l {
-            Learned::Password { target, .. } => format!("the password for {target}"),
-            Learned::Passphrase { key_path, .. } => format!("the passphrase of {key_path}"),
+            Learned::Password { target, .. } => {
+                tr!("the password for {target}", target = target.to_string())
+            }
+            Learned::Passphrase { key_path, .. } => {
+                tr!("the passphrase of {path}", path = key_path.to_string())
+            }
         })
     }
 
@@ -343,10 +348,10 @@ impl MobileSession {
         let answer = lock(&self.session)
             .remote()
             .exec(keys::INSTALL, format!("{}\n", public.trim()).into_bytes())
-            .ok_or_else(|| MobileError::Failed("Not connected.".into()))?;
+            .ok_or_else(|| MobileError::Failed(tr!("Not connected.")))?;
         let ran = answer
             .await
-            .map_err(|_| MobileError::Failed("the connection ended".into()))?
+            .map_err(|_| MobileError::Failed(tr!("the connection ended")))?
             .map_err(MobileError::of)?;
         match keys::installed(ran.status, &ran.stdout, &ran.stderr) {
             Ok(Installed::Added) => Ok(true),
@@ -361,12 +366,12 @@ impl MobileSession {
     /// full-screen program has the keys.
     fn ready(&self) -> Result<(), MobileError> {
         if lock(&self.session).status() != Status::Connected {
-            return Err(MobileError::Failed("Not connected.".into()));
+            return Err(MobileError::Failed(tr!("Not connected.")));
         }
         if lock(&self.frame).as_ref().is_some_and(|f| f.alternate) {
-            return Err(MobileError::Failed(
-                "A full-screen program is running: leave it, then try again.".into(),
-            ));
+            return Err(MobileError::Failed(tr!(
+                "A full-screen program is running: leave it, then try again."
+            )));
         }
         Ok(())
     }

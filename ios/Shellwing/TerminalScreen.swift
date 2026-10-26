@@ -45,7 +45,7 @@ struct TerminalScreen: View {
                     }
                 }
                 .background(Dusk.panel.ignoresSafeArea())
-                .navigationTitle("Snippets")
+                .navigationTitle(tr("Snippets"))
                 .navigationBarTitleDisplayMode(.inline)
             }
             .environmentObject(app)
@@ -73,7 +73,7 @@ struct TerminalScreen: View {
                 }
                 .scrollContentBackground(.hidden)
                 .background(Dusk.panel.ignoresSafeArea())
-                .navigationTitle("Load an environment")
+                .navigationTitle(tr("Load an environment"))
                 .navigationBarTitleDisplayMode(.inline)
             }
             .presentationDetents([.medium])
@@ -92,7 +92,7 @@ struct TerminalScreen: View {
             NavigationStack {
                 NotesList(session: model)
                     .background(Dusk.panel.ignoresSafeArea())
-                    .navigationTitle("Notes")
+                    .navigationTitle(tr("Notes"))
                     .navigationBarTitleDisplayMode(.inline)
             }
             .environmentObject(app)
@@ -125,8 +125,8 @@ struct TerminalScreen: View {
                 ForEach(model.placed, id: \.path) { p in
                     Menu {
                         Text(p.path)
-                        Button("Keep it there", systemImage: "pin") { placed(keep: true, p.path) }
-                        Button("Take it away now", systemImage: "xmark", role: .destructive) { placed(keep: false, p.path) }
+                        Button(tr("Keep it there"), systemImage: "pin") { placed(keep: true, p.path) }
+                        Button(tr("Take it away now"), systemImage: "xmark", role: .destructive) { placed(keep: false, p.path) }
                     } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "doc.badge.clock").font(.system(size: 12)).foregroundStyle(Dusk.amber)
@@ -137,7 +137,7 @@ struct TerminalScreen: View {
                         .background(Dusk.chip, in: Capsule())
                         .overlay(Capsule().stroke(Dusk.fieldEdge))
                     }
-                    .accessibilityLabel("\(p.name), placed until the session ends")
+                    .accessibilityLabel(tr("{name}, placed until the session ends", ["name": "\(p.name)"]))
                 }
                 ForEach(model.envs, id: \.id) { e in
                     HStack(spacing: 4) {
@@ -147,7 +147,7 @@ struct TerminalScreen: View {
                             Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
                                 .frame(width: 24, height: 24)
                         }
-                        .accessibilityLabel("Unload \(e.name)")
+                        .accessibilityLabel(tr("Unload {name}", ["name": "\(e.name)"]))
                     }
                     .padding(.leading, 10)
                     .frame(height: 30)
@@ -169,10 +169,10 @@ struct TerminalScreen: View {
             do {
                 if keep {
                     try await core.keepPlaced(session: h, path: path)
-                    show("\(path) stays when the session ends.")
+                    show(tr("{path} stays when the session ends.", ["path": "\(path)"]))
                 } else {
                     try await core.removePlaced(session: h, path: path)
-                    show("\(path) taken away.")
+                    show(tr("{path} taken away.", ["path": "\(path)"]))
                 }
             } catch {
                 show("\(error)")
@@ -201,23 +201,23 @@ struct TerminalScreen: View {
     /// A password that worked, offered to keep in the vault.
     private func offerBar(_ offer: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Save \(offer) in the vault? It is tried first next time.")
+            Text(tr("Save {offer} in the vault? It is tried first next time.", ["offer": "\(offer)"]))
                 .font(.system(size: 13))
                 .foregroundStyle(Dusk.text)
             HStack(spacing: 8) {
                 Spacer()
-                Button("Not now") { model.dismissOffer() }
+                Button(tr("Not now")) { model.dismissOffer() }
                     .font(.system(size: 14))
                     .padding(.horizontal, 12)
                     .frame(height: 34)
                     .background(Dusk.button, in: Capsule())
                     .foregroundStyle(Dusk.text)
-                Button("Save") {
+                Button(tr("Save")) {
                     do {
                         try model.keepOffer()
-                        show("Saved in the vault.")
+                        show(tr("Saved in the vault."))
                     } catch {
-                        show("Not saved: \(error)")
+                        show(tr("Not saved: {error}", ["error": "\(error)"]))
                     }
                 }
                 .font(.system(size: 14, weight: .semibold))
@@ -240,7 +240,7 @@ struct TerminalScreen: View {
                     .frame(width: 44, height: 44)
             }
             .foregroundStyle(Dusk.accent)
-            .accessibilityLabel("Hosts")
+            .accessibilityLabel(tr("Hosts"))
             VStack(spacing: 1) {
                 HStack(spacing: 7) {
                     Circle().fill(model.status.color).frame(width: 8, height: 8)
@@ -253,22 +253,22 @@ struct TerminalScreen: View {
             }
             .frame(maxWidth: .infinity)
             Menu {
-                Button("Paste", systemImage: "doc.on.clipboard") {
+                Button(tr("Paste"), systemImage: "doc.on.clipboard") {
                     if let s = UIPasteboard.general.string { model.paste(s) }
                 }
-                Button("Back to the bottom", systemImage: "arrow.down.to.line") {
+                Button(tr("Back to the bottom"), systemImage: "arrow.down.to.line") {
                     model.scrollToBottom()
                 }
                 if model.status == .connected {
-                    Button("Snippets…", systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
-                    Button("Load an environment…", systemImage: "list.bullet.rectangle") { pickingEnv = true }
-                    Button("Notes…", systemImage: "note.text") { reading = true }
-                    Button("Files…", systemImage: "folder") { browsing = true }
-                    Button("Place a config file…", systemImage: "doc.badge.gearshape") { placing = true }
-                    Button("Install a key on this host…", systemImage: "key") { installing = true }
+                    Button(tr("Snippets…"), systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
+                    Button(tr("Load an environment…"), systemImage: "list.bullet.rectangle") { pickingEnv = true }
+                    Button(tr("Notes…"), systemImage: "note.text") { reading = true }
+                    Button(tr("Files…"), systemImage: "folder") { browsing = true }
+                    Button(tr("Place a config file…"), systemImage: "doc.badge.gearshape") { placing = true }
+                    Button(tr("Install a key on this host…"), systemImage: "key") { installing = true }
                 }
                 if model.status == .lost || model.status == .closed || model.status == .failed {
-                    Button("Connect again", systemImage: "arrow.clockwise") { model.reconnect() }
+                    Button(tr("Connect again"), systemImage: "arrow.clockwise") { model.reconnect() }
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -276,7 +276,7 @@ struct TerminalScreen: View {
                     .frame(width: 44, height: 44)
             }
             .foregroundStyle(Dusk.soft)
-            .accessibilityLabel("Actions")
+            .accessibilityLabel(tr("Actions"))
         }
         .padding(.horizontal, 6)
         .frame(height: 52)
@@ -295,7 +295,7 @@ struct TerminalScreen: View {
                     .foregroundStyle(model.status == .failed ? Dusk.badText : Dusk.soft)
                     .lineLimit(2)
                 Spacer(minLength: 8)
-                Button("Connect again") { model.reconnect() }
+                Button(tr("Connect again")) { model.reconnect() }
                     .font(.system(size: 14, weight: .semibold))
                     .padding(.horizontal, 12)
                     .frame(height: 34)
@@ -323,10 +323,10 @@ struct KeysRow: View {
                 key("Tab") { model.press(.tab) }
                 toggle("Ctrl", on: model.ctrl) { model.ctrl.toggle() }
                 toggle("Alt", on: model.alt) { model.alt.toggle() }
-                icon("chevron.left", "Left") { model.press(.left) }
-                icon("chevron.up", "Up") { model.press(.up) }
-                icon("chevron.down", "Down") { model.press(.down) }
-                icon("chevron.right", "Right") { model.press(.right) }
+                icon("chevron.left", tr("Left")) { model.press(.left) }
+                icon("chevron.up", tr("Up")) { model.press(.up) }
+                icon("chevron.down", tr("Down")) { model.press(.down) }
+                icon("chevron.right", tr("Right")) { model.press(.right) }
             }
             HStack(spacing: 5) {
                 Button(action: snippets) {
@@ -336,7 +336,7 @@ struct KeysRow: View {
                         .frame(maxWidth: .infinity, minHeight: 40)
                 }
                 .background(Dusk.button, in: RoundedRectangle(cornerRadius: 9))
-                .accessibilityLabel("Snippets")
+                .accessibilityLabel(tr("Snippets"))
                 ForEach(["|", "~", "/", "-", "_", ":"], id: \.self) { s in
                     key(s, mono: true) { model.type(s) }
                 }
@@ -348,7 +348,7 @@ struct KeysRow: View {
                 }
                 .background(Dusk.accent, in: RoundedRectangle(cornerRadius: 9))
                 .foregroundStyle(Dusk.onAccent)
-                .accessibilityLabel(typing ? "Hide the keyboard" : "Show the keyboard")
+                .accessibilityLabel(typing ? tr("Hide the keyboard") : tr("Show the keyboard"))
             }
         }
         .padding(.horizontal, 6)
@@ -423,13 +423,13 @@ struct InstallKeySheet: View {
                             .disabled(busy)
                         }
                     } header: {
-                        SectionHeading(text: "Keys in the vault")
+                        SectionHeading(text: tr("Keys in the vault"))
                     }
                     .listRowBackground(Dusk.surface)
                 }
                 Section {
-                    TextField("Name", text: $name)
-                    Button("Make an Ed25519 key and install it") {
+                    TextField(tr("Name"), text: $name)
+                    Button(tr("Make an Ed25519 key and install it")) {
                         if let k = app.generateKey(name: name) {
                             keys = app.keys()
                             install(k)
@@ -437,9 +437,9 @@ struct InstallKeySheet: View {
                     }
                     .disabled(busy || name.trimmingCharacters(in: .whitespaces).isEmpty)
                 } header: {
-                    SectionHeading(text: "A new key")
+                    SectionHeading(text: tr("A new key"))
                 } footer: {
-                    Text("Kept in the vault, encrypted; only its public line goes to \(model.spec).")
+                    Text(tr("Kept in the vault, encrypted; only its public line goes to {host}.", ["host": model.spec]))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
@@ -449,11 +449,11 @@ struct InstallKeySheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(Dusk.page.ignoresSafeArea())
-            .navigationTitle("Install a key")
+            .navigationTitle(tr("Install a key"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { done(nil) }
+                    Button(tr("Cancel")) { done(nil) }
                 }
                 if busy {
                     ToolbarItem(placement: .confirmationAction) { ProgressView() }
@@ -471,8 +471,8 @@ struct InstallKeySheet: View {
             do {
                 let added = try await model.install(key: key.public)
                 done(added
-                    ? "\(key.name) is on \(model.spec): it signs in from now on."
-                    : "\(key.name) was on \(model.spec) already.")
+                    ? tr("{name} is on {host}: it signs in from now on.", ["name": "\(key.name)", "host": model.spec])
+                    : tr("{name} was on {host} already.", ["name": "\(key.name)", "host": model.spec]))
             } catch {
                 problem = "\(error)"
                 busy = false

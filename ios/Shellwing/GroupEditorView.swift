@@ -23,11 +23,11 @@ struct GroupEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Name") {
-                        TextField("Production", text: $edit.name)
+                    LabeledContent(tr("Name")) {
+                        TextField(tr("Production"), text: $edit.name)
                     }
                     HStack(spacing: 10) {
-                        Text("Color")
+                        Text(tr("Color"))
                         Spacer()
                         swatch(nil, color: Dusk.button)
                         ForEach(hostColors(), id: \.name) { c in
@@ -37,14 +37,14 @@ struct GroupEditorView: View {
                     NavigationLink {
                         ThemePicker(selected: edit.theme, appDefault: true) { edit.theme = $0 }
                     } label: {
-                        LabeledContent("Theme for its hosts") {
+                        LabeledContent(tr("Theme for its hosts")) {
                             Text(themeName).foregroundStyle(Dusk.muted)
                         }
                     }
                 } header: {
-                    SectionHeading(text: "Group")
+                    SectionHeading(text: tr("Group"))
                 } footer: {
-                    Text("A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.")
+                    Text(tr("A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it."))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
@@ -52,7 +52,7 @@ struct GroupEditorView: View {
                     Text(problem).foregroundStyle(Dusk.badText).listRowBackground(Dusk.badBg)
                 }
                 Section {
-                    Button("Delete…", role: .destructive) { confirmDelete = true }
+                    Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
                         .frame(maxWidth: .infinity)
                 }
                 .listRowBackground(Dusk.surface)
@@ -63,17 +63,19 @@ struct GroupEditorView: View {
             .navigationTitle(oldName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: done) }
+                ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel"), action: done) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(edit.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button(tr("Save"), action: save).disabled(edit.name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog(
-                members == 0 ? "Delete \(oldName)?" : "Delete \(oldName)? Its \(members == 1 ? "host stays" : "\(members) hosts stay"), in no group.",
+                members == 0
+                    ? tr("Delete {group}?", ["group": oldName])
+                    : trN(members, "Delete {group}? Its {n} host stays, in no group.", "Delete {group}? Its {n} hosts stay, in no group.", ["group": oldName]),
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) {
+                Button(tr("Delete"), role: .destructive) {
                     do {
                         try app.core?.deleteGroup(name: oldName)
                         app.reload()
@@ -88,7 +90,7 @@ struct GroupEditorView: View {
     }
 
     private var themeName: String {
-        guard let id = edit.theme else { return "Same as the app" }
+        guard let id = edit.theme else { return tr("Same as the app") }
         return app.core?.themes().first { $0.id == id }?.name ?? id
     }
 
@@ -103,7 +105,7 @@ struct GroupEditorView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(name ?? "No color")
+        .accessibilityLabel(name ?? tr("No color"))
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 

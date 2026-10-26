@@ -54,7 +54,7 @@ struct MarkdownView: View {
                         Text(lang).font(.system(size: 11)).foregroundStyle(Dusk.muted)
                         Spacer()
                         if let insert {
-                            Button("Insert", systemImage: "arrow.down.to.line") { insert(code) }
+                            Button(tr("Insert"), systemImage: "arrow.down.to.line") { insert(code) }
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(Dusk.accent)
                         }
@@ -78,9 +78,9 @@ struct MarkdownView: View {
                     .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: 420, alignment: .leading)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .accessibilityLabel(alt.isEmpty ? "Image" : alt)
+                    .accessibilityLabel(alt.isEmpty ? tr("Image") : alt)
             } else {
-                Label(alt.isEmpty ? "The image cannot be shown" : alt, systemImage: "photo")
+                Label(alt.isEmpty ? tr("The image cannot be shown") : alt, systemImage: "photo")
                     .font(.system(size: 13))
                     .foregroundStyle(Dusk.muted)
             }

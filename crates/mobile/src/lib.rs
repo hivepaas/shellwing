@@ -10,12 +10,14 @@ uniffi::setup_scaffolding!();
 
 mod config_files;
 mod files;
+mod i18n;
 mod library;
 mod session;
 mod settings;
 mod sync;
 mod vault;
 
+use shellwing_i18n::tr;
 use std::sync::Arc;
 
 use shellwing_config::{Auth, AuthMethod, Host, Hosts, Store};
@@ -24,6 +26,7 @@ use shellwing_core::session::{Opens, Session};
 
 pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
 pub use files::FileEntry;
+pub use i18n::LanguageRow;
 pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
@@ -183,6 +186,9 @@ impl Shellwing {
             vault::Keys(keys),
         );
         let store = Store::new(config_dir);
+        // The app's own choice, else the phone's language.
+        let settings = store.settings().unwrap_or_default();
+        shellwing_i18n::set_language(settings.general.language.as_deref());
         // Hosts written by hand have no id yet; editing one finds it by it.
         store.assign_host_ids().map_err(MobileError::of)?;
         let sync = sync::Syncing::start(vault.clone(), store.clone(), rt.handle());
@@ -295,7 +301,7 @@ impl Shellwing {
     ) -> Result<String, MobileError> {
         let name = edit.name.trim().to_string();
         if name.is_empty() {
-            return Err(MobileError::Failed("A name is needed.".into()));
+            return Err(MobileError::Failed(tr!("A name is needed.")));
         }
         let hosts = self.hosts()?;
         let mine = |g: &shellwing_config::Group| match &edit.id {
@@ -303,7 +309,7 @@ impl Shellwing {
             None => old_name.as_deref() == Some(g.name.as_str()),
         };
         if hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
-            return Err(MobileError::Failed("Another group has this name.".into()));
+            return Err(MobileError::Failed(tr!("Another group has this name.")));
         }
         let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
         let group = shellwing_config::Group {
@@ -389,43 +395,43 @@ fn checked(edit: HostEdit, hosts: &Hosts) -> Result<Host, String> {
             .any(|h| !me(h) && (h.name == n || h.alias.as_deref() == Some(n)))
     };
     if address.is_empty() {
-        return Err("Address: an address is needed.".into());
+        return Err(tr!("Address: an address is needed."));
     }
     if spaced(&address) {
-        return Err("Address: no spaces.".into());
+        return Err(tr!("Address: no spaces."));
     }
     if taken(&name) {
-        return Err("Name: another host has this name.".into());
+        return Err(tr!("Name: another host has this name."));
     }
     let alias = clean(edit.alias);
     if let Some(a) = &alias {
         if spaced(a) {
-            return Err("Alias: no spaces.".into());
+            return Err(tr!("Alias: no spaces."));
         }
         if taken(a) {
-            return Err("Alias: another host uses this.".into());
+            return Err(tr!("Alias: another host uses this."));
         }
     }
     if edit.port == Some(0) {
-        return Err("Port: 1 to 65535.".into());
+        return Err(tr!("Port: 1 to 65535."));
     }
     let user = clean(edit.user);
     if user.as_deref().is_some_and(spaced) {
-        return Err("User: no spaces.".into());
+        return Err(tr!("User: no spaces."));
     }
     let key = clean(edit.key);
     if edit.auth == AuthWay::Key && key.is_none() {
-        return Err("Key: choose a key.".into());
+        return Err(tr!("Key: choose a key."));
     }
     if edit.keepalive.is_some_and(|k| k > 3600) {
-        return Err("Keepalive: seconds, 0 to 3600 (0: none).".into());
+        return Err(tr!("Keepalive: seconds, 0 to 3600 (0: none)."));
     }
     if edit.jump.contains(&name) {
-        return Err("Jump: a host cannot jump through itself.".into());
+        return Err(tr!("Jump: a host cannot jump through itself."));
     }
     for f in &edit.forward {
         if let Some(e) = forward_problem(f.clone()) {
-            return Err(format!("Forward {f}: {e}"));
+            return Err(tr!("Forward {forward}: {e}", forward = f.as_str(), e = e));
         }
     }
     let mut host = old.cloned().unwrap_or_else(|| new_host(&address));
@@ -599,6 +605,9 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("dir");
         std::fs::write(dir.join("hosts.toml"), text).expect("hosts");
+        // What the tests read is the English, whatever the system speaks.
+        std::fs::write(dir.join("config.toml"), "[general]\nlanguage = \"en\"\n")
+            .expect("config");
         let app = Shellwing::new(
             dir.to_string_lossy().into_owned(),
             Arc::new(MemKeys::default()),

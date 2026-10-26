@@ -62,6 +62,8 @@ pub struct SettingsRow {
     pub keepalive: u64,
     /// These settings sync with the vault.
     pub synced: bool,
+    /// The app's language, by tag; None: the phone's. This device's own.
+    pub language: Option<String>,
 }
 
 /// A line of known_hosts: a host whose key is known.
@@ -121,6 +123,7 @@ impl Shellwing {
             host_key: s.ssh.host_key.into(),
             keepalive: s.ssh.keepalive,
             synced: s.sync.settings,
+            language: s.general.language.filter(|l| !l.is_empty() && l != "auto"),
         }
     }
 
@@ -164,6 +167,16 @@ impl Shellwing {
     pub fn set_keepalive(&self, seconds: u64) -> Result<(), MobileError> {
         let s = seconds.min(3600) as i64;
         self.set(&["ssh", "keepalive"], SettingValue::Int(s))
+    }
+
+    /// Speaks `tag` (None: the phone's language) from now on.
+    pub fn set_language(&self, tag: Option<String>) -> Result<(), MobileError> {
+        let value = tag.clone().map(SettingValue::Str);
+        self.store
+            .set_setting(&["general", "language"], value)
+            .map_err(MobileError::of)?;
+        shellwing_i18n::set_language(tag.as_deref());
+        Ok(())
     }
 
     pub fn set_settings_synced(&self, on: bool) -> Result<(), MobileError> {

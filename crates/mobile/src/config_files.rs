@@ -5,6 +5,7 @@
 //! that could not take them away (the app was stopped) does when its host
 //! connects next.
 
+use shellwing_i18n::{tr, tr_n};
 use std::sync::Arc;
 
 use shellwing_core::placing::{self, Placed, There};
@@ -113,12 +114,12 @@ impl Shellwing {
     ) -> Result<String, MobileError> {
         let path = row.path.trim().to_string();
         if row.name.trim().is_empty() {
-            return Err(MobileError::Failed("A name is needed.".into()));
+            return Err(MobileError::Failed(tr!("A name is needed.")));
         }
         if !(path.starts_with('/') || path.starts_with("~/")) || path.ends_with('/') {
-            return Err(MobileError::Failed(
-                "Where it goes: a file's path from / or from ~/, such as ~/.kube/config.".into(),
-            ));
+            return Err(MobileError::Failed(tr!(
+                "Where it goes: a file's path from / or from ~/, such as ~/.kube/config."
+            )));
         }
         let f = ConfigFile {
             id: row.id,
@@ -185,7 +186,7 @@ impl Shellwing {
             .map_err(MobileError::of)?
             .into_iter()
             .find(|f| f.id == id)
-            .ok_or_else(|| MobileError::Failed("It is not in the vault any more.".into()))?;
+            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))?;
         let content = self.content(&id)?;
         let (aside, until) = match how {
             PlaceHow::Until => (None, true),
@@ -287,14 +288,16 @@ impl Shellwing {
         self.unnote_placed(&spec, &kept);
         let mut said = vec![];
         if !gone.is_empty() {
-            said.push(format!(
-                "Took away {} config file(s) left here from before.",
-                gone.len()
+            said.push(tr_n!(
+                gone.len(),
+                "Took away {n} config file left here from before.",
+                "Took away {n} config files left here from before."
             ));
         }
         for p in &kept {
-            said.push(format!(
-                "Left {p} as it is: it changed since it was placed."
+            said.push(tr!(
+                "Left {path} as it is: it changed since it was placed.",
+                path = p.as_str()
             ));
         }
         (!said.is_empty()).then(|| said.join(" "))
@@ -313,7 +316,9 @@ impl Shellwing {
             .read_file(&full, shellwing_vault::limits::FILE)
             .await
             .map_err(MobileError::of)?
-            .ok_or_else(|| MobileError::Failed(format!("nothing at {full}")))?;
+            .ok_or_else(|| {
+                MobileError::Failed(tr!("Nothing is at {path}.", path = full.as_str()))
+            })?;
         let name = shellwing_ssh::sftp::name_of(&path).to_string();
         let f = ConfigFile {
             id: String::new(),
@@ -351,7 +356,7 @@ impl Shellwing {
         self.open_vault()?
             .config_file_content(id)
             .map_err(MobileError::of)?
-            .ok_or_else(|| MobileError::Failed("It is not in the vault any more.".into()))
+            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))
     }
 
     /// Notes a file placed until its session ends, to take away later if the

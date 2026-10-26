@@ -2,6 +2,7 @@
 //! snippets (run in a session, their `{{holes}}` asked for), environments
 //! (loaded into a session's shell, or given to one snippet) and notes.
 
+use shellwing_i18n::tr;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -124,9 +125,7 @@ impl Shellwing {
             origin: String::new(),
         });
         if edit.name.trim().is_empty() || edit.command.trim().is_empty() {
-            return Err(MobileError::Failed(
-                "A name and a command are needed.".into(),
-            ));
+            return Err(MobileError::Failed(tr!("A name and a command are needed.")));
         }
         s.name = edit.name.trim().to_string();
         s.category = edit.category.trim().to_string();
@@ -154,7 +153,7 @@ impl Shellwing {
             .map_err(MobileError::of)?
             .into_iter()
             .find(|s| s.id == id)
-            .ok_or_else(|| MobileError::Failed("It is not in the vault any more.".into()))?;
+            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))?;
         if s.command.len() > shellwing_vault::limits::COMMAND {
             let o = shellwing_vault::Oversize::Command(s.command.len());
             return Err(MobileError::Failed(environment::said_oversize(&o)));
@@ -210,7 +209,7 @@ impl Shellwing {
         dotenv: String,
     ) -> Result<String, MobileError> {
         if name.trim().is_empty() {
-            return Err(MobileError::Failed("A name is needed.".into()));
+            return Err(MobileError::Failed(tr!("A name is needed.")));
         }
         let vars = environment::parse_dotenv(&dotenv).map_err(MobileError::Failed)?;
         self.open_vault()?
@@ -226,7 +225,7 @@ impl Shellwing {
             .map_err(MobileError::of)?
             .into_iter()
             .find(|e| e.id == id)
-            .ok_or_else(|| MobileError::Failed("It is not in the vault any more.".into()))?;
+            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))?;
         let values = vault
             .environment_values(&id)
             .map_err(MobileError::of)?

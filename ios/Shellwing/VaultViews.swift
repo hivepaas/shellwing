@@ -13,7 +13,7 @@ struct KeysView: View {
     var body: some View {
         List {
             if keys.isEmpty {
-                Text("No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.")
+                Text(tr("No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
             }
@@ -35,12 +35,12 @@ struct KeysView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 8) {
-                        Button(copied == k.id ? "Copied" : "Copy public key") {
+                        Button(copied == k.id ? tr("Copied") : tr("Copy public key")) {
                             UIPasteboard.general.string = k.public
                             copied = k.id
                         }
                         .buttonStyle(.bordered)
-                        ShareLink(item: k.public) { Label("Share", systemImage: "square.and.arrow.up") }
+                        ShareLink(item: k.public) { Label(tr("Share"), systemImage: "square.and.arrow.up") }
                             .buttonStyle(.bordered)
                     }
                     .font(.system(size: 13))
@@ -49,7 +49,7 @@ struct KeysView: View {
                 .padding(.vertical, 4)
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button("Delete", role: .destructive) {
+                    Button(tr("Delete"), role: .destructive) {
                         app.forget(k.id)
                         keys = app.keys()
                     }
@@ -58,20 +58,20 @@ struct KeysView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Dusk.panel.ignoresSafeArea())
-        .navigationTitle("SSH keys")
+        .navigationTitle(tr("SSH keys"))
         .toolbar {
             Button { naming = true } label: { Image(systemName: "plus") }
-                .accessibilityLabel("Make a key")
+                .accessibilityLabel(tr("Make a key"))
         }
-        .alert("A new Ed25519 key", isPresented: $naming) {
-            TextField("Name", text: $name)
-            Button("Make") {
+        .alert(tr("A new Ed25519 key"), isPresented: $naming) {
+            TextField(tr("Name"), text: $name)
+            Button(tr("Make")) {
                 _ = app.generateKey(name: name)
                 keys = app.keys()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(tr("Cancel"), role: .cancel) {}
         } message: {
-            Text("Kept in the vault, encrypted, with your other secrets.")
+            Text(tr("Kept in the vault, encrypted, with your other secrets."))
         }
         .onAppear { keys = app.keys() }
     }
@@ -86,7 +86,7 @@ struct SecretsView: View {
     var body: some View {
         List {
             if secrets.isEmpty {
-                Text("Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.")
+                Text(tr("Nothing saved yet. When a password typed in a session works, shellwing offers to keep it."))
                     .foregroundStyle(Dusk.muted)
                     .listRowBackground(Dusk.surface)
             }
@@ -99,14 +99,14 @@ struct SecretsView: View {
                             .font(.system(size: 15, design: .monospaced))
                             .lineLimit(1)
                             .truncationMode(.middle)
-                        Text(s.passphrase ? "A key's passphrase" : "Password")
+                        Text(s.passphrase ? tr("A key's passphrase") : tr("Password"))
                             .font(.system(size: 12))
                             .foregroundStyle(Dusk.muted)
                     }
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button("Forget", role: .destructive) {
+                    Button(tr("Forget"), role: .destructive) {
                         app.forget(s.id)
                         secrets = app.savedSecrets()
                     }
@@ -115,7 +115,7 @@ struct SecretsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Dusk.panel.ignoresSafeArea())
-        .navigationTitle("Saved passwords")
+        .navigationTitle(tr("Saved passwords"))
         .onAppear { secrets = app.savedSecrets() }
     }
 }
@@ -130,7 +130,7 @@ struct RecoveryKeyView: View {
     var body: some View {
         VStack(spacing: 18) {
             if let key {
-                Text("Write it down and keep it apart from this phone. It opens the vault where nothing else can.")
+                Text(tr("Write it down and keep it apart from this phone. It opens the vault where nothing else can."))
                     .font(.system(size: 15))
                     .foregroundStyle(Dusk.label)
                     .multilineTextAlignment(.center)
@@ -144,11 +144,11 @@ struct RecoveryKeyView: View {
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Dusk.fieldEdge))
                     }
                 }
-                Button("Copy") { UIPasteboard.general.string = key }
+                Button(tr("Copy")) { UIPasteboard.general.string = key }
                     .buttonStyle(.bordered)
             } else if let problem {
                 Text(problem).foregroundStyle(Dusk.badText)
-                Button("Try again") { ask() }
+                Button(tr("Try again")) { ask() }
             } else {
                 ProgressView()
             }
@@ -158,7 +158,7 @@ struct RecoveryKeyView: View {
         .foregroundStyle(Dusk.text)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Dusk.page.ignoresSafeArea())
-        .navigationTitle("Recovery key")
+        .navigationTitle(tr("Recovery key"))
         .onAppear(perform: ask)
     }
 
@@ -169,13 +169,13 @@ struct RecoveryKeyView: View {
             key = app.recoveryKey()
             return
         }
-        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Show the vault's recovery key") { ok, _ in
+        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: tr("Show the vault's recovery key")) { ok, _ in
             Task { @MainActor in
                 if ok {
                     key = app.recoveryKey()
-                    if key == nil { problem = "The vault is not open." }
+                    if key == nil { problem = tr("The vault is not open.") }
                 } else {
-                    problem = "Not confirmed: the key stays hidden."
+                    problem = tr("Not confirmed: the key stays hidden.")
                 }
             }
         }

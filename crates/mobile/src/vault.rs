@@ -2,6 +2,7 @@
 //! ([`PlatformKeys`]), the passwords saved in it, and the SSH keys made or
 //! kept there, which sessions sign in with as on the desktop.
 
+use shellwing_i18n::tr;
 use std::sync::Arc;
 
 use shellwing_ssh::keys::{self, KeyKind};
@@ -147,7 +148,7 @@ impl Shellwing {
     pub fn generate_key(&self, name: String) -> Result<KeyRow, MobileError> {
         let name = name.trim().to_string();
         if name.is_empty() {
-            return Err(MobileError::Failed("A name is needed.".into()));
+            return Err(MobileError::Failed(tr!("A name is needed.")));
         }
         let vault = self.open_vault()?;
         let key = keys::generate(KeyKind::Ed25519, &name).map_err(MobileError::of)?;
@@ -172,7 +173,7 @@ impl Shellwing {
             MobileError::Failed(
                 self.vault
                     .problem()
-                    .unwrap_or_else(|| "the vault is not open".into()),
+                    .unwrap_or_else(|| tr!("the vault is not open")),
             )
         })
     }

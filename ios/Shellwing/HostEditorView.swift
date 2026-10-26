@@ -50,7 +50,7 @@ struct HostEditorView: View {
                     Text(problem).foregroundStyle(Dusk.badText).listRowBackground(Dusk.badBg)
                 }
                 Section {
-                    Button("Save and connect") { save(connect: true) }
+                    Button(tr("Save and connect")) { save(connect: true) }
                         .font(.system(size: 17, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .listRowBackground(Dusk.accent)
@@ -59,7 +59,7 @@ struct HostEditorView: View {
                 }
                 if edit.id != nil {
                     Section {
-                        Button("Delete…", role: .destructive) { confirmDelete = true }
+                        Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
                             .frame(maxWidth: .infinity)
                     }
                     .listRowBackground(Dusk.surface)
@@ -69,22 +69,22 @@ struct HostEditorView: View {
             .background(Dusk.page.ignoresSafeArea())
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .navigationTitle(edit.id == nil ? "New host" : title)
+            .navigationTitle(edit.id == nil ? tr("New host") : title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { done(nil) }
+                    Button(tr("Cancel")) { done(nil) }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save(connect: false) }.disabled(blankAddress)
+                    Button(tr("Save")) { save(connect: false) }.disabled(blankAddress)
                 }
             }
             .confirmationDialog(
-                "Delete \(title) from hosts.toml?",
+                tr("Delete {host} from hosts.toml?", ["host": title]),
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) {
+                Button(tr("Delete"), role: .destructive) {
                     if let id = edit.id { app.delete(hostId: id) }
                     done(nil)
                 }
@@ -101,29 +101,29 @@ struct HostEditorView: View {
 
     private var connection: some View {
         Section {
-            LabeledContent("Name") {
+            LabeledContent(tr("Name")) {
                 TextField(edit.address.isEmpty ? "web-1" : edit.address, text: $edit.name)
             }
-            LabeledContent("Address") {
+            LabeledContent(tr("Address")) {
                 TextField("host.example.com", text: $edit.address)
                     .keyboardType(.URL)
                     .font(.system(.body, design: .monospaced))
             }
-            LabeledContent("User") {
-                TextField("as the server says", text: text($edit.user))
+            LabeledContent(tr("User")) {
+                TextField(tr("as the server says"), text: text($edit.user))
                     .font(.system(.body, design: .monospaced))
             }
-            LabeledContent("Port") {
+            LabeledContent(tr("Port")) {
                 TextField("22", text: $port)
                     .keyboardType(.numberPad)
                     .font(.system(.body, design: .monospaced))
             }
-            LabeledContent("Alias") {
-                TextField("optional", text: text($edit.alias))
+            LabeledContent(tr("Alias")) {
+                TextField(tr("optional"), text: text($edit.alias))
                     .font(.system(.body, design: .monospaced))
             }
         } header: {
-            SectionHeading(text: "Connection")
+            SectionHeading(text: tr("Connection"))
         }
         .multilineTextAlignment(.trailing)
         .listRowBackground(Dusk.surface)
@@ -131,16 +131,16 @@ struct HostEditorView: View {
 
     private var signIn: some View {
         Section {
-            Picker("Sign in", selection: $edit.auth) {
-                Text("Automatic").tag(AuthWay.auto)
-                Text("Key").tag(AuthWay.key)
-                Text("Password").tag(AuthWay.password)
-                if edit.auth == .agent { Text("Agent").tag(AuthWay.agent) }
+            Picker(tr("Sign in"), selection: $edit.auth) {
+                Text(tr("Automatic")).tag(AuthWay.auto)
+                Text(tr("Key")).tag(AuthWay.key)
+                Text(tr("Password")).tag(AuthWay.password)
+                if edit.auth == .agent { Text(tr("Agent")).tag(AuthWay.agent) }
             }
             .pickerStyle(.segmented)
             if edit.auth == .key {
-                Picker("Key", selection: text($edit.key)) {
-                    Text("Choose a key").tag("")
+                Picker(tr("Key"), selection: text($edit.key)) {
+                    Text(tr("Choose a key")).tag("")
                     ForEach(keys, id: \.id) { k in
                         Text("\(k.name) · \(k.kind)").tag("vault:\(k.id)")
                     }
@@ -149,17 +149,17 @@ struct HostEditorView: View {
                         Text(k).tag(k)
                     }
                 }
-                Button("Make a key for \(title.isEmpty ? "this host" : title)", systemImage: "plus") {
+                Button(title.isEmpty ? tr("Make a key for this host") : tr("Make a key for {host}", ["host": title]), systemImage: "plus") {
                     makeKey()
                 }
                 if let k = madeKey, edit.key == "vault:\(k.id)" {
-                    Text("\(k.name) is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.")
+                    Text(tr("{name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.", ["name": "\(k.name)"]))
                         .font(.system(size: 13))
                         .foregroundStyle(Dusk.amber)
                 }
             }
         } header: {
-            SectionHeading(text: "Sign in")
+            SectionHeading(text: tr("Sign in"))
         } footer: {
             Text(signInHint).foregroundStyle(Dusk.muted)
         }
@@ -168,13 +168,13 @@ struct HostEditorView: View {
 
     private var signInHint: String {
         switch edit.auth {
-        case .auto: return "Tries the keys in the vault, then asks for a password, like ssh."
+        case .auto: return tr("Tries the keys in the vault, then asks for a password, like ssh.")
         case .key:
             return edit.key?.hasPrefix("vault:") == true
-                ? "Kept in the vault: no passphrase to ask for."
-                : "A key file of another device: this phone signs in with the vault's keys."
-        case .password: return "Asked for when connecting, and can be saved in the vault."
-        case .agent: return "Uses the keys in an ssh-agent: a desktop's; a phone has none."
+                ? tr("Kept in the vault: no passphrase to ask for.")
+                : tr("A key file of another device: this phone signs in with the vault's keys.")
+        case .password: return tr("Asked for when connecting, and can be saved in the vault.")
+        case .agent: return tr("Uses the keys in an ssh-agent: a desktop's; a phone has none.")
         }
     }
 
@@ -197,14 +197,14 @@ struct HostEditorView: View {
                         Button(c) { edit.jump.append(c) }
                     }
                 } label: {
-                    Label("Add a jump", systemImage: "plus")
+                    Label(tr("Add a jump"), systemImage: "plus")
                 }
             }
         } header: {
-            SectionHeading(text: "Route")
+            SectionHeading(text: tr("Route"))
         } footer: {
             Text(edit.jump.isEmpty
-                ? "Straight to the host. A jump goes through another host first (a bastion)."
+                ? tr("Straight to the host. A jump goes through another host first (a bastion).")
                 : (edit.jump + [title]).joined(separator: " → "))
                 .foregroundStyle(Dusk.muted)
         }
@@ -221,15 +221,15 @@ struct HostEditorView: View {
                 TextField("-L 8080:localhost:80", text: $forward)
                     .font(.system(.body, design: .monospaced))
                     .onSubmit(addForward)
-                Button("Add", action: addForward).disabled(forward.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button(tr("Add"), action: addForward).disabled(forward.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             if let forwardSaid {
                 Text(forwardSaid).font(.system(size: 13)).foregroundStyle(Dusk.badText)
             }
         } header: {
-            SectionHeading(text: "Port forwarding")
+            SectionHeading(text: tr("Port forwarding"))
         } footer: {
-            Text("-L [bind:]port:host:hostport · -R [bind:]port:host:hostport · -D [bind:]port. Set up every time this host connects.")
+            Text("-L [bind:]port:host:hostport · -R [bind:]port:host:hostport · -D [bind:]port\n" + tr("Set up every time this host connects."))
                 .foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
@@ -237,8 +237,8 @@ struct HostEditorView: View {
 
     private var organize: some View {
         Section {
-            LabeledContent("Group") {
-                TextField("None", text: text($edit.group)).multilineTextAlignment(.trailing)
+            LabeledContent(tr("Group")) {
+                TextField(tr("None"), text: text($edit.group)).multilineTextAlignment(.trailing)
             }
             let groups = app.groups()
             if !groups.isEmpty {
@@ -257,20 +257,20 @@ struct HostEditorView: View {
                     }
                 }
             }
-            LabeledContent("Tags") {
+            LabeledContent(tr("Tags")) {
                 TextField("web, docker", text: $tags).multilineTextAlignment(.trailing)
             }
             HStack(spacing: 10) {
-                Text("Color")
+                Text(tr("Color"))
                 Spacer()
                 swatch(nil, color: Dusk.button)
                 ForEach(hostColors(), id: \.name) { c in
                     swatch(c.name, color: Color(hex: c.rgb))
                 }
             }
-            Toggle("Favorite: listed first", isOn: $edit.favorite)
+            Toggle(tr("Favorite: listed first"), isOn: $edit.favorite)
         } header: {
-            SectionHeading(text: "Organize")
+            SectionHeading(text: tr("Organize"))
         }
         .listRowBackground(Dusk.surface)
     }
@@ -286,7 +286,7 @@ struct HostEditorView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(name ?? "No color")
+        .accessibilityLabel(name ?? tr("No color"))
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
@@ -295,46 +295,46 @@ struct HostEditorView: View {
             NavigationLink {
                 ThemePicker(selected: edit.theme, appDefault: true) { edit.theme = $0 }
             } label: {
-                LabeledContent("Theme") {
+                LabeledContent(tr("Theme")) {
                     Text(themeName).foregroundStyle(Dusk.muted)
                 }
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text("Run after connecting")
+                Text(tr("Run after connecting"))
                 TextField("cd ~/apps && ls", text: text($edit.run))
                     .font(.system(.body, design: .monospaced))
             }
         } header: {
-            SectionHeading(text: "Terminal")
+            SectionHeading(text: tr("Terminal"))
         }
         .listRowBackground(Dusk.surface)
     }
 
     private var themeName: String {
-        guard let id = edit.theme else { return "Same as the app" }
+        guard let id = edit.theme else { return tr("Same as the app") }
         return app.core?.themes().first { $0.id == id }?.name ?? id
     }
 
     private var advanced: some View {
         Section {
-            Picker("Host keys", selection: $edit.hostKey) {
-                Text("As in Settings").tag(HostKeyWay?.none)
-                Text("Ask").tag(HostKeyWay?.some(.ask))
-                Text("Accept new ones").tag(HostKeyWay?.some(.acceptNew))
-                Text("Known ones only").tag(HostKeyWay?.some(.strict))
+            Picker(tr("Host keys"), selection: $edit.hostKey) {
+                Text(tr("As in Settings")).tag(HostKeyWay?.none)
+                Text(tr("Ask")).tag(HostKeyWay?.some(.ask))
+                Text(tr("Accept new ones")).tag(HostKeyWay?.some(.acceptNew))
+                Text(tr("Known ones only")).tag(HostKeyWay?.some(.strict))
             }
-            LabeledContent("Keepalive (s)") {
-                TextField("as in Settings", text: $keepalive)
+            LabeledContent(tr("Keepalive (s)")) {
+                TextField(tr("as in Settings"), text: $keepalive)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
             }
-            Toggle("Keep on this device only", isOn: $edit.localOnly)
+            Toggle(tr("Keep on this device only"), isOn: $edit.localOnly)
         } header: {
-            SectionHeading(text: "Advanced")
+            SectionHeading(text: tr("Advanced"))
         } footer: {
             Text(edit.localOnly
-                ? "Not synced: other devices do not see this host."
-                : "Synced with your other devices when sync is on.")
+                ? tr("Not synced: other devices do not see this host.")
+                : tr("Synced with your other devices when sync is on."))
                 .foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
@@ -374,12 +374,12 @@ struct HostEditorView: View {
     private func save(connect: Bool) {
         let p = port.trimmingCharacters(in: .whitespaces)
         if !p.isEmpty, UInt16(p) == nil {
-            problem = "Port: 1 to 65535."
+            problem = tr("Port: 1 to 65535.")
             return
         }
         let k = keepalive.trimmingCharacters(in: .whitespaces)
         if !k.isEmpty, UInt64(k) == nil {
-            problem = "Keepalive: seconds, 0 to 3600 (0: none)."
+            problem = tr("Keepalive: seconds, 0 to 3600 (0: none).")
             return
         }
         var e = edit

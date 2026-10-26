@@ -78,7 +78,7 @@ final class TerminalCanvas: UIView, UIKeyInput {
         addGestureRecognizer(UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:))))
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(panned(_:))))
         isAccessibilityElement = true
-        accessibilityLabel = "Terminal"
+        accessibilityLabel = tr("Terminal")
         accessibilityTraits = .allowsDirectInteraction
     }
 

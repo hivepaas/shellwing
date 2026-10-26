@@ -12,6 +12,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var sessions: [SessionModel] = []
     @Published private(set) var sync: SyncStatus?
     @Published var error: String?
+    /// The language spoken, by tag: the core's choice, from Settings or the phone.
+    @Published private(set) var language = languageInUse()
     private let syncHears = SyncHears()
 
     init() {
@@ -29,10 +31,22 @@ final class AppModel: ObservableObject {
             core = nil
             problem = "\(error)"
         }
+        language = languageInUse()
         syncHears.app = self
         core?.setSyncListener(listener: syncHears)
         reload()
         refreshSync()
+    }
+
+    /// Speaks `tag` (nil: the phone's language) from now on.
+    func setLanguage(_ tag: String?) {
+        do {
+            try core?.setLanguage(tag: tag)
+        } catch {
+            self.error = "\(error)"
+        }
+        language = languageInUse()
+        reload()
     }
 
     /// The sync's state, read again; a sync done may have brought hosts.
@@ -183,7 +197,7 @@ final class AppModel: ObservableObject {
 
     /// Runs snippet `id` in `session` with the values asked for: nil, or why not.
     func run(snippet id: String, in session: SessionModel, values: [String: String]) -> String? {
-        guard let core, let handle = session.handle else { return "Not connected." }
+        guard let core, let handle = session.handle else { return tr("Not connected.") }
         do {
             try core.runSnippet(session: handle, id: id, values: values)
             return nil
@@ -209,7 +223,7 @@ final class AppModel: ObservableObject {
 
     /// Loads environment `id` into `session`'s shell: nil, or why not.
     func load(env id: String, in session: SessionModel) -> String? {
-        guard let core, let handle = session.handle else { return "Not connected." }
+        guard let core, let handle = session.handle else { return tr("Not connected.") }
         do {
             try core.loadEnv(session: handle, id: id)
             return nil
@@ -442,7 +456,7 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     /// Puts the public key `line` in the host's authorized_keys: true when added, false
     /// when it was there.
     func install(key line: String) async throws -> Bool {
-        guard let session else { throw MobileError.Failed("Not connected.") }
+        guard let session else { throw MobileError.Failed(tr("Not connected.")) }
         return try await session.installKey(public: line)
     }
 }
@@ -460,11 +474,11 @@ extension SessionStatus {
 
     var said: String {
         switch self {
-        case .connected: return "connected"
-        case .connecting: return "connecting"
-        case .lost: return "connection lost"
-        case .failed: return "could not connect"
-        case .closed: return "closed"
+        case .connected: return tr("connected")
+        case .connecting: return tr("connecting")
+        case .lost: return tr("connection lost")
+        case .failed: return tr("could not connect")
+        case .closed: return tr("closed")
         }
     }
 }

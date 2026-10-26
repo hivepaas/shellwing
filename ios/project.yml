@@ -28,6 +28,9 @@ targets:
       path: Shellwing/Info.plist
       properties:
         CFBundleDisplayName: shellwing
+        # The languages of crates/i18n: iOS offers them in the app's settings.
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, de, es, fr, pt-BR, vi, ru, ja, ko, zh-Hans]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:

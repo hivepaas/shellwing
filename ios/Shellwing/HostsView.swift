@@ -24,7 +24,7 @@ struct HostsView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                     } header: {
-                        SectionHeading(text: "Open")
+                        SectionHeading(text: tr("Open"))
                     }
                 }
                 ForEach(shown, id: \.self) { section in
@@ -37,13 +37,13 @@ struct HostsView: View {
                             }
                             .listRowBackground(Dusk.surface)
                             .swipeActions {
-                                Button("Delete", role: .destructive) { app.delete(hostId: host.id) }
-                                Button("Edit") { editing = app.host(id: host.id) }
+                                Button(tr("Delete"), role: .destructive) { app.delete(hostId: host.id) }
+                                Button(tr("Edit")) { editing = app.host(id: host.id) }
                                     .tint(Dusk.button)
                             }
                             .contextMenu {
-                                Button("Edit", systemImage: "pencil") { editing = app.host(id: host.id) }
-                                Button("Another session", systemImage: "plus.rectangle.on.rectangle") {
+                                Button(tr("Edit"), systemImage: "pencil") { editing = app.host(id: host.id) }
+                                Button(tr("Another session"), systemImage: "plus.rectangle.on.rectangle") {
                                     if let s = app.open(host.spec) { path = [s] }
                                 }
                             }
@@ -56,7 +56,7 @@ struct HostsView: View {
                             if section.favorites {
                                 Image(systemName: "star.fill").font(.system(size: 10)).foregroundStyle(Dusk.amber)
                             }
-                            SectionHeading(text: section.name ?? "Hosts")
+                            SectionHeading(text: section.name ?? tr("Hosts"))
                             if let name = section.name, !section.favorites {
                                 Button {
                                     if let g = app.core?.group(name: name) { editingGroup = GroupSheet(edit: g) }
@@ -65,10 +65,10 @@ struct HostsView: View {
                                         .frame(width: 28, height: 22)
                                 }
                                 .foregroundStyle(Dusk.muted)
-                                .accessibilityLabel("Edit \(name)")
+                                .accessibilityLabel(tr("Edit {name}", ["name": "\(name)"]))
                             }
                             Spacer()
-                            Text(section.hosts.count == 1 ? "1 host" : "\(section.hosts.count) hosts")
+                            Text(trN(section.hosts.count, "{n} host", "{n} hosts"))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Dusk.muted)
                         }
@@ -81,7 +81,7 @@ struct HostsView: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Dusk.panel.ignoresSafeArea())
-            .searchable(text: $filter, prompt: "Filter by name, tag or address")
+            .searchable(text: $filter, prompt: tr("Filter by name, tag or address"))
             .navigationTitle("shellwing")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -90,7 +90,7 @@ struct HostsView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .accessibilityLabel("Add a host")
+                    .accessibilityLabel(tr("Add a host"))
                 }
             }
             .navigationDestination(for: SessionModel.self) { s in
@@ -126,7 +126,7 @@ struct HostsView: View {
                 get: { app.error != nil },
                 set: { if !$0 { app.error = nil } }
             )) {
-                Button("OK") { app.error = nil }
+                Button(tr("OK")) { app.error = nil }
             } message: {
                 Text(app.error ?? "")
             }
@@ -156,8 +156,8 @@ struct HostsView: View {
     private var empty: some View {
         VStack(spacing: 10) {
             Image(systemName: "server.rack").font(.system(size: 34)).foregroundStyle(Dusk.muted)
-            Text("No hosts yet").font(.headline).foregroundStyle(Dusk.text)
-            Text("Add one with +, or sync the hosts of your other devices.")
+            Text(tr("No hosts yet")).font(.headline).foregroundStyle(Dusk.text)
+            Text(tr("Add one with +, or sync the hosts of your other devices."))
                 .font(.subheadline)
                 .foregroundStyle(Dusk.muted)
                 .multilineTextAlignment(.center)
