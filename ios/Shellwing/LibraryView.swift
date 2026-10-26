@@ -65,17 +65,40 @@ struct LibraryView: View {
 #if DEBUG
 /// `-screen mdedit`: the editor on the sample, the caret in it.
 struct MarkdownEditorSample: View {
+    /// What the sample's image shows: a picture drawn here.
+    static let picture: UIImage = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 300)).image { c in
+        let colors = [UIColor(hex: 0x4cc4f9).cgColor, UIColor(hex: 0x22c55e).cgColor] as CFArray
+        let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])!
+        c.cgContext.drawLinearGradient(g, start: .zero, end: CGPoint(x: 600, y: 300), options: [])
+        ("web-1 · 22" as NSString).draw(at: CGPoint(x: 30, y: 120), withAttributes: [
+            .font: UIFont.monospacedSystemFont(ofSize: 48, weight: .bold), .foregroundColor: UIColor.white,
+        ])
+    }
+
     @State private var text = MarkdownSample.text
     @StateObject private var editor = MarkdownEditorController()
 
     var body: some View {
         MarkdownEditor(text: $text, controller: editor)
             .background(Dusk.page.ignoresSafeArea())
+            .onAppear { editor.imageFor = { _ in Self.picture } }
             .task {
                 try? await Task.sleep(for: .milliseconds(600))
                 guard let tv = editor.textView else { return }
+                // `-caret <offset>` (or `end`): where the caret starts;
+                // `-caret none`: the keyboard down.
+                let caret = UserDefaults.standard.string(forKey: "caret") ?? "40"
+                guard caret != "none" else { return }
                 tv.becomeFirstResponder()
-                tv.selectedRange = NSRange(location: 40, length: 4)
+                let n = (tv.text as NSString).length
+                var at = caret == "end" ? n : min(Int(caret) ?? 40, n)
+                // `-caretAt <words>`: the caret at those words.
+                if let words = UserDefaults.standard.string(forKey: "caretAt") {
+                    let r = (tv.text as NSString).range(of: words)
+                    if r.location != NSNotFound { at = r.location }
+                }
+                tv.selectedRange = NSRange(location: at, length: caret == "40" ? 4 : 0)
+                tv.scrollRangeToVisible(tv.selectedRange)
                 if UserDefaults.standard.string(forKey: "script") == "check" { await check(tv) }
             }
     }
@@ -167,6 +190,8 @@ enum MarkdownSample {
 
     - [x] Back up the database
     - [ ] Tell the team
+
+    ![The dashboard](attachment:sample)
 
     | Host | Port | Role |
     |:--|--:|:-:|
@@ -788,6 +813,9 @@ struct NoteEditor: View {
         }
         .onAppear {
             editor.onImage = { picking = true }
+            editor.imageFor = { source in
+                source.hasPrefix("attachment:") ? app.noteImage(String(source.dropFirst("attachment:".count))) : nil
+            }
             guard !loaded else { return }
             loaded = true
             id = note.id

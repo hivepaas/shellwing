@@ -7,6 +7,12 @@
 //! show it; what counts as an alert and a bare link is the desktop's
 //! (`zorite-markdown`).
 //!
+//! Off the caret's line, the marks of formatting, headings and links may
+//! hide (`MdRun::hide`) and an image's line show the image
+//! ([`markdown_images`]), as the desktop's editor shows a line until the
+//! caret is on it; lists, tasks, quotes, fences and tables keep theirs, a
+//! finger's to tap and edit.
+//!
 //! Offsets in and out are UTF-16, as UIKit counts them; inside, bytes.
 
 use std::ops::Range;
@@ -56,6 +62,20 @@ pub struct MdRun {
     /// 1 to 6 on a heading's line; 0 elsewhere.
     pub heading: u8,
     pub role: MdRole,
+    /// A mark that hides off the caret's line: of formatting (`**`, `` ` ``),
+    /// a heading's `#`, a link's `[` and `](url)`.
+    pub hide: bool,
+}
+
+/// A line that is an image alone, `![alt](source)`: shown as the image
+/// off the caret's line.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct MdImageLine {
+    /// The line, without its newline (UTF-16).
+    pub start: u32,
+    pub len: u32,
+    pub source: String,
+    pub alt: String,
 }
 
 /// The text after an edit, and what is selected in it (UTF-16).
@@ -99,6 +119,7 @@ struct Style {
     mono: bool,
     heading: u8,
     role: MdRole,
+    hide: bool,
 }
 
 /// An element open while reading: its range, and what of it its children
@@ -113,6 +134,8 @@ struct Frame {
 enum Kind {
     Item,
     Quote,
+    /// Formatting, a heading, a link, an image: its marks may hide.
+    Inline,
     Other,
 }
 
@@ -143,6 +166,12 @@ fn styles(text: &str) -> Vec<Style> {
                 let kind = match &tag {
                     Tag::Item => Kind::Item,
                     Tag::BlockQuote(_) => Kind::Quote,
+                    Tag::Strong
+                    | Tag::Emphasis
+                    | Tag::Strikethrough
+                    | Tag::Link { .. }
+                    | Tag::Image { .. }
+                    | Tag::Heading { .. } => Kind::Inline,
                     _ => Kind::Other,
                 };
                 apply(&mut st, &r, |s| match &tag {
@@ -175,10 +204,12 @@ fn styles(text: &str) -> Vec<Style> {
                 let inner = (r.start + ticks)..r.end.saturating_sub(ticks).max(r.start + ticks);
                 apply(&mut st, &r, |s| s.mono = true);
                 apply(&mut st, &inner, |s| s.role = MdRole::Code);
-                apply(&mut st, &(r.start..inner.start), |s| {
-                    s.role = MdRole::Marker
-                });
-                apply(&mut st, &(inner.end..r.end), |s| s.role = MdRole::Marker);
+                for ticks in [r.start..inner.start, inner.end..r.end] {
+                    apply(&mut st, &ticks, |s| {
+                        s.role = MdRole::Marker;
+                        s.hide = true;
+                    });
+                }
             }
             Event::Html(_) | Event::InlineHtml(_) => {
                 cover(&mut stack, &r);
@@ -237,7 +268,9 @@ fn marks(text: &str, st: &mut [Style], f: &Frame) {
     }
     let mut first = true;
     for g in gaps {
-        let Some(g) = trimmed(text, g) else { continue };
+        let Some(t) = trimmed(text, g.clone()) else {
+            continue;
+        };
         let role = if f.tag == Kind::Item && first {
             MdRole::ListMarker
         } else {
@@ -245,10 +278,22 @@ fn marks(text: &str, st: &mut [Style], f: &Frame) {
         };
         first = false;
         // A mark is not struck with what it marks: it is dimmed.
-        apply(st, &g, |s| {
+        apply(st, &t, |s| {
             s.role = role;
             s.strike = false;
         });
+        // What may hide goes whole (a heading's `## ` with its space), but
+        // never a newline: the lines stay lines.
+        if f.tag == Kind::Inline {
+            let mut at = g.start;
+            for part in text[g.clone()].split('\n') {
+                let piece = at..at + part.len();
+                if !part.trim().is_empty() {
+                    apply(st, &piece, |s| s.hide = true);
+                }
+                at = piece.end + 1;
+            }
+        }
     }
     if f.tag == Kind::Quote {
         alert_mark(text, st, &f.range);
@@ -325,6 +370,7 @@ fn runs(text: &str, st: &[Style]) -> Vec<MdRun> {
                     mono: s.mono,
                     heading: s.heading,
                     role: s.role,
+                    hide: s.hide,
                 });
             }
             start = i;
@@ -345,6 +391,45 @@ fn utf16_at(text: &str) -> Vec<u32> {
         n += c.len_utf16() as u32;
     }
     out[text.len()] = n;
+    out
+}
+
+/// The lines of `text` that are an image alone (not in code): shown as the
+/// image off the caret's line.
+#[uniffi::export]
+pub fn markdown_images(text: String) -> Vec<MdImageLine> {
+    let mut out = vec![];
+    let mut open: Option<(Range<usize>, String, String)> = None;
+    for (ev, r) in Parser::new_ext(&text, Options::ENABLE_TABLES | Options::ENABLE_TASKLISTS)
+        .into_offset_iter()
+    {
+        match ev {
+            Event::Start(Tag::Image { dest_url, .. }) => {
+                open = Some((r, dest_url.to_string(), String::new()));
+            }
+            Event::Text(t) => {
+                if let Some(o) = &mut open {
+                    o.2.push_str(&t);
+                }
+            }
+            Event::End(pulldown_cmark::TagEnd::Image) => {
+                let Some((r, source, alt)) = open.take() else {
+                    continue;
+                };
+                let (ls, le) = (line_start(&text, r.start), line_end(&text, r.start));
+                // Alone on its line, white space aside.
+                if text[ls..le].trim() == &text[r.clone()] {
+                    out.push(MdImageLine {
+                        start: u16_of(&text, ls),
+                        len: u16_of(&text, le) - u16_of(&text, ls),
+                        source,
+                        alt,
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
     out
 }
 
@@ -819,6 +904,36 @@ mod tests {
         assert!(code.mono && code.role == MdRole::CodeBlock);
         assert!(style_of(md, "| 1").mono);
         assert_eq!(style_of(md, "|---|").role, MdRole::Marker);
+    }
+
+    #[test]
+    fn marks_of_formatting_headings_and_links_hide_others_stay() {
+        let md = "## Title\n\n**b** `c` [l](https://x.example)\n\n- [ ] t\n\n> q\n\n```\nls\n```\n";
+        let hides = |what: &str| style_of(md, what).hide;
+        assert!(hides("## "), "a heading's hashes");
+        assert!(
+            hides(" Title") && !style_of(md, "Title").hide,
+            "its space too, not its words"
+        );
+        assert!(hides("**b") && !style_of(md, "b**").hide);
+        assert!(hides("`c") && !style_of(md, "c`").hide);
+        assert!(hides("[l") && hides("](https") && !style_of(md, "l](").hide);
+        assert!(!hides("- [ ]"), "a list's marker stays");
+        assert!(!hides("[ ] t"), "a task's box stays");
+        assert!(!hides("> q"), "a quote's mark stays");
+        assert!(!hides("```"), "a fence stays");
+    }
+
+    #[test]
+    fn image_lines_are_those_alone() {
+        let md = "![shot](attachment:ab)\nsee ![x](y) here\n  ![](attachment:cd)  \n```\n![](attachment:no)\n```\n";
+        let imgs = markdown_images(md.into());
+        let sources: Vec<&str> = imgs.iter().map(|i| i.source.as_str()).collect();
+        assert_eq!(sources, ["attachment:ab", "attachment:cd"]);
+        assert_eq!(
+            (imgs[0].alt.as_str(), imgs[0].start, imgs[0].len),
+            ("shot", 0, 22)
+        );
     }
 
     #[test]

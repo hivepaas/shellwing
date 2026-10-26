@@ -10,6 +10,13 @@ final class MarkdownEditorController: ObservableObject {
     weak var textView: UITextView?
     /// The bar's image button: the note's editor picks one.
     var onImage: (() -> Void)?
+    /// The image an image's line shows (`attachment:<id>`), if there is one.
+    /// Set: the images shown again.
+    var imageFor: ((String) -> UIImage?)? {
+        didSet {
+            if let tv = textView, let c = tv.delegate as? MarkdownEditor.Coordinator { c.restyle(tv) }
+        }
+    }
 
     private var text: String { textView?.text ?? "" }
 
@@ -93,8 +100,11 @@ final class MarkdownEditorController: ObservableObject {
 
 /// A Markdown note's text, edited as Markdown and styled as it is typed:
 /// marks dimmed, headings large, code in a monospace face, links in color,
-/// a task's box ticked by a tap. A bar over the keyboard formats; Return
-/// carries a list on.
+/// a task's box ticked by a tap. Off the caret's line, as on the desktop,
+/// the marks of formatting, headings and links hide (made invisible, not
+/// taken away: the text and its offsets stay as they are) and an image's
+/// line shows the image. A bar over the keyboard formats; Return carries a
+/// list on.
 struct MarkdownEditor: UIViewRepresentable {
     @Binding var text: String
     let controller: MarkdownEditorController
@@ -118,6 +128,7 @@ struct MarkdownEditor: UIViewRepresentable {
         tv.smartInsertDeleteType = .no
         tv.spellCheckingType = .yes
         tv.delegate = context.coordinator
+        tv.textLayoutManager?.delegate = context.coordinator
         tv.text = text
         tv.inputAccessoryView = context.coordinator.bar()
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapped(_:)))
@@ -141,10 +152,18 @@ struct MarkdownEditor: UIViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate, NSTextLayoutManagerDelegate {
         var parent: MarkdownEditor
         /// The runs of the text as last styled: where the task boxes are.
         private var runs: [MdRun] = []
+        /// Its lines that are an image alone.
+        private var images: [MdImageLine] = []
+        /// The images shown, by source, at the size they show.
+        private var shots: [String: (image: UIImage, size: CGSize)] = [:]
+        /// The lines the caret (or the selection) is on: their marks show.
+        private var caret = NSRange(location: 0, length: 0)
+        /// Styling, which moves no caret of its own.
+        private var painting = false
         private var pending: DispatchWorkItem?
 
         static let size: CGFloat = 16
@@ -187,23 +206,124 @@ struct MarkdownEditor: UIViewRepresentable {
 
         // MARK: Style
 
+        /// The text read again and styled whole.
         func restyle(_ tv: UITextView) {
             let text = tv.text ?? ""
             runs = markdownRuns(text: text)
-            let storage = tv.textStorage
-            let all = NSRange(location: 0, length: storage.length)
+            images = markdownImages(text: text)
+            caret = caretLines(tv)
+            paint(tv, NSRange(location: 0, length: tv.textStorage.length))
+        }
+
+        /// The caret on another line: the lines it left and the ones it is on
+        /// styled again (their marks shown or hidden, an image or its line).
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            guard !painting, tv.markedTextRange == nil else { return }
+            let now = caretLines(tv)
+            guard now != caret else { return }
+            let old = caret
+            caret = now
+            let n = tv.textStorage.length
+            let a = NSIntersectionRange(old, NSRange(location: 0, length: n))
+            paint(tv, a.length > 0 ? NSUnionRange(a, now) : now)
+        }
+
+        private func caretLines(_ tv: UITextView) -> NSRange {
+            let ns = (tv.text ?? "") as NSString
             let sel = tv.selectedRange
+            guard sel.location <= ns.length else { return NSRange(location: ns.length, length: 0) }
+            return ns.lineRange(for: sel)
+        }
+
+        private func onCaret(_ r: NSRange) -> Bool {
+            NSIntersectionRange(r, caret).length > 0
+                || (r.length == 0 && NSLocationInRange(r.location, caret))
+                || (caret.length == 0 && caret.location >= r.location && caret.location <= NSMaxRange(r))
+        }
+
+        /// Styles `range` of the text from the runs read.
+        private func paint(_ tv: UITextView, _ range: NSRange) {
+            let storage = tv.textStorage
+            let range = NSIntersectionRange(range, NSRange(location: 0, length: storage.length))
+            painting = true
+            defer { painting = false }
+            let sel = tv.selectedRange
+            // An image not here (not synced yet): its line shows as written.
+            let missing = images.compactMap { img -> NSRange? in
+                let line = NSRange(location: Int(img.start), length: Int(img.len))
+                return shot(img.source, tv) == nil ? line : nil
+            }
             storage.beginEditing()
-            storage.setAttributes(Self.base, range: all)
+            storage.setAttributes(Self.base, range: range)
             for r in runs {
-                let range = NSRange(location: Int(r.start), length: Int(r.len))
-                guard NSMaxRange(range) <= storage.length else { continue }
-                storage.addAttributes(Self.attributes(r), range: range)
+                let rr = NSRange(location: Int(r.start), length: Int(r.len))
+                let part = NSIntersectionRange(rr, range)
+                guard part.length > 0, NSMaxRange(part) <= storage.length else { continue }
+                let hidden = r.hide && !onCaret(rr) && !missing.contains { NSIntersectionRange($0, rr).length > 0 }
+                storage.addAttributes(hidden ? Self.hidden : Self.attributes(r), range: part)
+            }
+            for img in images {
+                let line = NSRange(location: Int(img.start), length: Int(img.len))
+                guard NSIntersectionRange(line, range).length > 0, NSMaxRange(line) <= storage.length,
+                      !onCaret(line), let shot = shot(img.source, tv) else { continue }
+                // The line's text hidden, its height the image's: the image
+                // is drawn there (`ImageFragment`).
+                let p = NSMutableParagraphStyle()
+                p.minimumLineHeight = shot.size.height + 8
+                p.maximumLineHeight = shot.size.height + 8
+                var a = Self.hidden
+                a[.paragraphStyle] = p
+                storage.addAttributes(a, range: line)
             }
             storage.endEditing()
-            tv.selectedRange = sel
+            if tv.selectedRange != sel { tv.selectedRange = sel }
             tv.typingAttributes = Self.base
         }
+
+        /// The image `source` names, at the width the text has.
+        private func shot(_ source: String, _ tv: UITextView) -> (image: UIImage, size: CGSize)? {
+            let width = max(tv.bounds.width, 300) - tv.textContainerInset.left - tv.textContainerInset.right - 12
+            if let s = shots[source], abs(s.size.width - min(width, s.image.size.width)) < 1 || s.size.height >= 320 {
+                return s
+            }
+            guard let image = MainActor.assumeIsolated({ parent.controller.imageFor?(source) }),
+                  image.size.width > 0 else { return nil }
+            var size = CGSize(width: min(width, image.size.width), height: 0)
+            size.height = size.width * image.size.height / image.size.width
+            if size.height > 320 {
+                size = CGSize(width: 320 * image.size.width / image.size.height, height: 320)
+            }
+            shots[source] = (image, size)
+            return (image, size)
+        }
+
+        // MARK: Images (TextKit 2)
+
+        func textLayoutManager(
+            _ m: NSTextLayoutManager,
+            textLayoutFragmentFor location: any NSTextLocation,
+            in textElement: NSTextElement
+        ) -> NSTextLayoutFragment {
+            let range = textElement.elementRange
+            if let range, let content = m.textContentManager {
+                let start = content.offset(from: content.documentRange.location, to: range.location)
+                if let img = images.first(where: { Int($0.start) == start }),
+                   !onCaret(NSRange(location: Int(img.start), length: Int(img.len))),
+                   let shot = shots[img.source] {
+                    let f = ImageFragment(textElement: textElement, range: range)
+                    f.image = shot.image
+                    f.size = shot.size
+                    return f
+                }
+            }
+            return NSTextLayoutFragment(textElement: textElement, range: range)
+        }
+
+        /// What hides: no size, no color, the text still there.
+        static let hidden: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 0.01),
+            .foregroundColor: UIColor.clear,
+        ]
 
         static func attributes(_ r: MdRun) -> [NSAttributedString.Key: Any] {
             let scale: CGFloat = [1, 1.8, 1.5, 1.3, 1.15, 1.05, 1][Int(min(r.heading, 6))]
@@ -342,5 +462,30 @@ struct MarkdownEditor: UIViewRepresentable {
             b.widthAnchor.constraint(greaterThanOrEqualToConstant: 40).isActive = true
             return b
         }
+    }
+}
+
+/// An image's line, off the caret's: the image drawn where its hidden text
+/// is, the line as tall as the image.
+final class ImageFragment: NSTextLayoutFragment {
+    var image: UIImage?
+    var size: CGSize = .zero
+
+    override func draw(at point: CGPoint, in context: CGContext) {
+        guard let image else {
+            super.draw(at: point, in: context)
+            return
+        }
+        let rect = CGRect(x: point.x + 6, y: point.y + 4, width: size.width, height: size.height)
+        UIGraphicsPushContext(context)
+        context.saveGState()
+        UIBezierPath(roundedRect: rect, cornerRadius: 6).addClip()
+        image.draw(in: rect)
+        context.restoreGState()
+        UIGraphicsPopContext()
+    }
+
+    override var renderingSurfaceBounds: CGRect {
+        super.renderingSurfaceBounds.union(CGRect(x: 0, y: 0, width: size.width + 12, height: size.height + 8))
     }
 }
