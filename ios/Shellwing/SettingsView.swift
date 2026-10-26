@@ -43,7 +43,9 @@ struct SettingsView: View {
                     SectionHeading(text: tr("Lock"))
                 } footer: {
                     Text(lock.available
-                        ? tr("When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.", ["biometry": "\(lock.biometry)"])
+                        ? (lock.biometry.map {
+                            tr("When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.", ["biometry": $0])
+                        } ?? tr("When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath."))
                         : tr("This phone has no passcode, so nothing could ask that it is you."))
                         .foregroundStyle(Dusk.muted)
                 }

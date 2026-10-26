@@ -4118,670 +4118,709 @@ t60f438b7 = настройки не записаны: { $e }
 t00f3a4eb = хосты не записаны: { $e }
 
 # Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
-# t37ca034c =
+t37ca034c = Куда он попадёт: путь к файлу, начинающийся с / или с ~/, например ~/.kube/config.
 
 # Nothing is at {path}.
-# ta5cf42ea =
+ta5cf42ea = По пути { $path } ничего нет.
 
 # Address: an address is needed.
-# t3f9c8dd7 =
+t3f9c8dd7 = Адрес: нужно указать адрес.
 
 # Address: no spaces.
-# t1a9d2c69 =
+t1a9d2c69 = Адрес: без пробелов.
 
 # Name: another host has this name.
-# tcf956656 =
+tcf956656 = Имя: другой хост уже называется так.
 
 # Alias: no spaces.
-# t240468fd =
+t240468fd = Алиас: без пробелов.
 
 # Alias: another host uses this.
-# t6d4194b8 =
+t6d4194b8 = Алиас: он уже используется другим хостом.
 
 # Port: 1 to 65535.
-# t48e7bff2 =
+t48e7bff2 = Порт: от 1 до 65535.
 
 # User: no spaces.
-# t7b146164 =
+t7b146164 = Пользователь: без пробелов.
 
 # Key: choose a key.
-# t96503d0f =
+t96503d0f = Ключ: выберите ключ.
 
 # Keepalive: seconds, 0 to 3600 (0: none).
-# t868fa0cd =
+t868fa0cd = Keepalive: секунды, от 0 до 3600 (0 — отключено).
 
 # Jump: a host cannot jump through itself.
-# tf5b576a7 =
+tf5b576a7 = Промежуточный хост: хост не может быть промежуточным для самого себя.
 
 # Forward {forward}: {e}
-# t575e8c34 =
+t575e8c34 = Проброс { $forward }: { $e }
 
 # the password for {target}
-# t33a923dd =
+t33a923dd = пароль для { $target }
 
 # the passphrase of {path}
-# t847f4536 =
+t847f4536 = парольную фразу { $path }
 
 # A full-screen program is running: leave it, then try again.
-# t1dca493f =
+t1dca493f = Запущена полноэкранная программа: выйдите из неё и повторите попытку.
 
 # Unlock shellwing
-# t25d6e4bc =
-
-# Your passcode
-# t7c17b57e =
+t25d6e4bc = Разблокировать shellwing
 
 # {biometry} or your passcode unlocks it.
-# t22b7de26 =
+t22b7de26 = Его разблокирует { $biometry } или ваш код-пароль.
+
+# Your passcode unlocks it.
+t22c93782 = Его разблокирует ваш код-пароль.
 
 # {n} session stays connected underneath. | {n} sessions stay connected underneath.
-# t8f2f0709 =
+t8f2f0709 =
+    { $n ->
+        [one] { $n } сеанс остаётся подключённым в фоне.
+        [few] { $n } сеанса остаются подключёнными в фоне.
+        [many] { $n } сеансов остаются подключёнными в фоне.
+       *[other] { $n } сеанса остаются подключёнными в фоне.
+    }
 
 # No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
-# t773e80be =
+t773e80be = Файлов конфигурации пока нет: это файлы в хранилище (kubeconfig, .npmrc), которые размещаются на хосте из сеанса.
 
 # stays
-# t6210bca9 =
+t6210bca9 = насовсем
 
 # Placed to stay
-# t326d488a =
+t326d488a = Размещать насовсем
 
 # Placed, it stays when the session ends.
-# t596dc3ba =
+t596dc3ba = После размещения он остаётся и после завершения сеанса.
 
 # Placed, it is taken away when the session ends.
-# tcb169849 =
+tcb169849 = После размещения он удаляется при завершении сеанса.
 
 # Binary, {size}: kept as it is.
-# td3506722 =
+td3506722 = Двоичный, { $size }: хранится как есть.
 
 # Replace from Files…
-# t910b03ca =
+t910b03ca = Заменить из «Файлов»…
 
 # Only a text file can be imported here.
-# t94955dee =
+t94955dee = Сюда можно импортировать только текстовый файл.
 
 # Permissions: three digits from 0 to 7, such as 600.
-# tad710134 =
+tad710134 = Права доступа: три цифры от 0 до 7, например 600.
 
 # No config files for this host. Keep them in Library › Files.
-# t31aa06de =
+t31aa06de = Для этого хоста нет файлов конфигурации. Храните их в разделе Библиотека › Файлы.
 
 # Place a config file
-# t2bd139bb =
+t2bd139bb = Разместить файл конфигурации
 
 # Replace the one placed until the session ends
-# t72427900 =
+t72427900 = Заменить размещённый до завершения сеанса
 
 # Place it until the session ends
-# tf442be28 =
+tf442be28 = Разместить до завершения сеанса
 
 # Replace it until the session ends
-# t96406163 =
+t96406163 = Заменить до завершения сеанса
 
 # Cannot place {name}: {error}
-# t816e11b0 =
+t816e11b0 = Не удалось разместить { $name }: { $error }
 
 # {name} is at {path} until the session ends.
-# t10182ed5 =
+t10182ed5 = { $name } размещён в { $path } до завершения сеанса.
 
 # {name} is at {path}.
-# t3b2e2230 =
+t3b2e2230 = { $name } размещён в { $path }.
 
 # Nothing here.
-# ta7006e9a =
+ta7006e9a = Здесь ничего нет.
 
 # Upload from Files…
-# t3efaa7bd =
+t3efaa7bd = Загрузить из «Файлов»…
 
 # Hidden files
-# t3f0de492 =
+t3f0de492 = Скрытые файлы
 
 # Add
-# t9dc3aa14 =
+t9dc3aa14 = Добавить
 
 # Make
-# t486bedcf =
+t486bedcf = Создать
 
 # The folder and everything in it are deleted on {host}.
-# t200fdede =
+t200fdede = Папка и всё её содержимое будут удалены на { $host }.
 
 # It is deleted on {host}.
-# td57ed776 =
+td57ed776 = Файл будет удалён на { $host }.
 
 # Download the folder
-# t1c6b8ca2 =
+t1c6b8ca2 = Скачать папку
 
 # Keep in the vault
-# t08dcb490 =
+t08dcb490 = Сохранить в хранилище
 
 # Copy the path
-# t095d064e =
+t095d064e = Копировать путь
 
 # A name without /, please.
-# t7055c52a =
+t7055c52a = Имя не должно содержать /.
 
 # Making {name}…
-# t431597d3 =
+t431597d3 = Создание { $name }…
 
 # Renaming…
-# t87125000 =
+t87125000 = Переименование…
 
 # Deleting {name}…
-# ta17d02e6 =
+ta17d02e6 = Удаление { $name }…
 
 # {name} deleted.
-# tf36570a5 =
+tf36570a5 = Удалено: { $name }.
 
 # Downloading {name}…
-# t49917320 =
+t49917320 = Скачивание { $name }…
 
 # Opening {name}…
-# t24b03450 =
+t24b03450 = Открытие { $name }…
 
 # Uploading {name}…
-# t763593ef =
+t763593ef = Загрузка { $name }…
 
 # Uploading {n} item… | Uploading {n} items…
-# t4d21b20c =
+t4d21b20c =
+    { $n ->
+        [one] Загрузка { $n } элемента…
+        [few] Загрузка { $n } элементов…
+        [many] Загрузка { $n } элементов…
+       *[other] Загрузка { $n } элемента…
+    }
 
 # {name} uploaded.
-# t0b81da1e =
+t0b81da1e = Загружено: { $name }.
 
 # {n} item uploaded. | {n} items uploaded.
-# tbf7cc840 =
+tbf7cc840 =
+    { $n ->
+        [one] Загружен { $n } элемент.
+        [few] Загружено { $n } элемента.
+        [many] Загружено { $n } элементов.
+       *[other] Загружено { $n } элемента.
+    }
 
 # Keeping {name}…
-# tbb0f5ffb =
+tbb0f5ffb = Сохранение { $name } в хранилище…
 
 # {name} is in the vault: Library › Files.
-# t71be4d4c =
+t71be4d4c = { $name } теперь в хранилище: Библиотека › Файлы.
 
 # {path} changed on {host} since it was opened.
-# ta4924204 =
+ta4924204 = { $path } изменён на { $host } после открытия.
 
 # Replace it with this
-# tf329d9b0 =
+tf329d9b0 = Заменить этой версией
 
 # Not saved: {error}
-# t2fe29775 =
+t2fe29775 = Не сохранено: { $error }
 
 # A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
-# t3ff468c2 =
+t3ff468c2 = Собственная тема хоста важнее темы его группы. Чтобы добавить хост в группу, выберите её в редакторе хоста.
 
 # Delete {group}?
-# t6801beba =
+t6801beba = Удалить { $group }?
 
 # Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
-# t8d5eff39 =
+t8d5eff39 =
+    { $n ->
+        [one] Удалить { $group }? Её { $n } хост останется без группы.
+        [few] Удалить { $group }? Её { $n } хоста останутся без группы.
+        [many] Удалить { $group }? Её { $n } хостов останутся без группы.
+       *[other] Удалить { $group }? Её { $n } хоста останутся без группы.
+    }
 
 # No color
-# te96206b1 =
+te96206b1 = Без цвета
 
 # Delete {host} from hosts.toml?
-# tcee76080 =
+tcee76080 = Удалить { $host } из hosts.toml?
 
 # as the server says
-# ta204abe7 =
+ta204abe7 = как скажет сервер
 
 # Alias
-# t22e1f2f7 =
+t22e1f2f7 = Алиас
 
 # Make a key for this host
-# tfc47113a =
+tfc47113a = Создать ключ для этого хоста
 
 # Make a key for {host}
-# tc4091336 =
+tc4091336 = Создать ключ для { $host }
 
 # {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
-# t14c6a565 =
+t14c6a565 = { $name } — новый ключ: на хосте его ещё нет. Подключитесь один раз другим способом (по паролю), затем установите его из меню сеанса.
 
 # Tries the keys in the vault, then asks for a password, like ssh.
-# t4c5dd8b2 =
+t4c5dd8b2 = Пробует ключи из хранилища, затем запрашивает пароль, как ssh.
 
 # A key file of another device: this phone signs in with the vault's keys.
-# t85abc601 =
+t85abc601 = Файл ключа другого устройства: этот телефон входит с ключами из хранилища.
 
 # Uses the keys in an ssh-agent: a desktop's; a phone has none.
-# t4b96b415 =
+t4b96b415 = Использует ключи из ssh-agent: он есть на компьютере, но не на телефоне.
 
 # Add a jump
-# t16c79e2d =
+t16c79e2d = Добавить промежуточный хост
 
 # Straight to the host. A jump goes through another host first (a bastion).
-# t31e98c98 =
+t31e98c98 = Напрямую к хосту. С промежуточным хостом подключение сначала идёт через другой хост (бастион).
 
 # Favorite: listed first
-# t7bd2a9c8 =
+t7bd2a9c8 = Избранное: первым в списке
 
 # Host keys
-# t2f5a3205 =
+t2f5a3205 = Ключи хостов
 
 # As in Settings
-# t46210079 =
+t46210079 = Как в настройках
 
 # Accept new ones
-# tc99d0b88 =
+tc99d0b88 = Принимать новые
 
 # Known ones only
-# t2234971d =
+t2234971d = Только известные
 
 # Keepalive (s)
-# t13e524f5 =
+t13e524f5 = Keepalive (с)
 
 # as in Settings
-# tf8e77e19 =
+tf8e77e19 = как в настройках
 
 # Another session
-# t4d6f66b8 =
+t4d6f66b8 = Ещё один сеанс
 
 # Edit {name}
-# t4688b082 =
+t4688b082 = Изменить { $name }
 
 # Add a host
-# t38d39c8f =
+t38d39c8f = Добавить хост
 
 # OK
-# t85e4b82f =
+t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
-# tceb03600 =
+tceb03600 = Добавьте хост кнопкой + или синхронизируйте хосты с других ваших устройств.
 
 # the Keychain said {status}
-# tc1738579 =
+tc1738579 = связка ключей вернула { $status }
 
 # Envs
-# tf645a165 =
+tf645a165 = Окружения
 
 # Part
-# te3596034 =
+te3596034 = Раздел
 
 # Library
-# ta8532270 =
+ta8532270 = Библиотека
 
 # No snippets yet. Make one with +, or sync those of your other devices.
-# tf81b77f9 =
+tf81b77f9 = Сниппетов пока нет. Создайте сниппет кнопкой + или синхронизируйте сниппеты с других ваших устройств.
 
 # No snippets for this host.
-# tbf3767c5 =
+tbf3767c5 = Для этого хоста нет сниппетов.
 
 # Filter snippets
-# tbb9b10c7 =
+tbb9b10c7 = Фильтр сниппетов
 
 # Offered
-# t2bd643c4 =
+t2bd643c4 = Доступен
 
 # Everywhere
-# t327a596f =
+t327a596f = Везде
 
 # Group: {group}
-# t0d904ce9 =
+t0d904ce9 = Группа: { $group }
 
 # Host: {host}
-# t3fb3f6b3 =
+t3fb3f6b3 = Хост: { $host }
 
 # Press Enter after it
-# te4ce8331 =
+te4ce8331 = Нажимать Enter после ввода
 
 # Command
-# tc67c8f52 =
+tc67c8f52 = Команда
 
 # {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
-# td02256f4 =
+td02256f4 = {"{{"}name{"}}"} запрашивает значение при запуске; {"{{"}host{"}}"}, {"{{"}user{"}}"} и {"{{"}address{"}}"} берутся из сеанса.
 
 # Runs with
-# te90c2175 =
+te90c2175 = Выполняется с
 
 # Their variables are given to it alone, in a subshell, without showing their values.
-# t4ef64333 =
+t4ef64333 = Их переменные передаются только ему, в подоболочке, без показа значений.
 
 # Run
-# t8d57e66a =
+t8d57e66a = Выполнить
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
-# tbcdba796 =
+tbcdba796 = Окружений пока нет: это переменные в хранилище, которые загружаются в оболочку сеанса без показа значений.
 
 # NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-# t36bfa774 =
+t36bfa774 = NAME=value, по одной на строку. Имя, после = которого ничего нет, сохраняет своё текущее значение; значения здесь никогда не показываются.
 
 # No notes yet.
-# t4be168d5 =
+t4be168d5 = Заметок пока нет.
 
 # Untitled
-# t2e35a678 =
+t2e35a678 = Без названия
 
 # this host
-# t4b4cbe3d =
+t4b4cbe3d = этот хост
 
 # Filter notes
-# tde67183a =
+tde67183a = Фильтр заметок
 
 # Markdown
-# tf651116c =
+tf651116c = Markdown
 
 # Show a sensitive note
-# t905684dd =
+t905684dd = Показать конфиденциальную заметку
 
 # For hosts…
-# t4d6ecc3d =
+t4d6ecc3d = Для хостов…
 
 # Insert an image…
-# t2d3653b2 =
+t2d3653b2 = Вставить изображение…
 
 # Note
-# t1440c15d =
+t1440c15d = Заметка
 
 # Delete this note?
-# t9d3e3253 =
+t9d3e3253 = Удалить эту заметку?
 
 # That image cannot be read.
-# tc5fceb9b =
+tc5fceb9b = Не удаётся прочитать это изображение.
 
 # For hosts
-# t350fa483 =
+t350fa483 = Для хостов
 
 # Image
-# t590ca79a =
+t590ca79a = Изображение
 
 # No sessions open
-# t483ac645 =
+t483ac645 = Нет открытых сеансов
 
 # Open one from Hosts.
-# t7a72807e =
+t7a72807e = Откройте сеанс в разделе «Хосты».
 
 # Sessions
-# tb69a8aec =
+tb69a8aec = Сеансы
 
 # Connect again
-# t05dc6981 =
+t05dc6981 = Подключиться снова
 
 # {n} minute | {n} minutes
-# tf77c9aaa =
+tf77c9aaa =
+    { $n ->
+        [one] { $n } минута
+        [few] { $n } минуты
+        [many] { $n } минут
+       *[other] { $n } минуты
+    }
 
 # Lock
-# t71b42d62 =
+t71b42d62 = Блокировка
 
 # When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
-# taaa2c58c =
+taaa2c58c = При запуске shellwing, а также после такого времени в фоне, он скрывается, пока { $biometry } или ваш код-пароль не подтвердит, что это вы. Лёгкая защита на случай незаблокированного телефона: сеансы продолжают работать в фоне.
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = При запуске shellwing, а также после такого времени в фоне, он скрывается, пока ваш код-пароль не подтвердит, что это вы. Лёгкая защита на случай незаблокированного телефона: сеансы продолжают работать в фоне.
 
 # This phone has no passcode, so nothing could ask that it is you.
-# td366e372 =
+td366e372 = На этом телефоне не задан код-пароль, поэтому подтвердить, что это вы, нечем.
 
 # As the phone
-# t8ad2f046 =
+t8ad2f046 = Как на телефоне
 
 # Text size
-# t2c041143 =
+t2c041143 = Размер текста
 
 # History
-# t7d96597f =
+t7d96597f = История
 
 # Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
-# tde3581cd =
+tde3581cd = Изменение применяется к сеансам, открытым после него. Размер текста также меняется щипком в терминале; он задаётся только для этого телефона.
 
 # New host keys
-# t48a98987 =
+t48a98987 = Новые ключи хостов
 
 # Accept them
-# t2dd33559 =
+t2dd33559 = Принимать
 
 # Refuse them
-# t2483aa25 =
+t2483aa25 = Отклонять
 
 # Every {n} second | Every {n} seconds
-# t0877f108 =
+t0877f108 =
+    { $n ->
+        [one] Каждую { $n } секунду
+        [few] Каждые { $n } секунды
+        [many] Каждые { $n } секунд
+       *[other] Каждые { $n } секунды
+    }
 
 # Connections
-# t25db363e =
+t25db363e = Подключения
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
-# t25360db5 =
+t25360db5 = Настройка хоста в его редакторе важнее. Изменённый ключ всегда отклоняется: чтобы принять новый, забудьте хост в разделе «Известные хосты».
 
 # SSH keys
-# t7e7cad2b =
+t7e7cad2b = Ключи SSH
 
 # Saved passwords
-# tcdae5fca =
+tcdae5fca = Сохранённые пароли
 
 # The vault is opening…
-# t12986dd4 =
+t12986dd4 = Хранилище открывается…
 
 # Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
-# t8cae68cf =
+t8cae68cf = Пароли и ключи, зашифрованные на этом телефоне; ключ хранилища находится в связке ключей iOS, только на этом телефоне.
 
 # Configuration
-# t1a5ee459 =
+t1a5ee459 = Конфигурация
 
 # hosts.toml, in the app's own folder
-# tcdaeae19 =
+tcdaeae19 = hosts.toml, в собственной папке приложения
 
 # Version
-# t5dcdd537 =
+t5dcdd537 = Версия
 
 # shellwing on GitHub
-# t1fcb667e =
+t1fcb667e = shellwing на GitHub
 
 # Problem
-# t448c5c7c =
+t448c5c7c = Проблема
 
 # No host keys known yet: a host's is kept the first time you connect.
-# ta5bda1d5 =
+ta5bda1d5 = Известных ключей хостов пока нет: ключ хоста сохраняется при первом подключении.
 
 # A hashed name
-# t97c138ac =
+t97c138ac = Хешированное имя
 
 # Forget
-# t6e3fab8c =
+t6e3fab8c = Забыть
 
 # Filter by name
-# tbcb12ca7 =
+tbcb12ca7 = Фильтр по имени
 
 # shellwing may not use that folder.
-# t39f14b58 =
+t39f14b58 = У shellwing нет доступа к этой папке.
 
 # Place
-# t9ad2489c =
+t9ad2489c = Место
 
 # Last synced
-# t2d4f851d =
+t2d4f851d = Последняя синхронизация
 
 # not yet
-# t6d9d33dc =
+t6d9d33dc = ещё не было
 
 # End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
-# tac696b8b =
+tac696b8b = Сквозное шифрование: место хранит только то, что открывается ключом хранилища. Синхронизация идёт каждую минуту, пока shellwing открыт, а также при изменениях.
 
 # {device} asks to join
-# tf44b389c =
+tf44b389c = { $device } просит подключиться
 
 # Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
-# t329319cf =
+t329319cf = Подтверждайте, только если там показан код { $code }. Устройство получит всё содержимое хранилища: пароли, ключи, сниппеты и хосты.
 
 # Devices asking
-# t49658daf =
+t49658daf = Запросы устройств
 
 # Stop syncing on this phone?
-# t7ca0b094 =
+t7ca0b094 = Остановить синхронизацию на этом телефоне?
 
 # The vault stays here, and the copy at the place stays for your other devices.
-# t7b47ff6d =
+t7b47ff6d = Хранилище останется здесь, а копия в месте синхронизации останется для других ваших устройств.
 
 # Waiting for a device that syncs there…
-# tb119de8b =
+tb119de8b = Ожидание устройства, которое синхронизируется там…
 
 # Open shellwing on it: it asks whether to let this phone in.
-# t5b4d0d2f =
+t5b4d0d2f = Откройте на нём shellwing: он спросит, впустить ли этот телефон.
 
 # {device} answered
-# t89d183da =
+t89d183da = Ответ от { $device }
 
 # Approve on {device} if it shows the same code.
-# tbc9bc44d =
+tbc9bc44d = Подтвердите на { $device }, если там показан тот же код.
 
 # Joined: this phone syncs there now.
-# tfb82a94e =
+tfb82a94e = Подключено: теперь этот телефон синхронизируется там.
 
 # This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-# t237ca793 =
+t237ca793 = Теперь этот телефон синхронизируется там. Ключ восстановления открывает хранилище на других ваших устройствах: запишите его.
 
 # Where
-# t91dad0f8 =
+t91dad0f8 = Где
 
 # Password or app password
-# t9cc53273 =
+t9cc53273 = Пароль или пароль приложения
 
 # Endpoint: https://s3.eu-west-1.amazonaws.com
-# t9deef30d =
+t9deef30d = Endpoint: https://s3.eu-west-1.amazonaws.com
 
 # Region (empty: auto)
-# t6689bdf6 =
+t6689bdf6 = Регион (пусто: автоматически)
 
 # Folder in the bucket (optional)
-# t7c04f452 =
+t7c04f452 = Папка в бакете (необязательно)
 
 # Choose another folder…
-# tcba15eff =
+tcba15eff = Выбрать другую папку…
 
 # Sync the vault
-# tff5adbd9 =
+tff5adbd9 = Синхронизировать хранилище
 
 # A folder another device syncs in too, such as shellwing's in iCloud Drive.
-# t679b365b =
+t679b365b = Папка, которую синхронизирует и другое устройство, например папка shellwing в iCloud Drive.
 
 # The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-# t72badf79 =
+t72badf79 = Пароль хранится в хранилище этого телефона, а не в месте синхронизации. Git на iPhone недоступен.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
-# tfd5abd9b =
+tfd5abd9b = Там уже есть хранилище другого устройства. Подключитесь к нему, чтобы получить его хосты, ключи, пароли и сниппеты на этом телефоне.
 
 # Pair with a device that syncs there
-# tb3c83579 =
+tb3c83579 = Сопряжение с устройством, которое синхронизируется там
 
 # Join
-# t30025399 =
+t30025399 = Подключиться
 
 # XXXX-XXXX-…, 13 groups of 4
-# t1d59283c =
+t1d59283c = XXXX-XXXX-…, 13 групп по 4
 
 # Join with the recovery key
-# t20a260d4 =
+t20a260d4 = Подключиться с ключом восстановления
 
 # The passphrase set on the other device
-# t71d27652 =
+t71d27652 = Парольная фраза, заданная на другом устройстве
 
 # Join with the passphrase
-# t97bef16c =
+t97bef16c = Подключиться с парольной фразой
 
 # shellwing did not start.
-# td364ab30 =
+td364ab30 = shellwing не запустился.
 
 # Load an environment
-# tfd1fc961 =
+tfd1fc961 = Загрузить окружение
 
 # Keep it there
-# t3cd7dd37 =
+t3cd7dd37 = Оставить там
 
 # Take it away now
-# te025e6eb =
+te025e6eb = Удалить сейчас
 
 # {name}, placed until the session ends
-# t7fad2b94 =
+t7fad2b94 = { $name }, размещён до завершения сеанса
 
 # Unload {name}
-# t4f418d0b =
+t4f418d0b = Выгрузить { $name }
 
 # {path} stays when the session ends.
-# t3ef97d99 =
+t3ef97d99 = { $path } останется после завершения сеанса.
 
 # {path} taken away.
-# tb65f4b23 =
+tb65f4b23 = { $path } удалён.
 
 # Save {offer} in the vault? It is tried first next time.
-# t3fd5ca20 =
+t3fd5ca20 = Сохранить { $offer } в хранилище? В следующий раз сначала будет испробовано сохранённое.
 
 # Load an environment…
-# t8b267127 =
+t8b267127 = Загрузить окружение…
 
 # Notes…
-# te20662aa =
+te20662aa = Заметки…
 
 # Files…
-# t4b68cf4c =
+t4b68cf4c = Файлы…
 
 # Place a config file…
-# tdc9941e5 =
+tdc9941e5 = Разместить файл конфигурации…
 
 # Install a key on this host…
-# te5f3e2ad =
+te5f3e2ad = Установить ключ на этот хост…
 
 # Left
-# t92773890 =
+t92773890 = Влево
 
 # Up
-# t42f35940 =
+t42f35940 = Вверх
 
 # Down
-# ta4995035 =
+ta4995035 = Вниз
 
 # Right
-# t1e9e9f85 =
+t1e9e9f85 = Вправо
 
 # Hide the keyboard
-# t5cadc433 =
+t5cadc433 = Скрыть клавиатуру
 
 # Show the keyboard
-# t6884a1b4 =
+t6884a1b4 = Показать клавиатуру
 
 # Keys in the vault
-# t9c92000f =
+t9c92000f = Ключи в хранилище
 
 # Make an Ed25519 key and install it
-# t1913ae2f =
+t1913ae2f = Создать ключ Ed25519 и установить его
 
 # A new key
-# t93b96abd =
+t93b96abd = Новый ключ
 
 # Kept in the vault, encrypted; only its public line goes to {host}.
-# teb44b03c =
+teb44b03c = Хранится в хранилище в зашифрованном виде; на { $host } отправляется только строка открытого ключа.
 
 # Install a key
-# td8f1fd20 =
+td8f1fd20 = Установить ключ
 
 # {name} is on {host}: it signs in from now on.
-# tcc1f38f4 =
+tcc1f38f4 = { $name } установлен на { $host }: теперь вход выполняется с ним.
 
 # {name} was on {host} already.
-# t1b42e91e =
+t1b42e91e = { $name } уже был на { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
-# td823bccd =
+td823bccd = Ключей пока нет. Создайте ключ, затем установите его на хост из меню сеанса: после этого вход будет выполняться с ним, без пароля.
 
 # Copied
-# t8dc21305 =
+t8dc21305 = Скопировано
 
 # Share
-# t4f856dd8 =
+t4f856dd8 = Поделиться
 
 # Make a key
-# ta2572fcb =
+ta2572fcb = Создать ключ
 
 # A new Ed25519 key
-# t97812638 =
+t97812638 = Новый ключ Ed25519
 
 # Kept in the vault, encrypted, with your other secrets.
-# t698b5927 =
+t698b5927 = Хранится в хранилище в зашифрованном виде вместе с другими вашими секретами.
 
 # Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
-# t8e21fd8c =
+t8e21fd8c = Пока ничего не сохранено. Когда пароль, введённый в сеансе, подойдёт, shellwing предложит его сохранить.
 
 # A key's passphrase
-# tdf0a144f =
+tdf0a144f = Парольная фраза ключа
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
-# t91c53986 =
+t91c53986 = Запишите его и храните отдельно от этого телефона. Он открывает хранилище, когда больше ничто не может.
 
 # Show the vault's recovery key
-# t45dffa07 =
+t45dffa07 = Показать ключ восстановления хранилища
 
 # Not confirmed: the key stays hidden.
-# t899a4de3 =
+t899a4de3 = Не подтверждено: ключ остаётся скрытым.

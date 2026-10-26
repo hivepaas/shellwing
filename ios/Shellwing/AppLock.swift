@@ -63,14 +63,15 @@ final class AppLock: ObservableObject {
         LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
     }
 
-    var biometry: String {
+    /// Face ID, Touch ID or Optic ID; nil when only the passcode asks.
+    var biometry: String? {
         let ctx = LAContext()
         _ = ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
         switch ctx.biometryType {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
-        default: return tr("Your passcode")
+        default: return nil
         }
     }
 }
@@ -88,7 +89,8 @@ struct LockView: View {
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(Dusk.edge))
                 .overlay(Wing().fill(Dusk.accent).frame(width: 48, height: 48))
             Text(tr("shellwing is locked")).font(.system(size: 24, weight: .semibold))
-            Text(tr("{biometry} or your passcode unlocks it.", ["biometry": "\(lock.biometry)"]))
+            Text(lock.biometry.map { tr("{biometry} or your passcode unlocks it.", ["biometry": $0]) }
+                ?? tr("Your passcode unlocks it."))
                 .font(.system(size: 16))
                 .foregroundStyle(Dusk.label)
                 .multilineTextAlignment(.center)

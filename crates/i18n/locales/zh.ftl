@@ -3887,670 +3887,691 @@ t60f438b7 = 设置未写入：{ $e }
 t00f3a4eb = 主机未写入：{ $e }
 
 # Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
-# t37ca034c =
+t37ca034c = 放置位置：以 / 或 ~/ 开头的文件路径，例如 ~/.kube/config。
 
 # Nothing is at {path}.
-# ta5cf42ea =
+ta5cf42ea = { $path } 处没有任何内容。
 
 # Address: an address is needed.
-# t3f9c8dd7 =
+t3f9c8dd7 = 地址：必须填写地址。
 
 # Address: no spaces.
-# t1a9d2c69 =
+t1a9d2c69 = 地址：不能包含空格。
 
 # Name: another host has this name.
-# tcf956656 =
+tcf956656 = 名称：已有其他主机使用此名称。
 
 # Alias: no spaces.
-# t240468fd =
+t240468fd = 别名：不能包含空格。
 
 # Alias: another host uses this.
-# t6d4194b8 =
+t6d4194b8 = 别名：已有其他主机使用此别名。
 
 # Port: 1 to 65535.
-# t48e7bff2 =
+t48e7bff2 = 端口：1 到 65535。
 
 # User: no spaces.
-# t7b146164 =
+t7b146164 = 用户：不能包含空格。
 
 # Key: choose a key.
-# t96503d0f =
+t96503d0f = 密钥：请选择密钥。
 
 # Keepalive: seconds, 0 to 3600 (0: none).
-# t868fa0cd =
+t868fa0cd = 保活：秒数，0 到 3600（0：不启用）。
 
 # Jump: a host cannot jump through itself.
-# tf5b576a7 =
+tf5b576a7 = 跳板：主机不能通过自身跳转。
 
 # Forward {forward}: {e}
-# t575e8c34 =
+t575e8c34 = 转发 { $forward }：{ $e }
 
 # the password for {target}
-# t33a923dd =
+t33a923dd = { $target } 的密码
 
 # the passphrase of {path}
-# t847f4536 =
+t847f4536 = { $path } 的密码短语
 
 # A full-screen program is running: leave it, then try again.
-# t1dca493f =
+t1dca493f = 正在运行全屏程序：请先退出，然后重试。
 
 # Unlock shellwing
-# t25d6e4bc =
-
-# Your passcode
-# t7c17b57e =
+t25d6e4bc = 解锁 shellwing
 
 # {biometry} or your passcode unlocks it.
-# t22b7de26 =
+t22b7de26 = 可使用 { $biometry } 或你的设备密码解锁。
+
+# Your passcode unlocks it.
+t22c93782 = 可使用你的设备密码解锁。
 
 # {n} session stays connected underneath. | {n} sessions stay connected underneath.
-# t8f2f0709 =
+t8f2f0709 =
+    { $n ->
+       *[other] 仍有 { $n } 个会话在后台保持连接。
+    }
 
 # No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
-# t773e80be =
+t773e80be = 还没有配置文件：配置文件是保存在保险库中的文件（例如 kubeconfig、.npmrc），可从会话中放置到主机上。
 
 # stays
-# t6210bca9 =
+t6210bca9 = 保留
 
 # Placed to stay
-# t326d488a =
+t326d488a = 放置后保留
 
 # Placed, it stays when the session ends.
-# t596dc3ba =
+t596dc3ba = 放置后，会话结束时它仍会保留。
 
 # Placed, it is taken away when the session ends.
-# tcb169849 =
+tcb169849 = 放置后，会话结束时它会被移除。
 
 # Binary, {size}: kept as it is.
-# td3506722 =
+td3506722 = 二进制文件，{ $size }：按原样保存。
 
 # Replace from Files…
-# t910b03ca =
+t910b03ca = 从“文件”替换…
 
 # Only a text file can be imported here.
-# t94955dee =
+t94955dee = 此处只能导入文本文件。
 
 # Permissions: three digits from 0 to 7, such as 600.
-# tad710134 =
+tad710134 = 权限：三位 0 到 7 的数字，例如 600。
 
 # No config files for this host. Keep them in Library › Files.
-# t31aa06de =
+t31aa06de = 此主机没有配置文件。请在“资料库 › 文件”中保存。
 
 # Place a config file
-# t2bd139bb =
+t2bd139bb = 放置配置文件
 
 # Replace the one placed until the session ends
-# t72427900 =
+t72427900 = 替换已放置的文件，直到会话结束
 
 # Place it until the session ends
-# tf442be28 =
+tf442be28 = 放置到会话结束为止
 
 # Replace it until the session ends
-# t96406163 =
+t96406163 = 替换，直到会话结束
 
 # Cannot place {name}: {error}
-# t816e11b0 =
+t816e11b0 = 无法放置 { $name }：{ $error }
 
 # {name} is at {path} until the session ends.
-# t10182ed5 =
+t10182ed5 = { $name } 已放置到 { $path }，直到会话结束。
 
 # {name} is at {path}.
-# t3b2e2230 =
+t3b2e2230 = { $name } 已放置到 { $path }。
 
 # Nothing here.
-# ta7006e9a =
+ta7006e9a = 这里什么都没有。
 
 # Upload from Files…
-# t3efaa7bd =
+t3efaa7bd = 从“文件”上传…
 
 # Hidden files
-# t3f0de492 =
+t3f0de492 = 隐藏文件
 
 # Add
-# t9dc3aa14 =
+t9dc3aa14 = 添加
 
 # Make
-# t486bedcf =
+t486bedcf = 创建
 
 # The folder and everything in it are deleted on {host}.
-# t200fdede =
+t200fdede = 将删除 { $host } 上的此文件夹及其中的所有内容。
 
 # It is deleted on {host}.
-# td57ed776 =
+td57ed776 = 将从 { $host } 上删除它。
 
 # Download the folder
-# t1c6b8ca2 =
+t1c6b8ca2 = 下载此文件夹
 
 # Keep in the vault
-# t08dcb490 =
+t08dcb490 = 保存到保险库
 
 # Copy the path
-# t095d064e =
+t095d064e = 复制路径
 
 # A name without /, please.
-# t7055c52a =
+t7055c52a = 请输入不含 / 的名称。
 
 # Making {name}…
-# t431597d3 =
+t431597d3 = 正在创建 { $name }…
 
 # Renaming…
-# t87125000 =
+t87125000 = 正在重命名…
 
 # Deleting {name}…
-# ta17d02e6 =
+ta17d02e6 = 正在删除 { $name }…
 
 # {name} deleted.
-# tf36570a5 =
+tf36570a5 = 已删除 { $name }。
 
 # Downloading {name}…
-# t49917320 =
+t49917320 = 正在下载 { $name }…
 
 # Opening {name}…
-# t24b03450 =
+t24b03450 = 正在打开 { $name }…
 
 # Uploading {name}…
-# t763593ef =
+t763593ef = 正在上传 { $name }…
 
 # Uploading {n} item… | Uploading {n} items…
-# t4d21b20c =
+t4d21b20c =
+    { $n ->
+       *[other] 正在上传 { $n } 项…
+    }
 
 # {name} uploaded.
-# t0b81da1e =
+t0b81da1e = 已上传 { $name }。
 
 # {n} item uploaded. | {n} items uploaded.
-# tbf7cc840 =
+tbf7cc840 =
+    { $n ->
+       *[other] 已上传 { $n } 项。
+    }
 
 # Keeping {name}…
-# tbb0f5ffb =
+tbb0f5ffb = 正在保存 { $name }…
 
 # {name} is in the vault: Library › Files.
-# t71be4d4c =
+t71be4d4c = { $name } 已保存到保险库：见“资料库 › 文件”。
 
 # {path} changed on {host} since it was opened.
-# ta4924204 =
+ta4924204 = { $path } 在打开后已在 { $host } 上被更改。
 
 # Replace it with this
-# tf329d9b0 =
+tf329d9b0 = 用此版本替换
 
 # Not saved: {error}
-# t2fe29775 =
+t2fe29775 = 未保存：{ $error }
 
 # A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
-# t3ff468c2 =
+t3ff468c2 = 主机自身的主题优先于其分组的主题。在主机编辑器中选择该分组，即可将主机加入其中。
 
 # Delete {group}?
-# t6801beba =
+t6801beba = 删除 { $group }？
 
 # Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
-# t8d5eff39 =
+t8d5eff39 =
+    { $n ->
+       *[other] 删除 { $group }？其中的 { $n } 台主机会保留，但不再属于任何分组。
+    }
 
 # No color
-# te96206b1 =
+te96206b1 = 无颜色
 
 # Delete {host} from hosts.toml?
-# tcee76080 =
+tcee76080 = 从 hosts.toml 中删除 { $host }？
 
 # as the server says
-# ta204abe7 =
+ta204abe7 = 由服务器决定
 
 # Alias
-# t22e1f2f7 =
+t22e1f2f7 = 别名
 
 # Make a key for this host
-# tfc47113a =
+tfc47113a = 为此主机生成密钥
 
 # Make a key for {host}
-# tc4091336 =
+tc4091336 = 为 { $host } 生成密钥
 
 # {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
-# t14c6a565 =
+t14c6a565 = { $name } 是新密钥：主机上还没有它。请先用其他方式（密码）连接一次，然后从会话菜单中安装它。
 
 # Tries the keys in the vault, then asks for a password, like ssh.
-# t4c5dd8b2 =
+t4c5dd8b2 = 先尝试保险库中的密钥，再询问密码，与 ssh 相同。
 
 # A key file of another device: this phone signs in with the vault's keys.
-# t85abc601 =
+t85abc601 = 另一台设备上的密钥文件：此手机使用保险库中的密钥登录。
 
 # Uses the keys in an ssh-agent: a desktop's; a phone has none.
-# t4b96b415 =
+t4b96b415 = 使用 ssh-agent 中的密钥：仅桌面设备有，手机上没有。
 
 # Add a jump
-# t16c79e2d =
+t16c79e2d = 添加跳板
 
 # Straight to the host. A jump goes through another host first (a bastion).
-# t31e98c98 =
+t31e98c98 = 直接连接到主机。跳板会先经由另一台主机（堡垒机）。
 
 # Favorite: listed first
-# t7bd2a9c8 =
+t7bd2a9c8 = 收藏：排在最前
 
 # Host keys
-# t2f5a3205 =
+t2f5a3205 = 主机密钥
 
 # As in Settings
-# t46210079 =
+t46210079 = 跟随设置
 
 # Accept new ones
-# tc99d0b88 =
+tc99d0b88 = 接受新密钥
 
 # Known ones only
-# t2234971d =
+t2234971d = 仅限已知密钥
 
 # Keepalive (s)
-# t13e524f5 =
+t13e524f5 = 保活（秒）
 
 # as in Settings
-# tf8e77e19 =
+tf8e77e19 = 跟随设置
 
 # Another session
-# t4d6f66b8 =
+t4d6f66b8 = 再开一个会话
 
 # Edit {name}
-# t4688b082 =
+t4688b082 = 编辑 { $name }
 
 # Add a host
-# t38d39c8f =
+t38d39c8f = 添加主机
 
 # OK
-# t85e4b82f =
+t85e4b82f = 好
 
 # Add one with +, or sync the hosts of your other devices.
-# tceb03600 =
+tceb03600 = 用 + 添加，或同步你其他设备上的主机。
 
 # the Keychain said {status}
-# tc1738579 =
+tc1738579 = 钥匙串返回了 { $status }
 
 # Envs
-# tf645a165 =
+tf645a165 = 环境
 
 # Part
-# te3596034 =
+te3596034 = 栏目
 
 # Library
-# ta8532270 =
+ta8532270 = 资料库
 
 # No snippets yet. Make one with +, or sync those of your other devices.
-# tf81b77f9 =
+tf81b77f9 = 还没有代码片段。用 + 新建，或同步你其他设备上的代码片段。
 
 # No snippets for this host.
-# tbf3767c5 =
+tbf3767c5 = 此主机没有代码片段。
 
 # Filter snippets
-# tbb9b10c7 =
+tbb9b10c7 = 筛选代码片段
 
 # Offered
-# t2bd643c4 =
+t2bd643c4 = 适用于
 
 # Everywhere
-# t327a596f =
+t327a596f = 所有主机
 
 # Group: {group}
-# t0d904ce9 =
+t0d904ce9 = 分组：{ $group }
 
 # Host: {host}
-# t3fb3f6b3 =
+t3fb3f6b3 = 主机：{ $host }
 
 # Press Enter after it
-# te4ce8331 =
+te4ce8331 = 输入后按 Enter
 
 # Command
-# tc67c8f52 =
+tc67c8f52 = 命令
 
 # {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
-# td02256f4 =
+td02256f4 = {"{{"}name{"}}"} 会在运行时询问值；{"{{"}host{"}}"}、{"{{"}user{"}}"} 和 {"{{"}address{"}}"} 来自会话。
 
 # Runs with
-# te90c2175 =
+te90c2175 = 运行时使用的环境
 
 # Their variables are given to it alone, in a subshell, without showing their values.
-# t4ef64333 =
+t4ef64333 = 其变量只在子 shell 中单独提供给它，且不显示变量值。
 
 # Run
-# t8d57e66a =
+t8d57e66a = 运行
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
-# tbcdba796 =
+tbcdba796 = 还没有环境：环境是保存在保险库中的变量，可加载到会话的 shell 中，且不显示其值。
 
 # NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-# t36bfa774 =
+t36bfa774 = 每行一个 NAME=value。= 后为空的名称保留原有的值；值永远不会在此显示。
 
 # No notes yet.
-# t4be168d5 =
+t4be168d5 = 还没有笔记。
 
 # Untitled
-# t2e35a678 =
+t2e35a678 = 无标题
 
 # this host
-# t4b4cbe3d =
+t4b4cbe3d = 此主机
 
 # Filter notes
-# tde67183a =
+tde67183a = 筛选笔记
 
 # Markdown
-# tf651116c =
+tf651116c = Markdown
 
 # Show a sensitive note
-# t905684dd =
+t905684dd = 显示敏感笔记
 
 # For hosts…
-# t4d6ecc3d =
+t4d6ecc3d = 适用主机…
 
 # Insert an image…
-# t2d3653b2 =
+t2d3653b2 = 插入图片…
 
 # Note
-# t1440c15d =
+t1440c15d = 笔记
 
 # Delete this note?
-# t9d3e3253 =
+t9d3e3253 = 删除这条笔记？
 
 # That image cannot be read.
-# tc5fceb9b =
+tc5fceb9b = 无法读取该图片。
 
 # For hosts
-# t350fa483 =
+t350fa483 = 适用主机
 
 # Image
-# t590ca79a =
+t590ca79a = 图片
 
 # No sessions open
-# t483ac645 =
+t483ac645 = 没有打开的会话
 
 # Open one from Hosts.
-# t7a72807e =
+t7a72807e = 请从“主机”中打开一个。
 
 # Sessions
-# tb69a8aec =
+tb69a8aec = 会话
 
 # Connect again
-# t05dc6981 =
+t05dc6981 = 重新连接
 
 # {n} minute | {n} minutes
-# tf77c9aaa =
+tf77c9aaa =
+    { $n ->
+       *[other] { $n } 分钟
+    }
 
 # Lock
-# t71b42d62 =
+t71b42d62 = 锁定
 
 # When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
-# taaa2c58c =
+taaa2c58c = shellwing 启动时，以及在后台超过这段时间后，它会隐藏，直到 { $biometry } 或你的设备密码确认是你本人。这是针对手机未锁屏的轻量防护：会话仍在后台继续运行。
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = shellwing 启动时，以及在后台超过这段时间后，它会隐藏，直到你的设备密码确认是你本人。这是针对手机未锁屏的轻量防护：会话仍在后台继续运行。
 
 # This phone has no passcode, so nothing could ask that it is you.
-# td366e372 =
+td366e372 = 此手机未设置设备密码，因此无法确认是你本人。
 
 # As the phone
-# t8ad2f046 =
+t8ad2f046 = 跟随手机
 
 # Text size
-# t2c041143 =
+t2c041143 = 文字大小
 
 # History
-# t7d96597f =
+t7d96597f = 历史记录
 
 # Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
-# tde3581cd =
+tde3581cd = 更改后新打开的会话才会采用。在终端上双指捏合也可调整文字大小；该大小仅对此手机生效。
 
 # New host keys
-# t48a98987 =
+t48a98987 = 新主机密钥
 
 # Accept them
-# t2dd33559 =
+t2dd33559 = 接受
 
 # Refuse them
-# t2483aa25 =
+t2483aa25 = 拒绝
 
 # Every {n} second | Every {n} seconds
-# t0877f108 =
+t0877f108 =
+    { $n ->
+       *[other] 每 { $n } 秒
+    }
 
 # Connections
-# t25db363e =
+t25db363e = 连接
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
-# t25360db5 =
+t25360db5 = 主机在其编辑器中的设置优先。已更改的密钥始终会被拒绝：请在“已知主机”中忘记该主机，以接受其新密钥。
 
 # SSH keys
-# t7e7cad2b =
+t7e7cad2b = SSH 密钥
 
 # Saved passwords
-# tcdae5fca =
+tcdae5fca = 已保存的密码
 
 # The vault is opening…
-# t12986dd4 =
+t12986dd4 = 保险库正在打开…
 
 # Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
-# t8cae68cf =
+t8cae68cf = 密码和密钥加密保存在此手机上；其密钥位于 iOS 钥匙串中，仅保存在此手机上。
 
 # Configuration
-# t1a5ee459 =
+t1a5ee459 = 配置
 
 # hosts.toml, in the app's own folder
-# tcdaeae19 =
+tcdaeae19 = hosts.toml，位于应用自己的文件夹中
 
 # Version
-# t5dcdd537 =
+t5dcdd537 = 版本
 
 # shellwing on GitHub
-# t1fcb667e =
+t1fcb667e = GitHub 上的 shellwing
 
 # Problem
-# t448c5c7c =
+t448c5c7c = 问题
 
 # No host keys known yet: a host's is kept the first time you connect.
-# ta5bda1d5 =
+ta5bda1d5 = 还没有已知的主机密钥：首次连接时会保存主机的密钥。
 
 # A hashed name
-# t97c138ac =
+t97c138ac = 已哈希的名称
 
 # Forget
-# t6e3fab8c =
+t6e3fab8c = 忘记
 
 # Filter by name
-# tbcb12ca7 =
+tbcb12ca7 = 按名称筛选
 
 # shellwing may not use that folder.
-# t39f14b58 =
+t39f14b58 = shellwing 无权使用该文件夹。
 
 # Place
-# t9ad2489c =
+t9ad2489c = 位置
 
 # Last synced
-# t2d4f851d =
+t2d4f851d = 上次同步
 
 # not yet
-# t6d9d33dc =
+t6d9d33dc = 尚未同步
 
 # End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
-# tac696b8b =
+tac696b8b = 端到端加密：该位置只保存保险库密钥才能打开的内容。shellwing 打开时每分钟同步一次，有更改时也会同步。
 
 # {device} asks to join
-# tf44b389c =
+tf44b389c = { $device } 请求加入
 
 # Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
-# t329319cf =
+t329319cf = 仅当它显示 { $code } 时才批准。它将获得保险库中的所有内容：密码、密钥、代码片段和主机。
 
 # Devices asking
-# t49658daf =
+t49658daf = 请求加入的设备
 
 # Stop syncing on this phone?
-# t7ca0b094 =
+t7ca0b094 = 在此手机上停止同步？
 
 # The vault stays here, and the copy at the place stays for your other devices.
-# t7b47ff6d =
+t7b47ff6d = 保险库仍保留在这里，该位置的副本也会保留，供你的其他设备使用。
 
 # Waiting for a device that syncs there…
-# tb119de8b =
+tb119de8b = 正在等待在那里同步的设备…
 
 # Open shellwing on it: it asks whether to let this phone in.
-# t5b4d0d2f =
+t5b4d0d2f = 在那台设备上打开 shellwing：它会询问是否允许此手机加入。
 
 # {device} answered
-# t89d183da =
+t89d183da = { $device } 已回应
 
 # Approve on {device} if it shows the same code.
-# tbc9bc44d =
+tbc9bc44d = 如果 { $device } 显示相同的代码，请在那台设备上批准。
 
 # Joined: this phone syncs there now.
-# tfb82a94e =
+tfb82a94e = 已加入：此手机现在会同步到那里。
 
 # This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-# t237ca793 =
+t237ca793 = 此手机现在会同步到那里。恢复密钥可在你的其他设备上打开保险库：请把它记下来。
 
 # Where
-# t91dad0f8 =
+t91dad0f8 = 存放位置
 
 # Password or app password
-# t9cc53273 =
+t9cc53273 = 密码或应用专用密码
 
 # Endpoint: https://s3.eu-west-1.amazonaws.com
-# t9deef30d =
+t9deef30d = 端点：https://s3.eu-west-1.amazonaws.com
 
 # Region (empty: auto)
-# t6689bdf6 =
+t6689bdf6 = 区域（留空：自动）
 
 # Folder in the bucket (optional)
-# t7c04f452 =
+t7c04f452 = 存储桶中的文件夹（可选）
 
 # Choose another folder…
-# tcba15eff =
+tcba15eff = 选择其他文件夹…
 
 # Sync the vault
-# tff5adbd9 =
+tff5adbd9 = 同步保险库
 
 # A folder another device syncs in too, such as shellwing's in iCloud Drive.
-# t679b365b =
+t679b365b = 其他设备也在其中同步的文件夹，例如 iCloud Drive 中 shellwing 的文件夹。
 
 # The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-# t72badf79 =
+t72badf79 = 密码保存在此手机的保险库中，绝不会存放到该位置。iPhone 上不提供 Git。
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
-# tfd5abd9b =
+tfd5abd9b = 那里有另一台设备的保险库。加入它，即可在此手机上获得其主机、密钥、密码和代码片段。
 
 # Pair with a device that syncs there
-# tb3c83579 =
+tb3c83579 = 与在那里同步的设备配对
 
 # Join
-# t30025399 =
+t30025399 = 加入
 
 # XXXX-XXXX-…, 13 groups of 4
-# t1d59283c =
+t1d59283c = XXXX-XXXX-…，13 组，每组 4 个字符
 
 # Join with the recovery key
-# t20a260d4 =
+t20a260d4 = 用恢复密钥加入
 
 # The passphrase set on the other device
-# t71d27652 =
+t71d27652 = 在另一台设备上设置的密码短语
 
 # Join with the passphrase
-# t97bef16c =
+t97bef16c = 用密码短语加入
 
 # shellwing did not start.
-# td364ab30 =
+td364ab30 = shellwing 未能启动。
 
 # Load an environment
-# tfd1fc961 =
+tfd1fc961 = 加载环境
 
 # Keep it there
-# t3cd7dd37 =
+t3cd7dd37 = 保留在那里
 
 # Take it away now
-# te025e6eb =
+te025e6eb = 立即移除
 
 # {name}, placed until the session ends
-# t7fad2b94 =
+t7fad2b94 = { $name }，已放置到会话结束为止
 
 # Unload {name}
-# t4f418d0b =
+t4f418d0b = 卸载 { $name }
 
 # {path} stays when the session ends.
-# t3ef97d99 =
+t3ef97d99 = 会话结束后 { $path } 仍会保留。
 
 # {path} taken away.
-# tb65f4b23 =
+tb65f4b23 = 已移除 { $path }。
 
 # Save {offer} in the vault? It is tried first next time.
-# t3fd5ca20 =
+t3fd5ca20 = 将 { $offer } 保存到保险库？下次会先尝试它。
 
 # Load an environment…
-# t8b267127 =
+t8b267127 = 加载环境…
 
 # Notes…
-# te20662aa =
+te20662aa = 笔记…
 
 # Files…
-# t4b68cf4c =
+t4b68cf4c = 文件…
 
 # Place a config file…
-# tdc9941e5 =
+tdc9941e5 = 放置配置文件…
 
 # Install a key on this host…
-# te5f3e2ad =
+te5f3e2ad = 在此主机上安装密钥…
 
 # Left
-# t92773890 =
+t92773890 = 左
 
 # Up
-# t42f35940 =
+t42f35940 = 上
 
 # Down
-# ta4995035 =
+ta4995035 = 下
 
 # Right
-# t1e9e9f85 =
+t1e9e9f85 = 右
 
 # Hide the keyboard
-# t5cadc433 =
+t5cadc433 = 隐藏键盘
 
 # Show the keyboard
-# t6884a1b4 =
+t6884a1b4 = 显示键盘
 
 # Keys in the vault
-# t9c92000f =
+t9c92000f = 保险库中的密钥
 
 # Make an Ed25519 key and install it
-# t1913ae2f =
+t1913ae2f = 生成 Ed25519 密钥并安装
 
 # A new key
-# t93b96abd =
+t93b96abd = 新密钥
 
 # Kept in the vault, encrypted; only its public line goes to {host}.
-# teb44b03c =
+teb44b03c = 加密保存在保险库中；只有其公钥行会发送到 { $host }。
 
 # Install a key
-# td8f1fd20 =
+td8f1fd20 = 安装密钥
 
 # {name} is on {host}: it signs in from now on.
-# tcc1f38f4 =
+tcc1f38f4 = { $name } 已安装到 { $host }：今后将用它登录。
 
 # {name} was on {host} already.
-# t1b42e91e =
+t1b42e91e = { $host } 上已有 { $name }。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
-# td823bccd =
+td823bccd = 还没有密钥。请生成一个，然后从会话菜单中将其安装到主机上：此后无需密码即可用它登录。
 
 # Copied
-# t8dc21305 =
+t8dc21305 = 已复制
 
 # Share
-# t4f856dd8 =
+t4f856dd8 = 共享
 
 # Make a key
-# ta2572fcb =
+ta2572fcb = 生成密钥
 
 # A new Ed25519 key
-# t97812638 =
+t97812638 = 新的 Ed25519 密钥
 
 # Kept in the vault, encrypted, with your other secrets.
-# t698b5927 =
+t698b5927 = 与你的其他机密信息一起加密保存在保险库中。
 
 # Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
-# t8e21fd8c =
+t8e21fd8c = 还没有保存任何内容。在会话中输入的密码有效时，shellwing 会提议保存它。
 
 # A key's passphrase
-# tdf0a144f =
+tdf0a144f = 密钥的密码短语
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
-# t91c53986 =
+t91c53986 = 请把它记下来，并与此手机分开保管。在其他方式都无法打开保险库时，它可以打开。
 
 # Show the vault's recovery key
-# t45dffa07 =
+t45dffa07 = 显示保险库的恢复密钥
 
 # Not confirmed: the key stays hidden.
-# t899a4de3 =
+t899a4de3 = 未确认：密钥保持隐藏。

@@ -1486,8 +1486,8 @@ t33a923dd = the password for { $target }
 t847f4536 = the passphrase of { $path }
 t1dca493f = A full-screen program is running: leave it, then try again.
 t25d6e4bc = Unlock shellwing
-t7c17b57e = Your passcode
 t22b7de26 = { $biometry } or your passcode unlocks it.
+t22c93782 = Your passcode unlocks it.
 t8f2f0709 =
     { $n ->
         [one] { $n } session stays connected underneath.
@@ -1618,6 +1618,7 @@ tf77c9aaa =
     }
 t71b42d62 = Lock
 taaa2c58c = When shellwing starts, and after this long in the background, it hides until { $biometry } or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
 td366e372 = This phone has no passcode, so nothing could ask that it is you.
 t8ad2f046 = As the phone
 t2c041143 = Text size

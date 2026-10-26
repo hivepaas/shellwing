@@ -3887,670 +3887,691 @@ t60f438b7 = 設定を書き込めませんでした：{ $e }
 t00f3a4eb = ホストを書き込めませんでした：{ $e }
 
 # Where it goes: a file's path from / or from ~/, such as ~/.kube/config.
-# t37ca034c =
+t37ca034c = 配置先：/ または ~/ から始まるファイルのパス（例：~/.kube/config）。
 
 # Nothing is at {path}.
-# ta5cf42ea =
+ta5cf42ea = { $path } には何もありません。
 
 # Address: an address is needed.
-# t3f9c8dd7 =
+t3f9c8dd7 = アドレス：アドレスが必要です。
 
 # Address: no spaces.
-# t1a9d2c69 =
+t1a9d2c69 = アドレス：スペースは使えません。
 
 # Name: another host has this name.
-# tcf956656 =
+tcf956656 = 名前：同じ名前のホストがすでにあります。
 
 # Alias: no spaces.
-# t240468fd =
+t240468fd = エイリアス：スペースは使えません。
 
 # Alias: another host uses this.
-# t6d4194b8 =
+t6d4194b8 = エイリアス：別のホストが使用しています。
 
 # Port: 1 to 65535.
-# t48e7bff2 =
+t48e7bff2 = ポート：1〜65535。
 
 # User: no spaces.
-# t7b146164 =
+t7b146164 = ユーザー：スペースは使えません。
 
 # Key: choose a key.
-# t96503d0f =
+t96503d0f = 鍵：鍵を選んでください。
 
 # Keepalive: seconds, 0 to 3600 (0: none).
-# t868fa0cd =
+t868fa0cd = キープアライブ：秒数、0〜3600（0：なし）。
 
 # Jump: a host cannot jump through itself.
-# tf5b576a7 =
+tf5b576a7 = 踏み台：ホストは自分自身を経由できません。
 
 # Forward {forward}: {e}
-# t575e8c34 =
+t575e8c34 = フォワード { $forward }：{ $e }
 
 # the password for {target}
-# t33a923dd =
+t33a923dd = { $target } のパスワード
 
 # the passphrase of {path}
-# t847f4536 =
+t847f4536 = { $path } のパスフレーズ
 
 # A full-screen program is running: leave it, then try again.
-# t1dca493f =
+t1dca493f = フルスクリーンのプログラムが動作中です。終了してからもう一度お試しください。
 
 # Unlock shellwing
-# t25d6e4bc =
-
-# Your passcode
-# t7c17b57e =
+t25d6e4bc = shellwing のロックを解除
 
 # {biometry} or your passcode unlocks it.
-# t22b7de26 =
+t22b7de26 = { $biometry } またはパスコードでロックを解除できます。
+
+# Your passcode unlocks it.
+t22c93782 = パスコードでロックを解除できます。
 
 # {n} session stays connected underneath. | {n} sessions stay connected underneath.
-# t8f2f0709 =
+t8f2f0709 =
+    { $n ->
+       *[other] { $n } 件のセッションは裏で接続されたままです。
+    }
 
 # No config files yet: files kept in the vault (a kubeconfig, an .npmrc), placed on a host from a session.
-# t773e80be =
+t773e80be = 設定ファイルはまだありません。保管庫に保存するファイル（kubeconfig、.npmrc など）で、セッションからホストに配置します。
 
 # stays
-# t6210bca9 =
+t6210bca9 = 残す
 
 # Placed to stay
-# t326d488a =
+t326d488a = 配置後も残す
 
 # Placed, it stays when the session ends.
-# t596dc3ba =
+t596dc3ba = 配置したファイルはセッション終了後も残ります。
 
 # Placed, it is taken away when the session ends.
-# tcb169849 =
+tcb169849 = 配置したファイルはセッション終了時に削除されます。
 
 # Binary, {size}: kept as it is.
-# td3506722 =
+td3506722 = バイナリ（{ $size }）：そのまま保存されます。
 
 # Replace from Files…
-# t910b03ca =
+t910b03ca = 「ファイル」から置き換え…
 
 # Only a text file can be imported here.
-# t94955dee =
+t94955dee = ここではテキストファイルのみインポートできます。
 
 # Permissions: three digits from 0 to 7, such as 600.
-# tad710134 =
+tad710134 = パーミッション：0〜7 の数字 3 桁（例：600）。
 
 # No config files for this host. Keep them in Library › Files.
-# t31aa06de =
+t31aa06de = このホスト用の設定ファイルがありません。ライブラリ › ファイル で保存してください。
 
 # Place a config file
-# t2bd139bb =
+t2bd139bb = 設定ファイルを配置
 
 # Replace the one placed until the session ends
-# t72427900 =
+t72427900 = 配置済みのファイルをセッション終了まで置き換える
 
 # Place it until the session ends
-# tf442be28 =
+tf442be28 = セッション終了まで配置する
 
 # Replace it until the session ends
-# t96406163 =
+t96406163 = セッション終了まで置き換える
 
 # Cannot place {name}: {error}
-# t816e11b0 =
+t816e11b0 = { $name } を配置できません：{ $error }
 
 # {name} is at {path} until the session ends.
-# t10182ed5 =
+t10182ed5 = { $name } をセッション終了まで { $path } に配置しました。
 
 # {name} is at {path}.
-# t3b2e2230 =
+t3b2e2230 = { $name } を { $path } に配置しました。
 
 # Nothing here.
-# ta7006e9a =
+ta7006e9a = 何もありません。
 
 # Upload from Files…
-# t3efaa7bd =
+t3efaa7bd = 「ファイル」からアップロード…
 
 # Hidden files
-# t3f0de492 =
+t3f0de492 = 隠しファイル
 
 # Add
-# t9dc3aa14 =
+t9dc3aa14 = 追加
 
 # Make
-# t486bedcf =
+t486bedcf = 作成
 
 # The folder and everything in it are deleted on {host}.
-# t200fdede =
+t200fdede = { $host } 上のフォルダとその中身がすべて削除されます。
 
 # It is deleted on {host}.
-# td57ed776 =
+td57ed776 = { $host } 上から削除されます。
 
 # Download the folder
-# t1c6b8ca2 =
+t1c6b8ca2 = フォルダをダウンロード
 
 # Keep in the vault
-# t08dcb490 =
+t08dcb490 = 保管庫に保存
 
 # Copy the path
-# t095d064e =
+t095d064e = パスをコピー
 
 # A name without /, please.
-# t7055c52a =
+t7055c52a = / を含まない名前にしてください。
 
 # Making {name}…
-# t431597d3 =
+t431597d3 = { $name } を作成中…
 
 # Renaming…
-# t87125000 =
+t87125000 = 名前を変更中…
 
 # Deleting {name}…
-# ta17d02e6 =
+ta17d02e6 = { $name } を削除中…
 
 # {name} deleted.
-# tf36570a5 =
+tf36570a5 = { $name } を削除しました。
 
 # Downloading {name}…
-# t49917320 =
+t49917320 = { $name } をダウンロード中…
 
 # Opening {name}…
-# t24b03450 =
+t24b03450 = { $name } を開いています…
 
 # Uploading {name}…
-# t763593ef =
+t763593ef = { $name } をアップロード中…
 
 # Uploading {n} item… | Uploading {n} items…
-# t4d21b20c =
+t4d21b20c =
+    { $n ->
+       *[other] { $n } 件をアップロード中…
+    }
 
 # {name} uploaded.
-# t0b81da1e =
+t0b81da1e = { $name } をアップロードしました。
 
 # {n} item uploaded. | {n} items uploaded.
-# tbf7cc840 =
+tbf7cc840 =
+    { $n ->
+       *[other] { $n } 件をアップロードしました。
+    }
 
 # Keeping {name}…
-# tbb0f5ffb =
+tbb0f5ffb = { $name } を保管庫に保存中…
 
 # {name} is in the vault: Library › Files.
-# t71be4d4c =
+t71be4d4c = { $name } を保管庫に保存しました：ライブラリ › ファイル
 
 # {path} changed on {host} since it was opened.
-# ta4924204 =
+ta4924204 = { $path } は開いた後に { $host } 上で変更されました。
 
 # Replace it with this
-# tf329d9b0 =
+tf329d9b0 = これで置き換える
 
 # Not saved: {error}
-# t2fe29775 =
+t2fe29775 = 保存できませんでした：{ $error }
 
 # A host's own theme wins over its group's. Choose the group in a host's editor to put the host in it.
-# t3ff468c2 =
+t3ff468c2 = ホスト自身のテーマがグループのテーマより優先されます。ホストをグループに入れるには、ホストのエディタでグループを選んでください。
 
 # Delete {group}?
-# t6801beba =
+t6801beba = { $group } を削除しますか？
 
 # Delete {group}? Its {n} host stays, in no group. | Delete {group}? Its {n} hosts stay, in no group.
-# t8d5eff39 =
+t8d5eff39 =
+    { $n ->
+       *[other] { $group } を削除しますか？所属する { $n } 件のホストはグループなしで残ります。
+    }
 
 # No color
-# te96206b1 =
+te96206b1 = 色なし
 
 # Delete {host} from hosts.toml?
-# tcee76080 =
+tcee76080 = { $host } を hosts.toml から削除しますか？
 
 # as the server says
-# ta204abe7 =
+ta204abe7 = サーバーの既定
 
 # Alias
-# t22e1f2f7 =
+t22e1f2f7 = エイリアス
 
 # Make a key for this host
-# tfc47113a =
+tfc47113a = このホスト用の鍵を生成
 
 # Make a key for {host}
-# tc4091336 =
+tc4091336 = { $host } 用の鍵を生成
 
 # {name} is new: the host does not have it yet. Connect once another way (a password), then install it from the session's menu.
-# t14c6a565 =
+t14c6a565 = { $name } は新しい鍵で、ホストにはまだ登録されていません。一度別の方法（パスワード）で接続してから、セッションのメニューでインストールしてください。
 
 # Tries the keys in the vault, then asks for a password, like ssh.
-# t4c5dd8b2 =
+t4c5dd8b2 = ssh と同様に、保管庫の鍵を試し、最後にパスワードを尋ねます。
 
 # A key file of another device: this phone signs in with the vault's keys.
-# t85abc601 =
+t85abc601 = 別のデバイスの鍵ファイルです。この iPhone は保管庫の鍵でサインインします。
 
 # Uses the keys in an ssh-agent: a desktop's; a phone has none.
-# t4b96b415 =
+t4b96b415 = ssh-agent の鍵を使います（デスクトップのもの。iPhone にはありません）。
 
 # Add a jump
-# t16c79e2d =
+t16c79e2d = 踏み台を追加
 
 # Straight to the host. A jump goes through another host first (a bastion).
-# t31e98c98 =
+t31e98c98 = ホストに直接接続します。踏み台を追加すると、先に別のホスト（bastion）を経由します。
 
 # Favorite: listed first
-# t7bd2a9c8 =
+t7bd2a9c8 = お気に入り：先頭に表示
 
 # Host keys
-# t2f5a3205 =
+t2f5a3205 = ホスト鍵
 
 # As in Settings
-# t46210079 =
+t46210079 = 設定どおり
 
 # Accept new ones
-# tc99d0b88 =
+tc99d0b88 = 新しい鍵を受け入れる
 
 # Known ones only
-# t2234971d =
+t2234971d = 既知の鍵のみ
 
 # Keepalive (s)
-# t13e524f5 =
+t13e524f5 = キープアライブ（秒）
 
 # as in Settings
-# tf8e77e19 =
+tf8e77e19 = 設定どおり
 
 # Another session
-# t4d6f66b8 =
+t4d6f66b8 = 別のセッション
 
 # Edit {name}
-# t4688b082 =
+t4688b082 = { $name } を編集
 
 # Add a host
-# t38d39c8f =
+t38d39c8f = ホストを追加
 
 # OK
-# t85e4b82f =
+t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
-# tceb03600 =
+tceb03600 = + で追加するか、他のデバイスのホストを同期してください。
 
 # the Keychain said {status}
-# tc1738579 =
+tc1738579 = キーチェーンの応答：{ $status }
 
 # Envs
-# tf645a165 =
+tf645a165 = 環境
 
 # Part
-# te3596034 =
+te3596034 = 項目
 
 # Library
-# ta8532270 =
+ta8532270 = ライブラリ
 
 # No snippets yet. Make one with +, or sync those of your other devices.
-# tf81b77f9 =
+tf81b77f9 = スニペットはまだありません。+ で作成するか、他のデバイスのスニペットを同期してください。
 
 # No snippets for this host.
-# tbf3767c5 =
+tbf3767c5 = このホスト用のスニペットはありません。
 
 # Filter snippets
-# tbb9b10c7 =
+tbb9b10c7 = スニペットを絞り込み
 
 # Offered
-# t2bd643c4 =
+t2bd643c4 = 対象
 
 # Everywhere
-# t327a596f =
+t327a596f = すべてのホスト
 
 # Group: {group}
-# t0d904ce9 =
+t0d904ce9 = グループ：{ $group }
 
 # Host: {host}
-# t3fb3f6b3 =
+t3fb3f6b3 = ホスト：{ $host }
 
 # Press Enter after it
-# te4ce8331 =
+te4ce8331 = 入力後に Enter を押す
 
 # Command
-# tc67c8f52 =
+tc67c8f52 = コマンド
 
 # {{name}} asks for a value when it runs; {{host}}, {{user}} and {{address}} come from the session.
-# td02256f4 =
+td02256f4 = {"{{"}name{"}}"} は実行時に値を尋ねます。{"{{"}host{"}}"}、{"{{"}user{"}}"}、{"{{"}address{"}}"} はセッションから入ります。
 
 # Runs with
-# te90c2175 =
+te90c2175 = 実行時の環境
 
 # Their variables are given to it alone, in a subshell, without showing their values.
-# t4ef64333 =
+t4ef64333 = 変数はこのスニペットだけに、値を表示せずにサブシェルで渡されます。
 
 # Run
-# t8d57e66a =
+t8d57e66a = 実行
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
-# tbcdba796 =
+tbcdba796 = 環境はまだありません。保管庫に保存する変数で、値を表示せずにセッションのシェルに読み込みます。
 
 # NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-# t36bfa774 =
+t36bfa774 = 1 行に NAME=value を 1 つ。= の後が空の名前は現在の値を保持します。値はここには表示されません。
 
 # No notes yet.
-# t4be168d5 =
+t4be168d5 = ノートはまだありません。
 
 # Untitled
-# t2e35a678 =
+t2e35a678 = 無題
 
 # this host
-# t4b4cbe3d =
+t4b4cbe3d = このホスト
 
 # Filter notes
-# tde67183a =
+tde67183a = ノートを絞り込み
 
 # Markdown
-# tf651116c =
+tf651116c = Markdown
 
 # Show a sensitive note
-# t905684dd =
+t905684dd = 機密ノートを表示
 
 # For hosts…
-# t4d6ecc3d =
+t4d6ecc3d = 対象ホスト…
 
 # Insert an image…
-# t2d3653b2 =
+t2d3653b2 = 画像を挿入…
 
 # Note
-# t1440c15d =
+t1440c15d = ノート
 
 # Delete this note?
-# t9d3e3253 =
+t9d3e3253 = このノートを削除しますか？
 
 # That image cannot be read.
-# tc5fceb9b =
+tc5fceb9b = その画像は読み込めません。
 
 # For hosts
-# t350fa483 =
+t350fa483 = 対象ホスト
 
 # Image
-# t590ca79a =
+t590ca79a = 画像
 
 # No sessions open
-# t483ac645 =
+t483ac645 = 開いているセッションはありません
 
 # Open one from Hosts.
-# t7a72807e =
+t7a72807e = 「ホスト」から開いてください。
 
 # Sessions
-# tb69a8aec =
+tb69a8aec = セッション
 
 # Connect again
-# t05dc6981 =
+t05dc6981 = もう一度接続
 
 # {n} minute | {n} minutes
-# tf77c9aaa =
+tf77c9aaa =
+    { $n ->
+       *[other] { $n } 分
+    }
 
 # Lock
-# t71b42d62 =
+t71b42d62 = ロック
 
 # When shellwing starts, and after this long in the background, it hides until {biometry} or your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
-# taaa2c58c =
+taaa2c58c = shellwing の起動時、およびバックグラウンドでこの時間が経過すると、{ $biometry } またはパスコードで本人と確認されるまで画面が隠れます。ロックし忘れた iPhone に備える軽い保護です。セッションは裏で動き続けます。
+
+# When shellwing starts, and after this long in the background, it hides until your passcode says it is you. A light guard for a phone left unlocked: the sessions go on underneath.
+t5b7bea20 = shellwing の起動時、およびバックグラウンドでこの時間が経過すると、パスコードで本人と確認されるまで画面が隠れます。ロックし忘れた iPhone に備える軽い保護です。セッションは裏で動き続けます。
 
 # This phone has no passcode, so nothing could ask that it is you.
-# td366e372 =
+td366e372 = この iPhone にはパスコードが設定されていないため、本人確認ができません。
 
 # As the phone
-# t8ad2f046 =
+t8ad2f046 = iPhone の設定に従う
 
 # Text size
-# t2c041143 =
+t2c041143 = 文字サイズ
 
 # History
-# t7d96597f =
+t7d96597f = 履歴
 
 # Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own.
-# tde3581cd =
+tde3581cd = 変更後に開いたセッションに適用されます。ターミナルをピンチしても文字サイズを変えられます。サイズはこの iPhone だけの設定です。
 
 # New host keys
-# t48a98987 =
+t48a98987 = 新しいホスト鍵
 
 # Accept them
-# t2dd33559 =
+t2dd33559 = 受け入れる
 
 # Refuse them
-# t2483aa25 =
+t2483aa25 = 拒否する
 
 # Every {n} second | Every {n} seconds
-# t0877f108 =
+t0877f108 =
+    { $n ->
+       *[other] { $n } 秒ごと
+    }
 
 # Connections
-# t25db363e =
+t25db363e = 接続
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
-# t25360db5 =
+t25360db5 = ホストのエディタでの個別設定が優先されます。変更された鍵は常に拒否されます。新しい鍵を受け入れるには、既知のホストでそのホストを消去してください。
 
 # SSH keys
-# t7e7cad2b =
+t7e7cad2b = SSH 鍵
 
 # Saved passwords
-# tcdae5fca =
+tcdae5fca = 保存済みのパスワード
 
 # The vault is opening…
-# t12986dd4 =
+t12986dd4 = 保管庫を開いています…
 
 # Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.
-# t8cae68cf =
+t8cae68cf = パスワードと鍵は、この iPhone 上で暗号化されています。その鍵は iOS のキーチェーンにあり、この iPhone にのみ保存されます。
 
 # Configuration
-# t1a5ee459 =
+t1a5ee459 = 構成
 
 # hosts.toml, in the app's own folder
-# tcdaeae19 =
+tcdaeae19 = hosts.toml（アプリ専用のフォルダ内）
 
 # Version
-# t5dcdd537 =
+t5dcdd537 = バージョン
 
 # shellwing on GitHub
-# t1fcb667e =
+t1fcb667e = GitHub の shellwing
 
 # Problem
-# t448c5c7c =
+t448c5c7c = 問題
 
 # No host keys known yet: a host's is kept the first time you connect.
-# ta5bda1d5 =
+ta5bda1d5 = 既知のホスト鍵はまだありません。初めて接続したときにホストの鍵が保存されます。
 
 # A hashed name
-# t97c138ac =
+t97c138ac = ハッシュ化された名前
 
 # Forget
-# t6e3fab8c =
+t6e3fab8c = 消去
 
 # Filter by name
-# tbcb12ca7 =
+tbcb12ca7 = 名前で絞り込み
 
 # shellwing may not use that folder.
-# t39f14b58 =
+t39f14b58 = shellwing はそのフォルダを使用できません。
 
 # Place
-# t9ad2489c =
+t9ad2489c = 同期先
 
 # Last synced
-# t2d4f851d =
+t2d4f851d = 最終同期
 
 # not yet
-# t6d9d33dc =
+t6d9d33dc = まだ
 
 # End-to-end encrypted: the place holds only what the vault's key opens. It syncs every minute while shellwing is open, and when something changes.
-# tac696b8b =
+tac696b8b = エンドツーエンドで暗号化されています。同期先には保管庫の鍵でしか開けないデータだけが置かれます。shellwing を開いている間は 1 分ごとに、また変更があったときに同期します。
 
 # {device} asks to join
-# tf44b389c =
+tf44b389c = { $device } が参加を求めています
 
 # Approve only if it shows {code}. It gets everything the vault holds: passwords, keys, snippets and hosts.
-# t329319cf =
+t329319cf = { $code } が表示されている場合のみ承認してください。保管庫の内容（パスワード、鍵、スニペット、ホスト）がすべて共有されます。
 
 # Devices asking
-# t49658daf =
+t49658daf = 参加を求めているデバイス
 
 # Stop syncing on this phone?
-# t7ca0b094 =
+t7ca0b094 = この iPhone での同期を停止しますか？
 
 # The vault stays here, and the copy at the place stays for your other devices.
-# t7b47ff6d =
+t7b47ff6d = 保管庫はこの iPhone に残り、同期先のコピーも他のデバイスのために残ります。
 
 # Waiting for a device that syncs there…
-# tb119de8b =
+tb119de8b = そこと同期しているデバイスを待っています…
 
 # Open shellwing on it: it asks whether to let this phone in.
-# t5b4d0d2f =
+t5b4d0d2f = そのデバイスで shellwing を開いてください。この iPhone の参加を許可するか確認されます。
 
 # {device} answered
-# t89d183da =
+t89d183da = { $device } が応答しました
 
 # Approve on {device} if it shows the same code.
-# tbc9bc44d =
+tbc9bc44d = 同じコードが表示されていれば、{ $device } で承認してください。
 
 # Joined: this phone syncs there now.
-# tfb82a94e =
+tfb82a94e = 参加しました。この iPhone はそこと同期します。
 
 # This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-# t237ca793 =
+t237ca793 = この iPhone はそこと同期するようになりました。復旧キーで他のデバイスでも保管庫を開けます。書き留めておいてください。
 
 # Where
-# t91dad0f8 =
+t91dad0f8 = 場所
 
 # Password or app password
-# t9cc53273 =
+t9cc53273 = パスワードまたはアプリパスワード
 
 # Endpoint: https://s3.eu-west-1.amazonaws.com
-# t9deef30d =
+t9deef30d = エンドポイント：https://s3.eu-west-1.amazonaws.com
 
 # Region (empty: auto)
-# t6689bdf6 =
+t6689bdf6 = リージョン（空欄：自動）
 
 # Folder in the bucket (optional)
-# t7c04f452 =
+t7c04f452 = バケット内のフォルダ（任意）
 
 # Choose another folder…
-# tcba15eff =
+tcba15eff = 別のフォルダを選択…
 
 # Sync the vault
-# tff5adbd9 =
+tff5adbd9 = 保管庫を同期
 
 # A folder another device syncs in too, such as shellwing's in iCloud Drive.
-# t679b365b =
+t679b365b = 別のデバイスも同期しているフォルダ（iCloud Drive の shellwing フォルダなど）。
 
 # The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-# t72badf79 =
+t72badf79 = パスワードはこの iPhone の保管庫に保存され、同期先には置かれません。iPhone では Git は使えません。
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
-# tfd5abd9b =
+tfd5abd9b = そこには別のデバイスの保管庫があります。参加すると、そのホスト、鍵、パスワード、スニペットをこの iPhone で使えます。
 
 # Pair with a device that syncs there
-# tb3c83579 =
+tb3c83579 = そこと同期しているデバイスとペアリング
 
 # Join
-# t30025399 =
+t30025399 = 参加
 
 # XXXX-XXXX-…, 13 groups of 4
-# t1d59283c =
+t1d59283c = XXXX-XXXX-…（4 文字 × 13 グループ）
 
 # Join with the recovery key
-# t20a260d4 =
+t20a260d4 = 復旧キーで参加
 
 # The passphrase set on the other device
-# t71d27652 =
+t71d27652 = もう一方のデバイスで設定したパスフレーズ
 
 # Join with the passphrase
-# t97bef16c =
+t97bef16c = パスフレーズで参加
 
 # shellwing did not start.
-# td364ab30 =
+td364ab30 = shellwing を起動できませんでした。
 
 # Load an environment
-# tfd1fc961 =
+tfd1fc961 = 環境を読み込む
 
 # Keep it there
-# t3cd7dd37 =
+t3cd7dd37 = そのまま残す
 
 # Take it away now
-# te025e6eb =
+te025e6eb = 今すぐ削除
 
 # {name}, placed until the session ends
-# t7fad2b94 =
+t7fad2b94 = { $name }（セッション終了まで配置）
 
 # Unload {name}
-# t4f418d0b =
+t4f418d0b = { $name } の読み込みを解除
 
 # {path} stays when the session ends.
-# t3ef97d99 =
+t3ef97d99 = { $path } はセッション終了後も残ります。
 
 # {path} taken away.
-# tb65f4b23 =
+tb65f4b23 = { $path } を削除しました。
 
 # Save {offer} in the vault? It is tried first next time.
-# t3fd5ca20 =
+t3fd5ca20 = { $offer } を保管庫に保存しますか？次回は最初に試します。
 
 # Load an environment…
-# t8b267127 =
+t8b267127 = 環境を読み込む…
 
 # Notes…
-# te20662aa =
+te20662aa = ノート…
 
 # Files…
-# t4b68cf4c =
+t4b68cf4c = ファイル…
 
 # Place a config file…
-# tdc9941e5 =
+tdc9941e5 = 設定ファイルを配置…
 
 # Install a key on this host…
-# te5f3e2ad =
+te5f3e2ad = このホストに鍵をインストール…
 
 # Left
-# t92773890 =
+t92773890 = 左
 
 # Up
-# t42f35940 =
+t42f35940 = 上
 
 # Down
-# ta4995035 =
+ta4995035 = 下
 
 # Right
-# t1e9e9f85 =
+t1e9e9f85 = 右
 
 # Hide the keyboard
-# t5cadc433 =
+t5cadc433 = キーボードを隠す
 
 # Show the keyboard
-# t6884a1b4 =
+t6884a1b4 = キーボードを表示
 
 # Keys in the vault
-# t9c92000f =
+t9c92000f = 保管庫の鍵
 
 # Make an Ed25519 key and install it
-# t1913ae2f =
+t1913ae2f = Ed25519 鍵を生成してインストール
 
 # A new key
-# t93b96abd =
+t93b96abd = 新しい鍵
 
 # Kept in the vault, encrypted; only its public line goes to {host}.
-# teb44b03c =
+teb44b03c = 保管庫に暗号化して保存され、{ $host } には公開鍵の行だけが送られます。
 
 # Install a key
-# td8f1fd20 =
+td8f1fd20 = 鍵をインストール
 
 # {name} is on {host}: it signs in from now on.
-# tcc1f38f4 =
+tcc1f38f4 = { $name } を { $host } に登録しました。今後はこの鍵でサインインします。
 
 # {name} was on {host} already.
-# t1b42e91e =
+t1b42e91e = { $name } はすでに { $host } に登録されています。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
-# td823bccd =
+td823bccd = 鍵はまだありません。鍵を生成し、セッションのメニューからホストにインストールすると、以降はパスワードなしでサインインできます。
 
 # Copied
-# t8dc21305 =
+t8dc21305 = コピーしました
 
 # Share
-# t4f856dd8 =
+t4f856dd8 = 共有
 
 # Make a key
-# ta2572fcb =
+ta2572fcb = 鍵を生成
 
 # A new Ed25519 key
-# t97812638 =
+t97812638 = 新しい Ed25519 鍵
 
 # Kept in the vault, encrypted, with your other secrets.
-# t698b5927 =
+t698b5927 = 他のシークレットと一緒に、保管庫に暗号化して保存されます。
 
 # Nothing saved yet. When a password typed in a session works, shellwing offers to keep it.
-# t8e21fd8c =
+t8e21fd8c = まだ何も保存されていません。セッションで入力したパスワードが正しければ、shellwing が保存を提案します。
 
 # A key's passphrase
-# tdf0a144f =
+tdf0a144f = 鍵のパスフレーズ
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
-# t91c53986 =
+t91c53986 = 書き留めて、この iPhone とは別の場所に保管してください。ほかに開く手段がないときも、これで保管庫を開けます。
 
 # Show the vault's recovery key
-# t45dffa07 =
+t45dffa07 = 保管庫の復旧キーを表示
 
 # Not confirmed: the key stays hidden.
-# t899a4de3 =
+t899a4de3 = 確認されませんでした。復旧キーは非表示のままです。
