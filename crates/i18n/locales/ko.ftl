@@ -4006,6 +4006,12 @@ t3c800198 = 보관함을 동기화하고 있다면 다른 기기에서도 삭제
 # Nothing here.
 ta7006e9a = 아무것도 없습니다.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = { $host }에서 폴더와 그 안의 모든 항목이 삭제됩니다.
+
+# It is deleted on {host}.
+td57ed776 = { $host }에서 삭제됩니다.
+
 # Upload from Files…
 t3efaa7bd = 파일 앱에서 업로드…
 
@@ -4017,12 +4023,6 @@ t9dc3aa14 = 추가
 
 # Make
 t486bedcf = 만들기
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = { $host }에서 폴더와 그 안의 모든 항목이 삭제됩니다.
-
-# It is deleted on {host}.
-td57ed776 = { $host }에서 삭제됩니다.
 
 # Download the folder
 t1c6b8ca2 = 폴더 다운로드

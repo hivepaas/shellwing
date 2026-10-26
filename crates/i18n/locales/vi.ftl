@@ -4006,6 +4006,12 @@ t3c800198 = Nếu kho đang đồng bộ, nó cũng bị xoá khỏi các thiế
 # Nothing here.
 ta7006e9a = Không có gì ở đây.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = Thư mục và mọi thứ bên trong sẽ bị xoá trên { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Nó sẽ bị xoá trên { $host }.
+
 # Upload from Files…
 t3efaa7bd = Tải lên từ Tệp…
 
@@ -4017,12 +4023,6 @@ t9dc3aa14 = Thêm
 
 # Make
 t486bedcf = Tạo
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = Thư mục và mọi thứ bên trong sẽ bị xoá trên { $host }.
-
-# It is deleted on {host}.
-td57ed776 = Nó sẽ bị xoá trên { $host }.
 
 # Download the folder
 t1c6b8ca2 = Tải xuống thư mục

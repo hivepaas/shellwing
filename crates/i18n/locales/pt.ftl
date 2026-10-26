@@ -4142,6 +4142,12 @@ t3c800198 = Se o cofre for sincronizado, ele some também dos seus outros dispos
 # Nothing here.
 ta7006e9a = Nada aqui.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = A pasta e tudo o que há nela são excluídos em { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Ele é excluído em { $host }.
+
 # Upload from Files…
 t3efaa7bd = Enviar de Arquivos…
 
@@ -4153,12 +4159,6 @@ t9dc3aa14 = Adicionar
 
 # Make
 t486bedcf = Criar
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = A pasta e tudo o que há nela são excluídos em { $host }.
-
-# It is deleted on {host}.
-td57ed776 = Ele é excluído em { $host }.
 
 # Download the folder
 t1c6b8ca2 = Baixar a pasta

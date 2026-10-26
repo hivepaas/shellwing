@@ -15,6 +15,9 @@ struct GroupEditorView: View {
         _edit = State(initialValue: edit)
     }
 
+    /// Not in hosts.toml yet.
+    private var isNew: Bool { oldName.isEmpty }
+
     private var members: Int {
         app.sections.first { !$0.favorites && $0.name == oldName }?.hosts.count ?? 0
     }
@@ -24,7 +27,7 @@ struct GroupEditorView: View {
             Form {
                 Section {
                     LabeledContent(tr("Name")) {
-                        TextField(tr("Production"), text: $edit.name)
+                        TextField(tr("Production"), text: $edit.name).multilineTextAlignment(.trailing)
                     }
                     HStack(spacing: 10) {
                         Text(tr("Color"))
@@ -51,33 +54,35 @@ struct GroupEditorView: View {
                 if let problem {
                     Text(problem).foregroundStyle(Dusk.badText).listRowBackground(Dusk.badBg)
                 }
-                Section {
-                    Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
-                        .frame(maxWidth: .infinity)
-                        .confirmationDialog(
-                            members == 0
-                                ? tr("Delete {group}?", ["group": oldName])
-                                : trN(members, "Delete {group}? Its {n} host stays, in no group.", "Delete {group}? Its {n} hosts stay, in no group.", ["group": oldName]),
-                            isPresented: $confirmDelete,
-                            titleVisibility: .visible
-                        ) {
-                            Button(tr("Delete"), role: .destructive) {
-                                do {
-                                    try app.core?.deleteGroup(name: oldName)
-                                    app.reload()
-                                    done()
-                                } catch {
-                                    problem = "\(error)"
+                if !isNew {
+                    Section {
+                        Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
+                            .frame(maxWidth: .infinity)
+                            .confirmationDialog(
+                                members == 0
+                                    ? tr("Delete {group}?", ["group": oldName])
+                                    : trN(members, "Delete {group}? Its {n} host stays, in no group.", "Delete {group}? Its {n} hosts stay, in no group.", ["group": oldName]),
+                                isPresented: $confirmDelete,
+                                titleVisibility: .visible
+                            ) {
+                                Button(tr("Delete"), role: .destructive) {
+                                    do {
+                                        try app.core?.deleteGroup(name: oldName)
+                                        app.reload()
+                                        done()
+                                    } catch {
+                                        problem = "\(error)"
+                                    }
                                 }
                             }
-                        }
+                    }
+                    .listRowBackground(Dusk.surface)
                 }
-                .listRowBackground(Dusk.surface)
             }
             .scrollContentBackground(.hidden)
             .background(Dusk.page.ignoresSafeArea())
             .autocorrectionDisabled()
-            .navigationTitle(oldName)
+            .navigationTitle(isNew ? tr("New group") : oldName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel"), action: done) }
@@ -111,7 +116,7 @@ struct GroupEditorView: View {
 
     private func save() {
         do {
-            _ = try app.core?.saveGroup(edit: edit, oldName: oldName)
+            _ = try app.core?.saveGroup(edit: edit, oldName: isNew ? nil : oldName)
             app.reload()
             done()
         } catch {

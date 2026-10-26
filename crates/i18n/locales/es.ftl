@@ -4142,6 +4142,12 @@ t3c800198 = Si la bóveda se sincroniza, también desaparece de tus otros dispos
 # Nothing here.
 ta7006e9a = Aquí no hay nada.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = La carpeta y todo su contenido se eliminan en { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Se elimina en { $host }.
+
 # Upload from Files…
 t3efaa7bd = Subir desde Archivos…
 
@@ -4153,12 +4159,6 @@ t9dc3aa14 = Añadir
 
 # Make
 t486bedcf = Crear
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = La carpeta y todo su contenido se eliminan en { $host }.
-
-# It is deleted on {host}.
-td57ed776 = Se elimina en { $host }.
 
 # Download the folder
 t1c6b8ca2 = Descargar la carpeta

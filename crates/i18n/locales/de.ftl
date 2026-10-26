@@ -4142,6 +4142,12 @@ t3c800198 = Wenn der Tresor synchronisiert wird, verschwindet es auch von deinen
 # Nothing here.
 ta7006e9a = Hier ist nichts.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = Der Ordner und sein gesamter Inhalt werden auf { $host } gelöscht.
+
+# It is deleted on {host}.
+td57ed776 = Wird auf { $host } gelöscht.
+
 # Upload from Files…
 t3efaa7bd = Aus Dateien hochladen…
 
@@ -4153,12 +4159,6 @@ t9dc3aa14 = Hinzufügen
 
 # Make
 t486bedcf = Erstellen
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = Der Ordner und sein gesamter Inhalt werden auf { $host } gelöscht.
-
-# It is deleted on {host}.
-td57ed776 = Wird auf { $host } gelöscht.
 
 # Download the folder
 t1c6b8ca2 = Ordner herunterladen

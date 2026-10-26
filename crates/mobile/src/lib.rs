@@ -790,6 +790,21 @@ mod tests {
         app.save_group(g, Some("Lab".into())).expect("saved");
         assert_eq!(app.groups(), ["Home lab"]);
         assert_eq!(app.group("Home lab".into()).theme.as_deref(), Some("nord"));
+        // A new one, with no hosts yet: listed all the same.
+        let empty = GroupEdit {
+            id: None,
+            name: "Staging".into(),
+            color: Some("sky".into()),
+            theme: None,
+        };
+        app.save_group(empty.clone(), None).expect("new group");
+        assert!(app.save_group(empty, None).is_err(), "a second Staging");
+        let s = app.sections().expect("sections");
+        assert!(
+            s.iter()
+                .any(|x| x.name.as_deref() == Some("Staging") && x.hosts.is_empty())
+        );
+        app.delete_group("Staging".into()).expect("deleted");
         app.delete_group("Home lab".into()).expect("deleted");
         assert!(app.groups().is_empty());
         assert_eq!(

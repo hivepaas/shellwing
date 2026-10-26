@@ -4142,6 +4142,12 @@ t3c800198 = Si le coffre est synchronisé, il disparaît aussi de vos autres app
 # Nothing here.
 ta7006e9a = Rien ici.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = Le dossier et tout son contenu sont supprimés sur { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Il est supprimé sur { $host }.
+
 # Upload from Files…
 t3efaa7bd = Téléverser depuis Fichiers…
 
@@ -4153,12 +4159,6 @@ t9dc3aa14 = Ajouter
 
 # Make
 t486bedcf = Créer
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = Le dossier et tout son contenu sont supprimés sur { $host }.
-
-# It is deleted on {host}.
-td57ed776 = Il est supprimé sur { $host }.
 
 # Download the folder
 t1c6b8ca2 = Télécharger le dossier

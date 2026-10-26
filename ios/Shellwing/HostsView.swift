@@ -30,6 +30,12 @@ struct HostsView: View {
                 }
                 ForEach(shown, id: \.self) { section in
                     Section {
+                        if section.hosts.isEmpty {
+                            Text(tr("No hosts yet. Choose this group in a host's editor."))
+                                .font(.system(size: 14))
+                                .foregroundStyle(Dusk.muted)
+                                .listRowBackground(Dusk.surface)
+                        }
                         ForEach(section.hosts, id: \.id) { host in
                             Button {
                                 if let s = app.session(for: host.spec) { path = [s] }
@@ -91,8 +97,13 @@ struct HostsView: View {
             .navigationTitle("shellwing")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        editing = HostEditorView.blank()
+                    Menu {
+                        Button(tr("New host"), systemImage: "server.rack") {
+                            editing = HostEditorView.blank()
+                        }
+                        Button(tr("New group"), systemImage: "folder.badge.plus") {
+                            editingGroup = GroupSheet(edit: GroupEdit(id: nil, name: "", color: nil, theme: nil))
+                        }
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -114,6 +125,10 @@ struct HostsView: View {
                 if UserDefaults.standard.string(forKey: "ask") == "delete",
                    let section = app.sections.last, let host = section.hosts.last {
                     doomed = Doomed(key: rowKey(section, host), title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {}
+                }
+                // `-ask newgroup`: a new group's editor.
+                if UserDefaults.standard.string(forKey: "ask") == "newgroup" {
+                    editingGroup = GroupSheet(edit: GroupEdit(id: nil, name: "", color: nil, theme: nil))
                 }
                 // `-edit <host>` (or `new`): its editor.
                 if let name = UserDefaults.standard.string(forKey: "edit") {

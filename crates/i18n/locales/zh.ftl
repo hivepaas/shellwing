@@ -4006,6 +4006,12 @@ t3c800198 = 如果保险库正在同步，它也会从你的其他设备上删�
 # Nothing here.
 ta7006e9a = 这里什么都没有。
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = 将删除 { $host } 上的此文件夹及其中的所有内容。
+
+# It is deleted on {host}.
+td57ed776 = 将从 { $host } 上删除它。
+
 # Upload from Files…
 t3efaa7bd = 从“文件”上传…
 
@@ -4017,12 +4023,6 @@ t9dc3aa14 = 添加
 
 # Make
 t486bedcf = 创建
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = 将删除 { $host } 上的此文件夹及其中的所有内容。
-
-# It is deleted on {host}.
-td57ed776 = 将从 { $host } 上删除它。
 
 # Download the folder
 t1c6b8ca2 = 下载此文件夹

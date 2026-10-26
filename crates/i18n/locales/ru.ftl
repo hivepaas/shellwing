@@ -4240,6 +4240,12 @@ t3c800198 = Если хранилище синхронизируется, это
 # Nothing here.
 ta7006e9a = Здесь ничего нет.
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = Папка и всё её содержимое будут удалены на { $host }.
+
+# It is deleted on {host}.
+td57ed776 = Файл будет удалён на { $host }.
+
 # Upload from Files…
 t3efaa7bd = Загрузить из «Файлов»…
 
@@ -4251,12 +4257,6 @@ t9dc3aa14 = Добавить
 
 # Make
 t486bedcf = Создать
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = Папка и всё её содержимое будут удалены на { $host }.
-
-# It is deleted on {host}.
-td57ed776 = Файл будет удалён на { $host }.
 
 # Download the folder
 t1c6b8ca2 = Скачать папку

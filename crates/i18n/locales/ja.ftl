@@ -4006,6 +4006,12 @@ t3c800198 = 保管庫を同期している場合、ほかのデバイスから�
 # Nothing here.
 ta7006e9a = 何もありません。
 
+# The folder and everything in it are deleted on {host}.
+t200fdede = { $host } 上のフォルダとその中身がすべて削除されます。
+
+# It is deleted on {host}.
+td57ed776 = { $host } 上から削除されます。
+
 # Upload from Files…
 t3efaa7bd = 「ファイル」からアップロード…
 
@@ -4017,12 +4023,6 @@ t9dc3aa14 = 追加
 
 # Make
 t486bedcf = 作成
-
-# The folder and everything in it are deleted on {host}.
-t200fdede = { $host } 上のフォルダとその中身がすべて削除されます。
-
-# It is deleted on {host}.
-td57ed776 = { $host } 上から削除されます。
 
 # Download the folder
 t1c6b8ca2 = フォルダをダウンロード
