@@ -105,7 +105,7 @@ struct HostEditorView: View {
                 TextField(edit.address.isEmpty ? "web-1" : edit.address, text: $edit.name)
             }
             LabeledContent("Address") {
-                TextField("10.0.1.11 or host.example.com", text: $edit.address)
+                TextField("host.example.com", text: $edit.address)
                     .keyboardType(.URL)
                     .font(.system(.body, design: .monospaced))
             }
@@ -125,6 +125,7 @@ struct HostEditorView: View {
         } header: {
             SectionHeading(text: "Connection")
         }
+        .multilineTextAlignment(.trailing)
         .listRowBackground(Dusk.surface)
     }
 
@@ -237,7 +238,7 @@ struct HostEditorView: View {
     private var organize: some View {
         Section {
             LabeledContent("Group") {
-                TextField("None", text: text($edit.group))
+                TextField("None", text: text($edit.group)).multilineTextAlignment(.trailing)
             }
             let groups = app.groups()
             if !groups.isEmpty {
@@ -257,7 +258,7 @@ struct HostEditorView: View {
                 }
             }
             LabeledContent("Tags") {
-                TextField("web, docker", text: $tags)
+                TextField("web, docker", text: $tags).multilineTextAlignment(.trailing)
             }
             HStack(spacing: 10) {
                 Text("Color")

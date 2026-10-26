@@ -6,6 +6,7 @@ struct HostsView: View {
     @State private var filter = ""
     @State private var path: [SessionModel] = []
     @State private var editing: HostEdit?
+    @State private var editingGroup: GroupSheet?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -26,7 +27,7 @@ struct HostsView: View {
                         SectionHeading(text: "Open")
                     }
                 }
-                ForEach(shown, id: \.name) { section in
+                ForEach(shown, id: \.self) { section in
                     Section {
                         ForEach(section.hosts, id: \.id) { host in
                             Button {
@@ -52,7 +53,20 @@ struct HostsView: View {
                             if let c = section.color {
                                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: c)).frame(width: 8, height: 8)
                             }
+                            if section.favorites {
+                                Image(systemName: "star.fill").font(.system(size: 10)).foregroundStyle(Dusk.amber)
+                            }
                             SectionHeading(text: section.name ?? "Hosts")
+                            if let name = section.name, !section.favorites {
+                                Button {
+                                    if let g = app.core?.group(name: name) { editingGroup = GroupSheet(edit: g) }
+                                } label: {
+                                    Image(systemName: "pencil").font(.system(size: 11, weight: .semibold))
+                                        .frame(width: 28, height: 22)
+                                }
+                                .foregroundStyle(Dusk.muted)
+                                .accessibilityLabel("Edit \(name)")
+                            }
                             Spacer()
                             Text(section.hosts.count == 1 ? "1 host" : "\(section.hosts.count) hosts")
                                 .font(.system(size: 12))
@@ -90,6 +104,11 @@ struct HostsView: View {
                    let s = app.session(for: spec) {
                     path = [s]
                 }
+                // `-edit <host>` (or `new`): its editor.
+                if let name = UserDefaults.standard.string(forKey: "edit") {
+                    let id = app.sections.flatMap(\.hosts).first { $0.name == name }?.id
+                    editing = id.flatMap { app.host(id: $0) } ?? HostEditorView.blank()
+                }
             }
             #endif
             .sheet(item: $editing) { edit in
@@ -99,6 +118,9 @@ struct HostsView: View {
                         path = [s]
                     }
                 }
+            }
+            .sheet(item: $editingGroup) { g in
+                GroupEditorView(edit: g.edit) { editingGroup = nil }
             }
             .alert("shellwing", isPresented: Binding(
                 get: { app.error != nil },
@@ -117,8 +139,9 @@ struct HostsView: View {
         return app.sections.compactMap { s in
             let hosts = s.hosts.filter {
                 $0.name.lowercased().contains(q) || $0.detail.lowercased().contains(q)
+                    || $0.tags.contains { $0.lowercased().contains(q) }
             }
-            return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts)
+            return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts, favorites: s.favorites)
         }
     }
 
@@ -208,3 +231,9 @@ extension SessionModel: Hashable {
 
 /// For `.sheet(item:)`: a host is its id; a new one has none.
 extension HostEdit: Identifiable {}
+
+/// A group's editor, open.
+struct GroupSheet: Identifiable {
+    let id = UUID()
+    let edit: GroupEdit
+}

@@ -55,6 +55,8 @@ pub struct HostRow {
     pub color: Option<u32>,
     /// What opens it: its alias, else its name.
     pub spec: String,
+    pub tags: Vec<String>,
+    pub favorite: bool,
 }
 
 /// A group of hosts, in the file's order; `name` None: the hosts in no group.
@@ -63,6 +65,19 @@ pub struct HostSection {
     pub name: Option<String>,
     pub color: Option<u32>,
     pub hosts: Vec<HostRow>,
+    /// The favorites, first: they are in their groups too.
+    pub favorites: bool,
+}
+
+/// A group as its editor has it.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct GroupEdit {
+    /// None: not in hosts.toml yet (new, or only named by its hosts).
+    pub id: Option<String>,
+    pub name: String,
+    pub color: Option<String>,
+    /// The theme of its hosts, unless a host has its own.
+    pub theme: Option<String>,
 }
 
 /// A host as its editor has it, as on the desktop; what the phone does not
@@ -253,6 +268,62 @@ impl Shellwing {
         self.store.save_host(&host).map_err(MobileError::of)
     }
 
+    /// The group named `name`, to edit.
+    pub fn group(&self, name: String) -> GroupEdit {
+        let hosts = self.hosts().unwrap_or_default();
+        match hosts.groups.into_iter().find(|g| g.name == name) {
+            Some(g) => GroupEdit {
+                id: g.id,
+                name: g.name,
+                color: g.color,
+                theme: g.theme,
+            },
+            None => GroupEdit {
+                id: None,
+                name,
+                color: None,
+                theme: None,
+            },
+        }
+    }
+
+    /// Saves a group; renamed (from `old_name`), its hosts move with it.
+    pub fn save_group(
+        &self,
+        edit: GroupEdit,
+        old_name: Option<String>,
+    ) -> Result<String, MobileError> {
+        let name = edit.name.trim().to_string();
+        if name.is_empty() {
+            return Err(MobileError::Failed("A name is needed.".into()));
+        }
+        let hosts = self.hosts()?;
+        let mine = |g: &shellwing_config::Group| match &edit.id {
+            Some(id) => g.id.as_ref() == Some(id),
+            None => old_name.as_deref() == Some(g.name.as_str()),
+        };
+        if hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
+            return Err(MobileError::Failed("Another group has this name.".into()));
+        }
+        let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+        let group = shellwing_config::Group {
+            id: edit.id,
+            name,
+            color: clean(edit.color),
+            theme: clean(edit.theme),
+        };
+        self.store
+            .save_group(&group, old_name.as_deref())
+            .map_err(MobileError::of)
+    }
+
+    /// Deletes the group named `name`; its hosts stay, in no group.
+    pub fn delete_group(&self, name: String) -> Result<(), MobileError> {
+        // One only named by its hosts has no id: they leave it all the same.
+        let id = self.group(name.clone()).id.unwrap_or_default();
+        self.store.delete_group(&id, &name).map_err(MobileError::of)
+    }
+
     pub fn delete_host(&self, id: String) -> Result<(), MobileError> {
         self.store.delete_host(&id).map_err(MobileError::of)
     }
@@ -279,7 +350,12 @@ impl Shellwing {
         let name = shellwing_ssh::config::split(&spec)
             .map(|(_, n, _)| n)
             .unwrap_or_default();
-        let theme = hosts.find(&name).and_then(|h| h.theme.clone());
+        // The host's own theme, else its group's.
+        let theme = hosts.find(&name).and_then(|h| {
+            h.theme
+                .clone()
+                .or_else(|| hosts.group_of(h).and_then(|g| g.theme.clone()))
+        });
         session.term.set_colors(self.colors(theme.as_deref()));
         Ok(MobileSession::new(session, listener, self.rt.handle()))
     }
@@ -434,6 +510,8 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
             detail,
             color: h.color_rgb().or(group_color),
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
+            tags: h.tags.clone(),
+            favorite: h.favorite,
         }
     };
     let mut names: Vec<String> = hosts.groups.iter().map(|g| g.name.clone()).collect();
@@ -459,8 +537,21 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
                 .map(row)
                 .collect(),
             name: Some(name),
+            favorites: false,
         })
         .collect();
+    let favorites: Vec<HostRow> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
+    if !favorites.is_empty() {
+        out.insert(
+            0,
+            HostSection {
+                name: Some("Favorites".into()),
+                color: None,
+                hosts: favorites,
+                favorites: true,
+            },
+        );
+    }
     let loose: Vec<HostRow> = hosts
         .hosts
         .iter()
@@ -472,6 +563,7 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
             name: None,
             color: None,
             hosts: loose,
+            favorites: false,
         });
     }
     out
@@ -617,6 +709,31 @@ mod tests {
         assert_eq!(app.groups(), ["Staging"]);
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn favorites_come_first_and_groups_are_edited() {
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"a\"\naddress = \"a.example\"\ngroup = \"Lab\"\nfavorite = true\ntags = [\"pi\"]\n",
+        );
+        let s = app.sections().expect("sections");
+        assert!(s[0].favorites && s[0].hosts[0].tags == ["pi"]);
+        assert_eq!(s[1].name.as_deref(), Some("Lab"));
+        let mut g = app.group("Lab".into());
+        assert!(g.id.is_none(), "only named by its host");
+        g.name = "Home lab".into();
+        g.theme = Some("nord".into());
+        app.save_group(g, Some("Lab".into())).expect("saved");
+        assert_eq!(app.groups(), ["Home lab"]);
+        assert_eq!(app.group("Home lab".into()).theme.as_deref(), Some("nord"));
+        app.delete_group("Home lab".into()).expect("deleted");
+        assert!(app.groups().is_empty());
+        assert_eq!(
+            app.sections().expect("sections").len(),
+            2,
+            "favorites, then no group"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
