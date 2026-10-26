@@ -12,15 +12,15 @@ mod config_files;
 mod files;
 mod library;
 mod session;
+mod settings;
 mod sync;
 mod vault;
 
 use std::sync::Arc;
 
-use shellwing_config::{Auth, Host, Hosts, Store};
+use shellwing_config::{Auth, AuthMethod, Host, Hosts, Store};
 use shellwing_core::secrets::VaultSlot;
 use shellwing_core::session::{Opens, Session};
-use shellwing_term::{Colors, Rgb};
 
 pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
 pub use files::FileEntry;
@@ -28,6 +28,7 @@ pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
+pub use settings::{HostKeyWay, SettingsRow, ThemeRow};
 pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
 pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 
@@ -64,24 +65,86 @@ pub struct HostSection {
     pub hosts: Vec<HostRow>,
 }
 
-/// The fields the phone edits; the rest of a host (jumps, forwards, a theme)
-/// stays as `hosts.toml` has it.
+/// A host as its editor has it, as on the desktop; what the phone does not
+/// edit (the session log) stays as `hosts.toml` has it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct HostEdit {
     /// None: a new host.
     pub id: Option<String>,
     pub name: String,
+    /// A short name to open it by.
+    pub alias: Option<String>,
     pub address: String,
     pub port: Option<u16>,
     pub user: Option<String>,
     pub group: Option<String>,
+    pub tags: Vec<String>,
+    /// Hosts to go through first, outermost first.
+    pub jump: Vec<String>,
+    /// Ports forwarded while connected: `-L 8080:localhost:80`, `-R …`, `-D 1080`.
+    pub forward: Vec<String>,
+    pub auth: AuthWay,
+    /// With `auth` Key: `vault:<id>` for a key in the vault, else a key file.
+    pub key: Option<String>,
+    /// The terminal's theme on this host, by id; None: the app's.
+    pub theme: Option<String>,
+    /// A name of [`host_colors`] or `#rrggbb`.
+    pub color: Option<String>,
+    pub favorite: bool,
+    /// Not synced to other devices.
+    pub local_only: bool,
+    pub forward_agent: bool,
+    /// Seconds between keepalives (0: none); None: the app's setting.
+    pub keepalive: Option<u64>,
+    /// None: the app's setting.
+    pub host_key: Option<HostKeyWay>,
+    /// Typed into the shell once it is ready, after every connect.
+    pub run: Option<String>,
+}
+
+/// How a host is signed in to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum AuthWay {
+    /// As ssh does: keys in the vault, then a password.
+    Auto,
+    Key,
+    Password,
+    /// The ssh-agent's keys (on a desktop: none on a phone).
+    Agent,
+}
+
+/// A color a host can be marked with.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct HostColor {
+    pub name: String,
+    pub rgb: u32,
+}
+
+/// The colors a host or a group can be marked with, by name.
+#[uniffi::export]
+pub fn host_colors() -> Vec<HostColor> {
+    shellwing_config::HOST_COLORS
+        .iter()
+        .map(|(n, v)| HostColor {
+            name: n.to_string(),
+            rgb: *v,
+        })
+        .collect()
+}
+
+/// Why a port forward cannot be, if it cannot: `-L 8080:localhost:80`.
+#[uniffi::export]
+pub fn forward_problem(spec: String) -> Option<String> {
+    spec.trim()
+        .parse::<shellwing_ssh::Forward>()
+        .err()
+        .map(|e| e.to_string())
 }
 
 #[derive(uniffi::Object)]
 pub struct Shellwing {
     store: Store,
     rt: tokio::runtime::Runtime,
-    colors: Colors,
     /// Saved passwords and SSH keys: `vault.db` beside hosts.toml, its key
     /// in the platform's keychain.
     vault: VaultSlot,
@@ -111,7 +174,6 @@ impl Shellwing {
         Ok(Arc::new(Shellwing {
             store,
             rt,
-            colors: dusk(),
             vault,
             sync,
         }))
@@ -130,11 +192,41 @@ impl Shellwing {
         Some(HostEdit {
             id: h.id.clone(),
             name: h.name.clone(),
+            alias: h.alias.clone(),
             address: h.address.clone(),
             port: h.port,
             user: h.user.clone(),
             group: h.group.clone(),
+            tags: h.tags.clone(),
+            jump: h.jump.clone(),
+            forward: h.forward.clone(),
+            auth: match h.auth.method {
+                AuthMethod::Auto => AuthWay::Auto,
+                AuthMethod::Key => AuthWay::Key,
+                AuthMethod::Password => AuthWay::Password,
+                AuthMethod::Agent => AuthWay::Agent,
+            },
+            key: h.auth.key.clone(),
+            theme: h.theme.clone(),
+            color: h.color.clone(),
+            favorite: h.favorite,
+            local_only: h.local_only,
+            forward_agent: h.forward_agent,
+            keepalive: h.keepalive,
+            host_key: h.host_key.map(Into::into),
+            run: h.run.clone(),
         })
+    }
+
+    /// The hosts another can jump through: all but `except` (its name).
+    pub fn jump_choices(&self, except: Option<String>) -> Vec<String> {
+        self.hosts()
+            .map(|h| h.hosts)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|h| h.name)
+            .filter(|n| except.as_deref() != Some(n.as_str()))
+            .collect()
     }
 
     /// The groups hosts can go in.
@@ -156,35 +248,8 @@ impl Shellwing {
     /// Writes `edit` into `hosts.toml`, over the host with its id or as a new
     /// one; returns its id.
     pub fn save_host(&self, edit: HostEdit) -> Result<String, MobileError> {
-        let name = edit.name.trim().to_string();
-        let address = edit.address.trim().to_string();
-        if address.is_empty() {
-            return Err(MobileError::Failed("An address is needed.".into()));
-        }
-        let old = edit.id.as_ref().and_then(|id| {
-            self.hosts()
-                .ok()?
-                .hosts
-                .into_iter()
-                .find(|h| h.id.as_ref() == Some(id))
-        });
-        let mut host = old.unwrap_or_else(|| new_host(&address));
-        host.id = edit.id;
-        host.name = if name.is_empty() {
-            address.clone()
-        } else {
-            name
-        };
-        host.address = address;
-        host.port = edit.port;
-        host.user = edit
-            .user
-            .map(|u| u.trim().to_string())
-            .filter(|u| !u.is_empty());
-        host.group = edit
-            .group
-            .map(|g| g.trim().to_string())
-            .filter(|g| !g.is_empty());
+        let hosts = self.hosts()?;
+        let host = checked(edit, &hosts).map_err(MobileError::Failed)?;
         self.store.save_host(&host).map_err(MobileError::of)
     }
 
@@ -211,7 +276,11 @@ impl Shellwing {
             self.vault.clone(),
         )
         .map_err(MobileError::of)?;
-        session.term.set_colors(self.colors.clone());
+        let name = shellwing_ssh::config::split(&spec)
+            .map(|(_, n, _)| n)
+            .unwrap_or_default();
+        let theme = hosts.find(&name).and_then(|h| h.theme.clone());
+        session.term.set_colors(self.colors(theme.as_deref()));
         Ok(MobileSession::new(session, listener, self.rt.handle()))
     }
 }
@@ -220,6 +289,107 @@ impl Shellwing {
     fn hosts(&self) -> Result<Hosts, MobileError> {
         self.store.hosts().map_err(MobileError::of)
     }
+}
+
+/// `edit` as the host to write over the one with its id (or a new one), or
+/// what is wrong with it, as the desktop's editor says.
+fn checked(edit: HostEdit, hosts: &Hosts) -> Result<Host, String> {
+    let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let spaced = |s: &str| s.chars().any(char::is_whitespace);
+    let address = edit.address.trim().to_string();
+    let name = match edit.name.trim() {
+        "" => address.clone(),
+        n => n.to_string(),
+    };
+    let old = edit
+        .id
+        .as_ref()
+        .and_then(|id| hosts.hosts.iter().find(|h| h.id.as_ref() == Some(id)));
+    let me = |h: &Host| edit.id.is_some() && h.id == edit.id;
+    let taken = |n: &str| {
+        hosts
+            .hosts
+            .iter()
+            .any(|h| !me(h) && (h.name == n || h.alias.as_deref() == Some(n)))
+    };
+    if address.is_empty() {
+        return Err("Address: an address is needed.".into());
+    }
+    if spaced(&address) {
+        return Err("Address: no spaces.".into());
+    }
+    if taken(&name) {
+        return Err("Name: another host has this name.".into());
+    }
+    let alias = clean(edit.alias);
+    if let Some(a) = &alias {
+        if spaced(a) {
+            return Err("Alias: no spaces.".into());
+        }
+        if taken(a) {
+            return Err("Alias: another host uses this.".into());
+        }
+    }
+    if edit.port == Some(0) {
+        return Err("Port: 1 to 65535.".into());
+    }
+    let user = clean(edit.user);
+    if user.as_deref().is_some_and(spaced) {
+        return Err("User: no spaces.".into());
+    }
+    let key = clean(edit.key);
+    if edit.auth == AuthWay::Key && key.is_none() {
+        return Err("Key: choose a key.".into());
+    }
+    if edit.keepalive.is_some_and(|k| k > 3600) {
+        return Err("Keepalive: seconds, 0 to 3600 (0: none).".into());
+    }
+    if edit.jump.contains(&name) {
+        return Err("Jump: a host cannot jump through itself.".into());
+    }
+    for f in &edit.forward {
+        if let Some(e) = forward_problem(f.clone()) {
+            return Err(format!("Forward {f}: {e}"));
+        }
+    }
+    let mut host = old.cloned().unwrap_or_else(|| new_host(&address));
+    host.id = edit.id;
+    host.name = name;
+    host.alias = alias;
+    host.address = address;
+    host.port = edit.port;
+    host.user = user;
+    host.group = clean(edit.group);
+    host.tags = edit
+        .tags
+        .into_iter()
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty())
+        .collect();
+    host.jump = edit.jump;
+    host.forward = edit
+        .forward
+        .into_iter()
+        .map(|f| f.trim().to_string())
+        .collect();
+    host.auth = Auth {
+        method: match edit.auth {
+            AuthWay::Auto => AuthMethod::Auto,
+            AuthWay::Key => AuthMethod::Key,
+            AuthWay::Password => AuthMethod::Password,
+            AuthWay::Agent => AuthMethod::Agent,
+        },
+        key: if edit.auth == AuthWay::Key { key } else { None },
+    };
+    host.theme = clean(edit.theme);
+    host.color = clean(edit.color);
+    host.favorite = edit.favorite;
+    host.local_only = edit.local_only;
+    host.forward_agent = edit.forward_agent;
+    host.keepalive = edit.keepalive;
+    host.host_key = edit.host_key.map(Into::into);
+    host.run = clean(edit.run);
+    Ok(host)
 }
 
 /// A host with nothing set but its address.
@@ -307,42 +477,6 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
     out
 }
 
-/// The terminal's colors: Dusk, the desktop's default dark theme.
-fn dusk() -> Colors {
-    let themes = shellwing_config::Themes::builtin();
-    let rgb = |c: shellwing_config::Color| Rgb {
-        r: c.r,
-        g: c.g,
-        b: c.b,
-    };
-    match themes.find(shellwing_config::DEFAULT_THEME) {
-        Some(t) => Colors {
-            foreground: rgb(t.foreground),
-            background: rgb(t.background),
-            cursor: rgb(t.cursor),
-            palette: t.palette.map(rgb),
-        },
-        None => Colors {
-            foreground: Rgb {
-                r: 0xe2,
-                g: 0xe8,
-                b: 0xf0,
-            },
-            background: Rgb {
-                r: 0x27,
-                g: 0x2e,
-                b: 0x38,
-            },
-            cursor: Rgb {
-                r: 0x4c,
-                g: 0xc4,
-                b: 0xf9,
-            },
-            palette: [Rgb::default(); 16],
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -366,11 +500,10 @@ mod tests {
     }
 
     fn store_with(text: &str) -> (std::path::PathBuf, Arc<Shellwing>) {
-        let dir = std::env::temp_dir().join(format!(
-            "shellwing-mobile-{}-{}",
-            std::process::id(),
-            text.len()
-        ));
+        // One folder per test: they run at once.
+        static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("shellwing-mobile-{}-{n}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("dir");
         std::fs::write(dir.join("hosts.toml"), text).expect("hosts");
@@ -402,8 +535,9 @@ mod tests {
 
     #[test]
     fn a_host_saved_keeps_what_the_phone_does_not_edit() {
-        let (dir, app) =
-            store_with("[[host]]\nname = \"db\"\naddress = \"10.0.2.5\"\njump = [\"bastion\"]\n");
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"db\"\naddress = \"10.0.2.5\"\njump = [\"bastion\"]\nlog = true\n",
+        );
         let id = app.sections().expect("sections")[0].hosts[0].id.clone();
         let mut edit = app.host(id.clone()).expect("host");
         edit.user = Some("postgres".into());
@@ -412,21 +546,103 @@ mod tests {
         let text = std::fs::read_to_string(dir.join("hosts.toml")).expect("read");
         assert!(text.contains("bastion"), "{text}");
         assert!(text.contains("postgres") && text.contains("2201"), "{text}");
+        assert!(text.contains("log = true"), "{text}");
 
+        let blank = HostEdit {
+            id: None,
+            name: String::new(),
+            alias: None,
+            address: "new.example".into(),
+            port: None,
+            user: None,
+            group: Some("Staging".into()),
+            tags: vec![],
+            jump: vec![],
+            forward: vec![],
+            auth: AuthWay::Auto,
+            key: None,
+            theme: None,
+            color: None,
+            favorite: false,
+            local_only: false,
+            forward_agent: false,
+            keepalive: None,
+            host_key: None,
+            run: None,
+        };
+        let refused = |e: HostEdit| app.save_host(e).expect_err("saved").to_string();
+        assert!(
+            refused(HostEdit {
+                name: "db".into(),
+                ..blank.clone()
+            })
+            .starts_with("Name")
+        );
+        assert!(
+            refused(HostEdit {
+                auth: AuthWay::Key,
+                ..blank.clone()
+            })
+            .starts_with("Key")
+        );
+        assert!(
+            refused(HostEdit {
+                forward: vec!["-L x".into()],
+                ..blank.clone()
+            })
+            .starts_with("Forward")
+        );
+        assert!(forward_problem("-L 8080:localhost:80".into()).is_none());
         let new = app
             .save_host(HostEdit {
-                id: None,
-                name: String::new(),
-                address: "new.example".into(),
-                port: None,
-                user: None,
-                group: Some("Staging".into()),
+                auth: AuthWay::Key,
+                key: Some("vault:k1".into()),
+                theme: Some("nord".into()),
+                tags: vec![" web ".into(), String::new()],
+                host_key: Some(HostKeyWay::Strict),
+                ..blank
             })
             .expect("new");
         assert!(!new.is_empty());
+        let back = app.host(new.clone()).expect("new host");
+        assert_eq!(back.name, "new.example");
+        assert_eq!(
+            (back.key.as_deref(), back.tags.as_slice()),
+            (Some("vault:k1"), &["web".to_string()][..])
+        );
+        assert_eq!(
+            (back.theme.as_deref(), back.host_key),
+            (Some("nord"), Some(HostKeyWay::Strict))
+        );
         assert_eq!(app.groups(), ["Staging"]);
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn settings_are_read_and_written_as_the_desktop_does() {
+        let (dir, app) = store_with("");
+        let s = app.settings();
+        assert_eq!(
+            (s.scrollback, s.keepalive, s.host_key),
+            (10_000, 30, HostKeyWay::Ask)
+        );
+        let themes = app.themes();
+        assert!(themes.iter().any(|t| t.id == s.theme), "{}", s.theme);
+        let other = themes
+            .iter()
+            .find(|t| t.id != s.theme)
+            .expect("another")
+            .id
+            .clone();
+        app.set_theme(other.clone()).expect("theme");
+        app.set_scrollback(5).expect("scrollback");
+        app.set_host_key(HostKeyWay::AcceptNew).expect("host key");
+        app.set_keepalive(15).expect("keepalive");
+        let s = app.settings();
+        assert_eq!((s.theme, s.scrollback, s.keepalive), (other, 100, 15));
+        assert_eq!(s.host_key, HostKeyWay::AcceptNew);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
