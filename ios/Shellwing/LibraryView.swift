@@ -45,6 +45,9 @@ struct LibraryView: View {
             #if DEBUG
             // `-screen markdown`: how a note shows, the desktop's template
             // and what it lacks (a table, alerts, nested lists).
+            .sheet(isPresented: .constant(UserDefaults.standard.string(forKey: "screen") == "mdedit")) {
+                MarkdownEditorSample().environmentObject(app).preferredColorScheme(.dark)
+            }
             .sheet(isPresented: .constant(UserDefaults.standard.string(forKey: "screen") == "markdown")) {
                 ScrollView {
                     MarkdownView(text: MarkdownSample.text, toggle: { _ in })
@@ -60,6 +63,91 @@ struct LibraryView: View {
 }
 
 #if DEBUG
+/// `-screen mdedit`: the editor on the sample, the caret in it.
+struct MarkdownEditorSample: View {
+    @State private var text = MarkdownSample.text
+    @StateObject private var editor = MarkdownEditorController()
+
+    var body: some View {
+        MarkdownEditor(text: $text, controller: editor)
+            .background(Dusk.page.ignoresSafeArea())
+            .task {
+                try? await Task.sleep(for: .milliseconds(600))
+                guard let tv = editor.textView else { return }
+                tv.becomeFirstResponder()
+                tv.selectedRange = NSRange(location: 40, length: 4)
+                if UserDefaults.standard.string(forKey: "script") == "check" { await check(tv) }
+            }
+    }
+
+    /// `-script check`: the bar's edits, Return and Undo, done on the text
+    /// view as a user would; what came of each written to `editor-check.txt`
+    /// in the app's tmp, to read.
+    private func check(_ tv: UITextView) async {
+        var said: [String] = []
+        func select(_ what: String, offset: Int = 0, length: Int? = nil) {
+            let r = (tv.text as NSString).range(of: what)
+            tv.selectedRange = NSRange(location: r.location + offset, length: length ?? r.length)
+        }
+        /// As the keyboard types: the delegate asked first.
+        func type(_ t: String) {
+            let r = tv.selectedRange
+            if tv.delegate?.textView?(tv, shouldChangeTextIn: r, replacementText: t) ?? true {
+                tv.insertText(t)
+            }
+        }
+        func pause() async { try? await Task.sleep(for: .milliseconds(150)) }
+        func line(_ what: String) -> String {
+            (tv.text ?? "").components(separatedBy: "\n").first { $0.contains(what) } ?? "(gone)"
+        }
+        select("load")
+        editor.wrap(.bold)
+        await pause()
+        said.append("bold: " + line("load") + " | selected: " + (tv.text as NSString).substring(with: tv.selectedRange))
+        select("Tell the team", offset: 13, length: 0)
+        type("\n")
+        await pause()
+        type("Ring Linh")
+        await pause()
+        said.append("return: " + line("Ring Linh"))
+        type("\n")
+        type("\n")
+        said.append("empty item ends: [" + line("Ring Linh") + "] then [" + (tv.text as NSString).substring(with: (tv.text as NSString).lineRange(for: tv.selectedRange)).replacingOccurrences(of: "\n", with: "⏎") + "]")
+        select("Pull the image", offset: 0, length: 0)
+        editor.indent(out: false)
+        await pause()
+        said.append("indent: " + line("Pull the image"))
+        editor.undo()
+        await pause()
+        said.append("undo: " + line("Pull the image") + " | bold kept: " + line("load"))
+        select("Check the logs", offset: 0, length: 0)
+        editor.lines(.task)
+        await pause()
+        said.append("task: " + line("Check the logs"))
+        select("Deploying", offset: 0, length: 0)
+        editor.lines(.heading)
+        await pause()
+        said.append("heading: " + line("Deploying"))
+        editor.insertBlock("![](attachment:abc)")
+        await pause()
+        said.append("image after: " + (tv.text ?? "").components(separatedBy: "\n").prefix(2).joined(separator: " ⏎ "))
+        let boxes = markdownRuns(text: tv.text).filter { $0.role == .taskBox }
+        if let box = boxes.first {
+            let ns = { (tv.text ?? "") as NSString }
+            let lineOf = { ns().substring(with: ns().lineRange(for: NSRange(location: Int(box.start), length: 0))).trimmingCharacters(in: .newlines) }
+            let before = lineOf()
+            editor.toggleTask(box: Int(box.start))
+            await pause()
+            let ticked = lineOf()
+            editor.undo()
+            await pause()
+            said.append("tick: [" + before + "] -> [" + ticked + "] -> undo [" + lineOf() + "]")
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("editor-check.txt")
+        try? said.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+}
+
 enum MarkdownSample {
     static let text = """
     # Deploying web-1
@@ -596,6 +684,8 @@ struct NoteEditor: View {
     @State private var problem: String?
     @State private var deleted = false
     @State private var confirmDelete = false
+    /// The Markdown editor's: its bar's image button, an image put in.
+    @StateObject private var editor = MarkdownEditorController()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -641,9 +731,11 @@ struct NoteEditor: View {
                     })
                         .padding(16)
                 }
+            } else if markdown {
+                MarkdownEditor(text: $text, controller: editor)
             } else {
                 TextEditor(text: $text)
-                    .font(.system(size: 15, design: markdown ? .default : .monospaced))
+                    .font(.system(size: 15, design: .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 12)
             }
@@ -695,6 +787,7 @@ struct NoteEditor: View {
             HostsChooser(chosen: $hosts).environmentObject(app)
         }
         .onAppear {
+            editor.onImage = { picking = true }
             guard !loaded else { return }
             loaded = true
             id = note.id
@@ -731,7 +824,12 @@ struct NoteEditor: View {
         }
         do {
             guard let line = try app.core?.addNoteImage(bytes: jpeg) else { return }
-            text += (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + line + "\n"
+            if editor.textView != nil && !preview {
+                // Where the caret is, on a line of its own.
+                editor.insertBlock(line)
+            } else {
+                text += (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + line + "\n"
+            }
             problem = nil
         } catch {
             problem = "\(error)"

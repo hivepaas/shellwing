@@ -506,7 +506,7 @@ fn drop_front(spans: Vec<MdSpan>, mut n: usize) -> Vec<MdSpan> {
     out
 }
 
-fn alert_of(kind: AlertKind) -> MdAlert {
+pub(crate) fn alert_of(kind: AlertKind) -> MdAlert {
     match kind {
         AlertKind::Note => MdAlert::Note,
         AlertKind::Tip => MdAlert::Tip,

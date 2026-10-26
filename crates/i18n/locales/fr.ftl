@@ -4403,6 +4403,39 @@ tc5fceb9b = Cette image est illisible.
 # For hosts
 t350fa483 = Pour les serveurs
 
+# Bold
+t45768d96 = Gras
+
+# Italic
+t8db0c08d = Italique
+
+# Strikethrough
+t2504f1e4 = Barré
+
+# Code
+t795db914 = Code
+
+# Link
+t8e08e589 = Lien
+
+# Heading
+tfc3003b5 = Titre
+
+# Outdent
+ta6a77b16 = Désindenter
+
+# Indent
+t5f8d60db = Indenter
+
+# Undo
+t71fd4acf = Annuler
+
+# Redo
+t7412e5e9 = Rétablir
+
+# Hide the keyboard
+t5cadc433 = Masquer le clavier
+
 # Not done
 t0f88a146 = Pas fait
 
@@ -4705,9 +4738,6 @@ ta4995035 = Bas
 
 # Right
 t1e9e9f85 = Droite
-
-# Hide the keyboard
-t5cadc433 = Masquer le clavier
 
 # Show the keyboard
 t6884a1b4 = Afficher le clavier

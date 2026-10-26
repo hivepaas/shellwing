@@ -4403,6 +4403,39 @@ tc5fceb9b = No se puede leer esa imagen.
 # For hosts
 t350fa483 = Para servidores
 
+# Bold
+t45768d96 = Negrita
+
+# Italic
+t8db0c08d = Cursiva
+
+# Strikethrough
+t2504f1e4 = Tachado
+
+# Code
+t795db914 = Código
+
+# Link
+t8e08e589 = Enlace
+
+# Heading
+tfc3003b5 = Encabezado
+
+# Outdent
+ta6a77b16 = Reducir sangría
+
+# Indent
+t5f8d60db = Aumentar sangría
+
+# Undo
+t71fd4acf = Deshacer
+
+# Redo
+t7412e5e9 = Rehacer
+
+# Hide the keyboard
+t5cadc433 = Ocultar el teclado
+
 # Not done
 t0f88a146 = Sin hacer
 
@@ -4705,9 +4738,6 @@ ta4995035 = Abajo
 
 # Right
 t1e9e9f85 = Derecha
-
-# Hide the keyboard
-t5cadc433 = Ocultar el teclado
 
 # Show the keyboard
 t6884a1b4 = Mostrar el teclado

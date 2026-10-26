@@ -4264,6 +4264,39 @@ tc5fceb9b = 无法读取该图片。
 # For hosts
 t350fa483 = 适用主机
 
+# Bold
+t45768d96 = 粗体
+
+# Italic
+t8db0c08d = 斜体
+
+# Strikethrough
+t2504f1e4 = 删除线
+
+# Code
+t795db914 = 代码
+
+# Link
+t8e08e589 = 链接
+
+# Heading
+tfc3003b5 = 标题
+
+# Outdent
+ta6a77b16 = 减少缩进
+
+# Indent
+t5f8d60db = 增加缩进
+
+# Undo
+t71fd4acf = 撤销
+
+# Redo
+t7412e5e9 = 重做
+
+# Hide the keyboard
+t5cadc433 = 隐藏键盘
+
 # Not done
 t0f88a146 = 未完成
 
@@ -4563,9 +4596,6 @@ ta4995035 = 下
 
 # Right
 t1e9e9f85 = 右
-
-# Hide the keyboard
-t5cadc433 = 隐藏键盘
 
 # Show the keyboard
 t6884a1b4 = 显示键盘

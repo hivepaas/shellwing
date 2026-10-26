@@ -13,6 +13,7 @@ mod files;
 mod i18n;
 mod library;
 mod markdown;
+mod md_edit;
 mod session;
 mod settings;
 mod sync;
@@ -30,6 +31,7 @@ pub use files::FileEntry;
 pub use i18n::LanguageRow;
 pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
 pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
+pub use md_edit::{MdEdit, MdLines, MdRole, MdRun, MdWrap};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };

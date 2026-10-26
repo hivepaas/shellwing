@@ -4264,6 +4264,39 @@ tc5fceb9b = Không đọc được ảnh đó.
 # For hosts
 t350fa483 = Cho máy chủ
 
+# Bold
+t45768d96 = Đậm
+
+# Italic
+t8db0c08d = Nghiêng
+
+# Strikethrough
+t2504f1e4 = Gạch ngang
+
+# Code
+t795db914 = Mã
+
+# Link
+t8e08e589 = Liên kết
+
+# Heading
+tfc3003b5 = Tiêu đề
+
+# Outdent
+ta6a77b16 = Giảm thụt lề
+
+# Indent
+t5f8d60db = Tăng thụt lề
+
+# Undo
+t71fd4acf = Hoàn tác
+
+# Redo
+t7412e5e9 = Làm lại
+
+# Hide the keyboard
+t5cadc433 = Ẩn bàn phím
+
 # Not done
 t0f88a146 = Chưa xong
 
@@ -4563,9 +4596,6 @@ ta4995035 = Xuống
 
 # Right
 t1e9e9f85 = Phải
-
-# Hide the keyboard
-t5cadc433 = Ẩn bàn phím
 
 # Show the keyboard
 t6884a1b4 = Hiện bàn phím

@@ -4403,6 +4403,39 @@ tc5fceb9b = Dieses Bild ist nicht lesbar.
 # For hosts
 t350fa483 = Für Hosts
 
+# Bold
+t45768d96 = Fett
+
+# Italic
+t8db0c08d = Kursiv
+
+# Strikethrough
+t2504f1e4 = Durchgestrichen
+
+# Code
+t795db914 = Code
+
+# Link
+t8e08e589 = Link
+
+# Heading
+tfc3003b5 = Überschrift
+
+# Outdent
+ta6a77b16 = Ausrücken
+
+# Indent
+t5f8d60db = Einrücken
+
+# Undo
+t71fd4acf = Widerrufen
+
+# Redo
+t7412e5e9 = Wiederholen
+
+# Hide the keyboard
+t5cadc433 = Tastatur ausblenden
+
 # Not done
 t0f88a146 = Nicht erledigt
 
@@ -4705,9 +4738,6 @@ ta4995035 = Nach unten
 
 # Right
 t1e9e9f85 = Nach rechts
-
-# Hide the keyboard
-t5cadc433 = Tastatur ausblenden
 
 # Show the keyboard
 t6884a1b4 = Tastatur einblenden

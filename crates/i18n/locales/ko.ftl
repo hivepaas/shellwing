@@ -4264,6 +4264,39 @@ tc5fceb9b = 이미지를 읽을 수 없습니다.
 # For hosts
 t350fa483 = 사용 호스트
 
+# Bold
+t45768d96 = 굵게
+
+# Italic
+t8db0c08d = 기울임꼴
+
+# Strikethrough
+t2504f1e4 = 취소선
+
+# Code
+t795db914 = 코드
+
+# Link
+t8e08e589 = 링크
+
+# Heading
+tfc3003b5 = 제목
+
+# Outdent
+ta6a77b16 = 내어쓰기
+
+# Indent
+t5f8d60db = 들여쓰기
+
+# Undo
+t71fd4acf = 실행 취소
+
+# Redo
+t7412e5e9 = 다시 실행
+
+# Hide the keyboard
+t5cadc433 = 키보드 숨기기
+
 # Not done
 t0f88a146 = 완료 안 됨
 
@@ -4563,9 +4596,6 @@ ta4995035 = 아래
 
 # Right
 t1e9e9f85 = 오른쪽
-
-# Hide the keyboard
-t5cadc433 = 키보드 숨기기
 
 # Show the keyboard
 t6884a1b4 = 키보드 보기

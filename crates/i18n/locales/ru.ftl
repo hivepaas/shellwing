@@ -4507,6 +4507,39 @@ tc5fceb9b = Не удаётся прочитать это изображение
 # For hosts
 t350fa483 = Для хостов
 
+# Bold
+t45768d96 = Жирный
+
+# Italic
+t8db0c08d = Курсив
+
+# Strikethrough
+t2504f1e4 = Зачёркнутый
+
+# Code
+t795db914 = Код
+
+# Link
+t8e08e589 = Ссылка
+
+# Heading
+tfc3003b5 = Заголовок
+
+# Outdent
+ta6a77b16 = Уменьшить отступ
+
+# Indent
+t5f8d60db = Увеличить отступ
+
+# Undo
+t71fd4acf = Отменить
+
+# Redo
+t7412e5e9 = Повторить
+
+# Hide the keyboard
+t5cadc433 = Скрыть клавиатуру
+
 # Not done
 t0f88a146 = Не выполнено
 
@@ -4815,9 +4848,6 @@ ta4995035 = Вниз
 
 # Right
 t1e9e9f85 = Вправо
-
-# Hide the keyboard
-t5cadc433 = Скрыть клавиатуру
 
 # Show the keyboard
 t6884a1b4 = Показать клавиатуру
