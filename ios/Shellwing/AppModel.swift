@@ -18,7 +18,7 @@ final class AppModel: ObservableObject {
         // its to write in.
         setenv("SHELLWING_KNOWN_HOSTS", dir.appendingPathComponent("known_hosts").path, 1)
         do {
-            core = try Shellwing(configDir: dir.path)
+            core = try Shellwing(configDir: dir.path, keys: KeychainKeys())
             problem = nil
         } catch {
             core = nil
@@ -100,6 +100,43 @@ final class AppModel: ObservableObject {
     func close(_ model: SessionModel) {
         sessions.removeAll { $0 === model }
     }
+
+    // The vault: saved passwords and SSH keys. Opening it waits on its own
+    // thread the first time; after, these return at once.
+
+    func vaultState() -> VaultState {
+        core?.vaultState() ?? VaultState(ready: false, problem: problem)
+    }
+
+    func recoveryKey() -> String? {
+        core?.recoveryKey()
+    }
+
+    func savedSecrets() -> [SavedSecret] {
+        core?.savedSecrets() ?? []
+    }
+
+    func keys() -> [KeyRow] {
+        core?.keys() ?? []
+    }
+
+    /// Forgets a saved password or passphrase, or deletes a key.
+    func forget(_ id: String) {
+        do {
+            try core?.forget(id: id)
+        } catch {
+            self.error = "\(error)"
+        }
+    }
+
+    func generateKey(name: String) -> KeyRow? {
+        do {
+            return try core?.generateKey(name: name)
+        } catch {
+            self.error = "\(error)"
+            return nil
+        }
+    }
 }
 
 /// One session: its latest frame, status and title, published for the views.
@@ -114,6 +151,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     @MainActor @Published private(set) var status: SessionStatus = .connecting
     @MainActor @Published private(set) var title: String
     @MainActor @Published private(set) var ended: String?
+    /// A password that worked, offered to keep: `the password for deploy@web-1`.
+    @MainActor @Published private(set) var offer: String?
     /// Ctrl or Alt, pressed on the row above the keyboard: held for the next key.
     @MainActor @Published var ctrl = false
     @MainActor @Published var alt = false
@@ -160,6 +199,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         if t != title { title = t }
         let e = session.ended()
         if e != ended { ended = e }
+        let o = session.offer()
+        if o != offer { offer = o }
     }
 
     // What the keyboard and the keys row send.
@@ -209,6 +250,25 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
 
     func reconnect() {
         session?.reconnect()
+    }
+
+    @MainActor
+    func keepOffer() throws {
+        try session?.saveOffer()
+        offer = nil
+    }
+
+    @MainActor
+    func dismissOffer() {
+        session?.dismissOffer()
+        offer = nil
+    }
+
+    /// Puts the public key `line` in the host's authorized_keys: true when added, false
+    /// when it was there.
+    func install(key line: String) async throws -> Bool {
+        guard let session else { throw MobileError.Failed("Not connected.") }
+        return try await session.installKey(public: line)
     }
 }
 

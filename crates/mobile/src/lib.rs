@@ -9,6 +9,7 @@
 uniffi::setup_scaffolding!();
 
 mod session;
+mod vault;
 
 use std::sync::Arc;
 
@@ -20,6 +21,7 @@ use shellwing_term::{Colors, Rgb};
 pub use session::{
     FrameData, Key, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
+pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum MobileError {
@@ -72,20 +74,27 @@ pub struct Shellwing {
     store: Store,
     rt: tokio::runtime::Runtime,
     colors: Colors,
+    /// Saved passwords and SSH keys: `vault.db` beside hosts.toml, its key
+    /// in the platform's keychain.
+    vault: VaultSlot,
 }
 
 #[uniffi::export]
 impl Shellwing {
     /// Keeps the configuration in `config_dir` (the app's own folder),
-    /// making it if need be.
+    /// making it if need be; the vault's key in `keys`.
     #[uniffi::constructor]
-    pub fn new(config_dir: String) -> Result<Arc<Self>, MobileError> {
+    pub fn new(config_dir: String, keys: Arc<dyn PlatformKeys>) -> Result<Arc<Self>, MobileError> {
         std::fs::create_dir_all(&config_dir).map_err(MobileError::of)?;
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .thread_name("shellwing-net")
             .build()
             .map_err(MobileError::of)?;
+        let vault = VaultSlot::open_with(
+            std::path::Path::new(&config_dir).join("vault.db"),
+            vault::Keys(keys),
+        );
         let store = Store::new(config_dir);
         // Hosts written by hand have no id yet; editing one finds it by it.
         store.assign_host_ids().map_err(MobileError::of)?;
@@ -93,6 +102,7 @@ impl Shellwing {
             store,
             rt,
             colors: dusk(),
+            vault,
         }))
     }
 
@@ -187,7 +197,7 @@ impl Shellwing {
             &settings,
             self.rt.handle(),
             None,
-            VaultSlot::none(),
+            self.vault.clone(),
         )
         .map_err(MobileError::of)?;
         session.term.set_colors(self.colors.clone());
@@ -326,6 +336,24 @@ fn dusk() -> Colors {
 mod tests {
     use super::*;
 
+    /// The platform's keychain, in memory.
+    #[derive(Default)]
+    struct MemKeys(std::sync::Mutex<Option<Vec<u8>>>);
+
+    impl PlatformKeys for MemKeys {
+        fn load(&self) -> Result<Option<Vec<u8>>, MobileError> {
+            Ok(self.0.lock().map_err(MobileError::of)?.clone())
+        }
+        fn save(&self, key: Vec<u8>) -> Result<(), MobileError> {
+            *self.0.lock().map_err(MobileError::of)? = Some(key);
+            Ok(())
+        }
+        fn forget(&self) -> Result<(), MobileError> {
+            *self.0.lock().map_err(MobileError::of)? = None;
+            Ok(())
+        }
+    }
+
     fn store_with(text: &str) -> (std::path::PathBuf, Arc<Shellwing>) {
         let dir = std::env::temp_dir().join(format!(
             "shellwing-mobile-{}-{}",
@@ -335,7 +363,11 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("dir");
         std::fs::write(dir.join("hosts.toml"), text).expect("hosts");
-        let app = Shellwing::new(dir.to_string_lossy().into_owned()).expect("app");
+        let app = Shellwing::new(
+            dir.to_string_lossy().into_owned(),
+            Arc::new(MemKeys::default()),
+        )
+        .expect("app");
         (dir, app)
     }
 
@@ -384,6 +416,25 @@ mod tests {
         assert_eq!(app.groups(), ["Staging"]);
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_vault_keeps_its_key_in_the_platform_keychain_and_keys_in_it() {
+        let (dir, app) = store_with("");
+        assert!(app.vault_state().ready, "{:?}", app.vault_state());
+        assert!(
+            app.recovery_key()
+                .is_some_and(|k| k.split('-').count() == 13)
+        );
+        assert!(app.generate_key("  ".into()).is_err());
+        let key = app.generate_key("phone".into()).expect("key");
+        assert_eq!(key.kind, "ED25519");
+        assert!(key.public.starts_with("ssh-ed25519 "), "{}", key.public);
+        assert_eq!(app.keys(), std::slice::from_ref(&key));
+        app.forget(key.id).expect("deleted");
+        assert!(app.keys().is_empty());
+        assert!(app.saved_secrets().is_empty());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

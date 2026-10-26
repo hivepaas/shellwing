@@ -30,6 +30,24 @@ struct SettingsView: View {
                 .listRowBackground(Dusk.surface)
 
                 Section {
+                    let state = app.vaultState()
+                    if state.ready {
+                        NavigationLink("SSH keys") { KeysView() }
+                        NavigationLink("Saved passwords") { SecretsView() }
+                        NavigationLink("Recovery key") { RecoveryKeyView() }
+                    } else {
+                        Text(state.problem ?? "The vault is opening…")
+                            .foregroundStyle(Dusk.badText)
+                    }
+                } header: {
+                    SectionHeading(text: "Vault")
+                } footer: {
+                    Text("Passwords and keys, encrypted on this phone; its key is in the iOS Keychain, on this phone only.")
+                        .foregroundStyle(Dusk.muted)
+                }
+                .listRowBackground(Dusk.surface)
+
+                Section {
                     LabeledContent("Hosts", value: "\(app.sections.flatMap(\.hosts).count)")
                     LabeledContent("Configuration") {
                         Text("hosts.toml, in the app's own folder")

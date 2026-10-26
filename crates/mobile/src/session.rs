@@ -4,7 +4,11 @@
 use std::sync::{Arc, Mutex, Weak};
 
 use shellwing_core::session::{Session, Status};
+use shellwing_ssh::Learned;
+use shellwing_ssh::keys::{self, Installed};
 use shellwing_term::{Event, Frame, Mods, NamedKey, Rgb};
+
+use crate::MobileError;
 
 /// Told when a session has something new to show: a frame, its status, its
 /// title. Called off the main thread; the app reads them on its own.
@@ -110,6 +114,9 @@ pub struct MobileSession {
     title: Mutex<String>,
     /// The last frame taken: a new one only replaces it.
     frame: Mutex<Option<FrameData>>,
+    /// A password or passphrase typed at a prompt that worked: offered to
+    /// keep in the vault.
+    offer: Mutex<Option<Learned>>,
 }
 
 impl MobileSession {
@@ -118,11 +125,16 @@ impl MobileSession {
         listener: Arc<dyn SessionListener>,
         rt: &tokio::runtime::Handle,
     ) -> Arc<Self> {
-        let (wake, events) = (session.wake.clone(), session.events.clone());
+        let (wake, events, learned) = (
+            session.wake.clone(),
+            session.events.clone(),
+            session.learned.clone(),
+        );
         let me = Arc::new(MobileSession {
             title: Mutex::new(session.title.clone()),
             session: Mutex::new(session),
             frame: Mutex::new(None),
+            offer: Mutex::new(None),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
@@ -141,6 +153,13 @@ impl MobileSession {
                             }
                         }
                         Ok(_) => {}
+                        Err(_) => break,
+                    },
+                    typed = learned.recv() => match typed {
+                        Ok(l) => {
+                            let Some(me) = weak.upgrade() else { break };
+                            *lock(&me.offer) = Some(l);
+                        }
                         Err(_) => break,
                     },
                 }
@@ -242,6 +261,46 @@ impl MobileSession {
     /// Connects again, after it was lost or closed.
     pub fn reconnect(&self) {
         lock(&self.session).reconnect();
+    }
+
+    /// What a prompt that worked would keep in the vault, said for the
+    /// question: `the password for deploy@web-1`.
+    pub fn offer(&self) -> Option<String> {
+        lock(&self.offer).as_ref().map(|l| match l {
+            Learned::Password { target, .. } => format!("the password for {target}"),
+            Learned::Passphrase { key_path, .. } => format!("the passphrase of {key_path}"),
+        })
+    }
+
+    /// Keeps what was offered in the vault: tried first next time.
+    pub fn save_offer(&self) -> Result<(), MobileError> {
+        let Some(l) = lock(&self.offer).take() else {
+            return Ok(());
+        };
+        lock(&self.session).save(&l).map_err(MobileError::Failed)
+    }
+
+    pub fn dismiss_offer(&self) {
+        lock(&self.offer).take();
+    }
+
+    /// Adds `public` (one line, as `authorized_keys` takes it) to the host's
+    /// `~/.ssh/authorized_keys`, over this session's connection. True when
+    /// it was added, false when it was there already.
+    pub async fn install_key(&self, public: String) -> Result<bool, MobileError> {
+        let answer = lock(&self.session)
+            .remote()
+            .exec(keys::INSTALL, format!("{}\n", public.trim()).into_bytes())
+            .ok_or_else(|| MobileError::Failed("Not connected.".into()))?;
+        let ran = answer
+            .await
+            .map_err(|_| MobileError::Failed("the connection ended".into()))?
+            .map_err(MobileError::of)?;
+        match keys::installed(ran.status, &ran.stdout, &ran.stderr) {
+            Ok(Installed::Added) => Ok(true),
+            Ok(Installed::Present) => Ok(false),
+            Err(e) => Err(MobileError::Failed(e)),
+        }
     }
 }
 
