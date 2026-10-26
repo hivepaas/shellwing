@@ -23,6 +23,9 @@ struct ShellwingApp: App {
                         .tabItem { Label("Sessions", systemImage: "terminal") }
                         .badge(app.sessions.count)
                         .tag("sessions")
+                    LibraryView()
+                        .tabItem { Label("Library", systemImage: "books.vertical") }
+                        .tag("library")
                     SettingsView()
                         .tabItem { Label("Settings", systemImage: "gearshape") }
                         .tag("settings")

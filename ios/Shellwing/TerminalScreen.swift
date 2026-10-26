@@ -8,12 +8,16 @@ struct TerminalScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var typing = true
     @State private var installing = false
+    @State private var pickingSnippet = false
+    @State private var running: SnippetRow?
+    @State private var pickingEnv = false
     /// What the last thing done said: a key installed, a password kept.
     @State private var said: String?
 
     var body: some View {
         VStack(spacing: 0) {
             header
+            if !model.envs.isEmpty { envBadges }
             TerminalView(model: model, typing: $typing)
                 .overlay(alignment: .bottom) {
                     VStack(spacing: 0) {
@@ -22,11 +26,62 @@ struct TerminalScreen: View {
                         banner
                     }
                 }
-            KeysRow(model: model, typing: $typing)
+            KeysRow(model: model, typing: $typing) { pickingSnippet = true }
         }
         .background(Dusk.chrome)
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+        .sheet(isPresented: $pickingSnippet) {
+            NavigationStack {
+                SnippetsList(spec: model.spec) { s in
+                    pickingSnippet = false
+                    if s.asked.isEmpty {
+                        if let why = app.run(snippet: s.id, in: model, values: [:]) { show(why) }
+                    } else {
+                        running = s
+                    }
+                }
+                .background(Dusk.panel.ignoresSafeArea())
+                .navigationTitle("Snippets")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .environmentObject(app)
+            .presentationDetents([.medium, .large])
+            .preferredColorScheme(.dark)
+        }
+        .sheet(item: $running) { s in
+            RunSnippetSheet(snippet: s, session: model).environmentObject(app)
+        }
+        .sheet(isPresented: $pickingEnv) {
+            NavigationStack {
+                List(app.environments(), id: \.id) { e in
+                    Button {
+                        pickingEnv = false
+                        if let why = app.load(env: e.id, in: model) { show(why) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(e.name).foregroundStyle(Dusk.text)
+                            Text(e.names.joined(separator: " "))
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(Dusk.muted)
+                        }
+                    }
+                    .listRowBackground(Dusk.surface)
+                }
+                .scrollContentBackground(.hidden)
+                .background(Dusk.panel.ignoresSafeArea())
+                .navigationTitle("Load an environment")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.medium])
+            .preferredColorScheme(.dark)
+        }
+        .onChange(of: model.notice) { _, n in
+            if let n {
+                show(n)
+                model.notice = nil
+            }
+        }
         .sheet(isPresented: $installing) {
             InstallKeySheet(model: model) { result in
                 installing = false
@@ -35,6 +90,33 @@ struct TerminalScreen: View {
             .environmentObject(app)
             .presentationDetents([.medium, .large])
         }
+    }
+
+    /// The environments loaded into the shell; ✕ unloads one.
+    private var envBadges: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(model.envs, id: \.id) { e in
+                    HStack(spacing: 4) {
+                        Circle().fill(Dusk.ok).frame(width: 6, height: 6)
+                        Text(e.name).font(.system(size: 13))
+                        Button { model.unload(env: e.id) } label: {
+                            Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+                                .frame(width: 24, height: 24)
+                        }
+                        .accessibilityLabel("Unload \(e.name)")
+                    }
+                    .padding(.leading, 10)
+                    .frame(height: 30)
+                    .background(Dusk.chip, in: Capsule())
+                    .overlay(Capsule().stroke(Dusk.fieldEdge))
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+        }
+        .foregroundStyle(Dusk.text)
+        .background(Dusk.chrome)
     }
 
     private func show(_ text: String) {
@@ -116,6 +198,8 @@ struct TerminalScreen: View {
                     model.scrollToBottom()
                 }
                 if model.status == .connected {
+                    Button("Snippets…", systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
+                    Button("Load an environment…", systemImage: "list.bullet.rectangle") { pickingEnv = true }
                     Button("Install a key on this host…", systemImage: "key") { installing = true }
                 }
                 if model.status == .lost || model.status == .closed || model.status == .failed {
@@ -164,6 +248,8 @@ struct TerminalScreen: View {
 struct KeysRow: View {
     @ObservedObject var model: SessionModel
     @Binding var typing: Bool
+    /// The Snippets key: the session's snippets, to run.
+    let snippets: () -> Void
 
     var body: some View {
         VStack(spacing: 5) {
@@ -178,6 +264,14 @@ struct KeysRow: View {
                 icon("chevron.right", "Right") { model.press(.right) }
             }
             HStack(spacing: 5) {
+                Button(action: snippets) {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Dusk.accent)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .background(Dusk.button, in: RoundedRectangle(cornerRadius: 9))
+                .accessibilityLabel("Snippets")
                 ForEach(["|", "~", "/", "-", "_", ":"], id: \.self) { s in
                     key(s, mono: true) { model.type(s) }
                 }

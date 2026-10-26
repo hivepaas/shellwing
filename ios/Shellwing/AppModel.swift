@@ -145,6 +145,78 @@ final class AppModel: ObservableObject {
         }
     }
 
+    // The library: snippets, environments, notes.
+
+    func snippets(for spec: String?) -> [SnippetRow] {
+        core?.snippets(spec: spec) ?? []
+    }
+
+    @discardableResult
+    func save(snippet: SnippetEdit) -> Bool {
+        do {
+            _ = try core?.saveSnippet(edit: snippet)
+            return true
+        } catch {
+            self.error = "\(error)"
+            return false
+        }
+    }
+
+    /// Runs snippet `id` in `session` with the values asked for: nil, or why not.
+    func run(snippet id: String, in session: SessionModel, values: [String: String]) -> String? {
+        guard let core, let handle = session.handle else { return "Not connected." }
+        do {
+            try core.runSnippet(session: handle, id: id, values: values)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    func environments() -> [EnvRow] {
+        core?.environments() ?? []
+    }
+
+    @discardableResult
+    func saveEnvironment(id: String, name: String, scope: String, dotenv: String) -> Bool {
+        do {
+            _ = try core?.saveEnvironment(id: id, name: name, scope: scope, dotenv: dotenv)
+            return true
+        } catch {
+            self.error = "\(error)"
+            return false
+        }
+    }
+
+    /// Loads environment `id` into `session`'s shell: nil, or why not.
+    func load(env id: String, in session: SessionModel) -> String? {
+        guard let core, let handle = session.handle else { return "Not connected." }
+        do {
+            try core.loadEnv(session: handle, id: id)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    func notes() -> [NoteRow] {
+        core?.notes() ?? []
+    }
+
+    func noteText(_ id: String) -> String {
+        (try? core?.noteText(id: id)) ?? ""
+    }
+
+    /// Saves a note; its id, or nil and `error` set.
+    func saveNote(id: String, title: String, category: String, markdown: Bool, text: String) -> String? {
+        do {
+            return try core?.saveNote(id: id, title: title, category: category, markdown: markdown, text: text)
+        } catch {
+            self.error = "\(error)"
+            return nil
+        }
+    }
+
     func generateKey(name: String) -> KeyRow? {
         do {
             return try core?.generateKey(name: name)
@@ -162,6 +234,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     let id = UUID()
     let spec: String
     private var session: MobileSession?
+    /// For what runs through the core (snippets, environments).
+    var handle: MobileSession? { session }
 
     @MainActor @Published private(set) var frame: FrameData?
     @MainActor @Published private(set) var status: SessionStatus = .connecting
@@ -169,6 +243,9 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     @MainActor @Published private(set) var ended: String?
     /// A password that worked, offered to keep: `the password for deploy@web-1`.
     @MainActor @Published private(set) var offer: String?
+    /// Something said once: an environment loaded, a load given up.
+    @MainActor @Published var notice: String?
+    @MainActor @Published private(set) var envs: [LoadedEnvRow] = []
     /// Ctrl or Alt, pressed on the row above the keyboard: held for the next key.
     @MainActor @Published var ctrl = false
     @MainActor @Published var alt = false
@@ -217,6 +294,9 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         if e != ended { ended = e }
         let o = session.offer()
         if o != offer { offer = o }
+        if let n = session.notice() { notice = n }
+        let loaded = session.loadedEnvs()
+        if loaded != envs { envs = loaded }
     }
 
     // What the keyboard and the keys row send.
@@ -266,6 +346,16 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
 
     func reconnect() {
         session?.reconnect()
+    }
+
+    @MainActor
+    func unload(env id: String?) {
+        do {
+            try session?.unloadEnv(id: id)
+            envs = session?.loadedEnvs() ?? []
+        } catch {
+            notice = "\(error)"
+        }
     }
 
     @MainActor
