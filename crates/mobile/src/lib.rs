@@ -28,7 +28,7 @@ pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
-pub use settings::{HostKeyWay, SettingsRow, ThemeRow};
+pub use settings::{HostKeyWay, KnownHostRow, SettingsRow, ThemeRow};
 pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
 pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 

@@ -1,9 +1,10 @@
 //! The settings a phone has, from `config.toml` as the desktop writes it:
 //! the terminal's theme, its history, and how hosts are met (their keys,
 //! keepalives). Those sync with the vault, as on the desktop. The themes
-//! are the desktop's built-in ones.
+//! are the desktop's built-in ones. And the hosts whose keys are known.
 
 use shellwing_config::{HostKey, SettingValue, Theme, Themes};
+use shellwing_ssh::known_hosts;
 use shellwing_term::{Colors, Rgb};
 
 use crate::{MobileError, Shellwing};
@@ -63,8 +64,51 @@ pub struct SettingsRow {
     pub synced: bool,
 }
 
+/// A line of known_hosts: a host whose key is known.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct KnownHostRow {
+    /// Its line in the file, from 1.
+    pub line: u64,
+    /// The names it is for; empty when they are hashed.
+    pub names: Vec<String>,
+    pub kind: String,
+    pub fingerprint: String,
+    /// `@cert-authority` or `@revoked`.
+    pub marker: Option<String>,
+}
+
 #[uniffi::export]
 impl Shellwing {
+    /// The hosts whose keys are known, as known_hosts lists them.
+    pub fn known_hosts(&self) -> Result<Vec<KnownHostRow>, MobileError> {
+        let Some(path) = known_hosts::default_path() else {
+            return Ok(vec![]);
+        };
+        Ok(known_hosts::entries(&path)
+            .map_err(MobileError::of)?
+            .into_iter()
+            .map(|e| KnownHostRow {
+                line: e.line as u64,
+                names: e.names().into_iter().map(str::to_string).collect(),
+                kind: e.key.kind,
+                fingerprint: e.key.fingerprint,
+                marker: e.marker,
+            })
+            .collect())
+    }
+
+    /// Forgets the known hosts on `lines`: their keys are asked about again
+    /// next time. The file before is kept as `known_hosts.old`.
+    pub fn forget_known_hosts(&self, lines: Vec<u64>) -> Result<u32, MobileError> {
+        let Some(path) = known_hosts::default_path() else {
+            return Ok(0);
+        };
+        let lines: Vec<usize> = lines.into_iter().map(|l| l as usize).collect();
+        known_hosts::remove_lines(&path, &lines)
+            .map(|n| n as u32)
+            .map_err(MobileError::of)
+    }
+
     pub fn settings(&self) -> SettingsRow {
         let s = self.store.settings().unwrap_or_default();
         let theme = Themes::builtin()
