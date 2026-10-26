@@ -5,6 +5,7 @@
 pub mod bench;
 pub mod command;
 pub mod environment;
+pub mod envs;
 pub mod images;
 pub mod library;
 pub mod local;
