@@ -4264,8 +4264,26 @@ tc5fceb9b = 이미지를 읽을 수 없습니다.
 # For hosts
 t350fa483 = 사용 호스트
 
+# Not done
+t0f88a146 = 완료 안 됨
+
 # Image
 t590ca79a = 이미지
+
+# Copied
+t8dc21305 = 복사됨
+
+# Tip
+t1d97162a = 팁
+
+# Important
+tc93c9dc5 = 중요
+
+# Warning
+t37c4fc8f = 경고
+
+# Caution
+tec06ed06 = 주의
 
 # No sessions open
 t483ac645 = 열린 세션 없음
@@ -4575,9 +4593,6 @@ t1b42e91e = { $name }은(는) 이미 { $host }에 있습니다.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 아직 키가 없습니다. 키를 생성한 뒤 세션 메뉴에서 호스트에 설치하세요. 그때부터 비밀번호 없이 로그인합니다.
-
-# Copied
-t8dc21305 = 복사됨
 
 # Share
 t4f856dd8 = 공유

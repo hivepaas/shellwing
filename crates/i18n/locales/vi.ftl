@@ -4264,8 +4264,26 @@ tc5fceb9b = Không đọc được ảnh đó.
 # For hosts
 t350fa483 = Cho máy chủ
 
+# Not done
+t0f88a146 = Chưa xong
+
 # Image
 t590ca79a = Ảnh
+
+# Copied
+t8dc21305 = Đã sao chép
+
+# Tip
+t1d97162a = Mẹo
+
+# Important
+tc93c9dc5 = Quan trọng
+
+# Warning
+t37c4fc8f = Cảnh báo
+
+# Caution
+tec06ed06 = Thận trọng
 
 # No sessions open
 t483ac645 = Chưa có phiên nào đang mở
@@ -4575,9 +4593,6 @@ t1b42e91e = { $name } đã có sẵn trên { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Chưa có khoá nào. Hãy tạo một khoá, rồi cài lên máy chủ từ menu của phiên: từ đó sẽ đăng nhập bằng khoá, không cần mật khẩu.
-
-# Copied
-t8dc21305 = Đã sao chép
 
 # Share
 t4f856dd8 = Chia sẻ

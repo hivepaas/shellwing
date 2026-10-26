@@ -4403,8 +4403,26 @@ tc5fceb9b = Dieses Bild ist nicht lesbar.
 # For hosts
 t350fa483 = Für Hosts
 
+# Not done
+t0f88a146 = Nicht erledigt
+
 # Image
 t590ca79a = Bild
+
+# Copied
+t8dc21305 = Kopiert
+
+# Tip
+t1d97162a = Tipp
+
+# Important
+tc93c9dc5 = Wichtig
+
+# Warning
+t37c4fc8f = Warnung
+
+# Caution
+tec06ed06 = Vorsicht
 
 # No sessions open
 t483ac645 = Keine Sitzungen offen
@@ -4717,9 +4735,6 @@ t1b42e91e = { $name } war bereits auf { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Noch keine Schlüssel. Erzeuge einen und installiere ihn dann über das Menü einer Sitzung auf einem Host: Danach erfolgt die Anmeldung damit, ohne Passwort.
-
-# Copied
-t8dc21305 = Kopiert
 
 # Share
 t4f856dd8 = Teilen

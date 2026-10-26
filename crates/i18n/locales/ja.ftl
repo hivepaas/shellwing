@@ -4264,8 +4264,26 @@ tc5fceb9b = その画像は読み込めません。
 # For hosts
 t350fa483 = 対象ホスト
 
+# Not done
+t0f88a146 = 未完了
+
 # Image
 t590ca79a = 画像
+
+# Copied
+t8dc21305 = コピーしました
+
+# Tip
+t1d97162a = ヒント
+
+# Important
+tc93c9dc5 = 重要
+
+# Warning
+t37c4fc8f = 警告
+
+# Caution
+tec06ed06 = 注意
 
 # No sessions open
 t483ac645 = 開いているセッションはありません
@@ -4575,9 +4593,6 @@ t1b42e91e = { $name } はすでに { $host } に登録されています。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 鍵はまだありません。鍵を生成し、セッションのメニューからホストにインストールすると、以降はパスワードなしでサインインできます。
-
-# Copied
-t8dc21305 = コピーしました
 
 # Share
 t4f856dd8 = 共有

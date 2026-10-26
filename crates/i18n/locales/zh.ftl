@@ -4264,8 +4264,26 @@ tc5fceb9b = 无法读取该图片。
 # For hosts
 t350fa483 = 适用主机
 
+# Not done
+t0f88a146 = 未完成
+
 # Image
 t590ca79a = 图片
+
+# Copied
+t8dc21305 = 已复制
+
+# Tip
+t1d97162a = 提示
+
+# Important
+tc93c9dc5 = 重要
+
+# Warning
+t37c4fc8f = 警告
+
+# Caution
+tec06ed06 = 注意
 
 # No sessions open
 t483ac645 = 没有打开的会话
@@ -4575,9 +4593,6 @@ t1b42e91e = { $host } 上已有 { $name }。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 还没有密钥。请生成一个，然后从会话菜单中将其安装到主机上：此后无需密码即可用它登录。
-
-# Copied
-t8dc21305 = 已复制
 
 # Share
 t4f856dd8 = 共享

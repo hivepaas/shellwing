@@ -12,6 +12,7 @@ mod config_files;
 mod files;
 mod i18n;
 mod library;
+mod markdown;
 mod session;
 mod settings;
 mod sync;
@@ -28,6 +29,7 @@ pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
 pub use files::FileEntry;
 pub use i18n::LanguageRow;
 pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
+pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };

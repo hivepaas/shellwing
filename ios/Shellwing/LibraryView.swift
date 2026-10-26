@@ -5,6 +5,8 @@ import SwiftUI
 /// The Library tab: what the vault keeps besides passwords, as the desktop's
 /// Library has it.
 struct LibraryView: View {
+    @EnvironmentObject private var app: AppModel
+
     enum Part: String, CaseIterable, Identifiable {
         case snippets = "Snippets", envs = "Envs", notes = "Notes", files = "Files", keys = "Keys"
         var id: String { rawValue }
@@ -40,9 +42,63 @@ struct LibraryView: View {
             }
             .background(Dusk.panel.ignoresSafeArea())
             .navigationTitle(tr("Library"))
+            #if DEBUG
+            // `-screen markdown`: how a note shows, the desktop's template
+            // and what it lacks (a table, alerts, nested lists).
+            .sheet(isPresented: .constant(UserDefaults.standard.string(forKey: "screen") == "markdown")) {
+                ScrollView {
+                    MarkdownView(text: MarkdownSample.text, toggle: { _ in })
+                        .padding(16)
+                }
+                .background(Dusk.page.ignoresSafeArea())
+                .environmentObject(app)
+                .preferredColorScheme(.dark)
+            }
+            #endif
         }
     }
 }
+
+#if DEBUG
+enum MarkdownSample {
+    static let text = """
+    # Deploying web-1
+
+    Check **disk** and *load* first, ~~then reboot~~, with `df -h`. Docs: https://example.com/runbook_v2.
+
+    > [!WARNING]
+    > Restarting nginx drops open connections.
+
+    > [!TIP] Run it inside tmux.
+
+    1. Pull the image
+    2. Restart
+       - nginx
+       - the workers
+    3. Check the logs
+
+    - [x] Back up the database
+    - [ ] Tell the team
+
+    | Host | Port | Role |
+    |:--|--:|:-:|
+    | web-1 | 22 | front |
+    | db-primary | 5432 | database |
+
+    ```bash
+    sudo systemctl restart nginx
+    journalctl -u nginx --since "10 min ago"
+    ```
+
+    > A plain quote
+    > > and one inside it.
+
+    ---
+
+    Done.
+    """
+}
+#endif
 
 // MARK: Snippets
 
@@ -580,7 +636,9 @@ struct NoteEditor: View {
                 Spacer()
             } else if preview && markdown {
                 ScrollView {
-                    MarkdownView(text: text, insert: nil)
+                    MarkdownView(text: text, toggle: { at in
+                        if let ticked = toggleTask(text: text, at: at) { text = ticked }
+                    })
                         .padding(16)
                 }
             } else {
@@ -744,10 +802,14 @@ struct NoteReader: View {
                     .font(.system(size: 22, weight: .semibold))
                 if let text {
                     if note.markdown {
-                        MarkdownView(text: text) { code in
-                            session.paste(code)
-                            dismiss()
-                        }
+                        MarkdownView(
+                            text: text,
+                            insert: { code in
+                                session.paste(code)
+                                dismiss()
+                            },
+                            toggle: { at in tick(at, in: text) }
+                        )
                     } else {
                         Text(text).font(.system(size: 14, design: .monospaced)).textSelection(.enabled)
                     }
@@ -766,6 +828,18 @@ struct NoteReader: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if !note.sensitive { text = app.noteText(note.id) }
+        }
+    }
+
+    /// A task ticked here is saved at once: the note is not being edited.
+    private func tick(_ at: UInt64, in current: String) {
+        guard let ticked = toggleTask(text: current, at: at) else { return }
+        text = ticked
+        if case .failure(let e) = app.saveNote(
+            id: note.id, title: note.title, category: note.category, markdown: note.markdown,
+            hosts: note.hosts, sensitive: note.sensitive, text: ticked
+        ) {
+            app.error = "\(e)"
         }
     }
 }

@@ -4507,8 +4507,26 @@ tc5fceb9b = Не удаётся прочитать это изображение
 # For hosts
 t350fa483 = Для хостов
 
+# Not done
+t0f88a146 = Не выполнено
+
 # Image
 t590ca79a = Изображение
+
+# Copied
+t8dc21305 = Скопировано
+
+# Tip
+t1d97162a = Совет
+
+# Important
+tc93c9dc5 = Важно
+
+# Warning
+t37c4fc8f = Предупреждение
+
+# Caution
+tec06ed06 = Осторожно
 
 # No sessions open
 t483ac645 = Нет открытых сеансов
@@ -4827,9 +4845,6 @@ t1b42e91e = { $name } уже был на { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Ключей пока нет. Создайте ключ, затем установите его на хост из меню сеанса: после этого вход будет выполняться с ним, без пароля.
-
-# Copied
-t8dc21305 = Скопировано
 
 # Share
 t4f856dd8 = Поделиться
