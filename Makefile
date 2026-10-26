@@ -31,7 +31,7 @@ ARCH := $(shell uname -m 2>/dev/null)
 
 .DEFAULT_GOAL := help
 .PHONY: help build run dev build-mac build-linux build-windows build-ios-core \
-	build-android-core test lint fmt check install-desktop package doctor clean zig
+	build-android-core ios ios-sim test lint fmt check install-desktop package doctor clean zig
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-20s %s\n", $$1, $$2}'
@@ -110,6 +110,18 @@ build-android-core: zig ## shellwing-core for Android arm64 (needs the NDK)
 	@test -d "$(ANDROID_NDK_HOME)" || { echo "no Android NDK found: set ANDROID_NDK_HOME (docs/platforms.md)"; exit 1; }
 	$(RUSTUP) target add aarch64-linux-android
 	$(CARGO) build -p shellwing-core --target aarch64-linux-android
+
+## The iOS app (ios/; needs Xcode and XcodeGen: brew install xcodegen)
+
+ios: zig ## The iOS app's Rust library, its Swift, and the Xcode project -> ios/Shellwing.xcodeproj
+	$(RUSTUP) target add aarch64-apple-ios aarch64-apple-ios-sim
+	CARGO=$(CARGO) scripts/build_ios.sh
+	cd ios && xcodegen generate --quiet
+	@echo "open ios/Shellwing.xcodeproj, or: make ios-sim"
+
+ios-sim: ## Builds the iOS app for the Simulator (after make ios)
+	cd ios && xcodebuild -project Shellwing.xcodeproj -scheme Shellwing \
+		-destination 'generic/platform=iOS Simulator' -derivedDataPath ../target/ios build
 
 ## Before a pull request (CONTRIBUTING.md)
 

@@ -12,3 +12,9 @@
 
 # A shell history left by a session run with the repository as its home.
 .bash_history
+
+# The iOS app's generated parts: the Rust library and its Swift, and the
+# Xcode project XcodeGen makes from ios/project.yml (make ios).
+/ios/Generated
+/ios/Shellwing.xcodeproj
+/ios/Shellwing/Info.plist
