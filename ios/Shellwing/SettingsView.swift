@@ -32,6 +32,13 @@ struct SettingsView: View {
                 Section {
                     let state = app.vaultState()
                     if state.ready {
+                        NavigationLink {
+                            SyncView()
+                        } label: {
+                            LabeledContent("Sync") {
+                                Text(app.sync?.said ?? "Off").foregroundStyle(Dusk.muted)
+                            }
+                        }
                         NavigationLink("SSH keys") { KeysView() }
                         NavigationLink("Saved passwords") { SecretsView() }
                         NavigationLink("Recovery key") { RecoveryKeyView() }

@@ -10,13 +10,18 @@ final class AppModel: ObservableObject {
 
     @Published private(set) var sections: [HostSection] = []
     @Published private(set) var sessions: [SessionModel] = []
+    @Published private(set) var sync: SyncStatus?
     @Published var error: String?
+    private let syncHears = SyncHears()
 
     init() {
         let dir = AppModel.configDir()
         // known_hosts goes beside the configuration: the app's home is not
         // its to write in.
         setenv("SHELLWING_KNOWN_HOSTS", dir.appendingPathComponent("known_hosts").path, 1)
+        // A sync folder the user gave (iCloud Drive): open to the app again
+        // before the sync worker looks at it.
+        SyncFolder.resume()
         do {
             core = try Shellwing(configDir: dir.path, keys: KeychainKeys())
             problem = nil
@@ -24,7 +29,18 @@ final class AppModel: ObservableObject {
             core = nil
             problem = "\(error)"
         }
+        syncHears.app = self
+        core?.setSyncListener(listener: syncHears)
         reload()
+        refreshSync()
+    }
+
+    /// The sync's state, read again; a sync done may have brought hosts.
+    func refreshSync() {
+        guard let core else { return }
+        let now = core.syncStatus()
+        if now.last != sync?.last { reload() }
+        sync = now
     }
 
     /// Application Support/shellwing: kept, backed up, never shown in Files.
@@ -290,6 +306,17 @@ extension SessionStatus {
         case .lost: return "connection lost"
         case .failed: return "could not connect"
         case .closed: return "closed"
+        }
+    }
+}
+
+/// Hears the sync worker (off the main thread) and refreshes the app on it.
+final class SyncHears: SyncListener, @unchecked Sendable {
+    weak var app: AppModel?
+
+    func changed() {
+        DispatchQueue.main.async { [weak self] in
+            self?.app?.refreshSync()
         }
     }
 }
