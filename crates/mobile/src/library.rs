@@ -62,6 +62,10 @@ pub struct NoteRow {
     pub sensitive: bool,
     /// The text's bytes.
     pub size: u64,
+    /// The hosts it is about, by name.
+    pub hosts: Vec<String>,
+    /// About the session's host: offered first there.
+    pub here: bool,
 }
 
 #[uniffi::export]
@@ -236,10 +240,13 @@ impl Shellwing {
         )
     }
 
-    pub fn notes(&self) -> Vec<NoteRow> {
+    /// The notes by category then title; with `spec`, those about its host
+    /// first, as the desktop's palette offers them in a pane.
+    pub fn notes(&self, spec: Option<String>) -> Vec<NoteRow> {
         let Some(v) = self.vault.get() else {
             return vec![];
         };
+        let host = spec.and_then(|s| self.host_and_group(&s).0);
         let mut out: Vec<NoteRow> = v
             .notes()
             .unwrap_or_default()
@@ -251,13 +258,40 @@ impl Shellwing {
                 markdown: n.format == NoteFormat::Markdown,
                 sensitive: n.sensitive,
                 size: n.size as u64,
+                here: host.as_ref().is_some_and(|h| n.hosts.contains(h)),
+                hosts: n.hosts,
             })
             .collect();
         out.sort_by(|a, b| {
-            (a.category.to_lowercase(), a.title.to_lowercase())
-                .cmp(&(b.category.to_lowercase(), b.title.to_lowercase()))
+            (!a.here, a.category.to_lowercase(), a.title.to_lowercase()).cmp(&(
+                !b.here,
+                b.category.to_lowercase(),
+                b.title.to_lowercase(),
+            ))
         });
         out
+    }
+
+    /// The image a note shows as `attachment:<id>`: PNG or JPEG bytes.
+    pub fn note_image(&self, id: String) -> Option<Vec<u8>> {
+        let bytes = self.vault.get()?.attachment(&id).ok()??;
+        Some(bytes.to_vec())
+    }
+
+    /// Keeps an image for a note (made smaller if need be, as the desktop
+    /// does); returns the Markdown line that shows it.
+    pub fn add_note_image(&self, bytes: Vec<u8>) -> Result<String, MobileError> {
+        let prepared = shellwing_core::images::prepare(&bytes).map_err(|e| match e {
+            shellwing_core::images::PrepareError::TooLarge(n) => MobileError::Failed(
+                environment::said_oversize(&shellwing_vault::Oversize::Attachment(n)),
+            ),
+            e => MobileError::of(e),
+        })?;
+        let id = self
+            .open_vault()?
+            .add_attachment(&prepared.bytes)
+            .map_err(|e| MobileError::Failed(environment::said_error(&e)))?;
+        Ok(shellwing_vault::attachment_line(&id))
     }
 
     pub fn note_text(&self, id: String) -> Result<String, MobileError> {
@@ -269,15 +303,18 @@ impl Shellwing {
             .unwrap_or_default())
     }
 
-    /// Saves a note: a new one when `id` is empty. Its other fields (hosts,
-    /// sensitive) stay as they were.
+    /// Saves a note: a new one when `id` is empty. `text` None keeps the
+    /// one it has (a sensitive note not shown).
+    #[allow(clippy::too_many_arguments)]
     pub fn save_note(
         &self,
         id: String,
         title: String,
         category: String,
         markdown: bool,
-        text: String,
+        hosts: Vec<String>,
+        sensitive: bool,
+        text: Option<String>,
     ) -> Result<String, MobileError> {
         let vault = self.open_vault()?;
         let old = vault
@@ -302,8 +339,10 @@ impl Shellwing {
         } else {
             NoteFormat::Plain
         };
+        n.hosts = hosts;
+        n.sensitive = sensitive;
         vault
-            .save_note(&n, Some(&text))
+            .save_note(&n, text.as_deref())
             .map_err(|e| MobileError::Failed(environment::said_error(&e)))
     }
 }

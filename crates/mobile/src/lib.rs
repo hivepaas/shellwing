@@ -890,12 +890,58 @@ mod tests {
                 "Disk".into(),
                 "Ops".into(),
                 true,
-                "# df -h".into(),
+                vec![],
+                false,
+                Some("# df -h".into()),
             )
             .expect("note");
-        assert_eq!(app.notes()[0].title, "Disk");
-        assert!(app.notes()[0].markdown);
-        assert_eq!(app.note_text(note).expect("text"), "# df -h");
+        assert_eq!(app.notes(None)[0].title, "Disk");
+        assert!(app.notes(None)[0].markdown);
+        assert_eq!(app.note_text(note.clone()).expect("text"), "# df -h");
+        let pi = app
+            .save_note(
+                String::new(),
+                "The Pi".into(),
+                "Ops".into(),
+                false,
+                vec!["pi".into()],
+                true,
+                Some("secret".into()),
+            )
+            .expect("note");
+        let here = app.notes(Some("pi".into()));
+        assert!(here[0].here && here[0].sensitive && here[0].hosts == ["pi"]);
+        assert_eq!(app.notes(Some("web-1".into()))[0].title, "Disk");
+        // Saved again unshown: its text stays.
+        app.save_note(
+            pi.clone(),
+            "Pi".into(),
+            "Ops".into(),
+            false,
+            vec![],
+            true,
+            None,
+        )
+        .expect("saved");
+        assert_eq!(app.note_text(pi).expect("text"), "secret");
+
+        const PNG: &[u8] = &[
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48,
+            0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+            0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78,
+            0x9c, 0x63, 0xf8, 0xcf, 0xc0, 0xf0, 0x1f, 0x00, 0x05, 0x00, 0x01, 0xff, 0x89, 0x99,
+            0x3d, 0x1d, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+        ];
+        assert!(app.add_note_image(b"not an image".to_vec()).is_err());
+        let line = app.add_note_image(PNG.to_vec()).expect("image");
+        let id = line
+            .strip_prefix("![](attachment:")
+            .and_then(|l| l.strip_suffix(')'))
+            .expect("a line");
+        assert!(
+            app.note_image(id.into())
+                .is_some_and(|b| b.starts_with(b"\x89PNG"))
+        );
 
         let row = |path: &str| ConfigFileRow {
             id: String::new(),
