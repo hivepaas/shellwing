@@ -49,7 +49,6 @@ mod snippet_window;
 mod snippets;
 mod snippets_view;
 mod sync_panel;
-mod syncing;
 mod tab_overview;
 mod view;
 mod workspace;
@@ -64,7 +63,7 @@ use gpui::{App, AppContext as _, Entity, WindowDecorations, WindowOptions};
 use shellwing_config::Store;
 
 // The UI-free half, under the names the app's modules use.
-use shellwing_core::{Writer, bench, local, secrets, session, target};
+use shellwing_core::{Writer, bench, local, secrets, session, sync as syncing, target};
 
 /// Icons drawn into the binary: the app has no other files.
 struct Assets;

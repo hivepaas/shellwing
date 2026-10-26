@@ -13,6 +13,9 @@ shellwing-ssh.workspace = true
 shellwing-config.workspace = true
 shellwing-vault.workspace = true
 shellwing-presence.workspace = true
+# Syncing the vault: its places (WebDAV, S3, Git) and what it says.
+shellwing-remote.workspace = true
+shellwing-i18n.workspace = true
 tokio.workspace = true
 async-channel.workspace = true
 anyhow.workspace = true
