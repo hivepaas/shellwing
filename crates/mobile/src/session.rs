@@ -3,6 +3,7 @@
 
 use std::sync::{Arc, Mutex, Weak};
 
+use shellwing_core::envs::{self, Envs, LoadedEnv};
 use shellwing_core::session::{Session, Status};
 use shellwing_ssh::Learned;
 use shellwing_ssh::keys::{self, Installed};
@@ -117,6 +118,17 @@ pub struct MobileSession {
     /// A password or passphrase typed at a prompt that worked: offered to
     /// keep in the vault.
     offer: Mutex<Option<Learned>>,
+    /// Environments loaded into the shell, and those waiting for it.
+    envs: Mutex<Envs>,
+    /// What to say once: an environment loaded, a load given up.
+    notice: Mutex<Option<String>>,
+}
+
+/// An environment loaded into a session's shell.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct LoadedEnvRow {
+    pub id: String,
+    pub name: String,
 }
 
 impl MobileSession {
@@ -135,6 +147,8 @@ impl MobileSession {
             session: Mutex::new(session),
             frame: Mutex::new(None),
             offer: Mutex::new(None),
+            envs: Mutex::default(),
+            notice: Mutex::new(None),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
@@ -150,6 +164,13 @@ impl MobileSession {
                             let Some(me) = weak.upgrade() else { break };
                             if !t.is_empty() {
                                 *lock(&me.title) = t;
+                            }
+                        }
+                        Ok(Event::Signal(signal)) => {
+                            let Some(me) = weak.upgrade() else { break };
+                            let term = lock(&me.session).term.clone();
+                            if let Some(name) = lock(&me.envs).signal(&term, &signal) {
+                                *lock(&me.notice) = Some(format!("{name} is loaded into this shell."));
                             }
                         }
                         Ok(_) => {}
@@ -263,6 +284,31 @@ impl MobileSession {
         lock(&self.session).reconnect();
     }
 
+    /// Something to say once (an environment loaded, a load given up); taken.
+    pub fn notice(&self) -> Option<String> {
+        lock(&self.notice).take()
+    }
+
+    /// The environments loaded into the shell.
+    pub fn loaded_envs(&self) -> Vec<LoadedEnvRow> {
+        lock(&self.envs)
+            .loaded()
+            .iter()
+            .map(|e| LoadedEnvRow {
+                id: e.id.clone(),
+                name: e.name.clone(),
+            })
+            .collect()
+    }
+
+    /// Unloads environment `id` from the shell (None: all of them).
+    pub fn unload_env(&self, id: Option<String>) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        lock(&self.envs).unload(&term, id.as_deref());
+        Ok(())
+    }
+
     /// What a prompt that worked would keep in the vault, said for the
     /// question: `the password for deploy@web-1`.
     pub fn offer(&self) -> Option<String> {
@@ -301,6 +347,96 @@ impl MobileSession {
             Ok(Installed::Present) => Ok(false),
             Err(e) => Err(MobileError::Failed(e)),
         }
+    }
+}
+
+impl MobileSession {
+    /// Why nothing can be typed into the shell now: not connected, or a
+    /// full-screen program has the keys.
+    fn ready(&self) -> Result<(), MobileError> {
+        if lock(&self.session).status() != Status::Connected {
+            return Err(MobileError::Failed("Not connected.".into()));
+        }
+        if lock(&self.frame).as_ref().is_some_and(|f| f.alternate) {
+            return Err(MobileError::Failed(
+                "A full-screen program is running: leave it, then try again.".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    /// `host`, `user` and `address`, as snippets name them.
+    pub(crate) fn built_ins(&self) -> Vec<(String, String)> {
+        let s = lock(&self.session);
+        let mut out = vec![(
+            "host".to_string(),
+            s.entry.clone().unwrap_or_else(|| s.title.clone()),
+        )];
+        if let Some(t) = s.reached() {
+            out.push(("user".into(), t.user.clone()));
+            out.push(("address".into(), t.host.clone()));
+        }
+        out
+    }
+
+    /// Types `text` (several lines as one paste), and Enter if `enter`.
+    pub(crate) fn type_text(&self, text: &str, enter: bool) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let text = text.trim_end_matches('\n');
+        if text.contains('\n') {
+            term.paste(text.to_string(), true);
+        } else {
+            term.text(text.to_string());
+        }
+        if enter {
+            term.key(NamedKey::Enter, Mods::default());
+        }
+        Ok(())
+    }
+
+    pub(crate) fn run_with_env(
+        self: &Arc<Self>,
+        values: shellwing_vault::EnvValues,
+        command: &str,
+        enter: bool,
+        rt: &tokio::runtime::Runtime,
+    ) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let ready = lock(&self.envs)
+            .run_with(&term, values, command, enter)
+            .map_err(MobileError::Failed)?;
+        self.give_up_later(ready, rt);
+        Ok(())
+    }
+
+    pub(crate) fn load_env(
+        self: &Arc<Self>,
+        env: LoadedEnv,
+        values: shellwing_vault::EnvValues,
+        rt: &tokio::runtime::Runtime,
+    ) -> Result<(), MobileError> {
+        self.ready()?;
+        let term = lock(&self.session).term.clone();
+        let ready = lock(&self.envs)
+            .load(&term, env, values)
+            .map_err(MobileError::Failed)?;
+        self.give_up_later(ready, rt);
+        Ok(())
+    }
+
+    /// Gives up on `ready` if the shell has not signalled it by then.
+    fn give_up_later(self: &Arc<Self>, ready: String, rt: &tokio::runtime::Runtime) {
+        let me = Arc::downgrade(self);
+        rt.spawn(async move {
+            tokio::time::sleep(envs::WAIT).await;
+            if let Some(me) = me.upgrade()
+                && lock(&me.envs).give_up(&ready)
+            {
+                *lock(&me.notice) = Some(envs::gave_up());
+            }
+        });
     }
 }
 

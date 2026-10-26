@@ -8,6 +8,7 @@
 
 uniffi::setup_scaffolding!();
 
+mod library;
 mod session;
 mod sync;
 mod vault;
@@ -19,8 +20,9 @@ use shellwing_core::secrets::VaultSlot;
 use shellwing_core::session::{Opens, Session};
 use shellwing_term::{Colors, Rgb};
 
+pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
-    FrameData, Key, MobileSession, RowData, RunData, SessionListener, SessionStatus,
+    FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
 pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
 pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
@@ -498,5 +500,65 @@ mod tests {
         });
         assert!(b.sync_status().place.is_some());
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn snippets_environments_and_notes_from_the_vault() {
+        let (dir, app) = store_with(
+            "[[group]]\nname = \"Production\"\n\n\
+             [[host]]\nname = \"web-1\"\naddress = \"10.0.1.11\"\ngroup = \"Production\"\n\n\
+             [[host]]\nname = \"pi\"\naddress = \"pi.local\"\n",
+        );
+        let id = app
+            .save_snippet(SnippetEdit {
+                id: String::new(),
+                name: "Restart".into(),
+                category: "Kubernetes".into(),
+                command: "kubectl rollout restart deploy/{{name}} -n {{ns}} # on {{host}}".into(),
+                enter: true,
+                scope: "group:Production".into(),
+            })
+            .expect("snippet");
+        let all = app.snippets(None);
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0].id, id);
+        assert_eq!(all[0].asked, ["name", "ns"]);
+        assert_eq!(app.snippets(Some("web-1".into())).len(), 1);
+        assert!(
+            app.snippets(Some("pi".into())).is_empty(),
+            "offered outside its group"
+        );
+
+        app.save_environment(
+            String::new(),
+            "Staging".into(),
+            String::new(),
+            "export API=x\nTOKEN='t'\n".into(),
+        )
+        .expect("env");
+        assert_eq!(app.environments()[0].names, ["API", "TOKEN"]);
+        assert!(
+            app.save_environment(
+                String::new(),
+                "Bad".into(),
+                String::new(),
+                "not a line".into()
+            )
+            .is_err()
+        );
+
+        let note = app
+            .save_note(
+                String::new(),
+                "Disk".into(),
+                "Ops".into(),
+                true,
+                "# df -h".into(),
+            )
+            .expect("note");
+        assert_eq!(app.notes()[0].title, "Disk");
+        assert!(app.notes()[0].markdown);
+        assert_eq!(app.note_text(note).expect("text"), "# df -h");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
