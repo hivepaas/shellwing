@@ -13,6 +13,7 @@ struct TerminalScreen: View {
     @State private var pickingEnv = false
     @State private var browsing = false
     @State private var placing = false
+    @State private var reading = false
     /// What the last thing done said: a key installed, a password kept.
     @State private var said: String?
 
@@ -86,6 +87,17 @@ struct TerminalScreen: View {
         }
         .sheet(isPresented: $browsing) {
             FilesScreen(model: model).environmentObject(app)
+        }
+        .sheet(isPresented: $reading) {
+            NavigationStack {
+                NotesList(session: model)
+                    .background(Dusk.panel.ignoresSafeArea())
+                    .navigationTitle("Notes")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .environmentObject(app)
+            .presentationDetents([.medium, .large])
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $placing) {
             PlaceConfigSheet(model: model) { result in
@@ -250,6 +262,7 @@ struct TerminalScreen: View {
                 if model.status == .connected {
                     Button("Snippets…", systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
                     Button("Load an environment…", systemImage: "list.bullet.rectangle") { pickingEnv = true }
+                    Button("Notes…", systemImage: "note.text") { reading = true }
                     Button("Files…", systemImage: "folder") { browsing = true }
                     Button("Place a config file…", systemImage: "doc.badge.gearshape") { placing = true }
                     Button("Install a key on this host…", systemImage: "key") { installing = true }

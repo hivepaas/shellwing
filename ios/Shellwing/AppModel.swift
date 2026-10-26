@@ -218,23 +218,38 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func notes() -> [NoteRow] {
-        core?.notes() ?? []
+    /// The notes; with `spec`, those about its host first.
+    func notes(for spec: String? = nil) -> [NoteRow] {
+        core?.notes(spec: spec) ?? []
     }
 
     func noteText(_ id: String) -> String {
         (try? core?.noteText(id: id)) ?? ""
     }
 
-    /// Saves a note; its id, or nil and `error` set.
-    func saveNote(id: String, title: String, category: String, markdown: Bool, text: String) -> String? {
-        do {
-            return try core?.saveNote(id: id, title: title, category: category, markdown: markdown, text: text)
-        } catch {
-            self.error = "\(error)"
-            return nil
+    /// Saves a note (`text` nil keeps its text); its id, or why not.
+    func saveNote(
+        id: String, title: String, category: String, markdown: Bool,
+        hosts: [String], sensitive: Bool, text: String?
+    ) -> Result<String, Error> {
+        guard let core else { return .failure(MobileError.Failed(problem ?? "")) }
+        return Result {
+            try core.saveNote(
+                id: id, title: title, category: category, markdown: markdown,
+                hosts: hosts, sensitive: sensitive, text: text
+            )
         }
     }
+
+    /// The image `attachment:<id>` names, decoded once and kept.
+    func noteImage(_ id: String) -> UIImage? {
+        if let seen = images.object(forKey: id as NSString) { return seen }
+        guard let bytes = core?.noteImage(id: id), let image = UIImage(data: bytes) else { return nil }
+        images.setObject(image, forKey: id as NSString)
+        return image
+    }
+
+    private let images = NSCache<NSString, UIImage>()
 
     // Config files: kept in the vault, placed on a session's host.
 

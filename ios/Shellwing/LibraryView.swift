@@ -1,4 +1,5 @@
 import LocalAuthentication
+import PhotosUI
 import SwiftUI
 
 /// The Library tab: what the vault keeps besides passwords, as the desktop's
@@ -334,109 +335,348 @@ struct EnvEditor: View {
 
 // MARK: Notes
 
+/// The notes; in a session (`session`), those about its host first, and
+/// a tap opens one to read, its commands to insert.
 struct NotesList: View {
     @EnvironmentObject private var app: AppModel
+    var session: SessionModel?
     @State private var notes: [NoteRow] = []
+    @State private var filter = ""
 
     var body: some View {
         List {
             if notes.isEmpty {
                 Text("No notes yet.").foregroundStyle(Dusk.muted).listRowBackground(Dusk.surface)
             }
-            ForEach(notes, id: \.id) { n in
+            ForEach(shown, id: \.id) { n in
                 NavigationLink {
-                    NoteEditor(note: n)
+                    if let session {
+                        NoteReader(note: n, session: session)
+                    } else {
+                        NoteEditor(note: n)
+                    }
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             if n.sensitive { Image(systemName: "lock.fill").font(.system(size: 11)).foregroundStyle(Dusk.amber) }
                             Text(n.title.isEmpty ? "Untitled" : n.title).font(.system(size: 15, weight: .medium))
+                            if n.here {
+                                Text("this host").font(.system(size: 11)).foregroundStyle(Dusk.accent)
+                            }
                         }
-                        Text(n.category.isEmpty ? (n.markdown ? "Markdown" : "Text") : n.category)
+                        Text(detail(n))
                             .font(.system(size: 12))
                             .foregroundStyle(Dusk.muted)
+                            .lineLimit(1)
                     }
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button("Delete", role: .destructive) {
-                        app.forget(n.id)
-                        notes = app.notes()
+                    if session == nil {
+                        Button("Delete", role: .destructive) {
+                            app.forget(n.id)
+                            reload()
+                        }
                     }
                 }
             }
         }
         .scrollContentBackground(.hidden)
+        .searchable(text: $filter, prompt: "Filter notes")
         .toolbar {
-            NavigationLink {
-                NoteEditor(note: NoteRow(id: "", title: "", category: "", markdown: true, sensitive: false, size: 0))
-            } label: { Image(systemName: "plus") }
-            .accessibilityLabel("New note")
+            if session == nil {
+                NavigationLink {
+                    NoteEditor(note: NoteRow(id: "", title: "", category: "", markdown: true, sensitive: false, size: 0, hosts: [], here: false))
+                } label: { Image(systemName: "plus") }
+                .accessibilityLabel("New note")
+            }
         }
-        .onAppear { notes = app.notes() }
+        .onAppear(perform: reload)
+    }
+
+    private var shown: [NoteRow] {
+        let q = filter.lowercased()
+        guard !q.isEmpty else { return notes }
+        return notes.filter {
+            $0.title.lowercased().contains(q) || $0.category.lowercased().contains(q)
+                || $0.hosts.contains { $0.lowercased().contains(q) }
+        }
+    }
+
+    private func detail(_ n: NoteRow) -> String {
+        var parts = [n.category.isEmpty ? (n.markdown ? "Markdown" : "Text") : n.category]
+        if !n.hosts.isEmpty { parts.append(n.hosts.joined(separator: ", ")) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func reload() {
+        notes = app.notes(for: session?.spec)
     }
 }
 
+/// A sensitive note shows once Face ID or the passcode says it is the
+/// owner, as on the desktop.
+@MainActor
+func confirmOwner(_ reason: String, _ then: @escaping (Bool) -> Void) {
+    let ctx = LAContext()
+    guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
+        then(true)
+        return
+    }
+    ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { ok, _ in
+        Task { @MainActor in then(ok) }
+    }
+}
+
+/// A note as the desktop's note window has it: written, or shown as
+/// Markdown; for hosts; sensitive; with images; exported.
 struct NoteEditor: View {
     @EnvironmentObject private var app: AppModel
+    @Environment(\.dismiss) private var dismiss
     let note: NoteRow
     @State private var id = ""
     @State private var title = ""
+    @State private var category = ""
     @State private var text = ""
+    @State private var markdown = true
+    @State private var sensitive = false
+    @State private var hosts: [String] = []
     @State private var loaded = false
+    /// A sensitive note's text, shown.
     @State private var shown = false
+    @State private var preview = false
+    @State private var choosingHosts = false
+    @State private var picking = false
+    @State private var photo: PhotosPickerItem?
+    @State private var problem: String?
+    @State private var deleted = false
+    @State private var confirmDelete = false
 
     var body: some View {
         VStack(spacing: 0) {
             TextField("Title", text: $title)
                 .font(.system(size: 20, weight: .semibold))
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.top, 10)
+            HStack(spacing: 8) {
+                TextField("No category", text: $category)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Dusk.muted)
+                if !hosts.isEmpty {
+                    Text(hosts.joined(separator: ", "))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Dusk.accent)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
             Dusk.line.frame(height: 1)
-            if note.sensitive && !shown {
-                Button("Show the note") { confirm() }
-                    .buttonStyle(.bordered)
-                    .padding(.top, 40)
+            if let problem {
+                Text(problem)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Dusk.badText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background(Dusk.badBg)
+            }
+            if !canRead {
+                VStack(spacing: 12) {
+                    Image(systemName: "lock.fill").font(.system(size: 28)).foregroundStyle(Dusk.amber)
+                    Text("Sensitive: its text shows once it is you.").foregroundStyle(Dusk.muted)
+                    Button("Show the text") { confirmOwner("Show a sensitive note") { ok in if ok { reveal() } } }
+                        .buttonStyle(.bordered)
+                }
+                .padding(.top, 40)
                 Spacer()
+            } else if preview && markdown {
+                ScrollView {
+                    MarkdownView(text: text, insert: nil)
+                        .padding(16)
+                }
             } else {
                 TextEditor(text: $text)
-                    .font(.system(size: 15, design: note.markdown ? .default : .monospaced))
+                    .font(.system(size: 15, design: markdown ? .default : .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 12)
             }
         }
         .foregroundStyle(Dusk.text)
         .background(Dusk.page.ignoresSafeArea())
+        .textInputAutocapitalization(.sentences)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if markdown && canRead {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(preview ? "Edit" : "Preview") { preview.toggle() }
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button("For hosts…", systemImage: "server.rack") { choosingHosts = true }
+                    Toggle("Sensitive", systemImage: "lock", isOn: $sensitive)
+                    Toggle("Markdown", systemImage: "textformat", isOn: $markdown)
+                    if canRead {
+                        if markdown {
+                            Button("Insert an image…", systemImage: "photo") { picking = true }
+                        }
+                        ShareLink(item: exported, preview: SharePreview(title.isEmpty ? "Note" : title)) {
+                            Label("Export…", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    if !id.isEmpty {
+                        Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                    }
+                } label: { Image(systemName: "ellipsis.circle") }
+                .accessibilityLabel("Note")
+            }
+        }
+        .photosPicker(isPresented: $picking, selection: $photo, matching: .images)
+        .onChange(of: photo) { _, item in
+            guard let item else { return }
+            photo = nil
+            Task { await insertImage(item) }
+        }
+        .sheet(isPresented: $choosingHosts) {
+            HostsChooser(chosen: $hosts).environmentObject(app)
+        }
+        .confirmationDialog("Delete \(title.isEmpty ? "this note" : title)?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                app.forget(id)
+                deleted = true
+                dismiss()
+            }
+        }
         .onAppear {
             guard !loaded else { return }
             loaded = true
             id = note.id
             title = note.title
-            text = note.id.isEmpty ? "" : app.noteText(note.id)
+            category = note.category
+            markdown = note.markdown
+            sensitive = note.sensitive
+            hosts = note.hosts
+            if !note.sensitive { text = note.id.isEmpty ? "" : app.noteText(note.id) }
+            preview = note.markdown && !note.id.isEmpty
         }
         .onDisappear(perform: save)
     }
 
-    /// A sensitive note shows once Face ID or the passcode says it is the
-    /// owner, as on the desktop.
-    private func confirm() {
-        let ctx = LAContext()
-        guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
-            shown = true
+    /// Its text is here to edit: not a sensitive note still hidden.
+    private var canRead: Bool { !(note.sensitive && !shown) }
+
+    private var exported: String {
+        title.isEmpty ? text : (markdown ? "# \(title)\n\n\(text)" : "\(title)\n\n\(text)")
+    }
+
+    private func reveal() {
+        text = app.noteText(note.id)
+        shown = true
+    }
+
+    /// An image from Photos, as JPEG (a photo is HEIC), at the cursor's end.
+    private func insertImage(_ item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data),
+              let jpeg = image.jpegData(compressionQuality: 0.85) else {
+            problem = "That image cannot be read."
             return
         }
-        ctx.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Show a sensitive note") { ok, _ in
-            Task { @MainActor in shown = ok }
+        do {
+            guard let line = try app.core?.addNoteImage(bytes: jpeg) else { return }
+            text += (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + line + "\n"
+            problem = nil
+        } catch {
+            problem = "\(error)"
         }
     }
 
     private func save() {
-        guard !(title.isEmpty && text.isEmpty) else { return }
-        // A sensitive note not shown was not loaded: nothing to write over it.
-        guard !(note.sensitive && !shown) else { return }
-        if let saved = app.saveNote(id: id, title: title, category: note.category, markdown: note.markdown, text: text) {
-            id = saved
+        guard !deleted else { return }
+        guard !(title.isEmpty && text.isEmpty && id.isEmpty) else { return }
+        // A sensitive note not shown was not loaded: its text stays.
+        let body: String? = canRead ? text : nil
+        switch app.saveNote(
+            id: id, title: title, category: category, markdown: markdown,
+            hosts: hosts, sensitive: sensitive, text: body
+        ) {
+        case .success(let saved): id = saved
+        case .failure(let e): app.error = "Not saved: \(e)"
+        }
+    }
+}
+
+/// The hosts a note is about.
+struct HostsChooser: View {
+    @EnvironmentObject private var app: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @Binding var chosen: [String]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                let names = Array(Set(app.sections.flatMap(\.hosts).map(\.name) + chosen)).sorted()
+                ForEach(names, id: \.self) { name in
+                    Button {
+                        if let i = chosen.firstIndex(of: name) { chosen.remove(at: i) } else { chosen.append(name) }
+                    } label: {
+                        HStack {
+                            Text(name).foregroundStyle(Dusk.text)
+                            Spacer()
+                            if chosen.contains(name) { Image(systemName: "checkmark").foregroundStyle(Dusk.accent) }
+                        }
+                    }
+                    .listRowBackground(Dusk.surface)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Dusk.page.ignoresSafeArea())
+            .navigationTitle("For hosts")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { Button("Done") { dismiss() } }
+        }
+        .presentationDetents([.medium, .large])
+        .preferredColorScheme(.dark)
+    }
+}
+
+/// A note read in a session: its commands inserted into the shell.
+struct NoteReader: View {
+    @EnvironmentObject private var app: AppModel
+    @Environment(\.dismiss) private var dismiss
+    let note: NoteRow
+    let session: SessionModel
+    @State private var text: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(note.title.isEmpty ? "Untitled" : note.title)
+                    .font(.system(size: 22, weight: .semibold))
+                if let text {
+                    if note.markdown {
+                        MarkdownView(text: text) { code in
+                            session.paste(code)
+                            dismiss()
+                        }
+                    } else {
+                        Text(text).font(.system(size: 14, design: .monospaced)).textSelection(.enabled)
+                    }
+                } else {
+                    Button("Show the text") {
+                        confirmOwner("Show a sensitive note") { ok in if ok { text = app.noteText(note.id) } }
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+        }
+        .foregroundStyle(Dusk.text)
+        .background(Dusk.page.ignoresSafeArea())
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if !note.sensitive { text = app.noteText(note.id) }
         }
     }
 }
