@@ -25,6 +25,10 @@ use shellwing_vault::{Backend, Folder};
 
 pub mod git;
 pub use git::{Git, GitRepo, Install, NoGit};
+#[cfg(feature = "libgit")]
+pub mod libgit;
+#[cfg(feature = "libgit")]
+pub use libgit::LibGitRepo;
 
 /// Where the vault syncs. Secrets (a password, a secret key) are in it:
 /// not `Debug`, so they are never printed by accident.
@@ -155,13 +159,21 @@ impl Place {
                 token,
                 device,
             } => {
-                let git = Git::find()
-                    .map_err(|e| io::Error::new(io::ErrorKind::NotFound, e.to_string()))?;
                 let dir = clone_dir(url, branch)?;
                 let token = (!token.is_empty()).then_some((user.as_str(), token.as_str()));
-                Ok(Arc::new(GitRepo::open(
-                    git, &dir, url, branch, token, device,
-                )?))
+                // A phone has no git to run: libgit2, over HTTPS.
+                #[cfg(feature = "libgit")]
+                return Ok(Arc::new(LibGitRepo::open(
+                    &dir, url, branch, token, device,
+                )?));
+                #[cfg(not(feature = "libgit"))]
+                {
+                    let git = Git::find()
+                        .map_err(|e| io::Error::new(io::ErrorKind::NotFound, e.to_string()))?;
+                    Ok(Arc::new(GitRepo::open(
+                        git, &dir, url, branch, token, device,
+                    )?))
+                }
             }
         }
     }

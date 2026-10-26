@@ -191,11 +191,12 @@ private struct SetUpSyncView: View {
     @EnvironmentObject private var app: AppModel
 
     enum Kind: String, CaseIterable, Identifiable {
-        case webdav = "WebDAV", s3 = "S3", folder = "Folder"
+        case webdav = "WebDAV", s3 = "S3", git = "Git", folder = "Folder"
         var id: String { rawValue }
     }
 
-    @State private var kind: Kind = .webdav
+    // `-syncKind Git` at launch (debug builds) starts on that kind.
+    @State private var kind: Kind = Kind(rawValue: UserDefaults.standard.string(forKey: "syncKind") ?? "") ?? .webdav
     @State private var url = ""
     @State private var user = ""
     @State private var password = ""
@@ -206,6 +207,10 @@ private struct SetUpSyncView: View {
     @State private var accessKey = ""
     @State private var secretKey = ""
     @State private var folder: String?
+    @State private var repository = ""
+    @State private var branch = ""
+    @State private var token = ""
+    @State private var tokenUser = ""
     @State private var picking = false
     @State private var busy = false
     @State private var problem: String?
@@ -274,6 +279,12 @@ private struct SetUpSyncView: View {
                 TextField(tr("Folder in the bucket (optional)"), text: $prefix)
                 TextField(tr("Access key"), text: $accessKey)
                 SecureField(tr("Secret key"), text: $secretKey)
+            case .git:
+                TextField("https://github.com/you/vault.git", text: $repository)
+                    .keyboardType(.URL)
+                TextField(tr("Branch"), text: $branch)
+                SecureField(tr("Token"), text: $token)
+                TextField(tr("The token's user"), text: $tokenUser)
             case .folder:
                 Button(folder == nil ? tr("Choose a folder…") : tr("Choose another folder…")) { picking = true }
                 if let folder {
@@ -285,10 +296,7 @@ private struct SetUpSyncView: View {
         } header: {
             SectionHeading(text: tr("Sync the vault"))
         } footer: {
-            Text(kind == .folder
-                ? tr("A folder another device syncs in too, such as shellwing's in iCloud Drive.")
-                : tr("The password is kept in this phone's vault, never in the place. Git is not offered on iPhone."))
-                .foregroundStyle(Dusk.muted)
+            Text(footer).foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
     }
@@ -331,9 +339,19 @@ private struct SetUpSyncView: View {
         }
     }
 
+    private var footer: String {
+        switch kind {
+        case .folder: return tr("A folder another device syncs in too, such as shellwing's in iCloud Drive.")
+        case .git:
+            return tr("A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.")
+        default: return tr("The password is kept in this phone's vault, never in the place.")
+        }
+    }
+
     private var ready: Bool {
         switch kind {
         case .webdav: return !url.isEmpty
+        case .git: return repository.hasPrefix("https://") && !token.isEmpty
         case .s3: return !endpoint.isEmpty && !bucket.isEmpty && !accessKey.isEmpty && !secretKey.isEmpty
         case .folder: return folder != nil
         }
@@ -345,6 +363,9 @@ private struct SetUpSyncView: View {
             return (.webDav(url: url.trimmingCharacters(in: .whitespaces), user: user), password.isEmpty ? nil : password)
         case .s3:
             return (.s3(endpoint: endpoint, region: region, bucket: bucket, prefix: prefix, accessKey: accessKey), secretKey)
+        case .git:
+            let trim = { (s: String) in s.trimmingCharacters(in: .whitespaces) }
+            return (.git(url: trim(repository), branch: trim(branch), user: trim(tokenUser)), token)
         case .folder:
             return (.folder(path: folder ?? ""), nil)
         }

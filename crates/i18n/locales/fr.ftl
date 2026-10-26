@@ -4570,17 +4570,14 @@ t6689bdf6 = Région (vide : auto)
 # Folder in the bucket (optional)
 t7c04f452 = Dossier dans le bucket (facultatif)
 
+# Token
+t3a355bd2 = Token
+
 # Choose another folder…
 tcba15eff = Choisir un autre dossier…
 
 # Sync the vault
 tff5adbd9 = Synchroniser le coffre
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Un dossier où un autre appareil se synchronise aussi, comme celui de shellwing dans iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = Le mot de passe est conservé dans le coffre de ce téléphone, jamais à l'emplacement. Git n'est pas proposé sur iPhone.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = Le coffre d'un autre appareil s'y trouve. Rejoignez-le pour obtenir ses serveurs, clés, mots de passe et extraits sur ce téléphone.
@@ -4602,6 +4599,15 @@ t71d27652 = La phrase secrète définie sur l'autre appareil
 
 # Join with the passphrase
 t97bef16c = Rejoindre avec la phrase secrète
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Un dossier où un autre appareil se synchronise aussi, comme celui de shellwing dans iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Un dépôt privé sur GitHub, GitLab, Gitea ou votre propre serveur, par son adresse https://, avec un token autorisé à y pousser (sur GitHub, un token à granularité fine avec Contents : lecture et écriture). Chaque modification est un commit. Le token est conservé dans le coffre de ce téléphone.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Le mot de passe est conservé dans le coffre de ce téléphone, jamais à l'emplacement.
 
 # shellwing did not start.
 td364ab30 = shellwing n'a pas démarré.

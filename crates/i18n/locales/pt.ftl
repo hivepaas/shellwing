@@ -4570,17 +4570,14 @@ t6689bdf6 = Região (vazio: automática)
 # Folder in the bucket (optional)
 t7c04f452 = Pasta no bucket (opcional)
 
+# Token
+t3a355bd2 = Token
+
 # Choose another folder…
 tcba15eff = Escolher outra pasta…
 
 # Sync the vault
 tff5adbd9 = Sincronizar o cofre
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Uma pasta que outro dispositivo também sincroniza, como a do shellwing no iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = A senha fica no cofre deste celular, nunca no local. O Git não está disponível no iPhone.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = O cofre de outro dispositivo está lá. Entre nele para ter os servidores, chaves, senhas e trechos dele neste celular.
@@ -4602,6 +4599,15 @@ t71d27652 = A frase secreta definida no outro dispositivo
 
 # Join with the passphrase
 t97bef16c = Entrar com a frase secreta
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Uma pasta que outro dispositivo também sincroniza, como a do shellwing no iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Um repositório privado no GitHub, GitLab, Gitea ou no seu próprio servidor, pelo endereço https://, com um token que possa fazer push nele (no GitHub, um token de acesso refinado com Contents: leitura e escrita). Cada alteração é um commit. O token fica no cofre deste celular.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = A senha fica no cofre deste celular, nunca no local.
 
 # shellwing did not start.
 td364ab30 = O shellwing não iniciou.

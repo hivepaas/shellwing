@@ -4570,17 +4570,14 @@ t6689bdf6 = Region (leer: automatisch)
 # Folder in the bucket (optional)
 t7c04f452 = Ordner im Bucket (optional)
 
+# Token
+t3a355bd2 = Token
+
 # Choose another folder…
 tcba15eff = Anderen Ordner wählen…
 
 # Sync the vault
 tff5adbd9 = Tresor synchronisieren
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Ein Ordner, in dem auch ein anderes Gerät synchronisiert, z. B. der von shellwing in iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = Das Passwort wird im Tresor dieses iPhones gespeichert, nie am Ort. Git gibt es auf dem iPhone nicht.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = Dort liegt der Tresor eines anderen Geräts. Tritt ihm bei, um seine Hosts, Schlüssel, Passwörter und Snippets auf dieses iPhone zu holen.
@@ -4602,6 +4599,15 @@ t71d27652 = Die auf dem anderen Gerät festgelegte Passphrase
 
 # Join with the passphrase
 t97bef16c = Mit der Passphrase beitreten
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Ein Ordner, in dem auch ein anderes Gerät synchronisiert, z. B. der von shellwing in iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Ein privates Repository auf GitHub, GitLab, Gitea oder deinem eigenen Server, über seine https://-Adresse, mit einem Token, das dorthin pushen darf (auf GitHub ein fein abgestuftes Token mit Contents: Lesen und Schreiben). Jede Änderung ist ein Commit. Das Token liegt im Tresor dieses iPhones.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Das Passwort liegt im Tresor dieses iPhones, nie am Ort.
 
 # shellwing did not start.
 td364ab30 = shellwing ist nicht gestartet.

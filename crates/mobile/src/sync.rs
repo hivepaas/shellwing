@@ -1,13 +1,14 @@
 //! Syncing on a phone: the desktop's own worker (`shellwing_core::sync`),
-//! with a place set up here (a WebDAV folder, S3-compatible storage, or a
-//! folder the app was given, such as one in iCloud Drive), or joined from
-//! the desktop with the recovery key, a passphrase, or pairing. Git is not
-//! offered: iOS runs no `git`.
+//! with a place set up here (a WebDAV folder, S3-compatible storage, a Git
+//! repository over HTTPS, or a folder the app was given, such as one in
+//! iCloud Drive), or joined from the desktop with the recovery key, a
+//! passphrase, or pairing. iOS runs no `git`: there, libgit2 does
+//! (`shellwing_remote::LibGitRepo`), the desktop's repository as it is.
 
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
-use shellwing_config::{S3Sync, SyncPlace, SyncPlaceText, WebDavSync};
+use shellwing_config::{GitSync, S3Sync, SyncPlace, SyncPlaceText, WebDavSync};
 use shellwing_core::sync::{self as worker, SyncEvent, SyncWorker};
 use shellwing_vault::{AskState, FolderState, Request};
 
@@ -40,6 +41,15 @@ pub enum Place {
     /// A folder on the phone the app may use (one in iCloud Drive, chosen
     /// in Files).
     Folder { path: String },
+    /// A Git repository, by its `https://` address, signed in to with a
+    /// token (the place's secret).
+    Git {
+        url: String,
+        /// Empty: the repository's default.
+        branch: String,
+        /// Who the token signs in as, where the host needs it; empty: any.
+        user: String,
+    },
 }
 
 impl Place {
@@ -60,11 +70,12 @@ impl Place {
                 access_key,
             }),
             Place::Folder { path } => SyncPlace::Folder(path.into()),
+            Place::Git { url, branch, user } => SyncPlace::Git(GitSync { url, branch, user }),
         }
     }
 
-    fn of(place: &SyncPlace) -> Option<Place> {
-        Some(match place.clone() {
+    fn of(place: &SyncPlace) -> Place {
+        match place.clone() {
             SyncPlace::WebDav(w) => Place::WebDav {
                 url: w.url,
                 user: w.user,
@@ -79,8 +90,12 @@ impl Place {
             SyncPlace::Folder(f) => Place::Folder {
                 path: f.to_string_lossy().into_owned(),
             },
-            SyncPlace::Git(_) => return None,
-        })
+            SyncPlace::Git(g) => Place::Git {
+                url: g.url,
+                branch: g.branch,
+                user: g.user,
+            },
+        }
     }
 }
 
@@ -165,7 +180,7 @@ impl Syncing {
         let place = store.settings().ok().and_then(|s| s.sync.place());
         let (tx, rx) = async_channel::unbounded::<SyncEvent>();
         let worker = SyncWorker::start(vault, Some(store.clone()), tx);
-        worker.set_place(place.filter(|p| !matches!(p, SyncPlace::Git(_))));
+        worker.set_place(place);
         let state: Arc<Mutex<State>> = Arc::default();
         let kept = state.clone();
         let (w, joined_store) = (worker.clone(), store);
@@ -260,7 +275,7 @@ impl Shellwing {
         let s = lock(&self.sync.state);
         SyncStatus {
             said: place.as_ref().map(worker::describe),
-            place: place.as_ref().and_then(Place::of),
+            place: place.as_ref().map(Place::of),
             syncing: s.syncing,
             last: s.last,
             pulled: s.pulled,

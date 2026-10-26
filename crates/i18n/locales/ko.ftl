@@ -4429,17 +4429,14 @@ t6689bdf6 = 리전 (비워 두면 자동)
 # Folder in the bucket (optional)
 t7c04f452 = 버킷 내 폴더 (선택 사항)
 
+# Token
+t3a355bd2 = 토큰
+
 # Choose another folder…
 tcba15eff = 다른 폴더 선택…
 
 # Sync the vault
 tff5adbd9 = 보관함 동기화
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = 다른 기기도 동기화하는 폴더, 예: iCloud Drive의 shellwing 폴더.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = 비밀번호는 그 위치가 아니라 이 휴대폰의 보관함에 보관됩니다. iPhone에서는 Git을 사용할 수 없습니다.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = 다른 기기의 보관함이 있습니다. 참여하면 그 호스트, 키, 비밀번호, 스니펫을 이 휴대폰에서 쓸 수 있습니다.
@@ -4461,6 +4458,15 @@ t71d27652 = 다른 기기에서 설정한 암호 문구
 
 # Join with the passphrase
 t97bef16c = 암호 문구로 참여
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = 다른 기기도 동기화하는 폴더, 예: iCloud Drive의 shellwing 폴더.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = GitHub, GitLab, Gitea 또는 자체 서버의 비공개 저장소를 https:// 주소와 그곳에 푸시할 수 있는 토큰으로 사용합니다 (GitHub에서는 Contents 읽기 및 쓰기 권한이 있는 세분화된 토큰). 변경 사항마다 커밋이 하나씩 생성됩니다. 토큰은 이 휴대폰의 보관함에 보관됩니다.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = 비밀번호는 이 휴대폰의 보관함에 보관되며, 위치에는 절대 저장되지 않습니다.
 
 # shellwing did not start.
 td364ab30 = shellwing이 시작되지 않았습니다.

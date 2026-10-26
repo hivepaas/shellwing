@@ -4429,17 +4429,14 @@ t6689bdf6 = リージョン（空欄：自動）
 # Folder in the bucket (optional)
 t7c04f452 = バケット内のフォルダ（任意）
 
+# Token
+t3a355bd2 = トークン
+
 # Choose another folder…
 tcba15eff = 別のフォルダを選択…
 
 # Sync the vault
 tff5adbd9 = 保管庫を同期
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = 別のデバイスも同期しているフォルダ（iCloud Drive の shellwing フォルダなど）。
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = パスワードはこの iPhone の保管庫に保存され、同期先には置かれません。iPhone では Git は使えません。
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = そこには別のデバイスの保管庫があります。参加すると、そのホスト、鍵、パスワード、スニペットをこの iPhone で使えます。
@@ -4461,6 +4458,15 @@ t71d27652 = もう一方のデバイスで設定したパスフレーズ
 
 # Join with the passphrase
 t97bef16c = パスフレーズで参加
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = 別のデバイスも同期しているフォルダ（iCloud Drive の shellwing フォルダなど）。
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = GitHub、GitLab、Gitea、または自前のサーバー上のプライベートリポジトリを、その https:// アドレスと、push できるトークンで使います（GitHub ではきめ細かいトークンに Contents の読み取りと書き込みを許可）。変更はそれぞれ 1 つのコミットになります。トークンはこの iPhone の保管庫に保存されます。
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = パスワードはこの iPhone の保管庫に保存され、同期先には置かれません。
 
 # shellwing did not start.
 td364ab30 = shellwing を起動できませんでした。

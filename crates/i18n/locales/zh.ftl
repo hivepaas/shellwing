@@ -4429,17 +4429,14 @@ t6689bdf6 = 区域（留空：自动）
 # Folder in the bucket (optional)
 t7c04f452 = 存储桶中的文件夹（可选）
 
+# Token
+t3a355bd2 = 令牌
+
 # Choose another folder…
 tcba15eff = 选择其他文件夹…
 
 # Sync the vault
 tff5adbd9 = 同步保险库
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = 其他设备也在其中同步的文件夹，例如 iCloud Drive 中 shellwing 的文件夹。
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = 密码保存在此手机的保险库中，绝不会存放到该位置。iPhone 上不提供 Git。
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = 那里有另一台设备的保险库。加入它，即可在此手机上获得其主机、密钥、密码和代码片段。
@@ -4461,6 +4458,15 @@ t71d27652 = 在另一台设备上设置的密码短语
 
 # Join with the passphrase
 t97bef16c = 用密码短语加入
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = 其他设备也在其中同步的文件夹，例如 iCloud Drive 中 shellwing 的文件夹。
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = GitHub、GitLab、Gitea 或你自己服务器上的私有仓库，通过其 https:// 地址和一个可以推送到那里的令牌访问（在 GitHub 上，使用对 Contents 有读写权限的细粒度令牌）。每次更改都是一次提交。令牌保存在这部手机的保险库中。
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = 密码保存在这部手机的保险库中，绝不会存放在同步位置。
 
 # shellwing did not start.
 td364ab30 = shellwing 未能启动。

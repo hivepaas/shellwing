@@ -941,6 +941,36 @@ mod tests {
         (a, b)
     }
 
+    /// A phone (libgit2) and a computer (its git) sync through one
+    /// repository: the same files, the same branch.
+    #[cfg(feature = "libgit")]
+    #[test]
+    fn a_phone_and_a_computer_sync_through_one_repository() {
+        let dir = std::env::temp_dir().join(format!("shellwing-git-mixed-{}", std::process::id()));
+        let (laptop, _) = two_clones(&dir);
+        let url = format!("file://{}", dir.join("server.git").display());
+        let mut phone =
+            crate::LibGitRepo::open(&dir.join("phone"), &url, "", None, "phone").expect("phone");
+        phone.fresh_for = Duration::ZERO;
+        let a = Vault::open(&dir.join("a.db"), &MemoryKeys::default()).expect("a");
+        let b = Vault::open(&dir.join("b.db"), &MemoryKeys::default()).expect("b");
+        a.set_password("deploy@web", "from-the-laptop")
+            .expect("save");
+        let rk = shellwing_vault::transact(&laptop, |s| a.start_sync(s))
+            .expect("start")
+            .to_string();
+        a.sync(&laptop).expect("sync laptop");
+        assert_eq!(phone.branch(), "main");
+        shellwing_vault::transact(&phone, |s| b.join(s, &rk)).expect("join from the phone");
+        b.set_password("root@db", "from-the-phone").expect("save");
+        b.sync(&phone).expect("sync phone");
+        a.sync(&laptop).expect("sync laptop again");
+        let pw = |v: &Vault, t: &str| v.password(t).expect("read").map(|p| p.to_string());
+        assert_eq!(pw(&b, "deploy@web").as_deref(), Some("from-the-laptop"));
+        assert_eq!(pw(&a, "root@db").as_deref(), Some("from-the-phone"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn two_devices_sync_through_a_repository() {
         let dir = std::env::temp_dir().join(format!("shellwing-git-{}", std::process::id()));

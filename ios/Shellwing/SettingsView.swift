@@ -8,6 +8,7 @@ struct SettingsView: View {
     private let scrollbacks: [UInt64] = [1_000, 5_000, 10_000, 50_000, 100_000]
     private let keepalives: [UInt64] = [0, 15, 30, 60, 120]
     @State private var settings: SettingsRow?
+    @State private var debugScreen = UserDefaults.standard.string(forKey: "screen")
     @AppStorage(TerminalCanvas.fontSizeKey) private var fontSize = TerminalCanvas.defaultFontSize
 
     private var themeName: String {
@@ -179,6 +180,13 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Dusk.panel.ignoresSafeArea())
             .navigationTitle(tr("Settings"))
+            #if DEBUG
+            // `-screen sync` at launch (trying it in the Simulator): Sync.
+            .navigationDestination(isPresented: Binding(
+                get: { debugScreen == "sync" },
+                set: { if !$0 { debugScreen = nil } }
+            )) { SyncView() }
+            #endif
             .onAppear { settings = app.core?.settings() }
             .onChange(of: app.sync?.last) { _, _ in settings = app.core?.settings() }
         }

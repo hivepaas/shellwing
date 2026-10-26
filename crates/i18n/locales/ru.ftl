@@ -4678,17 +4678,14 @@ t6689bdf6 = Регион (пусто: автоматически)
 # Folder in the bucket (optional)
 t7c04f452 = Папка в бакете (необязательно)
 
+# Token
+t3a355bd2 = Токен
+
 # Choose another folder…
 tcba15eff = Выбрать другую папку…
 
 # Sync the vault
 tff5adbd9 = Синхронизировать хранилище
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Папка, которую синхронизирует и другое устройство, например папка shellwing в iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = Пароль хранится в хранилище этого телефона, а не в месте синхронизации. Git на iPhone недоступен.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = Там уже есть хранилище другого устройства. Подключитесь к нему, чтобы получить его хосты, ключи, пароли и сниппеты на этом телефоне.
@@ -4710,6 +4707,15 @@ t71d27652 = Парольная фраза, заданная на другом у
 
 # Join with the passphrase
 t97bef16c = Подключиться с парольной фразой
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Папка, которую синхронизирует и другое устройство, например папка shellwing в iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Приватный репозиторий на GitHub, GitLab, Gitea или вашем сервере, по его адресу https://, с токеном, которому разрешён push туда (на GitHub — детализированный токен с правом Contents: чтение и запись). Каждое изменение — коммит. Токен хранится в хранилище этого телефона.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Пароль хранится в хранилище этого телефона, а не в месте синхронизации.
 
 # shellwing did not start.
 td364ab30 = shellwing не запустился.

@@ -30,6 +30,18 @@ dirs = "7"
 # WebDAV's conditional writes, which OpenDAL leaves out; the client it uses.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 
+# Git without a `git` to run (a phone): libgit2, HTTPS through the
+# system's TLS on Apple's platforms.
+git2 = { version = "0.20", default-features = false, features = ["https"], optional = true }
+
+[features]
+# Sync through Git with libgit2 instead of the system's git (iOS).
+libgit = ["dep:git2"]
+# For a target with no OpenSSL to find (iOS): git2's `https` asks for
+# openssl-sys on every Unix, though libgit2 uses the system's TLS on
+# Apple's; built from source there, and never called.
+libgit-vendored = ["libgit", "git2/vendored-openssl"]
+
 [dev-dependencies]
 opendal = { version = "0.59", default-features = false, features = ["services-memory", "blocking", "executors-tokio"] }
 # A WebDAV server in the tests, in memory.

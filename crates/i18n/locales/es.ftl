@@ -4570,17 +4570,14 @@ t6689bdf6 = Región (vacío: automática)
 # Folder in the bucket (optional)
 t7c04f452 = Carpeta en el bucket (opcional)
 
+# Token
+t3a355bd2 = Token
+
 # Choose another folder…
 tcba15eff = Elegir otra carpeta…
 
 # Sync the vault
 tff5adbd9 = Sincronizar la bóveda
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Una carpeta en la que también sincroniza otro dispositivo, como la de shellwing en iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = La contraseña se guarda en la bóveda de este teléfono, nunca en el lugar. Git no está disponible en iPhone.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = Ahí hay una bóveda de otro dispositivo. Únete a ella para tener sus servidores, claves, contraseñas y fragmentos en este teléfono.
@@ -4602,6 +4599,15 @@ t71d27652 = La frase de contraseña definida en el otro dispositivo
 
 # Join with the passphrase
 t97bef16c = Unirse con la frase de contraseña
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Una carpeta en la que también sincroniza otro dispositivo, como la de shellwing en iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Un repositorio privado en GitHub, GitLab, Gitea o tu propio servidor, por su dirección https://, con un token que pueda hacer push allí (en GitHub, un token de grano fino con Contents: lectura y escritura). Cada cambio es un commit. El token se guarda en la bóveda de este teléfono.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = La contraseña se guarda en la bóveda de este teléfono, nunca en el lugar.
 
 # shellwing did not start.
 td364ab30 = shellwing no se inició.

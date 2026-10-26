@@ -4429,17 +4429,14 @@ t6689bdf6 = Region (để trống: tự động)
 # Folder in the bucket (optional)
 t7c04f452 = Thư mục trong bucket (không bắt buộc)
 
+# Token
+t3a355bd2 = Token
+
 # Choose another folder…
 tcba15eff = Chọn thư mục khác…
 
 # Sync the vault
 tff5adbd9 = Đồng bộ kho
-
-# A folder another device syncs in too, such as shellwing's in iCloud Drive.
-t679b365b = Một thư mục mà thiết bị khác cũng đồng bộ, như thư mục của shellwing trong iCloud Drive.
-
-# The password is kept in this phone's vault, never in the place. Git is not offered on iPhone.
-t72badf79 = Mật khẩu được giữ trong kho của điện thoại này, không bao giờ ở chỗ đồng bộ. Git không có trên iPhone.
 
 # Another device's vault is there. Join it to get its hosts, keys, passwords and snippets on this phone.
 tfd5abd9b = Ở đó có kho của một thiết bị khác. Hãy tham gia để có máy chủ, khoá, mật khẩu và đoạn lệnh của nó trên điện thoại này.
@@ -4461,6 +4458,15 @@ t71d27652 = Cụm mật khẩu đã đặt trên thiết bị kia
 
 # Join with the passphrase
 t97bef16c = Tham gia bằng cụm mật khẩu
+
+# A folder another device syncs in too, such as shellwing's in iCloud Drive.
+t679b365b = Một thư mục mà thiết bị khác cũng đồng bộ, như thư mục của shellwing trong iCloud Drive.
+
+# A private repository on GitHub, GitLab, Gitea or your own server, by its https:// address, with a token that may push there (on GitHub, a fine-grained token with Contents: read and write). Each change is a commit. The token is kept in this phone's vault.
+t9526bd07 = Một repository riêng tư trên GitHub, GitLab, Gitea hoặc máy chủ của bạn, theo địa chỉ https://, với một token được phép push lên đó (trên GitHub là token fine-grained có quyền Contents: đọc và ghi). Mỗi thay đổi là một commit. Token được giữ trong kho của điện thoại này.
+
+# The password is kept in this phone's vault, never in the place.
+t76c422df = Mật khẩu được giữ trong kho của điện thoại này, không bao giờ ở chỗ đồng bộ.
 
 # shellwing did not start.
 td364ab30 = shellwing không khởi động được.

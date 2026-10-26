@@ -606,8 +606,7 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("dir");
         std::fs::write(dir.join("hosts.toml"), text).expect("hosts");
         // What the tests read is the English, whatever the system speaks.
-        std::fs::write(dir.join("config.toml"), "[general]\nlanguage = \"en\"\n")
-            .expect("config");
+        std::fs::write(dir.join("config.toml"), "[general]\nlanguage = \"en\"\n").expect("config");
         let app = Shellwing::new(
             dir.to_string_lossy().into_owned(),
             Arc::new(MemKeys::default()),
