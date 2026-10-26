@@ -122,6 +122,10 @@ pub struct MobileSession {
     envs: Mutex<Envs>,
     /// What to say once: an environment loaded, a load given up.
     notice: Mutex<Option<String>>,
+    /// The session's SFTP, opened the first time Files asks.
+    pub(crate) sftp: tokio::sync::Mutex<Option<shellwing_ssh::Sftp>>,
+    /// Config files placed on the host until the session ends.
+    placed: Mutex<Vec<shellwing_core::placing::Placed>>,
 }
 
 /// An environment loaded into a session's shell.
@@ -149,6 +153,8 @@ impl MobileSession {
             offer: Mutex::new(None),
             envs: Mutex::default(),
             notice: Mutex::new(None),
+            sftp: tokio::sync::Mutex::new(None),
+            placed: Mutex::default(),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
@@ -363,6 +369,38 @@ impl MobileSession {
             ));
         }
         Ok(())
+    }
+
+    pub(crate) fn placed_now(&self) -> Vec<shellwing_core::placing::Placed> {
+        lock(&self.placed).clone()
+    }
+
+    /// The placed file at `path`, or all of them.
+    pub(crate) fn placed_matching(
+        &self,
+        path: Option<&str>,
+    ) -> Vec<shellwing_core::placing::Placed> {
+        lock(&self.placed)
+            .iter()
+            .filter(|p| path.is_none_or(|x| p.path == x))
+            .cloned()
+            .collect()
+    }
+
+    pub(crate) fn add_placed(&self, p: shellwing_core::placing::Placed) {
+        let mut all = lock(&self.placed);
+        all.retain(|x| x.path != p.path);
+        all.push(p);
+    }
+
+    /// No longer placed until the session ends: taken away, or kept.
+    pub(crate) fn drop_placed(&self, paths: &[String]) {
+        lock(&self.placed).retain(|p| !paths.contains(&p.path));
+    }
+
+    /// What runs beside the shell: SFTP, commands.
+    pub(crate) fn remote(&self) -> shellwing_core::session::Remote {
+        lock(&self.session).remote()
     }
 
     /// `host`, `user` and `address`, as snippets name them.

@@ -311,7 +311,7 @@ impl Shellwing {
 impl Shellwing {
     /// The hosts.toml entry `spec` names (its name) and its group, for the
     /// snippets offered there.
-    fn host_and_group(&self, spec: &str) -> (Option<String>, Option<String>) {
+    pub(crate) fn host_and_group(&self, spec: &str) -> (Option<String>, Option<String>) {
         let Ok(hosts) = self.store.hosts() else {
             return (None, None);
         };

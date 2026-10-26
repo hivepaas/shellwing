@@ -8,6 +8,8 @@
 
 uniffi::setup_scaffolding!();
 
+mod config_files;
+mod files;
 mod library;
 mod session;
 mod sync;
@@ -20,6 +22,8 @@ use shellwing_core::secrets::VaultSlot;
 use shellwing_core::session::{Opens, Session};
 use shellwing_term::{Colors, Rgb};
 
+pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
+pub use files::FileEntry;
 pub use library::{EnvRow, NoteRow, SnippetEdit, SnippetRow};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
@@ -559,6 +563,35 @@ mod tests {
         assert_eq!(app.notes()[0].title, "Disk");
         assert!(app.notes()[0].markdown);
         assert_eq!(app.note_text(note).expect("text"), "# df -h");
+
+        let row = |path: &str| ConfigFileRow {
+            id: String::new(),
+            name: "kube prod".into(),
+            category: "Kubernetes".into(),
+            path: path.into(),
+            mode: 0o600,
+            size: 0,
+            binary: false,
+            stays: true,
+            scope: "host:web-1".into(),
+        };
+        assert!(
+            app.save_config_file(row("kube/config"), Some("x".into()))
+                .is_err(),
+            "a relative path"
+        );
+        let file = app
+            .save_config_file(row("~/.kube/config"), Some("apiVersion: v1\n".into()))
+            .expect("file");
+        assert!(app.config_files(Some("web-1".into()))[0].stays);
+        assert!(
+            app.config_files(Some("pi".into())).is_empty(),
+            "offered on another host"
+        );
+        assert_eq!(
+            app.config_file_text(file).expect("text").as_deref(),
+            Some("apiVersion: v1\n")
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
