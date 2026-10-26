@@ -21,7 +21,6 @@ mod chrome;
 mod colors;
 mod copies;
 mod editors;
-mod environment;
 mod files;
 mod group_editor;
 mod host_editor;
@@ -30,7 +29,6 @@ mod import_view;
 mod input;
 mod keys_view;
 mod known_hosts_view;
-mod library;
 mod library_window;
 mod look;
 mod note_images;
@@ -39,14 +37,12 @@ mod notice;
 mod palette;
 mod pane;
 mod placement;
-mod placing;
 mod prompt;
 mod scrollbar;
 mod settings_view;
 mod shell_syntax;
 mod sidebar;
 mod snippet_window;
-mod snippets;
 mod snippets_view;
 mod sync_panel;
 mod tab_overview;
@@ -63,7 +59,10 @@ use gpui::{App, AppContext as _, Entity, WindowDecorations, WindowOptions};
 use shellwing_config::Store;
 
 // The UI-free half, under the names the app's modules use.
-use shellwing_core::{Writer, bench, local, secrets, session, sync as syncing, target};
+use shellwing_core::{
+    Writer, bench, environment, library, local, placing, secrets, session, snippets,
+    sync as syncing, target,
+};
 
 /// Icons drawn into the binary: the app has no other files.
 struct Assets;

@@ -4,11 +4,15 @@
 
 pub mod bench;
 pub mod command;
+pub mod environment;
 pub mod images;
+pub mod library;
 pub mod local;
 pub mod logs;
+pub mod placing;
 pub mod secrets;
 pub mod session;
+pub mod snippets;
 pub mod sync;
 pub mod target;
 pub mod writer;
