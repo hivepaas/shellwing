@@ -167,7 +167,7 @@ impl Shellwing {
 }
 
 impl Shellwing {
-    fn open_vault(&self) -> Result<Arc<shellwing_vault::Vault>, MobileError> {
+    pub(crate) fn open_vault(&self) -> Result<Arc<shellwing_vault::Vault>, MobileError> {
         self.vault.get().ok_or_else(|| {
             MobileError::Failed(
                 self.vault

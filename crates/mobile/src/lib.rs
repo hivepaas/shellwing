@@ -9,6 +9,7 @@
 uniffi::setup_scaffolding!();
 
 mod session;
+mod sync;
 mod vault;
 
 use std::sync::Arc;
@@ -21,6 +22,7 @@ use shellwing_term::{Colors, Rgb};
 pub use session::{
     FrameData, Key, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };
+pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
 pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -77,6 +79,7 @@ pub struct Shellwing {
     /// Saved passwords and SSH keys: `vault.db` beside hosts.toml, its key
     /// in the platform's keychain.
     vault: VaultSlot,
+    sync: sync::Syncing,
 }
 
 #[uniffi::export]
@@ -98,11 +101,13 @@ impl Shellwing {
         let store = Store::new(config_dir);
         // Hosts written by hand have no id yet; editing one finds it by it.
         store.assign_host_ids().map_err(MobileError::of)?;
+        let sync = sync::Syncing::start(vault.clone(), store.clone(), rt.handle());
         Ok(Arc::new(Shellwing {
             store,
             rt,
             colors: dusk(),
             vault,
+            sync,
         }))
     }
 
@@ -436,5 +441,62 @@ mod tests {
         assert!(app.keys().is_empty());
         assert!(app.saved_secrets().is_empty());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Waits up to 20 s for `done`.
+    fn within(what: &str, mut done: impl FnMut() -> bool) {
+        let start = std::time::Instant::now();
+        while !done() {
+            assert!(start.elapsed().as_secs() < 20, "waited for {what}");
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    }
+
+    #[test]
+    fn a_phone_joins_with_the_recovery_key_and_gets_the_hosts() {
+        let base =
+            std::env::temp_dir().join(format!("shellwing-mobile-sync-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let (shared, a_dir, b_dir) = (base.join("drive"), base.join("a"), base.join("b"));
+        for d in [&shared, &a_dir, &b_dir] {
+            std::fs::create_dir_all(d).expect("dir");
+        }
+        std::fs::write(
+            a_dir.join("hosts.toml"),
+            "[[host]]\nname = \"web-1\"\naddress = \"10.0.1.11\"\n",
+        )
+        .expect("hosts");
+        let open = |d: &std::path::Path| {
+            Shellwing::new(
+                d.to_string_lossy().into_owned(),
+                Arc::new(MemKeys::default()),
+            )
+            .expect("app")
+        };
+        let (a, b) = (open(&a_dir), open(&b_dir));
+        let place = Place::Folder {
+            path: shared.to_string_lossy().into_owned(),
+        };
+
+        let Connected::Started { recovery_key } =
+            a.connect_sync(place.clone(), None).expect("started")
+        else {
+            panic!("the empty folder was not started");
+        };
+        within("the first sync", || a.sync_status().last.is_some());
+        assert!(a.sync_status().said.is_some());
+
+        assert_eq!(
+            b.connect_sync(place.clone(), None).expect("found"),
+            Connected::Other { passphrase: false }
+        );
+        b.join_with_recovery_key(place, recovery_key)
+            .expect("joined");
+        within("web-1 on the phone", || {
+            b.sections()
+                .is_ok_and(|s| s.iter().flat_map(|s| &s.hosts).any(|h| h.name == "web-1"))
+        });
+        assert!(b.sync_status().place.is_some());
+        let _ = std::fs::remove_dir_all(&base);
     }
 }

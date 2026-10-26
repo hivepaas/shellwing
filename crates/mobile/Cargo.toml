@@ -29,6 +29,7 @@ shellwing-term.workspace = true
 shellwing-ssh.workspace = true
 shellwing-vault.workspace = true
 tokio.workspace = true
+async-channel.workspace = true
 thiserror.workspace = true
 uniffi = "0.32"
 
