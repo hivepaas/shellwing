@@ -4282,6 +4282,9 @@ t8e08e589 = 링크
 # Heading
 tfc3003b5 = 제목
 
+# Table
+td70ceb7f = 표
+
 # Outdent
 ta6a77b16 = 내어쓰기
 
@@ -4545,6 +4548,12 @@ t76c422df = 비밀번호는 이 휴대폰의 보관함에 보관되며, 위치�
 
 # shellwing did not start.
 td364ab30 = shellwing이 시작되지 않았습니다.
+
+# Column {n}
+tb3578e13 = { $n }열
+
+# Row {n}
+tf0d5ffc7 = { $n }행
 
 # Load an environment
 tfd1fc961 = 환경 불러오기

@@ -4421,6 +4421,9 @@ t8e08e589 = Lien
 # Heading
 tfc3003b5 = Titre
 
+# Table
+td70ceb7f = Tableau
+
 # Outdent
 ta6a77b16 = Désindenter
 
@@ -4687,6 +4690,12 @@ t76c422df = Le mot de passe est conservé dans le coffre de ce téléphone, jama
 
 # shellwing did not start.
 td364ab30 = shellwing n'a pas démarré.
+
+# Column {n}
+tb3578e13 = Colonne { $n }
+
+# Row {n}
+tf0d5ffc7 = Ligne { $n }
 
 # Load an environment
 tfd1fc961 = Charger un environnement

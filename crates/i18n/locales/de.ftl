@@ -4421,6 +4421,9 @@ t8e08e589 = Link
 # Heading
 tfc3003b5 = Überschrift
 
+# Table
+td70ceb7f = Tabelle
+
 # Outdent
 ta6a77b16 = Ausrücken
 
@@ -4687,6 +4690,12 @@ t76c422df = Das Passwort liegt im Tresor dieses iPhones, nie am Ort.
 
 # shellwing did not start.
 td364ab30 = shellwing ist nicht gestartet.
+
+# Column {n}
+tb3578e13 = Spalte { $n }
+
+# Row {n}
+tf0d5ffc7 = Zeile { $n }
 
 # Load an environment
 tfd1fc961 = Umgebung laden

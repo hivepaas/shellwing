@@ -4282,6 +4282,9 @@ t8e08e589 = Liên kết
 # Heading
 tfc3003b5 = Tiêu đề
 
+# Table
+td70ceb7f = Bảng
+
 # Outdent
 ta6a77b16 = Giảm thụt lề
 
@@ -4545,6 +4548,12 @@ t76c422df = Mật khẩu được giữ trong kho của điện thoại này, kh
 
 # shellwing did not start.
 td364ab30 = shellwing không khởi động được.
+
+# Column {n}
+tb3578e13 = Cột { $n }
+
+# Row {n}
+tf0d5ffc7 = Hàng { $n }
 
 # Load an environment
 tfd1fc961 = Nạp một bộ biến

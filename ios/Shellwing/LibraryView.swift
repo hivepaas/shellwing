@@ -62,6 +62,12 @@ struct LibraryView: View {
     }
 }
 
+/// A table opened in its grid: nil, a new one.
+struct TableSheet: Identifiable {
+    let id = UUID()
+    let table: MdTable?
+}
+
 #if DEBUG
 /// `-screen mdedit`: the editor on the sample, the caret in it.
 struct MarkdownEditorSample: View {
@@ -77,11 +83,20 @@ struct MarkdownEditorSample: View {
 
     @State private var text = MarkdownSample.text
     @StateObject private var editor = MarkdownEditorController()
+    @State private var tabling: TableSheet?
 
     var body: some View {
         MarkdownEditor(text: $text, controller: editor)
             .background(Dusk.page.ignoresSafeArea())
-            .onAppear { editor.imageFor = { _ in Self.picture } }
+            .onAppear {
+                editor.imageFor = { _ in Self.picture }
+                editor.onTable = { table in tabling = TableSheet(table: table) }
+            }
+            .sheet(item: $tabling) { sheet in
+                TableEditor(original: sheet.table) { aligns, head, rows in
+                    editor.setTable(sheet.table, aligns: aligns, head: head, rows: rows)
+                }
+            }
             .task {
                 try? await Task.sleep(for: .milliseconds(600))
                 guard let tv = editor.textView else { return }
@@ -100,7 +115,16 @@ struct MarkdownEditorSample: View {
                 tv.selectedRange = NSRange(location: at, length: caret == "40" ? 4 : 0)
                 tv.scrollRangeToVisible(tv.selectedRange)
                 if UserDefaults.standard.string(forKey: "script") == "check" { await check(tv) }
+                if UserDefaults.standard.string(forKey: "script") == "table" {
+                    select(tv, "web-1 |")
+                    editor.table()
+                }
             }
+    }
+
+    private func select(_ tv: UITextView, _ what: String) {
+        let r = (tv.text as NSString).range(of: what)
+        if r.location != NSNotFound { tv.selectedRange = NSRange(location: r.location, length: 0) }
     }
 
     /// `-script check`: the bar's edits, Return and Undo, done on the text
@@ -154,6 +178,19 @@ struct MarkdownEditorSample: View {
         editor.insertBlock("![](attachment:abc)")
         await pause()
         said.append("image after: " + (tv.text ?? "").components(separatedBy: "\n").prefix(2).joined(separator: " ⏎ "))
+        select("web-1 |", offset: 0, length: 0)
+        if let t = mdTableAt(text: tv.text, at: UInt32(tv.selectedRange.location)) {
+            var rows = t.rows
+            rows[0][1] = "2222"
+            rows.append(["db-replica", "5433", "database"])
+            editor.setTable(t, aligns: t.aligns, head: t.head, rows: rows)
+            await pause()
+            let lines = (tv.text ?? "").components(separatedBy: "\n").filter { $0.hasPrefix("|") }
+            said.append("table: " + lines.joined(separator: " ⏎ "))
+            editor.undo()
+            await pause()
+            said.append("table undone: " + ((tv.text ?? "").contains("db-replica") ? "no" : "yes"))
+        }
         let boxes = markdownRuns(text: tv.text).filter { $0.role == .taskBox }
         if let box = boxes.first {
             let ns = { (tv.text ?? "") as NSString }
@@ -711,6 +748,8 @@ struct NoteEditor: View {
     @State private var confirmDelete = false
     /// The Markdown editor's: its bar's image button, an image put in.
     @StateObject private var editor = MarkdownEditorController()
+    /// A table being edited in its grid.
+    @State private var tabling: TableSheet?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -811,8 +850,14 @@ struct NoteEditor: View {
         .sheet(isPresented: $choosingHosts) {
             HostsChooser(chosen: $hosts).environmentObject(app)
         }
+        .sheet(item: $tabling) { sheet in
+            TableEditor(original: sheet.table) { aligns, head, rows in
+                editor.setTable(sheet.table, aligns: aligns, head: head, rows: rows)
+            }
+        }
         .onAppear {
             editor.onImage = { picking = true }
+            editor.onTable = { table in tabling = TableSheet(table: table) }
             editor.imageFor = { source in
                 source.hasPrefix("attachment:") ? app.noteImage(String(source.dropFirst("attachment:".count))) : nil
             }

@@ -4282,6 +4282,9 @@ t8e08e589 = リンク
 # Heading
 tfc3003b5 = 見出し
 
+# Table
+td70ceb7f = 表
+
 # Outdent
 ta6a77b16 = インデントを減らす
 
@@ -4545,6 +4548,12 @@ t76c422df = パスワードはこの iPhone の保管庫に保存され、同期
 
 # shellwing did not start.
 td364ab30 = shellwing を起動できませんでした。
+
+# Column {n}
+tb3578e13 = { $n } 列目
+
+# Row {n}
+tf0d5ffc7 = { $n } 行目
 
 # Load an environment
 tfd1fc961 = 環境を読み込む

@@ -4282,6 +4282,9 @@ t8e08e589 = 链接
 # Heading
 tfc3003b5 = 标题
 
+# Table
+td70ceb7f = 表格
+
 # Outdent
 ta6a77b16 = 减少缩进
 
@@ -4545,6 +4548,12 @@ t76c422df = 密码保存在这部手机的保险库中，绝不会存放在同�
 
 # shellwing did not start.
 td364ab30 = shellwing 未能启动。
+
+# Column {n}
+tb3578e13 = 第 { $n } 列
+
+# Row {n}
+tf0d5ffc7 = 第 { $n } 行
 
 # Load an environment
 tfd1fc961 = 加载环境

@@ -4421,6 +4421,9 @@ t8e08e589 = Enlace
 # Heading
 tfc3003b5 = Encabezado
 
+# Table
+td70ceb7f = Tabla
+
 # Outdent
 ta6a77b16 = Reducir sangría
 
@@ -4687,6 +4690,12 @@ t76c422df = La contraseña se guarda en la bóveda de este teléfono, nunca en e
 
 # shellwing did not start.
 td364ab30 = shellwing no se inició.
+
+# Column {n}
+tb3578e13 = Columna { $n }
+
+# Row {n}
+tf0d5ffc7 = Fila { $n }
 
 # Load an environment
 tfd1fc961 = Cargar un entorno

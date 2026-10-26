@@ -4421,6 +4421,9 @@ t8e08e589 = Link
 # Heading
 tfc3003b5 = Título
 
+# Table
+td70ceb7f = Tabela
+
 # Outdent
 ta6a77b16 = Diminuir recuo
 
@@ -4687,6 +4690,12 @@ t76c422df = A senha fica no cofre deste celular, nunca no local.
 
 # shellwing did not start.
 td364ab30 = O shellwing não iniciou.
+
+# Column {n}
+tb3578e13 = Coluna { $n }
+
+# Row {n}
+tf0d5ffc7 = Linha { $n }
 
 # Load an environment
 tfd1fc961 = Carregar um ambiente

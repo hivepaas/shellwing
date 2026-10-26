@@ -31,7 +31,7 @@ pub use files::FileEntry;
 pub use i18n::LanguageRow;
 pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
 pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
-pub use md_edit::{MdEdit, MdImageLine, MdLines, MdRole, MdRun, MdWrap};
+pub use md_edit::{MdEdit, MdImageLine, MdLines, MdRole, MdRun, MdTable, MdWrap};
 pub use session::{
     FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
 };

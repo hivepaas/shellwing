@@ -10,6 +10,9 @@ final class MarkdownEditorController: ObservableObject {
     weak var textView: UITextView?
     /// The bar's image button: the note's editor picks one.
     var onImage: (() -> Void)?
+    /// The bar's table button: the note's editor opens the grid, on the
+    /// table the caret is in, or on a new one (nil).
+    var onTable: ((MdTable?) -> Void)?
     /// The image an image's line shows (`attachment:<id>`), if there is one.
     /// Set: the images shown again.
     var imageFor: ((String) -> UIImage?)? {
@@ -54,6 +57,24 @@ final class MarkdownEditorController: ObservableObject {
     func insertBlock(_ block: String) {
         let (s, e) = selection
         apply(mdInsertBlock(text: text, start: s, end: e, block: block))
+    }
+
+    /// The grid on the table the caret is in, or on a new one.
+    func table() {
+        let (s, _) = selection
+        onTable?(mdTableAt(text: text, at: s))
+    }
+
+    /// The table `original` (nil: a new one, put in where the caret is) made
+    /// as the grid has it; with no columns, gone.
+    func setTable(_ original: MdTable?, aligns: [MdAlign], head: [String], rows: [[String]]) {
+        let table = head.isEmpty ? "" : mdTableText(aligns: aligns, head: head, rows: rows)
+        if let t = original {
+            apply(mdReplace(text: text, start: t.start, len: t.len, with: table))
+        } else if !table.isEmpty {
+            let (s, e) = selection
+            apply(mdInsertBlock(text: text, start: s, end: e, block: table))
+        }
     }
 
     /// Ticks or unticks the task whose box (`[ ]`) starts at `box`, as
@@ -415,6 +436,7 @@ struct MarkdownEditor: UIViewRepresentable {
                 ("checklist", tr("To-do"), { c.lines(.task) }),
                 ("text.quote", tr("Quote"), { c.lines(.quote) }),
                 ("curlybraces", tr("Code block"), { c.codeBlock() }),
+                ("tablecells", tr("Table"), { c.table() }),
                 ("decrease.indent", tr("Outdent"), { c.indent(out: true) }),
                 ("increase.indent", tr("Indent"), { c.indent(out: false) }),
                 ("photo", tr("Insert an image…"), { c.onImage?() }),

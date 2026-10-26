@@ -4525,6 +4525,9 @@ t8e08e589 = Ссылка
 # Heading
 tfc3003b5 = Заголовок
 
+# Table
+td70ceb7f = Таблица
+
 # Outdent
 ta6a77b16 = Уменьшить отступ
 
@@ -4797,6 +4800,12 @@ t76c422df = Пароль хранится в хранилище этого те�
 
 # shellwing did not start.
 td364ab30 = shellwing не запустился.
+
+# Column {n}
+tb3578e13 = Столбец { $n }
+
+# Row {n}
+tf0d5ffc7 = Строка { $n }
 
 # Load an environment
 tfd1fc961 = Загрузить окружение

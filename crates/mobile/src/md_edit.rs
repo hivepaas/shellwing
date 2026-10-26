@@ -20,7 +20,7 @@ use std::ops::Range;
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use zorite_markdown::syntax as zsyntax;
 
-use crate::markdown::MdAlert;
+use crate::markdown::{MdAlert, MdAlign};
 
 /// What a run of the source is, for its color.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, uniffi::Enum)]
@@ -84,6 +84,18 @@ pub struct MdEdit {
     pub text: String,
     pub sel_start: u32,
     pub sel_end: u32,
+}
+
+/// A table, as its grid edits it: each cell's own Markdown.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct MdTable {
+    /// Its text, without the newline after it (UTF-16).
+    pub start: u32,
+    pub len: u32,
+    pub aligns: Vec<MdAlign>,
+    pub head: Vec<String>,
+    /// As many cells in each as in the head.
+    pub rows: Vec<Vec<String>>,
 }
 
 /// An inline mark the bar puts around the selection, or takes away.
@@ -431,6 +443,123 @@ pub fn markdown_images(text: String) -> Vec<MdImageLine> {
         }
     }
     out
+}
+
+// MARK: Tables
+
+/// The table the caret (`at`, UTF-16) is in, its cells as written; None
+/// when it is in none.
+#[uniffi::export]
+pub fn md_table_at(text: String, at: u32) -> Option<MdTable> {
+    let c = byte_of(&text, at);
+    let mut table: Option<(Range<usize>, Vec<MdAlign>)> = None;
+    let (mut head, mut rows, mut row) = (vec![], vec![], vec![]);
+    let mut in_head = false;
+    for (ev, r) in Parser::new_ext(&text, Options::ENABLE_TABLES).into_offset_iter() {
+        match ev {
+            Event::Start(Tag::Table(aligns)) if table.is_none() && r.start <= c && c <= r.end => {
+                let aligns = aligns
+                    .into_iter()
+                    .map(|a| match a {
+                        pulldown_cmark::Alignment::None => MdAlign::None,
+                        pulldown_cmark::Alignment::Left => MdAlign::Left,
+                        pulldown_cmark::Alignment::Center => MdAlign::Center,
+                        pulldown_cmark::Alignment::Right => MdAlign::Right,
+                    })
+                    .collect();
+                table = Some((r, aligns));
+            }
+            _ if table.is_none() => {}
+            Event::Start(Tag::TableHead) => in_head = true,
+            Event::End(pulldown_cmark::TagEnd::TableHead) => {
+                in_head = false;
+                head = std::mem::take(&mut row);
+            }
+            Event::Start(Tag::TableCell) => {
+                row.push(text[r].trim().replace("\\|", "|"));
+            }
+            Event::End(pulldown_cmark::TagEnd::TableRow) if !in_head => {
+                rows.push(std::mem::take(&mut row));
+            }
+            Event::End(pulldown_cmark::TagEnd::Table) => break,
+            _ => {}
+        }
+    }
+    let (range, aligns) = table?;
+    let end = text[..range.end]
+        .trim_end_matches('\n')
+        .len()
+        .max(range.start);
+    let n = head.len();
+    for r in &mut rows {
+        r.resize(n, String::new());
+    }
+    Some(MdTable {
+        start: u16_of(&text, range.start),
+        len: u16_of(&text, end) - u16_of(&text, range.start),
+        aligns,
+        head,
+        rows,
+    })
+}
+
+/// A table as Markdown, its columns lined up: `|` in a cell kept as `\|`,
+/// a newline as a space.
+#[uniffi::export]
+pub fn md_table_text(aligns: Vec<MdAlign>, head: Vec<String>, rows: Vec<Vec<String>>) -> String {
+    let cols = head
+        .len()
+        .max(rows.iter().map(Vec::len).max().unwrap_or(0))
+        .max(1);
+    let clean = |s: &str| s.trim().replace('\n', " ").replace('|', "\\|");
+    let cell = |row: &[String], i: usize| row.get(i).map(|s| clean(s)).unwrap_or_default();
+    let align = |i: usize| aligns.get(i).copied().unwrap_or(MdAlign::None);
+    let width = |i: usize| {
+        std::iter::once(cell(&head, i))
+            .chain(rows.iter().map(|r| cell(r, i)))
+            .map(|s| s.chars().count())
+            .max()
+            .unwrap_or(0)
+            .max(3)
+    };
+    let widths: Vec<usize> = (0..cols).map(width).collect();
+    let pad = |s: String, i: usize| {
+        let gap = widths[i] - s.chars().count();
+        match align(i) {
+            MdAlign::Right => format!("{}{s}", " ".repeat(gap)),
+            MdAlign::Center => format!("{}{s}{}", " ".repeat(gap / 2), " ".repeat(gap - gap / 2)),
+            _ => format!("{s}{}", " ".repeat(gap)),
+        }
+    };
+    let line = |row: &[String]| {
+        let cells: Vec<String> = (0..cols).map(|i| pad(cell(row, i), i)).collect();
+        format!("| {} |", cells.join(" | "))
+    };
+    let rule: Vec<String> = (0..cols)
+        .map(|i| {
+            let w = widths[i];
+            match align(i) {
+                MdAlign::None => "-".repeat(w),
+                MdAlign::Left => format!(":{}", "-".repeat(w - 1)),
+                MdAlign::Right => format!("{}:", "-".repeat(w - 1)),
+                MdAlign::Center => format!(":{}:", "-".repeat(w - 2)),
+            }
+        })
+        .collect();
+    let mut out = vec![line(&head), format!("| {} |", rule.join(" | "))];
+    out.extend(rows.iter().map(|r| line(r)));
+    out.join("\n")
+}
+
+/// `text` with `len` UTF-16 units at `start` replaced by `with`; the caret
+/// after it.
+#[uniffi::export]
+pub fn md_replace(text: String, start: u32, len: u32, with: String) -> MdEdit {
+    let s = byte_of(&text, start);
+    let e = byte_of(&text, start + len);
+    let mut t = text;
+    t.replace_range(s..e, &with);
+    edit(t, s + with.len()..s + with.len())
 }
 
 // MARK: Offsets
@@ -934,6 +1063,47 @@ mod tests {
             (imgs[0].alt.as_str(), imgs[0].start, imgs[0].len),
             ("shot", 0, 22)
         );
+    }
+
+    #[test]
+    fn a_table_is_read_and_written_back() {
+        let md = "Before\n\n| Host | Port |\n|:--|--:|\n| web-1 | 22 |\n| a \\| b | |\n\nAfter";
+        let (at, _) = at(md, "web-1");
+        let t = md_table_at(md.into(), at).expect("a table");
+        assert_eq!(t.aligns, [MdAlign::Left, MdAlign::Right]);
+        assert_eq!(t.head, ["Host", "Port"]);
+        assert_eq!(
+            t.rows,
+            [
+                vec!["web-1".to_string(), "22".into()],
+                vec!["a | b".into(), String::new()]
+            ]
+        );
+        let table = &md[byte_of(md, t.start)..byte_of(md, t.start + t.len)];
+        assert!(
+            table.starts_with("| Host") && table.ends_with("| |"),
+            "{table:?}"
+        );
+        assert!(md_table_at(md.into(), 0).is_none(), "not in a table");
+        // Changed in the grid, written back lined up.
+        let mut rows = t.rows.clone();
+        rows[0][1] = "2222".into();
+        rows.push(vec!["db".into(), "5432".into()]);
+        let text = md_table_text(t.aligns.clone(), t.head.clone(), rows);
+        assert_eq!(
+            text,
+            "| Host   | Port |\n| :----- | ---: |\n| web-1  | 2222 |\n| a \\| b |      |\n| db     | 5432 |"
+        );
+        let e = md_replace(md.into(), t.start, t.len, text.clone());
+        assert!(
+            e.text.starts_with("Before\n\n| Host") && e.text.ends_with(" |\n\nAfter"),
+            "{}",
+            e.text
+        );
+        // And read again as it was written.
+        let again = md_table_at(e.text.clone(), e.sel_start - 1).expect("still a table");
+        assert_eq!(again.rows[2], ["db", "5432"]);
+        assert_eq!(again.rows[1][0], "a | b");
     }
 
     #[test]
