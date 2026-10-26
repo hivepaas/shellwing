@@ -854,6 +854,7 @@ mod tests {
                 command: "kubectl rollout restart deploy/{{name}} -n {{ns}} # on {{host}}".into(),
                 enter: true,
                 scope: "group:Production".into(),
+                needs: vec![],
             })
             .expect("snippet");
         let all = app.snippets(None);
@@ -866,14 +867,29 @@ mod tests {
             "offered outside its group"
         );
 
-        app.save_environment(
-            String::new(),
-            "Staging".into(),
-            String::new(),
-            "export API=x\nTOKEN='t'\n".into(),
-        )
-        .expect("env");
+        let env = app
+            .save_environment(
+                String::new(),
+                "Staging".into(),
+                String::new(),
+                "export API=x\nTOKEN='t'\n".into(),
+            )
+            .expect("env");
         assert_eq!(app.environments()[0].names, ["API", "TOKEN"]);
+        let mut edit = SnippetEdit {
+            id: id.clone(),
+            name: all[0].name.clone(),
+            category: all[0].category.clone(),
+            command: all[0].command.clone(),
+            enter: true,
+            scope: all[0].scope.clone(),
+            needs: vec![env.clone()],
+        };
+        app.save_snippet(edit.clone()).expect("needs");
+        assert_eq!(app.snippets(None)[0].needs, [env]);
+        edit.needs.clear();
+        app.save_snippet(edit).expect("needs none");
+        assert!(app.snippets(None)[0].needs.is_empty());
         assert!(
             app.save_environment(
                 String::new(),

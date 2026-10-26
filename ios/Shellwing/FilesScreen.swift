@@ -19,6 +19,7 @@ struct FilesScreen: View {
     @State private var removing: FileEntry?
     @State private var sharing: SharedFile?
     @State private var showHidden = false
+    @State private var editing: RemoteText?
 
     /// A name asked for: a new folder, or an entry renamed.
     struct Naming: Identifiable {
@@ -111,6 +112,9 @@ struct FilesScreen: View {
             .sheet(item: $sharing) { f in
                 ShareSheet(items: [f.url]).ignoresSafeArea()
             }
+            .sheet(item: $editing, onDismiss: { Task { await list(dir) } }) { r in
+                RemoteTextEditor(model: model, file: r)
+            }
             .task {
                 guard dir.isEmpty else { return }
                 do {
@@ -148,6 +152,8 @@ struct FilesScreen: View {
         Button {
             if e.dir {
                 Task { await list(join(dir, e.name)) }
+            } else if e.size <= RemoteText.most {
+                edit(e)
             } else {
                 download(e)
             }
@@ -172,6 +178,9 @@ struct FilesScreen: View {
 
     @ViewBuilder
     private func menu(_ e: FileEntry) -> some View {
+        if !e.dir && e.size <= RemoteText.most {
+            Button("Edit", systemImage: "square.and.pencil") { edit(e) }
+        }
         Button(e.dir ? "Download the folder" : "Download", systemImage: "square.and.arrow.down") { download(e) }
         if !e.dir {
             Button("Keep in the vault", systemImage: "lock.doc") { keep(e) }
@@ -247,6 +256,26 @@ struct FilesScreen: View {
             try FileManager.default.createDirectory(at: into, withIntermediateDirectories: true)
             try await handle().filesDownload(remote: join(dir, e.name), local: local.path)
             sharing = SharedFile(url: local)
+            return nil
+        }
+    }
+
+    /// Opens a text file to edit; one that is not text is offered to share.
+    private func edit(_ e: FileEntry) {
+        let into = FileManager.default.temporaryDirectory
+            .appendingPathComponent("edits", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let local = into.appendingPathComponent(e.name)
+        let remote = join(dir, e.name)
+        run("Opening \(e.name)…", reload: false) {
+            try FileManager.default.createDirectory(at: into, withIntermediateDirectories: true)
+            try await handle().filesDownload(remote: remote, local: local.path)
+            let data = try Data(contentsOf: local)
+            if let text = String(data: data, encoding: .utf8), !data.contains(0) {
+                editing = RemoteText(remote: remote, local: local, text: text, size: e.size, modified: e.modified)
+            } else {
+                sharing = SharedFile(url: local)
+            }
             return nil
         }
     }
@@ -334,4 +363,100 @@ private func parents(of path: String) -> [String] {
         out.append("/" + parts.joined(separator: "/"))
     }
     return out
+}
+
+/// A remote text file being edited: where it is, its copy here, and what
+/// the server had when it was opened.
+struct RemoteText: Identifiable {
+    /// Larger than this is not a file to edit on a phone.
+    static let most: UInt64 = 1024 * 1024
+
+    let id = UUID()
+    let remote: String
+    let local: URL
+    let text: String
+    let size: UInt64
+    let modified: UInt64?
+}
+
+/// A remote file's text, saved back over SFTP; if the server's changed
+/// since it was opened, asked before it is replaced.
+struct RemoteTextEditor: View {
+    @ObservedObject var model: SessionModel
+    let file: RemoteText
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var saving = false
+    @State private var problem: String?
+    @State private var changedThere = false
+    @State private var asked = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                if let problem {
+                    Text(problem)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Dusk.badText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(Dusk.badBg)
+                }
+                TextEditor(text: $text)
+                    .font(.system(size: 13, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 8)
+            }
+            .foregroundStyle(Dusk.text)
+            .background(Dusk.field.ignoresSafeArea())
+            .navigationTitle(file.remote.split(separator: "/").last.map(String.init) ?? file.remote)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    if saving { ProgressView() } else {
+                        Button("Save") { save(force: false) }.disabled(text == file.text)
+                    }
+                }
+            }
+            .confirmationDialog(
+                "\(file.remote) changed on \(model.spec) since it was opened.",
+                isPresented: $changedThere,
+                titleVisibility: .visible
+            ) {
+                Button("Replace it with this", role: .destructive) { save(force: true) }
+            }
+            .onAppear {
+                if !asked { text = file.text; asked = true }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func save(force: Bool) {
+        guard let h = model.handle else { return }
+        saving = true
+        Task {
+            defer { saving = false }
+            do {
+                if !force {
+                    // What the server has now, against what it had.
+                    let dir = String(file.remote[..<(file.remote.lastIndex(of: "/") ?? file.remote.startIndex)])
+                    let name = String(file.remote.split(separator: "/").last ?? "")
+                    let now = try await h.filesList(dir: dir.isEmpty ? "/" : dir).first { $0.name == name }
+                    if let now, now.size != file.size || now.modified != file.modified {
+                        changedThere = true
+                        return
+                    }
+                }
+                try text.write(to: file.local, atomically: true, encoding: .utf8)
+                try await h.filesUpload(local: file.local.path, remote: file.remote)
+                dismiss()
+            } catch {
+                problem = "Not saved: \(error)"
+            }
+        }
+    }
 }

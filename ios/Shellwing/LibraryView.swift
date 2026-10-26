@@ -88,7 +88,7 @@ struct SnippetsList: View {
         .searchable(text: $filter, prompt: "Filter snippets")
         .toolbar {
             Button {
-                editing = SnippetEdit(id: "", name: "", category: "", command: "", enter: true, scope: "")
+                editing = SnippetEdit(id: "", name: "", category: "", command: "", enter: true, scope: "", needs: [])
             } label: { Image(systemName: "plus") }
             .accessibilityLabel("New snippet")
         }
@@ -115,11 +115,36 @@ struct SnippetsList: View {
     }
 
     private func edit(_ s: SnippetRow) -> SnippetEdit {
-        SnippetEdit(id: s.id, name: s.name, category: s.category, command: s.command, enter: s.enter, scope: s.scope)
+        SnippetEdit(id: s.id, name: s.name, category: s.category, command: s.command, enter: s.enter, scope: s.scope, needs: s.needs)
     }
 }
 
 extension SnippetEdit: Identifiable {}
+
+/// Where a snippet, an environment or a config file is offered: everywhere,
+/// in a group's sessions, or one host's.
+struct ScopePicker: View {
+    @EnvironmentObject private var app: AppModel
+    @Binding var scope: String
+
+    var body: some View {
+        Picker("Offered", selection: $scope) {
+            Text("Everywhere").tag("")
+            ForEach(app.groups(), id: \.self) { g in Text("Group: \(g)").tag("group:\(g)") }
+            ForEach(hostNames, id: \.self) { h in Text("Host: \(h)").tag("host:\(h)") }
+            // One no longer here (synced, or renamed): kept as it is.
+            if !scope.isEmpty, !known { Text(scope).tag(scope) }
+        }
+    }
+
+    private var hostNames: [String] {
+        Array(Set(app.sections.flatMap(\.hosts).map(\.name))).sorted()
+    }
+
+    private var known: Bool {
+        app.groups().map { "group:\($0)" }.contains(scope) || hostNames.map { "host:\($0)" }.contains(scope)
+    }
+}
 
 struct SnippetEditor: View {
     @EnvironmentObject private var app: AppModel
@@ -147,15 +172,37 @@ struct SnippetEditor: View {
                 }
                 .listRowBackground(Dusk.surface)
                 Section {
-                    Picker("Offered", selection: $edit.scope) {
-                        Text("Everywhere").tag("")
-                        ForEach(app.groups(), id: \.self) { g in Text("Group: \(g)").tag("group:\(g)") }
-                        ForEach(app.sections.flatMap(\.hosts), id: \.id) { h in
-                            Text("Host: \(h.name)").tag("host:\(h.name)")
-                        }
-                    }
+                    ScopePicker(scope: $edit.scope)
                 }
                 .listRowBackground(Dusk.surface)
+                let envs = app.environments()
+                if !envs.isEmpty {
+                    Section {
+                        ForEach(envs, id: \.id) { e in
+                            Toggle(isOn: Binding(
+                                get: { edit.needs.contains(e.id) },
+                                set: { on in
+                                    edit.needs.removeAll { $0 == e.id }
+                                    if on { edit.needs.append(e.id) }
+                                }
+                            )) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(e.name)
+                                    Text(e.names.joined(separator: " "))
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundStyle(Dusk.muted)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                    } header: {
+                        SectionHeading(text: "Runs with")
+                    } footer: {
+                        Text("Their variables are given to it alone, in a subshell, without showing their values.")
+                            .foregroundStyle(Dusk.muted)
+                    }
+                    .listRowBackground(Dusk.surface)
+                }
             }
             .scrollContentBackground(.hidden)
             .background(Dusk.page.ignoresSafeArea())
@@ -290,13 +337,17 @@ struct EnvEditor: View {
     @Environment(\.dismiss) private var dismiss
     let env: EnvRow
     @State private var name = ""
+    @State private var scope = ""
     @State private var text = ""
 
     var body: some View {
         NavigationStack {
             Form {
-                Section { TextField("Name", text: $name) }
-                    .listRowBackground(Dusk.surface)
+                Section {
+                    TextField("Name", text: $name)
+                    ScopePicker(scope: $scope)
+                }
+                .listRowBackground(Dusk.surface)
                 Section {
                     TextEditor(text: $text)
                         .font(.system(size: 14, design: .monospaced))
@@ -319,13 +370,14 @@ struct EnvEditor: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        if app.saveEnvironment(id: env.id, name: name, scope: env.scope, dotenv: text) { dismiss() }
+                        if app.saveEnvironment(id: env.id, name: name, scope: scope, dotenv: text) { dismiss() }
                     }
                     .disabled(name.isEmpty)
                 }
             }
             .onAppear {
                 name = env.name
+                scope = env.scope
                 text = env.names.map { "\($0)=" }.joined(separator: "\n")
             }
         }

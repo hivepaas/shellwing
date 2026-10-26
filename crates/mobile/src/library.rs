@@ -41,6 +41,8 @@ pub struct SnippetEdit {
     pub command: String,
     pub enter: bool,
     pub scope: String,
+    /// The environments it runs with, by id.
+    pub needs: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -131,6 +133,7 @@ impl Shellwing {
         s.command = edit.command;
         s.enter = edit.enter;
         s.scope = edit.scope;
+        s.needs = edit.needs;
         vault
             .save_snippet(&s)
             .map_err(|e| MobileError::Failed(environment::said_error(&e)))

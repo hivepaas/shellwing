@@ -125,13 +125,7 @@ struct ConfigFileEditor: View {
                 }
                 .listRowBackground(Dusk.surface)
                 Section {
-                    Picker("Offered", selection: $file.scope) {
-                        Text("Everywhere").tag("")
-                        ForEach(app.groups(), id: \.self) { g in Text("Group: \(g)").tag("group:\(g)") }
-                        ForEach(app.sections.flatMap(\.hosts), id: \.id) { h in
-                            Text("Host: \(h.name)").tag("host:\(h.name)")
-                        }
-                    }
+                    ScopePicker(scope: $file.scope)
                 }
                 .listRowBackground(Dusk.surface)
                 Section {
