@@ -288,9 +288,11 @@ struct KnownHostsView: View {
                         .truncationMode(.middle)
                 }
                 .listRowBackground(Dusk.surface)
+                .confirming($doomed, about: "\(r.line)")
                 .swipeActions {
                     DeleteSwipe(label: tr("Forget")) {
                         doomed = Doomed(
+                            key: "\(r.line)",
                             title: tr("Forget the key of {host}?", ["host": r.names.isEmpty ? tr("A hashed name") : r.names.joined(separator: ", ")]),
                             message: tr("It is shown to check again the next time you connect."),
                             action: tr("Forget")
@@ -302,7 +304,6 @@ struct KnownHostsView: View {
         .scrollContentBackground(.hidden)
         .background(Dusk.page.ignoresSafeArea())
         .searchable(text: $filter, prompt: tr("Filter by name"))
-        .confirming($doomed)
         .navigationTitle(tr("Known hosts"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: reload)

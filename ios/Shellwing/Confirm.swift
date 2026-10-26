@@ -4,6 +4,9 @@ import SwiftUI
 /// goes, what then happens, and the deed.
 struct Doomed: Identifiable {
     let id = UUID()
+    /// The row it is about: the question shows by that row (on iOS 26, a
+    /// popover pointing at it).
+    let key: String
     let title: String
     var message: String?
     /// The button that does it: Delete, Forget.
@@ -12,12 +15,13 @@ struct Doomed: Identifiable {
 }
 
 extension View {
-    /// Asks before `doomed` goes; nothing happens on Cancel.
-    func confirming(_ doomed: Binding<Doomed?>) -> some View {
+    /// On the row `key`: asks there before `doomed` goes, if it is about
+    /// that row; nothing happens on Cancel.
+    func confirming(_ doomed: Binding<Doomed?>, about key: String) -> some View {
         confirmationDialog(
             doomed.wrappedValue?.title ?? "",
             isPresented: Binding(
-                get: { doomed.wrappedValue != nil },
+                get: { doomed.wrappedValue?.key == key },
                 set: { if !$0 { doomed.wrappedValue = nil } }
             ),
             titleVisibility: .visible,

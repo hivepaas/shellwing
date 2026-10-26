@@ -86,9 +86,10 @@ struct SnippetsList: View {
                             }
                         }
                         .listRowBackground(Dusk.surface)
+                        .confirming($doomed, about: s.id)
                         .swipeActions {
                             DeleteSwipe {
-                                doomed = Doomed(title: tr("Delete {name}?", ["name": s.name]), message: goesEverywhere()) {
+                                doomed = Doomed(key: s.id, title: tr("Delete {name}?", ["name": s.name]), message: goesEverywhere()) {
                                     app.forget(s.id)
                                     reload()
                                 }
@@ -103,7 +104,6 @@ struct SnippetsList: View {
         }
         .scrollContentBackground(.hidden)
         .searchable(text: $filter, prompt: tr("Filter snippets"))
-        .confirming($doomed)
         .toolbar {
             if run == nil {
                 Button { browsing = true } label: { Image(systemName: "books.vertical") }
@@ -334,9 +334,10 @@ struct EnvironmentsList: View {
                     }
                 }
                 .listRowBackground(Dusk.surface)
+                .confirming($doomed, about: e.id)
                 .swipeActions {
                     DeleteSwipe {
-                        doomed = Doomed(title: tr("Delete {name}?", ["name": e.name]), message: goesEverywhere()) {
+                        doomed = Doomed(key: e.id, title: tr("Delete {name}?", ["name": e.name]), message: goesEverywhere()) {
                             app.forget(e.id)
                             envs = app.environments()
                         }
@@ -345,7 +346,6 @@ struct EnvironmentsList: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .confirming($doomed)
         .toolbar {
             Button { editing = EnvRow(id: "", name: "", scope: "", names: []) } label: { Image(systemName: "plus") }
                 .accessibilityLabel(tr("New environment"))
@@ -453,10 +453,12 @@ struct NotesList: View {
                     }
                 }
                 .listRowBackground(Dusk.surface)
+                .confirming($doomed, about: n.id)
                 .swipeActions {
                     if session == nil {
                         DeleteSwipe {
                             doomed = Doomed(
+                                key: n.id,
                                 title: n.title.isEmpty ? tr("Delete this note?") : tr("Delete {title}?", ["title": n.title]),
                                 message: goesEverywhere()
                             ) {
@@ -470,7 +472,6 @@ struct NotesList: View {
         }
         .scrollContentBackground(.hidden)
         .searchable(text: $filter, prompt: tr("Filter notes"))
-        .confirming($doomed)
         .toolbar {
             if session == nil {
                 NavigationLink {
@@ -617,6 +618,13 @@ struct NoteEditor: View {
                     }
                 } label: { Image(systemName: "ellipsis.circle") }
                 .accessibilityLabel(tr("Note"))
+                .confirmationDialog(title.isEmpty ? tr("Delete this note?") : tr("Delete {title}?", ["title": title]), isPresented: $confirmDelete, titleVisibility: .visible) {
+                    Button(tr("Delete"), role: .destructive) {
+                        app.forget(id)
+                        deleted = true
+                        dismiss()
+                    }
+                }
             }
         }
         .photosPicker(isPresented: $picking, selection: $photo, matching: .images)
@@ -627,13 +635,6 @@ struct NoteEditor: View {
         }
         .sheet(isPresented: $choosingHosts) {
             HostsChooser(chosen: $hosts).environmentObject(app)
-        }
-        .confirmationDialog(title.isEmpty ? tr("Delete this note?") : tr("Delete {title}?", ["title": title]), isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button(tr("Delete"), role: .destructive) {
-                app.forget(id)
-                deleted = true
-                dismiss()
-            }
         }
         .onAppear {
             guard !loaded else { return }

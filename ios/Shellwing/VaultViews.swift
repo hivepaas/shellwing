@@ -49,9 +49,11 @@ struct KeysView: View {
                 }
                 .padding(.vertical, 4)
                 .listRowBackground(Dusk.surface)
+                .confirming($doomed, about: k.id)
                 .swipeActions {
                     DeleteSwipe {
                         doomed = Doomed(
+                            key: k.id,
                             title: tr("Delete {name}?", ["name": k.name]),
                             message: tr("Hosts that sign in with it need another way in.") + " " + goesEverywhere()
                         ) {
@@ -63,7 +65,6 @@ struct KeysView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .confirming($doomed)
         .background(Dusk.panel.ignoresSafeArea())
         .navigationTitle(tr("SSH keys"))
         .toolbar {
@@ -113,9 +114,11 @@ struct SecretsView: View {
                     }
                 }
                 .listRowBackground(Dusk.surface)
+                .confirming($doomed, about: s.id)
                 .swipeActions {
                     DeleteSwipe(label: tr("Forget")) {
                         doomed = Doomed(
+                            key: s.id,
                             title: tr("Forget {name}?", ["name": s.what]),
                             message: tr("It is asked for again next time."),
                             action: tr("Forget")
@@ -128,7 +131,6 @@ struct SecretsView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .confirming($doomed)
         .background(Dusk.panel.ignoresSafeArea())
         .navigationTitle(tr("Saved passwords"))
         .onAppear { secrets = app.savedSecrets() }

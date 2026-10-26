@@ -54,6 +54,23 @@ struct GroupEditorView: View {
                 Section {
                     Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
                         .frame(maxWidth: .infinity)
+                        .confirmationDialog(
+                            members == 0
+                                ? tr("Delete {group}?", ["group": oldName])
+                                : trN(members, "Delete {group}? Its {n} host stays, in no group.", "Delete {group}? Its {n} hosts stay, in no group.", ["group": oldName]),
+                            isPresented: $confirmDelete,
+                            titleVisibility: .visible
+                        ) {
+                            Button(tr("Delete"), role: .destructive) {
+                                do {
+                                    try app.core?.deleteGroup(name: oldName)
+                                    app.reload()
+                                    done()
+                                } catch {
+                                    problem = "\(error)"
+                                }
+                            }
+                        }
                 }
                 .listRowBackground(Dusk.surface)
             }
@@ -66,23 +83,6 @@ struct GroupEditorView: View {
                 ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel"), action: done) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(tr("Save"), action: save).disabled(edit.name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .confirmationDialog(
-                members == 0
-                    ? tr("Delete {group}?", ["group": oldName])
-                    : trN(members, "Delete {group}? Its {n} host stays, in no group.", "Delete {group}? Its {n} hosts stay, in no group.", ["group": oldName]),
-                isPresented: $confirmDelete,
-                titleVisibility: .visible
-            ) {
-                Button(tr("Delete"), role: .destructive) {
-                    do {
-                        try app.core?.deleteGroup(name: oldName)
-                        app.reload()
-                        done()
-                    } catch {
-                        problem = "\(error)"
-                    }
                 }
             }
         }

@@ -114,24 +114,24 @@ private struct SyncingView: View {
 
             Section {
                 Button(tr("Stop syncing"), role: .destructive) { stopping = true }
+                .confirmationDialog(tr("Stop syncing on this phone?"), isPresented: $stopping, titleVisibility: .visible) {
+                    Button(tr("Stop syncing"), role: .destructive) {
+                        do {
+                            try app.core?.stopSync()
+                            SyncFolder.forget()
+                        } catch {
+                            app.error = "\(error)"
+                        }
+                        app.refreshSync()
+                    }
+                } message: {
+                    Text(tr("The vault stays here, and the copy at the place stays for your other devices."))
+                }
             }
             .listRowBackground(Dusk.surface)
         }
         .scrollContentBackground(.hidden)
         .background(Dusk.panel.ignoresSafeArea())
-        .confirmationDialog(tr("Stop syncing on this phone?"), isPresented: $stopping, titleVisibility: .visible) {
-            Button(tr("Stop syncing"), role: .destructive) {
-                do {
-                    try app.core?.stopSync()
-                    SyncFolder.forget()
-                } catch {
-                    app.error = "\(error)"
-                }
-                app.refreshSync()
-            }
-        } message: {
-            Text(tr("The vault stays here, and the copy at the place stays for your other devices."))
-        }
     }
 }
 

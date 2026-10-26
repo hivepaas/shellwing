@@ -23,9 +23,10 @@ struct ConfigFilesList: View {
                     ForEach(files.filter { $0.category == cat }, id: \.id) { f in
                         Button { editing = f } label: { ConfigFileLabel(file: f) }
                             .listRowBackground(Dusk.surface)
+                            .confirming($doomed, about: f.id)
                             .swipeActions {
                                 DeleteSwipe {
-                                    doomed = Doomed(title: tr("Delete {name}?", ["name": f.name]), message: goesEverywhere()) {
+                                    doomed = Doomed(key: f.id, title: tr("Delete {name}?", ["name": f.name]), message: goesEverywhere()) {
                                         app.forget(f.id)
                                         reload()
                                     }
@@ -47,7 +48,6 @@ struct ConfigFilesList: View {
         .sheet(item: $editing, onDismiss: reload) { f in
             ConfigFileEditor(file: f)
         }
-        .confirming($doomed)
         .onAppear(perform: reload)
     }
 
@@ -231,6 +231,21 @@ struct PlaceConfigSheet: View {
                     Button { look(f) } label: { ConfigFileLabel(file: f) }
                         .disabled(busy)
                         .listRowBackground(Dusk.surface)
+                        // How to place it, asked by the file tapped.
+                        .confirmationDialog(
+                            title,
+                            isPresented: Binding(
+                                get: { asking?.file.id == f.id },
+                                set: { if !$0 { asking = nil } }
+                            ),
+                            titleVisibility: .visible,
+                            presenting: asking
+                        ) { a in
+                            ForEach(choices(a), id: \.label) { c in
+                                Button(c.label) { place(a, c.how) }
+                            }
+                            Button(tr("Cancel"), role: .cancel) {}
+                        }
                 }
                 if let problem {
                     Text(problem).foregroundStyle(Dusk.badText).listRowBackground(Dusk.badBg)
@@ -243,17 +258,6 @@ struct PlaceConfigSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { done(nil) } }
                 if busy { ToolbarItem(placement: .confirmationAction) { ProgressView() } }
-            }
-            .confirmationDialog(
-                title,
-                isPresented: Binding(get: { asking != nil }, set: { if !$0 { asking = nil } }),
-                titleVisibility: .visible,
-                presenting: asking
-            ) { a in
-                ForEach(choices(a), id: \.label) { c in
-                    Button(c.label) { place(a, c.how) }
-                }
-                Button(tr("Cancel"), role: .cancel) {}
             }
             .onAppear { files = app.configFiles(for: model.spec) }
         }

@@ -40,6 +40,19 @@ struct FilesScreen: View {
                 ForEach(shown, id: \.name) { e in
                     row(e)
                         .listRowBackground(Dusk.surface)
+                        // The question by the row about to go.
+                        .confirmationDialog(
+                            tr("Delete {name}?", ["name": e.name]),
+                            isPresented: Binding(
+                                get: { removing?.name == e.name },
+                                set: { if !$0 { removing = nil } }
+                            ),
+                            titleVisibility: .visible
+                        ) {
+                            Button(tr("Delete"), role: .destructive) { remove(e) }
+                        } message: {
+                            Text(e.dir ? tr("The folder and everything in it are deleted on {host}.", ["host": model.spec]) : tr("It is deleted on {host}.", ["host": model.spec]))
+                        }
                         .swipeActions {
                             DeleteSwipe { removing = e }
                             Button(tr("Rename")) { naming = Naming(renaming: e, text: e.name) }.tint(Dusk.button)
@@ -97,17 +110,6 @@ struct FilesScreen: View {
                 .autocorrectionDisabled()
                 Button(tr("Cancel"), role: .cancel) { naming = nil }
                 Button(naming?.renaming == nil ? tr("Make") : tr("Rename")) { named() }
-            }
-            .confirmationDialog(
-                tr("Delete {name}?", ["name": removing?.name ?? ""]),
-                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
-                titleVisibility: .visible
-            ) {
-                Button(tr("Delete"), role: .destructive) {
-                    if let e = removing { remove(e) }
-                }
-            } message: {
-                Text(removing?.dir == true ? tr("The folder and everything in it are deleted on {host}.", ["host": model.spec]) : tr("It is deleted on {host}.", ["host": model.spec]))
             }
             .sheet(item: $sharing) { f in
                 ShareSheet(items: [f.url]).ignoresSafeArea()
@@ -416,17 +418,20 @@ struct RemoteTextEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    if saving { ProgressView() } else {
-                        Button(tr("Save")) { save(force: false) }.disabled(text == file.text)
-                    }
+                    // Kept while saving (disabled): the question below hangs on it.
+                    Button(tr("Save")) { save(force: false) }
+                        .disabled(text == file.text || saving)
+                        .confirmationDialog(
+                            tr("{path} changed on {host} since it was opened.", ["path": file.remote, "host": model.spec]),
+                            isPresented: $changedThere,
+                            titleVisibility: .visible
+                        ) {
+                            Button(tr("Replace it with this"), role: .destructive) { save(force: true) }
+                        }
                 }
-            }
-            .confirmationDialog(
-                tr("{path} changed on {host} since it was opened.", ["path": file.remote, "host": model.spec]),
-                isPresented: $changedThere,
-                titleVisibility: .visible
-            ) {
-                Button(tr("Replace it with this"), role: .destructive) { save(force: true) }
+                if saving {
+                    ToolbarItem(placement: .principal) { ProgressView() }
+                }
             }
             .onAppear {
                 if !asked { text = file.text; asked = true }

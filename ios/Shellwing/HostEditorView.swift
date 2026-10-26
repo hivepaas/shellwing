@@ -61,6 +61,16 @@ struct HostEditorView: View {
                     Section {
                         Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
                             .frame(maxWidth: .infinity)
+                            .confirmationDialog(
+                                tr("Delete {title} from hosts.toml?", ["title": title]),
+                                isPresented: $confirmDelete,
+                                titleVisibility: .visible
+                            ) {
+                                Button(tr("Delete"), role: .destructive) {
+                                    if let id = edit.id { app.delete(hostId: id) }
+                                    done(nil)
+                                }
+                            }
                     }
                     .listRowBackground(Dusk.surface)
                 }
@@ -77,16 +87,6 @@ struct HostEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(tr("Save")) { save(connect: false) }.disabled(blankAddress)
-                }
-            }
-            .confirmationDialog(
-                tr("Delete {title} from hosts.toml?", ["title": title]),
-                isPresented: $confirmDelete,
-                titleVisibility: .visible
-            ) {
-                Button(tr("Delete"), role: .destructive) {
-                    if let id = edit.id { app.delete(hostId: id) }
-                    done(nil)
                 }
             }
             .onAppear { keys = app.keys() }

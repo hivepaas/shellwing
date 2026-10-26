@@ -37,9 +37,10 @@ struct HostsView: View {
                                 HostRowView(host: host, status: status(of: host))
                             }
                             .listRowBackground(Dusk.surface)
+                            .confirming($doomed, about: rowKey(section, host))
                             .swipeActions {
                                 DeleteSwipe {
-                                    doomed = Doomed(title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {
+                                    doomed = Doomed(key: rowKey(section, host), title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {
                                         app.delete(hostId: host.id)
                                     }
                                 }
@@ -109,6 +110,11 @@ struct HostsView: View {
                    let s = app.session(for: spec) {
                     path = [s]
                 }
+                // `-ask delete`: the question for the last host, as its swipe asks.
+                if UserDefaults.standard.string(forKey: "ask") == "delete",
+                   let section = app.sections.last, let host = section.hosts.last {
+                    doomed = Doomed(key: rowKey(section, host), title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {}
+                }
                 // `-edit <host>` (or `new`): its editor.
                 if let name = UserDefaults.standard.string(forKey: "edit") {
                     let id = app.sections.flatMap(\.hosts).first { $0.name == name }?.id
@@ -124,7 +130,6 @@ struct HostsView: View {
                     }
                 }
             }
-            .confirming($doomed)
             .sheet(item: $editingGroup) { g in
                 GroupEditorView(edit: g.edit) { editingGroup = nil }
             }
@@ -149,6 +154,11 @@ struct HostsView: View {
             }
             return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts, favorites: s.favorites)
         }
+    }
+
+    /// A row's own: a favorite is listed twice, first and in its group.
+    private func rowKey(_ section: HostSection, _ host: HostRow) -> String {
+        (section.favorites ? "favorite:" : "") + host.id
     }
 
     private func status(of host: HostRow) -> SessionStatus? {
