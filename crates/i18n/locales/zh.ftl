@@ -4000,6 +4000,9 @@ t10182ed5 = { $name } 已放置到 { $path }，直到会话结束。
 # {name} is at {path}.
 t3b2e2230 = { $name } 已放置到 { $path }。
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = 如果保险库正在同步，它也会从你的其他设备上删除。
+
 # Nothing here.
 ta7006e9a = 这里什么都没有。
 
@@ -4098,9 +4101,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 无颜色
-
-# Delete {host} from hosts.toml?
-tcee76080 = 从 hosts.toml 中删除 { $host }？
 
 # as the server says
 ta204abe7 = 由服务器决定
@@ -4237,6 +4237,9 @@ t2e35a678 = 无标题
 # this host
 t4b4cbe3d = 此主机
 
+# Delete this note?
+t9d3e3253 = 删除这条笔记？
+
 # Filter notes
 tde67183a = 筛选笔记
 
@@ -4254,9 +4257,6 @@ t2d3653b2 = 插入图片…
 
 # Note
 t1440c15d = 笔记
-
-# Delete this note?
-t9d3e3253 = 删除这条笔记？
 
 # That image cannot be read.
 tc5fceb9b = 无法读取该图片。
@@ -4365,6 +4365,12 @@ t97c138ac = 已哈希的名称
 
 # Forget
 t6e3fab8c = 忘记
+
+# Forget the key of {host}?
+t25034152 = 忘记 { $host } 的密钥？
+
+# It is shown to check again the next time you connect.
+t51c13890 = 下次连接时会再次显示，供你核对。
 
 # Filter by name
 tbcb12ca7 = 按名称筛选
@@ -4576,6 +4582,9 @@ t8dc21305 = 已复制
 # Share
 t4f856dd8 = 共享
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = 用它登录的主机将需要另一种登录方式。
+
 # Make a key
 ta2572fcb = 生成密钥
 
@@ -4590,6 +4599,12 @@ t8e21fd8c = 还没有保存任何内容。在会话中输入的密码有效时�
 
 # A key's passphrase
 tdf0a144f = 密钥的密码短语
+
+# Forget {name}?
+t5b101fa2 = 忘记 { $name }？
+
+# It is asked for again next time.
+t736fd9ad = 下次会再次询问。
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = 请把它记下来，并与此手机分开保管。在其他方式都无法打开保险库时，它可以打开。

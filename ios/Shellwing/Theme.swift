@@ -30,6 +30,8 @@ enum Dusk {
     static let lost = Color(hex: 0xf97316)
     static let idle = Color(hex: 0x7b8595)
     static let bad = Color(hex: 0xf87171)
+    /// Behind white text that deletes (a swipe action): dark enough to read.
+    static let danger = Color(hex: 0xdc2626)
     static let badBg = Color(hex: 0x3a1a1f)
     static let badEdge = Color(hex: 0x8a2a2a)
     static let badText = Color(hex: 0xfecaca)

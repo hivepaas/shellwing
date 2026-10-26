@@ -4136,6 +4136,9 @@ t10182ed5 = { $name } liegt unter { $path }, bis die Sitzung endet.
 # {name} is at {path}.
 t3b2e2230 = { $name } liegt unter { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Wenn der Tresor synchronisiert wird, verschwindet es auch von deinen anderen Geräten.
+
 # Nothing here.
 ta7006e9a = Hier ist nichts.
 
@@ -4237,9 +4240,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Keine Farbe
-
-# Delete {host} from hosts.toml?
-tcee76080 = { $host } aus hosts.toml löschen?
 
 # as the server says
 ta204abe7 = wie vom Server vorgegeben
@@ -4376,6 +4376,9 @@ t2e35a678 = Ohne Titel
 # this host
 t4b4cbe3d = dieser Host
 
+# Delete this note?
+t9d3e3253 = Diese Notiz löschen?
+
 # Filter notes
 tde67183a = Notizen filtern
 
@@ -4393,9 +4396,6 @@ t2d3653b2 = Bild einfügen…
 
 # Note
 t1440c15d = Notiz
-
-# Delete this note?
-t9d3e3253 = Diese Notiz löschen?
 
 # That image cannot be read.
 tc5fceb9b = Dieses Bild ist nicht lesbar.
@@ -4506,6 +4506,12 @@ t97c138ac = Ein gehashter Name
 
 # Forget
 t6e3fab8c = Vergessen
+
+# Forget the key of {host}?
+t25034152 = Den Schlüssel von { $host } vergessen?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Beim nächsten Verbinden wird er dir wieder zur Prüfung gezeigt.
 
 # Filter by name
 tbcb12ca7 = Nach Name filtern
@@ -4718,6 +4724,9 @@ t8dc21305 = Kopiert
 # Share
 t4f856dd8 = Teilen
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Hosts, die sich damit anmelden, brauchen einen anderen Weg.
+
 # Make a key
 ta2572fcb = Schlüssel erzeugen
 
@@ -4732,6 +4741,12 @@ t8e21fd8c = Noch nichts gespeichert. Wenn ein in einer Sitzung eingegebenes Pass
 
 # A key's passphrase
 tdf0a144f = Passphrase eines Schlüssels
+
+# Forget {name}?
+t5b101fa2 = { $name } vergessen?
+
+# It is asked for again next time.
+t736fd9ad = Beim nächsten Mal wird wieder danach gefragt.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Schreib ihn auf und bewahre ihn getrennt von diesem iPhone auf. Er öffnet den Tresor, wo nichts anderes es kann.

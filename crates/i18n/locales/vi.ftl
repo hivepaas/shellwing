@@ -4000,6 +4000,9 @@ t10182ed5 = { $name } nằm ở { $path } tới khi phiên kết thúc.
 # {name} is at {path}.
 t3b2e2230 = { $name } nằm ở { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Nếu kho đang đồng bộ, nó cũng bị xoá khỏi các thiết bị khác của bạn.
+
 # Nothing here.
 ta7006e9a = Không có gì ở đây.
 
@@ -4098,9 +4101,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Không màu
-
-# Delete {host} from hosts.toml?
-tcee76080 = Xoá { $host } khỏi hosts.toml?
 
 # as the server says
 ta204abe7 = theo máy chủ
@@ -4237,6 +4237,9 @@ t2e35a678 = Chưa đặt tên
 # this host
 t4b4cbe3d = máy chủ này
 
+# Delete this note?
+t9d3e3253 = Xoá ghi chú này?
+
 # Filter notes
 tde67183a = Lọc ghi chú
 
@@ -4254,9 +4257,6 @@ t2d3653b2 = Chèn ảnh…
 
 # Note
 t1440c15d = Ghi chú
-
-# Delete this note?
-t9d3e3253 = Xoá ghi chú này?
 
 # That image cannot be read.
 tc5fceb9b = Không đọc được ảnh đó.
@@ -4365,6 +4365,12 @@ t97c138ac = Một tên đã băm
 
 # Forget
 t6e3fab8c = Quên
+
+# Forget the key of {host}?
+t25034152 = Quên khoá của { $host }?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Lần kết nối tới, khoá sẽ được hiện ra để bạn kiểm tra lại.
 
 # Filter by name
 tbcb12ca7 = Lọc theo tên
@@ -4576,6 +4582,9 @@ t8dc21305 = Đã sao chép
 # Share
 t4f856dd8 = Chia sẻ
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Các máy chủ đăng nhập bằng khoá này sẽ cần cách đăng nhập khác.
+
 # Make a key
 ta2572fcb = Tạo khoá
 
@@ -4590,6 +4599,12 @@ t8e21fd8c = Chưa lưu gì. Khi mật khẩu nhập trong một phiên dùng đ�
 
 # A key's passphrase
 tdf0a144f = Cụm mật khẩu của khoá
+
+# Forget {name}?
+t5b101fa2 = Quên { $name }?
+
+# It is asked for again next time.
+t736fd9ad = Lần sau sẽ được hỏi lại.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Hãy ghi lại và cất ở nơi tách biệt với điện thoại này. Nó mở được kho khi không còn cách nào khác.

@@ -4000,6 +4000,9 @@ t10182ed5 = 세션이 끝날 때까지 { $name }이(가) { $path }에 있습니�
 # {name} is at {path}.
 t3b2e2230 = { $name }이(가) { $path }에 있습니다.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = 보관함을 동기화하고 있다면 다른 기기에서도 삭제됩니다.
+
 # Nothing here.
 ta7006e9a = 아무것도 없습니다.
 
@@ -4098,9 +4101,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 색 없음
-
-# Delete {host} from hosts.toml?
-tcee76080 = hosts.toml에서 { $host }을(를) 삭제하시겠습니까?
 
 # as the server says
 ta204abe7 = 서버가 정한 대로
@@ -4237,6 +4237,9 @@ t2e35a678 = 제목 없음
 # this host
 t4b4cbe3d = 이 호스트
 
+# Delete this note?
+t9d3e3253 = 이 노트를 삭제하시겠습니까?
+
 # Filter notes
 tde67183a = 노트 필터링
 
@@ -4254,9 +4257,6 @@ t2d3653b2 = 이미지 삽입…
 
 # Note
 t1440c15d = 노트
-
-# Delete this note?
-t9d3e3253 = 이 노트를 삭제하시겠습니까?
 
 # That image cannot be read.
 tc5fceb9b = 이미지를 읽을 수 없습니다.
@@ -4365,6 +4365,12 @@ t97c138ac = 해시된 이름
 
 # Forget
 t6e3fab8c = 삭제
+
+# Forget the key of {host}?
+t25034152 = { $host }의 키를 삭제할까요?
+
+# It is shown to check again the next time you connect.
+t51c13890 = 다음에 연결할 때 확인하도록 다시 표시됩니다.
 
 # Filter by name
 tbcb12ca7 = 이름으로 필터링
@@ -4576,6 +4582,9 @@ t8dc21305 = 복사됨
 # Share
 t4f856dd8 = 공유
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = 이 키로 로그인하는 호스트에는 다른 로그인 방법이 필요합니다.
+
 # Make a key
 ta2572fcb = 키 생성
 
@@ -4590,6 +4599,12 @@ t8e21fd8c = 아직 저장된 항목이 없습니다. 세션에서 입력한 비�
 
 # A key's passphrase
 tdf0a144f = 키의 암호 문구
+
+# Forget {name}?
+t5b101fa2 = { $name }을(를) 삭제할까요?
+
+# It is asked for again next time.
+t736fd9ad = 다음에 다시 물어봅니다.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = 적어서 이 휴대폰과 따로 보관하세요. 다른 방법이 통하지 않을 때 보관함을 열 수 있습니다.

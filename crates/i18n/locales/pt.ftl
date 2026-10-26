@@ -4136,6 +4136,9 @@ t10182ed5 = { $name } está em { $path } até a sessão terminar.
 # {name} is at {path}.
 t3b2e2230 = { $name } está em { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Se o cofre for sincronizado, ele some também dos seus outros dispositivos.
+
 # Nothing here.
 ta7006e9a = Nada aqui.
 
@@ -4237,9 +4240,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Sem cor
-
-# Delete {host} from hosts.toml?
-tcee76080 = Excluir { $host } de hosts.toml?
 
 # as the server says
 ta204abe7 = como o servidor disser
@@ -4376,6 +4376,9 @@ t2e35a678 = Sem título
 # this host
 t4b4cbe3d = este servidor
 
+# Delete this note?
+t9d3e3253 = Excluir esta nota?
+
 # Filter notes
 tde67183a = Filtrar notas
 
@@ -4393,9 +4396,6 @@ t2d3653b2 = Inserir uma imagem…
 
 # Note
 t1440c15d = Nota
-
-# Delete this note?
-t9d3e3253 = Excluir esta nota?
 
 # That image cannot be read.
 tc5fceb9b = Não é possível ler essa imagem.
@@ -4506,6 +4506,12 @@ t97c138ac = Um nome com hash
 
 # Forget
 t6e3fab8c = Esquecer
+
+# Forget the key of {host}?
+t25034152 = Esquecer a chave de { $host }?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Ela será mostrada para conferir na próxima vez que você se conectar.
 
 # Filter by name
 tbcb12ca7 = Filtrar por nome
@@ -4718,6 +4724,9 @@ t8dc21305 = Copiada
 # Share
 t4f856dd8 = Compartilhar
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Os servidores que entram com ela vão precisar de outra forma de acesso.
+
 # Make a key
 ta2572fcb = Gerar uma chave
 
@@ -4732,6 +4741,12 @@ t8e21fd8c = Nada salvo ainda. Quando uma senha digitada em uma sessão funciona,
 
 # A key's passphrase
 tdf0a144f = A frase secreta de uma chave
+
+# Forget {name}?
+t5b101fa2 = Esquecer { $name }?
+
+# It is asked for again next time.
+t736fd9ad = Será pedido de novo na próxima vez.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Anote-a e guarde-a longe deste celular. Ela abre o cofre quando nada mais consegue.

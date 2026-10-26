@@ -41,7 +41,7 @@ struct FilesScreen: View {
                     row(e)
                         .listRowBackground(Dusk.surface)
                         .swipeActions {
-                            Button(tr("Delete"), role: .destructive) { removing = e }
+                            DeleteSwipe { removing = e }
                             Button(tr("Rename")) { naming = Naming(renaming: e, text: e.name) }.tint(Dusk.button)
                         }
                         .contextMenu { menu(e) }

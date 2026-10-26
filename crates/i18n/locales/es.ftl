@@ -4136,6 +4136,9 @@ t10182ed5 = { $name } está en { $path } hasta que termine la sesión.
 # {name} is at {path}.
 t3b2e2230 = { $name } está en { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Si la bóveda se sincroniza, también desaparece de tus otros dispositivos.
+
 # Nothing here.
 ta7006e9a = Aquí no hay nada.
 
@@ -4237,9 +4240,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Sin color
-
-# Delete {host} from hosts.toml?
-tcee76080 = ¿Eliminar { $host } de hosts.toml?
 
 # as the server says
 ta204abe7 = el que indique el servidor
@@ -4376,6 +4376,9 @@ t2e35a678 = Sin título
 # this host
 t4b4cbe3d = este servidor
 
+# Delete this note?
+t9d3e3253 = ¿Eliminar esta nota?
+
 # Filter notes
 tde67183a = Filtrar notas
 
@@ -4393,9 +4396,6 @@ t2d3653b2 = Insertar una imagen…
 
 # Note
 t1440c15d = Nota
-
-# Delete this note?
-t9d3e3253 = ¿Eliminar esta nota?
 
 # That image cannot be read.
 tc5fceb9b = No se puede leer esa imagen.
@@ -4506,6 +4506,12 @@ t97c138ac = Un nombre con hash
 
 # Forget
 t6e3fab8c = Olvidar
+
+# Forget the key of {host}?
+t25034152 = ¿Olvidar la clave de { $host }?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Se te mostrará para comprobarla la próxima vez que te conectes.
 
 # Filter by name
 tbcb12ca7 = Filtrar por nombre
@@ -4718,6 +4724,9 @@ t8dc21305 = Copiada
 # Share
 t4f856dd8 = Compartir
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Los servidores que inician sesión con ella necesitarán otra forma de entrar.
+
 # Make a key
 ta2572fcb = Crear una clave
 
@@ -4732,6 +4741,12 @@ t8e21fd8c = Aún no hay nada guardado. Cuando una contraseña escrita en una ses
 
 # A key's passphrase
 tdf0a144f = La frase de contraseña de una clave
+
+# Forget {name}?
+t5b101fa2 = ¿Olvidar { $name }?
+
+# It is asked for again next time.
+t736fd9ad = Se volverá a pedir la próxima vez.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Anótala y guárdala lejos de este teléfono. Abre la bóveda donde nada más puede.

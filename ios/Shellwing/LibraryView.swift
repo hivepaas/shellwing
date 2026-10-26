@@ -54,6 +54,7 @@ struct SnippetsList: View {
     let run: ((SnippetRow) -> Void)?
     @State private var snippets: [SnippetRow] = []
     @State private var editing: SnippetEdit?
+    @State private var doomed: Doomed?
     @State private var browsing = UserDefaults.standard.string(forKey: "screen") == "library"
     @State private var filter = ""
 
@@ -86,9 +87,11 @@ struct SnippetsList: View {
                         }
                         .listRowBackground(Dusk.surface)
                         .swipeActions {
-                            Button(tr("Delete"), role: .destructive) {
-                                app.forget(s.id)
-                                reload()
+                            DeleteSwipe {
+                                doomed = Doomed(title: tr("Delete {name}?", ["name": s.name]), message: goesEverywhere()) {
+                                    app.forget(s.id)
+                                    reload()
+                                }
                             }
                             Button(tr("Edit")) { editing = edit(s) }.tint(Dusk.button)
                         }
@@ -100,6 +103,7 @@ struct SnippetsList: View {
         }
         .scrollContentBackground(.hidden)
         .searchable(text: $filter, prompt: tr("Filter snippets"))
+        .confirming($doomed)
         .toolbar {
             if run == nil {
                 Button { browsing = true } label: { Image(systemName: "books.vertical") }
@@ -310,6 +314,7 @@ struct EnvironmentsList: View {
     @EnvironmentObject private var app: AppModel
     @State private var envs: [EnvRow] = []
     @State private var editing: EnvRow?
+    @State private var doomed: Doomed?
 
     var body: some View {
         List {
@@ -330,14 +335,17 @@ struct EnvironmentsList: View {
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button(tr("Delete"), role: .destructive) {
-                        app.forget(e.id)
-                        envs = app.environments()
+                    DeleteSwipe {
+                        doomed = Doomed(title: tr("Delete {name}?", ["name": e.name]), message: goesEverywhere()) {
+                            app.forget(e.id)
+                            envs = app.environments()
+                        }
                     }
                 }
             }
         }
         .scrollContentBackground(.hidden)
+        .confirming($doomed)
         .toolbar {
             Button { editing = EnvRow(id: "", name: "", scope: "", names: []) } label: { Image(systemName: "plus") }
                 .accessibilityLabel(tr("New environment"))
@@ -414,6 +422,7 @@ struct NotesList: View {
     @EnvironmentObject private var app: AppModel
     var session: SessionModel?
     @State private var notes: [NoteRow] = []
+    @State private var doomed: Doomed?
     @State private var filter = ""
 
     var body: some View {
@@ -446,9 +455,14 @@ struct NotesList: View {
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
                     if session == nil {
-                        Button(tr("Delete"), role: .destructive) {
-                            app.forget(n.id)
-                            reload()
+                        DeleteSwipe {
+                            doomed = Doomed(
+                                title: n.title.isEmpty ? tr("Delete this note?") : tr("Delete {title}?", ["title": n.title]),
+                                message: goesEverywhere()
+                            ) {
+                                app.forget(n.id)
+                                reload()
+                            }
                         }
                     }
                 }
@@ -456,6 +470,7 @@ struct NotesList: View {
         }
         .scrollContentBackground(.hidden)
         .searchable(text: $filter, prompt: tr("Filter notes"))
+        .confirming($doomed)
         .toolbar {
             if session == nil {
                 NavigationLink {

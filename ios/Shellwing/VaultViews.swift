@@ -6,6 +6,7 @@ import SwiftUI
 struct KeysView: View {
     @EnvironmentObject private var app: AppModel
     @State private var keys: [KeyRow] = []
+    @State private var doomed: Doomed?
     @State private var naming = false
     @State private var name = "iPhone"
     @State private var copied: String?
@@ -49,14 +50,20 @@ struct KeysView: View {
                 .padding(.vertical, 4)
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button(tr("Delete"), role: .destructive) {
-                        app.forget(k.id)
-                        keys = app.keys()
+                    DeleteSwipe {
+                        doomed = Doomed(
+                            title: tr("Delete {name}?", ["name": k.name]),
+                            message: tr("Hosts that sign in with it need another way in.") + " " + goesEverywhere()
+                        ) {
+                            app.forget(k.id)
+                            keys = app.keys()
+                        }
                     }
                 }
             }
         }
         .scrollContentBackground(.hidden)
+        .confirming($doomed)
         .background(Dusk.panel.ignoresSafeArea())
         .navigationTitle(tr("SSH keys"))
         .toolbar {
@@ -82,6 +89,7 @@ struct KeysView: View {
 struct SecretsView: View {
     @EnvironmentObject private var app: AppModel
     @State private var secrets: [SavedSecret] = []
+    @State private var doomed: Doomed?
 
     var body: some View {
         List {
@@ -106,14 +114,21 @@ struct SecretsView: View {
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button(tr("Forget"), role: .destructive) {
-                        app.forget(s.id)
-                        secrets = app.savedSecrets()
+                    DeleteSwipe(label: tr("Forget")) {
+                        doomed = Doomed(
+                            title: tr("Forget {name}?", ["name": s.what]),
+                            message: tr("It is asked for again next time."),
+                            action: tr("Forget")
+                        ) {
+                            app.forget(s.id)
+                            secrets = app.savedSecrets()
+                        }
                     }
                 }
             }
         }
         .scrollContentBackground(.hidden)
+        .confirming($doomed)
         .background(Dusk.panel.ignoresSafeArea())
         .navigationTitle(tr("Saved passwords"))
         .onAppear { secrets = app.savedSecrets() }

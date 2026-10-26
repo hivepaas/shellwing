@@ -4000,6 +4000,9 @@ t10182ed5 = { $name } をセッション終了まで { $path } に配置しま�
 # {name} is at {path}.
 t3b2e2230 = { $name } を { $path } に配置しました。
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = 保管庫を同期している場合、ほかのデバイスからも削除されます。
+
 # Nothing here.
 ta7006e9a = 何もありません。
 
@@ -4098,9 +4101,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 色なし
-
-# Delete {host} from hosts.toml?
-tcee76080 = { $host } を hosts.toml から削除しますか？
 
 # as the server says
 ta204abe7 = サーバーの既定
@@ -4237,6 +4237,9 @@ t2e35a678 = 無題
 # this host
 t4b4cbe3d = このホスト
 
+# Delete this note?
+t9d3e3253 = このノートを削除しますか？
+
 # Filter notes
 tde67183a = ノートを絞り込み
 
@@ -4254,9 +4257,6 @@ t2d3653b2 = 画像を挿入…
 
 # Note
 t1440c15d = ノート
-
-# Delete this note?
-t9d3e3253 = このノートを削除しますか？
 
 # That image cannot be read.
 tc5fceb9b = その画像は読み込めません。
@@ -4365,6 +4365,12 @@ t97c138ac = ハッシュ化された名前
 
 # Forget
 t6e3fab8c = 消去
+
+# Forget the key of {host}?
+t25034152 = { $host } の鍵を消去しますか？
+
+# It is shown to check again the next time you connect.
+t51c13890 = 次に接続するとき、確認のために再び表示されます。
 
 # Filter by name
 tbcb12ca7 = 名前で絞り込み
@@ -4576,6 +4582,9 @@ t8dc21305 = コピーしました
 # Share
 t4f856dd8 = 共有
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = この鍵でサインインしているホストには、別のサインイン方法が必要になります。
+
 # Make a key
 ta2572fcb = 鍵を生成
 
@@ -4590,6 +4599,12 @@ t8e21fd8c = まだ何も保存されていません。セッションで入力�
 
 # A key's passphrase
 tdf0a144f = 鍵のパスフレーズ
+
+# Forget {name}?
+t5b101fa2 = { $name } を消去しますか？
+
+# It is asked for again next time.
+t736fd9ad = 次回また入力を求められます。
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = 書き留めて、この iPhone とは別の場所に保管してください。ほかに開く手段がないときも、これで保管庫を開けます。

@@ -7,6 +7,7 @@ struct HostsView: View {
     @State private var path: [SessionModel] = []
     @State private var editing: HostEdit?
     @State private var editingGroup: GroupSheet?
+    @State private var doomed: Doomed?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -37,7 +38,11 @@ struct HostsView: View {
                             }
                             .listRowBackground(Dusk.surface)
                             .swipeActions {
-                                Button(tr("Delete"), role: .destructive) { app.delete(hostId: host.id) }
+                                DeleteSwipe {
+                                    doomed = Doomed(title: tr("Delete {title} from hosts.toml?", ["title": host.name])) {
+                                        app.delete(hostId: host.id)
+                                    }
+                                }
                                 Button(tr("Edit")) { editing = app.host(id: host.id) }
                                     .tint(Dusk.button)
                             }
@@ -119,6 +124,7 @@ struct HostsView: View {
                     }
                 }
             }
+            .confirming($doomed)
             .sheet(item: $editingGroup) { g in
                 GroupEditorView(edit: g.edit) { editingGroup = nil }
             }

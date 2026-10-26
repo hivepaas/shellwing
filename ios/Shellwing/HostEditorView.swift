@@ -80,7 +80,7 @@ struct HostEditorView: View {
                 }
             }
             .confirmationDialog(
-                tr("Delete {host} from hosts.toml?", ["host": title]),
+                tr("Delete {title} from hosts.toml?", ["title": title]),
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {

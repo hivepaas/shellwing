@@ -9,6 +9,7 @@ struct ConfigFilesList: View {
     @EnvironmentObject private var app: AppModel
     @State private var files: [ConfigFileRow] = []
     @State private var editing: ConfigFileRow?
+    @State private var doomed: Doomed?
 
     var body: some View {
         List {
@@ -23,9 +24,11 @@ struct ConfigFilesList: View {
                         Button { editing = f } label: { ConfigFileLabel(file: f) }
                             .listRowBackground(Dusk.surface)
                             .swipeActions {
-                                Button(tr("Delete"), role: .destructive) {
-                                    app.forget(f.id)
-                                    reload()
+                                DeleteSwipe {
+                                    doomed = Doomed(title: tr("Delete {name}?", ["name": f.name]), message: goesEverywhere()) {
+                                        app.forget(f.id)
+                                        reload()
+                                    }
                                 }
                             }
                     }
@@ -44,6 +47,7 @@ struct ConfigFilesList: View {
         .sheet(item: $editing, onDismiss: reload) { f in
             ConfigFileEditor(file: f)
         }
+        .confirming($doomed)
         .onAppear(perform: reload)
     }
 

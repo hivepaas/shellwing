@@ -257,6 +257,7 @@ struct ThemePicker: View {
 struct KnownHostsView: View {
     @EnvironmentObject private var app: AppModel
     @State private var rows: [KnownHostRow] = []
+    @State private var doomed: Doomed?
     @State private var problem: String?
     @State private var filter = ""
 
@@ -288,13 +289,20 @@ struct KnownHostsView: View {
                 }
                 .listRowBackground(Dusk.surface)
                 .swipeActions {
-                    Button(tr("Forget"), role: .destructive) { forget([r.line]) }
+                    DeleteSwipe(label: tr("Forget")) {
+                        doomed = Doomed(
+                            title: tr("Forget the key of {host}?", ["host": r.names.isEmpty ? tr("A hashed name") : r.names.joined(separator: ", ")]),
+                            message: tr("It is shown to check again the next time you connect."),
+                            action: tr("Forget")
+                        ) { forget([r.line]) }
+                    }
                 }
             }
         }
         .scrollContentBackground(.hidden)
         .background(Dusk.page.ignoresSafeArea())
         .searchable(text: $filter, prompt: tr("Filter by name"))
+        .confirming($doomed)
         .navigationTitle(tr("Known hosts"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: reload)

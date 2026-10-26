@@ -4234,6 +4234,9 @@ t10182ed5 = { $name } размещён в { $path } до завершения с
 # {name} is at {path}.
 t3b2e2230 = { $name } размещён в { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Если хранилище синхронизируется, это исчезнет и с других ваших устройств.
+
 # Nothing here.
 ta7006e9a = Здесь ничего нет.
 
@@ -4341,9 +4344,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Без цвета
-
-# Delete {host} from hosts.toml?
-tcee76080 = Удалить { $host } из hosts.toml?
 
 # as the server says
 ta204abe7 = как скажет сервер
@@ -4480,6 +4480,9 @@ t2e35a678 = Без названия
 # this host
 t4b4cbe3d = этот хост
 
+# Delete this note?
+t9d3e3253 = Удалить эту заметку?
+
 # Filter notes
 tde67183a = Фильтр заметок
 
@@ -4497,9 +4500,6 @@ t2d3653b2 = Вставить изображение…
 
 # Note
 t1440c15d = Заметка
-
-# Delete this note?
-t9d3e3253 = Удалить эту заметку?
 
 # That image cannot be read.
 tc5fceb9b = Не удаётся прочитать это изображение.
@@ -4614,6 +4614,12 @@ t97c138ac = Хешированное имя
 
 # Forget
 t6e3fab8c = Забыть
+
+# Forget the key of {host}?
+t25034152 = Забыть ключ { $host }?
+
+# It is shown to check again the next time you connect.
+t51c13890 = При следующем подключении его покажут для проверки.
 
 # Filter by name
 tbcb12ca7 = Фильтр по имени
@@ -4828,6 +4834,9 @@ t8dc21305 = Скопировано
 # Share
 t4f856dd8 = Поделиться
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Хостам, на которые вы входите с ним, понадобится другой способ входа.
+
 # Make a key
 ta2572fcb = Создать ключ
 
@@ -4842,6 +4851,12 @@ t8e21fd8c = Пока ничего не сохранено. Когда парол
 
 # A key's passphrase
 tdf0a144f = Парольная фраза ключа
+
+# Forget {name}?
+t5b101fa2 = Забыть { $name }?
+
+# It is asked for again next time.
+t736fd9ad = В следующий раз его спросят снова.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Запишите его и храните отдельно от этого телефона. Он открывает хранилище, когда больше ничто не может.

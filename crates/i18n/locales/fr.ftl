@@ -4136,6 +4136,9 @@ t10182ed5 = { $name } est déposé sous { $path } jusqu'à la fin de la session.
 # {name} is at {path}.
 t3b2e2230 = { $name } est déposé sous { $path }.
 
+# If the vault syncs, it goes from your other devices too.
+t3c800198 = Si le coffre est synchronisé, il disparaît aussi de vos autres appareils.
+
 # Nothing here.
 ta7006e9a = Rien ici.
 
@@ -4237,9 +4240,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Aucune couleur
-
-# Delete {host} from hosts.toml?
-tcee76080 = Supprimer { $host } de hosts.toml ?
 
 # as the server says
 ta204abe7 = selon le serveur
@@ -4376,6 +4376,9 @@ t2e35a678 = Sans titre
 # this host
 t4b4cbe3d = ce serveur
 
+# Delete this note?
+t9d3e3253 = Supprimer cette note ?
+
 # Filter notes
 tde67183a = Filtrer les notes
 
@@ -4393,9 +4396,6 @@ t2d3653b2 = Insérer une image…
 
 # Note
 t1440c15d = Note
-
-# Delete this note?
-t9d3e3253 = Supprimer cette note ?
 
 # That image cannot be read.
 tc5fceb9b = Cette image est illisible.
@@ -4506,6 +4506,12 @@ t97c138ac = Un nom haché
 
 # Forget
 t6e3fab8c = Oublier
+
+# Forget the key of {host}?
+t25034152 = Oublier la clé de { $host } ?
+
+# It is shown to check again the next time you connect.
+t51c13890 = Elle vous sera montrée pour vérification à la prochaine connexion.
 
 # Filter by name
 tbcb12ca7 = Filtrer par nom
@@ -4718,6 +4724,9 @@ t8dc21305 = Copié
 # Share
 t4f856dd8 = Partager
 
+# Hosts that sign in with it need another way in.
+te6d5f68b = Les serveurs qui s'y connectent avec elle devront passer par un autre moyen.
+
 # Make a key
 ta2572fcb = Générer une clé
 
@@ -4732,6 +4741,12 @@ t8e21fd8c = Rien d'enregistré pour l'instant. Quand un mot de passe saisi dans 
 
 # A key's passphrase
 tdf0a144f = La phrase secrète d'une clé
+
+# Forget {name}?
+t5b101fa2 = Oublier { $name } ?
+
+# It is asked for again next time.
+t736fd9ad = Il sera redemandé la prochaine fois.
 
 # Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t91c53986 = Notez-la et conservez-la loin de ce téléphone. Elle ouvre le coffre là où rien d'autre ne le peut.
