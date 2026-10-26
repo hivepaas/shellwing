@@ -5,7 +5,7 @@ import SwiftUI
 /// Library has it.
 struct LibraryView: View {
     enum Part: String, CaseIterable, Identifiable {
-        case snippets = "Snippets", envs = "Environments", notes = "Notes", keys = "Keys"
+        case snippets = "Snippets", envs = "Envs", notes = "Notes", files = "Files", keys = "Keys"
         var id: String { rawValue }
     }
 
@@ -24,6 +24,7 @@ struct LibraryView: View {
                 case .snippets: SnippetsList(spec: nil, run: nil)
                 case .envs: EnvironmentsList()
                 case .notes: NotesList()
+                case .files: ConfigFilesList()
                 case .keys: KeysView()
                 }
             }

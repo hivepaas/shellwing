@@ -11,13 +11,15 @@ struct TerminalScreen: View {
     @State private var pickingSnippet = false
     @State private var running: SnippetRow?
     @State private var pickingEnv = false
+    @State private var browsing = false
+    @State private var placing = false
     /// What the last thing done said: a key installed, a password kept.
     @State private var said: String?
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            if !model.envs.isEmpty { envBadges }
+            if !model.envs.isEmpty || !model.placed.isEmpty { badges }
             TerminalView(model: model, typing: $typing)
                 .overlay(alignment: .bottom) {
                     VStack(spacing: 0) {
@@ -82,6 +84,17 @@ struct TerminalScreen: View {
                 model.notice = nil
             }
         }
+        .sheet(isPresented: $browsing) {
+            FilesScreen(model: model).environmentObject(app)
+        }
+        .sheet(isPresented: $placing) {
+            PlaceConfigSheet(model: model) { result in
+                placing = false
+                if let result { show(result) }
+            }
+            .environmentObject(app)
+            .presentationDetents([.medium, .large])
+        }
         .sheet(isPresented: $installing) {
             InstallKeySheet(model: model) { result in
                 installing = false
@@ -92,10 +105,28 @@ struct TerminalScreen: View {
         }
     }
 
-    /// The environments loaded into the shell; ✕ unloads one.
-    private var envBadges: some View {
+    /// The environments loaded into the shell (✕ unloads one), and the config
+    /// files placed until the session ends (kept, or taken away, from its menu).
+    private var badges: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
+                ForEach(model.placed, id: \.path) { p in
+                    Menu {
+                        Text(p.path)
+                        Button("Keep it there", systemImage: "pin") { placed(keep: true, p.path) }
+                        Button("Take it away now", systemImage: "xmark", role: .destructive) { placed(keep: false, p.path) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "doc.badge.clock").font(.system(size: 12)).foregroundStyle(Dusk.amber)
+                            Text(p.name).font(.system(size: 13))
+                        }
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(Dusk.chip, in: Capsule())
+                        .overlay(Capsule().stroke(Dusk.fieldEdge))
+                    }
+                    .accessibilityLabel("\(p.name), placed until the session ends")
+                }
                 ForEach(model.envs, id: \.id) { e in
                     HStack(spacing: 4) {
                         Circle().fill(Dusk.ok).frame(width: 6, height: 6)
@@ -117,6 +148,25 @@ struct TerminalScreen: View {
         }
         .foregroundStyle(Dusk.text)
         .background(Dusk.chrome)
+    }
+
+    /// Keeps the file placed at `path` for good, or takes it away now.
+    private func placed(keep: Bool, _ path: String) {
+        guard let core = app.core, let h = model.handle else { return }
+        Task {
+            do {
+                if keep {
+                    try await core.keepPlaced(session: h, path: path)
+                    show("\(path) stays when the session ends.")
+                } else {
+                    try await core.removePlaced(session: h, path: path)
+                    show("\(path) taken away.")
+                }
+            } catch {
+                show("\(error)")
+            }
+            model.refreshPlaced()
+        }
     }
 
     private func show(_ text: String) {
@@ -200,6 +250,8 @@ struct TerminalScreen: View {
                 if model.status == .connected {
                     Button("Snippets…", systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
                     Button("Load an environment…", systemImage: "list.bullet.rectangle") { pickingEnv = true }
+                    Button("Files…", systemImage: "folder") { browsing = true }
+                    Button("Place a config file…", systemImage: "doc.badge.gearshape") { placing = true }
                     Button("Install a key on this host…", systemImage: "key") { installing = true }
                 }
                 if model.status == .lost || model.status == .closed || model.status == .failed {

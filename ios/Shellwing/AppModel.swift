@@ -105,6 +105,13 @@ final class AppModel: ObservableObject {
         do {
             let session = try core.open(spec: spec, listener: model)
             model.attach(session)
+            // Config files left on the host by a session that could not take
+            // them away (the app was stopped): tidied once it connects.
+            model.connected = { [weak model] in
+                Task { @MainActor in
+                    if let said = await core.tidyPlaced(session: session) { model?.notice = said }
+                }
+            }
             sessions.append(model)
             return model
         } catch {
@@ -113,8 +120,12 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Closes a session: the config files it placed until it ends go first
+    /// (those it cannot take away are tidied when the host connects next).
     func close(_ model: SessionModel) {
         sessions.removeAll { $0 === model }
+        guard let core, let handle = model.handle, !model.placed.isEmpty else { return }
+        Task { try? await core.removePlaced(session: handle, path: nil) }
     }
 
     // The vault: saved passwords and SSH keys. Opening it waits on its own
@@ -217,6 +228,27 @@ final class AppModel: ObservableObject {
         }
     }
 
+    // Config files: kept in the vault, placed on a session's host.
+
+    func configFiles(for spec: String?) -> [ConfigFileRow] {
+        core?.configFiles(spec: spec) ?? []
+    }
+
+    func configFileText(_ id: String) -> String? {
+        (try? core?.configFileText(id: id)) ?? nil
+    }
+
+    /// Saves a config file (`content` nil keeps the one it has): nil, or why not.
+    func save(configFile row: ConfigFileRow, content: String?) -> String? {
+        guard let core else { return problem }
+        do {
+            _ = try core.saveConfigFile(row: row, content: content)
+            return nil
+        } catch {
+            return "\(error)"
+        }
+    }
+
     func generateKey(name: String) -> KeyRow? {
         do {
             return try core?.generateKey(name: name)
@@ -246,6 +278,10 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     /// Something said once: an environment loaded, a load given up.
     @MainActor @Published var notice: String?
     @MainActor @Published private(set) var envs: [LoadedEnvRow] = []
+    /// Config files placed on the host until the session ends.
+    @MainActor @Published private(set) var placed: [PlacedRow] = []
+    /// Called on the main thread each time the session connects.
+    @MainActor var connected: (() -> Void)?
     /// Ctrl or Alt, pressed on the row above the keyboard: held for the next key.
     @MainActor @Published var ctrl = false
     @MainActor @Published var alt = false
@@ -287,7 +323,10 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
             frame = f
         }
         let s = session.status()
-        if s != status { status = s }
+        if s != status {
+            status = s
+            if s == .connected { connected?() }
+        }
         let t = session.title()
         if t != title { title = t }
         let e = session.ended()
@@ -297,6 +336,13 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         if let n = session.notice() { notice = n }
         let loaded = session.loadedEnvs()
         if loaded != envs { envs = loaded }
+        refreshPlaced()
+    }
+
+    @MainActor
+    func refreshPlaced() {
+        let now = session?.placed() ?? []
+        if now != placed { placed = now }
     }
 
     // What the keyboard and the keys row send.
