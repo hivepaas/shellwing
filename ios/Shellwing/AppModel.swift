@@ -80,6 +80,14 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Saves the host: its id, or why not.
+    func trySave(_ edit: HostEdit) throws -> String {
+        guard let core else { throw MobileError.Failed(problem ?? "") }
+        let id = try core.saveHost(edit: edit)
+        reload()
+        return id
+    }
+
     func delete(hostId: String) {
         guard let core else { return }
         do {

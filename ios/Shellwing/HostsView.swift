@@ -72,7 +72,7 @@ struct HostsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        editing = HostEdit(id: nil, name: "", address: "", port: nil, user: nil, group: nil)
+                        editing = HostEditorView.blank()
                     } label: {
                         Image(systemName: "plus")
                     }
