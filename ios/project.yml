@@ -47,7 +47,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UIUserInterfaceStyle: Dark
-        NSFaceIDUsageDescription: shellwing asks that it is you before it shows itself, when you set it to lock.
+        NSFaceIDUsageDescription: shellwing asks that it is you before it shows itself, when you set it to lock, and before it shows a secret, such as an environment's values.
         NSLocalNetworkUsageDescription: shellwing connects to servers on your network over SSH.
     settings:
       base:

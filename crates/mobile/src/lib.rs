@@ -29,7 +29,9 @@ use shellwing_core::session::{Opens, Session};
 pub use config_files::{ConfigFileRow, Found, Looked, PlaceHow, PlacedRow};
 pub use files::FileEntry;
 pub use i18n::LanguageRow;
-pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow};
+pub use library::{
+    EnvRow, EnvShown, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetEdit, SnippetRow,
+};
 pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
 pub use md_edit::{MdEdit, MdImageLine, MdLines, MdRole, MdRun, MdTable, MdWrap};
 pub use session::{
@@ -626,6 +628,79 @@ mod tests {
             *self.0.lock().map_err(MobileError::of)? = None;
             Ok(())
         }
+    }
+
+    /// An environment's values show in its text when asked for, quoted
+    /// where a line would change them, and hide again unless changed; one
+    /// of several lines stays kept.
+    #[test]
+    fn values_show_in_the_text_and_hide_again() {
+        let (dir, app) = store_with("");
+        let id = app
+            .save_environment(
+                String::new(),
+                "Prod".into(),
+                String::new(),
+                "API=k-1\nPAD=\" a \"\nQUOTED='\"q\"'\n".into(),
+            )
+            .expect("env");
+        let kept = |name: &str| (name.to_string(), None);
+        app.open_vault()
+            .expect("vault")
+            .save_environment(
+                &id,
+                "Prod",
+                "",
+                &[
+                    kept("API"),
+                    kept("PAD"),
+                    kept("QUOTED"),
+                    ("PEM".into(), Some("a\nb".into())),
+                ],
+            )
+            .expect("several lines");
+
+        let text = "API=\nPAD=\nQUOTED=\n  export PEM=\nNEW=typed\n";
+        let shown = app.env_text_shown(id.clone(), text.into()).expect("shown");
+        assert_eq!(
+            shown.text,
+            "API=k-1\nPAD=\" a \"\nQUOTED=\"\"q\"\"\n  export PEM=\nNEW=typed\n"
+        );
+        assert_eq!(shown.not_shown, ["PEM"]);
+
+        // Hidden again: only what was not changed.
+        let edited = shown.text.replace("API=k-1", "API=k-2");
+        let hidden = app.env_text_hidden(id.clone(), edited);
+        assert_eq!(hidden, "API=k-2\nPAD=\nQUOTED=\n  export PEM=\nNEW=typed\n");
+
+        app.save_environment(id.clone(), "Prod".into(), String::new(), hidden)
+            .expect("saved");
+        let mut values: Vec<(String, String)> = app
+            .open_vault()
+            .expect("vault")
+            .environment_values(&id)
+            .expect("values")
+            .expect("there")
+            .into_iter()
+            .map(|(n, v)| (n, v.to_string()))
+            .collect();
+        values.sort();
+        let want = [
+            ("API", "k-2"),
+            ("NEW", "typed"),
+            ("PAD", " a "),
+            ("PEM", "a\nb"),
+            ("QUOTED", "\"q\""),
+        ]
+        .map(|(n, v)| (n.to_string(), v.to_string()));
+        assert_eq!(values, want);
+
+        // A new one keeps nothing to show.
+        let new = app
+            .env_text_shown(String::new(), "A=\n".into())
+            .expect("new");
+        assert_eq!(new.text, "A=\n");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     struct Quiet;

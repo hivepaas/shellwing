@@ -212,9 +212,16 @@ def check():
             if mid in found and found[mid][1] is None:
                 english = found[mid][0].replace("{{", "").replace("}}", "")
                 names = set(re.findall(r"\{([A-Za-z_][A-Za-z0-9_]*)\}", english))
-                used = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_-]*)", "\n".join(lines)))
+                text = "\n".join(lines)
+                used = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_-]*)", text))
                 if used - names:
                     print(f"{path.name}: {mid} uses {sorted(used - names)}, which its English has not")
+                    ok = False
+                # `{ $name }` given to apply comes out as text: it wants `{name}`.
+                real = set(re.findall(r"\{ \$([A-Za-z_][A-Za-z0-9_-]*) \}", text))
+                as_text = names & (used - real)
+                if as_text:
+                    print(f"{path.name}: {mid} has {sorted(as_text)} as text, not as values: apply takes {{name}}")
                     ok = False
         left = sum(1 for m in found if m not in entries)
         print(f"{path.name}: {len(found) - left} of {len(found)} translated")

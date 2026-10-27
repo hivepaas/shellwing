@@ -4370,8 +4370,23 @@ t8d57e66a = Ausführen
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Noch keine Umgebungen: Variablen im Tresor, die in die Shell einer Sitzung geladen werden, ohne ihre Werte zu zeigen.
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = NAME=value, eine pro Zeile. Ein Name ohne etwas nach = behält seinen bisherigen Wert; Werte werden hier nie angezeigt.
+# Hide values
+tab6d76ed = Werte ausblenden
+
+# Show values
+t68f568ba = Werte anzeigen
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = NAME=value, eine pro Zeile. Ein Name ohne etwas nach = behält seinen bisherigen Wert.
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = Angezeigte Werte werden nach einer Minute wieder ausgeblendet, oder wenn du die App verlässt.
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = Nicht angezeigt, da mehrzeilig: { $names }. Der Desktop zeigt sie an.
+
+# Show the values of {name}
+t02678451 = Die Werte von { $name } anzeigen
 
 # No notes yet.
 t4be168d5 = Noch keine Notizen.

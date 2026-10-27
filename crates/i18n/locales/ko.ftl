@@ -4231,8 +4231,23 @@ t8d57e66a = 실행
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 아직 환경이 없습니다. 보관함에 보관되는 변수로, 값을 보여 주지 않고 세션의 셸에 불러옵니다.
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = 한 줄에 NAME=value 하나. = 뒤에 아무것도 없는 이름은 기존 값을 유지합니다. 값은 여기에 표시되지 않습니다.
+# Hide values
+tab6d76ed = 값 숨기기
+
+# Show values
+t68f568ba = 값 보기
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = 한 줄에 NAME=value 하나. = 뒤에 아무것도 없는 이름은 기존 값을 유지합니다.
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = 표시된 값은 1분 후 또는 앱을 떠나면 다시 숨겨집니다.
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = 여러 줄이라 표시되지 않음: { $names }. 데스크톱 앱에서 볼 수 있습니다.
+
+# Show the values of {name}
+t02678451 = { $name }의 값 보기
 
 # No notes yet.
 t4be168d5 = 아직 노트가 없습니다.

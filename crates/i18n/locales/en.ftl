@@ -1596,7 +1596,12 @@ te90c2175 = Runs with
 t4ef64333 = Their variables are given to it alone, in a subshell, without showing their values.
 t8d57e66a = Run
 tbcdba796 = No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
-t36bfa774 = NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
+tab6d76ed = Hide values
+t68f568ba = Show values
+tae47acf2 = NAME=value, a line. A name with nothing after = keeps the value it has.
+t9608e14a = Values shown hide again after a minute, or when you leave the app.
+tf0ef55de = Not shown, of several lines: { $names }. The desktop shows them.
+t02678451 = Show the values of { $name }
 t4be168d5 = No notes yet.
 t2e35a678 = Untitled
 t4b4cbe3d = this host

@@ -275,6 +275,17 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Environment `id`'s text with the values it keeps shown in it. The
+    /// editor asks it is the user first.
+    func envTextShown(id: String, text: String) throws -> EnvShown? {
+        try core?.envTextShown(id: id, text: text)
+    }
+
+    /// The values shown and not changed kept again (`NAME=`).
+    func envTextHidden(id: String, text: String) -> String {
+        core?.envTextHidden(id: id, text: text) ?? text
+    }
+
     /// Loads environment `id` into `session`'s shell: nil, or why not.
     func load(env id: String, in session: SessionModel) -> String? {
         guard let core, let handle = session.handle else { return tr("Not connected.") }

@@ -22,6 +22,10 @@ struct LibraryView: View {
     }
 
     @State private var part: Part = .snippets
+    #if DEBUG
+    /// `-screen env`: the sample environment's editor.
+    @State private var envSample: EnvRow?
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -57,10 +61,37 @@ struct LibraryView: View {
                 .environmentObject(app)
                 .preferredColorScheme(.dark)
             }
+            .sheet(item: $envSample) { e in EnvEditor(env: e).environmentObject(app) }
+            .onAppear {
+                if UserDefaults.standard.string(forKey: "screen")?.hasPrefix("env") == true {
+                    part = .envs
+                    envSample = EnvSample.make(app)
+                }
+            }
             #endif
         }
     }
 }
+
+#if DEBUG
+/// `-screen env`: the editor on a sample environment whose values need
+/// quotes to read back; `-showValues YES` shows them at once. `-screen
+/// envgone`: the sample deleted.
+enum EnvSample {
+    static let name = "Debug sample"
+
+    @MainActor
+    static func make(_ app: AppModel) -> EnvRow? {
+        let old = app.environments().first { $0.name == name }
+        if UserDefaults.standard.string(forKey: "screen") == "envgone" {
+            if let old { app.forget(old.id) }
+            return nil
+        }
+        app.saveEnvironment(id: old?.id ?? "", name: name, scope: "", dotenv: "API_TOKEN=tok-123\nPADDED=\" spaced \"\nQUOTED='\"q\"'\n")
+        return app.environments().first { $0.name == name }
+    }
+}
+#endif
 
 /// A table opened in its grid: nil, a new one.
 struct TableSheet: Identifiable {
@@ -566,14 +597,27 @@ struct EnvironmentsList: View {
 extension EnvRow: Identifiable {}
 
 /// An environment as `.env` text. Its variables are listed without values:
-/// a name left so keeps the one it has; a value typed replaces it.
+/// a name left so keeps the one it has; a value typed replaces it. Show
+/// values puts them in, once Face ID or the passcode says it is the owner,
+/// as the desktop's eyes do, for a minute.
 struct EnvEditor: View {
     @EnvironmentObject private var app: AppModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var phase
     let env: EnvRow
     @State private var name = ""
     @State private var scope = ""
     @State private var text = ""
+    /// The values kept are in the text, for a while.
+    @State private var shown = false
+    /// Hides them when the while is over.
+    @State private var hiding: Task<Void, Never>?
+    /// Variables whose value is of several lines, left out of the text.
+    @State private var notShown: [String] = []
+    @State private var problem: String?
+
+    /// How long values stay shown: the desktop's minute.
+    private static let shownFor: Duration = .seconds(60)
 
     var body: some View {
         NavigationStack {
@@ -588,10 +632,34 @@ struct EnvEditor: View {
                         .font(.system(size: 14, design: .monospaced))
                         .frame(minHeight: 180)
                 } header: {
-                    SectionHeading(text: tr("Variables"))
+                    HStack {
+                        SectionHeading(text: tr("Variables"))
+                        Spacer()
+                        if !env.id.isEmpty {
+                            Button {
+                                if shown { hide() } else { askToShow() }
+                            } label: {
+                                Label(shown ? tr("Hide values") : tr("Show values"), systemImage: shown ? "eye.slash" : "eye")
+                                    .font(.system(size: 13, weight: .semibold))
+                            }
+                            .foregroundStyle(Dusk.accent)
+                            .textCase(nil)
+                        }
+                    }
                 } footer: {
-                    Text(tr("NAME=value, a line. A name with nothing after = keeps the value it has; values never show here."))
-                        .foregroundStyle(Dusk.muted)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(tr("NAME=value, a line. A name with nothing after = keeps the value it has."))
+                        if !env.id.isEmpty {
+                            Text(tr("Values shown hide again after a minute, or when you leave the app."))
+                        }
+                        if !notShown.isEmpty {
+                            Text(tr("Not shown, of several lines: {names}. The desktop shows them.", ["names": notShown.joined(separator: ", ")]))
+                        }
+                        if let problem {
+                            Text(problem).foregroundStyle(Dusk.badText)
+                        }
+                    }
+                    .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)
             }
@@ -605,7 +673,9 @@ struct EnvEditor: View {
                 ToolbarItem(placement: .cancellationAction) { Button(tr("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(tr("Save")) {
-                        if app.saveEnvironment(id: env.id, name: name, scope: scope, dotenv: text) { dismiss() }
+                        // What was shown and not changed is kept, not saved again.
+                        let dotenv = shown ? app.envTextHidden(id: env.id, text: text) : text
+                        if app.saveEnvironment(id: env.id, name: name, scope: scope, dotenv: dotenv) { dismiss() }
                     }
                     .disabled(name.isEmpty)
                 }
@@ -614,9 +684,51 @@ struct EnvEditor: View {
                 name = env.name
                 scope = env.scope
                 text = env.names.map { "\($0)=" }.joined(separator: "\n")
+                #if DEBUG
+                // Not asked: a script cannot type the Simulator's passcode.
+                if UserDefaults.standard.bool(forKey: "showValues") { show() }
+                #endif
             }
+            // Out of sight, out of the app switcher's picture too.
+            .onChange(of: phase) { _, now in
+                if now != .active { hide() }
+            }
+            .onDisappear { hiding?.cancel() }
         }
         .preferredColorScheme(.dark)
+    }
+
+    /// Shows the values once Face ID or the passcode says it is the owner.
+    private func askToShow() {
+        confirmOwner(tr("Show the values of {name}", ["name": env.name])) { ok in if ok { show() } }
+    }
+
+    private func show() {
+        problem = nil
+        do {
+            guard let r = try app.envTextShown(id: env.id, text: text) else { return }
+            text = r.text
+            notShown = r.notShown
+            shown = true
+            hiding?.cancel()
+            hiding = Task {
+                try? await Task.sleep(for: Self.shownFor)
+                if !Task.isCancelled { hide() }
+            }
+        } catch {
+            problem = "\(error)"
+        }
+    }
+
+    /// The values shown and not changed out of the text again; what was
+    /// typed stays.
+    private func hide() {
+        hiding?.cancel()
+        hiding = nil
+        guard shown else { return }
+        text = app.envTextHidden(id: env.id, text: text)
+        shown = false
+        notShown = []
     }
 }
 
