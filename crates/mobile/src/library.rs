@@ -55,6 +55,16 @@ pub struct EnvRow {
     pub names: Vec<String>,
 }
 
+/// An environment's `.env` text with its values shown (see
+/// [`Shellwing::env_text_shown`]).
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct EnvShown {
+    pub text: String,
+    /// Variables whose value is of several lines, which a line of the text
+    /// cannot hold: they stay kept (`NAME=`), as the desktop shows them.
+    pub not_shown: Vec<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct NoteRow {
     pub id: String,
@@ -217,6 +227,50 @@ impl Shellwing {
             .map_err(|e| MobileError::Failed(environment::said_error(&e)))
     }
 
+    /// `text`, as the editor holds it, with each variable left to keep its
+    /// value (`NAME=`) given the one environment `id` keeps. The app asks
+    /// it is the user first, as the desktop does before its eyes show them.
+    pub fn env_text_shown(&self, id: String, text: String) -> Result<EnvShown, MobileError> {
+        let values = self.env_values(&id)?;
+        let mut not_shown = vec![];
+        let lines = text.lines().map(|line| {
+            let (Some((name, None)), Some(eq)) = (dotenv_line(line), line.find('=')) else {
+                return line.to_string();
+            };
+            match values.iter().find(|(n, _)| *n == name) {
+                Some((_, v)) if v.contains(['\n', '\r']) => {
+                    not_shown.push(name);
+                    line.to_string()
+                }
+                Some((_, v)) => format!("{}{}", &line[..=eq], dotenv_value(v)),
+                None => line.to_string(),
+            }
+        });
+        let text = same_end(lines.collect(), &text);
+        Ok(EnvShown { text, not_shown })
+    }
+
+    /// `text` with each value shown and not changed since kept again
+    /// (`NAME=`): what was typed stays, to replace the value when saved.
+    pub fn env_text_hidden(&self, id: String, text: String) -> String {
+        let Ok(values) = self.env_values(&id) else {
+            return text;
+        };
+        let lines = text
+            .lines()
+            .map(|line| match (dotenv_line(line), line.find('=')) {
+                (Some((name, Some(value))), Some(eq))
+                    if values
+                        .iter()
+                        .any(|(n, v)| *n == name && v.as_str() == value) =>
+                {
+                    line[..=eq].to_string()
+                }
+                _ => line.to_string(),
+            });
+        same_end(lines.collect(), &text)
+    }
+
     /// Loads environment `id` into `session`'s shell.
     pub fn load_env(&self, session: Arc<MobileSession>, id: String) -> Result<(), MobileError> {
         let vault = self.open_vault()?;
@@ -350,6 +404,14 @@ impl Shellwing {
 }
 
 impl Shellwing {
+    /// The values environment `id` keeps; none for one not saved yet.
+    fn env_values(&self, id: &str) -> Result<shellwing_vault::EnvValues, MobileError> {
+        self.open_vault()?
+            .environment_values(id)
+            .map(Option::unwrap_or_default)
+            .map_err(MobileError::of)
+    }
+
     /// The hosts.toml entry `spec` names (its name) and its group, for the
     /// snippets offered there.
     pub(crate) fn host_and_group(&self, spec: &str) -> (Option<String>, Option<String>) {
@@ -543,4 +605,51 @@ fn choice(pick: &LibraryPick) -> shellwing_core::library::Choice {
 #[uniffi::export]
 pub fn snippet_asked(command: String) -> Vec<String> {
     snippets::asked(&command)
+}
+
+/// The variable a line of `.env` text holds, as saving reads it: its name,
+/// and its value (None: left to keep the one it has).
+fn dotenv_line(line: &str) -> Option<(String, Option<String>)> {
+    let mut vars = environment::parse_dotenv(line).ok()?;
+    (vars.len() == 1).then(|| vars.remove(0))
+}
+
+/// `value` as a line of `.env` text gives it back: in quotes where trimming
+/// the line, or taking quotes off, would change it.
+fn dotenv_value(value: &str) -> String {
+    if value.trim() != value || value.starts_with(['"', '\'']) {
+        format!("\"{value}\"")
+    } else {
+        value.to_string()
+    }
+}
+
+/// `lines` as text, ending as `text` did.
+fn same_end(lines: Vec<String>, text: &str) -> String {
+    let mut out = lines.join("\n");
+    if text.ends_with('\n') {
+        out.push('\n');
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_value_shown_reads_back_the_same() {
+        for value in [
+            "plain", "a=b #c", " lead", "trail\t", "  ", "\"both\"", "'single'", "\"open",
+            "close\"", "'mixed\"",
+        ] {
+            let line = format!("N={}", dotenv_value(value));
+            assert_eq!(
+                dotenv_line(&line),
+                Some(("N".into(), Some(value.into()))),
+                "{line}"
+            );
+        }
+        assert_eq!(dotenv_value("plain"), "plain", "quoted only when needed");
+    }
 }

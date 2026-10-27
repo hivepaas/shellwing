@@ -4231,8 +4231,23 @@ t8d57e66a = 运行
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 还没有环境：环境是保存在保险库中的变量，可加载到会话的 shell 中，且不显示其值。
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = 每行一个 NAME=value。= 后为空的名称保留原有的值；值永远不会在此显示。
+# Hide values
+tab6d76ed = 隐藏值
+
+# Show values
+t68f568ba = 显示值
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = 每行一个 NAME=value。= 后为空的名称保留原有的值。
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = 显示的值会在一分钟后，或你离开应用时再次隐藏。
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = 因有多行而未显示：{ $names }。桌面版可以显示它们。
+
+# Show the values of {name}
+t02678451 = 显示 { $name } 的值
 
 # No notes yet.
 t4be168d5 = 还没有笔记。

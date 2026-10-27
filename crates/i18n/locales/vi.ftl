@@ -4231,8 +4231,23 @@ t8d57e66a = Chạy
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Chưa có bộ biến nào: các biến giữ trong kho, được nạp vào shell của một phiên mà không hiện giá trị.
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = NAME=value, mỗi dòng một biến. Tên không có gì sau dấu = sẽ giữ giá trị hiện có; giá trị không bao giờ hiện ở đây.
+# Hide values
+tab6d76ed = Ẩn giá trị
+
+# Show values
+t68f568ba = Hiện giá trị
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = NAME=value, mỗi dòng một biến. Tên không có gì sau dấu = sẽ giữ giá trị hiện có.
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = Giá trị đang hiện sẽ tự ẩn sau một phút, hoặc khi bạn rời ứng dụng.
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = Không hiện, vì có nhiều dòng: { $names }. Ứng dụng máy tính hiện được các giá trị này.
+
+# Show the values of {name}
+t02678451 = Hiện giá trị của { $name }
 
 # No notes yet.
 t4be168d5 = Chưa có ghi chú nào.

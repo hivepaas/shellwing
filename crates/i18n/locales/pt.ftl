@@ -4370,8 +4370,23 @@ t8d57e66a = Executar
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Nenhum ambiente ainda: variáveis guardadas no cofre, carregadas no shell de uma sessão sem mostrar os valores.
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = NAME=value, um por linha. Um nome sem nada depois de = mantém o valor que tem; os valores nunca aparecem aqui.
+# Hide values
+tab6d76ed = Ocultar valores
+
+# Show values
+t68f568ba = Mostrar valores
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = NAME=value, um por linha. Um nome sem nada depois de = mantém o valor que tem.
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = Os valores mostrados voltam a se ocultar depois de um minuto, ou quando você sai do app.
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = Não mostrados, por terem várias linhas: { $names }. O app de desktop os mostra.
+
+# Show the values of {name}
+t02678451 = Mostrar os valores de { $name }
 
 # No notes yet.
 t4be168d5 = Nenhuma nota ainda.

@@ -4474,8 +4474,23 @@ t8d57e66a = Выполнить
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Окружений пока нет: это переменные в хранилище, которые загружаются в оболочку сеанса без показа значений.
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = NAME=value, по одной на строку. Имя, после = которого ничего нет, сохраняет своё текущее значение; значения здесь никогда не показываются.
+# Hide values
+tab6d76ed = Скрыть значения
+
+# Show values
+t68f568ba = Показать значения
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = NAME=value, по одной на строку. Имя, после = которого ничего нет, сохраняет своё текущее значение.
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = Показанные значения снова скрываются через минуту или когда вы выходите из приложения.
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = Не показаны, так как занимают несколько строк: { $names }. Их показывает настольное приложение.
+
+# Show the values of {name}
+t02678451 = Показать значения { $name }
 
 # No notes yet.
 t4be168d5 = Заметок пока нет.

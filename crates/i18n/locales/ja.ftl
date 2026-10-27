@@ -4231,8 +4231,23 @@ t8d57e66a = 実行
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 環境はまだありません。保管庫に保存する変数で、値を表示せずにセッションのシェルに読み込みます。
 
-# NAME=value, a line. A name with nothing after = keeps the value it has; values never show here.
-t36bfa774 = 1 行に NAME=value を 1 つ。= の後が空の名前は現在の値を保持します。値はここには表示されません。
+# Hide values
+tab6d76ed = 値を隠す
+
+# Show values
+t68f568ba = 値を表示
+
+# NAME=value, a line. A name with nothing after = keeps the value it has.
+tae47acf2 = 1 行に NAME=value を 1 つ。= の後が空の名前は現在の値を保持します。
+
+# Values shown hide again after a minute, or when you leave the app.
+t9608e14a = 表示した値は 1 分後、またはアプリを離れたときに再び隠れます。
+
+# Not shown, of several lines: {names}. The desktop shows them.
+tf0ef55de = 複数行のため表示されません：{ $names }。デスクトップ版では表示できます。
+
+# Show the values of {name}
+t02678451 = { $name } の値を表示
 
 # No notes yet.
 t4be168d5 = ノートはまだありません。
