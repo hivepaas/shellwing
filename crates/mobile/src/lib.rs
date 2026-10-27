@@ -47,6 +47,27 @@ impl MobileError {
     }
 }
 
+/// Runs `work` on the app's runtime and waits for it there. What Swift
+/// awaits is polled by Swift's own executor, outside any Tokio runtime, and
+/// SSH needs one (its channels, SFTP, their timers): every `async fn` Swift
+/// calls goes through here.
+pub(crate) async fn on_runtime<T: Send + 'static>(
+    rt: &tokio::runtime::Handle,
+    work: impl std::future::Future<Output = Result<T, MobileError>> + Send + 'static,
+) -> Result<T, MobileError> {
+    rt.spawn(work).await.unwrap_or_else(|e| {
+        let why = match e.try_into_panic() {
+            Ok(p) => p
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| p.downcast_ref::<String>().cloned())
+                .unwrap_or_default(),
+            Err(_) => String::new(),
+        };
+        Err(MobileError::Failed(format!("stopped: {why}")))
+    })
+}
+
 /// A host as the list shows it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct HostRow {
@@ -718,6 +739,77 @@ mod tests {
         app.delete_host(new.clone()).expect("deleted");
         assert!(app.host(new).is_none(), "still there");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Polls `f` on this thread, as Swift's executor polls what it awaits:
+    /// no Tokio runtime here.
+    fn block_on<F: std::future::Future>(f: F) -> F::Output {
+        use std::task::{Context, Poll, Wake, Waker};
+        struct Unpark(std::thread::Thread);
+        impl Wake for Unpark {
+            fn wake(self: Arc<Self>) {
+                self.0.unpark();
+            }
+        }
+        let waker = Waker::from(Arc::new(Unpark(std::thread::current())));
+        let mut cx = Context::from_waker(&waker);
+        let mut f = std::pin::pin!(f);
+        loop {
+            if let Poll::Ready(v) = f.as_mut().poll(&mut cx) {
+                return v;
+            }
+            std::thread::park();
+        }
+    }
+
+    #[test]
+    fn what_swift_awaits_runs_on_the_apps_runtime() {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        assert!(
+            tokio::runtime::Handle::try_current().is_err(),
+            "none here, as in Swift"
+        );
+        // A timer and a task: what SFTP's calls need, and what failed.
+        let done = block_on(on_runtime(rt.handle(), async {
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            Ok(tokio::spawn(async { 7 }).await.expect("task"))
+        }));
+        assert_eq!(done.expect("ran"), 7);
+        // A panic there is an error here, not a crash.
+        let failed: Result<(), MobileError> = block_on(on_runtime(rt.handle(), async {
+            panic!("boom");
+        }));
+        assert!(matches!(failed, Err(MobileError::Failed(m)) if m.contains("boom")));
+    }
+
+    /// Every async call Swift makes runs on the app's runtime: one that did
+    /// not failed on a phone with "there is no reactor running".
+    #[test]
+    fn every_async_export_goes_through_on_runtime() {
+        let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut seen = 0;
+        for entry in std::fs::read_dir(&src).expect("src") {
+            let path = entry.expect("entry").path();
+            let text = std::fs::read_to_string(&path).expect("source");
+            let code = text.split("#[cfg(test)]").next().unwrap_or("");
+            let lines: Vec<&str> = code.lines().collect();
+            for (i, l) in lines.iter().enumerate() {
+                if l.trim_start().starts_with("pub async fn") {
+                    seen += 1;
+                    let body = lines[i..(i + 14).min(lines.len())].join("\n");
+                    assert!(
+                        body.contains("on_runtime("),
+                        "{}: {} does not run on the app's runtime",
+                        path.display(),
+                        l.trim()
+                    );
+                }
+            }
+        }
+        assert!(seen >= 14, "the async calls: {seen}");
     }
 
     #[test]

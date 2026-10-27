@@ -125,6 +125,8 @@ pub struct MobileSession {
     notice: Mutex<Option<String>>,
     /// The session's SFTP, opened the first time Files asks.
     pub(crate) sftp: tokio::sync::Mutex<Option<shellwing_ssh::Sftp>>,
+    /// The app's runtime: what Swift awaits runs there (`on_runtime`).
+    pub(crate) rt: tokio::runtime::Handle,
     /// Config files placed on the host until the session ends.
     placed: Mutex<Vec<shellwing_core::placing::Placed>>,
 }
@@ -156,6 +158,7 @@ impl MobileSession {
             notice: Mutex::new(None),
             sftp: tokio::sync::Mutex::new(None),
             placed: Mutex::default(),
+            rt: rt.clone(),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
@@ -344,7 +347,14 @@ impl MobileSession {
     /// Adds `public` (one line, as `authorized_keys` takes it) to the host's
     /// `~/.ssh/authorized_keys`, over this session's connection. True when
     /// it was added, false when it was there already.
-    pub async fn install_key(&self, public: String) -> Result<bool, MobileError> {
+    pub async fn install_key(self: Arc<Self>, public: String) -> Result<bool, MobileError> {
+        let rt = self.rt.clone();
+        crate::on_runtime(&rt, async move { self.install_key_now(public).await }).await
+    }
+}
+
+impl MobileSession {
+    async fn install_key_now(&self, public: String) -> Result<bool, MobileError> {
         let answer = lock(&self.session)
             .remote()
             .exec(keys::INSTALL, format!("{}\n", public.trim()).into_bytes())
