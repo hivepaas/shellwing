@@ -3,7 +3,7 @@
 //! keepalives). Those sync with the vault, as on the desktop. The themes
 //! are the desktop's built-in ones. And the hosts whose keys are known.
 
-use shellwing_config::{HostKey, SettingValue, Theme, Themes};
+use shellwing_config::{HostKey, OnDisconnect, SettingValue, Theme, Themes};
 use shellwing_ssh::known_hosts;
 use shellwing_term::{Colors, Rgb};
 
@@ -40,6 +40,29 @@ impl From<HostKeyWay> for HostKey {
     }
 }
 
+/// What a session does when its connection ends, as the desktop's setting
+/// says it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum OnDisconnectWay {
+    /// A lost connection is made again by itself, waiting longer each time,
+    /// and at once when the app comes back.
+    Reconnect,
+    /// Nothing by itself: Connect again does.
+    Ask,
+    /// After `exit` the session closes; a lost connection waits for you.
+    Close,
+}
+
+impl From<OnDisconnect> for OnDisconnectWay {
+    fn from(o: OnDisconnect) -> Self {
+        match o {
+            OnDisconnect::Reconnect => OnDisconnectWay::Reconnect,
+            OnDisconnect::Ask => OnDisconnectWay::Ask,
+            OnDisconnect::Close => OnDisconnectWay::Close,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ThemeRow {
     pub id: String,
@@ -60,6 +83,7 @@ pub struct SettingsRow {
     pub host_key: HostKeyWay,
     /// Seconds between keepalives; 0: none.
     pub keepalive: u64,
+    pub on_disconnect: OnDisconnectWay,
     /// These settings sync with the vault.
     pub synced: bool,
     /// The app's language, by tag; None: the phone's. This device's own.
@@ -122,6 +146,7 @@ impl Shellwing {
             scrollback: s.terminal.scrollback as u64,
             host_key: s.ssh.host_key.into(),
             keepalive: s.ssh.keepalive,
+            on_disconnect: s.terminal.on_disconnect.into(),
             synced: s.sync.settings,
             language: s.general.language.filter(|l| !l.is_empty() && l != "auto"),
         }
@@ -177,6 +202,18 @@ impl Shellwing {
             .map_err(MobileError::of)?;
         shellwing_i18n::set_language(tag.as_deref());
         Ok(())
+    }
+
+    pub fn set_on_disconnect(&self, way: OnDisconnectWay) -> Result<(), MobileError> {
+        let name = match way {
+            OnDisconnectWay::Reconnect => "reconnect",
+            OnDisconnectWay::Ask => "ask",
+            OnDisconnectWay::Close => "close",
+        };
+        self.set(
+            &["terminal", "on_disconnect"],
+            SettingValue::Str(name.into()),
+        )
     }
 
     pub fn set_settings_synced(&self, on: bool) -> Result<(), MobileError> {

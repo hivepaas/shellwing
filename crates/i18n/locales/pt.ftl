@@ -4274,6 +4274,12 @@ t31e98c98 = Direto ao servidor. Um salto passa primeiro por outro servidor (um b
 # Favorite: listed first
 t7bd2a9c8 = Favorito: listado primeiro
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = Manter o shell no servidor (tmux)
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = Com tmux, uma conexão refeita encontra o mesmo shell, com os programas ainda rodando: o telefone pode perder a conexão em segundo plano. O tmux precisa estar no servidor; sem ele, o shell fica como sempre.
+
 # Host keys
 t2f5a3205 = Chaves de servidor
 
@@ -4524,6 +4530,9 @@ t25db363e = Conexões
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = A configuração própria de um servidor, no editor dele, prevalece. Uma chave alterada é sempre recusada: esqueça o servidor em Servidores conhecidos para aceitar a nova.
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = O iOS para um app logo depois que ele sai da tela, e as conexões dele junto. “Reconectar” refaz sozinho uma conexão perdida, esperando mais a cada vez, e na hora em que você volta; o shell de um servidor mantido no tmux (no editor do servidor) é encontrado como estava.
 
 # SSH keys
 t7e7cad2b = Chaves SSH

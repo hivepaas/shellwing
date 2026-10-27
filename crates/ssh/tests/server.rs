@@ -108,6 +108,8 @@ struct TestServer {
     opened: HashMap<ChannelId, Channel<Msg>>,
     /// The first factor passed (with `then_otp`).
     first_factor: bool,
+    /// The size the PTY was asked at: the greeting says it.
+    pty: Option<(u32, u32)>,
 }
 
 impl TestServer {
@@ -251,13 +253,14 @@ impl server::Handler for TestServer {
         &mut self,
         channel: ChannelId,
         _term: &str,
-        _cols: u32,
-        _rows: u32,
+        cols: u32,
+        rows: u32,
         _pw: u32,
         _ph: u32,
         _modes: &[(russh::Pty, u32)],
         session: &mut ServerSession,
     ) -> Result<(), Self::Error> {
+        self.pty = Some((cols, rows));
         session.channel_success(channel)
     }
 
@@ -273,7 +276,11 @@ impl server::Handler for TestServer {
             ask_agent(session.handle(), record);
         }
         session.channel_success(channel)?;
-        session.data(channel, "welcome\r\n")
+        let size = self
+            .pty
+            .map(|(cols, rows)| format!(" {cols}x{rows}"))
+            .unwrap_or_default();
+        session.data(channel, format!("welcome{size}\r\n"))
     }
 
     async fn agent_request(
@@ -407,6 +414,9 @@ impl server::Handler for TestServer {
             }
             // The server dies: the connection drops with nothing said.
             b"die\r" => return Err(russh::Error::Disconnect),
+            // The server stops answering, the connection still up: as one
+            // that died unheard while a phone slept looks.
+            b"freeze\r" => tokio::time::sleep(Duration::from_secs(3600)).await,
             _ => session.data(channel, data.to_vec())?,
         }
         Ok(())
@@ -524,6 +534,7 @@ async fn serve_as(
                     sessions: vec![],
                     opened: HashMap::new(),
                     first_factor: false,
+                    pty: None,
                 };
                 if let Ok(running) = server::run_stream(config, socket, handler).await {
                     let _ = running.await;
@@ -576,6 +587,7 @@ impl Fixture {
             secrets: None,
             forwarded: None,
             keepalive: None,
+            size: None,
             cols: 80,
             rows: 24,
             term: "xterm-256color".into(),
@@ -945,6 +957,137 @@ async fn an_exit_closes_but_a_dying_server_disconnects() {
         end_with(opts(), b"die\r").await,
         shellwing_ssh::Ended::Error(Error::Disconnected)
     ));
+}
+
+/// Connects and returns the shell's greeting, which says the PTY's size.
+async fn greeting(opts: Options) -> String {
+    let out = Arc::new(Mutex::new(Vec::new()));
+    let sink = out.clone();
+    let session = shellwing_ssh::connect(
+        opts,
+        Box::new(move |b| sink.lock().expect("out").extend_from_slice(b)),
+        Box::new(|_| {}),
+    )
+    .await
+    .expect("connect");
+    for _ in 0..200 {
+        let text = String::from_utf8_lossy(&out.lock().expect("out")).into_owned();
+        if let Some(line) = text.lines().find(|l| l.starts_with("welcome")) {
+            drop(session);
+            return line.trim().to_string();
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("no greeting from the shell");
+}
+
+/// The PTY is asked for at the terminal's size then, not at the one it had
+/// when connecting began: a shell started at another size draws its first
+/// prompt for that one.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_pty_starts_at_the_terminals_size_when_asked_for() {
+    let fx = Fixture::new("pty-size");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+
+    // The terminal has its size only while the password is asked.
+    let sized = Arc::new(Mutex::new(None));
+    let (prompter, mut questions) = Prompter::new();
+    let set = sized.clone();
+    tokio::spawn(async move {
+        while let Some(req) = questions.recv().await {
+            let answer = match req.prompt {
+                Prompt::HostKey { .. } => "yes",
+                _ => {
+                    *set.lock().expect("size") = Some((46, 20));
+                    "pw"
+                }
+            };
+            let _ = req.reply.send(Some(answer.into()));
+        }
+    });
+    let size: shellwing_ssh::SizeFn = Box::new(move || *sized.lock().expect("size"));
+    let opts = Options {
+        size: Some(size),
+        ..fx.options(local(port, "me"), prompter)
+    };
+    assert_eq!(greeting(opts).await, "welcome 46x20");
+
+    // None yet, or no way to ask: the options' size.
+    for size in [Some(Box::new(|| None) as shellwing_ssh::SizeFn), None] {
+        let (prompter, _) = scripted(vec![Some("pw")]);
+        let opts = Options {
+            size,
+            ..fx.options(local(port, "me"), prompter)
+        };
+        assert_eq!(greeting(opts).await, "welcome 80x24");
+    }
+}
+
+/// Asks the running connection whether it answers.
+async fn ping(session: &shellwing_ssh::Session) -> bool {
+    let (reply, answer) = tokio::sync::oneshot::channel();
+    if session.sender().send(Input::Ping { reply }).is_err() {
+        return false;
+    }
+    answer.await.unwrap_or(false)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_ping_is_answered_while_the_server_answers() {
+    let fx = Fixture::new("ping");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let start = || async {
+        let (prompter, _) = scripted(vec![Some("yes"), Some("pw"), Some("pw")]);
+        shellwing_ssh::connect(
+            fx.options(local(port, "me"), prompter),
+            Box::new(|_| {}),
+            Box::new(|_| {}),
+        )
+        .await
+        .expect("connect")
+    };
+    let alive = start().await;
+    assert!(ping(&alive).await, "the server is there");
+    assert!(
+        ping(&alive).await,
+        "and again: the probe leaves nothing open"
+    );
+
+    // Gone: no answer, at once.
+    let dead = start().await;
+    dead.write(b"die\r".to_vec());
+    let mut answered = true;
+    for _ in 0..50 {
+        answered = ping(&dead).await;
+        if !answered {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    assert!(!answered, "a server gone does not answer");
+
+    // Still up but silent, as a connection that died unheard looks: no
+    // answer within the ping's wait.
+    let frozen = start().await;
+    frozen.write(b"freeze\r".to_vec());
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let asked = std::time::Instant::now();
+    assert!(!ping(&frozen).await, "a silent server does not answer");
+    assert!(asked.elapsed() < Duration::from_secs(8), "given up in time");
 }
 
 /// Saved secrets for a test, and what the connection reported as learned.

@@ -42,6 +42,10 @@ fn changed_key(e: &Error) -> Option<&shellwing_ssh::ChangedKey> {
     }
 }
 
+/// The waits before each try at reconnecting a connection that was lost, in
+/// seconds; then it waits for the user.
+pub const RETRY_BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
+
 fn retryable(e: &Error) -> bool {
     match e {
         Error::Ssh(_) | Error::Disconnected => true,
@@ -64,6 +68,8 @@ struct State {
     /// The last attempt found the host's key changed: what was known, and
     /// what the server showed.
     changed_key: Option<shellwing_ssh::ChangedKey>,
+    /// Counts the attempts to connect: only the latest one's end counts.
+    attempt: u64,
 }
 
 pub struct Session {
@@ -112,6 +118,13 @@ impl Remote {
     pub fn sftp(&self) -> Option<tokio::sync::oneshot::Receiver<Result<Sftp, Error>>> {
         let (reply, answer) = tokio::sync::oneshot::channel();
         self.writer.send(Input::Sftp { reply }).then_some(answer)
+    }
+
+    /// Whether the running connection still answers (see
+    /// [`shellwing_ssh::Input::Ping`]). None when nothing is connected.
+    pub fn ping(&self) -> Option<tokio::sync::oneshot::Receiver<bool>> {
+        let (reply, answer) = tokio::sync::oneshot::channel();
+        self.writer.send(Input::Ping { reply }).then_some(answer)
     }
 
     /// Runs `command` on the running connection, beside the shell. None when
@@ -188,6 +201,9 @@ fn forwarded(term: &TermHandle, held: &Held, result: Result<Active, Error>) {
 fn status_line(term: &TermHandle, msg: &str) {
     term.feed(format!("\r\n\x1b[2m[{msg}]\x1b[0m\r\n").into_bytes());
 }
+
+/// Why a connection that looked up was given up on.
+const UNANSWERED: &str = "connection lost: the host stopped answering";
 
 /// An error line, in red.
 fn failure(term: &TermHandle, msg: &str) {
@@ -443,6 +459,48 @@ impl Session {
         self.local.is_some()
     }
 
+    /// The connection stopped answering though it looked up, as one that
+    /// died unheard does (a phone back from the background, a network
+    /// gone): it is given up on and made again.
+    pub fn reconnect_unanswered(&mut self) {
+        if self.give_up_unanswered() {
+            self.restart();
+        }
+    }
+
+    /// As [`Self::reconnect_unanswered`], but it is left lost: connecting
+    /// again is the user's to do.
+    pub fn drop_unanswered(&mut self) {
+        if self.give_up_unanswered() {
+            self.set_status(Status::Lost, Some(UNANSWERED.into()));
+        }
+    }
+
+    /// Gives up on a connection that looks up but does not answer; false
+    /// if none looks up. Its own end, should it come later, no longer
+    /// counts.
+    fn give_up_unanswered(&mut self) -> bool {
+        if self.status() != Status::Connected {
+            return false;
+        }
+        self.next_attempt();
+        failure(&self.term, UNANSWERED);
+        if let Some(t) = self.task.take() {
+            t.abort();
+        }
+        self.writer.stop();
+        true
+    }
+
+    /// A new attempt to connect: what the ones before it say from now on is
+    /// not heard.
+    fn next_attempt(&self) -> u64 {
+        self.state.lock().map_or(0, |mut s| {
+            s.attempt += 1;
+            s.attempt
+        })
+    }
+
     /// Connects again to the same target, below what the terminal shows.
     pub fn reconnect(&mut self) {
         if (self.target.is_none() && self.local.is_none())
@@ -450,6 +508,11 @@ impl Session {
         {
             return;
         }
+        self.restart();
+    }
+
+    /// Drops what runs and connects again.
+    fn restart(&mut self) {
         if let Some(t) = self.task.take() {
             t.abort();
         }
@@ -458,10 +521,18 @@ impl Session {
         self.connect(None);
     }
 
+    /// The size a new shell starts at: the pane's when it has one. The
+    /// size sent once it runs can come after its first prompt, which a
+    /// narrower pane then shows broken (zsh's `%` line).
+    fn start_size(&self) -> (u32, u32) {
+        self.writer.size().unwrap_or((80, 24))
+    }
+
     /// Starts the shell on this computer, in a PTY the pane's input goes to.
     fn connect_local(&mut self, argv: Vec<String>) {
         self.set_status(Status::Connecting, None);
         self.writer.connecting();
+        let (cols, rows) = self.start_size();
         let (term, writer, state, wake_tx) = (
             self.term.clone(),
             self.writer.clone(),
@@ -473,7 +544,10 @@ impl Session {
             let out = term.clone();
             let started = crate::local::start(
                 argv.clone(),
-                (80, 24),
+                (
+                    cols.clamp(1, u16::MAX as u32) as u16,
+                    rows.clamp(1, u16::MAX as u32) as u16,
+                ),
                 rx,
                 Box::new(move |bytes| out.feed(bytes.to_vec())),
             );
@@ -510,8 +584,10 @@ impl Session {
         let Some(resolved) = self.target.clone() else {
             return;
         };
+        let attempt = self.next_attempt();
         self.set_status(Status::Connecting, None);
         self.writer.connecting();
+        let (cols, rows) = self.start_size();
         let (term, writer, state, wake_tx) = (
             self.term.clone(),
             self.writer.clone(),
@@ -522,6 +598,7 @@ impl Session {
         let policy = crate::target::policy(self.ssh.host_key);
         let run = self.run.clone();
         let keepalive = std::time::Duration::from_secs(self.ssh.keepalive);
+        let sized = self.writer.clone();
         // Lives as long as the connection: the forwarded callback and the ended
         // one hold it.
         let held = Arc::new(Held::default());
@@ -563,8 +640,9 @@ impl Session {
                 prompter: Some(prompter),
                 secrets: secrets.clone(),
                 forwarded: Some(Box::new(move |r| forwarded(&fwd_term, &fwd_held, r))),
-                cols: 80,
-                rows: 24,
+                size: Some(Box::new(move || sized.size())),
+                cols,
+                rows,
                 term: "xterm-256color".into(),
             };
             let probe = bench.as_ref().map(|(_, p)| p.clone());
@@ -583,6 +661,11 @@ impl Session {
                 Box::new(move |ended| {
                     // The ports are closed now.
                     drop(held);
+                    // One given up on ends after the next began: that one's
+                    // input, status and terminal are not its own.
+                    if end_state.lock().is_ok_and(|s| s.attempt != attempt) {
+                        return;
+                    }
                     end_writer.stop();
                     let (status, why) = match ended {
                         Ended::Closed {

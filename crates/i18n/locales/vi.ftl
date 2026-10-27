@@ -4135,6 +4135,12 @@ t31e98c98 = Kết nối thẳng tới máy chủ. Với máy nhảy, kết nối
 # Favorite: listed first
 t7bd2a9c8 = Yêu thích: xếp đầu danh sách
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = Giữ shell trên máy chủ (tmux)
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = Với tmux, kết nối lại sẽ gặp đúng shell cũ, các chương trình trong đó vẫn đang chạy: khi ứng dụng chạy nền, điện thoại có thể làm mất kết nối. Máy chủ cần có tmux; nếu không có, shell vẫn như thường.
+
 # Host keys
 t2f5a3205 = Khoá máy chủ
 
@@ -4383,6 +4389,9 @@ t25db363e = Kết nối
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = Cài đặt riêng của máy chủ, trong trình sửa của nó, được ưu tiên. Khoá đã thay đổi luôn bị từ chối: hãy quên máy chủ trong Máy chủ đã biết để chấp nhận khoá mới của nó.
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS dừng ứng dụng ngay sau khi nó rời màn hình, kéo theo các kết nối của nó. Với "Kết nối lại", kết nối bị mất sẽ tự được nối lại, mỗi lần chờ lâu hơn, và nối lại ngay khi bạn quay lại; shell của máy chủ được giữ trong tmux (bật trong trình sửa máy chủ) vẫn nguyên như cũ.
 
 # SSH keys
 t7e7cad2b = Khoá SSH

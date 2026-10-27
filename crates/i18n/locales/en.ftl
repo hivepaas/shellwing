@@ -1564,6 +1564,8 @@ t4b96b415 = Uses the keys in an ssh-agent: a desktop's; a phone has none.
 t16c79e2d = Add a jump
 t31e98c98 = Straight to the host. A jump goes through another host first (a bastion).
 t7bd2a9c8 = Favorite: listed first
+ta3e2fb16 = Keep the shell on the host (tmux)
+t6b4d9cba = In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
 t2f5a3205 = Host keys
 t46210079 = As in Settings
 tc99d0b88 = Accept new ones
@@ -1653,6 +1655,7 @@ t0877f108 =
     }
 t25db363e = Connections
 t25360db5 = A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
+t8012e2b7 = iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
 t7e7cad2b = SSH keys
 tcdae5fca = Saved passwords
 t12986dd4 = The vault is opening…

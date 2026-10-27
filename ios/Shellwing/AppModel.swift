@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import SwiftUI
 
 /// The app's state: shellwing-core, the hosts it lists, and the sessions open.
@@ -15,6 +16,11 @@ final class AppModel: ObservableObject {
     /// The language spoken, by tag: the core's choice, from Settings or the phone.
     @Published private(set) var language = languageInUse()
     private let syncHears = SyncHears()
+    /// Time iOS gives the app in the background, while sessions are open.
+    private var background: UIBackgroundTaskIdentifier = .invalid
+    /// The network, watched: a change (Wi-Fi to cellular) checks the sessions.
+    private let paths = NWPathMonitor()
+    private var lastPath: String?
 
     init() {
         let dir = AppModel.configDir()
@@ -34,6 +40,13 @@ final class AppModel: ObservableObject {
         language = languageInUse()
         syncHears.app = self
         core?.setSyncListener(listener: syncHears)
+        paths.pathUpdateHandler = { [weak self] path in
+            let now = path.status == .satisfied
+                ? path.availableInterfaces.map(\.name).joined(separator: ",")
+                : "none"
+            DispatchQueue.main.async { self?.networkMoved(now) }
+        }
+        paths.start(queue: DispatchQueue(label: "shellwing.network"))
         reload()
         refreshSync()
     }
@@ -55,6 +68,47 @@ final class AppModel: ObservableObject {
         let now = core.syncStatus()
         if now.last != sync?.last { reload() }
         sync = now
+    }
+
+    // The app in the background, and back. iOS suspends an app moments
+    // after it leaves the screen, and a suspended app's connections die
+    // unheard: they are checked when it comes back, and made again
+    // (`MobileSession.resumed`, as the setting says).
+
+    /// Gone to the background: the time iOS gives (about half a minute) is
+    /// asked for, so a quick look at another app finds the sessions as they
+    /// were, and a transfer finishes.
+    func wentAway() {
+        guard background == .invalid,
+              sessions.contains(where: { $0.status == .connected || $0.status == .connecting }) else { return }
+        background = UIApplication.shared.beginBackgroundTask(withName: "shellwing sessions") { [weak self] in
+            self?.endBackground()
+        }
+    }
+
+    /// Back: the sessions checked.
+    func cameBack() {
+        endBackground()
+        for s in sessions { s.resumed() }
+    }
+
+    private func endBackground() {
+        guard background != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(background)
+        background = .invalid
+    }
+
+    /// The network moved (another interface, or back after none): the
+    /// sessions checked, once it is there.
+    private func networkMoved(_ now: String) {
+        defer { lastPath = now }
+        guard let was = lastPath, was != now, now != "none" else { return }
+        for s in sessions { s.resumed() }
+    }
+
+    /// What a session does when its connection ends (the desktop's setting).
+    var onDisconnect: OnDisconnectWay {
+        core?.settings().onDisconnect ?? .reconnect
     }
 
     /// Application Support/shellwing: kept, backed up, never shown in Files.
@@ -315,6 +369,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     /// Something said once: an environment loaded, a load given up.
     @MainActor @Published var notice: String?
     @MainActor @Published private(set) var envs: [LoadedEnvRow] = []
+    /// A lost connection about to be tried again: in how long, which try.
+    @MainActor @Published private(set) var retrying: Retrying?
     /// Config files placed on the host until the session ends.
     @MainActor @Published private(set) var placed: [PlacedRow] = []
     /// Called on the main thread each time the session connects.
@@ -373,6 +429,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         if let n = session.notice() { notice = n }
         let loaded = session.loadedEnvs()
         if loaded != envs { envs = loaded }
+        let r = session.retrying()
+        if r != retrying { retrying = r }
         refreshPlaced()
     }
 
@@ -429,6 +487,18 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
 
     func reconnect() {
         session?.reconnect()
+    }
+
+    @MainActor
+    func stopRetrying() {
+        session?.stopRetrying()
+        retrying = nil
+    }
+
+    /// Back from the background, or the network moved: checked, and made
+    /// again if it no longer answers.
+    func resumed() {
+        session?.resumed()
     }
 
     @MainActor

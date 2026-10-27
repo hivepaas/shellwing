@@ -33,9 +33,10 @@ pub use library::{EnvRow, FileUnder, LibraryItem, LibraryPick, NoteRow, SnippetE
 pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
 pub use md_edit::{MdEdit, MdImageLine, MdLines, MdRole, MdRun, MdTable, MdWrap};
 pub use session::{
-    FrameData, Key, LoadedEnvRow, MobileSession, RowData, RunData, SessionListener, SessionStatus,
+    FrameData, Key, LoadedEnvRow, MobileSession, Retrying, RowData, RunData, SessionListener,
+    SessionStatus,
 };
-pub use settings::{HostKeyWay, KnownHostRow, SettingsRow, ThemeRow};
+pub use settings::{HostKeyWay, KnownHostRow, OnDisconnectWay, SettingsRow, ThemeRow};
 pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
 pub use vault::{KeyRow, PlatformKeys, SavedSecret, VaultState};
 
@@ -388,7 +389,12 @@ impl Shellwing {
                 .or_else(|| hosts.group_of(h).and_then(|g| g.theme.clone()))
         });
         session.term.set_colors(self.colors(theme.as_deref()));
-        Ok(MobileSession::new(session, listener, self.rt.handle()))
+        Ok(MobileSession::new(
+            session,
+            listener,
+            self.rt.handle(),
+            self.store.clone(),
+        ))
     }
 }
 
@@ -622,6 +628,27 @@ mod tests {
         }
     }
 
+    struct Quiet;
+
+    impl SessionListener for Quiet {
+        fn changed(&self) {}
+    }
+
+    /// The phone's terminal size reaches the shell on the host, as the
+    /// desktop pane's does: the core asks for the PTY at it.
+    #[test]
+    fn the_terminals_size_is_the_shells() {
+        let (dir, app) = store_with("");
+        let s = app
+            .open("me@127.0.0.1:1".into(), Arc::new(Quiet))
+            .expect("open");
+        assert_eq!(s.shell_size(), None, "none until the screen is laid out");
+        s.resize(46, 20, 9, 18);
+        assert_eq!(s.shell_size(), Some((46, 20)));
+        drop(s);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
     fn store_with(text: &str) -> (std::path::PathBuf, Arc<Shellwing>) {
         // One folder per test: they run at once.
         static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
@@ -798,7 +825,8 @@ mod tests {
         for entry in std::fs::read_dir(&src).expect("src") {
             let path = entry.expect("entry").path();
             let text = std::fs::read_to_string(&path).expect("source");
-            let code = text.split("#[cfg(test)]").next().unwrap_or("");
+            // The code above the file's tests.
+            let code = text.split("\n#[cfg(test)]\nmod ").next().unwrap_or("");
             let lines: Vec<&str> = code.lines().collect();
             for (i, l) in lines.iter().enumerate() {
                 if l.trim_start().starts_with("pub async fn") {
@@ -931,9 +959,17 @@ mod tests {
         app.set_scrollback(5).expect("scrollback");
         app.set_host_key(HostKeyWay::AcceptNew).expect("host key");
         app.set_keepalive(15).expect("keepalive");
+        assert_eq!(
+            s.on_disconnect,
+            OnDisconnectWay::Reconnect,
+            "the desktop's default"
+        );
+        app.set_on_disconnect(OnDisconnectWay::Ask)
+            .expect("on disconnect");
         let s = app.settings();
         assert_eq!((s.theme, s.scrollback, s.keepalive), (other, 100, 15));
         assert_eq!(s.host_key, HostKeyWay::AcceptNew);
+        assert_eq!(s.on_disconnect, OnDisconnectWay::Ask);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

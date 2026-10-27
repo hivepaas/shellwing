@@ -42,6 +42,8 @@ pub use sftp::Sftp;
 const DEFAULT_KEEPALIVE: Duration = Duration::from_secs(30);
 /// Unanswered keepalives before the connection counts as dead.
 const KEEPALIVE_MAX: usize = 3;
+/// How long [`Input::Ping`] waits for the server to answer.
+const PING: Duration = Duration::from_secs(5);
 /// How much a channel may receive before the server waits for us: 8 MiB, not
 /// russh's and OpenSSH's 2 MiB, which hold a download to 2 MiB per round trip
 /// (18 MB/s at 50 ms; 65 MB/s with this). It applies to the shell too, where it
@@ -174,6 +176,13 @@ pub enum Input {
         stdin: Vec<u8>,
         reply: tokio::sync::oneshot::Sender<Result<Exec, Error>>,
     },
+    /// Whether the connection still answers: a channel asked for, and closed,
+    /// within [`PING`]. Keepalives find a dead one in minutes; a phone back
+    /// from the background, whose connection may have died unheard while it
+    /// slept, asks at once.
+    Ping {
+        reply: tokio::sync::oneshot::Sender<bool>,
+    },
 }
 
 /// A host whose key is not the one known_hosts has: what is known, and what
@@ -265,6 +274,8 @@ pub type OutputFn = Box<dyn FnMut(&[u8]) + Send>;
 pub type EndedFn = Box<dyn FnOnce(Ended) + Send>;
 /// How each of the target's forwards went: running, or why not.
 pub type ForwardedFn = Box<dyn FnMut(Result<Active, Error>) + Send + Sync>;
+/// The terminal's size (columns, rows), if it has one yet.
+pub type SizeFn = Box<dyn Fn() -> Option<(u32, u32)> + Send + Sync>;
 
 pub struct Options {
     pub target: Resolved,
@@ -282,6 +293,10 @@ pub struct Options {
     pub forwarded: Option<ForwardedFn>,
     /// Keepalive for hosts that set none; zero: none. None: 30 seconds.
     pub keepalive: Option<Duration>,
+    /// The terminal's size when the PTY is asked for, after signing in: it
+    /// can have changed since connecting began. `cols` and `rows` without
+    /// one, or while it has none.
+    pub size: Option<SizeFn>,
     pub cols: u32,
     pub rows: u32,
     pub term: String,
@@ -404,8 +419,13 @@ pub async fn connect(
     }
 
     let mut channel = handle.channel_open_session().await?;
+    let (cols, rows) = opts
+        .size
+        .as_ref()
+        .and_then(|now| now())
+        .unwrap_or((opts.cols, opts.rows));
     channel
-        .request_pty(false, &opts.term, opts.cols, opts.rows, 0, 0, &[])
+        .request_pty(false, &opts.term, cols, rows, 0, 0, &[])
         .await?;
     if forward_agent {
         channel.agent_forward(false).await?;
@@ -448,6 +468,17 @@ pub async fn connect(
                             let handle = handle.clone();
                             tokio::spawn(async move {
                                 let _ = reply.send(exec(&handle, &command, &stdin).await);
+                            });
+                        }
+                        Some(Input::Ping { reply }) => {
+                            let handle = handle.clone();
+                            tokio::spawn(async move {
+                                let answered = tokio::time::timeout(PING, async {
+                                    let probe = handle.channel_open_session().await?;
+                                    probe.close().await
+                                })
+                                .await;
+                                let _ = reply.send(matches!(answered, Ok(Ok(()))));
                             });
                         }
                         None => break,
