@@ -1,193 +1,275 @@
 import SwiftUI
 
-/// A note's Markdown shown: headings, paragraphs, lists and tasks, quotes,
-/// rules, code blocks and images (`attachment:<id>` from the vault). In a
-/// session (`insert`), a code block's commands go into its shell.
+/// A note's Markdown shown, as the desktop shows it: headings, paragraphs,
+/// lists and tasks, quotes and alerts, code, tables, images
+/// (`attachment:<id>` from the vault), rules. The core reads the Markdown
+/// (`markdown_blocks`); this draws its blocks. A task's box ticks when
+/// `toggle` is given (it gets the box's place in the text); in a session,
+/// `insert` puts a code block's commands into its shell.
 struct MarkdownView: View {
     @EnvironmentObject private var app: AppModel
     let text: String
-    let insert: ((String) -> Void)?
+    var insert: ((String) -> Void)?
+    var toggle: ((UInt64) -> Void)?
+
+    /// The body text's size: headings scale from it as the desktop's do.
+    private let base: CGFloat = 15
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(Array(MarkdownBlock.parse(text).enumerated()), id: \.offset) { _, block in
+        let blocks = markdownBlocks(text: text)
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { n, block in
                 view(of: block)
+                    .padding(.leading, CGFloat(block.indent) * 18)
+                    .modifier(QuoteBars(depth: Int(block.quote), alert: block.alert))
+                    .padding(.top, n == 0 ? 0 : gap(blocks[n - 1], block))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .textSelection(.enabled)
+    }
+
+    /// The space between two blocks: none inside a quote, whose bar and
+    /// tint run on; little between items of a list.
+    private func gap(_ a: MdBlock, _ b: MdBlock) -> CGFloat {
+        if a.group != 0 && a.group == b.group { return 0 }
+        if case .item = a.kind, case .item = b.kind { return 6 }
+        return 10
     }
 
     @ViewBuilder
-    private func view(of block: MarkdownBlock) -> some View {
-        switch block {
-        case .heading(let level, let text):
-            inline(text)
-                .font(.system(size: level == 1 ? 22 : level == 2 ? 19 : 16, weight: .semibold))
-                .padding(.top, 4)
-        case .paragraph(let text):
-            inline(text).font(.system(size: 15))
-        case .item(let marker, let text, let depth):
+    private func view(of block: MdBlock) -> some View {
+        switch block.kind {
+        case .heading(let level, let spans):
+            styled(spans)
+                .font(.system(size: base * scale(level), weight: .semibold))
+                .padding(.top, level <= 2 ? 6 : 2)
+                .textSelection(.enabled)
+        case .paragraph(let spans):
+            styled(spans).font(.system(size: base)).textSelection(.enabled)
+        case .item(let marker, let task, let at, let spans):
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                switch marker {
-                case .bullet: Text("•").foregroundStyle(Dusk.muted)
-                case .number(let n): Text("\(n).").foregroundStyle(Dusk.muted).monospacedDigit()
-                case .task(let done):
-                    Image(systemName: done ? "checkmark.square.fill" : "square")
-                        .foregroundStyle(done ? Dusk.accent : Dusk.muted)
+                if let done = task {
+                    Button {
+                        if let at { toggle?(at) }
+                    } label: {
+                        Image(systemName: done ? "checkmark.square.fill" : "square")
+                            .foregroundStyle(done ? Dusk.accent : Dusk.muted)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(toggle == nil || at == nil)
+                    .accessibilityLabel(done ? tr("Done") : tr("Not done"))
+                } else {
+                    Text(marker).foregroundStyle(Dusk.muted).monospacedDigit()
                 }
-                inline(text).font(.system(size: 15))
+                styled(spans)
+                    .font(.system(size: base))
+                    .strikethrough(task == true, color: Dusk.muted)
+                    .foregroundStyle(task == true ? Dusk.muted : Dusk.text)
+                    .textSelection(.enabled)
             }
-            .padding(.leading, CGFloat(depth) * 16)
-        case .quote(let text):
-            inline(text)
-                .font(.system(size: 15))
-                .foregroundStyle(Dusk.soft)
-                .padding(.leading, 12)
-                .overlay(alignment: .leading) { Dusk.edge.frame(width: 3) }
-        case .rule:
-            Dusk.line.frame(height: 1)
         case .code(let lang, let code):
-            VStack(alignment: .leading, spacing: 0) {
-                if insert != nil || !lang.isEmpty {
-                    HStack {
-                        Text(lang).font(.system(size: 11)).foregroundStyle(Dusk.muted)
-                        Spacer()
-                        if let insert {
-                            Button(tr("Insert"), systemImage: "arrow.down.to.line") { insert(code) }
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Dusk.accent)
+            CodeBlock(lang: lang, code: code, insert: insert)
+        case .table(let aligns, let head, let rows):
+            table(aligns, head, rows)
+        case .image(let source, let alt):
+            image(source, alt)
+        case .rule:
+            Dusk.line.frame(height: 1).padding(.vertical, 4)
+        case .alertTitle(let kind):
+            Label(kind.title, systemImage: kind.symbol)
+                .font(.system(size: base, weight: .semibold))
+                .foregroundStyle(kind.color)
+        }
+    }
+
+    private func scale(_ level: UInt8) -> CGFloat {
+        switch level {
+        case 1: return 1.8
+        case 2: return 1.5
+        case 3: return 1.3
+        case 4: return 1.15
+        case 5: return 1.05
+        default: return 1
+        }
+    }
+
+    /// Spans as one text: bold, italic, struck, code, links that open.
+    private func styled(_ spans: [MdSpan]) -> Text {
+        var out = AttributedString()
+        for s in spans {
+            var a = AttributedString(s.text)
+            var intent: InlinePresentationIntent = []
+            if s.bold { intent.insert(.stronglyEmphasized) }
+            if s.italic { intent.insert(.emphasized) }
+            if s.strike { intent.insert(.strikethrough) }
+            if s.code {
+                intent.insert(.code)
+                a.font = .system(size: base - 1, design: .monospaced)
+                a.backgroundColor = Dusk.field
+            }
+            a.inlinePresentationIntent = intent
+            if let link = s.link, let url = URL(string: link) {
+                a.link = url
+                a.foregroundColor = Dusk.accent
+                a.underlineStyle = .single
+            }
+            out += a
+        }
+        return Text(out)
+    }
+
+    private func table(_ aligns: [MdAlign], _ head: [MdCell], _ rows: [MdRow]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
+                GridRow {
+                    ForEach(Array(head.enumerated()), id: \.offset) { n, cell in
+                        cellView(cell, align: n < aligns.count ? aligns[n] : .none)
+                            .font(.system(size: base - 1, weight: .semibold))
+                            .background(Dusk.raised)
+                    }
+                }
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    GridRow {
+                        ForEach(Array(row.cells.enumerated()), id: \.offset) { n, cell in
+                            cellView(cell, align: n < aligns.count ? aligns[n] : .none)
+                                .font(.system(size: base - 1))
                         }
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 6)
-                }
-                ScrollView(.horizontal, showsIndicators: false) {
-                    Text(code)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(Dusk.text)
-                        .padding(10)
                 }
             }
-            .background(Dusk.field, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Dusk.line))
-        case .image(let source, let alt):
-            if let id = source.attachmentId, let image = app.noteImage(id) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: 420, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .accessibilityLabel(alt.isEmpty ? tr("Image") : alt)
-            } else {
-                Label(alt.isEmpty ? tr("The image cannot be shown") : alt, systemImage: "photo")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Dusk.muted)
-            }
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Dusk.line))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }
 
-    /// Bold, italics, code and links within a line.
-    private func inline(_ text: String) -> Text {
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        if let a = try? AttributedString(markdown: text, options: options) {
-            return Text(a)
+    private func cellView(_ cell: MdCell, align: MdAlign) -> some View {
+        styled(cell.spans)
+            .textSelection(.enabled)
+            .multilineTextAlignment(align == .right ? .trailing : align == .center ? .center : .leading)
+            .frame(minWidth: 60, maxWidth: 280, alignment: align == .right ? .trailing : align == .center ? .center : .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .overlay(alignment: .trailing) { Dusk.line.frame(width: 1) }
+            .overlay(alignment: .bottom) { Dusk.line.frame(height: 1) }
+    }
+
+    @ViewBuilder
+    private func image(_ source: String, _ alt: String) -> some View {
+        let id = source.hasPrefix("attachment:") ? String(source.dropFirst("attachment:".count)) : nil
+        if let id, let image = app.noteImage(id) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: 420, alignment: .leading)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .accessibilityLabel(alt.isEmpty ? tr("Image") : alt)
+        } else {
+            Label(alt.isEmpty ? tr("The image cannot be shown") : alt, systemImage: "photo")
+                .font(.system(size: 13))
+                .foregroundStyle(Dusk.muted)
         }
-        return Text(text)
     }
 }
 
-/// A block of Markdown, as the note view draws it.
-enum MarkdownBlock {
-    enum Marker { case bullet, number(Int), task(Bool) }
+/// A code block: its language, Copy, and Insert in a session.
+private struct CodeBlock: View {
+    let lang: String
+    let code: String
+    let insert: ((String) -> Void)?
+    @State private var copied = false
 
-    case heading(Int, String)
-    case paragraph(String)
-    case item(Marker, String, depth: Int)
-    case quote(String)
-    case rule
-    case code(lang: String, String)
-    case image(source: String, alt: String)
-
-    static func parse(_ text: String) -> [MarkdownBlock] {
-        var out: [MarkdownBlock] = []
-        var para: [String] = []
-        var code: (fence: String, lang: String, lines: [String])?
-        func flush() {
-            if !para.isEmpty { out.append(.paragraph(para.joined(separator: "\n"))) }
-            para = []
-        }
-        for raw in text.components(separatedBy: "\n") {
-            let line = raw.trimmingCharacters(in: .whitespaces)
-            if let c = code {
-                if line.hasPrefix(c.fence) {
-                    out.append(.code(lang: c.lang, c.lines.joined(separator: "\n")))
-                    code = nil
-                } else {
-                    code?.lines.append(raw)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 14) {
+                Text(lang).font(.system(size: 11)).foregroundStyle(Dusk.muted)
+                Spacer()
+                Button(copied ? tr("Copied") : tr("Copy"), systemImage: copied ? "checkmark" : "doc.on.doc") {
+                    UIPasteboard.general.string = code
+                    copied = true
+                    Task {
+                        try? await Task.sleep(for: .seconds(2))
+                        copied = false
+                    }
                 }
-                continue
+                if let insert {
+                    Button(tr("Insert"), systemImage: "arrow.down.to.line") { insert(code) }
+                }
             }
-            if line.hasPrefix("```") || line.hasPrefix("~~~") {
-                flush()
-                let fence = String(line.prefix(3))
-                code = (fence, String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces), [])
-                continue
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Dusk.accent)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10)
+            .padding(.top, 7)
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(code)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundStyle(Dusk.text)
+                    .textSelection(.enabled)
+                    .padding(10)
             }
-            if line.isEmpty { flush(); continue }
-            if let h = heading(line) { flush(); out.append(h); continue }
-            if ["---", "***", "___"].contains(line) { flush(); out.append(.rule); continue }
-            if let img = image(line) { flush(); out.append(img); continue }
-            if line.hasPrefix(">") {
-                flush()
-                out.append(.quote(String(line.dropFirst()).trimmingCharacters(in: .whitespaces)))
-                continue
-            }
-            if let item = item(raw) { flush(); out.append(item); continue }
-            para.append(line)
         }
-        if let c = code { out.append(.code(lang: c.lang, c.lines.joined(separator: "\n"))) }
-        flush()
-        return out
-    }
-
-    private static func heading(_ line: String) -> MarkdownBlock? {
-        let hashes = line.prefix { $0 == "#" }.count
-        guard (1...6).contains(hashes), line.dropFirst(hashes).first == " " else { return nil }
-        return .heading(hashes, String(line.dropFirst(hashes + 1)))
-    }
-
-    /// `![alt](source)` alone on its line.
-    private static func image(_ line: String) -> MarkdownBlock? {
-        guard line.hasPrefix("!["), line.hasSuffix(")"),
-              let close = line.range(of: "](") else { return nil }
-        let alt = String(line[line.index(line.startIndex, offsetBy: 2)..<close.lowerBound])
-        let source = String(line[close.upperBound..<line.index(before: line.endIndex)])
-        return .image(source: source, alt: alt)
-    }
-
-    private static func item(_ raw: String) -> MarkdownBlock? {
-        let indent = raw.prefix { $0 == " " || $0 == "\t" }.count
-        let line = raw.dropFirst(indent)
-        let depth = min(indent / 2, 4)
-        if let first = line.first, "-*+".contains(first), line.dropFirst().first == " " {
-            let rest = String(line.dropFirst(2))
-            for (box, done) in [("[ ] ", false), ("[x] ", true), ("[X] ", true)] where rest.hasPrefix(box) {
-                return .item(.task(done), String(rest.dropFirst(4)), depth: depth)
-            }
-            return .item(.bullet, rest, depth: depth)
-        }
-        let digits = line.prefix { $0.isNumber }
-        if !digits.isEmpty, let n = Int(digits), line.dropFirst(digits.count).hasPrefix(". ") {
-            return .item(.number(n), String(line.dropFirst(digits.count + 2)), depth: depth)
-        }
-        return nil
+        .background(Dusk.field, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Dusk.line))
     }
 }
 
-private extension String {
-    /// The id of an `attachment:<id>` source.
-    var attachmentId: String? {
-        hasPrefix("attachment:") ? String(dropFirst("attachment:".count)) : nil
+/// The bars of the quotes a block is in; an alert's in its color, its
+/// background tinted.
+private struct QuoteBars: ViewModifier {
+    let depth: Int
+    let alert: MdAlert?
+
+    func body(content: Content) -> some View {
+        if depth == 0 {
+            content
+        } else {
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(0..<depth, id: \.self) { n in
+                    (n == depth - 1 ? (alert?.color ?? Dusk.edge) : Dusk.edge)
+                        .frame(width: 3)
+                        .padding(.trailing, 10)
+                }
+                // The space inside, so the bars run the block's whole height
+                // and meet the next block's.
+                content
+                    .foregroundStyle(alert == nil ? Dusk.soft : Dusk.text)
+                    .padding(.vertical, 5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .background(alert.map { $0.color.opacity(0.08) } ?? .clear)
+        }
+    }
+}
+
+extension MdAlert {
+    var title: String {
+        switch self {
+        case .note: return tr("Note")
+        case .tip: return tr("Tip")
+        case .important: return tr("Important")
+        case .warning: return tr("Warning")
+        case .caution: return tr("Caution")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .note: return "info.circle"
+        case .tip: return "lightbulb"
+        case .important: return "exclamationmark.bubble"
+        case .warning: return "exclamationmark.triangle"
+        case .caution: return "exclamationmark.octagon"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .note: return Dusk.accent
+        case .tip: return Dusk.ok
+        case .important: return Color(hex: 0xa78bfa)
+        case .warning: return Dusk.amber
+        case .caution: return Dusk.bad
+        }
     }
 }

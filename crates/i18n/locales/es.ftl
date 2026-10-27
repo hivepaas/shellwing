@@ -4403,8 +4403,62 @@ tc5fceb9b = No se puede leer esa imagen.
 # For hosts
 t350fa483 = Para servidores
 
+# Bold
+t45768d96 = Negrita
+
+# Italic
+t8db0c08d = Cursiva
+
+# Strikethrough
+t2504f1e4 = Tachado
+
+# Code
+t795db914 = Código
+
+# Link
+t8e08e589 = Enlace
+
+# Heading
+tfc3003b5 = Encabezado
+
+# Table
+td70ceb7f = Tabla
+
+# Outdent
+ta6a77b16 = Reducir sangría
+
+# Indent
+t5f8d60db = Aumentar sangría
+
+# Undo
+t71fd4acf = Deshacer
+
+# Redo
+t7412e5e9 = Rehacer
+
+# Hide the keyboard
+t5cadc433 = Ocultar el teclado
+
+# Not done
+t0f88a146 = Sin hacer
+
 # Image
 t590ca79a = Imagen
+
+# Copied
+t8dc21305 = Copiada
+
+# Tip
+t1d97162a = Consejo
+
+# Important
+tc93c9dc5 = Importante
+
+# Warning
+t37c4fc8f = Advertencia
+
+# Caution
+tec06ed06 = Precaución
 
 # No sessions open
 t483ac645 = No hay sesiones abiertas
@@ -4637,6 +4691,12 @@ t76c422df = La contraseña se guarda en la bóveda de este teléfono, nunca en e
 # shellwing did not start.
 td364ab30 = shellwing no se inició.
 
+# Column {n}
+tb3578e13 = Columna { $n }
+
+# Row {n}
+tf0d5ffc7 = Fila { $n }
+
 # Load an environment
 tfd1fc961 = Cargar un entorno
 
@@ -4688,9 +4748,6 @@ ta4995035 = Abajo
 # Right
 t1e9e9f85 = Derecha
 
-# Hide the keyboard
-t5cadc433 = Ocultar el teclado
-
 # Show the keyboard
 t6884a1b4 = Mostrar el teclado
 
@@ -4717,9 +4774,6 @@ t1b42e91e = { $name } ya estaba en { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Aún no hay claves. Crea una y luego instálala en un servidor desde el menú de una sesión: desde entonces inicia sesión sin contraseña.
-
-# Copied
-t8dc21305 = Copiada
 
 # Share
 t4f856dd8 = Compartir

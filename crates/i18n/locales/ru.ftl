@@ -4507,8 +4507,62 @@ tc5fceb9b = Не удаётся прочитать это изображение
 # For hosts
 t350fa483 = Для хостов
 
+# Bold
+t45768d96 = Жирный
+
+# Italic
+t8db0c08d = Курсив
+
+# Strikethrough
+t2504f1e4 = Зачёркнутый
+
+# Code
+t795db914 = Код
+
+# Link
+t8e08e589 = Ссылка
+
+# Heading
+tfc3003b5 = Заголовок
+
+# Table
+td70ceb7f = Таблица
+
+# Outdent
+ta6a77b16 = Уменьшить отступ
+
+# Indent
+t5f8d60db = Увеличить отступ
+
+# Undo
+t71fd4acf = Отменить
+
+# Redo
+t7412e5e9 = Повторить
+
+# Hide the keyboard
+t5cadc433 = Скрыть клавиатуру
+
+# Not done
+t0f88a146 = Не выполнено
+
 # Image
 t590ca79a = Изображение
+
+# Copied
+t8dc21305 = Скопировано
+
+# Tip
+t1d97162a = Совет
+
+# Important
+tc93c9dc5 = Важно
+
+# Warning
+t37c4fc8f = Предупреждение
+
+# Caution
+tec06ed06 = Осторожно
 
 # No sessions open
 t483ac645 = Нет открытых сеансов
@@ -4747,6 +4801,12 @@ t76c422df = Пароль хранится в хранилище этого те�
 # shellwing did not start.
 td364ab30 = shellwing не запустился.
 
+# Column {n}
+tb3578e13 = Столбец { $n }
+
+# Row {n}
+tf0d5ffc7 = Строка { $n }
+
 # Load an environment
 tfd1fc961 = Загрузить окружение
 
@@ -4798,9 +4858,6 @@ ta4995035 = Вниз
 # Right
 t1e9e9f85 = Вправо
 
-# Hide the keyboard
-t5cadc433 = Скрыть клавиатуру
-
 # Show the keyboard
 t6884a1b4 = Показать клавиатуру
 
@@ -4827,9 +4884,6 @@ t1b42e91e = { $name } уже был на { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Ключей пока нет. Создайте ключ, затем установите его на хост из меню сеанса: после этого вход будет выполняться с ним, без пароля.
-
-# Copied
-t8dc21305 = Скопировано
 
 # Share
 t4f856dd8 = Поделиться

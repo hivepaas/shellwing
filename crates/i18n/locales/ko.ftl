@@ -4264,8 +4264,62 @@ tc5fceb9b = 이미지를 읽을 수 없습니다.
 # For hosts
 t350fa483 = 사용 호스트
 
+# Bold
+t45768d96 = 굵게
+
+# Italic
+t8db0c08d = 기울임꼴
+
+# Strikethrough
+t2504f1e4 = 취소선
+
+# Code
+t795db914 = 코드
+
+# Link
+t8e08e589 = 링크
+
+# Heading
+tfc3003b5 = 제목
+
+# Table
+td70ceb7f = 표
+
+# Outdent
+ta6a77b16 = 내어쓰기
+
+# Indent
+t5f8d60db = 들여쓰기
+
+# Undo
+t71fd4acf = 실행 취소
+
+# Redo
+t7412e5e9 = 다시 실행
+
+# Hide the keyboard
+t5cadc433 = 키보드 숨기기
+
+# Not done
+t0f88a146 = 완료 안 됨
+
 # Image
 t590ca79a = 이미지
+
+# Copied
+t8dc21305 = 복사됨
+
+# Tip
+t1d97162a = 팁
+
+# Important
+tc93c9dc5 = 중요
+
+# Warning
+t37c4fc8f = 경고
+
+# Caution
+tec06ed06 = 주의
 
 # No sessions open
 t483ac645 = 열린 세션 없음
@@ -4495,6 +4549,12 @@ t76c422df = 비밀번호는 이 휴대폰의 보관함에 보관되며, 위치�
 # shellwing did not start.
 td364ab30 = shellwing이 시작되지 않았습니다.
 
+# Column {n}
+tb3578e13 = { $n }열
+
+# Row {n}
+tf0d5ffc7 = { $n }행
+
 # Load an environment
 tfd1fc961 = 환경 불러오기
 
@@ -4546,9 +4606,6 @@ ta4995035 = 아래
 # Right
 t1e9e9f85 = 오른쪽
 
-# Hide the keyboard
-t5cadc433 = 키보드 숨기기
-
 # Show the keyboard
 t6884a1b4 = 키보드 보기
 
@@ -4575,9 +4632,6 @@ t1b42e91e = { $name }은(는) 이미 { $host }에 있습니다.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 아직 키가 없습니다. 키를 생성한 뒤 세션 메뉴에서 호스트에 설치하세요. 그때부터 비밀번호 없이 로그인합니다.
-
-# Copied
-t8dc21305 = 복사됨
 
 # Share
 t4f856dd8 = 공유

@@ -5,6 +5,8 @@ import SwiftUI
 /// The Library tab: what the vault keeps besides passwords, as the desktop's
 /// Library has it.
 struct LibraryView: View {
+    @EnvironmentObject private var app: AppModel
+
     enum Part: String, CaseIterable, Identifiable {
         case snippets = "Snippets", envs = "Envs", notes = "Notes", files = "Files", keys = "Keys"
         var id: String { rawValue }
@@ -40,9 +42,213 @@ struct LibraryView: View {
             }
             .background(Dusk.panel.ignoresSafeArea())
             .navigationTitle(tr("Library"))
+            #if DEBUG
+            // `-screen markdown`: how a note shows, the desktop's template
+            // and what it lacks (a table, alerts, nested lists).
+            .sheet(isPresented: .constant(UserDefaults.standard.string(forKey: "screen") == "mdedit")) {
+                MarkdownEditorSample().environmentObject(app).preferredColorScheme(.dark)
+            }
+            .sheet(isPresented: .constant(UserDefaults.standard.string(forKey: "screen") == "markdown")) {
+                ScrollView {
+                    MarkdownView(text: MarkdownSample.text, toggle: { _ in })
+                        .padding(16)
+                }
+                .background(Dusk.page.ignoresSafeArea())
+                .environmentObject(app)
+                .preferredColorScheme(.dark)
+            }
+            #endif
         }
     }
 }
+
+/// A table opened in its grid: nil, a new one.
+struct TableSheet: Identifiable {
+    let id = UUID()
+    let table: MdTable?
+}
+
+#if DEBUG
+/// `-screen mdedit`: the editor on the sample, the caret in it.
+struct MarkdownEditorSample: View {
+    /// What the sample's image shows: a picture drawn here.
+    static let picture: UIImage = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 300)).image { c in
+        let colors = [UIColor(hex: 0x4cc4f9).cgColor, UIColor(hex: 0x22c55e).cgColor] as CFArray
+        let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1])!
+        c.cgContext.drawLinearGradient(g, start: .zero, end: CGPoint(x: 600, y: 300), options: [])
+        ("web-1 · 22" as NSString).draw(at: CGPoint(x: 30, y: 120), withAttributes: [
+            .font: UIFont.monospacedSystemFont(ofSize: 48, weight: .bold), .foregroundColor: UIColor.white,
+        ])
+    }
+
+    @State private var text = MarkdownSample.text
+    @StateObject private var editor = MarkdownEditorController()
+    @State private var tabling: TableSheet?
+
+    var body: some View {
+        MarkdownEditor(text: $text, controller: editor)
+            .background(Dusk.page.ignoresSafeArea())
+            .onAppear {
+                editor.imageFor = { _ in Self.picture }
+                editor.onTable = { table in tabling = TableSheet(table: table) }
+            }
+            .sheet(item: $tabling) { sheet in
+                TableEditor(original: sheet.table) { aligns, head, rows in
+                    editor.setTable(sheet.table, aligns: aligns, head: head, rows: rows)
+                }
+            }
+            .task {
+                try? await Task.sleep(for: .milliseconds(600))
+                guard let tv = editor.textView else { return }
+                // `-caret <offset>` (or `end`): where the caret starts;
+                // `-caret none`: the keyboard down.
+                let caret = UserDefaults.standard.string(forKey: "caret") ?? "40"
+                guard caret != "none" else { return }
+                tv.becomeFirstResponder()
+                let n = (tv.text as NSString).length
+                var at = caret == "end" ? n : min(Int(caret) ?? 40, n)
+                // `-caretAt <words>`: the caret at those words.
+                if let words = UserDefaults.standard.string(forKey: "caretAt") {
+                    let r = (tv.text as NSString).range(of: words)
+                    if r.location != NSNotFound { at = r.location }
+                }
+                tv.selectedRange = NSRange(location: at, length: caret == "40" ? 4 : 0)
+                tv.scrollRangeToVisible(tv.selectedRange)
+                if UserDefaults.standard.string(forKey: "script") == "check" { await check(tv) }
+                if UserDefaults.standard.string(forKey: "script") == "table" {
+                    select(tv, "web-1 |")
+                    editor.table()
+                }
+            }
+    }
+
+    private func select(_ tv: UITextView, _ what: String) {
+        let r = (tv.text as NSString).range(of: what)
+        if r.location != NSNotFound { tv.selectedRange = NSRange(location: r.location, length: 0) }
+    }
+
+    /// `-script check`: the bar's edits, Return and Undo, done on the text
+    /// view as a user would; what came of each written to `editor-check.txt`
+    /// in the app's tmp, to read.
+    private func check(_ tv: UITextView) async {
+        var said: [String] = []
+        func select(_ what: String, offset: Int = 0, length: Int? = nil) {
+            let r = (tv.text as NSString).range(of: what)
+            tv.selectedRange = NSRange(location: r.location + offset, length: length ?? r.length)
+        }
+        /// As the keyboard types: the delegate asked first.
+        func type(_ t: String) {
+            let r = tv.selectedRange
+            if tv.delegate?.textView?(tv, shouldChangeTextIn: r, replacementText: t) ?? true {
+                tv.insertText(t)
+            }
+        }
+        func pause() async { try? await Task.sleep(for: .milliseconds(150)) }
+        func line(_ what: String) -> String {
+            (tv.text ?? "").components(separatedBy: "\n").first { $0.contains(what) } ?? "(gone)"
+        }
+        select("load")
+        editor.wrap(.bold)
+        await pause()
+        said.append("bold: " + line("load") + " | selected: " + (tv.text as NSString).substring(with: tv.selectedRange))
+        select("Tell the team", offset: 13, length: 0)
+        type("\n")
+        await pause()
+        type("Ring Linh")
+        await pause()
+        said.append("return: " + line("Ring Linh"))
+        type("\n")
+        type("\n")
+        said.append("empty item ends: [" + line("Ring Linh") + "] then [" + (tv.text as NSString).substring(with: (tv.text as NSString).lineRange(for: tv.selectedRange)).replacingOccurrences(of: "\n", with: "⏎") + "]")
+        select("Pull the image", offset: 0, length: 0)
+        editor.indent(out: false)
+        await pause()
+        said.append("indent: " + line("Pull the image"))
+        editor.undo()
+        await pause()
+        said.append("undo: " + line("Pull the image") + " | bold kept: " + line("load"))
+        select("Check the logs", offset: 0, length: 0)
+        editor.lines(.task)
+        await pause()
+        said.append("task: " + line("Check the logs"))
+        select("Deploying", offset: 0, length: 0)
+        editor.lines(.heading)
+        await pause()
+        said.append("heading: " + line("Deploying"))
+        editor.insertBlock("![](attachment:abc)")
+        await pause()
+        said.append("image after: " + (tv.text ?? "").components(separatedBy: "\n").prefix(2).joined(separator: " ⏎ "))
+        select("web-1 |", offset: 0, length: 0)
+        if let t = mdTableAt(text: tv.text, at: UInt32(tv.selectedRange.location)) {
+            var rows = t.rows
+            rows[0][1] = "2222"
+            rows.append(["db-replica", "5433", "database"])
+            editor.setTable(t, aligns: t.aligns, head: t.head, rows: rows)
+            await pause()
+            let lines = (tv.text ?? "").components(separatedBy: "\n").filter { $0.hasPrefix("|") }
+            said.append("table: " + lines.joined(separator: " ⏎ "))
+            editor.undo()
+            await pause()
+            said.append("table undone: " + ((tv.text ?? "").contains("db-replica") ? "no" : "yes"))
+        }
+        let boxes = markdownRuns(text: tv.text).filter { $0.role == .taskBox }
+        if let box = boxes.first {
+            let ns = { (tv.text ?? "") as NSString }
+            let lineOf = { ns().substring(with: ns().lineRange(for: NSRange(location: Int(box.start), length: 0))).trimmingCharacters(in: .newlines) }
+            let before = lineOf()
+            editor.toggleTask(box: Int(box.start))
+            await pause()
+            let ticked = lineOf()
+            editor.undo()
+            await pause()
+            said.append("tick: [" + before + "] -> [" + ticked + "] -> undo [" + lineOf() + "]")
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("editor-check.txt")
+        try? said.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+}
+
+enum MarkdownSample {
+    static let text = """
+    # Deploying web-1
+
+    Check **disk** and *load* first, ~~then reboot~~, with `df -h`. Docs: https://example.com/runbook_v2.
+
+    > [!WARNING]
+    > Restarting nginx drops open connections.
+
+    > [!TIP] Run it inside tmux.
+
+    1. Pull the image
+    2. Restart
+       - nginx
+       - the workers
+    3. Check the logs
+
+    - [x] Back up the database
+    - [ ] Tell the team
+
+    ![The dashboard](attachment:sample)
+
+    | Host | Port | Role |
+    |:--|--:|:-:|
+    | web-1 | 22 | front |
+    | db-primary | 5432 | database |
+
+    ```bash
+    sudo systemctl restart nginx
+    journalctl -u nginx --since "10 min ago"
+    ```
+
+    > A plain quote
+    > > and one inside it.
+
+    ---
+
+    Done.
+    """
+}
+#endif
 
 // MARK: Snippets
 
@@ -540,6 +746,10 @@ struct NoteEditor: View {
     @State private var problem: String?
     @State private var deleted = false
     @State private var confirmDelete = false
+    /// The Markdown editor's: its bar's image button, an image put in.
+    @StateObject private var editor = MarkdownEditorController()
+    /// A table being edited in its grid.
+    @State private var tabling: TableSheet?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -580,12 +790,16 @@ struct NoteEditor: View {
                 Spacer()
             } else if preview && markdown {
                 ScrollView {
-                    MarkdownView(text: text, insert: nil)
+                    MarkdownView(text: text, toggle: { at in
+                        if let ticked = toggleTask(text: text, at: at) { text = ticked }
+                    })
                         .padding(16)
                 }
+            } else if markdown {
+                MarkdownEditor(text: $text, controller: editor)
             } else {
                 TextEditor(text: $text)
-                    .font(.system(size: 15, design: markdown ? .default : .monospaced))
+                    .font(.system(size: 15, design: .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 12)
             }
@@ -636,7 +850,17 @@ struct NoteEditor: View {
         .sheet(isPresented: $choosingHosts) {
             HostsChooser(chosen: $hosts).environmentObject(app)
         }
+        .sheet(item: $tabling) { sheet in
+            TableEditor(original: sheet.table) { aligns, head, rows in
+                editor.setTable(sheet.table, aligns: aligns, head: head, rows: rows)
+            }
+        }
         .onAppear {
+            editor.onImage = { picking = true }
+            editor.onTable = { table in tabling = TableSheet(table: table) }
+            editor.imageFor = { source in
+                source.hasPrefix("attachment:") ? app.noteImage(String(source.dropFirst("attachment:".count))) : nil
+            }
             guard !loaded else { return }
             loaded = true
             id = note.id
@@ -673,7 +897,12 @@ struct NoteEditor: View {
         }
         do {
             guard let line = try app.core?.addNoteImage(bytes: jpeg) else { return }
-            text += (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + line + "\n"
+            if editor.textView != nil && !preview {
+                // Where the caret is, on a line of its own.
+                editor.insertBlock(line)
+            } else {
+                text += (text.isEmpty || text.hasSuffix("\n") ? "" : "\n") + line + "\n"
+            }
             problem = nil
         } catch {
             problem = "\(error)"
@@ -744,10 +973,14 @@ struct NoteReader: View {
                     .font(.system(size: 22, weight: .semibold))
                 if let text {
                     if note.markdown {
-                        MarkdownView(text: text) { code in
-                            session.paste(code)
-                            dismiss()
-                        }
+                        MarkdownView(
+                            text: text,
+                            insert: { code in
+                                session.paste(code)
+                                dismiss()
+                            },
+                            toggle: { at in tick(at, in: text) }
+                        )
                     } else {
                         Text(text).font(.system(size: 14, design: .monospaced)).textSelection(.enabled)
                     }
@@ -766,6 +999,18 @@ struct NoteReader: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if !note.sensitive { text = app.noteText(note.id) }
+        }
+    }
+
+    /// A task ticked here is saved at once: the note is not being edited.
+    private func tick(_ at: UInt64, in current: String) {
+        guard let ticked = toggleTask(text: current, at: at) else { return }
+        text = ticked
+        if case .failure(let e) = app.saveNote(
+            id: note.id, title: note.title, category: note.category, markdown: note.markdown,
+            hosts: note.hosts, sensitive: note.sensitive, text: ticked
+        ) {
+            app.error = "\(e)"
         }
     }
 }

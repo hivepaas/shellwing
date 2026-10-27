@@ -4264,8 +4264,62 @@ tc5fceb9b = 无法读取该图片。
 # For hosts
 t350fa483 = 适用主机
 
+# Bold
+t45768d96 = 粗体
+
+# Italic
+t8db0c08d = 斜体
+
+# Strikethrough
+t2504f1e4 = 删除线
+
+# Code
+t795db914 = 代码
+
+# Link
+t8e08e589 = 链接
+
+# Heading
+tfc3003b5 = 标题
+
+# Table
+td70ceb7f = 表格
+
+# Outdent
+ta6a77b16 = 减少缩进
+
+# Indent
+t5f8d60db = 增加缩进
+
+# Undo
+t71fd4acf = 撤销
+
+# Redo
+t7412e5e9 = 重做
+
+# Hide the keyboard
+t5cadc433 = 隐藏键盘
+
+# Not done
+t0f88a146 = 未完成
+
 # Image
 t590ca79a = 图片
+
+# Copied
+t8dc21305 = 已复制
+
+# Tip
+t1d97162a = 提示
+
+# Important
+tc93c9dc5 = 重要
+
+# Warning
+t37c4fc8f = 警告
+
+# Caution
+tec06ed06 = 注意
 
 # No sessions open
 t483ac645 = 没有打开的会话
@@ -4495,6 +4549,12 @@ t76c422df = 密码保存在这部手机的保险库中，绝不会存放在同�
 # shellwing did not start.
 td364ab30 = shellwing 未能启动。
 
+# Column {n}
+tb3578e13 = 第 { $n } 列
+
+# Row {n}
+tf0d5ffc7 = 第 { $n } 行
+
 # Load an environment
 tfd1fc961 = 加载环境
 
@@ -4546,9 +4606,6 @@ ta4995035 = 下
 # Right
 t1e9e9f85 = 右
 
-# Hide the keyboard
-t5cadc433 = 隐藏键盘
-
 # Show the keyboard
 t6884a1b4 = 显示键盘
 
@@ -4575,9 +4632,6 @@ t1b42e91e = { $host } 上已有 { $name }。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 还没有密钥。请生成一个，然后从会话菜单中将其安装到主机上：此后无需密码即可用它登录。
-
-# Copied
-t8dc21305 = 已复制
 
 # Share
 t4f856dd8 = 共享

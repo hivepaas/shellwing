@@ -29,6 +29,10 @@ shellwing-term.workspace = true
 shellwing-i18n.workspace = true
 shellwing-ssh.workspace = true
 shellwing-vault.workspace = true
+# A note's Markdown read for the phone (GFM: tables, tasks, alerts).
+pulldown-cmark = { version = "0.13", default-features = false }
+# What counts as an alert, an ordered marker, a bare link: the desktop's.
+zorite-markdown = { version = "=0.10.0", default-features = false }
 tokio.workspace = true
 async-channel.workspace = true
 zeroize = "1"

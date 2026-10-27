@@ -4264,8 +4264,62 @@ tc5fceb9b = その画像は読み込めません。
 # For hosts
 t350fa483 = 対象ホスト
 
+# Bold
+t45768d96 = 太字
+
+# Italic
+t8db0c08d = 斜体
+
+# Strikethrough
+t2504f1e4 = 取り消し線
+
+# Code
+t795db914 = コード
+
+# Link
+t8e08e589 = リンク
+
+# Heading
+tfc3003b5 = 見出し
+
+# Table
+td70ceb7f = 表
+
+# Outdent
+ta6a77b16 = インデントを減らす
+
+# Indent
+t5f8d60db = インデントを増やす
+
+# Undo
+t71fd4acf = 取り消す
+
+# Redo
+t7412e5e9 = やり直す
+
+# Hide the keyboard
+t5cadc433 = キーボードを隠す
+
+# Not done
+t0f88a146 = 未完了
+
 # Image
 t590ca79a = 画像
+
+# Copied
+t8dc21305 = コピーしました
+
+# Tip
+t1d97162a = ヒント
+
+# Important
+tc93c9dc5 = 重要
+
+# Warning
+t37c4fc8f = 警告
+
+# Caution
+tec06ed06 = 注意
 
 # No sessions open
 t483ac645 = 開いているセッションはありません
@@ -4495,6 +4549,12 @@ t76c422df = パスワードはこの iPhone の保管庫に保存され、同期
 # shellwing did not start.
 td364ab30 = shellwing を起動できませんでした。
 
+# Column {n}
+tb3578e13 = { $n } 列目
+
+# Row {n}
+tf0d5ffc7 = { $n } 行目
+
 # Load an environment
 tfd1fc961 = 環境を読み込む
 
@@ -4546,9 +4606,6 @@ ta4995035 = 下
 # Right
 t1e9e9f85 = 右
 
-# Hide the keyboard
-t5cadc433 = キーボードを隠す
-
 # Show the keyboard
 t6884a1b4 = キーボードを表示
 
@@ -4575,9 +4632,6 @@ t1b42e91e = { $name } はすでに { $host } に登録されています。
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = 鍵はまだありません。鍵を生成し、セッションのメニューからホストにインストールすると、以降はパスワードなしでサインインできます。
-
-# Copied
-t8dc21305 = コピーしました
 
 # Share
 t4f856dd8 = 共有

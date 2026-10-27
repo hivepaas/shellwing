@@ -4264,8 +4264,62 @@ tc5fceb9b = Không đọc được ảnh đó.
 # For hosts
 t350fa483 = Cho máy chủ
 
+# Bold
+t45768d96 = Đậm
+
+# Italic
+t8db0c08d = Nghiêng
+
+# Strikethrough
+t2504f1e4 = Gạch ngang
+
+# Code
+t795db914 = Mã
+
+# Link
+t8e08e589 = Liên kết
+
+# Heading
+tfc3003b5 = Tiêu đề
+
+# Table
+td70ceb7f = Bảng
+
+# Outdent
+ta6a77b16 = Giảm thụt lề
+
+# Indent
+t5f8d60db = Tăng thụt lề
+
+# Undo
+t71fd4acf = Hoàn tác
+
+# Redo
+t7412e5e9 = Làm lại
+
+# Hide the keyboard
+t5cadc433 = Ẩn bàn phím
+
+# Not done
+t0f88a146 = Chưa xong
+
 # Image
 t590ca79a = Ảnh
+
+# Copied
+t8dc21305 = Đã sao chép
+
+# Tip
+t1d97162a = Mẹo
+
+# Important
+tc93c9dc5 = Quan trọng
+
+# Warning
+t37c4fc8f = Cảnh báo
+
+# Caution
+tec06ed06 = Thận trọng
 
 # No sessions open
 t483ac645 = Chưa có phiên nào đang mở
@@ -4495,6 +4549,12 @@ t76c422df = Mật khẩu được giữ trong kho của điện thoại này, kh
 # shellwing did not start.
 td364ab30 = shellwing không khởi động được.
 
+# Column {n}
+tb3578e13 = Cột { $n }
+
+# Row {n}
+tf0d5ffc7 = Hàng { $n }
+
 # Load an environment
 tfd1fc961 = Nạp một bộ biến
 
@@ -4546,9 +4606,6 @@ ta4995035 = Xuống
 # Right
 t1e9e9f85 = Phải
 
-# Hide the keyboard
-t5cadc433 = Ẩn bàn phím
-
 # Show the keyboard
 t6884a1b4 = Hiện bàn phím
 
@@ -4575,9 +4632,6 @@ t1b42e91e = { $name } đã có sẵn trên { $host }.
 
 # No keys yet. Make one, then install it on a host from a session's menu: it signs in from then on, without a password.
 td823bccd = Chưa có khoá nào. Hãy tạo một khoá, rồi cài lên máy chủ từ menu của phiên: từ đó sẽ đăng nhập bằng khoá, không cần mật khẩu.
-
-# Copied
-t8dc21305 = Đã sao chép
 
 # Share
 t4f856dd8 = Chia sẻ

@@ -6355,6 +6355,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pulldown-cmark"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "278e9268c93b9e498a2da46c34d90ba93a3255eb99009646398f34bc73ab36eb"
+dependencies = [
+ "bitflags 2.13.2",
+ "memchr",
+ "unicase",
+]
+
+[[package]]
 name = "pulp"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7994,6 +8005,7 @@ name = "shellwing-mobile"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "pulldown-cmark",
  "shellwing-config",
  "shellwing-core",
  "shellwing-i18n",
@@ -8005,6 +8017,7 @@ dependencies = [
  "tokio",
  "uniffi",
  "zeroize",
+ "zorite-markdown",
 ]
 
 [[package]]
