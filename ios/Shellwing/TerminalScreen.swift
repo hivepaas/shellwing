@@ -309,10 +309,10 @@ struct TerminalScreen: View {
                     model.scrollToBottom()
                 }
                 if model.status == .connected {
+                    Button(tr("Files (SFTP)…"), systemImage: "folder") { browsing = true }
                     Button(tr("Snippets…"), systemImage: "chevron.left.forwardslash.chevron.right") { pickingSnippet = true }
                     Button(tr("Load an environment…"), systemImage: "list.bullet.rectangle") { pickingEnv = true }
                     Button(tr("Notes…"), systemImage: "note.text") { reading = true }
-                    Button(tr("Files…"), systemImage: "folder") { browsing = true }
                     Button(tr("Place a config file…"), systemImage: "doc.badge.gearshape") { placing = true }
                     Button(tr("Install a key on this host…"), systemImage: "key") { installing = true }
                 }
