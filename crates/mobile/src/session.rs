@@ -3,9 +3,11 @@
 
 use shellwing_i18n::tr;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::{Duration, Instant};
 
+use shellwing_config::{OnDisconnect, Store};
 use shellwing_core::envs::{self, Envs, LoadedEnv};
-use shellwing_core::session::{Session, Status};
+use shellwing_core::session::{RETRY_BACKOFF_SECS, Session, Status};
 use shellwing_ssh::Learned;
 use shellwing_ssh::keys::{self, Installed};
 use shellwing_term::{Event, Frame, Mods, NamedKey, Rgb};
@@ -127,6 +129,12 @@ pub struct MobileSession {
     pub(crate) sftp: tokio::sync::Mutex<Option<shellwing_ssh::Sftp>>,
     /// The app's runtime: what Swift awaits runs there (`on_runtime`).
     pub(crate) rt: tokio::runtime::Handle,
+    /// The configuration: what a lost connection does (`[terminal]
+    /// on_disconnect`, the desktop's setting).
+    store: Store,
+    /// Reconnecting by itself, after a connection that worked was lost.
+    retry: Mutex<Retry>,
+    listener: Arc<dyn SessionListener>,
     /// Config files placed on the host until the session ends.
     placed: Mutex<Vec<shellwing_core::placing::Placed>>,
 }
@@ -139,10 +147,17 @@ pub struct LoadedEnvRow {
 }
 
 impl MobileSession {
+    /// The size the shell on the host is given.
+    #[cfg(test)]
+    pub(crate) fn shell_size(&self) -> Option<(u32, u32)> {
+        lock(&self.session).writer.size()
+    }
+
     pub(crate) fn new(
         session: Session,
         listener: Arc<dyn SessionListener>,
         rt: &tokio::runtime::Handle,
+        store: Store,
     ) -> Arc<Self> {
         let (wake, events, learned) = (
             session.wake.clone(),
@@ -159,9 +174,14 @@ impl MobileSession {
             sftp: tokio::sync::Mutex::new(None),
             placed: Mutex::default(),
             rt: rt.clone(),
+            store,
+            retry: Mutex::default(),
+            listener: listener.clone(),
         });
         let weak: Weak<MobileSession> = Arc::downgrade(&me);
         rt.spawn(async move {
+            // The last status change acted on: each is, once.
+            let mut seen = 0;
             loop {
                 tokio::select! {
                     woke = wake.recv() => {
@@ -194,9 +214,13 @@ impl MobileSession {
                         Err(_) => break,
                     },
                 }
-                if weak.strong_count() == 0 {
-                    break;
+                let Some(me) = weak.upgrade() else { break };
+                let (n, status) = lock(&me.session).status_change();
+                if n != seen {
+                    seen = n;
+                    me.status_moved(status);
                 }
+                drop(me);
                 listener.changed();
             }
         });
@@ -271,11 +295,13 @@ impl MobileSession {
         lock(&self.session).term.key(named, mods);
     }
 
-    /// The terminal's size in cells, and a cell's in pixels.
+    /// The terminal's size in cells, and a cell's in pixels: the grid's,
+    /// and the shell's on the host, as the desktop's pane does.
     pub fn resize(&self, cols: u16, rows: u16, cell_w: u32, cell_h: u32) {
-        lock(&self.session)
-            .term
-            .resize(cols.max(1), rows.max(1), cell_w, cell_h);
+        let (cols, rows) = (cols.max(1), rows.max(1));
+        let session = lock(&self.session);
+        session.term.resize(cols, rows, cell_w, cell_h);
+        session.writer.resize(u32::from(cols), u32::from(rows));
     }
 
     /// Scrolls the history by `lines` (up: positive), as a wheel does.
@@ -289,9 +315,71 @@ impl MobileSession {
         lock(&self.session).term.scroll_to_bottom();
     }
 
-    /// Connects again, after it was lost or closed.
+    /// Connects again, after it was lost or closed; trying by itself starts
+    /// over.
     pub fn reconnect(&self) {
+        self.start_retrying_over();
         lock(&self.session).reconnect();
+    }
+
+    /// While it is going to reconnect by itself: in how long, and which
+    /// try of how many that is.
+    pub fn retrying(&self) -> Option<Retrying> {
+        let r = lock(&self.retry);
+        let due = r.due?;
+        Some(Retrying {
+            seconds: due
+                .saturating_duration_since(Instant::now())
+                .as_secs_f64()
+                .ceil() as u32,
+            attempt: r.tries as u32,
+            attempts: RETRY_BACKOFF_SECS.len() as u32,
+        })
+    }
+
+    /// Stops reconnecting by itself, coming back to the app included, until
+    /// Connect again.
+    pub fn stop_retrying(&self) {
+        let mut r = lock(&self.retry);
+        r.plan += 1;
+        r.due = None;
+        r.tries = RETRY_BACKOFF_SECS.len();
+        r.stopped = true;
+    }
+
+    /// The app is back from the background, or the network changed. A phone
+    /// asleep does not hear its connections die, so one that looks connected
+    /// is asked whether it answers; one that does not is shown lost. With
+    /// the setting Reconnect, a lost one is also made again at once, unless
+    /// trying by itself was stopped.
+    pub fn resumed(self: Arc<Self>) {
+        let by_itself =
+            self.on_disconnect() == OnDisconnect::Reconnect && !lock(&self.retry).stopped;
+        let (status, ever) = {
+            let s = lock(&self.session);
+            (s.status(), s.ever_connected())
+        };
+        match status {
+            Status::Lost if ever && by_itself => self.reconnect(),
+            Status::Connected => {
+                let Some(answer) = lock(&self.session).remote().ping() else {
+                    return;
+                };
+                let me = self.clone();
+                self.rt.spawn(async move {
+                    if answer.await.unwrap_or(false) {
+                        return;
+                    }
+                    if by_itself {
+                        me.start_retrying_over();
+                        lock(&me.session).reconnect_unanswered();
+                    } else {
+                        lock(&me.session).drop_unanswered();
+                    }
+                });
+            }
+            _ => {}
+        }
     }
 
     /// Something to say once (an environment loaded, a load given up); taken.
@@ -371,7 +459,105 @@ impl MobileSession {
     }
 }
 
+/// A lost connection about to be tried again: in `seconds`, try `attempt`
+/// of `attempts`.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct Retrying {
+    pub seconds: u32,
+    pub attempt: u32,
+    pub attempts: u32,
+}
+
+/// Reconnecting by itself: tries made since the last connection, when the
+/// next is due, which plan is current (one called off is not made), and
+/// whether the user stopped it.
+#[derive(Default)]
+struct Retry {
+    tries: usize,
+    due: Option<Instant>,
+    plan: u64,
+    stopped: bool,
+}
+
+/// The wait before try `tries` (from 0) at reconnecting; None: no more
+/// tries, the user connects again.
+fn retry_wait(tries: usize) -> Option<Duration> {
+    RETRY_BACKOFF_SECS
+        .get(tries)
+        .map(|s| Duration::from_secs(*s))
+}
+
 impl MobileSession {
+    fn on_disconnect(&self) -> OnDisconnect {
+        self.store
+            .settings()
+            .map(|s| s.terminal.on_disconnect)
+            .unwrap_or_default()
+    }
+
+    /// The connection's status moved: connected, trying starts over; lost,
+    /// after it had worked, it is tried again, waiting longer each time, as
+    /// the desktop does.
+    fn status_moved(self: &Arc<Self>, status: Status) {
+        match status {
+            Status::Connected => self.start_retrying_over(),
+            Status::Lost
+                if self.on_disconnect() == OnDisconnect::Reconnect
+                    && lock(&self.session).ever_connected()
+                    && lock(&self.retry).due.is_none() =>
+            {
+                self.plan_retry();
+            }
+            _ => {}
+        }
+    }
+
+    /// Tries made start from none, one planned is called off, and a stop
+    /// is forgotten.
+    fn start_retrying_over(&self) {
+        let mut r = lock(&self.retry);
+        r.tries = 0;
+        r.due = None;
+        r.plan += 1;
+        r.stopped = false;
+    }
+
+    /// Reconnects after the next wait, saying each second how long is left.
+    fn plan_retry(self: &Arc<Self>) {
+        let (plan, due) = {
+            let mut r = lock(&self.retry);
+            let Some(wait) = retry_wait(r.tries) else {
+                r.due = None;
+                return;
+            };
+            r.tries += 1;
+            r.plan += 1;
+            let due = Instant::now() + wait;
+            r.due = Some(due);
+            (r.plan, due)
+        };
+        let weak = Arc::downgrade(self);
+        self.rt.spawn(async move {
+            loop {
+                let wait = due
+                    .saturating_duration_since(Instant::now())
+                    .min(Duration::from_secs(1));
+                tokio::time::sleep(wait).await;
+                let Some(me) = weak.upgrade() else { return };
+                if lock(&me.retry).plan != plan {
+                    return;
+                }
+                if Instant::now() >= due {
+                    lock(&me.retry).due = None;
+                    lock(&me.session).reconnect();
+                    me.listener.changed();
+                    return;
+                }
+                me.listener.changed();
+            }
+        });
+    }
+
     /// Why nothing can be typed into the shell now: not connected, or a
     /// full-screen program has the keys.
     fn ready(&self) -> Result<(), MobileError> {
@@ -549,6 +735,13 @@ fn frame_data(f: &Frame) -> FrameData {
 mod tests {
     use super::*;
     use shellwing_term::{Found, Row, Run};
+
+    #[test]
+    fn a_lost_connection_is_tried_again_waiting_longer_then_left() {
+        let waits: Vec<u64> = (0..).map_while(retry_wait).map(|d| d.as_secs()).collect();
+        assert_eq!(waits, [1, 2, 4, 8, 16, 30], "the desktop's");
+        assert!(retry_wait(6).is_none(), "then the user connects again");
+    }
 
     fn run(len: usize, col: u16, cells: u16, fg: Rgb) -> Run {
         Run {

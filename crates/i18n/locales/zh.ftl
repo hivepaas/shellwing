@@ -4135,6 +4135,12 @@ t31e98c98 = 直接连接到主机。跳板会先经由另一台主机（堡垒�
 # Favorite: listed first
 t7bd2a9c8 = 收藏：排在最前
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = 在主机上保留 shell（tmux）
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = 使用 tmux 时，重新连接会回到同一个 shell，其中的程序仍在运行：手机在后台可能会断开连接。主机上需要有 tmux；没有它，shell 照常工作。
+
 # Host keys
 t2f5a3205 = 主机密钥
 
@@ -4383,6 +4389,9 @@ t25db363e = 连接
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = 主机在其编辑器中的设置优先。已更改的密钥始终会被拒绝：请在“已知主机”中忘记该主机，以接受其新密钥。
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS 会在应用离开屏幕后不久将其停止，连接也随之断开。“重新连接”会自动恢复断开的连接，每次等待更久，你回来时立即连接；保留在 tmux 中的主机 shell（在主机编辑器中设置）会保持原样。
 
 # SSH keys
 t7e7cad2b = SSH 密钥

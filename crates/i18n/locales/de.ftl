@@ -4274,6 +4274,12 @@ t31e98c98 = Direkt zum Host. Über einen Jump-Host geht es zuerst über einen an
 # Favorite: listed first
 t7bd2a9c8 = Favorit: steht oben
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = Shell auf dem Host behalten (tmux)
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = In tmux findet eine neue Verbindung dieselbe Shell wieder, ihre Programme laufen weiter: Im Hintergrund kann das Telefon die Verbindung verlieren. tmux muss auf dem Host sein; ohne tmux bleibt die Shell wie gewohnt.
+
 # Host keys
 t2f5a3205 = Host-Schlüssel
 
@@ -4524,6 +4530,9 @@ t25db363e = Verbindungen
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = Die eigene Einstellung eines Hosts in seinem Editor hat Vorrang. Ein geänderter Schlüssel wird immer abgelehnt: Vergiss den Host unter Bekannte Hosts, um seinen neuen Schlüssel zu akzeptieren.
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS beendet eine App kurz nachdem sie den Bildschirm verlässt, und mit ihr ihre Verbindungen. „Neu verbinden“ stellt eine verlorene Verbindung von selbst wieder her, wartet dabei jedes Mal länger und verbindet sofort, wenn du zurückkommst; die Shell eines Hosts, die in tmux bleibt (im Editor des Hosts), ist so da, wie sie war.
 
 # SSH keys
 t7e7cad2b = SSH-Schlüssel

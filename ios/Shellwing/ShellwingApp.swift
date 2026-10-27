@@ -52,8 +52,12 @@ struct ShellwingApp: App {
             .preferredColorScheme(.dark)
             .onChange(of: phase) { _, now in
                 switch now {
-                case .background: lock.wentAway()
-                case .active: lock.cameBack()
+                case .background:
+                    lock.wentAway()
+                    app.wentAway()
+                case .active:
+                    lock.cameBack()
+                    app.cameBack()
                 default: break
                 }
             }

@@ -261,7 +261,7 @@ pub enum PaneCommand {
 }
 
 /// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
-const BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
+const BACKOFF_SECS: [u64; 6] = shellwing_core::session::RETRY_BACKOFF_SECS;
 
 /// The modifier that turns a click into "open link": Cmd on macOS, Ctrl elsewhere.
 fn link_mod(m: &Modifiers) -> bool {

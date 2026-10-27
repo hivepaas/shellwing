@@ -114,11 +114,20 @@ struct SettingsView: View {
                             Text(s == 0 ? tr("None") : trN(Int(s), "Every {n} second", "Every {n} seconds")).tag(s)
                         }
                     }
+                    Picker(tr("When a connection drops"), selection: Binding(
+                        get: { settings?.onDisconnect ?? .reconnect },
+                        set: { v in change { try $0.setOnDisconnect(way: v) } }
+                    )) {
+                        Text(tr("Reconnect")).tag(OnDisconnectWay.reconnect)
+                        Text(tr("Ask")).tag(OnDisconnectWay.ask)
+                        Text(tr("Close")).tag(OnDisconnectWay.close)
+                    }
                     NavigationLink(tr("Known hosts")) { KnownHostsView() }
                 } header: {
                     SectionHeading(text: tr("Connections"))
                 } footer: {
-                    Text(tr("A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one."))
+                    Text(tr("A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.")
+                        + "\n\n" + tr("iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was."))
                         .foregroundStyle(Dusk.muted)
                 }
                 .listRowBackground(Dusk.surface)

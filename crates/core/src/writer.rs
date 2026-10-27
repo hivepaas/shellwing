@@ -88,6 +88,11 @@ impl Writer {
         }
     }
 
+    /// The last terminal size, if one was given yet.
+    pub fn size(&self) -> Option<(u32, u32)> {
+        self.state.lock().ok().and_then(|st| st.size)
+    }
+
     /// A connection starts: what is typed from now on is kept for its session.
     pub fn connecting(&self) {
         if let Ok(mut st) = self.state.lock() {

@@ -4135,6 +4135,12 @@ t31e98c98 = ホストに直接接続します。踏み台を追加すると、�
 # Favorite: listed first
 t7bd2a9c8 = お気に入り：先頭に表示
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = シェルをホストに残す（tmux）
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = tmux では、つなぎ直しても同じシェルに戻り、プログラムも動いたままです。電話はバックグラウンドで接続を失うことがあります。ホストに tmux が必要です。なければ、シェルは通常どおりです。
+
 # Host keys
 t2f5a3205 = ホスト鍵
 
@@ -4383,6 +4389,9 @@ t25db363e = 接続
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = ホストのエディタでの個別設定が優先されます。変更された鍵は常に拒否されます。新しい鍵を受け入れるには、既知のホストでそのホストを消去してください。
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS はアプリが画面から離れるとすぐに止め、その接続も切れます。「再接続」は切れた接続を自動でつなぎ直し、そのたびに待ち時間を延ばし、戻ったときはすぐにつなぎます。tmux に残したホストのシェル（ホストのエディタで設定）は、そのままの状態で見つかります。
 
 # SSH keys
 t7e7cad2b = SSH 鍵

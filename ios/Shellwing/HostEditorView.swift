@@ -27,6 +27,11 @@ struct HostEditorView: View {
         _keepalive = State(initialValue: edit.keepalive.map(String.init) ?? "")
     }
 
+    /// The shell kept on the host: tmux's session `shellwing`, made or
+    /// joined after each connect (the host's run command, so the desktop
+    /// joins it too); nothing where tmux is not.
+    static let tmux = "command -v tmux >/dev/null && tmux new -A -s shellwing"
+
     /// A blank host, for +.
     static func blank() -> HostEdit {
         HostEdit(
@@ -299,6 +304,10 @@ struct HostEditorView: View {
                     Text(themeName).foregroundStyle(Dusk.muted)
                 }
             }
+            Toggle(tr("Keep the shell on the host (tmux)"), isOn: Binding(
+                get: { edit.run == Self.tmux },
+                set: { edit.run = $0 ? Self.tmux : nil }
+            ))
             VStack(alignment: .leading, spacing: 6) {
                 Text(tr("Run after connecting"))
                 TextField("cd ~/apps && ls", text: text($edit.run))
@@ -306,6 +315,9 @@ struct HostEditorView: View {
             }
         } header: {
             SectionHeading(text: tr("Terminal"))
+        } footer: {
+            Text(tr("In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual."))
+                .foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
     }

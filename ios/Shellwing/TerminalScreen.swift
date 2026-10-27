@@ -26,9 +26,11 @@ struct TerminalScreen: View {
                     VStack(spacing: 0) {
                         if let said { note(said) }
                         if let offer = model.offer { offerBar(offer) }
-                        banner
                     }
                 }
+            // Below the terminal, not over it: its last lines say why the
+            // connection ended or the last try failed.
+            banner
             KeysRow(model: model, typing: $typing) { pickingSnippet = true }
         }
         .background(Dusk.chrome)
@@ -86,6 +88,13 @@ struct TerminalScreen: View {
             if now == .connected, UserDefaults.standard.string(forKey: "script") == "place" { Task { await placeCheck() } }
         }
         #endif
+        // After `exit`, with the setting Close: the session closes.
+        .onChange(of: model.status) { _, now in
+            if now == .closed, app.onDisconnect == .close {
+                app.close(model)
+                dismiss()
+            }
+        }
         .onChange(of: model.notice) { _, n in
             if let n {
                 show(n)
@@ -328,7 +337,29 @@ struct TerminalScreen: View {
     /// How the connection ended, and a way to connect again.
     @ViewBuilder
     private var banner: some View {
-        if model.status == .lost || model.status == .closed || model.status == .failed {
+        if let r = model.retrying, model.status == .lost {
+            // Trying again by itself: when, and a way to now, or not at all.
+            HStack(spacing: 10) {
+                Text(tr("Connection lost. Trying again in {seconds} s (attempt {attempt} of {attempts}).", [
+                    "seconds": "\(r.seconds)", "attempt": "\(r.attempt)", "attempts": "\(r.attempts)",
+                ]))
+                .font(.system(size: 13))
+                .foregroundStyle(Dusk.soft)
+                .lineLimit(2)
+                Spacer(minLength: 8)
+                Button(tr("Stop")) { model.stopRetrying() }
+                    .font(.system(size: 14))
+                    .foregroundStyle(Dusk.soft)
+                Button(tr("Connect again")) { model.reconnect() }
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(Dusk.accent, in: Capsule())
+                    .foregroundStyle(Dusk.onAccent)
+            }
+            .padding(12)
+            .background(Dusk.field.opacity(0.95))
+        } else if model.status == .lost || model.status == .closed || model.status == .failed {
             HStack(spacing: 10) {
                 Text(model.ended ?? model.status.said)
                     .font(.system(size: 13))

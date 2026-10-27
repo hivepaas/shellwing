@@ -4135,6 +4135,12 @@ t31e98c98 = 호스트에 바로 연결합니다. 경유 호스트를 두면 먼�
 # Favorite: listed first
 t7bd2a9c8 = 즐겨찾기: 맨 위에 표시
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = 호스트에 셸 유지 (tmux)
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = tmux에서는 다시 연결해도 같은 셸로 돌아가며, 실행 중인 프로그램도 그대로입니다. 휴대폰은 백그라운드에서 연결을 잃을 수 있습니다. 호스트에 tmux가 있어야 하며, 없으면 셸은 평소와 같습니다.
+
 # Host keys
 t2f5a3205 = 호스트 키
 
@@ -4383,6 +4389,9 @@ t25db363e = 연결
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = 호스트 편집기에서 지정한 값이 우선합니다. 변경된 키는 항상 거부됩니다. 새 키를 수락하려면 알려진 호스트에서 해당 호스트를 삭제하세요.
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS는 앱이 화면에서 벗어나면 곧 멈추고, 연결도 함께 끊깁니다. 다시 연결을 선택하면 끊긴 연결을 스스로 다시 맺으며, 매번 조금 더 기다렸다가, 돌아오면 바로 연결합니다. tmux에 유지한 호스트의 셸(호스트 편집기에서 설정)은 그대로 남아 있습니다.
 
 # SSH keys
 t7e7cad2b = SSH 키

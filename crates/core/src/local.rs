@@ -168,6 +168,10 @@ pub fn start(
                     Input::Exec { reply, .. } => {
                         let _ = reply.send(Err(Error::Exec(NOT_SSH.into())));
                     }
+                    // A shell here is always here.
+                    Input::Ping { reply } => {
+                        let _ = reply.send(true);
+                    }
                 }
             }
             // The pane is gone, or the shell ended: stop what is left.

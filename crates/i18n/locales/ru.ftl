@@ -4378,6 +4378,12 @@ t31e98c98 = Напрямую к хосту. С промежуточным хос
 # Favorite: listed first
 t7bd2a9c8 = Избранное: первым в списке
 
+# Keep the shell on the host (tmux)
+ta3e2fb16 = Сохранять оболочку на хосте (tmux)
+
+# In tmux, a connection made again finds the same shell, its programs still running: the phone may lose it in the background. tmux has to be on the host; without it, the shell is as usual.
+t6b4d9cba = В tmux новое подключение находит ту же оболочку, её программы продолжают работать: в фоне телефон может потерять соединение. На хосте должен быть tmux; без него оболочка работает как обычно.
+
 # Host keys
 t2f5a3205 = Ключи хостов
 
@@ -4632,6 +4638,9 @@ t25db363e = Подключения
 
 # A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one.
 t25360db5 = Настройка хоста в его редакторе важнее. Изменённый ключ всегда отклоняется: чтобы принять новый, забудьте хост в разделе «Известные хосты».
+
+# iOS stops an app soon after it leaves the screen, and its connections with it. Reconnect makes a lost one again by itself, waiting longer each time, and at once when you come back; a host's shell kept in tmux (in its editor) is found as it was.
+t8012e2b7 = iOS останавливает приложение вскоре после того, как оно уходит с экрана, а вместе с ним и его соединения. «Переподключиться» само восстанавливает потерянное соединение, каждый раз выжидая дольше, и сразу, когда вы возвращаетесь; оболочка хоста, сохраняемая в tmux (в редакторе хоста), находится такой, какой была.
 
 # SSH keys
 t7e7cad2b = Ключи SSH
