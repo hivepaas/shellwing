@@ -12,7 +12,7 @@ use shellwing_core::placing::{self, Placed, There};
 use shellwing_core::snippets;
 use shellwing_vault::ConfigFile;
 
-use crate::{MobileError, MobileSession, Shellwing};
+use crate::{MobileError, MobileSession, Shellwing, on_runtime};
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ConfigFileRow {
@@ -149,6 +149,136 @@ impl Shellwing {
 
     /// What is at `path` on `session`'s host, for config file `id`.
     pub async fn look_to_place(
+        self: Arc<Self>,
+        session: Arc<MobileSession>,
+        id: String,
+        path: String,
+    ) -> Result<Looked, MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            self.look_to_place_now(session, id, path).await
+        })
+        .await
+    }
+
+    /// Places config file `id` at `full` (as [`Self::look_to_place`] said it)
+    /// on `session`'s host, the way `how` says.
+    pub async fn place(
+        self: Arc<Self>,
+        session: Arc<MobileSession>,
+        id: String,
+        full: String,
+        how: PlaceHow,
+    ) -> Result<(), MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(
+            &rt,
+            async move { self.place_now(session, id, full, how).await },
+        )
+        .await
+    }
+
+    /// Leaves the file placed at `path` (None: all) on `session`'s host for
+    /// good: what it set aside becomes its backup.
+    pub async fn keep_placed(
+        self: Arc<Self>,
+        session: Arc<MobileSession>,
+        path: Option<String>,
+    ) -> Result<(), MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(
+            &rt,
+            async move { self.keep_placed_now(session, path).await },
+        )
+        .await
+    }
+
+    /// Takes the file placed at `path` (None: all) away from `session`'s
+    /// host, and puts back what it set aside.
+    pub async fn remove_placed(
+        self: Arc<Self>,
+        session: Arc<MobileSession>,
+        path: Option<String>,
+    ) -> Result<(), MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(
+            &rt,
+            async move { self.remove_placed_now(session, path).await },
+        )
+        .await
+    }
+
+    /// Files left on `session`'s host from before (the app stopped before it
+    /// could take them away): taken away if unchanged, else left. Says what
+    /// it did, if anything.
+    pub async fn tidy_placed(self: Arc<Self>, session: Arc<MobileSession>) -> Option<String> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move { Ok(self.tidy_placed_now(session).await) })
+            .await
+            .ok()
+            .flatten()
+    }
+
+    /// Keeps the file at `path` on `session`'s host in the vault, as a
+    /// config file for every host. Returns its id.
+    pub async fn keep_host_file(
+        self: Arc<Self>,
+        session: Arc<MobileSession>,
+        path: String,
+    ) -> Result<String, MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(
+            &rt,
+            async move { self.keep_host_file_now(session, path).await },
+        )
+        .await
+    }
+}
+
+#[uniffi::export]
+impl MobileSession {
+    /// The config files placed on the host until the session ends.
+    pub fn placed(&self) -> Vec<PlacedRow> {
+        self.placed_now()
+            .into_iter()
+            .map(|p| PlacedRow {
+                name: p.name,
+                path: p.path,
+            })
+            .collect()
+    }
+}
+
+impl Shellwing {
+    fn content(&self, id: &str) -> Result<zeroize::Zeroizing<Vec<u8>>, MobileError> {
+        self.open_vault()?
+            .config_file_content(id)
+            .map_err(MobileError::of)?
+            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))
+    }
+
+    /// Notes a file placed until its session ends, to take away later if the
+    /// session cannot.
+    fn note_placed(&self, host: &str, p: &Placed) {
+        let mut all = self.store.placed();
+        all.retain(|x| !(x.host == host && x.path == p.path));
+        all.push(p.kept(host));
+        let _ = self.store.save_placed(&all);
+    }
+
+    fn unnote_placed(&self, host: &str, paths: &[String]) {
+        let mut all = self.store.placed();
+        let before = all.len();
+        all.retain(|x| !(x.host == host && paths.contains(&x.path)));
+        if all.len() != before {
+            let _ = self.store.save_placed(&all);
+        }
+    }
+}
+
+/// What the async calls above do, on the app's runtime.
+impl Shellwing {
+    async fn look_to_place_now(
         &self,
         session: Arc<MobileSession>,
         id: String,
@@ -171,9 +301,7 @@ impl Shellwing {
         })
     }
 
-    /// Places config file `id` at `full` (as [`Self::look_to_place`] said it)
-    /// on `session`'s host, the way `how` says.
-    pub async fn place(
+    async fn place_now(
         &self,
         session: Arc<MobileSession>,
         id: String,
@@ -218,9 +346,7 @@ impl Shellwing {
         Ok(())
     }
 
-    /// Leaves the file placed at `path` (None: all) on `session`'s host for
-    /// good: what it set aside becomes its backup.
-    pub async fn keep_placed(
+    async fn keep_placed_now(
         &self,
         session: Arc<MobileSession>,
         path: Option<String>,
@@ -239,9 +365,7 @@ impl Shellwing {
         Ok(())
     }
 
-    /// Takes the file placed at `path` (None: all) away from `session`'s
-    /// host, and puts back what it set aside.
-    pub async fn remove_placed(
+    async fn remove_placed_now(
         &self,
         session: Arc<MobileSession>,
         path: Option<String>,
@@ -260,10 +384,7 @@ impl Shellwing {
         Ok(())
     }
 
-    /// Files left on `session`'s host from before (the app stopped before it
-    /// could take them away): taken away if unchanged, else left. Says what
-    /// it did, if anything.
-    pub async fn tidy_placed(&self, session: Arc<MobileSession>) -> Option<String> {
+    async fn tidy_placed_now(&self, session: Arc<MobileSession>) -> Option<String> {
         let spec = session.spec();
         let held: Vec<String> = session.placed_now().into_iter().map(|p| p.path).collect();
         let left: Vec<_> = self
@@ -303,9 +424,7 @@ impl Shellwing {
         (!said.is_empty()).then(|| said.join(" "))
     }
 
-    /// Keeps the file at `path` on `session`'s host in the vault, as a
-    /// config file for every host. Returns its id.
-    pub async fn keep_host_file(
+    async fn keep_host_file_now(
         &self,
         session: Arc<MobileSession>,
         path: String,
@@ -334,46 +453,5 @@ impl Shellwing {
         self.open_vault()?
             .save_config_file(&f, Some(&bytes))
             .map_err(|e| MobileError::Failed(shellwing_core::environment::said_error(&e)))
-    }
-}
-
-#[uniffi::export]
-impl MobileSession {
-    /// The config files placed on the host until the session ends.
-    pub fn placed(&self) -> Vec<PlacedRow> {
-        self.placed_now()
-            .into_iter()
-            .map(|p| PlacedRow {
-                name: p.name,
-                path: p.path,
-            })
-            .collect()
-    }
-}
-
-impl Shellwing {
-    fn content(&self, id: &str) -> Result<zeroize::Zeroizing<Vec<u8>>, MobileError> {
-        self.open_vault()?
-            .config_file_content(id)
-            .map_err(MobileError::of)?
-            .ok_or_else(|| MobileError::Failed(tr!("It is not in the vault any more.")))
-    }
-
-    /// Notes a file placed until its session ends, to take away later if the
-    /// session cannot.
-    fn note_placed(&self, host: &str, p: &Placed) {
-        let mut all = self.store.placed();
-        all.retain(|x| !(x.host == host && x.path == p.path));
-        all.push(p.kept(host));
-        let _ = self.store.save_placed(&all);
-    }
-
-    fn unnote_placed(&self, host: &str, paths: &[String]) {
-        let mut all = self.store.placed();
-        let before = all.len();
-        all.retain(|x| !(x.host == host && paths.contains(&x.path)));
-        if all.len() != before {
-            let _ = self.store.save_placed(&all);
-        }
     }
 }

@@ -79,6 +79,13 @@ struct TerminalScreen: View {
             .presentationDetents([.medium])
             .preferredColorScheme(.dark)
         }
+        #if DEBUG
+        // `-files` at launch (with `-open <host>`): its Files once connected.
+        .onChange(of: model.status) { _, now in
+            if now == .connected, UserDefaults.standard.bool(forKey: "files") { browsing = true }
+            if now == .connected, UserDefaults.standard.string(forKey: "script") == "place" { Task { await placeCheck() } }
+        }
+        #endif
         .onChange(of: model.notice) { _, n in
             if let n {
                 show(n)
@@ -161,6 +168,39 @@ struct TerminalScreen: View {
         .foregroundStyle(Dusk.text)
         .background(Dusk.chrome)
     }
+
+    #if DEBUG
+    /// `-script place` (with `-open <host>`): a config file placed on the
+    /// host until the session ends, then taken away; what came of each
+    /// written to `place-check.txt` in the app's tmp.
+    private func placeCheck() async {
+        var said: [String] = []
+        guard let core = app.core, let h = model.handle else { return }
+        let path = "/tmp/shellwing-place-test.conf"
+        let row = ConfigFileRow(id: "", name: "place-test", category: "", path: path, mode: 0o600, size: 0, binary: false, stays: false, scope: "")
+        do {
+            let id = try core.saveConfigFile(row: row, content: "hello from the phone\n")
+            let looked = try await core.lookToPlace(session: h, id: id, path: path)
+            said.append("looked: \(looked.full) \(looked.found)")
+            try await core.place(session: h, id: id, full: looked.full, how: .until)
+            said.append("placed: \(h.placed().map(\.path))")
+            write(said)
+            try await Task.sleep(for: .seconds(6))
+            try await core.removePlaced(session: h, path: nil)
+            said.append("removed: \(h.placed().map(\.path))")
+            app.forget(id)
+        } catch {
+            said.append("error: \(error)")
+        }
+        said.append("done")
+        write(said)
+    }
+
+    private func write(_ said: [String]) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("place-check.txt")
+        try? said.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    }
+    #endif
 
     /// Keeps the file placed at `path` for good, or takes it away now.
     private func placed(keep: Bool, _ path: String) {
