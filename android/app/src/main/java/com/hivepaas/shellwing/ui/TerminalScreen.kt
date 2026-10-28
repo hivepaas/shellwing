@@ -1,6 +1,7 @@
 package com.hivepaas.shellwing.ui
 
 import android.content.ClipboardManager
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -91,6 +92,14 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
     val scope = rememberCoroutineScope()
     val prefs = model.prefs
     val say: (String?) -> Unit = { it?.let { said -> session.notice = said } }
+
+    // A selection copied: on the clipboard. Android 13 and later say so themselves.
+    LaunchedEffect(session.copied) {
+        val text = session.copied ?: return@LaunchedEffect
+        copy(context, session.spec, text)
+        session.copied = null
+        if (Build.VERSION.SDK_INT < 33) say(tr("Copied."))
+    }
 
     // With Close as the setting, a session that ended goes, and its screen with it.
     LaunchedEffect(session.status) {

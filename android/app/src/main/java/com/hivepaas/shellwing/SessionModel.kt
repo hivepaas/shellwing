@@ -11,6 +11,7 @@ import com.hivepaas.shellwing.core.LoadedEnvRow
 import com.hivepaas.shellwing.core.MobileSession
 import com.hivepaas.shellwing.core.PlacedRow
 import com.hivepaas.shellwing.core.Retrying
+import com.hivepaas.shellwing.core.Selecting
 import com.hivepaas.shellwing.core.SessionListener
 import com.hivepaas.shellwing.core.SessionStatus
 import java.util.UUID
@@ -39,6 +40,8 @@ class SessionModel(val spec: String) : SessionListener {
         private set
     /** Something said once: an environment loaded, a load given up. */
     var notice by mutableStateOf<String?>(null)
+    /** The selection's text, copied: for the clipboard, then cleared. */
+    var copied by mutableStateOf<String?>(null)
     var envs by mutableStateOf<List<LoadedEnvRow>>(emptyList())
         private set
     /** A lost connection about to be tried again: in how long, which try. */
@@ -82,6 +85,7 @@ class SessionModel(val spec: String) : SessionListener {
         session.ended().let { if (it != ended) ended = it }
         session.offer().let { if (it != offer) offer = it }
         session.notice()?.let { notice = it }
+        session.copied()?.let { copied = it }
         session.loadedEnvs().let { if (it != envs) envs = it }
         session.retrying().let { if (it != retrying) retrying = it }
         session.placed().let { if (it != placed) placed = it }
@@ -123,6 +127,14 @@ class SessionModel(val spec: String) : SessionListener {
     fun scroll(lines: Float) = handle?.scroll(lines)
 
     fun scrollToBottom() = handle?.scrollToBottom()
+
+    /** A finger selecting at (`x`, `y`) in the grid's pixels. */
+    fun select(how: Selecting, x: Float, y: Float) = handle?.select(how, x, y)
+
+    fun clearSelection() = handle?.clearSelection()
+
+    /** The selection's text comes back as [copied]. */
+    fun copySelection() = handle?.copySelection()
 
     fun reconnect() = handle?.reconnect()
 

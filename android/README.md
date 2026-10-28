@@ -37,7 +37,7 @@ libghostty-vt builds for 64-bit Android only.
 | `SessionService.kt` | A foreground service while sessions are open: Android keeps the process, and so the connections, when shellwing is not on screen; its notification lists them |
 | `KeystoreKeys.kt` | The vault's key, encrypted by a key in Android's keystore, in the no-backup folder: on this device only |
 | `AppLock.kt` | Lock shellwing when away: the fingerprint, the face or the screen lock (BiometricPrompt) |
-| `ui/TerminalView.kt` | The terminal: draws a frame's runs, takes the on-screen keyboard and a physical one, scrolls the history, pinch sizes the text |
+| `ui/TerminalView.kt` | The terminal: draws a frame's runs, takes the on-screen keyboard and a physical one, scrolls the history, pinch sizes the text, a long press selects (dragging takes more) and offers Copy |
 | `ui/` | Hosts, a session with the keys a phone lacks, Sessions, the host editor, a session's files, the library, the vault, sync, Settings, the lock |
 
 Coming back to the app, or a network change, checks each session
@@ -55,4 +55,4 @@ the core reads and writes paths, the pickers hand content URIs, so each
 transfer is copied through the app's cache, and a file provider hands those
 copies to other apps to show or send.
 
-Not yet: selecting text in the terminal, and the tablet layout.
+Not yet: the tablet layout.
