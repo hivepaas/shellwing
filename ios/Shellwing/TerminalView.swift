@@ -33,14 +33,17 @@ struct TerminalView: UIViewRepresentable {
 }
 
 /// Draws a frame cell by cell (runs of styled text, their backgrounds, the
-/// cursor) and passes what is typed to the session.
-final class TerminalCanvas: UIView, UIKeyInput {
+/// cursor) and passes what is typed to the session. A long press selects:
+/// the word under the finger, more as it drags, then the edit menu's Copy.
+final class TerminalCanvas: UIView, UIKeyInput, UIEditMenuInteractionDelegate {
     weak var model: SessionModel?
     var onFocus: ((Bool) -> Void)?
 
     var frameData: FrameData? {
         didSet {
             if frameData?.seq != oldValue?.seq { setNeedsDisplay() }
+            // The selection went (output moved it, a tap let it go): so does the menu.
+            if oldValue?.selected == true, frameData?.selected == false { editMenu.dismissMenu() }
         }
     }
 
@@ -67,6 +70,7 @@ final class TerminalCanvas: UIView, UIKeyInput {
     /// Rows of the history scrolled but not yet sent, a pan's leftover.
     private var scrollRest: CGFloat = 0
     private let inset = UIEdgeInsets(top: 4, left: 6, bottom: 4, right: 6)
+    private lazy var editMenu = UIEditMenuInteraction(delegate: self)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -77,6 +81,10 @@ final class TerminalCanvas: UIView, UIKeyInput {
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapped)))
         addGestureRecognizer(UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:))))
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(panned(_:))))
+        let press = UILongPressGestureRecognizer(target: self, action: #selector(pressed(_:)))
+        press.minimumPressDuration = 0.4
+        addGestureRecognizer(press)
+        addInteraction(editMenu)
         isAccessibilityElement = true
         accessibilityLabel = tr("Terminal")
         accessibilityTraits = .allowsDirectInteraction
@@ -190,11 +198,65 @@ final class TerminalCanvas: UIView, UIKeyInput {
     // MARK: Gestures
 
     @objc private func tapped() {
-        if isFirstResponder {
+        // With text selected, a tap lets it go.
+        if frameData?.selected == true {
+            editMenu.dismissMenu()
+            model?.clearSelection()
+        } else if isFirstResponder {
             _ = resignFirstResponder()
         } else {
             _ = becomeFirstResponder()
         }
+    }
+
+    /// Selecting: the word under a long press, more as the finger drags; the
+    /// edit menu when it lifts.
+    @objc private func pressed(_ press: UILongPressGestureRecognizer) {
+        let p = press.location(in: self)
+        // The grid's pixels, as `resize` gives the cells.
+        let scale = window?.screen.scale ?? UIScreen.main.scale
+        let x = Float((p.x - inset.left) * scale)
+        let y = Float((p.y - inset.top) * scale)
+        switch press.state {
+        case .began:
+            editMenu.dismissMenu()
+            model?.select(.start, x: x, y: y)
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        case .changed:
+            model?.select(.extend, x: x, y: y)
+        case .ended:
+            model?.select(.end, x: x, y: y)
+            editMenu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: p))
+        case .cancelled, .failed:
+            model?.select(.end, x: x, y: y)
+        default:
+            break
+        }
+    }
+
+    // Copy, right after a selection (its frame may not be here yet), and
+    // Paste when there is text to paste.
+    func editMenuInteraction(
+        _ interaction: UIEditMenuInteraction,
+        menuFor configuration: UIEditMenuConfiguration,
+        suggestedActions: [UIMenuElement]
+    ) -> UIMenu? {
+        var actions: [UIAction] = [
+            UIAction(title: tr("Copy")) { [weak self] _ in self?.model?.copySelection() },
+        ]
+        if UIPasteboard.general.hasStrings {
+            actions.append(UIAction(title: tr("Paste")) { [weak self] _ in self?.paste(nil) })
+        }
+        return UIMenu(children: actions)
+    }
+
+    // The menu gone (a choice made, or a tap elsewhere): the selection with it.
+    func editMenuInteraction(
+        _ interaction: UIEditMenuInteraction,
+        willDismissMenuFor configuration: UIEditMenuConfiguration,
+        animator: any UIEditMenuInteractionAnimating
+    ) {
+        model?.clearSelection()
     }
 
     @objc private func panned(_ pan: UIPanGestureRecognizer) {
@@ -245,9 +307,18 @@ final class TerminalCanvas: UIView, UIKeyInput {
     var smartInsertDeleteType: UITextSmartInsertDeleteType { get { .no } set {} }
     var keyboardAppearance: UIKeyboardAppearance { get { .dark } set {} }
 
-    // Paste, from the edit menu a long press brings.
+    // Copy and Paste, from the edit menu a long press brings, or Cmd+C and
+    // Cmd+V on a keyboard.
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
-        action == #selector(paste(_:)) && UIPasteboard.general.hasStrings
+        switch action {
+        case #selector(copy(_:)): return frameData?.selected == true
+        case #selector(paste(_:)): return UIPasteboard.general.hasStrings
+        default: return false
+        }
+    }
+
+    override func copy(_ sender: Any?) {
+        model?.copySelection()
     }
 
     override func paste(_ sender: Any?) {
