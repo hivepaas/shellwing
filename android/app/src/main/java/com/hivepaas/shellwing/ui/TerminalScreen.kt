@@ -132,10 +132,10 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                         })
                         if (session.status == SessionStatus.CONNECTED) {
                             for ((label, which) in listOf(
+                                tr("Files (SFTP)…") to null,
                                 tr("Snippets…") to Sheet.Snippets,
                                 tr("Load an environment…") to Sheet.Environments,
                                 tr("Notes…") to Sheet.Notes,
-                                tr("Files…") to null,
                                 tr("Place a config file…") to Sheet.Place,
                                 tr("Install a key on this host…") to Sheet.InstallKey,
                             )) {
