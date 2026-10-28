@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
@@ -58,7 +60,18 @@ fun LibraryScreen(model: AppModel, onOpen: (Screen) -> Unit) {
     var part by rememberSaveable { mutableIntStateOf(0) }
     val parts = listOf(tr("Snippets"), tr("Envs"), tr("Notes"), tr("Files"), tr("Keys"))
     Scaffold(
-        topBar = { TopAppBar(title = { Text(tr("Library")) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(tr("Library")) },
+                actions = {
+                    if (part == 0) {
+                        IconButton(onClick = { onOpen(Screen.SnippetLibrary) }) {
+                            Icon(Icons.AutoMirrored.Outlined.LibraryBooks, tr("Snippet library"))
+                        }
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             val (label, open) = when (part) {
                 0 -> tr("New snippet") to { onOpen(Screen.SnippetEditor(newSnippet())) }
