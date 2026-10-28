@@ -3,6 +3,12 @@ package com.hivepaas.shellwing.ui
 import android.content.ClipboardManager
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -244,7 +250,7 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                 }
             }
 
-            KeysRow(session, typing = typing, onKeyboard = {
+            KeysRow(session, typing = typing, onSnippets = { sheet = Sheet.Snippets }, onKeyboard = {
                 val v = view ?: return@KeysRow
                 if (typing) v.hideKeyboard() else v.showKeyboard()
             })
@@ -346,9 +352,13 @@ private fun Bar(text: String, background: Color, color: Color, actions: @Composa
     }
 }
 
-/** The keys a phone's keyboard lacks: Esc, Tab, Ctrl and Alt (held for the next key), the arrows, a few symbols. */
+/**
+ * The keys a phone's keyboard lacks: Esc, Tab, Ctrl and Alt (held for the
+ * next key), the arrows (held: Home and End, Page Up and Page Down), the
+ * session's snippets, a few symbols.
+ */
 @Composable
-private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Unit) {
+private fun KeysRow(session: SessionModel, typing: Boolean, onSnippets: () -> Unit, onKeyboard: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().background(Dusk.chrome).padding(horizontal = 6.dp, vertical = 8.dp)
             .navigationBarsPadding(),
@@ -359,12 +369,21 @@ private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Un
             KeyButton("Tab") { session.press(Key.Tab) }
             KeyButton("Ctrl", on = session.ctrl) { session.ctrl = !session.ctrl }
             KeyButton("Alt", on = session.alt) { session.alt = !session.alt }
-            KeyButton(icon = Icons.Filled.KeyboardArrowLeft, label = tr("Left")) { session.press(Key.Left) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowUp, label = tr("Up")) { session.press(Key.Up) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowDown, label = tr("Down")) { session.press(Key.Down) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowRight, label = tr("Right")) { session.press(Key.Right) }
+            KeyButton(icon = Icons.Filled.KeyboardArrowLeft, label = tr("Left"), onLongClick = { session.press(Key.Home) }) {
+                session.press(Key.Left)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowUp, label = tr("Up"), onLongClick = { session.press(Key.PageUp) }) {
+                session.press(Key.Up)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowDown, label = tr("Down"), onLongClick = { session.press(Key.PageDown) }) {
+                session.press(Key.Down)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowRight, label = tr("Right"), onLongClick = { session.press(Key.End) }) {
+                session.press(Key.Right)
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            KeyButton(icon = Icons.Filled.Code, label = tr("Snippets"), tint = Dusk.accent, onClick = onSnippets)
             for (c in listOf("|", "~", "/", "-", "_", ":")) KeyButton(c, mono = true) { session.type(c) }
             KeyButton(
                 icon = if (typing) Icons.Outlined.KeyboardHide else Icons.Outlined.Keyboard,
@@ -376,6 +395,8 @@ private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Un
     }
 }
 
+/** A key of the row; held, [onLongClick] if it has one, with a tick. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.KeyButton(
     text: String? = null,
@@ -384,32 +405,43 @@ private fun androidx.compose.foundation.layout.RowScope.KeyButton(
     on: Boolean = false,
     mono: Boolean = false,
     accent: Boolean = false,
+    tint: Color? = null,
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(10.dp)
+    val haptics = LocalHapticFeedback.current
     val bg = when {
         accent -> Dusk.accent
         on -> Dusk.accentContainer
         else -> Dusk.button
     }
-    val fg = when {
+    val fg = tint ?: when {
         accent -> Dusk.onAccent
         on -> Dusk.onAccentContainer
         else -> Dusk.text
     }
-    TextButton(
-        onClick = onClick,
-        shape = shape,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-        colors = ButtonDefaults.textButtonColors(containerColor = bg, contentColor = fg),
-        modifier = Modifier.weight(1f).height(44.dp).clip(shape)
-            .then(if (on) Modifier.border(1.dp, Dusk.accent, shape) else Modifier),
+    Box(
+        Modifier.weight(1f).height(44.dp).clip(shape).background(bg)
+            .then(if (on) Modifier.border(1.dp, Dusk.accent, shape) else Modifier)
+            .combinedClickable(
+                role = Role.Button,
+                onClick = onClick,
+                onLongClick = onLongClick?.let { held ->
+                    {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        held()
+                    }
+                },
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
-            Icon(icon, label)
+            Icon(icon, label, tint = fg)
         } else {
             Text(
                 text ?: "",
+                color = fg,
                 fontSize = if (mono) 15.sp else 14.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
