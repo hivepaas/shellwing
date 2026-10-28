@@ -4692,3 +4692,33 @@ t45dffa07 = 보관함 복구 키 보기
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = 확인되지 않음: 키가 숨겨진 상태로 유지됩니다.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+       *[other] 세션 { $n }개 열림
+    }
+
+# Close all
+td20a2320 = 모두 닫기
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = 지문, 얼굴 또는 화면 잠금으로 잠금을 해제합니다.
+
+# In the background
+t206da987 = 백그라운드에서
+
+# Keep sessions connected
+t0bc12e52 = 세션 연결 유지
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = 세션이 열려 있는 동안 알림에 표시되고 Android가 연결을 유지합니다.
+
+# Battery use
+taa2fc90d = 배터리 사용량
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = 제한 없음: Android가 세션을 닫지 않습니다.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = 최적화됨: Android가 백그라운드에서 세션을 닫을 수 있습니다. 탭하여 제한 없음을 허용하세요.

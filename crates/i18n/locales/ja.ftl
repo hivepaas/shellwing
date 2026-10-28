@@ -4692,3 +4692,33 @@ t45dffa07 = 保管庫の復旧キーを表示
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = 確認されませんでした。復旧キーは非表示のままです。
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+       *[other] { $n } 件のセッションが開いています
+    }
+
+# Close all
+td20a2320 = すべて閉じる
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = 指紋、顔、または画面ロックでロックを解除します。
+
+# In the background
+t206da987 = バックグラウンド
+
+# Keep sessions connected
+t0bc12e52 = セッションの接続を保つ
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = セッションが開いている間、通知に表示され、Android が接続を保ちます。
+
+# Battery use
+taa2fc90d = バッテリー使用量
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = 制限なし：Android はセッションを閉じません。
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = 最適化：Android がバックグラウンドでセッションを閉じることがあります。タップして制限なしを許可します。

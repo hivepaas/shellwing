@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Keeps shellwing's translations in step with the code.
 
-The English is in the code (`tr!("…")`, `tr_n!(n, "…", "…")`, and in the iOS
-app's Swift `tr("…")`, `trN(n, "…", "…")`); each message's id is the FNV-1a
+The English is in the code (`tr!("…")`, `tr_n!(n, "…", "…")`, and in the phone
+apps' Swift and Kotlin `tr("…")`, `trN(n, "…", "…")`); each message's id is the FNV-1a
 hash of its English, as crates/i18n computes it.
 
     scripts/i18n.py update   writes locales/en.ftl from the code, and brings
@@ -39,6 +39,8 @@ SOURCES = sorted(
 # The iOS app says its English through the same catalogs (crates/mobile's
 # tr and tr_n).
 SWIFT_SOURCES = sorted((ROOT / "ios" / "Shellwing").glob("**/*.swift"))
+# The Android app's Kotlin too, with the same tr and trN.
+KOTLIN_SOURCES = sorted((ROOT / "android" / "app" / "src").glob("**/*.kt"))
 
 STRING = r'"((?:[^"\\]|\\.)*)"'
 TR = re.compile(r"\btr!\(\s*" + STRING, re.S)
@@ -84,13 +86,13 @@ def id_of(english):
 def messages():
     """The code's messages in order of first use: id -> (english, plural)."""
     found = {}
-    for path in SOURCES + SWIFT_SOURCES:
+    for path in SOURCES + SWIFT_SOURCES + KOTLIN_SOURCES:
         # Comments (docs that show tr! at work) are not code.
         text = "\n".join(
             "" if l.lstrip().startswith("//") else l
             for l in path.read_text(encoding="utf-8").splitlines()
         )
-        tr, tr_n = (SWIFT_TR, SWIFT_TR_N) if path.suffix == ".swift" else (TR, TR_N)
+        tr, tr_n = (SWIFT_TR, SWIFT_TR_N) if path.suffix in (".swift", ".kt") else (TR, TR_N)
         hits = [(m.start(), unescape(m.group(1)), None) for m in tr.finditer(text)]
         hits += [
             (m.start(), unescape(m.group(1)), unescape(m.group(2)))

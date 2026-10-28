@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dusk's, as Theme.kt has them. -->
+    <color name="background">#FF252B34</color>
+    <color name="icon_background">#FFF1F4F8</color>
+    <color name="accent">#FF0284C7</color>
+</resources>

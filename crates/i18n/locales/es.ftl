@@ -4834,3 +4834,34 @@ t45dffa07 = Mostrar la clave de recuperación de la bóveda
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = No confirmado: la clave sigue oculta.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+        [one] { $n } sesión abierta
+       *[other] { $n } sesiones abiertas
+    }
+
+# Close all
+td20a2320 = Cerrar todas
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = Tu huella, tu cara o el bloqueo de pantalla lo desbloquean.
+
+# In the background
+t206da987 = En segundo plano
+
+# Keep sessions connected
+t0bc12e52 = Mantener las sesiones conectadas
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = Mientras haya una sesión abierta, una notificación la muestra y Android la mantiene conectada.
+
+# Battery use
+taa2fc90d = Uso de batería
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = Sin restricciones: Android deja las sesiones en paz.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = Optimizado: Android puede cerrar las sesiones en segundo plano. Toca para permitir el uso sin restricciones.

@@ -31,7 +31,7 @@ ARCH := $(shell uname -m 2>/dev/null)
 
 .DEFAULT_GOAL := help
 .PHONY: help build run dev build-mac build-linux build-windows build-ios-core \
-	build-android-core ios ios-sim test lint fmt check install-desktop package doctor clean zig
+	build-android-core ios ios-sim android test lint fmt check install-desktop package doctor clean zig
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-20s %s\n", $$1, $$2}'
@@ -122,6 +122,13 @@ ios: zig ## The iOS app's Rust library, its Swift, and the Xcode project -> ios/
 ios-sim: ## Builds the iOS app for the Simulator (after make ios)
 	cd ios && xcodebuild -project Shellwing.xcodeproj -scheme Shellwing \
 		-destination 'generic/platform=iOS Simulator' -derivedDataPath ../target/ios build
+
+## The Android app (android/; needs a JDK, the Android SDK and NDK, cargo-ndk)
+
+android: zig ## The Android app's Rust library, its Kotlin, and a debug APK -> android/app/build/outputs/apk/debug/
+	$(RUSTUP) target add aarch64-linux-android x86_64-linux-android
+	CARGO=$(CARGO) scripts/build_android.sh
+	cd android && ./gradlew assembleDebug
 
 ## Before a pull request (CONTRIBUTING.md)
 

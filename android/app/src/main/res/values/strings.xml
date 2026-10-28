@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's name only: every other string comes from the desktop's
+     catalogs, through the Rust library (I18n.kt). -->
+<resources>
+    <string name="app_name" translatable="false">shellwing</string>
+</resources>

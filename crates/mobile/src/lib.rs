@@ -8,6 +8,8 @@
 
 uniffi::setup_scaffolding!();
 
+#[cfg(target_os = "android")]
+mod android;
 mod config_files;
 mod files;
 mod i18n;

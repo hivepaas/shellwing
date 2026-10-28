@@ -38,29 +38,29 @@ Downloaded macOS binaries are quarantined by Gatekeeper; clear the flag once:
 xattr -d com.apple.quarantine ./shellwing && chmod +x ./shellwing
 ```
 
-## The core on iOS and Android
+## The phone apps
 
-There is no mobile app yet, but `shellwing-core` (term, ssh, config, vault) builds
-for the phones, for a front end to link. The vault's key store comes from the app
-there (`VaultSlot::open_with`): the keyring crate picks none on iOS or Android.
+The iPhone app is in `ios/` (its README says how to build it), the Android app
+in `android/` (`make android`; its README). Both are UI over `crates/mobile`,
+which wraps `shellwing-core` (term, ssh, config, vault) for Swift and Kotlin
+with UniFFI. The vault's key store comes from each app (`PlatformKeys`): the
+keyring crate picks none on iOS or Android.
 
-- iOS: Xcode with the iOS SDK. If `xcode-select -p` shows the Command Line Tools,
-  set `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, then
-  `rustup target add aarch64-apple-ios-sim` and
-  `cargo build -p shellwing-core --target aarch64-apple-ios-sim`.
-- Android: the NDK (`brew install --cask android-ndk` on macOS), with
-  `ANDROID_NDK_HOME` pointing at it, and its clang for the C parts:
+To build the core alone for Android, with the NDK (`ANDROID_NDK_HOME`) and its
+clang for the C parts:
 
-  ```sh
-  bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"  # linux-x86_64 on Linux
-  export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
-  export AR_aarch64_linux_android="$bin/llvm-ar"
-  rustup target add aarch64-linux-android
-  cargo build -p shellwing-core --target aarch64-linux-android
-  ```
+```sh
+bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"  # linux-x86_64 on Linux
+export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
+export AR_aarch64_linux_android="$bin/llvm-ar"
+export RANLIB_aarch64_linux_android="$bin/llvm-ranlib"   # OpenSSL, for libgit2
+rustup target add aarch64-linux-android
+cargo build -p shellwing-mobile --target aarch64-linux-android
+```
 
-CI builds the Android core on every pull request; iOS when started by hand
-(Actions > CI > Run workflow, `ios` or `all`).
+CI checks the Android core and bindings on every pull request; the Android and
+iOS apps when started by hand (Actions > CI > Run workflow, `android`, `ios`
+or `all`).
 
 ## Windows in a virtual machine
 
