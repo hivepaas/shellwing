@@ -7,7 +7,7 @@ exclude = ["vendor"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.99"
 repository = "https://github.com/hivepaas/shellwing"
 license = "GPL-3.0-or-later"
 publish = false

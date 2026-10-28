@@ -94,7 +94,9 @@ jobs:
         with:
           version: 0.16.0
 
-      - uses: dtolnay/rust-toolchain@stable
+      # The version and its components: rust-toolchain.toml.
+      - name: Rust
+        run: rustup toolchain install
 
       - name: Build
         run: cargo build --release --locked -p shellwing
