@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.AlertDialog
@@ -27,6 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.hivepaas.shellwing.AppLock
 import com.hivepaas.shellwing.AppModel
+import com.hivepaas.shellwing.core.ConfigFileRow
+import com.hivepaas.shellwing.core.EnvRow
+import com.hivepaas.shellwing.core.NoteRow
+import com.hivepaas.shellwing.core.SnippetEdit
 import com.hivepaas.shellwing.tr
 
 /** Where the app is: a tab, or a screen over the tabs. */
@@ -34,9 +39,15 @@ sealed interface Screen {
     data class Terminal(val sessionId: String) : Screen
     /** A host's editor; a new host's without an id. */
     data class HostEditor(val hostId: String?) : Screen
+    data class SnippetEditor(val edit: SnippetEdit) : Screen
+    data class EnvEditor(val env: EnvRow) : Screen
+    data class NoteEditor(val note: NoteRow) : Screen
+    data class ConfigFileEditor(val file: ConfigFileRow) : Screen
+    data object Secrets : Screen
+    data object RecoveryKey : Screen
 }
 
-enum class Tab { Hosts, Sessions, Settings }
+enum class Tab { Hosts, Sessions, Library, Settings }
 
 /** The app: three tabs, and the screens opened over them (a session, an editor). */
 @Composable
@@ -69,6 +80,12 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
             })
             return
         }
+        is Screen.SnippetEditor -> { SnippetEditorScreen(model, top.edit, onDone = back); return }
+        is Screen.EnvEditor -> { EnvEditorScreen(model, top.env, onDone = back); return }
+        is Screen.NoteEditor -> { NoteEditorScreen(model, top.note, onDone = back); return }
+        is Screen.ConfigFileEditor -> { ConfigFileEditorScreen(model, top.file, onDone = back); return }
+        Screen.Secrets -> { SecretsScreen(model, onBack = back); return }
+        Screen.RecoveryKey -> { RecoveryKeyScreen(model, onBack = back); return }
         null -> {}
     }
 
@@ -92,6 +109,12 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
                     label = { Text(tr("Sessions")) },
                 )
                 NavigationBarItem(
+                    selected = tab == Tab.Library,
+                    onClick = { tab = Tab.Library },
+                    icon = { Icon(Icons.Outlined.Lock, null) },
+                    label = { Text(tr("Library")) },
+                )
+                NavigationBarItem(
                     selected = tab == Tab.Settings,
                     onClick = { tab = Tab.Settings },
                     icon = { Icon(Icons.Outlined.Settings, null) },
@@ -104,7 +127,8 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
             when (tab) {
                 Tab.Hosts -> HostsScreen(model, onOpen = open, onSessions = { tab = Tab.Sessions })
                 Tab.Sessions -> SessionsScreen(model, onOpen = open)
-                Tab.Settings -> SettingsScreen(model, lock, onLockNow = onLockNow)
+                Tab.Library -> LibraryScreen(model, onOpen = open)
+                Tab.Settings -> SettingsScreen(model, lock, onLockNow = onLockNow, onOpen = open)
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.hivepaas.shellwing
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
@@ -45,37 +47,48 @@ class AppLock(private val prefs: SharedPreferences) {
         if (after > 0 && SystemClock.elapsedRealtime() - since >= after * 60_000L) locked = true
     }
 
-    /** The phone can say it is you: a fingerprint, a face, or a screen lock. */
-    fun available(activity: FragmentActivity) =
-        BiometricManager.from(activity).canAuthenticate(BIOMETRIC_WEAK or DEVICE_CREDENTIAL) ==
-            BiometricManager.BIOMETRIC_SUCCESS
-
-    /** Asks that it is you; [done] hears whether it was. With nothing to ask with, it opens. */
-    fun confirm(activity: FragmentActivity, title: String, done: (Boolean) -> Unit) {
-        if (!available(activity)) {
-            done(true)
-            return
-        }
-        val prompt = BiometricPrompt(
-            activity, ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = done(true)
-                override fun onAuthenticationError(code: Int, said: CharSequence) = done(false)
-            },
-        )
-        prompt.authenticate(
-            BiometricPrompt.PromptInfo.Builder()
-                .setTitle(title)
-                .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
-                .build(),
-        )
-    }
-
     fun unlock(activity: FragmentActivity) {
-        confirm(activity, tr("Unlock shellwing")) { ok -> if (ok) locked = false }
+        confirmOwner(activity, tr("Unlock shellwing")) { ok -> if (ok) locked = false }
     }
 
     private companion object {
         const val KEY = "lock.after"
     }
+}
+
+/** The phone can say it is you: a fingerprint, a face, or a screen lock. */
+fun ownerCheckAvailable(context: Context) =
+    BiometricManager.from(context).canAuthenticate(BIOMETRIC_WEAK or DEVICE_CREDENTIAL) ==
+        BiometricManager.BIOMETRIC_SUCCESS
+
+/**
+ * Asks that it is you (unlocking, showing a secret: an environment's values,
+ * a sensitive note, the recovery key); [done] hears whether it was. With
+ * nothing to ask with, it opens, as on iOS.
+ */
+fun confirmOwner(context: Context, title: String, done: (Boolean) -> Unit) {
+    val activity = context.findActivity()
+    if (activity == null || !ownerCheckAvailable(context)) {
+        done(true)
+        return
+    }
+    val prompt = BiometricPrompt(
+        activity, ContextCompat.getMainExecutor(activity),
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = done(true)
+            override fun onAuthenticationError(code: Int, said: CharSequence) = done(false)
+        },
+    )
+    prompt.authenticate(
+        BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+            .build(),
+    )
+}
+
+private tailrec fun Context.findActivity(): FragmentActivity? = when (this) {
+    is FragmentActivity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

@@ -2,6 +2,22 @@ package com.hivepaas.shellwing.ui
 
 import android.content.ClipboardManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.hivepaas.shellwing.core.EnvRow
+import com.hivepaas.shellwing.core.NoteRow
+import com.hivepaas.shellwing.core.SnippetRow
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -70,7 +86,11 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
     var typing by remember { mutableStateOf(true) }
     var menu by remember { mutableStateOf(false) }
     var view by remember { mutableStateOf<TerminalView?>(null) }
+    var sheet by remember { mutableStateOf<Sheet?>(null) }
+    var running by remember { mutableStateOf<SnippetRow?>(null) }
+    val scope = rememberCoroutineScope()
     val prefs = model.prefs
+    val say: (String?) -> Unit = { it?.let { said -> session.notice = said } }
 
     // With Close as the setting, a session that ended goes, and its screen with it.
     LaunchedEffect(session.status) {
@@ -110,6 +130,17 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                             menu = false
                             session.scrollToBottom()
                         })
+                        if (session.status == SessionStatus.CONNECTED) {
+                            for ((label, which) in listOf(
+                                tr("Snippets…") to Sheet.Snippets,
+                                tr("Load an environment…") to Sheet.Environments,
+                                tr("Notes…") to Sheet.Notes,
+                                tr("Place a config file…") to Sheet.Place,
+                                tr("Install a key on this host…") to Sheet.InstallKey,
+                            )) {
+                                DropdownMenuItem(text = { Text(label) }, onClick = { menu = false; sheet = which })
+                            }
+                        }
                         if (!session.isLive) {
                             DropdownMenuItem(text = { Text(tr("Connect again")) }, onClick = {
                                 menu = false
@@ -127,6 +158,28 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
         },
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).imePadding().background(Dusk.page)) {
+            if (session.placed.isNotEmpty() || session.envs.isNotEmpty()) {
+                Badges(session, onPlaced = { keep, path ->
+                    val core = model.core
+                    val handle = session.handle
+                    if (core != null && handle != null) {
+                        scope.launch {
+                            try {
+                                if (keep) {
+                                    core.keepPlaced(handle, path)
+                                    say(tr("{path} stays when the session ends.", "path" to path))
+                                } else {
+                                    core.removePlaced(handle, path)
+                                    say(tr("{path} taken away.", "path" to path))
+                                }
+                            } catch (e: Exception) {
+                                say(e.said())
+                            }
+                            session.changed()
+                        }
+                    }
+                })
+            }
             AndroidView(
                 factory = { ctx ->
                     TerminalView(ctx) { focused -> typing = focused }.also {
@@ -182,6 +235,89 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                 val v = view ?: return@KeysRow
                 if (typing) v.hideKeyboard() else v.showKeyboard()
             })
+        }
+    }
+
+    sheet?.let { which ->
+        val close = { sheet = null }
+        ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = which == Sheet.InstallKey)) {
+            when (which) {
+                Sheet.Snippets -> {
+                    Heading(tr("Snippets"), Modifier.padding(16.dp))
+                    SnippetsList(model, session.spec) { s -> close(); running = s }
+                }
+                Sheet.Environments -> {
+                    Heading(tr("Load an environment"), Modifier.padding(16.dp))
+                    EnvironmentsPick(model) { e ->
+                        close()
+                        val core = model.core
+                        val handle = session.handle
+                        say(
+                            if (core == null || handle == null) tr("Not connected.")
+                            else runCatching { core.loadEnv(handle, e.id) }.exceptionOrNull()?.said(),
+                        )
+                    }
+                }
+                Sheet.Notes -> {
+                    var reading by remember { mutableStateOf<NoteRow?>(null) }
+                    val note = reading
+                    if (note == null) {
+                        Heading(tr("Notes"), Modifier.padding(16.dp))
+                        NotesList(model, session.spec) { reading = it }
+                    } else {
+                        NoteReader(model, note, session, onDone = close)
+                    }
+                }
+                Sheet.Place -> PlaceConfig(model, session) { said -> close(); say(said) }
+                Sheet.InstallKey -> InstallKey(model, session) { said -> close(); say(said) }
+            }
+        }
+    }
+    running?.let { s -> RunSnippet(model, s, session) { said -> running = null; say(said) } }
+}
+
+/** What opens over a session from its menu. */
+private enum class Sheet { Snippets, Environments, Notes, Place, InstallKey }
+
+@Composable
+private fun EnvironmentsPick(model: AppModel, onPick: (EnvRow) -> Unit) {
+    val envs = remember { model.core?.environments() ?: emptyList() }
+    Library(empty = if (envs.isEmpty()) tr("No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.") else null) {
+        items(envs.size) { i -> Item(envs[i].name, envs[i].names.joinToString(" "), mono = true, onClick = { onPick(envs[i]) }) }
+    }
+}
+
+/**
+ * The environments loaded into the shell (✕ unloads one), and the config
+ * files placed until the session ends (kept, or taken away, from their menu).
+ */
+@Composable
+private fun Badges(session: SessionModel, onPlaced: (keep: Boolean, path: String) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        for (p in session.placed) {
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                AssistChip(
+                    onClick = { menu = true },
+                    label = { Text(p.name) },
+                    modifier = Modifier.semantics { contentDescription = tr("{name}, placed until the session ends", "name" to p.name) },
+                )
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text(tr("Keep it there")) }, onClick = { menu = false; onPlaced(true, p.path) })
+                    DropdownMenuItem(text = { Text(tr("Take it away now"), color = Dusk.bad) }, onClick = { menu = false; onPlaced(false, p.path) })
+                }
+            }
+        }
+        for (e in session.envs) {
+            InputChip(
+                selected = true,
+                onClick = { session.unload(e.id) },
+                label = { Text("ENV ${e.name}", fontFamily = FontFamily.Monospace, fontSize = 12.sp) },
+                trailingIcon = { Icon(Icons.Filled.Close, tr("Unload {name}", "name" to e.name), modifier = Modifier.size(16.dp)) },
+            )
         }
     }
 }

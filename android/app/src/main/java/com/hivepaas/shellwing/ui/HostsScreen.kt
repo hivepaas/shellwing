@@ -209,7 +209,7 @@ private fun OpenChip(session: SessionModel, onClick: () -> Unit) {
         Dot(statusColor(session.status))
         Spacer(Modifier.width(10.dp))
         Column {
-            Text(session.title, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(session.spec, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(statusWord(session.status), fontSize = 12.sp, color = Dusk.muted)
         }
     }

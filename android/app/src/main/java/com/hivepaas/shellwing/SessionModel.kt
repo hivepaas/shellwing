@@ -134,6 +134,15 @@ class SessionModel(val spec: String) : SessionListener {
     /** Back from the background, or the network moved: checked, made again if it no longer answers. */
     fun resumed() = handle?.resumed()
 
+    fun unload(env: String?) {
+        try {
+            handle?.unloadEnv(env)
+        } catch (e: Exception) {
+            notice = e.said()
+        }
+        handle?.let { envs = it.loadedEnvs() }
+    }
+
     fun keepOffer() {
         handle?.saveOffer()
         offer = null
