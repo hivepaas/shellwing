@@ -36,19 +36,63 @@ enum SyncFolder {
 /// set up, as the desktop's Settings › Sync.
 struct SyncView: View {
     @EnvironmentObject private var app: AppModel
+    /// The recovery key of a vault this phone just put at the place, shown
+    /// until Done: the place is set by then, which would show Syncing.
+    @State private var started: String?
 
     var body: some View {
         Group {
-            if let status = app.sync, status.place != nil {
+            if let started {
+                StartedView(key: started) { self.started = nil }
+            } else if let status = app.sync, status.place != nil, status.pairing == nil {
                 SyncingView(status: status)
-            } else if case .some(let p) = app.sync?.pairing {
-                PairingView(pairing: p)
             } else {
-                SetUpSyncView()
+                // The pairing shows in it, so a cancel finds the place still typed.
+                SetUpSyncView(pairing: app.sync?.pairing, onStarted: { started = $0 })
             }
         }
         .navigationTitle(tr("Sync"))
         .navigationBarTitleDisplayMode(.inline)
+        // A pairing that ended (joined, refused, expired) is said until Done;
+        // leaving says it was seen.
+        .onDisappear {
+            switch app.sync?.pairing {
+            case .joined?, .refused?, .expired?:
+                app.core?.cancelJoin()
+                app.refreshSync()
+            default:
+                break
+            }
+        }
+    }
+}
+
+/// The recovery key of the vault this phone put at the place.
+private struct StartedView: View {
+    let key: String
+    let done: () -> Void
+
+    var body: some View {
+        Form {
+            Section {
+                Text(tr("This phone syncs there now. The recovery key opens the vault on your other devices: write it down."))
+                    .foregroundStyle(Dusk.label)
+                Text(key)
+                    .font(.system(size: 15, design: .monospaced))
+                    .textSelection(.enabled)
+                Button(tr("Copy")) { UIPasteboard.general.string = key }
+            } header: {
+                SectionHeading(text: tr("Recovery key"))
+            }
+            .listRowBackground(Dusk.surface)
+            Section {
+                Button(tr("Done"), action: done)
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .listRowBackground(Dusk.surface)
+        }
+        .scrollContentBackground(.hidden)
+        .background(Dusk.panel.ignoresSafeArea())
     }
 }
 
@@ -186,9 +230,13 @@ private struct PairingView: View {
     }
 }
 
-/// Choosing a place, connecting, and joining what is there.
+/// Choosing a place, connecting, and joining what is there; while this
+/// phone asks to join, how that goes.
 private struct SetUpSyncView: View {
     @EnvironmentObject private var app: AppModel
+    let pairing: Pairing?
+    /// Told the new vault's recovery key, once it is at the place.
+    let onStarted: (String) -> Void
 
     enum Kind: String, CaseIterable, Identifiable {
         case webdav = "WebDAV", s3 = "S3", git = "Git", folder = "Folder"
@@ -216,25 +264,20 @@ private struct SetUpSyncView: View {
     @State private var problem: String?
     /// Another device's vault was there: how to join it.
     @State private var other: (place: Place, passphrase: Bool)?
-    @State private var started: String?
     @State private var joinKey = ""
     @State private var joinPassphrase = ""
 
     var body: some View {
+        if let pairing {
+            PairingView(pairing: pairing)
+        } else {
+            form
+        }
+    }
+
+    private var form: some View {
         Form {
-            if let started {
-                Section {
-                    Text(tr("This phone syncs there now. The recovery key opens the vault on your other devices: write it down."))
-                        .foregroundStyle(Dusk.label)
-                    Text(started)
-                        .font(.system(size: 15, design: .monospaced))
-                        .textSelection(.enabled)
-                    Button(tr("Copy")) { UIPasteboard.general.string = started }
-                } header: {
-                    SectionHeading(text: tr("Recovery key"))
-                }
-                .listRowBackground(Dusk.surface)
-            } else if let other {
+            if let other {
                 joinSection(other.place, passphrase: other.passphrase)
             } else {
                 placeSection
@@ -383,7 +426,7 @@ private struct SetUpSyncView: View {
                 await MainActor.run {
                     busy = false
                     switch found {
-                    case .started(let key): started = key
+                    case .started(let key): onStarted(key)
                     case .other(let passphrase): other = (p, passphrase)
                     }
                     app.refreshSync()
