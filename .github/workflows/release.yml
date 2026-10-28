@@ -158,9 +158,84 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  # The Android app: one APK for phones (arm64-v8a) and the emulator
+  # (x86_64), signed with the release key from the repository's secrets
+  # (docs/releasing.md › Signing for Android). A tag needs the key: an
+  # unsigned APK does not install. A rehearsal builds without it.
+  android:
+    name: android
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-release
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Rust library and Kotlin
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          cargo install cargo-ndk --locked
+          scripts/build_android.sh
+
+      - name: Signing key
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE" ]; then
+            echo "$ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "SHELLWING_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "::error::no ANDROID_KEYSTORE secret: an unsigned APK does not install"
+            exit 1
+          fi
+
+      - name: APK
+        working-directory: android
+        env:
+          SHELLWING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SHELLWING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SHELLWING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Package
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          out=android/app/build/outputs/apk/release
+          apk="$out/app-release.apk"
+          [ -f "$apk" ] || apk="$out/app-release-unsigned.apk"
+          mkdir -p dist
+          cp "$apk" "dist/shellwing_${VERSION}_android.apk"
+
+      - name: Forget the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shellwing-android
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
   release:
     name: Draft release
-    needs: [version, package]
+    needs: [version, package, android]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:

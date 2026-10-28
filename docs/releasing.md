@@ -11,6 +11,7 @@ app is told of it.
 | Linux x86_64, aarch64 | `shellwing_<v>_linux_<arch>.AppImage`, `.tar.gz`, `shellwing_<v>_<amd64\|arm64>.deb` | `scripts/package_linux.sh` |
 | macOS aarch64, x86_64 | `shellwing_<v>_macos_<arch>.dmg`, `.app.tar.gz` | `scripts/package_macos.sh` |
 | Windows x86_64 | `shellwing_<v>_windows_x86_64-setup.exe`, `.zip` | `scripts/package_windows.sh` |
+| Android (arm64-v8a, x86_64) | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
 
 and `SHA256SUMS`. The updater installs the AppImage, the `.app.tar.gz` and the
 installer; the others are for people.
@@ -30,6 +31,12 @@ installer; the others are for people.
   `%LOCALAPPDATA%\Programs\shellwing` (where the updater looks for it), with a
   Start menu entry and an uninstaller. It is not signed: SmartScreen asks the
   first time (More info › Run anyway).
+- **Android**: one APK, signed with the release key
+  ([Signing for Android](#signing-for-android)); its version is `Cargo.toml`'s
+  (`versionCode` *major·10⁶ + minor·10⁴ + patch·100*, plus the beta's number or
+  99, so a beta comes before its release). It is installed by hand (Android asks
+  to allow installs from the browser or file manager it came from), and
+  installed again over itself to update: the updater does not run on phones.
 
 `make package` makes them for the computer it runs on, into `dist/`.
 
@@ -76,6 +83,38 @@ scripts/package_macos.sh
 The private key stays in the keychain and in the repository's secrets: never
 in the repository, nor anywhere else.
 
+## Signing for Android
+
+Android installs an update over an app only when both are signed with the same
+key: the release key is made once and kept for good. Lost, every user has to
+uninstall shellwing (and its vault) to install the next one.
+
+1. **The key**, once, with the JDK's `keytool`, on the signing machine:
+
+   ```sh
+   keytool -genkeypair -v -keystore shellwing-release.jks -alias shellwing \
+     -keyalg RSA -keysize 4096 -validity 10000
+   ```
+
+   Keep `shellwing-release.jks` and its passwords with the other signing keys,
+   and a copy somewhere else.
+2. **The repository's secrets** (Settings › Secrets and variables › Actions):
+
+   | Secret | Value |
+   | --- | --- |
+   | `ANDROID_KEYSTORE` | the keystore, as `base64 -w0 shellwing-release.jks` |
+   | `ANDROID_KEYSTORE_PASSWORD` | the keystore's password |
+   | `ANDROID_KEY_ALIAS` | `shellwing` |
+   | `ANDROID_KEY_PASSWORD` | the key's password |
+
+The Release workflow refuses a tag without them; a rehearsal builds the APK
+unsigned. To sign one by hand, `scripts/build_android.sh`, then in `android/`:
+
+```sh
+SHELLWING_KEYSTORE=/path/to/shellwing-release.jks SHELLWING_KEYSTORE_PASSWORD=… \
+SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelease
+```
+
 ## Making one
 
 1. **The version.** `version` under `[workspace.package]` in `Cargo.toml` is
@@ -87,7 +126,7 @@ in the repository, nor anywhere else.
    too.
 3. **The tag.** `git tag -s v0.2.0 && git push origin v0.2.0`. The Release
    workflow checks that the tag is `Cargo.toml`'s version, builds the five
-   platforms, and makes a **draft** release with the files and `SHA256SUMS`.
+   desktop platforms and the Android APK, and makes a **draft** release with the files and `SHA256SUMS`.
 4. **Check the draft**: install it on each system, and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
    AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), sign it
