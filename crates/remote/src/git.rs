@@ -14,6 +14,7 @@ use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use shellwing_spawn::Unblocked;
@@ -104,11 +105,7 @@ impl Git {
         };
         // An empty home: ~/.gitconfig (a rewrite to SSH, a helper with the
         // user's password) must not sign in for us.
-        let home = std::env::temp_dir().join(format!(
-            "shellwing-anonymous-{}-{:?}",
-            std::process::id(),
-            Instant::now()
-        ));
+        let home = anonymous_home();
         if std::fs::create_dir_all(&home).is_err() {
             return false;
         }
@@ -195,6 +192,18 @@ fn command_line_tools() -> bool {
         .stderr(Stdio::null())
         .status_unblocked()
         .is_ok_and(|s| s.success())
+}
+
+/// A home of its own for one anonymous `ls-remote`, named in letters, digits
+/// and dashes, which every system's paths take (`Instant`'s `Debug` has a
+/// colon, and Windows makes no folder of it).
+fn anonymous_home() -> PathBuf {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    std::env::temp_dir().join(format!(
+        "shellwing-anonymous-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ))
 }
 
 /// Where `url` is read with no sign-in: itself over HTTP(S) or git://,
@@ -811,6 +820,17 @@ mod tests {
         );
         let e = failed("hint: something\nfatal: something odd\n");
         assert_eq!(e.to_string(), "git: something odd");
+    }
+
+    #[test]
+    fn the_anonymous_home_is_a_name_every_system_takes() {
+        let (a, b) = (anonymous_home(), anonymous_home());
+        assert_ne!(a, b);
+        let name = a.file_name().and_then(|n| n.to_str()).expect("name");
+        assert!(
+            name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'),
+            "{name}"
+        );
     }
 
     #[test]
