@@ -38,7 +38,7 @@ libghostty-vt builds for 64-bit Android only.
 | `KeystoreKeys.kt` | The vault's key, encrypted by a key in Android's keystore, in the no-backup folder: on this device only |
 | `AppLock.kt` | Lock shellwing when away: the fingerprint, the face or the screen lock (BiometricPrompt) |
 | `ui/TerminalView.kt` | The terminal: draws a frame's runs, takes the on-screen keyboard and a physical one, scrolls the history, pinch sizes the text |
-| `ui/` | Hosts, a session with the keys a phone lacks, Sessions, the host editor, the library, the vault, sync, Settings, the lock |
+| `ui/` | Hosts, a session with the keys a phone lacks, Sessions, the host editor, a session's files, the library, the vault, sync, Settings, the lock |
 
 Coming back to the app, or a network change, checks each session
 (`MobileSession.resumed`) as on iOS. `Native.init` hands the core the app's
@@ -50,5 +50,10 @@ Every string goes through the desktop's catalogs (`I18n.kt`);
 Sync offers WebDAV, S3 and Git, not a folder: Android gives an app no folder
 of the user's to write in by its path.
 
-Not yet: SFTP, the snippet library's ready-made commands, selecting text in
-the terminal, and the tablet layout.
+A session's files (SFTP) go to and from the phone through Android's pickers:
+the core reads and writes paths, the pickers hand content URIs, so each
+transfer is copied through the app's cache, and a file provider hands those
+copies to other apps to show or send.
+
+Not yet: the snippet library's ready-made commands, selecting text in the
+terminal, and the tablet layout.

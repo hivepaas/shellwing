@@ -45,5 +45,16 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps interactive SSH terminal sessions the user opened connected while the app is in the background, as an SSH client must; the notification lists them and closes them." />
         </service>
+
+        <!-- Hands a host's file, copied to the cache, to another app: to show it or send it. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
