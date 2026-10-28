@@ -55,5 +55,4 @@ the core reads and writes paths, the pickers hand content URIs, so each
 transfer is copied through the app's cache, and a file provider hands those
 copies to other apps to show or send.
 
-Not yet: the snippet library's ready-made commands, selecting text in the
-terminal, and the tablet layout.
+Not yet: selecting text in the terminal, and the tablet layout.
