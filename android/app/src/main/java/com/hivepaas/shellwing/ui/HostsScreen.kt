@@ -82,6 +82,7 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                         tint = Dusk.accent, modifier = Modifier.padding(start = 16.dp, end = 8.dp).size(26.dp),
                     )
                 },
+                actions = { SyncButton(model) { onOpen(Screen.Sync) } },
             )
         },
         floatingActionButton = {

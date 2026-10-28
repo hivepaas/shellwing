@@ -135,6 +135,7 @@ fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit, onOpen
             } else {
                 Row(tr("Saved passwords"), null) { onOpen(Screen.Secrets) }
                 Row(tr("Recovery key"), null) { onOpen(Screen.RecoveryKey) }
+                Row(tr("Sync"), syncSummary(model.sync)) { onOpen(Screen.Sync) }
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
