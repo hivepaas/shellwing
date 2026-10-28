@@ -2,6 +2,8 @@ package com.hivepaas.shellwing.ui
 
 import android.content.ClipboardManager
 import android.os.Build
+import android.view.InputDevice
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.background
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -11,6 +13,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Close
@@ -60,6 +65,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,7 +76,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -85,10 +93,16 @@ import com.hivepaas.shellwing.said
 import com.hivepaas.shellwing.statusWord
 import com.hivepaas.shellwing.tr
 
-/** A session full screen: the terminal, why it ended or when it tries again, the keys a phone lacks. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** A session: the terminal, why it ended or when it tries again, the keys a phone lacks. Full screen, or [embedded] beside the host list on a tablet. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, onOpen: (Screen) -> Unit) {
+fun TerminalScreen(
+    model: AppModel,
+    session: SessionModel,
+    onBack: () -> Unit,
+    onOpen: (Screen) -> Unit,
+    embedded: Boolean = false,
+) {
     val context = LocalContext.current
     var typing by remember { mutableStateOf(true) }
     var menu by remember { mutableStateOf(false) }
@@ -98,6 +112,15 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
     val scope = rememberCoroutineScope()
     val prefs = model.prefs
     val say: (String?) -> Unit = { it?.let { said -> session.notice = said } }
+
+    // The terminal gone (closed from its tab, or left): its keyboard with it,
+    // through the window's root, still attached when the terminal is not.
+    val root = LocalView.current
+    DisposableEffect(Unit) {
+        onDispose {
+            context.getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(root.windowToken, 0)
+        }
+    }
 
     // A selection copied: on the clipboard. Android 13 and later say so themselves.
     LaunchedEffect(session.copied) {
@@ -119,8 +142,11 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Dusk.chrome),
+                // Embedded, the session tabs above it are under the status bar already.
+                windowInsets = if (embedded) WindowInsets(0) else TopAppBarDefaults.windowInsets,
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Hosts")) }
+                    // Beside the host list on a tablet: nothing to go back to.
+                    if (!embedded) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Hosts")) }
                 },
                 title = {
                     Column {
@@ -250,10 +276,17 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                 }
             }
 
-            KeysRow(session, typing = typing, onSnippets = { sheet = Sheet.Snippets }, onKeyboard = {
-                val v = view ?: return@KeysRow
-                if (typing) v.hideKeyboard() else v.showKeyboard()
-            })
+            // A keyboard attached has the keys the row stands in for, unless
+            // the on-screen one is up anyway. Asked again when the
+            // configuration changes, as it does when a keyboard comes or goes.
+            val config = LocalConfiguration.current
+            val keyboard = remember(config) { keyboardAttached() }
+            if (!keyboard || WindowInsets.isImeVisible) {
+                KeysRow(session, typing = typing, onSnippets = { sheet = Sheet.Snippets }, onKeyboard = {
+                    val v = view ?: return@KeysRow
+                    if (typing) v.hideKeyboard() else v.showKeyboard()
+                })
+            }
         }
     }
 
@@ -350,6 +383,17 @@ private fun Bar(text: String, background: Color, color: Color, actions: @Composa
         Text(text, color = color, fontSize = 14.sp, modifier = Modifier.weight(1f))
         actions()
     }
+}
+
+/**
+ * A keyboard with letters is attached (Bluetooth, USB, a Chromebook's own).
+ * Asked of the devices rather than the configuration, which says "qwerty"
+ * on some devices that have none (the emulator does).
+ */
+private fun keyboardAttached(): Boolean = InputDevice.getDeviceIds().any { id ->
+    val device = InputDevice.getDevice(id) ?: return@any false
+    !device.isVirtual && device.keyboardType == InputDevice.KEYBOARD_TYPE_ALPHABETIC &&
+        device.supportsSource(InputDevice.SOURCE_KEYBOARD)
 }
 
 /**

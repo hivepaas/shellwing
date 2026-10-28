@@ -55,4 +55,8 @@ the core reads and writes paths, the pickers hand content URIs, so each
 transfer is copied through the app's cache, and a file provider hands those
 copies to other apps to show or send.
 
-Not yet: the tablet layout.
+On a tablet (600 dp wide or more) the tabs are a rail; from 840 dp wide and
+480 dp tall, Hosts and Sessions show beside the session open, a tab for each
+session above it (`ui/AppRoot.kt`). With a keyboard attached the keys row
+hides unless the on-screen keyboard is up, and Ctrl+Shift+C and V copy and
+paste.

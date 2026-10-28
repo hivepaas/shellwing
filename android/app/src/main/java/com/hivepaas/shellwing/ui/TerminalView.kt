@@ -1,6 +1,7 @@
 package com.hivepaas.shellwing.ui
 
 import android.annotation.SuppressLint
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -378,6 +379,20 @@ class TerminalView(context: Context, private val onFocus: (Boolean) -> Unit) : V
     /** A physical keyboard's keys, and the on-screen one's Enter and delete. */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val model = model ?: return super.onKeyDown(keyCode, event)
+        // Ctrl+Shift+C and V: copy and paste, as the desktop has them.
+        if (event.isCtrlPressed && event.isShiftPressed) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_C -> {
+                    model.copySelection()
+                    return true
+                }
+                KeyEvent.KEYCODE_V -> {
+                    val clip = context.getSystemService(ClipboardManager::class.java)?.primaryClip
+                    clip?.getItemAt(0)?.coerceToText(context)?.toString()?.let { model.paste(it) }
+                    return true
+                }
+            }
+        }
         val ctrl = event.isCtrlPressed || model.ctrl
         val alt = event.isAltPressed || model.alt
         val shift = event.isShiftPressed
