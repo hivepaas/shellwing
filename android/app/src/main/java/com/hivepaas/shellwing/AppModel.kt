@@ -18,6 +18,8 @@ import com.hivepaas.shellwing.core.MobileException
 import com.hivepaas.shellwing.core.OnDisconnectWay
 import com.hivepaas.shellwing.core.SessionStatus
 import com.hivepaas.shellwing.core.Shellwing
+import com.hivepaas.shellwing.core.SyncListener
+import com.hivepaas.shellwing.core.SyncStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +39,9 @@ class AppModel(private val app: ShellwingApp) {
         private set
     val sessions = mutableStateListOf<SessionModel>()
     var error by mutableStateOf<String?>(null)
+    /** The sync's state: where, when last, devices asking to join. */
+    var sync by mutableStateOf<SyncStatus?>(null)
+        private set
 
     val prefs = app.getSharedPreferences("shellwing", Context.MODE_PRIVATE)
     /** Kept when away: a notification shows the sessions (Settings). */
@@ -58,6 +63,13 @@ class AppModel(private val app: ShellwingApp) {
         core = made
         problem = why
         reload()
+        // The sync worker (off the main thread) says when its state changes.
+        core?.setSyncListener(object : SyncListener {
+            override fun changed() {
+                main.post(::refreshSync)
+            }
+        })
+        refreshSync()
         watchNetwork()
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) = cameBack()
@@ -96,6 +108,13 @@ class AppModel(private val app: ShellwingApp) {
         } catch (e: Exception) {
             error = e.said()
         }
+    }
+
+    /** The sync's state, read again; a sync done may have brought hosts. */
+    fun refreshSync() {
+        val now = core?.syncStatus() ?: return
+        if (now.last != sync?.last) reload()
+        sync = now
     }
 
     fun groups(): List<String> = core?.groups() ?: emptyList()

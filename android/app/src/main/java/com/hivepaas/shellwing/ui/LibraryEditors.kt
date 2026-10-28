@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -90,13 +91,16 @@ fun PlainField(
     mono: Boolean = false,
     lines: Int = 1,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    type: KeyboardType = KeyboardType.Text,
+    placeholder: String? = null,
     onChange: (String) -> Unit,
 ) {
     OutlinedTextField(
         value = value, onValueChange = onChange, label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it, color = Dusk.muted) } },
         singleLine = lines == 1, minLines = lines,
         textStyle = if (mono) TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp) else TextStyle.Default,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, keyboardType = type),
         modifier = modifier,
     )
 }
