@@ -37,6 +37,8 @@ import com.hivepaas.shellwing.tr
 /** Where the app is: a tab, or a screen over the tabs. */
 sealed interface Screen {
     data class Terminal(val sessionId: String) : Screen
+    /** A session's files over SFTP. */
+    data class Files(val sessionId: String) : Screen
     /** A host's editor; a new host's without an id. */
     data class HostEditor(val hostId: String?) : Screen
     data class SnippetEditor(val edit: SnippetEdit) : Screen
@@ -72,6 +74,11 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
         is Screen.Terminal -> {
             val session = model.sessions.firstOrNull { it.id == top.sessionId }
             if (session == null) back() else TerminalScreen(model, session, onBack = back, onOpen = open)
+            return
+        }
+        is Screen.Files -> {
+            val session = model.sessions.firstOrNull { it.id == top.sessionId }
+            if (session == null) back() else FilesScreen(model, session, onBack = back)
             return
         }
         is Screen.HostEditor -> {
