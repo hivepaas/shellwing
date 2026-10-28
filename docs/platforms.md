@@ -15,7 +15,8 @@ CI only proves that the code builds and the tests pass.
 
 All platforms need Rust (via [rustup](https://rustup.rs)) and **Zig 0.16**
 from [ziglang.org/download](https://ziglang.org/download/) on `PATH`;
-libghostty-vt is compiled from source with it.
+libghostty-vt is compiled from source with it. rustup installs the Rust version in
+`rust-toolchain.toml` by itself, the first time cargo runs in the repository.
 
 | Platform | Also install |
 | --- | --- |
@@ -37,6 +38,24 @@ Downloaded macOS binaries are quarantined by Gatekeeper; clear the flag once:
 ```sh
 xattr -d com.apple.quarantine ./shellwing && chmod +x ./shellwing
 ```
+
+## The Rust version
+
+`rust-toolchain.toml` pins the Rust that local builds, CI and releases use, and
+`rust-version` in `Cargo.toml` follows it, so a new Rust never turns CI red on
+its own. Rust ships every six weeks; take every second release (about every
+twelve weeks), or one sooner when a fix or a feature in it is needed, once it
+is two weeks old (its point release, if any, is out by then). In a pull request
+of its own:
+
+1. Set `channel` in `rust-toolchain.toml` and `rust-version` in `Cargo.toml`.
+2. Fix what the new clippy finds: `make check`.
+3. Run CI and the UI tests on every platform:
+   `gh workflow run ci.yml --ref <branch> -f platforms=all` and
+   `gh workflow run ui-tests.yml --ref <branch> -f platforms=all`.
+
+Targets added by hand (`rustup target add`, for the phones) belong to one
+version: add them again after a raise. The `make` targets for the phones do.
 
 ## The phone apps
 

@@ -1,0 +1,6 @@
+# The Rust that local builds, CI and releases use. Raised by hand, in a pull
+# request of its own: docs/platforms.md, "The Rust version".
+[toolchain]
+channel = "1.99.1"
+profile = "minimal"
+components = ["clippy", "rustfmt"]
