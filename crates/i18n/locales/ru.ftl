@@ -4944,3 +4944,36 @@ t45dffa07 = Показать ключ восстановления хранил�
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = Не подтверждено: ключ остаётся скрытым.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+        [one] Открыт { $n } сеанс
+        [few] Открыто { $n } сеанса
+        [many] Открыто { $n } сеансов
+       *[other] Открыто { $n } сеанса
+    }
+
+# Close all
+td20a2320 = Закрыть все
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = Разблокируется отпечатком пальца, лицом или блокировкой экрана.
+
+# In the background
+t206da987 = В фоне
+
+# Keep sessions connected
+t0bc12e52 = Не разрывать сеансы
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = Пока сеанс открыт, его показывает уведомление, и Android сохраняет подключение.
+
+# Battery use
+taa2fc90d = Расход батареи
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = Без ограничений: Android не трогает сеансы.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = Оптимизировано: Android может закрывать сеансы в фоне. Нажмите, чтобы разрешить работу без ограничений.

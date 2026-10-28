@@ -4834,3 +4834,34 @@ t45dffa07 = Afficher la clé de récupération du coffre
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = Non confirmé : la clé reste masquée.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+        [one] { $n } session ouverte
+       *[other] { $n } sessions ouvertes
+    }
+
+# Close all
+td20a2320 = Tout fermer
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = Votre empreinte, votre visage ou le verrouillage de l'écran le déverrouille.
+
+# In the background
+t206da987 = En arrière-plan
+
+# Keep sessions connected
+t0bc12e52 = Garder les sessions connectées
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = Tant qu'une session est ouverte, une notification l'affiche et Android la garde connectée.
+
+# Battery use
+taa2fc90d = Utilisation de la batterie
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = Non restreinte : Android laisse les sessions tranquilles.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = Optimisée : Android peut fermer les sessions en arrière-plan. Touchez pour autoriser une utilisation non restreinte.

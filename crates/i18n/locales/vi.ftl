@@ -4692,3 +4692,33 @@ t45dffa07 = Hiện khoá khôi phục của kho
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = Chưa xác nhận: khoá vẫn được ẩn.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+       *[other] { $n } phiên đang mở
+    }
+
+# Close all
+td20a2320 = Đóng tất cả
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = Vân tay, khuôn mặt hoặc khoá màn hình của bạn sẽ mở khoá.
+
+# In the background
+t206da987 = Khi chạy nền
+
+# Keep sessions connected
+t0bc12e52 = Giữ các phiên luôn kết nối
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = Khi có phiên đang mở, một thông báo sẽ hiện phiên đó và Android giữ cho nó kết nối.
+
+# Battery use
+taa2fc90d = Sử dụng pin
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = Không hạn chế: Android không đóng các phiên.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = Tối ưu hoá: Android có thể đóng các phiên khi chạy nền. Chạm để cho phép không hạn chế.

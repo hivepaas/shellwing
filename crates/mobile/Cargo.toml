@@ -47,6 +47,15 @@ uniffi = "0.32"
 [target.'cfg(target_os = "ios")'.dependencies]
 shellwing-remote = { workspace = true, features = ["libgit-vendored"] }
 
+# Android: libgit2 as on iOS; and the JVM handles rustls-platform-verifier
+# needs to check certificates with Android's own trust store (WebDAV, S3),
+# given once by the app (`Java_app_shellwing_Native_init`). Their versions are
+# the ones reqwest already pulls in.
+[target.'cfg(target_os = "android")'.dependencies]
+shellwing-remote = { workspace = true, features = ["libgit-vendored"] }
+rustls-platform-verifier = "0.7"
+jni = "0.22"
+
 [lints.clippy]
 unwrap_used = "warn"
 dbg_macro = "deny"

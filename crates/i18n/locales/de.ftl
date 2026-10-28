@@ -4834,3 +4834,34 @@ t45dffa07 = Wiederherstellungsschlüssel des Tresors anzeigen
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = Nicht bestätigt: Der Schlüssel bleibt verborgen.
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+        [one] { $n } Sitzung offen
+       *[other] { $n } Sitzungen offen
+    }
+
+# Close all
+td20a2320 = Alle schließen
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = Fingerabdruck, Gesicht oder Displaysperre entsperren es.
+
+# In the background
+t206da987 = Im Hintergrund
+
+# Keep sessions connected
+t0bc12e52 = Sitzungen verbunden halten
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = Solange eine Sitzung offen ist, zeigt eine Benachrichtigung sie an und Android hält sie verbunden.
+
+# Battery use
+taa2fc90d = Akkunutzung
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = Uneingeschränkt: Android lässt die Sitzungen in Ruhe.
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = Optimiert: Android kann die Sitzungen im Hintergrund schließen. Tippen, um uneingeschränkte Nutzung zu erlauben.

@@ -1759,3 +1759,16 @@ t736fd9ad = It is asked for again next time.
 t91c53986 = Write it down and keep it apart from this phone. It opens the vault where nothing else can.
 t45dffa07 = Show the vault's recovery key
 t899a4de3 = Not confirmed: the key stays hidden.
+t113905d0 =
+    { $n ->
+        [one] { $n } session open
+       *[other] { $n } sessions open
+    }
+td20a2320 = Close all
+t218f9703 = Your fingerprint, face or screen lock unlocks it.
+t206da987 = In the background
+t0bc12e52 = Keep sessions connected
+t1bfce276 = While a session is open, a notification shows it and Android keeps it connected.
+taa2fc90d = Battery use
+tbc0972ef = Unrestricted: Android leaves the sessions alone.
+tfabc103e = Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.

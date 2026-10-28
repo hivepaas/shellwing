@@ -1,0 +1,8 @@
+# How UniFFI writes the bindings for each language (scripts/build_ios.sh,
+# scripts/build_android.sh).
+
+[bindings.kotlin]
+# The Android app's package, beside its own code.
+package_name = "com.hivepaas.shellwing.core"
+# libshellwing_mobile.so, as the Android build names it.
+cdylib_name = "shellwing_mobile"

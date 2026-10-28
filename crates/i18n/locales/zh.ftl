@@ -4692,3 +4692,33 @@ t45dffa07 = 显示保险库的恢复密钥
 
 # Not confirmed: the key stays hidden.
 t899a4de3 = 未确认：密钥保持隐藏。
+
+# {n} session open | {n} sessions open
+t113905d0 =
+    { $n ->
+       *[other] { $n } 个会话已打开
+    }
+
+# Close all
+td20a2320 = 全部关闭
+
+# Your fingerprint, face or screen lock unlocks it.
+t218f9703 = 用指纹、面容或屏幕锁定解锁。
+
+# In the background
+t206da987 = 在后台
+
+# Keep sessions connected
+t0bc12e52 = 保持会话连接
+
+# While a session is open, a notification shows it and Android keeps it connected.
+t1bfce276 = 有会话打开时，会有一条通知显示它，Android 会保持它的连接。
+
+# Battery use
+taa2fc90d = 电池用量
+
+# Unrestricted: Android leaves the sessions alone.
+tbc0972ef = 不受限制：Android 不会关闭会话。
+
+# Optimized: Android may close the sessions in the background. Tap to allow unrestricted use.
+tfabc103e = 已优化：Android 可能会在后台关闭会话。点按以允许不受限制地使用。
