@@ -9,7 +9,7 @@
 Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs between your devices, in a GPU-rendered terminal built in Rust.
 
 [![CI](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml/badge.svg)](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml)
-[![Rust](https://img.shields.io/badge/Rust-1.95+-DEA584?style=flat&logo=rust)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/Rust-1.99+-DEA584?style=flat&logo=rust)](https://www.rust-lang.org)
 [![GPUI](https://img.shields.io/badge/UI-GPUI-7B61FF?style=flat)](https://github.com/zed-industries/zed/tree/main/crates/gpui)
 [![libghostty](https://img.shields.io/badge/Terminal-libghostty-3551F3?style=flat)](https://ghostty.org)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20Windows%20%7C%20Linux-555?style=flat)](docs/platforms.md)
@@ -50,7 +50,7 @@ The releases are not signed with an Apple Developer ID or a Windows certificate 
 
 ### Building from source
 
-It needs Rust 1.95+ and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is built from source):
+It needs Rust (rustup installs the version in `rust-toolchain.toml`) and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is built from source):
 
 ```sh
 make build                    # a release build for this computer, into dist/
