@@ -115,6 +115,38 @@ fn drag_selects_and_copy_returns_the_text() {
 }
 
 #[test]
+fn pressing_twice_selects_the_word_and_clearing_lets_go() {
+    let h = harness();
+    h.term.feed(b"hello world".to_vec());
+    h.frame_where(|f| Harness::row_text(f, 0) == "hello world");
+
+    // As a phone's long press does: a double click on "world", with Shift so a
+    // program taking the mouse would not get it.
+    let shift = Mods {
+        shift: true,
+        ..Mods::default()
+    };
+    h.mouse(MouseAction::Press, 75.0, 5.0, shift);
+    h.mouse(MouseAction::Release, 75.0, 5.0, shift);
+    h.mouse(MouseAction::Press, 75.0, 5.0, shift);
+    h.mouse(MouseAction::Release, 75.0, 5.0, shift);
+    h.frame_where(|f| f.selected);
+    h.term.copy();
+    let copied = h
+        .events
+        .recv_timeout(Duration::from_secs(2))
+        .expect("copy event");
+    assert_eq!(copied, Event::Copied("world".into()));
+
+    h.term.clear_selection();
+    let f = h.frame_where(|f| !f.selected);
+    assert!(
+        f.rows[0].runs.iter().all(|r| !r.selected),
+        "no cell shows as selected"
+    );
+}
+
+#[test]
 fn unsafe_paste_is_refused_until_bracketed() {
     let h = harness();
     h.term.paste("rm -rf x\nls".into(), false);

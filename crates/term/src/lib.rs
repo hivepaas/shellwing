@@ -372,6 +372,8 @@ enum Cmd {
         allow_unsafe: bool,
     },
     Copy,
+    /// Select nothing.
+    ClearSelection,
     Mouse(MouseInput),
     /// Wheel movement in lines; negative scrolls up into history.
     Wheel {
@@ -493,6 +495,11 @@ impl TermHandle {
     /// Copies the selection; the text arrives as [`Event::Copied`].
     pub fn copy(&self) {
         let _ = self.tx.send(Cmd::Copy);
+    }
+
+    /// Lets go of the selection, as a click elsewhere does with a mouse.
+    pub fn clear_selection(&self) {
+        let _ = self.tx.send(Cmd::ClearSelection);
     }
 
     /// Writes what the terminal is sent from now on to `log`, in place of
@@ -801,6 +808,9 @@ fn run(
                             (e.events)(Event::Copied(text));
                         }
                     }
+                }
+                Cmd::ClearSelection => {
+                    e.term.set_selection(None)?;
                 }
                 Cmd::Mouse(m) => {
                     let mut out = Vec::new();

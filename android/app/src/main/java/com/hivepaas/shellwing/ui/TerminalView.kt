@@ -4,11 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.text.InputType
 import android.util.TypedValue
+import android.view.ActionMode
 import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
@@ -20,6 +25,7 @@ import com.hivepaas.shellwing.SessionModel
 import com.hivepaas.shellwing.core.FrameData
 import com.hivepaas.shellwing.core.Key
 import com.hivepaas.shellwing.core.RunData
+import com.hivepaas.shellwing.core.Selecting
 import com.hivepaas.shellwing.tr
 import java.text.BreakIterator
 import kotlin.math.ceil
@@ -36,6 +42,8 @@ class TerminalView(context: Context, private val onFocus: (Boolean) -> Unit) : V
     var frame: FrameData? = null
         set(value) {
             if (value?.seq != field?.seq) {
+                // The selection went (output moved it, a tap let it go): so does Copy.
+                if (field?.selected == true && value?.selected == false && !selecting) actions?.finish()
                 field = value
                 invalidate()
             }
@@ -173,14 +181,29 @@ class TerminalView(context: Context, private val onFocus: (Boolean) -> Unit) : V
     }
 
     // Gestures: a tap raises the keyboard (or lowers it), a drag scrolls the
-    // history, a pinch sizes the text.
+    // history, a pinch sizes the text, a long press selects.
 
     private val gestures = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent) = true
 
         override fun onSingleTapUp(e: MotionEvent): Boolean {
-            if (hasFocus() && keyboardUp) hideKeyboard() else showKeyboard()
+            // With text selected, a tap lets it go.
+            if (actions != null || frame?.selected == true) {
+                actions?.finish()
+                model?.clearSelection()
+            } else if (hasFocus() && keyboardUp) {
+                hideKeyboard()
+            } else {
+                showKeyboard()
+            }
             return true
+        }
+
+        override fun onLongPress(e: MotionEvent) {
+            actions?.finish()
+            selecting = true
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            select(Selecting.START, e)
         }
 
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
@@ -212,8 +235,62 @@ class TerminalView(context: Context, private val onFocus: (Boolean) -> Unit) : V
         }
     })
 
+    // Selecting: a long press takes the word under the finger, dragging takes
+    // more, and lifting it offers Copy in Android's floating toolbar.
+
+    private var selecting = false
+    private var actions: ActionMode? = null
+    /** Where the finger last was: the toolbar shows above it. */
+    private var touchX = 0f
+    private var touchY = 0f
+
+    private fun select(how: Selecting, e: MotionEvent) {
+        touchX = e.x
+        touchY = e.y
+        model?.select(how, e.x - inset, e.y - inset)
+    }
+
+    private val copying = object : ActionMode.Callback2() {
+        override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+            menu.add(Menu.NONE, android.R.id.copy, Menu.NONE, android.R.string.copy)
+            return true
+        }
+
+        override fun onPrepareActionMode(mode: ActionMode, menu: Menu) = false
+
+        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+            if (item.itemId != android.R.id.copy) return false
+            model?.copySelection()
+            mode.finish()
+            return true
+        }
+
+        override fun onDestroyActionMode(mode: ActionMode) {
+            actions = null
+            model?.clearSelection()
+        }
+
+        override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
+            outRect.set((touchX - cellW).toInt(), (touchY - 2 * cellH).toInt(), (touchX + cellW).toInt(), touchY.toInt())
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (selecting) {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_MOVE -> select(Selecting.EXTEND, event)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    select(Selecting.END, event)
+                    selecting = false
+                    if (event.actionMasked == MotionEvent.ACTION_UP) {
+                        actions = startActionMode(copying, ActionMode.TYPE_FLOATING)
+                    }
+                }
+            }
+            gestures.onTouchEvent(event)
+            return true
+        }
         pinch.onTouchEvent(event)
         if (!pinch.isInProgress) gestures.onTouchEvent(event)
         if (event.actionMasked == MotionEvent.ACTION_UP) scrollRest = 0f

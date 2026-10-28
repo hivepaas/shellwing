@@ -10,7 +10,7 @@ use shellwing_core::envs::{self, Envs, LoadedEnv};
 use shellwing_core::session::{RETRY_BACKOFF_SECS, Session, Status};
 use shellwing_ssh::Learned;
 use shellwing_ssh::keys::{self, Installed};
-use shellwing_term::{Event, Frame, Mods, NamedKey, Rgb};
+use shellwing_term::{Event, Frame, Mods, MouseAction, MouseButton, MouseInput, NamedKey, Rgb};
 
 use crate::MobileError;
 
@@ -68,6 +68,15 @@ pub enum Key {
     },
 }
 
+/// What a finger does to select text: a long press takes the word under it,
+/// dragging takes more, word by word, and lifting it ends the selection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum Selecting {
+    Start,
+    Extend,
+    End,
+}
+
 /// Cells of one row that share a style, and their text.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct RunData {
@@ -107,6 +116,8 @@ pub struct FrameData {
     pub alternate: bool,
     /// The history is shown, not the live screen.
     pub scrolled_back: bool,
+    /// Some text is selected: there is something to copy.
+    pub selected: bool,
     /// Grows with every frame.
     pub seq: u64,
 }
@@ -125,6 +136,8 @@ pub struct MobileSession {
     envs: Mutex<Envs>,
     /// What to say once: an environment loaded, a load given up.
     notice: Mutex<Option<String>>,
+    /// The text of the last selection copied, until taken.
+    copied: Mutex<Option<String>>,
     /// The session's SFTP, opened the first time Files asks.
     pub(crate) sftp: tokio::sync::Mutex<Option<shellwing_ssh::Sftp>>,
     /// The app's runtime: what Swift awaits runs there (`on_runtime`).
@@ -171,6 +184,7 @@ impl MobileSession {
             offer: Mutex::new(None),
             envs: Mutex::default(),
             notice: Mutex::new(None),
+            copied: Mutex::new(None),
             sftp: tokio::sync::Mutex::new(None),
             placed: Mutex::default(),
             rt: rt.clone(),
@@ -195,6 +209,10 @@ impl MobileSession {
                             if !t.is_empty() {
                                 *lock(&me.title) = t;
                             }
+                        }
+                        Ok(Event::Copied(text)) => {
+                            let Some(me) = weak.upgrade() else { break };
+                            *lock(&me.copied) = Some(text);
                         }
                         Ok(Event::Signal(signal)) => {
                             let Some(me) = weak.upgrade() else { break };
@@ -313,6 +331,49 @@ impl MobileSession {
 
     pub fn scroll_to_bottom(&self) {
         lock(&self.session).term.scroll_to_bottom();
+    }
+
+    /// Selects with a finger at (`x`, `y`), in grid pixels (see
+    /// [`Selecting`]). It selects under a program that takes the mouse too
+    /// (htop, vim with the mouse on), as Shift does with a mouse.
+    pub fn select(&self, how: Selecting, x: f32, y: f32) {
+        let term = lock(&self.session).term.clone();
+        let at = |action| MouseInput {
+            action,
+            button: Some(MouseButton::Left),
+            x,
+            y,
+            mods: Mods {
+                shift: true,
+                ..Mods::default()
+            },
+            link: false,
+        };
+        match how {
+            // Pressed twice, as a double click is: the word.
+            Selecting::Start => {
+                term.mouse(at(MouseAction::Press));
+                term.mouse(at(MouseAction::Release));
+                term.mouse(at(MouseAction::Press));
+            }
+            Selecting::Extend => term.mouse(at(MouseAction::Motion)),
+            Selecting::End => term.mouse(at(MouseAction::Release)),
+        }
+    }
+
+    pub fn clear_selection(&self) {
+        lock(&self.session).term.clear_selection();
+    }
+
+    /// Copies the selection: its text comes from [`Self::copied`] once the
+    /// terminal has it, and the listener is told.
+    pub fn copy_selection(&self) {
+        lock(&self.session).term.copy();
+    }
+
+    /// The text copied last, once.
+    pub fn copied(&self) -> Option<String> {
+        lock(&self.copied).take()
     }
 
     /// Connects again, after it was lost or closed; trying by itself starts
@@ -727,6 +788,7 @@ fn frame_data(f: &Frame) -> FrameData {
         cursor_color: hex(f.cursor_color.unwrap_or(f.foreground)),
         alternate: f.alternate,
         scrolled_back: f.scrolled_back,
+        selected: f.selected,
         seq: f.seq,
     }
 }
