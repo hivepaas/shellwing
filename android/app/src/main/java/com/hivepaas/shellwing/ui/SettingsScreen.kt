@@ -50,7 +50,7 @@ import com.hivepaas.shellwing.trN
 /** Settings: the background, the lock, connections, the language. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
+fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit, onOpen: (Screen) -> Unit) {
     val context = LocalContext.current
     var settings by remember { mutableStateOf(model.core?.settings()) }
     val change: ((com.hivepaas.shellwing.core.Shellwing) -> Unit) -> Unit = { work ->
@@ -125,6 +125,16 @@ fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
                     ),
                     s.hostKey,
                 ) { v -> change { it.setHostKey(v) } }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Heading(tr("Vault"), Modifier.padding(start = 16.dp))
+            val vault = remember { model.core?.vaultState() }
+            if (vault?.ready == false && vault.problem != null) {
+                Text(vault.problem!!, color = Dusk.bad, modifier = Modifier.padding(horizontal = 16.dp))
+            } else {
+                Row(tr("Saved passwords"), null) { onOpen(Screen.Secrets) }
+                Row(tr("Recovery key"), null) { onOpen(Screen.RecoveryKey) }
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
