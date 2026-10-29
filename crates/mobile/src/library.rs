@@ -403,6 +403,27 @@ impl Shellwing {
     }
 }
 
+/// What a new note starts with, in the app's language, as the desktop's
+/// does: how to write one, a code block, and that a session inserts it. Its
+/// words are a phone's (a tap, Preview, a session's Notes…). Left as it is,
+/// with nothing else given, the note is not kept.
+#[uniffi::export]
+pub fn note_template() -> String {
+    match shellwing_i18n::language() {
+        "vi" => include_str!("note_templates/vi.md"),
+        "de" => include_str!("note_templates/de.md"),
+        "es" => include_str!("note_templates/es.md"),
+        "fr" => include_str!("note_templates/fr.md"),
+        "ja" => include_str!("note_templates/ja.md"),
+        "ko" => include_str!("note_templates/ko.md"),
+        "pt" => include_str!("note_templates/pt.md"),
+        "ru" => include_str!("note_templates/ru.md"),
+        "zh" => include_str!("note_templates/zh.md"),
+        _ => include_str!("note_templates/en.md"),
+    }
+    .to_string()
+}
+
 impl Shellwing {
     /// The values environment `id` keeps; none for one not saved yet.
     fn env_values(&self, id: &str) -> Result<shellwing_vault::EnvValues, MobileError> {
@@ -651,5 +672,47 @@ mod tests {
             );
         }
         assert_eq!(dotenv_value("plain"), "plain", "quoted only when needed");
+    }
+
+    #[test]
+    fn every_template_has_a_heading_a_task_and_a_command() {
+        use crate::markdown::{MdKind, markdown_blocks};
+        for md in [
+            include_str!("note_templates/en.md"),
+            include_str!("note_templates/vi.md"),
+            include_str!("note_templates/de.md"),
+            include_str!("note_templates/es.md"),
+            include_str!("note_templates/fr.md"),
+            include_str!("note_templates/ja.md"),
+            include_str!("note_templates/ko.md"),
+            include_str!("note_templates/pt.md"),
+            include_str!("note_templates/ru.md"),
+            include_str!("note_templates/zh.md"),
+        ] {
+            let blocks = markdown_blocks(md.into());
+            let head = md.lines().next().unwrap_or_default();
+            assert!(
+                matches!(blocks[0].kind, MdKind::Heading { level: 1, .. }),
+                "{head}"
+            );
+            assert!(
+                blocks.iter().any(|b| matches!(
+                    b.kind,
+                    MdKind::Item {
+                        task: Some(false),
+                        task_at: Some(_),
+                        ..
+                    }
+                )),
+                "{head}: a task to tick"
+            );
+            assert!(
+                blocks.iter().any(|b| matches!(
+                    &b.kind,
+                    MdKind::Code { lang, text } if lang == "bash" && text.contains("systemctl restart")
+                )),
+                "{head}: a command to insert"
+            );
+        }
     }
 }

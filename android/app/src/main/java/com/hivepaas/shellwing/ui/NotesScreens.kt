@@ -57,6 +57,7 @@ import com.hivepaas.shellwing.AppModel
 import com.hivepaas.shellwing.SessionModel
 import com.hivepaas.shellwing.confirmOwner
 import com.hivepaas.shellwing.core.NoteRow
+import com.hivepaas.shellwing.core.noteTemplate
 import com.hivepaas.shellwing.core.toggleTask
 import com.hivepaas.shellwing.said
 import com.hivepaas.shellwing.tr
@@ -114,8 +115,16 @@ fun NoteEditorScreen(model: AppModel, note: NoteRow, onDone: () -> Unit) {
     var hosts by remember { mutableStateOf(note.hosts) }
     // A sensitive note's text is not loaded until the owner says it is them.
     var shown by remember { mutableStateOf(!note.sensitive) }
+    // A new note starts with a guide to write over, as the desktop's does.
+    val template = remember { noteTemplate() }
     var text by remember {
-        mutableStateOf(if (!note.sensitive && note.id.isNotEmpty()) runCatching { model.core?.noteText(note.id) }.getOrNull() ?: "" else "")
+        mutableStateOf(
+            when {
+                note.sensitive -> ""
+                note.id.isEmpty() -> template
+                else -> runCatching { model.core?.noteText(note.id) }.getOrNull() ?: ""
+            },
+        )
     }
     var preview by remember { mutableStateOf(note.markdown && note.id.isNotEmpty()) }
     var menu by remember { mutableStateOf(false) }
@@ -124,7 +133,9 @@ fun NoteEditorScreen(model: AppModel, note: NoteRow, onDone: () -> Unit) {
     var deleted by remember { mutableStateOf(false) }
 
     fun save() {
-        if (deleted || (title.isEmpty() && text.isEmpty() && id.isEmpty())) return
+        if (deleted) return
+        // Left untouched, a new note is not kept.
+        if (id.isEmpty() && title.isEmpty() && category.isEmpty() && hosts.isEmpty() && (text.isEmpty() || text == template)) return
         try {
             // A sensitive note not shown was not loaded: its text stays.
             id = model.core?.saveNote(id, title, category, markdown, hosts, sensitive, if (shown) text else null) ?: id
