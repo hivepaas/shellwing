@@ -3,6 +3,25 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// The app's version is the workspace's, in Cargo.toml: one for every platform
+// (docs/releasing.md).
+val workspaceVersion: String = rootProject.file("../Cargo.toml").readLines()
+    .dropWhile { it.trim() != "[workspace.package]" }
+    .firstNotNullOf { Regex("""^version = "(.+)"""").find(it)?.groupValues?.get(1) }
+
+/** 0.3.0-beta1 is 30001 and 0.3.0 is 30099: a beta comes before its release. */
+fun versionCodeOf(version: String): Int {
+    val parts = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-beta(\d+))?$""").matchEntire(version)
+        ?: error("Cargo.toml's version $version is not X.Y.Z or X.Y.Z-betaN")
+    val (major, minor, patch, beta) = parts.destructured
+    return major.toInt() * 1_000_000 + minor.toInt() * 10_000 + patch.toInt() * 100 + (beta.toIntOrNull() ?: 99)
+}
+
+// Release builds are signed when the environment holds the key: the Release
+// workflow sets these from the repository's secrets (docs/releasing.md ›
+// Signing for Android). Without it they come out unsigned.
+val keystore: String? = System.getenv("SHELLWING_KEYSTORE")
+
 android {
     namespace = "com.hivepaas.shellwing"
     compileSdk = 37
@@ -12,16 +31,28 @@ android {
         // scripts/build_android.sh builds the Rust library for the same.
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = versionCodeOf(workspaceVersion)
+        versionName = workspaceVersion
         // What libghostty-vt builds for: phones and the emulator.
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+    }
+
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("SHELLWING_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("SHELLWING_KEY_ALIAS")
+                keyPassword = System.getenv("SHELLWING_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (keystore != null) signingConfig = signingConfigs.getByName("release")
         }
     }
 
