@@ -42,7 +42,7 @@ Download the latest release from [GitHub Releases](https://github.com/hivepaas/s
 
 | System | File |
 | --- | --- |
-| macOS (Apple silicon, Intel) | `shellwing_<version>_macos_<arch>.dmg` |
+| macOS 13 or later (Apple silicon, Intel) | `shellwing_<version>_macos_<arch>.dmg` |
 | Windows | `shellwing_<version>_windows_x86_64-setup.exe`, or the `.zip` |
 | Linux (x86_64, aarch64) | the `.AppImage`, the `.deb`, or the `.tar.gz` |
 
