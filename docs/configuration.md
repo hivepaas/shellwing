@@ -137,6 +137,9 @@ as boxes, pick a UI font that has them in *Settings › Appearance › App text*
 Translations live in `crates/i18n/locales/<language>.ftl` (Fluent), each message
 under the English it translates, which is in the code. `scripts/i18n.py update`
 brings them in step with the code; `scripts/i18n.py todo vi` lists what is left.
+The guide a new note starts with is translated whole, one Markdown file per
+language: `crates/app/src/note_templates/` for the desktop,
+`crates/mobile/src/note_templates/` for phones (a tap, not a click).
 
 ## Keyboard shortcuts
 

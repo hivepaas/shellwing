@@ -862,6 +862,8 @@ struct NoteEditor: View {
     @StateObject private var editor = MarkdownEditorController()
     /// A table being edited in its grid.
     @State private var tabling: TableSheet?
+    /// What a new note starts with.
+    private let template = noteTemplate()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -981,7 +983,8 @@ struct NoteEditor: View {
             markdown = note.markdown
             sensitive = note.sensitive
             hosts = note.hosts
-            if !note.sensitive { text = note.id.isEmpty ? "" : app.noteText(note.id) }
+            // A new note starts with a guide to write over, as the desktop's does.
+            if !note.sensitive { text = note.id.isEmpty ? template : app.noteText(note.id) }
             preview = note.markdown && !note.id.isEmpty
         }
         .onDisappear(perform: save)
@@ -1023,7 +1026,9 @@ struct NoteEditor: View {
 
     private func save() {
         guard !deleted else { return }
-        guard !(title.isEmpty && text.isEmpty && id.isEmpty) else { return }
+        // Left untouched, a new note is not kept.
+        let untouched = text.isEmpty || text == template
+        guard !(id.isEmpty && title.isEmpty && category.isEmpty && hosts.isEmpty && untouched) else { return }
         // A sensitive note not shown was not loaded: its text stays.
         let body: String? = canRead ? text : nil
         switch app.saveNote(

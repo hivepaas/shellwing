@@ -901,6 +901,10 @@ mod tests {
         let mut seen = 0;
         for entry in std::fs::read_dir(&src).expect("src") {
             let path = entry.expect("entry").path();
+            // Only the code: not the note templates.
+            if path.extension().is_none_or(|e| e != "rs") {
+                continue;
+            }
             let text = std::fs::read_to_string(&path).expect("source");
             // The code above the file's tests.
             let code = text.split("\n#[cfg(test)]\nmod ").next().unwrap_or("");
