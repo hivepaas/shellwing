@@ -808,6 +808,12 @@ t66ef7116 = 已复制公钥。
 # Not renamed: {e}
 t836adf69 = 未重命名：{ $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = 此后你的任何设备都无法再从这里用它登录拥有其公钥的服务器。
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } 使用它登录：这些主机将改为尝试其他方式（代理、~/.ssh、密码）。拥有其公钥的服务器会一直保留该公钥，直到你在服务器上将其删除。
+
 # Deleted {name}.
 t0c7abd07 = 已删除 { $name }。
 
@@ -990,12 +996,6 @@ t2c552c07 = 重命名密钥
 
 # Rename
 tc80631f3 = 重命名
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = 此后你的任何设备都无法再从这里用它登录拥有其公钥的服务器。
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } 使用它登录：这些主机将改为尝试其他方式（代理、~/.ssh、密码）。拥有其公钥的服务器会一直保留该公钥，直到你在服务器上将其删除。
 
 # Export {name}
 t78124df8 = 导出 { $name }
@@ -2497,6 +2497,9 @@ t5956f56a = { $size }，非文本
 # Edit…
 t8e7efcd7 = 编辑…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 它将从保险库中删除，你的其他设备同步后也会删除。已放置的地方会保留。
+
 # Choose a file…
 t28a576c9 = 选择文件…
 
@@ -2575,6 +2578,9 @@ t79d75da2 =
        *[other] { $n } 个代码片段需要
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
+
 # Change
 ta1de2fdd = 更改
 
@@ -2619,12 +2625,6 @@ td4e41905 = 仅输入，不运行
 
 # with {envs}
 tba31f3bb = 使用 { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = 它将从保险库中删除，你的其他设备同步后也会删除。已放置的地方会保留。
 
 # None yet.
 t786bc275 = 还没有。

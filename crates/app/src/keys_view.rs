@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 
 use gpui::{
     ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton,
-    Pixels, Point, Render, SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*,
-    px, rgb,
+    Pixels, Point, PromptLevel, Render, SharedString, WeakEntity, Window, anchored, deferred, div,
+    prelude::*, px, rgb,
 };
 use shellwing_i18n::{tr, tr_n};
 use shellwing_ssh::keys::{self, KeyFile, KeyInfo, KeyKind, ReadError};
@@ -62,9 +62,6 @@ enum Dialog {
     Rename {
         id: String,
         input: Entity<TextInput>,
-    },
-    Delete {
-        kept: Kept,
     },
     Export {
         kept: Kept,
@@ -299,7 +296,7 @@ impl KeysView {
             Dialog::Generate { name, .. } => Some(name.clone()),
             Dialog::Rename { input, .. } => Some(input.clone()),
             Dialog::Export { pass, .. } | Dialog::Unlock { pass, .. } => Some(pass.clone()),
-            Dialog::Generated { .. } | Dialog::Delete { .. } => None,
+            Dialog::Generated { .. } => None,
         };
         self.dialog = Some(dialog);
         self.menu = None;
@@ -448,20 +445,52 @@ impl KeysView {
         }
     }
 
-    fn delete(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::Delete { kept }) = &self.dialog else {
-            return;
+    /// Asks before `kept` goes, in the app's own question, as quitting asks:
+    /// Tab moves between its answers, and nothing under it takes a click.
+    /// Then deletes it.
+    fn ask_delete(&mut self, kept: Kept, window: &mut Window, cx: &mut Context<Self>) {
+        self.menu = None;
+        let users = self.users.get(&kept.id).cloned().unwrap_or_default();
+        let what = if users.is_empty() {
+            tr!(
+                "Servers that have its public key will not let it in from here any more, from any of your devices."
+            )
+        } else {
+            tr!(
+                "{hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.",
+                hosts = users.join(", ")
+            )
         };
-        let (id, name) = (kept.id.clone(), kept.name.clone());
+        let (yes, no) = (tr!("Delete"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Delete {name}?", name = &kept.name),
+            Some(&what),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let yes = matches!(answer.await, Ok(0));
+            let _ = this.update_in(cx, |v, window, cx| {
+                window.focus(&v.focus, cx);
+                if yes {
+                    v.delete(&kept.id, &kept.name, cx);
+                }
+            });
+        })
+        .detach();
+        cx.notify();
+    }
+
+    fn delete(&mut self, id: &str, name: &str, cx: &mut Context<Self>) {
         let result = self
             .vault
             .get()
             .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
+            .and_then(|v| v.delete(id).map_err(|e| e.to_string()));
         match result {
             Ok(()) => {
-                self.say(tr!("Deleted {name}.", name = &name), false, cx);
+                self.say(tr!("Deleted {name}.", name = name), false, cx);
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
@@ -822,7 +851,6 @@ impl KeysView {
             "enter" => match &self.dialog {
                 Some(Dialog::Generate { .. }) => self.generate(cx),
                 Some(Dialog::Rename { .. }) => self.rename(window, cx),
-                Some(Dialog::Delete { .. }) => self.delete(window, cx),
                 Some(Dialog::Export { .. }) => self.export(window, cx),
                 Some(Dialog::Unlock {
                     path, pass, then, ..
@@ -1279,15 +1307,10 @@ impl KeysView {
                         )),
                     )
                 };
-                menu =
-                    menu.child(line())
-                        .child(
-                            item("menu-delete", &tr!("Delete…"), true).on_click(cx.listener(
-                                move |v, _, w, cx| {
-                                    v.open(Dialog::Delete { kept: k4.clone() }, w, cx)
-                                },
-                            )),
-                        );
+                menu = menu.child(line()).child(
+                    item("menu-delete", &tr!("Delete…"), true)
+                        .on_click(cx.listener(move |v, _, w, cx| v.ask_delete(k4.clone(), w, cx))),
+                );
             }
             MenuFor::File(i) => {
                 let f = self.listed.files.get(i)?.clone();
@@ -1424,7 +1447,6 @@ impl KeysView {
                 |v, _, w, cx| match &v.dialog {
                     Some(Dialog::Generate { .. }) => v.generate(cx),
                     Some(Dialog::Rename { .. }) => v.rename(w, cx),
-                    Some(Dialog::Delete { .. }) => v.delete(w, cx),
                     Some(Dialog::Export { .. }) => v.export(w, cx),
                     Some(Dialog::Unlock {
                         path, pass, then, ..
@@ -1656,31 +1678,6 @@ impl KeysView {
                     ("rename-ok", tr!("Rename").as_str()),
                     cx,
                 )),
-            Dialog::Delete { kept } => {
-                let users = self.users.get(&kept.id).cloned().unwrap_or_default();
-                let what = if users.is_empty() {
-                    tr!(
-                        "Servers that have its public key will not let it in from here any more, from any of your devices."
-                    )
-                } else {
-                    tr!(
-                        "{hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.",
-                        hosts = users.join(", ")
-                    )
-                };
-                card.child(title(tr!("Delete {name}?", name = &kept.name)))
-                    .child(
-                        div()
-                            .text_size(ui(12.5))
-                            .text_color(rgb(colors().label))
-                            .child(what),
-                    )
-                    .child(buttons(
-                        Some(tr!("Cancel").as_str()),
-                        ("delete-ok", tr!("Delete").as_str()),
-                        cx,
-                    ))
-            }
             Dialog::Export {
                 kept,
                 pass,
@@ -1856,6 +1853,9 @@ impl Render for KeysView {
                             .items_center()
                             .justify_center()
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            // Nothing under it takes the mouse: no click,
+                            // hover or scroll reaches the page.
+                            .occlude()
                             .child(card),
                     ),
                 )

@@ -302,27 +302,6 @@ impl SnippetsView {
         }
     }
 
-    pub(super) fn delete_file(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::DeleteFile { file }) = &self.dialog else {
-            return;
-        };
-        let (id, name) = (file.id.clone(), file.name.clone());
-        let done = self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
-        match done {
-            Ok(()) => {
-                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
-        }
-    }
-
     pub(super) fn file_rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
         let filed = self.files.iter().any(|f| !f.category.trim().is_empty());
         let mut last: Option<String> = None;
@@ -418,9 +397,10 @@ impl SnippetsView {
                         Self::small(("file-delete", i), &tr!("Delete"))
                             .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
-                                v.dialog = Some(Dialog::DeleteFile { file: del.clone() });
-                                window_focus(&v.focus, w, cx);
-                                cx.notify();
+                                let detail = tr!(
+                                    "It goes from the vault, and from your other devices once they sync. Where it was placed, it stays."
+                                );
+                                v.ask_delete(del.id.clone(), del.name.clone(), detail, w, cx)
                             })),
                     )
                     .into_any_element(),

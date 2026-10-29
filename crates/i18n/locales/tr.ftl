@@ -836,6 +836,12 @@ t66ef7116 = Genel anahtar kopyalandı.
 # Not renamed: {e}
 t836adf69 = Yeniden adlandırılmadı: { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Genel anahtarına sahip sunucular artık onu buradan, hiçbir cihazınızdan içeri almayacak.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } bununla giriş yapıyor: bunun yerine diğer yolları (ajan, ~/.ssh, parola) deneyecekler. Genel anahtarına sahip sunucular, siz oradan kaldırana kadar onu tutar.
+
 # Deleted {name}.
 t0c7abd07 = { $name } silindi.
 
@@ -1022,12 +1028,6 @@ t2c552c07 = Anahtarı yeniden adlandır
 
 # Rename
 tc80631f3 = Yeniden adlandır
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = Genel anahtarına sahip sunucular artık onu buradan, hiçbir cihazınızdan içeri almayacak.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } bununla giriş yapıyor: bunun yerine diğer yolları (ajan, ~/.ssh, parola) deneyecekler. Genel anahtarına sahip sunucular, siz oradan kaldırana kadar onu tutar.
 
 # Export {name}
 t78124df8 = Dışa aktar: { $name }
@@ -2548,6 +2548,9 @@ t5956f56a = { $size }, metin değil
 # Edit…
 t8e7efcd7 = Düzenle…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Kasadan ve eşitlemeden sonra diğer cihazlarınızdan da silinir. Yerleştirildiği yerlerde kalır.
+
 # Choose a file…
 t28a576c9 = Dosya seç…
 
@@ -2627,6 +2630,9 @@ t79d75da2 =
        *[other] { $n } kod parçacığı gerektiriyor
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Değişkenleri kasadan ve eşitlemeden sonra diğer cihazlarınızdan da silinir. Yüklendiği kabuklar onları boşaltılana kadar tutar.
+
 # Change
 ta1de2fdd = Değiştir
 
@@ -2671,12 +2677,6 @@ td4e41905 = yazılır, çalıştırılmaz
 
 # with {envs}
 tba31f3bb = { $envs } ile
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = Değişkenleri kasadan ve eşitlemeden sonra diğer cihazlarınızdan da silinir. Yüklendiği kabuklar onları boşaltılana kadar tutar.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = Kasadan ve eşitlemeden sonra diğer cihazlarınızdan da silinir. Yerleştirildiği yerlerde kalır.
 
 # None yet.
 t786bc275 = Henüz yok.

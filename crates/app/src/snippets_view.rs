@@ -2,8 +2,8 @@
 //! edit and delete. They run from the palette (see `snippets`).
 
 use gpui::{
-    Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
-    SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*, px, rgb,
+    Context, Entity, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, PromptLevel,
+    Render, SharedString, WeakEntity, Window, anchored, deferred, div, prelude::*, px, rgb,
 };
 use shellwing_i18n::{tr, tr_n};
 
@@ -44,18 +44,13 @@ impl Dialog {
         match self {
             Dialog::EditEnv(e) => Some((&mut e.scope, &mut e.pick)),
             Dialog::EditFile(f) => Some((&mut f.scope, &mut f.pick)),
-            _ => None,
         }
     }
 }
 
 enum Dialog {
-    Delete { snippet: Snippet },
     EditEnv(Box<environments::EnvEdit>),
-    DeleteEnv { env: Environment },
     EditFile(Box<config_files::FileEdit>),
-    DeleteFile { file: shellwing_vault::ConfigFile },
-    DeleteNote { note: shellwing_vault::Note },
 }
 
 pub struct SnippetsView {
@@ -230,25 +225,53 @@ impl SnippetsView {
         }
     }
 
-    fn delete(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::Delete { snippet }) = &self.dialog else {
-            return;
-        };
-        let (id, name) = (snippet.id.clone(), snippet.name.clone());
+    /// Asks before `name` (the vault's `id`: a snippet, an environment, a
+    /// config file, a note) goes, in the app's own question, as quitting
+    /// asks: Tab moves between its answers, and nothing under it takes a
+    /// click. Then deletes it.
+    pub(super) fn ask_delete(
+        &mut self,
+        id: String,
+        name: String,
+        detail: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let (yes, no) = (tr!("Delete"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Delete {name}?", name = name.as_str()),
+            Some(&detail),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let yes = matches!(answer.await, Ok(0));
+            let _ = this.update_in(cx, |v, window, cx| {
+                window.focus(&v.focus, cx);
+                if yes {
+                    v.delete(&id, &name, cx);
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn delete(&mut self, id: &str, name: &str, cx: &mut Context<Self>) {
         let done = self
             .vault
             .get()
             .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
+            .and_then(|v| v.delete(id).map_err(|e| e.to_string()));
         match done {
             Ok(()) => {
-                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
+                self.notice = Some((tr!("Deleted {name}.", name = name).into(), false));
                 self.vault_changed(cx);
                 self.refresh(cx);
             }
             Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
         }
+        cx.notify();
     }
 
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -258,12 +281,8 @@ impl SnippetsView {
         match ev.keystroke.key.as_str() {
             "escape" => self.close(window, cx),
             "enter" => match &self.dialog {
-                Some(Dialog::Delete { .. }) => self.delete(window, cx),
                 Some(Dialog::EditEnv(_)) => self.env_enter(window, cx),
-                Some(Dialog::DeleteEnv { .. }) => self.delete_env(window, cx),
                 Some(Dialog::EditFile(_)) => self.file_enter(window, cx),
-                Some(Dialog::DeleteFile { .. }) => self.delete_file(window, cx),
-                Some(Dialog::DeleteNote { .. }) => self.delete_note(window, cx),
                 None => {}
             },
             _ => return,
@@ -537,11 +556,10 @@ impl SnippetsView {
                 Self::small(("snippet-delete", i), &tr!("Delete"))
                     .text_color(rgb(colors().bad))
                     .on_click(cx.listener(move |v, _, w, cx| {
-                        v.dialog = Some(Dialog::Delete {
-                            snippet: del.clone(),
-                        });
-                        window_focus(&v.focus, w, cx);
-                        cx.notify();
+                        let detail = tr!(
+                            "It goes from the vault, and from your other devices once they sync."
+                        );
+                        v.ask_delete(del.id.clone(), del.name.clone(), detail, w, cx)
                     })),
             )
             .into_any_element()
@@ -697,12 +715,8 @@ impl SnippetsView {
             .child(
                 primary_button("snippet-ok", ok).on_click(cx.listener(
                     |v, _, w, cx| match &v.dialog {
-                        Some(Dialog::Delete { .. }) => v.delete(w, cx),
                         Some(Dialog::EditEnv(_)) => v.save_env(w, cx),
-                        Some(Dialog::DeleteEnv { .. }) => v.delete_env(w, cx),
                         Some(Dialog::EditFile(_)) => v.save_file(w, cx),
-                        Some(Dialog::DeleteFile { .. }) => v.delete_file(w, cx),
-                        Some(Dialog::DeleteNote { .. }) => v.delete_note(w, cx),
                         None => {}
                     },
                 )),
@@ -732,55 +746,9 @@ impl SnippetsView {
             .shadow_lg()
             .text_color(rgb(colors().text))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation());
-        let title = dialog_title;
-        let buttons = Self::buttons;
         Some(match d {
-            Dialog::Delete { snippet } => card
-                .child(title(&tr!("Delete {name}?", name = snippet.name.as_str())))
-                .child(
-                    div()
-                        .text_size(ui(12.5))
-                        .text_color(rgb(colors().label))
-                        .child(tr!(
-                            "It goes from the vault, and from your other devices once they sync."
-                        )),
-                )
-                .child(buttons(&tr!("Delete"), cx)),
-            Dialog::DeleteEnv { env } => card
-                .child(title(&tr!("Delete {name}?", name = env.name.as_str())))
-                .child(
-                    div()
-                        .text_size(ui(12.5))
-                        .text_color(rgb(colors().label))
-                        .child(tr!(
-                            "Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded."
-                        )),
-                )
-                .child(buttons(&tr!("Delete"), cx)),
             Dialog::EditEnv(e) => self.env_card(e, card, window, cx),
             Dialog::EditFile(f) => self.file_card(f, card, window, cx),
-            Dialog::DeleteNote { note } => card
-                .child(title(&tr!("Delete {name}?", name = note.title.as_str())))
-                .child(
-                    div()
-                        .text_size(ui(12.5))
-                        .text_color(rgb(colors().label))
-                        .child(tr!(
-                            "It goes from the vault, and from your other devices once they sync."
-                        )),
-                )
-                .child(buttons(&tr!("Delete"), cx)),
-            Dialog::DeleteFile { file } => card
-                .child(title(&tr!("Delete {name}?", name = file.name.as_str())))
-                .child(
-                    div()
-                        .text_size(ui(12.5))
-                        .text_color(rgb(colors().label))
-                        .child(tr!(
-                            "It goes from the vault, and from your other devices once they sync. Where it was placed, it stays."
-                        )),
-                )
-                .child(buttons(&tr!("Delete"), cx)),
         })
     }
 }
@@ -790,10 +758,6 @@ fn dialog_title(s: &str) -> gpui::Div {
         .text_size(ui(16.))
         .font_weight(FontWeight::SEMIBOLD)
         .child(s.to_string())
-}
-
-fn window_focus(f: &FocusHandle, window: &mut Window, cx: &mut Context<SnippetsView>) {
-    window.focus(f, cx);
 }
 
 impl Render for SnippetsView {
@@ -976,6 +940,9 @@ impl Render for SnippetsView {
                             .items_center()
                             .justify_center()
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                            // Nothing under it takes the mouse: no click,
+                            // hover or scroll reaches the page.
+                            .occlude()
                             .child(card),
                     ),
                 )

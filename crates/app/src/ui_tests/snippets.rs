@@ -518,3 +518,76 @@ scenario!(
         ui.wait_until("the snippet in the vault", |ui| added(ui, "system/memory"));
     }
 );
+
+/// The names of the user's snippets.
+fn snippet_names(ui: &mut Ui) -> Vec<String> {
+    ui.vault()
+        .and_then(|v| v.snippets().ok())
+        .unwrap_or_default()
+        .into_iter()
+        .map(|s| s.name)
+        .collect()
+}
+
+scenario!(
+    /// A snippet deleted in Settings › Snippets is asked about first, in the
+    /// app's own question (as quitting is: Tab moves between its answers,
+    /// nothing under it takes a click): Cancel keeps it, Delete takes it
+    /// from the vault.
+    a_snippet_deleted_in_settings_is_asked_about_first,
+    |ui| {
+        ui.open();
+        snippet(ui, "Disk", "df -h", true, vec![]);
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Snippets");
+        ui.click("snippet-delete-0");
+        ui.answer_prompt("Cancel");
+        assert_eq!(snippet_names(ui), ["Disk"]);
+        ui.click("snippet-delete-0");
+        ui.answer_prompt("Delete");
+        ui.wait_until("it deleted", |ui| snippet_names(ui).is_empty());
+    }
+);
+
+scenario!(
+    /// While a form is open over Settings (a new environment's), nothing
+    /// under it takes the mouse: a click on the page's list of pages, or the
+    /// wheel over the page beside the form, leaves the page as it is.
+    nothing_under_a_settings_form_takes_the_mouse,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        // Enough to scroll.
+        for n in 0..30 {
+            environment(ui, &format!("Env {n:02}"));
+        }
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Environments");
+        ui.wait_until("them listed", |ui| ui.find("env-edit-29").is_some());
+        let page = ui.bounds("settings-content");
+        assert!(
+            ui.bounds("env-edit-29").bottom() > page.bottom(),
+            "the page does not scroll"
+        );
+        ui.click("env-new");
+        assert!(ui.find("env-paste").is_some(), "the form");
+        let first = ui.bounds("env-edit-0");
+        let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+        vcx.simulate_event(gpui::ScrollWheelEvent {
+            // Left of the form, over the page.
+            position: gpui::point(page.left() + gpui::px(12.), page.center().y),
+            delta: gpui::ScrollDelta::Lines(gpui::point(0., -10.)),
+            ..Default::default()
+        });
+        ui.cx.run_until_parked();
+        assert_eq!(ui.bounds("env-edit-0"), first, "the page scrolled");
+        ui.click("settings-page:Snippets");
+        assert_eq!(
+            ui.settings_page(),
+            Some(crate::settings_view::Page::Environments)
+        );
+        assert!(ui.find("env-paste").is_some(), "the form stays");
+    }
+);
