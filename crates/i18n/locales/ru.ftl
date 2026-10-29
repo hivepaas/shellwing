@@ -4723,6 +4723,9 @@ t71962a99 = Отмечено
 # shellwing may not use that folder.
 t39f14b58 = У shellwing нет доступа к этой папке.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Теперь этот телефон синхронизируется там. Ключ восстановления открывает хранилище на других ваших устройствах: запишите его.
+
 # Place
 t9ad2489c = Место
 
@@ -4764,9 +4767,6 @@ tbc9bc44d = Подтвердите на { $device }, если там показ�
 
 # Joined: this phone syncs there now.
 tfb82a94e = Подключено: теперь этот телефон синхронизируется там.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = Теперь этот телефон синхронизируется там. Ключ восстановления открывает хранилище на других ваших устройствах: запишите его.
 
 # Where
 t91dad0f8 = Где

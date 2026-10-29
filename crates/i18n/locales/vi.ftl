@@ -4471,6 +4471,9 @@ t71962a99 = Đã chọn
 # shellwing may not use that folder.
 t39f14b58 = shellwing không được phép dùng thư mục đó.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Giờ điện thoại này đồng bộ ở đó. Khoá khôi phục mở được kho trên các thiết bị khác của bạn: hãy ghi lại.
+
 # Place
 t9ad2489c = Chỗ đồng bộ
 
@@ -4512,9 +4515,6 @@ tbc9bc44d = Hãy đồng ý trên { $device } nếu nó hiện cùng mã.
 
 # Joined: this phone syncs there now.
 tfb82a94e = Đã tham gia: giờ điện thoại này đồng bộ ở đó.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = Giờ điện thoại này đồng bộ ở đó. Khoá khôi phục mở được kho trên các thiết bị khác của bạn: hãy ghi lại.
 
 # Where
 t91dad0f8 = Nơi đồng bộ

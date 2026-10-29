@@ -4471,6 +4471,9 @@ t71962a99 = 選択済み
 # shellwing may not use that folder.
 t39f14b58 = shellwing はそのフォルダを使用できません。
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = この iPhone はそこと同期するようになりました。復旧キーで他のデバイスでも保管庫を開けます。書き留めておいてください。
+
 # Place
 t9ad2489c = 同期先
 
@@ -4512,9 +4515,6 @@ tbc9bc44d = 同じコードが表示されていれば、{ $device } で承認�
 
 # Joined: this phone syncs there now.
 tfb82a94e = 参加しました。この iPhone はそこと同期します。
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = この iPhone はそこと同期するようになりました。復旧キーで他のデバイスでも保管庫を開けます。書き留めておいてください。
 
 # Where
 t91dad0f8 = 場所

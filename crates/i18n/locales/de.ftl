@@ -4613,6 +4613,9 @@ t71962a99 = Ausgewählt
 # shellwing may not use that folder.
 t39f14b58 = shellwing darf diesen Ordner nicht verwenden.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Dieses iPhone synchronisiert jetzt dort. Der Wiederherstellungsschlüssel öffnet den Tresor auf deinen anderen Geräten: Schreib ihn auf.
+
 # Place
 t9ad2489c = Ort
 
@@ -4654,9 +4657,6 @@ tbc9bc44d = Bestätige auf { $device }, wenn es denselben Code zeigt.
 
 # Joined: this phone syncs there now.
 tfb82a94e = Beigetreten: Dieses iPhone synchronisiert jetzt dort.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = Dieses iPhone synchronisiert jetzt dort. Der Wiederherstellungsschlüssel öffnet den Tresor auf deinen anderen Geräten: Schreib ihn auf.
 
 # Where
 t91dad0f8 = Wo

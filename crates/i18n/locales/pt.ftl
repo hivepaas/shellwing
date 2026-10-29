@@ -4613,6 +4613,9 @@ t71962a99 = Marcado
 # shellwing may not use that folder.
 t39f14b58 = O shellwing não tem permissão para usar essa pasta.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Este celular agora sincroniza lá. A chave de recuperação abre o cofre nos seus outros dispositivos: anote-a.
+
 # Place
 t9ad2489c = Local
 
@@ -4654,9 +4657,6 @@ tbc9bc44d = Aprove em { $device } se ele mostrar o mesmo código.
 
 # Joined: this phone syncs there now.
 tfb82a94e = Pronto: este celular agora sincroniza lá.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = Este celular agora sincroniza lá. A chave de recuperação abre o cofre nos seus outros dispositivos: anote-a.
 
 # Where
 t91dad0f8 = Onde
