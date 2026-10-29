@@ -60,14 +60,17 @@ fn extreme_kitty_graphics() -> String {
     let (max, imax, imin) = (u32::MAX, i32::MAX, i32::MIN);
     // One red RGB pixel, base64.
     let pixel = "/wAA";
+    // The terminal answers a command naming an image (`i=`) on the input,
+    // which this shell would take as typed: `q=2` asks it not to, as programs
+    // drawing images do.
     [
         format!("a=T,f=24,s=1,v=1,c={max},r={max};{pixel}"),
         format!("a=T,f=24,s=1,v=1,X={max},Y={max};{pixel}"),
         format!("a=T,f=24,s=1,v=1,x={max},y={max},w={max},h={max};{pixel}"),
         format!("a=T,f=24,s={max},v={max};{pixel}"),
-        format!("a=t,f=24,s=1,v=1,i=7;{pixel}"),
-        "a=p,i=7,p=1".to_string(),
-        format!("a=p,i=7,p=2,P=7,Q=1,H={imax},V={imin}"),
+        format!("a=t,f=24,s=1,v=1,i=7,q=2;{pixel}"),
+        "a=p,i=7,p=1,q=2".to_string(),
+        format!("a=p,i=7,p=2,P=7,Q=1,H={imax},V={imin},q=2"),
     ]
     .iter()
     .map(|c| format!("\x1b_G{c}\x1b\\"))
