@@ -4613,6 +4613,9 @@ t71962a99 = Coché
 # shellwing may not use that folder.
 t39f14b58 = shellwing n'a pas le droit d'utiliser ce dossier.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = Ce téléphone s'y synchronise désormais. La clé de récupération ouvre le coffre sur vos autres appareils : notez-la.
+
 # Place
 t9ad2489c = Emplacement
 
@@ -4654,9 +4657,6 @@ tbc9bc44d = Approuvez sur { $device } s'il affiche le même code.
 
 # Joined: this phone syncs there now.
 tfb82a94e = Ajouté : ce téléphone s'y synchronise désormais.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = Ce téléphone s'y synchronise désormais. La clé de récupération ouvre le coffre sur vos autres appareils : notez-la.
 
 # Where
 t91dad0f8 = Où

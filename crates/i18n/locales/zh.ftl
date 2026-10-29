@@ -4471,6 +4471,9 @@ t71962a99 = 已选
 # shellwing may not use that folder.
 t39f14b58 = shellwing 无权使用该文件夹。
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = 此手机现在会同步到那里。恢复密钥可在你的其他设备上打开保险库：请把它记下来。
+
 # Place
 t9ad2489c = 位置
 
@@ -4512,9 +4515,6 @@ tbc9bc44d = 如果 { $device } 显示相同的代码，请在那台设备上批�
 
 # Joined: this phone syncs there now.
 tfb82a94e = 已加入：此手机现在会同步到那里。
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = 此手机现在会同步到那里。恢复密钥可在你的其他设备上打开保险库：请把它记下来。
 
 # Where
 t91dad0f8 = 存放位置

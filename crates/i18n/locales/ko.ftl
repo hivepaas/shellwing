@@ -4471,6 +4471,9 @@ t71962a99 = 선택됨
 # shellwing may not use that folder.
 t39f14b58 = shellwing은 이 폴더를 사용할 수 없습니다.
 
+# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
+t237ca793 = 이제 이 휴대폰은 그 위치와 동기화합니다. 복구 키로 다른 기기에서 보관함을 열 수 있으니 적어 두세요.
+
 # Place
 t9ad2489c = 위치
 
@@ -4512,9 +4515,6 @@ tbc9bc44d = 같은 코드가 표시되면 { $device }에서 승인하세요.
 
 # Joined: this phone syncs there now.
 tfb82a94e = 참여했습니다. 이제 이 휴대폰은 그 위치와 동기화합니다.
-
-# This phone syncs there now. The recovery key opens the vault on your other devices: write it down.
-t237ca793 = 이제 이 휴대폰은 그 위치와 동기화합니다. 복구 키로 다른 기기에서 보관함을 열 수 있으니 적어 두세요.
 
 # Where
 t91dad0f8 = 위치
