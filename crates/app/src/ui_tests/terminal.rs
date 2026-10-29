@@ -263,6 +263,35 @@ scenario!(
 );
 
 scenario!(
+    /// With no history kept (`scrollback = 0`), a host clearing the screen
+    /// into it again and again, the cursor styled or linked, leaves the
+    /// session working: a clear that dropped the cursor's page once corrupted
+    /// libghostty's styles and links (GHSA-w9q4-5jvv-mcv4).
+    clears_with_no_history_kept,
+    |ui| {
+        ui.config_file("config.toml", "[terminal]\nscrollback = 0\n");
+        signed_in(ui);
+        ui.line("clears");
+        ui.wait_for("cleared");
+        ui.line("still here");
+        ui.wait_for("you said: still here");
+    }
+);
+
+scenario!(
+    /// Kitty graphics from the host with the largest sizes and offsets the
+    /// protocol carries leave the session working (GHSA-mhff-mv4q-fp63).
+    extreme_kitty_graphics_from_the_host,
+    |ui| {
+        signed_in(ui);
+        ui.line("kitty");
+        ui.wait_for("images sent");
+        ui.line("still here");
+        ui.wait_for("you said: still here");
+    }
+);
+
+scenario!(
     /// Ctrl/Cmd and = makes this pane's font bigger, and 0 brings it back.
     zoom_keys_change_the_font_size,
     |ui| {
