@@ -23,6 +23,11 @@ What is generated, and not committed: `ios/Generated/` (the XCFramework and
 `shellwing_mobile.swift`), `ios/Shellwing.xcodeproj` and its `Info.plist`.
 Edit `ios/project.yml` for the project's settings.
 
+Zig 0.17.0's standard library does not compile for iOS
+([ziglang/zig#37061](https://codeberg.org/ziglang/zig/issues/37061), fixed for
+0.17.1). `scripts/build_ios.sh` builds with a patched copy of it in
+`target/zig-lib-ios` (`ZIG_LIB_DIR`), leaving the Zig installed alone.
+
 Where GitHub is slow to clone from, `GHOSTTY_SOURCE_DIR=<a ghostty checkout>`
 reuses one, such as the one a desktop build left under
 `target/release/build/libghostty-vt-sys-*/out/ghostty-src`.

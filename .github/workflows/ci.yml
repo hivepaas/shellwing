@@ -198,6 +198,13 @@ jobs:
 
       - uses: ./.github/actions/fetch-ghostty
 
+      # Zig 0.17.0's standard library does not compile for iOS; every build
+      # below uses a patched copy (scripts/zig-0.17.0-ios.patch).
+      - name: Zig's lib directory for iOS
+        run: |
+          dir=$(scripts/zig_lib_ios.sh "$RUNNER_TEMP/zig-lib-ios")
+          if [ -n "$dir" ]; then echo "ZIG_LIB_DIR=$dir" >> "$GITHUB_ENV"; fi
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ios-sim-arm64

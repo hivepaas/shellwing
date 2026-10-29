@@ -29,6 +29,13 @@ OUT="$ROOT/ios/Generated"
 LIB=libshellwing_mobile.a
 TARGETS=(aarch64-apple-ios aarch64-apple-ios-sim)
 
+# Zig 0.17.0's standard library does not compile for iOS: build with a
+# patched copy of it (scripts/zig-0.17.0-ios.patch).
+ZIG_LIB_IOS=$("$ROOT/scripts/zig_lib_ios.sh" "$ROOT/target/zig-lib-ios")
+if [[ -n "$ZIG_LIB_IOS" ]]; then
+	export ZIG_LIB_DIR="$ZIG_LIB_IOS"
+fi
+
 for t in "${TARGETS[@]}"; do
 	echo "building shellwing-mobile for $t ($PROFILE)"
 	"$CARGO" build -p shellwing-mobile --lib $FLAG --target "$t"
