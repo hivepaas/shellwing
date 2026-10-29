@@ -81,6 +81,9 @@ sealed interface Screen {
     data class ConfigFileEditor(val file: ConfigFileRow) : Screen
     data object Secrets : Screen
     data object RecoveryKey : Screen
+    /** The terminal's theme, the app's. */
+    data object AppTheme : Screen
+    data object KnownHosts : Screen
     data object SnippetLibrary : Screen
     data object Sync : Screen
 }
@@ -168,6 +171,8 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
         is Screen.ConfigFileEditor -> { ConfigFileEditorScreen(model, top.file, onDone = back); return }
         Screen.Secrets -> { SecretsScreen(model, onBack = back); return }
         Screen.RecoveryKey -> { RecoveryKeyScreen(model, onBack = back); return }
+        Screen.AppTheme -> { AppThemeScreen(model, onBack = back); return }
+        Screen.KnownHosts -> { KnownHostsScreen(model, onBack = back); return }
         Screen.SnippetLibrary -> { SnippetLibraryScreen(model, onBack = back); return }
         Screen.Sync -> { SyncScreen(model, onBack = back); return }
         null -> {}

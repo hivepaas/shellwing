@@ -17,6 +17,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.hivepaas.shellwing.core.KnownHostRow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,6 +114,20 @@ fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit, onOpen
             if (lock.after > 0) Row(tr("Lock now"), null) { onLockNow() }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Heading(tr("Terminal"), Modifier.padding(start = 16.dp))
+            settings?.let { s ->
+                val themeName = remember(s.theme) { model.core?.themes()?.firstOrNull { it.id == s.theme }?.name ?: s.theme }
+                Row(tr("Theme"), themeName) { onOpen(Screen.AppTheme) }
+                TextSize(model)
+                Choice(
+                    tr("History"),
+                    SCROLLBACKS.map { it to trN(it.toInt(), "{n} line", "{n} lines") },
+                    s.scrollback,
+                ) { v -> change { it.setScrollback(v) } }
+            }
+            Footer(tr("Sessions opened after a change take it. A pinch on the terminal sizes its text too; the size is this phone's own."))
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Heading(tr("Connections"), Modifier.padding(start = 16.dp))
             settings?.let { s ->
                 Choice(
@@ -125,7 +148,14 @@ fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit, onOpen
                     ),
                     s.hostKey,
                 ) { v -> change { it.setHostKey(v) } }
+                Choice(
+                    tr("Keepalive"),
+                    KEEPALIVES.map { it to if (it == 0uL) tr("None") else trN(it.toInt(), "Every {n} second", "Every {n} seconds") },
+                    s.keepalive,
+                ) { v -> change { it.setKeepalive(v) } }
             }
+            Row(tr("Known hosts"), null) { onOpen(Screen.KnownHosts) }
+            Footer(tr("A host's own, in its editor, wins. A key that changed is always refused: forget the host in Known hosts to accept its new one."))
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Heading(tr("Vault"), Modifier.padding(start = 16.dp))
@@ -162,6 +192,101 @@ fun SettingsScreen(model: AppModel, lock: AppLock, onLockNow: () -> Unit, onOpen
             model.problem?.let {
                 Heading(tr("Problem"), Modifier.padding(start = 16.dp, top = 8.dp))
                 Text(it, color = Dusk.bad, modifier = Modifier.padding(16.dp))
+            }
+        }
+    }
+}
+
+private val SCROLLBACKS = listOf(1_000uL, 5_000uL, 10_000uL, 50_000uL, 100_000uL)
+private val KEEPALIVES = listOf(0uL, 15uL, 30uL, 60uL, 120uL)
+
+/** The terminal's text size, this phone's own (a pinch on the terminal sets it too). */
+@Composable
+private fun TextSize(model: AppModel) {
+    var size by remember { mutableFloatStateOf(model.prefs.getFloat(TerminalView.SIZE_KEY, TerminalView.DEFAULT_SIZE)) }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(tr("Text size"), fontSize = 16.sp, modifier = Modifier.weight(1f))
+            Text("%s sp".format(if (size % 1f == 0f) size.toInt().toString() else size.toString()), fontSize = 14.sp, color = Dusk.muted)
+        }
+        Slider(
+            value = size,
+            onValueChange = { size = Math.round(it * 2) / 2f },
+            onValueChangeFinished = { model.prefs.edit().putFloat(TerminalView.SIZE_KEY, size).apply() },
+            // Half points, as a pinch makes them; no tick for each.
+            valueRange = TerminalView.MIN_SIZE..TerminalView.MAX_SIZE,
+        )
+    }
+}
+
+@Composable
+private fun Footer(text: String) {
+    Text(text, fontSize = 13.sp, color = Dusk.muted, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+}
+
+/** The terminal's theme, the app's: sessions opened after take it. */
+@Composable
+fun AppThemeScreen(model: AppModel, onBack: () -> Unit) {
+    val themes = remember { model.core?.themes() ?: emptyList() }
+    ThemePicker(themes, model.core?.settings()?.theme, appDefault = false, onBack = onBack) { id ->
+        if (id != null) {
+            try {
+                model.core?.setTheme(id)
+            } catch (e: Exception) {
+                model.error = e.said()
+            }
+        }
+        onBack()
+    }
+}
+
+/** The hosts whose keys are known; one forgotten has its key asked about again next time. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun KnownHostsScreen(model: AppModel, onBack: () -> Unit) {
+    var problem by remember { mutableStateOf<String?>(null) }
+    fun read(): List<KnownHostRow> = try {
+        (model.core?.knownHosts() ?: emptyList()).also { problem = null }
+    } catch (e: Exception) {
+        problem = e.said()
+        emptyList()
+    }
+    var rows by remember { mutableStateOf(read()) }
+    var filter by rememberSaveable { mutableStateOf("") }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Settings")) } },
+                title = { Text(tr("Known hosts")) },
+            )
+        },
+    ) { pad ->
+        Box(Modifier.padding(pad)) {
+            val q = filter.lowercase()
+            val shown = rows.filter { q.isEmpty() || it.names.any { n -> n.lowercase().contains(q) } }
+            Library(
+                filter = filter, onFilter = { filter = it }, filterHint = tr("Filter by name"),
+                empty = if (rows.isEmpty() && problem == null) tr("No host keys known yet: a host's is kept the first time you connect.") else null,
+            ) {
+                problem?.let { item { Text(it, color = Dusk.bad, modifier = Modifier.padding(16.dp)) } }
+                items(shown, key = { it.line.toString() }) { r ->
+                    val name = if (r.names.isEmpty()) tr("A hashed name") else r.names.joinToString(", ")
+                    Item(
+                        title = name, sub = "${r.kind} · ${r.fingerprint}", mono = true, onClick = {},
+                        onDelete = {
+                            try {
+                                model.core?.forgetKnownHosts(listOf(r.line))
+                            } catch (e: Exception) {
+                                model.error = e.said()
+                            }
+                            rows = read()
+                        },
+                        deleteTitle = tr("Forget the key of {host}?", "host" to name),
+                        deleteSays = tr("It is shown to check again the next time you connect."),
+                        deleteLabel = tr("Forget"),
+                        trailing = { r.marker?.let { Text(it, fontSize = 11.sp, color = Dusk.amber) } },
+                    )
+                }
             }
         }
     }
