@@ -6,7 +6,7 @@ use gpui::{
     Context, Entity, EventEmitter, FocusHandle, Focusable, KeyDownEvent, MouseButton, Render,
     ScrollHandle, SharedString, Subscription, Window, div, prelude::*, px, rgb,
 };
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 /// The most a question's list (not the main palette's) is high before it
 /// scrolls.
@@ -44,6 +44,14 @@ pub enum PaletteEvent {
     PlaceFile(String),
     /// Open a note (by id) in its window.
     OpenNote(String),
+    /// A command of the snippet library (by id): typed into the focused
+    /// pane, or (`add`, Alt+Enter) shown in the library to add.
+    Library {
+        id: String,
+        add: bool,
+    },
+    /// The snippet library, finding these words.
+    FindInLibrary(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -147,7 +155,17 @@ pub enum Kind {
     File(String),
     /// A note to open in its window, by id.
     OpenNote(String),
+    /// A command of the snippet library not added yet, by id: listed only
+    /// when words typed find it, and a few at most.
+    Library(String),
+    /// The rest of what the words typed find in the library: they are
+    /// found there.
+    LibraryMore(String),
 }
+
+/// How many of the library's commands the palette lists at most; a line
+/// after them opens the library on the rest.
+const LIBRARY_SHOWN: usize = 5;
 
 /// What part of the palette an entry is in, to jump to from the row of
 /// badges under the field. Several groups can be one section (the
@@ -204,6 +222,9 @@ pub struct Entry {
     pub status: Option<Status>,
     pub hint: SharedString,
     pub section: Part,
+    /// More words that find it, lowercase: a library command's tool, task,
+    /// about and command.
+    pub keywords: String,
 }
 
 impl Entry {
@@ -216,7 +237,13 @@ impl Entry {
             status: None,
             hint: SharedString::default(),
             section: Part::Other,
+            keywords: String::new(),
         }
+    }
+
+    pub fn keywords(mut self, k: &str) -> Self {
+        self.keywords = k.to_lowercase();
+        self
     }
 
     pub fn section(mut self, s: Part) -> Self {
@@ -259,6 +286,18 @@ fn score(e: &Entry, query: &str) -> Option<u8> {
         let mut rest = all.chars();
         query.chars().all(|q| rest.any(|c| c == q)).then_some(3)
     }
+}
+
+/// How well `words` (lowercase) find a library command: all in its title,
+/// else all in its title and keywords; None when one is missing. Words, not
+/// letters in order: among hundreds, those would find nearly every one.
+fn word_score(e: &Entry, words: &[&str]) -> Option<u8> {
+    let title = e.title.to_lowercase();
+    if words.iter().all(|w| title.contains(w)) {
+        return Some(0);
+    }
+    let all = format!("{title} {}", e.keywords);
+    words.iter().all(|w| all.contains(w)).then_some(1)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -475,6 +514,7 @@ impl Palette {
             .iter()
             .enumerate()
             .filter(|(_, e)| !actions_only || matches!(e.kind, Kind::Action(_)))
+            .filter(|(_, e)| !matches!(e.kind, Kind::Library(_)))
             .filter_map(|(i, e)| score(e, &query).map(|s| (s, i, e.clone())))
             .collect();
         if !query.is_empty() {
@@ -493,6 +533,41 @@ impl Palette {
             // After a clearly matching host, before a weak one.
             let at = if best.is_some_and(|s| s <= 1) { 1 } else { 0 };
             shown.insert(at.min(shown.len()), connect);
+        }
+        // The library's commands after everything else, once a word is
+        // typed: a few, and a line for the rest.
+        if !actions_only && query.chars().count() >= 2 {
+            let words: Vec<&str> = query.split_whitespace().collect();
+            let mut found: Vec<(u8, usize)> = self
+                .entries
+                .iter()
+                .enumerate()
+                .filter(|(_, e)| matches!(e.kind, Kind::Library(_)))
+                .filter_map(|(i, e)| word_score(e, &words).map(|s| (s, i)))
+                .collect();
+            found.sort();
+            let more = found.len().saturating_sub(LIBRARY_SHOWN);
+            shown.extend(
+                found
+                    .iter()
+                    .take(LIBRARY_SHOWN)
+                    .map(|(_, i)| self.entries[*i].clone()),
+            );
+            if more > 0 {
+                shown.push(
+                    Entry::new(
+                        Kind::LibraryMore(typed.clone()),
+                        tr!("Snippet library"),
+                        tr_n!(
+                            more,
+                            "{n} more in the snippet library…",
+                            "{n} more in the snippet library…"
+                        ),
+                    )
+                    .hint("Enter")
+                    .section(Part::Snippets),
+                );
+            }
         }
         self.shown = shown;
         self.unfiltered = typed.is_empty();
@@ -558,7 +633,8 @@ impl Palette {
         matches!(self.mode, Mode::Connect | Mode::Choose | Mode::Themes) && self.unfiltered
     }
 
-    /// `all`: Alt+Enter, a snippet for every pane of the tab.
+    /// `all`: Alt+Enter, a snippet for every pane of the tab, a library
+    /// command to add.
     fn choose(&mut self, ix: usize, all: bool, cx: &mut Context<Self>) {
         let Some(e) = self.shown.get(ix) else {
             return;
@@ -586,6 +662,11 @@ impl Palette {
             Kind::Env(id) => PaletteEvent::LoadEnv(id.clone()),
             Kind::File(id) => PaletteEvent::PlaceFile(id.clone()),
             Kind::OpenNote(id) => PaletteEvent::OpenNote(id.clone()),
+            Kind::Library(id) => PaletteEvent::Library {
+                id: id.clone(),
+                add: all,
+            },
+            Kind::LibraryMore(words) => PaletteEvent::FindInLibrary(words.clone()),
             Kind::Note => return,
         });
     }
@@ -625,6 +706,18 @@ impl Palette {
 }
 
 impl Palette {
+    /// What is listed (each entry's kind and title) and the selected one's
+    /// place.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn listed(&self) -> (Vec<(Kind, String)>, usize) {
+        let list = self
+            .shown
+            .iter()
+            .map(|e| (e.kind.clone(), e.title.to_string()))
+            .collect();
+        (list, self.selected)
+    }
+
     /// The row of badges under the field, one a section listed; the
     /// selected entry's lit. A click jumps there.
     fn badges(&self, cx: &mut Context<Self>) -> Option<gpui::Div> {
@@ -888,5 +981,17 @@ mod tests {
         assert_eq!(score(&db, "dbpr"), Some(3));
         assert_eq!(score(&db, "xyz"), None);
         assert_eq!(score(&db, ""), Some(0));
+    }
+
+    #[test]
+    fn library_commands_are_found_by_every_word() {
+        let dump = Entry::new(Kind::Library("pg/dump".into()), "", "Dump a database")
+            .keywords("PostgreSQL Backup Everything in one file pg_dump -Fc");
+        assert_eq!(word_score(&dump, &["dump", "data"]), Some(0));
+        assert_eq!(word_score(&dump, &["postgresql", "dump"]), Some(1));
+        assert_eq!(word_score(&dump, &["pg_dump"]), Some(1));
+        assert_eq!(word_score(&dump, &["dump", "mysql"]), None);
+        // Letters in order are not enough.
+        assert_eq!(word_score(&dump, &["dmp"]), None);
     }
 }

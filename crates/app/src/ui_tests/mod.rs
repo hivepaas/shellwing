@@ -453,6 +453,14 @@ impl Ui {
         })
     }
 
+    /// The palette's list (each entry's kind and title) and the selected
+    /// entry's place; None while it is closed.
+    pub fn palette_list(&mut self) -> Option<(Vec<(crate::palette::Kind, String)>, usize)> {
+        self.cx.run_until_parked();
+        let p = self.ws(|ws, _, _| ws.palette_view())?;
+        Some(self.cx.read(|cx| p.read(cx).listed()))
+    }
+
     /// The snippet library's window, once open.
     pub fn library_window(&mut self) -> Option<WindowHandle<crate::library_window::LibraryWindow>> {
         self.cx.update(|cx| {

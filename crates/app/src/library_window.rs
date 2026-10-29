@@ -48,11 +48,22 @@ struct Opened(Option<WindowHandle<LibraryWindow>>);
 
 impl gpui::Global for Opened {}
 
-/// Opens the library's window, or brings it forward.
-pub fn open(vault: VaultSlot, hooks: Hooks, cx: &mut App) {
+/// Where the library opens, from the palette.
+pub enum At {
+    /// A command, by id: shown, and ticked to add.
+    Item(String),
+    /// The words typed in the palette, to find there.
+    Find(String),
+}
+
+/// Opens the library's window, or brings it forward; at `at` when given.
+pub fn open(vault: VaultSlot, hooks: Hooks, mut at: Option<At>, cx: &mut App) {
     if let Some(h) = cx.default_global::<Opened>().0
         && h.update(cx, |v, window, cx| {
             v.refresh(cx);
+            if let Some(at) = at.take() {
+                v.go_to(at, cx);
+            }
             window.activate_window();
         })
         .is_ok()
@@ -76,7 +87,13 @@ pub fn open(vault: VaultSlot, hooks: Hooks, cx: &mut App) {
         ..Default::default()
     };
     let opened = cx.open_window(options, |window, cx| {
-        cx.new(|cx| LibraryWindow::new(vault, hooks, window, cx))
+        cx.new(|cx| {
+            let mut v = LibraryWindow::new(vault, hooks, window, cx);
+            if let Some(at) = at {
+                v.go_to(at, cx);
+            }
+            v
+        })
     });
     match opened {
         Ok(h) => {
@@ -201,6 +218,40 @@ impl LibraryWindow {
         };
         v.refresh(cx);
         v
+    }
+
+    /// Shows `at` among every tool and task: the words found, or a command
+    /// focused and ticked, found by its name.
+    fn go_to(&mut self, at: At, cx: &mut Context<Self>) {
+        let words = match at {
+            At::Find(words) => words,
+            At::Item(id) => {
+                let Some(n) = library::items().iter().position(|i| i.id == id) else {
+                    return;
+                };
+                self.focused = Some(n);
+                self.checked.insert(n);
+                self.picking_env = false;
+                library::items()[n].name.clone()
+            }
+        };
+        self.shelf = Shelf::All;
+        self.task = None;
+        self.not_added = false;
+        self.query
+            .update(cx, |q, cx| q.set_text(&words, words.len()..words.len(), cx));
+        cx.notify();
+    }
+
+    /// The command focused, those ticked, and the words typed.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn at(&self, cx: &App) -> (Option<String>, Vec<String>, String) {
+        let id = |n: &usize| library::items()[*n].id.clone();
+        (
+            self.focused.as_ref().map(id),
+            self.checked.iter().map(id).collect(),
+            self.query.read(cx).text().to_string(),
+        )
     }
 
     /// What was added, and the environments, as the vault has them now.

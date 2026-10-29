@@ -196,7 +196,7 @@ impl SnippetsView {
     /// The snippet library, in its window.
     fn open_library(&mut self, cx: &mut Context<Self>) {
         if let Some(w) = self.workspace.upgrade() {
-            w.update(cx, |ws, cx| ws.open_library(cx));
+            w.update(cx, |ws, cx| ws.open_library(None, cx));
         }
     }
 

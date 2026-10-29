@@ -1573,6 +1573,12 @@ t51c5c888 = 连接到 { $typed }
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = 新地址；会应用 ~/.ssh/config 中的 Host 块
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+       *[other] 代码片段库中还有 { $n } 条…
+    }
+
 # Enter again to forget
 t850e9777 = 再按 Enter 忘记
 
@@ -3198,6 +3204,15 @@ t134e12f0 =
     { $n ->
        *[other] { $n } 条可添加的现成命令
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = 请先打开一个标签页 · Alt+Enter：添加…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter 输入 · Alt+Enter：添加…
+
+# Library · {tool}
+t8f5c1ee7 = 代码片段库 · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 请先打开一个标签页：代码片段在选中的窗格中运行。

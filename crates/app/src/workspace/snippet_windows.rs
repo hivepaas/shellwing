@@ -58,8 +58,12 @@ impl Workspace {
         }
     }
 
-    /// Opens the snippet library's window.
-    pub(crate) fn open_library(&mut self, cx: &mut Context<Self>) {
+    /// Opens the snippet library's window, at `at` when given.
+    pub(crate) fn open_library(
+        &mut self,
+        at: Option<crate::library_window::At>,
+        cx: &mut Context<Self>,
+    ) {
         let ws = cx.entity().downgrade();
         let (added, open, touched) = (ws.clone(), ws.clone(), ws);
         let hooks = crate::library_window::Hooks {
@@ -80,7 +84,7 @@ impl Workspace {
             }),
         };
         let vault = self.vault.clone();
-        cx.defer(move |cx| crate::library_window::open(vault, hooks, cx));
+        cx.defer(move |cx| crate::library_window::open(vault, hooks, at, cx));
     }
 
     /// Opens `snippet` (None: a new one) in its window.

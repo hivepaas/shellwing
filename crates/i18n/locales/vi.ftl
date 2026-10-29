@@ -1573,6 +1573,12 @@ t51c5c888 = Kết nối tới { $typed }
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = một địa chỉ mới; khối Host trong ~/.ssh/config sẽ được áp dụng
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+       *[other] Còn { $n } lệnh trong thư viện đoạn lệnh…
+    }
+
 # Enter again to forget
 t850e9777 = Nhấn Enter lần nữa để quên
 
@@ -3198,6 +3204,15 @@ t134e12f0 =
     { $n ->
        *[other] { $n } lệnh có sẵn để thêm
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = Hãy mở một tab trước · Alt+Enter: thêm…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter để gõ vào · Alt+Enter: thêm…
+
+# Library · {tool}
+t8f5c1ee7 = Thư viện · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = Hãy mở một tab trước: đoạn lệnh chạy trong pane đang chọn.

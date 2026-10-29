@@ -1648,6 +1648,15 @@ t51c5c888 = Подключиться к { $typed }
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = новый адрес; применяется блок Host из ~/.ssh/config
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+        [one] ещё { $n } в библиотеке сниппетов…
+        [few] ещё { $n } в библиотеке сниппетов…
+        [many] ещё { $n } в библиотеке сниппетов…
+       *[other] ещё { $n } в библиотеке сниппетов…
+    }
+
 # Enter again to forget
 t850e9777 = Enter ещё раз, чтобы забыть
 
@@ -3375,6 +3384,15 @@ t134e12f0 =
         [many] { $n } готовых команд для добавления
        *[other] { $n } готовой команды для добавления
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = Сначала откройте вкладку · Alt+Enter: добавить…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter вводит её · Alt+Enter: добавить…
+
+# Library · {tool}
+t8f5c1ee7 = Библиотека · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = Сначала откройте вкладку: сниппет выполняется в выбранной панели.

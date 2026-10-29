@@ -1616,6 +1616,13 @@ t51c5c888 = Conectar a { $typed }
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = una dirección nueva; se aplica un bloque Host de ~/.ssh/config
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+        [one] { $n } más en la biblioteca de fragmentos…
+       *[other] { $n } más en la biblioteca de fragmentos…
+    }
+
 # Enter again to forget
 t850e9777 = Enter otra vez para olvidar
 
@@ -3297,6 +3304,15 @@ t134e12f0 =
         [one] { $n } comando listo para añadir
        *[other] { $n } comandos listos para añadir
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = Abre una pestaña primero · Alt+Enter: añadir…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter lo escribe · Alt+Enter: añadir…
+
+# Library · {tool}
+t8f5c1ee7 = Biblioteca · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = Abre una pestaña primero: un fragmento se ejecuta en el panel seleccionado.
