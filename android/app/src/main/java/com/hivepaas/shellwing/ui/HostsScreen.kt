@@ -24,7 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -32,6 +34,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -82,7 +85,12 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                         tint = Dusk.accent, modifier = Modifier.padding(start = 16.dp, end = 8.dp).size(26.dp),
                     )
                 },
-                actions = { SyncButton(model) { onOpen(Screen.Sync) } },
+                actions = {
+                    IconButton(onClick = { onOpen(Screen.GroupEditor(null)) }) {
+                        Icon(Icons.Outlined.CreateNewFolder, tr("New group"))
+                    }
+                    SyncButton(model) { onOpen(Screen.Sync) }
+                },
             )
         },
         floatingActionButton = {
@@ -101,7 +109,8 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                 words.isEmpty() || h.name.lowercase().contains(words) || h.detail.lowercase().contains(words) ||
                     h.tags.any { it.lowercase().contains(words) }
             }
-            if (hosts.isEmpty()) null else s.copy(hosts = hosts)
+            // A group with no hosts yet shows, to be edited, unless filtered out.
+            if (hosts.isEmpty() && (words.isNotEmpty() || s.hosts.isNotEmpty())) null else s.copy(hosts = hosts)
         }
         LazyColumn(Modifier.fillMaxSize().padding(pad)) {
             item {
@@ -160,10 +169,26 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                             Icon(Icons.Filled.Star, null, tint = Dusk.amber, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(8.dp))
                         }
-                        Heading(section.name ?: tr("Hosts"), Modifier.weight(1f))
+                        Heading(section.name ?: tr("Hosts"))
+                        val group = section.name.takeUnless { section.favorites }
+                        if (group != null) {
+                            IconButton(onClick = { onOpen(Screen.GroupEditor(group)) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Edit, tr("Edit {name}", "name" to group), tint = Dusk.muted, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
                         Text(
                             trN(section.hosts.size, "{n} host", "{n} hosts"),
                             fontSize = 12.sp, color = Dusk.muted,
+                        )
+                    }
+                }
+                if (section.hosts.isEmpty()) {
+                    item(key = "empty:" + section.name) {
+                        Text(
+                            tr("No hosts yet. Choose this group in a host's editor."),
+                            fontSize = 14.sp, color = Dusk.muted,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
                 }
