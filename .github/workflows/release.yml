@@ -67,7 +67,10 @@ jobs:
           - { name: windows-x86_64, runner: windows-latest }
     runs-on: ${{ matrix.runner }}
     env:
-      MACOSX_DEPLOYMENT_TARGET: '11.0'
+      # The oldest macOS shellwing runs on, as Info.plist says: Ghostty's
+      # build makes libghostty-vt for macOS 13 whatever it is asked
+      # (scripts/check_macos_minimum.sh holds the two together).
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
       # Whether the repository holds a Developer ID (not the secret itself).
       MACOS_SIGNING: ${{ secrets.MACOS_CERTIFICATE != '' }}
     steps:
