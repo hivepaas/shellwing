@@ -73,6 +73,8 @@ sealed interface Screen {
     data class Files(val sessionId: String) : Screen
     /** A host's editor; a new host's without an id. */
     data class HostEditor(val hostId: String?) : Screen
+    /** A group's editor; a new group's without a name. */
+    data class GroupEditor(val name: String?) : Screen
     data class SnippetEditor(val edit: SnippetEdit) : Screen
     data class EnvEditor(val env: EnvRow) : Screen
     data class NoteEditor(val note: NoteRow) : Screen
@@ -159,6 +161,7 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
             })
             return
         }
+        is Screen.GroupEditor -> { GroupEditorScreen(model, top.name, onDone = back); return }
         is Screen.SnippetEditor -> { SnippetEditorScreen(model, top.edit, onDone = back); return }
         is Screen.EnvEditor -> { EnvEditorScreen(model, top.env, onDone = back); return }
         is Screen.NoteEditor -> { NoteEditorScreen(model, top.note, onDone = back); return }

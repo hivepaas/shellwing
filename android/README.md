@@ -38,7 +38,7 @@ libghostty-vt builds for 64-bit Android only.
 | `KeystoreKeys.kt` | The vault's key, encrypted by a key in Android's keystore, in the no-backup folder: on this device only |
 | `AppLock.kt` | Lock shellwing when away: the fingerprint, the face or the screen lock (BiometricPrompt) |
 | `ui/TerminalView.kt` | The terminal: draws a frame's runs, takes the on-screen keyboard and a physical one, scrolls the history, pinch sizes the text, a long press selects (dragging takes more) and offers Copy |
-| `ui/` | Hosts, a session with the keys a phone lacks, Sessions, the host editor, a session's files, the library, the vault, sync, Settings, the lock |
+| `ui/` | Hosts, a session with the keys a phone lacks, Sessions, the host and group editors, a session's files, the library, the vault, sync, Settings, the lock |
 
 Coming back to the app, or a network change, checks each session
 (`MobileSession.resumed`) as on iOS. `Native.init` hands the core the app's
