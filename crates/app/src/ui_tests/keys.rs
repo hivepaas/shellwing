@@ -152,7 +152,7 @@ scenario!(
         ui.wait_until("renamed", |ui| vault_keys(ui) == ["deploy-key"]);
         ui.click("kept-more-0");
         ui.click("menu-delete");
-        ui.click("delete-ok");
+        ui.answer_prompt("Delete");
         ui.wait_until("deleted", |ui| vault_keys(ui).is_empty());
     }
 );

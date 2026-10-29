@@ -829,6 +829,12 @@ t66ef7116 = Kunci publik disalin.
 # Not renamed: {e}
 t836adf69 = Nama tidak diganti: { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Server yang memiliki kunci publiknya tidak akan lagi menerima kunci ini dari sini, dari perangkat Anda mana pun.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } masuk dengan kunci ini: host tersebut akan mencoba cara lain (agen, ~/.ssh, kata sandi) sebagai gantinya. Server yang memiliki kunci publiknya tetap menyimpannya sampai Anda menghapusnya di sana.
+
 # Deleted {name}.
 t0c7abd07 = { $name } dihapus.
 
@@ -1014,12 +1020,6 @@ t2c552c07 = Ganti nama kunci
 
 # Rename
 tc80631f3 = Ganti nama
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = Server yang memiliki kunci publiknya tidak akan lagi menerima kunci ini dari sini, dari perangkat Anda mana pun.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } masuk dengan kunci ini: host tersebut akan mencoba cara lain (agen, ~/.ssh, kata sandi) sebagai gantinya. Server yang memiliki kunci publiknya tetap menyimpannya sampai Anda menghapusnya di sana.
 
 # Export {name}
 t78124df8 = Ekspor { $name }
@@ -2527,6 +2527,9 @@ t5956f56a = { $size }, bukan teks
 # Edit…
 t8e7efcd7 = Edit…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Berkas ini dihapus dari brankas, dan dari perangkat Anda yang lain setelah tersinkron. Yang sudah ditempatkan tetap ada di sana.
+
 # Choose a file…
 t28a576c9 = Pilih berkas…
 
@@ -2605,6 +2608,9 @@ t79d75da2 =
        *[other] dibutuhkan oleh { $n } snippet
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Variabelnya dihapus dari brankas, dan dari perangkat Anda yang lain setelah tersinkron. Shell tempat lingkungan ini dimuat tetap menyimpannya sampai dilepas.
+
 # Change
 ta1de2fdd = Ubah
 
@@ -2649,12 +2655,6 @@ td4e41905 = diketik, tidak dijalankan
 
 # with {envs}
 tba31f3bb = dengan { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = Variabelnya dihapus dari brankas, dan dari perangkat Anda yang lain setelah tersinkron. Shell tempat lingkungan ini dimuat tetap menyimpannya sampai dilepas.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = Berkas ini dihapus dari brankas, dan dari perangkat Anda yang lain setelah tersinkron. Yang sudah ditempatkan tetap ada di sana.
 
 # None yet.
 t786bc275 = Belum ada.

@@ -11,27 +11,6 @@ impl SnippetsView {
         }
     }
 
-    pub(super) fn delete_note(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::DeleteNote { note }) = &self.dialog else {
-            return;
-        };
-        let (id, name) = (note.id.clone(), note.title.clone());
-        let done = self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
-        match done {
-            Ok(()) => {
-                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
-        }
-    }
-
     pub(super) fn note_rows(&self, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
         let filed = self.notes.iter().any(|n| !n.category.trim().is_empty());
         let mut last: Option<String> = None;
@@ -135,9 +114,15 @@ impl SnippetsView {
                             .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
                                 cx.stop_propagation();
-                                v.dialog = Some(Dialog::DeleteNote { note: del.clone() });
-                                window_focus(&v.focus, w, cx);
-                                cx.notify();
+                                let name = if del.title.is_empty() {
+                                    tr!("this note")
+                                } else {
+                                    del.title.clone()
+                                };
+                                let detail = tr!(
+                                    "It goes from the vault, and from your other devices once they sync."
+                                );
+                                v.ask_delete(del.id.clone(), name, detail, w, cx)
                             })),
                     )
                     .into_any_element(),

@@ -829,6 +829,12 @@ t66ef7116 = 已複製公鑰。
 # Not renamed: {e}
 t836adf69 = 未重新命名：{ $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = 此後你的任何裝置都無法再從這裡用它登入擁有其公鑰的伺服器。
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } 使用它登入：這些主機將改為嘗試其他方式（代理程式、~/.ssh、密碼）。擁有其公鑰的伺服器會一直保留該公鑰，直到你在伺服器上將其移除。
+
 # Deleted {name}.
 t0c7abd07 = 已刪除 { $name }。
 
@@ -1014,12 +1020,6 @@ t2c552c07 = 重新命名金鑰
 
 # Rename
 tc80631f3 = 重新命名
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = 此後你的任何裝置都無法再從這裡用它登入擁有其公鑰的伺服器。
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } 使用它登入：這些主機將改為嘗試其他方式（代理程式、~/.ssh、密碼）。擁有其公鑰的伺服器會一直保留該公鑰，直到你在伺服器上將其移除。
 
 # Export {name}
 t78124df8 = 匯出 { $name }
@@ -2527,6 +2527,9 @@ t5956f56a = { $size }，非文字
 # Edit…
 t8e7efcd7 = 編輯…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 它將從保險庫中刪除，你的其他裝置同步後也會刪除。已放置的地方會保留。
+
 # Choose a file…
 t28a576c9 = 選擇檔案…
 
@@ -2605,6 +2608,9 @@ t79d75da2 =
        *[other] { $n } 個程式碼片段需要
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 其變數將從保險庫中刪除，你的其他裝置同步後也會刪除。已載入它的 shell 會保留這些變數，直到卸載為止。
+
 # Change
 ta1de2fdd = 變更
 
@@ -2649,12 +2655,6 @@ td4e41905 = 僅輸入，不執行
 
 # with {envs}
 tba31f3bb = 使用 { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = 其變數將從保險庫中刪除，你的其他裝置同步後也會刪除。已載入它的 shell 會保留這些變數，直到卸載為止。
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = 它將從保險庫中刪除，你的其他裝置同步後也會刪除。已放置的地方會保留。
 
 # None yet.
 t786bc275 = 還沒有。

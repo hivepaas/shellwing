@@ -836,6 +836,12 @@ t66ef7116 = Clé publique copiée.
 # Not renamed: {e}
 t836adf69 = Non renommée : { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Les serveurs qui ont sa clé publique ne l'accepteront plus depuis ici, depuis aucun de vos appareils.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } se connectent avec elle : ils essaieront plutôt les autres moyens (l'agent, ~/.ssh, un mot de passe). Les serveurs qui ont sa clé publique la conservent jusqu'à ce que vous l'y retiriez.
+
 # Deleted {name}.
 t0c7abd07 = { $name } supprimée.
 
@@ -1022,12 +1028,6 @@ t2c552c07 = Renommer la clé
 
 # Rename
 tc80631f3 = Renommer
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = Les serveurs qui ont sa clé publique ne l'accepteront plus depuis ici, depuis aucun de vos appareils.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } se connectent avec elle : ils essaieront plutôt les autres moyens (l'agent, ~/.ssh, un mot de passe). Les serveurs qui ont sa clé publique la conservent jusqu'à ce que vous l'y retiriez.
 
 # Export {name}
 t78124df8 = Exporter { $name }
@@ -2548,6 +2548,9 @@ t5956f56a = { $size }, pas du texte
 # Edit…
 t8e7efcd7 = Modifier…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation. Là où il a été déposé, il reste.
+
 # Choose a file…
 t28a576c9 = Choisir un fichier…
 
@@ -2627,6 +2630,9 @@ t79d75da2 =
        *[other] requis par { $n } extraits
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
+
 # Change
 ta1de2fdd = Modifier
 
@@ -2671,12 +2677,6 @@ td4e41905 = saisi, non exécuté
 
 # with {envs}
 tba31f3bb = avec { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = Ses variables sont retirées du coffre, et de vos autres appareils dès leur synchronisation. Les shells où il est chargé les gardent jusqu'au déchargement.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = Il est retiré du coffre, et de vos autres appareils dès leur synchronisation. Là où il a été déposé, il reste.
 
 # None yet.
 t786bc275 = Aucun pour l'instant.

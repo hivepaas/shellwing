@@ -808,6 +808,12 @@ t66ef7116 = Đã sao chép khoá công khai.
 # Not renamed: {e}
 t836adf69 = Chưa đổi tên: { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Các máy chủ có khoá công khai của nó sẽ không còn cho nó đăng nhập từ đây nữa, từ bất kỳ thiết bị nào của bạn.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } đăng nhập bằng khoá này: chúng sẽ thử các cách khác (agent, ~/.ssh, mật khẩu). Các máy chủ có khoá công khai của nó vẫn giữ cho đến khi bạn gỡ ở đó.
+
 # Deleted {name}.
 t0c7abd07 = Đã xoá { $name }.
 
@@ -990,12 +996,6 @@ t2c552c07 = Đổi tên khoá
 
 # Rename
 tc80631f3 = Đổi tên
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = Các máy chủ có khoá công khai của nó sẽ không còn cho nó đăng nhập từ đây nữa, từ bất kỳ thiết bị nào của bạn.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } đăng nhập bằng khoá này: chúng sẽ thử các cách khác (agent, ~/.ssh, mật khẩu). Các máy chủ có khoá công khai của nó vẫn giữ cho đến khi bạn gỡ ở đó.
 
 # Export {name}
 t78124df8 = Xuất { $name }
@@ -2497,6 +2497,9 @@ t5956f56a = { $size }, không phải văn bản
 # Edit…
 t8e7efcd7 = Sửa…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Tệp bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Những nơi đã đặt tệp thì vẫn giữ.
+
 # Choose a file…
 t28a576c9 = Chọn tệp…
 
@@ -2575,6 +2578,9 @@ t79d75da2 =
        *[other] { $n } đoạn lệnh cần dùng
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
+
 # Change
 ta1de2fdd = Đổi
 
@@ -2619,12 +2625,6 @@ td4e41905 = chỉ gõ, không chạy
 
 # with {envs}
 tba31f3bb = kèm { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = Tệp bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Những nơi đã đặt tệp thì vẫn giữ.
 
 # None yet.
 t786bc275 = Chưa có.

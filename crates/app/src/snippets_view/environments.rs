@@ -182,27 +182,6 @@ impl SnippetsView {
         }
     }
 
-    pub(super) fn delete_env(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(Dialog::DeleteEnv { env }) = &self.dialog else {
-            return;
-        };
-        let (id, name) = (env.id.clone(), env.name.clone());
-        let done = self
-            .vault
-            .get()
-            .ok_or_else(|| tr!("the vault is not open"))
-            .and_then(|v| v.delete(&id).map_err(|e| e.to_string()));
-        self.close(window, cx);
-        match done {
-            Ok(()) => {
-                self.notice = Some((tr!("Deleted {name}.", name = name.as_str()).into(), false));
-                self.vault_changed(cx);
-                self.refresh(cx);
-            }
-            Err(e) => self.notice = Some((tr!("Not deleted: {e}", e = e).into(), true)),
-        }
-    }
-
     /// Fills the rows from `.env` text on the clipboard: a name already
     /// there takes the value, others are added.
     fn paste_dotenv(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -448,9 +427,10 @@ impl SnippetsView {
                         Self::small(("env-delete", i), &tr!("Delete"))
                             .text_color(rgb(colors().bad))
                             .on_click(cx.listener(move |v, _, w, cx| {
-                                v.dialog = Some(Dialog::DeleteEnv { env: del.clone() });
-                                window_focus(&v.focus, w, cx);
-                                cx.notify();
+                                let detail = tr!(
+                                    "Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded."
+                                );
+                                v.ask_delete(del.id.clone(), del.name.clone(), detail, w, cx)
                             })),
                     )
                     .into_any_element()

@@ -808,6 +808,12 @@ t66ef7116 = 公開鍵をコピーしました。
 # Not renamed: {e}
 t836adf69 = 名前を変更できませんでした：{ $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = 公開鍵を登録しているサーバーにも、今後はどのデバイスからもこの鍵で接続できなくなります。
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } はこの鍵でサインインしています。今後は他の方法（エージェント、~/.ssh、パスワード）を試します。サーバーに登録された公開鍵は、そちらで削除するまで残ります。
+
 # Deleted {name}.
 t0c7abd07 = { $name } を削除しました。
 
@@ -990,12 +996,6 @@ t2c552c07 = 鍵の名前を変更
 
 # Rename
 tc80631f3 = 名前を変更
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = 公開鍵を登録しているサーバーにも、今後はどのデバイスからもこの鍵で接続できなくなります。
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } はこの鍵でサインインしています。今後は他の方法（エージェント、~/.ssh、パスワード）を試します。サーバーに登録された公開鍵は、そちらで削除するまで残ります。
 
 # Export {name}
 t78124df8 = { $name } をエクスポート
@@ -2497,6 +2497,9 @@ t5956f56a = { $size }、テキストではありません
 # Edit…
 t8e7efcd7 = 編集…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 保管庫から削除され、同期後は他のデバイスからも削除されます。配置済みの場所にはそのまま残ります。
+
 # Choose a file…
 t28a576c9 = ファイルを選択…
 
@@ -2575,6 +2578,9 @@ t79d75da2 =
        *[other] { $n } 件のスニペットが必要としています
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
+
 # Change
 ta1de2fdd = 変更
 
@@ -2619,12 +2625,6 @@ td4e41905 = 入力のみ（実行しない）
 
 # with {envs}
 tba31f3bb = { $envs } を使用
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = 保管庫から削除され、同期後は他のデバイスからも削除されます。配置済みの場所にはそのまま残ります。
 
 # None yet.
 t786bc275 = まだありません。

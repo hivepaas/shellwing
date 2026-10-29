@@ -808,6 +808,12 @@ t66ef7116 = 공개 키를 복사했습니다.
 # Not renamed: {e}
 t836adf69 = 이름을 바꾸지 못함: { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = 공개 키가 등록된 서버라도 이제 어느 기기에서도 이 키로 로그인할 수 없습니다.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts }은(는) 이 키로 로그인합니다. 삭제하면 대신 다른 방법(에이전트, ~/.ssh, 비밀번호)을 시도합니다. 공개 키는 서버에서 직접 제거할 때까지 서버에 남아 있습니다.
+
 # Deleted {name}.
 t0c7abd07 = { $name }을(를) 삭제했습니다.
 
@@ -990,12 +996,6 @@ t2c552c07 = 키 이름 바꾸기
 
 # Rename
 tc80631f3 = 이름 바꾸기
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = 공개 키가 등록된 서버라도 이제 어느 기기에서도 이 키로 로그인할 수 없습니다.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts }은(는) 이 키로 로그인합니다. 삭제하면 대신 다른 방법(에이전트, ~/.ssh, 비밀번호)을 시도합니다. 공개 키는 서버에서 직접 제거할 때까지 서버에 남아 있습니다.
 
 # Export {name}
 t78124df8 = { $name } 내보내기
@@ -2497,6 +2497,9 @@ t5956f56a = { $size }, 텍스트 아님
 # Edit…
 t8e7efcd7 = 편집…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 이미 배치된 곳에는 그대로 남습니다.
+
 # Choose a file…
 t28a576c9 = 파일 선택…
 
@@ -2575,6 +2578,9 @@ t79d75da2 =
        *[other] 스니펫 { $n }개에서 필요로 함
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
+
 # Change
 ta1de2fdd = 변경
 
@@ -2619,12 +2625,6 @@ td4e41905 = 입력만 하고 실행하지 않음
 
 # with {envs}
 tba31f3bb = { $envs } 사용
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 이미 배치된 곳에는 그대로 남습니다.
 
 # None yet.
 t786bc275 = 아직 없습니다.
