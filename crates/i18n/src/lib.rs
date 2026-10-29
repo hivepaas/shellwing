@@ -21,10 +21,12 @@ pub const LANGUAGES: &[(&str, &str)] = &[
     ("es", "Español"),
     ("fr", "Français"),
     ("id", "Bahasa Indonesia"),
+    ("it", "Italiano"),
     ("pt", "Português (Brasil)"),
     ("tr", "Türkçe"),
     ("vi", "Tiếng Việt"),
     ("ru", "Русский"),
+    ("uk", "Українська"),
     ("ja", "日本語"),
     ("ko", "한국어"),
     ("zh", "简体中文"),
@@ -39,11 +41,13 @@ const CATALOGS: &[(&str, &str)] = &[
     ("es", include_str!("../locales/es.ftl")),
     ("fr", include_str!("../locales/fr.ftl")),
     ("id", include_str!("../locales/id.ftl")),
+    ("it", include_str!("../locales/it.ftl")),
     ("ja", include_str!("../locales/ja.ftl")),
     ("ko", include_str!("../locales/ko.ftl")),
     ("pt", include_str!("../locales/pt.ftl")),
     ("ru", include_str!("../locales/ru.ftl")),
     ("tr", include_str!("../locales/tr.ftl")),
+    ("uk", include_str!("../locales/uk.ftl")),
     ("vi", include_str!("../locales/vi.ftl")),
     ("zh", include_str!("../locales/zh.ftl")),
     ("zh-Hant", include_str!("../locales/zh-Hant.ftl")),
@@ -365,6 +369,8 @@ mod tests {
         assert_eq!(supported("EN-us"), Some("en"));
         assert_eq!(supported("id-ID"), Some("id"));
         assert_eq!(supported("tr_TR.UTF-8"), Some("tr"));
+        assert_eq!(supported("it-IT"), Some("it"));
+        assert_eq!(supported("uk_UA.UTF-8"), Some("uk"));
         assert_eq!(supported("tlh"), None);
         assert_eq!(id_of("Sync now"), id_of("Sync now"));
         assert_ne!(id_of("Sync now"), id_of("Sync now."));
