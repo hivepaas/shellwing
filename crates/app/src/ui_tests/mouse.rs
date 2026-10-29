@@ -92,6 +92,9 @@ scenario!(
         let _server = links(ui, &[("https://example.com/docs", "Read-the-docs")]);
         let row = row_of(ui, "Read-the-docs");
         ui.click_cell(row, 3, Modifiers::secondary_key());
+        // The terminal's thread takes the click and says to open the link:
+        // a moment after it, on a slow machine.
+        ui.wait_until("the link to open", |ui| ui.opened_url().is_some());
         assert_eq!(ui.opened_url().as_deref(), Some("https://example.com/docs"));
     }
 );
@@ -135,10 +138,13 @@ scenario!(
         const URL: &str = "https://example.com/far";
         let _server = signed_in(ui);
         ui.line(&format!("{} {URL}", "x".repeat(120)));
-        ui.wait_for("you said: xxx");
+        // The answer drawn to its end, address and all: the typed line has
+        // the address once, the answer twice.
+        ui.wait_for_count(URL, 2);
         let (row, col) = ui.find_text("you said: xxx");
         let last = col + "you said: ".len() + 121 + URL.len() - 1;
         ui.click_cell(row, last, Modifiers::secondary_key());
+        ui.wait_until("the address to open", |ui| ui.opened_url().is_some());
         assert_eq!(ui.opened_url().as_deref(), Some(URL));
     }
 );
