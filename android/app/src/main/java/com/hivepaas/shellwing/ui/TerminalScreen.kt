@@ -2,9 +2,20 @@ package com.hivepaas.shellwing.ui
 
 import android.content.ClipboardManager
 import android.os.Build
+import android.view.InputDevice
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Close
@@ -54,6 +65,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,7 +76,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -79,10 +93,16 @@ import com.hivepaas.shellwing.said
 import com.hivepaas.shellwing.statusWord
 import com.hivepaas.shellwing.tr
 
-/** A session full screen: the terminal, why it ended or when it tries again, the keys a phone lacks. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** A session: the terminal, why it ended or when it tries again, the keys a phone lacks. Full screen, or [embedded] beside the host list on a tablet. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, onOpen: (Screen) -> Unit) {
+fun TerminalScreen(
+    model: AppModel,
+    session: SessionModel,
+    onBack: () -> Unit,
+    onOpen: (Screen) -> Unit,
+    embedded: Boolean = false,
+) {
     val context = LocalContext.current
     var typing by remember { mutableStateOf(true) }
     var menu by remember { mutableStateOf(false) }
@@ -92,6 +112,15 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
     val scope = rememberCoroutineScope()
     val prefs = model.prefs
     val say: (String?) -> Unit = { it?.let { said -> session.notice = said } }
+
+    // The terminal gone (closed from its tab, or left): its keyboard with it,
+    // through the window's root, still attached when the terminal is not.
+    val root = LocalView.current
+    DisposableEffect(Unit) {
+        onDispose {
+            context.getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(root.windowToken, 0)
+        }
+    }
 
     // A selection copied: on the clipboard. Android 13 and later say so themselves.
     LaunchedEffect(session.copied) {
@@ -113,8 +142,11 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Dusk.chrome),
+                // Embedded, the session tabs above it are under the status bar already.
+                windowInsets = if (embedded) WindowInsets(0) else TopAppBarDefaults.windowInsets,
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Hosts")) }
+                    // Beside the host list on a tablet: nothing to go back to.
+                    if (!embedded) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Hosts")) }
                 },
                 title = {
                     Column {
@@ -244,10 +276,17 @@ fun TerminalScreen(model: AppModel, session: SessionModel, onBack: () -> Unit, o
                 }
             }
 
-            KeysRow(session, typing = typing, onKeyboard = {
-                val v = view ?: return@KeysRow
-                if (typing) v.hideKeyboard() else v.showKeyboard()
-            })
+            // A keyboard attached has the keys the row stands in for, unless
+            // the on-screen one is up anyway. Asked again when the
+            // configuration changes, as it does when a keyboard comes or goes.
+            val config = LocalConfiguration.current
+            val keyboard = remember(config) { keyboardAttached() }
+            if (!keyboard || WindowInsets.isImeVisible) {
+                KeysRow(session, typing = typing, onSnippets = { sheet = Sheet.Snippets }, onKeyboard = {
+                    val v = view ?: return@KeysRow
+                    if (typing) v.hideKeyboard() else v.showKeyboard()
+                })
+            }
         }
     }
 
@@ -346,9 +385,24 @@ private fun Bar(text: String, background: Color, color: Color, actions: @Composa
     }
 }
 
-/** The keys a phone's keyboard lacks: Esc, Tab, Ctrl and Alt (held for the next key), the arrows, a few symbols. */
+/**
+ * A keyboard with letters is attached (Bluetooth, USB, a Chromebook's own).
+ * Asked of the devices rather than the configuration, which says "qwerty"
+ * on some devices that have none (the emulator does).
+ */
+private fun keyboardAttached(): Boolean = InputDevice.getDeviceIds().any { id ->
+    val device = InputDevice.getDevice(id) ?: return@any false
+    !device.isVirtual && device.keyboardType == InputDevice.KEYBOARD_TYPE_ALPHABETIC &&
+        device.supportsSource(InputDevice.SOURCE_KEYBOARD)
+}
+
+/**
+ * The keys a phone's keyboard lacks: Esc, Tab, Ctrl and Alt (held for the
+ * next key), the arrows (held: Home and End, Page Up and Page Down), the
+ * session's snippets, a few symbols.
+ */
 @Composable
-private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Unit) {
+private fun KeysRow(session: SessionModel, typing: Boolean, onSnippets: () -> Unit, onKeyboard: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().background(Dusk.chrome).padding(horizontal = 6.dp, vertical = 8.dp)
             .navigationBarsPadding(),
@@ -359,12 +413,21 @@ private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Un
             KeyButton("Tab") { session.press(Key.Tab) }
             KeyButton("Ctrl", on = session.ctrl) { session.ctrl = !session.ctrl }
             KeyButton("Alt", on = session.alt) { session.alt = !session.alt }
-            KeyButton(icon = Icons.Filled.KeyboardArrowLeft, label = tr("Left")) { session.press(Key.Left) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowUp, label = tr("Up")) { session.press(Key.Up) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowDown, label = tr("Down")) { session.press(Key.Down) }
-            KeyButton(icon = Icons.Filled.KeyboardArrowRight, label = tr("Right")) { session.press(Key.Right) }
+            KeyButton(icon = Icons.Filled.KeyboardArrowLeft, label = tr("Left"), onLongClick = { session.press(Key.Home) }) {
+                session.press(Key.Left)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowUp, label = tr("Up"), onLongClick = { session.press(Key.PageUp) }) {
+                session.press(Key.Up)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowDown, label = tr("Down"), onLongClick = { session.press(Key.PageDown) }) {
+                session.press(Key.Down)
+            }
+            KeyButton(icon = Icons.Filled.KeyboardArrowRight, label = tr("Right"), onLongClick = { session.press(Key.End) }) {
+                session.press(Key.Right)
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            KeyButton(icon = Icons.Filled.Code, label = tr("Snippets"), tint = Dusk.accent, onClick = onSnippets)
             for (c in listOf("|", "~", "/", "-", "_", ":")) KeyButton(c, mono = true) { session.type(c) }
             KeyButton(
                 icon = if (typing) Icons.Outlined.KeyboardHide else Icons.Outlined.Keyboard,
@@ -376,6 +439,8 @@ private fun KeysRow(session: SessionModel, typing: Boolean, onKeyboard: () -> Un
     }
 }
 
+/** A key of the row; held, [onLongClick] if it has one, with a tick. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.KeyButton(
     text: String? = null,
@@ -384,32 +449,43 @@ private fun androidx.compose.foundation.layout.RowScope.KeyButton(
     on: Boolean = false,
     mono: Boolean = false,
     accent: Boolean = false,
+    tint: Color? = null,
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(10.dp)
+    val haptics = LocalHapticFeedback.current
     val bg = when {
         accent -> Dusk.accent
         on -> Dusk.accentContainer
         else -> Dusk.button
     }
-    val fg = when {
+    val fg = tint ?: when {
         accent -> Dusk.onAccent
         on -> Dusk.onAccentContainer
         else -> Dusk.text
     }
-    TextButton(
-        onClick = onClick,
-        shape = shape,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-        colors = ButtonDefaults.textButtonColors(containerColor = bg, contentColor = fg),
-        modifier = Modifier.weight(1f).height(44.dp).clip(shape)
-            .then(if (on) Modifier.border(1.dp, Dusk.accent, shape) else Modifier),
+    Box(
+        Modifier.weight(1f).height(44.dp).clip(shape).background(bg)
+            .then(if (on) Modifier.border(1.dp, Dusk.accent, shape) else Modifier)
+            .combinedClickable(
+                role = Role.Button,
+                onClick = onClick,
+                onLongClick = onLongClick?.let { held ->
+                    {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        held()
+                    }
+                },
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
-            Icon(icon, label)
+            Icon(icon, label, tint = fg)
         } else {
             Text(
                 text ?: "",
+                color = fg,
                 fontSize = if (mono) 15.sp else 14.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
