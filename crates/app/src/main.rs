@@ -46,6 +46,7 @@ mod snippet_window;
 mod snippets_view;
 mod sync_panel;
 mod tab_overview;
+mod ui_font;
 mod view;
 mod workspace;
 
@@ -266,6 +267,9 @@ fn main() -> anyhow::Result<()> {
             // each one's own dialog (and Linux has none: GPUI would draw a
             // white box).
             cx.set_prompt_builder(prompt::render);
+            // Linux's UI font, where the settings name none.
+            let ui_family = ui_font::find(cx);
+            cx.set_global(ui_font::SystemUiFont(ui_family));
             // The notes' editor: its keys, while it has the focus.
             shellwing_note_editor::bind_keys(cx);
             app_lock::guard_other_windows(cx);
