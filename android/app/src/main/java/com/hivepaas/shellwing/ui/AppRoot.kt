@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.hivepaas.shellwing.AppLock
@@ -103,6 +104,9 @@ private const val SPLIT_HEIGHT_DP = 480
 fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
     var tab by rememberSaveable { mutableStateOf(Tab.Hosts) }
     val stack = remember { mutableStateListOf<Screen>() }
+    // Each tab keeps what it was showing (Library's Notes, a filter) while a
+    // screen is over it, or another tab is.
+    val kept = rememberSaveableStateHolder()
     val screen = LocalConfiguration.current
     val width = screen.screenWidthDp
     val split = width >= SPLIT_DP && screen.screenHeightDp >= SPLIT_HEIGHT_DP
@@ -180,11 +184,13 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
         }
     }
     val content: @Composable () -> Unit = {
-        when (tab) {
-            Tab.Hosts -> HostsScreen(model, onOpen = open, onSessions = { tab = Tab.Sessions })
-            Tab.Sessions -> SessionsScreen(model, onOpen = open)
-            Tab.Library -> LibraryScreen(model, onOpen = open)
-            Tab.Settings -> SettingsScreen(model, lock, onLockNow = onLockNow, onOpen = open)
+        kept.SaveableStateProvider(tab.name) {
+            when (tab) {
+                Tab.Hosts -> HostsScreen(model, onOpen = open, onSessions = { tab = Tab.Sessions })
+                Tab.Sessions -> SessionsScreen(model, onOpen = open)
+                Tab.Library -> LibraryScreen(model, onOpen = open)
+                Tab.Settings -> SettingsScreen(model, lock, onLockNow = onLockNow, onOpen = open)
+            }
         }
     }
 
