@@ -100,6 +100,20 @@ jobs:
 
       - uses: ./.github/actions/fetch-ghostty
 
+      # Zig fetches libghostty's own dependencies while building it: a network
+      # hiccup there (codeberg.org, a reset connection) should not fail a
+      # release. What it fetched stays in the ghostty checkout (zig-pkg) for
+      # the build after it.
+      - name: Build libghostty (up to three tries)
+        shell: bash
+        run: |
+          for try in 1 2 3; do
+            cargo build --release --locked -p libghostty-vt-sys && exit 0
+            echo "::warning::building libghostty failed (try $try)"
+            sleep 30
+          done
+          exit 1
+
       - name: Build
         run: cargo build --release --locked -p shellwing
 
@@ -187,6 +201,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: android-release
+
+      # As in the desktop jobs: libghostty's Zig dependencies, fetched with
+      # retries by a build for this machine, stay in the ghostty checkout
+      # (zig-pkg) for the Android builds, which need the same ones.
+      - name: Fetch libghostty's dependencies (up to three tries)
+        run: |
+          for try in 1 2 3; do
+            cargo check --locked -p libghostty-vt-sys && exit 0
+            echo "::warning::building libghostty failed (try $try)"
+            sleep 30
+          done
+          exit 1
 
       - uses: actions/setup-java@v4
         with:
