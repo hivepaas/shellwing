@@ -3169,7 +3169,8 @@ impl Workspace {
         cx.set_global(EditorCommand(self.live.settings().files.editor.clone()));
         cx.set_global(crate::hotkeys::Bound(self.live.keymap()));
         let font = self.live.settings().appearance.ui_font.family.clone();
-        cx.set_global(crate::prompt::PromptFont(font.map(Into::into)));
+        let font = crate::ui_font::family(font.as_deref(), cx);
+        cx.set_global(crate::prompt::PromptFont(font));
     }
 
     pub fn change_setting(
@@ -5582,7 +5583,7 @@ impl Render for Workspace {
         let ui_font = self.live.settings().appearance.ui_font.clone();
         window.set_rem_size(look::rem_for(ui_font.size));
         // Note windows are drawn in the same font.
-        let family = ui_font.family.clone().map(SharedString::from);
+        let family = crate::ui_font::family(ui_font.family.as_deref(), cx);
         if cx
             .try_global::<crate::note_window::NoteLook>()
             .is_none_or(|l| l.size != ui_font.size || l.family != family)
@@ -5932,60 +5933,63 @@ impl Render for Workspace {
         };
         self.keep_keys_locked(window, cx);
         let lock = self.lock.as_ref().map(|(v, _)| v.clone());
-        root.when_some(ui_font.family, |d, f| d.font_family(f))
-            .when_some(lock, |d, lock| {
-                d.child(
-                    gpui::deferred(
-                        div()
-                            .absolute()
-                            .top_0()
-                            .left_0()
-                            .size_full()
-                            .occlude()
-                            .child(lock),
-                    )
-                    .with_priority(100),
+        root.when_some(
+            crate::ui_font::family(ui_font.family.as_deref(), cx),
+            |d, f| d.font_family(f),
+        )
+        .when_some(lock, |d, lock| {
+            d.child(
+                gpui::deferred(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .occlude()
+                        .child(lock),
                 )
-            })
-            .track_focus(&self.focus)
-            .capture_key_down(cx.listener(Self::shortcut))
-            .capture_any_mouse_down(cx.listener(|ws, _, _, _| {
-                ws.last_input = std::time::Instant::now();
+                .with_priority(100),
+            )
+        })
+        .track_focus(&self.focus)
+        .capture_key_down(cx.listener(Self::shortcut))
+        .capture_any_mouse_down(cx.listener(|ws, _, _, _| {
+            ws.last_input = std::time::Instant::now();
+        }))
+        .when(self.sidebar_drag.is_some(), |d| {
+            d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
+                if let Some((x0, w0)) = ws.sidebar_drag {
+                    ws.sidebar_width = (w0 + f32::from(e.position.x) - x0)
+                        .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
+                    cx.notify();
+                }
             }))
-            .when(self.sidebar_drag.is_some(), |d| {
-                d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
-                    if let Some((x0, w0)) = ws.sidebar_drag {
-                        ws.sidebar_width = (w0 + f32::from(e.position.x) - x0)
-                            .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
-                        cx.notify();
-                    }
-                }))
-                .on_mouse_up(
-                    MouseButton::Left,
-                    cx.listener(|ws, _, window, cx| {
-                        ws.sidebar_drag = None;
-                        ws.save_sidebar(window, cx);
-                        cx.notify();
-                    }),
-                )
-            })
-            .when(self.dragging.is_some(), |d| {
-                d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
-                    if let Some(s) = &ws.dragging {
-                        s.drag_to(e.position);
-                        cx.notify();
-                    }
-                }))
-                .on_mouse_up(
-                    MouseButton::Left,
-                    cx.listener(|ws, _, _, cx| {
-                        ws.dragging = None;
-                        ws.layout_changed(cx);
-                        cx.notify();
-                    }),
-                )
-            })
-            .text_color(rgb(colors().text))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|ws, _, window, cx| {
+                    ws.sidebar_drag = None;
+                    ws.save_sidebar(window, cx);
+                    cx.notify();
+                }),
+            )
+        })
+        .when(self.dragging.is_some(), |d| {
+            d.on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
+                if let Some(s) = &ws.dragging {
+                    s.drag_to(e.position);
+                    cx.notify();
+                }
+            }))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|ws, _, _, cx| {
+                    ws.dragging = None;
+                    ws.layout_changed(cx);
+                    cx.notify();
+                }),
+            )
+        })
+        .text_color(rgb(colors().text))
     }
 }
 

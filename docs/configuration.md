@@ -50,8 +50,10 @@ cursor = { style = "block" } # "block", "bar" or "underline"
 scrollbar = "auto"           # "auto", "always" or "never"
 padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
 # The app's own text (tabs, host list, palette, panels, settings), not the
-# terminal's. No family: the system's interface font. Size 10 to 20, default 14,
-# as the terminal's.
+# terminal's. No family: the system's interface font (on Linux the desktop's,
+# GNOME's or KDE's, when it has every Vietnamese letter; else the first of Noto
+# Sans, Adwaita Sans, Cantarell, Ubuntu Sans, DejaVu Sans, Liberation Sans that
+# does). Size 10 to 20, default 14, as the terminal's.
 ui_font = { family = "Inter", size = 14 }
 theme_accent = true          # the app's accent (logo, choices, buttons) is the theme's
 
