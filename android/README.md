@@ -10,7 +10,7 @@ the desktop's own code. The design is the canvas "shellwing Android".
 ## Building
 
 Needs JDK 17 or newer, the Android SDK with an NDK (`ANDROID_HOME`, or
-`~/Android/Sdk`), [cargo-ndk](https://github.com/bbqsrc/cargo-ndk), and Zig 0.16
+`~/Android/Sdk`), [cargo-ndk](https://github.com/bbqsrc/cargo-ndk), and Zig 0.17
 on `PATH`:
 
 ```sh

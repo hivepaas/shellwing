@@ -8,7 +8,7 @@
 #
 # Writes ios/Generated/ShellwingCore.xcframework and
 # ios/Generated/shellwing_mobile.swift (neither is committed). Needs Xcode
-# (not only the Command Line Tools), Zig 0.16 on PATH, and the two targets:
+# (not only the Command Line Tools), Zig 0.17 on PATH, and the two targets:
 #   rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 set -euo pipefail
 
@@ -28,6 +28,13 @@ CARGO="${CARGO:-cargo}"
 OUT="$ROOT/ios/Generated"
 LIB=libshellwing_mobile.a
 TARGETS=(aarch64-apple-ios aarch64-apple-ios-sim)
+
+# Zig 0.17.0's standard library does not compile for iOS: build with a
+# patched copy of it (scripts/zig-0.17.0-ios.patch).
+ZIG_LIB_IOS=$("$ROOT/scripts/zig_lib_ios.sh" "$ROOT/target/zig-lib-ios")
+if [[ -n "$ZIG_LIB_IOS" ]]; then
+	export ZIG_LIB_DIR="$ZIG_LIB_IOS"
+fi
 
 for t in "${TARGETS[@]}"; do
 	echo "building shellwing-mobile for $t ($PROFILE)"

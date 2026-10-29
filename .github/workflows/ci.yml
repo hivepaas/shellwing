@@ -59,7 +59,7 @@ jobs:
       # libghostty-vt is built from source with Zig.
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.16.0
+          version: 0.17.0
 
       # The version and its components: rust-toolchain.toml.
       - name: Rust
@@ -110,7 +110,7 @@ jobs:
 
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.16.0
+          version: 0.17.0
 
       - name: Rust
         run: |
@@ -145,7 +145,7 @@ jobs:
 
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.16.0
+          version: 0.17.0
 
       - name: Rust
         run: |
@@ -189,7 +189,7 @@ jobs:
 
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.16.0
+          version: 0.17.0
 
       - name: Rust
         run: |
@@ -197,6 +197,13 @@ jobs:
           rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 
       - uses: ./.github/actions/fetch-ghostty
+
+      # Zig 0.17.0's standard library does not compile for iOS; every build
+      # below uses a patched copy (scripts/zig-0.17.0-ios.patch).
+      - name: Zig's lib directory for iOS
+        run: |
+          dir=$(scripts/zig_lib_ios.sh "$RUNNER_TEMP/zig-lib-ios")
+          if [ -n "$dir" ]; then echo "ZIG_LIB_DIR=$dir" >> "$GITHUB_ENV"; fi
 
       - uses: Swatinem/rust-cache@v2
         with:

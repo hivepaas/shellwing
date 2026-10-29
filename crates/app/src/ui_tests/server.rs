@@ -27,6 +27,57 @@ pub const PROMPT: &str = "$ ";
 /// What `unicode` prints: Vietnamese, CJK (wide) and an emoji.
 pub const UNICODE: &str = "Tiếng Việt có dấu — 日本語 — 🚀";
 
+/// What `clears` prints: rows cleared into history (`CSI 22 J`) over and
+/// over, a varying number at a time, with the cursor at the top of the screen
+/// styled, then linked (OSC 8). With no history kept, libghostty drops its
+/// oldest page at a clear, sooner or later the cursor's: before Ghostty 1.4.0
+/// the cursor kept that page's style and link (GHSA-w9q4-5jvv-mcv4).
+fn clears_into_history() -> String {
+    let mut out = String::new();
+    for (start, end) in [
+        ("\x1b[1;4;31m", "\x1b[0m"),
+        ("\x1b]8;;https://example.com/\x1b\\", "\x1b]8;;\x1b\\"),
+    ] {
+        for i in 0..400 {
+            for _ in 0..i % 5 {
+                out.push_str("x\r\n");
+            }
+            out.push_str("x\x1b[H");
+            out.push_str(start);
+            out.push_str("\x1b[22Jy");
+            out.push_str(end);
+            out.push_str("\r\n");
+        }
+    }
+    out.push_str("cleared\r\n");
+    out
+}
+
+/// What `kitty` prints: Kitty graphics commands with the largest sizes and
+/// offsets the protocol carries, which once went into unchecked arithmetic
+/// (GHSA-mhff-mv4q-fp63).
+fn extreme_kitty_graphics() -> String {
+    let (max, imax, imin) = (u32::MAX, i32::MAX, i32::MIN);
+    // One red RGB pixel, base64.
+    let pixel = "/wAA";
+    // The terminal answers a command naming an image (`i=`) on the input,
+    // which this shell would take as typed: `q=2` asks it not to, as programs
+    // drawing images do.
+    [
+        format!("a=T,f=24,s=1,v=1,c={max},r={max};{pixel}"),
+        format!("a=T,f=24,s=1,v=1,X={max},Y={max};{pixel}"),
+        format!("a=T,f=24,s=1,v=1,x={max},y={max},w={max},h={max};{pixel}"),
+        format!("a=T,f=24,s={max},v={max};{pixel}"),
+        format!("a=t,f=24,s=1,v=1,i=7,q=2;{pixel}"),
+        "a=p,i=7,p=1,q=2".to_string(),
+        format!("a=p,i=7,p=2,P=7,Q=1,H={imax},V={imin},q=2"),
+    ]
+    .iter()
+    .map(|c| format!("\x1b_G{c}\x1b\\"))
+    .chain(["\r\nimages sent\r\n".to_string()])
+    .collect()
+}
+
 /// How the server lets users in, and what else it allows.
 #[derive(Clone, Default)]
 pub struct Policy {
@@ -736,6 +787,8 @@ impl Shell {
             "bell" => "\x07".into(),
             "red" => "\x1b[31mred text\x1b[0m\r\n".into(),
             "clear" => "\x1b[2J\x1b[H".into(),
+            "clears" => clears_into_history(),
+            "kitty" => extreme_kitty_graphics(),
             // A full screen program (vim, htop, less): the alternate screen
             // until `q` is typed.
             "fullscreen" => {

@@ -743,3 +743,114 @@ fn a_title_the_program_sets_comes_as_an_event() {
         _ => panic!("not a title"),
     }
 }
+
+/// A title that is not UTF-8 is dropped (libghostty ignores it), and the
+/// next one still comes. The binding hands titles over as bytes since Ghostty
+/// 1.4; they are read lossily all the same.
+#[test]
+fn a_title_that_is_not_utf8_is_dropped_and_the_next_one_comes() {
+    let h = harness();
+    h.term
+        .feed(b"\x1b]2;caf\xe9 \xff\x07\x1b]2;deploy@api-1\x07$ ".to_vec());
+    let got = h
+        .events
+        .recv_timeout(Duration::from_secs(5))
+        .expect("an event");
+    match got {
+        Event::Title(t) => assert_eq!(t, "deploy@api-1"),
+        _ => panic!("not a title"),
+    }
+}
+
+/// Waits, longer than [`Harness::frame_where`], for `text` on the screen:
+/// what is fed before it is slow to parse in a debug build.
+fn shows_after_a_while(h: &Harness, text: &str) {
+    let deadline = std::time::Instant::now() + Duration::from_secs(120);
+    while std::time::Instant::now() < deadline {
+        if let Some(f) = h.term.take_frame()
+            && f.rows.iter().any(|r| r.text.contains(text))
+        {
+            return;
+        }
+        let _ = h.woke.recv_timeout(Duration::from_millis(50));
+    }
+    panic!("{text:?} never showed: the terminal stopped");
+}
+
+/// Writes rows and clears them into history (`CSI 22 J`) over and over, a
+/// varying number at a time, with the cursor at the top of the screen and
+/// given `start` (a style, a link) before each clear. With no history kept,
+/// libghostty drops its oldest page at a clear; sooner or later that is the
+/// page the cursor is on, whatever a page holds.
+fn clear_into_no_history(start: &str, end: &str) {
+    let h = harness_keeping(0);
+    let mut out = String::new();
+    for i in 0..400 {
+        for _ in 0..i % 5 {
+            out.push_str("x\r\n");
+        }
+        out.push_str("x\x1b[H");
+        out.push_str(start);
+        out.push_str("\x1b[22Jy");
+        out.push_str(end);
+        out.push_str("\r\n");
+    }
+    out.push_str("\r\nstill here");
+    h.term.feed(out.into_bytes());
+    shows_after_a_while(&h, "still here");
+}
+
+/// A clear that dropped the cursor's page left the cursor with that page's
+/// style, which then reached into another page's styles: a crash in a debug
+/// build of libghostty before Ghostty 1.4.0 (GHSA-w9q4-5jvv-mcv4). A host can
+/// send it; `scrollback = 0` keeps no history.
+#[test]
+fn clearing_into_no_history_with_a_styled_cursor_goes_on() {
+    clear_into_no_history("\x1b[1;4;31m", "\x1b[0m");
+}
+
+/// The same with a link (OSC 8) on the cursor, whose ID is per page too.
+#[test]
+fn clearing_into_no_history_with_a_linked_cursor_goes_on() {
+    clear_into_no_history("\x1b]8;;https://example.com/\x1b\\", "\x1b]8;;\x1b\\");
+}
+
+/// Kitty graphics commands with the largest sizes and offsets the protocol
+/// carries, which a host can send. Such numbers once went into unchecked
+/// arithmetic: a crash in a debug build, wrapped sizes in a release one, or
+/// the cursor moved for ever (GHSA-mhff-mv4q-fp63). Ghostty fixed that in
+/// August 2026, before the commit shellwing used until 1.4.0; this keeps an
+/// update from bringing it back.
+#[test]
+fn kitty_graphics_with_extreme_numbers_leave_the_terminal_working() {
+    let h = harness();
+    let (max, imax, imin) = (u32::MAX, i32::MAX, i32::MIN);
+    // One red RGB pixel, base64.
+    let pixel = "/wAA";
+    let commands = [
+        // Placed over more columns and rows than there are, the cursor
+        // moving past them.
+        format!("a=T,f=24,s=1,v=1,c={max},r={max};{pixel}"),
+        format!("a=T,f=24,s=1,v=1,X={max},Y={max};{pixel}"),
+        format!("a=T,f=24,s=1,v=1,x={max},y={max},w={max},h={max};{pixel}"),
+        format!("a=T,f=24,s=1,v=1,z={imin},C=1;{pixel}"),
+        // Sizes whose product wraps, for a pixel's worth of data.
+        format!("a=T,f=24,s={max},v={max};{pixel}"),
+        format!("a=T,f=32,s=65536,v=65536;{pixel}"),
+        // An image kept, then placed relative to a placement of its own.
+        format!("a=t,f=24,s=1,v=1,i=7;{pixel}"),
+        "a=p,i=7,p=1".to_string(),
+        format!("a=p,i=7,p=2,P=7,Q=1,H={imax},V={imax}"),
+        format!("a=p,i=7,p=3,P=7,Q=1,H={imin},V={imin}"),
+        format!("a=p,i=7,p=4,c={max},r={max}"),
+        // Deleting by a cell far off the screen.
+        format!("a=d,d=p,x={max},y={max}"),
+    ];
+    let mut out = String::new();
+    for c in &commands {
+        out.push_str(&format!("\x1b_G{c}\x1b\\"));
+    }
+    out.push_str("\r\nstill here");
+    h.term.feed(out.into_bytes());
+    shows_after_a_while(&h, "still here");
+}

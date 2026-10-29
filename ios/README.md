@@ -8,7 +8,7 @@ host keys) and the terminal itself are the desktop's own code.
 
 ## Building
 
-Needs Xcode, Zig 0.16 on `PATH`, and XcodeGen (`brew install xcodegen`).
+Needs Xcode, Zig 0.17 on `PATH`, and XcodeGen (`brew install xcodegen`).
 
 ```sh
 make ios        # the Rust library for iPhones and the Simulator, its Swift, the Xcode project
@@ -22,6 +22,11 @@ the command line. After changing `crates/mobile`, run `make ios` again.
 What is generated, and not committed: `ios/Generated/` (the XCFramework and
 `shellwing_mobile.swift`), `ios/Shellwing.xcodeproj` and its `Info.plist`.
 Edit `ios/project.yml` for the project's settings.
+
+Zig 0.17.0's standard library does not compile for iOS
+([ziglang/zig#37061](https://codeberg.org/ziglang/zig/issues/37061), fixed for
+0.17.1). `scripts/build_ios.sh` builds with a patched copy of it in
+`target/zig-lib-ios` (`ZIG_LIB_DIR`), leaving the Zig installed alone.
 
 Where GitHub is slow to clone from, `GHOSTTY_SOURCE_DIR=<a ghostty checkout>`
 reuses one, such as the one a desktop build left under

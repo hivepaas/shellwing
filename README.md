@@ -50,7 +50,7 @@ The releases are not signed with an Apple Developer ID or a Windows certificate 
 
 ### Building from source
 
-It needs Rust (rustup installs the version in `rust-toolchain.toml`) and [Zig](https://ziglang.org/) 0.16 on `PATH` (libghostty-vt is built from source):
+It needs Rust (rustup installs the version in `rust-toolchain.toml`) and [Zig](https://ziglang.org/) 0.17 on `PATH` (libghostty-vt is built from source):
 
 ```sh
 make build                    # a release build for this computer, into dist/

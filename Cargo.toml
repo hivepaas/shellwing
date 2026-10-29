@@ -28,8 +28,10 @@ shellwing-import = { path = "crates/import" }
 gpui = { package = "gpui-pre", version = "=0.3.9" }
 # font-kit and runtime_shaders only affect macOS; the Linux backends are app features.
 gpui_platform = { package = "gpui-pre-platform", version = "=0.3.9", default-features = false, features = ["font-kit", "runtime_shaders"] }
-# Master tracks Zig 0.16; the 0.2.2 release still needs Zig 0.15.
-libghostty-vt = { git = "https://github.com/uzaaft/libghostty-rs", branch = "master" }
+# HivePaaS's fork of uzaaft/libghostty-rs, pinned to Ghostty 1.4.0 and its
+# security fixes (upstream's master pins a commit before them). Needs Zig 0.17.
+# Back to upstream once it pins 1.4.0 or later.
+libghostty-vt = { git = "https://github.com/hivepaas/libghostty-rs", branch = "ghostty-1.4.0" }
 # ring rather than the default aws-lc-rs: it builds on Windows without NASM or CMake.
 russh = { version = "0.64", default-features = false, features = ["ring", "rsa", "flate2"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }

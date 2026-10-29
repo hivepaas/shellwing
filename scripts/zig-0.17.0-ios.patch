@@ -1,0 +1,20 @@
+Zig 0.17.0 cannot compile its standard library for iOS: std.Io.Threaded's
+processReplace reaches spawnDarwin, which reads a field iOS's NullFile does
+not have (https://codeberg.org/ziglang/zig/issues/37061, fixed for 0.17.1).
+This is Ghostty 1.4.0's backport of the fix (nix/patches/
+zig-0.17-ios-process-replace.patch, MIT), applied by scripts/zig_lib_ios.sh
+to a copy of Zig's lib directory. Drop it once shellwing builds with 0.17.1.
+
+diff --git a/lib/std/Io/Threaded.zig b/lib/std/Io/Threaded.zig
+index 8ca455c..49e2747 100644
+--- a/lib/std/Io/Threaded.zig
++++ b/lib/std/Io/Threaded.zig
+@@ -15214,7 +15214,7 @@ fn processReplace(userdata: ?*anyopaque, options: process.ReplaceOptions) proces
+         });
+     };
+ 
+-    if (is_darwin) if (t.spawnDarwin(
++    if (is_darwin and process.can_spawn) if (t.spawnDarwin(
+         .replace,
+         options.exe,
+         argv_buf.ptr,
