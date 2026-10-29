@@ -422,6 +422,8 @@ pub fn note_template() -> String {
         "zh-Hant" => include_str!("note_templates/zh-Hant.md"),
         "id" => include_str!("note_templates/id.md"),
         "tr" => include_str!("note_templates/tr.md"),
+        "it" => include_str!("note_templates/it.md"),
+        "uk" => include_str!("note_templates/uk.md"),
         _ => include_str!("note_templates/en.md"),
     }
     .to_string()
@@ -694,6 +696,8 @@ mod tests {
             include_str!("note_templates/zh-Hant.md"),
             include_str!("note_templates/id.md"),
             include_str!("note_templates/tr.md"),
+            include_str!("note_templates/it.md"),
+            include_str!("note_templates/uk.md"),
         ] {
             let blocks = markdown_blocks(md.into());
             let head = md.lines().next().unwrap_or_default();

@@ -19,3 +19,6 @@
 /ios/Generated
 /ios/Shellwing.xcodeproj
 /ios/Shellwing/Info.plist
+
+# Python bytecode (scripts/*.py)
+__pycache__/
