@@ -20,26 +20,33 @@ pub const LANGUAGES: &[(&str, &str)] = &[
     ("de", "Deutsch"),
     ("es", "Español"),
     ("fr", "Français"),
+    ("id", "Bahasa Indonesia"),
     ("pt", "Português (Brasil)"),
+    ("tr", "Türkçe"),
     ("vi", "Tiếng Việt"),
     ("ru", "Русский"),
     ("ja", "日本語"),
     ("ko", "한국어"),
     ("zh", "简体中文"),
+    ("zh-Hant", "繁體中文"),
 ];
 
 /// The translations, by language tag (English is the code's own). `pt` is
-/// Brazil's Portuguese, `zh` simplified Chinese.
+/// Brazil's Portuguese, `zh` simplified Chinese, `zh-Hant` traditional
+/// Chinese in Taiwan's words.
 const CATALOGS: &[(&str, &str)] = &[
     ("de", include_str!("../locales/de.ftl")),
     ("es", include_str!("../locales/es.ftl")),
     ("fr", include_str!("../locales/fr.ftl")),
+    ("id", include_str!("../locales/id.ftl")),
     ("ja", include_str!("../locales/ja.ftl")),
     ("ko", include_str!("../locales/ko.ftl")),
     ("pt", include_str!("../locales/pt.ftl")),
     ("ru", include_str!("../locales/ru.ftl")),
+    ("tr", include_str!("../locales/tr.ftl")),
     ("vi", include_str!("../locales/vi.ftl")),
     ("zh", include_str!("../locales/zh.ftl")),
+    ("zh-Hant", include_str!("../locales/zh-Hant.ftl")),
 ];
 
 /// The language in use, and its translations.
@@ -137,12 +144,19 @@ pub fn system_language() -> &'static str {
 }
 
 /// `tag` (`vi`, `vi-VN`, `pt_BR`) as one of [`LANGUAGES`], if it is one.
+/// Chinese is traditional where its script says so (`zh-Hant`) or, with
+/// none said, where Taiwan, Hong Kong or Macau is.
 fn supported(tag: &str) -> Option<&'static str> {
-    let main = tag
-        .split(['-', '_', '.'])
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let parts: Vec<String> = tag
+        .split(['-', '_', '.', '@'])
+        .map(str::to_lowercase)
+        .collect();
+    let main = parts.first().map(String::as_str).unwrap_or("");
+    let has = |p: &str| parts[1..].iter().any(|x| x == p);
+    if main == "zh" && (has("hant") || (!has("hans") && ["tw", "hk", "mo"].iter().any(|r| has(r))))
+    {
+        return Some("zh-Hant");
+    }
     LANGUAGES.iter().map(|(t, _)| *t).find(|t| *t == main)
 }
 
@@ -349,8 +363,34 @@ mod tests {
         assert_eq!(supported("vi-VN"), Some("vi"));
         assert_eq!(supported("vi_VN.UTF-8"), Some("vi"));
         assert_eq!(supported("EN-us"), Some("en"));
+        assert_eq!(supported("id-ID"), Some("id"));
+        assert_eq!(supported("tr_TR.UTF-8"), Some("tr"));
         assert_eq!(supported("tlh"), None);
         assert_eq!(id_of("Sync now"), id_of("Sync now"));
         assert_ne!(id_of("Sync now"), id_of("Sync now."));
+    }
+
+    #[test]
+    fn chinese_is_traditional_by_its_script_or_region() {
+        for tag in [
+            "zh-Hant",
+            "zh-Hant-TW",
+            "zh-TW",
+            "zh_TW.UTF-8",
+            "zh-HK",
+            "zh-MO",
+        ] {
+            assert_eq!(supported(tag), Some("zh-Hant"), "{tag}");
+        }
+        for tag in [
+            "zh",
+            "zh-CN",
+            "zh-Hans",
+            "zh-Hans-HK",
+            "zh_SG",
+            "zh_CN.UTF-8",
+        ] {
+            assert_eq!(supported(tag), Some("zh"), "{tag}");
+        }
     }
 }

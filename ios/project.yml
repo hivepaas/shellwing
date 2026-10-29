@@ -30,7 +30,7 @@ targets:
         CFBundleDisplayName: shellwing
         # The languages of crates/i18n: iOS offers them in the app's settings.
         CFBundleDevelopmentRegion: en
-        CFBundleLocalizations: [en, de, es, fr, pt-BR, vi, ru, ja, ko, zh-Hans]
+        CFBundleLocalizations: [en, de, es, fr, id, pt-BR, tr, vi, ru, ja, ko, zh-Hans, zh-Hant]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:

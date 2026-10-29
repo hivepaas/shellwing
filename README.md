@@ -31,7 +31,7 @@ Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs betwe
 * **Saved hosts:** `hosts.toml` with groups, colors, favorites, tags, jump hosts, forwards and a command to run after connecting; a host list and a palette to find and open them.
 * **Vault:** passwords, SSH keys, snippets, environments, config files and notes, encrypted and unlocked through the system keychain, Windows Hello or Touch ID, or a passphrase.
 * **Sync between devices:** the vault, hosts and settings through a synced folder (iCloud Drive, Dropbox, Syncthing...), WebDAV, S3-compatible storage or a Git repository, end-to-end encrypted, with a recovery key and device pairing.
-* **Made for work:** a command palette, find in the terminal and its history, session logs, a local terminal beside the SSH tabs, customizable shortcuts, light and dark themes (gradients too), and an interface in 10 languages.
+* **Made for work:** a command palette, find in the terminal and its history, session logs, a local terminal beside the SSH tabs, customizable shortcuts, light and dark themes (gradients too), and an interface in 13 languages.
 * **Reconnects on its own:** a lost connection is retried with a back-off, and forwards come back with it.
 
 ---
