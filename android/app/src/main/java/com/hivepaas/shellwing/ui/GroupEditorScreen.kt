@@ -120,13 +120,7 @@ fun GroupEditorScreen(model: AppModel, name: String?, onDone: () -> Unit) {
                 keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text(tr("Color"), fontSize = 16.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Swatch(null, Dusk.button, edit.color == null) { edit = edit.copy(color = null) }
-                for (c in hostColors()) {
-                    Swatch(c.name, rgb(c.rgb), edit.color == c.name) { edit = edit.copy(color = c.name) }
-                }
-            }
+            ColorChoice(edit.color) { edit = edit.copy(color = it) }
             Column(
                 Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(8.dp)).clickable { picking = true }
                     .padding(vertical = 8.dp),
@@ -172,6 +166,18 @@ fun GroupEditorScreen(model: AppModel, name: String?, onDone: () -> Unit) {
             },
             dismissButton = { TextButton(onClick = { deleting = false }) { Text(tr("Cancel")) } },
         )
+    }
+}
+
+/** "Color" and its swatches: none, then the colors a host or a group can be marked with, by name. */
+@Composable
+fun ColorChoice(color: String?, onChange: (String?) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(tr("Color"), fontSize = 16.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Swatch(null, Dusk.button, color == null) { onChange(null) }
+            for (c in hostColors()) Swatch(c.name, rgb(c.rgb), color == c.name) { onChange(c.name) }
+        }
     }
 }
 
