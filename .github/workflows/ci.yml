@@ -65,6 +65,8 @@ jobs:
       - name: Rust
         run: rustup toolchain install
 
+      - uses: ./.github/actions/fetch-ghostty
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.name }}
@@ -115,6 +117,8 @@ jobs:
           rustup toolchain install
           rustup target add aarch64-linux-android
 
+      - uses: ./.github/actions/fetch-ghostty
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: android-aarch64
@@ -147,6 +151,8 @@ jobs:
         run: |
           rustup toolchain install
           rustup target add aarch64-linux-android x86_64-linux-android
+
+      - uses: ./.github/actions/fetch-ghostty
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -189,6 +195,8 @@ jobs:
         run: |
           rustup toolchain install
           rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+
+      - uses: ./.github/actions/fetch-ghostty
 
       - uses: Swatinem/rust-cache@v2
         with:

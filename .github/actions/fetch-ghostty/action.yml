@@ -1,0 +1,32 @@
+name: Fetch ghostty
+description: >-
+  Clones ghostty once, at the commit libghostty-vt-sys pins, trying three
+  times, and points every build in the job at it (GHOSTTY_SOURCE_DIR).
+  libghostty-vt-sys's build script would otherwise clone it again for each
+  profile (clippy's, the tests', a release), with no retry: a clone that
+  failed (git's exit 128 on macOS, once) failed the run. Needs Rust.
+runs:
+  using: composite
+  steps:
+    - name: Fetch ghostty (up to three tries)
+      shell: bash
+      run: |
+        dir="$RUNNER_TEMP/ghostty-src"
+        # Windows' bash: paths with forward slashes, which git, Rust and
+        # Zig all take.
+        if command -v cygpath >/dev/null; then dir=$(cygpath -m "$dir"); fi
+        for try in 1 2 3; do
+          manifest=$(cargo metadata --format-version 1 --locked |
+            jq -r '.packages[] | select(.name == "libghostty-vt-sys") | .manifest_path') &&
+            if command -v cygpath >/dev/null; then manifest=$(cygpath -u "$manifest"); fi &&
+            commit=$(sed -n 's/^const GHOSTTY_COMMIT: &str = "\([0-9a-f]*\)";$/\1/p' "${manifest%Cargo.toml}build.rs") &&
+            test -n "$commit" &&
+            rm -rf "$dir" &&
+            git clone --quiet --config core.longpaths=true --filter=blob:none --no-checkout \
+              https://github.com/ghostty-org/ghostty.git "$dir" &&
+            git -C "$dir" checkout --quiet "$commit" &&
+            { echo "GHOSTTY_SOURCE_DIR=$dir" >> "$GITHUB_ENV"; exit 0; }
+          echo "::warning::fetching ghostty failed (try $try)"
+          sleep 30
+        done
+        exit 1
