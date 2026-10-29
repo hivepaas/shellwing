@@ -66,6 +66,8 @@ jobs:
       - name: Rust
         run: rustup toolchain install
 
+      - uses: ./.github/actions/fetch-ghostty
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ui-${{ matrix.name }}

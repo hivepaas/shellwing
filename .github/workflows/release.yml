@@ -98,6 +98,8 @@ jobs:
       - name: Rust
         run: rustup toolchain install
 
+      - uses: ./.github/actions/fetch-ghostty
+
       - name: Build
         run: cargo build --release --locked -p shellwing
 
@@ -175,9 +177,12 @@ jobs:
         with:
           version: 0.16.0
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android, x86_64-linux-android
+      - name: Rust
+        run: |
+          rustup toolchain install
+          rustup target add aarch64-linux-android x86_64-linux-android
+
+      - uses: ./.github/actions/fetch-ghostty
 
       - uses: Swatinem/rust-cache@v2
         with:
