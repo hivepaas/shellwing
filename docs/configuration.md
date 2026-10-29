@@ -126,10 +126,12 @@ stays as it is.
 | `es` | Español |
 | `fr` | Français |
 | `id` | Bahasa Indonesia |
+| `it` | Italiano |
 | `pt` | Português (Brasil) |
 | `tr` | Türkçe |
 | `vi` | Tiếng Việt |
 | `ru` | Русский |
+| `uk` | Українська |
 | `ja` | 日本語 |
 | `ko` | 한국어 |
 | `zh` | 简体中文 (simplified Chinese) |
