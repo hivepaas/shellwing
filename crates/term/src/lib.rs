@@ -758,7 +758,9 @@ fn run(
                     if titled.replace(false)
                         && let Ok(title) = e.term.title()
                     {
-                        (e.events)(Event::Title(title.to_string()));
+                        // The program's bytes, not always UTF-8.
+                        let title = String::from_utf8_lossy(title).into_owned();
+                        (e.events)(Event::Title(title));
                     }
                 }
                 Cmd::Resize {

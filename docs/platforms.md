@@ -13,7 +13,7 @@ CI only proves that the code builds and the tests pass.
 
 ## Toolchain (to build locally)
 
-All platforms need Rust (via [rustup](https://rustup.rs)) and **Zig 0.16**
+All platforms need Rust (via [rustup](https://rustup.rs)) and **Zig 0.17**
 from [ziglang.org/download](https://ziglang.org/download/) on `PATH`;
 libghostty-vt is compiled from source with it. rustup installs the Rust version in
 `rust-toolchain.toml` by itself, the first time cargo runs in the repository.

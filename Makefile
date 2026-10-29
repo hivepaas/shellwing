@@ -1,5 +1,5 @@
 # Building shellwing in one word: `make build`, `make run`; `make` alone lists
-# the rest. Needs Rust (rustup) and Zig 0.16 on PATH, plus each platform's
+# the rest. Needs Rust (rustup) and Zig 0.17 on PATH, plus each platform's
 # tools (docs/platforms.md). On Windows, run it from Git Bash or MSYS2.
 #
 # The desktop app does not cross-compile (GPUI links each system's own window
@@ -11,7 +11,7 @@
 # path too.
 CARGO_BIN := $(HOME)/.cargo/bin
 export PATH := $(CARGO_BIN):$(PATH)
-# Zig 0.16 elsewhere than on PATH: make build ZIG_DIR=/path/to/zig-0.16
+# Zig 0.17 elsewhere than on PATH: make build ZIG_DIR=/path/to/zig-0.17
 ifdef ZIG_DIR
 export PATH := $(ZIG_DIR):$(PATH)
 endif
@@ -148,7 +148,7 @@ check: lint test ## lint, then test
 
 doctor: ## Which tools are here, and which are missing
 	@printf "%-12s " cargo; $(CARGO) --version 2>/dev/null || echo "missing: https://rustup.rs"
-	@printf "%-12s " zig; zig version 2>/dev/null || echo "missing: Zig 0.16 from https://ziglang.org/download/"
+	@printf "%-12s " zig; zig version 2>/dev/null || echo "missing: Zig 0.17 from https://ziglang.org/download/"
 ifeq ($(HOST),Darwin)
 	@printf "%-12s " xcode; DEVELOPER_DIR=$${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer} xcrun --sdk iphonesimulator --show-sdk-version 2>/dev/null | sed 's/^/iOS SDK /' || echo "no iOS SDK (only for build-ios-core)"
 endif
@@ -158,7 +158,7 @@ clean: ## Remove build output
 	$(CARGO) clean
 	rm -rf $(DIST)
 
-# Zig must be on PATH and 0.16: other versions fail deep in libghostty's build.
+# Zig must be on PATH and 0.17: other versions fail deep in libghostty's build.
 zig:
-	@command -v zig >/dev/null 2>&1 || { echo "zig not found: install Zig 0.16 (docs/platforms.md) or pass ZIG_DIR=/path/to/zig"; exit 1; }
-	@zig version | grep -q '^0\.16\.' || { echo "zig $$(zig version) found; libghostty-vt needs 0.16.x"; exit 1; }
+	@command -v zig >/dev/null 2>&1 || { echo "zig not found: install Zig 0.17 (docs/platforms.md) or pass ZIG_DIR=/path/to/zig"; exit 1; }
+	@zig version | grep -q '^0\.17\.' || { echo "zig $$(zig version) found; libghostty-vt needs 0.17.x"; exit 1; }

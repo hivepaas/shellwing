@@ -8,7 +8,7 @@ host keys) and the terminal itself are the desktop's own code.
 
 ## Building
 
-Needs Xcode, Zig 0.16 on `PATH`, and XcodeGen (`brew install xcodegen`).
+Needs Xcode, Zig 0.17 on `PATH`, and XcodeGen (`brew install xcodegen`).
 
 ```sh
 make ios        # the Rust library for iPhones and the Simulator, its Swift, the Xcode project

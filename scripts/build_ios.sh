@@ -8,7 +8,7 @@
 #
 # Writes ios/Generated/ShellwingCore.xcframework and
 # ios/Generated/shellwing_mobile.swift (neither is committed). Needs Xcode
-# (not only the Command Line Tools), Zig 0.16 on PATH, and the two targets:
+# (not only the Command Line Tools), Zig 0.17 on PATH, and the two targets:
 #   rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 set -euo pipefail
 

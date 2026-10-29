@@ -9,7 +9,7 @@
 # Writes android/app/src/main/jniLibs/<abi>/ and
 # android/app/build/generated/uniffi/ (neither is committed). Needs the NDK
 # (ANDROID_NDK_HOME, or one under ~/Android/Sdk/ndk), cargo-ndk
-# (cargo install cargo-ndk), Zig 0.16 on PATH, and the two targets:
+# (cargo install cargo-ndk), Zig 0.17 on PATH, and the two targets:
 #   rustup target add aarch64-linux-android x86_64-linux-android
 # No armv7 or x86: libghostty-vt builds for 64-bit Android only.
 set -euo pipefail
