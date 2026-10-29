@@ -125,12 +125,15 @@ stays as it is.
 | `de` | Deutsch |
 | `es` | Español |
 | `fr` | Français |
+| `id` | Bahasa Indonesia |
 | `pt` | Português (Brasil) |
+| `tr` | Türkçe |
 | `vi` | Tiếng Việt |
 | `ru` | Русский |
 | `ja` | 日本語 |
 | `ko` | 한국어 |
 | `zh` | 简体中文 (simplified Chinese) |
+| `zh-Hant` | 繁體中文 (traditional Chinese, Taiwan's words; the system's choice in Taiwan, Hong Kong and Macau) |
 
 Japanese, Korean and Chinese need a font with their characters. If they show
 as boxes, pick a UI font that has them in *Settings › Appearance › App text*

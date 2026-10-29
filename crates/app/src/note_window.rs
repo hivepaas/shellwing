@@ -1698,6 +1698,9 @@ fn template() -> &'static str {
         "pt" => include_str!("note_templates/pt.md"),
         "ru" => include_str!("note_templates/ru.md"),
         "zh" => include_str!("note_templates/zh.md"),
+        "zh-Hant" => include_str!("note_templates/zh-Hant.md"),
+        "id" => include_str!("note_templates/id.md"),
+        "tr" => include_str!("note_templates/tr.md"),
         _ => include_str!("note_templates/en.md"),
     }
 }
@@ -1987,6 +1990,9 @@ mod tests {
             include_str!("note_templates/pt.md"),
             include_str!("note_templates/ru.md"),
             include_str!("note_templates/zh.md"),
+            include_str!("note_templates/zh-Hant.md"),
+            include_str!("note_templates/id.md"),
+            include_str!("note_templates/tr.md"),
         ] {
             assert!(t.starts_with("# "), "a heading first");
             assert_eq!(t.matches("```").count(), 2, "one code block");
