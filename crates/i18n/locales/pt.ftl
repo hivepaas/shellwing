@@ -1616,6 +1616,13 @@ t51c5c888 = Conectar a { $typed }
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = um endereço novo; um bloco Host em ~/.ssh/config se aplica
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+        [one] mais { $n } na biblioteca de trechos…
+       *[other] mais { $n } na biblioteca de trechos…
+    }
+
 # Enter again to forget
 t850e9777 = Enter de novo para esquecer
 
@@ -3297,6 +3304,15 @@ t134e12f0 =
         [one] { $n } comando pronto para adicionar
        *[other] { $n } comandos prontos para adicionar
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = Abra uma aba primeiro · Alt+Enter: adicionar…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter digita · Alt+Enter: adicionar…
+
+# Library · {tool}
+t8f5c1ee7 = Biblioteca · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = Abra uma aba primeiro: um trecho roda no painel selecionado.

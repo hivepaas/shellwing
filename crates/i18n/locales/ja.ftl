@@ -1573,6 +1573,12 @@ t51c5c888 = { $typed } に接続
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = 新しいアドレス。~/.ssh/config の Host ブロックが適用されます
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+       *[other] スニペットライブラリにあと { $n } 件…
+    }
+
 # Enter again to forget
 t850e9777 = もう一度 Enter で消去
 
@@ -3198,6 +3204,15 @@ t134e12f0 =
     { $n ->
        *[other] 追加できるコマンド { $n } 件
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = 先にタブを開いてください · Alt+Enter：追加…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter で入力 · Alt+Enter：追加…
+
+# Library · {tool}
+t8f5c1ee7 = ライブラリ · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 先にタブを開いてください。スニペットは選択中のペインで実行されます。

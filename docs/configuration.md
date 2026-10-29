@@ -713,6 +713,15 @@ can be added again, as another copy.
 - **File under** sets the new snippets' category: their tool (*PostgreSQL*),
   their task (*Backup*, the name then saying the tool), or both.
 
+**From the palette**, without adding: words typed there (two letters or
+more) also find the commands not added yet, after everything else, five at
+most, then a line that opens the library finding the same words. Every word
+counts, in the command's name, tool, task, description or text. **Enter**
+types one into the focused pane as it comes (no option, sudo as the command
+has it, on the host) and leaves it there, to read before Enter runs it; its
+values are asked first, and nothing is added. **Alt+Enter** opens the library
+at it, ticked, to adjust and add.
+
 The library's text is in English. Its commands are in two files:
 `crates/app/src/library/extra.toml`, written by hand (the machine, what runs on
 it, backups and clouds), and `crates/app/src/library/items.json`, made from

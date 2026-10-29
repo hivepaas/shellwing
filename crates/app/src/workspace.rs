@@ -470,6 +470,11 @@ impl Workspace {
     }
 
     #[cfg(all(test, feature = "ui-tests"))]
+    pub fn palette_view(&self) -> Option<Entity<Palette>> {
+        self.palette.as_ref().map(|(p, ..)| p.clone())
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
     pub fn overview_open(&self) -> bool {
         self.overview.is_some()
     }
@@ -731,6 +736,83 @@ impl Workspace {
                 .section(Part::Snippets),
             ))
             .collect()
+    }
+
+    /// The snippet library's commands not added yet: the palette finds them
+    /// by the words typed, never lists them all (there are hundreds).
+    fn library_entries(&self) -> Vec<Entry> {
+        let added: std::collections::HashSet<String> = self
+            .vault
+            .ready()
+            .and_then(|v| v.snippets().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|s| s.origin)
+            .collect();
+        let hint = if self.active_tab().is_none() {
+            tr!("Open a tab first · Alt+Enter: add…")
+        } else {
+            tr!("Enter types it · Alt+Enter: add…")
+        };
+        crate::library::items()
+            .iter()
+            .filter(|i| !added.contains(&i.origin()))
+            .map(|i| {
+                let command = i.command(&Default::default());
+                Entry::new(
+                    Kind::Library(i.id.clone()),
+                    tr!("Snippet library"),
+                    i.name.clone(),
+                )
+                .detail(format!(
+                    "{} · {}",
+                    tr!("Library · {tool}", tool = i.tool.clone()),
+                    snippets::one_line(&command)
+                ))
+                .keywords(&format!("{} {} {} {}", i.tool, i.task, i.about, command))
+                .section(Part::Snippets)
+                .hint(hint.clone())
+            })
+            .collect()
+    }
+
+    /// Types a command of the snippet library into the focused pane as it
+    /// comes (no option, sudo as it has it, on the host), and leaves it
+    /// there: it is not the user's yet, so it is read before Enter runs it.
+    /// Its `{{name}}` values are asked first.
+    fn type_library_command(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if self.active_tab().is_none() {
+            return self.say(
+                Notice::warn(tr!("Open a tab first: a snippet runs in the focused pane.")),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
+        let Some(item) = crate::library::items().iter().find(|i| i.id == id) else {
+            return;
+        };
+        let command = item.command(&Default::default());
+        let left = snippets::asked(&command);
+        let snippet = snippets::Snippet {
+            id: String::new(),
+            name: item.name.clone(),
+            command,
+            scope: String::new(),
+            enter: false,
+            category: String::new(),
+            needs: vec![],
+            origin: item.origin(),
+        };
+        self.ask_snippet(
+            SnippetRun {
+                snippet,
+                all: false,
+                values: Default::default(),
+                left,
+            },
+            window,
+            cx,
+        );
     }
 
     fn run_snippet(&mut self, id: &str, all: bool, window: &mut Window, cx: &mut Context<Self>) {
@@ -1741,6 +1823,7 @@ impl Workspace {
             );
         }
         entries.extend(self.snippet_entries(cx));
+        entries.extend(self.library_entries());
         // A section with nothing in it offers to make the first one (not
         // while the vault they are kept in is locked).
         let open = self.vault.ready().is_some();
@@ -3855,6 +3938,20 @@ impl Workspace {
                 self.close_palette(window, cx);
                 self.run_snippet(&id, all, window, cx);
             }
+            PaletteEvent::Library { id, add } => {
+                let (id, add) = (id.clone(), *add);
+                self.close_palette(window, cx);
+                if add {
+                    self.open_library(Some(crate::library_window::At::Item(id)), cx);
+                } else {
+                    self.type_library_command(&id, window, cx);
+                }
+            }
+            PaletteEvent::FindInLibrary(words) => {
+                let words = words.clone();
+                self.close_palette(window, cx);
+                self.open_library(Some(crate::library_window::At::Find(words)), cx);
+            }
             PaletteEvent::Chose(how) if matches!(self.asking, Some(Asking::JoinHow { .. })) => {
                 let Some(Asking::JoinHow { place: folder, .. }) = self.asking.take() else {
                     return;
@@ -4049,7 +4146,7 @@ impl Workspace {
                 self.check_updates(cx);
                 self.open_settings(Page::About, window, cx);
             }
-            Action::SnippetLibrary => self.open_library(cx),
+            Action::SnippetLibrary => self.open_library(None, cx),
             Action::UnloadEnv => {
                 if let Some(view) = self.active_tab().cloned()
                     && let Err(e) = view.update(cx, |v, cx| v.unload_env(None, cx))

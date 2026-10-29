@@ -1573,6 +1573,12 @@ t51c5c888 = { $typed }에 연결
 # a new address; a Host block in ~/.ssh/config applies
 t69b58e6c = 새 주소, ~/.ssh/config의 Host 블록이 적용됨
 
+# {n} more in the snippet library… | {n} more in the snippet library…
+t51d15edf =
+    { $n ->
+       *[other] 스니펫 라이브러리에 { $n }개 더…
+    }
+
 # Enter again to forget
 t850e9777 = 삭제하려면 Enter를 한 번 더 누르세요
 
@@ -3198,6 +3204,15 @@ t134e12f0 =
     { $n ->
        *[other] 추가할 수 있는 명령 { $n }개
     }
+
+# Open a tab first · Alt+Enter: add…
+tcd0bb8f7 = 먼저 탭을 여세요 · Alt+Enter: 추가…
+
+# Enter types it · Alt+Enter: add…
+t7556b445 = Enter로 입력 · Alt+Enter: 추가…
+
+# Library · {tool}
+t8f5c1ee7 = 라이브러리 · { $tool }
 
 # Open a tab first: a snippet runs in the focused pane.
 t45260fd2 = 먼저 탭을 여세요. 스니펫은 선택된 창에서 실행됩니다.

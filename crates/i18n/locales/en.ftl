@@ -582,6 +582,11 @@ ta5e61028 = Find a theme
 tdb89a899 = Connect
 t51c5c888 = Connect to { $typed }
 t69b58e6c = a new address; a Host block in ~/.ssh/config applies
+t51d15edf =
+    { $n ->
+        [one] { $n } more in the snippet library…
+       *[other] { $n } more in the snippet library…
+    }
 t850e9777 = Enter again to forget
 tf8e003c3 = Nothing matches.
 t007c4e08 = ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
@@ -1204,6 +1209,9 @@ t134e12f0 =
         [one] { $n } ready command to add
        *[other] { $n } ready commands to add
     }
+tcd0bb8f7 = Open a tab first · Alt+Enter: add…
+t7556b445 = Enter types it · Alt+Enter: add…
+t8f5c1ee7 = Library · { $tool }
 t45260fd2 = Open a tab first: a snippet runs in the focused pane.
 t57139bb8 = in this pane
 tca97c422 =

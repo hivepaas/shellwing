@@ -8,6 +8,7 @@ use std::time::Duration;
 use shellwing_vault::Snippet;
 
 use super::{Policy, Server, USER, Ui, scenario};
+use crate::palette::Kind;
 
 /// A secret value with what a terminal must not take as typed text: spaces,
 /// a backslash, a newline and Vietnamese (bytes past ASCII).
@@ -63,6 +64,39 @@ fn signed_in(ui: &mut Ui) -> Server {
     ui.connect("web");
     ui.login();
     server
+}
+
+/// Opens the palette and types `words`, without Enter.
+fn find(ui: &mut Ui, words: &str) {
+    ui.shortcut("k");
+    ui.type_text(words);
+}
+
+/// What the palette lists: each entry's kind and title.
+fn listed(ui: &mut Ui) -> Vec<(Kind, String)> {
+    ui.palette_list().expect("the palette").0
+}
+
+/// Moves the palette's selection down to the entry of `kind`, then presses
+/// `keys`.
+fn choose(ui: &mut Ui, kind: Kind, keys: &str) {
+    let (list, selected) = ui.palette_list().expect("the palette");
+    let at = list
+        .iter()
+        .position(|(k, _)| *k == kind)
+        .unwrap_or_else(|| panic!("{kind:?} in {list:?}"));
+    for _ in selected..at {
+        ui.keys("down");
+    }
+    ui.keys(keys);
+}
+
+/// Whether the user has a snippet made from the library's `id`.
+fn added(ui: &mut Ui, id: &str) -> bool {
+    let origin = format!("library:{id}");
+    ui.vault()
+        .and_then(|v| v.snippets().ok())
+        .is_some_and(|s| s.iter().any(|s| s.origin == origin))
 }
 
 /// How many times the shell ran `line`.
@@ -379,5 +413,108 @@ scenario!(
         let gap = button.top() - list.bottom();
         assert!(gap >= gpui::px(0.) && gap <= gpui::px(6.), "above it: {list:?} over {button:?}");
         assert!((list.left() - button.left()).abs() <= gpui::px(1.), "from its left edge");
+    }
+);
+
+scenario!(
+    /// A library command not added yet is found by its words in the
+    /// palette and typed into the pane, not run, nor added: Enter in the
+    /// terminal runs it.
+    a_library_command_is_typed_from_the_palette,
+    |ui| {
+        let server = signed_in(ui);
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        find(ui, "memory free");
+        choose(ui, Kind::Library("system/memory".into()), "enter");
+        ui.wait_for("free -h");
+        ui.advance(Duration::from_millis(300));
+        assert_eq!(ran(&server, "free -h"), 0, "typed only");
+        assert!(!added(ui, "system/memory"));
+        ui.keys("enter");
+        ui.wait_for("you said: free -h");
+    }
+);
+
+scenario!(
+    /// The palette lists the library's commands only once words are typed,
+    /// a few, then a line that opens the library finding the same words.
+    /// One added already is the user's snippet there, not the library's.
+    the_palette_finds_a_few_library_commands_and_the_rest_in_the_library,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.shortcut("k");
+        let all = listed(ui);
+        assert!(
+            !all.iter()
+                .any(|(k, _)| matches!(k, Kind::Library(_) | Kind::LibraryMore(_))),
+            "{all:?}"
+        );
+        ui.type_text("postgresql");
+        let found = listed(ui);
+        let library = found
+            .iter()
+            .filter(|(k, _)| matches!(k, Kind::Library(_)))
+            .count();
+        assert_eq!(library, 5, "{found:?}");
+        assert!(
+            matches!(found.last(), Some((Kind::LibraryMore(w), _)) if w == "postgresql"),
+            "{found:?}"
+        );
+        choose(ui, Kind::LibraryMore("postgresql".into()), "enter");
+        ui.wait_until("the library", |ui| ui.library_window().is_some());
+        let lib = ui.library_window().expect("library");
+        let (_, ticked, words) = ui.cx.read(|cx| lib.read(cx).expect("library").at(cx));
+        assert_eq!(words, "postgresql");
+        assert!(ticked.is_empty(), "{ticked:?}");
+
+        let vault = ui.vault().expect("vault");
+        vault
+            .save_snippet(&Snippet {
+                id: String::new(),
+                name: "Memory".into(),
+                command: "free -h".into(),
+                scope: String::new(),
+                enter: true,
+                category: "System".into(),
+                needs: vec![],
+                origin: "library:system/memory".into(),
+            })
+            .expect("snippet saved");
+        find(ui, "memory");
+        let found = listed(ui);
+        assert!(
+            found
+                .iter()
+                .any(|(k, t)| matches!(k, Kind::Snippet(_)) && t == "Memory"),
+            "{found:?}"
+        );
+        assert!(
+            !found
+                .iter()
+                .any(|(k, _)| *k == Kind::Library("system/memory".into())),
+            "{found:?}"
+        );
+    }
+);
+
+scenario!(
+    /// Alt+Enter on a library command opens the library at it, ticked: Add
+    /// makes it the user's snippet.
+    alt_enter_shows_a_library_command_to_add,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        find(ui, "memory free");
+        choose(ui, Kind::Library("system/memory".into()), "alt-enter");
+        ui.wait_until("the library", |ui| ui.library_window().is_some());
+        let lib = ui.library_window().expect("library");
+        let (focused, ticked, words) =
+            ui.cx.read(|cx| lib.read(cx).expect("library").at(cx));
+        assert_eq!(focused.as_deref(), Some("system/memory"));
+        assert_eq!(ticked, ["system/memory"]);
+        assert_eq!(words, "Memory");
+        ui.click_in(lib.into(), "library-add");
+        ui.wait_until("the snippet in the vault", |ui| added(ui, "system/memory"));
     }
 );
