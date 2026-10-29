@@ -850,6 +850,12 @@ t66ef7116 = Відкритий ключ скопійовано.
 # Not renamed: {e}
 t836adf69 = Не перейменовано: { $e }
 
+# Servers that have its public key will not let it in from here any more, from any of your devices.
+tf9cc53bc = Сервери з його відкритим ключем більше не пускатимуть з ним звідси — з жодного з ваших пристроїв.
+
+# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
+t20cb489a = { $hosts } входять із ним: натомість вони спробують інші способи (агент, ~/.ssh, пароль). Сервери з його відкритим ключем зберігатимуть його, доки ви не видалите його там.
+
 # Deleted {name}.
 t0c7abd07 = { $name } видалено.
 
@@ -1038,12 +1044,6 @@ t2c552c07 = Перейменувати ключ
 
 # Rename
 tc80631f3 = Перейменувати
-
-# Servers that have its public key will not let it in from here any more, from any of your devices.
-tf9cc53bc = Сервери з його відкритим ключем більше не пускатимуть з ним звідси — з жодного з ваших пристроїв.
-
-# {hosts} sign in with it: they will try the other ways (the agent, ~/.ssh, a password) instead. Servers that have its public key keep it until you remove it there.
-t20cb489a = { $hosts } входять із ним: натомість вони спробують інші способи (агент, ~/.ssh, пароль). Сервери з його відкритим ключем зберігатимуть його, доки ви не видалите його там.
 
 # Export {name}
 t78124df8 = Експорт { $name }
@@ -2590,6 +2590,9 @@ t5956f56a = { $size }, не текст
 # Edit…
 t8e7efcd7 = Редагувати…
 
+# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
+t9903435f = Його буде видалено зі сховища, а після синхронізації — і з інших ваших пристроїв. Там, де його вже розміщено, він залишиться.
+
 # Choose a file…
 t28a576c9 = Вибрати файл…
 
@@ -2671,6 +2674,9 @@ t79d75da2 =
        *[other] потрібне { $n } сніпета
     }
 
+# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
+td2d90383 = Його змінні буде видалено зі сховища, а після синхронізації — і з інших ваших пристроїв. Оболонки, у які його завантажено, зберігають їх до вивантаження.
+
 # Change
 ta1de2fdd = Змінити
 
@@ -2715,12 +2721,6 @@ td4e41905 = вводиться, але не виконується
 
 # with {envs}
 tba31f3bb = з { $envs }
-
-# Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
-td2d90383 = Його змінні буде видалено зі сховища, а після синхронізації — і з інших ваших пристроїв. Оболонки, у які його завантажено, зберігають їх до вивантаження.
-
-# It goes from the vault, and from your other devices once they sync. Where it was placed, it stays.
-t9903435f = Його буде видалено зі сховища, а після синхронізації — і з інших ваших пристроїв. Там, де його вже розміщено, він залишиться.
 
 # None yet.
 t786bc275 = Поки немає.
