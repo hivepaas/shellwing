@@ -438,6 +438,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         let o = session.offer()
         if o != offer { offer = o }
         if let n = session.notice() { notice = n }
+        // A selection copied: its text, on the pasteboard.
+        if let copied = session.copied() { UIPasteboard.general.string = copied }
         let loaded = session.loadedEnvs()
         if loaded != envs { envs = loaded }
         let r = session.retrying()
@@ -494,6 +496,20 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
 
     func scrollToBottom() {
         session?.scrollToBottom()
+    }
+
+    /// A finger selecting at a point of the grid, in pixels (see `Selecting`).
+    func select(_ how: Selecting, x: Float, y: Float) {
+        session?.select(how: how, x: x, y: y)
+    }
+
+    func clearSelection() {
+        session?.clearSelection()
+    }
+
+    /// The selection's text goes on the pasteboard once the terminal has it.
+    func copySelection() {
+        session?.copySelection()
     }
 
     func reconnect() {
