@@ -595,6 +595,24 @@ t741afb89 = 连接期间，此主机上拥有 root 权限的任何人也能用�
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = 这样你就能在此主机上使用本机的密钥执行 git push 或继续 ssh；密钥不会被复制过去。
 
+# X11 windows
+td33b1f40 = X11 窗口
+
+# As ~/.ssh/config
+tff363503 = 按 ~/.ssh/config
+
+# Off
+t0dc6b4aa = 关闭
+
+# Untrusted
+tb69519d9 = 不信任
+
+# Trusted
+t102c70dc = 信任
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = 让主机上的程序在此处的 X 服务器打开窗口。不信任的程序会与你的其他窗口和键盘隔离；信任的程序则不会，因此仅用于你信任的主机。
+
 # Some fields need a look.
 teaa35f1a = 部分字段需要检查。
 
@@ -2100,9 +2118,6 @@ tb9e9f472 = 未找到（未设置 SSH_AUTH_SOCK）。
 
 # Refuse
 t9bcada35 = 拒绝
-
-# Off
-t0dc6b4aa = 关闭
 
 # Unknown host keys
 t2534790f = 未知主机密钥

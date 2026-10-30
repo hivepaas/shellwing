@@ -613,6 +613,24 @@ t741afb89 = Поки ви підключені, будь-хто з правам�
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Тоді з цього хоста можна буде виконувати git push або ssh далі з ключами цього комп'ютера; вони ніколи туди не копіюються.
 
+# X11 windows
+td33b1f40 = Вікна X11
+
+# As ~/.ssh/config
+tff363503 = Як у ~/.ssh/config
+
+# Off
+t0dc6b4aa = Вимк.
+
+# Untrusted
+tb69519d9 = Без довіри
+
+# Trusted
+t102c70dc = З довірою
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Дозволяє програмам на хості відкривати вікна тут, на X-сервері. Програми без довіри ізольовані від інших ваших вікон і клавіатури; з довірою — ні, тому лише для хостів, яким ви довіряєте.
+
 # Some fields need a look.
 teaa35f1a = Перевірте деякі поля.
 
@@ -2178,9 +2196,6 @@ tb9e9f472 = Не знайдено (SSH_AUTH_SOCK не задано).
 
 # Refuse
 t9bcada35 = Відхиляти
-
-# Off
-t0dc6b4aa = Вимк.
 
 # Unknown host keys
 t2534790f = Невідомі ключі хостів

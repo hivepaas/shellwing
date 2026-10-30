@@ -607,6 +607,24 @@ t741afb89 = Solange du verbunden bist, kann jeder mit Root-Rechten auf diesem Ho
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Von diesem Host aus kannst du dann mit den Schlüsseln dieses Computers git push ausführen oder dich per ssh weiterverbinden; sie werden nie dorthin kopiert.
 
+# X11 windows
+td33b1f40 = X11-Fenster
+
+# As ~/.ssh/config
+tff363503 = Wie in ~/.ssh/config
+
+# Off
+t0dc6b4aa = Aus
+
+# Untrusted
+tb69519d9 = Nicht vertrauenswürdig
+
+# Trusted
+t102c70dc = Vertrauenswürdig
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Lässt Programme auf dem Host hier Fenster öffnen, auf einem X-Server. Nicht vertrauenswürdige bleiben von deinen anderen Fenstern und der Tastatur getrennt; vertrauenswürdige nicht, also nur für Hosts, denen du vertraust.
+
 # Some fields need a look.
 teaa35f1a = Einige Felder sind zu prüfen.
 
@@ -2144,9 +2162,6 @@ tb9e9f472 = Nicht gefunden (SSH_AUTH_SOCK ist nicht gesetzt).
 
 # Refuse
 t9bcada35 = Ablehnen
-
-# Off
-t0dc6b4aa = Aus
 
 # Unknown host keys
 t2534790f = Unbekannte Host-Schlüssel

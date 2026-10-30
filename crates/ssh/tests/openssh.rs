@@ -847,3 +847,94 @@ async fn connect_timeout_gives_up_on_a_silent_server() {
         );
     }
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn x11_programs_reach_the_x_server_here() {
+    let lab = lab!();
+    let Ok(real_cookie) = std::env::var("SHELLWING_E2E_X11_COOKIE") else {
+        eprintln!("skipped: no X server (xauth is missing here)");
+        return;
+    };
+    if !has("ssh") {
+        eprintln!("skipped: no OpenSSH client");
+        return;
+    }
+    // A real X client on each server, which an X server with a cookie lets
+    // in only if the made-up cookie was swapped for the right one here.
+    for host in &lab.targets {
+        for trusted in ["yes", "no"] {
+            let ((theirs, _), (ours, _)) = both_run(
+                &lab,
+                &format!("x11-{trusted}-{host}"),
+                host,
+                &format!(
+                    "  ForwardX11 yes\n  ForwardX11Trusted {trusted}\n  RemoteCommand xdpyinfo 2>&1 | head -n 3; xauth list; echo finished\n"
+                ),
+            )
+            .await;
+            let what = format!("{host}, trusted {trusted}");
+            // In: its first line, or the error a limited cookie gets for
+            // what it may not ask. Not in: "unable to open display".
+            let got_in = |out: &str| {
+                (out.contains("name of display:") || out.contains("X Error of failed request"))
+                    && !out.contains("unable to open display")
+            };
+            assert!(got_in(&theirs), "OpenSSH, {what}: {theirs:?}");
+            assert!(got_in(&ours), "shellwing, {what}: {ours:?}");
+            assert!(ours.contains("finished"), "shellwing, {what}: {ours:?}");
+            // The server has a made-up cookie, never the X server's own.
+            assert!(ours.contains("MIT-MAGIC-COOKIE-1"), "{what}: {ours:?}");
+            assert!(
+                !ours.contains(&real_cookie),
+                "{what}: the real cookie is there"
+            );
+        }
+        // Not asked for: no display there.
+        let (_, (ours, _)) = both_run(
+            &lab,
+            &format!("no-x11-{host}"),
+            host,
+            "  RemoteCommand echo \"[$DISPLAY]\"\n",
+        )
+        .await;
+        assert!(ours.contains("[]"), "{host}: {ours:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_server_refusing_x11_is_reported_and_the_session_goes_on() {
+    let lab = lab!();
+    if std::env::var("SHELLWING_E2E_X11_COOKIE").is_err() {
+        eprintln!("skipped: no X server (xauth is missing here)");
+        return;
+    }
+    // The bastion's X11Forwarding is off.
+    let mut target = lab.bastion();
+    target.x11 = Some(shellwing_ssh::config::X11 {
+        trusted: true,
+        ..Default::default()
+    });
+    let reports = Arc::new(Mutex::new(Vec::new()));
+    let seen = reports.clone();
+    let mut opts = lab.options(target);
+    opts.forwarded = Some(Box::new(move |r| {
+        seen.lock().expect("seen").push(match r {
+            Ok(_) => "running".to_string(),
+            Err(e) => e.to_string(),
+        });
+    }));
+    let shell = open_or_fail(opts, "the bastion").await;
+    assert_eq!(shell.who().await, USER);
+    for _ in 0..200 {
+        if !reports.lock().expect("reports").is_empty() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    let reports = reports.lock().expect("reports").clone();
+    assert_eq!(reports.len(), 1, "{reports:?}");
+    assert!(
+        reports[0].contains("X11") && reports[0].contains("refused"),
+        "{reports:?}"
+    );
+}

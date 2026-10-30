@@ -607,6 +607,24 @@ t741afb89 = Bağlıyken bu ana makinede root olan herkes, sizin anahtarlarınız
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Bu ana makineden, bu bilgisayardaki anahtarlarla git push yapabilir veya ssh ile daha ileri gidebilirsiniz; anahtarlar oraya asla kopyalanmaz.
 
+# X11 windows
+td33b1f40 = X11 pencereleri
+
+# As ~/.ssh/config
+tff363503 = ~/.ssh/config gibi
+
+# Off
+t0dc6b4aa = Kapalı
+
+# Untrusted
+tb69519d9 = Güvenilmeyen
+
+# Trusted
+t102c70dc = Güvenilen
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Ana makinedeki programların burada, bir X sunucusunda pencere açmasını sağlar. Güvenilmeyenler diğer pencerelerinizden ve klavyeden uzak tutulur; güvenilenler tutulmaz, bu yüzden yalnızca güvendiğiniz ana makineler için.
+
 # Some fields need a look.
 teaa35f1a = Bazı alanların gözden geçirilmesi gerekiyor.
 
@@ -2144,9 +2162,6 @@ tb9e9f472 = Bulunamadı (SSH_AUTH_SOCK ayarlı değil).
 
 # Refuse
 t9bcada35 = Reddet
-
-# Off
-t0dc6b4aa = Kapalı
 
 # Unknown host keys
 t2534790f = Bilinmeyen ana makine anahtarları

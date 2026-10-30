@@ -11,7 +11,7 @@ use gpui::{
     Context, ElementId, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent,
     Render, SharedString, Window, div, prelude::*, px, rgb,
 };
-use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, Hosts, Store};
+use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, HostX11, Hosts, Store};
 use shellwing_i18n::tr;
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
@@ -131,6 +131,7 @@ pub struct HostEditor {
     local_only: bool,
     forward_agent: bool,
     host_key: Option<HostKey>,
+    x11: Option<HostX11>,
     log: Option<bool>,
     color: Option<String>,
     favorite: bool,
@@ -209,6 +210,7 @@ impl HostEditor {
             local_only: false,
             forward_agent: false,
             host_key: None,
+            x11: None,
             log: None,
             color: None,
             favorite: false,
@@ -277,6 +279,7 @@ impl HostEditor {
         );
         self.forward_agent = h.forward_agent;
         self.host_key = h.host_key;
+        self.x11 = h.x11;
         self.log = h.log;
         self.set(&i.run, h.run.as_deref().unwrap_or(""), cx);
         self.set(&i.proxy, h.proxy_command.as_deref().unwrap_or(""), cx);
@@ -329,6 +332,7 @@ impl HostEditor {
             theme: self.theme.clone(),
             local_only: self.local_only,
             forward_agent: self.forward_agent,
+            x11: self.x11,
             keepalive: self.text(&i.keepalive, cx).parse().ok(),
             host_key: self.host_key,
             color: self.color.clone(),
@@ -586,6 +590,7 @@ impl HostEditor {
             theme: None,
             local_only: false,
             forward_agent: false,
+            x11: None,
             keepalive: None,
             host_key: None,
             color: None,
@@ -595,6 +600,13 @@ impl HostEditor {
         };
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
+            host.x11 = r.x11.as_ref().map(|x| {
+                if x.trusted {
+                    HostX11::Trusted
+                } else {
+                    HostX11::Untrusted
+                }
+            });
             host.keepalive = r.keepalive.map(|k| k.as_secs());
             host.address = r.target.host.clone();
             host.proxy_command = r.proxy_command.clone();
@@ -762,6 +774,7 @@ impl HostEditor {
             row = row.child(
                 div()
                     .id((id, n))
+                    .debug_selector(move || format!("{id}:{n}"))
                     .flex_1()
                     .h(px(30.))
                     .flex()
@@ -1890,7 +1903,23 @@ impl Render for HostEditor {
                 tr!("While you are connected, whoever is root on this host can sign in elsewhere with your keys too. Only for hosts you trust.")
             } else {
                 tr!("From this host you could then git push or ssh further with the keys on this computer; they are never copied there.")
-            }));
+            }))
+            .child(label_text(&tr!("X11 windows")))
+            .child(Self::segments(
+                "host-x11",
+                &[
+                    (None, tr!("As ~/.ssh/config").as_str()),
+                    (Some(HostX11::Off), tr!("Off").as_str()),
+                    (Some(HostX11::Untrusted), tr!("Untrusted").as_str()),
+                    (Some(HostX11::Trusted), tr!("Trusted").as_str()),
+                ],
+                self.x11,
+                |e, v| e.x11 = v,
+                cx,
+            ))
+            .child(hint_text(&tr!(
+                "Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust."
+            )));
 
         let mut footer = div()
             .flex_shrink_0()

@@ -77,7 +77,8 @@ ready() {
 docker network create "$run-edge" >/dev/null
 docker network create --internal "$run-inner" >/dev/null
 image bastion "$bastion_image"
-start bastion bastion "$run-edge" -p 127.0.0.1::22
+# It refuses X11 forwarding, so a test can see that reported.
+start bastion bastion "$run-edge" -p 127.0.0.1::22 -e E2E_X11_FORWARDING=no
 docker network connect "$run-inner" "$run-bastion"
 labels=()
 for t in "${targets[@]}"; do
@@ -88,6 +89,28 @@ for t in "${targets[@]}"; do
 done
 ready bastion
 for label in "${labels[@]}"; do ready "$label"; done
+
+# An X server for X11 forwarding, where this machine has xauth to use it: its
+# TCP port published, and DISPLAY the number that port stands for.
+if command -v xauth >/dev/null; then
+	mkdir "$work/x11"
+	od -An -tx1 -N16 /dev/urandom | tr -d ' \n' >"$work/x11/cookie"
+	docker build -q -t shellwing-e2e-xvfb e2e/xvfb >/dev/null
+	docker run -d --name "$run-xvfb" --network "$run-edge" -p 127.0.0.1::6099 \
+		-v "$work/x11:/e2e:ro" shellwing-e2e-xvfb >/dev/null
+	for _ in $(seq 60); do
+		docker exec "$run-xvfb" env XAUTHORITY=/tmp/auth xdpyinfo -display :99 >/dev/null 2>&1 && break
+		sleep 0.5
+	done
+	x_port=$(docker port "$run-xvfb" 6099/tcp | head -n1)
+	x_port=${x_port##*:}
+	export DISPLAY="127.0.0.1:$((x_port - 6000))" XAUTHORITY="$work/x11/auth"
+	xauth -f "$XAUTHORITY" add "$DISPLAY" MIT-MAGIC-COOKIE-1 "$(cat "$work/x11/cookie")" 2>/dev/null
+	export SHELLWING_E2E_X11_COOKIE
+	SHELLWING_E2E_X11_COOKIE=$(cat "$work/x11/cookie")
+else
+	unset DISPLAY XAUTHORITY
+fi
 
 export SHELLWING_E2E_DIR="$work"
 export SHELLWING_E2E_BASTION

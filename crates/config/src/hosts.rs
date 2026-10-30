@@ -64,6 +64,10 @@ pub struct Host {
     /// Let the host use the local ssh-agent (`ForwardAgent`).
     #[serde(default)]
     pub forward_agent: bool,
+    /// Let the host's programs open windows here; None: what `~/.ssh/config`
+    /// says for the address.
+    #[serde(default)]
+    pub x11: Option<HostX11>,
     /// Seconds between keepalives (0: none); None: the app's setting.
     #[serde(default)]
     pub keepalive: Option<u64>,
@@ -187,6 +191,27 @@ pub enum HostKey {
     AcceptNew,
     /// Refuse it.
     Strict,
+}
+
+/// X11 forwarding for a host.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HostX11 {
+    Off,
+    /// A limited cookie: its programs cannot read other windows or the keyboard.
+    Untrusted,
+    /// The display's own cookie (`ForwardX11Trusted yes`).
+    Trusted,
+}
+
+impl HostX11 {
+    pub fn name(self) -> &'static str {
+        match self {
+            HostX11::Off => "off",
+            HostX11::Untrusted => "untrusted",
+            HostX11::Trusted => "trusted",
+        }
+    }
 }
 
 impl HostKey {

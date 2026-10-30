@@ -201,6 +201,7 @@ fn host_of(f: &Found, name: &str, tag: &str) -> Host {
         theme: None,
         local_only: false,
         forward_agent: f.forward_agent,
+        x11: f.x11,
         keepalive: None,
         host_key: None,
         color: f.color.as_deref().map(color),

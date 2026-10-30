@@ -23,6 +23,7 @@ pub mod proxy;
 pub mod secrets;
 pub mod sftp;
 mod tokens;
+mod x11;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -345,6 +346,7 @@ async fn open_hop(
     opts: &Options,
     routes: Routes,
     forward_agent: bool,
+    x11: Option<Arc<x11::Forwarding>>,
 ) -> Result<Handle<Checker>, Error> {
     let problem = Arc::new(Mutex::new(None));
     let key_shown = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -364,6 +366,7 @@ async fn open_hop(
         forward_agent,
         agent: agent.clone(),
         key_shown: key_shown.clone(),
+        x11,
     };
     let keepalive = hop
         .keepalive
@@ -487,7 +490,7 @@ pub async fn connect(
     let mut jumps: Vec<Handle<Checker>> = Vec::new();
     for hop in &opts.target.jumps {
         // Jump hosts never get the agent: only the target asked for it.
-        let h = open_hop(hop, jumps.last(), &opts, Routes::default(), false)
+        let h = open_hop(hop, jumps.last(), &opts, Routes::default(), false, None)
             .await
             .map_err(|e| Error::Jump {
                 host: hop.alias.clone(),
@@ -497,6 +500,17 @@ pub async fn connect(
     }
     let routes = Routes::default();
     let forward_agent = opts.target.forward_agent;
+    // As OpenSSH, X11 that cannot be set up is reported, and the session goes on.
+    let (x11, x11_problem) = match opts.target.x11.clone() {
+        None => (None, None),
+        Some(settings) => {
+            match tokio::task::spawn_blocking(move || x11::Forwarding::prepare(&settings)).await {
+                Ok(Ok(f)) => (Some(Arc::new(f)), None),
+                Ok(Err(why)) => (None, Some(why)),
+                Err(e) => (None, Some(e.to_string())),
+            }
+        }
+    };
     let handle = Arc::new(
         open_hop(
             &opts.target,
@@ -504,6 +518,7 @@ pub async fn connect(
             &opts,
             routes.clone(),
             forward_agent,
+            x11.clone(),
         )
         .await?,
     );
@@ -518,6 +533,13 @@ pub async fn connect(
         if let Some(report) = opts.forwarded.as_mut() {
             report(result);
         }
+    }
+
+    if let (Some(why), Some(report)) = (x11_problem, opts.forwarded.as_mut()) {
+        report(Err(Error::Forward {
+            spec: "X11".into(),
+            why,
+        }));
     }
 
     let mut channel = handle.channel_open_session().await?;
@@ -540,6 +562,19 @@ pub async fn connect(
     if forward_agent {
         channel.agent_forward(false).await?;
     }
+    // Its answer comes in the loop below: the only request here that asks for one.
+    if let Some(x11) = &x11 {
+        channel
+            .request_x11(
+                true,
+                false,
+                x11.protocol.clone(),
+                x11.fake_hex(),
+                x11.screen,
+            )
+            .await?;
+    }
+    let mut x11_report = x11.is_some().then(|| opts.forwarded.take()).flatten();
     match &opts.target.remote_command {
         Some(command) => {
             let command = tokens::expand(command, &opts.target, "RemoteCommand", "hprndu")?;
@@ -568,6 +603,14 @@ pub async fn connect(
                             } else {
                                 let lines = with_crlf(&data);
                                 tokio::task::block_in_place(|| output(&lines));
+                            }
+                        }
+                        Some(ChannelMsg::Failure) => {
+                            if let Some(mut report) = x11_report.take() {
+                                report(Err(Error::Forward {
+                                    spec: "X11".into(),
+                                    why: "the server refused it (its X11Forwarding, or no xauth there)".into(),
+                                }));
                             }
                         }
                         Some(ChannelMsg::ExitStatus { exit_status: s }) => exit_status = Some(s),

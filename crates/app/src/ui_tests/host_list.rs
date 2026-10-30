@@ -408,6 +408,24 @@ scenario!(
 );
 
 scenario!(
+    /// X11 windows, chosen in the host editor: written to hosts.toml, and
+    /// shown again when the host is opened; "As ~/.ssh/config" takes it out.
+    x11_chosen_in_the_host_editor,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", closed_port()));
+        ui.open();
+        edit_host(ui, "web");
+        ui.click("host-x11:3");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("x11 = \"trusted\""), "{}", ui.hosts_toml());
+        edit_host(ui, "web");
+        ui.click("host-x11:0");
+        save_host(ui);
+        assert!(!ui.hosts_toml().contains("x11"), "{}", ui.hosts_toml());
+    }
+);
+
+scenario!(
     /// A command typed into the host editor (Route, under the jump hosts):
     /// saved to hosts.toml, and the host goes through it.
     proxy_command_typed_in_the_host_editor,

@@ -595,6 +595,24 @@ t741afb89 = 接続中は、このホストで root 権限を持つ人なら誰�
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = これにより、このホストからこのコンピュータの鍵を使って git push や ssh でさらに先へ接続できます。鍵がコピーされることはありません。
 
+# X11 windows
+td33b1f40 = X11 ウィンドウ
+
+# As ~/.ssh/config
+tff363503 = ~/.ssh/config に従う
+
+# Off
+t0dc6b4aa = オフ
+
+# Untrusted
+tb69519d9 = 信頼しない
+
+# Trusted
+t102c70dc = 信頼する
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = ホスト上のプログラムがここの X サーバーにウィンドウを開けるようにします。信頼しないプログラムは他のウィンドウやキーボードから隔離されます。信頼するプログラムは隔離されないため、信頼できるホストにのみ使ってください。
+
 # Some fields need a look.
 teaa35f1a = 確認が必要な項目があります。
 
@@ -2100,9 +2118,6 @@ tb9e9f472 = 見つかりません（SSH_AUTH_SOCK が設定されていません
 
 # Refuse
 t9bcada35 = 拒否
-
-# Off
-t0dc6b4aa = オフ
 
 # Unknown host keys
 t2534790f = 不明なホスト鍵

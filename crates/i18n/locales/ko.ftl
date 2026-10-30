@@ -595,6 +595,24 @@ t741afb89 = 연결되어 있는 동안 이 호스트의 root 권한을 가진 �
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = 그러면 이 호스트에서 이 컴퓨터의 키로 git push나 ssh를 할 수 있습니다. 키는 호스트에 복사되지 않습니다.
 
+# X11 windows
+td33b1f40 = X11 창
+
+# As ~/.ssh/config
+tff363503 = ~/.ssh/config 따름
+
+# Off
+t0dc6b4aa = 끔
+
+# Untrusted
+tb69519d9 = 신뢰 안 함
+
+# Trusted
+t102c70dc = 신뢰함
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = 호스트의 프로그램이 이곳의 X 서버에 창을 열 수 있게 합니다. 신뢰하지 않는 프로그램은 다른 창과 키보드에서 격리되지만, 신뢰하는 프로그램은 그렇지 않으므로 믿을 수 있는 호스트에만 사용하세요.
+
 # Some fields need a look.
 teaa35f1a = 일부 필드를 확인하세요.
 
@@ -2100,9 +2118,6 @@ tb9e9f472 = 찾을 수 없습니다(SSH_AUTH_SOCK이 설정되지 않음).
 
 # Refuse
 t9bcada35 = 거부
-
-# Off
-t0dc6b4aa = 끔
 
 # Unknown host keys
 t2534790f = 알 수 없는 호스트 키

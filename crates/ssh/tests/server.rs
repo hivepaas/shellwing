@@ -33,6 +33,9 @@ struct Policy {
     /// What came back from the client's agent when this server asked it
     /// something: on a forwarding request, or (`rogue`) unasked at shell start.
     agent_reply: Option<AgentReply>,
+    /// Opens an X11 channel when the shell starts, asked for or not, and
+    /// records whether the client took it.
+    rogue_x11: Option<Arc<Mutex<Option<bool>>>>,
     rogue: bool,
     /// Run commands (exec requests) with `sh`, with this as `$HOME`.
     home: Option<PathBuf>,
@@ -274,6 +277,13 @@ impl server::Handler for TestServer {
             && let Some(record) = self.policy.agent_reply.clone()
         {
             ask_agent(session.handle(), record);
+        }
+        if let Some(record) = self.policy.rogue_x11.clone() {
+            let handle = session.handle();
+            tokio::spawn(async move {
+                let taken = handle.channel_open_x11("127.0.0.1", 6010).await.is_ok();
+                *record.lock().expect("record") = Some(taken);
+            });
         }
         session.channel_success(channel)?;
         let size = self
@@ -1896,6 +1906,38 @@ fn fake_agent(path: &std::path::Path) -> Arc<std::sync::atomic::AtomicUsize> {
         }
     });
     served
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_x11_channel_not_asked_for_is_refused() {
+    let fx = Fixture::new("rogue-x11");
+    let record = Arc::new(Mutex::new(None));
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            rogue_x11: Some(record.clone()),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, _) = scripted(vec![Some("yes"), Some("pw")]);
+    let session = shellwing_ssh::connect(
+        fx.options(local(port, "me"), p),
+        Box::new(|_| {}),
+        Box::new(|_| {}),
+    )
+    .await
+    .expect("connect");
+    for _ in 0..300 {
+        if let Some(taken) = *record.lock().expect("record") {
+            assert!(!taken, "the client took an X11 channel it never asked for");
+            drop(session);
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("the server never heard back about its channel");
 }
 
 /// Connects with agent forwarding on or off and returns what the server's

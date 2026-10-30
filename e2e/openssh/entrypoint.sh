@@ -42,7 +42,9 @@ TrustedUserCAKeys /e2e/user_ca.pub
 AllowTcpForwarding yes
 AllowAgentForwarding yes
 AcceptEnv LANG LC_* SHELLWING_*
-X11Forwarding no
+X11Forwarding ${E2E_X11_FORWARDING:-yes}
+# Where IPv6 is missing, sshd finds no X11 display socket otherwise.
+AddressFamily inet
 Subsystem sftp internal-sftp
 PidFile /run/sshd.pid
 LogLevel VERBOSE

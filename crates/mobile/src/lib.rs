@@ -527,6 +527,7 @@ fn new_host(address: &str) -> Host {
         theme: None,
         local_only: false,
         forward_agent: false,
+        x11: None,
         keepalive: None,
         host_key: None,
         color: None,
