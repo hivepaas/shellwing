@@ -362,6 +362,24 @@ command's input and output carry the connection. AWS Systems Manager
 - When the command fails, the last line it wrote to its standard error, or its
   exit status, says why. It is stopped when the connection ends.
 
+**The session, from `~/.ssh/config`,** as `ssh` takes it:
+
+- **`RemoteCommand`** runs instead of the login shell, with `%h`, `%p`, `%r`,
+  `%n`, `%d`, `%u` and `%%` replaced, for example
+  `RemoteCommand tmux new -A -s main`. The tab ends when the command does.
+  `none` turns off one set further down. A host's `run` is typed into what
+  the command runs.
+- **`RequestTTY no`** opens the session without a terminal. Its output lines
+  still start at the left, and its standard error is shown too. Any other
+  value gets a terminal, since shellwing is one.
+- **`SendEnv`** sends this machine's variables the patterns name, for example
+  `SendEnv LANG LC_*`. Every block that applies adds its patterns, and
+  `-pattern` takes earlier ones back. **`SetEnv NAME=value`** sends values of
+  its own, and the first `SetEnv` line that applies is the one used. A server
+  takes only the variables its `AcceptEnv` names; Debian and Ubuntu accept
+  `LANG LC_*`. Note that an app opened from the Finder or a desktop launcher
+  has fewer variables than a terminal's shell.
+
 **Fields not used yet.** `tags` is read but has no effect yet (`id` and
 `local_only` are for sync, below). The `password` and `agent` methods of `auth`
 behave like the default for now: agent, then key files, then a password prompt,

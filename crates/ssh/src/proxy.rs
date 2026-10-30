@@ -22,32 +22,7 @@ const LAST_WORDS: Duration = Duration::from_secs(2);
 /// the host name, `%p` the port, `%r` the user, `%n` the name as given, and
 /// `%%` a `%`.
 pub fn expand(command: &str, hop: &Resolved) -> Result<String, Error> {
-    let mut out = String::with_capacity(command.len());
-    let mut chars = command.chars();
-    while let Some(c) = chars.next() {
-        if c != '%' {
-            out.push(c);
-            continue;
-        }
-        match chars.next() {
-            Some('h') => out.push_str(&hop.target.host),
-            Some('p') => out.push_str(&hop.target.port.to_string()),
-            Some('r') => out.push_str(&hop.target.user),
-            Some('n') => out.push_str(&hop.alias),
-            Some('%') => out.push('%'),
-            Some(t) => {
-                return Err(Error::Config(format!(
-                    "ProxyCommand {command:?}: %{t} is not a token it takes"
-                )));
-            }
-            None => {
-                return Err(Error::Config(format!(
-                    "ProxyCommand {command:?} ends in a lone %"
-                )));
-            }
-        }
-    }
-    Ok(out)
+    crate::tokens::expand(command, hop, "ProxyCommand", "hprn")
 }
 
 /// The connection through a running command. The command is stopped once
