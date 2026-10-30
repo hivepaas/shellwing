@@ -764,7 +764,8 @@ fn time_value(text: &str) -> Option<Duration> {
 }
 
 /// Splits a line's values as ssh does: at spaces outside quotes (`"` or
-/// `'`), a `\` outside single quotes taking the next character as it is.
+/// `'`). A `\` escapes a quote, a `\`, or outside quotes a space; before
+/// anything else it is itself, as in a Windows path.
 fn words(line: &str) -> Vec<String> {
     let (mut out, mut word, mut quote, mut started) = (vec![], String::new(), None, false);
     let mut chars = line.chars();
@@ -781,9 +782,14 @@ fn words(line: &str) -> Vec<String> {
                 started = true;
             }
             (Some(q), c) if c == q => quote = None,
-            (q, '\\') if q != Some('\'') => {
-                if let Some(next) = chars.next() {
-                    word.push(next);
+            (q, '\\') => {
+                let escapes = |n: char| matches!(n, '\'' | '"' | '\\') || (q.is_none() && n == ' ');
+                match chars.clone().next().filter(|n| escapes(*n)) {
+                    Some(next) => {
+                        chars.next();
+                        word.push(next);
+                    }
+                    None => word.push('\\'),
                 }
                 started = true;
             }
@@ -1394,6 +1400,18 @@ mod tests {
                 .port,
             22
         );
+    }
+
+    #[test]
+    fn values_split_as_ssh_splits_them() {
+        assert_eq!(words(r"C:\Users\me\.ssh\id"), [r"C:\Users\me\.ssh\id"]);
+        assert_eq!(
+            words(r#""C:\Program Files\k" two"#),
+            [r"C:\Program Files\k", "two"]
+        );
+        assert_eq!(words(r"a\ b c"), ["a b", "c"]);
+        assert_eq!(words(r#"say \"hi\" \\x"#), ["say", "\"hi\"", r"\x"]);
+        assert_eq!(words(r#"'a b' "c d" "" e"#), ["a b", "c d", "", "e"]);
     }
 
     #[test]
