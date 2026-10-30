@@ -44,7 +44,7 @@ Download the latest release from [GitHub Releases](https://github.com/hivepaas/s
 | --- | --- |
 | macOS 13 or later (Apple silicon, Intel) | `shellwing_<version>_macos_<arch>.dmg` |
 | Windows | `shellwing_<version>_windows_x86_64-setup.exe`, or the `.zip` |
-| Linux (x86_64, aarch64) | the `.AppImage`, the `.deb`, or the `.tar.gz` |
+| Linux (x86_64, aarch64) | the `.AppImage`, the `.deb`, the `.rpm`, or the `.tar.gz` |
 
 macOS releases are signed with a Developer ID and notarized. Windows releases are not signed yet: the first time, SmartScreen asks under **More info › Run anyway**. The app tells you when a newer version is out, and installs it when you say so.
 

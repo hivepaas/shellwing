@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Packages a release build of shellwing for Linux into dist/: the AppImage the
-# updater replaces itself with, a .deb, and a tar.gz of the binary (see
+# updater replaces itself with, a .deb, an .rpm, and a tar.gz of the binary (see
 # docs/releasing.md).
 #
 #   cargo build --release -p shellwing
@@ -10,6 +10,7 @@
 #   dist/shellwing_0.1.0_linux_x86_64.AppImage
 #   dist/shellwing_0.1.0_linux_x86_64.tar.gz
 #   dist/shellwing_0.1.0_amd64.deb
+#   dist/shellwing_0.1.0_x86_64.rpm
 #
 # appimagetool and the AppImage runtime are downloaded at the versions pinned
 # below and checked against their SHA-256 before they run.
@@ -131,5 +132,48 @@ Description: Fast, native SSH client
 EOF
 chmod -R go-w "$DEB"
 dpkg-deb --root-owner-group --build "$DEB" "$DIST/shellwing_${VERSION}_${DEB_ARCH}.deb"
+
+## The .rpm
+# As the .deb: the binary in /opt, linked from /usr/bin. rpmbuild works out what
+# it needs from the binary, the glibc version included, so a system too old for
+# it is refused at install rather than failing when it starts.
+RPM="$WORK/rpm"
+RPMROOT="$ROOT/$WORK/rpm-root"
+install_tree "$RPMROOT/usr"
+mkdir -p "$RPMROOT/opt/shellwing"
+mv "$RPMROOT/usr/bin/shellwing" "$RPMROOT/opt/shellwing/shellwing"
+ln -s /opt/shellwing/shellwing "$RPMROOT/usr/bin/shellwing"
+install -Dm644 LICENSE "$RPMROOT/usr/share/licenses/shellwing/LICENSE"
+mkdir -p "$RPM"
+cat >"$RPM/shellwing.spec" <<EOF
+%global debug_package %{nil}
+%global _build_id_links none
+%global __brp_strip %{nil}
+Name: shellwing
+# An RPM version has no hyphen; ~ sorts a beta before its release.
+Version: ${VERSION/-/\~}
+Release: 1
+Summary: Fast, native SSH client
+License: GPL-3.0-or-later
+URL: https://shellwing.app
+Recommends: libwayland-client, libxcb, vulkan-loader, mesa-vulkan-drivers
+
+%description
+Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs
+between devices, in a GPU-rendered terminal built with Rust and Zig.
+
+%install
+cp -a "$RPMROOT/." "%{buildroot}/"
+
+%files
+%dir /opt/shellwing
+/opt/shellwing/shellwing
+/usr/bin/shellwing
+/usr/share/applications/shellwing.desktop
+/usr/share/icons/hicolor/*/apps/shellwing.*
+%license /usr/share/licenses/shellwing/LICENSE
+EOF
+rpmbuild -bb --quiet --target "$ARCH" --define "_topdir $ROOT/$RPM" "$RPM/shellwing.spec"
+cp "$RPM/RPMS/$ARCH/"*.rpm "$DIST/shellwing_${VERSION}_${ARCH}.rpm"
 
 ls -l "$DIST"
