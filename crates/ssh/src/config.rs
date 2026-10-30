@@ -6,12 +6,8 @@
 //! command line (`user@host:port`) win over the file, and the file wins over the
 //! defaults, matching OpenSSH's precedence.
 
-use std::fs::File;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-
-use ssh2_config::{ParseRule, SshConfig};
 
 use crate::{Error, Target};
 
@@ -177,32 +173,21 @@ pub fn default_config_path() -> Option<PathBuf> {
         .or_else(|| std::env::home_dir().map(|h| h.join(".ssh").join("config")))
 }
 
-fn load(path: Option<&Path>) -> Result<SshConfig, Error> {
-    let Some(path) = path.filter(|p| p.exists()) else {
-        return Ok(SshConfig::default());
-    };
-    let file = File::open(path).map_err(|e| Error::Config(format!("{}: {e}", path.display())))?;
-    SshConfig::default()
-        .parse(
-            &mut BufReader::new(file),
-            ParseRule::ALLOW_UNKNOWN_FIELDS | ParseRule::ALLOW_UNSUPPORTED_FIELDS,
-        )
-        .map_err(|e| Error::Config(format!("{}: {e}", path.display())))
-}
-
 /// The names `Host` lines give, in file order, leaving out patterns (`*`, `?`)
 /// and negations: the hosts a person can connect to by name.
 pub fn aliases(config: Option<&Path>) -> Vec<String> {
-    let Ok(cfg) = load(config) else {
+    let Some(path) = config.filter(|p| p.exists()) else {
         return vec![];
     };
     let mut out: Vec<String> = vec![];
-    for clause in cfg.get_hosts().iter().flat_map(|h| &h.pattern) {
-        if !clause.negated
-            && !clause.pattern.contains(['*', '?', '!'])
-            && !out.contains(&clause.pattern)
-        {
-            out.push(clause.pattern.clone());
+    for (blocks, line) in scan(path) {
+        let (Line::Starts, Some(Block::Hosts(patterns))) = (line, blocks.last()) else {
+            continue;
+        };
+        for p in patterns {
+            if !p.contains(['*', '?', '!']) && !out.contains(p) {
+                out.push(p.clone());
+            }
         }
     }
     out
@@ -308,30 +293,112 @@ pub(crate) fn null_device() -> PathBuf {
     PathBuf::from(if cfg!(windows) { "NUL" } else { "/dev/null" })
 }
 
-/// Resolves `[user@]host[:port]` through the config file at `config` (none: defaults only).
+/// How long a `Match exec` command may take; past that it counts as false.
+/// A host is often resolved on the app's main thread.
+const EXEC_LIMIT: Duration = Duration::from_secs(3);
+
+/// Whether a `Match exec` runs its command.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Exec {
+    /// Connecting: as ssh does.
+    Run,
+    /// Only looking: nothing runs, and it counts as false.
+    Skip,
+}
+
+/// Resolves `[user@]host[:port]` through the config file at `config` (none:
+/// defaults only), to connect: a `Match exec` runs its command.
 pub fn resolve(spec: &str, config: Option<&Path>) -> Result<Resolved, Error> {
-    let cfg = load(config)?;
-    let lines = config.filter(|p| p.exists()).map(scan).unwrap_or_default();
-    let mut r = resolve_with(&cfg, &lines, spec, &mut vec![])?;
+    resolve_as(spec, config, Exec::Run)
+}
+
+/// As [`resolve`], to show what a host would be: no `Match exec` command runs.
+pub fn resolve_without_commands(spec: &str, config: Option<&Path>) -> Result<Resolved, Error> {
+    resolve_as(spec, config, Exec::Skip)
+}
+
+fn resolve_as(spec: &str, config: Option<&Path>, exec: Exec) -> Result<Resolved, Error> {
+    let lines = match config.filter(|p| p.exists()) {
+        Some(path) => {
+            std::fs::read(path).map_err(|e| Error::Config(format!("{}: {e}", path.display())))?;
+            scan(path)
+        }
+        None => vec![],
+    };
+    let context = Reading {
+        lines: &lines,
+        exec,
+        ran: Default::default(),
+    };
+    let mut r = resolve_with(&context, spec, &mut vec![])?;
     // The host's own forwards; jump hosts forward nothing, as with ssh -J.
-    r.forwards = forwards_in(&lines, &r.alias);
+    r.forwards = forwards_in(&context.applying(&r.alias, split(spec)?.0.as_deref()));
     Ok(r)
 }
 
 /// How deep `Include`s may nest, as in OpenSSH.
 const MAX_INCLUDE: usize = 16;
 
-/// A line of a config file that the parsed config does not keep as ssh
-/// reads it.
+/// Which hosts the lines of a config file are for.
+#[derive(Clone, Debug)]
+enum Block {
+    /// Before any `Host`: every host.
+    Every,
+    /// `Host` patterns.
+    Hosts(Vec<String>),
+    /// `Match` conditions, all of which must hold, weighed once per reading
+    /// where the line stands; the id tells one `Match` line from another.
+    Match(usize, Vec<Condition>),
+}
+
+/// One condition of a `Match` line.
+#[derive(Clone, Debug)]
+struct Condition {
+    negated: bool,
+    test: Test,
+}
+
+#[derive(Clone, Debug)]
+enum Test {
+    All,
+    /// `final`: holds in a second reading, once the rest is known.
+    Final,
+    Host(String),
+    OriginalHost(String),
+    User(String),
+    LocalUser(String),
+    Exec(String),
+    Tagged(String),
+    Command(String),
+    /// What is not weighed here: `canonical` (no canonicalization),
+    /// `localnetwork`, `version`, and anything unknown. It holds for nobody,
+    /// negated or not, so such a block applies to no host.
+    Never,
+}
+
+/// A line of a config file.
 enum Line {
+    /// A `Host` or `Match` line: what starts a block.
+    Starts,
+    HostName(String),
+    User(String),
+    Port(String),
+    /// `IdentityFile`, as written; every one counts.
+    IdentityFile(String),
+    /// `CertificateFile`, as written; every one counts.
+    CertificateFile(String),
+    ServerAliveInterval(String),
+    ConnectTimeout(String),
+    ForwardAgent(bool),
+    Tag(String),
     /// `LocalForward`, `RemoteForward` or `DynamicForward`, as a `-L`/`-R`/`-D` spec.
     Forward(String),
     /// `ClearAllForwardings`.
     Clear(bool),
     /// `ProxyCommand`, the rest of the line as written: it goes to a shell.
     ProxyCommand(String),
-    /// `ProxyJump`: only where it comes, before or after a `ProxyCommand`.
-    ProxyJump,
+    /// `ProxyJump`: its hosts, or `none`.
+    ProxyJump(String),
     /// `IdentityAgent`, as written (its quotes taken off).
     IdentityAgent(String),
     IdentitiesOnly(bool),
@@ -352,14 +419,250 @@ enum Line {
     XAuthLocation(String),
 }
 
-/// The lines of a config file, each with the `Host` patterns it comes under:
-/// None before any `Host` (every host), Some(empty) under a `Match` (not
-/// read: no host).
-type Lines = Vec<(Option<Vec<String>>, Line)>;
+/// The lines of a config file, each with the blocks it comes under: its own,
+/// after those of the `Include`s that brought its file in. It applies only
+/// if all of them do: an `Include` in a block that does not apply brings
+/// nothing, whatever `Host` lines its file has.
+type Lines = Vec<(Vec<Block>, Line)>;
 
-/// Whether a line under `under` applies to `alias`.
-fn applies(under: &Option<Vec<String>>, alias: &str) -> bool {
-    under.as_ref().is_none_or(|p| host_matches(p, alias))
+/// One reading of a config file, which may run `Match exec` commands.
+struct Reading<'a> {
+    lines: &'a Lines,
+    exec: Exec,
+    /// The answers of the commands run so far.
+    ran: std::cell::RefCell<std::collections::HashMap<String, bool>>,
+}
+
+/// What ssh has settled so far while it reads a config file for one host.
+struct Settled<'a> {
+    alias: &'a str,
+    host: Option<String>,
+    user: Option<String>,
+    port: Option<u16>,
+    tag: Option<String>,
+}
+
+impl Settled<'_> {
+    fn take(&mut self, line: &Line) {
+        match line {
+            Line::HostName(h) if self.host.is_none() => self.host = Some(host_name(h, self.alias)),
+            Line::User(u) if self.user.is_none() => self.user = Some(u.clone()),
+            Line::Port(p) if self.port.is_none() => self.port = p.parse().ok(),
+            Line::Tag(t) if self.tag.is_none() => self.tag = Some(t.clone()),
+            _ => {}
+        }
+    }
+}
+
+/// `HostName`, with `%h` the name given.
+fn host_name(value: &str, alias: &str) -> String {
+    value
+        .replace("%%", "\0")
+        .replace("%h", alias)
+        .replace('\0', "%")
+}
+
+/// Whether `text` matches a comma-separated list of patterns: one of them
+/// does and no negated one.
+fn matches_list(list: &str, text: &str) -> bool {
+    let patterns: Vec<String> = list.split(',').map(str::to_string).collect();
+    let mut hit = false;
+    for p in &patterns {
+        match p.strip_prefix('!') {
+            Some(neg) if wildcard(neg, text) => return false,
+            Some(_) => {}
+            None => hit |= wildcard(p, text),
+        }
+    }
+    hit
+}
+
+/// Runs a `Match exec` command under the user's shell: whether it exits with
+/// zero within [`EXEC_LIMIT`].
+fn exec_holds(command: &str) -> bool {
+    use shellwing_spawn::Unblocked;
+    #[cfg(unix)]
+    let mut c = {
+        let shell = std::env::var("SHELL")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "/bin/sh".into());
+        let mut c = std::process::Command::new(shell);
+        c.arg("-c").arg(format!("exec {command}"));
+        c
+    };
+    #[cfg(windows)]
+    let mut c = {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut c = std::process::Command::new(
+            std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".into()),
+        );
+        c.raw_arg(format!("/d /c {command}"));
+        c.creation_flags(CREATE_NO_WINDOW);
+        c
+    };
+    #[cfg(not(any(unix, windows)))]
+    let mut c = std::process::Command::new(command);
+    c.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    let Ok(mut child) = c.spawn_unblocked() else {
+        return false;
+    };
+    let deadline = std::time::Instant::now() + EXEC_LIMIT;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+        }
+    }
+}
+
+impl<'a> Reading<'a> {
+    fn condition_holds(&self, c: &Condition, now: &Settled, last_pass: bool) -> bool {
+        let host = now.host.clone().unwrap_or_else(|| now.alias.to_string());
+        let user = now.user.clone().unwrap_or_else(local_user);
+        let holds = match &c.test {
+            Test::Never => return false,
+            Test::All => true,
+            Test::Final => last_pass,
+            Test::Host(list) => matches_list(&list.to_lowercase(), &host.to_lowercase()),
+            Test::OriginalHost(list) => {
+                matches_list(&list.to_lowercase(), &now.alias.to_lowercase())
+            }
+            Test::User(list) => matches_list(list, &user),
+            Test::LocalUser(list) => matches_list(list, &local_user()),
+            Test::Tagged(list) => matches_list(list, now.tag.as_deref().unwrap_or("")),
+            // The command on ssh's command line, not RemoteCommand: none here.
+            Test::Command(list) => matches_list(list, ""),
+            Test::Exec(command) => {
+                if self.exec == Exec::Skip {
+                    return false;
+                }
+                let mut hop = Resolved::direct(Target {
+                    user,
+                    host,
+                    port: now.port.unwrap_or(22),
+                });
+                hop.alias = now.alias.to_string();
+                let Ok(command) = crate::tokens::expand(command, &hop, "Match exec", "hprndu")
+                else {
+                    return false;
+                };
+                if let Some(known) = self.ran.borrow().get(&command) {
+                    *known
+                } else {
+                    let answer = exec_holds(&command);
+                    self.ran.borrow_mut().insert(command, answer);
+                    answer
+                }
+            }
+        };
+        holds != c.negated
+    }
+
+    /// The lines that apply to `alias`, in the order ssh takes them. As in
+    /// ssh, a `Match` sees what the lines before it settled. A `Match final`
+    /// holds in a second reading, whose lines come after the first's: what
+    /// the first settled stays.
+    fn applying(&self, alias: &str, given_user: Option<&str>) -> Vec<&'a Line> {
+        let mut now = Settled {
+            alias,
+            host: None,
+            user: given_user.map(str::to_string),
+            port: None,
+            tag: None,
+        };
+        let wants_final = self.lines.iter().any(|(blocks, _)| {
+            blocks.iter().any(|block| {
+                matches!(block, Block::Match(_, conditions)
+                    if conditions.iter().any(|c| matches!(c.test, Test::Final)))
+            })
+        });
+        let mut taken: Vec<&'a Line> = vec![];
+        let mut seen = vec![false; self.lines.len()];
+        for last_pass in [false, true] {
+            if last_pass && !wants_final {
+                break;
+            }
+            let mut weighed = std::collections::HashMap::new();
+            for (i, (blocks, line)) in self.lines.iter().enumerate() {
+                let on = blocks.iter().all(|block| match block {
+                    Block::Every => true,
+                    Block::Hosts(patterns) => host_matches(patterns, alias),
+                    Block::Match(id, conditions) => *weighed.entry(*id).or_insert_with(|| {
+                        conditions
+                            .iter()
+                            .all(|c| self.condition_holds(c, &now, last_pass))
+                    }),
+                });
+                if on && !seen[i] {
+                    seen[i] = true;
+                    now.take(line);
+                    taken.push(line);
+                }
+            }
+        }
+        taken
+    }
+}
+
+/// The conditions of a `Match` line: `keyword value` or `keyword=value`, each
+/// perhaps negated with `!`. A line with none holds for nobody.
+fn match_conditions(words: &[String]) -> Vec<Condition> {
+    let mut out = vec![];
+    let mut words = words.iter();
+    while let Some(word) = words.next() {
+        let (negated, word) = match word.strip_prefix('!') {
+            Some(rest) => (true, rest),
+            None => (false, word.as_str()),
+        };
+        let (key, inline) = match word.split_once('=') {
+            Some((k, v)) => (k, Some(v.to_string())),
+            None => (word, None),
+        };
+        let key = key.to_lowercase();
+        let test = match key.as_str() {
+            "all" => Test::All,
+            "final" => Test::Final,
+            "canonical" => Test::Never,
+            _ => {
+                let Some(value) = inline.or_else(|| words.next().cloned()) else {
+                    out.push(Condition {
+                        negated,
+                        test: Test::Never,
+                    });
+                    break;
+                };
+                match key.as_str() {
+                    "host" => Test::Host(value),
+                    "originalhost" => Test::OriginalHost(value),
+                    "user" => Test::User(value),
+                    "localuser" => Test::LocalUser(value),
+                    "exec" => Test::Exec(value),
+                    "tagged" | "tag" => Test::Tagged(value),
+                    "command" => Test::Command(value),
+                    _ => Test::Never,
+                }
+            }
+        };
+        out.push(Condition { negated, test });
+    }
+    if out.is_empty() {
+        out.push(Condition {
+            negated: false,
+            test: Test::Never,
+        });
+    }
+    out
 }
 
 /// Whether `host` matches a `Host` line's patterns: one of them does and
@@ -499,11 +802,12 @@ fn words(line: &str) -> Vec<String> {
 /// The [`Line`]s of the config file at `path` and the files it includes.
 fn scan(path: &Path) -> Lines {
     let mut lines = vec![];
-    scan_into(path, None, 0, &mut lines);
+    scan_into(path, &[], 0, &mut lines);
     lines
 }
 
-fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mut Lines) {
+fn scan_into(path: &Path, within: &[Block], depth: usize, out: &mut Lines) {
+    let mut block = Block::Every;
     let Ok(text) = std::fs::read_to_string(path) else {
         return;
     };
@@ -520,110 +824,101 @@ fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mu
             ),
             None => (line, ""),
         };
-        let args: Vec<String> = rest
-            .split_whitespace()
-            .map(|a| a.trim_matches('"').to_string())
-            .collect();
-        match key.to_lowercase().as_str() {
-            "host" => under = Some(args),
-            "match" => under = Some(vec![]),
-            "include" if depth < MAX_INCLUDE => {
+        let args = words(rest);
+        let key = key.to_lowercase();
+        let first = args.first();
+        let parsed = match (key.as_str(), first) {
+            ("host", _) => {
+                block = Block::Hosts(args);
+                Some(Line::Starts)
+            }
+            ("match", _) => {
+                block = Block::Match(out.len(), match_conditions(&args));
+                Some(Line::Starts)
+            }
+            ("include", _) if depth < MAX_INCLUDE => {
+                let mut blocks = within.to_vec();
+                blocks.push(block.clone());
                 for a in &args {
                     for file in include_paths(a) {
-                        scan_into(&file, under.clone(), depth + 1, out);
+                        scan_into(&file, &blocks, depth + 1, out);
                     }
                 }
+                None
             }
-            "localforward" | "remoteforward" | "dynamicforward" if !args.is_empty() => {
-                let flag = match key.to_lowercase().as_str() {
-                    "localforward" => "-L",
-                    "remoteforward" => "-R",
-                    _ => "-D",
-                };
-                out.push((
-                    under.clone(),
-                    Line::Forward(format!("{flag} {}", args.join(":"))),
-                ));
+            ("hostname", Some(v)) => Some(Line::HostName(v.clone())),
+            ("user", Some(v)) => Some(Line::User(v.clone())),
+            ("port", Some(v)) => Some(Line::Port(v.clone())),
+            ("identityfile", Some(v)) => Some(Line::IdentityFile(v.clone())),
+            ("certificatefile", Some(v)) => Some(Line::CertificateFile(v.clone())),
+            ("serveraliveinterval", Some(v)) => Some(Line::ServerAliveInterval(v.clone())),
+            ("connecttimeout", Some(v)) => Some(Line::ConnectTimeout(v.clone())),
+            ("forwardagent", Some(_)) => Some(Line::ForwardAgent(flag(&args))),
+            ("tag", Some(v)) => Some(Line::Tag(v.clone())),
+            ("localforward", Some(_)) => Some(Line::Forward(format!("-L {}", args.join(":")))),
+            ("remoteforward", Some(_)) => Some(Line::Forward(format!("-R {}", args.join(":")))),
+            ("dynamicforward", Some(_)) => Some(Line::Forward(format!("-D {}", args.join(":")))),
+            ("clearallforwardings", _) => Some(Line::Clear(flag(&args))),
+            ("proxycommand", Some(_)) => Some(Line::ProxyCommand(rest.to_string())),
+            ("proxyjump", Some(v)) => Some(Line::ProxyJump(v.clone())),
+            ("identityagent", Some(_)) => {
+                Some(Line::IdentityAgent(rest.trim_matches('"').to_string()))
             }
-            "clearallforwardings" => out.push((
-                under.clone(),
-                Line::Clear(args.first().is_some_and(|a| a.eq_ignore_ascii_case("yes"))),
+            ("sendenv", _) => Some(Line::SendEnv(args)),
+            ("setenv", _) => Some(Line::SetEnv(
+                args.iter()
+                    .filter_map(|w| w.split_once('=').map(|(k, v)| (k.into(), v.into())))
+                    .collect(),
             )),
-            "proxycommand" if !rest.is_empty() => {
-                out.push((under.clone(), Line::ProxyCommand(rest.to_string())));
-            }
-            "proxyjump" => out.push((under.clone(), Line::ProxyJump)),
-            "identityagent" if !rest.is_empty() => out.push((
-                under.clone(),
-                Line::IdentityAgent(rest.trim_matches('"').to_string()),
-            )),
-            "sendenv" => out.push((under.clone(), Line::SendEnv(words(rest)))),
-            "setenv" => out.push((
-                under.clone(),
-                Line::SetEnv(
-                    words(rest)
-                        .into_iter()
-                        .filter_map(|w| w.split_once('=').map(|(k, v)| (k.into(), v.into())))
-                        .collect(),
-                ),
-            )),
-            "remotecommand" if !rest.is_empty() => {
-                out.push((under.clone(), Line::RemoteCommand(rest.to_string())));
-            }
-            "requesttty" => out.push((
-                under.clone(),
-                Line::RequestTty(!args.first().is_some_and(|a| {
+            ("remotecommand", Some(_)) => Some(Line::RemoteCommand(rest.to_string())),
+            ("requesttty", _) => {
+                Some(Line::RequestTty(!first.is_some_and(|a| {
                     a.eq_ignore_ascii_case("no") || a.eq_ignore_ascii_case("false")
-                })),
-            )),
-            "stricthostkeychecking" if !args.is_empty() => out.push((
-                under.clone(),
-                Line::StrictHostKeyChecking(args[0].to_lowercase()),
-            )),
-            "userknownhostsfile" => {
-                if let Some(first) = words(rest).into_iter().next() {
-                    out.push((under.clone(), Line::UserKnownHostsFile(first)));
-                }
+                })))
             }
-            "forwardx11" => out.push((under.clone(), Line::ForwardX11(flag(&args)))),
-            "forwardx11trusted" => out.push((under.clone(), Line::ForwardX11Trusted(flag(&args)))),
-            "forwardx11timeout" if !args.is_empty() => {
-                out.push((under.clone(), Line::ForwardX11Timeout(args[0].clone())));
+            ("stricthostkeychecking", Some(v)) => {
+                Some(Line::StrictHostKeyChecking(v.to_lowercase()))
             }
-            "xauthlocation" if !args.is_empty() => {
-                out.push((under.clone(), Line::XAuthLocation(args[0].clone())));
-            }
-            "identitiesonly" => out.push((
-                under.clone(),
-                Line::IdentitiesOnly(args.first().is_some_and(|a| {
-                    a.eq_ignore_ascii_case("yes") || a.eq_ignore_ascii_case("true")
-                })),
-            )),
-            _ => {}
+            ("userknownhostsfile", Some(v)) => Some(Line::UserKnownHostsFile(v.clone())),
+            ("forwardx11", _) => Some(Line::ForwardX11(flag(&args))),
+            ("forwardx11trusted", _) => Some(Line::ForwardX11Trusted(flag(&args))),
+            ("forwardx11timeout", Some(v)) => Some(Line::ForwardX11Timeout(v.clone())),
+            ("xauthlocation", Some(v)) => Some(Line::XAuthLocation(v.clone())),
+            ("identitiesonly", _) => Some(Line::IdentitiesOnly(flag(&args))),
+            _ => None,
+        };
+        if let Some(parsed) = parsed {
+            let mut blocks = within.to_vec();
+            blocks.push(block.clone());
+            out.push((blocks, parsed));
         }
     }
 }
 
 /// The forwards the config file at `path` gives `alias`, as ssh reads them:
 /// every `LocalForward`, `RemoteForward` and `DynamicForward` of every block
-/// that matches, in order, unless `ClearAllForwardings yes` comes first.
-/// (Not taken from the parsed config, which keeps only one of each.)
+/// that applies, in order, unless `ClearAllForwardings yes` comes first.
 pub fn forwards_for(path: &Path, alias: &str) -> Vec<String> {
-    forwards_in(&scan(path), alias)
+    let lines = scan(path);
+    let reading = Reading {
+        lines: &lines,
+        exec: Exec::Skip,
+        ran: Default::default(),
+    };
+    forwards_in(&reading.applying(alias, None))
 }
 
-fn forwards_in(lines: &Lines, alias: &str) -> Vec<String> {
-    let clear = lines.iter().find_map(|(under, l)| match l {
-        Line::Clear(on) if applies(under, alias) => Some(*on),
+fn forwards_in(mine: &[&Line]) -> Vec<String> {
+    let clear = mine.iter().find_map(|l| match l {
+        Line::Clear(on) => Some(*on),
         _ => None,
     });
     if clear == Some(true) {
         return vec![];
     }
     let mut out: Vec<String> = vec![];
-    for (under, l) in lines {
+    for l in mine {
         if let Line::Forward(spec) = l
-            && applies(under, alias)
             && !out.contains(spec)
         {
             out.push(spec.clone());
@@ -632,73 +927,67 @@ fn forwards_in(lines: &Lines, alias: &str) -> Vec<String> {
     out
 }
 
-fn resolve_with(
-    cfg: &SshConfig,
-    lines: &Lines,
-    spec: &str,
-    chain: &mut Vec<String>,
-) -> Result<Resolved, Error> {
+fn resolve_with(reading: &Reading, spec: &str, chain: &mut Vec<String>) -> Result<Resolved, Error> {
     let (user, alias, port) = split(spec)?;
     if chain.contains(&alias) || chain.len() > MAX_JUMPS {
         return Err(Error::Config(format!(
             "ProxyJump loops or is too long at {alias}"
         )));
     }
-    let p = cfg.query(&alias);
-    let host = p
-        .host_name
-        .clone()
-        .map(|h| h.replace("%h", &alias))
-        .unwrap_or_else(|| alias.clone());
-    let user = user.or(p.user.clone()).unwrap_or_else(local_user);
-    let port = port.or(p.port).unwrap_or(22);
-    let identity_files = p
-        .identity_file
-        .clone()
-        .unwrap_or_default()
+    let mine = reading.applying(&alias, user.as_deref());
+    // The first value wins, as in ssh, but for what adds up.
+    macro_rules! first {
+        ($pattern:pat => $value:expr) => {
+            mine.iter().find_map(|l| match *l {
+                $pattern => Some($value),
+                _ => None,
+            })
+        };
+    }
+    let host = first!(Line::HostName(h) => host_name(h, &alias)).unwrap_or_else(|| alias.clone());
+    let user = user
+        .or(first!(Line::User(u) => u.clone()))
+        .unwrap_or_else(local_user);
+    let port = match (port, first!(Line::Port(p) => p)) {
+        (Some(given), _) => given,
+        (None, Some(p)) => p
+            .parse()
+            .map_err(|_| Error::Config(format!("bad Port {p:?} for {alias}")))?,
+        (None, None) => 22,
+    };
+    let identity_files = mine
         .iter()
-        .map(|f| expand_tokens(f, &host, &user))
+        .filter_map(|l| match l {
+            Line::IdentityFile(f) if f != "none" => Some(config_path(f, &host, &user)),
+            _ => None,
+        })
         .collect();
-    let certificate_files = p
-        .certificate_file
+    let certificate_files = mine
         .iter()
-        .map(|f| expand_tokens(f, &host, &user))
+        .filter_map(|l| match l {
+            Line::CertificateFile(f) if f != "none" => Some(config_path(f, &host, &user)),
+            _ => None,
+        })
         .collect();
 
     // The first ProxyJump or ProxyCommand for the host wins, as in OpenSSH;
     // either one set to `none` turns both off (`ProxyCommand none` on a
     // bastion that `Host *` would send through itself).
-    let first = lines.iter().find_map(|(under, l)| match l {
-        Line::ProxyCommand(_) | Line::ProxyJump if applies(under, &alias) => Some(l),
-        _ => None,
-    });
-    let proxy_command = match first {
+    let proxy = mine
+        .iter()
+        .find(|l| matches!(l, Line::ProxyCommand(_) | Line::ProxyJump(_)));
+    let proxy_command = match proxy {
         Some(Line::ProxyCommand(c)) if c != "none" => Some(c.clone()),
         _ => None,
     };
-    let identity_agent = lines
-        .iter()
-        .find_map(|(under, l)| match l {
-            Line::IdentityAgent(v) if applies(under, &alias) => {
-                Some(identity_agent(v, &host, &user))
-            }
-            _ => None,
-        })
-        .unwrap_or_default();
-    let identities_only = lines
-        .iter()
-        .find_map(|(under, l)| match l {
-            Line::IdentitiesOnly(on) if applies(under, &alias) => Some(*on),
-            _ => None,
-        })
-        .unwrap_or(false);
+    let identity_agent =
+        first!(Line::IdentityAgent(v) => identity_agent(v, &host, &user)).unwrap_or_default();
+    let identities_only = first!(Line::IdentitiesOnly(on) => *on).unwrap_or(false);
     // SendEnv adds up over every block that applies; `-pattern` takes back
     // the patterns it matches. The others: the first value wins.
     let mut send_env: Vec<String> = vec![];
-    for (under, l) in lines {
-        if let Line::SendEnv(patterns) = l
-            && applies(under, &alias)
-        {
+    for l in &mine {
+        if let Line::SendEnv(patterns) = l {
             for p in patterns {
                 match p.strip_prefix('-') {
                     Some(taken) => send_env.retain(|had| !wildcard(taken, had)),
@@ -709,102 +998,61 @@ fn resolve_with(
         }
     }
     let mut set_env: Vec<(String, String)> = vec![];
-    if let Some(vars) = lines.iter().find_map(|(under, l)| match l {
-        Line::SetEnv(vars) if applies(under, &alias) => Some(vars),
-        _ => None,
-    }) {
+    if let Some(vars) = first!(Line::SetEnv(vars) => vars) {
         for (name, value) in vars {
             if !set_env.iter().any(|(had, _)| had == name) {
                 set_env.push((name.clone(), value.clone()));
             }
         }
     }
-    let remote_command = lines
-        .iter()
-        .find_map(|(under, l)| match l {
-            Line::RemoteCommand(c) if applies(under, &alias) => Some(c),
-            _ => None,
-        })
+    let remote_command = first!(Line::RemoteCommand(c) => c)
         .filter(|c| *c != "none")
         .cloned();
-    let tty = lines
-        .iter()
-        .find_map(|(under, l)| match l {
-            Line::RequestTty(on) if applies(under, &alias) => Some(*on),
-            _ => None,
-        })
-        .unwrap_or(true);
+    let tty = first!(Line::RequestTty(on) => *on).unwrap_or(true);
     // `no` and `off` would let even a changed key in; shellwing takes them
     // as `accept-new`, which is what they are wanted for (hosts made and
     // thrown away, often with UserKnownHostsFile /dev/null).
-    let host_key = lines.iter().find_map(|(under, l)| match l {
-        Line::StrictHostKeyChecking(v) if applies(under, &alias) => match v.as_str() {
-            "yes" | "true" => Some(crate::HostKeyPolicy::Strict),
-            "ask" => Some(crate::HostKeyPolicy::Ask),
-            "accept-new" | "no" | "off" | "false" => Some(crate::HostKeyPolicy::AcceptNew),
-            _ => None,
-        },
+    let host_key = first!(Line::StrictHostKeyChecking(v) => v).and_then(|v| match v.as_str() {
+        "yes" | "true" => Some(crate::HostKeyPolicy::Strict),
+        "ask" => Some(crate::HostKeyPolicy::Ask),
+        "accept-new" | "no" | "off" | "false" => Some(crate::HostKeyPolicy::AcceptNew),
         _ => None,
     });
-    let known_hosts = lines.iter().find_map(|(under, l)| match l {
-        Line::UserKnownHostsFile(v) if applies(under, &alias) => Some(match v.as_str() {
-            "/dev/null" | "none" => null_device(),
-            v => config_path(v, &host, &user),
-        }),
-        _ => None,
+    let known_hosts = first!(Line::UserKnownHostsFile(v) => match v.as_str() {
+        "/dev/null" | "none" => null_device(),
+        v => config_path(v, &host, &user),
     });
-    let first_of = |pick: fn(&Line) -> Option<&str>| {
-        lines
-            .iter()
-            .filter(|(under, _)| applies(under, &alias))
-            .find_map(|(_, l)| pick(l))
-    };
-    let on = |pick: fn(&Line) -> Option<bool>| {
-        lines
-            .iter()
-            .filter(|(under, _)| applies(under, &alias))
-            .find_map(|(_, l)| pick(l))
-    };
-    let forward_x11 = on(|l| match l {
-        Line::ForwardX11(v) => Some(*v),
-        _ => None,
-    });
-    let x11 = forward_x11.unwrap_or(false).then(|| {
-        let defaults = X11::default();
-        X11 {
-            trusted: on(|l| match l {
-                Line::ForwardX11Trusted(v) => Some(*v),
-                _ => None,
-            })
-            .unwrap_or(defaults.trusted),
-            timeout: first_of(|l| match l {
-                Line::ForwardX11Timeout(v) => Some(v),
-                _ => None,
-            })
-            .and_then(time_value)
-            .unwrap_or(defaults.timeout),
-            xauth: first_of(|l| match l {
-                Line::XAuthLocation(v) => Some(v),
-                _ => None,
-            })
-            .map(|v| config_path(v, &host, &user)),
-        }
-    });
+    let x11 = first!(Line::ForwardX11(on) => *on)
+        .unwrap_or(false)
+        .then(|| {
+            let defaults = X11::default();
+            X11 {
+                trusted: first!(Line::ForwardX11Trusted(on) => *on).unwrap_or(defaults.trusted),
+                timeout: first!(Line::ForwardX11Timeout(v) => v)
+                    .and_then(|v| time_value(v))
+                    .unwrap_or(defaults.timeout),
+                xauth: first!(Line::XAuthLocation(v) => config_path(v, &host, &user)),
+            }
+        });
     let mut jumps = vec![];
-    if !matches!(first, Some(Line::ProxyCommand(_)))
-        && let Some(list) = &p.proxy_jump
-        && !(list.len() == 1 && list[0].eq_ignore_ascii_case("none"))
+    if let Some(Line::ProxyJump(list)) = proxy
+        && !list.eq_ignore_ascii_case("none")
     {
         chain.push(alias.clone());
-        for hop in list {
+        for hop in list.split(',').map(str::trim).filter(|h| !h.is_empty()) {
             // A jump host may itself be configured with a ProxyJump: flatten it.
-            let mut j = resolve_with(cfg, lines, hop, chain)?;
+            let mut j = resolve_with(reading, hop, chain)?;
             jumps.append(&mut j.jumps);
             jumps.push(j);
         }
         chain.pop();
     }
     Ok(Resolved {
+        keepalive: first!(Line::ServerAliveInterval(v) => v).and_then(|v| time_value(v)),
+        forward_agent: first!(Line::ForwardAgent(on) => *on).unwrap_or(false),
+        connect_timeout: first!(Line::ConnectTimeout(v) => v)
+            .and_then(|v| time_value(v))
+            .filter(|t| !t.is_zero()),
         alias,
         target: Target { user, host, port },
         identity_files,
@@ -814,12 +1062,9 @@ fn resolve_with(
         identities_only,
         jumps,
         proxy_command,
-        keepalive: p.server_alive_interval,
         forwards: vec![],
-        forward_agent: p.forward_agent.unwrap_or(false),
         host_key,
         known_hosts,
-        connect_timeout: p.connect_timeout.filter(|t| !t.is_zero()),
         x11,
         remote_command,
         tty,
@@ -851,8 +1096,8 @@ mod tests {
                  Host web*\n  RemoteForward 9000 localhost:3000\n  LocalForward 8080 localhost:80\n\
                  Host * !web\n  LocalForward 5555 x:5\n\
                  Host quiet\n  ClearAllForwardings yes\n\
-                 Match user root\n  LocalForward 6666 z:6\n\
-                 Include {}/conf.d/*.conf\n",
+                 Match all\n  Include {}/conf.d/*.conf\n\
+                 Match user root\n  LocalForward 6666 z:6\n",
                 dir.display()
             ),
         )
@@ -1100,6 +1345,55 @@ mod tests {
         assert_eq!(time_value("300"), Some(Duration::from_secs(300)));
         assert_eq!(time_value("20m"), Some(Duration::from_secs(1200)));
         assert_eq!(time_value("soon"), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn match_exec_runs_only_when_connecting_and_not_for_long() {
+        let dir = std::env::temp_dir().join(format!("shellwing-exec-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ran = dir.join("ran");
+        let cfg = config(&format!(
+            "Match exec \"touch {}\"\n  User yes\n",
+            ran.display()
+        ));
+        // Only looking at a host runs nothing, and the condition is false.
+        let r = resolve_without_commands("web", Some(&cfg)).expect("resolve");
+        assert!(!ran.exists(), "the command ran");
+        assert_ne!(r.target.user, "yes");
+        let r = resolve("web", Some(&cfg)).expect("resolve");
+        assert!(ran.exists(), "the command did not run");
+        assert_eq!(r.target.user, "yes");
+        // A command that takes too long counts as false, and does not hold
+        // the app up for long.
+        let cfg = config("Match exec \"sleep 30\"\n  User yes\n");
+        let started = std::time::Instant::now();
+        let r = resolve("web", Some(&cfg)).expect("resolve");
+        assert_ne!(r.target.user, "yes");
+        assert!(started.elapsed() < Duration::from_secs(10));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn match_conditions_not_weighed_hold_for_nobody() {
+        let cfg = config(
+            "Match localnetwork 10.0.0.0/8\n  User a\nMatch !localnetwork 10.0.0.0/8\n  User b\nMatch canonical all\n  User c\nMatch something-new x\n  User d\nMatch\n  User e\nMatch host\n  User f\n",
+        );
+        let r = resolve("web", Some(&cfg)).expect("resolve");
+        assert!(!["a", "b", "c", "d", "e", "f"].contains(&r.target.user.as_str()));
+    }
+
+    #[test]
+    fn a_bad_port_is_refused() {
+        let cfg = config("Host web\n  Port many\n");
+        assert!(matches!(resolve("web", Some(&cfg)), Err(Error::Config(_))));
+        assert_eq!(
+            resolve("me@web:22", Some(&cfg))
+                .expect("resolve")
+                .target
+                .port,
+            22
+        );
     }
 
     #[test]
