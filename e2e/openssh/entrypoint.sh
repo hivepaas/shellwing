@@ -46,4 +46,9 @@ Subsystem sftp internal-sftp
 PidFile /run/sshd.pid
 LogLevel VERBOSE
 EOF
+# OpenSSH 9.8 and later shut out an address that failed to sign in, for a
+# while: the tests fail on purpose, all from one address (Docker's gateway).
+if /usr/sbin/sshd -t -f /etc/ssh/e2e_sshd_config -o PerSourcePenalties=no 2>/dev/null; then
+    echo "PerSourcePenalties no" >>/etc/ssh/e2e_sshd_config
+fi
 exec /usr/sbin/sshd -D -e -f /etc/ssh/e2e_sshd_config

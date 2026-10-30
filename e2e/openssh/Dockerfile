@@ -2,6 +2,8 @@
 # the distribution BASE names: each has its own OpenSSH.
 ARG BASE=alpine:3.22
 FROM ${BASE}
-COPY install.sh entrypoint.sh /e2e-image/
+COPY install.sh /e2e-image/
 RUN sh /e2e-image/install.sh
+# After the packages, so a change here does not install them again.
+COPY entrypoint.sh /e2e-image/
 ENTRYPOINT ["sh", "/e2e-image/entrypoint.sh"]
