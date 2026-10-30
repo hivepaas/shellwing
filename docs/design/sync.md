@@ -1,32 +1,35 @@
 # Accounts and sync
 
-## Accounts (shellwing portal)
+## Accounts
 
-The portal is a web app where people sign in (Google, GitHub, …) and buy plans.
-The desktop app works fully without it.
+The desktop app works fully without an account. An account is only for a
+shellwing server: shellwing cloud, or one somebody hosts.
 
-**Sign-in.** It follows RFC 8252:
+**The app talks only to its server.** The portal, `portal.hivepaas.com`, is
+shared by the owner's products: people sign in to it with a Wing account and buy
+plans there. It holds no shellwing data, and only shellwing cloud uses it. A
+self-hosted server has its own users and SSO. See [teams.md](teams.md), and the
+multi-product design in the `hivepaas-portal` repository.
 
-1. The app opens the browser at the portal.
-2. The portal does the Google/GitHub OAuth. The app never sees those tokens.
-3. The portal redirects to `http://127.0.0.1:<port>/callback` with a code.
-4. The app exchanges the code, with PKCE, for shellwing tokens.
+**Sign-in.** It follows RFC 8252, whichever server it is:
+
+1. The app opens the browser at the server.
+2. The server does the sign-in: its own users, or SSO. For shellwing cloud, that
+   is the Wing account. The app never sees those tokens.
+3. The server redirects to `http://127.0.0.1:<port>/callback` with a code.
+4. The app exchanges the code, with PKCE, for the server's tokens.
 
 The device-code flow is the fallback when no browser can open. The refresh
 token is kept in the OS keychain.
 
-**License.** The portal issues a token signed with Ed25519. It carries the
-account, plan, `host_limit` and expiry.
-
-- The app checks the signature offline and refreshes the token daily.
-- After about 14 days without reaching the portal, cloud sync pauses. Nothing
-  else stops working.
-- The sync server enforces the limit on every write, so editing the app cannot
-  raise it.
+**Plans.** shellwing cloud reads an account's plan and limits from the portal,
+and keeps them for a while, so a portal outage does not stop anybody already
+signed in. The server enforces the limit on every write, so editing the app
+cannot raise it.
 
 **Signing in never unlocks data.** Encryption keys come from the user's devices
-or recovery key ([vault.md](vault.md)). A compromised portal exposes no hosts or
-secrets.
+or recovery key ([vault.md](vault.md)). A compromised portal or server exposes
+no hosts or secrets.
 
 ## Host limits
 
@@ -53,7 +56,7 @@ What counts toward the limit:
   - Hosts from `~/.ssh/config`.
   - Hosts synced through any other backend (Git, S3, folder…), which is
     unlimited and free.
-- **Team plans** are per seat with unlimited hosts ([teams.md](teams.md)).
+- **Team plans** have unlimited hosts ([teams.md](teams.md)).
 - **When over the limit** (for example after a downgrade), nothing is deleted:
   1. The user picks which hosts keep syncing.
   2. The rest become local-only on the devices that have them.
@@ -131,7 +134,7 @@ counter and the device id.
 | S3-compatible (AWS, R2, B2, MinIO, Wasabi) | Self-hosters | Endpoint, bucket, keys | `If-Match` | Low ([OpenDAL](https://opendal.apache.org)) |
 | WebDAV (Nextcloud, Synology, Koofr) | Self-hosters | URL, user, password | ETag | Low (OpenDAL) |
 | Google Drive, OneDrive, Dropbox | Everyone | OAuth sign-in | Weak | Medium: shellwing must register an OAuth app with each |
-| shellwing cloud | Paying users | Portal sign-in | Full | High (server + portal) |
+| shellwing cloud | Paying users | Wing account sign-in | Full | High (server + portal) |
 | shellwing-server, self-hosted | Teams, self-hosters | URL + sign-in | Full | Shared with the cloud ([teams.md](teams.md)) |
 
 Notes:
