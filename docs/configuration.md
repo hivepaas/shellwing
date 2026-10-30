@@ -331,6 +331,21 @@ so turn it on only for hosts you trust. It is off by default, as in `ssh`;
 to gets the agent, never the jump hosts on the way, and a server that opens an
 agent channel without it being asked for is refused.
 
+**`Match` blocks** in `~/.ssh/config` apply as in `ssh`: `all`, `host` (the host
+name, after `HostName`), `originalhost` (the name given), `user`, `localuser`,
+`exec`, `tagged`, `command` and `final`, each perhaps negated with `!`, and
+patterns in lists (`host *.corp,!bastion.corp`). An `Include` in a block that
+does not apply brings nothing.
+
+- `exec` runs its command under your shell when connecting, with `%h`, `%p`,
+  `%r`, `%n`, `%d` and `%u`, as `ssh` does. Only looking at a host in the app
+  runs nothing, and the condition counts as false there. A command that takes
+  more than 3 seconds counts as false, as a host is often resolved while the
+  app waits.
+- `localnetwork`, `canonical` and `version` are not weighed: a block with one
+  of them applies to no host, negated or not. An `exec` running `ip route` or
+  the like can often stand in for `localnetwork`.
+
 **X11 windows** (`x11 = "untrusted"` or `"trusted"`, *X11 windows* in the host
 editor, or `ForwardX11 yes` in `~/.ssh/config`) let programs on the host open
 windows here, on an X server: `DISPLAY` must be set for shellwing, and the host
@@ -463,9 +478,6 @@ What happens is shown under the connecting line: `[forwarding localhost:8080 →
 localhost:80]`, or in red why a forward could not start (a port in use, a
 server that refuses). The session goes on either way, as with `ssh`. A second
 tab to the same host finds the first tab's ports taken and says so quietly.
-
-Forwards under a `Match` block in `~/.ssh/config` are not applied: shellwing
-does not read `Match` conditions.
 
 ## Files (SFTP)
 
