@@ -68,6 +68,17 @@ pub struct Resolved {
     pub forward_agent: bool,
     /// How an unknown host key is handled here; None: the app's setting.
     pub host_key: Option<crate::HostKeyPolicy>,
+    /// Run instead of the login shell (`RemoteCommand`), its `%` tokens not
+    /// expanded yet.
+    pub remote_command: Option<String>,
+    /// A terminal (PTY) for the session: off only for `RequestTTY no`.
+    pub tty: bool,
+    /// Which of this machine's variables to send the host (`SendEnv`
+    /// patterns, with `*` and `?`), read when connecting.
+    pub send_env: Vec<String>,
+    /// Variables sent as they are (`SetEnv`). The host takes only those its
+    /// `AcceptEnv` names, these and `SendEnv`'s alike.
+    pub set_env: Vec<(String, String)>,
 }
 
 impl Resolved {
@@ -87,6 +98,10 @@ impl Resolved {
             forwards: vec![],
             forward_agent: false,
             host_key: None,
+            remote_command: None,
+            tty: true,
+            send_env: vec![],
+            set_env: vec![],
         }
     }
 
@@ -148,7 +163,7 @@ pub fn aliases(config: Option<&Path>) -> Vec<String> {
     out
 }
 
-fn local_user() -> String {
+pub(crate) fn local_user() -> String {
     std::env::var("USER")
         .or_else(|_| std::env::var("USERNAME"))
         .unwrap_or_else(|_| "root".into())
@@ -265,6 +280,13 @@ enum Line {
     /// `IdentityAgent`, as written (its quotes taken off).
     IdentityAgent(String),
     IdentitiesOnly(bool),
+    /// `SendEnv`'s patterns, `-pattern` taking back earlier ones.
+    SendEnv(Vec<String>),
+    SetEnv(Vec<(String, String)>),
+    /// `RemoteCommand`, the rest of the line as written.
+    RemoteCommand(String),
+    /// `RequestTTY`: false for `no`.
+    RequestTty(bool),
 }
 
 /// The lines of a config file, each with the `Host` patterns it comes under:
@@ -294,7 +316,7 @@ fn host_matches(patterns: &[String], host: &str) -> bool {
 }
 
 /// `*` for any run of characters, `?` for one.
-fn wildcard(pattern: &str, text: &str) -> bool {
+pub(crate) fn wildcard(pattern: &str, text: &str) -> bool {
     let (p, t): (Vec<char>, Vec<char>) = (pattern.chars().collect(), text.chars().collect());
     let (mut pi, mut ti, mut star, mut mark) = (0, 0, None, 0);
     while ti < t.len() {
@@ -344,6 +366,42 @@ fn include_paths(arg: &str) -> Vec<PathBuf> {
         .collect();
     found.sort();
     found
+}
+
+/// Splits a line's values as ssh does: at spaces outside quotes (`"` or
+/// `'`), a `\` outside single quotes taking the next character as it is.
+fn words(line: &str) -> Vec<String> {
+    let (mut out, mut word, mut quote, mut started) = (vec![], String::new(), None, false);
+    let mut chars = line.chars();
+    while let Some(c) = chars.next() {
+        match (quote, c) {
+            (None, c) if c.is_whitespace() => {
+                if started {
+                    out.push(std::mem::take(&mut word));
+                    started = false;
+                }
+            }
+            (None, '"' | '\'') => {
+                quote = Some(c);
+                started = true;
+            }
+            (Some(q), c) if c == q => quote = None,
+            (q, '\\') if q != Some('\'') => {
+                if let Some(next) = chars.next() {
+                    word.push(next);
+                }
+                started = true;
+            }
+            (_, c) => {
+                word.push(c);
+                started = true;
+            }
+        }
+    }
+    if started {
+        out.push(word);
+    }
+    out
 }
 
 /// The [`Line`]s of the config file at `path` and the files it includes.
@@ -406,6 +464,25 @@ fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mu
             "identityagent" if !rest.is_empty() => out.push((
                 under.clone(),
                 Line::IdentityAgent(rest.trim_matches('"').to_string()),
+            )),
+            "sendenv" => out.push((under.clone(), Line::SendEnv(words(rest)))),
+            "setenv" => out.push((
+                under.clone(),
+                Line::SetEnv(
+                    words(rest)
+                        .into_iter()
+                        .filter_map(|w| w.split_once('=').map(|(k, v)| (k.into(), v.into())))
+                        .collect(),
+                ),
+            )),
+            "remotecommand" if !rest.is_empty() => {
+                out.push((under.clone(), Line::RemoteCommand(rest.to_string())));
+            }
+            "requesttty" => out.push((
+                under.clone(),
+                Line::RequestTty(!args.first().is_some_and(|a| {
+                    a.eq_ignore_ascii_case("no") || a.eq_ignore_ascii_case("false")
+                })),
             )),
             "identitiesonly" => out.push((
                 under.clone(),
@@ -506,6 +583,48 @@ fn resolve_with(
             _ => None,
         })
         .unwrap_or(false);
+    // SendEnv adds up over every block that applies; `-pattern` takes back
+    // the patterns it matches. The others: the first value wins.
+    let mut send_env: Vec<String> = vec![];
+    for (under, l) in lines {
+        if let Line::SendEnv(patterns) = l
+            && applies(under, &alias)
+        {
+            for p in patterns {
+                match p.strip_prefix('-') {
+                    Some(taken) => send_env.retain(|had| !wildcard(taken, had)),
+                    None if !send_env.contains(p) => send_env.push(p.clone()),
+                    None => {}
+                }
+            }
+        }
+    }
+    let mut set_env: Vec<(String, String)> = vec![];
+    if let Some(vars) = lines.iter().find_map(|(under, l)| match l {
+        Line::SetEnv(vars) if applies(under, &alias) => Some(vars),
+        _ => None,
+    }) {
+        for (name, value) in vars {
+            if !set_env.iter().any(|(had, _)| had == name) {
+                set_env.push((name.clone(), value.clone()));
+            }
+        }
+    }
+    let remote_command = lines
+        .iter()
+        .find_map(|(under, l)| match l {
+            Line::RemoteCommand(c) if applies(under, &alias) => Some(c),
+            _ => None,
+        })
+        .filter(|c| *c != "none")
+        .cloned();
+    let tty = lines
+        .iter()
+        .find_map(|(under, l)| match l {
+            Line::RequestTty(on) if applies(under, &alias) => Some(*on),
+            _ => None,
+        })
+        .unwrap_or(true);
     let mut jumps = vec![];
     if !matches!(first, Some(Line::ProxyCommand(_)))
         && let Some(list) = &p.proxy_jump
@@ -534,6 +653,10 @@ fn resolve_with(
         forwards: vec![],
         forward_agent: p.forward_agent.unwrap_or(false),
         host_key: None,
+        remote_command,
+        tty,
+        send_env,
+        set_env,
     })
 }
 
@@ -734,6 +857,34 @@ mod tests {
             resolve("x", None).expect("resolve").identity_agent,
             IdentityAgent::Usual
         );
+    }
+
+    #[test]
+    fn session_options_as_ssh_reads_them() {
+        let cfg = config(
+            "Host box\n  SendEnv LANG LC_*\n  SetEnv GREETING=\"hello there\" EMPTY= 'QUOTED=a b'\n  RemoteCommand tmux new -A -s %r\n  RequestTTY force\nHost plain\n  RemoteCommand none\n  RequestTTY no\nHost *\n  SendEnv -LC_* EDITOR\n  SetEnv LATER=never\n  RemoteCommand echo never\n",
+        );
+        let r = resolve("box", Some(&cfg)).expect("resolve");
+        // Every block adds; `-LC_*` takes back what came before it.
+        assert_eq!(r.send_env, ["LANG", "EDITOR"]);
+        // The first SetEnv that applies, all of it; later ones not at all.
+        assert_eq!(
+            r.set_env,
+            [
+                ("GREETING".to_string(), "hello there".to_string()),
+                ("EMPTY".into(), "".into()),
+                ("QUOTED".into(), "a b".into())
+            ]
+        );
+        assert_eq!(r.remote_command.as_deref(), Some("tmux new -A -s %r"));
+        assert!(r.tty);
+        let r = resolve("plain", Some(&cfg)).expect("resolve");
+        assert_eq!(r.remote_command, None, "none, before Host *'s");
+        assert!(!r.tty);
+        assert_eq!(r.send_env, ["EDITOR"]);
+        assert_eq!(r.set_env, [("LATER".to_string(), "never".to_string())]);
+        let r = resolve("x", None).expect("resolve");
+        assert!(r.tty && r.remote_command.is_none() && r.send_env.is_empty());
     }
 
     #[test]

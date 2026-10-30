@@ -94,6 +94,8 @@ export SHELLWING_E2E_BASTION
 SHELLWING_E2E_BASTION=$(docker port "$run-bastion" 22/tcp | head -n1)
 export SHELLWING_E2E_TARGETS
 SHELLWING_E2E_TARGETS=$(IFS=,; echo "${labels[*]}")
+# For SendEnv to send.
+export SHELLWING_E2E_SENT="sent by this machine"
 # Nothing of this machine's own: no ~/.ssh keys to offer, no agent.
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
 export HOME="$work/home"

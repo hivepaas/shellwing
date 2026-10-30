@@ -22,6 +22,7 @@ pub mod prompt;
 pub mod proxy;
 pub mod secrets;
 pub mod sftp;
+mod tokens;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -246,6 +247,31 @@ async fn exec(handle: &Handle<Checker>, command: &str, stdin: &[u8]) -> Result<E
     Ok(out)
 }
 
+/// What the session sends the host as its environment: this machine's
+/// variables that `SendEnv` names, then `SetEnv`'s.
+fn environment(target: &Resolved) -> Vec<(String, String)> {
+    let mut vars: Vec<(String, String)> = std::env::vars_os()
+        .filter_map(|(name, value)| Some((name.into_string().ok()?, value.into_string().ok()?)))
+        .filter(|(name, _)| target.send_env.iter().any(|p| config::wildcard(p, name)))
+        .collect();
+    vars.sort();
+    vars.extend(target.set_env.iter().cloned());
+    vars
+}
+
+/// `data` with each `\n` after a `\r`, as a terminal's line discipline
+/// writes output (ONLCR).
+fn with_crlf(data: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len() + data.len() / 16);
+    for &b in data {
+        if b == b'\n' {
+            out.push(b'\r');
+        }
+        out.push(b);
+    }
+    out
+}
+
 /// A connected interactive shell. Dropping every sender closes the session.
 pub struct Session {
     tx: mpsc::UnboundedSender<Input>,
@@ -453,18 +479,32 @@ pub async fn connect(
     }
 
     let mut channel = handle.channel_open_session().await?;
-    let (cols, rows) = opts
-        .size
-        .as_ref()
-        .and_then(|now| now())
-        .unwrap_or((opts.cols, opts.rows));
-    channel
-        .request_pty(false, &opts.term, cols, rows, 0, 0, &[])
-        .await?;
+    let tty = opts.target.tty;
+    if tty {
+        let (cols, rows) = opts
+            .size
+            .as_ref()
+            .and_then(|now| now())
+            .unwrap_or((opts.cols, opts.rows));
+        channel
+            .request_pty(false, &opts.term, cols, rows, 0, 0, &[])
+            .await?;
+    }
+    // A host takes only the variables its AcceptEnv names, and ignores the
+    // rest without a word, as with ssh.
+    for (name, value) in environment(&opts.target) {
+        channel.set_env(false, name, value).await?;
+    }
     if forward_agent {
         channel.agent_forward(false).await?;
     }
-    channel.request_shell(false).await?;
+    match &opts.target.remote_command {
+        Some(command) => {
+            let command = tokens::expand(command, &opts.target, "RemoteCommand", "hprndu")?;
+            channel.exec(false, command).await?;
+        }
+        None => channel.request_shell(false).await?,
+    }
 
     let (tx, mut rx) = mpsc::unbounded_channel::<Input>();
     tokio::spawn(async move {
@@ -477,8 +517,16 @@ pub async fn connect(
             loop {
                 tokio::select! {
                     msg = channel.wait() => match msg {
-                        Some(ChannelMsg::Data { data }) => {
-                            tokio::task::block_in_place(|| output(&data));
+                        // Without a PTY (RequestTTY no) the errors come apart,
+                        // and each line ends in a bare \n: a terminal's own
+                        // line discipline would add the \r.
+                        Some(ChannelMsg::Data { data }) | Some(ChannelMsg::ExtendedData { data, .. }) => {
+                            if tty {
+                                tokio::task::block_in_place(|| output(&data));
+                            } else {
+                                let lines = with_crlf(&data);
+                                tokio::task::block_in_place(|| output(&lines));
+                            }
                         }
                         Some(ChannelMsg::ExitStatus { exit_status: s }) => exit_status = Some(s),
                         // OpenSSH sends the exit status after the output's

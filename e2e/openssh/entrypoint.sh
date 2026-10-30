@@ -41,6 +41,7 @@ AuthorizedKeysFile .ssh/authorized_keys
 TrustedUserCAKeys /e2e/user_ca.pub
 AllowTcpForwarding yes
 AllowAgentForwarding yes
+AcceptEnv LANG LC_* SHELLWING_*
 X11Forwarding no
 Subsystem sftp internal-sftp
 PidFile /run/sshd.pid

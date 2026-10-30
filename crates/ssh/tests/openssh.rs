@@ -587,3 +587,98 @@ async fn the_agent_is_forwarded_when_asked_for() {
     shell.session.write(b"ssh-add -l\n".to_vec());
     shell.wait_for("shellwing-e2e-id_ecdsa").await;
 }
+
+/// What a session printed, and its exit status.
+type Ran = (String, Option<u32>);
+
+/// Runs `alias` from an ssh config of the lab's, with `more` under its own
+/// Host, with OpenSSH's own client and with shellwing. Returns what each
+/// printed (ssh's standard output) and its exit status. The servers are
+/// behind the bastion through the config's ProxyJump.
+async fn both_run(lab: &Lab, name: &str, alias: &str, more: &str) -> (Ran, Ran) {
+    let path = lab.scratch(&format!("{name}.ssh_config"));
+    std::fs::write(
+        &path,
+        format!(
+            "Host {alias}\n{more}Host *\n  User {USER}\n  IdentityFile {}\n  IdentitiesOnly yes\n  IdentityAgent none\n  UserKnownHostsFile {}\n  StrictHostKeyChecking yes\n  BatchMode yes\nHost bastion\n  HostName {}\n  Port {}\nHost {}\n  ProxyJump bastion\n",
+            lab.key("id_ed25519").display(),
+            lab.dir.join("known_hosts").display(),
+            lab.bastion.host,
+            lab.bastion.port,
+            lab.targets.join(" ")
+        ),
+    )
+    .expect("ssh config");
+    let out = std::process::Command::new("ssh")
+        .arg("-F")
+        .arg(&path)
+        .arg(alias)
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .expect("ssh");
+    let theirs = (
+        String::from_utf8_lossy(&out.stdout).into_owned(),
+        out.status.code().map(|c| c as u32),
+    );
+    let resolved = shellwing_ssh::config::resolve(alias, Some(&path)).expect("resolve");
+    let shell = open_or_fail(lab.options(resolved), alias).await;
+    let ended = tokio::time::timeout(Duration::from_secs(20), shell.ended)
+        .await
+        .expect("the session to end")
+        .expect("ended");
+    let exit = match ended {
+        Ended::Closed { exit_status } => exit_status,
+        Ended::Error(e) => panic!("{alias}: {e}"),
+    };
+    let printed = String::from_utf8_lossy(&shell.out.lock().expect("out")).into_owned();
+    (theirs, (printed, exit))
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn session_options_are_taken_as_openssh_takes_them() {
+    let lab = lab!();
+    if !has("ssh") {
+        eprintln!("skipped: no OpenSSH client");
+        return;
+    }
+    for host in &lab.targets {
+        // A variable from here (SendEnv), one from the config (SetEnv), and
+        // a command instead of the shell, with its tokens.
+        let ((theirs, their_exit), (ours, our_exit)) = both_run(
+            &lab,
+            &format!("env-{host}"),
+            host,
+            "  SendEnv SHELLWING_E2E_SENT\n  SetEnv SHELLWING_SET=\"set in config\"\n  RemoteCommand echo \"[$SHELLWING_E2E_SENT|$SHELLWING_SET|%r@%n]\"; tty; exit 3\n",
+        )
+        .await;
+        let line = format!("[sent by this machine|set in config|{USER}@{host}]");
+        assert!(theirs.contains(&line), "OpenSSH, {host}: {theirs:?}");
+        assert!(ours.contains(&line), "shellwing, {host}: {ours:?}");
+        assert_eq!((their_exit, our_exit), (Some(3), Some(3)), "{host}");
+        // shellwing is a terminal, so the command gets one. ssh here gets
+        // none, its input not being one (RequestTTY auto).
+        assert!(ours.contains("/dev/pts/"), "{host}: {ours:?}");
+        assert!(theirs.contains("not a tty"), "{host}: {theirs:?}");
+
+        // RequestTTY no: no terminal; the lines still start at the left,
+        // and what goes to standard error is shown too.
+        let ((theirs, _), (ours, our_exit)) = both_run(
+            &lab,
+            &format!("notty-{host}"),
+            host,
+            "  RequestTTY no\n  RemoteCommand tty; echo second; echo oops >&2\n",
+        )
+        .await;
+        assert!(
+            theirs.contains("not a tty\nsecond\n"),
+            "OpenSSH, {host}: {theirs:?}"
+        );
+        assert!(
+            ours.contains("not a tty\r\nsecond\r\n"),
+            "shellwing, {host}: {ours:?}"
+        );
+        assert!(ours.contains("oops"), "shellwing, {host}: {ours:?}");
+        assert_eq!(our_exit, Some(0), "{host}");
+    }
+}
