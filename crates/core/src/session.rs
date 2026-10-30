@@ -48,7 +48,9 @@ pub const RETRY_BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
 
 fn retryable(e: &Error) -> bool {
     match e {
-        Error::Ssh(_) | Error::Disconnected => true,
+        // A ProxyCommand is the way to the network: cloudflared or aws
+        // failing just after the laptop wakes is the network not back yet.
+        Error::Ssh(_) | Error::Disconnected | Error::Proxy { .. } => true,
         Error::Jump { source, .. } => retryable(source),
         _ => false,
     }
@@ -774,6 +776,10 @@ mod tests {
             std::io::ErrorKind::ConnectionRefused,
         )));
         assert!(retryable(&io));
+        assert!(retryable(&Error::Proxy {
+            command: "cloudflared access ssh --hostname h".into(),
+            why: "failed to connect to the edge".into(),
+        }));
         assert!(retryable(&Error::Jump {
             host: "bastion".into(),
             source: Box::new(io),

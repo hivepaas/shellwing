@@ -378,6 +378,34 @@ scenario!(
     }
 );
 
+scenario!(
+    /// A host ~/.ssh/config reaches through a ProxyCommand, copied to
+    /// hosts.toml: the copy keeps the alias as its address, so it still goes
+    /// through the command (hosts.toml has no place for one).
+    host_copied_with_its_proxy_command,
+    |ui| {
+        let Some(relay) = crate::ui_tests::server::relay_command() else {
+            eprintln!("skipped: no nc to relay with");
+            return;
+        };
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.ssh_config(&format!(
+            "Host tunnel\n  HostName 127.0.0.1\n  Port {}\n  User {USER}\n  ProxyCommand {relay}\n",
+            server.port
+        ));
+        ui.open();
+        edit_host(ui, "tunnel");
+        ui.click("ssh-copy");
+        save_host(ui);
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("address = \"tunnel\""), "{hosts}");
+        ui.click("host:tunnel");
+        ui.wait_for("through `");
+        ui.login();
+    }
+);
+
 /// hosts.toml: the group Databases with db1 and db2, and web on its own.
 fn grouped(ui: &crate::ui_tests::Ui) {
     let in_group = |name: &str| format!("{}group = \"Databases\"\n", host(name, closed_port()));
