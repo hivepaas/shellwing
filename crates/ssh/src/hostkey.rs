@@ -60,6 +60,9 @@ pub(crate) struct Checker {
     /// Set once the server has shown its key: `ConnectTimeout` counts only
     /// until then, never while a question about the key waits for the user.
     pub key_shown: Arc<std::sync::atomic::AtomicBool>,
+    /// X11 forwarding, once it is asked for: only then are the server's X11
+    /// channels accepted.
+    pub x11: Option<Arc<crate::x11::Forwarding>>,
 }
 
 fn default_known_hosts() -> Option<PathBuf> {
@@ -304,6 +307,25 @@ impl client::Handler for Checker {
 
     /// The server asks for the agent (`ssh-add -l` there, a jump onwards):
     /// a fresh connection to the local agent, carried over this channel.
+    async fn server_channel_open_x11(
+        &mut self,
+        channel: Channel<Msg>,
+        _originator_address: &str,
+        _originator_port: u32,
+        reply: ChannelOpenHandle,
+        _session: &mut client::Session,
+    ) -> Result<(), Self::Error> {
+        let Some(x11) = self.x11.clone() else {
+            // Not asked for: dropping the reply refuses it.
+            return Ok(());
+        };
+        tokio::spawn(async move {
+            reply.accept().await;
+            let _ = x11.carry(channel).await;
+        });
+        Ok(())
+    }
+
     async fn server_channel_open_agent_forward(
         &mut self,
         channel: Channel<Msg>,
@@ -354,6 +376,7 @@ mod tests {
             forward_agent: false,
             agent: Default::default(),
             key_shown: Default::default(),
+            x11: None,
         }
     }
 

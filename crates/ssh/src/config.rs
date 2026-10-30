@@ -32,6 +32,30 @@ pub enum IdentityAgent {
     At(PathBuf),
 }
 
+/// X11 forwarding for a host (`ForwardX11`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct X11 {
+    /// The display's own cookie (`ForwardX11Trusted yes`): what the host's
+    /// programs do on the display has no limits, reading the keyboard and the
+    /// screen included. Otherwise a limited cookie made for the session.
+    pub trusted: bool,
+    /// No new connections after this long (`ForwardX11Timeout`); zero: no
+    /// limit. Only for a limited cookie, which stops working then too.
+    pub timeout: Duration,
+    /// The `xauth` to run (`XAuthLocation`).
+    pub xauth: Option<PathBuf>,
+}
+
+impl Default for X11 {
+    fn default() -> Self {
+        X11 {
+            trusted: false,
+            timeout: Duration::from_secs(20 * 60),
+            xauth: None,
+        }
+    }
+}
+
 /// Everything needed to reach one host.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Resolved {
@@ -76,6 +100,9 @@ pub struct Resolved {
     /// How long to wait for the host to answer, up to showing its key
     /// (`ConnectTimeout`); None: as long as the system waits.
     pub connect_timeout: Option<Duration>,
+    /// Let the host's programs open windows here (`ForwardX11`). Off unless
+    /// asked; jump hosts never get it.
+    pub x11: Option<X11>,
     /// Run instead of the login shell (`RemoteCommand`), its `%` tokens not
     /// expanded yet.
     pub remote_command: Option<String>,
@@ -108,6 +135,7 @@ impl Resolved {
             host_key: None,
             known_hosts: None,
             connect_timeout: None,
+            x11: None,
             remote_command: None,
             tty: true,
             send_env: vec![],
@@ -310,6 +338,11 @@ enum Line {
     StrictHostKeyChecking(String),
     /// `UserKnownHostsFile`'s first file, as written.
     UserKnownHostsFile(String),
+    ForwardX11(bool),
+    ForwardX11Trusted(bool),
+    /// `ForwardX11Timeout`, as written.
+    ForwardX11Timeout(String),
+    XAuthLocation(String),
 }
 
 /// The lines of a config file, each with the `Host` patterns it comes under:
@@ -389,6 +422,35 @@ fn include_paths(arg: &str) -> Vec<PathBuf> {
         .collect();
     found.sort();
     found
+}
+
+/// A yes/no value, as ssh reads it.
+fn flag(args: &[String]) -> bool {
+    args.first()
+        .is_some_and(|a| a.eq_ignore_ascii_case("yes") || a.eq_ignore_ascii_case("true"))
+}
+
+/// A time as ssh_config writes it: `300`, `20m`, `1h30m`, with `s`, `m`, `h`,
+/// `d` and `w`.
+fn time_value(text: &str) -> Option<Duration> {
+    let (mut total, mut number) = (0u64, None::<u64>);
+    for c in text.to_ascii_lowercase().chars() {
+        if let Some(d) = c.to_digit(10) {
+            number = Some(number.unwrap_or(0).checked_mul(10)?.checked_add(d as u64)?);
+            continue;
+        }
+        let unit = match c {
+            's' => 1,
+            'm' => 60,
+            'h' => 3600,
+            'd' => 86400,
+            'w' => 604800,
+            _ => return None,
+        };
+        total = total.checked_add(number.take()?.checked_mul(unit)?)?;
+    }
+    total = total.checked_add(number.unwrap_or(0))?;
+    Some(Duration::from_secs(total))
 }
 
 /// Splits a line's values as ssh does: at spaces outside quotes (`"` or
@@ -515,6 +577,14 @@ fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mu
                 if let Some(first) = words(rest).into_iter().next() {
                     out.push((under.clone(), Line::UserKnownHostsFile(first)));
                 }
+            }
+            "forwardx11" => out.push((under.clone(), Line::ForwardX11(flag(&args)))),
+            "forwardx11trusted" => out.push((under.clone(), Line::ForwardX11Trusted(flag(&args)))),
+            "forwardx11timeout" if !args.is_empty() => {
+                out.push((under.clone(), Line::ForwardX11Timeout(args[0].clone())));
+            }
+            "xauthlocation" if !args.is_empty() => {
+                out.push((under.clone(), Line::XAuthLocation(args[0].clone())));
             }
             "identitiesonly" => out.push((
                 under.clone(),
@@ -676,6 +746,43 @@ fn resolve_with(
         }),
         _ => None,
     });
+    let first_of = |pick: fn(&Line) -> Option<&str>| {
+        lines
+            .iter()
+            .filter(|(under, _)| applies(under, &alias))
+            .find_map(|(_, l)| pick(l))
+    };
+    let on = |pick: fn(&Line) -> Option<bool>| {
+        lines
+            .iter()
+            .filter(|(under, _)| applies(under, &alias))
+            .find_map(|(_, l)| pick(l))
+    };
+    let forward_x11 = on(|l| match l {
+        Line::ForwardX11(v) => Some(*v),
+        _ => None,
+    });
+    let x11 = forward_x11.unwrap_or(false).then(|| {
+        let defaults = X11::default();
+        X11 {
+            trusted: on(|l| match l {
+                Line::ForwardX11Trusted(v) => Some(*v),
+                _ => None,
+            })
+            .unwrap_or(defaults.trusted),
+            timeout: first_of(|l| match l {
+                Line::ForwardX11Timeout(v) => Some(v),
+                _ => None,
+            })
+            .and_then(time_value)
+            .unwrap_or(defaults.timeout),
+            xauth: first_of(|l| match l {
+                Line::XAuthLocation(v) => Some(v),
+                _ => None,
+            })
+            .map(|v| config_path(v, &host, &user)),
+        }
+    });
     let mut jumps = vec![];
     if !matches!(first, Some(Line::ProxyCommand(_)))
         && let Some(list) = &p.proxy_jump
@@ -706,6 +813,7 @@ fn resolve_with(
         host_key,
         known_hosts,
         connect_timeout: p.connect_timeout.filter(|t| !t.is_zero()),
+        x11,
         remote_command,
         tty,
         send_env,
@@ -962,6 +1070,29 @@ mod tests {
         let r = resolve("other", Some(&cfg)).expect("resolve");
         assert_eq!(r.host_key, Some(crate::HostKeyPolicy::Ask));
         assert_eq!(r.known_hosts, None);
+    }
+
+    #[test]
+    fn x11_as_ssh_reads_it() {
+        let cfg = config(
+            "Host limited\n  ForwardX11 yes\nHost full\n  ForwardX11 yes\n  ForwardX11Trusted yes\n  ForwardX11Timeout 1h30m\n  XAuthLocation /opt/X11/bin/xauth\nHost never\n  ForwardX11Timeout 0\n  ForwardX11 yes\nHost off\n  ForwardX11 no\nHost *\n  ForwardX11 yes\n",
+        );
+        let x11 = |name: &str| resolve(name, Some(&cfg)).expect("resolve").x11;
+        assert_eq!(x11("limited"), Some(X11::default()));
+        assert_eq!(
+            x11("full"),
+            Some(X11 {
+                trusted: true,
+                timeout: Duration::from_secs(5400),
+                xauth: Some("/opt/X11/bin/xauth".into()),
+            })
+        );
+        assert_eq!(x11("never").map(|x| x.timeout), Some(Duration::ZERO));
+        assert_eq!(x11("off"), None, "no, before Host *'s yes");
+        assert_eq!(resolve("x", None).expect("resolve").x11, None);
+        assert_eq!(time_value("300"), Some(Duration::from_secs(300)));
+        assert_eq!(time_value("20m"), Some(Duration::from_secs(1200)));
+        assert_eq!(time_value("soon"), None);
     }
 
     #[test]

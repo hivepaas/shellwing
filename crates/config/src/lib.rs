@@ -22,7 +22,7 @@ mod store;
 mod theme;
 
 pub use color::Color;
-pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, Hosts, color_rgb};
+pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, HostX11, Hosts, color_rgb};
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, GitSync, Log, LogFormat,

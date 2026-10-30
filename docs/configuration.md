@@ -298,6 +298,7 @@ forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
 auth = { method = "key", key = "~/.ssh/deploy_ed25519" }   # or "vault:<id>": a key the app keeps
 theme = "nord"              # beats the group's and config.toml's theme
 forward_agent = false       # let the host use your ssh-agent (see below)
+x11 = "untrusted"           # let the host's programs open windows here (see below)
 keepalive = 15              # seconds; beats [ssh] keepalive
 host_key = "accept-new"     # beats [ssh] host_key
 color = "pink"              # pink, sky, green, amber, red or "#rrggbb": on its tab and pane
@@ -329,6 +330,27 @@ so turn it on only for hosts you trust. It is off by default, as in `ssh`;
 `ForwardAgent yes` in `~/.ssh/config` also turns it on. Only the host connected
 to gets the agent, never the jump hosts on the way, and a server that opens an
 agent channel without it being asked for is refused.
+
+**X11 windows** (`x11 = "untrusted"` or `"trusted"`, *X11 windows* in the host
+editor, or `ForwardX11 yes` in `~/.ssh/config`) let programs on the host open
+windows here, on an X server: `DISPLAY` must be set for shellwing, and the host
+needs `xauth` and `X11Forwarding yes`. The host only ever gets a made-up cookie;
+each connection back has it swapped for the real one here.
+
+- **Untrusted** (the default, `ForwardX11Trusted no`) uses a limited cookie that
+  `xauth` makes for the session, which keeps those programs from your other
+  windows and the keyboard. New windows stop after `ForwardX11Timeout`, 20
+  minutes by default; `0` means no limit. Some programs do not work this way,
+  and some X servers cannot make such a cookie.
+- **Trusted** (`ForwardX11Trusted yes`) uses the display's own cookie. Whoever is
+  root on the host can then read your screen and keyboard while you are
+  connected, so only for hosts you trust.
+
+`x11 = "off"` turns it off for a host that `~/.ssh/config` turns it on for.
+Jump hosts never get it, and a server that opens an X11 channel without it being
+asked for is refused. If it cannot be set up (no `DISPLAY`, a server that
+refuses), the pane says why, and the session goes on. `XAuthLocation` names the
+`xauth` to run. Not on phones.
 
 **How `shellwing <name>` finds a host:**
 

@@ -604,6 +604,24 @@ t741afb89 = Selama Anda terhubung, siapa pun yang menjadi root di host ini juga 
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Dari host ini Anda lalu dapat git push atau ssh lebih jauh dengan kunci di komputer ini; kunci tersebut tidak pernah disalin ke sana.
 
+# X11 windows
+td33b1f40 = Jendela X11
+
+# As ~/.ssh/config
+tff363503 = Seperti ~/.ssh/config
+
+# Off
+t0dc6b4aa = Mati
+
+# Untrusted
+tb69519d9 = Tidak tepercaya
+
+# Trusted
+t102c70dc = Tepercaya
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Mengizinkan program di host membuka jendela di sini, pada server X. Yang tidak tepercaya dijauhkan dari jendela lain dan keyboard Anda; yang tepercaya tidak, jadi hanya untuk host yang Anda percaya.
+
 # Some fields need a look.
 teaa35f1a = Beberapa kolom perlu diperiksa.
 
@@ -2127,9 +2145,6 @@ tb9e9f472 = Tidak ditemukan (SSH_AUTH_SOCK tidak diatur).
 
 # Refuse
 t9bcada35 = Tolak
-
-# Off
-t0dc6b4aa = Mati
 
 # Unknown host keys
 t2534790f = Kunci host tidak dikenal

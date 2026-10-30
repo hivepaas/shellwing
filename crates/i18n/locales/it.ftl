@@ -607,6 +607,24 @@ t741afb89 = Mentre sei connesso, chiunque sia root su questo host può accedere 
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Da questo host potrai poi fare git push o collegarti via ssh altrove con le chiavi di questo computer; non vengono mai copiate lì.
 
+# X11 windows
+td33b1f40 = Finestre X11
+
+# As ~/.ssh/config
+tff363503 = Come ~/.ssh/config
+
+# Off
+t0dc6b4aa = Disattivato
+
+# Untrusted
+tb69519d9 = Non attendibile
+
+# Trusted
+t102c70dc = Attendibile
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Consente ai programmi dell'host di aprire finestre qui, su un server X. Quelli non attendibili restano separati dalle altre finestre e dalla tastiera; quelli attendibili no, quindi solo per host di cui ti fidi.
+
 # Some fields need a look.
 teaa35f1a = Alcuni campi vanno controllati.
 
@@ -2144,9 +2162,6 @@ tb9e9f472 = Non trovato (SSH_AUTH_SOCK non è impostato).
 
 # Refuse
 t9bcada35 = Rifiuta
-
-# Off
-t0dc6b4aa = Disattivato
 
 # Unknown host keys
 t2534790f = Chiavi host sconosciute

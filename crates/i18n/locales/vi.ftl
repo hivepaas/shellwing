@@ -595,6 +595,24 @@ t741afb89 = Trong lúc bạn kết nối, ai có quyền root trên máy chủ n
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = Từ máy chủ này bạn có thể git push hoặc ssh tiếp bằng các khoá trên máy tính này; chúng không bao giờ bị sao chép lên đó.
 
+# X11 windows
+td33b1f40 = Cửa sổ X11
+
+# As ~/.ssh/config
+tff363503 = Theo ~/.ssh/config
+
+# Off
+t0dc6b4aa = Tắt
+
+# Untrusted
+tb69519d9 = Không tin cậy
+
+# Trusted
+t102c70dc = Tin cậy
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Cho phép chương trình trên máy chủ mở cửa sổ tại đây, trên một X server. Chương trình không tin cậy bị tách khỏi các cửa sổ khác và bàn phím của bạn; chương trình tin cậy thì không, nên chỉ dùng với máy chủ bạn tin tưởng.
+
 # Some fields need a look.
 teaa35f1a = Có vài trường cần xem lại.
 
@@ -2100,9 +2118,6 @@ tb9e9f472 = Không tìm thấy (chưa đặt SSH_AUTH_SOCK).
 
 # Refuse
 t9bcada35 = Từ chối
-
-# Off
-t0dc6b4aa = Tắt
 
 # Unknown host keys
 t2534790f = Khoá máy chủ chưa biết

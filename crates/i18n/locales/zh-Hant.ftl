@@ -604,6 +604,24 @@ t741afb89 = 連線期間，此主機上任何擁有 root 權限的人也能用�
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = 這樣你就能在此主機上使用這台電腦的金鑰執行 git push 或繼續 ssh；金鑰永遠不會被複製過去。
 
+# X11 windows
+td33b1f40 = X11 視窗
+
+# As ~/.ssh/config
+tff363503 = 依 ~/.ssh/config
+
+# Off
+t0dc6b4aa = 關閉
+
+# Untrusted
+tb69519d9 = 不信任
+
+# Trusted
+t102c70dc = 信任
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = 讓主機上的程式在此處的 X 伺服器開啟視窗。不信任的程式會與你的其他視窗和鍵盤隔離；信任的程式則不會，因此僅用於你信任的主機。
+
 # Some fields need a look.
 teaa35f1a = 部分欄位需要檢查。
 
@@ -2127,9 +2145,6 @@ tb9e9f472 = 找不到（未設定 SSH_AUTH_SOCK）。
 
 # Refuse
 t9bcada35 = 拒絕
-
-# Off
-t0dc6b4aa = 關閉
 
 # Unknown host keys
 t2534790f = 未知的主機金鑰

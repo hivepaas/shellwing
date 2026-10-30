@@ -607,6 +607,24 @@ t741afb89 = Enquanto você estiver conectado, quem for root neste servidor tamb�
 # From this host you could then git push or ssh further with the keys on this computer; they are never copied there.
 t01f5f399 = A partir deste servidor, você poderá fazer git push ou ssh adiante com as chaves deste computador; elas nunca são copiadas para lá.
 
+# X11 windows
+td33b1f40 = Janelas X11
+
+# As ~/.ssh/config
+tff363503 = Como ~/.ssh/config
+
+# Off
+t0dc6b4aa = Desativado
+
+# Untrusted
+tb69519d9 = Não confiável
+
+# Trusted
+t102c70dc = Confiável
+
+# Lets programs on the host open windows here, on an X server. Untrusted ones are kept from your other windows and keyboard; trusted ones are not, so only for hosts you trust.
+t07477a92 = Permite que programas do servidor abram janelas aqui, em um servidor X. Os não confiáveis ficam isolados das suas outras janelas e do teclado; os confiáveis não, então use só com servidores de confiança.
+
 # Some fields need a look.
 teaa35f1a = Alguns campos precisam de atenção.
 
@@ -2144,9 +2162,6 @@ tb9e9f472 = Não encontrado (SSH_AUTH_SOCK não está definido).
 
 # Refuse
 t9bcada35 = Recusar
-
-# Off
-t0dc6b4aa = Desativado
 
 # Unknown host keys
 t2534790f = Chaves de servidor desconhecidas

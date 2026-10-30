@@ -61,6 +61,7 @@ impl Host {
             self.keepalive.map(|k| k.to_string()).as_deref(),
         );
         put(&mut f, "host_key", self.host_key.map(|k| k.name()));
+        put(&mut f, "x11", self.x11.map(|x| x.name()));
         put(&mut f, "color", self.color.as_deref());
         if self.favorite {
             f.insert("favorite".into(), "true".into());
@@ -235,6 +236,7 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_flag(t, "forward_agent", g("forward_agent") == Some("true"));
     changed |= set_int(t, "keepalive", g("keepalive"));
     changed |= set_str(t, "host_key", g("host_key"));
+    changed |= set_str(t, "x11", g("x11"));
     changed |= set_str(t, "color", g("color"));
     changed |= set_flag(t, "favorite", g("favorite") == Some("true"));
     changed |= set_str(t, "run", g("run"));
@@ -563,6 +565,7 @@ local_only = true
             theme: None,
             local_only: false,
             forward_agent: true,
+            x11: Some(crate::hosts::HostX11::Trusted),
             keepalive: Some(15),
             host_key: Some(crate::hosts::HostKey::AcceptNew),
             color: Some("pink".into()),
@@ -589,6 +592,7 @@ local_only = true
         let cache = hosts.find("cache").expect("cache");
         assert_eq!(cache.port, Some(2222));
         assert!(cache.forward_agent);
+        assert_eq!(cache.x11, Some(crate::hosts::HostX11::Trusted));
         assert_eq!(cache.keepalive, Some(15));
         assert_eq!(cache.host_key, Some(crate::hosts::HostKey::AcceptNew));
         assert_eq!(

@@ -4,6 +4,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use shellwing_config::HostX11;
+
 use crate::{Found, Jump, Read};
 
 /// Includes nested deeper than this are not followed (a file that includes
@@ -202,6 +204,19 @@ fn host(lines: &[Line], name: &str, names: &[String]) -> Found {
         forward_agent: first
             .get("forwardagent")
             .is_some_and(|v| !matches!(v.to_ascii_lowercase().as_str(), "no" | "false")),
+        x11: first
+            .get("forwardx11")
+            .is_some_and(|v| v.eq_ignore_ascii_case("yes"))
+            .then(|| {
+                if first
+                    .get("forwardx11trusted")
+                    .is_some_and(|v| v.eq_ignore_ascii_case("yes"))
+                {
+                    HostX11::Trusted
+                } else {
+                    HostX11::Untrusted
+                }
+            }),
         jump,
         proxy_command,
         forward,

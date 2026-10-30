@@ -4,7 +4,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::bail;
-use shellwing_config::{AuthMethod, Host, HostKey, Hosts};
+use shellwing_config::{AuthMethod, Host, HostKey, HostX11, Hosts};
 use shellwing_ssh::HostKeyPolicy;
 use shellwing_ssh::config::{self, Resolved};
 
@@ -77,6 +77,16 @@ fn from_host(
     }
     // On here, or `ForwardAgent yes` for the address in ~/.ssh/config.
     r.forward_agent |= h.forward_agent;
+    // Set here, it wins over ForwardX11 for the address.
+    match h.x11 {
+        None => {}
+        Some(HostX11::Off) => r.x11 = None,
+        Some(mode) => {
+            let mut x11 = r.x11.take().unwrap_or_default();
+            x11.trusted = mode == HostX11::Trusted;
+            r.x11 = Some(x11);
+        }
+    }
     if let Some(k) = h.keepalive {
         r.keepalive = Some(std::time::Duration::from_secs(k));
     }
@@ -280,6 +290,31 @@ mod tests {
         assert_eq!((r.proxy_command, r.jumps.len()), (None, 1), "jump wins");
         let (r, _) = resolve("blank", &h, Some(&ssh)).expect("resolve");
         assert_eq!((r.proxy_command, r.jumps.len()), (None, 1), "blank: none");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_entrys_x11_wins_over_the_ssh_config() {
+        let dir = std::env::temp_dir().join(format!("shellwing-x11-entry-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ssh = dir.join("config");
+        std::fs::write(
+            &ssh,
+            "Host *.lab\n  ForwardX11 yes\n  ForwardX11Timeout 5m\n",
+        )
+        .expect("config");
+        let h = hosts(
+            "[[host]]\nname = \"a\"\naddress = \"a.lab\"\n[[host]]\nname = \"b\"\naddress = \"b.lab\"\nx11 = \"off\"\n[[host]]\nname = \"c\"\naddress = \"c.lab\"\nx11 = \"trusted\"\n[[host]]\nname = \"d\"\naddress = \"d.example\"\nx11 = \"untrusted\"\n",
+        );
+        let x11 = |name: &str| resolve(name, &h, Some(&ssh)).expect("resolve").0.x11;
+        let five = std::time::Duration::from_secs(300);
+        assert_eq!(
+            x11("a").map(|x| (x.trusted, x.timeout)),
+            Some((false, five))
+        );
+        assert_eq!(x11("b"), None);
+        assert_eq!(x11("c").map(|x| (x.trusted, x.timeout)), Some((true, five)));
+        assert_eq!(x11("d").map(|x| x.trusted), Some(false));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

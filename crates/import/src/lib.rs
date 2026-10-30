@@ -72,6 +72,8 @@ pub struct Found {
     /// A key file, its path as the app wrote it.
     pub key: Option<String>,
     pub forward_agent: bool,
+    /// X11 forwarding (`ForwardX11`), for those that have it.
+    pub x11: Option<shellwing_config::HostX11>,
     /// Hosts to go through first, outermost first.
     pub jump: Vec<Jump>,
     /// The command it is reached through (`ProxyCommand`), as written.
