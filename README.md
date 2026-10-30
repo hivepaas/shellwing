@@ -46,7 +46,7 @@ Download the latest release from [GitHub Releases](https://github.com/hivepaas/s
 | Windows | `shellwing_<version>_windows_x86_64-setup.exe`, or the `.zip` |
 | Linux (x86_64, aarch64) | the `.AppImage`, the `.deb`, or the `.tar.gz` |
 
-The releases are not signed with an Apple Developer ID or a Windows certificate yet: the first time, macOS asks you to allow it in *System Settings › Privacy & Security* (**Open Anyway**), and Windows' SmartScreen under **More info › Run anyway**. The app tells you when a newer version is out, and installs it when you say so.
+macOS releases are signed with a Developer ID and notarized. Windows releases are not signed yet: the first time, SmartScreen asks under **More info › Run anyway**. The app tells you when a newer version is out, and installs it when you say so.
 
 ### Building from source
 

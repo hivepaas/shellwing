@@ -11,7 +11,7 @@ app is told of it.
 | Linux x86_64, aarch64 | `shellwing_<v>_linux_<arch>.AppImage`, `.tar.gz`, `shellwing_<v>_<amd64\|arm64>.deb` | `scripts/package_linux.sh` |
 | macOS aarch64, x86_64 | `shellwing_<v>_macos_<arch>.dmg`, `.app.tar.gz` | `scripts/package_macos.sh` |
 | Windows x86_64 | `shellwing_<v>_windows_x86_64-setup.exe`, `.zip` | `scripts/package_windows.sh` |
-| Android (arm64-v8a, x86_64) | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
+| Android (arm64-v8a, x86_64), rehearsals only for now | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
 
 and `SHA256SUMS`. The updater installs the AppImage, the `.app.tar.gz` and the
 installer; the others are for people.
@@ -107,8 +107,10 @@ uninstall shellwing (and its vault) to install the next one.
    | `ANDROID_KEY_ALIAS` | `shellwing` |
    | `ANDROID_KEY_PASSWORD` | the key's password |
 
-The Release workflow refuses a tag without them; a rehearsal builds the APK
-unsigned. To sign one by hand, `scripts/build_android.sh`, then in `android/`:
+**Tags do not build the APK yet.** The release key has not been made, so the
+Android job runs in rehearsals only, unsigned. Once these secrets are set, take
+the job's `if` out of `release.yml` and put `android` back in the draft release's
+`needs`; the job then refuses a tag without them. To sign one by hand, `scripts/build_android.sh`, then in `android/`:
 
 ```sh
 SHELLWING_KEYSTORE=/path/to/shellwing-release.jks SHELLWING_KEYSTORE_PASSWORD=… \
@@ -126,8 +128,10 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
    too.
 3. **The tag.** `git tag -s v0.2.0 && git push origin v0.2.0`. The Release
    workflow checks that the tag is `Cargo.toml`'s version, builds the five
-   desktop platforms and the Android APK, and makes a **draft** release with the files and `SHA256SUMS`.
-4. **Check the draft**: install it on each system, and publish it.
+   desktop platforms, and makes a **draft** release with the files and
+   `SHA256SUMS`.
+4. **Check the draft**: install it on each system ([Checking a
+   release](#checking-a-release)), and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
    AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), sign it
    on the signing machine, and move the `release` branch
@@ -136,3 +140,42 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
 
 A release that went wrong is not deleted once the list names it: the next one
 replaces it.
+
+## Checking a release
+
+CI tests the code, not the packages on a real desktop. Before a release, on a
+rehearsal's artifacts or the draft's files, what only a real system shows:
+
+**Windows** (a VM will do; it has a GPU driver good enough):
+
+- The installer: `Get-AuthenticodeSignature` says what is expected, the file's
+  version is the release's, and it adds a Start menu entry and an uninstall entry.
+- From the desktop session, not over SSH: connect to a host with `ProxyCommand`
+  set to `ssh.exe -W %h:%p …`. The shell comes up and **no console window shows**.
+  Closing the app leaves no `ssh.exe` behind.
+- A `Match … exec` that holds and one that does not.
+- The uninstaller leaves no program folder and no uninstall entry.
+- SmartScreen shows only for a file really downloaded and opened by hand.
+
+**macOS** (a VM without Metal cannot run the app, which exits with no message; it
+can check the signature):
+
+- `spctl -a -t exec -vv shellwing.app` says `source=Notarized Developer ID`, the
+  same with `-t open --context context:primary-signature` for the `.dmg`, and
+  `xcrun stapler validate` passes on both.
+- `LSMinimumSystemVersion` and `CFBundleShortVersionString` are right.
+
+On a real Mac:
+
+- Drag the app from the disk image to Applications and open it from the Finder:
+  one question, *Open*, and no trip to System Settings.
+- A `ProxyCommand` whose program is only in `/opt/homebrew/bin`: an app opened
+  from the Finder does not have that on `PATH`.
+- Touch ID opens the vault.
+
+**Linux:**
+
+- The AppImage runs (`--help`), the `.deb` names the version and installs under
+  `/opt/shellwing`.
+- X11 forwarding with `DISPLAY=:0`, on the desktop's X server. GNOME under Wayland
+  has no SECURITY extension, so *Untrusted* says why it cannot, and *Trusted* works.
