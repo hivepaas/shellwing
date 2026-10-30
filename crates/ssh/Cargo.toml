@@ -13,7 +13,6 @@ tokio = { workspace = true, features = ["io-util", "fs", "process"] }
 # ProxyCommand: started with no signals blocked.
 shellwing-spawn.workspace = true
 thiserror.workspace = true
-ssh2-config = "0.8"
 russh-sftp = "3"
 # Randomness for new keys and for locking exported ones.
 rand = { version = "0.10", features = ["thread_rng"] }

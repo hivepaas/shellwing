@@ -241,9 +241,12 @@ impl HostEditor {
 
     /// A host from `~/.ssh/config`, read only until copied.
     pub fn ssh_config(ctx: EditorContext, alias: String, cx: &mut Context<Self>) -> Self {
-        let resolved = ssh_config::resolve(&alias, ssh_config::default_config_path().as_deref())
-            .ok()
-            .map(Box::new);
+        let resolved = ssh_config::resolve_without_commands(
+            &alias,
+            ssh_config::default_config_path().as_deref(),
+        )
+        .ok()
+        .map(Box::new);
         Self::blank(ctx, Mode::SshConfig { alias, resolved }, cx)
     }
 

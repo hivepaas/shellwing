@@ -8084,7 +8084,6 @@ dependencies = [
  "russh-sftp",
  "sha1 0.11.0",
  "shellwing-spawn",
- "ssh2-config",
  "thiserror 2.0.21",
  "tokio",
  "zeroize",
@@ -8406,20 +8405,6 @@ dependencies = [
  "ssh-cipher",
  "ssh-encoding",
  "zeroize",
-]
-
-[[package]]
-name = "ssh2-config"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7220846f1080bafaf80204d7268f7e2a1fb0609e34520d2edc3e75cfc55f4c38"
-dependencies = [
- "bitflags 2.13.2",
- "dirs 7.0.0",
- "glob",
- "log",
- "thiserror 2.0.21",
- "wildmatch",
 ]
 
 [[package]]
@@ -9929,12 +9914,6 @@ checksum = "bae2f2b2b816647a1cab1acc91f5bd20812d53cb344382635ec2181940c8034f"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "wildmatch"
-version = "2.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29333c3ea1ba8b17211763463ff24ee84e41c78224c16b001cd907e663a38c68"
 
 [[package]]
 name = "winapi"
