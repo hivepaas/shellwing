@@ -210,7 +210,7 @@ fn split_program(line: &str) -> (&str, &str) {
 }
 
 /// `path` with Homebrew's folders at the end, if it lacks them.
-#[cfg(any(target_os = "macos", test))]
+#[cfg(any(target_os = "macos", all(unix, test)))]
 fn with_homebrew(path: Option<std::ffi::OsString>) -> Option<std::ffi::OsString> {
     let mut dirs: Vec<std::path::PathBuf> = path
         .as_deref()
@@ -265,6 +265,8 @@ mod tests {
         assert_eq!(split_program("cloudflared"), ("cloudflared", ""));
     }
 
+    // Unix: PATH's separator is `:` (`;` on Windows).
+    #[cfg(unix)]
     #[test]
     fn adds_homebrew_once() {
         let p = with_homebrew(Some("/usr/bin:/opt/homebrew/bin".into())).expect("added");
