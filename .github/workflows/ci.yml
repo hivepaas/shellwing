@@ -97,6 +97,27 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # The SSH crate against real OpenSSH servers of several versions, in
+  # Docker, behind a bastion (scripts/e2e_openssh.sh). The Linux runners
+  # have Docker; the SSH crate needs neither Zig nor the GUI's libraries.
+  openssh:
+    name: openssh-e2e (OpenSSH 8.0 to 10)
+    if: github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","linux"]'), inputs.platforms)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version and its components: rust-toolchain.toml.
+      - name: Rust
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: openssh-e2e
+
+      - name: End-to-end against OpenSSH
+        run: scripts/e2e_openssh.sh
+
   # The UI-free core (term, ssh, config, vault) and the phone apps' bindings
   # (crates/mobile), built, not run. Android cross-builds on Linux with the
   # runner's NDK; iOS needs Xcode, so it runs only when started by hand, and

@@ -11,6 +11,25 @@ not need a toolchain: download the artifact from the run's summary page.
 Rendering and input (IME, keyboard layouts, HiDPI) still need a real desktop;
 CI only proves that the code builds and the tests pass.
 
+## Against real OpenSSH servers
+
+`make e2e-openssh` (`scripts/e2e_openssh.sh`) runs `crates/ssh/tests/openssh.rs`
+against real OpenSSH servers in Docker, set up the way an organization sets
+them up:
+
+- A bastion is the only server this machine reaches.
+- Behind it, on a network only the bastion is on, are Alpine (OpenSSH 10),
+  Debian 12 (9.2), Ubuntu 20.04 (8.2) and Rocky 8 (8.0).
+- Hosts are trusted through a host CA (`@cert-authority`).
+- A user CA, three kinds of key and a password are made for each run.
+
+The tests sign in each way and go through ProxyJump and ProxyCommand. They
+also cover SFTP, a local forward, agent forwarding and the shell's exit
+status. CI runs them on every pull request. Locally they need Docker and
+`ssh-keygen`. `SHELLWING_E2E_KEEP=1` leaves the servers running to look at,
+and `scripts/e2e_openssh.sh -- <filter>` runs some of the tests. Without the
+script's environment, `cargo test` skips them.
+
 ## Toolchain (to build locally)
 
 All platforms need Rust (via [rustup](https://rustup.rs)) and **Zig 0.17**

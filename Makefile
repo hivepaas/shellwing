@@ -30,7 +30,7 @@ endif
 ARCH := $(shell uname -m 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help build run dev build-mac build-linux build-windows build-ios-core \
+.PHONY: help e2e-openssh build run dev build-mac build-linux build-windows build-ios-core \
 	build-android-core ios ios-sim android test lint fmt check install-desktop package doctor clean zig
 
 help: ## List the targets
@@ -143,6 +143,9 @@ test: zig ## All tests
 	$(CARGO) test --workspace
 
 check: lint test ## lint, then test
+
+e2e-openssh: ## SSH against real OpenSSH servers, 8.0 to 10, in Docker
+	scripts/e2e_openssh.sh
 
 ## Housekeeping
 
