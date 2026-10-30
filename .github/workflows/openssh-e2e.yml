@@ -1,0 +1,47 @@
+name: OpenSSH e2e
+
+# The SSH crate against real OpenSSH servers of several versions, in Docker,
+# behind a bastion (scripts/e2e_openssh.sh, crates/ssh/tests/openssh.rs).
+# Building the servers' images takes minutes, so it runs daily and when
+# started by hand (Actions > OpenSSH e2e > Run workflow, or
+# `gh workflow run openssh-e2e.yml --ref <branch>`), not on pushes or pull
+# requests. The Linux runners have Docker; the SSH crate needs neither Zig
+# nor the GUI's libraries.
+
+on:
+  schedule:
+    # 02:30 in Vietnam, after the UI tests start.
+    - cron: "30 19 * * *"
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: Only tests whose name contains this (e.g. "agent" or "sftp")
+        type: string
+        default: ""
+
+concurrency:
+  group: openssh-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  openssh:
+    name: openssh-e2e (OpenSSH 8.0 to 10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version and its components: rust-toolchain.toml.
+      - name: Rust
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: openssh-e2e
+
+      - name: End-to-end against OpenSSH
+        env:
+          FILTER: ${{ inputs.filter }}
+        run: scripts/e2e_openssh.sh -- ${FILTER:+"$FILTER"}

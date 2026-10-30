@@ -412,6 +412,13 @@ impl server::Handler for TestServer {
                 session.eof(channel)?;
                 session.close(channel)?;
             }
+            // As OpenSSH ends a session: the output's end first, then the
+            // exit status.
+            b"exit 3\r" => {
+                session.eof(channel)?;
+                session.exit_status_request(channel, 3)?;
+                session.close(channel)?;
+            }
             // The server dies: the connection drops with nothing said.
             b"die\r" => return Err(russh::Error::Disconnect),
             // The server stops answering, the connection still up: as one
@@ -1070,6 +1077,12 @@ async fn an_exit_closes_but_a_dying_server_disconnects() {
         end_with(opts(), b"exit\r").await,
         shellwing_ssh::Ended::Closed {
             exit_status: Some(0)
+        }
+    ));
+    assert!(matches!(
+        end_with(opts(), b"exit 3\r").await,
+        shellwing_ssh::Ended::Closed {
+            exit_status: Some(3)
         }
     ));
     assert!(matches!(
