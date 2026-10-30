@@ -46,7 +46,7 @@ Limits to state plainly to customers:
 - **Removing a member cannot undo what they already copied.** That is why
   removal comes with the list of secrets to change.
 
-### SSH certificates (Business)
+### SSH certificates
 
 The real fix for both limits is an SSH certificate authority:
 
@@ -78,41 +78,38 @@ verified, except through certificates.
 
 ## Editions
 
-| | Community (self-hosted, free) | Team | Business |
-| --- | --- | --- | --- |
-| Users | Up to 3 (**Open**) | Per seat | Per seat |
-| Personal sync, unlimited hosts | Yes | Yes | Yes |
-| Collections | 1 | Unlimited | Unlimited |
-| Groups, Connect/Edit/Manage | | Yes | Yes |
-| Removal checklist, key rotation | | Yes | Yes |
-| Audit log | | 30 days | Unlimited, export |
-| SSO (OIDC, SAML), SCIM | | | Yes |
-| Policies (no export, vault lock required…) | | | Yes |
-| SSH CA, short-lived certificates | | | Yes |
+Two products are sold through the portal shared by the owner's products: a
+license for a server somebody hosts, and shellwing cloud, the service the owner
+runs. **Every edition has every feature.** Only the number of users differs.
 
-Team and Business are sold both in shellwing cloud and as self-hosted licenses.
-**Open:** prices.
+| | Self-hosted, free | Self-hosted, licensed | shellwing cloud |
+| --- | --- | --- | --- |
+| Run by | The customer | The customer | The owner |
+| Users | Up to 3 (**Open**) | The license's tier, such as 10, 25, 50 (**Open**) | The plan's (**Open**) |
+| Features | All | All | All |
+
+**Open:** prices. The design is in the `hivepaas-portal` repository:
+`docs/superpowers/specs/2026-10-30-multi-product-design.md`.
 
 ## shellwing-server
 
-**One codebase.** shellwing cloud runs the same server, with billing turned on.
+**One codebase.** One public repository. shellwing cloud is the same server,
+which the owner runs, configured to sign in with the Wing account and read plans
+from the portal. It holds no payment code: buying happens at the portal.
 
-**Licensing.** This is open core in one repository:
+**Licensing.** The whole server is AGPL-3.0; the app stays GPL-3.0. Public code
+earns trust for a product that holds credentials, and anyone offering it as a
+service must publish their changes. As with HivePaaS, the limit is a fair-use
+gate, not DRM: the code is open, so anybody may remove it for their own use.
 
-- **The core is AGPL-3.0.** Public code earns trust for a product that holds
-  credentials. Anyone offering it as a service must publish their changes.
-- **Team features live in `ee/` under a commercial license**, as with GitLab EE or
-  Bitwarden. The source is visible, but use needs a valid license.
-- **Not FSL or BSL for the whole server.** Those allow modifying the code for
-  internal use, which includes removing the license check. That suits Sentry,
-  which sells its cloud, not self-hosted licenses.
+**License key.** Signed by the portal, with a key pair of this product's own,
+and carrying the customer, the number of users and the expiry.
 
-**License key.** A file signed with Ed25519 by the portal, carrying the
-organization, seats, features and expiry.
-
-- The server verifies it offline, so it works without internet access.
-- When the license expires, team features become read-only. People are never
-  locked out of their own credentials.
+- The server verifies it offline, so it works without internet access. Fetching
+  a renewed key from the portal is optional.
+- A limit only stops creating. Over the limit, or when a license ends, nobody is
+  removed or locked out of their own credentials, and every feature keeps
+  working.
 
 **Stack.**
 
