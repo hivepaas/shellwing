@@ -25,10 +25,13 @@ them up:
 
 The tests sign in each way and go through ProxyJump and ProxyCommand. They
 also cover SFTP, a local forward, agent forwarding and the shell's exit
-status. CI runs them on every pull request. Locally they need Docker and
-`ssh-keygen`. `SHELLWING_E2E_KEEP=1` leaves the servers running to look at,
-and `scripts/e2e_openssh.sh -- <filter>` runs some of the tests. Without the
-script's environment, `cargo test` skips them.
+status. Building the servers' images takes minutes, so CI runs them daily
+and when started by hand: Actions → OpenSSH e2e → Run workflow, or
+`gh workflow run openssh-e2e.yml --ref <branch>` (`-f filter=agent` for some
+of them). Locally they need Docker and `ssh-keygen`. `SHELLWING_E2E_KEEP=1`
+leaves the servers running to look at, and `scripts/e2e_openssh.sh -- <filter>`
+runs some of the tests. Without the script's environment, `cargo test` skips
+them.
 
 ## Toolchain (to build locally)
 
