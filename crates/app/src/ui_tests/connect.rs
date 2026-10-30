@@ -329,6 +329,72 @@ scenario!(
 );
 
 scenario!(
+    /// ProxyCommand as people write it for a bastion, with OpenSSH's own
+    /// client (`ssh -W %h:%p`): the bastion lets it in with a key, the target
+    /// is reached through it and asks for its password, and the connecting
+    /// line says what it went through.
+    proxy_command_through_openssh,
+    |ui| {
+        if std::process::Command::new("ssh").arg("-V").output().is_err() {
+            eprintln!("skipped: no OpenSSH client here");
+            return;
+        }
+        let (path, key) = key_file(ui, "id_bastion", None);
+        let bastion = ui.server(Policy {
+            key: Some(key.public_key().clone()),
+            forward: true,
+            ..Default::default()
+        });
+        let target = ui.server(Policy::password());
+        ui.trust(&target);
+        // None of this machine's ssh config, agent or known hosts.
+        let proxy = format!(
+            "ssh -F none -i \"{}\" -p {} -o BatchMode=yes -o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=no -o UserKnownHostsFile=\"{}\" -o LogLevel=ERROR -W %h:%p {USER}@127.0.0.1",
+            path.display(),
+            bastion.port,
+            ui.dir.join("bastion_known_hosts").display()
+        );
+        ui.ssh_config(&alias(
+            "inner",
+            target.port,
+            &format!("  ProxyCommand {proxy}\n"),
+        ));
+        ui.connect("inner");
+        ui.wait_for("through `ssh -F none");
+        ui.login();
+        assert!(
+            bastion.seen(|s| s.auth.contains(&"publickey:ok".to_string())),
+            "{:?}",
+            bastion.seen(|s| s.auth.clone())
+        );
+        assert_eq!(bastion.seen(|s| s.forwards.len()), 1);
+        assert_eq!(target.seen(|s| s.auth.clone()), ["password:ok"]);
+    }
+);
+
+scenario!(
+    /// A ProxyCommand that fails: the pane says what the command said, and
+    /// no server is asked anything.
+    proxy_command_that_fails_says_why,
+    |ui| {
+        // What it says (42) is not in the command, which the pane shows too.
+        let command = if cfg!(windows) {
+            r#"cmd.exe /c "echo tunnel 4^2 is down 1>&2 & exit 1""#
+        } else {
+            "sh -c 'echo tunnel 4''2 is down >&2; exit 1'"
+        };
+        ui.ssh_config(&alias(
+            "box",
+            crate::ui_tests::server::closed_port(),
+            &format!("  ProxyCommand {command}\n"),
+        ));
+        ui.connect("box");
+        ui.wait_for("failed: tunnel 42 is down");
+        assert!(!ui.screen().contains("password:"));
+    }
+);
+
+scenario!(
     /// A key, then a one-time code: the usual two-factor setup
     /// (`AuthenticationMethods publickey,keyboard-interactive`).
     key_then_one_time_code,

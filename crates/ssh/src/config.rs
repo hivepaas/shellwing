@@ -1,7 +1,7 @@
 //! Resolving a target through `~/.ssh/config`, as `ssh` would.
 //!
 //! `shellwing web` uses the `Host web` block: its `HostName`, `User`, `Port`,
-//! `IdentityFile`, `ProxyJump` and `ServerAliveInterval`. Values typed on the
+//! `IdentityFile`, `ProxyJump`, `ProxyCommand` and `ServerAliveInterval`. Values typed on the
 //! command line (`user@host:port`) win over the file, and the file wins over the
 //! defaults, matching OpenSSH's precedence.
 
@@ -35,6 +35,11 @@ pub struct Resolved {
     pub vault_key: Option<String>,
     /// Hosts to go through first, outermost first; each has no jumps of its own.
     pub jumps: Vec<Resolved>,
+    /// The command whose input and output carry the connection
+    /// (`ProxyCommand`), its `%` tokens not expanded yet. Used when this host
+    /// is the first one connected to, not through a jump host (as `ssh -J`
+    /// skips it there).
+    pub proxy_command: Option<String>,
     pub keepalive: Option<Duration>,
     /// Ports to forward, as `-L`, `-R` and `-D` options are written. Read when
     /// connecting, so one that is wrong is reported without stopping the rest.
@@ -56,6 +61,7 @@ impl Resolved {
             certificate_files: vec![],
             vault_key: None,
             jumps: vec![],
+            proxy_command: None,
             keepalive: None,
             forwards: vec![],
             forward_agent: false,
@@ -181,23 +187,37 @@ fn expand_tokens(path: &Path, host: &str, user: &str) -> PathBuf {
 /// Resolves `[user@]host[:port]` through the config file at `config` (none: defaults only).
 pub fn resolve(spec: &str, config: Option<&Path>) -> Result<Resolved, Error> {
     let cfg = load(config)?;
-    let mut r = resolve_with(&cfg, spec, &mut vec![])?;
+    let lines = config.filter(|p| p.exists()).map(scan).unwrap_or_default();
+    let mut r = resolve_with(&cfg, &lines, spec, &mut vec![])?;
     // The host's own forwards; jump hosts forward nothing, as with ssh -J.
-    if let Some(path) = config.filter(|p| p.exists()) {
-        r.forwards = forwards_for(path, &r.alias);
-    }
+    r.forwards = forwards_in(&lines, &r.alias);
     Ok(r)
 }
 
 /// How deep `Include`s may nest, as in OpenSSH.
 const MAX_INCLUDE: usize = 16;
 
-/// A line of a config file that forwarding depends on.
-enum ForwardLine {
+/// A line of a config file that the parsed config does not keep as ssh
+/// reads it.
+enum Line {
     /// `LocalForward`, `RemoteForward` or `DynamicForward`, as a `-L`/`-R`/`-D` spec.
     Forward(String),
     /// `ClearAllForwardings`.
     Clear(bool),
+    /// `ProxyCommand`, the rest of the line as written: it goes to a shell.
+    ProxyCommand(String),
+    /// `ProxyJump`: only where it comes, before or after a `ProxyCommand`.
+    ProxyJump,
+}
+
+/// The lines of a config file, each with the `Host` patterns it comes under:
+/// None before any `Host` (every host), Some(empty) under a `Match` (not
+/// read: no host).
+type Lines = Vec<(Option<Vec<String>>, Line)>;
+
+/// Whether a line under `under` applies to `alias`.
+fn applies(under: &Option<Vec<String>>, alias: &str) -> bool {
+    under.as_ref().is_none_or(|p| host_matches(p, alias))
 }
 
 /// Whether `host` matches a `Host` line's patterns: one of them does and
@@ -269,15 +289,14 @@ fn include_paths(arg: &str) -> Vec<PathBuf> {
     found
 }
 
-/// Reads the forwarding lines of the config file at `path` (and the files
-/// it includes), each with the `Host` patterns it comes under: None before
-/// any `Host` (every host), Some(empty) under a `Match` (not read: no host).
-fn scan_forwards(
-    path: &Path,
-    mut under: Option<Vec<String>>,
-    depth: usize,
-    out: &mut Vec<(Option<Vec<String>>, ForwardLine)>,
-) {
+/// The [`Line`]s of the config file at `path` and the files it includes.
+fn scan(path: &Path) -> Lines {
+    let mut lines = vec![];
+    scan_into(path, None, 0, &mut lines);
+    lines
+}
+
+fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mut Lines) {
     let Ok(text) = std::fs::read_to_string(path) else {
         return;
     };
@@ -304,7 +323,7 @@ fn scan_forwards(
             "include" if depth < MAX_INCLUDE => {
                 for a in &args {
                     for file in include_paths(a) {
-                        scan_forwards(&file, under.clone(), depth + 1, out);
+                        scan_into(&file, under.clone(), depth + 1, out);
                     }
                 }
             }
@@ -316,13 +335,17 @@ fn scan_forwards(
                 };
                 out.push((
                     under.clone(),
-                    ForwardLine::Forward(format!("{flag} {}", args.join(":"))),
+                    Line::Forward(format!("{flag} {}", args.join(":"))),
                 ));
             }
             "clearallforwardings" => out.push((
                 under.clone(),
-                ForwardLine::Clear(args.first().is_some_and(|a| a.eq_ignore_ascii_case("yes"))),
+                Line::Clear(args.first().is_some_and(|a| a.eq_ignore_ascii_case("yes"))),
             )),
+            "proxycommand" if !rest.is_empty() => {
+                out.push((under.clone(), Line::ProxyCommand(rest.to_string())));
+            }
+            "proxyjump" => out.push((under.clone(), Line::ProxyJump)),
             _ => {}
         }
     }
@@ -333,21 +356,21 @@ fn scan_forwards(
 /// that matches, in order, unless `ClearAllForwardings yes` comes first.
 /// (Not taken from the parsed config, which keeps only one of each.)
 pub fn forwards_for(path: &Path, alias: &str) -> Vec<String> {
-    let mut lines = vec![];
-    scan_forwards(path, None, 0, &mut lines);
-    let applies =
-        |under: &Option<Vec<String>>| under.as_ref().is_none_or(|p| host_matches(p, alias));
+    forwards_in(&scan(path), alias)
+}
+
+fn forwards_in(lines: &Lines, alias: &str) -> Vec<String> {
     let clear = lines.iter().find_map(|(under, l)| match l {
-        ForwardLine::Clear(on) if applies(under) => Some(*on),
+        Line::Clear(on) if applies(under, alias) => Some(*on),
         _ => None,
     });
     if clear == Some(true) {
         return vec![];
     }
     let mut out: Vec<String> = vec![];
-    for (under, l) in &lines {
-        if let ForwardLine::Forward(spec) = l
-            && applies(under)
+    for (under, l) in lines {
+        if let Line::Forward(spec) = l
+            && applies(under, alias)
             && !out.contains(spec)
         {
             out.push(spec.clone());
@@ -356,7 +379,12 @@ pub fn forwards_for(path: &Path, alias: &str) -> Vec<String> {
     out
 }
 
-fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<Resolved, Error> {
+fn resolve_with(
+    cfg: &SshConfig,
+    lines: &Lines,
+    spec: &str,
+    chain: &mut Vec<String>,
+) -> Result<Resolved, Error> {
     let (user, alias, port) = split(spec)?;
     if chain.contains(&alias) || chain.len() > MAX_JUMPS {
         return Err(Error::Config(format!(
@@ -384,14 +412,26 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         .map(|f| expand_tokens(f, &host, &user))
         .collect();
 
+    // The first ProxyJump or ProxyCommand for the host wins, as in OpenSSH;
+    // either one set to `none` turns both off (`ProxyCommand none` on a
+    // bastion that `Host *` would send through itself).
+    let first = lines.iter().find_map(|(under, l)| match l {
+        Line::ProxyCommand(_) | Line::ProxyJump if applies(under, &alias) => Some(l),
+        _ => None,
+    });
+    let proxy_command = match first {
+        Some(Line::ProxyCommand(c)) if c != "none" => Some(c.clone()),
+        _ => None,
+    };
     let mut jumps = vec![];
-    if let Some(list) = &p.proxy_jump
+    if !matches!(first, Some(Line::ProxyCommand(_)))
+        && let Some(list) = &p.proxy_jump
         && !(list.len() == 1 && list[0].eq_ignore_ascii_case("none"))
     {
         chain.push(alias.clone());
         for hop in list {
             // A jump host may itself be configured with a ProxyJump: flatten it.
-            let mut j = resolve_with(cfg, hop, chain)?;
+            let mut j = resolve_with(cfg, lines, hop, chain)?;
             jumps.append(&mut j.jumps);
             jumps.push(j);
         }
@@ -404,6 +444,7 @@ fn resolve_with(cfg: &SshConfig, spec: &str, chain: &mut Vec<String>) -> Result<
         certificate_files,
         vault_key: None,
         jumps,
+        proxy_command,
         keepalive: p.server_alive_interval,
         forwards: vec![],
         forward_agent: p.forward_agent.unwrap_or(false),
@@ -481,10 +522,12 @@ mod tests {
     }
 
     fn config(text: &str) -> PathBuf {
+        // A folder of its own for each, as tests run side by side.
+        static MADE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let dir = std::env::temp_dir().join(format!(
             "shellwing-cfg-{}-{}",
             std::process::id(),
-            text.len()
+            MADE.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
         ));
         std::fs::create_dir_all(&dir).expect("dir");
         let path = dir.join("config");
@@ -514,6 +557,61 @@ mod tests {
         );
         let r = resolve("root@web:22", Some(&cfg)).expect("resolve");
         assert_eq!((r.target.user.as_str(), r.target.port), ("root", 22));
+    }
+
+    #[test]
+    fn proxy_command_is_the_rest_of_the_line_as_written() {
+        let cfg = config(
+            "Host i-*\n  User ec2-user\n  ProxyCommand sh -c \"aws ssm start-session --target %h --parameters 'portNumber=%p'\"\nHost tunnel\n  ProxyCommand=cloudflared access ssh --hostname %h\n",
+        );
+        let r = resolve("i-0abc", Some(&cfg)).expect("resolve");
+        assert_eq!(
+            r.proxy_command.as_deref(),
+            Some("sh -c \"aws ssm start-session --target %h --parameters 'portNumber=%p'\"")
+        );
+        assert_eq!(r.target.user, "ec2-user");
+        assert!(r.jumps.is_empty());
+        let r = resolve("tunnel", Some(&cfg)).expect("resolve");
+        assert_eq!(
+            r.proxy_command.as_deref(),
+            Some("cloudflared access ssh --hostname %h")
+        );
+        assert_eq!(
+            resolve("other", Some(&cfg)).expect("resolve").proxy_command,
+            None
+        );
+    }
+
+    #[test]
+    fn the_first_of_proxy_jump_and_proxy_command_wins() {
+        let cfg = config(
+            "Host bastion\n  HostName bastion.example.com\n  ProxyCommand none\nHost web\n  ProxyCommand cloudflared access ssh --hostname %h\nHost app\n  ProxyJump edge\nHost edge\n  ProxyCommand nc %h %p\nHost *\n  ProxyJump bastion\n",
+        );
+        // `none` first: neither, though `Host *` would jump through itself.
+        let r = resolve("bastion", Some(&cfg)).expect("resolve");
+        assert_eq!((r.proxy_command, r.jumps.len()), (None, 0));
+        let r = resolve("web", Some(&cfg)).expect("resolve");
+        assert_eq!(
+            (r.proxy_command.as_deref(), r.jumps.len()),
+            (Some("cloudflared access ssh --hostname %h"), 0)
+        );
+        let r = resolve("db", Some(&cfg)).expect("resolve");
+        assert_eq!(r.proxy_command, None);
+        let hops: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
+        assert_eq!(hops, ["bastion"]);
+        assert_eq!(r.jumps[0].proxy_command, None);
+        // A jump host has its own: edge's command comes before `Host *`'s
+        // ProxyJump, which it skips.
+        let r = resolve("edge", Some(&cfg)).expect("resolve");
+        assert_eq!(
+            (r.proxy_command.as_deref(), r.jumps.len()),
+            (Some("nc %h %p"), 0)
+        );
+        let r = resolve("app", Some(&cfg)).expect("resolve");
+        assert_eq!(r.proxy_command, None);
+        let hops: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
+        assert_eq!(hops, ["edge"]);
+        assert_eq!(r.jumps[0].proxy_command.as_deref(), Some("nc %h %p"));
     }
 
     #[test]

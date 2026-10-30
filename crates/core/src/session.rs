@@ -48,7 +48,9 @@ pub const RETRY_BACKOFF_SECS: [u64; 6] = [1, 2, 4, 8, 16, 30];
 
 fn retryable(e: &Error) -> bool {
     match e {
-        Error::Ssh(_) | Error::Disconnected => true,
+        // A ProxyCommand is the way to the network: cloudflared or aws
+        // failing just after the laptop wakes is the network not back yet.
+        Error::Ssh(_) | Error::Disconnected | Error::Proxy { .. } => true,
         Error::Jump { source, .. } => retryable(source),
         _ => false,
     }
@@ -605,11 +607,18 @@ impl Session {
         self.held = Arc::downgrade(&held);
         let task = self.rt.spawn(async move {
             let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
-            let via = if via.is_empty() {
+            let mut via = if via.is_empty() {
                 String::new()
             } else {
                 format!(" via {}", via.join(", "))
             };
+            // The first host connected to may be reached through a command.
+            let first = resolved.jumps.first().unwrap_or(&resolved);
+            if let Some(command) = &first.proxy_command {
+                let command = shellwing_ssh::proxy::expand(command, first)
+                    .unwrap_or_else(|_| command.clone());
+                via.push_str(&format!(" through `{command}`"));
+            }
             status_line(&term, &format!("connecting to {}{via}…", resolved.target));
 
             // Questions from the connection are asked in the terminal.
@@ -767,6 +776,10 @@ mod tests {
             std::io::ErrorKind::ConnectionRefused,
         )));
         assert!(retryable(&io));
+        assert!(retryable(&Error::Proxy {
+            command: "cloudflared access ssh --hostname h".into(),
+            why: "failed to connect to the edge".into(),
+        }));
         assert!(retryable(&Error::Jump {
             host: "bastion".into(),
             source: Box::new(io),

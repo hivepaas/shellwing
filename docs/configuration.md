@@ -337,6 +337,31 @@ agent channel without it being asked for is refused.
 
 A user or port typed on the command line (`root@api1:22`) wins over the file.
 
+**Through a command (`ProxyCommand`).** A host whose block in `~/.ssh/config`
+has a `ProxyCommand` is reached through that command, as `ssh` reaches it: the
+command's input and output carry the connection. AWS Systems Manager
+(`aws ssm start-session`), Cloudflare Access (`cloudflared access ssh`) and
+`gcloud compute start-iap-tunnel` work this way.
+
+- `%h` (the host name), `%p` (the port), `%r` (the user), `%n` (the name as
+  given) and `%%` are replaced, as in `ssh`.
+- On macOS and Linux the command runs in your shell (`$SHELL -c "exec …"`), so
+  quotes, variables and pipes work. On Windows the first word is the program
+  and the rest of the line goes to it as written, as Windows' OpenSSH runs it.
+  On macOS, Homebrew's folders are added at the end of `PATH`, which apps
+  opened from the Finder do not get.
+- The first `ProxyJump` or `ProxyCommand` for a host wins, and either one set
+  to `none` turns both off, as in `ssh`: `ProxyCommand none` on a bastion keeps
+  a `ProxyJump` under `Host *` from sending it through itself.
+- A jump host can have one too: the first host connected to goes through the
+  command, the others through it.
+- A host here whose address has one in `~/.ssh/config` uses it, unless the host
+  lists jump hosts of its own. hosts.toml has no field for it, so it is not
+  synced: it comes from this computer's `~/.ssh/config`. A host copied or
+  imported from `~/.ssh/config` keeps its alias as its address for that.
+- When the command fails, the last line it wrote to its standard error, or its
+  exit status, says why. It is stopped when the connection ends.
+
 **Fields not used yet.** `tags` is read but has no effect yet (`id` and
 `local_only` are for sync, below). The `password` and `agent` methods of `auth`
 behave like the default for now: agent, then key files, then a password prompt,

@@ -100,7 +100,10 @@ fn from_host(
             jumps.push(j);
         }
         chain.pop();
+        // The entry's jump hosts replace how ~/.ssh/config reaches the
+        // address, a ProxyCommand too.
         r.jumps = jumps;
+        r.proxy_command = None;
     }
     Ok(r)
 }
@@ -198,6 +201,30 @@ mod tests {
         let (r, _) = resolve("v", &h, None).expect("resolve");
         assert_eq!(r.vault_key.as_deref(), Some("0192ab"));
         assert!(r.identity_files.is_empty() && r.keys_to_try().is_empty());
+    }
+
+    #[test]
+    fn the_entrys_jumps_replace_a_proxy_command() {
+        let dir = std::env::temp_dir().join(format!("shellwing-target-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ssh = dir.join("config");
+        std::fs::write(
+            &ssh,
+            "Host *.internal\n  ProxyCommand cloudflared access ssh --hostname %h\n",
+        )
+        .expect("config");
+        let h = hosts(
+            "[[host]]\nname = \"db\"\naddress = \"db.internal\"\n[[host]]\nname = \"via\"\naddress = \"db.internal\"\njump = [\"bastion.example.com\"]\n",
+        );
+        let (r, _) = resolve("db", &h, Some(&ssh)).expect("resolve");
+        assert_eq!(
+            r.proxy_command.as_deref(),
+            Some("cloudflared access ssh --hostname %h")
+        );
+        let (r, _) = resolve("via", &h, Some(&ssh)).expect("resolve");
+        assert_eq!(r.proxy_command, None);
+        assert_eq!(r.jumps.len(), 1);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -1,6 +1,6 @@
 //! End-to-end tests against an in-process russh server: host key questions,
 //! password retries, one-time codes, encrypted keys, cancelling, ProxyJump,
-//! port forwarding and SFTP (served by OpenSSH's sftp-server, where installed).
+//! ProxyCommand, port forwarding and SFTP (served by OpenSSH's sftp-server, where installed).
 //! Keys are generated at run time; nothing secret lives in the repository.
 
 use std::collections::HashMap;
@@ -907,6 +907,125 @@ async fn proxy_jump_checks_and_authenticates_each_hop() {
         })
         .collect();
     assert_eq!(targets, ["jumper@127.0.0.1", "alice@127.0.0.1"]);
+}
+
+/// A ProxyCommand that relays to 127.0.0.1 at the port `%p` stands for,
+/// where this system has one: nc on Unix, PowerShell on Windows.
+fn relay_command() -> Option<String> {
+    if cfg!(windows) {
+        return Some(
+            "powershell.exe -NoProfile -NonInteractive -Command \"$c = New-Object Net.Sockets.TcpClient('127.0.0.1', %p); $n = $c.GetStream(); $t = $n.CopyToAsync([Console]::OpenStandardOutput()); [Console]::OpenStandardInput().CopyTo($n)\"".into(),
+        );
+    }
+    let nc = std::process::Command::new("sh")
+        .args(["-c", "command -v nc"])
+        .output()
+        .is_ok_and(|o| o.status.success());
+    nc.then(|| "nc 127.0.0.1 %p".into())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_proxy_command_carries_the_connection_and_ends_with_it() {
+    let Some(relay) = relay_command() else {
+        eprintln!("skipped: no nc to relay with");
+        return;
+    };
+    let fx = Fixture::new("proxycmd");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let mut target = local(port, "alice");
+    // On Unix the command writes down its process, to see it stopped after.
+    let pid_file = fx.dir.join("pid");
+    target.proxy_command = Some(if cfg!(windows) {
+        relay
+    } else {
+        format!("sh -c 'echo $$ > \"{}\"; exec {relay}'", pid_file.display())
+    });
+    let (p, asked) = scripted(vec![Some("yes"), Some("pw")]);
+    connect(fx.options(target, p))
+        .await
+        .expect("connect through the command");
+    assert_eq!(kinds(&asked), ["hostkey", "password"]);
+    #[cfg(unix)]
+    {
+        let pid = std::fs::read_to_string(&pid_file).expect("pid");
+        assert!(
+            stops(&pid).await,
+            "the command still runs after the session ended"
+        );
+    }
+}
+
+/// Whether the process `pid` names still runs.
+#[cfg(unix)]
+async fn stops(pid: &str) -> bool {
+    for _ in 0..200 {
+        let running = std::process::Command::new("kill")
+            .args(["-0", pid.trim()])
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success());
+        if !running {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    false
+}
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_proxy_command_is_stopped_when_connecting_is_given_up() {
+    let fx = Fixture::new("proxyhang");
+    let pid_file = fx.dir.join("pid");
+    let mut target = local(22, "alice");
+    // Never answers, and never ends of itself.
+    target.proxy_command = Some(format!(
+        "sh -c 'echo $$ > \"{}\"; exec sleep 30'",
+        pid_file.display()
+    ));
+    let (p, _) = scripted(vec![]);
+    let given_up = tokio::time::timeout(Duration::from_millis(500), connect(fx.options(target, p)));
+    assert!(given_up.await.is_err(), "connected to nothing");
+    let pid = std::fs::read_to_string(&pid_file).expect("pid");
+    assert!(stops(&pid).await, "the command still runs");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_proxy_command_that_fails_says_why() {
+    let fx = Fixture::new("proxyfail");
+    for (command, said) in if cfg!(windows) {
+        [
+            (
+                r#"cmd.exe /c "echo no route to %h 1>&2 & exit 3""#,
+                "no route to 127.0.0.1",
+            ),
+            ("cmd.exe /c exit 3", "exit code: 3"),
+        ]
+    } else {
+        [
+            (
+                "sh -c 'echo no route to %h >&2; exit 3'",
+                "no route to 127.0.0.1",
+            ),
+            ("sh -c 'exit 3'", "exit status: 3"),
+        ]
+    } {
+        let mut target = local(22, "alice");
+        target.proxy_command = Some(command.into());
+        let (p, asked) = scripted(vec![]);
+        match connect(fx.options(target, p)).await {
+            Err(Error::Proxy { why, .. }) => assert_eq!(why, said, "{command}"),
+            other => panic!("{command}: expected the command's reason, got {other:?}"),
+        }
+        assert!(kinds(&asked).is_empty());
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]

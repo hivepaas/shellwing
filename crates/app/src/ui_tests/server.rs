@@ -495,6 +495,21 @@ pub fn closed_port() -> u16 {
     1
 }
 
+/// A ProxyCommand that relays to 127.0.0.1 at the port `%p` stands for:
+/// nc on Unix (None where it is missing), PowerShell on Windows.
+pub fn relay_command() -> Option<String> {
+    if cfg!(windows) {
+        return Some(
+            "powershell.exe -NoProfile -NonInteractive -Command \"$c = New-Object Net.Sockets.TcpClient('127.0.0.1', %p); $n = $c.GetStream(); $t = $n.CopyToAsync([Console]::OpenStandardOutput()); [Console]::OpenStandardInput().CopyTo($n)\"".into(),
+        );
+    }
+    let nc = std::process::Command::new("sh")
+        .args(["-c", "command -v nc"])
+        .output()
+        .is_ok_and(|o| o.status.success());
+    nc.then(|| "nc 127.0.0.1 %p".into())
+}
+
 /// A port that accepts connections but never says anything: an SSH server
 /// that hangs, or a firewall that swallows packets after the handshake.
 pub fn silent_port(rt: &tokio::runtime::Runtime) -> u16 {

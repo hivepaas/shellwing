@@ -157,12 +157,21 @@ fn host(lines: &[Line], name: &str, names: &[String]) -> Found {
             }
         }
     }
-    let address = first
-        .get("hostname")
-        .map(|h| h.replace("%h", name).replace("%%", "%"))
-        .unwrap_or_else(|| name.to_string());
-    let jump = match first.get("proxyjump") {
-        Some(j) if !j.eq_ignore_ascii_case("none") => j
+    // The first ProxyJump or ProxyCommand wins, and `none` turns both off,
+    // as in OpenSSH. hosts.toml has no ProxyCommand: a host reached through
+    // one keeps its name as its address, for ~/.ssh/config to give it.
+    let proxy = lines
+        .iter()
+        .filter(|l| applies(&l.within, name))
+        .find(|l| matches!(l.key.as_str(), "proxyjump" | "proxycommand"));
+    let address = match (proxy, first.get("hostname")) {
+        (Some(l), _) if l.key == "proxycommand" && l.value != "none" => name.to_string(),
+        (_, Some(h)) => h.replace("%h", name).replace("%%", "%"),
+        (_, None) => name.to_string(),
+    };
+    let jump = match proxy {
+        Some(l) if l.key == "proxyjump" && !l.value.eq_ignore_ascii_case("none") => l
+            .value
             .split(',')
             .map(str::trim)
             .filter(|j| !j.is_empty())
@@ -321,6 +330,25 @@ Host *
             }]
         );
         assert!(h[4].jump.is_empty(), "negated: *.prod is not for it");
+    }
+
+    #[test]
+    fn the_first_of_proxy_jump_and_proxy_command_wins() {
+        let h = hosts(
+            "Host bastion\n  HostName bastion.example.com\n  ProxyCommand none\nHost tunnel\n  HostName tunnel.internal\n  ProxyCommand cloudflared access ssh --hostname %h\nHost app\n  HostName 10.0.0.7\nHost *\n  ProxyJump bastion\n",
+        );
+        // `none` first: not through itself, as `Host *` would have it.
+        assert_eq!(
+            (h[0].address.as_str(), h[0].jump.as_slice()),
+            ("bastion.example.com", &[][..])
+        );
+        // Reached through ~/.ssh/config's command, by its name.
+        assert_eq!(
+            (h[1].address.as_str(), h[1].jump.as_slice()),
+            ("tunnel", &[][..])
+        );
+        assert_eq!(h[2].address, "10.0.0.7");
+        assert_eq!(h[2].jump, [Jump::Host("bastion".into())]);
     }
 
     #[test]
