@@ -84,6 +84,9 @@ fn from_host(
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
+        // That key only: an agent's others first could use up the server's
+        // tries (MaxAuthTries) before it, as IdentitiesOnly keeps them out.
+        r.identities_only = true;
         // `vault:<id>`: a key the app keeps; else a key file.
         match key.strip_prefix(VAULT_KEY) {
             Some(id) => r.vault_key = Some(id.to_string()),
@@ -159,6 +162,7 @@ mod tests {
         assert_eq!(r.alias, "api-1");
         assert_eq!(r.target.to_string(), "deploy@10.0.1.11:2222");
         assert_eq!(r.identity_files, [PathBuf::from("/keys/deploy")]);
+        assert!(r.identities_only);
         assert_eq!(r.forwards, ["-L 8080:localhost:80"]);
         assert!(r.forward_agent);
         assert_eq!(r.keepalive, Some(std::time::Duration::from_secs(10)));
@@ -200,6 +204,7 @@ mod tests {
         );
         let (r, _) = resolve("v", &h, None).expect("resolve");
         assert_eq!(r.vault_key.as_deref(), Some("0192ab"));
+        assert!(r.identities_only, "the agent's other keys first");
         assert!(r.identity_files.is_empty() && r.keys_to_try().is_empty());
     }
 

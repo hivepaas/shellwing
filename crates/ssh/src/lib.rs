@@ -102,7 +102,8 @@ pub struct Auth {
     pub agent: bool,
     /// Tried once before asking (scripts, benchmarks).
     pub password: Option<String>,
-    /// The agent's socket instead of `$SSH_AUTH_SOCK` (tests), for signing in
+    /// The agent's socket instead of the host's `IdentityAgent` or
+    /// `$SSH_AUTH_SOCK` (tests), for signing in
     /// and for forwarding.
     pub agent_socket: Option<PathBuf>,
 }
@@ -316,6 +317,11 @@ async fn open_hop(
     forward_agent: bool,
 ) -> Result<Handle<Checker>, Error> {
     let problem = Arc::new(Mutex::new(None));
+    // The agent the host's IdentityAgent names, unless one is given (tests).
+    let agent = match &opts.auth.agent_socket {
+        Some(socket) => config::IdentityAgent::At(socket.clone()),
+        None => hop.identity_agent.clone(),
+    };
     let checker = Checker {
         host: hop.target.host.clone(),
         port: hop.target.port,
@@ -325,7 +331,7 @@ async fn open_hop(
         problem: problem.clone(),
         routes,
         forward_agent,
-        agent_socket: opts.auth.agent_socket.clone(),
+        agent: agent.clone(),
     };
     let keepalive = hop
         .keepalive
@@ -393,6 +399,8 @@ async fn open_hop(
         &hop.certificate_files,
         auth::StoredKeys::of(hop),
         &opts.auth,
+        &agent,
+        hop.identities_only,
         opts.prompter.as_ref(),
         opts.secrets.as_deref(),
     )

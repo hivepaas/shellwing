@@ -400,15 +400,24 @@ async fn the_shells_exit_status_comes_back() {
     }
 }
 
-#[tokio::test(flavor = "multi_thread")]
-async fn the_agent_is_forwarded_when_asked_for() {
-    let lab = lab!();
-    if !has("ssh-agent") {
-        eprintln!("skipped: no ssh-agent");
-        return;
+/// An ssh-agent of the test's own, holding `keys` in that order; stopped
+/// when dropped.
+struct TestAgent {
+    sock: PathBuf,
+    child: std::process::Child,
+}
+
+impl Drop for TestAgent {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
     }
-    let sock = lab.scratch("agent.sock");
-    let mut agent = std::process::Command::new("ssh-agent")
+}
+
+fn start_agent(lab: &Lab, name: &str, keys: &[PathBuf]) -> TestAgent {
+    let sock = lab.scratch(&format!("{name}.sock"));
+    let _ = std::fs::remove_file(&sock);
+    let child = std::process::Command::new("ssh-agent")
         .arg("-D")
         .arg("-a")
         .arg(&sock)
@@ -419,24 +428,162 @@ async fn the_agent_is_forwarded_when_asked_for() {
         if sock.exists() {
             break;
         }
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        std::thread::sleep(Duration::from_millis(20));
     }
-    let added = std::process::Command::new("ssh-add")
-        .arg(lab.key("id_ecdsa"))
-        .env("SSH_AUTH_SOCK", &sock)
+    for key in keys {
+        let added = std::process::Command::new("ssh-add")
+            .arg(key)
+            .env("SSH_AUTH_SOCK", &sock)
+            .stderr(std::process::Stdio::null())
+            .status()
+            .expect("ssh-add");
+        assert!(added.success(), "ssh-add {}", key.display());
+    }
+    TestAgent { sock, child }
+}
+
+/// `n` keys no server knows, made once per run.
+fn decoys(lab: &Lab, n: usize) -> Vec<PathBuf> {
+    (0..n)
+        .map(|i| {
+            let path = lab.scratch(&format!("decoy{i}"));
+            if !path.exists() {
+                let made = std::process::Command::new("ssh-keygen")
+                    .args(["-q", "-t", "ed25519", "-N", "", "-C", "decoy", "-f"])
+                    .arg(&path)
+                    .status()
+                    .expect("ssh-keygen");
+                assert!(made.success());
+            }
+            path
+        })
+        .collect()
+}
+
+/// Signs in to the bastion as `lab`, which `config` (lines under its Host)
+/// describes, with OpenSSH's own client and with shellwing: whether
+/// OpenSSH got in, and how shellwing did.
+async fn both_sign_in(lab: &Lab, name: &str, config: &str) -> (bool, Result<(), Error>) {
+    let path = lab.scratch(&format!("{name}.ssh_config"));
+    std::fs::write(
+        &path,
+        format!(
+            "Host lab\n  HostName {}\n  Port {}\n  User {USER}\n{config}",
+            lab.bastion.host, lab.bastion.port
+        ),
+    )
+    .expect("ssh config");
+    let openssh = std::process::Command::new("ssh")
+        .arg("-F")
+        .arg(&path)
+        .args([
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+        ])
+        .arg(format!(
+            "UserKnownHostsFile={}",
+            lab.dir.join("known_hosts").display()
+        ))
+        .args(["lab", "true"])
+        .stdin(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
-        .expect("ssh-add");
-    assert!(added.success());
+        .is_ok_and(|s| s.success());
+    let resolved = shellwing_ssh::config::resolve("lab", Some(&path)).expect("resolve");
+    let mut opts = lab.options(resolved);
+    // As the app signs in: the agent first.
+    opts.auth.agent = true;
+    (openssh, open(opts).await.map(|_| ()))
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn agent_keys_are_offered_as_openssh_offers_them() {
+    let lab = lab!();
+    if !has("ssh-agent") || !has("ssh") {
+        eprintln!("skipped: no OpenSSH client or ssh-agent");
+        return;
+    }
+    // Seven keys the server does not know: more than its MaxAuthTries (6).
+    let decoys = decoys(&lab, 7);
+    let mut held = decoys.clone();
+    held.push(lab.key("id_ed25519"));
+    // The right key last, after the seven; and an agent with only the seven.
+    let crowded = start_agent(&lab, "crowded", &held);
+    let others = start_agent(&lab, "others", &decoys);
+    let agent = |a: &TestAgent| format!("  IdentityAgent \"{}\"\n", a.sock.display());
+    // The key's .pub alone, as 1Password and Secretive have it.
+    let named = format!("  IdentityFile {}\n", lab.key("id_ed25519.pub").display());
+    let on_disk = format!("  IdentityFile {}\n", lab.key("id_rsa").display());
+    let only = "  IdentitiesOnly yes\n";
+    let cases = [
+        (
+            "the agent's key IdentityFile names goes first",
+            format!("{}{named}", agent(&crowded)),
+            true,
+        ),
+        (
+            "the agent's other keys use up the tries before a key file",
+            format!("{}{on_disk}", agent(&others)),
+            false,
+        ),
+        (
+            "IdentitiesOnly keeps the agent's other keys out",
+            format!("{}{on_disk}{only}", agent(&others)),
+            true,
+        ),
+        (
+            "IdentitiesOnly with the agent's key named",
+            format!("{}{named}{only}", agent(&crowded)),
+            true,
+        ),
+        (
+            "IdentityAgent none: no agent to sign with",
+            format!("  IdentityAgent none\n{named}"),
+            false,
+        ),
+    ];
+    for (i, (what, config, gets_in)) in cases.iter().enumerate() {
+        let (openssh, ours) = both_sign_in(&lab, &format!("agent{i}"), config).await;
+        assert_eq!(openssh, *gets_in, "OpenSSH, {what}");
+        assert_eq!(ours.is_ok(), *gets_in, "shellwing, {what}: {ours:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_agent_is_forwarded_when_asked_for() {
+    let lab = lab!();
+    if !has("ssh-agent") {
+        eprintln!("skipped: no ssh-agent");
+        return;
+    }
+    let agent = start_agent(&lab, "forwarded", &[lab.key("id_ecdsa")]);
     for host in &lab.targets {
         let mut r = lab.behind(host, Some("id_ed25519"));
         r.forward_agent = true;
         let mut opts = lab.options(r);
-        opts.auth.agent_socket = Some(sock.clone());
+        opts.auth.agent_socket = Some(agent.sock.clone());
         let shell = open_or_fail(opts, host).await;
         shell.session.write(b"ssh-add -l\n".to_vec());
         shell.wait_for("shellwing-e2e-id_ecdsa").await;
     }
-    let _ = agent.kill();
-    let _ = agent.wait();
+    // The agent IdentityAgent names is the one forwarded, as in ssh.
+    let path = lab.scratch("forward.ssh_config");
+    std::fs::write(
+        &path,
+        format!(
+            "Host lab\n  HostName {}\n  Port {}\n  User {USER}\n  IdentityFile {}\n  IdentityAgent \"{}\"\n  ForwardAgent yes\n",
+            lab.bastion.host,
+            lab.bastion.port,
+            lab.key("id_ed25519").display(),
+            agent.sock.display()
+        ),
+    )
+    .expect("ssh config");
+    let resolved = shellwing_ssh::config::resolve("lab", Some(&path)).expect("resolve");
+    let shell = open_or_fail(lab.options(resolved), "the bastion").await;
+    shell.session.write(b"ssh-add -l\n".to_vec());
+    shell.wait_for("shellwing-e2e-id_ecdsa").await;
 }

@@ -993,7 +993,23 @@ from then on. That writes `key = "vault:<id>"` in its `auth`, and the host
 editor offers the same choice.
 
 Hosts set to sign in automatically try the agent, then `~/.ssh`, then every key
-in the vault, then a password. A host that names a key offers only that key.
+in the vault, then a password. A host that names a key offers only that key,
+whatever else the agent holds.
+
+**The agent and `~/.ssh/config`, as `ssh` reads them:**
+
+- **`IdentityAgent` picks the agent.** It can be a socket of its own: 1Password,
+  Secretive and Bitwarden have theirs named so, and an app opened from the
+  Finder never sees an `SSH_AUTH_SOCK` set in a shell's profile. On Windows it
+  can be a named pipe. `none` means no agent. `SSH_AUTH_SOCK` and `$NAME` read
+  the socket's path from that variable.
+- **The agent's keys go first.** Those an `IdentityFile` names come before the
+  others. That `IdentityFile` can be the key's `.pub` alone, with its private
+  half in the agent.
+- **`IdentitiesOnly yes` keeps the agent's other keys out.** A server lets only
+  so many keys be tried (`MaxAuthTries`, 6 by default). With more keys than
+  that in the agent, name the one to use and set `IdentitiesOnly yes`, as in
+  `ssh`.
 
 ## Syncing passwords between devices
 
