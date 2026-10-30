@@ -352,6 +352,9 @@ tc0567af7 = Secondes, de 0 à 3600 (0 : aucun).
 # A host cannot jump through itself.
 t272071b9 = Un serveur ne peut pas passer par lui-même.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Des serveurs intermédiaires ou une commande : l'un ou l'autre, pas les deux.
+
 # new key
 t2aaac45a = nouvelle clé
 
@@ -480,6 +483,12 @@ tfc8a9b1f = Passer par, dans l'ordre
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter ajoute ce que vous avez saisi · Esc arrête l'ajout
+
+# Or through a command
+t7ba76a07 = Ou par une commande
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Son entrée et sa sortie portent la connexion, comme ProxyCommand de ssh : %h, %p, %r et %n sont le serveur, le port, l'utilisateur et le nom. Elle s'exécute sur les ordinateurs, pas sur les téléphones.
 
 # + Add forward
 tcfdf6ef4 = + Ajouter une redirection

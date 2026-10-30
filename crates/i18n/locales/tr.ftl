@@ -352,6 +352,9 @@ tc0567af7 = Saniye, 0 ile 3600 arası (0: yok).
 # A host cannot jump through itself.
 t272071b9 = Bir ana makine kendi üzerinden atlayamaz.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Atlama ana makineleri veya bir komut: ikisinden biri, ikisi birden değil.
+
 # new key
 t2aaac45a = yeni anahtar
 
@@ -480,6 +483,12 @@ tfc8a9b1f = Sırayla bunların üzerinden atla
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter yazdığınızı ekler · Esc eklemeyi bırakır
+
+# Or through a command
+t7ba76a07 = Veya bir komut üzerinden
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Girdisi ve çıktısı bağlantıyı taşır, ssh'nin ProxyCommand'ı gibi: %h, %p, %r ve %n ana makine, bağlantı noktası, kullanıcı ve addır. Bilgisayarlarda çalışır, telefonlarda çalışmaz.
 
 # + Add forward
 tcfdf6ef4 = + Yönlendirme ekle

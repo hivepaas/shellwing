@@ -340,6 +340,9 @@ tc0567af7 = 秒数，0 到 3600（0：不启用）。
 # A host cannot jump through itself.
 t272071b9 = 主机不能通过自身跳转。
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = 跳板或命令只能选其一，不能同时使用。
+
 # new key
 t2aaac45a = 新密钥
 
@@ -468,6 +471,12 @@ tfc8a9b1f = 依次经由以下跳板
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter 添加输入内容 · Esc 停止添加
+
+# Or through a command
+t7ba76a07 = 或经由命令
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = 命令的输入和输出承载连接，如同 ssh 的 ProxyCommand：%h、%p、%r 和 %n 分别是主机、端口、用户和名称。在电脑上运行，手机上无法运行。
 
 # + Add forward
 tcfdf6ef4 = + 添加转发

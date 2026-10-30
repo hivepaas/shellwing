@@ -47,6 +47,7 @@ impl Host {
                 f.insert(key.into(), serde_json::to_string(list).unwrap_or_default());
             }
         }
+        put(&mut f, "proxy_command", self.proxy_command.as_deref());
         if self.auth.method != AuthMethod::Auto {
             f.insert("auth_method".into(), method_name(self.auth.method).into());
         }
@@ -237,6 +238,7 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_str(t, "color", g("color"));
     changed |= set_flag(t, "favorite", g("favorite") == Some("true"));
     changed |= set_str(t, "run", g("run"));
+    changed |= set_str(t, "proxy_command", g("proxy_command"));
     changed |= set_bool(t, "log", g("log"));
     changed
 }
@@ -555,6 +557,7 @@ local_only = true
             group: None,
             tags: vec![],
             jump: vec![],
+            proxy_command: Some("cloudflared access ssh --hostname %h".into()),
             forward: vec!["-L 6379:localhost:6379".into()],
             auth: Default::default(),
             theme: None,
@@ -593,6 +596,10 @@ local_only = true
             (Some("pink"), true, Some("cd ~/apps && ls"))
         );
         assert_eq!(cache.log, Some(false), "false is kept, not left out");
+        assert_eq!(
+            cache.proxy_command.as_deref(),
+            Some("cloudflared access ssh --hostname %h")
+        );
 
         assert!(delete_host(&mut doc, "h9"));
         assert!(!delete_host(&mut doc, "h9"));

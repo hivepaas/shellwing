@@ -340,6 +340,9 @@ tc0567af7 = Số giây, từ 0 đến 3600 (0: không dùng).
 # A host cannot jump through itself.
 t272071b9 = Máy chủ không thể nhảy qua chính nó.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Máy chủ trung gian hoặc một lệnh: chọn một, không dùng cả hai.
+
 # new key
 t2aaac45a = khoá mới
 
@@ -468,6 +471,12 @@ tfc8a9b1f = Nhảy qua, theo thứ tự
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter để thêm điều đã gõ · Esc để thôi thêm
+
+# Or through a command
+t7ba76a07 = Hoặc đi qua một lệnh
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Đầu vào và đầu ra của lệnh mang kết nối, như ProxyCommand của ssh: %h, %p, %r và %n là máy chủ, cổng, người dùng và tên. Lệnh chạy trên máy tính, không chạy trên điện thoại.
 
 # + Add forward
 tcfdf6ef4 = + Thêm chuyển tiếp

@@ -340,6 +340,9 @@ tc0567af7 = 초 단위, 0~3600 (0: 없음).
 # A host cannot jump through itself.
 t272071b9 = 호스트는 자기 자신을 경유할 수 없습니다.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = 경유 호스트와 명령 중 하나만 사용할 수 있습니다.
+
 # new key
 t2aaac45a = 새 키
 
@@ -468,6 +471,12 @@ tfc8a9b1f = 순서대로 경유
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter: 입력한 항목 추가 · Esc: 추가 중지
+
+# Or through a command
+t7ba76a07 = 또는 명령을 통해
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = ssh의 ProxyCommand처럼 명령의 입출력이 연결을 전달합니다. %h, %p, %r, %n은 호스트, 포트, 사용자, 이름입니다. 컴퓨터에서 실행되며 휴대폰에서는 실행되지 않습니다.
 
 # + Add forward
 tcfdf6ef4 = + 포워딩 추가

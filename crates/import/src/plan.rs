@@ -189,6 +189,7 @@ fn host_of(f: &Found, name: &str, tag: &str) -> Host {
         group: (!f.folder.is_empty()).then(|| f.folder.join(" / ")),
         tags: vec![tag.to_string()],
         jump: vec![],
+        proxy_command: f.proxy_command.clone(),
         forward: f.forward.clone(),
         auth: match &f.key {
             Some(k) => Auth {

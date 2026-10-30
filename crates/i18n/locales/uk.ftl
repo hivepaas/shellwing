@@ -358,6 +358,9 @@ tc0567af7 = Секунди, від 0 до 3600 (0: вимкнено).
 # A host cannot jump through itself.
 t272071b9 = Хост не може бути проміжним для самого себе.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Проміжні хости або команда: щось одне, не обидва.
+
 # new key
 t2aaac45a = новий ключ
 
@@ -486,6 +489,12 @@ tfc8a9b1f = Через проміжні хости, по черзі
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter додає введене · Esc завершує додавання
+
+# Or through a command
+t7ba76a07 = Або через команду
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Її ввід і вивід несуть з'єднання, як ProxyCommand у ssh: %h, %p, %r і %n — це хост, порт, користувач та ім'я. Працює на комп'ютерах, не на телефонах.
 
 # + Add forward
 tcfdf6ef4 = + Додати переадресацію
