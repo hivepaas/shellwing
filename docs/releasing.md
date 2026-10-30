@@ -175,7 +175,7 @@ On a real Mac:
 
 **Linux:**
 
-- The AppImage runs (`--version`), the `.deb` names the version and installs under
+- The AppImage runs (`--help`), the `.deb` names the version and installs under
   `/opt/shellwing`.
 - X11 forwarding with `DISPLAY=:0`, on the desktop's X server. GNOME under Wayland
   has no SECURITY extension, so *Untrusted* says why it cannot, and *Trusted* works.
