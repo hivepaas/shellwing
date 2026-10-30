@@ -93,6 +93,7 @@ enum Field {
     User,
     Key,
     Jump,
+    Proxy,
     Forward,
     Keepalive,
 }
@@ -109,6 +110,7 @@ struct Inputs {
     forward: Entity<TextInput>,
     keepalive: Entity<TextInput>,
     run: Entity<TextInput>,
+    proxy: Entity<TextInput>,
     new_group: Entity<TextInput>,
 }
 
@@ -189,6 +191,7 @@ impl HostEditor {
             forward: input(cx, || "-L 8080:localhost:80".to_string()),
             keepalive: input(cx, move || keepalive.clone()),
             run: input(cx, || "cd ~/apps && exec $SHELL -l".to_string()),
+            proxy: input(cx, || "cloudflared access ssh --hostname %h".to_string()),
             new_group: input(cx, || tr!("Staging")),
         };
         HostEditor {
@@ -276,6 +279,7 @@ impl HostEditor {
         self.host_key = h.host_key;
         self.log = h.log;
         self.set(&i.run, h.run.as_deref().unwrap_or(""), cx);
+        self.set(&i.proxy, h.proxy_command.as_deref().unwrap_or(""), cx);
         self.color = h.color.clone();
         self.favorite = h.favorite;
         self.method = h.auth.method;
@@ -314,6 +318,7 @@ impl HostEditor {
             },
             tags,
             jump: self.jumps.clone(),
+            proxy_command: opt(self.text(&i.proxy, cx)),
             forward: self.forwards.clone(),
             auth: Auth {
                 method: self.method,
@@ -395,6 +400,12 @@ impl HostEditor {
         }
         if host.jump.contains(&host.name) {
             problems.push((Field::Jump, tr!("A host cannot jump through itself.")));
+        }
+        if !host.jump.is_empty() && host.proxy_command.is_some() {
+            problems.push((
+                Field::Proxy,
+                tr!("Jump hosts or a command: one of them, not both."),
+            ));
         }
         self.problems = problems;
         self.problems.is_empty().then_some(host)
@@ -569,6 +580,7 @@ impl HostEditor {
             group: None,
             tags: vec![],
             jump: vec![],
+            proxy_command: None,
             forward: vec![],
             auth: Auth::default(),
             theme: None,
@@ -584,11 +596,8 @@ impl HostEditor {
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
             host.keepalive = r.keepalive.map(|k| k.as_secs());
-            // hosts.toml has no ProxyCommand: a host reached through one keeps
-            // the alias as its address, for ~/.ssh/config to give it.
-            if r.proxy_command.is_none() {
-                host.address = r.target.host.clone();
-            }
+            host.address = r.target.host.clone();
+            host.proxy_command = r.proxy_command.clone();
             host.port = (r.target.port != 22).then_some(r.target.port);
             // Your own login name is what ssh uses anyway; written out, it would
             // be wrong on a device where you are someone else.
@@ -678,6 +687,7 @@ impl HostEditor {
         if self.adding_jump {
             order.push(&i.jump);
         }
+        order.push(&i.proxy);
         if self.adding_forward {
             order.push(&i.forward);
         }
@@ -1519,6 +1529,21 @@ impl Render for HostEditor {
                 )));
         }
         if let Some(p) = self.problem(Field::Jump) {
+            route = route.child(problem_text(p));
+        }
+        route = route
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .child(label_text(&tr!("Or through a command")))
+                    .child(self.input_box(&i.proxy, self.problem(Field::Proxy).is_some(), window, cx)),
+            )
+            .child(hint_text(&tr!(
+                "Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones."
+            )));
+        if let Some(p) = self.problem(Field::Proxy) {
             route = route.child(problem_text(p));
         }
 

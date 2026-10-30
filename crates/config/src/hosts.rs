@@ -45,6 +45,11 @@ pub struct Host {
     /// aliases from `~/.ssh/config`.
     #[serde(default)]
     pub jump: Vec<String>,
+    /// Or a command whose input and output carry the connection, as ssh's
+    /// `ProxyCommand` (`%h`, `%p`, `%r`, `%n`, `%%`). Not with `jump`, which
+    /// wins. It runs on computers, not phones.
+    #[serde(default)]
+    pub proxy_command: Option<String>,
     /// Ports to forward while connected, written as ssh's options:
     /// `-L 8080:localhost:80`, `-R 9000:localhost:3000`, `-D 1080`.
     #[serde(default)]

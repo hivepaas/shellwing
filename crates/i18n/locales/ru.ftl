@@ -358,6 +358,9 @@ tc0567af7 = Секунды, от 0 до 3600 (0: нет).
 # A host cannot jump through itself.
 t272071b9 = Хост не может быть промежуточным для самого себя.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Промежуточные хосты или команда: что-то одно, не оба сразу.
+
 # new key
 t2aaac45a = новый ключ
 
@@ -486,6 +489,12 @@ tfc8a9b1f = Через промежуточные хосты, по порядк�
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter добавляет введённое · Esc завершает добавление
+
+# Or through a command
+t7ba76a07 = Или через команду
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Её ввод и вывод несут соединение, как ProxyCommand в ssh: %h, %p, %r и %n — это хост, порт, пользователь и имя. Работает на компьютерах, не на телефонах.
 
 # + Add forward
 tcfdf6ef4 = + Добавить проброс

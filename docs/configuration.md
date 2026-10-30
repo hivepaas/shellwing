@@ -293,6 +293,7 @@ port = 2222                 # default 22
 user = "deploy"             # default: from ~/.ssh/config, else your login name
 group = "Production"
 jump = ["bastion"]          # outermost first: hosts here or ~/.ssh/config aliases
+# proxy_command = "cloudflared access ssh --hostname %h"   # or a command instead of jump
 forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
 auth = { method = "key", key = "~/.ssh/deploy_ed25519" }   # or "vault:<id>": a key the app keeps
 theme = "nord"              # beats the group's and config.toml's theme
@@ -355,10 +356,14 @@ command's input and output carry the connection. AWS Systems Manager
   a `ProxyJump` under `Host *` from sending it through itself.
 - A jump host can have one too: the first host connected to goes through the
   command, the others through it.
-- A host here whose address has one in `~/.ssh/config` uses it, unless the host
-  lists jump hosts of its own. hosts.toml has no field for it, so it is not
-  synced: it comes from this computer's `~/.ssh/config`. A host copied or
-  imported from `~/.ssh/config` keeps its alias as its address for that.
+- A host here can have its own: `proxy_command` in hosts.toml, or *Or through
+  a command* under Route in the host editor. It is synced with the host, and
+  replaces what `~/.ssh/config` says about the address. So do the host's jump
+  hosts, which win if a file has both; the editor refuses both. A host copied
+  or imported from `~/.ssh/config` brings its command along. Without one of
+  its own, a host uses what `~/.ssh/config` has for its address.
+- Phones do not run commands: a host with one says so there and does not
+  connect. The phone apps keep the command when they save the host.
 - When the command fails, the last line it wrote to its standard error, or its
   exit status, says why. It is stopped when the connection ends.
 

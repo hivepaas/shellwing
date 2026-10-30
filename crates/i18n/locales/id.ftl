@@ -349,6 +349,9 @@ tc0567af7 = Detik, 0 sampai 3600 (0: tidak ada).
 # A host cannot jump through itself.
 t272071b9 = Host tidak dapat melompat melalui dirinya sendiri.
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = Host lompatan atau perintah: salah satu saja, tidak keduanya.
+
 # new key
 t2aaac45a = kunci baru
 
@@ -477,6 +480,12 @@ tfc8a9b1f = Lompat melalui, berurutan
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter menambahkan yang Anda ketik · Esc berhenti menambahkan
+
+# Or through a command
+t7ba76a07 = Atau melalui perintah
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = Masukan dan keluarannya membawa koneksi, seperti ProxyCommand milik ssh: %h, %p, %r, dan %n adalah host, port, pengguna, dan nama. Berjalan di komputer, bukan di ponsel.
 
 # + Add forward
 tcfdf6ef4 = + Tambah penerusan

@@ -23,6 +23,8 @@ struct Line {
     within: For,
     key: String,
     value: String,
+    /// The value as written, its quotes kept: what a ProxyCommand runs.
+    raw: String,
 }
 
 /// The config at `path`, its `Include`s read from beside it.
@@ -102,12 +104,12 @@ fn parse(
             .find(|c: char| c.is_whitespace() || c == '=')
             .unwrap_or(line.len());
         let key = line[..split].to_ascii_lowercase();
-        let value = line[split..]
+        let written = line[split..]
             .trim_start()
             .trim_start_matches('=')
             .trim()
-            .trim_matches('"')
             .to_string();
+        let value = written.trim_matches('"').to_string();
         match key.as_str() {
             "host" => {
                 within = For::Hosts(value.split_whitespace().map(str::to_string).collect());
@@ -115,6 +117,7 @@ fn parse(
                     within: For::None,
                     key,
                     value,
+                    raw: written,
                 });
             }
             "match" => within = For::None,
@@ -129,6 +132,7 @@ fn parse(
                 within: within.clone(),
                 key,
                 value,
+                raw: written,
             }),
         }
     }
@@ -158,17 +162,18 @@ fn host(lines: &[Line], name: &str, names: &[String]) -> Found {
         }
     }
     // The first ProxyJump or ProxyCommand wins, and `none` turns both off,
-    // as in OpenSSH. hosts.toml has no ProxyCommand: a host reached through
-    // one keeps its name as its address, for ~/.ssh/config to give it.
+    // as in OpenSSH.
     let proxy = lines
         .iter()
         .filter(|l| applies(&l.within, name))
         .find(|l| matches!(l.key.as_str(), "proxyjump" | "proxycommand"));
-    let address = match (proxy, first.get("hostname")) {
-        (Some(l), _) if l.key == "proxycommand" && l.value != "none" => name.to_string(),
-        (_, Some(h)) => h.replace("%h", name).replace("%%", "%"),
-        (_, None) => name.to_string(),
-    };
+    let proxy_command = proxy
+        .filter(|l| l.key == "proxycommand" && l.raw != "none")
+        .map(|l| l.raw.clone());
+    let address = first
+        .get("hostname")
+        .map(|h| h.replace("%h", name).replace("%%", "%"))
+        .unwrap_or_else(|| name.to_string());
     let jump = match proxy {
         Some(l) if l.key == "proxyjump" && !l.value.eq_ignore_ascii_case("none") => l
             .value
@@ -198,6 +203,7 @@ fn host(lines: &[Line], name: &str, names: &[String]) -> Found {
             .get("forwardagent")
             .is_some_and(|v| !matches!(v.to_ascii_lowercase().as_str(), "no" | "false")),
         jump,
+        proxy_command,
         forward,
         ..Found::default()
     }
@@ -342,11 +348,16 @@ Host *
             (h[0].address.as_str(), h[0].jump.as_slice()),
             ("bastion.example.com", &[][..])
         );
-        // Reached through ~/.ssh/config's command, by its name.
+        // Its command comes along, as written.
         assert_eq!(
             (h[1].address.as_str(), h[1].jump.as_slice()),
-            ("tunnel", &[][..])
+            ("tunnel.internal", &[][..])
         );
+        assert_eq!(
+            h[1].proxy_command.as_deref(),
+            Some("cloudflared access ssh --hostname %h")
+        );
+        assert_eq!(h[0].proxy_command, None, "ProxyCommand none");
         assert_eq!(h[2].address, "10.0.0.7");
         assert_eq!(h[2].jump, [Jump::Host("bastion".into())]);
     }

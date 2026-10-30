@@ -521,6 +521,7 @@ fn new_host(address: &str) -> Host {
         group: None,
         tags: vec![],
         jump: vec![],
+        proxy_command: None,
         forward: vec![],
         auth: Auth::default(),
         theme: None,

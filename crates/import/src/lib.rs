@@ -74,6 +74,8 @@ pub struct Found {
     pub forward_agent: bool,
     /// Hosts to go through first, outermost first.
     pub jump: Vec<Jump>,
+    /// The command it is reached through (`ProxyCommand`), as written.
+    pub proxy_command: Option<String>,
     /// Forwards as `ssh` writes them: `-L 8080:localhost:80`, `-R …`, `-D 1080`.
     pub forward: Vec<String>,
     /// `#rrggbb`.

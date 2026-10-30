@@ -110,6 +110,12 @@ fn from_host(
         // address, a ProxyCommand too.
         r.jumps = jumps;
         r.proxy_command = None;
+    } else if let Some(command) = h.proxy_command.as_deref().map(str::trim)
+        && !command.is_empty()
+    {
+        // Or its own command, which replaces them as well.
+        r.proxy_command = Some(command.to_string());
+        r.jumps.clear();
     }
     Ok(r)
 }
@@ -252,6 +258,28 @@ mod tests {
         );
         let (r, _) = resolve("b", &h, Some(&ssh)).expect("resolve");
         assert_eq!(r.host_key, Some(HostKeyPolicy::Strict));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_entrys_own_command_replaces_the_route_and_jumps_win() {
+        let dir = std::env::temp_dir().join(format!("shellwing-proxyentry-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ssh = dir.join("config");
+        std::fs::write(&ssh, "Host *.internal\n  ProxyJump bastion.example.com\n").expect("config");
+        let h = hosts(
+            "[[host]]\nname = \"db\"\naddress = \"db.internal\"\nproxy_command = \"cloudflared access ssh --hostname %h\"\n[[host]]\nname = \"both\"\naddress = \"x.example\"\njump = [\"edge.example\"]\nproxy_command = \"nc %h %p\"\n[[host]]\nname = \"blank\"\naddress = \"y.internal\"\nproxy_command = \"  \"\n",
+        );
+        let (r, _) = resolve("db", &h, Some(&ssh)).expect("resolve");
+        assert_eq!(
+            r.proxy_command.as_deref(),
+            Some("cloudflared access ssh --hostname %h")
+        );
+        assert!(r.jumps.is_empty(), "the ssh config's ProxyJump is replaced");
+        let (r, _) = resolve("both", &h, Some(&ssh)).expect("resolve");
+        assert_eq!((r.proxy_command, r.jumps.len()), (None, 1), "jump wins");
+        let (r, _) = resolve("blank", &h, Some(&ssh)).expect("resolve");
+        assert_eq!((r.proxy_command, r.jumps.len()), (None, 1), "blank: none");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

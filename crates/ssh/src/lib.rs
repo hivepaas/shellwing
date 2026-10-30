@@ -387,6 +387,13 @@ async fn open_hop(
     let stream = match (via, &hop.proxy_command) {
         (None, Some(command)) => {
             let command = proxy::expand(command, hop)?;
+            // A phone runs no other program: the host is for a computer.
+            if cfg!(any(target_os = "ios", target_os = "android")) {
+                return Err(Error::Proxy {
+                    command,
+                    why: "commands run on computers, not phones; connect from a computer".into(),
+                });
+            }
             let (stream, said) = proxy::start(&command).map_err(|e| Error::Proxy {
                 command: command.clone(),
                 why: e.to_string(),

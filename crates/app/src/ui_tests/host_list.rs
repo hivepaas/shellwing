@@ -380,8 +380,8 @@ scenario!(
 
 scenario!(
     /// A host ~/.ssh/config reaches through a ProxyCommand, copied to
-    /// hosts.toml: the copy keeps the alias as its address, so it still goes
-    /// through the command (hosts.toml has no place for one).
+    /// hosts.toml: the command comes along, beside the real address, and the
+    /// copy goes through it.
     host_copied_with_its_proxy_command,
     |ui| {
         let Some(relay) = crate::ui_tests::server::relay_command() else {
@@ -399,10 +399,57 @@ scenario!(
         ui.click("ssh-copy");
         save_host(ui);
         let hosts = ui.hosts_toml();
-        assert!(hosts.contains("address = \"tunnel\""), "{hosts}");
+        assert!(hosts.contains("address = \"127.0.0.1\""), "{hosts}");
+        assert!(hosts.contains("proxy_command = "), "{hosts}");
         ui.click("host:tunnel");
         ui.wait_for("through `");
         ui.login();
+    }
+);
+
+scenario!(
+    /// A command typed into the host editor (Route, under the jump hosts):
+    /// saved to hosts.toml, and the host goes through it.
+    proxy_command_typed_in_the_host_editor,
+    |ui| {
+        let Some(relay) = crate::ui_tests::server::relay_command() else {
+            eprintln!("skipped: no nc to relay with");
+            return;
+        };
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        edit_host(ui, "web");
+        ui.keys("tab tab tab tab tab"); // alias, address, port, user, to the command
+        ui.type_text(&relay);
+        save_host(ui);
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("proxy_command = "), "{hosts}");
+        ui.click("host:web");
+        ui.wait_for("through `");
+        ui.login();
+        assert_eq!(server.seen(|s| s.connections), 1);
+    }
+);
+
+scenario!(
+    /// Jump hosts and a command are one or the other: the editor says so
+    /// and stays open, and nothing is saved.
+    jump_hosts_and_a_command_are_refused_together,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &format!("{}jump = [\"bastion\"]\n", host("web", closed_port())),
+        );
+        ui.open();
+        edit_host(ui, "web");
+        ui.keys("tab tab tab tab tab");
+        ui.type_text("nc %h %p");
+        ui.click("save");
+        ui.settle(std::time::Duration::from_millis(100));
+        assert!(ui.host_editor_open(), "the editor stays open");
+        assert!(!ui.hosts_toml().contains("proxy_command"));
     }
 );
 

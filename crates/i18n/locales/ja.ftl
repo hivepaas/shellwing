@@ -340,6 +340,9 @@ tc0567af7 = 秒数、0〜3600（0：なし）。
 # A host cannot jump through itself.
 t272071b9 = ホストは自分自身を経由できません。
 
+# Jump hosts or a command: one of them, not both.
+t1a129586 = 踏み台かコマンドのどちらか一方だけを指定してください。
+
 # new key
 t2aaac45a = 新しい鍵
 
@@ -468,6 +471,12 @@ tfc8a9b1f = 経由する踏み台（順番どおり）
 
 # Enter adds what you typed · Esc stops adding
 ta13c2c20 = Enter で入力内容を追加 · Esc で追加を終了
+
+# Or through a command
+t7ba76a07 = またはコマンドを経由
+
+# Its input and output carry the connection, as ssh's ProxyCommand: %h, %p, %r and %n are the host, port, user and name. It runs on computers, not phones.
+t011a46a2 = ssh の ProxyCommand と同じく、コマンドの入出力が接続を運びます。%h、%p、%r、%n はホスト、ポート、ユーザー、名前です。コンピューターで動作し、スマートフォンでは動作しません。
 
 # + Add forward
 tcfdf6ef4 = + フォワードを追加
