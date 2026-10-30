@@ -1,6 +1,7 @@
-//! Client authentication, in OpenSSH's order: agent keys, key files (asking for
-//! passphrases), keyboard-interactive (one-time codes, or PAM asking the password),
-//! then password. Methods the server no longer offers are skipped, and each
+//! Client authentication, in OpenSSH's order: agent keys (those the key files
+//! name first, then the others unless `IdentitiesOnly`), key files (asking for
+//! passphrases), keyboard-interactive (one-time codes, or PAM asking the
+//! password), then password. Methods the server no longer offers are skipped, and each
 //! interactive method gets three tries.
 
 use std::path::PathBuf;
@@ -9,10 +10,12 @@ use std::sync::Arc;
 use russh::client::{AuthResult, Handle, KeyboardInteractiveAuthResponse};
 use russh::keys::agent::AgentIdentity;
 use russh::keys::agent::client::{AgentClient, AgentStream};
-use russh::keys::ssh_key::Certificate;
+use russh::keys::ssh_key::public::KeyData;
+use russh::keys::ssh_key::{Certificate, PublicKey};
 use russh::keys::{PrivateKey, PrivateKeyWithHashAlg};
 use russh::{MethodKind, MethodSet};
 
+use crate::config::IdentityAgent;
 use crate::hostkey::Checker;
 use crate::prompt::{Prompt, Prompter};
 use crate::secrets::{Learned, Secrets};
@@ -25,8 +28,9 @@ const ROUNDS: usize = 3;
 
 type Agent = AgentClient<Box<dyn AgentStream + Send + Unpin + 'static>>;
 
-/// The ssh-agents this platform offers: `socket`, else `$SSH_AUTH_SOCK` on
-/// Unix; on Windows the OpenSSH agent's named pipe, then Pageant.
+/// The ssh-agents this platform offers: `socket` (a named pipe on Windows),
+/// else `$SSH_AUTH_SOCK` on Unix; on Windows the OpenSSH agent's named pipe,
+/// then Pageant.
 pub(crate) async fn agents(socket: Option<&std::path::Path>) -> Vec<Agent> {
     let mut found = Vec::new();
     #[cfg(unix)]
@@ -39,18 +43,58 @@ pub(crate) async fn agents(socket: Option<&std::path::Path>) -> Vec<Agent> {
             found.push(a.dynamic());
         }
     }
-    #[cfg(not(unix))]
-    let _ = socket;
     #[cfg(windows)]
-    {
-        if let Ok(a) = AgentClient::connect_named_pipe(r"\\.\pipe\openssh-ssh-agent").await {
-            found.push(a.dynamic());
+    match socket {
+        Some(pipe) => {
+            if let Ok(a) = AgentClient::connect_named_pipe(pipe).await {
+                found.push(a.dynamic());
+            }
         }
-        if let Ok(a) = AgentClient::connect_pageant().await {
-            found.push(a.dynamic());
+        None => {
+            if let Ok(a) = AgentClient::connect_named_pipe(r"\\.\pipe\openssh-ssh-agent").await {
+                found.push(a.dynamic());
+            }
+            if let Ok(a) = AgentClient::connect_pageant().await {
+                found.push(a.dynamic());
+            }
         }
     }
+    #[cfg(not(any(unix, windows)))]
+    let _ = socket;
     found
+}
+
+/// The agents `choice` (`IdentityAgent`) names.
+pub(crate) async fn agents_for(choice: &IdentityAgent) -> Vec<Agent> {
+    match choice {
+        IdentityAgent::Usual => agents(None).await,
+        IdentityAgent::Off => vec![],
+        IdentityAgent::At(path) => agents(Some(path)).await,
+    }
+}
+
+/// A key file's public half, read without its passphrase: the file itself
+/// when it is a public key (`IdentityFile ~/.ssh/github.pub`, its private
+/// half in an agent), else `<file>.pub`, else the private key file's own.
+fn public_half(path: &std::path::Path) -> Option<KeyData> {
+    let text = std::fs::read_to_string(path).ok()?;
+    if let Ok(k) = PublicKey::from_openssh(text.trim()) {
+        return Some(k.key_data().clone());
+    }
+    if let Some(k) = crate::keys::pub_beside(path) {
+        return Some(k.key_data().clone());
+    }
+    PrivateKey::from_openssh(text.trim())
+        .ok()
+        .map(|k| k.public_key().key_data().clone())
+}
+
+/// The key an agent's identity signs with.
+fn key_of(id: &AgentIdentity) -> KeyData {
+    match id {
+        AgentIdentity::PublicKey { key, .. } => key.key_data().clone(),
+        AgentIdentity::Certificate { certificate, .. } => certificate.public_key().clone(),
+    }
 }
 
 /// Tracks which methods the server still accepts (`None` until it has told
@@ -202,11 +246,17 @@ pub(crate) async fn authenticate(
     certs: &[PathBuf],
     stored: StoredKeys<'_>,
     auth: &Auth,
+    agent: &IdentityAgent,
+    identities_only: bool,
     prompter: Option<&Prompter>,
     secrets: Option<&dyn Secrets>,
 ) -> Result<(), Error> {
     let user = target.user.as_str();
     let mut methods = Methods::default();
+    // The keys the key files are, to find them in the agent; and the
+    // agent's keys tried, not offered again from their files.
+    let named: Vec<Option<KeyData>> = keys.iter().map(|k| public_half(k)).collect();
+    let mut offered: Vec<KeyData> = vec![];
 
     // Each round tries the methods in order; a partial success (one accepted,
     // more needed) starts another with the methods the server names.
@@ -214,8 +264,16 @@ pub(crate) async fn authenticate(
         methods.partial = false;
 
         if auth.agent && methods.allows(MethodKind::PublicKey) {
-            for mut agent in agents(auth.agent_socket.as_deref()).await {
-                for id in agent.request_identities().await.unwrap_or_default() {
+            for mut agent in agents_for(agent).await {
+                let ids = agent.request_identities().await.unwrap_or_default();
+                // As OpenSSH offers them: those the key files name first, then
+                // the others, unless IdentitiesOnly.
+                let (mine, others): (Vec<_>, Vec<_>) = ids
+                    .into_iter()
+                    .partition(|id| named.contains(&Some(key_of(id))));
+                let others = if identities_only { vec![] } else { others };
+                for id in mine.into_iter().chain(others) {
+                    offered.push(key_of(&id));
                     // A certificate the agent holds signs in as itself.
                     if let AgentIdentity::Certificate { certificate, .. } = id {
                         let hash = if certificate.algorithm().is_rsa() {
@@ -254,7 +312,10 @@ pub(crate) async fn authenticate(
         }
 
         if methods.allows(MethodKind::PublicKey) {
-            for path in keys {
+            for (path, public) in keys.iter().zip(&named) {
+                if public.as_ref().is_some_and(|k| offered.contains(k)) {
+                    continue;
+                }
                 let Some(key) = load_key(path, prompter, secrets).await? else {
                     continue;
                 };

@@ -55,7 +55,8 @@ pub(crate) struct Checker {
     /// Agent forwarding was asked for: only then are the server's agent
     /// channels accepted.
     pub forward_agent: bool,
-    pub agent_socket: Option<PathBuf>,
+    /// The agent forwarded: the one that signs in.
+    pub agent: crate::config::IdentityAgent,
 }
 
 fn default_known_hosts() -> Option<PathBuf> {
@@ -303,13 +304,9 @@ impl client::Handler for Checker {
             // Not asked for: dropping the reply refuses it.
             return Ok(());
         }
-        let socket = self.agent_socket.clone();
+        let choice = self.agent.clone();
         tokio::spawn(async move {
-            let Some(agent) = crate::auth::agents(socket.as_deref())
-                .await
-                .into_iter()
-                .next()
-            else {
+            let Some(agent) = crate::auth::agents_for(&choice).await.into_iter().next() else {
                 reply.reject(russh::ChannelOpenFailure::ConnectFailed).await;
                 return;
             };
@@ -345,7 +342,7 @@ mod tests {
             problem: Default::default(),
             routes: Default::default(),
             forward_agent: false,
-            agent_socket: None,
+            agent: Default::default(),
         }
     }
 

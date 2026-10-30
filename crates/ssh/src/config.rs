@@ -1,7 +1,8 @@
 //! Resolving a target through `~/.ssh/config`, as `ssh` would.
 //!
 //! `shellwing web` uses the `Host web` block: its `HostName`, `User`, `Port`,
-//! `IdentityFile`, `ProxyJump`, `ProxyCommand` and `ServerAliveInterval`. Values typed on the
+//! `IdentityFile`, `IdentityAgent`, `IdentitiesOnly`, `ProxyJump`, `ProxyCommand` and
+//! `ServerAliveInterval`. Values typed on the
 //! command line (`user@host:port`) win over the file, and the file wins over the
 //! defaults, matching OpenSSH's precedence.
 
@@ -18,6 +19,19 @@ use crate::{Error, Target};
 /// config that loops would otherwise never resolve).
 const MAX_JUMPS: usize = 8;
 
+/// Which ssh-agent signs in and is forwarded (`IdentityAgent`).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum IdentityAgent {
+    /// `$SSH_AUTH_SOCK`; on Windows, OpenSSH's agent, then Pageant.
+    #[default]
+    Usual,
+    /// `none`: no agent.
+    Off,
+    /// One of its own: a socket, or on Windows a named pipe. 1Password,
+    /// Secretive and Bitwarden have theirs named so.
+    At(PathBuf),
+}
+
 /// Everything needed to reach one host.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Resolved {
@@ -33,6 +47,11 @@ pub struct Resolved {
     pub certificate_files: Vec<PathBuf>,
     /// The one key the app keeps to sign in with (its id), instead of any file.
     pub vault_key: Option<String>,
+    pub identity_agent: IdentityAgent,
+    /// Only the keys named (`IdentitiesOnly`): none of the agent's others,
+    /// which otherwise come before the key files and can use up the
+    /// server's tries (`MaxAuthTries`).
+    pub identities_only: bool,
     /// Hosts to go through first, outermost first; each has no jumps of its own.
     pub jumps: Vec<Resolved>,
     /// The command whose input and output carry the connection
@@ -60,6 +79,8 @@ impl Resolved {
             identity_files: vec![],
             certificate_files: vec![],
             vault_key: None,
+            identity_agent: IdentityAgent::Usual,
+            identities_only: false,
             jumps: vec![],
             proxy_command: None,
             keepalive: None,
@@ -184,6 +205,39 @@ fn expand_tokens(path: &Path, host: &str, user: &str) -> PathBuf {
     PathBuf::from(out)
 }
 
+/// What an `IdentityAgent` value names, as ssh reads it: `none`,
+/// `SSH_AUTH_SOCK` (the usual agent), `$NAME` (a variable holding the
+/// socket's path; no agent if it is not set), or a path, with `~`,
+/// `${NAME}` and the `%` tokens of `IdentityFile`.
+fn identity_agent(value: &str, host: &str, user: &str) -> IdentityAgent {
+    match value {
+        "none" => IdentityAgent::Off,
+        "SSH_AUTH_SOCK" => IdentityAgent::Usual,
+        v if v.starts_with('$') && !v.starts_with("${") => match std::env::var_os(&v[1..]) {
+            Some(path) if !path.is_empty() => IdentityAgent::At(path.into()),
+            _ => IdentityAgent::Off,
+        },
+        v => {
+            let mut path = String::new();
+            let mut rest = v;
+            while let Some(start) = rest.find("${") {
+                let Some(len) = rest[start..].find('}') else {
+                    break;
+                };
+                path.push_str(&rest[..start]);
+                path.push_str(&std::env::var(&rest[start + 2..start + len]).unwrap_or_default());
+                rest = &rest[start + len + 1..];
+            }
+            path.push_str(rest);
+            let path = match (path.strip_prefix("~/"), std::env::home_dir()) {
+                (Some(under), Some(home)) => home.join(under),
+                _ => PathBuf::from(path),
+            };
+            IdentityAgent::At(expand_tokens(&path, host, user))
+        }
+    }
+}
+
 /// Resolves `[user@]host[:port]` through the config file at `config` (none: defaults only).
 pub fn resolve(spec: &str, config: Option<&Path>) -> Result<Resolved, Error> {
     let cfg = load(config)?;
@@ -208,6 +262,9 @@ enum Line {
     ProxyCommand(String),
     /// `ProxyJump`: only where it comes, before or after a `ProxyCommand`.
     ProxyJump,
+    /// `IdentityAgent`, as written (its quotes taken off).
+    IdentityAgent(String),
+    IdentitiesOnly(bool),
 }
 
 /// The lines of a config file, each with the `Host` patterns it comes under:
@@ -346,6 +403,16 @@ fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mu
                 out.push((under.clone(), Line::ProxyCommand(rest.to_string())));
             }
             "proxyjump" => out.push((under.clone(), Line::ProxyJump)),
+            "identityagent" if !rest.is_empty() => out.push((
+                under.clone(),
+                Line::IdentityAgent(rest.trim_matches('"').to_string()),
+            )),
+            "identitiesonly" => out.push((
+                under.clone(),
+                Line::IdentitiesOnly(args.first().is_some_and(|a| {
+                    a.eq_ignore_ascii_case("yes") || a.eq_ignore_ascii_case("true")
+                })),
+            )),
             _ => {}
         }
     }
@@ -423,6 +490,22 @@ fn resolve_with(
         Some(Line::ProxyCommand(c)) if c != "none" => Some(c.clone()),
         _ => None,
     };
+    let identity_agent = lines
+        .iter()
+        .find_map(|(under, l)| match l {
+            Line::IdentityAgent(v) if applies(under, &alias) => {
+                Some(identity_agent(v, &host, &user))
+            }
+            _ => None,
+        })
+        .unwrap_or_default();
+    let identities_only = lines
+        .iter()
+        .find_map(|(under, l)| match l {
+            Line::IdentitiesOnly(on) if applies(under, &alias) => Some(*on),
+            _ => None,
+        })
+        .unwrap_or(false);
     let mut jumps = vec![];
     if !matches!(first, Some(Line::ProxyCommand(_)))
         && let Some(list) = &p.proxy_jump
@@ -443,6 +526,8 @@ fn resolve_with(
         identity_files,
         certificate_files,
         vault_key: None,
+        identity_agent,
+        identities_only,
         jumps,
         proxy_command,
         keepalive: p.server_alive_interval,
@@ -612,6 +697,43 @@ mod tests {
         let hops: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
         assert_eq!(hops, ["edge"]);
         assert_eq!(r.jumps[0].proxy_command.as_deref(), Some("nc %h %p"));
+    }
+
+    #[test]
+    fn identity_agent_and_identities_only_as_ssh_reads_them() {
+        let home = std::env::home_dir().expect("home");
+        let path = std::env::var("PATH").expect("PATH");
+        let cfg = config(
+            "Host op\n  IdentityAgent \"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"\n  IdentitiesOnly yes\nHost off\n  IdentityAgent none\nHost env\n  IdentityAgent $PATH\nHost unset\n  IdentityAgent $SHELLWING_NO_SUCH_AGENT\nHost braces\n  IdentityAgent ${PATH}/agent-%r.sock\nHost usual\n  IdentityAgent SSH_AUTH_SOCK\nHost *\n  IdentityAgent /run/second.sock\n  IdentitiesOnly no\n",
+        );
+        let r = resolve("op", Some(&cfg)).expect("resolve");
+        assert_eq!(
+            r.identity_agent,
+            IdentityAgent::At(
+                home.join("Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock")
+            )
+        );
+        assert!(r.identities_only);
+        let agent = |name: &str| resolve(name, Some(&cfg)).expect("resolve").identity_agent;
+        assert_eq!(agent("off"), IdentityAgent::Off);
+        assert_eq!(agent("env"), IdentityAgent::At(PathBuf::from(&path)));
+        assert_eq!(agent("unset"), IdentityAgent::Off);
+        assert_eq!(
+            agent("me@braces"),
+            IdentityAgent::At(PathBuf::from(format!("{path}/agent-me.sock")))
+        );
+        assert_eq!(agent("usual"), IdentityAgent::Usual);
+        // The first value wins: Host *'s comes after the others'.
+        assert_eq!(agent("other"), IdentityAgent::At("/run/second.sock".into()));
+        assert!(
+            !resolve("other", Some(&cfg))
+                .expect("resolve")
+                .identities_only
+        );
+        assert_eq!(
+            resolve("x", None).expect("resolve").identity_agent,
+            IdentityAgent::Usual
+        );
     }
 
     #[test]

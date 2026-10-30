@@ -216,7 +216,7 @@ pub fn key_files(dir: &Path) -> Vec<KeyFile> {
 }
 
 /// The public key in `<path>.pub`, if it reads as one.
-fn pub_beside(path: &Path) -> Option<PublicKey> {
+pub(crate) fn pub_beside(path: &Path) -> Option<PublicKey> {
     let mut p = path.as_os_str().to_owned();
     p.push(".pub");
     PublicKey::from_openssh(std::fs::read_to_string(PathBuf::from(p)).ok()?.trim()).ok()
