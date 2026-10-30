@@ -188,9 +188,13 @@ jobs:
   # (x86_64), signed with the release key from the repository's secrets
   # (docs/releasing.md › Signing for Android). A tag needs the key: an
   # unsigned APK does not install. A rehearsal builds without it.
+  # Rehearsals only until the release key exists (docs/releasing.md): a tag
+  # builds the desktop platforms. With the key, take this `if` out and put
+  # `android` back in the draft release's `needs`.
   android:
     name: android
     needs: version
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -276,7 +280,7 @@ jobs:
 
   release:
     name: Draft release
-    needs: [version, package, android]
+    needs: [version, package]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:

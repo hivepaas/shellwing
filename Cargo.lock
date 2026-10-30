@@ -7900,7 +7900,7 @@ checksum = "dc6fe69c597f9c37bfeeeeeb33da3530379845f10be461a66d16d03eca2ded77"
 
 [[package]]
 name = "shellwing"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -7941,7 +7941,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-config"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "getrandom 0.3.4",
  "serde",
@@ -7953,7 +7953,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -7979,7 +7979,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-i18n"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fluent-bundle",
  "sys-locale",
@@ -7988,7 +7988,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-import"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "encoding_rs 0.8.42",
  "quick-xml 0.42.0",
@@ -8002,7 +8002,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-mobile"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "jni 0.22.4",
@@ -8024,7 +8024,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-note-editor"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gpui-bidi",
  "gpui-pre",
@@ -8034,7 +8034,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-presence"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "getrandom 0.3.4",
  "nix 0.31.3",
@@ -8047,7 +8047,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-remote"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "dav-server",
@@ -8068,14 +8068,14 @@ dependencies = [
 
 [[package]]
 name = "shellwing-spawn"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nix 0.31.3",
 ]
 
 [[package]]
 name = "shellwing-ssh"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "data-encoding",
  "hmac 0.13.0",
@@ -8092,7 +8092,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-term"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "libghostty-vt",
  "regex",
@@ -8101,7 +8101,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-update"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "curve25519-dalek",
@@ -8120,7 +8120,7 @@ dependencies = [
 
 [[package]]
 name = "shellwing-vault"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aes-gcm 0.10.3",
  "argon2",

@@ -11,7 +11,7 @@ app is told of it.
 | Linux x86_64, aarch64 | `shellwing_<v>_linux_<arch>.AppImage`, `.tar.gz`, `shellwing_<v>_<amd64\|arm64>.deb` | `scripts/package_linux.sh` |
 | macOS aarch64, x86_64 | `shellwing_<v>_macos_<arch>.dmg`, `.app.tar.gz` | `scripts/package_macos.sh` |
 | Windows x86_64 | `shellwing_<v>_windows_x86_64-setup.exe`, `.zip` | `scripts/package_windows.sh` |
-| Android (arm64-v8a, x86_64) | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
+| Android (arm64-v8a, x86_64), rehearsals only for now | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
 
 and `SHA256SUMS`. The updater installs the AppImage, the `.app.tar.gz` and the
 installer; the others are for people.
@@ -107,8 +107,10 @@ uninstall shellwing (and its vault) to install the next one.
    | `ANDROID_KEY_ALIAS` | `shellwing` |
    | `ANDROID_KEY_PASSWORD` | the key's password |
 
-The Release workflow refuses a tag without them; a rehearsal builds the APK
-unsigned. To sign one by hand, `scripts/build_android.sh`, then in `android/`:
+**Tags do not build the APK yet.** The release key has not been made, so the
+Android job runs in rehearsals only, unsigned. Once these secrets are set, take
+the job's `if` out of `release.yml` and put `android` back in the draft release's
+`needs`; the job then refuses a tag without them. To sign one by hand, `scripts/build_android.sh`, then in `android/`:
 
 ```sh
 SHELLWING_KEYSTORE=/path/to/shellwing-release.jks SHELLWING_KEYSTORE_PASSWORD=… \
@@ -126,7 +128,8 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
    too.
 3. **The tag.** `git tag -s v0.2.0 && git push origin v0.2.0`. The Release
    workflow checks that the tag is `Cargo.toml`'s version, builds the five
-   desktop platforms and the Android APK, and makes a **draft** release with the files and `SHA256SUMS`.
+   desktop platforms, and makes a **draft** release with the files and
+   `SHA256SUMS`.
 4. **Check the draft**: install it on each system, and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
    AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), sign it
