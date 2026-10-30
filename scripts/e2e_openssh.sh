@@ -50,6 +50,12 @@ mkdir "$work/server" "$work/home"
 cat "$work"/id_{ed25519,rsa,ecdsa}.pub >"$work/server/authorized_keys"
 cp "$work/user_ca.pub" "$work/host_ca" "$work/server/"
 LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 >"$work/server/password" || true
+# Security keys: software ones (e2e/sk), which only its own ssh-agent can sign
+# with. The servers that know this kind of key accept them.
+mkdir "$work/sk"
+docker build -q -t shellwing-e2e-sk e2e/sk >/dev/null
+docker run --rm -e E2E_UID="$(id -u)" -v "$work/sk:/sk" shellwing-e2e-sk generate
+cat "$work"/sk/id_*_sk.pub >>"$work/server/authorized_keys"
 # The client trusts each host through the host CA, as an organization would.
 echo "@cert-authority * $(cat "$work/host_ca.pub")" >"$work/known_hosts"
 
@@ -89,6 +95,12 @@ for t in "${targets[@]}"; do
 done
 ready bastion
 for label in "${labels[@]}"; do ready "$label"; done
+
+docker run -d --name "$run-sk" -e E2E_UID="$(id -u)" -v "$work/sk:/sk" shellwing-e2e-sk agent >/dev/null
+for _ in $(seq 60); do
+	[[ -S "$work/sk/agent.sock" ]] && break
+	sleep 0.5
+done
 
 # An X server for X11 forwarding, where this machine has xauth to use it: its
 # TCP port published, and DISPLAY the number that port stands for.

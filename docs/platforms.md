@@ -21,11 +21,15 @@ them up:
 - Behind it, on a network only the bastion is on, are Alpine (OpenSSH 10),
   Debian 12 (9.2), Ubuntu 20.04 (8.2) and Rocky 8 (8.0).
 - Hosts are trusted through a host CA (`@cert-authority`).
-- A user CA, three kinds of key and a password are made for each run.
+- A user CA, three kinds of key and a password are made for each run, and two
+  security keys, on a software token in a container (`sk-dummy`, from OpenSSH's
+  own tests).
+- An X server (Xvfb) runs in a container of its own, for X11 forwarding.
 
 The tests sign in each way and go through ProxyJump and ProxyCommand. They
-also cover SFTP, a local forward, agent forwarding and the shell's exit
-status. Building the servers' images takes minutes, so CI runs them daily
+also cover SFTP, a local forward, agent and X11 forwarding, the session and
+connection options, and the shell's exit status. Most of them run OpenSSH's own
+client on the same config and expect the same result. Building the servers' images takes minutes, so CI runs them daily
 and when started by hand: Actions → OpenSSH e2e → Run workflow, or
 `gh workflow run openssh-e2e.yml --ref <branch>` (`-f filter=agent` for some
 of them). Locally they need Docker and `ssh-keygen`. `SHELLWING_E2E_KEEP=1`
