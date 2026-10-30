@@ -126,17 +126,21 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
    builds and packages everything as the tag will, and keeps the files as the
    run's artifacts. A pull request that changes the packaging is rehearsed so
    too.
-3. **The tag.** `git tag -s v0.2.0 && git push origin v0.2.0`. The Release
+3. **The tag.** `git tag -a v0.2.0 -m "shellwing 0.2.0" <commit> && git push origin v0.2.0`,
+   on `main`'s commit with the version and the notes. The Release
    workflow checks that the tag is `Cargo.toml`'s version, builds the five
    desktop platforms, and makes a **draft** release with the files and
    `SHA256SUMS`.
 4. **Check the draft**: install it on each system ([Checking a
    release](#checking-a-release)), and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
-   AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), sign it
-   on the signing machine, and move the `release` branch
+   AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), and merge
+   it. Sign what is on `main`: pull first, as the tool signs the `release.json` it
+   finds. Commit `release.signed.json`; `cargo test -p shellwing-update` fails if it
+   does not carry `release.json` byte for byte. Then move the `release` branch
    ([updates.md › Publishing a release's list](updates.md#publishing-a-releases-list)).
-   From then on the apps already out there offer it.
+   From then on the apps already out there offer it, within a few minutes: GitHub
+   caches the file.
 
 A release that went wrong is not deleted once the list names it: the next one
 replaces it.
