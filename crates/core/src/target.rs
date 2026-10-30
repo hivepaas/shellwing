@@ -80,7 +80,10 @@ fn from_host(
     if let Some(k) = h.keepalive {
         r.keepalive = Some(std::time::Duration::from_secs(k));
     }
-    r.host_key = h.host_key.map(policy);
+    // Set here, it wins over StrictHostKeyChecking for the address.
+    if let Some(k) = h.host_key {
+        r.host_key = Some(policy(k));
+    }
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
@@ -229,6 +232,26 @@ mod tests {
         let (r, _) = resolve("via", &h, Some(&ssh)).expect("resolve");
         assert_eq!(r.proxy_command, None);
         assert_eq!(r.jumps.len(), 1);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_entrys_host_key_wins_over_the_ssh_config() {
+        let dir = std::env::temp_dir().join(format!("shellwing-hostkey-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let ssh = dir.join("config");
+        std::fs::write(&ssh, "Host *.lab\n  StrictHostKeyChecking no\n").expect("config");
+        let h = hosts(
+            "[[host]]\nname = \"a\"\naddress = \"a.lab\"\n[[host]]\nname = \"b\"\naddress = \"b.lab\"\nhost_key = \"strict\"\n",
+        );
+        let (r, _) = resolve("a", &h, Some(&ssh)).expect("resolve");
+        assert_eq!(
+            r.host_key,
+            Some(HostKeyPolicy::AcceptNew),
+            "the ssh config's"
+        );
+        let (r, _) = resolve("b", &h, Some(&ssh)).expect("resolve");
+        assert_eq!(r.host_key, Some(HostKeyPolicy::Strict));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

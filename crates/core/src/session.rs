@@ -50,7 +50,7 @@ fn retryable(e: &Error) -> bool {
     match e {
         // A ProxyCommand is the way to the network: cloudflared or aws
         // failing just after the laptop wakes is the network not back yet.
-        Error::Ssh(_) | Error::Disconnected | Error::Proxy { .. } => true,
+        Error::Ssh(_) | Error::Disconnected | Error::Proxy { .. } | Error::Timeout { .. } => true,
         Error::Jump { source, .. } => retryable(source),
         _ => false,
     }
@@ -412,8 +412,8 @@ impl Session {
     /// `ssh-keygen -R` and accepting it would), for the next attempt.
     pub fn trust_changed_key(&self) -> Result<(), String> {
         let c = self.changed_key().ok_or("no key changed")?;
-        let path = shellwing_ssh::known_hosts::default_path().ok_or("no home folder")?;
-        shellwing_ssh::known_hosts::replace(&path, &c.host, c.port, &c.key)
+        // The file the old key is in: the host's UserKnownHostsFile, if any.
+        shellwing_ssh::known_hosts::replace(&c.file, &c.host, c.port, &c.key)
             .map_err(|e| e.to_string())
     }
 
@@ -776,6 +776,10 @@ mod tests {
             std::io::ErrorKind::ConnectionRefused,
         )));
         assert!(retryable(&io));
+        assert!(retryable(&Error::Timeout {
+            host: "h".into(),
+            after: std::time::Duration::from_secs(5),
+        }));
         assert!(retryable(&Error::Proxy {
             command: "cloudflared access ssh --hostname h".into(),
             why: "failed to connect to the edge".into(),

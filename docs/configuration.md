@@ -653,6 +653,22 @@ only once you type it in full. *Remove* takes a line out, so the next
 connection to that host asks about its key again. Every change keeps the file
 as it was in `known_hosts.old`, and comments and other lines stay as they are.
 
+**Per host, from `~/.ssh/config`,** as `ssh` reads it:
+
+- **`UserKnownHostsFile`** gives the host a known_hosts file of its own. Only
+  the first file named is used. `/dev/null` (or `none`) means nothing is
+  known and nothing is kept. Trusting a changed key writes to the file the old
+  key was in.
+- **`StrictHostKeyChecking`**: `yes` refuses a host not in known_hosts, `ask`
+  asks, and `accept-new` keeps a new key without asking. `no` and `off` are
+  taken as `accept-new`, so a changed key still stops the connection, where
+  `ssh` would go on. Together with `UserKnownHostsFile /dev/null`, that suits
+  hosts made and thrown away. A host's `host_key` in hosts.toml wins over it.
+- **`ConnectTimeout`** gives up on a host that does not answer within that
+  many seconds, counting the connection and the server's first words up to
+  its key, as `ssh` counts them. A question about the key is never cut off.
+  The tab then tries again, as for a lost connection.
+
 ## Certificates
 
 shellwing takes OpenSSH certificates both ways, as `ssh` does, for setups where

@@ -146,6 +146,8 @@ pub enum Error {
     Key(String),
     #[error("{0}")]
     Exec(String),
+    #[error("{host} did not answer within {} s (ConnectTimeout)", .after.as_secs())]
+    Timeout { host: String, after: Duration },
     #[error("ProxyCommand {command:?} failed: {why}")]
     Proxy { command: String, why: String },
     #[error("via {host}: {source}")]
@@ -196,6 +198,8 @@ pub enum Input {
 /// sure (see [`known_hosts::replace`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChangedKey {
+    /// The known_hosts file the old key is in (`UserKnownHostsFile`).
+    pub file: PathBuf,
     /// `host`, or `[host]:port`.
     pub label: String,
     pub host: String,
@@ -343,6 +347,7 @@ async fn open_hop(
     forward_agent: bool,
 ) -> Result<Handle<Checker>, Error> {
     let problem = Arc::new(Mutex::new(None));
+    let key_shown = Arc::new(std::sync::atomic::AtomicBool::new(false));
     // The agent the host's IdentityAgent names, unless one is given (tests).
     let agent = match &opts.auth.agent_socket {
         Some(socket) => config::IdentityAgent::At(socket.clone()),
@@ -352,12 +357,13 @@ async fn open_hop(
         host: hop.target.host.clone(),
         port: hop.target.port,
         policy: hop.host_key.unwrap_or(opts.policy),
-        known_hosts: opts.known_hosts.clone(),
+        known_hosts: opts.known_hosts.clone().or_else(|| hop.known_hosts.clone()),
         prompter: opts.prompter.clone(),
         problem: problem.clone(),
         routes,
         forward_agent,
         agent: agent.clone(),
+        key_shown: key_shown.clone(),
     };
     let keepalive = hop
         .keepalive
@@ -376,8 +382,9 @@ async fn open_hop(
         preferred,
         ..Default::default()
     });
+    // A ProxyCommand's process starts first: what fails there is its own error.
     let mut through = None;
-    let connected = match (via, &hop.proxy_command) {
+    let stream = match (via, &hop.proxy_command) {
         (None, Some(command)) => {
             let command = proxy::expand(command, hop)?;
             let (stream, said) = proxy::start(&command).map_err(|e| Error::Proxy {
@@ -385,22 +392,50 @@ async fn open_hop(
                 why: e.to_string(),
             })?;
             through = Some((command, said));
-            client::connect_stream(config, stream, checker).await
+            Some(stream)
         }
-        (None, None) => {
-            client::connect(config, (hop.target.host.as_str(), hop.target.port), checker).await
+        _ => None,
+    };
+    let connecting = async {
+        match (via, stream) {
+            (None, Some(stream)) => client::connect_stream(config, stream, checker).await,
+            (None, None) => {
+                client::connect(config, (hop.target.host.as_str(), hop.target.port), checker).await
+            }
+            (Some(prev), _) => {
+                let channel = prev
+                    .channel_open_direct_tcpip(
+                        hop.target.host.clone(),
+                        hop.target.port as u32,
+                        "127.0.0.1",
+                        0,
+                    )
+                    .await?;
+                client::connect_stream(config, channel.into_stream(), checker).await
+            }
         }
-        (Some(prev), _) => {
-            let channel = prev
-                .channel_open_direct_tcpip(
-                    hop.target.host.clone(),
-                    hop.target.port as u32,
-                    "127.0.0.1",
-                    0,
-                )
-                .await?;
-            client::connect_stream(config, channel.into_stream(), checker).await
+    };
+    // ConnectTimeout, as OpenSSH counts it: the connection and the server's
+    // first words, up to its key; not a question about the key.
+    let connected = match hop.connect_timeout {
+        Some(limit) => {
+            let given_up = async {
+                tokio::time::sleep(limit).await;
+                if key_shown.load(std::sync::atomic::Ordering::Relaxed) {
+                    std::future::pending::<()>().await;
+                }
+            };
+            tokio::select! {
+                c = connecting => c,
+                () = given_up => {
+                    return Err(Error::Timeout {
+                        host: hop.target.host.clone(),
+                        after: limit,
+                    });
+                }
+            }
         }
+        None => connecting.await,
     };
     let mut handle = match connected {
         Ok(h) => h,

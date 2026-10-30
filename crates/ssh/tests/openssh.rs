@@ -682,3 +682,168 @@ async fn session_options_are_taken_as_openssh_takes_them() {
         assert_eq!(our_exit, Some(0), "{host}");
     }
 }
+
+/// Signs in to the bastion as `lab` with OpenSSH's own client and with
+/// shellwing, `lines` under its Host and nothing else telling either which
+/// known_hosts to use. `KNOWN` in `lines` stands for a known_hosts file of
+/// each client's own, `<name>.<client>.known`, empty to begin with. Whether
+/// OpenSSH got in, how shellwing did, and the two files.
+async fn both_check_host(
+    lab: &Lab,
+    name: &str,
+    lines: &str,
+) -> ((bool, PathBuf), (Result<(), Error>, PathBuf)) {
+    let run = |client: &str| {
+        let known = lab.scratch(&format!("{name}.{client}.known"));
+        std::fs::write(&known, "").expect("known_hosts");
+        let path = lab.scratch(&format!("{name}.{client}.ssh_config"));
+        std::fs::write(
+            &path,
+            format!(
+                "Host lab\n  HostName {}\n  Port {}\n  User {USER}\n  IdentityFile {}\n  IdentitiesOnly yes\n  IdentityAgent none\n  BatchMode yes\n{}",
+                lab.bastion.host,
+                lab.bastion.port,
+                lab.key("id_ed25519").display(),
+                lines.replace("KNOWN", &known.display().to_string())
+            ),
+        )
+        .expect("ssh config");
+        (path, known)
+    };
+    let (theirs, their_known) = run("openssh");
+    let openssh = std::process::Command::new("ssh")
+        .arg("-F")
+        .arg(&theirs)
+        .args(["lab", "true"])
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    let (ours, our_known) = run("shellwing");
+    let resolved = shellwing_ssh::config::resolve("lab", Some(&ours)).expect("resolve");
+    let mut opts = lab.options(resolved);
+    // Only the config says where known_hosts is.
+    opts.known_hosts = None;
+    (
+        (openssh, their_known),
+        (open(opts).await.map(|_| ()), our_known),
+    )
+}
+
+/// The key a known_hosts file has for the host: each line without its host.
+fn keys_in(file: &std::path::Path) -> Vec<String> {
+    std::fs::read_to_string(file)
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|l| l.split_once(' ').map(|(_, key)| key.trim().to_string()))
+        .collect()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn host_keys_are_checked_as_the_config_says() {
+    let lab = lab!();
+    if !has("ssh") {
+        eprintln!("skipped: no OpenSSH client");
+        return;
+    }
+    // A known_hosts of its own that does not know the host: refused.
+    let ((theirs, _), (ours, _)) = both_check_host(
+        &lab,
+        "strict",
+        "  UserKnownHostsFile KNOWN\n  StrictHostKeyChecking yes\n",
+    )
+    .await;
+    assert!(!theirs, "OpenSSH got in");
+    assert!(
+        matches!(ours, Err(Error::HostKeyUnknown { .. })),
+        "{ours:?}"
+    );
+    // accept-new: both get in, and keep the same key in their own file.
+    let ((theirs, their_file), (ours, our_file)) = both_check_host(
+        &lab,
+        "accept-new",
+        "  UserKnownHostsFile KNOWN\n  StrictHostKeyChecking accept-new\n",
+    )
+    .await;
+    assert!(theirs, "OpenSSH did not get in");
+    assert!(ours.is_ok(), "{ours:?}");
+    let (their_keys, our_keys) = (keys_in(&their_file), keys_in(&our_file));
+    assert!(!our_keys.is_empty(), "shellwing kept no key");
+    assert_eq!(our_keys, their_keys);
+    // Hosts made and thrown away: nothing known, nothing kept, every time.
+    for _ in 0..2 {
+        let ((theirs, _), (ours, _)) = both_check_host(
+            &lab,
+            "throwaway",
+            "  UserKnownHostsFile /dev/null\n  StrictHostKeyChecking no\n",
+        )
+        .await;
+        assert!(theirs, "OpenSSH did not get in");
+        assert!(ours.is_ok(), "{ours:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn connect_timeout_gives_up_on_a_silent_server() {
+    let lab = lab!();
+    if !has("ssh") {
+        eprintln!("skipped: no OpenSSH client");
+        return;
+    }
+    // Takes connections and never says a word: a hung sshd, or a firewall
+    // that lets the handshake through.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind");
+    let port = listener.local_addr().expect("addr").port();
+    tokio::spawn(async move {
+        let mut held = vec![];
+        while let Ok((socket, _)) = listener.accept().await {
+            held.push(socket);
+        }
+    });
+    let path = lab.scratch("silent.ssh_config");
+    std::fs::write(
+        &path,
+        format!(
+            "Host silent\n  HostName 127.0.0.1\n  Port {port}\n  User {USER}\n  ConnectTimeout 2\n  BatchMode yes\n"
+        ),
+    )
+    .expect("ssh config");
+    let started = std::time::Instant::now();
+    let openssh = tokio::task::spawn_blocking({
+        let path = path.clone();
+        move || {
+            std::process::Command::new("ssh")
+                .arg("-F")
+                .arg(&path)
+                .args(["silent", "true"])
+                .stdin(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        }
+    })
+    .await
+    .expect("ssh");
+    let theirs = started.elapsed();
+    assert!(!openssh);
+    let started = std::time::Instant::now();
+    let resolved = shellwing_ssh::config::resolve("silent", Some(&path)).expect("resolve");
+    let ours = tokio::time::timeout(Duration::from_secs(20), open(lab.options(resolved)))
+        .await
+        .expect("it gave up on its own");
+    let ours_took = started.elapsed();
+    assert!(
+        matches!(ours, Err(Error::Timeout { .. })),
+        "{:?}",
+        ours.err()
+    );
+    // About the 2 s asked for, as ssh.
+    for (who, took) in [("OpenSSH", theirs), ("shellwing", ours_took)] {
+        assert!(
+            took >= Duration::from_millis(1900) && took < Duration::from_secs(6),
+            "{who} took {took:?}"
+        );
+    }
+}
