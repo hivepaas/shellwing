@@ -130,7 +130,8 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
    workflow checks that the tag is `Cargo.toml`'s version, builds the five
    desktop platforms, and makes a **draft** release with the files and
    `SHA256SUMS`.
-4. **Check the draft**: install it on each system, and publish it.
+4. **Check the draft**: install it on each system ([Checking a
+   release](#checking-a-release)), and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
    AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), sign it
    on the signing machine, and move the `release` branch
@@ -139,3 +140,42 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
 
 A release that went wrong is not deleted once the list names it: the next one
 replaces it.
+
+## Checking a release
+
+CI tests the code, not the packages on a real desktop. Before a release, on a
+rehearsal's artifacts or the draft's files, what only a real system shows:
+
+**Windows** (a VM will do; it has a GPU driver good enough):
+
+- The installer: `Get-AuthenticodeSignature` says what is expected, the file's
+  version is the release's, and it adds a Start menu entry and an uninstall entry.
+- From the desktop session, not over SSH: connect to a host with `ProxyCommand`
+  set to `ssh.exe -W %h:%p …`. The shell comes up and **no console window shows**.
+  Closing the app leaves no `ssh.exe` behind.
+- A `Match … exec` that holds and one that does not.
+- The uninstaller leaves no program folder and no uninstall entry.
+- SmartScreen shows only for a file really downloaded and opened by hand.
+
+**macOS** (a VM without Metal cannot run the app, which exits with no message; it
+can check the signature):
+
+- `spctl -a -t exec -vv shellwing.app` says `source=Notarized Developer ID`, the
+  same with `-t open --context context:primary-signature` for the `.dmg`, and
+  `xcrun stapler validate` passes on both.
+- `LSMinimumSystemVersion` and `CFBundleShortVersionString` are right.
+
+On a real Mac:
+
+- Drag the app from the disk image to Applications and open it from the Finder:
+  one question, *Open*, and no trip to System Settings.
+- A `ProxyCommand` whose program is only in `/opt/homebrew/bin`: an app opened
+  from the Finder does not have that on `PATH`.
+- Touch ID opens the vault.
+
+**Linux:**
+
+- The AppImage runs (`--version`), the `.deb` names the version and installs under
+  `/opt/shellwing`.
+- X11 forwarding with `DISPLAY=:0`, on the desktop's X server. GNOME under Wayland
+  has no SECURITY extension, so *Untrusted* says why it cannot, and *Trusted* works.
