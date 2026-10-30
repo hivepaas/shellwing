@@ -462,7 +462,7 @@ pub async fn connect(
     tokio::spawn(async move {
         // The jump connections carry this one; keep them until the session ends.
         let _jumps = jumps;
-        let mut exit_status = None;
+        let (mut exit_status, mut eof) = (None, false);
         let result: Result<(), Error> = async {
             // A session that is closed in order says so (Eof, Close); the channel
             // just vanishing means the connection died.
@@ -473,7 +473,12 @@ pub async fn connect(
                             tokio::task::block_in_place(|| output(&data));
                         }
                         Some(ChannelMsg::ExitStatus { exit_status: s }) => exit_status = Some(s),
-                        Some(ChannelMsg::Eof) | Some(ChannelMsg::Close) => break,
+                        // OpenSSH sends the exit status after the output's
+                        // end (Eof), so only Close ends the session.
+                        Some(ChannelMsg::Eof) => eof = true,
+                        Some(ChannelMsg::Close) => break,
+                        // Gone after its output ended: closed, if not in order.
+                        None if eof => break,
                         None => return Err(Error::Disconnected),
                         _ => {}
                     },
