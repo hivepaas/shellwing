@@ -57,6 +57,9 @@ pub(crate) struct Checker {
     pub forward_agent: bool,
     /// The agent forwarded: the one that signs in.
     pub agent: crate::config::IdentityAgent,
+    /// Set once the server has shown its key: `ConnectTimeout` counts only
+    /// until then, never while a question about the key waits for the user.
+    pub key_shown: Arc<std::sync::atomic::AtomicBool>,
 }
 
 fn default_known_hosts() -> Option<PathBuf> {
@@ -174,6 +177,10 @@ impl Checker {
 
     fn learn(&self, key: &PublicKey) -> Result<(), Error> {
         let path = self.path()?;
+        // UserKnownHostsFile /dev/null: nothing is kept.
+        if path == crate::config::null_device() {
+            return Ok(());
+        }
         if let Some(dir) = path.parent() {
             let _ = std::fs::create_dir_all(dir);
         }
@@ -195,6 +202,7 @@ impl Checker {
             Verdict::Changed { line, old } => {
                 let info = crate::keys::info(key);
                 Err(Error::HostKeyChanged(Box::new(crate::ChangedKey {
+                    file: self.path()?,
                     label: self.label(),
                     host: self.host.clone(),
                     port: self.port,
@@ -247,6 +255,8 @@ impl client::Handler for Checker {
         &mut self,
         key: &PublicKeyOrCertificate,
     ) -> Result<bool, Self::Error> {
+        self.key_shown
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         let key = match key {
             PublicKeyOrCertificate::PublicKey { key, .. } => key,
             PublicKeyOrCertificate::Certificate(cert) => {
@@ -343,6 +353,7 @@ mod tests {
             routes: Default::default(),
             forward_agent: false,
             agent: Default::default(),
+            key_shown: Default::default(),
         }
     }
 

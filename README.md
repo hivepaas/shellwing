@@ -24,7 +24,7 @@ Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs betwe
 ## 🌟 Key Features
 
 * **Native and fast:** a GPU-rendered terminal on [libghostty-vt](https://ghostty.org), parsing on its own thread; the display's full refresh rate under heavy output, sharp text at any HiDPI scale, and input methods (IME) with the composing text at the cursor.
-* **SSH the way OpenSSH does it:** `~/.ssh/config` (aliases, `ProxyJump`, `ProxyCommand`, forwards, identity files, `IdentityAgent`, `RemoteCommand`, `SendEnv`), `known_hosts` checks, agent keys, key files, certificates, keyboard-interactive and two-factor codes, and agent forwarding.
+* **SSH the way OpenSSH does it:** `~/.ssh/config` (aliases, `ProxyJump`, `ProxyCommand`, forwards, identity files, `IdentityAgent`, `RemoteCommand`, `SendEnv`, `StrictHostKeyChecking`, `ConnectTimeout`), `known_hosts` checks, agent keys, key files, certificates, keyboard-interactive and two-factor codes, and agent forwarding.
 * **Tabs and panes:** split a tab to the same host, move between panes, type into every pane at once, reorder tabs by dragging; tabs follow the shell's title.
 * **Files over SFTP:** browse, upload and download (drag and drop too), rename, delete, and edit remote files in your own editor.
 * **Port forwarding:** local, remote and SOCKS (`-L`, `-R`, `-D`), from the command line, a saved host or the palette while connected.

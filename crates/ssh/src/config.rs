@@ -66,8 +66,16 @@ pub struct Resolved {
     /// Let the host use the local ssh-agent (`ForwardAgent`). Off unless asked:
     /// whoever is root there can then sign with your keys while you are connected.
     pub forward_agent: bool,
-    /// How an unknown host key is handled here; None: the app's setting.
+    /// How an unknown host key is handled here (`StrictHostKeyChecking`, or
+    /// hosts.toml's `host_key`); None: the app's setting.
     pub host_key: Option<crate::HostKeyPolicy>,
+    /// The known_hosts file for this host (`UserKnownHostsFile`, its first);
+    /// None: `~/.ssh/known_hosts`. The null device for `/dev/null` or `none`:
+    /// nothing known, nothing kept.
+    pub known_hosts: Option<PathBuf>,
+    /// How long to wait for the host to answer, up to showing its key
+    /// (`ConnectTimeout`); None: as long as the system waits.
+    pub connect_timeout: Option<Duration>,
     /// Run instead of the login shell (`RemoteCommand`), its `%` tokens not
     /// expanded yet.
     pub remote_command: Option<String>,
@@ -98,6 +106,8 @@ impl Resolved {
             forwards: vec![],
             forward_agent: false,
             host_key: None,
+            known_hosts: None,
+            connect_timeout: None,
             remote_command: None,
             tty: true,
             send_env: vec![],
@@ -232,25 +242,35 @@ fn identity_agent(value: &str, host: &str, user: &str) -> IdentityAgent {
             Some(path) if !path.is_empty() => IdentityAgent::At(path.into()),
             _ => IdentityAgent::Off,
         },
-        v => {
-            let mut path = String::new();
-            let mut rest = v;
-            while let Some(start) = rest.find("${") {
-                let Some(len) = rest[start..].find('}') else {
-                    break;
-                };
-                path.push_str(&rest[..start]);
-                path.push_str(&std::env::var(&rest[start + 2..start + len]).unwrap_or_default());
-                rest = &rest[start + len + 1..];
-            }
-            path.push_str(rest);
-            let path = match (path.strip_prefix("~/"), std::env::home_dir()) {
-                (Some(under), Some(home)) => home.join(under),
-                _ => PathBuf::from(path),
-            };
-            IdentityAgent::At(expand_tokens(&path, host, user))
-        }
+        v => IdentityAgent::At(config_path(v, host, user)),
     }
+}
+
+/// A path from the config, as ssh reads `IdentityAgent` and
+/// `UserKnownHostsFile`: `${NAME}` from the environment, `~` for the home
+/// folder, and the `%` tokens of `IdentityFile`.
+fn config_path(value: &str, host: &str, user: &str) -> PathBuf {
+    let mut path = String::new();
+    let mut rest = value;
+    while let Some(start) = rest.find("${") {
+        let Some(len) = rest[start..].find('}') else {
+            break;
+        };
+        path.push_str(&rest[..start]);
+        path.push_str(&std::env::var(&rest[start + 2..start + len]).unwrap_or_default());
+        rest = &rest[start + len + 1..];
+    }
+    path.push_str(rest);
+    let path = match (path.strip_prefix("~/"), std::env::home_dir()) {
+        (Some(under), Some(home)) => home.join(under),
+        _ => PathBuf::from(path),
+    };
+    expand_tokens(&path, host, user)
+}
+
+/// The null device, which `UserKnownHostsFile /dev/null` means everywhere.
+pub(crate) fn null_device() -> PathBuf {
+    PathBuf::from(if cfg!(windows) { "NUL" } else { "/dev/null" })
 }
 
 /// Resolves `[user@]host[:port]` through the config file at `config` (none: defaults only).
@@ -287,6 +307,9 @@ enum Line {
     RemoteCommand(String),
     /// `RequestTTY`: false for `no`.
     RequestTty(bool),
+    StrictHostKeyChecking(String),
+    /// `UserKnownHostsFile`'s first file, as written.
+    UserKnownHostsFile(String),
 }
 
 /// The lines of a config file, each with the `Host` patterns it comes under:
@@ -484,6 +507,15 @@ fn scan_into(path: &Path, mut under: Option<Vec<String>>, depth: usize, out: &mu
                     a.eq_ignore_ascii_case("no") || a.eq_ignore_ascii_case("false")
                 })),
             )),
+            "stricthostkeychecking" if !args.is_empty() => out.push((
+                under.clone(),
+                Line::StrictHostKeyChecking(args[0].to_lowercase()),
+            )),
+            "userknownhostsfile" => {
+                if let Some(first) = words(rest).into_iter().next() {
+                    out.push((under.clone(), Line::UserKnownHostsFile(first)));
+                }
+            }
             "identitiesonly" => out.push((
                 under.clone(),
                 Line::IdentitiesOnly(args.first().is_some_and(|a| {
@@ -625,6 +657,25 @@ fn resolve_with(
             _ => None,
         })
         .unwrap_or(true);
+    // `no` and `off` would let even a changed key in; shellwing takes them
+    // as `accept-new`, which is what they are wanted for (hosts made and
+    // thrown away, often with UserKnownHostsFile /dev/null).
+    let host_key = lines.iter().find_map(|(under, l)| match l {
+        Line::StrictHostKeyChecking(v) if applies(under, &alias) => match v.as_str() {
+            "yes" | "true" => Some(crate::HostKeyPolicy::Strict),
+            "ask" => Some(crate::HostKeyPolicy::Ask),
+            "accept-new" | "no" | "off" | "false" => Some(crate::HostKeyPolicy::AcceptNew),
+            _ => None,
+        },
+        _ => None,
+    });
+    let known_hosts = lines.iter().find_map(|(under, l)| match l {
+        Line::UserKnownHostsFile(v) if applies(under, &alias) => Some(match v.as_str() {
+            "/dev/null" | "none" => null_device(),
+            v => config_path(v, &host, &user),
+        }),
+        _ => None,
+    });
     let mut jumps = vec![];
     if !matches!(first, Some(Line::ProxyCommand(_)))
         && let Some(list) = &p.proxy_jump
@@ -652,7 +703,9 @@ fn resolve_with(
         keepalive: p.server_alive_interval,
         forwards: vec![],
         forward_agent: p.forward_agent.unwrap_or(false),
-        host_key: None,
+        host_key,
+        known_hosts,
+        connect_timeout: p.connect_timeout.filter(|t| !t.is_zero()),
         remote_command,
         tty,
         send_env,
@@ -885,6 +938,30 @@ mod tests {
         assert_eq!(r.set_env, [("LATER".to_string(), "never".to_string())]);
         let r = resolve("x", None).expect("resolve");
         assert!(r.tty && r.remote_command.is_none() && r.send_env.is_empty());
+    }
+
+    #[test]
+    fn host_keys_and_timeouts_as_ssh_reads_them() {
+        let home = std::env::home_dir().expect("home");
+        let cfg = config(
+            "Host throwaway-*\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  ConnectTimeout 5\nHost work\n  StrictHostKeyChecking yes\n  UserKnownHostsFile ~/.ssh/known_hosts_work ~/.ssh/known_hosts_other\nHost per-host\n  UserKnownHostsFile ~/.ssh/known/%h\n  StrictHostKeyChecking accept-new\nHost *\n  StrictHostKeyChecking ask\n  ConnectTimeout 0\n",
+        );
+        let r = resolve("throwaway-1", Some(&cfg)).expect("resolve");
+        // `no` is taken as accept-new: a changed key still stops it.
+        assert_eq!(r.host_key, Some(crate::HostKeyPolicy::AcceptNew));
+        assert_eq!(r.known_hosts, Some(null_device()));
+        assert_eq!(r.connect_timeout, Some(Duration::from_secs(5)));
+        let r = resolve("work", Some(&cfg)).expect("resolve");
+        assert_eq!(r.host_key, Some(crate::HostKeyPolicy::Strict));
+        assert_eq!(r.known_hosts, Some(home.join(".ssh/known_hosts_work")));
+        // ConnectTimeout 0: none, as in ssh.
+        assert_eq!(r.connect_timeout, None);
+        let r = resolve("per-host", Some(&cfg)).expect("resolve");
+        assert_eq!(r.known_hosts, Some(home.join(".ssh/known/per-host")));
+        assert_eq!(r.host_key, Some(crate::HostKeyPolicy::AcceptNew));
+        let r = resolve("other", Some(&cfg)).expect("resolve");
+        assert_eq!(r.host_key, Some(crate::HostKeyPolicy::Ask));
+        assert_eq!(r.known_hosts, None);
     }
 
     #[test]
