@@ -1,8 +1,33 @@
 {
   "channels": {
-    "stable": "v0.1.0"
+    "stable": "v0.2.0"
   },
   "releases": {
+    "v0.2.0": {
+      "releaseDate": "2026-10-31",
+      "archives": {
+        "linux_x86_64": {
+          "file": "shellwing_0.2.0_linux_x86_64.AppImage",
+          "sha256": "96c367407b8432e667929cf9e9ab8900313fd93e2bf57b308f2ca3abf1064bae"
+        },
+        "linux_aarch64": {
+          "file": "shellwing_0.2.0_linux_aarch64.AppImage",
+          "sha256": "c0c38f22c52f3198a0ee896378060b30bcd432770e9352ba80c2ddf4248fb7c0"
+        },
+        "macos_aarch64": {
+          "file": "shellwing_0.2.0_macos_aarch64.app.tar.gz",
+          "sha256": "34125567f6e7bede076c48dd11aca70c4ee849b643dd0fb0be3a3e2bc93d03b3"
+        },
+        "macos_x86_64": {
+          "file": "shellwing_0.2.0_macos_x86_64.app.tar.gz",
+          "sha256": "1d61f47ec979eea54470f97378980800389f2ca7d446c2501164086e42262cd1"
+        },
+        "windows_x86_64": {
+          "file": "shellwing_0.2.0_windows_x86_64-setup.exe",
+          "sha256": "c97f93995461002301196b1a6e9388ad8fd48f6062ef6bc4bfb4e79109e54464"
+        }
+      }
+    },
     "v0.1.0": {
       "releaseDate": "2026-10-21",
       "archives": {
