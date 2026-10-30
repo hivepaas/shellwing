@@ -131,6 +131,10 @@ pub enum Error {
     HostCertificate { host: String, why: String },
     #[error("permission denied: the server accepted none of the keys or passwords tried")]
     AuthFailed,
+    #[error(
+        "permission denied: {key} is a security key, which signs through ssh-agent here. Add it with ssh-add {key}, then connect again"
+    )]
+    SecurityKey { key: String },
     #[error("cancelled")]
     Cancelled,
     /// The connection went away without the server closing the session, as when

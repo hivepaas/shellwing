@@ -1072,6 +1072,14 @@ whatever else the agent holds.
   that in the agent, name the one to use and set `IdentitiesOnly yes`, as in
   `ssh`.
 
+**Security keys** (FIDO2: `ed25519-sk` and `ecdsa-sk`, on a YubiKey for example)
+sign in through an ssh-agent, which talks to the token: `ssh-add ~/.ssh/id_ed25519_sk`,
+then connect as usual. To pick one among the agent's keys, name its file or its
+`.pub` in `IdentityFile`. shellwing does not talk to the token itself: with a
+security key's file and no agent holding it, signing in stops with what to do.
+The server needs OpenSSH 8.2 or later. Apple's own ssh-agent does not take
+security keys; Homebrew's does.
+
 ## Syncing passwords between devices
 
 ```toml

@@ -89,6 +89,12 @@ fn public_half(path: &std::path::Path) -> Option<KeyData> {
         .map(|k| k.public_key().key_data().clone())
 }
 
+/// Whether a key is on a security key: its file holds only a handle, and
+/// only the token signs. Here that goes through an agent.
+fn on_a_token(key: &KeyData) -> bool {
+    matches!(key, KeyData::SkEd25519(_) | KeyData::SkEcdsaSha2NistP256(_))
+}
+
 /// The key an agent's identity signs with.
 fn key_of(id: &AgentIdentity) -> KeyData {
     match id {
@@ -257,6 +263,8 @@ pub(crate) async fn authenticate(
     // agent's keys tried, not offered again from their files.
     let named: Vec<Option<KeyData>> = keys.iter().map(|k| public_half(k)).collect();
     let mut offered: Vec<KeyData> = vec![];
+    // A security key that no agent offered, to say what to do if nothing else works.
+    let mut unsigned: Option<&PathBuf> = None;
 
     // Each round tries the methods in order; a partial success (one accepted,
     // more needed) starts another with the methods the server names.
@@ -316,6 +324,10 @@ pub(crate) async fn authenticate(
                 if public.as_ref().is_some_and(|k| offered.contains(k)) {
                     continue;
                 }
+                if public.as_ref().is_some_and(on_a_token) {
+                    unsigned = unsigned.or(Some(path));
+                    continue;
+                }
                 let Some(key) = load_key(path, prompter, secrets).await? else {
                     continue;
                 };
@@ -353,6 +365,9 @@ pub(crate) async fn authenticate(
                 let Ok(key) = crate::keys::parse(&k.openssh, None) else {
                     continue;
                 };
+                if on_a_token(key.public_key().key_data()) {
+                    continue;
+                }
                 if let Some(cert) = certificate_for(&key, None, certs) {
                     let r = handle
                         .authenticate_openssh_cert(user, Arc::new(key.clone()), cert)
@@ -516,7 +531,12 @@ pub(crate) async fn authenticate(
             break;
         }
     }
-    Err(Error::AuthFailed)
+    Err(match unsigned {
+        Some(key) => Error::SecurityKey {
+            key: key.display().to_string(),
+        },
+        None => Error::AuthFailed,
+    })
 }
 
 #[cfg(test)]

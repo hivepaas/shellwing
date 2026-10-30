@@ -938,3 +938,111 @@ async fn a_server_refusing_x11_is_reported_and_the_session_goes_on() {
         "{reports:?}"
     );
 }
+
+/// Signs in to `host` behind the bastion with OpenSSH's own client and with
+/// shellwing, `signing_in` under its Host: whether OpenSSH got in, and how
+/// shellwing did.
+async fn both_reach(
+    lab: &Lab,
+    name: &str,
+    host: &str,
+    signing_in: &str,
+) -> (bool, Result<(), Error>) {
+    let path = lab.scratch(&format!("{name}.ssh_config"));
+    let known = lab.dir.join("known_hosts");
+    std::fs::write(
+        &path,
+        format!(
+            "Host {host}\n  User {USER}\n  ProxyJump bastion\n  UserKnownHostsFile {known}\n  StrictHostKeyChecking yes\n  BatchMode yes\n{signing_in}Host bastion\n  HostName {}\n  Port {}\n  User {USER}\n  IdentityFile {}\n  IdentitiesOnly yes\n  IdentityAgent none\n  UserKnownHostsFile {known}\n  StrictHostKeyChecking yes\n  BatchMode yes\n",
+            lab.bastion.host,
+            lab.bastion.port,
+            lab.key("id_ed25519").display(),
+            known = known.display(),
+        ),
+    )
+    .expect("ssh config");
+    let openssh = std::process::Command::new("ssh")
+        .arg("-F")
+        .arg(&path)
+        .args([host, "true"])
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    let resolved = shellwing_ssh::config::resolve(host, Some(&path)).expect("resolve");
+    let mut opts = lab.options(resolved);
+    // As the app signs in: the agent first.
+    opts.auth.agent = true;
+    (openssh, open(opts).await.map(|_| ()))
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn security_keys_in_an_agent_sign_in_as_with_openssh() {
+    let lab = lab!();
+    let sk = lab.dir.join("sk");
+    if !sk.join("agent.sock").exists() || !has("ssh") {
+        eprintln!("skipped: no security key agent or OpenSSH client");
+        return;
+    }
+    let agent = sk.join("agent.sock");
+    for kind in ["ed25519", "ecdsa"] {
+        for host in &lab.targets {
+            // Its .pub named, as for a key whose private half is on a token.
+            let (openssh, ours) = both_reach(
+                &lab,
+                &format!("sk-{kind}-{host}"),
+                host,
+                &format!(
+                    "  IdentityAgent \"{}\"\n  IdentityFile {}\n  IdentitiesOnly yes\n",
+                    agent.display(),
+                    sk.join(format!("id_{kind}_sk.pub")).display()
+                ),
+            )
+            .await;
+            eprintln!(
+                "{kind}-sk on {host}: OpenSSH {openssh}, shellwing {}",
+                ours.is_ok()
+            );
+            assert_eq!(ours.is_ok(), openssh, "{kind}-sk on {host}: {ours:?}");
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_security_key_file_without_its_agent_says_what_to_do() {
+    let lab = lab!();
+    let sk = lab.dir.join("sk");
+    if !sk.join("id_ed25519_sk").exists() {
+        eprintln!("skipped: no security keys");
+        return;
+    }
+    let file = sk.join("id_ed25519_sk");
+    let host = &lab.targets[0];
+    // Only the token's file, and no agent to reach the token through.
+    let (_, ours) = both_reach(
+        &lab,
+        "sk-file",
+        host,
+        &format!(
+            "  IdentityAgent none\n  IdentitiesOnly yes\n  IdentityFile {}\n",
+            file.display()
+        ),
+    )
+    .await;
+    let err = ours.expect_err("signed in without the token");
+    assert!(matches!(err, Error::SecurityKey { .. }), "{err}");
+    assert!(err.to_string().contains("ssh-add"), "{err}");
+    // It does not stop the keys after it.
+    let (_, ours) = both_reach(
+        &lab,
+        "sk-file-then-key",
+        host,
+        &format!(
+            "  IdentityAgent none\n  IdentitiesOnly yes\n  IdentityFile {}\n  IdentityFile {}\n",
+            file.display(),
+            lab.key("id_ed25519").display()
+        ),
+    )
+    .await;
+    assert!(ours.is_ok(), "{ours:?}");
+}

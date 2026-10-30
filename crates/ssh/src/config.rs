@@ -155,11 +155,18 @@ impl Resolved {
         let Some(ssh) = std::env::home_dir().map(|h| h.join(".ssh")) else {
             return vec![];
         };
-        ["id_ed25519", "id_ecdsa", "id_rsa"]
-            .iter()
-            .map(|n| ssh.join(n))
-            .filter(|p| p.exists())
-            .collect()
+        // Security keys too, for the agent's to go first; the token signs there.
+        [
+            "id_ed25519",
+            "id_ed25519_sk",
+            "id_ecdsa",
+            "id_ecdsa_sk",
+            "id_rsa",
+        ]
+        .iter()
+        .map(|n| ssh.join(n))
+        .filter(|p| p.exists())
+        .collect()
     }
 }
 
