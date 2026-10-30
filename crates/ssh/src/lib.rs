@@ -1,6 +1,7 @@
 //! SSH sessions for shellwing, over russh.
 //!
 //! - [`config`] resolves a target through `~/.ssh/config`, including ProxyJump.
+//! - [`proxy`] reaches a host through a `ProxyCommand`.
 //! - [`hostkey`] checks host keys like OpenSSH and, by default, asks before
 //!   trusting a new one; nothing is sent before the user answers.
 //! - Authentication follows OpenSSH's order: agent, key files (passphrases are
@@ -18,6 +19,7 @@ pub mod hostkey;
 pub mod keys;
 pub mod known_hosts;
 pub mod prompt;
+pub mod proxy;
 pub mod secrets;
 pub mod sftp;
 
@@ -142,6 +144,8 @@ pub enum Error {
     Key(String),
     #[error("{0}")]
     Exec(String),
+    #[error("ProxyCommand {command:?} failed: {why}")]
+    Proxy { command: String, why: String },
     #[error("via {host}: {source}")]
     Jump {
         host: String,
@@ -302,7 +306,8 @@ pub struct Options {
     pub term: String,
 }
 
-/// Connects to one hop, over TCP or through the previous hop, and authenticates.
+/// Connects to one hop, over TCP, its ProxyCommand or the previous hop, and
+/// authenticates.
 async fn open_hop(
     hop: &Resolved,
     via: Option<&Handle<Checker>>,
@@ -339,9 +344,21 @@ async fn open_hop(
         preferred,
         ..Default::default()
     });
-    let connected = match via {
-        None => client::connect(config, (hop.target.host.as_str(), hop.target.port), checker).await,
-        Some(prev) => {
+    let mut through = None;
+    let connected = match (via, &hop.proxy_command) {
+        (None, Some(command)) => {
+            let command = proxy::expand(command, hop)?;
+            let (stream, said) = proxy::start(&command).map_err(|e| Error::Proxy {
+                command: command.clone(),
+                why: e.to_string(),
+            })?;
+            through = Some((command, said));
+            client::connect_stream(config, stream, checker).await
+        }
+        (None, None) => {
+            client::connect(config, (hop.target.host.as_str(), hop.target.port), checker).await
+        }
+        (Some(prev), _) => {
             let channel = prev
                 .channel_open_direct_tcpip(
                     hop.target.host.clone(),
@@ -353,13 +370,22 @@ async fn open_hop(
             client::connect_stream(config, channel.into_stream(), checker).await
         }
     };
-    let mut handle = connected.map_err(|e| {
-        problem
-            .lock()
-            .ok()
-            .and_then(|mut p| p.take())
-            .unwrap_or(Error::Ssh(e))
-    })?;
+    let mut handle = match connected {
+        Ok(h) => h,
+        Err(e) => {
+            if let Some(p) = problem.lock().ok().and_then(|mut p| p.take()) {
+                return Err(p);
+            }
+            // A command that ended says why better than the connection it
+            // took down with it.
+            if let Some((command, said)) = through
+                && let Some(why) = said.why().await
+            {
+                return Err(Error::Proxy { command, why });
+            }
+            return Err(Error::Ssh(e));
+        }
+    };
     auth::authenticate(
         &mut handle,
         &hop.target,

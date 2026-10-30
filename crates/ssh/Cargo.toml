@@ -9,7 +9,9 @@ publish.workspace = true
 
 [dependencies]
 russh.workspace = true
-tokio = { workspace = true, features = ["io-util", "fs"] }
+tokio = { workspace = true, features = ["io-util", "fs", "process"] }
+# ProxyCommand: started with no signals blocked.
+shellwing-spawn.workspace = true
 thiserror.workspace = true
 ssh2-config = "0.8"
 russh-sftp = "3"

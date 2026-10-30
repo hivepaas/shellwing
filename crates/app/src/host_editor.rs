@@ -584,7 +584,11 @@ impl HostEditor {
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
             host.keepalive = r.keepalive.map(|k| k.as_secs());
-            host.address = r.target.host.clone();
+            // hosts.toml has no ProxyCommand: a host reached through one keeps
+            // the alias as its address, for ~/.ssh/config to give it.
+            if r.proxy_command.is_none() {
+                host.address = r.target.host.clone();
+            }
             host.port = (r.target.port != 22).then_some(r.target.port);
             // Your own login name is what ssh uses anyway; written out, it would
             // be wrong on a device where you are someone else.
@@ -970,8 +974,15 @@ impl HostEditor {
                 if let Some(k) = r.identity_files.first() {
                     facts = facts.child(fact(&tr!("Key"), tilde(k)));
                 }
-                if !r.jumps.is_empty() {
-                    let via: Vec<&str> = r.jumps.iter().map(|j| j.alias.as_str()).collect();
+                // A ProxyCommand first, where the first host has one, then the jump hosts.
+                let first = r.jumps.first().unwrap_or(r);
+                let via: Vec<&str> = first
+                    .proxy_command
+                    .iter()
+                    .chain(r.jumps.iter().map(|j| &j.alias))
+                    .map(String::as_str)
+                    .collect();
+                if !via.is_empty() {
                     facts = facts.child(fact(&tr!("Through"), via.join(" → ")));
                 }
                 if !r.forwards.is_empty() {

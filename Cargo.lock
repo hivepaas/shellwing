@@ -8083,6 +8083,7 @@ dependencies = [
  "russh",
  "russh-sftp",
  "sha1 0.11.0",
+ "shellwing-spawn",
  "ssh2-config",
  "thiserror 2.0.21",
  "tokio",

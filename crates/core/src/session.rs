@@ -605,11 +605,18 @@ impl Session {
         self.held = Arc::downgrade(&held);
         let task = self.rt.spawn(async move {
             let via: Vec<&str> = resolved.jumps.iter().map(|j| j.alias.as_str()).collect();
-            let via = if via.is_empty() {
+            let mut via = if via.is_empty() {
                 String::new()
             } else {
                 format!(" via {}", via.join(", "))
             };
+            // The first host connected to may be reached through a command.
+            let first = resolved.jumps.first().unwrap_or(&resolved);
+            if let Some(command) = &first.proxy_command {
+                let command = shellwing_ssh::proxy::expand(command, first)
+                    .unwrap_or_else(|_| command.clone());
+                via.push_str(&format!(" through `{command}`"));
+            }
             status_line(&term, &format!("connecting to {}{via}…", resolved.target));
 
             // Questions from the connection are asked in the terminal.
