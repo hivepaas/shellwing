@@ -1,6 +1,6 @@
 {
   "channels": {
-    "stable": "v0.2.0"
+    "stable": "v0.2.1"
   },
   "releases": {
     "v0.2.0": {
@@ -50,6 +50,49 @@
         "windows_x86_64": {
           "file": "shellwing_0.1.0_windows_x86_64-setup.exe",
           "sha256": "c064cb83dd4178b7e0040103bb104d567f5807b42d66b5fec64a51743ec68f2c"
+        }
+      }
+    },
+    "v0.2.1": {
+      "releaseDate": "2026-10-31",
+      "archives": {
+        "linux_x86_64": {
+          "file": "shellwing_0.2.1_linux_x86_64.AppImage",
+          "sha256": "3b40a5ee8c92ada62a5f5382649706f3fc433a8600dc0050070c99e66dd59d2a"
+        },
+        "linux_aarch64": {
+          "file": "shellwing_0.2.1_linux_aarch64.AppImage",
+          "sha256": "ed1d4419f137ee8679f285b3adeb04708b06b95c5d2e98a7bd24825946d25c35"
+        },
+        "macos_aarch64": {
+          "file": "shellwing_0.2.1_macos_aarch64.app.tar.gz",
+          "sha256": "3ceecd7f723f42290e55ab3923bc396899c6e7626565fce12040ec66e941bdd1"
+        },
+        "macos_x86_64": {
+          "file": "shellwing_0.2.1_macos_x86_64.app.tar.gz",
+          "sha256": "bc3ebf9c4c28e35b506010165514a5a90de554d6dd7d9367f156850cb966975b"
+        },
+        "windows_x86_64": {
+          "file": "shellwing_0.2.1_windows_x86_64-setup.exe",
+          "sha256": "b3107f7903a0d70fbb37b90a3e5a8ec5a30176558a9da50b112665a10f24e39f"
+        }
+      },
+      "packages": {
+        "deb_x86_64": {
+          "file": "shellwing_0.2.1_amd64.deb",
+          "sha256": "6efcf60fbcb6706a30f4df7082d3232885c61ddda22f53fcfb1d6ee04307b9c0"
+        },
+        "deb_aarch64": {
+          "file": "shellwing_0.2.1_arm64.deb",
+          "sha256": "89f328079d6fdbdee2db7fcfa659935de66a75631048c4d00fd562918d7b4afc"
+        },
+        "rpm_x86_64": {
+          "file": "shellwing_0.2.1_x86_64.rpm",
+          "sha256": "07aab64987a62629dac1415136b9bf9650058419753dfdd6ff74e9f674254e69"
+        },
+        "rpm_aarch64": {
+          "file": "shellwing_0.2.1_aarch64.rpm",
+          "sha256": "83e634bfd119a96131a8cdd7e3b7576ccd1622543c580f02d4718a4a0c8a73d1"
         }
       }
     }
