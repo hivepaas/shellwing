@@ -203,15 +203,12 @@ scenario!(
     /// to do with it, not commands.
     a_package_the_list_does_not_name_gets_the_page,
     |ui| {
-        // The list has no package for this tool's kind on another architecture.
-        if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-            return;
-        }
         shellwing_update::set_test_install(Install::Package(PackageTool::Apt));
         if !check(ui, Some(SIGNED)) {
             return;
         }
-        assert!(ui.find("update-steps").is_none());
+        ui.ws(|ws, _, cx| ws.forget_update_package_for_test(cx));
+        ui.wait_until("the commands to go", |ui| ui.find("update-steps").is_none());
         assert!(ui.find("update-get").is_some());
     }
 );

@@ -269,6 +269,13 @@ impl Workspace {
         cx.notify();
     }
 
+    /// As a list that names no package would leave it: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn forget_update_package_for_test(&mut self, cx: &mut Context<Self>) {
+        self.updates.state.package = None;
+        self.refresh_settings(cx);
+    }
+
     /// Why the last look for updates failed, if it did: for the UI tests.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn update_problem(&self) -> Option<String> {
