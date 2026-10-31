@@ -95,6 +95,19 @@ notarize() {
 		exit 1
 	fi
 }
+# Stapling fetches the ticket from Apple's CloudKit, and a dropped connection
+# there is no reason to lose a build that Apple has already accepted.
+staple() {
+	local try
+	for try in 1 2 3 4 5; do
+		if xcrun stapler staple "$1"; then
+			return 0
+		fi
+		echo "stapling $1 failed (try $try of 5)" >&2
+		[ "$try" -lt 5 ] && sleep 30
+	done
+	return 1
+}
 NOTARIZE=""
 if [ -n "$IDENTITY" ] && [ -n "${APPLE_API_KEY_PATH:-}" ]; then
 	NOTARIZE=1
@@ -107,7 +120,7 @@ fi
 if [ -n "$NOTARIZE" ]; then
 	ditto -c -k --keepParent "$APP" "$WORK/shellwing.zip"
 	notarize "$WORK/shellwing.zip"
-	xcrun stapler staple "$APP"
+	staple "$APP"
 	spctl --assess --type execute --verbose=2 "$APP"
 fi
 
@@ -125,7 +138,7 @@ if [ -n "$IDENTITY" ]; then
 fi
 if [ -n "$NOTARIZE" ]; then
 	notarize "$DMG"
-	xcrun stapler staple "$DMG"
+	staple "$DMG"
 fi
 
 ## For the updater: the .app, tarred
