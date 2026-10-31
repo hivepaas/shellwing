@@ -1710,6 +1710,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Procurando uma versão mais recente…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } está disponível
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Execute estes comandos em um terminal. Eles verificam o download com a lista assinada de versões, e o sudo pede a sua senha.
+
+# Copied.
+t53842cb1 = Copiado.
+
+# Open in a local terminal
+t556d080c = Abrir em um terminal local
+
+# Skip this version
+t2c33d756 = Pular esta versão
+
 # How to update
 t3603428f = Como atualizar
 
@@ -1725,17 +1740,14 @@ t84b27295 = Atualize usando { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Ele é baixado e verificado, e instalado quando você sai.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Baixe o pacote para o seu sistema e instale-o com { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Baixe e instale no lugar desta versão.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } está disponível
-
 # The download failed: {why}
 t5e96c075 = O download falhou: { $why }
-
-# Skip this version
-t2c33d756 = Pular esta versão
 
 # The last look failed: {why}
 td122a092 = A última verificação falhou: { $why }
@@ -2303,9 +2315,6 @@ te5143d09 = Baixar o git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Instale-o em um terminal e depois conecte de novo:
-
-# Copied.
-t53842cb1 = Copiado.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Instale um git mais recente (git-scm.com) e depois conecte de novo.
@@ -3299,6 +3308,9 @@ t2bfc1370 = Não há pasta para onde baixar.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } está pronto: ele é instalado quando você sai, ou agora com Reiniciar.
+
+# Update
+t6e230e94 = Atualizar
 
 # Downloading… {got} of {total}
 taee668c2 = Baixando… { $got } de { $total }

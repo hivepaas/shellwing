@@ -9,6 +9,10 @@ pub struct UpdateState {
     /// The release it was offered, if any (`v0.2.0`).
     #[serde(default)]
     pub offered: Option<String>,
+    /// The offered release's system package for this computer, when this copy
+    /// came from one and the list names it: its file, and its SHA-256.
+    #[serde(default)]
+    pub package: Option<(String, String)>,
     /// A release the user said to skip.
     #[serde(default)]
     pub skipped: Option<String>,

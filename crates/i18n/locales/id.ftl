@@ -1693,6 +1693,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Mencari versi yang lebih baru…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } telah dirilis
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Jalankan perintah ini di terminal. Perintah ini memeriksa unduhan terhadap daftar rilis yang ditandatangani, dan sudo akan meminta kata sandi Anda.
+
+# Copied.
+t53842cb1 = Disalin.
+
+# Open in a local terminal
+t556d080c = Buka di terminal lokal
+
+# Skip this version
+t2c33d756 = Lewati versi ini
+
 # How to update
 t3603428f = Cara memperbarui
 
@@ -1708,17 +1723,14 @@ t84b27295 = { $by } memperbaruinya.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Diunduh dan diperiksa, lalu dipasang saat Anda keluar.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Unduh paket untuk sistem Anda, lalu pasang dengan { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Unduh, lalu pasang untuk menggantikan versi ini.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } telah dirilis
-
 # The download failed: {why}
 t5e96c075 = Unduhan gagal: { $why }
-
-# Skip this version
-t2c33d756 = Lewati versi ini
 
 # The last look failed: {why}
 td122a092 = Pemeriksaan terakhir gagal: { $why }
@@ -2286,9 +2298,6 @@ te5143d09 = Unduh git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Pasang di terminal, lalu Hubungkan lagi:
-
-# Copied.
-t53842cb1 = Disalin.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Pasang git yang lebih baru (git-scm.com), lalu Hubungkan lagi.
@@ -3261,6 +3270,9 @@ t2bfc1370 = Tidak ada folder tujuan unduhan.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } siap: dipasang saat Anda keluar, atau sekarang dengan Mulai Ulang.
+
+# Update
+t6e230e94 = Perbarui
 
 # Downloading… {got} of {total}
 taee668c2 = Mengunduh… { $got } dari { $total }

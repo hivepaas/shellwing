@@ -1666,6 +1666,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = 正在检查新版本…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 已发布
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = 请在终端中运行这些命令。它们会根据已签名的版本列表校验下载内容，sudo 会询问你的密码。
+
+# Copied.
+t53842cb1 = 已复制。
+
+# Open in a local terminal
+t556d080c = 在本地终端中打开
+
+# Skip this version
+t2c33d756 = 跳过此版本
+
 # How to update
 t3603428f = 如何更新
 
@@ -1681,17 +1696,14 @@ t84b27295 = 通过 { $by } 更新。
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = 下载并校验后，在退出时安装。
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = 下载适用于你系统的软件包，然后用 { $tool } 安装。
+
 # Download it, and install it in place of this one.
 t39312eae = 下载后安装，替换当前版本。
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } 已发布
-
 # The download failed: {why}
 t5e96c075 = 下载失败：{ $why }
-
-# Skip this version
-t2c33d756 = 跳过此版本
 
 # The last look failed: {why}
 td122a092 = 上次检查失败：{ $why }
@@ -2259,9 +2271,6 @@ te5143d09 = 下载 git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = 请在终端中安装，然后重新连接：
-
-# Copied.
-t53842cb1 = 已复制。
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = 请安装更新版本的 git（git-scm.com），然后重新连接。
@@ -3204,6 +3213,9 @@ t2bfc1370 = 没有可用于下载的文件夹。
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } 已就绪：退出时安装，或点击“重新启动”立即安装。
+
+# Update
+t6e230e94 = 更新
 
 # Downloading… {got} of {total}
 taee668c2 = 正在下载… { $got } / { $total }

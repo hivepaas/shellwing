@@ -1744,6 +1744,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Пошук нової версії…
 
+# shellwing {version} is out
+t5b33836c = Вийшов shellwing { $version }
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Виконайте ці команди в терміналі. Вони звіряють завантажений файл із підписаним списком випусків, а sudo запитає ваш пароль.
+
+# Copied.
+t53842cb1 = Скопійовано.
+
+# Open in a local terminal
+t556d080c = Відкрити в локальному терміналі
+
+# Skip this version
+t2c33d756 = Пропустити цю версію
+
 # How to update
 t3603428f = Як оновити
 
@@ -1759,17 +1774,14 @@ t84b27295 = Оновлюється через { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Його буде завантажено й перевірено, а встановлено — коли ви вийдете.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Завантажте пакет для своєї системи та встановіть його за допомогою { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Завантажте її та встановіть замість цієї.
 
-# shellwing {version} is out
-t5b33836c = Вийшов shellwing { $version }
-
 # The download failed: {why}
 t5e96c075 = Не вдалося завантажити: { $why }
-
-# Skip this version
-t2c33d756 = Пропустити цю версію
 
 # The last look failed: {why}
 td122a092 = Остання перевірка не вдалася: { $why }
@@ -2337,9 +2349,6 @@ te5143d09 = Завантажити git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Встановіть його в терміналі, потім натисніть «Підключитися» ще раз:
-
-# Copied.
-t53842cb1 = Скопійовано.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Встановіть новіший git (git-scm.com), потім натисніть «Підключитися» ще раз.
@@ -3375,6 +3384,9 @@ t2bfc1370 = Немає папки для завантаження.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } готовий: його буде встановлено під час виходу або зараз — кнопкою «Перезапустити».
+
+# Update
+t6e230e94 = Оновити
 
 # Downloading… {got} of {total}
 taee668c2 = Завантаження… { $got } з { $total }

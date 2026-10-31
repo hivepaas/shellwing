@@ -1744,6 +1744,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Поиск новой версии…
 
+# shellwing {version} is out
+t5b33836c = Вышел shellwing { $version }
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Выполните эти команды в терминале. Они сверяют загруженный файл с подписанным списком выпусков, а sudo запросит ваш пароль.
+
+# Copied.
+t53842cb1 = Скопировано.
+
+# Open in a local terminal
+t556d080c = Открыть в локальном терминале
+
+# Skip this version
+t2c33d756 = Пропустить эту версию
+
 # How to update
 t3603428f = Как обновить
 
@@ -1759,17 +1774,14 @@ t84b27295 = Обновляется через { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Он скачивается и проверяется, а устанавливается при выходе.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Скачайте пакет для своей системы и установите его с помощью { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Скачайте её и установите вместо текущей.
 
-# shellwing {version} is out
-t5b33836c = Вышел shellwing { $version }
-
 # The download failed: {why}
 t5e96c075 = Не удалось скачать: { $why }
-
-# Skip this version
-t2c33d756 = Пропустить эту версию
 
 # The last look failed: {why}
 td122a092 = Последняя проверка не удалась: { $why }
@@ -2337,9 +2349,6 @@ te5143d09 = Скачать git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Установите его в терминале, затем подключитесь снова:
-
-# Copied.
-t53842cb1 = Скопировано.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Установите более новый git (git-scm.com), затем подключитесь снова.
@@ -3375,6 +3384,9 @@ t2bfc1370 = Нет папки для загрузки.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } готов: он установится при выходе или сейчас — кнопкой «Перезапустить».
+
+# Update
+t6e230e94 = Обновить
 
 # Downloading… {got} of {total}
 taee668c2 = Загрузка… { $got } из { $total }

@@ -1666,6 +1666,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Đang tìm phiên bản mới hơn…
 
+# shellwing {version} is out
+t5b33836c = Đã có shellwing { $version }
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Chạy các lệnh này trong terminal. Chúng kiểm tra bản tải về theo danh sách phát hành đã ký, và sudo sẽ hỏi mật khẩu của bạn.
+
+# Copied.
+t53842cb1 = Đã sao chép.
+
+# Open in a local terminal
+t556d080c = Mở trong terminal cục bộ
+
+# Skip this version
+t2c33d756 = Bỏ qua phiên bản này
+
 # How to update
 t3603428f = Cách cập nhật
 
@@ -1681,17 +1696,14 @@ t84b27295 = { $by } sẽ cập nhật nó.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Bản mới được tải xuống và kiểm tra, rồi cài khi bạn thoát app.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Tải gói cho hệ thống của bạn, rồi cài bằng { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Tải về và cài đè lên bản này.
 
-# shellwing {version} is out
-t5b33836c = Đã có shellwing { $version }
-
 # The download failed: {why}
 t5e96c075 = Tải xuống thất bại: { $why }
-
-# Skip this version
-t2c33d756 = Bỏ qua phiên bản này
 
 # The last look failed: {why}
 td122a092 = Lần kiểm tra trước bị lỗi: { $why }
@@ -2259,9 +2271,6 @@ te5143d09 = Tải git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Cài nó trong terminal, rồi Kết nối lại:
-
-# Copied.
-t53842cb1 = Đã sao chép.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Cài git bản mới hơn (git-scm.com), rồi Kết nối lại.
@@ -3204,6 +3213,9 @@ t2bfc1370 = Không có thư mục để tải xuống.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } đã sẵn sàng: bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
+
+# Update
+t6e230e94 = Cập nhật
 
 # Downloading… {got} of {total}
 taee668c2 = Đang tải xuống… { $got } / { $total }

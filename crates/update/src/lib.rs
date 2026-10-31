@@ -7,8 +7,9 @@
 //!
 //! A copy the app can replace (an AppImage, an `.app`, one its installer put
 //! on Windows) downloads the release's file for its platform, checks it
-//! against the list's SHA-256, and installs it as it quits (`apply`). Any
-//! other copy is told where the release is, or what updates it.
+//! against the list's SHA-256, and installs it as it quits (`apply`). A copy
+//! from the release's `.deb` or `.rpm` is given the commands that install the
+//! next one. Any other copy is told where the release is, or what updates it.
 
 pub mod apply;
 pub mod download;
@@ -21,7 +22,7 @@ pub mod version;
 use std::time::Duration;
 
 pub use envelope::{PublicKeys, SignatureError};
-pub use install::{Install, install_of};
+pub use install::{Install, PackageTool, install_of};
 pub use manifest::{Manifest, ManifestError};
 pub use version::{Channel, Version};
 
@@ -82,6 +83,23 @@ pub fn list_url() -> String {
         return url;
     }
     LIST_URL.to_string()
+}
+
+/// How this copy was installed, in place of what its path says: for the app's
+/// UI tests.
+#[cfg(feature = "test-source")]
+static TEST_INSTALL: std::sync::Mutex<Option<Install>> = std::sync::Mutex::new(None);
+
+#[cfg(feature = "test-source")]
+pub fn set_test_install(install: Install) {
+    if let Ok(mut i) = TEST_INSTALL.lock() {
+        *i = Some(install);
+    }
+}
+
+#[cfg(feature = "test-source")]
+pub fn test_install() -> Option<Install> {
+    TEST_INSTALL.lock().ok()?.clone()
 }
 
 /// A list and keys of a test's own: the url, and each key's id and PEM.
@@ -157,6 +175,48 @@ pub fn release_file(envelope: &[u8], version: &Version) -> Result<ReleaseFile, C
     })
 }
 
+/// The system package `version` has for `tool` on this computer, from a
+/// signed list: its file and SHA-256. `None` when the list has none.
+pub fn package_file(
+    envelope: &[u8],
+    version: &Version,
+    tool: PackageTool,
+) -> Result<Option<(String, String)>, CheckError> {
+    let data = envelope::open(&trusted_keys()?, envelope, CONTEXT)?;
+    Ok(Manifest::parse(&data)?
+        .releases
+        .get(&version.to_string())
+        .and_then(|r| r.packages.get(&platform::package_key(tool)))
+        .map(|a| (a.file.clone(), a.sha256.clone())))
+}
+
+/// The commands that download a release's package, check it against the
+/// signed list's SHA-256 and install it, each to follow the one before with
+/// `&&`. They run the same in bash, zsh and fish.
+///
+/// `file` and `sha256` are what the list holds: [`Manifest::parse`] takes only
+/// a file named as the release's and a SHA-256 in hex, so nothing in them means
+/// anything to a shell.
+pub fn package_steps(
+    version: &Version,
+    tool: PackageTool,
+    file: &str,
+    sha256: &str,
+) -> Vec<String> {
+    let install = match tool {
+        PackageTool::Apt => format!("sudo apt install ./{file}"),
+        PackageTool::Dnf => format!("sudo dnf install ./{file}"),
+        // Not signed: the SHA-256 is what vouches for it, and zypper stops without this.
+        PackageTool::Zypper => format!("sudo zypper --no-gpg-checks install ./{file}"),
+    };
+    vec![
+        "cd \"$(mktemp -d)\"".to_string(),
+        format!("curl -fLO {}", platform::download_url(version, file)),
+        format!("echo '{sha256}  {file}' | sha256sum -c"),
+        install,
+    ]
+}
+
 /// What a signed list offers the app at `current`: None when it is the
 /// newest of its channel.
 pub fn offer(envelope: &[u8], current: &Version) -> Result<Option<Version>, CheckError> {
@@ -217,5 +277,30 @@ mod tests {
             include_bytes!("../../../release.json").as_slice()
         );
         manifest::Manifest::parse(&opened).expect("a list the app takes");
+    }
+
+    #[test]
+    fn the_steps_name_the_release_its_hash_and_the_tool() {
+        let v = Version::parse("v0.2.1").expect("version");
+        let steps = package_steps(&v, PackageTool::Apt, "shellwing_0.2.1_amd64.deb", "abc");
+        assert_eq!(
+            steps,
+            [
+                "cd \"$(mktemp -d)\"",
+                "curl -fLO https://github.com/hivepaas/shellwing/releases/download/v0.2.1/shellwing_0.2.1_amd64.deb",
+                "echo 'abc  shellwing_0.2.1_amd64.deb' | sha256sum -c",
+                "sudo apt install ./shellwing_0.2.1_amd64.deb",
+            ]
+        );
+        let last = |tool| {
+            package_steps(&v, tool, "x.rpm", "abc")
+                .pop()
+                .expect("a step")
+        };
+        assert_eq!(last(PackageTool::Dnf), "sudo dnf install ./x.rpm");
+        assert_eq!(
+            last(PackageTool::Zypper),
+            "sudo zypper --no-gpg-checks install ./x.rpm"
+        );
     }
 }

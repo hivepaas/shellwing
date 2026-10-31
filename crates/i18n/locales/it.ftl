@@ -1710,6 +1710,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Ricerca di una versione più recente…
 
+# shellwing {version} is out
+t5b33836c = È uscito shellwing { $version }
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Esegui questi comandi in un terminale. Verificano il download con l'elenco firmato delle versioni, e sudo chiede la tua password.
+
+# Copied.
+t53842cb1 = Copiato.
+
+# Open in a local terminal
+t556d080c = Apri in un terminale locale
+
+# Skip this version
+t2c33d756 = Salta questa versione
+
 # How to update
 t3603428f = Come aggiornare
 
@@ -1725,17 +1740,14 @@ t84b27295 = Lo aggiorna { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Viene scaricato e verificato, poi installato quando esci.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Scarica il pacchetto per il tuo sistema e installalo con { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Scaricalo e installalo al posto di questo.
 
-# shellwing {version} is out
-t5b33836c = È uscito shellwing { $version }
-
 # The download failed: {why}
 t5e96c075 = Download non riuscito: { $why }
-
-# Skip this version
-t2c33d756 = Salta questa versione
 
 # The last look failed: {why}
 td122a092 = L'ultimo controllo non è riuscito: { $why }
@@ -2303,9 +2315,6 @@ te5143d09 = Scarica git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Installalo in un terminale, poi premi di nuovo Connetti:
-
-# Copied.
-t53842cb1 = Copiato.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Installa un git più recente (git-scm.com), poi premi di nuovo Connetti.
@@ -3299,6 +3308,9 @@ t2bfc1370 = Nessuna cartella in cui scaricare.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } è pronto: viene installato all'uscita, oppure subito con «Riavvia».
+
+# Update
+t6e230e94 = Aggiorna
 
 # Downloading… {got} of {total}
 taee668c2 = Download… { $got } di { $total }

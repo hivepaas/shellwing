@@ -135,8 +135,9 @@ SHELLWING_KEY_ALIAS=shellwing SHELLWING_KEY_PASSWORD=… ./gradlew assembleRelea
 4. **Check the draft**: install it on each system ([Checking a
    release](#checking-a-release)), and publish it.
 5. **The list.** Add the release to `release.json` with the SHA-256 of the
-   AppImages, the `.app.tar.gz` and the installer (from `SHA256SUMS`), and merge
-   it. Sign what is on `main`: pull first, as the tool signs the `release.json` it
+   AppImages, the `.app.tar.gz` and the installer under `archives`, and of the
+   `.deb` and `.rpm` files under `packages` (never `archives`: [updates.md](updates.md#the-list-of-releases)),
+   all from `SHA256SUMS`, and merge it. Sign what is on `main`: pull first, as the tool signs the `release.json` it
    finds. Commit `release.signed.json`; `cargo test -p shellwing-update` fails if it
    does not carry `release.json` byte for byte. Then move the `release` branch
    ([updates.md › Publishing a release's list](updates.md#publishing-a-releases-list)).
