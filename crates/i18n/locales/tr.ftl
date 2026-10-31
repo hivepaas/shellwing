@@ -1710,6 +1710,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Daha yeni bir sürüm aranıyor…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } çıktı
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Bu komutları bir terminalde çalıştırın. İndirilen dosyayı imzalı sürüm listesiyle karşılaştırırlar ve sudo parolanızı sorar.
+
+# Copied.
+t53842cb1 = Kopyalandı.
+
+# Open in a local terminal
+t556d080c = Yerel terminalde aç
+
+# Skip this version
+t2c33d756 = Bu sürümü atla
+
 # How to update
 t3603428f = Nasıl güncellenir
 
@@ -1725,17 +1740,14 @@ t84b27295 = { $by } tarafından güncellenir.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = İndirilir ve doğrulanır, sonra çıktığınızda kurulur.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Sisteminize uygun paketi indirin ve { $tool } ile kurun.
+
 # Download it, and install it in place of this one.
 t39312eae = İndirin ve bunun yerine kurun.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } çıktı
-
 # The download failed: {why}
 t5e96c075 = İndirme başarısız oldu: { $why }
-
-# Skip this version
-t2c33d756 = Bu sürümü atla
 
 # The last look failed: {why}
 td122a092 = Son denetim başarısız oldu: { $why }
@@ -2303,9 +2315,6 @@ te5143d09 = git'i indir
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Bir terminalde kurun, sonra tekrar Bağlan'a tıklayın:
-
-# Copied.
-t53842cb1 = Kopyalandı.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Daha yeni bir git kurun (git-scm.com), sonra tekrar Bağlan'a tıklayın.
@@ -3299,6 +3308,9 @@ t2bfc1370 = İndirme için klasör yok.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } hazır: çıktığınızda ya da şimdi Yeniden başlat ile kurulur.
+
+# Update
+t6e230e94 = Güncelle
 
 # Downloading… {got} of {total}
 taee668c2 = İndiriliyor… { $got } / { $total }

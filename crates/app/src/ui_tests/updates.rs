@@ -3,10 +3,10 @@
 //! signature does not hold is refused, and no list yet is "up to date".
 //!
 //! The list is crates/update's test data: signed with test keys (thrown
-//! away), offering v0.2.0 on the stable channel. Once shellwing is 0.2.0 or
-//! newer, make it again with a newer release (crates/update/testdata/make.sh).
+//! away), offering v99.0.0 on the stable channel, with a `.deb` and an `.rpm`
+//! for x86_64 (crates/update/testdata/make.sh).
 
-use shellwing_update::Version;
+use shellwing_update::{Install, PackageTool, Version};
 
 use super::server::http_file;
 use super::{Ui, scenario};
@@ -26,7 +26,7 @@ const KEYS: [(&str, &str); 2] = [
 
 /// The release the test list offers.
 fn offered() -> Version {
-    Version::parse("v0.2.0").expect("version")
+    Version::parse("v99.0.0").expect("version")
 }
 
 /// The window open, the list served (`None`: not published yet) and
@@ -127,5 +127,91 @@ scenario!(
         }
         assert_eq!(offer(ui), None);
         assert_eq!(problem(ui), None);
+    }
+);
+
+scenario!(
+    /// The row over the panes tells of the release, and Update goes to the
+    /// section of About that gets it.
+    the_row_tells_and_goes_to_about,
+    |ui| {
+        if !check(ui, Some(SIGNED)) {
+            return;
+        }
+        ui.ws(|ws, window, cx| ws.close_settings_for_test(window, cx));
+        assert!(ui.find("update-row").is_some(), "no row");
+        ui.click("update-row-open");
+        ui.wait_until("About", |ui| ui.settings_page() == Some(Page::About));
+        assert!(ui.find("update-get").is_some());
+    }
+);
+
+scenario!(
+    /// The row's ✕ closes it for this run and offers the release still; its
+    /// Skip offers it no more.
+    the_row_closes_and_skips,
+    |ui| {
+        if !check(ui, Some(SIGNED)) {
+            return;
+        }
+        ui.ws(|ws, window, cx| ws.close_settings_for_test(window, cx));
+        ui.click("update-row-close");
+        ui.wait_until("the row to go", |ui| ui.find("update-row").is_none());
+        assert_eq!(offer(ui), Some(offered()), "closing is not skipping");
+
+        ui.ws(|ws, _, cx| ws.reopen_update_row_for_test(cx));
+        ui.click("update-row-skip");
+        ui.wait_until("the row to go", |ui| ui.find("update-row").is_none());
+        assert_eq!(offer(ui), None);
+    }
+);
+
+scenario!(
+    /// A copy from the release's `.deb`: About shows the commands with the
+    /// list's hash, and opening them types them into a new local terminal,
+    /// with Enter left to the user.
+    a_package_gets_the_commands_typed_not_run,
+    |ui| {
+        if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+            return;
+        }
+        shellwing_update::set_test_install(Install::Package(PackageTool::Apt));
+        if !check(ui, Some(SIGNED)) {
+            return;
+        }
+        assert!(ui.find("update-steps").is_some(), "no commands");
+        assert!(ui.find("update-get").is_none());
+        let steps = ui.ws(|ws, _, _| ws.update_steps()).expect("steps");
+        assert!(steps.iter().any(|s| s.contains(
+            "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae  shellwing_99.0.0_amd64.deb"
+        )));
+        assert!(steps.iter().any(|s| s == "sudo apt install ./shellwing_99.0.0_amd64.deb"));
+
+        ui.click("update-type");
+        ui.wait_until("a tab", |ui| ui.tabs() == 1);
+        ui.wait_for("mktemp");
+        ui.settle(std::time::Duration::from_millis(500));
+        // Not run: the shell has made no temporary folder, and curl said nothing.
+        let screen = ui.screen();
+        assert!(!screen.contains("sha256sum: "), "{screen}");
+        assert!(!screen.contains("curl: "), "{screen}");
+    }
+);
+
+scenario!(
+    /// A package whose release the list names no file for: the page, and what
+    /// to do with it, not commands.
+    a_package_the_list_does_not_name_gets_the_page,
+    |ui| {
+        // The list has no package for this tool's kind on another architecture.
+        if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+            return;
+        }
+        shellwing_update::set_test_install(Install::Package(PackageTool::Apt));
+        if !check(ui, Some(SIGNED)) {
+            return;
+        }
+        assert!(ui.find("update-steps").is_none());
+        assert!(ui.find("update-get").is_some());
     }
 );

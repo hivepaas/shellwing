@@ -4141,6 +4141,10 @@ impl Workspace {
                     });
                 }
             }
+            // The commands to read are in About.
+            Action::Update if self.update_steps().is_some() => {
+                self.open_settings(Page::About, window, cx)
+            }
             Action::Update => self.get_update(cx),
             Action::RestartToUpdate => self.restart_to_update(window, cx),
             Action::CheckUpdates => {
@@ -5612,6 +5616,7 @@ impl Render for Workspace {
             bottom
         };
         let tabs = self.tab_strip(cx);
+        let update_row = self.update_row(cx);
         let main: AnyElement = match self.tabs.get(self.active) {
             Some(tab) => {
                 let multi = tab.views().len() > 1;
@@ -5627,8 +5632,8 @@ impl Render for Workspace {
                 });
                 div()
                     .flex_1()
+                    .min_h_0()
                     .min_w_0()
-                    .h_full()
                     .flex()
                     .flex_col()
                     .children(strip)
@@ -5637,6 +5642,14 @@ impl Render for Workspace {
             }
             None => self.welcome(bg, main_corners).into_any_element(),
         };
+        let main = div()
+            .flex_1()
+            .min_w_0()
+            .h_full()
+            .flex()
+            .flex_col()
+            .children(update_row)
+            .child(main);
         let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
         let side_w = if self.sidebar_collapsed {
             sidebar::RAIL_WIDTH

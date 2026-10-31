@@ -1666,6 +1666,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = 新しいバージョンを確認しています…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } が公開されました
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = これらのコマンドをターミナルで実行してください。署名付きリリース一覧と照合してダウンロードを確認し、sudo がパスワードを尋ねます。
+
+# Copied.
+t53842cb1 = コピーしました。
+
+# Open in a local terminal
+t556d080c = ローカルターミナルで開く
+
+# Skip this version
+t2c33d756 = このバージョンをスキップ
+
 # How to update
 t3603428f = アップデート方法
 
@@ -1681,17 +1696,14 @@ t84b27295 = { $by } でアップデートします。
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = ダウンロードして検証し、終了時にインストールします。
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = お使いのシステム用のパッケージをダウンロードし、{ $tool } でインストールしてください。
+
 # Download it, and install it in place of this one.
 t39312eae = ダウンロードして、このバージョンの代わりにインストールしてください。
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } が公開されました
-
 # The download failed: {why}
 t5e96c075 = ダウンロードに失敗しました: { $why }
-
-# Skip this version
-t2c33d756 = このバージョンをスキップ
 
 # The last look failed: {why}
 td122a092 = 前回の確認に失敗しました：{ $why }
@@ -2259,9 +2271,6 @@ te5143d09 = git をダウンロード
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = ターミナルでインストールしてから、もう一度接続してください：
-
-# Copied.
-t53842cb1 = コピーしました。
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = 新しいバージョンの git（git-scm.com）をインストールしてから、もう一度接続してください。
@@ -3204,6 +3213,9 @@ t2bfc1370 = ダウンロード先のフォルダーがありません。
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } の準備ができました: 終了時にインストールされます。今すぐなら「再起動」を押してください。
+
+# Update
+t6e230e94 = アップデート
 
 # Downloading… {got} of {total}
 taee668c2 = ダウンロード中… { $got } / { $total }

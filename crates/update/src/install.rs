@@ -1,9 +1,10 @@
 //! How this copy of the app was installed, as far as can be told from where
 //! it runs: a copy the app can replace itself (an AppImage, an `.app`, one put
 //! there by its installer on Windows), one put somewhere by hand that it can
-//! only point to the download of, or one something else updates (a package
-//! manager, a store), which a replacement would leave thinking it has the
-//! old one.
+//! only point to the download of, one from the release's own `.deb` or `.rpm`
+//! that the system's package tool installs the next of, or one something else
+//! updates (a package manager, a store), which a replacement would leave
+//! thinking it has the old one.
 
 use std::path::{Path, PathBuf};
 
@@ -19,11 +20,50 @@ pub enum Install {
     /// Put there by hand (a binary run from a folder): the app says where
     /// the release is, and the user puts it there.
     Manual,
+    /// From the release's own package (in `/opt/shellwing`): this tool
+    /// installs the next one, as the user says.
+    Package(PackageTool),
     /// Updated by something else: what, and the command that does it, if one.
     Managed {
         by: &'static str,
         command: Option<&'static str>,
     },
+}
+
+/// What installs a release's package on this system.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageTool {
+    Apt,
+    Dnf,
+    Zypper,
+}
+
+impl PackageTool {
+    pub fn name(self) -> &'static str {
+        match self {
+            PackageTool::Apt => "apt",
+            PackageTool::Dnf => "dnf",
+            PackageTool::Zypper => "zypper",
+        }
+    }
+}
+
+/// Where the release's `.deb` and `.rpm` put the binary.
+const PACKAGE_EXE: &str = "/opt/shellwing/shellwing";
+
+/// Which tool installed the package at [`PACKAGE_EXE`]: dpkg keeps a list of a
+/// package's files; for an `.rpm`, the tool the system has. `None`: neither,
+/// so it was put there by hand.
+fn package_tool(exists: impl Fn(&str) -> bool) -> Option<PackageTool> {
+    if exists("/var/lib/dpkg/info/shellwing.list") {
+        Some(PackageTool::Apt)
+    } else if exists("/usr/bin/zypper") {
+        Some(PackageTool::Zypper)
+    } else if exists("/usr/bin/dnf") {
+        Some(PackageTool::Dnf)
+    } else {
+        None
+    }
 }
 
 impl Install {
@@ -80,6 +120,11 @@ pub fn install_of(exe: &Path, var: impl Fn(&str) -> Option<String>) -> Install {
             || p.contains("/program files/shellwing/"))
     {
         return Install::WindowsInstaller;
+    }
+    if p == PACKAGE_EXE
+        && let Some(tool) = package_tool(|f| Path::new(f).exists())
+    {
+        return Install::Package(tool);
     }
     // Under /usr (not /usr/local): a package of the system's.
     if p.starts_with("/usr/") && !p.starts_with("/usr/local/") {
@@ -150,6 +195,23 @@ mod tests {
         ));
         assert_eq!(install("/usr/local/bin/shellwing", &[]), Install::Manual);
         assert!(Install::AppImage("/x".into()).updates_itself());
+        assert!(!Install::Package(PackageTool::Apt).updates_itself());
         assert!(!Install::Manual.updates_itself());
+    }
+
+    #[test]
+    fn the_tool_of_a_package_in_opt_is_told_by_the_system() {
+        let tool = |have: &[&str]| {
+            let have: Vec<String> = have.iter().map(|s| s.to_string()).collect();
+            package_tool(|f| have.iter().any(|h| h == f))
+        };
+        assert_eq!(
+            tool(&["/var/lib/dpkg/info/shellwing.list", "/usr/bin/dnf"]),
+            Some(PackageTool::Apt)
+        );
+        assert_eq!(tool(&["/usr/bin/zypper"]), Some(PackageTool::Zypper));
+        assert_eq!(tool(&["/usr/bin/dnf"]), Some(PackageTool::Dnf));
+        // dpkg is there, but has no such package: put there by hand.
+        assert_eq!(tool(&["/usr/bin/dpkg"]), None);
     }
 }

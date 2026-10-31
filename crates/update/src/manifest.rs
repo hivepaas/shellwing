@@ -7,7 +7,8 @@
 //!   "releases": {
 //!     "v0.2.0": {
 //!       "releaseDate": "2026-11-02",
-//!       "archives": { "linux_x86_64": { "file": "…", "sha256": "…" } }
+//!       "archives": { "linux_x86_64": { "file": "…", "sha256": "…" } },
+//!       "packages": { "deb_x86_64": { "file": "…", "sha256": "…" } }
 //!     }
 //!   }
 //! }
@@ -35,6 +36,12 @@ pub struct Release {
     /// installs it itself.
     #[serde(default)]
     pub archives: BTreeMap<String, Archive>,
+    /// The system packages (`deb_x86_64`), which the user installs with the
+    /// system's tool. Apps before v0.2.1 refuse a list whose `archives` names
+    /// a platform they do not know, but pass over this field: packages must
+    /// never go in `archives`.
+    #[serde(default)]
+    pub packages: BTreeMap<String, Archive>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +76,12 @@ pub enum ManifestError {
     BetaOnStable(String),
 }
 
+fn is_sha256(s: &str) -> bool {
+    s.len() == 64
+        && s.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
 impl Manifest {
     /// Reads a list and checks it whole: a list that fails any of it is
     /// refused, not partly used.
@@ -89,14 +102,31 @@ impl Manifest {
                         file: a.file.clone(),
                     });
                 }
-                let hex = a.sha256.len() == 64
-                    && a.sha256
-                        .bytes()
-                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
-                if !hex {
+                if !is_sha256(&a.sha256) {
                     return Err(ManifestError::Sha256 {
                         release: name.clone(),
                         platform: platform.clone(),
+                        sha256: a.sha256.clone(),
+                    });
+                }
+            }
+            for (key, a) in &release.packages {
+                // A kind of package this app does not know is for a later
+                // one: passed over, and never shown.
+                let Some(file) = crate::platform::package_file(&v, key) else {
+                    continue;
+                };
+                if file != a.file {
+                    return Err(ManifestError::File {
+                        release: name.clone(),
+                        platform: key.clone(),
+                        file: a.file.clone(),
+                    });
+                }
+                if !is_sha256(&a.sha256) {
+                    return Err(ManifestError::Sha256 {
+                        release: name.clone(),
+                        platform: key.clone(),
                         sha256: a.sha256.clone(),
                     });
                 }
@@ -170,6 +200,30 @@ mod tests {
         assert_eq!(m.offer(&v("0.3.0-beta2")), Some(v("v0.3.0")));
         // Nothing newer than what runs.
         assert_eq!(m.offer(&v("0.4.0")), None);
+    }
+
+    #[test]
+    fn packages_are_checked_and_a_later_kind_is_passed_over() {
+        let sha = "a".repeat(64);
+        let with = |key: &str, file: &str, sha: &str| {
+            format!(
+                r#"{{"releases": {{"v0.2.1": {{"packages": {{"{key}": {{"file": "{file}", "sha256": "{sha}"}}}}}}}}}}"#
+            )
+        };
+        let m = Manifest::parse(with("deb_x86_64", "shellwing_0.2.1_amd64.deb", &sha).as_bytes())
+            .expect("a package");
+        assert_eq!(m.releases["v0.2.1"].packages.len(), 1);
+        assert!(
+            Manifest::parse(with("flatpak_x86_64", "whatever", "not a hash").as_bytes()).is_ok()
+        );
+        assert!(matches!(
+            Manifest::parse(with("deb_x86_64", "shellwing_0.2.1_arm64.deb", &sha).as_bytes()),
+            Err(ManifestError::File { .. })
+        ));
+        assert!(matches!(
+            Manifest::parse(with("rpm_x86_64", "shellwing_0.2.1_x86_64.rpm", "abc").as_bytes()),
+            Err(ManifestError::Sha256 { .. })
+        ));
     }
 
     #[test]

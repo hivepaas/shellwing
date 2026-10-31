@@ -1710,6 +1710,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Buscando una versión más reciente…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } está disponible
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Ejecuta estos comandos en un terminal. Comprueban la descarga con la lista firmada de versiones, y sudo te pedirá la contraseña.
+
+# Copied.
+t53842cb1 = Copiado.
+
+# Open in a local terminal
+t556d080c = Abrir en un terminal local
+
+# Skip this version
+t2c33d756 = Omitir esta versión
+
 # How to update
 t3603428f = Cómo actualizar
 
@@ -1725,17 +1740,14 @@ t84b27295 = Se actualiza con { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Se descarga y se comprueba, y se instala al salir.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Descarga el paquete para tu sistema e instálalo con { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Descárgala e instálala en lugar de esta.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } está disponible
-
 # The download failed: {why}
 t5e96c075 = La descarga falló: { $why }
-
-# Skip this version
-t2c33d756 = Omitir esta versión
 
 # The last look failed: {why}
 td122a092 = La última comprobación falló: { $why }
@@ -2303,9 +2315,6 @@ te5143d09 = Descargar git
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Instálalo en una terminal y pulsa Conectar otra vez:
-
-# Copied.
-t53842cb1 = Copiado.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Instala un git más reciente (git-scm.com) y pulsa Conectar otra vez.
@@ -3299,6 +3308,9 @@ t2bfc1370 = No hay ninguna carpeta donde descargar.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } está listo: se instala al salir, o ahora con Reiniciar.
+
+# Update
+t6e230e94 = Actualizar
 
 # Downloading… {got} of {total}
 taee668c2 = Descargando… { $got } de { $total }

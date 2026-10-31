@@ -1,5 +1,5 @@
-//! The About page: the version, where the code is and how to take part,
-//! updates, and HivePaaS, from the same author.
+//! The About page: the version, updates, where the code is and how to take
+//! part, and HivePaaS, from the same author.
 
 use gpui::{
     ClipboardItem, Context, FontWeight, InteractiveElement, ParentElement,
@@ -39,8 +39,8 @@ impl SettingsView {
     pub(super) fn about(&self, cx: &mut Context<Self>) -> gpui::Div {
         page(&tr!("About"))
             .child(self.identity(cx))
-            .child(open_source(cx))
             .child(self.updates(cx))
+            .child(open_source(cx))
             .child(hivepaas(cx))
             .child(
                 div()
@@ -152,6 +152,59 @@ impl SettingsView {
             )
         } else if u.checking {
             label(&tr!("Looking for a newer version…"))
+        } else if let (Some(v), Some(steps)) = (&u.offered, &u.package_steps) {
+            let line = steps.join(" && ");
+            update_card(
+                tr!("shellwing {version} is out", version = v.clone()),
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.))
+                    .child(label(&tr!(
+                        "Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password."
+                    )))
+                    .child(
+                        div()
+                            .debug_selector(|| "update-steps".to_string())
+                            .px(px(8.))
+                            .py(px(6.))
+                            .rounded(px(5.))
+                            .bg(rgb(colors().field))
+                            .font_family("monospace")
+                            .text_size(ui(12.))
+                            .children(steps.iter().enumerate().map(|(i, step)| {
+                                let more = if i + 1 < steps.len() { " &&" } else { "" };
+                                div().child(format!("{step}{more}"))
+                            })),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_wrap()
+                            .gap(px(8.))
+                            .child(small_button("update-copy", &tr!("Copy")).on_click(
+                                cx.listener(move |v, _, _, cx| {
+                                    cx.write_to_clipboard(ClipboardItem::new_string(line.clone()));
+                                    v.say(tr!("Copied."), cx);
+                                }),
+                            ))
+                            .child(
+                                small_button("update-type", &tr!("Open in a local terminal"))
+                                    .on_click(cx.listener(|v, _, w, cx| {
+                                        let _ = v
+                                            .workspace
+                                            .update(cx, |ws, cx| ws.type_update_steps(w, cx));
+                                    })),
+                            )
+                            .child(
+                                small_button("update-skip", &tr!("Skip this version")).on_click(
+                                    cx.listener(|v, _, _, cx| {
+                                        let _ = v.workspace.update(cx, |ws, cx| ws.skip_update(cx));
+                                    }),
+                                ),
+                            ),
+                    ),
+            )
         } else if let Some(v) = &u.offered {
             let get = match u.managed {
                 Some(_) => tr!("How to update"),
@@ -175,7 +228,13 @@ impl SettingsView {
                 None if u.updates_itself => {
                     tr!("It is downloaded and checked, then installed when you quit.")
                 }
-                None => tr!("Download it, and install it in place of this one."),
+                None => match u.package_tool {
+                    Some(tool) => tr!(
+                        "Download the package for your system, and install it with {tool}.",
+                        tool = tool
+                    ),
+                    None => tr!("Download it, and install it in place of this one."),
+                },
             };
             update_card(
                 tr!("shellwing {version} is out", version = v.clone()),

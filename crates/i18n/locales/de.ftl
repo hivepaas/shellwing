@@ -1710,6 +1710,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = Suche nach einer neueren Version…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } ist verfügbar
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = Führen Sie diese Befehle in einem Terminal aus. Sie prüfen den Download anhand der signierten Release-Liste, und sudo fragt nach Ihrem Passwort.
+
+# Copied.
+t53842cb1 = Kopiert.
+
+# Open in a local terminal
+t556d080c = In einem lokalen Terminal öffnen
+
+# Skip this version
+t2c33d756 = Diese Version überspringen
+
 # How to update
 t3603428f = So aktualisierst du
 
@@ -1725,17 +1740,14 @@ t84b27295 = Das Update übernimmt { $by }.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = Es wird heruntergeladen und geprüft, dann beim Beenden installiert.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = Laden Sie das Paket für Ihr System herunter und installieren Sie es mit { $tool }.
+
 # Download it, and install it in place of this one.
 t39312eae = Lade sie herunter und installiere sie anstelle dieser Version.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } ist verfügbar
-
 # The download failed: {why}
 t5e96c075 = Der Download ist fehlgeschlagen: { $why }
-
-# Skip this version
-t2c33d756 = Diese Version überspringen
 
 # The last look failed: {why}
 td122a092 = Die letzte Prüfung ist fehlgeschlagen: { $why }
@@ -2303,9 +2315,6 @@ te5143d09 = git herunterladen
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = Installiere es in einem Terminal und klicke dann erneut auf Verbinden:
-
-# Copied.
-t53842cb1 = Kopiert.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = Installiere ein neueres git (git-scm.com) und klicke dann erneut auf Verbinden.
@@ -3299,6 +3308,9 @@ t2bfc1370 = Kein Ordner zum Herunterladen.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } ist bereit: Es wird beim Beenden installiert, oder jetzt mit Neu starten.
+
+# Update
+t6e230e94 = Aktualisieren
 
 # Downloading… {got} of {total}
 taee668c2 = Wird heruntergeladen… { $got } von { $total }

@@ -1,13 +1,16 @@
 //! Telling that a newer shellwing is out, and installing it (see
 //! `shellwing_update`): a look once a day while `[updates] check` is on, or
-//! when asked in Settings › About. What is offered shows as a dot on the
-//! Settings button, an entry of the palette and a line in About; it never
-//! interrupts.
+//! when asked in Settings › About. What is offered shows as a row over the
+//! panes, a dot on the Settings button, an entry of the palette and a line in
+//! About; it never takes the keyboard.
 //!
 //! A copy the app can replace downloads the release when told to, checks it
 //! against the signed list, and installs it as it quits: at *Restart now*
 //! (asked first while connections are open), or whenever the user quits.
-//! Any other copy opens the release's page, or says what updates it.
+//! A copy from the release's `.deb` or `.rpm` is given the commands that
+//! install the next one, to copy or to have typed in a local terminal, where
+//! the user reads them and presses Enter. Any other copy opens the release's
+//! page, or says what updates it.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -15,6 +18,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::*;
+use gpui::Stateful;
 use shellwing_config::UpdateState;
 use shellwing_update::{Install, Version};
 
@@ -25,6 +29,10 @@ const WAKE_EVERY: Duration = Duration::from_secs(60 * 60);
 const FIRST_AFTER: Duration = Duration::from_secs(20);
 /// How often a download's progress is shown.
 const PROGRESS_EVERY: Duration = Duration::from_millis(250);
+/// How often a new local terminal is asked whether its shell has started, and
+/// how many times.
+const SHELL_EVERY: Duration = Duration::from_millis(200);
+const SHELL_TRIES: usize = 50;
 
 /// Where a release's file is downloaded.
 fn staging_dir() -> Option<PathBuf> {
@@ -53,6 +61,8 @@ pub(crate) struct Updates {
     pub(crate) stage: Stage,
     /// Quitting to install the update starts the app again.
     pub(crate) relaunch: bool,
+    /// The release whose row over the panes was closed: back at the next start.
+    pub(crate) row_closed: Option<Version>,
 }
 
 /// What Settings › About shows of it.
@@ -71,6 +81,11 @@ pub struct UpdateSnap {
     pub managed: Option<(&'static str, Option<&'static str>)>,
     /// The app can download a release and install it itself.
     pub updates_itself: bool,
+    /// The tool that installs the release's package, when this copy came from one.
+    pub package_tool: Option<&'static str>,
+    /// The commands that install the offered release's package, when the list
+    /// names it.
+    pub package_steps: Option<Vec<String>>,
     pub stage: Stage,
 }
 
@@ -93,8 +108,43 @@ pub(crate) fn by_said(by: &str) -> String {
 }
 
 fn install() -> Install {
+    #[cfg(all(test, feature = "ui-tests"))]
+    if let Some(how) = shellwing_update::test_install() {
+        return how;
+    }
     let exe = std::env::current_exe().unwrap_or_default();
     shellwing_update::install_of(&exe, |k| std::env::var(k).ok())
+}
+
+/// The release a list offers, and its package's file and SHA-256.
+type Found = (Option<Version>, Option<(String, String)>);
+
+/// What a signed list offers this copy, and that release's package for it.
+fn found_in(list: &[u8]) -> Result<Found, shellwing_update::CheckError> {
+    let offered = shellwing_update::offer(list, &shellwing_update::current())?;
+    let package = match (&offered, install()) {
+        (Some(v), Install::Package(tool)) => shellwing_update::package_file(list, v, tool)?,
+        _ => None,
+    };
+    Ok((offered, package))
+}
+
+/// A button of the row over the panes.
+fn row_button(id: &'static str, label: String) -> Stateful<Div> {
+    div()
+        .id(id)
+        .debug_selector(|| id.to_string())
+        .h(px(24.))
+        .px(px(10.))
+        .flex()
+        .items_center()
+        .rounded(px(6.))
+        .border_1()
+        .border_color(rgb(colors().accent))
+        .text_xs()
+        .cursor_pointer()
+        .hover(|s| s.bg(rgb(colors().hover)))
+        .child(label)
 }
 
 /// "12.3 MB".
@@ -181,20 +231,20 @@ impl Workspace {
             .spawn(async move { shellwing_update::fetch(&url).await });
         cx.spawn(async move |this, cx| {
             let found = match job.await {
-                Ok(Ok(list)) => shellwing_update::offer(&list, &shellwing_update::current())
-                    .map_err(|e| e.to_string()),
+                Ok(Ok(list)) => found_in(&list).map_err(|e| e.to_string()),
                 // Before the first release: up to date.
-                Ok(Err(shellwing_update::CheckError::NoList)) => Ok(None),
+                Ok(Err(shellwing_update::CheckError::NoList)) => Ok((None, None)),
                 Ok(Err(e)) => Err(e.to_string()),
                 Err(e) => Err(e.to_string()),
             };
             let _ = this.update(cx, |ws, cx| {
                 ws.updates.checking = false;
                 match found {
-                    Ok(offered) => {
+                    Ok((offered, package)) => {
                         ws.updates.problem = None;
                         ws.updates.state.checked_at = Some(now_secs());
                         ws.updates.state.offered = offered.map(|v| v.to_string());
+                        ws.updates.state.package = package;
                     }
                     Err(e) => ws.updates.problem = Some(e),
                 }
@@ -204,6 +254,19 @@ impl Workspace {
             });
         })
         .detach();
+    }
+
+    /// Settings closed, as Escape closes them: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn close_settings_for_test(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.close_settings(window, cx);
+    }
+
+    /// The row closed by the ✕ back, as at the next start: for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn reopen_update_row_for_test(&mut self, cx: &mut Context<Self>) {
+        self.updates.row_closed = None;
+        cx.notify();
     }
 
     /// Why the last look for updates failed, if it did: for the UI tests.
@@ -252,6 +315,50 @@ impl Workspace {
             }
             _ => cx.open_url(&shellwing_update::release_page(&v)),
         }
+    }
+
+    /// The commands that install the offered release's package, when this copy
+    /// came from one and the list names it.
+    pub(crate) fn update_steps(&self) -> Option<Vec<String>> {
+        let Install::Package(tool) = install() else {
+            return None;
+        };
+        let v = self.update_offered()?;
+        let (file, sha256) = self.updates.state.package.as_ref()?;
+        Some(shellwing_update::package_steps(&v, tool, file, sha256))
+    }
+
+    /// A local terminal with the commands typed, and Enter left to the user.
+    pub(crate) fn type_update_steps(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(steps) = self.update_steps() else {
+            return;
+        };
+        self.close_settings(window, cx);
+        self.open(crate::local::SPEC, window, cx);
+        let Some(view) = self.active_tab().map(|v| v.downgrade()) else {
+            return;
+        };
+        let line = steps.join(" && ");
+        let rt = self.rt.clone();
+        cx.spawn(async move |_, cx| {
+            for _ in 0..SHELL_TRIES {
+                // Asked after the wait: what is typed as a shell starts shows twice.
+                let _ = rt
+                    .spawn(async { tokio::time::sleep(SHELL_EVERY).await })
+                    .await;
+                let typed = view.update(cx, |v, _| {
+                    let ready = v.shell_unready().is_none();
+                    if ready {
+                        v.type_text(&line, false);
+                    }
+                    ready
+                });
+                if typed.unwrap_or(true) {
+                    break;
+                }
+            }
+        })
+        .detach();
     }
 
     /// Downloads `v`'s file for this platform, as the signed list (read
@@ -372,6 +479,90 @@ impl Workspace {
         cx.notify();
     }
 
+    /// Closes the row over the panes until the next start.
+    fn close_update_row(&mut self, v: Version, cx: &mut Context<Self>) {
+        self.updates.row_closed = Some(v);
+        cx.notify();
+    }
+
+    /// The row over the panes: a release that is ready, or, while looking for
+    /// updates is on, one that is out. Nothing while one downloads: About
+    /// shows that, and it was asked for.
+    pub(super) fn update_row(&self, cx: &mut Context<Self>) -> Option<Div> {
+        let (version, ready) = match &self.updates.stage {
+            Stage::Ready(v) => (v.clone(), true),
+            Stage::Downloading(..) => return None,
+            _ if self.live.settings().updates.check => (self.update_offered()?, false),
+            _ => return None,
+        };
+        if self.updates.row_closed.as_ref() == Some(&version) {
+            return None;
+        }
+        let said = version.to_string();
+        let row = div()
+            .debug_selector(|| "update-row".to_string())
+            .h(px(34.))
+            .flex_shrink_0()
+            .flex()
+            .items_center()
+            .gap(px(10.))
+            .px(px(14.))
+            .bg(rgb(colors().selected))
+            .border_b_1()
+            .border_color(rgb(colors().accent))
+            .text_sm()
+            .child(div().size(px(8.)).rounded_full().bg(rgb(colors().accent)))
+            .child(div().flex_1().min_w_0().child(if ready {
+                tr!("shellwing {version} is ready", version = said)
+            } else {
+                tr!("shellwing {version} is out", version = said)
+            }));
+        let row = if ready {
+            row.child(
+                row_button("update-row-restart", tr!("Restart now"))
+                    .on_click(cx.listener(|ws, _, window, cx| ws.restart_to_update(window, cx))),
+            )
+        } else {
+            row.child(row_button("update-row-open", tr!("Update")).on_click(
+                cx.listener(|ws, _, window, cx| ws.open_settings(Page::About, window, cx)),
+            ))
+            .child(
+                div()
+                    .id("update-row-skip")
+                    .debug_selector(|| "update-row-skip".to_string())
+                    .text_xs()
+                    .text_color(rgb(colors().soft))
+                    .cursor_pointer()
+                    .hover(|s| s.text_color(rgb(colors().text)).underline())
+                    .on_click(cx.listener(|ws, _, _, cx| ws.skip_update(cx)))
+                    .child(tr!("Skip this version")),
+            )
+        };
+        Some(
+            row.child(
+                div()
+                    .id("update-row-close")
+                    .debug_selector(|| "update-row-close".to_string())
+                    .size(px(20.))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(4.))
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().hover)))
+                    .on_click(
+                        cx.listener(move |ws, _, _, cx| ws.close_update_row(version.clone(), cx)),
+                    )
+                    .child(
+                        svg()
+                            .path("icons/close.svg")
+                            .size(px(12.))
+                            .text_color(rgb(colors().soft)),
+                    ),
+            ),
+        )
+    }
+
     /// Said as a download goes: "12.3 MB of 45.6 MB".
     pub(crate) fn download_said(got: u64, of: Option<u64>) -> String {
         match of {
@@ -402,6 +593,11 @@ impl Workspace {
                 _ => None,
             },
             updates_itself: how.updates_itself(),
+            package_tool: match how {
+                Install::Package(tool) => Some(tool.name()),
+                _ => None,
+            },
+            package_steps: self.update_steps(),
             stage: self.updates.stage.clone(),
         }
     }

@@ -1666,6 +1666,21 @@ tfc977e10 = shellwing { $version }
 # Looking for a newer version…
 tf1905fe9 = 새 버전을 확인하는 중…
 
+# shellwing {version} is out
+t5b33836c = shellwing { $version } 출시
+
+# Run these in a terminal. They check the download against the signed list of releases, and sudo asks for your password.
+t98b9753c = 터미널에서 이 명령을 실행하세요. 서명된 릴리스 목록과 대조해 다운로드를 확인하며, sudo가 비밀번호를 묻습니다.
+
+# Copied.
+t53842cb1 = 복사했습니다.
+
+# Open in a local terminal
+t556d080c = 로컬 터미널에서 열기
+
+# Skip this version
+t2c33d756 = 이 버전 건너뛰기
+
 # How to update
 t3603428f = 업데이트 방법
 
@@ -1681,17 +1696,14 @@ t84b27295 = { $by }에서 업데이트합니다.
 # It is downloaded and checked, then installed when you quit.
 tb46c0678 = 다운로드하고 확인한 뒤, 종료할 때 설치합니다.
 
+# Download the package for your system, and install it with {tool}.
+tb4036d6e = 시스템에 맞는 패키지를 다운로드한 뒤 { $tool }(으)로 설치하세요.
+
 # Download it, and install it in place of this one.
 t39312eae = 다운로드한 뒤 현재 버전 대신 설치하세요.
 
-# shellwing {version} is out
-t5b33836c = shellwing { $version } 출시
-
 # The download failed: {why}
 t5e96c075 = 다운로드 실패: { $why }
-
-# Skip this version
-t2c33d756 = 이 버전 건너뛰기
 
 # The last look failed: {why}
 td122a092 = 마지막 확인에 실패했습니다: { $why }
@@ -2259,9 +2271,6 @@ te5143d09 = git 다운로드
 
 # Install it in a terminal, then Connect again:
 t6e62c13a = 터미널에서 설치한 뒤 다시 연결하세요:
-
-# Copied.
-t53842cb1 = 복사했습니다.
 
 # Install a newer git (git-scm.com), then Connect again.
 t9a84a209 = 최신 git(git-scm.com)을 설치한 뒤 다시 연결하세요.
@@ -3204,6 +3213,9 @@ t2bfc1370 = 다운로드할 폴더가 없습니다.
 
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } 준비 완료: 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
+
+# Update
+t6e230e94 = 업데이트
 
 # Downloading… {got} of {total}
 taee668c2 = 다운로드 중… { $got } / { $total }

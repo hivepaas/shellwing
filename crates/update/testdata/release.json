@@ -1,19 +1,29 @@
 {
   "channels": {
-    "stable": "v0.2.0",
-    "beta": "v0.3.0-beta2"
+    "stable": "v99.0.0",
+    "beta": "v99.1.0-beta2"
   },
   "releases": {
-    "v0.2.0": {
+    "v99.0.0": {
       "releaseDate": "2026-11-02",
       "archives": {
         "linux_x86_64": {
-          "file": "shellwing_0.2.0_linux_x86_64.AppImage",
+          "file": "shellwing_99.0.0_linux_x86_64.AppImage",
           "sha256": "fd8f7bed4f39906801f70b89c1c859a28f4b8aa9cf7f4ae07a1ccb39b66236bd"
+        }
+      },
+      "packages": {
+        "deb_x86_64": {
+          "file": "shellwing_99.0.0_amd64.deb",
+          "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+        },
+        "rpm_x86_64": {
+          "file": "shellwing_99.0.0_x86_64.rpm",
+          "sha256": "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
         }
       }
     },
-    "v0.3.0-beta2": {
+    "v99.1.0-beta2": {
       "releaseDate": "2026-11-20",
       "archives": {}
     }

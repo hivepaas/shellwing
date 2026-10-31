@@ -1,9 +1,15 @@
 # Updates
 
-shellwing tells its user when a newer version is out (*Settings › About*, a dot
-on the Settings button, an entry of the palette). It looks once a day while
-`[updates] check` is on (the default), and when asked (*Check now*). Nothing is
-downloaded or installed until the user says so (see [Installing](#installing)).
+shellwing tells its user when a newer version is out (a row over the panes,
+*Settings › About*, a dot on the Settings button, an entry of the palette). It
+looks once a day while `[updates] check` is on (the default), and when asked
+(*Check now*). Nothing is downloaded or installed until the user says so (see
+[Installing](#installing)).
+
+The row never takes the keyboard, so it can show during a session. *Update* opens
+the section of About that gets the release, *Skip this version* offers it no more,
+and ✕ closes the row until the next start. With `[updates] check` off it shows
+only a release already downloaded.
 
 ## Channels
 
@@ -35,6 +41,10 @@ files one by one can never serve a new list with an old signature. `release.json
       "releaseDate": "2026-11-02",
       "archives": {
         "linux_x86_64": { "file": "shellwing_0.2.0_linux_x86_64.AppImage", "sha256": "…" }
+      },
+      "packages": {
+        "deb_x86_64": { "file": "shellwing_0.2.0_amd64.deb", "sha256": "…" },
+        "rpm_x86_64": { "file": "shellwing_0.2.0_x86_64.rpm", "sha256": "…" }
       }
     },
     "v0.3.0-beta2": { "releaseDate": "2026-11-20", "archives": {} }
@@ -47,6 +57,11 @@ The app refuses a list that does not hold together: a version not written
 stable, a SHA-256 that is not one, a file not named as its platform's is
 (below).
 
+**A system package never goes in `archives`.** An app refuses a list whose
+`archives` names a platform it does not know, so that would end updates for every
+copy already installed. `packages` is a separate field: apps before v0.2.1 pass
+over it, and later ones pass over a kind of package they do not know.
+
 ## Installing
 
 What the app does with a release depends on how it was installed, as told from
@@ -57,7 +72,8 @@ where it runs:
 | an AppImage (`$APPIMAGE`) | downloads the release's AppImage and puts it in place of this one |
 | `Shellwing.app` on macOS | downloads the `.app` (tarred), checks it with `codesign` (valid, signed by the team that signed this one), and swaps the two |
 | by its installer on Windows (`…\AppData\Local\Programs\shellwing\`, `…\Program Files\shellwing\`) | downloads the installer and runs it, quiet (`/S`), once the app has quit |
-| by Homebrew, Scoop, Flatpak, Snap, a system package, a store | says what updates it (`brew upgrade shellwing`, …) |
+| from the release's `.deb` or `.rpm` (`/opt/shellwing/shellwing`) | shows the commands that install the next one, to copy or to type into a local terminal (see below) |
+| by Homebrew, Scoop, Flatpak, Snap, a distribution's package, a store | says what updates it (`brew upgrade shellwing`, …) |
 | by hand (a binary in a folder) | opens the release's page |
 
 A release has one file for each platform, named so (`v0.2.0`):
@@ -79,6 +95,25 @@ installed as the app quits: at *Restart now* (asked first while connections are
 open, as quitting is), which starts the new one, or whenever the user quits. A
 release downloaded by an earlier run is still ready at the next start; once the
 app running is that version or newer, its file goes.
+
+### The release's `.deb` and `.rpm`
+
+Installing a package takes root, so the app does not do it: it shows the commands
+and the user runs them. They name the right file for the system, with the SHA-256
+from the signed list:
+
+```sh
+cd "$(mktemp -d)" &&
+curl -fLO https://github.com/hivepaas/shellwing/releases/download/v0.2.1/shellwing_0.2.1_amd64.deb &&
+echo '<sha256>  shellwing_0.2.1_amd64.deb' | sha256sum -c &&
+sudo apt install ./shellwing_0.2.1_amd64.deb
+```
+
+The tool is told from the system: `apt` when dpkg lists the package, else `zypper`
+or `dnf`, whichever it has. zypper is given `--no-gpg-checks`, as the packages are
+not signed; the SHA-256 vouches for the file. *Copy* and *Open in a local terminal*
+both give one line. The second types it into a new tab and leaves Enter to the
+user. If the list names no package for the system, the app opens the release's page.
 
 ## Signing
 
