@@ -8,7 +8,7 @@ app is told of it.
 
 | Platform | Files | Made by |
 | --- | --- | --- |
-| Linux x86_64, aarch64 | `shellwing_<v>_linux_<arch>.AppImage`, `.tar.gz`, `shellwing_<v>_<amd64\|arm64>.deb` | `scripts/package_linux.sh` |
+| Linux x86_64, aarch64 | `shellwing_<v>_linux_<arch>.AppImage`, `.tar.gz`, `shellwing_<v>_<amd64\|arm64>.deb`, `shellwing_<v>_<x86_64\|aarch64>.rpm` | `scripts/package_linux.sh` |
 | macOS aarch64, x86_64 | `shellwing_<v>_macos_<arch>.dmg`, `.app.tar.gz` | `scripts/package_macos.sh` |
 | Windows x86_64 | `shellwing_<v>_windows_x86_64-setup.exe`, `.zip` | `scripts/package_windows.sh` |
 | Android (arm64-v8a, x86_64), rehearsals only for now | `shellwing_<v>_android.apk` | `scripts/build_android.sh`, then `./gradlew assembleRelease` in `android/` |
@@ -18,9 +18,10 @@ installer; the others are for people.
 
 - **Linux** builds on Ubuntu 22.04, so the packages run on glibc 2.35 and newer.
   The binary links only libc and xkbcommon; Wayland, X11 and Vulkan are loaded
-  when it starts. The `.deb` puts it in `/opt/shellwing` (linked from
-  `/usr/bin`): under `/usr` the updater would take it for a distribution's own
-  package and leave it to apt.
+  when it starts. The `.deb` and the `.rpm` put it in `/opt/shellwing` (linked
+  from `/usr/bin`): under `/usr` the updater would take it for a distribution's
+  own package and leave it to apt. The `.rpm` is built with `rpmbuild` on Ubuntu,
+  so it names the glibc it needs, and an older system refuses it at install.
 - **macOS**: `shellwing.app`, signed with the Developer ID and notarized when the
   repository holds one ([Signing for macOS](#signing-for-macos)), else signed ad
   hoc: then Gatekeeper asks the first time it opens (*Open Anyway* in *System
@@ -179,7 +180,7 @@ On a real Mac:
 
 **Linux:**
 
-- The AppImage runs (`--help`), the `.deb` names the version and installs under
-  `/opt/shellwing`.
+- The AppImage runs (`--help`), the `.deb` and the `.rpm` name the version and
+  install under `/opt/shellwing`.
 - X11 forwarding with `DISPLAY=:0`, on the desktop's X server. GNOME under Wayland
   has no SECURITY extension, so *Untrusted* says why it cannot, and *Trusted* works.
