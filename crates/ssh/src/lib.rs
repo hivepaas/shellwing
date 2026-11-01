@@ -40,7 +40,7 @@ use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
 pub use secrets::{Learned, Secrets};
-pub use sftp::Sftp;
+pub use sftp::{RemoteFile, Sftp};
 
 /// Used when the config sets no ServerAliveInterval.
 const DEFAULT_KEEPALIVE: Duration = Duration::from_secs(30);
@@ -481,6 +481,50 @@ async fn open_hop(
     )
     .await?;
     Ok(handle)
+}
+
+/// A connection for files alone: no shell, no forwards. It closes when dropped.
+pub struct FilesConnection {
+    sftp: Sftp,
+    _target: Handle<Checker>,
+    /// The jump connections carry the target's.
+    _jumps: Vec<Handle<Checker>>,
+}
+
+impl FilesConnection {
+    pub fn sftp(&self) -> &Sftp {
+        &self.sftp
+    }
+}
+
+/// Connects (through any ProxyJump hosts), authenticates and opens SFTP, with no
+/// shell beside it, for what browses and transfers files and nothing else.
+pub async fn connect_files(opts: Options) -> Result<FilesConnection, Error> {
+    let mut jumps: Vec<Handle<Checker>> = Vec::new();
+    for hop in &opts.target.jumps {
+        let h = open_hop(hop, jumps.last(), &opts, Routes::default(), false, None)
+            .await
+            .map_err(|e| Error::Jump {
+                host: hop.alias.clone(),
+                source: Box::new(e),
+            })?;
+        jumps.push(h);
+    }
+    let target = open_hop(
+        &opts.target,
+        jumps.last(),
+        &opts,
+        Routes::default(),
+        false,
+        None,
+    )
+    .await?;
+    let sftp = sftp::open(&target).await?;
+    Ok(FilesConnection {
+        sftp,
+        _target: target,
+        _jumps: jumps,
+    })
 }
 
 /// Connects (through any ProxyJump hosts), authenticates, forwards the target's

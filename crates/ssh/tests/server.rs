@@ -1653,6 +1653,72 @@ async fn sftp_session(
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn a_connection_for_files_alone_streams_them() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    if sftp_server().is_none() {
+        eprintln!("skipped: no sftp-server on this system");
+        return;
+    }
+    let fx = Fixture::new("files-alone");
+    let remote = fx.dir.join("remote");
+    std::fs::create_dir_all(remote.join("full")).expect("dirs");
+    std::fs::create_dir_all(remote.join("empty")).expect("dirs");
+    std::fs::write(remote.join("full/x"), "x").expect("x");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            sftp: Some(remote.clone()),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, asked) = scripted(vec![Some("yes"), Some("pw")]);
+    let mut target = local(port, "me");
+    // No key of this machine's is tried: only the password.
+    target.identity_files = vec![fx.dir.join("no-key")];
+    let connection = shellwing_ssh::connect_files(fx.options(target, p)).await;
+    let connection = connection.unwrap_or_else(|e| {
+        panic!("connect: {e}: {:?}", asked.lock().expect("log"));
+    });
+    let sftp = connection.sftp();
+    let home = sftp.home().await.expect("home");
+    let path = shellwing_ssh::sftp::join(&home, "new.bin");
+
+    let body: Vec<u8> = (0..1_000_000u32).map(|i| (i % 251) as u8).collect();
+    let mut w = sftp.writer(&path).await.expect("writer");
+    w.write_all(&body).await.expect("write");
+    w.shutdown().await.expect("close");
+    assert!(sftp.writer(&path).await.is_err(), "a file that is there");
+
+    sftp.set_details(&path, Some(0o640), Some(1_500_000_000))
+        .await
+        .expect("details");
+    let meta = std::fs::metadata(remote.join("new.bin")).expect("meta");
+    assert_eq!(
+        meta.modified().expect("time"),
+        std::time::UNIX_EPOCH + Duration::from_secs(1_500_000_000)
+    );
+
+    let mut back = Vec::new();
+    let mut r = sftp.reader(&path).await.expect("reader");
+    r.read_to_end(&mut back).await.expect("read");
+    assert_eq!(back, body);
+
+    let (full, empty) = (
+        shellwing_ssh::sftp::join(&home, "full"),
+        shellwing_ssh::sftp::join(&home, "empty"),
+    );
+    assert!(sftp.is_real_dir(&full).await.expect("lstat"));
+    assert!(!sftp.is_real_dir(&path).await.expect("lstat"));
+    assert!(sftp.remove_empty_dir(&full).await.is_err());
+    assert!(remote.join("full/x").exists());
+    sftp.remove_empty_dir(&empty).await.expect("empty");
+    sftp.remove_file(&path).await.expect("file");
+    assert!(!remote.join("new.bin").exists());
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn files_are_listed_downloaded_and_uploaded_over_sftp() {
     use shellwing_ssh::sftp::{Progress, join};
     if sftp_server().is_none() {
