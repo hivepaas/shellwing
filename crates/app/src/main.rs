@@ -281,6 +281,10 @@ fn main() -> anyhow::Result<()> {
             let client_side = cfg!(any(target_os = "linux", target_os = "freebsd"));
             let options = WindowOptions {
                 window_bounds: Some(window_bounds),
+                window_min_size: Some(gpui::size(
+                    gpui::px(placement::MIN_SIZE.0),
+                    gpui::px(placement::MIN_SIZE.1),
+                )),
                 window_decorations: client_side.then_some(WindowDecorations::Client),
                 titlebar: (!client_side).then(|| gpui::TitlebarOptions {
                     title: Some("shellwing".into()),

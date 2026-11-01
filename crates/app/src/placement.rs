@@ -4,11 +4,13 @@
 //! size and the maximised or fullscreen state come back; the compositor places
 //! the window.
 
-use gpui::{App, Bounds, Pixels, WindowBounds, point, px, size};
+use gpui::{App, Bounds, Pixels, Size, WindowBounds, point, px, size};
 use shellwing_config::{WindowMode, WindowState};
 
 const DEFAULT_SIZE: (f32, f32) = (1100., 720.);
-const MIN_SIZE: (f32, f32) = (400., 240.);
+/// The smallest the window can be: when dragged, and when opened at a size saved
+/// from before this limit.
+pub const MIN_SIZE: (f32, f32) = (600., 400.);
 /// How much of the window must be on a display to keep its old position: enough
 /// to grab the title bar.
 const MIN_VISIBLE: (f32, f32) = (120., 40.);
@@ -21,10 +23,7 @@ pub fn initial(saved: Option<WindowState>, cx: &App) -> WindowBounds {
             cx,
         ));
     };
-    let wanted = Bounds::new(
-        point(px(s.x), px(s.y)),
-        size(px(s.width.max(MIN_SIZE.0)), px(s.height.max(MIN_SIZE.1))),
-    );
+    let wanted = Bounds::new(point(px(s.x), px(s.y)), at_least_min(s.width, s.height));
     let displays: Vec<Bounds<Pixels>> = cx.displays().iter().map(|d| d.bounds()).collect();
     let bounds = if on_a_display(wanted, &displays) {
         wanted
@@ -37,6 +36,10 @@ pub fn initial(saved: Option<WindowState>, cx: &App) -> WindowBounds {
         WindowMode::Maximized => WindowBounds::Maximized(bounds),
         WindowMode::Fullscreen => WindowBounds::Fullscreen(bounds),
     }
+}
+
+fn at_least_min(width: f32, height: f32) -> Size<Pixels> {
+    size(px(width.max(MIN_SIZE.0)), px(height.max(MIN_SIZE.1)))
 }
 
 fn on_a_display(window: Bounds<Pixels>, displays: &[Bounds<Pixels>]) -> bool {
@@ -87,6 +90,13 @@ mod tests {
         assert!(!on_a_display(b(2000., 100., 800., 600.), &screens[..1]));
         // Only a sliver left on screen.
         assert!(!on_a_display(b(1900., 100., 800., 600.), &screens[..1]));
+    }
+
+    #[test]
+    fn a_saved_size_below_the_limit_opens_at_the_limit() {
+        assert_eq!(at_least_min(320., 200.), size(px(600.), px(400.)));
+        assert_eq!(at_least_min(320., 900.), size(px(600.), px(900.)));
+        assert_eq!(at_least_min(1200., 800.), size(px(1200.), px(800.)));
     }
 
     #[test]
