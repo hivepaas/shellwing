@@ -65,6 +65,9 @@ impl Progress {
     }
 }
 
+/// A file open on the server, to read or write as a stream.
+pub type RemoteFile = russh_sftp::client::fs::File;
+
 /// An SFTP session on the connection. Cheap to clone; closed with the last clone
 /// (or with the connection).
 #[derive(Clone)]
@@ -248,6 +251,49 @@ impl Sftp {
             return Err(Error::Sftp(format!("{} is already there", name_of(to))));
         }
         self.0.rename(from, to).await.map_err(err)
+    }
+
+    /// The file at `path`, to read.
+    pub async fn reader(&self, path: &str) -> Result<RemoteFile, Error> {
+        self.0.open(path).await.map_err(err)
+    }
+
+    /// A new file at `path`, to write; one that is there is an error.
+    pub async fn writer(&self, path: &str) -> Result<RemoteFile, Error> {
+        use russh_sftp::protocol::OpenFlags;
+        self.0
+            .open_with_flags(
+                path,
+                OpenFlags::CREATE | OpenFlags::EXCLUDE | OpenFlags::WRITE,
+            )
+            .await
+            .map_err(err)
+    }
+
+    /// Sets the permissions and the time a file was modified, of those given.
+    pub async fn set_details(
+        &self,
+        path: &str,
+        mode: Option<u32>,
+        modified: Option<u32>,
+    ) -> Result<(), Error> {
+        let attrs = russh_sftp::protocol::FileAttributes {
+            permissions: mode,
+            atime: modified,
+            mtime: modified,
+            ..russh_sftp::protocol::FileAttributes::empty()
+        };
+        self.0.set_metadata(path, attrs).await.map_err(err)
+    }
+
+    /// Removes a file or a link, and nothing else.
+    pub async fn remove_file(&self, path: &str) -> Result<(), Error> {
+        self.0.remove_file(path).await.map_err(err)
+    }
+
+    /// Removes an empty directory; one that is not empty stays, and is an error.
+    pub async fn remove_empty_dir(&self, path: &str) -> Result<(), Error> {
+        self.0.remove_dir(path).await.map_err(err)
     }
 
     /// Removes a file, a link (not what it points at), or a directory with
@@ -439,7 +485,7 @@ impl Sftp {
     }
 
     /// The kind of what is at `path` itself (a link is a link); None when nothing is.
-    async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
+    pub async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
         use russh_sftp::client::error::Error as E;
         use russh_sftp::protocol::StatusCode;
         match self.0.symlink_metadata(path).await {
