@@ -148,6 +148,29 @@ Notes:
   roughly a record per change. Records are small (under 2 KB), so this is fine
   for years.
 
+**The server's storage.** To a client, shellwing cloud and a self-hosted server
+are one more backend: it does not know where the server keeps files.
+
+- **Content** is in a local folder or S3-compatible storage, chosen by whoever
+  runs the server, never in the database. A local folder means one instance; more
+  need S3.
+- **Metadata** is in PostgreSQL: a line per file (`sync_objects`: name, ETag, size,
+  clear kind, tombstone, revision) and a space's totals (`sync_spaces`). It holds
+  no content, and can be rebuilt from the store, as a record's envelope has its
+  id, kind and stamp in clear. It lets the server:
+  - check limits on each write without reading the store;
+  - answer "what changed since revision N?" without paying for listings;
+  - decide conditional writes itself, so they work the same on every store, even
+    S3 look-alikes and a folder;
+  - record changes for the audit log.
+- **A write:** check the limits, read the clear envelope, store the content under
+  a new key made of space, name and ETag (nothing there is ever changed), then
+  update the line only if its ETag is still what the writer saw. If it is not,
+  answer 412 and drop the new content. Then tell the devices over the WebSocket.
+  Old content is removed after a delay, and a job removes what no line names.
+- A lost change notice is harmless: a client also asks what changed when it
+  reconnects, and every so often.
+
 Build order:
 
 1. The engine plus the local folder backend (built). This exercises the
