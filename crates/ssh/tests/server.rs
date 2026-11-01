@@ -1709,8 +1709,10 @@ async fn a_connection_for_files_alone_streams_them() {
         shellwing_ssh::sftp::join(&home, "full"),
         shellwing_ssh::sftp::join(&home, "empty"),
     );
-    assert!(sftp.is_real_dir(&full).await.expect("lstat"));
-    assert!(!sftp.is_real_dir(&path).await.expect("lstat"));
+    assert_eq!(
+        sftp.lstat(&full).await.expect("lstat"),
+        Some(shellwing_ssh::sftp::Kind::Dir)
+    );
     assert!(sftp.remove_empty_dir(&full).await.is_err());
     assert!(remote.join("full/x").exists());
     sftp.remove_empty_dir(&empty).await.expect("empty");

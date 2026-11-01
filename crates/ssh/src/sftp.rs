@@ -296,11 +296,6 @@ impl Sftp {
         self.0.remove_dir(path).await.map_err(err)
     }
 
-    /// Whether `path` itself is a directory: a link to one is not.
-    pub async fn is_real_dir(&self, path: &str) -> Result<bool, Error> {
-        Ok(self.lstat(path).await? == Some(Kind::Dir))
-    }
-
     /// Removes a file, a link (not what it points at), or a directory with
     /// everything in it.
     pub async fn remove(&self, path: &str) -> Result<(), Error> {
@@ -490,7 +485,7 @@ impl Sftp {
     }
 
     /// The kind of what is at `path` itself (a link is a link); None when nothing is.
-    async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
+    pub async fn lstat(&self, path: &str) -> Result<Option<Kind>, Error> {
         use russh_sftp::client::error::Error as E;
         use russh_sftp::protocol::StatusCode;
         match self.0.symlink_metadata(path).await {
