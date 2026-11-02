@@ -24,6 +24,7 @@ use opendal::{ErrorKind, Operator, blocking, layers, services};
 use shellwing_vault::{Backend, Folder};
 
 pub mod git;
+pub mod server;
 pub use git::{Git, GitRepo, Install, NoGit};
 #[cfg(feature = "libgit")]
 pub mod libgit;
@@ -57,6 +58,12 @@ pub enum Place {
     /// `branch` empty: its default. `token` empty: git signs in as it does
     /// for the user; else as `user` (empty: any) with the token. `device`
     /// names the commits.
+    /// A shellwing server, by its address. `refresh_token` is this device's,
+    /// from signing in ([`server::SignIn`]).
+    Server {
+        url: String,
+        refresh_token: String,
+    },
     Git {
         url: String,
         branch: String,
@@ -87,6 +94,7 @@ impl Place {
                     p => format!("{bucket}/{p} on {host} (S3)"),
                 }
             }
+            Place::Server { url, .. } => format!("{} (shellwing server)", host_of(url)),
             Place::Git { url, branch, .. } => {
                 let repo = url
                     .trim()
@@ -108,6 +116,9 @@ impl Place {
     pub fn open(&self) -> io::Result<Arc<dyn Backend>> {
         match self {
             Place::Folder(f) => Ok(Arc::new(Folder::new(f))),
+            Place::Server { url, refresh_token } => {
+                Ok(Arc::new(server::Server::open(url, refresh_token)?))
+            }
             Place::WebDav {
                 url,
                 user,

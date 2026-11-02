@@ -817,3 +817,46 @@ scenario!(
         });
     }
 );
+
+scenario!(
+    /// A shellwing server, on the Sync page: an address in the clear is
+    /// refused beside Connect; a good one opens the browser with a sign-in,
+    /// which can be called off, and leaves nothing in config.toml.
+    a_server_is_signed_in_to_in_the_browser,
+    |ui: &mut Ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Sync");
+        ui.click("sync-kind:4");
+
+        ui.click("sync-connect");
+        ui.wait_until("what is missing", |ui| {
+            ui.sync_problem().is_some_and(|p| p.contains("address"))
+        });
+        ui.click("sync-field:Address");
+        ui.type_text("http://shellwing.example.com");
+        ui.click("sync-connect");
+        ui.wait_until("the address refused", |ui| {
+            ui.sync_problem().is_some_and(|p| p.contains("https://"))
+        });
+        assert!(ui.opened_url().is_none(), "no token goes out in the clear");
+
+        ui.click("sync-field:Address");
+        ui.keys("secondary-a");
+        ui.type_text("https://shellwing.example.com");
+        ui.click("sync-connect");
+        ui.wait_until("the browser to open", |ui| ui.opened_url().is_some());
+        let url = ui.opened_url().expect("url");
+        assert!(url.starts_with("https://shellwing.example.com/connect-device/?"), "{url}");
+        assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A"), "{url}");
+        assert!(url.contains("code_challenge="), "{url}");
+
+        ui.click("sync-cancel-sign-in");
+        ui.wait_until("Connect to come back", |ui| ui.find("sync-connect").is_some());
+        let config = std::fs::read_to_string(ui.config_dir().join("config.toml"))
+            .unwrap_or_default();
+        assert!(!config.contains("[sync]"), "{config}");
+    }
+);

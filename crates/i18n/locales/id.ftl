@@ -1897,11 +1897,14 @@ t97f35ca8 = apa saja (Gitea: milik Anda)
 # choose a folder
 tcaf5dc69 = pilih folder
 
-# Fill in the address, the user and the password.
-t164fba4d = Isi alamat, pengguna, dan kata sandi.
+# Fill in the server's address.
+tce72be65 = Isi alamat server.
 
 # The address starts with https://.
 t2ed84724 = Alamat diawali dengan https://.
+
+# Fill in the address, the user and the password.
+t164fba4d = Isi alamat, pengguna, dan kata sandi.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Isi endpoint, bucket, kunci akses, dan rahasianya.
@@ -1920,6 +1923,9 @@ t455dc834 = mis. code -n, atau /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = Simpan log di sini
+
+# Cannot sign in: {e}
+tf98212fb = Tidak dapat masuk: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } terpasang: Hubungkan lagi.
@@ -2230,6 +2236,9 @@ te84ceb50 = Folder
 # S3-compatible
 tdfb04144 = Kompatibel S3
 
+# shellwing server
+t5fee1d8d = Server shellwing
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, folder Dropbox atau OneDrive, folder berbagi jaringan.
 
@@ -2260,6 +2269,9 @@ t837b43b8 = Kunci akses
 # Secret key
 t47252d7a = Kunci rahasia
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Server shellwing yang dijalankan oleh Anda atau perusahaan Anda: Anda masuk di browser. Server menyimpan data Anda terenkripsi dan tidak pernah memiliki kunci Anda.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Repositori privat di GitHub, GitLab, Gitea, atau server Anda sendiri, melalui git di sistem ini: git masuk seperti biasanya untuk Anda (credential manager-nya, kunci dan agen SSH Anda). Setiap perubahan menjadi satu commit.
 
@@ -2283,6 +2295,9 @@ t2527393b = Kata sandi, kunci rahasia, atau token tetap di perangkat ini, di bra
 
 # Installing git…
 t77685894 = Memasang git…
+
+# Sign in in your browser, then come back here.
+t53007abd = Masuk di browser, lalu kembali ke sini.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS memasangnya dengan Command Line Tools dari Apple, dalam dialognya sendiri.

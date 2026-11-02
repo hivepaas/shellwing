@@ -1870,11 +1870,14 @@ t97f35ca8 = 任意（Gitea：你的用户名）
 # choose a folder
 tcaf5dc69 = 选择文件夹
 
-# Fill in the address, the user and the password.
-t164fba4d = 请填写地址、用户和密码。
+# Fill in the server's address.
+tce72be65 = 请填写服务器地址。
 
 # The address starts with https://.
 t2ed84724 = 地址须以 https:// 开头。
+
+# Fill in the address, the user and the password.
+t164fba4d = 请填写地址、用户和密码。
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = 请填写端点、存储桶、访问密钥及其秘密访问密钥。
@@ -1893,6 +1896,9 @@ t455dc834 = 例如 code -n，或 /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = 将日志保存在此处
+
+# Cannot sign in: {e}
+tf98212fb = 无法登录:{ $e }
 
 # git {version} is installed: Connect again.
 t92082827 = 已安装 git { $version }：请重新连接。
@@ -2203,6 +2209,9 @@ te84ceb50 = 文件夹
 # S3-compatible
 tdfb04144 = S3 兼容
 
+# shellwing server
+t5fee1d8d = shellwing 服务器
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive、Syncthing、Dropbox 或 OneDrive 文件夹、网络共享。
 
@@ -2233,6 +2242,9 @@ t837b43b8 = 访问密钥
 # Secret key
 t47252d7a = 秘密访问密钥
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = 由你或公司运营的 shellwing 服务器:在浏览器中登录。它以加密形式保存你的数据,且绝不持有你的密钥。
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea 或你自己服务器上的私有仓库，通过本系统的 git 访问：它按你平时的方式登录（凭据管理器、你的 SSH 密钥和代理）。每次更改都是一次提交。
 
@@ -2256,6 +2268,9 @@ t2527393b = 密码、秘密访问密钥或令牌保留在此设备的保险库�
 
 # Installing git…
 t77685894 = 正在安装 git…
+
+# Sign in in your browser, then come back here.
+t53007abd = 请在浏览器中登录,然后回到这里。
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS 会通过 Apple 的 Command Line Tools 安装，并弹出单独的对话框。

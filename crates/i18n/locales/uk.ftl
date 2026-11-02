@@ -1948,11 +1948,14 @@ t97f35ca8 = будь-яке (Gitea: ваше)
 # choose a folder
 tcaf5dc69 = виберіть папку
 
-# Fill in the address, the user and the password.
-t164fba4d = Заповніть адресу, користувача та пароль.
+# Fill in the server's address.
+tce72be65 = Вкажіть адресу сервера.
 
 # The address starts with https://.
 t2ed84724 = Адреса має починатися з https://.
+
+# Fill in the address, the user and the password.
+t164fba4d = Заповніть адресу, користувача та пароль.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Заповніть endpoint, бакет, ключ доступу та його секрет.
@@ -1971,6 +1974,9 @@ t455dc834 = наприклад, code -n або /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = Зберігати журнали тут
+
+# Cannot sign in: {e}
+tf98212fb = Не вдалося ввійти: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } встановлено: натисніть «Підключитися» ще раз.
@@ -2281,6 +2287,9 @@ te84ceb50 = Папка
 # S3-compatible
 tdfb04144 = S3-сумісне
 
+# shellwing server
+t5fee1d8d = Сервер shellwing
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, папка Dropbox або OneDrive, мережева папка.
 
@@ -2311,6 +2320,9 @@ t837b43b8 = Ключ доступу
 # Secret key
 t47252d7a = Секретний ключ
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Сервер shellwing, який працює у вас або у вашій компанії: вхід виконується в браузері. Дані зберігаються зашифрованими, а ваших ключів у сервера немає.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Приватний репозиторій на GitHub, GitLab, Gitea чи вашому сервері через git цієї системи: він входить так само, як зазвичай у вас (менеджер облікових даних, ваші ключі SSH і агент). Кожна зміна — це коміт.
 
@@ -2334,6 +2346,9 @@ t2527393b = Пароль, секретний ключ або токен зали
 
 # Installing git…
 t77685894 = Встановлення git…
+
+# Sign in in your browser, then come back here.
+t53007abd = Увійдіть у браузері й поверніться сюди.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS встановлює його разом із Command Line Tools від Apple в окремому вікні.

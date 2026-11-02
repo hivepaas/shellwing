@@ -13,14 +13,27 @@ multi-product design in the `hivepaas-portal` repository.
 
 **Sign-in.** It follows RFC 8252, whichever server it is:
 
-1. The app opens the browser at the server.
+1. The app opens the browser at the server's `/connect-device/`.
 2. The server does the sign-in: its own users, or SSO. For shellwing cloud, that
    is the Wing account. The app never sees those tokens.
-3. The server redirects to `http://127.0.0.1:<port>/callback` with a code.
-4. The app exchanges the code, with PKCE, for the server's tokens.
+3. The person approves this device: a link alone signs nothing in.
+4. The server sends the browser to `http://127.0.0.1:<port>/callback` with a code.
+   It sends a code nowhere but a literal loopback address.
+5. The app exchanges the code, with its PKCE verifier, for the server's tokens. A
+   code works once and lasts two minutes.
 
-The device-code flow is the fallback when no browser can open. The refresh
-token is kept in the OS keychain.
+Built on the desktop. The device-code flow, for when no browser can open, and
+signing in on a phone are not built yet.
+
+The refresh token is the place's device secret, in the vault, as other places'
+secrets are, and is known to the server only by its hash. It is not rotated: a
+device that lost the answer to a rotation would be signed out for good. It lasts
+90 days from its last use. Stopping sync here tells the server; a person can also
+revoke a device (`DELETE /api/devices/{id}`, with no page for it yet).
+
+**What a device's token reaches.** Sync, and nothing else. It is refused everywhere
+else by default, so an admin's device cannot manage the server, and a handler added
+later is closed to it unless it asks otherwise.
 
 **Plans.** shellwing cloud reads an account's plan and limits from the portal,
 and keeps them for a while, so a portal outage does not stop anybody already
@@ -119,7 +132,9 @@ counter and the device id.
 
 ### When it runs
 
-- **shellwing cloud and the self-hosted server** push changes over a WebSocket.
+- **shellwing cloud and the self-hosted server** can push changes over a WebSocket
+  (`GET /api/sync/spaces/{id}/events`). The app does not listen to it yet: it syncs
+  as with other backends.
 - **Other backends:**
   - Sync when the window gains focus.
   - Sync every few minutes.
@@ -171,6 +186,13 @@ are one more backend: it does not know where the server keeps files.
 - A lost change notice is harmless: a client also asks what changed when it
   reconnects, and every so often.
 
+**A server as a backend** (`crates/remote/src/server.rs`). A listing asks only for
+what changed since the last revision, so a round with nothing new costs that one
+small request and `format.json`, which answers 304. What was read is kept under its
+ETag, but for images, as with S3. A refused write forgets what was kept, so that
+reading it gives the other device's. Addresses are `https://`, or `http://` on this
+machine: tokens go to them.
+
 Build order:
 
 1. The engine plus the local folder backend (built). This exercises the
@@ -179,7 +201,7 @@ Build order:
 2. S3 and WebDAV, through OpenDAL (built: `crates/remote`). Moved ahead of
    the cloud: no server of ours is needed.
 3. Git, through the system's `git` (built: `crates/remote/src/git.rs`).
-4. shellwing cloud and the portal.
+4. A shellwing server (built, on the desktop). Then shellwing cloud and the portal.
 5. Drive, OneDrive and Dropbox.
 
 **S3 and WebDAV as built.**

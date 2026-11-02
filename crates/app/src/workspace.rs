@@ -4342,6 +4342,19 @@ impl Workspace {
                 self.refresh_settings(cx);
             }
             Action::StopSync => {
+                // A server is told: what this device signed in with stops working.
+                if let (Some(SyncPlace::Server(server)), Some(v)) =
+                    (self.sync.place(), self.vault.ready())
+                    && let Ok(Some(token)) = v.device_secret(crate::syncing::PLACE_SECRET)
+                {
+                    let token = token.to_string();
+                    cx.background_spawn(async move {
+                        // Unreachable, it stays signed in there, to be revoked from
+                        // the server's side: syncing stops here all the same.
+                        let _ = shellwing_remote::server::sign_out(&server.url, &token);
+                    })
+                    .detach();
+                }
                 self.keep_sync_place(None, cx);
                 // The place's password goes with it.
                 if let Some(v) = self.vault.ready() {

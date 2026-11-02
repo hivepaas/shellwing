@@ -117,6 +117,7 @@ impl Live {
                     None => f.display().to_string(),
                 },
             ),
+            SyncPlace::Server(s) => SyncPlaceText::Server(s.clone()),
             SyncPlace::WebDav(w) => SyncPlaceText::WebDav(w.clone()),
             SyncPlace::S3(s) => SyncPlaceText::S3(s.clone()),
             SyncPlace::Git(g) => SyncPlaceText::Git(g.clone()),

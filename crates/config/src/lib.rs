@@ -26,7 +26,7 @@ pub use hosts::{Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, HostX11, Ho
 pub use hosts_sync::Fields;
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, GitSync, Log, LogFormat,
-    OnDisconnect, Padding, S3Sync, Scrollbar, Settings, Ssh, Sync, SyncPlace, Terminal,
+    OnDisconnect, Padding, S3Sync, Scrollbar, ServerSync, Settings, Ssh, Sync, SyncPlace, Terminal,
     UI_FONT_SIZE, UiFont, Updates, VaultSettings, WebDavSync,
 };
 pub use shortcuts::{Chord, Hotkey, Keymap, Mods, Os, ShortcutSettings};

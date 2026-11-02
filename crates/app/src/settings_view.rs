@@ -5,6 +5,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use gpui::{
@@ -13,7 +14,7 @@ use gpui::{
 };
 use shellwing_config::{
     Color, ColorMode, CursorStyle, GitSync, HostKey, LogFormat, OnDisconnect, S3Sync, Scrollbar,
-    SettingValue, Settings, SyncPlace, Theme, WebDavSync,
+    ServerSync, SettingValue, Settings, SyncPlace, Theme, WebDavSync,
 };
 
 use shellwing_i18n::{tr, tr_n};
@@ -180,6 +181,10 @@ struct SyncForm {
     s3: [Entity<TextInput>; 6],
     /// Repository, branch, token, the token's user.
     git: [Entity<TextInput>; 4],
+    /// A shellwing server's address.
+    server: [Entity<TextInput>; 1],
+    /// Waiting for the browser to sign in to the server: setting it calls that off.
+    signing_in: Option<Arc<AtomicBool>>,
     /// What is missing, after Connect.
     problem: Option<String>,
     /// Why git cannot be used here, after Connect, with how to install it.
@@ -194,6 +199,7 @@ enum SyncKind {
     WebDav,
     S3,
     Git,
+    Server,
 }
 
 impl SyncForm {
@@ -217,8 +223,11 @@ impl SyncForm {
         let dav = sync.webdav.clone().unwrap_or_default();
         let s3 = sync.s3.clone().unwrap_or_default();
         let git = sync.git.clone().unwrap_or_default();
+        let server = sync.server.clone().unwrap_or_default();
         SyncForm {
-            kind: if sync.git.is_some() {
+            kind: if sync.server.is_some() {
+                SyncKind::Server
+            } else if sync.git.is_some() {
                 SyncKind::Git
             } else if sync.s3.is_some() {
                 SyncKind::S3
@@ -271,6 +280,13 @@ impl SyncForm {
                 ),
                 field(|| tr!("any (Gitea: yours)"), &git.user, false, cx),
             ],
+            server: [field(
+                || "https://shellwing.example.com".to_string(),
+                &server.url,
+                false,
+                cx,
+            )],
+            signing_in: None,
             problem: None,
             no_git: None,
             installing: false,
@@ -284,6 +300,7 @@ impl SyncForm {
             SyncKind::WebDav => &self.dav,
             SyncKind::S3 => &self.s3,
             SyncKind::Git => &self.git,
+            SyncKind::Server => &self.server,
         }
     }
 
@@ -293,6 +310,16 @@ impl SyncForm {
         let text = |i: &Entity<TextInput>| i.read(cx).text().trim().to_string();
         match self.kind {
             SyncKind::Folder => Err(tr!("choose a folder")),
+            SyncKind::Server => {
+                let url = text(&self.server[0]);
+                if url.is_empty() {
+                    return Err(tr!("Fill in the server's address."));
+                }
+                match shellwing_remote::server::check_address(&url) {
+                    Ok(url) => Ok((SyncPlace::Server(ServerSync { url }), None)),
+                    Err(_) => Err(tr!("The address starts with https://.")),
+                }
+            }
             SyncKind::WebDav => {
                 let [url, user, password] = &self.dav;
                 let (url, user) = (text(url), text(user));
@@ -547,6 +574,10 @@ impl SettingsView {
     /// Starts syncing with the server typed on the Sync page.
     fn connect_sync(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         match self.sync_form.place(cx) {
+            Ok((SyncPlace::Server(server), _)) => {
+                self.sync_form.problem = None;
+                self.sign_in_to_server(server, window, cx);
+            }
             Ok((place, secret)) => {
                 self.sync_form.problem = None;
                 // Git: the system's, or how to get it, before anything else.
@@ -571,6 +602,66 @@ impl SettingsView {
                     .update(cx, |ws, cx| ws.connect_sync(place, secret, window, cx));
             }
             Err(e) => self.sync_form.problem = Some(e),
+        }
+        cx.notify();
+    }
+
+    /// Signs in to a server in the browser, then starts syncing with it. What
+    /// that gives this device is the place's secret.
+    fn sign_in_to_server(
+        &mut self,
+        server: ServerSync,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let device = crate::syncing::device_name();
+        let sign_in = match shellwing_remote::server::SignIn::begin(
+            &server.url,
+            &device,
+            std::env::consts::OS,
+        ) {
+            Ok(sign_in) => sign_in,
+            Err(e) => {
+                self.sync_form.problem = Some(tr!("Cannot sign in: {e}", e = e.to_string()));
+                return cx.notify();
+            }
+        };
+        cx.open_url(sign_in.browser_url());
+        let cancel = Arc::new(AtomicBool::new(false));
+        self.sync_form.signing_in = Some(cancel.clone());
+        cx.notify();
+        // A thread of its own: it may wait for minutes, on a person.
+        let (answer, answered) = async_channel::bounded(1);
+        std::thread::spawn(move || {
+            let _ = answer.send_blocking(sign_in.wait(&cancel));
+        });
+        cx.spawn_in(window, async move |this, cx| {
+            let Ok(done) = answered.recv().await else {
+                return;
+            };
+            let _ = this.update_in(cx, |v, window, cx| {
+                v.sync_form.signing_in = None;
+                match done {
+                    Ok(token) => {
+                        let _ = v.workspace.update(cx, |ws, cx| {
+                            ws.connect_sync(SyncPlace::Server(server), Some(token), window, cx)
+                        });
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+                    Err(e) => {
+                        v.sync_form.problem = Some(tr!("Cannot sign in: {e}", e = e.to_string()));
+                    }
+                }
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// Stops waiting for the browser.
+    fn cancel_sign_in(&mut self, cx: &mut Context<Self>) {
+        if let Some(cancel) = self.sync_form.signing_in.take() {
+            cancel.store(true, Ordering::Relaxed);
         }
         cx.notify();
     }
@@ -1920,6 +2011,7 @@ impl SettingsView {
             (SyncKind::WebDav, "WebDAV".to_string()),
             (SyncKind::S3, tr!("S3-compatible")),
             (SyncKind::Git, "Git".to_string()),
+            (SyncKind::Server, tr!("shellwing server")),
         ];
         let pick = self.pills(
             "sync-kind",
@@ -1951,8 +2043,12 @@ impl SettingsView {
                     .child(input.clone()),
             )
         };
-        let connect = small_button("sync-connect", &tr!("Connect"))
-            .on_click(cx.listener(|v, _, w, cx| v.connect_sync(w, cx)));
+        let connect = match form.signing_in {
+            Some(_) => small_button("sync-cancel-sign-in", &tr!("Cancel"))
+                .on_click(cx.listener(|v, _, _, cx| v.cancel_sign_in(cx))),
+            None => small_button("sync-connect", &tr!("Connect"))
+                .on_click(cx.listener(|v, _, w, cx| v.connect_sync(w, cx))),
+        };
         let body = match form.kind {
             SyncKind::Folder => div()
                 .flex()
@@ -1985,6 +2081,12 @@ impl SettingsView {
                 .child(field(&tr!("Folder in the bucket"), &form.s3[3]))
                 .child(field(&tr!("Access key"), &form.s3[4]))
                 .child(field(&tr!("Secret key"), &form.s3[5])),
+            SyncKind::Server => div()
+                .flex()
+                .flex_col()
+                .gap(px(10.))
+                .child(label(&tr!("A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.")))
+                .child(field(&tr!("Address"), &form.server[0])),
             SyncKind::Git => div()
                 .flex()
                 .flex_col()
@@ -2013,9 +2115,11 @@ impl SettingsView {
             .child(pick)
             .child(body)
             .when(remote, |d| {
-                d.child(label(&tr!(
-                    "The password, secret key or token stays on this device, in the vault; other devices sign in with their own."
-                )))
+                d.when(form.kind != SyncKind::Server, |d| {
+                    d.child(label(&tr!(
+                        "The password, secret key or token stays on this device, in the vault; other devices sign in with their own."
+                    )))
+                })
                 .child(
                     div()
                         .flex()
@@ -2024,6 +2128,9 @@ impl SettingsView {
                         .child(connect)
                         .when(form.installing, |d| {
                             d.child(div().text_size(ui(12.5)).child(tr!("Installing git…")))
+                        })
+                        .when(form.signing_in.is_some(), |d| {
+                            d.child(div().text_size(ui(12.5)).child(tr!("Sign in in your browser, then come back here.")))
                         })
                         .when_some(form.problem.clone(), |d, p| {
                             d.child(div().text_size(ui(12.5)).text_color(rgb(colors().bad)).child(p))

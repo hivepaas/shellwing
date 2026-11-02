@@ -1120,6 +1120,8 @@ place at a time:
 [sync]
 # WebDAV: Nextcloud, ownCloud, Synology, Koofr, Fastmail. The folder's address.
 webdav = { url = "https://cloud.example.com/remote.php/dav/files/me/", user = "me" }
+# Or a shellwing server, which *Connect* in Settings › Sync signs in to, in the browser.
+server = { url = "https://shellwing.example.com" }
 # Or S3-compatible: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi.
 # region: if the service asks for one (R2 takes "auto", the default).
 # prefix: a folder in the bucket; none: the top.
