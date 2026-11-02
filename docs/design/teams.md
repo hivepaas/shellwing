@@ -104,8 +104,9 @@ earns trust for a product that holds credentials, and anyone offering it as a
 service must publish their changes. As with HivePaaS, the limit is a fair-use
 gate, not DRM: the code is open, so anybody may remove it for their own use.
 
-**License key.** Signed by the portal, with a key pair of this product's own,
-and carrying the customer, the number of users and the expiry.
+**License key.** Signed by the portal, with the key pair it uses for every
+product, under this product's own signing context, and carrying the customer,
+the number of users and the expiry.
 
 - The server verifies it offline, so it works without internet access. Fetching
   a renewed key from the portal is optional.
