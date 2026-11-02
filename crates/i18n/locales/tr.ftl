@@ -1914,11 +1914,14 @@ t97f35ca8 = herhangi biri (Gitea: sizinki)
 # choose a folder
 tcaf5dc69 = bir klasör seçin
 
-# Fill in the address, the user and the password.
-t164fba4d = Adresi, kullanıcıyı ve parolayı doldurun.
+# Fill in the server's address.
+tce72be65 = Sunucunun adresini girin.
 
 # The address starts with https://.
 t2ed84724 = Adres https:// ile başlamalı.
+
+# Fill in the address, the user and the password.
+t164fba4d = Adresi, kullanıcıyı ve parolayı doldurun.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Uç noktayı, bucket'ı, erişim anahtarını ve gizli anahtarını doldurun.
@@ -1937,6 +1940,9 @@ t455dc834 = örn. code -n veya /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = Günlükleri burada tut
+
+# Cannot sign in: {e}
+tf98212fb = Oturum açılamıyor: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } kuruldu: tekrar Bağlan'a tıklayın.
@@ -2247,6 +2253,9 @@ te84ceb50 = Bir klasör
 # S3-compatible
 tdfb04144 = S3 uyumlu
 
+# shellwing server
+t5fee1d8d = shellwing sunucusu
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, bir Dropbox veya OneDrive klasörü, bir ağ paylaşımı.
 
@@ -2277,6 +2286,9 @@ t837b43b8 = Erişim anahtarı
 # Secret key
 t47252d7a = Gizli anahtar
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Sizin veya şirketinizin çalıştırdığı bir shellwing sunucusu: tarayıcıda oturum açarsınız. Verilerinizi şifreli tutar ve anahtarlarınıza asla sahip olmaz.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub, GitLab, Gitea veya kendi sunucunuzdaki özel bir depo, bu sistemin git'i üzerinden: sizin için yaptığı gibi giriş yapar (kimlik bilgisi yöneticisi, SSH anahtarlarınız ve ajanınız). Her değişiklik bir commit olur.
 
@@ -2300,6 +2312,9 @@ t2527393b = Parola, gizli anahtar veya token bu cihazda, kasada kalır; diğer c
 
 # Installing git…
 t77685894 = git kuruluyor…
+
+# Sign in in your browser, then come back here.
+t53007abd = Tarayıcıda oturum açın, sonra buraya dönün.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS, git'i kendi iletişim kutusunda Apple'ın Command Line Tools paketiyle kurar.

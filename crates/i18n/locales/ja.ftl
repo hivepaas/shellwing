@@ -1870,11 +1870,14 @@ t97f35ca8 = 任意（Gitea：自分のユーザー名）
 # choose a folder
 tcaf5dc69 = フォルダを選択
 
-# Fill in the address, the user and the password.
-t164fba4d = アドレス、ユーザー、パスワードを入力してください。
+# Fill in the server's address.
+tce72be65 = サーバーのアドレスを入力してください。
 
 # The address starts with https://.
 t2ed84724 = アドレスは https:// で始める必要があります。
+
+# Fill in the address, the user and the password.
+t164fba4d = アドレス、ユーザー、パスワードを入力してください。
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = エンドポイント、バケット、アクセスキー、シークレットを入力してください。
@@ -1893,6 +1896,9 @@ t455dc834 = 例：code -n、または /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = ログの保存先
+
+# Cannot sign in: {e}
+tf98212fb = サインインできません: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } がインストールされました。もう一度接続してください。
@@ -2203,6 +2209,9 @@ te84ceb50 = フォルダ
 # S3-compatible
 tdfb04144 = S3 互換
 
+# shellwing server
+t5fee1d8d = shellwing サーバー
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive、Syncthing、Dropbox や OneDrive のフォルダ、ネットワーク共有。
 
@@ -2233,6 +2242,9 @@ t837b43b8 = アクセスキー
 # Secret key
 t47252d7a = シークレットキー
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = あなたまたは会社が運用する shellwing サーバーです。ブラウザでサインインします。データは暗号化して保管され、サーバーが鍵を持つことはありません。
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub、GitLab、Gitea、または自前のサーバー上のプライベートリポジトリを、このシステムの git 経由で使います。git は通常どおりの方法（認証情報マネージャー、SSH 鍵とエージェント）でサインインします。変更はそれぞれ 1 つのコミットになります。
 
@@ -2256,6 +2268,9 @@ t2527393b = パスワード、シークレットキー、トークンはこの�
 
 # Installing git…
 t77685894 = git をインストール中…
+
+# Sign in in your browser, then come back here.
+t53007abd = ブラウザでサインインしてから、ここに戻ってください。
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS では、Apple の Command Line Tools により専用のダイアログでインストールされます。

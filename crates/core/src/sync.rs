@@ -75,6 +75,10 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
     };
     Ok(match place {
         SyncPlace::Folder(f) => Place::Folder(f.clone()),
+        SyncPlace::Server(s) => Place::Server {
+            url: s.url.clone(),
+            refresh_token: secret()?,
+        },
         SyncPlace::WebDav(w) => Place::WebDav {
             url: w.url.clone(),
             user: w.user.clone(),
@@ -103,6 +107,10 @@ pub fn resolve(place: &SyncPlace, vault: &Vault) -> shellwing_vault::Result<Plac
 pub fn describe(place: &SyncPlace) -> String {
     let unsealed = match place {
         SyncPlace::Folder(f) => Place::Folder(f.clone()),
+        SyncPlace::Server(s) => Place::Server {
+            url: s.url.clone(),
+            refresh_token: String::new(),
+        },
         SyncPlace::WebDav(w) => Place::WebDav {
             url: w.url.clone(),
             user: w.user.clone(),

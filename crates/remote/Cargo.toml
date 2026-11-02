@@ -28,7 +28,12 @@ base64 = "0.22"
 # The clone of a Git repository lives in the cache folder.
 dirs = "7"
 # WebDAV's conditional writes, which OpenDAL leaves out; the client it uses.
-reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json"] }
+# A shellwing server: its answers, and signing in with PKCE.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+getrandom = "0.3"
 
 # Git without a `git` to run (a phone): libgit2, HTTPS through the
 # system's TLS on Apple's platforms.

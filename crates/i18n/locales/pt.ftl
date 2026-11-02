@@ -1914,11 +1914,14 @@ t97f35ca8 = qualquer um (Gitea: o seu)
 # choose a folder
 tcaf5dc69 = escolha uma pasta
 
-# Fill in the address, the user and the password.
-t164fba4d = Preencha o endereço, o usuário e a senha.
+# Fill in the server's address.
+tce72be65 = Preencha o endereço do servidor.
 
 # The address starts with https://.
 t2ed84724 = O endereço começa com https://.
+
+# Fill in the address, the user and the password.
+t164fba4d = Preencha o endereço, o usuário e a senha.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Preencha o endpoint, o bucket, a chave de acesso e o segredo dela.
@@ -1937,6 +1940,9 @@ t455dc834 = ex.: code -n ou /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = Guardar registros aqui
+
+# Cannot sign in: {e}
+tf98212fb = Não foi possível entrar: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } está instalado: conecte de novo.
@@ -2247,6 +2253,9 @@ te84ceb50 = Uma pasta
 # S3-compatible
 tdfb04144 = Compatível com S3
 
+# shellwing server
+t5fee1d8d = Servidor shellwing
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, uma pasta do Dropbox ou do OneDrive, um compartilhamento de rede.
 
@@ -2277,6 +2286,9 @@ t837b43b8 = Chave de acesso
 # Secret key
 t47252d7a = Chave secreta
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Um servidor shellwing gerido por si ou pela sua empresa: inicia sessão no navegador. Guarda os seus dados encriptados e nunca tem as suas chaves.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Um repositório privado no GitHub, GitLab, Gitea ou no seu próprio servidor, pelo git deste sistema: ele entra como faz para você (o gerenciador de credenciais, suas chaves SSH e o agente). Cada alteração é um commit.
 
@@ -2300,6 +2312,9 @@ t2527393b = A senha, a chave secreta ou o token fica neste dispositivo, no cofre
 
 # Installing git…
 t77685894 = Instalando o git…
+
+# Sign in in your browser, then come back here.
+t53007abd = Inicie sessão no navegador e volte aqui.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = O macOS o instala com as Command Line Tools da Apple, em uma janela própria.

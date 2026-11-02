@@ -1870,11 +1870,14 @@ t97f35ca8 = tuỳ ý (Gitea: tên của bạn)
 # choose a folder
 tcaf5dc69 = chọn một thư mục
 
-# Fill in the address, the user and the password.
-t164fba4d = Hãy điền địa chỉ, người dùng và mật khẩu.
+# Fill in the server's address.
+tce72be65 = Hãy nhập địa chỉ của máy chủ.
 
 # The address starts with https://.
 t2ed84724 = Địa chỉ bắt đầu bằng https://.
+
+# Fill in the address, the user and the password.
+t164fba4d = Hãy điền địa chỉ, người dùng và mật khẩu.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Hãy điền endpoint, bucket, access key và khoá bí mật của nó.
@@ -1893,6 +1896,9 @@ t455dc834 = ví dụ code -n, hoặc /đường/dẫn/trình-soạn-thảo --fla
 
 # Keep logs here
 t18df5c77 = Lưu nhật ký ở đây
+
+# Cannot sign in: {e}
+tf98212fb = Không thể đăng nhập: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = Đã cài git { $version }: hãy Kết nối lại.
@@ -2203,6 +2209,9 @@ te84ceb50 = Một thư mục
 # S3-compatible
 tdfb04144 = Tương thích S3
 
+# shellwing server
+t5fee1d8d = Máy chủ shellwing
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, thư mục Dropbox hoặc OneDrive, một ổ mạng chia sẻ.
 
@@ -2233,6 +2242,9 @@ t837b43b8 = Access key
 # Secret key
 t47252d7a = Khoá bí mật
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Máy chủ shellwing do bạn hoặc công ty bạn vận hành: bạn đăng nhập trong trình duyệt. Máy chủ giữ dữ liệu của bạn ở dạng mã hóa và không bao giờ có khóa của bạn.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Một repository riêng tư trên GitHub, GitLab, Gitea hoặc máy chủ của bạn, qua git của hệ thống này: nó đăng nhập như với bạn (trình quản lý thông tin đăng nhập, khoá SSH và agent của bạn). Mỗi thay đổi là một commit.
 
@@ -2256,6 +2268,9 @@ t2527393b = Mật khẩu, khoá bí mật hoặc token được giữ trên thi�
 
 # Installing git…
 t77685894 = Đang cài git…
+
+# Sign in in your browser, then come back here.
+t53007abd = Hãy đăng nhập trong trình duyệt rồi quay lại đây.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS cài git cùng Command Line Tools của Apple, trong hộp thoại riêng của nó.

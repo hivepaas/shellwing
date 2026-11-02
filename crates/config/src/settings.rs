@@ -147,6 +147,9 @@ impl Default for Ssh {
 pub struct Sync {
     /// The folder, `~/` allowed; None: no sync.
     pub folder: Option<String>,
+    /// A shellwing server instead. What this device signed in with is in the
+    /// vault, this device's own.
+    pub server: Option<ServerSync>,
     /// A WebDAV server instead (Nextcloud, Synology, Koofr). Its password is
     /// in the vault, this device's own.
     pub webdav: Option<WebDavSync>,
@@ -165,6 +168,7 @@ impl Default for Sync {
     fn default() -> Self {
         Sync {
             folder: None,
+            server: None,
             webdav: None,
             s3: None,
             git: None,
@@ -185,6 +189,9 @@ impl Sync {
         if let Some(f) = self.folder_path() {
             return Some(SyncPlace::Folder(f));
         }
+        if let Some(s) = &self.server {
+            return Some(SyncPlace::Server(s.clone()));
+        }
         if let Some(w) = &self.webdav {
             return Some(SyncPlace::WebDav(w.clone()));
         }
@@ -202,6 +209,14 @@ pub struct WebDavSync {
     /// The folder's address: `https://cloud.example.com/remote.php/dav/files/me/`.
     pub url: String,
     pub user: String,
+}
+
+/// `[sync] server`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct ServerSync {
+    /// The server's address: `https://shellwing.example.com`.
+    pub url: String,
 }
 
 /// `[sync] s3`.
@@ -235,6 +250,7 @@ pub struct GitSync {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SyncPlace {
     Folder(std::path::PathBuf),
+    Server(ServerSync),
     WebDav(WebDavSync),
     S3(S3Sync),
     Git(GitSync),

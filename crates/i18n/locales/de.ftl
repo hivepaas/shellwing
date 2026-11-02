@@ -1914,11 +1914,14 @@ t97f35ca8 = beliebig (Gitea: deiner)
 # choose a folder
 tcaf5dc69 = Ordner wählen
 
-# Fill in the address, the user and the password.
-t164fba4d = Gib Adresse, Benutzer und Passwort ein.
+# Fill in the server's address.
+tce72be65 = Gib die Adresse des Servers ein.
 
 # The address starts with https://.
 t2ed84724 = Die Adresse beginnt mit https://.
+
+# Fill in the address, the user and the password.
+t164fba4d = Gib Adresse, Benutzer und Passwort ein.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = Gib Endpoint, Bucket, Access Key und dessen Secret ein.
@@ -1937,6 +1940,9 @@ t455dc834 = z. B. code -n oder /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = Protokolle hier ablegen
+
+# Cannot sign in: {e}
+tf98212fb = Anmelden nicht möglich: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version } ist installiert: Klicke erneut auf Verbinden.
@@ -2247,6 +2253,9 @@ te84ceb50 = Ein Ordner
 # S3-compatible
 tdfb04144 = S3-kompatibel
 
+# shellwing server
+t5fee1d8d = shellwing-Server
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, ein Dropbox- oder OneDrive-Ordner, eine Netzwerkfreigabe.
 
@@ -2277,6 +2286,9 @@ t837b43b8 = Access Key
 # Secret key
 t47252d7a = Secret Key
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = Ein shellwing-Server, den du oder deine Firma betreibt: Du meldest dich im Browser an. Er speichert deine Daten verschlüsselt und hat nie deine Schlüssel.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = Ein privates Repository auf GitHub, GitLab, Gitea oder deinem eigenen Server, über das git dieses Systems: es meldet sich an wie bei dir (Credential Manager, deine SSH-Schlüssel und Agent). Jede Änderung ist ein Commit.
 
@@ -2300,6 +2312,9 @@ t2527393b = Passwort, Secret Key oder Token bleiben auf diesem Gerät, im Tresor
 
 # Installing git…
 t77685894 = git wird installiert…
+
+# Sign in in your browser, then come back here.
+t53007abd = Melde dich im Browser an und komm dann hierher zurück.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS installiert es mit Apples Command Line Tools, in einem eigenen Dialog.

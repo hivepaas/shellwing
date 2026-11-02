@@ -8,7 +8,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
-use shellwing_config::{GitSync, S3Sync, SyncPlace, SyncPlaceText, WebDavSync};
+use shellwing_config::{GitSync, S3Sync, ServerSync, SyncPlace, SyncPlaceText, WebDavSync};
 use shellwing_core::sync::{self as worker, SyncEvent, SyncWorker};
 use shellwing_vault::{AskState, FolderState, Request};
 
@@ -38,6 +38,9 @@ pub enum Place {
         prefix: String,
         access_key: String,
     },
+    /// A shellwing server. A phone cannot sign in to one yet: it is here for
+    /// a place set up by hand.
+    Server { url: String },
     /// A folder on the phone the app may use (one in iCloud Drive, chosen
     /// in Files).
     Folder { path: String },
@@ -69,6 +72,7 @@ impl Place {
                 prefix,
                 access_key,
             }),
+            Place::Server { url } => SyncPlace::Server(ServerSync { url }),
             Place::Folder { path } => SyncPlace::Folder(path.into()),
             Place::Git { url, branch, user } => SyncPlace::Git(GitSync { url, branch, user }),
         }
@@ -87,6 +91,7 @@ impl Place {
                 prefix: s.prefix,
                 access_key: s.access_key,
             },
+            SyncPlace::Server(s) => Place::Server { url: s.url },
             SyncPlace::Folder(f) => Place::Folder {
                 path: f.to_string_lossy().into_owned(),
             },
@@ -251,6 +256,7 @@ fn pairing(a: &AskState) -> Pairing {
 fn keep_place(store: &shellwing_config::Store, place: Option<&SyncPlace>) -> Result<(), String> {
     let text = place.map(|p| match p {
         SyncPlace::Folder(f) => SyncPlaceText::Folder(f.to_string_lossy().into_owned()),
+        SyncPlace::Server(s) => SyncPlaceText::Server(s.clone()),
         SyncPlace::WebDav(w) => SyncPlaceText::WebDav(w.clone()),
         SyncPlace::S3(s) => SyncPlaceText::S3(s.clone()),
         SyncPlace::Git(g) => SyncPlaceText::Git(g.clone()),

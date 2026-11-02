@@ -15,6 +15,7 @@ use crate::theme::{Theme, Themes};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SyncPlaceText {
     Folder(String),
+    Server(crate::ServerSync),
     WebDav(crate::WebDavSync),
     S3(crate::S3Sync),
     Git(crate::GitSync),
@@ -350,7 +351,7 @@ impl Store {
                 .or_insert_with(toml_edit::table)
                 .as_table_like_mut()
                 .ok_or("`sync` is not a table")?;
-            for key in ["folder", "webdav", "s3", "git"] {
+            for key in ["folder", "server", "webdav", "s3", "git"] {
                 sync.remove(key);
             }
             let inline = |pairs: &[(&str, &str)]| {
@@ -366,6 +367,9 @@ impl Store {
                 None => {}
                 Some(SyncPlaceText::Folder(f)) => {
                     sync.insert("folder", toml_edit::value(f.as_str()));
+                }
+                Some(SyncPlaceText::Server(s)) => {
+                    sync.insert("server", inline(&[("url", &s.url)]));
                 }
                 Some(SyncPlaceText::WebDav(w)) => {
                     sync.insert("webdav", inline(&[("url", &w.url), ("user", &w.user)]));

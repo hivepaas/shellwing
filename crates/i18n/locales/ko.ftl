@@ -1870,11 +1870,14 @@ t97f35ca8 = 아무 값 (Gitea: 본인 사용자 이름)
 # choose a folder
 tcaf5dc69 = 폴더 선택
 
-# Fill in the address, the user and the password.
-t164fba4d = 주소, 사용자, 비밀번호를 입력하세요.
+# Fill in the server's address.
+tce72be65 = 서버 주소를 입력하세요.
 
 # The address starts with https://.
 t2ed84724 = 주소는 https://로 시작해야 합니다.
+
+# Fill in the address, the user and the password.
+t164fba4d = 주소, 사용자, 비밀번호를 입력하세요.
 
 # Fill in the endpoint, the bucket, the access key and its secret.
 t03a28947 = 엔드포인트, 버킷, 액세스 키와 시크릿 키를 입력하세요.
@@ -1893,6 +1896,9 @@ t455dc834 = 예: code -n 또는 /path/to/editor --flag
 
 # Keep logs here
 t18df5c77 = 로그 보관 위치
+
+# Cannot sign in: {e}
+tf98212fb = 로그인할 수 없습니다: { $e }
 
 # git {version} is installed: Connect again.
 t92082827 = git { $version }이(가) 설치되었습니다. 다시 연결하세요.
@@ -2203,6 +2209,9 @@ te84ceb50 = 폴더
 # S3-compatible
 tdfb04144 = S3 호환
 
+# shellwing server
+t5fee1d8d = shellwing 서버
+
 # iCloud Drive, Syncthing, a Dropbox or OneDrive folder, a network share.
 tc7eed334 = iCloud Drive, Syncthing, Dropbox 또는 OneDrive 폴더, 네트워크 공유.
 
@@ -2233,6 +2242,9 @@ t837b43b8 = 액세스 키
 # Secret key
 t47252d7a = 시크릿 키
 
+# A shellwing server your company or you run: you sign in in the browser. It keeps your data encrypted and never has your keys.
+t16c496e4 = 본인이나 회사가 운영하는 shellwing 서버입니다. 브라우저에서 로그인합니다. 데이터는 암호화되어 보관되며 서버는 키를 갖지 않습니다.
+
 # A private repository on GitHub, GitLab, Gitea or your own server, through this system's git: it signs in as it does for you (its credential manager, your SSH keys and agent). Each change is a commit.
 t33e11efe = GitHub, GitLab, Gitea 또는 자체 서버의 비공개 저장소를 이 시스템의 git으로 사용합니다. git은 평소와 같은 방식(자격 증명 관리자, SSH 키 및 에이전트)으로 인증합니다. 변경 사항마다 커밋이 하나씩 생성됩니다.
 
@@ -2256,6 +2268,9 @@ t2527393b = 비밀번호, 시크릿 키, 토큰은 이 기기의 보관함에 �
 
 # Installing git…
 t77685894 = git 설치하는 중…
+
+# Sign in in your browser, then come back here.
+t53007abd = 브라우저에서 로그인한 뒤 여기로 돌아오세요.
 
 # macOS installs it with Apple's Command Line Tools, in a dialog of its own.
 t4d2669ba = macOS가 별도의 대화 상자에서 Apple의 Command Line Tools와 함께 설치합니다.
