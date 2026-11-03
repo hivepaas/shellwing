@@ -262,6 +262,12 @@ tf3e994b9 = 与应用相同
 # Theme for its hosts
 t9d045818 = 其主机的主题
 
+# None
+t304ff7fb = 无
+
+# Certificates from
+te7ecc3f7 = 证书来自
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = 还没有主机。请在主机编辑器中选择此分组。
 
@@ -279,6 +285,9 @@ te5b43cf8 = 颜色
 
 # A host's own theme wins over its group's.
 tad991bdd = 主机自身的主题优先于其分组的主题。
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = 其主机使用你的 shellwing 服务器上此组织的证书登录，证书有效期为几个小时。可以登录的账户由组织的管理员决定。
 
 # Delete {title}?
 ta14ea5b3 = 删除 { $title }？
@@ -460,6 +469,15 @@ ta6140863 = 连接时询问，并可保存在保险库中。
 # Uses the keys in your ssh-agent.
 t3a4ba988 = 使用 ssh-agent 中的密钥。
 
+# {name} (from the group)
+t5d454f47 = { $name }（来自分组）
+
+# Same as the group
+t046bf19d = 与分组相同
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = 会先尝试组织的证书，再用上面的方式。
+
 # + Add jump
 t3f09cb93 = + 添加跳板
 
@@ -498,9 +516,6 @@ t657130a6 = 不同步：其他设备看不到此主机。
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = 开启同步后，与你的其他设备同步。
-
-# None
-t304ff7fb = 无
 
 # {n} (this host only)
 tb6562d26 = { $n }（仅此主机）
@@ -3927,6 +3942,12 @@ t0993a534 = 它没有变量。
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = 加上已加载的，共 { $size } KB；一个 shell 最多 { $max } KB：请先卸载一个。
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = 此设备未与任何 shellwing 服务器同步：请在“设置 › 同步”中连接一个
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = 此设备未登录服务器：请在“设置 › 同步”中重新连接
 
 # every host
 t444612de = 所有主机

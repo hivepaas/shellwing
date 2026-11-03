@@ -3,6 +3,7 @@
 //! The desktop app draws it with GPUI; other front ends can use it as is.
 
 pub mod bench;
+pub mod certs;
 pub mod command;
 pub mod environment;
 pub mod envs;

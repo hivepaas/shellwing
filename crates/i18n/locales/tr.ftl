@@ -266,6 +266,12 @@ tf3e994b9 = Uygulamayla aynı
 # Theme for its hosts
 t9d045818 = Ana makineleri için tema
 
+# None
+t304ff7fb = Yok
+
+# Certificates from
+te7ecc3f7 = Sertifikaları veren
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = Henüz ana makine yok. Bir ana makinenin düzenleyicisinde bu grubu seçin.
 
@@ -287,6 +293,9 @@ te5b43cf8 = Renk
 
 # A host's own theme wins over its group's.
 tad991bdd = Bir ana makinenin kendi teması, grubununkinden önce gelir.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = Ana makineleri, shellwing sunucunuzdaki bu kuruluşun birkaç saat geçerli bir sertifikasıyla oturum açar. Hangi hesaplarla giriş yapabileceğinizi kuruluşun yöneticileri seçer.
 
 # Delete {title}?
 ta14ea5b3 = { $title } silinsin mi?
@@ -472,6 +481,15 @@ ta6140863 = Bağlanırken sorulur ve kasaya kaydedilebilir.
 # Uses the keys in your ssh-agent.
 t3a4ba988 = ssh-agent içindeki anahtarlarınızı kullanır.
 
+# {name} (from the group)
+t5d454f47 = { $name } (gruptan)
+
+# Same as the group
+t046bf19d = Grupla aynı
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = Kuruluşun sertifikası, yukarıdaki yöntemden önce denenir.
+
 # + Add jump
 t3f09cb93 = + Atlama ekle
 
@@ -510,9 +528,6 @@ t657130a6 = Eşitlenmiyor: diğer cihazlar bu ana makineyi görmez.
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = Eşitleme açıkken diğer cihazlarınızla eşitlenir.
-
-# None
-t304ff7fb = Yok
 
 # {n} (this host only)
 tb6562d26 = { $n } (yalnızca bu ana makine)
@@ -4063,6 +4078,12 @@ t0993a534 = Hiç değişkeni yok.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = Yüklü olanlarla birlikte toplam { $size } KB; bir kabuk en fazla { $max } KB alır: önce birini boşaltın.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = bu cihaz hiçbir shellwing sunucusuyla eşitlenmiyor: Ayarlar › Eşitleme bölümünden birini bağlayın
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = bu cihaz sunucuda oturum açmamış: Ayarlar › Eşitleme bölümünden yeniden bağlanın
 
 # every host
 t444612de = tüm ana makineler

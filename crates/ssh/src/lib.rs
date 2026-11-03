@@ -39,7 +39,7 @@ use forward::{Forwarder, Routes};
 use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
-pub use secrets::{Learned, Secrets};
+pub use secrets::{Certified, Learned, Secrets};
 pub use sftp::{RemoteFile, Sftp};
 
 /// Used when the config sets no ServerAliveInterval.
@@ -135,6 +135,9 @@ pub enum Error {
         "permission denied: {key} is a security key, which signs through ssh-agent here. Add it with ssh-add {key}, then connect again"
     )]
     SecurityKey { key: String },
+    /// The host's organization gave no certificate, or the host refused it.
+    #[error("permission denied: {why}")]
+    Certificate { why: String },
     #[error("cancelled")]
     Cancelled,
     /// The connection went away without the server closing the session, as when
@@ -410,6 +413,20 @@ async fn open_hop(
         }
         _ => None,
     };
+    // The organization's certificate, asked for before connecting: the host's
+    // time to sign in (LoginGraceTime) starts with the connection.
+    let certified = match (&hop.certified_by, &opts.secrets) {
+        (None, _) => None,
+        (Some(org), Some(secrets)) => {
+            let (org, secrets) = (org.clone(), secrets.clone());
+            Some(
+                tokio::task::spawn_blocking(move || secrets.certified(&org))
+                    .await
+                    .unwrap_or_else(|e| Err(e.to_string())),
+            )
+        }
+        (Some(_), None) => Some(Err("nothing here can ask for a certificate".into())),
+    };
     let connecting = async {
         match (via, stream) {
             (None, Some(stream)) => client::connect_stream(config, stream, checker).await,
@@ -472,6 +489,7 @@ async fn open_hop(
         &hop.target,
         &hop.keys_to_try(),
         &hop.certificate_files,
+        certified.as_ref(),
         auth::StoredKeys::of(hop),
         &opts.auth,
         &agent,

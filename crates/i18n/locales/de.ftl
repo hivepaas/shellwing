@@ -266,6 +266,12 @@ tf3e994b9 = Wie die App
 # Theme for its hosts
 t9d045818 = Design für ihre Hosts
 
+# None
+t304ff7fb = Keine
+
+# Certificates from
+te7ecc3f7 = Zertifikate von
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = Noch keine Hosts. Wähle diese Gruppe im Editor eines Hosts.
 
@@ -287,6 +293,9 @@ te5b43cf8 = Farbe
 
 # A host's own theme wins over its group's.
 tad991bdd = Das eigene Design eines Hosts hat Vorrang vor dem seiner Gruppe.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = Seine Hosts melden sich mit einem Zertifikat dieser Organisation auf deinem shellwing-Server an, gültig für einige Stunden. Ihre Admins legen fest, als welche Konten du dich anmelden darfst.
 
 # Delete {title}?
 ta14ea5b3 = { $title } löschen?
@@ -472,6 +481,15 @@ ta6140863 = Wird beim Verbinden abgefragt und kann im Tresor gespeichert werden.
 # Uses the keys in your ssh-agent.
 t3a4ba988 = Nutzt die Schlüssel in deinem ssh-agent.
 
+# {name} (from the group)
+t5d454f47 = { $name } (von der Gruppe)
+
+# Same as the group
+t046bf19d = Wie die Gruppe
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = Ein Zertifikat der Organisation wird zuerst versucht, vor der Methode oben.
+
 # + Add jump
 t3f09cb93 = + Jump-Host hinzufügen
 
@@ -510,9 +528,6 @@ t657130a6 = Nicht synchronisiert: andere Geräte sehen diesen Host nicht.
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = Wird mit deinen anderen Geräten synchronisiert, wenn Sync aktiv ist.
-
-# None
-t304ff7fb = Keine
 
 # {n} (this host only)
 tb6562d26 = { $n } (nur dieser Host)
@@ -4063,6 +4078,12 @@ t0993a534 = Sie hat keine Variablen.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = Mit den geladenen sind das { $size } KB; eine Shell nimmt höchstens { $max } KB: Entlade zuerst eine.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = dieses Gerät synchronisiert mit keinem shellwing-Server: verbinde einen unter Einstellungen › Sync
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = dieses Gerät ist nicht beim Server angemeldet: verbinde dich erneut unter Einstellungen › Sync
 
 # every host
 t444612de = alle Hosts

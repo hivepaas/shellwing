@@ -265,6 +265,12 @@ tf3e994b9 = 與應用程式相同
 # Theme for its hosts
 t9d045818 = 其主機的主題
 
+# None
+t304ff7fb = 無
+
+# Certificates from
+te7ecc3f7 = 憑證來自
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = 還沒有主機。請在主機編輯器中選擇此群組。
 
@@ -285,6 +291,9 @@ te5b43cf8 = 顏色
 
 # A host's own theme wins over its group's.
 tad991bdd = 主機本身的主題優先於其群組的主題。
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = 其主機使用你的 shellwing 伺服器上此組織的憑證登入，憑證有效期為幾個小時。可以登入的帳號由組織的管理員決定。
 
 # Delete {title}?
 ta14ea5b3 = 要刪除 { $title } 嗎？
@@ -469,6 +478,15 @@ ta6140863 = 連線時詢問，並可儲存在保險庫中。
 # Uses the keys in your ssh-agent.
 t3a4ba988 = 使用 ssh-agent 中的金鑰。
 
+# {name} (from the group)
+t5d454f47 = { $name }（來自群組）
+
+# Same as the group
+t046bf19d = 與群組相同
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = 會先嘗試組織的憑證，再用上面的方式。
+
 # + Add jump
 t3f09cb93 = + 新增跳板
 
@@ -507,9 +525,6 @@ t657130a6 = 不同步：其他裝置看不到此主機。
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = 開啟同步後，會與你的其他裝置同步。
-
-# None
-t304ff7fb = 無
 
 # {n} (this host only)
 tb6562d26 = { $n }（僅此主機）
@@ -4014,6 +4029,12 @@ t0993a534 = 它沒有變數。
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = 加上已載入的，共 { $size } KB；一個 shell 最多 { $max } KB：請先卸載一個。
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = 此裝置未與任何 shellwing 伺服器同步：請在「設定 › 同步」中連線一個
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = 此裝置未登入伺服器：請在「設定 › 同步」中重新連線
 
 # every host
 t444612de = 所有主機

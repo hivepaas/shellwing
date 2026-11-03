@@ -965,6 +965,7 @@ mod tests {
             id: None,
             name: "Lab".into(),
             color: None,
+            org: None,
             theme: None,
         };
         let mut host = store.hosts().expect("hosts").hosts[0].clone();

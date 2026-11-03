@@ -262,6 +262,12 @@ tf3e994b9 = 앱과 동일
 # Theme for its hosts
 t9d045818 = 소속 호스트의 테마
 
+# None
+t304ff7fb = 없음
+
+# Certificates from
+te7ecc3f7 = 인증서 발급처
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = 아직 호스트가 없습니다. 호스트 편집기에서 이 그룹을 선택하세요.
 
@@ -279,6 +285,9 @@ te5b43cf8 = 색상
 
 # A host's own theme wins over its group's.
 tad991bdd = 호스트 자체 테마가 그룹 테마보다 우선합니다.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = 이 그룹의 호스트는 shellwing 서버에 있는 이 조직의 인증서로 로그인하며, 인증서는 몇 시간 동안 유효합니다. 로그인할 수 있는 계정은 조직 관리자가 정합니다.
 
 # Delete {title}?
 ta14ea5b3 = { $title }을(를) 삭제하시겠습니까?
@@ -460,6 +469,15 @@ ta6140863 = 연결할 때 묻고, 보관함에 저장할 수 있습니다.
 # Uses the keys in your ssh-agent.
 t3a4ba988 = ssh-agent의 키를 사용합니다.
 
+# {name} (from the group)
+t5d454f47 = { $name } (그룹 설정)
+
+# Same as the group
+t046bf19d = 그룹과 동일
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = 조직의 인증서를 위 방법보다 먼저 시도합니다.
+
 # + Add jump
 t3f09cb93 = + 경유 호스트 추가
 
@@ -498,9 +516,6 @@ t657130a6 = 동기화되지 않음: 다른 기기에는 이 호스트가 표시�
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = 동기화가 켜져 있으면 다른 기기와 동기화됩니다.
-
-# None
-t304ff7fb = 없음
 
 # {n} (this host only)
 tb6562d26 = { $n } (이 호스트만)
@@ -3927,6 +3942,12 @@ t0993a534 = 변수가 없습니다.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = 불러온 것과 합치면 { $size }KB입니다. 셸은 최대 { $max }KB까지 받습니다. 먼저 하나를 해제하세요.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = 이 기기는 shellwing 서버와 동기화하지 않음: 설정 › 동기화에서 연결하세요
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = 이 기기가 서버에 로그인되어 있지 않음: 설정 › 동기화에서 다시 연결하세요
 
 # every host
 t444612de = 모든 호스트

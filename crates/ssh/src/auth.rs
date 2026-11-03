@@ -18,7 +18,7 @@ use russh::{MethodKind, MethodSet};
 use crate::config::IdentityAgent;
 use crate::hostkey::Checker;
 use crate::prompt::{Prompt, Prompter};
-use crate::secrets::{Learned, Secrets};
+use crate::secrets::{Certified, Learned, Secrets};
 use crate::{Auth, Error, Target};
 
 const TRIES: usize = 3;
@@ -250,6 +250,7 @@ pub(crate) async fn authenticate(
     target: &Target,
     keys: &[PathBuf],
     certs: &[PathBuf],
+    certified: Option<&Result<Certified, String>>,
     stored: StoredKeys<'_>,
     auth: &Auth,
     agent: &IdentityAgent,
@@ -265,11 +266,34 @@ pub(crate) async fn authenticate(
     let mut offered: Vec<KeyData> = vec![];
     // A security key that no agent offered, to say what to do if nothing else works.
     let mut unsigned: Option<&PathBuf> = None;
+    // The organization's certificate went to the host (once), which did not
+    // take it, not even as a first step.
+    let mut certificate_sent = false;
+    let mut refused: Option<&Certified> = None;
 
     // Each round tries the methods in order; a partial success (one accepted,
     // more needed) starts another with the methods the server names.
     for _ in 0..ROUNDS {
         methods.partial = false;
+
+        // The organization's certificate first, once: the host asked for
+        // it, before any other key can use up the server's tries.
+        if let Some(Ok(c)) = certified
+            && !certificate_sent
+            && methods.allows(MethodKind::PublicKey)
+        {
+            certificate_sent = true;
+            let r = handle
+                .authenticate_openssh_cert(user, c.key.clone(), c.certificate.clone())
+                .await?;
+            if r.success() {
+                return Ok(());
+            }
+            methods.update(&r);
+            if !methods.partial {
+                refused = Some(c);
+            }
+        }
 
         if auth.agent && methods.allows(MethodKind::PublicKey) {
             for mut agent in agents_for(agent).await {
@@ -531,11 +555,38 @@ pub(crate) async fn authenticate(
             break;
         }
     }
+    if let Some(why) = uncertified(certified, refused, target) {
+        return Err(Error::Certificate { why });
+    }
     Err(match unsigned {
         Some(key) => Error::SecurityKey {
             key: key.display().to_string(),
         },
         None => Error::AuthFailed,
+    })
+}
+
+/// Why the organization's certificate did not sign in, when the host has one.
+fn uncertified(
+    certified: Option<&Result<Certified, String>>,
+    refused: Option<&Certified>,
+    target: &Target,
+) -> Option<String> {
+    if let Some(Err(why)) = certified {
+        return Some(format!("the organization gave no certificate: {why}"));
+    }
+    let principals = refused?.certificate.valid_principals();
+    Some(if principals.contains(&target.user) {
+        format!(
+            "{} does not trust the organization's certificates: its sshd needs the organization's key in TrustedUserCAKeys",
+            target.host
+        )
+    } else {
+        format!(
+            "the organization lets you log in as {}, not {}",
+            principals.join(", "),
+            target.user
+        )
     })
 }
 

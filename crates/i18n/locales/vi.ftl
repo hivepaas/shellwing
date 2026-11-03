@@ -262,6 +262,12 @@ tf3e994b9 = Như của ứng dụng
 # Theme for its hosts
 t9d045818 = Chủ đề cho các máy chủ của nhóm
 
+# None
+t304ff7fb = Không
+
+# Certificates from
+te7ecc3f7 = Chứng chỉ từ
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = Chưa có máy chủ nào. Chọn nhóm này trong trình sửa của một máy chủ.
 
@@ -279,6 +285,9 @@ te5b43cf8 = Màu
 
 # A host's own theme wins over its group's.
 tad991bdd = Chủ đề riêng của máy chủ được ưu tiên hơn của nhóm.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = Các máy chủ trong nhóm đăng nhập bằng chứng chỉ của tổ chức này trên máy chủ shellwing của bạn, có hiệu lực vài giờ. Quản trị viên của tổ chức chọn những tài khoản bạn được đăng nhập.
 
 # Delete {title}?
 ta14ea5b3 = Xoá { $title }?
@@ -460,6 +469,15 @@ ta6140863 = Hỏi khi kết nối, và có thể lưu vào kho.
 # Uses the keys in your ssh-agent.
 t3a4ba988 = Dùng các khoá trong ssh-agent của bạn.
 
+# {name} (from the group)
+t5d454f47 = { $name } (theo nhóm)
+
+# Same as the group
+t046bf19d = Như của nhóm
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = Chứng chỉ của tổ chức được thử trước, trước cách ở trên.
+
 # + Add jump
 t3f09cb93 = + Thêm máy nhảy
 
@@ -498,9 +516,6 @@ t657130a6 = Không đồng bộ: các thiết bị khác không thấy máy ch�
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = Đồng bộ với các thiết bị khác của bạn khi bật đồng bộ.
-
-# None
-t304ff7fb = Không
 
 # {n} (this host only)
 tb6562d26 = { $n } (chỉ máy chủ này)
@@ -3927,6 +3942,12 @@ t0993a534 = Nó không có biến nào.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = Cộng với các bộ đang nạp là { $size } KB; một shell nhận tối đa { $max } KB: hãy gỡ bớt một bộ trước.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = thiết bị này không đồng bộ với máy chủ shellwing nào: hãy kết nối một máy chủ trong Cài đặt › Đồng bộ
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = thiết bị này chưa đăng nhập vào máy chủ: hãy kết nối lại trong Cài đặt › Đồng bộ
 
 # every host
 t444612de = mọi máy chủ

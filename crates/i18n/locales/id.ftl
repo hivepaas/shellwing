@@ -265,6 +265,12 @@ tf3e994b9 = Sama dengan aplikasi
 # Theme for its hosts
 t9d045818 = Tema untuk host-nya
 
+# None
+t304ff7fb = Tidak ada
+
+# Certificates from
+te7ecc3f7 = Sertifikat dari
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = Belum ada host. Pilih grup ini di editor host.
 
@@ -285,6 +291,9 @@ te5b43cf8 = Warna
 
 # A host's own theme wins over its group's.
 tad991bdd = Tema milik host sendiri mengalahkan tema grupnya.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = Host-nya masuk dengan sertifikat dari organisasi ini di server shellwing Anda, berlaku beberapa jam. Adminnya memilih akun yang boleh Anda pakai untuk masuk.
 
 # Delete {title}?
 ta14ea5b3 = Hapus { $title }?
@@ -469,6 +478,15 @@ ta6140863 = Diminta saat menghubungkan, dan dapat disimpan di brankas.
 # Uses the keys in your ssh-agent.
 t3a4ba988 = Memakai kunci di ssh-agent Anda.
 
+# {name} (from the group)
+t5d454f47 = { $name } (dari grup)
+
+# Same as the group
+t046bf19d = Sama dengan grup
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = Sertifikat dari organisasi dicoba lebih dulu, sebelum cara di atas.
+
 # + Add jump
 t3f09cb93 = + Tambah jump host
 
@@ -507,9 +525,6 @@ t657130a6 = Tidak disinkronkan: perangkat lain tidak melihat host ini.
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = Disinkronkan dengan perangkat Anda yang lain saat sinkronisasi aktif.
-
-# None
-t304ff7fb = Tidak ada
 
 # {n} (this host only)
 tb6562d26 = { $n } (hanya host ini)
@@ -4014,6 +4029,12 @@ t0993a534 = Tidak memiliki variabel.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = Bersama yang sudah dimuat, totalnya { $size } KB; shell menerima maksimal { $max } KB: lepaskan salah satu terlebih dahulu.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = perangkat ini tidak disinkronkan dengan server shellwing mana pun: hubungkan satu di Pengaturan › Sinkronisasi
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = perangkat ini belum masuk ke server: hubungkan lagi di Pengaturan › Sinkronisasi
 
 # every host
 t444612de = semua host

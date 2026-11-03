@@ -282,6 +282,10 @@ impl Session {
             secrets: Arc::new(SessionSecrets {
                 vault: vault.clone(),
                 learned: learned_tx,
+                server: match settings.sync.place() {
+                    Some(shellwing_config::SyncPlace::Server(s)) => Some(s.url),
+                    _ => None,
+                },
             }),
             vault,
             held: Weak::new(),

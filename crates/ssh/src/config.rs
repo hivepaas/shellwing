@@ -67,6 +67,9 @@ pub struct Resolved {
     pub certificate_files: Vec<PathBuf>,
     /// The one key the app keeps to sign in with (its id), instead of any file.
     pub vault_key: Option<String>,
+    /// An organization that certifies a key for this host (its id, as
+    /// [`crate::Secrets::certified`] takes it): tried before any other.
+    pub certified_by: Option<String>,
     pub identity_agent: IdentityAgent,
     /// Only the keys named (`IdentitiesOnly`): none of the agent's others,
     /// which otherwise come before the key files and can use up the
@@ -121,6 +124,7 @@ impl Resolved {
             identity_files: vec![],
             certificate_files: vec![],
             vault_key: None,
+            certified_by: None,
             identity_agent: IdentityAgent::Usual,
             identities_only: false,
             jumps: vec![],
@@ -1064,6 +1068,7 @@ fn resolve_with(reading: &Reading, spec: &str, chain: &mut Vec<String>) -> Resul
         identity_files,
         certificate_files,
         vault_key: None,
+        certified_by: None,
         identity_agent,
         identities_only,
         jumps,

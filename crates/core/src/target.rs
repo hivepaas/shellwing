@@ -94,6 +94,7 @@ fn from_host(
     if let Some(k) = h.host_key {
         r.host_key = Some(policy(k));
     }
+    r.certified_by = hosts.org_of(h).map(str::to_string);
     if h.auth.method == AuthMethod::Key
         && let Some(key) = &h.auth.key
     {
@@ -225,6 +226,30 @@ mod tests {
         assert_eq!(r.vault_key.as_deref(), Some("0192ab"));
         assert!(r.identities_only, "the agent's other keys first");
         assert!(r.identity_files.is_empty() && r.keys_to_try().is_empty());
+    }
+
+    #[test]
+    fn each_hop_is_certified_by_its_own_organization() {
+        let h = hosts(
+            r#"
+            [[group]]
+            name = "Team"
+            org = "o1"
+
+            [[host]]
+            name = "app"
+            address = "app.example"
+            group = "Team"
+            jump = ["bastion"]
+
+            [[host]]
+            name = "bastion"
+            address = "bastion.example"
+        "#,
+        );
+        let (r, _) = resolve("app", &h, None).expect("resolve");
+        assert_eq!(r.certified_by.as_deref(), Some("o1"));
+        assert_eq!(r.jumps[0].certified_by, None, "not in the group");
     }
 
     #[test]

@@ -20,6 +20,11 @@ pub struct Group {
     /// Theme for the group's hosts, unless a host sets its own.
     #[serde(default)]
     pub theme: Option<String>,
+    /// An organization on the shellwing server this device syncs with (its
+    /// id): its hosts sign in with a certificate from it, unless one sets its
+    /// own `org`.
+    #[serde(default)]
+    pub org: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -56,6 +61,10 @@ pub struct Host {
     pub forward: Vec<String>,
     #[serde(default)]
     pub auth: Auth,
+    /// The organization whose certificate signs in here, instead of the
+    /// group's; `none`: no certificate, whatever the group says.
+    #[serde(default)]
+    pub org: Option<String>,
     #[serde(default)]
     pub theme: Option<String>,
     /// Never synced.
@@ -109,6 +118,9 @@ pub enum AuthMethod {
     Agent,
 }
 
+/// A host's `org` that turns its group's off.
+pub const NO_ORG: &str = "none";
+
 impl Hosts {
     /// The host whose alias, or else whose name, is `name`.
     pub fn find(&self, name: &str) -> Option<&Host> {
@@ -121,6 +133,16 @@ impl Hosts {
     pub fn group_of(&self, host: &Host) -> Option<&Group> {
         let name = host.group.as_deref()?;
         self.groups.iter().find(|g| g.name == name)
+    }
+
+    /// The organization whose certificate signs in to `host`: its own, else
+    /// its group's.
+    pub fn org_of<'a>(&'a self, host: &'a Host) -> Option<&'a str> {
+        let org = match host.org.as_deref() {
+            Some(org) => org,
+            None => self.group_of(host)?.org.as_deref()?,
+        };
+        (!org.is_empty() && org != NO_ORG).then_some(org)
     }
 }
 
@@ -167,6 +189,23 @@ mod tests {
         let web = h.find("web").expect("by name");
         assert_eq!((web.port, web.auth.method), (None, AuthMethod::Auto));
         assert!(h.find("nope").is_none());
+    }
+
+    #[test]
+    fn a_hosts_org_is_its_own_else_its_groups() {
+        let h: Hosts = toml::from_str(
+            "[[group]]\nname = \"Team\"\norg = \"o1\"\n\
+             [[host]]\nname = \"a\"\naddress = \"a\"\ngroup = \"Team\"\n\
+             [[host]]\nname = \"b\"\naddress = \"b\"\ngroup = \"Team\"\norg = \"o2\"\n\
+             [[host]]\nname = \"c\"\naddress = \"c\"\ngroup = \"Team\"\norg = \"none\"\n\
+             [[host]]\nname = \"d\"\naddress = \"d\"\n",
+        )
+        .expect("parse");
+        let org = |n: &str| h.org_of(h.find(n).expect("host"));
+        assert_eq!(
+            [org("a"), org("b"), org("c"), org("d")],
+            [Some("o1"), Some("o2"), None, None]
+        );
     }
 
     #[test]

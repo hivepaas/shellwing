@@ -1,5 +1,6 @@
 //! The group editor: the host editor's drawer for a `[[group]]` in hosts.toml:
-//! its name, its color, and the theme its hosts use unless they set their own.
+//! its name, its color, and the theme its hosts use and the organization
+//! whose certificates they sign in with, unless they set their own.
 //! Renaming a group takes its hosts along; deleting one keeps its hosts,
 //! without a group.
 
@@ -23,18 +24,28 @@ pub enum GroupEvent {
     Deleted { name: String },
 }
 
+/// The list open under a field.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum List {
+    Themes,
+    Orgs,
+}
+
 pub struct GroupEditor {
     focus: FocusHandle,
     store: Option<Store>,
     hosts: Hosts,
     /// Theme ids and names.
     themes: Vec<(String, String)>,
+    /// The organizations on the shellwing server, ids and names.
+    orgs: Vec<(String, String)>,
     /// The group as opened; None for a new one.
     original: Option<Group>,
     name: Entity<TextInput>,
     color: Option<String>,
     theme: Option<String>,
-    themes_open: bool,
+    org: Option<String>,
+    open: Option<List>,
     problem: Option<String>,
     confirm_delete: bool,
 }
@@ -46,6 +57,7 @@ impl GroupEditor {
         store: Option<Store>,
         hosts: Hosts,
         themes: Vec<(String, String)>,
+        orgs: Vec<(String, String)>,
         group: Option<Group>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -59,11 +71,13 @@ impl GroupEditor {
             store,
             hosts,
             themes,
+            orgs,
             color: group.as_ref().and_then(|g| g.color.clone()),
             theme: group.as_ref().and_then(|g| g.theme.clone()),
+            org: group.as_ref().and_then(|g| g.org.clone()),
             original: group,
             name,
-            themes_open: false,
+            open: None,
             problem: None,
             confirm_delete: false,
         }
@@ -75,6 +89,13 @@ impl GroupEditor {
         self.typed(cx) == o.map(|g| g.name.clone()).unwrap_or_default()
             && self.color == o.and_then(|g| g.color.clone())
             && self.theme == o.and_then(|g| g.theme.clone())
+            && self.org == o.and_then(|g| g.org.clone())
+    }
+
+    /// The organizations as the server lists them now.
+    pub fn set_orgs(&mut self, orgs: Vec<(String, String)>, cx: &mut Context<Self>) {
+        self.orgs = orgs;
+        cx.notify();
     }
 
     pub fn first_focus(&self, cx: &gpui::App) -> FocusHandle {
@@ -124,6 +145,7 @@ impl GroupEditor {
             id: self.original.as_ref().and_then(|o| o.id.clone()),
             name: name.clone(),
             color: self.color.clone(),
+            org: self.org.clone(),
             theme: self.theme.clone(),
         };
         let old = self.original.as_ref().map(|o| o.name.as_str());
@@ -158,9 +180,101 @@ impl GroupEditor {
         }
     }
 
+    /// A field that opens a list of `choices` (value, name) under it.
+    fn select(
+        &self,
+        list: List,
+        label: &str,
+        choices: Vec<(Option<String>, String)>,
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
+        let (current, id) = match list {
+            List::Themes => (&self.theme, "group-theme"),
+            List::Orgs => (&self.org, "group-org"),
+        };
+        // One no longer listed is shown as it is written.
+        let shown = choices
+            .iter()
+            .find(|(v, _)| v == current)
+            .map(|(_, n)| n.clone())
+            .or_else(|| current.clone())
+            .unwrap_or_default();
+        let open = self.open == Some(list);
+        let mut field = div()
+            .flex()
+            .flex_col()
+            .gap(px(4.))
+            .child(label_text(label))
+            .child(
+                div()
+                    .id(id)
+                    .debug_selector(|| id.to_string())
+                    .h(px(30.))
+                    .px(px(10.))
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(if open {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
+                    .text_size(ui(13.))
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |e, _, _, cx| {
+                        e.open = (e.open != Some(list)).then_some(list);
+                        cx.notify();
+                    }))
+                    .child(shown)
+                    .child(div().text_color(rgb(colors().muted)).child("▾")),
+            );
+        if open {
+            let mut items = div()
+                .id(SharedString::from(format!("{id}s")))
+                .flex()
+                .flex_col()
+                .max_h(px(220.))
+                .overflow_y_scroll()
+                .p_1()
+                .rounded(px(6.))
+                .border_1()
+                .border_color(rgb(colors().edge))
+                .bg(rgb(colors().raised));
+            for (n, (value, name)) in choices.into_iter().enumerate() {
+                let on = value == *current;
+                items = items.child(
+                    div()
+                        .id((SharedString::from(format!("{id}-choice")), n))
+                        .debug_selector(|| format!("{id}-choice:{name}"))
+                        .px_2()
+                        .py(px(5.))
+                        .rounded(px(4.))
+                        .text_size(ui(13.))
+                        .cursor_pointer()
+                        .when(on, |d| d.bg(rgb(colors().selected)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(cx.listener(move |e, _, _, cx| {
+                            match list {
+                                List::Themes => e.theme = value.clone(),
+                                List::Orgs => e.org = value.clone(),
+                            }
+                            e.open = None;
+                            cx.notify();
+                        }))
+                        .child(name),
+                );
+            }
+            field = field.child(items);
+        }
+        field
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, _: &mut Window, cx: &mut Context<Self>) {
         match ev.keystroke.key.as_str() {
-            "escape" if self.themes_open => self.themes_open = false,
+            "escape" if self.open.is_some() => self.open = None,
             "escape" if self.confirm_delete => self.confirm_delete = false,
             "escape" => cx.emit(GroupEvent::Close),
             "enter" => self.save(cx),
@@ -298,87 +412,24 @@ impl Render for GroupEditor {
             );
         }
 
-        let theme_label = self
-            .theme
-            .as_ref()
-            .map(|t| {
-                self.themes
-                    .iter()
-                    .find(|(id, _)| id == t)
-                    .map(|(_, n)| n.clone())
-                    .unwrap_or_else(|| t.clone())
-            })
-            .unwrap_or_else(|| tr!("Same as the app"));
-        let mut theme = div()
-            .flex()
-            .flex_col()
-            .gap(px(4.))
-            .child(label_text(&tr!("Theme for its hosts")))
-            .child(
-                div()
-                    .id("group-theme")
-                    .h(px(30.))
-                    .px(px(10.))
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .rounded(px(6.))
-                    .border_1()
-                    .border_color(rgb(if self.themes_open {
-                        colors().accent
-                    } else {
-                        colors().field_edge
-                    }))
-                    .bg(rgb(colors().field))
-                    .text_size(ui(13.))
-                    .cursor_pointer()
-                    .on_click(cx.listener(|e, _, _, cx| {
-                        e.themes_open = !e.themes_open;
-                        cx.notify();
-                    }))
-                    .child(theme_label)
-                    .child(div().text_color(rgb(colors().muted)).child("▾")),
-            );
-        if self.themes_open {
-            let mut list = div()
-                .id("group-themes")
-                .flex()
-                .flex_col()
-                .max_h(px(220.))
-                .overflow_y_scroll()
-                .p_1()
-                .rounded(px(6.))
-                .border_1()
-                .border_color(rgb(colors().edge))
-                .bg(rgb(colors().raised));
-            let mut choices = vec![(None, tr!("Same as the app"))];
-            choices.extend(
-                self.themes
+        let mut themes = vec![(None, tr!("Same as the app"))];
+        themes.extend(
+            self.themes
+                .iter()
+                .map(|(id, n)| (Some(id.clone()), n.clone())),
+        );
+        let theme = self.select(List::Themes, &tr!("Theme for its hosts"), themes, cx);
+        // Only for a device that syncs with a shellwing server, or a group
+        // that has one already.
+        let orgs = (!self.orgs.is_empty() || self.org.is_some()).then(|| {
+            let mut orgs = vec![(None, tr!("None"))];
+            orgs.extend(
+                self.orgs
                     .iter()
                     .map(|(id, n)| (Some(id.clone()), n.clone())),
             );
-            for (n, (value, name)) in choices.into_iter().enumerate() {
-                let on = value == self.theme;
-                list = list.child(
-                    div()
-                        .id(("group-theme-choice", n))
-                        .px_2()
-                        .py(px(5.))
-                        .rounded(px(4.))
-                        .text_size(ui(13.))
-                        .cursor_pointer()
-                        .when(on, |d| d.bg(rgb(colors().selected)))
-                        .hover(|s| s.bg(rgb(colors().hover)))
-                        .on_click(cx.listener(move |e, _, _, cx| {
-                            e.theme = value.clone();
-                            e.themes_open = false;
-                            cx.notify();
-                        }))
-                        .child(name),
-                );
-            }
-            theme = theme.child(list);
-        }
+            self.select(List::Orgs, &tr!("Certificates from"), orgs, cx)
+        });
 
         let members = self.members();
         let who = match members.len() {
@@ -415,6 +466,11 @@ impl Render for GroupEditor {
             )
             .child(theme)
             .child(hint_text(&tr!("A host's own theme wins over its group's.")))
+            .when_some(orgs, |d, orgs| {
+                d.child(orgs).child(hint_text(&tr!(
+                    "Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as."
+                )))
+            })
             .child(
                 div()
                     .text_size(ui(12.5))

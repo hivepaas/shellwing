@@ -268,6 +268,12 @@ tf3e994b9 = Как в приложении
 # Theme for its hosts
 t9d045818 = Тема для её хостов
 
+# None
+t304ff7fb = Нет
+
+# Certificates from
+te7ecc3f7 = Сертификаты от
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = Хостов пока нет. Выберите эту группу в редакторе хоста.
 
@@ -291,6 +297,9 @@ te5b43cf8 = Цвет
 
 # A host's own theme wins over its group's.
 tad991bdd = Собственная тема хоста важнее темы его группы.
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = Его хосты входят по сертификату этой организации на вашем сервере shellwing, действующему несколько часов. Её администраторы выбирают учётные записи, под которыми вы можете входить.
 
 # Delete {title}?
 ta14ea5b3 = Удалить { $title }?
@@ -478,6 +487,15 @@ ta6140863 = Запрашивается при подключении, можно
 # Uses the keys in your ssh-agent.
 t3a4ba988 = Использует ключи из вашего ssh-agent.
 
+# {name} (from the group)
+t5d454f47 = { $name } (из группы)
+
+# Same as the group
+t046bf19d = Как в группе
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = Сначала пробуется сертификат организации, до способа выше.
+
 # + Add jump
 t3f09cb93 = + Добавить промежуточный хост
 
@@ -516,9 +534,6 @@ t657130a6 = Не синхронизируется: другие устройст
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = Синхронизируется с другими вашими устройствами, когда синхронизация включена.
-
-# None
-t304ff7fb = Нет
 
 # {n} (this host only)
 tb6562d26 = { $n } (только этот хост)
@@ -4161,6 +4176,12 @@ t0993a534 = В нём нет переменных.
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = Вместе с загруженными это { $size } КБ; оболочка принимает не больше { $max } КБ: сначала выгрузите одно.
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = это устройство не синхронизируется ни с одним сервером shellwing: подключите его в Настройки › Синхронизация
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = это устройство не вошло на сервер: подключитесь снова в Настройки › Синхронизация
 
 # every host
 t444612de = все хосты
