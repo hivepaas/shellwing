@@ -262,6 +262,12 @@ tf3e994b9 = アプリと同じ
 # Theme for its hosts
 t9d045818 = 所属ホストのテーマ
 
+# None
+t304ff7fb = なし
+
+# Certificates from
+te7ecc3f7 = 証明書の発行元
+
 # No hosts yet. Choose this group in a host's editor.
 t73e08796 = ホストはまだありません。ホストのエディタでこのグループを選んでください。
 
@@ -279,6 +285,9 @@ te5b43cf8 = 色
 
 # A host's own theme wins over its group's.
 tad991bdd = ホスト自体のテーマはグループのテーマより優先されます。
+
+# Its hosts sign in with a certificate from this organization on your shellwing server, good for a few hours. Its admins choose the accounts you may log in as.
+t441237fe = このグループのホストには、shellwing サーバー上のこの組織の証明書でサインインします。証明書は数時間有効です。ログインできるアカウントは組織の管理者が決めます。
 
 # Delete {title}?
 ta14ea5b3 = { $title } を削除しますか？
@@ -460,6 +469,15 @@ ta6140863 = 接続時に尋ねます。保管庫に保存できます。
 # Uses the keys in your ssh-agent.
 t3a4ba988 = ssh-agent の鍵を使います。
 
+# {name} (from the group)
+t5d454f47 = { $name }（グループから）
+
+# Same as the group
+t046bf19d = グループと同じ
+
+# A certificate from the organization is tried first, before the way above.
+t07c38387 = 組織の証明書が上の方法より先に試されます。
+
 # + Add jump
 t3f09cb93 = + 踏み台を追加
 
@@ -498,9 +516,6 @@ t657130a6 = 同期されません。他のデバイスにはこのホストが�
 
 # Synced with your other devices when sync is on.
 tb80f1c8f = 同期がオンのとき、他のデバイスと同期されます。
-
-# None
-t304ff7fb = なし
 
 # {n} (this host only)
 tb6562d26 = { $n }（このホストのみ）
@@ -3927,6 +3942,12 @@ t0993a534 = 変数がありません。
 
 # With the ones loaded, that comes to {size} KB; a shell takes {max} KB at most: unload one first.
 t3883bd87 = 読み込み済みのものと合わせて { $size } KB になります。シェルは最大 { $max } KB です。先にどれかの読み込みを解除してください。
+
+# this device syncs with no shellwing server: connect one in Settings › Sync
+t10561845 = このデバイスは shellwing サーバーと同期していません。設定 › 同期 で接続してください
+
+# this device is not signed in to the server: connect again in Settings › Sync
+t0ce953a7 = このデバイスはサーバーにサインインしていません。設定 › 同期 で再接続してください
 
 # every host
 t444612de = すべてのホスト

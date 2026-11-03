@@ -11,7 +11,9 @@ use gpui::{
     Context, ElementId, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent,
     Render, SharedString, Window, div, prelude::*, px, rgb,
 };
-use shellwing_config::{Auth, AuthMethod, HOST_COLORS, Host, HostKey, HostX11, Hosts, Store};
+use shellwing_config::{
+    Auth, AuthMethod, HOST_COLORS, Host, HostKey, HostX11, Hosts, NO_ORG, Store,
+};
 use shellwing_i18n::tr;
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
@@ -51,6 +53,8 @@ pub struct EditorContext {
     pub keys: Vec<KeyChoice>,
     /// Where a key made here is kept.
     pub vault: crate::secrets::VaultSlot,
+    /// The organizations on the shellwing server, ids and names.
+    pub orgs: Vec<(String, String)>,
 }
 
 /// The Key list's choice that makes a key for the host.
@@ -82,6 +86,7 @@ enum Menu {
     Group,
     Theme,
     Key,
+    Org,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -127,6 +132,9 @@ pub struct HostEditor {
     jumps: Vec<String>,
     forwards: Vec<String>,
     group: Option<String>,
+    /// The organization whose certificate signs in: None, the group's;
+    /// `none`, no certificate.
+    org: Option<String>,
     theme: Option<String>,
     local_only: bool,
     forward_agent: bool,
@@ -206,6 +214,7 @@ impl HostEditor {
             jumps: vec![],
             forwards: vec![],
             group: None,
+            org: None,
             theme: None,
             local_only: false,
             forward_agent: false,
@@ -223,6 +232,21 @@ impl HostEditor {
             confirm_delete: false,
             opened_as: None,
         }
+    }
+
+    /// The organizations as the server lists them now.
+    pub fn set_orgs(&mut self, orgs: Vec<(String, String)>, cx: &mut Context<Self>) {
+        self.ctx.orgs = orgs;
+        cx.notify();
+    }
+
+    /// The organization's name, or its id when it is not listed.
+    fn org_name(&self, id: &str) -> String {
+        self.ctx
+            .orgs
+            .iter()
+            .find(|(o, _)| o == id)
+            .map_or_else(|| id.to_string(), |(_, n)| n.clone())
     }
 
     pub fn new_host(ctx: EditorContext, cx: &mut Context<Self>) -> Self {
@@ -292,6 +316,7 @@ impl HostEditor {
         self.jumps = h.jump.clone();
         self.forwards = h.forward.clone();
         self.group = h.group.clone();
+        self.org = h.org.clone();
         self.theme = h.theme.clone();
         self.local_only = h.local_only;
     }
@@ -332,6 +357,7 @@ impl HostEditor {
                     .then(|| self.text(&i.key, cx))
                     .filter(|k| !k.is_empty()),
             },
+            org: self.org.clone(),
             theme: self.theme.clone(),
             local_only: self.local_only,
             forward_agent: self.forward_agent,
@@ -590,6 +616,7 @@ impl HostEditor {
             proxy_command: None,
             forward: vec![],
             auth: Auth::default(),
+            org: None,
             theme: None,
             local_only: false,
             forward_agent: false,
@@ -918,12 +945,14 @@ impl HostEditor {
             Menu::Group => self.group.clone(),
             Menu::Theme => self.theme.clone(),
             Menu::Key => Some(self.text(&self.inputs.key, cx)),
+            Menu::Org => self.org.clone(),
         };
         let mut list = div()
             .id(match menu {
                 Menu::Group => "group-menu",
                 Menu::Theme => "theme-menu",
                 Menu::Key => "key-menu",
+                Menu::Org => "org-menu",
             })
             .flex()
             .flex_col()
@@ -954,6 +983,7 @@ impl HostEditor {
                                 e.naming_group = false;
                             }
                             Menu::Theme => e.theme = value.clone(),
+                            Menu::Org => e.org = value.clone(),
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
@@ -1476,6 +1506,43 @@ impl Render for HostEditor {
             }
             AuthMethod::Agent => tr!("Uses the keys in your ssh-agent."),
         }));
+        // Only for a device that syncs with a shellwing server, or a host
+        // that has an organization already.
+        let group_org = self
+            .group
+            .as_deref()
+            .and_then(|g| self.ctx.hosts.groups.iter().find(|x| x.name == g))
+            .and_then(|g| g.org.clone());
+        if !self.ctx.orgs.is_empty() || self.org.is_some() || group_org.is_some() {
+            let shown = match (self.org.as_deref(), &group_org) {
+                (Some(NO_ORG), _) | (None, None) => tr!("None"),
+                (Some(id), _) => self.org_name(id),
+                (None, Some(id)) => tr!("{name} (from the group)", name = self.org_name(id)),
+            };
+            sign_in = sign_in.child(row().child(self.select(
+                "org-select",
+                &tr!("Certificates from"),
+                shown,
+                Menu::Org,
+                cx,
+            )));
+            if self.menu == Some(Menu::Org) {
+                let mut choices = vec![
+                    (None, tr!("Same as the group")),
+                    (Some(NO_ORG.to_string()), tr!("None")),
+                ];
+                choices.extend(
+                    self.ctx
+                        .orgs
+                        .iter()
+                        .map(|(id, name)| (Some(id.clone()), name.clone())),
+                );
+                sign_in = sign_in.child(self.menu_list(Menu::Org, choices, cx));
+            }
+            sign_in = sign_in.child(hint_text(&tr!(
+                "A certificate from the organization is tried first, before the way above."
+            )));
+        }
 
         // Route: the jump hosts, in order, then this host.
         let mut chain = div().flex().flex_wrap().items_center().gap(px(6.));

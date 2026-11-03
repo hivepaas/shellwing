@@ -52,6 +52,7 @@ impl Host {
             f.insert("auth_method".into(), method_name(self.auth.method).into());
         }
         put(&mut f, "auth_key", self.auth.key.as_deref());
+        put(&mut f, "org", self.org.as_deref());
         if self.forward_agent {
             f.insert("forward_agent".into(), "true".into());
         }
@@ -82,6 +83,7 @@ impl Group {
         put(&mut f, "name", Some(&self.name));
         put(&mut f, "color", self.color.as_deref());
         put(&mut f, "theme", self.theme.as_deref());
+        put(&mut f, "org", self.org.as_deref());
         f
     }
 }
@@ -232,6 +234,7 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_list(t, "jump", g("jump"));
     changed |= set_list(t, "forward", g("forward"));
     changed |= set_auth(t, g("auth_method"), g("auth_key"));
+    changed |= set_str(t, "org", g("org"));
     changed |= set_str(t, "theme", g("theme"));
     changed |= set_flag(t, "forward_agent", g("forward_agent") == Some("true"));
     changed |= set_int(t, "keepalive", g("keepalive"));
@@ -408,7 +411,7 @@ pub(crate) fn delete_host(doc: &mut DocumentMut, id: &str) -> bool {
 fn apply_group(t: &mut Table, f: &Fields) -> bool {
     let g = |k: &str| f.get(k).map(String::as_str);
     let mut changed = false;
-    for k in ["name", "color", "theme"] {
+    for k in ["name", "color", "theme", "org"] {
         changed |= set_str(t, k, g(k));
     }
     changed
@@ -562,6 +565,7 @@ local_only = true
             proxy_command: Some("cloudflared access ssh --hostname %h".into()),
             forward: vec!["-L 6379:localhost:6379".into()],
             auth: Default::default(),
+            org: None,
             theme: None,
             local_only: false,
             forward_agent: true,
@@ -618,6 +622,7 @@ local_only = true
             id: Some("g1".into()),
             name: "Prod".into(),
             color: Some("#f87171".into()),
+            org: None,
             theme: None,
         };
         assert!(save_group(&mut doc, "g1", &prod, Some("Production")));
@@ -639,6 +644,26 @@ local_only = true
         assert!(hosts.groups.iter().all(|g| g.name != "Prod"));
         let api = hosts.find("api-1").expect("api-1 stays");
         assert_eq!(api.group, None);
+    }
+
+    #[test]
+    fn an_organization_is_saved_with_a_group_and_a_host() {
+        let mut doc: DocumentMut = FILE.parse().expect("doc");
+        let mut hosts = parse(&doc.to_string());
+        let mut group = hosts.groups[0].clone();
+        group.org = Some("o1".into());
+        assert!(save_group(&mut doc, "g1", &group, None));
+        let mut api = hosts.hosts.remove(0);
+        api.org = Some(crate::NO_ORG.into());
+        assert!(save_host(&mut doc, "h1", &api));
+        let hosts = parse(&doc.to_string());
+        assert_eq!(hosts.groups[0].org.as_deref(), Some("o1"));
+        assert_eq!(hosts.hosts[0].org.as_deref(), Some("none"));
+        assert_eq!(hosts.org_of(&hosts.hosts[0]), None, "turned off here");
+        assert_eq!(
+            group.sync_fields().get("org").map(String::as_str),
+            Some("o1")
+        );
     }
 
     #[test]

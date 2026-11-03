@@ -198,6 +198,7 @@ fn host_of(f: &Found, name: &str, tag: &str) -> Host {
             },
             None => Auth::default(),
         },
+        org: None,
         theme: None,
         local_only: false,
         forward_agent: f.forward_agent,

@@ -4,6 +4,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
 
+use shellwing_i18n::tr;
 use shellwing_ssh::{Learned, Secrets};
 use shellwing_vault::{KeyStore, Lock, Presence, Unlock, Vault};
 
@@ -310,6 +311,9 @@ impl Presence for SystemPresence {
 pub struct SessionSecrets {
     pub vault: VaultSlot,
     pub learned: async_channel::Sender<Learned>,
+    /// The shellwing server this device syncs with, by its address: where
+    /// organizations' certificates come from.
+    pub server: Option<String>,
 }
 
 impl Secrets for SessionSecrets {
@@ -341,6 +345,22 @@ impl Secrets for SessionSecrets {
                 openssh: k.private,
             })
             .collect()
+    }
+
+    fn certified(&self, org: &str) -> Result<shellwing_ssh::Certified, String> {
+        let Some(address) = &self.server else {
+            return Err(tr!(
+                "this device syncs with no shellwing server: connect one in Settings › Sync"
+            ));
+        };
+        let token = self
+            .vault
+            .get()
+            .and_then(|v| v.device_secret(crate::sync::PLACE_SECRET).ok().flatten())
+            .ok_or_else(|| {
+                tr!("this device is not signed in to the server: connect again in Settings › Sync")
+            })?;
+        crate::certs::certified(address, &token, org)
     }
 }
 

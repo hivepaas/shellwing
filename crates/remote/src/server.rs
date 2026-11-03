@@ -12,6 +12,10 @@
 //! **Syncing.** The server numbers every change to a space, so a listing asks
 //! only for what changed since the last one, and costs one small request. It
 //! decides conditional writes itself, on every store it may be using.
+//!
+//! **Certificates.** The person's organizations there sign a public key for
+//! the accounts their admins granted ([`Server::certificate`]); the key's
+//! private half stays here.
 
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufReader, Read, Write};
@@ -541,6 +545,72 @@ impl Server {
     }
 }
 
+/// An organization the person is in.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+pub struct Org {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Deserialize)]
+struct Certificate {
+    certificate: String,
+}
+
+/// Organizations and their SSH certificates: what the person was let in to
+/// is the server's to say, not the app's.
+impl Server {
+    /// The organizations the person is in.
+    pub fn orgs(&self) -> io::Result<Vec<Org>> {
+        let answer = self.authorized(Method::GET, "/orgs", |r| r)?;
+        if !answer.status().is_success() {
+            return Err(refused(&self.runtime, answer));
+        }
+        let orgs: Answer<Vec<Org>> = self
+            .runtime
+            .block_on(async move { answer.json().await })
+            .map_err(|e| io::Error::other(short(&e.to_string())))?;
+        Ok(orgs.data)
+    }
+
+    /// `org`'s certificate for `public_key` (an OpenSSH line), as a line of a
+    /// `-cert.pub` file. The accounts it logs in as are the ones an admin
+    /// granted the person there.
+    pub fn certificate(&self, org: &str, public_key: &str) -> io::Result<String> {
+        let path = format!("/orgs/{}/ssh/certificates", query_encoded(org));
+        let body = serde_json::json!({ "publicKey": public_key });
+        let answer = self.authorized(Method::POST, &path, |r| r.json(&body))?;
+        let status = answer.status();
+        if !status.is_success() {
+            let problem: Option<Problem> = self
+                .runtime
+                .block_on(async move { answer.json().await })
+                .ok();
+            let code = problem.map(|p| p.code).unwrap_or_default();
+            return Err(io::Error::other(match (status, code.as_str()) {
+                (StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN, _) => {
+                    "this device has to sign in to the server again: connect again in Settings › Sync".into()
+                }
+                (StatusCode::NOT_FOUND, _) => {
+                    "you are not in this organization on the server, or it is gone".into()
+                }
+                (_, "ERR_SSH_CA_NOT_SET_UP") => {
+                    "the organization has no certificate authority yet: an admin makes one".into()
+                }
+                (_, "ERR_SSH_NO_PRINCIPALS") => {
+                    "you may log in as no account yet: an admin grants you some".into()
+                }
+                _ => format!("the server answered {}", status.as_u16()),
+            }));
+        }
+        let certificate: Answer<Certificate> = self
+            .runtime
+            .block_on(async move { answer.json().await })
+            .map_err(|e| io::Error::other(short(&e.to_string())))?;
+        Ok(certificate.data.certificate)
+    }
+}
+
 impl Backend for Server {
     fn list(&self, dir: &str) -> io::Result<Vec<String>> {
         self.pull()?;
@@ -771,6 +841,24 @@ mod tests {
         if request.headers.get("authorization") != Some(&bearer) {
             return reply(stream, 401, &[], &json_error("ERR_SESSION_JWT_INVALID"));
         }
+        if path == "/api/orgs" {
+            let body = serde_json::json!({ "data": [{ "id": "o1", "slug": "team", "name": "Team", "role": "member" }] });
+            return reply(stream, 200, &[], body.to_string().as_bytes());
+        }
+        if request.method == "POST" && path.ends_with("/ssh/certificates") {
+            let key: serde_json::Value = serde_json::from_slice(&request.body).unwrap_or_default();
+            let key = key["publicKey"].as_str().unwrap_or_default();
+            return match path.as_str() {
+                "/api/orgs/o1/ssh/certificates" => {
+                    let body = serde_json::json!({ "data": { "certificate": format!("certified {key}"), "principals": ["deploy"] } });
+                    reply(stream, 201, &[], body.to_string().as_bytes())
+                }
+                "/api/orgs/o2/ssh/certificates" => {
+                    reply(stream, 412, &[], &json_error("ERR_SSH_NO_PRINCIPALS"))
+                }
+                _ => reply(stream, 404, &[], &json_error("ERR_NOT_FOUND")),
+            };
+        }
         if path == "/api/sync/spaces" {
             let body = serde_json::json!({ "data": [{ "id": "s1", "type": "personal" }] });
             return reply(stream, 200, &[], body.to_string().as_bytes());
@@ -869,6 +957,36 @@ mod tests {
             }
         });
         (address, state)
+    }
+
+    #[test]
+    fn an_organization_certifies_a_key_and_says_why_it_will_not() {
+        let (address, fake) = fake();
+        fake.lock().expect("fake").valid_token = "nothing yet".into();
+        let server = Server::open(&address, "refresh-1").expect("open");
+        assert_eq!(
+            server.orgs().expect("orgs"),
+            [Org {
+                id: "o1".into(),
+                name: "Team".into()
+            }]
+        );
+        assert_eq!(
+            server
+                .certificate("o1", "ssh-ed25519 AAAA")
+                .expect("certificate"),
+            "certified ssh-ed25519 AAAA"
+        );
+        let no_grant = server.certificate("o2", "ssh-ed25519 AAAA");
+        assert!(
+            no_grant.is_err_and(|e| e.to_string().contains("no account yet")),
+            "nothing granted"
+        );
+        let elsewhere = server.certificate("o3", "ssh-ed25519 AAAA");
+        assert!(
+            elsewhere.is_err_and(|e| e.to_string().contains("not in this organization")),
+            "not a member"
+        );
     }
 
     #[test]

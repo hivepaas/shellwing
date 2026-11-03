@@ -545,6 +545,25 @@ scenario!(
 );
 
 scenario!(
+    /// A group takes its hosts' certificates from an organization chosen in
+    /// its editor, once the server has listed some.
+    a_group_takes_certificates_from_an_organization,
+    |ui| {
+        grouped(ui);
+        ui.open();
+        edit_group(ui, "Databases");
+        assert!(ui.find("group-org").is_none(), "no server, no choice");
+        ui.ws(|ws, _, cx| ws.know_orgs(vec![("o1".into(), "Platform team".into())], cx));
+        ui.click("group-org");
+        ui.click("group-org-choice:Platform team");
+        ui.keys("enter");
+        ui.wait_until("the editor to close", |ui| !ui.group_editor_open());
+        let hosts = ui.hosts_toml();
+        assert!(hosts.contains("org = \"o1\""), "{hosts}");
+    }
+);
+
+scenario!(
     /// A group deleted (after its editor asks) keeps its hosts, with no group.
     delete_a_group_keeps_its_hosts,
     |ui| {

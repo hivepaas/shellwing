@@ -2265,3 +2265,102 @@ async fn a_user_certificate_beside_the_key_signs_in() {
     opts.policy = HostKeyPolicy::AcceptNew;
     connect(opts).await.expect("signed in with the certificate");
 }
+
+/// What the app would get from its server: one organization's certificate,
+/// or why there is none.
+struct Org(Result<shellwing_ssh::Certified, String>);
+
+impl shellwing_ssh::Secrets for Org {
+    fn password(&self, _: &str) -> Option<String> {
+        None
+    }
+    fn passphrase(&self, _: &str) -> Option<String> {
+        None
+    }
+    fn learned(&self, _: shellwing_ssh::Learned) {}
+    fn certified(&self, org: &str) -> Result<shellwing_ssh::Certified, String> {
+        assert_eq!(org, "o1", "the host's organization");
+        self.0.clone()
+    }
+}
+
+/// Signs in to a server that trusts `trusted`, as `user`, with what `org` gives.
+async fn certified_connect(
+    name: &str,
+    trusted: &PrivateKey,
+    user: &str,
+    org: Result<shellwing_ssh::Certified, String>,
+) -> Result<(), Error> {
+    let fx = Fixture::new(name);
+    let policy = Policy {
+        user_ca: Some(trusted.public_key().clone()),
+        ..Default::default()
+    };
+    let (port, _) = serve(policy, &[MethodKind::PublicKey]).await;
+    let mut target = local(port, user);
+    // No key of its own to fall back on.
+    target.identity_files = vec![fx.dir.join("missing_key")];
+    target.certified_by = Some("o1".into());
+    let (prompter, _) = scripted(vec![]);
+    let mut opts = fx.options(target, prompter);
+    opts.policy = HostKeyPolicy::AcceptNew;
+    opts.secrets = Some(Arc::new(Org(org)));
+    connect(opts).await
+}
+
+fn org_certificate(ca: &PrivateKey, principal: &str) -> shellwing_ssh::Certified {
+    let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+    let certificate = certify(ca, key.public_key(), CertType::User, principal);
+    shellwing_ssh::Certified {
+        key: Arc::new(key),
+        certificate,
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_organizations_certificate_signs_in() {
+    let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+    let org = Ok(org_certificate(&ca, "deploy"));
+    certified_connect("orgcert", &ca, "deploy", org)
+        .await
+        .expect("signed in with the organization's certificate");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_certificate_for_another_account_says_which_it_is_for() {
+    let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+    let org = Ok(org_certificate(&ca, "deploy"));
+    let err = certified_connect("orgcert-user", &ca, "root", org)
+        .await
+        .expect_err("not root");
+    assert!(
+        err.to_string().contains("log in as deploy, not root"),
+        "{err}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_host_that_does_not_trust_the_organization_says_so() {
+    let (ca, other) = (
+        PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca"),
+        PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("other"),
+    );
+    let org = Ok(org_certificate(&ca, "deploy"));
+    let err = certified_connect("orgcert-ca", &other, "deploy", org)
+        .await
+        .expect_err("another authority");
+    assert!(err.to_string().contains("TrustedUserCAKeys"), "{err}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn no_certificate_from_the_organization_says_why() {
+    let ca = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("ca");
+    let org = Err("you may log in as no account yet".to_string());
+    let err = certified_connect("orgcert-none", &ca, "deploy", org)
+        .await
+        .expect_err("no certificate");
+    assert!(
+        matches!(&err, Error::Certificate { why } if why.ends_with("no account yet")),
+        "{err}"
+    );
+}

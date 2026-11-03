@@ -187,6 +187,7 @@ impl ImportView {
                 id: None,
                 name,
                 color: None,
+                org: None,
                 theme: None,
             })
             .collect();

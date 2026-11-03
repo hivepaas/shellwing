@@ -185,6 +185,10 @@ pub struct Workspace {
     editor: Option<(Entity<HostEditor>, Subscription)>,
     /// The group editor drawer, while open.
     group_editor: Option<(Entity<GroupEditor>, Subscription)>,
+    /// The organizations on the shellwing server this device syncs with (ids
+    /// and names), as last fetched: where groups and hosts can take
+    /// certificates from.
+    orgs: Vec<(String, String)>,
     /// Importing hosts from another app.
     import: Option<(Entity<ImportView>, Subscription)>,
     /// What the last import put in, with its notes' ids: *Undo import* takes
@@ -363,6 +367,7 @@ impl Workspace {
             asking: None,
             editor: None,
             group_editor: None,
+            orgs: vec![],
             import: None,
             last_import: None,
             settings: None,
@@ -3041,6 +3046,9 @@ impl Workspace {
         self.passphrase_joins = None;
         self.sync_error = None;
         self.last_synced = None;
+        // Certificates and organizations were the last server's.
+        shellwing_core::certs::forget();
+        self.orgs.clear();
         self.sync.set_place(place.cloned());
         self.sync.now();
         self.refresh_settings(cx);
@@ -3468,6 +3476,7 @@ impl Workspace {
             app_logs: self.live.settings().log.always,
             keys: self.key_choices(),
             vault: self.vault.clone(),
+            orgs: self.orgs.clone(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
@@ -3524,8 +3533,47 @@ impl Workspace {
         );
         let first = editor.read(cx).first_focus(cx);
         self.editor = Some((editor, sub));
+        self.fetch_orgs(cx);
         window.focus(&first, cx);
         cx.notify();
+    }
+
+    /// Asks the server this device syncs with for its organizations again,
+    /// for the editors open now and those opened later. Unreachable, the
+    /// last ones stay.
+    fn fetch_orgs(&mut self, cx: &mut Context<Self>) {
+        let (Some(SyncPlace::Server(server)), Some(vault)) =
+            (self.sync.place(), self.vault.ready())
+        else {
+            return;
+        };
+        let Ok(Some(token)) = vault.device_secret(crate::syncing::PLACE_SECRET) else {
+            return;
+        };
+        let token = token.to_string();
+        let job = cx.background_spawn(async move {
+            shellwing_remote::server::Server::open(&server.url, &token)?.orgs()
+        });
+        cx.spawn(async move |this, cx| {
+            let Ok(orgs) = job.await else {
+                return;
+            };
+            let orgs = orgs.into_iter().map(|o| (o.id, o.name)).collect();
+            let _ = this.update(cx, |ws, cx| ws.know_orgs(orgs, cx));
+        })
+        .detach();
+    }
+
+    /// The organizations the server listed (ids and names), for the editors
+    /// open now and those opened later.
+    pub fn know_orgs(&mut self, orgs: Vec<(String, String)>, cx: &mut Context<Self>) {
+        self.orgs = orgs.clone();
+        if let Some((e, _)) = &self.group_editor {
+            e.update(cx, |e, cx| e.set_orgs(orgs.clone(), cx));
+        }
+        if let Some((e, _)) = &self.editor {
+            e.update(cx, |e, cx| e.set_orgs(orgs, cx));
+        }
     }
 
     /// Opens the group editor on the group named `name`, or on a new one.
@@ -3559,7 +3607,9 @@ impl Workspace {
             .map(|t| (t.id.clone(), t.name.clone()))
             .collect();
         let store = self.live.store().cloned();
-        let editor = cx.new(|cx| GroupEditor::new(store, hosts, themes, group, cx));
+        let orgs = self.orgs.clone();
+        let editor = cx.new(|cx| GroupEditor::new(store, hosts, themes, orgs, group, cx));
+        self.fetch_orgs(cx);
         let sub = cx.subscribe_in(&editor, window, |ws, _, ev: &GroupEvent, window, cx| {
             let said = match ev {
                 GroupEvent::Close => None,

@@ -284,6 +284,7 @@ gradient gives way to that color.
 [[group]]
 name = "Production"
 theme = "crimson-ember"     # for the group's hosts that set none
+org = "<organization id>"   # its hosts sign in with this organization's certificates (see below)
 
 [[host]]
 name = "api-1"
@@ -296,6 +297,7 @@ jump = ["bastion"]          # outermost first: hosts here or ~/.ssh/config alias
 # proxy_command = "cloudflared access ssh --hostname %h"   # or a command instead of jump
 forward = ["-L 5432:localhost:5432", "-D 1080"]   # see Port forwarding
 auth = { method = "key", key = "~/.ssh/deploy_ed25519" }   # or "vault:<id>": a key the app keeps
+# org = "none"              # another organization than the group's, or none
 theme = "nord"              # beats the group's and config.toml's theme
 forward_agent = false       # let the host use your ssh-agent (see below)
 x11 = "untrusted"           # let the host's programs open windows here (see below)
@@ -321,6 +323,19 @@ still hides the host list altogether.
 
 The host list's filter matches every word typed against a host's name, alias,
 address, user and tags; **Enter** opens the first host shown, **Esc** clears it.
+
+**Certificates from an organization.** On a device that syncs with a
+shellwing server (*Settings › Sync*), a group can take its hosts' certificates
+from an organization there: *Certificates from* in the group editor, or in a
+host's *Sign in* for that host alone (*None* turns the group's off). When
+connecting, the app makes a key, held in memory only, and the server signs it
+for the accounts the organization's admins granted you, for a few hours (8 by
+default). It is offered before any other key or password, and a new one is
+asked for when most of its time is gone; stopping sync lets go of them all.
+The host's `sshd` has to trust the organization's certificate authority
+(`TrustedUserCAKeys`), which the server's admin sets up. A certificate is only
+offered to the hosts that have an organization: it names who you are, so
+others never see it.
 
 **Agent forwarding** (`forward_agent = true`, or *Forward my agent* in the host
 editor) lets the host use your local ssh-agent while you are connected: `git`

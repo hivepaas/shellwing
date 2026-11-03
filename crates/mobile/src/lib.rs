@@ -341,11 +341,18 @@ impl Shellwing {
         if hosts.groups.iter().any(|g| !mine(g) && g.name == name) {
             return Err(MobileError::Failed(tr!("Another group has this name.")));
         }
+        // The desktop sets it: a phone leaves it as it was.
+        let org = hosts
+            .groups
+            .iter()
+            .find(|g| mine(g))
+            .and_then(|g| g.org.clone());
         let clean = |s: Option<String>| s.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
         let group = shellwing_config::Group {
             id: edit.id,
             name,
             color: clean(edit.color),
+            org,
             theme: clean(edit.theme),
         };
         self.store
@@ -524,6 +531,7 @@ fn new_host(address: &str) -> Host {
         proxy_command: None,
         forward: vec![],
         auth: Auth::default(),
+        org: None,
         theme: None,
         local_only: false,
         forward_agent: false,
