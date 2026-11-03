@@ -37,6 +37,9 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 
 [dev-dependencies]
 russh.workspace = true
+# The tests against a real server (tests/shellwing_server.rs) play the browser.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 
 [lints]
 workspace = true
