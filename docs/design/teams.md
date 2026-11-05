@@ -20,6 +20,71 @@ Organization (Acme)                  a tenant: one on a self-hosted server,
 - **Sidebar.** Each collection is its own section, for example
   "Acme · Production".
 
+## Roles and permissions
+
+Two levels, and neither follows from the other:
+
+- **The server** (`users.role`, plus module grants): storage, mail, the
+  license, accounts. Disabling an account stops the person in every
+  organization. In shellwing cloud no customer is an admin of the server.
+- **An organization** (`org_members.role`): owner, admin or member.
+
+| In an organization | Owner | Admin | Member |
+| --- | --- | --- | --- |
+| See its members | All of each | All of each | Active ones, by name and role |
+| Suspend, remove or add back members and admins | ✓ | ✓ | Only leave |
+| Make members admins and admins members | ✓ | ✓ | – |
+| Make an owner, or change, suspend or remove one | ✓ | – | – |
+| Groups | ✓ | ✓ | – |
+| Make a collection | ✓ | ✓ | If the organization lets members |
+| Grant access to a collection | ✓ | ✓ | With Manage on it |
+| The CA, certificate lifetime, granting accounts | ✓ | ✓ | – |
+| Get a certificate | If granted accounts | If granted accounts | If granted accounts |
+| The organization's audit log | ✓ | ✓ | – |
+| SSO and verified domains | ✓ | – | – |
+| Plan and billing (cloud) | ✓ | – | – |
+
+- **There is always an active owner.** The last one can be neither demoted,
+  suspended nor removed; another is made first. Several owners are fine.
+- **Admins may grant themselves accounts.** It is in the audit log; a setting
+  requiring somebody else may come later.
+- **A member's status is the organization's:** active, suspended (gets
+  nothing for now, keeps their grants) or removed (loses their role and
+  accounts, and comes back as a member). The account's own status is the
+  server's.
+- **New people join as members.** Being an admin of the server makes nobody an
+  admin of an organization; the first admin of a self-hosted server owns its
+  organization.
+- **Owners hold every collection's key.** Otherwise a collection whose members
+  all leave is lost, with nobody able to grant it again. The price is that
+  owners can read every collection; access below them is need-to-know.
+- **A self-hosted server has one organization**, so that the license's limit
+  cannot be got round with a second.
+
+**Collections.** Connect (see the hosts and connect), Edit (add and change
+records), Manage (grant others, rotate the key). They are granted to a person
+or a group; what someone has is the union. A group may carry SSH accounts too:
+"Ops" grants `deploy` and `root`, and what a person may log in as is theirs
+plus their groups'.
+
+**A member's life:**
+
+- *Invited* by email: an existing account accepts on the web; a new one is made
+  pending, and joins once its person sets a password or signs in with SSO. In
+  shellwing cloud an email of a verified domain may join by itself, if the owner
+  allows it.
+- *Suspended:* the server stops serving them collections and certificates;
+  their devices keep syncing their personal space.
+- *Removed or leaving:* as suspended, and their accounts are cleared. The apps
+  of people with Manage get a checklist: rotate the key of each collection they
+  could read, and the secrets worth changing.
+- *Granted a collection:* the grant waits on the server until an app holding
+  its key checks the new member's fingerprint and wraps the key for them.
+
+**Seats.** A self-hosted server counts its accounts; shellwing cloud counts
+each organization's active and invited members, so a person in two counts in
+both.
+
 ## Sharing with end-to-end encryption
 
 The key hierarchy is in [vault.md](vault.md). In short, each person has a key
@@ -155,6 +220,11 @@ unique across the server, so otherwise its SSO could claim anybody's account.
 1. Personal sync ([sync.md](sync.md)), on a local folder, then S3.
 2. The 2-user limit and the license key.
 3. SSH CA.
-4. Collections, groups and permissions, plus the removal checklist.
-5. Several organizations, for shellwing cloud.
-6. Audit log views, SSO per organization and SCIM.
+4. An organization's roles and statuses, apart from the server's, managed on
+   the web.
+5. Groups, and SSH accounts through them.
+6. Collections: each person's key pair, collection keys wrapped for members,
+   grants, and the removal checklist.
+7. Several organizations, for shellwing cloud: made from the portal, SSO per
+   organization with verified domains, seats per organization.
+8. Audit log views and SCIM.
