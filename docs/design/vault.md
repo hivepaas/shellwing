@@ -20,11 +20,14 @@ of each device.
 Recovery key (printed) ───────────┐
 Passphrase (optional, Argon2id) ───┼── unlocks ──▶ Account Key (AK, 256-bit random)
 OS keychain, per device ───────────┘                   │
-                                                       ├─ wraps ─▶ user key pair (X25519 + Ed25519)
                                                        └─ wraps ─▶ Personal space key
-Collection key ◀── wrapped for each member's X25519 public key
+Personal space key ── encrypts ──▶ the person's identity (X25519 + Ed25519), a record
+Collection key ◀── wrapped for each member's X25519 public key, signed by the wrapper
 Space or collection key ── encrypts ──▶ each record (host, password, ssh_key, snippet…)
 ```
+
+The identity is a record so that every device of the person has it through
+sync; see [collections.md](collections.md).
 
 **Why a space key sits between the AK and the records:**
 
