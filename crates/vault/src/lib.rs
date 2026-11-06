@@ -26,6 +26,7 @@ use zeroize::Zeroizing;
 mod attachments;
 mod cipher;
 mod hlc;
+mod identity;
 mod keychain;
 mod pairing;
 mod presence;
@@ -34,6 +35,7 @@ mod sync;
 
 pub use attachments::{UNUSED_FOR_MS, attachment_line, attachment_refs, image_mime};
 pub use cipher::Cipher;
+pub use identity::{IDENTITY_ID, Identity, PublicIdentity, fingerprint};
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use keychain::OsKeychain;
 pub use keychain::{KeyStore, MemoryKeys};

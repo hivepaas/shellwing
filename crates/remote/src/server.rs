@@ -25,7 +25,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::engine::general_purpose::{STANDARD as B64, URL_SAFE_NO_PAD};
 use reqwest::{Client, Method, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -383,6 +383,8 @@ struct State {
     known: HashMap<String, String>,
     /// What was read, with the ETag it had.
     kept: HashMap<String, (String, Vec<u8>)>,
+    /// The identity published from here, not to send it at every sync.
+    published: Option<shellwing_vault::PublicIdentity>,
 }
 
 impl Server {
@@ -612,6 +614,27 @@ impl Server {
 }
 
 impl Backend for Server {
+    fn takes_identity(&self) -> bool {
+        true
+    }
+
+    fn publish_identity(&self, identity: &shellwing_vault::PublicIdentity) -> io::Result<()> {
+        if self.state()?.published.as_ref() == Some(identity) {
+            return Ok(());
+        }
+        let body = serde_json::json!({
+            "x25519Public": B64.encode(identity.x25519),
+            "ed25519Public": B64.encode(identity.ed25519),
+            "signature": B64.encode(identity.signature),
+        });
+        let answer = self.authorized(Method::PUT, "/users/current/identity", |r| r.json(&body))?;
+        if !answer.status().is_success() {
+            return Err(refused(&self.runtime, answer));
+        }
+        self.state()?.published = Some(identity.clone());
+        Ok(())
+    }
+
     fn list(&self, dir: &str) -> io::Result<Vec<String>> {
         self.pull()?;
         let prefix = format!("{dir}/");
@@ -744,6 +767,8 @@ mod tests {
         /// Refresh tokens are refused.
         signed_out: bool,
         requests: Vec<String>,
+        /// The identity published, as sent.
+        identity: Option<serde_json::Value>,
     }
 
     struct Http {
@@ -840,6 +865,10 @@ mod tests {
         let bearer = format!("Bearer {}", f.valid_token);
         if request.headers.get("authorization") != Some(&bearer) {
             return reply(stream, 401, &[], &json_error("ERR_SESSION_JWT_INVALID"));
+        }
+        if request.method == "PUT" && path == "/api/users/current/identity" {
+            f.identity = serde_json::from_slice(&request.body).ok();
+            return reply(stream, 200, &[], b"{}");
         }
         if path == "/api/orgs" {
             let body = serde_json::json!({ "data": [{ "id": "o1", "slug": "team", "name": "Team", "role": "member" }] });
@@ -1268,6 +1297,38 @@ mod tests {
         cancel.store(true, Ordering::Relaxed);
         let e = waiting.join().expect("thread").expect_err("off");
         assert_eq!(e.kind(), io::ErrorKind::Interrupted);
+    }
+
+    #[test]
+    fn an_identity_is_published_once_until_it_changes() {
+        let (address, fake) = fake();
+        let server = Server::open(&address, "refresh-1").expect("open");
+        assert!(server.takes_identity());
+        let identity = shellwing_vault::PublicIdentity {
+            x25519: [1; 32],
+            ed25519: [2; 32],
+            signature: [3; 64],
+        };
+        let puts = |fake: &Arc<Mutex<Fake>>| {
+            let f = fake.lock().expect("lock");
+            f.requests
+                .iter()
+                .filter(|r| r.starts_with("PUT /api/users/current/identity"))
+                .count()
+        };
+        server.publish_identity(&identity).expect("publish");
+        server.publish_identity(&identity).expect("again");
+        assert_eq!(puts(&fake), 1, "the same one goes once");
+        let sent = fake.lock().expect("lock").identity.clone().expect("sent");
+        assert_eq!(sent["x25519Public"], B64.encode([1u8; 32]));
+        assert_eq!(sent["signature"], B64.encode([3u8; 64]));
+
+        let other = shellwing_vault::PublicIdentity {
+            x25519: [4; 32],
+            ..identity
+        };
+        server.publish_identity(&other).expect("another");
+        assert_eq!(puts(&fake), 2);
     }
 
     #[test]

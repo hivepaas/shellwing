@@ -220,6 +220,18 @@ fn two_devices_share_a_vault_and_one_is_given_a_certificate() {
     a.sync(a_place.as_ref()).expect("sync a");
     assert_eq!(password(&a, "root@db").as_deref(), Some("from-b"));
 
+    // A's identity goes to B through sync, and to the server, which checks it.
+    let identity = a.ensure_identity().expect("identity").public();
+    a.sync(a_place.as_ref()).expect("sync a");
+    a_place.publish_identity(&identity).expect("publish");
+    b.sync(b_place.as_ref()).expect("sync b");
+    assert_eq!(
+        b.identity().expect("read").expect("synced").public(),
+        identity
+    );
+    let published = browser.call(Method::GET, "/users/current/identity", None);
+    assert_eq!(published["data"]["fingerprint"], identity.fingerprint());
+
     // The organization certifies A's key for the accounts it is granted.
     let orgs = Server::open(&s.address, &token_a)
         .expect("a's server")

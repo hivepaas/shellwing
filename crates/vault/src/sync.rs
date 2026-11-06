@@ -51,6 +51,15 @@ pub trait Backend: Send + Sync {
     fn publish(&self) -> io::Result<bool> {
         Ok(true)
     }
+    /// Whether people publish their identity here (a shellwing server): a
+    /// vault syncing here makes one, for collections.
+    fn takes_identity(&self) -> bool {
+        false
+    }
+    /// Publishes the public halves of the person's identity.
+    fn publish_identity(&self, _identity: &crate::PublicIdentity) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 /// Tries at publishing, each over what the others published just before.
