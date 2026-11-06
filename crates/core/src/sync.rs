@@ -561,6 +561,11 @@ fn sync_once(
         }
         _ => None,
     };
+    if synced.is_ok() && store.takes_identity() {
+        // Not a failed sync: collections need it, and say so; it goes again
+        // at the next one.
+        let _ = publish_identity(vault, store, held);
+    }
     let hosts_problem = hosts_problem.or(settings_problem);
     let written = written.or(settings_written);
     match (synced, hosts_problem.or(written)) {
@@ -568,6 +573,21 @@ fn sync_once(
         (Ok(r), None) => SyncEvent::Done(r),
         (Err(e), _) => SyncEvent::Failed(e.to_string()),
     }
+}
+
+/// Publishes the person's identity, made now if no device of theirs has one.
+/// After syncing, so that one another device made is taken, not a second.
+fn publish_identity(
+    vault: &Vault,
+    store: &dyn Backend,
+    held: &BTreeSet<String>,
+) -> shellwing_vault::Result<()> {
+    let made = vault.identity()?.is_none();
+    let identity = vault.ensure_identity()?;
+    if made {
+        vault.sync_holding(store, held)?;
+    }
+    Ok(store.publish_identity(&identity.public())?)
 }
 
 /// Records edits made in hosts.toml since the last sync.
@@ -731,6 +751,76 @@ mod tests {
             assert!(text.contains(from), "{from:?} in\n{text}");
             std::fs::write(&path, text.replacen(from, to, 1)).expect("write");
         }
+    }
+
+    /// A folder that takes identities, as a shellwing server does.
+    struct Publishing {
+        folder: Folder,
+        published: Mutex<Vec<shellwing_vault::PublicIdentity>>,
+    }
+
+    impl Backend for Publishing {
+        fn list(&self, dir: &str) -> std::io::Result<Vec<String>> {
+            self.folder.list(dir)
+        }
+        fn read(&self, name: &str) -> std::io::Result<Option<Vec<u8>>> {
+            self.folder.read(name)
+        }
+        fn write(&self, name: &str, data: &[u8]) -> std::io::Result<()> {
+            self.folder.write(name, data)
+        }
+        fn remove(&self, name: &str) -> std::io::Result<()> {
+            self.folder.remove(name)
+        }
+        fn takes_identity(&self) -> bool {
+            true
+        }
+        fn publish_identity(
+            &self,
+            identity: &shellwing_vault::PublicIdentity,
+        ) -> std::io::Result<()> {
+            self.published.lock().expect("lock").push(identity.clone());
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn devices_of_one_person_publish_one_identity() {
+        let root =
+            std::env::temp_dir().join(format!("shellwing-identity-sync-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let server = Publishing {
+            folder: Folder::new(&root.join("sync")),
+            published: Mutex::default(),
+        };
+        let a = Device::new(&root, "a", "");
+        let b = Device::new(&root, "b", "");
+
+        // Only a place that takes identities makes one.
+        let elsewhere = Folder::new(&root.join("elsewhere"));
+        b.sync(&elsewhere);
+        assert!(b.vault.identity().expect("read").is_none());
+
+        assert!(matches!(
+            sync_once(&a.vault, &server, None, &BTreeSet::new()),
+            SyncEvent::Done(_)
+        ));
+        let made = a.vault.identity().expect("read").expect("made").public();
+        let rk = a.vault.recovery_key().expect("rk").expect("started");
+        b.vault.join(&server, &rk.to_string()).expect("join");
+        assert!(matches!(
+            sync_once(&b.vault, &server, None, &BTreeSet::new()),
+            SyncEvent::Done(_)
+        ));
+        assert_eq!(
+            b.vault.identity().expect("read").expect("synced").public(),
+            made,
+            "the other device's, not a second"
+        );
+        assert_eq!(
+            *server.published.lock().expect("lock"),
+            vec![made.clone(), made]
+        );
     }
 
     #[test]

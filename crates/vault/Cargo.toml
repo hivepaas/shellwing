@@ -18,6 +18,8 @@ sha2 = "0.10"
 chacha20poly1305 = "0.10"
 # Pairing a new device: a key agreed through the sync folder.
 curve25519-dalek = "5"
+# A person's identity signs the collection keys they wrap (identity.rs).
+ed25519-dalek = "3"
 hkdf = "0.12"
 getrandom = "0.3"
 rusqlite = { version = "0.40", features = ["bundled"] }
