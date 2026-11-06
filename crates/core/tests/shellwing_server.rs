@@ -225,7 +225,10 @@ fn two_devices_share_a_vault_and_one_is_given_a_certificate() {
     a.sync(a_place.as_ref()).expect("sync a");
     a_place.publish_identity(&identity).expect("publish");
     b.sync(b_place.as_ref()).expect("sync b");
-    assert_eq!(b.identity().expect("read").expect("synced").public(), identity);
+    assert_eq!(
+        b.identity().expect("read").expect("synced").public(),
+        identity
+    );
     let published = browser.call(Method::GET, "/users/current/identity", None);
     assert_eq!(published["data"]["fingerprint"], identity.fingerprint());
 
