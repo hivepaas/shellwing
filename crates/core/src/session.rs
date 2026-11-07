@@ -286,6 +286,13 @@ impl Session {
                     Some(shellwing_config::SyncPlace::Server(s)) => Some(s.url),
                     _ => None,
                 },
+                collection: match &opens {
+                    Opens::Host(t) => (**t)
+                        .as_ref()
+                        .ok()
+                        .and_then(|(_, h)| h.as_ref()?.collection.clone()),
+                    Opens::Local(_) => None,
+                },
             }),
             vault,
             held: Weak::new(),
@@ -314,7 +321,11 @@ impl Session {
                     .filter(|r| !r.trim().is_empty());
                 session.title = resolved.alias.clone();
                 let logged = entry.as_ref().and_then(|h| h.log);
-                session.entry = entry.map(|h| h.name);
+                // A collection's host by its id: its name may be another's too.
+                session.entry = entry.map(|h| match (&h.collection, h.id) {
+                    (Some(_), Some(id)) => id,
+                    (_, _) => h.name,
+                });
                 session.target = Some(resolved);
                 if logged.unwrap_or(settings.log.always) {
                     session.log_from_start(&settings.log);

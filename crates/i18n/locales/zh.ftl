@@ -361,6 +361,12 @@ t97a4b927 = 保险库未打开
 # No key made: {e}
 t4e14e42b = 未生成密钥：{ $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = 你可以连接 { $name } 中的主机，但不能更改它们。
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = 此主机所属的集合已不再在此同步。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = 在 hosts.toml 中找不到此主机。
 
@@ -522,6 +528,21 @@ tb6562d26 = { $n }（仅此主机）
 
 # Organize
 t6ddb17ec = 归类
+
+# My hosts
+tcb6506f0 = 我的主机
+
+# Saved in
+tf3fe99c3 = 保存位置
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = 有权访问该集合的所有人都能看到，端到端加密。
+
+# Only you see it, on your devices.
+t6f22a0a3 = 只有你能看到，仅在你的设备上。
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = 位于集合 { $name } 中：有权访问它的所有人都能看到。
 
 # Tags
 t76bda0c0 = 标签
@@ -3421,6 +3442,12 @@ ta4580143 = 锁定 shellwing
 # Sync now with {place}
 t8aad97ad = 立即与 { $place } 同步
 
+# Give the key of {name}…
+t57ffca8e = 发放 { $name } 的密钥…
+
+# To the people granted it who wait for it
+tee158d1d = 发给已获授权并在等待的人
+
 # Sync passwords with a folder…
 t74de6b57 = 与文件夹同步密码…
 
@@ -3730,6 +3757,33 @@ t917924da = 无法编辑 hosts.toml：{ $e }
 # Saved {name}.
 t966c9f6d = 已保存 { $name }。
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = 集合需要与 shellwing 服务器同步。
+
+# Cannot list who waits: {e}
+t27666c65 = 无法列出等待者：{ $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = 指纹 { $fingerprint }：请与对方个人资料页面上的指纹核对，然后再发放。
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = 已在组织中停用：恢复后即可获得。
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = 尚无加密密钥：需要对方将 shellwing 应用与服务器同步一次。
+
+# Everybody with access holds the key.
+td9e661ee = 所有有权访问的人都已持有密钥。
+
+# Give the key of {name} to whom?
+t2cdda213 = 将 { $name } 的密钥发放给谁？
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } 现在已持有 { $collection } 的密钥。
+
+# The key was not given: {e}
+t9260982f = 密钥未发放：{ $e }
+
 # Saved the group {name}.
 t58507cbd = 已保存分组 { $name }。
 
@@ -3876,6 +3930,9 @@ tfa0d176a = 此计算机
 
 # Favorites
 t7c2c53ba = 收藏
+
+# waiting for its key
+tb827ed42 = 等待密钥
 
 # read only
 t0d7ec241 = 只读

@@ -379,6 +379,12 @@ t97a4b927 = сховище не відкрито
 # No key made: {e}
 t4e14e42b = Ключ не створено: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = Ви можете підключатися до хостів { $name }, але не змінювати їх.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = Колекція цього хоста тут більше не синхронізується.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Цей хост не знайдено в hosts.toml.
 
@@ -540,6 +546,21 @@ tb6562d26 = { $n } (лише цей хост)
 
 # Organize
 t6ddb17ec = Упорядкування
+
+# My hosts
+tcb6506f0 = Мої хости
+
+# Saved in
+tf3fe99c3 = Зберегти в
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Його бачать усі, хто має доступ до колекції; наскрізне шифрування.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Його бачите лише ви, на своїх пристроях.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = У колекції { $name }: його бачать усі, хто має до неї доступ.
 
 # Tags
 t76bda0c0 = Теги
@@ -3619,6 +3640,12 @@ ta4580143 = Заблокувати shellwing
 # Sync now with {place}
 t8aad97ad = Синхронізувати зараз із { $place }
 
+# Give the key of {name}…
+t57ffca8e = Передати ключ колекції { $name }…
+
+# To the people granted it who wait for it
+tee158d1d = Тим, хто має доступ і чекає на ключ
+
 # Sync passwords with a folder…
 t74de6b57 = Синхронізувати паролі через папку…
 
@@ -3940,6 +3967,33 @@ t917924da = Не вдалося змінити hosts.toml: { $e }
 # Saved {name}.
 t966c9f6d = { $name } збережено.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Колекціям потрібна синхронізація із сервером shellwing.
+
+# Cannot list who waits: {e}
+t27666c65 = Не вдалося отримати список тих, хто чекає: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Відбиток { $fingerprint }: звірте його з відбитком на сторінці «Профіль» користувача, потім передайте ключ.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = Призупинено в організації: зможе отримати ключ, коли повернеться.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Ще немає ключа шифрування: користувачеві треба один раз синхронізувати застосунок shellwing із сервером.
+
+# Everybody with access holds the key.
+td9e661ee = Ключ є в усіх, хто має доступ.
+
+# Give the key of {name} to whom?
+t2cdda213 = Кому передати ключ колекції { $name }?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = Тепер { $name } має ключ колекції { $collection }.
+
+# The key was not given: {e}
+t9260982f = Ключ не передано: { $e }
+
 # Saved the group {name}.
 t58507cbd = Групу { $name } збережено.
 
@@ -4110,6 +4164,9 @@ tfa0d176a = Цей комп'ютер
 
 # Favorites
 t7c2c53ba = Вибране
+
+# waiting for its key
+tb827ed42 = чекає на ключ
 
 # read only
 t0d7ec241 = лише читання

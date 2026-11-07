@@ -373,6 +373,12 @@ t97a4b927 = le coffre n'est pas ouvert
 # No key made: {e}
 t4e14e42b = Aucune clé créée : { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = Vous pouvez vous connecter aux serveurs de { $name }, pas les modifier.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = La collection de ce serveur n'est plus synchronisée ici.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Ce serveur est introuvable dans hosts.toml.
 
@@ -534,6 +540,21 @@ tb6562d26 = { $n } (ce serveur uniquement)
 
 # Organize
 t6ddb17ec = Organisation
+
+# My hosts
+tcb6506f0 = Mes serveurs
+
+# Saved in
+tf3fe99c3 = Enregistré dans
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Toutes les personnes ayant accès à la collection le voient, chiffré de bout en bout.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Vous seul le voyez, sur vos appareils.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = Dans la collection { $name } : toutes les personnes qui y ont accès le voient.
 
 # Tags
 t76bda0c0 = Étiquettes
@@ -3533,6 +3554,12 @@ ta4580143 = Verrouiller shellwing
 # Sync now with {place}
 t8aad97ad = Synchroniser maintenant avec { $place }
 
+# Give the key of {name}…
+t57ffca8e = Donner la clé de { $name }…
+
+# To the people granted it who wait for it
+tee158d1d = Aux personnes autorisées qui l'attendent
+
 # Sync passwords with a folder…
 t74de6b57 = Synchroniser les mots de passe avec un dossier…
 
@@ -3850,6 +3877,33 @@ t917924da = Impossible de modifier hosts.toml : { $e }
 # Saved {name}.
 t966c9f6d = { $name } enregistré.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Les collections doivent être synchronisées avec un serveur shellwing.
+
+# Cannot list who waits: {e}
+t27666c65 = Impossible de lister qui attend : { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Empreinte { $fingerprint } : comparez-la à celle de sa page Profil, puis donnez la clé.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = Suspendu dans l'organisation : la personne pourra l'avoir à son retour.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Pas encore de clé de chiffrement : la personne doit synchroniser une fois l'application shellwing avec le serveur.
+
+# Everybody with access holds the key.
+td9e661ee = Toutes les personnes ayant accès détiennent la clé.
+
+# Give the key of {name} to whom?
+t2cdda213 = Donner la clé de { $name } à qui ?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } a maintenant la clé de { $collection }.
+
+# The key was not given: {e}
+t9260982f = La clé n'a pas été donnée : { $e }
+
 # Saved the group {name}.
 t58507cbd = Groupe { $name } enregistré.
 
@@ -4012,6 +4066,9 @@ tfa0d176a = Cet ordinateur
 
 # Favorites
 t7c2c53ba = Favoris
+
+# waiting for its key
+tb827ed42 = en attente de sa clé
 
 # read only
 t0d7ec241 = lecture seule

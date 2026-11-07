@@ -89,7 +89,7 @@ impl Group {
 }
 
 /// A new id: time first, then randomness, as the vault's ids.
-pub(crate) fn new_id() -> String {
+pub fn new_id() -> String {
     let ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
@@ -485,8 +485,51 @@ pub(crate) fn apply_all(
     g || h
 }
 
+impl crate::Hosts {
+    /// Hosts and groups as synced records hold them (id → fields), read as
+    /// hosts.toml would be: a collection's, which live in the vault only.
+    pub fn from_synced(
+        hosts: &[(String, Fields)],
+        groups: &[(String, Fields)],
+    ) -> Result<crate::Hosts, String> {
+        let mut doc = DocumentMut::new();
+        apply_all(&mut doc, hosts, groups);
+        toml::from_str(&doc.to_string()).map_err(|e| e.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn synced_records_read_as_hosts() {
+        let text = r#"
+[[host]]
+id = "0193a1b2c3d4e5f60718293a4b5c6d7e"
+name = "db"
+address = "10.0.0.5"
+user = "deploy"
+port = 2222
+tags = ["prod"]
+"#;
+        let hosts: crate::Hosts = toml::from_str(text).expect("parse");
+        let records: Vec<(String, Fields)> = hosts
+            .hosts
+            .iter()
+            .map(|h| (h.id.clone().expect("id"), h.sync_fields()))
+            .collect();
+        let back = crate::Hosts::from_synced(&records, &[]).expect("from records");
+        assert_eq!(back.hosts.len(), 1);
+        let h = &back.hosts[0];
+        assert_eq!(h.id.as_deref(), Some("0193a1b2c3d4e5f60718293a4b5c6d7e"));
+        assert_eq!(
+            (h.name.as_str(), h.address.as_str(), h.port),
+            ("db", "10.0.0.5", Some(2222))
+        );
+        assert_eq!(h.user.as_deref(), Some("deploy"));
+        assert_eq!(h.tags, ["prod"]);
+        assert_eq!(h.collection, None, "the caller says which");
+    }
     use super::*;
     use crate::hosts::Hosts;
 
@@ -576,6 +619,7 @@ local_only = true
             favorite: true,
             run: Some("cd ~/apps && ls".into()),
             log: Some(false),
+            collection: None,
         };
         assert!(save_host(&mut doc, "h9", &new));
         let text = doc.to_string();

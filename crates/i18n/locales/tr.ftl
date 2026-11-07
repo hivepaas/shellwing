@@ -373,6 +373,12 @@ t97a4b927 = kasa açık değil
 # No key made: {e}
 t4e14e42b = Anahtar oluşturulmadı: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = { $name } koleksiyonunun ana makinelerine bağlanabilirsiniz, ancak onları değiştiremezsiniz.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = Bu ana makinenin koleksiyonu artık burada eşitlenmiyor.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Bu ana makine hosts.toml içinde bulunamıyor.
 
@@ -534,6 +540,21 @@ tb6562d26 = { $n } (yalnızca bu ana makine)
 
 # Organize
 t6ddb17ec = Gruplama
+
+# My hosts
+tcb6506f0 = Ana makinelerim
+
+# Saved in
+tf3fe99c3 = Kaydedileceği yer
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Koleksiyona erişimi olan herkes görür, uçtan uca şifreli.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Yalnızca siz görürsünüz, cihazlarınızda.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = { $name } koleksiyonunda: erişimi olan herkes görür.
 
 # Tags
 t76bda0c0 = Etiketler
@@ -3533,6 +3554,12 @@ ta4580143 = shellwing'i kilitle
 # Sync now with {place}
 t8aad97ad = { $place } ile şimdi eşitle
 
+# Give the key of {name}…
+t57ffca8e = { $name } koleksiyonunun anahtarını ver…
+
+# To the people granted it who wait for it
+tee158d1d = Erişim verilmiş ve anahtarı bekleyen kişilere
+
 # Sync passwords with a folder…
 t74de6b57 = Parolaları bir klasörle eşitle…
 
@@ -3850,6 +3877,33 @@ t917924da = hosts.toml düzenlenemiyor: { $e }
 # Saved {name}.
 t966c9f6d = { $name } kaydedildi.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Koleksiyonların bir shellwing sunucusuyla eşitlenmesi gerekir.
+
+# Cannot list who waits: {e}
+t27666c65 = Bekleyenler listelenemiyor: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Parmak izi { $fingerprint }: Profil sayfalarındakiyle karşılaştırın, sonra anahtarı verin.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = Kuruluşta askıya alınmış: geri döndüğünde alabilir.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Henüz şifreleme anahtarı yok: shellwing uygulamasını sunucuyla bir kez eşitlemesi gerekir.
+
+# Everybody with access holds the key.
+td9e661ee = Erişimi olan herkeste anahtar var.
+
+# Give the key of {name} to whom?
+t2cdda213 = { $name } koleksiyonunun anahtarı kime verilsin?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } artık { $collection } koleksiyonunun anahtarına sahip.
+
+# The key was not given: {e}
+t9260982f = Anahtar verilemedi: { $e }
+
 # Saved the group {name}.
 t58507cbd = { $name } grubu kaydedildi.
 
@@ -4012,6 +4066,9 @@ tfa0d176a = Bu bilgisayar
 
 # Favorites
 t7c2c53ba = Sık kullanılanlar
+
+# waiting for its key
+tb827ed42 = anahtarını bekliyor
 
 # read only
 t0d7ec241 = salt okunur

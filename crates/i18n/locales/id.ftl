@@ -370,6 +370,12 @@ t97a4b927 = brankas tidak terbuka
 # No key made: {e}
 t4e14e42b = Kunci tidak dibuat: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = Anda boleh terhubung ke host { $name }, tetapi tidak mengubahnya.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = Koleksi host ini tidak lagi disinkronkan di sini.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Host ini tidak ditemukan di hosts.toml.
 
@@ -531,6 +537,21 @@ tb6562d26 = { $n } (hanya host ini)
 
 # Organize
 t6ddb17ec = Atur
+
+# My hosts
+tcb6506f0 = Host saya
+
+# Saved in
+tf3fe99c3 = Disimpan di
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Semua yang memiliki akses ke koleksi dapat melihatnya, terenkripsi end-to-end.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Hanya Anda yang melihatnya, di perangkat Anda.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = Di koleksi { $name }: semua yang memiliki akses ke koleksi itu dapat melihatnya.
 
 # Tags
 t76bda0c0 = Tag
@@ -3490,6 +3511,12 @@ ta4580143 = Kunci shellwing
 # Sync now with {place}
 t8aad97ad = Sinkronkan sekarang dengan { $place }
 
+# Give the key of {name}…
+t57ffca8e = Berikan kunci { $name }…
+
+# To the people granted it who wait for it
+tee158d1d = Kepada orang yang diberi akses dan sedang menunggunya
+
 # Sync passwords with a folder…
 t74de6b57 = Sinkronkan kata sandi dengan folder…
 
@@ -3805,6 +3832,33 @@ t917924da = Tidak dapat mengedit hosts.toml: { $e }
 # Saved {name}.
 t966c9f6d = { $name } disimpan.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Koleksi perlu disinkronkan dengan server shellwing.
+
+# Cannot list who waits: {e}
+t27666c65 = Tidak dapat menampilkan siapa yang menunggu: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Sidik jari { $fingerprint }: bandingkan dengan yang ada di halaman Profil mereka, lalu berikan.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = Ditangguhkan di organisasi: mereka dapat menerimanya setelah kembali.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Belum memiliki kunci enkripsi: mereka perlu menyinkronkan aplikasi shellwing dengan server sekali.
+
+# Everybody with access holds the key.
+td9e661ee = Semua yang memiliki akses sudah memegang kuncinya.
+
+# Give the key of {name} to whom?
+t2cdda213 = Berikan kunci { $name } kepada siapa?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } sekarang memiliki kunci { $collection }.
+
+# The key was not given: {e}
+t9260982f = Kunci tidak diberikan: { $e }
+
 # Saved the group {name}.
 t58507cbd = Grup { $name } disimpan.
 
@@ -3963,6 +4017,9 @@ tfa0d176a = Komputer ini
 
 # Favorites
 t7c2c53ba = Favorit
+
+# waiting for its key
+tb827ed42 = menunggu kuncinya
 
 # read only
 t0d7ec241 = hanya baca

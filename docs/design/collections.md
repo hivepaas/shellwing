@@ -134,10 +134,20 @@ it.
 
 - The vault holds several spaces: the personal one as it is now, and each
   collection, with its own key and versions.
-- Each collection is a section of the sidebar. The host editor saves in the
-  personal space or a collection; moving a record is copying it and deleting the
-  original, since a record lives in one space.
-- Connect shows a collection read-only.
+- Each collection is a section of the sidebar: its hosts once the key is held,
+  else "waiting for its key"; "read only" with Connect. The vault keeps the
+  collections the server served at the last sync, so they show offline too.
+- A collection's hosts are read from the vault as hosts.toml's are, and found by
+  their id, since names may repeat across collections. They sign in with the
+  organization's certificates unless one says otherwise, and their passwords are
+  looked for in the collection first.
+- The host editor saves a new host in hosts.toml or a collection the person may
+  change ("Saved in"); a host saved stays where it is. Moving one is duplicating
+  it into another place and deleting the original, since a record lives in one
+  space.
+- With Manage, the palette's "Give the key of …" lists who waits, each with the
+  fingerprint to compare with their Profile page; choosing one gives it.
+- Granting and taking away access is on the web for now.
 
 ## Order
 
@@ -146,7 +156,7 @@ it.
    `/api/orgs/{org}/collections`, and `/api/sync/spaces` lists the collections
    after the personal space.
 3. The app: spaces in the vault, syncing collections, wrapping on making one and
-   on confirming who waits, and the sidebar.
+   on confirming who waits, and the sidebar. Done for the desktop.
 4. Replacing the key when somebody loses access, with the checklist.
 5. A format document with test vectors for the Rust app and the Go server, and
    an end-to-end test of two people sharing a collection.

@@ -130,6 +130,8 @@ pub enum Action {
     LetPassphraseJoin,
     StopPassphraseJoin,
     StopSync,
+    /// Give a collection's key, by its id, to people granted it who wait.
+    GiveCollectionKey(String),
 }
 
 #[derive(Clone, Debug, PartialEq)]

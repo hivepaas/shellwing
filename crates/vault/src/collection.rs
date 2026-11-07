@@ -17,7 +17,7 @@ use zeroize::Zeroizing;
 use std::collections::BTreeMap;
 use std::io;
 
-use rusqlite::params;
+use rusqlite::{OptionalExtension, params};
 
 use crate::identity::{Identity, Key, PublicIdentity};
 use crate::sync::Backend;
@@ -368,7 +368,7 @@ impl Vault {
 }
 
 /// A collection the server serves the person, as it lists it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CollectionInfo {
     pub id: String,
     pub org_id: String,
@@ -456,8 +456,10 @@ impl Vault {
     /// given since, makes the first key of one with none if they may manage
     /// it, and merges its records. One that fails does not stop the others.
     pub fn sync_collections(&self, host: &dyn Collections) -> Result<Vec<CollectionOutcome>> {
+        let listed = host.list_collections()?;
+        self.keep_known_collections(&listed)?;
         let mut out = Vec::new();
-        for c in host.list_collections()? {
+        for c in listed {
             let state = match self.sync_one_collection(host, &c) {
                 Ok(Some(r)) => CollectionState::Synced {
                     pulled: r.pulled,
@@ -497,6 +499,34 @@ impl Vault {
         }
         let store = host.collection_store(c)?;
         self.sync_collection(&*store, &c.id, c.edits()).map(Some)
+    }
+
+    /// The collections the server served at the last sync: what the host list
+    /// shows while offline. Kept on this device only.
+    pub fn known_collections(&self) -> Result<Vec<CollectionInfo>> {
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        let text: Option<String> = db
+            .query_row(
+                "SELECT value FROM meta WHERE key = 'collections'",
+                [],
+                |r| r.get(0),
+            )
+            .optional()?;
+        Ok(match text {
+            Some(t) => serde_json::from_str(&t)?,
+            None => Vec::new(),
+        })
+    }
+
+    fn keep_known_collections(&self, listed: &[CollectionInfo]) -> Result<()> {
+        let text = serde_json::to_string(listed)?;
+        let db = self.db.lock().map_err(|_| Error::Decrypt)?;
+        db.execute(
+            "INSERT INTO meta (key, value) VALUES ('collections', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![text],
+        )?;
+        Ok(())
     }
 
     /// Version 1 of a collection made on the web, wrapped for the person and
