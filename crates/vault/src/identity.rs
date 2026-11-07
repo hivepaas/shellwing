@@ -50,6 +50,22 @@ impl Identity {
         })
     }
 
+    #[cfg(test)]
+    pub(crate) fn from_secrets(x25519: Key, ed25519: Key) -> Identity {
+        Identity {
+            x25519: Zeroizing::new(x25519),
+            ed25519: Zeroizing::new(ed25519),
+        }
+    }
+
+    pub(crate) fn x25519_secret(&self) -> &Key {
+        &self.x25519
+    }
+
+    pub(crate) fn ed25519_secret(&self) -> &Key {
+        &self.ed25519
+    }
+
     fn encode(&self) -> Zeroizing<String> {
         let mut both = Zeroizing::new([0u8; 2 * KEY_LEN]);
         both[..KEY_LEN].copy_from_slice(&self.x25519[..]);

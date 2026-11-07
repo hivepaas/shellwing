@@ -169,7 +169,7 @@ CREATE TABLE records (
   deleted  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE keys (
-  id          TEXT NOT NULL,   -- 'account', a space id or a collection id
+  id          TEXT NOT NULL,   -- 'account', a space id, or 'col:' and a collection id
   ver         INTEGER NOT NULL,
   wrapped     BLOB NOT NULL,
   wrapped_by  TEXT NOT NULL,   -- 'keychain' | 'recovery' | 'passphrase' | 'account' | a user key id
@@ -183,6 +183,11 @@ CREATE TABLE sync (            -- not yet: comes with sync
   PRIMARY KEY (backend, record_id)
 );
 ```
+
+A collection's records sit beside the personal ones, with the collection's id
+as their space and the version of its key they are sealed with. Each version
+the person holds is in `keys`, sealed with the account key; the server gives
+them, wrapped for the person's identity (`crates/vault/src/collection.rs`).
 
 `hosts.toml` stays plain text on disk, as `~/.ssh/config` is. Synced copies of
 hosts are always encrypted.

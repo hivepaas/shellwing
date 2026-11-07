@@ -25,6 +25,7 @@ use zeroize::Zeroizing;
 
 mod attachments;
 mod cipher;
+mod collection;
 mod hlc;
 mod identity;
 mod keychain;
@@ -35,6 +36,7 @@ mod sync;
 
 pub use attachments::{UNUSED_FOR_MS, attachment_line, attachment_refs, image_mime};
 pub use cipher::Cipher;
+pub use collection::{Given, SEALED_LEN, Wrap, commitment};
 pub use identity::{IDENTITY_ID, Identity, PublicIdentity, fingerprint};
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use keychain::OsKeychain;
@@ -87,6 +89,9 @@ pub enum Error {
     Format(#[from] serde_json::Error),
     #[error("pairing: {0}")]
     Pairing(String),
+    /// A collection's key could not be wrapped or opened.
+    #[error("collection key: {0}")]
+    Collection(String),
     /// The vault cannot open without being told something: see [`Lock`].
     #[error("the vault is locked")]
     Locked(Lock),
@@ -533,8 +538,46 @@ pub(crate) fn copy_title(title: &str, device: Option<&str>) -> String {
     }
 }
 
+/// The additional data of a record: its id, clear kind, space and key
+/// version.
+fn space_aad(space: &str, ver: i64, id: &str, kind: &str) -> Vec<u8> {
+    format!("{id}\0{kind}\0{space}\0{ver}").into_bytes()
+}
+
+/// A personal record's additional data.
 fn record_aad(id: &str, kind: &str) -> Vec<u8> {
-    format!("{id}\0{kind}\0{SPACE}\0{KEY_VERSION}").into_bytes()
+    space_aad(SPACE, KEY_VERSION, id, kind)
+}
+
+/// A space the vault holds: the person's own, or a collection of an
+/// organization (docs/design/collections.md), by its id.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Space {
+    Personal,
+    Collection(String),
+}
+
+impl Space {
+    /// Its id, as records and synced files name it.
+    pub fn id(&self) -> &str {
+        match self {
+            Space::Personal => SPACE,
+            Space::Collection(id) => id,
+        }
+    }
+}
+
+/// The collections' keys held, by collection and version.
+pub(crate) type CollectionKeys = BTreeMap<(String, i64), Zeroizing<[u8; KEY_LEN]>>;
+
+/// A collection key's row in `keys`: apart from the device's own secrets.
+fn collection_key_id(collection: &str) -> String {
+    format!("col:{collection}")
+}
+
+fn collection_key_aad(collection: &str, ver: i64) -> Vec<u8> {
+    format!("shellwing collection key {collection} {ver} wrapped by the account key v1")
+        .into_bytes()
 }
 
 const SPACE_AAD: &[u8] = b"shellwing space key: personal v1";
@@ -545,6 +588,8 @@ pub struct Vault {
     account: Zeroizing<[u8; KEY_LEN]>,
     /// Behind a lock so joining another vault can replace it while open.
     space_key: std::sync::RwLock<Zeroizing<[u8; KEY_LEN]>>,
+    /// The collections' keys this person holds, by collection and version.
+    collection_keys: std::sync::RwLock<CollectionKeys>,
     /// What new values are sealed with; old ones open whatever they used.
     cipher: Cipher,
     clock: hlc::Clock,
@@ -560,6 +605,8 @@ pub(crate) struct RawRow {
     pub deleted: bool,
     /// "host" or "other", part of the additional data.
     pub kind: String,
+    /// The version of its space's key it is sealed with.
+    pub key_ver: i64,
 }
 
 const RECOVERY_KEY_AAD: &[u8] = b"shellwing recovery key wrapped by the account key v1";
@@ -949,10 +996,12 @@ impl Vault {
         if let Some(n) = &newest {
             clock.observe(n);
         }
+        let collection_keys = Self::load_collection_keys(&db, &account)?;
         let vault = Vault {
             db: Mutex::new(db),
             account,
             space_key: std::sync::RwLock::new(space_key),
+            collection_keys: std::sync::RwLock::new(collection_keys),
             cipher,
             clock,
             device_name: std::sync::RwLock::new(host_name().unwrap_or_default()),
@@ -985,8 +1034,9 @@ impl Vault {
     fn upgrade_untagged(&self) -> Result<()> {
         let rows: Vec<(String, Vec<u8>, String)> = {
             let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-            let mut q = db.prepare("SELECT id, data, kind FROM records WHERE deleted = 0")?;
-            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+            let mut q =
+                db.prepare("SELECT id, data, kind FROM records WHERE deleted = 0 AND space = ?1")?;
+            q.query_map(params![SPACE], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
                 .collect::<std::result::Result<_, _>>()?
         };
         for (id, data, kind) in rows {
@@ -1006,16 +1056,84 @@ impl Vault {
     }
 
     fn records(&self) -> Result<Vec<(String, Record)>> {
+        self.records_in(&Space::Personal)
+    }
+
+    fn records_in(&self, space: &Space) -> Result<Vec<(String, Record)>> {
         let mut out = vec![];
-        for row in self.raw_rows()? {
+        for row in self.raw_rows_in(space)? {
             if row.deleted {
                 continue;
             }
-            let (plain, _) = cipher::open(&self.sk(), &row.data, &record_aad(&row.id, &row.kind))?;
+            let plain = self.open_row(space, row.key_ver, &row.id, &row.kind, &row.data)?;
             out.push((row.id, serde_json::from_slice(&plain)?));
         }
         out.sort_by(|a, b| a.0.cmp(&b.0));
         Ok(out)
+    }
+
+    /// The key of a space's version: the personal key, or a collection's
+    /// this person holds.
+    pub(crate) fn space_key(&self, space: &Space, ver: i64) -> Result<Zeroizing<[u8; KEY_LEN]>> {
+        match space {
+            Space::Personal if ver == KEY_VERSION => Ok(self.sk().clone()),
+            Space::Personal => Err(Error::Decrypt),
+            Space::Collection(id) => self
+                .collection_keys
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .get(&(id.clone(), ver))
+                .cloned()
+                .ok_or_else(|| Error::Collection(format!("no key of version {ver}"))),
+        }
+    }
+
+    /// The version new records of a space are sealed with: the newest held.
+    pub(crate) fn space_version(&self, space: &Space) -> Result<i64> {
+        match space {
+            Space::Personal => Ok(KEY_VERSION),
+            Space::Collection(id) => self
+                .collection_versions(id)
+                .last()
+                .copied()
+                .ok_or_else(|| Error::Collection("its key is not held here yet".into())),
+        }
+    }
+
+    /// A record's payload, opened with its space's key of `ver`.
+    pub(crate) fn open_row(
+        &self,
+        space: &Space,
+        ver: i64,
+        id: &str,
+        kind: &str,
+        data: &[u8],
+    ) -> Result<Zeroizing<Vec<u8>>> {
+        let key = self.space_key(space, ver)?;
+        let (plain, _) = cipher::open(&key, data, &space_aad(space.id(), ver, id, kind))?;
+        Ok(plain)
+    }
+
+    /// A record's payload sealed with its space's current key, and that key's
+    /// version.
+    pub(crate) fn seal_row(
+        &self,
+        space: &Space,
+        id: &str,
+        kind: &str,
+        plain: &[u8],
+    ) -> Result<(i64, Vec<u8>)> {
+        let ver = self.space_version(space)?;
+        let key = self.space_key(space, ver)?;
+        Ok((
+            ver,
+            cipher::seal(
+                self.cipher,
+                &key,
+                plain,
+                &space_aad(space.id(), ver, id, kind),
+            )?,
+        ))
     }
 
     fn find(&self, kind: &str, field: &str, value: &str) -> Result<Option<(String, Record)>> {
@@ -1026,33 +1144,51 @@ impl Vault {
     }
 
     fn write(&self, id: &str, record: &Record) -> Result<()> {
+        self.write_in(&Space::Personal, id, record)
+    }
+
+    fn write_in(&self, space: &Space, id: &str, record: &Record) -> Result<()> {
         let plain = Zeroizing::new(serde_json::to_vec(record)?);
         let kind = clear_kind(&record.kind);
-        let data = cipher::seal(self.cipher, &self.sk(), &plain, &record_aad(id, kind))?;
+        let (ver, data) = self.seal_row(space, id, kind, &plain)?;
         let newest = record.f.values().map(|f| f.t.as_str()).max().unwrap_or("");
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-        db.execute(
+        // A record lives in one space: the same id in another is refused.
+        let n = db.execute(
             "INSERT INTO records (id, kind, space, key_ver, data, hlc) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(id) DO UPDATE SET data = excluded.data, hlc = excluded.hlc,
-               kind = excluded.kind, deleted = 0",
-            params![id, kind, SPACE, KEY_VERSION, data, newest],
+               kind = excluded.kind, key_ver = excluded.key_ver, deleted = 0
+             WHERE records.space = excluded.space",
+            params![id, kind, space.id(), ver, data, newest],
         )?;
+        if n == 0 {
+            return Err(Error::Collection(format!(
+                "{id} is a record of another space"
+            )));
+        }
         Ok(())
     }
 
     /// Every row, deleted ones too.
     pub(crate) fn raw_rows(&self) -> Result<Vec<RawRow>> {
+        self.raw_rows_in(&Space::Personal)
+    }
+
+    /// Every row of a space, deleted ones too.
+    pub(crate) fn raw_rows_in(&self, space: &Space) -> Result<Vec<RawRow>> {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
-        let mut q =
-            db.prepare("SELECT id, data, hlc, deleted, kind FROM records WHERE space = ?1")?;
+        let mut q = db.prepare(
+            "SELECT id, data, hlc, deleted, kind, key_ver FROM records WHERE space = ?1",
+        )?;
         let rows = q
-            .query_map(params![SPACE], |r| {
+            .query_map(params![space.id()], |r| {
                 Ok(RawRow {
                     id: r.get(0)?,
                     data: r.get(1)?,
                     hlc: r.get(2)?,
                     deleted: r.get::<_, i64>(3)? != 0,
                     kind: r.get(4)?,
+                    key_ver: r.get(5)?,
                 })
             })?
             .collect::<std::result::Result<_, _>>()?;
@@ -1060,16 +1196,24 @@ impl Vault {
     }
 
     /// Stores a merged version from sync.
-    pub(crate) fn store_version(&self, id: &str, kind: &str, v: &sync::Version) -> Result<()> {
+    pub(crate) fn store_version_in(
+        &self,
+        space: &Space,
+        id: &str,
+        kind: &str,
+        v: &sync::Version,
+    ) -> Result<()> {
         match v {
-            sync::Version::Live(r) => self.write(id, r),
+            sync::Version::Live(r) => self.write_in(space, id, r),
             sync::Version::Gone(t) => {
+                let ver = self.space_version(space)?;
                 let db = self.db.lock().map_err(|_| Error::Decrypt)?;
                 db.execute(
                     "INSERT INTO records (id, kind, space, key_ver, data, hlc, deleted)
                      VALUES (?1, ?2, ?3, ?4, X'', ?5, 1)
-                     ON CONFLICT(id) DO UPDATE SET data = X'', hlc = excluded.hlc, deleted = 1",
-                    params![id, kind, SPACE, KEY_VERSION, t],
+                     ON CONFLICT(id) DO UPDATE SET data = X'', hlc = excluded.hlc, deleted = 1
+                     WHERE records.space = excluded.space",
+                    params![id, kind, space.id(), ver, t],
                 )?;
                 Ok(())
             }
@@ -1661,8 +1805,17 @@ impl Vault {
     /// Records of one type (`"host"`, `"group"`) as plain values, without
     /// stamps: what a file like hosts.toml holds.
     pub fn entries(&self, record_type: &str) -> Result<Vec<(String, BTreeMap<String, String>)>> {
+        self.entries_in(&Space::Personal, record_type)
+    }
+
+    /// [`Vault::entries`] of a space.
+    pub fn entries_in(
+        &self,
+        space: &Space,
+        record_type: &str,
+    ) -> Result<Vec<(String, BTreeMap<String, String>)>> {
         Ok(self
-            .records()?
+            .records_in(space)?
             .into_iter()
             .filter(|(_, r)| r.kind == record_type)
             .map(|(id, r)| {
@@ -1692,8 +1845,20 @@ impl Vault {
         name: &str,
         values: &BTreeMap<String, String>,
     ) -> Result<bool> {
+        self.update_in(&Space::Personal, id, record_type, name, values)
+    }
+
+    /// [`Vault::update`] in a space: a collection's needs its key held here.
+    pub fn update_in(
+        &self,
+        space: &Space,
+        id: &str,
+        record_type: &str,
+        name: &str,
+        values: &BTreeMap<String, String>,
+    ) -> Result<bool> {
         let old = self
-            .records()?
+            .records_in(space)?
             .into_iter()
             .find(|(i, _)| i == id)
             .map(|(_, r)| r);
@@ -1731,7 +1896,8 @@ impl Vault {
             }
         }
         if changed {
-            self.write(
+            self.write_in(
+                space,
                 id,
                 &Record {
                     v: 1,
