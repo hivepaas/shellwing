@@ -17,7 +17,7 @@ use reqwest::Method;
 use serde_json::{Value, json};
 use shellwing_remote::Place;
 use shellwing_remote::server::{self, Server, SignIn};
-use shellwing_vault::{Backend, FolderState, MemoryKeys, Vault};
+use shellwing_vault::{Backend, CollectionState, FolderState, MemoryKeys, Space, Vault};
 
 struct Settings {
     address: String,
@@ -231,6 +231,67 @@ fn two_devices_share_a_vault_and_one_is_given_a_certificate() {
     );
     let published = browser.call(Method::GET, "/users/current/identity", None);
     assert_eq!(published["data"]["fingerprint"], identity.fingerprint());
+
+    // A collection made on the web has no key: A's app makes it, and B, the
+    // same person, opens it with the identity it synced.
+    let org_id = Server::open(&s.address, &token_a)
+        .expect("a's server")
+        .orgs()
+        .expect("orgs")
+        .first()
+        .expect("an organization")
+        .id
+        .clone();
+    let made = browser.call(
+        Method::POST,
+        &format!("/orgs/{org_id}/collections"),
+        Some(json!({ "name": format!("e2e {}", std::process::id()) })),
+    );
+    let col = made["data"]["id"].as_str().expect("its id").to_string();
+    let a_host = a_place.collections().expect("a server serves collections");
+    let synced = |v: &Vault, host: &dyn shellwing_vault::Collections| {
+        let out = v.sync_collections(host).expect("sync collections");
+        out.into_iter()
+            .find(|o| o.collection.id == col)
+            .expect("listed")
+            .state
+    };
+    assert!(matches!(synced(&a, a_host), CollectionState::Synced { .. }));
+    let space = Space::Collection(col.clone());
+    let values = [("address".to_string(), "10.1.2.3".to_string())].into();
+    a.update_in(
+        &space,
+        "c0110000000000000000000000000001",
+        "host",
+        "db",
+        &values,
+    )
+    .expect("save in the collection");
+    assert!(matches!(
+        synced(&a, a_host),
+        CollectionState::Synced { pushed: 1, .. }
+    ));
+    let b_host = b_place.collections().expect("b's server");
+    assert!(matches!(
+        synced(&b, b_host),
+        CollectionState::Synced { pulled: 1, .. }
+    ));
+    assert_eq!(
+        b.entries_in(&space, "host").expect("entries")[0].1["address"],
+        "10.1.2.3"
+    );
+    let detail = browser.call(
+        Method::GET,
+        &format!("/orgs/{org_id}/collections/{col}"),
+        None,
+    );
+    assert_eq!(detail["data"]["collection"]["keyVersion"], 1);
+    assert_eq!(detail["data"]["collection"]["hasKey"], true);
+    browser.call(
+        Method::DELETE,
+        &format!("/orgs/{org_id}/collections/{col}"),
+        None,
+    );
 
     // The organization certifies A's key for the accounts it is granted.
     let orgs = Server::open(&s.address, &token_a)

@@ -15,10 +15,12 @@ use sha2::{Digest, Sha256};
 use zeroize::Zeroizing;
 
 use std::collections::BTreeMap;
+use std::io;
 
 use rusqlite::params;
 
 use crate::identity::{Identity, Key, PublicIdentity};
+use crate::sync::Backend;
 use crate::{
     Error, KEY_LEN, Result, Space, Vault, cipher, collection_key_aad, collection_key_id, random,
 };
@@ -365,6 +367,186 @@ impl Vault {
     }
 }
 
+/// A collection the server serves the person, as it lists it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CollectionInfo {
+    pub id: String,
+    pub org_id: String,
+    pub name: String,
+    /// The version of its key now: 0 before an app makes the first.
+    pub key_version: u32,
+    /// What the person may do: `connect`, `edit` or `manage`.
+    pub permission: String,
+}
+
+impl CollectionInfo {
+    pub fn manages(&self) -> bool {
+        self.permission == "manage"
+    }
+
+    pub fn edits(&self) -> bool {
+        matches!(self.permission.as_str(), "edit" | "manage")
+    }
+}
+
+/// Somebody with access to a collection, for those who manage it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CollectionMember {
+    pub user_id: String,
+    pub username: String,
+    pub full_name: String,
+    /// In the organization: `owner`, `admin` or `member`.
+    pub role: String,
+    pub permission: String,
+    /// False while suspended: they keep access and get nothing.
+    pub served: bool,
+    pub has_key: bool,
+    /// None until their app publishes one: nobody can give them the key before.
+    pub identity: Option<PublicIdentity>,
+}
+
+/// What a shellwing server does for collections: the [`Backend`] of one is the
+/// person's own space, and it serves the collections beside it.
+pub trait Collections: Send + Sync {
+    fn list_collections(&self) -> io::Result<Vec<CollectionInfo>>;
+    /// Who has access, with their identities; for those who manage it.
+    fn collection_members(&self, c: &CollectionInfo) -> io::Result<Vec<CollectionMember>>;
+    /// The person's wraps of each version of the key.
+    fn collection_keys(&self, c: &CollectionInfo) -> io::Result<Vec<Given>>;
+    /// Gives the collection a new key, version current + 1, wrapped for each
+    /// user id. `Ok(false)`: another app gave it one first.
+    fn create_collection_key(
+        &self,
+        c: &CollectionInfo,
+        version: u32,
+        wraps: &[(String, Wrap)],
+    ) -> io::Result<bool>;
+    /// Gives the current key to people waiting for it.
+    fn add_collection_wraps(
+        &self,
+        c: &CollectionInfo,
+        version: u32,
+        wraps: &[(String, Wrap)],
+    ) -> io::Result<()>;
+    /// The collection's store.
+    fn collection_store(&self, c: &CollectionInfo) -> io::Result<Box<dyn Backend>>;
+}
+
+/// How syncing one collection went.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CollectionState {
+    /// Merged both ways.
+    Synced {
+        pulled: usize,
+        pushed: usize,
+    },
+    /// Nobody gave this person its key yet.
+    Waiting,
+    Failed(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CollectionOutcome {
+    pub collection: CollectionInfo,
+    pub state: CollectionState,
+}
+
+impl Vault {
+    /// Syncs each collection the server serves the person: takes the keys
+    /// given since, makes the first key of one with none if they may manage
+    /// it, and merges its records. One that fails does not stop the others.
+    pub fn sync_collections(&self, host: &dyn Collections) -> Result<Vec<CollectionOutcome>> {
+        let mut out = Vec::new();
+        for c in host.list_collections()? {
+            let state = match self.sync_one_collection(host, &c) {
+                Ok(Some(r)) => CollectionState::Synced {
+                    pulled: r.pulled,
+                    pushed: r.pushed,
+                },
+                Ok(None) => CollectionState::Waiting,
+                Err(e) => CollectionState::Failed(e.to_string()),
+            };
+            out.push(CollectionOutcome {
+                collection: c,
+                state,
+            });
+        }
+        Ok(out)
+    }
+
+    fn sync_one_collection(
+        &self,
+        host: &dyn Collections,
+        c: &CollectionInfo,
+    ) -> Result<Option<crate::SyncReport>> {
+        if c.key_version == 0 {
+            if !c.manages() {
+                return Ok(None);
+            }
+            self.make_first_key(host, c)?;
+        }
+        let newest = self.collection_versions(&c.id).last().copied().unwrap_or(0);
+        if newest < i64::from(c.key_version.max(1)) {
+            let given = host.collection_keys(c)?;
+            if !given.is_empty() {
+                self.take_collection_keys(&c.id, &given)?;
+            }
+        }
+        if self.collection_versions(&c.id).is_empty() {
+            return Ok(None);
+        }
+        let store = host.collection_store(c)?;
+        self.sync_collection(&*store, &c.id, c.edits()).map(Some)
+    }
+
+    /// Version 1 of a collection made on the web, wrapped for the person and
+    /// every owner with an identity, as the server requires. Another app
+    /// making it first is fine: its wrap for this person comes next.
+    fn make_first_key(&self, host: &dyn Collections, c: &CollectionInfo) -> Result<()> {
+        let me = self.identity_for_keys()?.public();
+        let members = host.collection_members(c)?;
+        let mut to: Vec<(String, PublicIdentity)> = Vec::new();
+        for m in members {
+            let Some(identity) = m.identity else { continue };
+            if identity == me || m.role == "owner" {
+                to.push((m.user_id, identity));
+            }
+        }
+        if !to.iter().any(|(_, p)| *p == me) {
+            return Err(Error::Collection(
+                "the server does not have this device's identity yet".into(),
+            ));
+        }
+        let identities: Vec<PublicIdentity> = to.iter().map(|(_, p)| p.clone()).collect();
+        let wraps = self.make_collection_key(&c.id, 1, &identities)?;
+        let wraps: Vec<(String, Wrap)> = to.into_iter().map(|(u, _)| u).zip(wraps).collect();
+        host.create_collection_key(c, 1, &wraps)?;
+        Ok(())
+    }
+
+    /// Gives the current key to people waiting for it, whose fingerprints the
+    /// person compared.
+    pub fn give_collection_key(
+        &self,
+        host: &dyn Collections,
+        c: &CollectionInfo,
+        to: &[CollectionMember],
+    ) -> Result<()> {
+        let identities: Vec<PublicIdentity> = to
+            .iter()
+            .map(|m| {
+                m.identity
+                    .clone()
+                    .ok_or_else(|| Error::Collection(format!("{} has no identity yet", m.username)))
+            })
+            .collect::<Result<_>>()?;
+        let (version, wraps) = self.wrap_collection_key(&c.id, &identities)?;
+        let wraps: Vec<(String, Wrap)> = to.iter().map(|m| m.user_id.clone()).zip(wraps).collect();
+        host.add_collection_wraps(c, version, &wraps)?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -575,8 +757,8 @@ mod tests {
 
             let store = Folder::new(&d.join("col1"));
             host(&alice, &col, "aa01000000000000", "10.0.0.1");
-            alice.sync_collection(&store, "col1").expect("sync a");
-            bob.sync_collection(&store, "col1").expect("sync b");
+            alice.sync_collection(&store, "col1", true).expect("sync a");
+            bob.sync_collection(&store, "col1", true).expect("sync b");
             let entries = bob.entries_in(&col, "host").expect("entries");
             assert_eq!(entries.len(), 1);
             assert_eq!(entries[0].1["address"], "10.0.0.1");
@@ -587,8 +769,8 @@ mod tests {
 
             // Bob's edit comes back; the record lives in the collection only.
             host(&bob, &col, "aa01000000000000", "10.0.0.2");
-            bob.sync_collection(&store, "col1").expect("sync b");
-            alice.sync_collection(&store, "col1").expect("sync a");
+            bob.sync_collection(&store, "col1", true).expect("sync b");
+            alice.sync_collection(&store, "col1", true).expect("sync a");
             assert_eq!(
                 alice.entries_in(&col, "host").expect("entries")[0].1["address"],
                 "10.0.0.2"
@@ -630,8 +812,8 @@ mod tests {
 
             let store = Folder::new(&d.join("col1"));
             host(&alice, &col, "aa02000000000000", "10.0.0.3");
-            alice.sync_collection(&store, "col1").expect("sync a");
-            bob.sync_collection(&store, "col1").expect("sync b");
+            alice.sync_collection(&store, "col1", true).expect("sync a");
+            bob.sync_collection(&store, "col1", true).expect("sync b");
             assert!(
                 bob.entries_in(&col, "host").expect("entries").is_empty(),
                 "waits for v2"
@@ -668,6 +850,263 @@ mod tests {
                     .take_collection_keys("col1", &given(&alice, 1, &for_carol, &carol))
                     .expect("take"),
                 [1]
+            );
+        }
+    }
+
+    mod host {
+        use std::sync::Mutex;
+
+        use super::super::*;
+        use crate::{Folder, MemoryKeys};
+
+        /// A server as far as collections go: one collection, its people and
+        /// their wraps, and a folder as its store.
+        struct Fake {
+            dir: std::path::PathBuf,
+            version: Mutex<u32>,
+            people: Vec<(String, String, String, PublicIdentity)>,
+            wraps: Mutex<Vec<(String, u32, Wrap, Key)>>,
+        }
+
+        /// One person's view of it.
+        struct As<'a> {
+            fake: &'a Fake,
+            me: String,
+        }
+
+        impl As<'_> {
+            fn info(&self) -> CollectionInfo {
+                let (_, _, permission, _) = self
+                    .fake
+                    .people
+                    .iter()
+                    .find(|p| p.0 == self.me)
+                    .expect("in it");
+                CollectionInfo {
+                    id: "col1".into(),
+                    org_id: "org1".into(),
+                    name: "Production".into(),
+                    key_version: *self.fake.version.lock().expect("lock"),
+                    permission: permission.clone(),
+                }
+            }
+
+            fn identity_of(&self, user: &str) -> &PublicIdentity {
+                &self
+                    .fake
+                    .people
+                    .iter()
+                    .find(|p| p.0 == user)
+                    .expect("person")
+                    .3
+            }
+        }
+
+        impl Collections for As<'_> {
+            fn list_collections(&self) -> io::Result<Vec<CollectionInfo>> {
+                Ok(vec![self.info()])
+            }
+
+            fn collection_members(&self, _: &CollectionInfo) -> io::Result<Vec<CollectionMember>> {
+                let version = *self.fake.version.lock().expect("lock");
+                let wraps = self.fake.wraps.lock().expect("lock");
+                Ok(self
+                    .fake
+                    .people
+                    .iter()
+                    .map(|(user, role, permission, identity)| CollectionMember {
+                        user_id: user.clone(),
+                        username: user.clone(),
+                        full_name: String::new(),
+                        role: role.clone(),
+                        permission: permission.clone(),
+                        served: true,
+                        has_key: wraps.iter().any(|w| w.0 == *user && w.1 == version),
+                        identity: Some(identity.clone()),
+                    })
+                    .collect())
+            }
+
+            fn collection_keys(&self, _: &CollectionInfo) -> io::Result<Vec<Given>> {
+                Ok(self
+                    .fake
+                    .wraps
+                    .lock()
+                    .expect("lock")
+                    .iter()
+                    .filter(|w| w.0 == self.me)
+                    .map(|(_, version, wrap, wrapper)| Given {
+                        version: *version,
+                        wrap: wrap.clone(),
+                        wrapper: *wrapper,
+                    })
+                    .collect())
+            }
+
+            fn create_collection_key(
+                &self,
+                _: &CollectionInfo,
+                version: u32,
+                wraps: &[(String, Wrap)],
+            ) -> io::Result<bool> {
+                let mut current = self.fake.version.lock().expect("lock");
+                if version != *current + 1 {
+                    return Ok(false);
+                }
+                *current = version;
+                let wrapper = self.identity_of(&self.me).ed25519;
+                let mut all = self.fake.wraps.lock().expect("lock");
+                for (user, w) in wraps {
+                    assert!(
+                        w.signed_by("col1", version, &wrapper),
+                        "the server checks it"
+                    );
+                    assert_eq!(
+                        w.recipient_x25519,
+                        self.identity_of(user).x25519,
+                        "for their key"
+                    );
+                    all.push((user.clone(), version, w.clone(), wrapper));
+                }
+                Ok(true)
+            }
+
+            fn add_collection_wraps(
+                &self,
+                _: &CollectionInfo,
+                version: u32,
+                wraps: &[(String, Wrap)],
+            ) -> io::Result<()> {
+                let wrapper = self.identity_of(&self.me).ed25519;
+                let mut all = self.fake.wraps.lock().expect("lock");
+                for (user, w) in wraps {
+                    assert!(w.signed_by("col1", version, &wrapper));
+                    all.push((user.clone(), version, w.clone(), wrapper));
+                }
+                Ok(())
+            }
+
+            fn collection_store(&self, _: &CollectionInfo) -> io::Result<Box<dyn Backend>> {
+                Ok(Box::new(Folder::new(&self.fake.dir)))
+            }
+        }
+
+        fn vault(d: &std::path::Path, name: &str) -> Vault {
+            let v =
+                Vault::open(&d.join(format!("{name}.db")), &MemoryKeys::default()).expect("open");
+            v.ensure_identity().expect("identity");
+            v
+        }
+
+        fn public(v: &Vault) -> PublicIdentity {
+            v.identity().expect("read").expect("identity").public()
+        }
+
+        #[test]
+        fn a_manager_makes_the_key_and_gives_it_to_who_waits() {
+            let d = std::env::temp_dir()
+                .join(format!("shellwing-collection-host-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&d);
+            std::fs::create_dir_all(&d).expect("dir");
+            let (max, olga, ed, vic) = (
+                vault(&d, "max"),
+                vault(&d, "olga"),
+                vault(&d, "ed"),
+                vault(&d, "vic"),
+            );
+            let fake = Fake {
+                dir: d.join("store"),
+                version: Mutex::new(0),
+                people: vec![
+                    ("max".into(), "member".into(), "manage".into(), public(&max)),
+                    (
+                        "olga".into(),
+                        "owner".into(),
+                        "manage".into(),
+                        public(&olga),
+                    ),
+                    ("ed".into(), "member".into(), "edit".into(), public(&ed)),
+                    (
+                        "vic".into(),
+                        "member".into(),
+                        "connect".into(),
+                        public(&vic),
+                    ),
+                ],
+                wraps: Mutex::new(Vec::new()),
+            };
+            let host = |me: &str| As {
+                fake: &fake,
+                me: me.into(),
+            };
+            let col = Space::Collection("col1".into());
+
+            // Ed may not make the key: he waits.
+            let out = ed.sync_collections(&host("ed")).expect("sync");
+            assert_eq!(out[0].state, CollectionState::Waiting);
+            // Max's app makes it, for himself and the owner.
+            let out = max.sync_collections(&host("max")).expect("sync");
+            assert_eq!(
+                out[0].state,
+                CollectionState::Synced {
+                    pulled: 0,
+                    pushed: 0
+                }
+            );
+            assert_eq!(*fake.version.lock().expect("lock"), 1);
+            let holders: Vec<String> = fake
+                .wraps
+                .lock()
+                .expect("lock")
+                .iter()
+                .map(|w| w.0.clone())
+                .collect();
+            assert_eq!(holders, ["max", "olga"]);
+            let values = [("address".to_string(), "10.0.0.9".to_string())].into();
+            max.update_in(&col, "ab01000000000000", "host", "db", &values)
+                .expect("save");
+            max.sync_collections(&host("max")).expect("sync");
+            olga.sync_collections(&host("olga")).expect("sync");
+            assert_eq!(
+                olga.entries_in(&col, "host").expect("entries").len(),
+                1,
+                "the owner has it"
+            );
+
+            // Max gives it to Ed and Vic, whose fingerprints he compared.
+            let members = host("max")
+                .collection_members(&host("max").info())
+                .expect("members");
+            let waiting: Vec<CollectionMember> =
+                members.into_iter().filter(|m| !m.has_key).collect();
+            assert_eq!(waiting.len(), 2);
+            max.give_collection_key(&host("max"), &host("max").info(), &waiting)
+                .expect("give");
+            let out = ed.sync_collections(&host("ed")).expect("sync");
+            assert!(matches!(
+                out[0].state,
+                CollectionState::Synced { pulled: 1, .. }
+            ));
+            assert_eq!(
+                ed.entries_in(&col, "host").expect("entries")[0].1["address"],
+                "10.0.0.9"
+            );
+
+            // Vic connects only: what he has here is not written there.
+            vic.sync_collections(&host("vic")).expect("sync");
+            let values = [("address".to_string(), "6.6.6.6".to_string())].into();
+            vic.update_in(&col, "ab01000000000000", "host", "db", &values)
+                .expect("local");
+            let out = vic.sync_collections(&host("vic")).expect("sync");
+            assert!(matches!(
+                out[0].state,
+                CollectionState::Synced { pushed: 0, .. }
+            ));
+            ed.sync_collections(&host("ed")).expect("sync");
+            assert_eq!(
+                ed.entries_in(&col, "host").expect("entries")[0].1["address"],
+                "10.0.0.9"
             );
         }
     }

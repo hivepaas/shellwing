@@ -561,10 +561,20 @@ fn sync_once(
         }
         _ => None,
     };
+    let mut synced = synced;
     if synced.is_ok() && store.takes_identity() {
         // Not a failed sync: collections need it, and say so; it goes again
         // at the next one.
-        let _ = publish_identity(vault, store, held);
+        let published = publish_identity(vault, store, held);
+        // The collections beside the personal space, each on its own: one
+        // that fails is in the report, and the personal space synced anyway.
+        if published.is_ok()
+            && let Some(host) = store.collections()
+            && let Ok(outcomes) = vault.sync_collections(host)
+            && let Ok(report) = synced.as_mut()
+        {
+            report.collections = outcomes;
+        }
     }
     let hosts_problem = hosts_problem.or(settings_problem);
     let written = written.or(settings_written);
