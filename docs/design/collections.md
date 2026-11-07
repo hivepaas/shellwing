@@ -41,8 +41,9 @@ which signs what they wrap.
 fingerprint  41520 07391 88214 30567 61209 94730
 ```
 
-An identity is not replaced while it holds keys: a new one would lose every
-collection's.
+A new identity cannot open the keys wrapped for the one before. The server drops
+them when another is published, and the person waits for each key again, as
+somebody newly granted does.
 
 ## A collection's key
 
@@ -57,8 +58,23 @@ version as their key: the additional data binds a record to both.
    `"shellwing collection key v1" ‖ collection id ‖ version` as info.
 3. The collection key sealed with that (XChaCha20-Poly1305), with the same info
    as additional data.
-4. The wrapper signs, with their Ed25519 key, the ephemeral public key, the
-   sealed key, the collection id, the version, and the member's public key.
+4. The wrapper signs, with their Ed25519 key, the collection id, the version,
+   the member's public key, the ephemeral public key, the sealed key and the
+   commitment.
+
+The sealed key is 72 bytes: the 24-byte nonce, then the key and its tag. What is
+signed is, in this order:
+
+```
+"shellwing collection key wrap v1"
+len(collection id), 2 bytes big-endian ‖ collection id
+version, 4 bytes big-endian
+member's X25519 key (32) ‖ ephemeral public key (32)
+sealed key (72) ‖ commitment (32)
+```
+
+shellwing-server's `pkg/collectionkey` checks it, with a test vector the app
+checks too.
 
 The wrap also carries a commitment, `SHA-256("shellwing collection key
 commitment v1" ‖ key)`. Neither Poly1305 nor GCM commits to its key; with it, a
@@ -74,8 +90,12 @@ left would be lost, and nobody could grant it again.
 
 ## Granting access
 
+A collection made on the web has no key, version 0: the first app with Manage
+that opens it makes version 1, wrapped for itself and every owner.
+
 1. An admin, or somebody with Manage, grants a person or a group Connect, Edit
-   or Manage: on the web or in the app.
+   or Manage: on the web or in the app. An admin with no grant manages access,
+   and cannot read the collection.
 2. The server keeps the grant **waiting for the key**. The web never wraps a key:
    it has none.
 3. The app of somebody holding the key lists who waits, each with their
@@ -101,7 +121,11 @@ it.
 - It serves a collection only to its active members with a grant, directly or
   through a group, and takes writes only from those with Edit or Manage.
 - It keeps the grants, the wraps per member and version, and which version is
-  current.
+  current. It takes a wrap only signed by the caller's published identity and
+  made for the recipient's, and a new version only from somebody holding the
+  current one, wrapped for them and every owner with an identity.
+- A collection needs a new key when somebody holding the current one has no
+  access any more; being suspended keeps access.
 - The audit log has each grant and its removal, each wrap, each new key, and
   each download of a collection.
 - Its hosts count as hosts do in a personal space.
@@ -117,8 +141,10 @@ it.
 
 ## Order
 
-1. Identities: made, synced and published; the fingerprint on the web.
-2. The server: collections, grants, wraps, and access to their sync.
+1. Identities: made, synced and published; the fingerprint on the web. Done.
+2. The server: collections, grants, wraps, and access to their sync. Done:
+   `/api/orgs/{org}/collections`, and `/api/sync/spaces` lists the collections
+   after the personal space.
 3. The app: spaces in the vault, syncing collections, wrapping on making one and
    on confirming who waits, and the sidebar.
 4. Replacing the key when somebody loses access, with the checklist.
