@@ -20,8 +20,8 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, TcpListener};
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use base64::Engine;
@@ -315,10 +315,93 @@ struct Tokens {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SpaceAnswer {
     id: String,
     #[serde(rename = "type")]
     kind: String,
+    #[serde(default)]
+    org_id: String,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    key_version: u32,
+    #[serde(default)]
+    permission: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityAnswer {
+    x25519_public: String,
+    ed25519_public: String,
+    signature: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MemberAnswer {
+    user_id: String,
+    username: String,
+    #[serde(default)]
+    full_name: String,
+    role: String,
+    permission: String,
+    served: bool,
+    has_key: bool,
+    identity: Option<IdentityAnswer>,
+}
+
+#[derive(Deserialize)]
+struct CollectionAnswer {
+    members: Vec<MemberAnswer>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WrapAnswer {
+    version: u32,
+    recipient_x25519: String,
+    ephemeral_public: String,
+    sealed_key: String,
+    commitment: String,
+    signature: String,
+    wrapper_ed25519: String,
+}
+
+#[derive(Deserialize)]
+struct KeysAnswer {
+    wraps: Vec<WrapAnswer>,
+}
+
+/// Fixed-size bytes from base64.
+fn decoded_array<const N: usize>(text: &str) -> io::Result<[u8; N]> {
+    B64.decode(text)
+        .ok()
+        .and_then(|b| b.try_into().ok())
+        .ok_or_else(|| io::Error::other("the server sent a key of the wrong size"))
+}
+
+fn identity_of(i: &IdentityAnswer) -> io::Result<shellwing_vault::PublicIdentity> {
+    Ok(shellwing_vault::PublicIdentity {
+        x25519: decoded_array(&i.x25519_public)?,
+        ed25519: decoded_array(&i.ed25519_public)?,
+        signature: decoded_array(&i.signature)?,
+    })
+}
+
+fn wraps_body(version: u32, wraps: &[(String, shellwing_vault::Wrap)]) -> serde_json::Value {
+    serde_json::json!({
+        "version": version,
+        "wraps": wraps.iter().map(|(user, w)| serde_json::json!({
+            "userId": user,
+            "recipientX25519": B64.encode(w.recipient_x25519),
+            "ephemeralPublic": B64.encode(w.ephemeral_public),
+            "sealedKey": B64.encode(&w.sealed),
+            "commitment": B64.encode(w.commitment),
+            "signature": B64.encode(w.signature),
+        })).collect::<Vec<_>>(),
+    })
 }
 
 #[derive(Deserialize)]
@@ -371,6 +454,9 @@ pub struct Server {
     runtime: tokio::runtime::Runtime,
     client: Client,
     state: Mutex<State>,
+    /// The stores of the collections synced from here, kept so that each
+    /// asks only for what changed since.
+    collections: Mutex<HashMap<String, Arc<Server>>>,
 }
 
 #[derive(Default)]
@@ -400,7 +486,45 @@ impl Server {
             runtime,
             client,
             state: Mutex::new(State::default()),
+            collections: Mutex::new(HashMap::new()),
         })
+    }
+
+    /// The store of one collection: the same server and sign-in, another space.
+    fn collection_server(&self, space: &str) -> io::Result<Arc<Server>> {
+        let mut stores = self.collections.lock().map_err(poisoned)?;
+        if let Some(s) = stores.get(space) {
+            return Ok(s.clone());
+        }
+        let runtime = runtime()?;
+        let client = client(&runtime)?;
+        let access = self.state()?.access.clone();
+        let store = Arc::new(Server {
+            base: self.base.clone(),
+            refresh_token: self.refresh_token.clone(),
+            runtime,
+            client,
+            state: Mutex::new(State {
+                access,
+                space: Some(space.to_string()),
+                ..State::default()
+            }),
+            collections: Mutex::new(HashMap::new()),
+        });
+        stores.insert(space.to_string(), store.clone());
+        Ok(store)
+    }
+
+    /// The JSON of a successful answer, or why it is not one.
+    fn answered<T: serde::de::DeserializeOwned>(&self, answer: Response) -> io::Result<T> {
+        if !answer.status().is_success() {
+            return Err(refused(&self.runtime, answer));
+        }
+        let parsed: Answer<T> = self
+            .runtime
+            .block_on(async move { answer.json().await })
+            .map_err(|e| io::Error::other(short(&e.to_string())))?;
+        Ok(parsed.data)
     }
 
     fn state(&self) -> io::Result<std::sync::MutexGuard<'_, State>> {
@@ -613,9 +737,153 @@ impl Server {
     }
 }
 
+/// A collection's path on the server.
+fn collection_path(c: &shellwing_vault::CollectionInfo, rest: &str) -> String {
+    format!(
+        "/orgs/{}/collections/{}{rest}",
+        query_encoded(&c.org_id),
+        query_encoded(&c.id)
+    )
+}
+
+impl shellwing_vault::Collections for Server {
+    fn list_collections(&self) -> io::Result<Vec<shellwing_vault::CollectionInfo>> {
+        let answer = self.authorized(Method::GET, "/sync/spaces", |r| r)?;
+        let spaces: Vec<SpaceAnswer> = self.answered(answer)?;
+        Ok(spaces
+            .into_iter()
+            .filter(|s| s.kind == "collection")
+            .map(|s| shellwing_vault::CollectionInfo {
+                id: s.id,
+                org_id: s.org_id,
+                name: s.name,
+                key_version: s.key_version,
+                permission: s.permission,
+            })
+            .collect())
+    }
+
+    fn collection_members(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+    ) -> io::Result<Vec<shellwing_vault::CollectionMember>> {
+        let answer = self.authorized(Method::GET, &collection_path(c, ""), |r| r)?;
+        let detail: CollectionAnswer = self.answered(answer)?;
+        detail
+            .members
+            .into_iter()
+            .map(|m| {
+                Ok(shellwing_vault::CollectionMember {
+                    identity: m.identity.as_ref().map(identity_of).transpose()?,
+                    user_id: m.user_id,
+                    username: m.username,
+                    full_name: m.full_name,
+                    role: m.role,
+                    permission: m.permission,
+                    served: m.served,
+                    has_key: m.has_key,
+                })
+            })
+            .collect()
+    }
+
+    fn collection_keys(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+    ) -> io::Result<Vec<shellwing_vault::Given>> {
+        let answer = self.authorized(Method::GET, &collection_path(c, "/keys"), |r| r)?;
+        let keys: KeysAnswer = self.answered(answer)?;
+        keys.wraps
+            .into_iter()
+            .map(|w| {
+                Ok(shellwing_vault::Given {
+                    version: w.version,
+                    wrapper: decoded_array(&w.wrapper_ed25519)?,
+                    wrap: shellwing_vault::Wrap {
+                        recipient_x25519: decoded_array(&w.recipient_x25519)?,
+                        ephemeral_public: decoded_array(&w.ephemeral_public)?,
+                        sealed: B64
+                            .decode(&w.sealed_key)
+                            .map_err(|_| io::Error::other("the server sent a damaged key"))?,
+                        commitment: decoded_array(&w.commitment)?,
+                        signature: decoded_array(&w.signature)?,
+                    },
+                })
+            })
+            .collect()
+    }
+
+    fn create_collection_key(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+        version: u32,
+        wraps: &[(String, shellwing_vault::Wrap)],
+    ) -> io::Result<bool> {
+        let body = wraps_body(version, wraps);
+        let answer = self.authorized(Method::POST, &collection_path(c, "/keys"), |r| {
+            r.json(&body)
+        })?;
+        if answer.status() == StatusCode::CONFLICT {
+            return Ok(false);
+        }
+        if !answer.status().is_success() {
+            return Err(refused(&self.runtime, answer));
+        }
+        Ok(true)
+    }
+
+    fn add_collection_wraps(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+        version: u32,
+        wraps: &[(String, shellwing_vault::Wrap)],
+    ) -> io::Result<()> {
+        let body = wraps_body(version, wraps);
+        let answer = self.authorized(Method::POST, &collection_path(c, "/wraps"), |r| {
+            r.json(&body)
+        })?;
+        if !answer.status().is_success() {
+            return Err(refused(&self.runtime, answer));
+        }
+        Ok(())
+    }
+
+    fn collection_store(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+    ) -> io::Result<Box<dyn Backend>> {
+        Ok(Box::new(Shared(self.collection_server(&c.id)?)))
+    }
+}
+
+/// A collection's store, kept by the server it came from.
+struct Shared(Arc<Server>);
+
+impl Backend for Shared {
+    fn list(&self, dir: &str) -> io::Result<Vec<String>> {
+        self.0.list(dir)
+    }
+    fn read(&self, name: &str) -> io::Result<Option<Vec<u8>>> {
+        self.0.read(name)
+    }
+    fn write(&self, name: &str, data: &[u8]) -> io::Result<()> {
+        self.0.write(name, data)
+    }
+    fn remove(&self, name: &str) -> io::Result<()> {
+        self.0.remove(name)
+    }
+    fn replace(&self, name: &str, data: &[u8]) -> io::Result<bool> {
+        self.0.replace(name, data)
+    }
+}
+
 impl Backend for Server {
     fn takes_identity(&self) -> bool {
         true
+    }
+
+    fn collections(&self) -> Option<&dyn shellwing_vault::Collections> {
+        Some(self)
     }
 
     fn publish_identity(&self, identity: &shellwing_vault::PublicIdentity) -> io::Result<()> {

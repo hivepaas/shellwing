@@ -62,6 +62,10 @@ pub trait Backend: Send + Sync {
     fn publish_identity(&self, _identity: &crate::PublicIdentity) -> io::Result<()> {
         Ok(())
     }
+    /// The organizations' collections served here (a shellwing server).
+    fn collections(&self) -> Option<&dyn crate::Collections> {
+        None
+    }
 }
 
 /// Tries at publishing, each over what the others published just before.
@@ -383,6 +387,8 @@ pub struct SyncReport {
     /// The titles of notes made here to keep a text another device's edit
     /// replaced without seeing it.
     pub copies: Vec<String>,
+    /// How each collection served there went (a shellwing server).
+    pub collections: Vec<crate::CollectionOutcome>,
 }
 
 /// Whether a store already holds a vault, and whose.
@@ -655,6 +661,7 @@ impl Vault {
                 remote,
                 local,
             },
+            true,
             &mut report,
         )?;
         // Images the merged notes show that are not here yet, from the
@@ -683,16 +690,22 @@ impl Vault {
         Ok(report)
     }
 
-    /// Merges a collection's records with its store on the server, both ways.
+    /// Merges a collection's records with its store on the server: both ways,
+    /// or only from it for somebody who may not change it (`writes` false).
     /// Its key is the server's to give, so the store holds no format; a record
     /// sealed with a version not held here is left for later.
-    pub fn sync_collection(&self, b: &dyn Backend, collection: &str) -> Result<SyncReport> {
+    pub fn sync_collection(
+        &self,
+        b: &dyn Backend,
+        collection: &str,
+        writes: bool,
+    ) -> Result<SyncReport> {
         let space = Space::Collection(collection.to_string());
         self.space_version(&space)?;
         transact(b, |b| {
             let mut report = SyncReport::default();
             let sides = self.sides(b, &space)?;
-            self.merge_sides(b, &space, &BTreeSet::new(), sides, &mut report)?;
+            self.merge_sides(b, &space, &BTreeSet::new(), sides, writes, &mut report)?;
             Ok(report)
         })
     }
@@ -745,6 +758,7 @@ impl Vault {
         space: &Space,
         held: &BTreeSet<String>,
         sides: Sides,
+        writes: bool,
         report: &mut SyncReport,
     ) -> Result<BTreeSet<String>> {
         let Sides {
@@ -790,7 +804,7 @@ impl Vault {
         }
         self.keep_copies(space, lost, held, &mut queue, report)?;
         while let Some(p) = queue.pop_front() {
-            let lost = self.settle(b, space, p, &kinds, &mut used, report)?;
+            let lost = self.settle(b, space, p, &kinds, &mut used, writes, report)?;
             self.keep_copies(space, lost, held, &mut queue, report)?;
         }
         Ok(used)
@@ -837,6 +851,7 @@ impl Vault {
 
     /// Keeps a merged record here and in the store. Gives back the notes'
     /// texts lost to another device's version written meanwhile.
+    #[allow(clippy::too_many_arguments)]
     fn settle(
         &self,
         b: &dyn Backend,
@@ -844,6 +859,7 @@ impl Vault {
         p: Pending,
         kinds: &BTreeMap<String, String>,
         used: &mut BTreeSet<String>,
+        writes: bool,
         report: &mut SyncReport,
     ) -> Result<Vec<(String, Record)>> {
         let Pending {
@@ -866,7 +882,7 @@ impl Vault {
         }
         let canonical = format!("{id}.sw");
         let up_to_date = there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
-        if !up_to_date {
+        if !up_to_date && writes {
             let path = format!("{RECORDS}/{canonical}");
             let mut merged = merged;
             for _ in 0..REPLACE_TRIES {
