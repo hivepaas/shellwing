@@ -18,7 +18,9 @@ use zeroize::Zeroizing;
 
 use crate::attachments::ATTACHMENTS;
 use crate::recovery::RecoveryKey;
-use crate::{Error, Field, KEY_LEN, KEY_VERSION, Record, Result, SPACE, Vault, cipher, clear_kind};
+use crate::{
+    Error, Field, KEY_LEN, KEY_VERSION, Record, Result, SPACE, Space, Vault, cipher, clear_kind,
+};
 
 const FORMAT: &str = "format.json";
 const RECORDS: &str = "records";
@@ -179,6 +181,14 @@ struct Envelope {
     hlc: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     data: Option<String>,
+}
+
+/// Both sides of a merge: each record's clear kind, its versions in the store
+/// with the files they came from, and its version here.
+struct Sides {
+    kinds: BTreeMap<String, String>,
+    remote: BTreeMap<String, Vec<(String, Version)>>,
+    local: BTreeMap<String, Version>,
 }
 
 /// A record's state on one side of a merge.
@@ -597,36 +607,12 @@ impl Vault {
             FolderState::Empty => return Err(Error::NotSynced),
             FolderState::Other => return Err(Error::OtherVault),
         }
-        // Each record's clear kind, from either side.
-        let mut kinds: BTreeMap<String, String> = BTreeMap::new();
-        // Remote versions of each record, with the files they came from.
-        let mut remote: BTreeMap<String, Vec<(String, Version)>> = BTreeMap::new();
-        for name in b.list(RECORDS)? {
-            let Some(id) = file_id(&name).map(str::to_string) else {
-                continue;
-            };
-            let Some(bytes) = b.read(&format!("{RECORDS}/{name}"))? else {
-                continue;
-            };
-            let Some((kind, version)) = self.version_in(&id, &bytes)? else {
-                continue;
-            };
-            kinds.entry(id.clone()).or_insert(kind);
-            remote.entry(id).or_default().push((name, version));
-        }
-        let mut local: BTreeMap<String, Version> = BTreeMap::new();
-        for crate::RawRow {
-            id,
-            data,
-            hlc,
-            deleted,
-            kind,
-        } in self.raw_rows()?
-        {
-            let v = self.row_version(&id, &kind, &data, hlc, deleted)?;
-            kinds.insert(id.clone(), kind);
-            local.insert(id, v);
-        }
+        let personal = Space::Personal;
+        let Sides {
+            kinds,
+            remote,
+            local,
+        } = self.sides(b, &personal)?;
         let mut report = SyncReport::default();
         // Images first: those the notes here refer to that the store lacks,
         // so no device finds a note before its images
@@ -660,6 +646,112 @@ impl Vault {
                 report.images_pushed += 1;
             }
         }
+        let used = self.merge_sides(
+            b,
+            &personal,
+            held,
+            Sides {
+                kinds,
+                remote,
+                local,
+            },
+            &mut report,
+        )?;
+        // Images the merged notes show that are not here yet, from the
+        // store, checked to be what their ids say.
+        for id in used.difference(&stored) {
+            let data = match listed.get(id) {
+                Some(name) => b.read(&format!("{ATTACHMENTS}/{name}"))?,
+                None => None,
+            };
+            match data.and_then(|d| self.check_attachment(id, &d).map(|n| (d, n))) {
+                Some((data, bytes)) => {
+                    self.store_attachment(id, &data, bytes)?;
+                    report.images_pulled += 1;
+                }
+                // Not synced yet (another device still sending it), or
+                // damaged: the note shows a placeholder; tried again next time.
+                None => report.images_missing += 1,
+            }
+        }
+        // Those no note has shown for long go, here and there.
+        for id in self.tend_attachments(&used, crate::now_ms())? {
+            if let Some(name) = listed.get(&id) {
+                b.remove(&format!("{ATTACHMENTS}/{name}"))?;
+            }
+        }
+        Ok(report)
+    }
+
+    /// Merges a collection's records with its store on the server, both ways.
+    /// Its key is the server's to give, so the store holds no format; a record
+    /// sealed with a version not held here is left for later.
+    pub fn sync_collection(&self, b: &dyn Backend, collection: &str) -> Result<SyncReport> {
+        let space = Space::Collection(collection.to_string());
+        self.space_version(&space)?;
+        transact(b, |b| {
+            let mut report = SyncReport::default();
+            let sides = self.sides(b, &space)?;
+            self.merge_sides(b, &space, &BTreeSet::new(), sides, &mut report)?;
+            Ok(report)
+        })
+    }
+
+    /// Each record's versions in the store and here, with their clear kinds.
+    fn sides(&self, b: &dyn Backend, space: &Space) -> Result<Sides> {
+        // Each record's clear kind, from either side.
+        let mut kinds: BTreeMap<String, String> = BTreeMap::new();
+        // Remote versions of each record, with the files they came from.
+        let mut remote: BTreeMap<String, Vec<(String, Version)>> = BTreeMap::new();
+        for name in b.list(RECORDS)? {
+            let Some(id) = file_id(&name).map(str::to_string) else {
+                continue;
+            };
+            let Some(bytes) = b.read(&format!("{RECORDS}/{name}"))? else {
+                continue;
+            };
+            let Some((kind, version)) = self.version_in(space, &id, &bytes)? else {
+                continue;
+            };
+            kinds.entry(id.clone()).or_insert(kind);
+            remote.entry(id).or_default().push((name, version));
+        }
+        let mut local: BTreeMap<String, Version> = BTreeMap::new();
+        for crate::RawRow {
+            id,
+            data,
+            hlc,
+            deleted,
+            kind,
+            key_ver,
+        } in self.raw_rows_in(space)?
+        {
+            let v = self.row_version(space, key_ver, &id, &kind, &data, hlc, deleted)?;
+            kinds.insert(id.clone(), kind);
+            local.insert(id, v);
+        }
+        Ok(Sides {
+            kinds,
+            remote,
+            local,
+        })
+    }
+
+    /// Merges both sides and writes the result here and there. Gives the
+    /// images the merged notes refer to.
+    fn merge_sides(
+        &self,
+        b: &dyn Backend,
+        space: &Space,
+        held: &BTreeSet<String>,
+        sides: Sides,
+        report: &mut SyncReport,
+    ) -> Result<BTreeSet<String>> {
+        let Sides {
+            kinds,
+            mut remote,
+            mut local,
+        } = sides;
         // The images the notes refer to once merged, to fetch the missing.
         let mut used: BTreeSet<String> = BTreeSet::new();
         // Every record is merged before any is written, so the notes' texts
@@ -696,40 +788,20 @@ impl Vault {
                 merged,
             });
         }
-        self.keep_copies(lost, held, &mut queue, &mut report)?;
+        self.keep_copies(space, lost, held, &mut queue, report)?;
         while let Some(p) = queue.pop_front() {
-            let lost = self.settle(b, p, &kinds, &mut used, &mut report)?;
-            self.keep_copies(lost, held, &mut queue, &mut report)?;
+            let lost = self.settle(b, space, p, &kinds, &mut used, report)?;
+            self.keep_copies(space, lost, held, &mut queue, report)?;
         }
-        // Images the merged notes show that are not here yet, from the
-        // store, checked to be what their ids say.
-        for id in used.difference(&stored) {
-            let data = match listed.get(id) {
-                Some(name) => b.read(&format!("{ATTACHMENTS}/{name}"))?,
-                None => None,
-            };
-            match data.and_then(|d| self.check_attachment(id, &d).map(|n| (d, n))) {
-                Some((data, bytes)) => {
-                    self.store_attachment(id, &data, bytes)?;
-                    report.images_pulled += 1;
-                }
-                // Not synced yet (another device still sending it), or
-                // damaged: the note shows a placeholder; tried again next time.
-                None => report.images_missing += 1,
-            }
-        }
-        // Those no note has shown for long go, here and there.
-        for id in self.tend_attachments(&used, crate::now_ms())? {
-            if let Some(name) = listed.get(&id) {
-                b.remove(&format!("{ATTACHMENTS}/{name}"))?;
-            }
-        }
-        Ok(report)
+        Ok(used)
     }
 
     /// A record row's version.
+    #[allow(clippy::too_many_arguments)]
     fn row_version(
         &self,
+        space: &Space,
+        key_ver: i64,
         id: &str,
         kind: &str,
         data: &[u8],
@@ -739,16 +811,24 @@ impl Vault {
         Ok(if deleted {
             Version::Gone(hlc)
         } else {
-            let (plain, _) = cipher::open(&self.sk(), data, &crate::record_aad(id, kind))?;
+            let plain = self.open_row(space, key_ver, id, kind, data)?;
             Version::Live(serde_json::from_slice(&plain)?)
         })
     }
 
     /// The record `id` as kept here.
-    fn version_here(&self, id: &str) -> Result<Option<Version>> {
-        for row in self.raw_rows()? {
+    fn version_here(&self, space: &Space, id: &str) -> Result<Option<Version>> {
+        for row in self.raw_rows_in(space)? {
             if row.id == id {
-                let v = self.row_version(&row.id, &row.kind, &row.data, row.hlc, row.deleted)?;
+                let v = self.row_version(
+                    space,
+                    row.key_ver,
+                    &row.id,
+                    &row.kind,
+                    &row.data,
+                    row.hlc,
+                    row.deleted,
+                )?;
                 return Ok(Some(v));
             }
         }
@@ -760,6 +840,7 @@ impl Vault {
     fn settle(
         &self,
         b: &dyn Backend,
+        space: &Space,
         p: Pending,
         kinds: &BTreeMap<String, String>,
         used: &mut BTreeSet<String>,
@@ -780,7 +861,7 @@ impl Vault {
             Version::Gone(_) => kinds.get(&id).cloned().unwrap_or_else(|| "other".into()),
         };
         if !here.as_ref().is_some_and(|h| h.same(&merged)) {
-            self.store_version(&id, &kind, &merged)?;
+            self.store_version_in(space, &id, &kind, &merged)?;
             report.pulled += 1;
         }
         let canonical = format!("{id}.sw");
@@ -789,18 +870,18 @@ impl Vault {
             let path = format!("{RECORDS}/{canonical}");
             let mut merged = merged;
             for _ in 0..REPLACE_TRIES {
-                if b.replace(&path, &self.envelope(&id, &kind, &merged)?)? {
+                if b.replace(&path, &self.envelope(space, &id, &kind, &merged)?)? {
                     break;
                 }
                 // Another device wrote it since the listing: theirs
                 // goes in, and the write is tried again.
                 if let Some(bytes) = b.read(&path)?
-                    && let Some((_, theirs)) = self.version_in(&id, &bytes)?
+                    && let Some((_, theirs)) = self.version_in(space, &id, &bytes)?
                 {
                     let (m, text) = merge(merged, theirs);
                     merged = m;
                     lost.extend(text.map(|r| (id.clone(), r)));
-                    self.store_version(&id, &kind, &merged)?;
+                    self.store_version_in(space, &id, &kind, &merged)?;
                     report.pulled += 1;
                 }
             }
@@ -819,6 +900,7 @@ impl Vault {
     /// deleted since) is merged with, so it is made once.
     fn keep_copies(
         &self,
+        space: &Space,
         lost: Vec<(String, Record)>,
         held: &BTreeSet<String>,
         queue: &mut VecDeque<Pending>,
@@ -836,7 +918,7 @@ impl Vault {
                 p.merged = merge(p.merged.clone(), copy).0;
                 continue;
             }
-            let here = self.version_here(&id)?;
+            let here = self.version_here(space, &id)?;
             let merged = match &here {
                 Some(h) => merge(h.clone(), copy).0,
                 None => copy,
@@ -861,16 +943,31 @@ impl Vault {
 
     /// The record `id` in a synced file's `bytes`, with its clear kind; None
     /// for a file that is not one of this space's records.
-    fn version_in(&self, id: &str, bytes: &[u8]) -> Result<Option<(String, Version)>> {
+    fn version_in(
+        &self,
+        space: &Space,
+        id: &str,
+        bytes: &[u8],
+    ) -> Result<Option<(String, Version)>> {
         let env: Envelope = serde_json::from_slice(bytes)?;
-        if env.id != id || env.space != SPACE || !matches!(env.kind.as_str(), "host" | "other") {
+        if env.id != id || env.space != space.id() || !matches!(env.kind.as_str(), "host" | "other")
+        {
             return Ok(None);
         }
         let version = match env.data {
             Some(d) => {
                 let sealed = B64.decode(d).map_err(|_| Error::Decrypt)?;
-                let (plain, _) =
-                    cipher::open(&self.sk(), &sealed, &crate::record_aad(id, &env.kind))?;
+                // The personal space has one key, whatever the file says.
+                let ver = match space {
+                    Space::Personal => KEY_VERSION,
+                    Space::Collection(_) => env.key,
+                };
+                // A collection's record under a key not held here yet: left
+                // for when it is.
+                if matches!(space, Space::Collection(_)) && self.space_key(space, ver).is_err() {
+                    return Ok(None);
+                }
+                let plain = self.open_row(space, ver, id, &env.kind, &sealed)?;
                 Version::Live(serde_json::from_slice(&plain)?)
             }
             None => Version::Gone(env.hlc.clone()),
@@ -879,24 +976,22 @@ impl Vault {
         Ok(Some((env.kind, version)))
     }
 
-    fn envelope(&self, id: &str, kind: &str, v: &Version) -> Result<Vec<u8>> {
+    fn envelope(&self, space: &Space, id: &str, kind: &str, v: &Version) -> Result<Vec<u8>> {
+        let mut key = self.space_version(space)?;
         let data = match v {
             Version::Live(r) => {
                 let plain = Zeroizing::new(serde_json::to_vec(r)?);
-                Some(B64.encode(cipher::seal(
-                    self.cipher,
-                    &self.sk(),
-                    &plain,
-                    &crate::record_aad(id, kind),
-                )?))
+                let (ver, sealed) = self.seal_row(space, id, kind, &plain)?;
+                key = ver;
+                Some(B64.encode(sealed))
             }
             Version::Gone(_) => None,
         };
         Ok(serde_json::to_vec(&Envelope {
             id: id.into(),
             kind: kind.into(),
-            space: SPACE.into(),
-            key: KEY_VERSION,
+            space: space.id().into(),
+            key,
             hlc: v.newest().into(),
             data,
         })?)
