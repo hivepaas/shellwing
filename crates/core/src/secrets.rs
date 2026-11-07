@@ -314,11 +314,24 @@ pub struct SessionSecrets {
     /// The shellwing server this device syncs with, by its address: where
     /// organizations' certificates come from.
     pub server: Option<String>,
+    /// The collection the host is in (its id): its passwords are looked for
+    /// there first.
+    pub collection: Option<String>,
 }
 
 impl Secrets for SessionSecrets {
     fn password(&self, target: &str) -> Option<String> {
-        let saved = self.vault.get()?.password(target).ok()??;
+        let vault = self.vault.get()?;
+        let in_collection = self.collection.as_ref().and_then(|c| {
+            vault
+                .password_in(&shellwing_vault::Space::Collection(c.clone()), target)
+                .ok()
+                .flatten()
+        });
+        let saved = match in_collection {
+            Some(p) => p,
+            None => vault.password(target).ok()??,
+        };
         Some(String::from(saved.as_str()))
     }
 

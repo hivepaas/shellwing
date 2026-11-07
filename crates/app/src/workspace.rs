@@ -159,6 +159,8 @@ pub struct Workspace {
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
     vault: VaultSlot,
+    /// The vault's collections are in the host list (it was open to read them).
+    collections_loaded: bool,
     /// A vault that failed to open was reported.
     vault_reported: bool,
     /// The locked vault was asked about at start.
@@ -355,6 +357,7 @@ impl Workspace {
             held_requests: Vec::new(),
             layout_change: 0,
             vault,
+            collections_loaded: false,
             vault_reported: false,
             vault_asked: false,
             updates: Default::default(),
@@ -2166,6 +2169,7 @@ impl Workspace {
             SyncEvent::Done(_) => {
                 self.syncing = false;
                 self.last_synced = Some(std::time::SystemTime::now());
+                self.reload_collections(cx);
             }
             SyncEvent::Failed(_) => self.syncing = false,
             _ => {}
@@ -3477,6 +3481,7 @@ impl Workspace {
             keys: self.key_choices(),
             vault: self.vault.clone(),
             orgs: self.orgs.clone(),
+            collections: self.live.collections().to_vec(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
@@ -3500,6 +3505,7 @@ impl Workspace {
                     let (name, connect, install) = (name.clone(), *connect, install.clone());
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
+                    ws.reload_collections(cx);
                     ws.sync.now();
                     if let Some(key) = install {
                         ws.install_on(&name, key, window, cx);
@@ -3517,6 +3523,7 @@ impl Workspace {
                     let name = name.clone();
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
+                    ws.reload_collections(cx);
                     ws.sync.now();
                     ws.say(
                         Notice::good(tr!("Deleted {name}.", name = name)),
@@ -5314,6 +5321,45 @@ impl Workspace {
         self.live.hosts().find(entry?).and_then(|h| h.color_rgb())
     }
 
+    /// Reads the collections and their hosts from the vault again, and shows
+    /// them if they changed.
+    fn reload_collections(&mut self, cx: &mut Context<Self>) {
+        if self.load_collections() {
+            self.refresh_sidebar(cx);
+        }
+    }
+
+    /// The collections the vault knows from the last sync, with the hosts of
+    /// those whose key it holds. Whether the host list changed.
+    fn load_collections(&mut self) -> bool {
+        let Some(vault) = self.vault.ready() else {
+            return false;
+        };
+        self.collections_loaded = true;
+        let views = vault
+            .known_collections()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|c| {
+                let waiting = vault.collection_versions(&c.id).is_empty();
+                let hosts = if waiting {
+                    Vec::new()
+                } else {
+                    collection_hosts(&vault, &c)
+                };
+                crate::look::CollectionHosts {
+                    id: c.id,
+                    name: c.name,
+                    org_id: c.org_id,
+                    permission: c.permission,
+                    waiting,
+                    hosts,
+                }
+            })
+            .collect();
+        self.live.set_collections(views)
+    }
+
     /// What the host list shows now: hosts.toml by group, then ssh config
     /// aliases it does not already name, each with its tabs' status.
     fn sidebar_sections(&self, cx: &Context<Self>) -> Vec<Section> {
@@ -5370,7 +5416,15 @@ impl Workspace {
                 ),
             }],
         });
-        let favorites: Vec<Row> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
+        // hosts.toml's: a collection's have a section of their own.
+        let own = |h: &&Host| h.collection.is_none();
+        let favorites: Vec<Row> = hosts
+            .hosts
+            .iter()
+            .filter(own)
+            .filter(|h| h.favorite)
+            .map(row)
+            .collect();
         if !favorites.is_empty() {
             sections.push(Section {
                 title: tr!("Favorites").into(),
@@ -5384,6 +5438,7 @@ impl Workspace {
             let rows: Vec<Row> = hosts
                 .hosts
                 .iter()
+                .filter(own)
                 .filter(|h| h.group.as_deref() == Some(g.name.as_str()))
                 .map(row)
                 .collect();
@@ -5399,6 +5454,7 @@ impl Workspace {
         let loose: Vec<Row> = hosts
             .hosts
             .iter()
+            .filter(own)
             .filter(|h| hosts.group_of(h).is_none())
             .map(row)
             .collect();
@@ -5409,6 +5465,37 @@ impl Workspace {
                 group: None,
                 color: None,
                 rows: loose,
+            });
+        }
+        // Each collection of an organization, by its name; its hosts go by
+        // their ids, which no other host shares.
+        for c in self.live.collections() {
+            let rows: Vec<Row> = c
+                .hosts
+                .iter()
+                .map(|h| {
+                    let id = h.id.clone().unwrap_or_else(|| h.name.clone());
+                    let mut r = row(h);
+                    r.status = self.host_status(cx, |s| s.entry.as_deref() == Some(id.as_str()));
+                    r.active = active_entry.as_deref() == Some(id.as_str());
+                    r.edit = EditTarget::Saved(id.clone());
+                    r.spec = id;
+                    r
+                })
+                .collect();
+            let note = if c.waiting {
+                tr!("waiting for its key")
+            } else if !c.edits() {
+                tr!("read only")
+            } else {
+                rows.len().to_string()
+            };
+            sections.push(Section {
+                title: c.name.clone().into(),
+                note: note.into(),
+                group: None,
+                color: None,
+                rows,
             });
         }
         let aliases: Vec<Row> = self
@@ -5440,6 +5527,10 @@ impl Workspace {
 
     /// Hands the host list a fresh snapshot (it redraws only if it differs).
     fn refresh_sidebar(&mut self, cx: &mut Context<Self>) {
+        // The collections the vault knows, once it is open.
+        if !self.collections_loaded {
+            self.load_collections();
+        }
         self.refresh_overview(cx);
         let sections = self.sidebar_sections(cx);
         let collapsed = self.sidebar_collapsed;
@@ -6152,4 +6243,36 @@ mod tests {
             "Alt+Shift+Left selects"
         );
     }
+}
+
+/// A collection's hosts, as the vault holds them: read as hosts.toml's are,
+/// in no group, and signing in with the organization's certificates unless
+/// one says otherwise.
+fn collection_hosts(
+    vault: &shellwing_vault::Vault,
+    c: &shellwing_vault::CollectionInfo,
+) -> Vec<Host> {
+    let space = shellwing_vault::Space::Collection(c.id.clone());
+    let (Ok(hosts), Ok(groups)) = (
+        vault.entries_in(&space, "host"),
+        vault.entries_in(&space, "group"),
+    ) else {
+        return Vec::new();
+    };
+    let Ok(parsed) = shellwing_config::Hosts::from_synced(&hosts, &groups) else {
+        return Vec::new();
+    };
+    parsed
+        .hosts
+        .into_iter()
+        .map(|mut h| {
+            h.collection = Some(c.id.clone());
+            h.group = None;
+            h.favorite = false;
+            if h.org.is_none() {
+                h.org = Some(c.org_id.clone());
+            }
+            h
+        })
+        .collect()
 }

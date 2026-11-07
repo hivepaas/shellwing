@@ -542,6 +542,7 @@ fn new_host(address: &str) -> Host {
         favorite: false,
         run: None,
         log: None,
+        collection: None,
     }
 }
 

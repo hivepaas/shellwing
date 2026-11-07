@@ -1140,8 +1140,18 @@ impl Vault {
     }
 
     fn find(&self, kind: &str, field: &str, value: &str) -> Result<Option<(String, Record)>> {
+        self.find_in(&Space::Personal, kind, field, value)
+    }
+
+    fn find_in(
+        &self,
+        space: &Space,
+        kind: &str,
+        field: &str,
+        value: &str,
+    ) -> Result<Option<(String, Record)>> {
         Ok(self
-            .records()?
+            .records_in(space)?
             .into_iter()
             .find(|(_, r)| r.kind == kind && r.f.get(field).is_some_and(|f| f.val == value)))
     }
@@ -1370,8 +1380,13 @@ impl Vault {
 
     /// The saved password for `user@host[:port]`.
     pub fn password(&self, target: &str) -> Result<Option<Zeroizing<String>>> {
+        self.password_in(&Space::Personal, target)
+    }
+
+    /// The password saved for `target` in a space.
+    pub fn password_in(&self, space: &Space, target: &str) -> Result<Option<Zeroizing<String>>> {
         Ok(self
-            .find("password", "target", target)?
+            .find_in(space, "password", "target", target)?
             .and_then(|(_, r)| r.f.get("password").map(|f| Zeroizing::new(f.val.clone()))))
     }
 

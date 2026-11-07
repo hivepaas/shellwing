@@ -55,6 +55,8 @@ pub struct EditorContext {
     pub vault: crate::secrets::VaultSlot,
     /// The organizations on the shellwing server, ids and names.
     pub orgs: Vec<(String, String)>,
+    /// The organizations' collections this person syncs.
+    pub collections: Vec<crate::look::CollectionHosts>,
 }
 
 /// The Key list's choice that makes a key for the host.
@@ -368,6 +370,7 @@ impl HostEditor {
             favorite: self.favorite,
             run: opt(self.text(&i.run, cx)),
             log: self.log,
+            collection: self.original.as_ref().and_then(|o| o.collection.clone()),
         }
     }
 
@@ -524,6 +527,9 @@ impl HostEditor {
             self.save_problem = None;
             return cx.notify();
         };
+        if host.collection.is_some() {
+            return self.save_in_collection(host, connect, install, cx);
+        }
         let Some(store) = &self.ctx.store else {
             self.save_problem = Some(tr!("There is no config directory to save in."));
             return cx.notify();
@@ -541,6 +547,66 @@ impl HostEditor {
         }
     }
 
+    /// The collection a host is in, if the person may change its hosts; else
+    /// why not.
+    fn writable_collection(&self, host: &Host) -> Result<crate::look::CollectionHosts, String> {
+        let id = host.collection.as_deref().unwrap_or_default();
+        match self.ctx.collections.iter().find(|c| c.id == id) {
+            Some(c) if c.edits() => Ok(c.clone()),
+            Some(c) => Err(tr!(
+                "You may connect to the hosts of {name}, not change them.",
+                name = c.name.clone()
+            )),
+            None => Err(tr!("This host's collection is no longer synced here.")),
+        }
+    }
+
+    /// Saves a collection's host in the vault, where it syncs to the others
+    /// with access.
+    fn save_in_collection(
+        &mut self,
+        mut host: Host,
+        connect: bool,
+        install: Option<crate::workspace::KeyToInstall>,
+        cx: &mut Context<Self>,
+    ) {
+        let saved = self.writable_collection(&host).and_then(|c| {
+            // The organization's certificates are the collection's own: not
+            // written down unless another is chosen.
+            if host.org.as_deref() == Some(c.org_id.as_str()) {
+                host.org = None;
+            }
+            let vault = self
+                .ctx
+                .vault
+                .get()
+                .ok_or_else(|| tr!("the vault is not open"))?;
+            let id = host.id.clone().ok_or_else(|| tr!("This host has no id."))?;
+            vault
+                .update_in(
+                    &shellwing_vault::Space::Collection(c.id.clone()),
+                    &id,
+                    "host",
+                    &host.name,
+                    &host.sync_fields(),
+                )
+                .map_err(|e| e.to_string())?;
+            Ok(id)
+        });
+        match saved {
+            // The host list opens a collection's host by its id.
+            Ok(id) => cx.emit(EditorEvent::Saved {
+                name: id,
+                connect,
+                install,
+            }),
+            Err(e) => {
+                self.save_problem = Some(e);
+                cx.notify();
+            }
+        }
+    }
+
     fn delete(&mut self, cx: &mut Context<Self>) {
         let Some(original) = &self.original else {
             return;
@@ -549,8 +615,16 @@ impl HostEditor {
             self.confirm_delete = true;
             return cx.notify();
         }
-        let result = match (&self.ctx.store, &original.id) {
-            (Some(store), Some(id)) => store.delete_host(id).map_err(|e| e.to_string()),
+        let result = match (&self.ctx.store, &original.id, &original.collection) {
+            (_, Some(id), Some(_)) => self.writable_collection(original).and_then(|_| {
+                let vault = self
+                    .ctx
+                    .vault
+                    .get()
+                    .ok_or_else(|| tr!("the vault is not open"))?;
+                vault.delete(id).map_err(|e| e.to_string())
+            }),
+            (Some(store), Some(id), None) => store.delete_host(id).map_err(|e| e.to_string()),
             _ => Err(tr!("This host cannot be found in hosts.toml.")),
         };
         match result {
@@ -627,6 +701,7 @@ impl HostEditor {
             favorite: false,
             run: None,
             log: None,
+            collection: None,
         };
         if let Some(r) = resolved {
             host.forward_agent = r.forward_agent;
