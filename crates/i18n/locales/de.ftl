@@ -373,6 +373,12 @@ t97a4b927 = der Tresor ist nicht geöffnet
 # No key made: {e}
 t4e14e42b = Kein Schlüssel erstellt: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = Du darfst dich mit den Hosts von { $name } verbinden, sie aber nicht ändern.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = Die Sammlung dieses Hosts wird hier nicht mehr synchronisiert.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Dieser Host ist nicht in hosts.toml zu finden.
 
@@ -534,6 +540,21 @@ tb6562d26 = { $n } (nur dieser Host)
 
 # Organize
 t6ddb17ec = Ordnen
+
+# My hosts
+tcb6506f0 = Meine Hosts
+
+# Saved in
+tf3fe99c3 = Gespeichert in
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Alle mit Zugriff auf die Sammlung sehen ihn, Ende-zu-Ende-verschlüsselt.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Nur du siehst ihn, auf deinen Geräten.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = In der Sammlung { $name }: Alle mit Zugriff darauf sehen ihn.
 
 # Tags
 t76bda0c0 = Tags
@@ -3533,6 +3554,12 @@ ta4580143 = shellwing sperren
 # Sync now with {place}
 t8aad97ad = Jetzt mit { $place } synchronisieren
 
+# Give the key of {name}…
+t57ffca8e = Schlüssel von { $name } weitergeben…
+
+# To the people granted it who wait for it
+tee158d1d = An die Berechtigten, die darauf warten
+
 # Sync passwords with a folder…
 t74de6b57 = Passwörter mit einem Ordner synchronisieren…
 
@@ -3850,6 +3877,33 @@ t917924da = hosts.toml kann nicht bearbeitet werden: { $e }
 # Saved {name}.
 t966c9f6d = { $name } gespeichert.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Sammlungen brauchen die Synchronisierung mit einem shellwing-Server.
+
+# Cannot list who waits: {e}
+t27666c65 = Wartende können nicht aufgelistet werden: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Fingerabdruck { $fingerprint }: Vergleiche ihn mit dem auf der Profilseite der Person, dann gib den Schlüssel weiter.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = In der Organisation suspendiert: Die Person kann ihn bekommen, sobald sie zurück ist.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Noch kein Verschlüsselungsschlüssel: Die Person muss die shellwing-App einmal mit dem Server synchronisieren.
+
+# Everybody with access holds the key.
+td9e661ee = Alle mit Zugriff haben den Schlüssel.
+
+# Give the key of {name} to whom?
+t2cdda213 = Schlüssel von { $name } an wen weitergeben?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } hat jetzt den Schlüssel von { $collection }.
+
+# The key was not given: {e}
+t9260982f = Der Schlüssel wurde nicht weitergegeben: { $e }
+
 # Saved the group {name}.
 t58507cbd = Gruppe { $name } gespeichert.
 
@@ -4012,6 +4066,9 @@ tfa0d176a = Dieser Computer
 
 # Favorites
 t7c2c53ba = Favoriten
+
+# waiting for its key
+tb827ed42 = wartet auf ihren Schlüssel
 
 # read only
 t0d7ec241 = nur lesend

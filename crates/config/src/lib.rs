@@ -25,7 +25,7 @@ pub use color::Color;
 pub use hosts::{
     Auth, AuthMethod, Group, HOST_COLORS, Host, HostKey, HostX11, Hosts, NO_ORG, color_rgb,
 };
-pub use hosts_sync::Fields;
+pub use hosts_sync::{Fields, new_id};
 pub use settings::{
     Appearance, ColorMode, Cursor, CursorStyle, Files, Font, General, GitSync, Log, LogFormat,
     OnDisconnect, Padding, S3Sync, Scrollbar, ServerSync, Settings, Ssh, Sync, SyncPlace, Terminal,

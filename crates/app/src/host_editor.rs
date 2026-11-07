@@ -89,6 +89,8 @@ enum Menu {
     Theme,
     Key,
     Org,
+    /// hosts.toml, or a collection the person may change.
+    Place,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -147,6 +149,8 @@ pub struct HostEditor {
     favorite: bool,
     /// A group being named here, made when the host is saved.
     naming_group: bool,
+    /// The collection the host is saved in (its id); None: hosts.toml.
+    collection: Option<String>,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -226,6 +230,7 @@ impl HostEditor {
             color: None,
             favorite: false,
             naming_group: false,
+            collection: None,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -318,6 +323,7 @@ impl HostEditor {
         self.jumps = h.jump.clone();
         self.forwards = h.forward.clone();
         self.group = h.group.clone();
+        self.collection = h.collection.clone();
         self.org = h.org.clone();
         self.theme = h.theme.clone();
         self.local_only = h.local_only;
@@ -370,7 +376,7 @@ impl HostEditor {
             favorite: self.favorite,
             run: opt(self.text(&i.run, cx)),
             log: self.log,
-            collection: self.original.as_ref().and_then(|o| o.collection.clone()),
+            collection: self.collection.clone(),
         }
     }
 
@@ -581,7 +587,7 @@ impl HostEditor {
                 .vault
                 .get()
                 .ok_or_else(|| tr!("the vault is not open"))?;
-            let id = host.id.clone().ok_or_else(|| tr!("This host has no id."))?;
+            let id = host.id.clone().unwrap_or_else(shellwing_config::new_id);
             vault
                 .update_in(
                     &shellwing_vault::Space::Collection(c.id.clone()),
@@ -1021,6 +1027,7 @@ impl HostEditor {
             Menu::Theme => self.theme.clone(),
             Menu::Key => Some(self.text(&self.inputs.key, cx)),
             Menu::Org => self.org.clone(),
+            Menu::Place => self.collection.clone(),
         };
         let mut list = div()
             .id(match menu {
@@ -1028,6 +1035,7 @@ impl HostEditor {
                 Menu::Theme => "theme-menu",
                 Menu::Key => "key-menu",
                 Menu::Org => "org-menu",
+                Menu::Place => "place-menu",
             })
             .flex()
             .flex_col()
@@ -1059,6 +1067,7 @@ impl HostEditor {
                             }
                             Menu::Theme => e.theme = value.clone(),
                             Menu::Org => e.org = value.clone(),
+                            Menu::Place => e.collection = value.clone(),
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
@@ -1782,7 +1791,51 @@ impl Render for HostEditor {
                     .unwrap_or_else(|| t.clone())
             })
             .unwrap_or_else(|| tr!("Same as the app"));
-        let mut organize = section(&tr!("Organize")).child(
+        let mut organize = section(&tr!("Organize"));
+        // A new host goes in hosts.toml or a collection; one saved stays where
+        // it is.
+        let places: Vec<(Option<String>, String)> = self
+            .ctx
+            .collections
+            .iter()
+            .filter(|c| c.edits() && !c.waiting)
+            .map(|c| (Some(c.id.clone()), c.name.clone()))
+            .collect();
+        if self.original.is_none() && !places.is_empty() {
+            let place_label = self
+                .collection
+                .as_ref()
+                .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                .map(|c| c.name.clone())
+                .unwrap_or_else(|| tr!("My hosts"));
+            organize = organize.child(row().child(self.select(
+                "place-select",
+                &tr!("Saved in"),
+                place_label,
+                Menu::Place,
+                cx,
+            )));
+            if self.menu == Some(Menu::Place) {
+                let mut choices = vec![(None, tr!("My hosts"))];
+                choices.extend(places);
+                organize = organize.child(self.menu_list(Menu::Place, choices, cx));
+            }
+            organize = organize.child(hint_text(&if self.collection.is_some() {
+                tr!("Everybody with access to the collection sees it, end-to-end encrypted.")
+            } else {
+                tr!("Only you see it, on your devices.")
+            }));
+        } else if let Some(c) = self
+            .collection
+            .as_ref()
+            .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+        {
+            organize = organize.child(hint_text(&tr!(
+                "In the collection {name}: everybody with access to it sees it.",
+                name = c.name.clone()
+            )));
+        }
+        organize = organize.child(
             row()
                 .child(self.select("group-select", &tr!("Group"), group_label, Menu::Group, cx))
                 .child(

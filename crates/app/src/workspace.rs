@@ -264,6 +264,11 @@ enum Asking {
     },
     /// A file of the host to keep in the vault.
     SaveFile,
+    /// Who of a collection's people to give its key to.
+    GiveKey {
+        collection: shellwing_vault::CollectionInfo,
+        members: Vec<shellwing_vault::CollectionMember>,
+    },
 }
 
 /// A snippet on its way to running.
@@ -2021,6 +2026,15 @@ impl Workspace {
                     tr!("Show the recovery key"),
                     String::new(),
                 );
+                for c in self.live.collections() {
+                    if c.permission == "manage" && !c.waiting {
+                        setting(
+                            Action::GiveCollectionKey(c.id.clone()),
+                            tr!("Give the key of {name}…", name = c.name.clone()),
+                            tr!("To the people granted it who wait for it"),
+                        );
+                    }
+                }
                 setting(Action::StopSync, tr!("Stop syncing"), String::new());
             }
             None => {
@@ -3571,6 +3585,157 @@ impl Workspace {
         .detach();
     }
 
+    /// The shellwing server this device syncs with, opened with its sign-in:
+    /// where collections are.
+    fn collections_server(
+        &self,
+    ) -> Option<(String, String, std::sync::Arc<shellwing_vault::Vault>)> {
+        let (Some(SyncPlace::Server(server)), Some(vault)) =
+            (self.sync.place(), self.vault.ready())
+        else {
+            return None;
+        };
+        let token = vault
+            .device_secret(crate::syncing::PLACE_SECRET)
+            .ok()??
+            .to_string();
+        Some((server.url, token, vault))
+    }
+
+    /// Lists who waits for a collection's key, with their fingerprints, to
+    /// choose whom to give it.
+    fn ask_give_key(&mut self, id: &str, cx: &mut Context<Self>) {
+        let Some((url, token, vault)) = self.collections_server() else {
+            return self.say(
+                Notice::bad(tr!("Collections need syncing with a shellwing server.")),
+                CONFIG_NOTICE,
+                cx,
+            );
+        };
+        let Some(info) = vault
+            .known_collections()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|c| c.id == id)
+        else {
+            return;
+        };
+        let asked = info.clone();
+        let job = cx.background_spawn(async move {
+            use shellwing_vault::Collections as _;
+            shellwing_remote::server::Server::open(&url, &token)?.collection_members(&asked)
+        });
+        cx.spawn(async move |this, cx| {
+            let found = job.await;
+            let _ = this.update(cx, |ws, cx| match found {
+                Ok(members) => ws.in_window(cx, move |ws, window, cx| {
+                    ws.show_give_key(info, members, window, cx);
+                }),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("Cannot list who waits: {e}", e = e.to_string())),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
+        })
+        .detach();
+    }
+
+    /// The people of a collection waiting for its key, each with the
+    /// fingerprint to compare before giving it.
+    fn show_give_key(
+        &mut self,
+        collection: shellwing_vault::CollectionInfo,
+        members: Vec<shellwing_vault::CollectionMember>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let waiting: Vec<&shellwing_vault::CollectionMember> =
+            members.iter().filter(|m| !m.has_key).collect();
+        let mut entries = Vec::new();
+        for m in &waiting {
+            let name = if m.full_name.is_empty() {
+                m.username.clone()
+            } else {
+                format!("{} ({})", m.full_name, m.username)
+            };
+            match &m.identity {
+                Some(identity) if m.served => entries.push(
+                    Entry::new(Kind::Choice(m.user_id.clone()), "", name).detail(tr!(
+                        "Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.",
+                        fingerprint = identity.fingerprint()
+                    )),
+                ),
+                Some(_) => entries.push(
+                    Entry::new(Kind::Note, "", name)
+                        .detail(tr!("Suspended in the organization: they can have it once they are back.")),
+                ),
+                None => entries.push(Entry::new(Kind::Note, "", name).detail(tr!(
+                    "Has no encryption key yet: they sync the shellwing app with the server once."
+                ))),
+            }
+        }
+        if waiting.is_empty() {
+            entries.push(Entry::new(
+                Kind::Note,
+                "",
+                tr!("Everybody with access holds the key."),
+            ));
+        }
+        let title = tr!(
+            "Give the key of {name} to whom?",
+            name = collection.name.clone()
+        );
+        self.asking = Some(Asking::GiveKey {
+            collection,
+            members,
+        });
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Wraps the collection's key for one person, whose fingerprint was
+    /// compared, and tells the server.
+    fn give_key(
+        &mut self,
+        collection: shellwing_vault::CollectionInfo,
+        member: shellwing_vault::CollectionMember,
+        cx: &mut Context<Self>,
+    ) {
+        let Some((url, token, vault)) = self.collections_server() else {
+            return;
+        };
+        let name = member.username.clone();
+        let collection_name = collection.name.clone();
+        let job = cx.background_spawn(async move {
+            let server =
+                shellwing_remote::server::Server::open(&url, &token).map_err(|e| e.to_string())?;
+            vault
+                .give_collection_key(&server, &collection, &[member])
+                .map_err(|e| e.to_string())
+        });
+        cx.spawn(async move |this, cx| {
+            let given = job.await;
+            let _ = this.update(cx, |ws, cx| match given {
+                Ok(()) => ws.say(
+                    Notice::good(tr!(
+                        "{name} has the key of {collection} now.",
+                        name = name,
+                        collection = collection_name
+                    )),
+                    THEME_NOTICE,
+                    cx,
+                ),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("The key was not given: {e}", e = e)),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
+        })
+        .detach();
+    }
+
     /// The organizations the server listed (ids and names), for the editors
     /// open now and those opened later.
     pub fn know_orgs(&mut self, orgs: Vec<(String, String)>, cx: &mut Context<Self>) {
@@ -4046,6 +4211,19 @@ impl Workspace {
                 let how = how.clone();
                 self.chose_place(&how, window, cx);
             }
+            PaletteEvent::Chose(user) if matches!(self.asking, Some(Asking::GiveKey { .. })) => {
+                let Some(Asking::GiveKey {
+                    collection,
+                    members,
+                }) = self.asking.take()
+                else {
+                    return;
+                };
+                self.close_palette(window, cx);
+                if let Some(m) = members.into_iter().find(|m| &m.user_id == user) {
+                    self.give_key(collection, m, cx);
+                }
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -4098,7 +4276,12 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::PlaceHow { .. })
+                    Some(
+                        Asking::JoinHow { .. }
+                        | Asking::Pairing(_)
+                        | Asking::PlaceHow { .. }
+                        | Asking::GiveKey { .. },
+                    )
                     | None => {
                         return self.close_palette(window, cx);
                     }
@@ -4236,6 +4419,7 @@ impl Workspace {
                 self.sync.now();
                 self.say(tr!("Syncing…"), THEME_NOTICE, cx);
             }
+            Action::GiveCollectionKey(id) => self.ask_give_key(&id, cx),
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(

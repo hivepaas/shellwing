@@ -361,6 +361,12 @@ t97a4b927 = 보관함이 열려 있지 않음
 # No key made: {e}
 t4e14e42b = 키를 만들지 못함: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = { $name }의 호스트에 연결할 수는 있지만 변경할 수는 없습니다.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = 이 호스트의 컬렉션은 더 이상 여기에서 동기화되지 않습니다.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = hosts.toml에서 이 호스트를 찾을 수 없습니다.
 
@@ -522,6 +528,21 @@ tb6562d26 = { $n } (이 호스트만)
 
 # Organize
 t6ddb17ec = 정리
+
+# My hosts
+tcb6506f0 = 내 호스트
+
+# Saved in
+tf3fe99c3 = 저장 위치
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = 컬렉션에 접근 권한이 있는 모든 사용자가 볼 수 있으며, 종단 간 암호화됩니다.
+
+# Only you see it, on your devices.
+t6f22a0a3 = 내 기기에서 나만 볼 수 있습니다.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = 컬렉션 { $name }에 있음: 접근 권한이 있는 모든 사용자가 볼 수 있습니다.
 
 # Tags
 t76bda0c0 = 태그
@@ -3421,6 +3442,12 @@ ta4580143 = shellwing 잠그기
 # Sync now with {place}
 t8aad97ad = 지금 { $place }과(와) 동기화
 
+# Give the key of {name}…
+t57ffca8e = { $name } 키 전달…
+
+# To the people granted it who wait for it
+tee158d1d = 권한을 받고 키를 기다리는 사용자에게
+
 # Sync passwords with a folder…
 t74de6b57 = 폴더와 비밀번호 동기화…
 
@@ -3730,6 +3757,33 @@ t917924da = hosts.toml을 편집할 수 없습니다: { $e }
 # Saved {name}.
 t966c9f6d = { $name }을(를) 저장했습니다.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = 컬렉션을 사용하려면 shellwing 서버와 동기화해야 합니다.
+
+# Cannot list who waits: {e}
+t27666c65 = 기다리는 사용자 목록을 가져올 수 없습니다: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = 지문 { $fingerprint }: 상대방의 프로필 페이지에 있는 지문과 비교한 뒤 전달하세요.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = 조직에서 정지됨: 복귀하면 받을 수 있습니다.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = 아직 암호화 키가 없음: 상대방이 shellwing 앱을 서버와 한 번 동기화해야 합니다.
+
+# Everybody with access holds the key.
+td9e661ee = 접근 권한이 있는 모든 사용자가 키를 갖고 있습니다.
+
+# Give the key of {name} to whom?
+t2cdda213 = { $name } 키를 누구에게 전달할까요?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = 이제 { $name }님이 { $collection } 키를 갖고 있습니다.
+
+# The key was not given: {e}
+t9260982f = 키를 전달하지 못함: { $e }
+
 # Saved the group {name}.
 t58507cbd = { $name } 그룹을 저장했습니다.
 
@@ -3876,6 +3930,9 @@ tfa0d176a = 이 컴퓨터
 
 # Favorites
 t7c2c53ba = 즐겨찾기
+
+# waiting for its key
+tb827ed42 = 키 대기 중
 
 # read only
 t0d7ec241 = 읽기 전용

@@ -89,7 +89,7 @@ impl Group {
 }
 
 /// A new id: time first, then randomness, as the vault's ids.
-pub(crate) fn new_id() -> String {
+pub fn new_id() -> String {
     let ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())

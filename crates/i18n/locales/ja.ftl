@@ -361,6 +361,12 @@ t97a4b927 = 保管庫が開いていません
 # No key made: {e}
 t4e14e42b = 鍵を作成できませんでした：{ $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = { $name } のホストには接続できますが、変更はできません。
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = このホストのコレクションは、ここでは同期されなくなりました。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = このホストが hosts.toml に見つかりません。
 
@@ -522,6 +528,21 @@ tb6562d26 = { $n }（このホストのみ）
 
 # Organize
 t6ddb17ec = 整理
+
+# My hosts
+tcb6506f0 = マイホスト
+
+# Saved in
+tf3fe99c3 = 保存先
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = コレクションにアクセスできる全員に表示されます。エンドツーエンドで暗号化されます。
+
+# Only you see it, on your devices.
+t6f22a0a3 = あなたのデバイス上で、あなただけに表示されます。
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = コレクション { $name } 内：アクセスできる全員に表示されます。
 
 # Tags
 t76bda0c0 = タグ
@@ -3421,6 +3442,12 @@ ta4580143 = shellwing をロック
 # Sync now with {place}
 t8aad97ad = { $place } と今すぐ同期
 
+# Give the key of {name}…
+t57ffca8e = { $name } の鍵を渡す…
+
+# To the people granted it who wait for it
+tee158d1d = アクセスを許可され、鍵を待っているユーザーへ
+
 # Sync passwords with a folder…
 t74de6b57 = フォルダとパスワードを同期…
 
@@ -3730,6 +3757,33 @@ t917924da = hosts.toml を編集できません：{ $e }
 # Saved {name}.
 t966c9f6d = { $name } を保存しました。
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = コレクションには shellwing サーバーとの同期が必要です。
+
+# Cannot list who waits: {e}
+t27666c65 = 鍵を待っているユーザーを一覧表示できません：{ $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = フィンガープリント { $fingerprint }：相手のプロフィールページにあるものと照合してから渡してください。
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = 組織で利用停止中：復帰すれば受け取れます。
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = 暗号化の鍵がまだありません：相手が shellwing アプリをサーバーと一度同期する必要があります。
+
+# Everybody with access holds the key.
+td9e661ee = アクセス権のある全員が鍵を持っています。
+
+# Give the key of {name} to whom?
+t2cdda213 = { $name } の鍵を誰に渡しますか？
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } が { $collection } の鍵を持つようになりました。
+
+# The key was not given: {e}
+t9260982f = 鍵を渡せませんでした：{ $e }
+
 # Saved the group {name}.
 t58507cbd = グループ { $name } を保存しました。
 
@@ -3876,6 +3930,9 @@ tfa0d176a = このコンピュータ
 
 # Favorites
 t7c2c53ba = お気に入り
+
+# waiting for its key
+tb827ed42 = 鍵待ち
 
 # read only
 t0d7ec241 = 読み取り専用
