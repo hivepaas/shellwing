@@ -269,6 +269,8 @@ enum Asking {
         collection: shellwing_vault::CollectionInfo,
         members: Vec<shellwing_vault::CollectionMember>,
     },
+    /// The secrets to change in a collection (its id): done, or not yet.
+    Checklist(String),
 }
 
 /// A snippet on its way to running.
@@ -2026,6 +2028,18 @@ impl Workspace {
                     tr!("Show the recovery key"),
                     String::new(),
                 );
+                for list in self
+                    .vault
+                    .ready()
+                    .and_then(|v| v.key_checklists().ok())
+                    .unwrap_or_default()
+                {
+                    setting(
+                        Action::KeyChecklist(list.collection.clone()),
+                        tr!("Secrets to change in {name}…", name = list.name.clone()),
+                        tr!("Somebody who lost access could read them"),
+                    );
+                }
                 for c in self.live.collections() {
                     if c.permission == "manage" && !c.waiting {
                         setting(
@@ -2236,6 +2250,28 @@ impl Workspace {
                             cx,
                         );
                     }
+                }
+                // A key this app replaced as somebody lost access: said last,
+                // with the secrets they could read listed in the palette.
+                let lists = self
+                    .vault
+                    .ready()
+                    .and_then(|v| v.key_checklists().ok())
+                    .unwrap_or_default();
+                for o in r.collections.iter().filter(|o| o.replaced.is_some()) {
+                    let name = o.collection.name.clone();
+                    let text = if lists.iter().any(|l| l.collection == o.collection.id) {
+                        tr!(
+                            "Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.",
+                            name = name
+                        )
+                    } else {
+                        tr!(
+                            "Somebody lost access to {name}: its key is replaced.",
+                            name = name
+                        )
+                    };
+                    self.say(Notice::warn(text), KEPT_NOTICE, cx);
                 }
             }
             SyncEvent::Failed(e) => {
@@ -3694,6 +3730,43 @@ impl Workspace {
         self.show_palette(palette, false, window, cx);
     }
 
+    /// The secrets of a collection whose key this app replaced, which
+    /// somebody who lost access could read: to change, then mark done.
+    fn show_key_checklist(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(list) = self
+            .vault
+            .ready()
+            .and_then(|v| v.key_checklists().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .find(|l| l.collection == id)
+        else {
+            return;
+        };
+        let mut entries: Vec<Entry> = list
+            .secrets
+            .iter()
+            .map(|name| Entry::new(Kind::Note, "", name.clone()))
+            .collect();
+        entries.push(
+            Entry::new(
+                Kind::Choice("done".into()),
+                "",
+                tr!("All changed: take this list away"),
+            )
+            .detail(tr!(
+                "Change each where it is used, then here in the collection."
+            )),
+        );
+        let title = tr!(
+            "Somebody who lost access to {name} could read these: change them",
+            name = list.name.clone()
+        );
+        self.asking = Some(Asking::Checklist(list.collection));
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
     /// Wraps the collection's key for one person, whose fingerprint was
     /// compared, and tells the server.
     fn give_key(
@@ -4211,6 +4284,21 @@ impl Workspace {
                 let how = how.clone();
                 self.chose_place(&how, window, cx);
             }
+            PaletteEvent::Chose(_) if matches!(self.asking, Some(Asking::Checklist(_))) => {
+                let Some(Asking::Checklist(id)) = self.asking.take() else {
+                    return;
+                };
+                self.close_palette(window, cx);
+                if let Some(vault) = self.vault.ready()
+                    && let Err(e) = vault.finish_key_checklist(&id)
+                {
+                    self.say(
+                        Notice::bad(tr!("Cannot take the list away: {e}", e = e.to_string())),
+                        CONFIG_NOTICE,
+                        cx,
+                    );
+                }
+            }
             PaletteEvent::Chose(user) if matches!(self.asking, Some(Asking::GiveKey { .. })) => {
                 let Some(Asking::GiveKey {
                     collection,
@@ -4280,7 +4368,8 @@ impl Workspace {
                         Asking::JoinHow { .. }
                         | Asking::Pairing(_)
                         | Asking::PlaceHow { .. }
-                        | Asking::GiveKey { .. },
+                        | Asking::GiveKey { .. }
+                        | Asking::Checklist(_),
                     )
                     | None => {
                         return self.close_palette(window, cx);
@@ -4420,6 +4509,7 @@ impl Workspace {
                 self.say(tr!("Syncing…"), THEME_NOTICE, cx);
             }
             Action::GiveCollectionKey(id) => self.ask_give_key(&id, cx),
+            Action::KeyChecklist(id) => self.show_key_checklist(&id, window, cx),
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(

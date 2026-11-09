@@ -3442,6 +3442,12 @@ ta4580143 = shellwing をロック
 # Sync now with {place}
 t8aad97ad = { $place } と今すぐ同期
 
+# Secrets to change in {name}…
+t6dbdbc5f = { $name } で変更するシークレット…
+
+# Somebody who lost access could read them
+t19bcc0de = アクセスを失ったユーザーが読めたもの
+
 # Give the key of {name}…
 t57ffca8e = { $name } の鍵を渡す…
 
@@ -3501,6 +3507,12 @@ t9024ea9c = ノートが 2 台のデバイスで変更されました。もう�
 
 # {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
 tbe970732 = { $n } 件のノートが 2 台のデバイスで変更されました。もう一方の版はそれぞれ隣に残してあります。
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = { $name } へのアクセスを失ったユーザーがいます：鍵は置き換えられました。そのユーザーが読めたものを変更してください：パレットの「{ $name } で変更するシークレット」から。
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = { $name } へのアクセスを失ったユーザーがいます：鍵は置き換えられました。
 
 # Sync: {e}
 t8cb8c8c3 = 同期：{ $e }
@@ -3778,6 +3790,15 @@ td9e661ee = アクセス権のある全員が鍵を持っています。
 # Give the key of {name} to whom?
 t2cdda213 = { $name } の鍵を誰に渡しますか？
 
+# All changed: take this list away
+tc0346301 = すべて変更済み：このリストを削除
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = それぞれ使用している場所で変更してから、ここのコレクションで変更してください。
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = { $name } へのアクセスを失ったユーザーがこれらを読めました：変更してください
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } が { $collection } の鍵を持つようになりました。
 
@@ -3849,6 +3870,9 @@ t586cd916 = まだ保存されていません。パスワードで接続でき�
 
 # Pairing cancelled.
 t9bf01ace = ペアリングをキャンセルしました。
+
+# Cannot take the list away: {e}
+t65900621 = リストを削除できません：{ $e }
 
 # Forgotten.
 te8ff7bb9 = 消去しました。

@@ -3640,6 +3640,12 @@ ta4580143 = Заблокувати shellwing
 # Sync now with {place}
 t8aad97ad = Синхронізувати зараз із { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Секрети для зміни в колекції { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Їх міг прочитати той, хто втратив доступ
+
 # Give the key of {name}…
 t57ffca8e = Передати ключ колекції { $name }…
 
@@ -3711,6 +3717,12 @@ tbe970732 =
         [many] { $n } нотаток змінено на двох пристроях: інші версії збережено поруч.
        *[other] { $n } нотатки змінено на двох пристроях: інші версії збережено поруч.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Хтось втратив доступ до колекції { $name }: її ключ замінено. Змініть те, що він міг прочитати: «Секрети для зміни в колекції { $name }» у палітрі.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Хтось втратив доступ до колекції { $name }: її ключ замінено.
 
 # Sync: {e}
 t8cb8c8c3 = Синхронізація: { $e }
@@ -3988,6 +4000,15 @@ td9e661ee = Ключ є в усіх, хто має доступ.
 # Give the key of {name} to whom?
 t2cdda213 = Кому передати ключ колекції { $name }?
 
+# All changed: take this list away
+tc0346301 = Усе змінено: прибрати цей список
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Змініть кожен там, де він використовується, потім тут, у колекції.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Це міг прочитати той, хто втратив доступ до колекції { $name }: змініть
+
 # {name} has the key of {collection} now.
 t4dd83f7b = Тепер { $name } має ключ колекції { $collection }.
 
@@ -4071,6 +4092,9 @@ t586cd916 = Поки нічого не збережено: коли пароль
 
 # Pairing cancelled.
 t9bf01ace = Сполучення скасовано.
+
+# Cannot take the list away: {e}
+t65900621 = Не вдалося прибрати список: { $e }
 
 # Forgotten.
 te8ff7bb9 = Забуто.

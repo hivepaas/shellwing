@@ -132,6 +132,9 @@ pub enum Action {
     StopSync,
     /// Give a collection's key, by its id, to people granted it who wait.
     GiveCollectionKey(String),
+    /// The secrets to change in a collection, by its id, whose key this app
+    /// replaced.
+    KeyChecklist(String),
 }
 
 #[derive(Clone, Debug, PartialEq)]

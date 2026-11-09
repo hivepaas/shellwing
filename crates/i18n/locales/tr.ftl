@@ -3554,6 +3554,12 @@ ta4580143 = shellwing'i kilitle
 # Sync now with {place}
 t8aad97ad = { $place } ile şimdi eşitle
 
+# Secrets to change in {name}…
+t6dbdbc5f = { $name } koleksiyonunda değiştirilecek gizli bilgiler…
+
+# Somebody who lost access could read them
+t19bcc0de = Erişimini kaybeden biri bunları okuyabiliyordu
+
 # Give the key of {name}…
 t57ffca8e = { $name } koleksiyonunun anahtarını ver…
 
@@ -3621,6 +3627,12 @@ tbe970732 =
         [one] { $n } not iki cihazda değiştirildi: diğer sürüm yanında saklandı.
        *[other] { $n } not iki cihazda değiştirildi: diğer sürümler yanlarında saklandı.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Biri { $name } koleksiyonuna erişimini kaybetti: anahtarı değiştirildi. Okuyabildiklerini değiştirin: { $name } koleksiyonunda değiştirilecek gizli bilgiler, palette.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Biri { $name } koleksiyonuna erişimini kaybetti: anahtarı değiştirildi.
 
 # Sync: {e}
 t8cb8c8c3 = Eşitleme: { $e }
@@ -3898,6 +3910,15 @@ td9e661ee = Erişimi olan herkeste anahtar var.
 # Give the key of {name} to whom?
 t2cdda213 = { $name } koleksiyonunun anahtarı kime verilsin?
 
+# All changed: take this list away
+tc0346301 = Hepsi değiştirildi: bu listeyi kaldır
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Her birini kullanıldığı yerde, sonra burada, koleksiyonda değiştirin.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = { $name } koleksiyonuna erişimini kaybeden biri bunları okuyabiliyordu: değiştirin
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } artık { $collection } koleksiyonunun anahtarına sahip.
 
@@ -3977,6 +3998,9 @@ t586cd916 = Henüz kayıtlı bir şey yok: bir parola işe yaradıktan sonra bö
 
 # Pairing cancelled.
 t9bf01ace = Eşleştirme iptal edildi.
+
+# Cannot take the list away: {e}
+t65900621 = Liste kaldırılamıyor: { $e }
 
 # Forgotten.
 te8ff7bb9 = Unutuldu.

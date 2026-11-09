@@ -1300,6 +1300,8 @@ tdfc17c92 = Saved passwords and passphrases…
 tc05449a1 = Lock the vault
 ta4580143 = Lock shellwing
 t8aad97ad = Sync now with { $place }
+t6dbdbc5f = Secrets to change in { $name }…
+t19bcc0de = Somebody who lost access could read them
 t57ffca8e = Give the key of { $name }…
 tee158d1d = To the people granted it who wait for it
 t74de6b57 = Sync passwords with a folder…
@@ -1328,6 +1330,8 @@ tbe970732 =
         [one] { $n } note was changed on two devices: the other version is kept beside it.
        *[other] { $n } notes were changed on two devices: the other versions are kept beside them.
     }
+t6b22b8e8 = Somebody lost access to { $name }: its key is replaced. Change what they could read: Secrets to change in { $name }, in the palette.
+t189f91dc = Somebody lost access to { $name }: its key is replaced.
 t8cb8c8c3 = Sync: { $e }
 t1d4ed983 = The other device refused to let this one in.
 t410f845d = No device let this one in within 10 minutes. Ask again, or use the recovery key.
@@ -1420,6 +1424,9 @@ t52d41370 = Suspended in the organization: they can have it once they are back.
 t7c7319f3 = Has no encryption key yet: they sync the shellwing app with the server once.
 td9e661ee = Everybody with access holds the key.
 t2cdda213 = Give the key of { $name } to whom?
+tc0346301 = All changed: take this list away
+t4e94b74c = Change each where it is used, then here in the collection.
+t4bd96d3f = Somebody who lost access to { $name } could read these: change them
 t4dd83f7b = { $name } has the key of { $collection } now.
 t9260982f = The key was not given: { $e }
 t58507cbd = Saved the group { $name }.
@@ -1452,6 +1459,7 @@ t328fcceb = Passphrase of { $key_path }
 taee646ba = Cannot read the vault: { $e }
 t586cd916 = Nothing saved yet: after a password works, the pane offers to save it.
 t9bf01ace = Pairing cancelled.
+t65900621 = Cannot take the list away: { $e }
 te8ff7bb9 = Forgotten.
 ted8446cd = Theme: { $name }
 t744465b3 = Cannot read the key: { $e }

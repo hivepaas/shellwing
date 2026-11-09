@@ -3442,6 +3442,12 @@ ta4580143 = Khoá shellwing
 # Sync now with {place}
 t8aad97ad = Đồng bộ ngay với { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Bí mật cần đổi trong { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Người đã mất quyền truy cập có thể đọc được chúng
+
 # Give the key of {name}…
 t57ffca8e = Trao khoá của { $name }…
 
@@ -3501,6 +3507,12 @@ t9024ea9c = Một ghi chú đã được sửa trên hai thiết bị: bản cò
 
 # {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
 tbe970732 = { $n } ghi chú đã được sửa trên hai thiết bị: các bản còn lại được giữ ngay bên cạnh.
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Có người đã mất quyền truy cập { $name }: khoá của bộ sưu tập đã được thay. Hãy đổi những gì họ có thể đọc: Bí mật cần đổi trong { $name }, trong bảng lệnh.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Có người đã mất quyền truy cập { $name }: khoá của bộ sưu tập đã được thay.
 
 # Sync: {e}
 t8cb8c8c3 = Đồng bộ: { $e }
@@ -3778,6 +3790,15 @@ td9e661ee = Mọi người có quyền truy cập đều đã có khoá.
 # Give the key of {name} to whom?
 t2cdda213 = Trao khoá của { $name } cho ai?
 
+# All changed: take this list away
+tc0346301 = Đã đổi hết: bỏ danh sách này
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Đổi từng cái ở nơi dùng nó, rồi ở đây trong bộ sưu tập.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Người đã mất quyền truy cập { $name } có thể đọc được những thứ này: hãy đổi chúng
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } giờ đã có khoá của { $collection }.
 
@@ -3849,6 +3870,9 @@ t586cd916 = Chưa lưu gì: sau khi một mật khẩu dùng được, khung s�
 
 # Pairing cancelled.
 t9bf01ace = Đã huỷ ghép thiết bị.
+
+# Cannot take the list away: {e}
+t65900621 = Không bỏ được danh sách: { $e }
 
 # Forgotten.
 te8ff7bb9 = Đã quên.

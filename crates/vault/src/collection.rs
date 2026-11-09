@@ -377,6 +377,10 @@ pub struct CollectionInfo {
     pub key_version: u32,
     /// What the person may do: `connect`, `edit` or `manage`.
     pub permission: String,
+    /// Somebody holding the current key lost access: the app of somebody
+    /// with Manage who holds it replaces it. Said only to those with Manage.
+    #[serde(default)]
+    pub needs_new_key: bool,
 }
 
 impl CollectionInfo {
@@ -449,6 +453,20 @@ pub enum CollectionState {
 pub struct CollectionOutcome {
     pub collection: CollectionInfo,
     pub state: CollectionState,
+    /// The version of the key this app made to replace the current one, as
+    /// somebody lost access; what they could read is in
+    /// [`Vault::key_checklists`].
+    pub replaced: Option<u32>,
+}
+
+/// What somebody who lost access to a collection could read, to change: the
+/// names of its secrets when its key was replaced.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct KeyChecklist {
+    pub collection: String,
+    pub name: String,
+    pub version: u32,
+    pub secrets: Vec<String>,
 }
 
 impl Vault {
@@ -460,7 +478,8 @@ impl Vault {
         self.keep_known_collections(&listed)?;
         let mut out = Vec::new();
         for c in listed {
-            let state = match self.sync_one_collection(host, &c) {
+            let mut replaced = None;
+            let state = match self.sync_one_collection(host, &c, &mut replaced) {
                 Ok(Some(r)) => CollectionState::Synced {
                     pulled: r.pulled,
                     pushed: r.pushed,
@@ -471,6 +490,7 @@ impl Vault {
             out.push(CollectionOutcome {
                 collection: c,
                 state,
+                replaced,
             });
         }
         Ok(out)
@@ -480,6 +500,7 @@ impl Vault {
         &self,
         host: &dyn Collections,
         c: &CollectionInfo,
+        replaced: &mut Option<u32>,
     ) -> Result<Option<crate::SyncReport>> {
         if c.key_version == 0 {
             if !c.manages() {
@@ -487,46 +508,142 @@ impl Vault {
             }
             self.make_first_key(host, c)?;
         }
-        let newest = self.collection_versions(&c.id).last().copied().unwrap_or(0);
-        if newest < i64::from(c.key_version.max(1)) {
-            let given = host.collection_keys(c)?;
-            if !given.is_empty() {
-                self.take_collection_keys(&c.id, &given)?;
-            }
-        }
+        self.take_new_keys(host, c, c.key_version.max(1))?;
         if self.collection_versions(&c.id).is_empty() {
             return Ok(None);
+        }
+        // Replaced by the first app with Manage holding the current key; the
+        // server takes one replacement, and the others' apps take its key.
+        if c.needs_new_key
+            && c.manages()
+            && self
+                .collection_versions(&c.id)
+                .contains(&i64::from(c.key_version))
+        {
+            let version = c.key_version + 1;
+            if self.replace_collection_key(host, c, version)? {
+                *replaced = Some(version);
+            }
+            self.take_new_keys(host, c, version)?;
+            if replaced.is_some() {
+                self.keep_key_checklist(c, version)?;
+            }
         }
         let store = host.collection_store(c)?;
         self.sync_collection(&*store, &c.id, c.edits()).map(Some)
     }
 
-    /// The collections the server served at the last sync: what the host list
-    /// shows while offline. Kept on this device only.
-    pub fn known_collections(&self) -> Result<Vec<CollectionInfo>> {
+    /// Takes the wraps the server has for this person if they hold no key
+    /// of `version` or newer yet.
+    fn take_new_keys(
+        &self,
+        host: &dyn Collections,
+        c: &CollectionInfo,
+        version: u32,
+    ) -> Result<()> {
+        let newest = self.collection_versions(&c.id).last().copied().unwrap_or(0);
+        if newest < i64::from(version) {
+            let given = host.collection_keys(c)?;
+            if !given.is_empty() {
+                self.take_collection_keys(&c.id, &given)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// A new key, `version`, wrapped for everybody who still has access and
+    /// an identity: those suspended keep it. False: another app replaced it
+    /// first.
+    fn replace_collection_key(
+        &self,
+        host: &dyn Collections,
+        c: &CollectionInfo,
+        version: u32,
+    ) -> Result<bool> {
+        let me = self.identity_for_keys()?.public();
+        let to: Vec<(String, PublicIdentity)> = host
+            .collection_members(c)?
+            .into_iter()
+            .filter_map(|m| Some((m.user_id, m.identity?)))
+            .collect();
+        if !to.iter().any(|(_, p)| *p == me) {
+            return Err(Error::Collection(
+                "the server does not have this device's identity yet".into(),
+            ));
+        }
+        let identities: Vec<PublicIdentity> = to.iter().map(|(_, p)| p.clone()).collect();
+        let wraps = self.make_collection_key(&c.id, version, &identities)?;
+        let wraps: Vec<(String, Wrap)> = to.into_iter().map(|(u, _)| u).zip(wraps).collect();
+        Ok(host.create_collection_key(c, version, &wraps)?)
+    }
+
+    /// Keeps, on this device, the names of the collection's secrets, which
+    /// whoever lost access could read: to change them.
+    fn keep_key_checklist(&self, c: &CollectionInfo, version: u32) -> Result<()> {
+        let space = Space::Collection(c.id.clone());
+        let mut secrets: Vec<String> = self
+            .records_in(&space)?
+            .into_iter()
+            .filter(|(_, r)| r.kind != "host")
+            .map(|(_, r)| r.name.clone())
+            .collect();
+        secrets.sort();
+        let mut lists = self.key_checklists()?;
+        lists.retain(|l| l.collection != c.id);
+        if !secrets.is_empty() {
+            lists.push(KeyChecklist {
+                collection: c.id.clone(),
+                name: c.name.clone(),
+                version,
+                secrets,
+            });
+        }
+        self.keep_meta_json("key_checklists", &lists)
+    }
+
+    /// The secrets to change in collections whose key this app replaced, until
+    /// they are marked done.
+    pub fn key_checklists(&self) -> Result<Vec<KeyChecklist>> {
+        Ok(self.meta_json("key_checklists")?.unwrap_or_default())
+    }
+
+    /// The secrets of a collection changed: its checklist goes.
+    pub fn finish_key_checklist(&self, collection: &str) -> Result<()> {
+        let mut lists = self.key_checklists()?;
+        lists.retain(|l| l.collection != collection);
+        self.keep_meta_json("key_checklists", &lists)
+    }
+
+    fn meta_json<T: serde::de::DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         let text: Option<String> = db
-            .query_row(
-                "SELECT value FROM meta WHERE key = 'collections'",
-                [],
-                |r| r.get(0),
-            )
+            .query_row("SELECT value FROM meta WHERE key = ?1", [key], |r| r.get(0))
             .optional()?;
         Ok(match text {
-            Some(t) => serde_json::from_str(&t)?,
-            None => Vec::new(),
+            Some(t) => Some(serde_json::from_str(&t)?),
+            None => None,
         })
     }
 
-    fn keep_known_collections(&self, listed: &[CollectionInfo]) -> Result<()> {
-        let text = serde_json::to_string(listed)?;
+    fn keep_meta_json<T: serde::Serialize>(&self, key: &str, value: &T) -> Result<()> {
+        let text = serde_json::to_string(value)?;
         let db = self.db.lock().map_err(|_| Error::Decrypt)?;
         db.execute(
-            "INSERT INTO meta (key, value) VALUES ('collections', ?1)
+            "INSERT INTO meta (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            params![text],
+            params![key, text],
         )?;
         Ok(())
+    }
+
+    /// The collections the server served at the last sync: what the host list
+    /// shows while offline. Kept on this device only.
+    pub fn known_collections(&self) -> Result<Vec<CollectionInfo>> {
+        Ok(self.meta_json("collections")?.unwrap_or_default())
+    }
+
+    fn keep_known_collections(&self, listed: &[CollectionInfo]) -> Result<()> {
+        self.keep_meta_json("collections", &listed)
     }
 
     /// Version 1 of a collection made on the web, wrapped for the person and
@@ -895,7 +1012,7 @@ mod tests {
         struct Fake {
             dir: std::path::PathBuf,
             version: Mutex<u32>,
-            people: Vec<(String, String, String, PublicIdentity)>,
+            people: Mutex<Vec<(String, String, String, PublicIdentity)>>,
             wraps: Mutex<Vec<(String, u32, Wrap, Key)>>,
         }
 
@@ -907,29 +1024,37 @@ mod tests {
 
         impl As<'_> {
             fn info(&self) -> CollectionInfo {
-                let (_, _, permission, _) = self
+                let people = self.fake.people.lock().expect("lock");
+                let (_, _, permission, _) = people.iter().find(|p| p.0 == self.me).expect("in it");
+                let version = *self.fake.version.lock().expect("lock");
+                // Somebody holding the current key has no access any more.
+                let lost = self
                     .fake
-                    .people
+                    .wraps
+                    .lock()
+                    .expect("lock")
                     .iter()
-                    .find(|p| p.0 == self.me)
-                    .expect("in it");
+                    .any(|w| w.1 == version && !people.iter().any(|p| p.0 == w.0));
                 CollectionInfo {
                     id: "col1".into(),
                     org_id: "org1".into(),
                     name: "Production".into(),
                     key_version: *self.fake.version.lock().expect("lock"),
                     permission: permission.clone(),
+                    needs_new_key: lost && permission == "manage",
                 }
             }
 
-            fn identity_of(&self, user: &str) -> &PublicIdentity {
-                &self
-                    .fake
+            fn identity_of(&self, user: &str) -> PublicIdentity {
+                self.fake
                     .people
+                    .lock()
+                    .expect("lock")
                     .iter()
                     .find(|p| p.0 == user)
                     .expect("person")
                     .3
+                    .clone()
             }
         }
 
@@ -944,6 +1069,8 @@ mod tests {
                 Ok(self
                     .fake
                     .people
+                    .lock()
+                    .expect("lock")
                     .iter()
                     .map(|(user, role, permission, identity)| CollectionMember {
                         user_id: user.clone(),
@@ -1048,7 +1175,7 @@ mod tests {
             let fake = Fake {
                 dir: d.join("store"),
                 version: Mutex::new(0),
-                people: vec![
+                people: Mutex::new(vec![
                     ("max".into(), "member".into(), "manage".into(), public(&max)),
                     (
                         "olga".into(),
@@ -1063,7 +1190,7 @@ mod tests {
                         "connect".into(),
                         public(&vic),
                     ),
-                ],
+                ]),
                 wraps: Mutex::new(Vec::new()),
             };
             let host = |me: &str| As {
@@ -1138,6 +1265,61 @@ mod tests {
                 ed.entries_in(&col, "host").expect("entries")[0].1["address"],
                 "10.0.0.9"
             );
+
+            // A password beside the host, then Vic loses access.
+            let values = [
+                ("target".to_string(), "deploy@10.0.0.9:22".to_string()),
+                ("password".to_string(), "hunter2".to_string()),
+            ]
+            .into();
+            max.update_in(&col, "ab02000000000000", "password", "db password", &values)
+                .expect("save");
+            max.sync_collections(&host("max")).expect("sync");
+            fake.people.lock().expect("lock").retain(|p| p.0 != "vic");
+
+            // Ed only edits: his app leaves the key alone.
+            let out = ed.sync_collections(&host("ed")).expect("sync");
+            assert_eq!(out[0].replaced, None);
+            assert_eq!(*fake.version.lock().expect("lock"), 1);
+            // Max's app replaces it, for who still has access, and seals the
+            // store's records again.
+            let out = max.sync_collections(&host("max")).expect("sync");
+            assert_eq!(out[0].replaced, Some(2));
+            assert!(matches!(out[0].state, CollectionState::Synced { .. }));
+            assert_eq!(max.collection_versions("col1"), [1, 2]);
+            let mut holders: Vec<String> = fake
+                .wraps
+                .lock()
+                .expect("lock")
+                .iter()
+                .filter(|w| w.1 == 2)
+                .map(|w| w.0.clone())
+                .collect();
+            holders.sort();
+            assert_eq!(holders, ["ed", "max", "olga"]);
+            for f in std::fs::read_dir(d.join("store/shellwing/records")).expect("records") {
+                let bytes = std::fs::read(f.expect("file").path()).expect("read");
+                let env: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
+                assert_eq!(env["key"], 2, "sealed again: {env}");
+            }
+            // The secrets Vic could read, to change.
+            let lists = max.key_checklists().expect("lists");
+            assert_eq!(lists.len(), 1);
+            assert_eq!(lists[0].name, "Production");
+            assert_eq!(lists[0].version, 2);
+            assert_eq!(lists[0].secrets, ["db password"]);
+
+            // The owner and Ed take the new key and read on.
+            let out = olga.sync_collections(&host("olga")).expect("sync");
+            assert_eq!(out[0].replaced, None, "replaced once");
+            assert_eq!(olga.collection_versions("col1"), [1, 2]);
+            ed.sync_collections(&host("ed")).expect("sync");
+            assert_eq!(ed.collection_versions("col1"), [1, 2]);
+            assert_eq!(ed.entries_in(&col, "password").expect("entries").len(), 1);
+            assert_eq!(olga.key_checklists().expect("lists"), []);
+
+            max.finish_key_checklist("col1").expect("done");
+            assert_eq!(max.key_checklists().expect("lists"), []);
         }
     }
 }

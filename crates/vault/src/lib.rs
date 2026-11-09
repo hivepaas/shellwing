@@ -38,7 +38,7 @@ pub use attachments::{UNUSED_FOR_MS, attachment_line, attachment_refs, image_mim
 pub use cipher::Cipher;
 pub use collection::{
     CollectionInfo, CollectionMember, CollectionOutcome, CollectionState, Collections, Given,
-    SEALED_LEN, Wrap, commitment,
+    KeyChecklist, SEALED_LEN, Wrap, commitment,
 };
 pub use identity::{IDENTITY_ID, Identity, PublicIdentity, fingerprint};
 #[cfg(not(any(target_os = "ios", target_os = "android")))]

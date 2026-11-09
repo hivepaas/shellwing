@@ -193,6 +193,9 @@ struct Sides {
     kinds: BTreeMap<String, String>,
     remote: BTreeMap<String, Vec<(String, Version)>>,
     local: BTreeMap<String, Version>,
+    /// The store's files sealed with an older key than the space's current
+    /// one (a collection's key replaced), to seal again.
+    stale: BTreeSet<String>,
 }
 
 /// A record's state on one side of a merge.
@@ -331,6 +334,8 @@ struct Pending {
     here: Option<Version>,
     there: Vec<(String, Version)>,
     merged: Version,
+    /// A file of it in the store is sealed with an older key.
+    stale: bool,
 }
 
 /// The note to keep a lost text in: `text` is the losing side's version of
@@ -618,6 +623,7 @@ impl Vault {
             kinds,
             remote,
             local,
+            stale,
         } = self.sides(b, &personal)?;
         let mut report = SyncReport::default();
         // Images first: those the notes here refer to that the store lacks,
@@ -660,6 +666,7 @@ impl Vault {
                 kinds,
                 remote,
                 local,
+                stale,
             },
             true,
             &mut report,
@@ -716,6 +723,8 @@ impl Vault {
         let mut kinds: BTreeMap<String, String> = BTreeMap::new();
         // Remote versions of each record, with the files they came from.
         let mut remote: BTreeMap<String, Vec<(String, Version)>> = BTreeMap::new();
+        let mut stale = BTreeSet::new();
+        let current = self.space_version(space)?;
         for name in b.list(RECORDS)? {
             let Some(id) = file_id(&name).map(str::to_string) else {
                 continue;
@@ -726,6 +735,11 @@ impl Vault {
             let Some((kind, version)) = self.version_in(space, &id, &bytes)? else {
                 continue;
             };
+            if serde_json::from_slice::<Envelope>(&bytes)
+                .is_ok_and(|e| e.data.is_some() && e.key < current)
+            {
+                stale.insert(name.clone());
+            }
             kinds.entry(id.clone()).or_insert(kind);
             remote.entry(id).or_default().push((name, version));
         }
@@ -747,6 +761,7 @@ impl Vault {
             kinds,
             remote,
             local,
+            stale,
         })
     }
 
@@ -765,6 +780,7 @@ impl Vault {
             kinds,
             mut remote,
             mut local,
+            stale,
         } = sides;
         // The images the notes refer to once merged, to fetch the missing.
         let mut used: BTreeSet<String> = BTreeSet::new();
@@ -795,11 +811,13 @@ impl Vault {
                 });
             }
             let Some(merged) = merged else { continue };
+            let stale = there.iter().any(|(name, _)| stale.contains(name));
             queue.push_back(Pending {
                 id,
                 here,
                 there,
                 merged,
+                stale,
             });
         }
         self.keep_copies(space, lost, held, &mut queue, report)?;
@@ -867,6 +885,7 @@ impl Vault {
             here,
             there,
             merged,
+            stale,
         } = p;
         let mut lost = Vec::new();
         if let Version::Live(r) = &merged {
@@ -881,7 +900,8 @@ impl Vault {
             report.pulled += 1;
         }
         let canonical = format!("{id}.sw");
-        let up_to_date = there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
+        let up_to_date =
+            !stale && there.len() == 1 && there[0].0 == canonical && there[0].1.same(&merged);
         if !up_to_date && writes {
             let path = format!("{RECORDS}/{canonical}");
             let mut merged = merged;
@@ -952,6 +972,7 @@ impl Vault {
                 here,
                 there: Vec::new(),
                 merged,
+                stale: false,
             });
         }
         Ok(())

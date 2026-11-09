@@ -3554,6 +3554,12 @@ ta4580143 = Bloquear o shellwing
 # Sync now with {place}
 t8aad97ad = Sincronizar agora com { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Segredos a trocar em { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Alguém que perdeu o acesso podia lê-los
+
 # Give the key of {name}…
 t57ffca8e = Dar a chave de { $name }…
 
@@ -3621,6 +3627,12 @@ tbe970732 =
         [one] { $n } nota foi alterada em dois dispositivos: a outra versão foi guardada ao lado.
        *[other] { $n } notas foram alteradas em dois dispositivos: as outras versões foram guardadas ao lado.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Alguém perdeu o acesso a { $name }: a chave da coleção foi substituída. Troque o que essa pessoa podia ler: Segredos a trocar em { $name }, na paleta.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Alguém perdeu o acesso a { $name }: a chave da coleção foi substituída.
 
 # Sync: {e}
 t8cb8c8c3 = Sincronização: { $e }
@@ -3898,6 +3910,15 @@ td9e661ee = Todos com acesso já têm a chave.
 # Give the key of {name} to whom?
 t2cdda213 = Dar a chave de { $name } a quem?
 
+# All changed: take this list away
+tc0346301 = Tudo trocado: remover esta lista
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Troque cada um onde é usado e depois aqui na coleção.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Alguém que perdeu o acesso a { $name } podia ler estes: troque-os
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } agora tem a chave de { $collection }.
 
@@ -3977,6 +3998,9 @@ t586cd916 = Nada salvo ainda: depois que uma senha funciona, o painel oferece sa
 
 # Pairing cancelled.
 t9bf01ace = Pareamento cancelado.
+
+# Cannot take the list away: {e}
+t65900621 = Não é possível remover a lista: { $e }
 
 # Forgotten.
 te8ff7bb9 = Esquecida.

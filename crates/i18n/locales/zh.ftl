@@ -3442,6 +3442,12 @@ ta4580143 = 锁定 shellwing
 # Sync now with {place}
 t8aad97ad = 立即与 { $place } 同步
 
+# Secrets to change in {name}…
+t6dbdbc5f = { $name } 中需更改的机密…
+
+# Somebody who lost access could read them
+t19bcc0de = 已失去访问权限的人可以读取它们
+
 # Give the key of {name}…
 t57ffca8e = 发放 { $name } 的密钥…
 
@@ -3501,6 +3507,12 @@ t9024ea9c = 一条笔记在两台设备上都被修改了：另一个版本已�
 
 # {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
 tbe970732 = { $n } 条笔记在两台设备上都被修改了：另一个版本已分别保留在旁边。
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = 有人已失去对 { $name } 的访问权限：其密钥已更换。请更改对方可读取的内容：在命令面板中使用“{ $name } 中需更改的机密”。
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = 有人已失去对 { $name } 的访问权限：其密钥已更换。
 
 # Sync: {e}
 t8cb8c8c3 = 同步：{ $e }
@@ -3778,6 +3790,15 @@ td9e661ee = 所有有权访问的人都已持有密钥。
 # Give the key of {name} to whom?
 t2cdda213 = 将 { $name } 的密钥发放给谁？
 
+# All changed: take this list away
+tc0346301 = 已全部更改：移除此清单
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = 先在每个使用之处更改，再在此集合中更改。
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = 已失去 { $name } 访问权限的人可以读取这些：请更改它们
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } 现在已持有 { $collection } 的密钥。
 
@@ -3849,6 +3870,9 @@ t586cd916 = 尚未保存任何内容：密码验证通过后，窗格会提示�
 
 # Pairing cancelled.
 t9bf01ace = 配对已取消。
+
+# Cannot take the list away: {e}
+t65900621 = 无法移除清单：{ $e }
 
 # Forgotten.
 te8ff7bb9 = 已忘记。
