@@ -3554,6 +3554,12 @@ ta4580143 = Verrouiller shellwing
 # Sync now with {place}
 t8aad97ad = Synchroniser maintenant avec { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Secrets à changer dans { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Une personne qui a perdu l'accès pouvait les lire
+
 # Give the key of {name}…
 t57ffca8e = Donner la clé de { $name }…
 
@@ -3621,6 +3627,12 @@ tbe970732 =
         [one] { $n } note a été modifiée sur deux appareils : l'autre version est conservée à côté.
        *[other] { $n } notes ont été modifiées sur deux appareils : les autres versions sont conservées à côté.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Une personne a perdu l'accès à { $name } : sa clé a été remplacée. Changez ce qu'elle pouvait lire : Secrets à changer dans { $name }, dans la palette.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Une personne a perdu l'accès à { $name } : sa clé a été remplacée.
 
 # Sync: {e}
 t8cb8c8c3 = Synchronisation : { $e }
@@ -3898,6 +3910,15 @@ td9e661ee = Toutes les personnes ayant accès détiennent la clé.
 # Give the key of {name} to whom?
 t2cdda213 = Donner la clé de { $name } à qui ?
 
+# All changed: take this list away
+tc0346301 = Tout est changé : retirer cette liste
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Changez chacun là où il est utilisé, puis ici dans la collection.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Une personne qui a perdu l'accès à { $name } pouvait lire ceux-ci : changez-les
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } a maintenant la clé de { $collection }.
 
@@ -3977,6 +3998,9 @@ t586cd916 = Rien d'enregistré pour l'instant : quand un mot de passe fonctionne
 
 # Pairing cancelled.
 t9bf01ace = Association annulée.
+
+# Cannot take the list away: {e}
+t65900621 = Impossible de retirer la liste : { $e }
 
 # Forgotten.
 te8ff7bb9 = Oublié.

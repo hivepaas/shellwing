@@ -3511,6 +3511,12 @@ ta4580143 = 鎖定 shellwing
 # Sync now with {place}
 t8aad97ad = 立即與 { $place } 同步
 
+# Secrets to change in {name}…
+t6dbdbc5f = { $name } 中需變更的機密…
+
+# Somebody who lost access could read them
+t19bcc0de = 已失去存取權的人可以讀取它們
+
 # Give the key of {name}…
 t57ffca8e = 發放 { $name } 的金鑰…
 
@@ -3576,6 +3582,12 @@ tbe970732 =
     { $n ->
        *[other] 有 { $n } 則筆記在兩台裝置上都被修改了：另一個版本已分別保留在旁邊。
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = 有人已失去 { $name } 的存取權：其金鑰已更換。請變更對方可讀取的內容：在命令面板中使用「{ $name } 中需變更的機密」。
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = 有人已失去 { $name } 的存取權：其金鑰已更換。
 
 # Sync: {e}
 t8cb8c8c3 = 同步：{ $e }
@@ -3853,6 +3865,15 @@ td9e661ee = 所有具備存取權的人都已持有金鑰。
 # Give the key of {name} to whom?
 t2cdda213 = 將 { $name } 的金鑰發放給誰？
 
+# All changed: take this list away
+tc0346301 = 已全部變更：移除此清單
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = 先在每個使用之處變更，再於此集合中變更。
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = 已失去 { $name } 存取權的人可以讀取這些：請變更它們
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } 現在已持有 { $collection } 的金鑰。
 
@@ -3930,6 +3951,9 @@ t586cd916 = 尚未儲存任何內容：密碼驗證成功後，窗格會提議�
 
 # Pairing cancelled.
 t9bf01ace = 已取消配對。
+
+# Cannot take the list away: {e}
+t65900621 = 無法移除清單：{ $e }
 
 # Forgotten.
 te8ff7bb9 = 已忘記。

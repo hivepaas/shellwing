@@ -3554,6 +3554,12 @@ ta4580143 = Blocca shellwing
 # Sync now with {place}
 t8aad97ad = Sincronizza ora con { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Segreti da cambiare in { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Qualcuno che ha perso l'accesso poteva leggerli
+
 # Give the key of {name}…
 t57ffca8e = Dai la chiave di { $name }…
 
@@ -3621,6 +3627,12 @@ tbe970732 =
         [one] { $n } nota è stata modificata su due dispositivi: l'altra versione è conservata accanto.
        *[other] { $n } note sono state modificate su due dispositivi: le altre versioni sono conservate accanto.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Qualcuno ha perso l'accesso a { $name }: la sua chiave è stata sostituita. Cambia ciò che poteva leggere: Segreti da cambiare in { $name }, nella palette.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Qualcuno ha perso l'accesso a { $name }: la sua chiave è stata sostituita.
 
 # Sync: {e}
 t8cb8c8c3 = Sincronizzazione: { $e }
@@ -3898,6 +3910,15 @@ td9e661ee = Chiunque abbia accesso ha già la chiave.
 # Give the key of {name} to whom?
 t2cdda213 = A chi dare la chiave di { $name }?
 
+# All changed: take this list away
+tc0346301 = Tutto cambiato: togli questa lista
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Cambia ciascuno dove è usato, poi qui nella raccolta.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Qualcuno che ha perso l'accesso a { $name } poteva leggere questi: cambiali
+
 # {name} has the key of {collection} now.
 t4dd83f7b = Ora { $name } ha la chiave di { $collection }.
 
@@ -3977,6 +3998,9 @@ t586cd916 = Ancora niente di salvato: quando una password funziona, il riquadro 
 
 # Pairing cancelled.
 t9bf01ace = Abbinamento annullato.
+
+# Cannot take the list away: {e}
+t65900621 = Impossibile togliere la lista: { $e }
 
 # Forgotten.
 te8ff7bb9 = Dimenticato.

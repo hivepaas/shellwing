@@ -3511,6 +3511,12 @@ ta4580143 = Kunci shellwing
 # Sync now with {place}
 t8aad97ad = Sinkronkan sekarang dengan { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Rahasia yang perlu diganti di { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Seseorang yang kehilangan akses dapat membacanya
+
 # Give the key of {name}…
 t57ffca8e = Berikan kunci { $name }…
 
@@ -3576,6 +3582,12 @@ tbe970732 =
     { $n ->
        *[other] { $n } catatan diubah di dua perangkat: versi lainnya disimpan di sebelahnya.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Seseorang kehilangan akses ke { $name }: kuncinya sudah diganti. Ganti apa yang dapat dibacanya: Rahasia yang perlu diganti di { $name }, di palet.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Seseorang kehilangan akses ke { $name }: kuncinya sudah diganti.
 
 # Sync: {e}
 t8cb8c8c3 = Sinkronisasi: { $e }
@@ -3853,6 +3865,15 @@ td9e661ee = Semua yang memiliki akses sudah memegang kuncinya.
 # Give the key of {name} to whom?
 t2cdda213 = Berikan kunci { $name } kepada siapa?
 
+# All changed: take this list away
+tc0346301 = Semua sudah diganti: hapus daftar ini
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Ganti masing-masing di tempat penggunaannya, lalu di sini, di koleksi.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Seseorang yang kehilangan akses ke { $name } dapat membaca ini: ganti semuanya
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } sekarang memiliki kunci { $collection }.
 
@@ -3930,6 +3951,9 @@ t586cd916 = Belum ada yang tersimpan: setelah kata sandi berhasil dipakai, panel
 
 # Pairing cancelled.
 t9bf01ace = Pemasangan perangkat dibatalkan.
+
+# Cannot take the list away: {e}
+t65900621 = Tidak dapat menghapus daftar: { $e }
 
 # Forgotten.
 te8ff7bb9 = Dilupakan.

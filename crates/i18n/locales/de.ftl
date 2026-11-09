@@ -3554,6 +3554,12 @@ ta4580143 = shellwing sperren
 # Sync now with {place}
 t8aad97ad = Jetzt mit { $place } synchronisieren
 
+# Secrets to change in {name}…
+t6dbdbc5f = Zu ändernde Geheimnisse in { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Jemand, der den Zugriff verloren hat, konnte sie lesen
+
 # Give the key of {name}…
 t57ffca8e = Schlüssel von { $name } weitergeben…
 
@@ -3621,6 +3627,12 @@ tbe970732 =
         [one] { $n } Notiz wurde auf zwei Geräten geändert: Die andere Fassung bleibt daneben erhalten.
        *[other] { $n } Notizen wurden auf zwei Geräten geändert: Die anderen Fassungen bleiben daneben erhalten.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Jemand hat den Zugriff auf { $name } verloren: Der Schlüssel der Sammlung wurde ersetzt. Ändere, was die Person lesen konnte: Zu ändernde Geheimnisse in { $name }, in der Palette.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Jemand hat den Zugriff auf { $name } verloren: Der Schlüssel der Sammlung wurde ersetzt.
 
 # Sync: {e}
 t8cb8c8c3 = Sync: { $e }
@@ -3898,6 +3910,15 @@ td9e661ee = Alle mit Zugriff haben den Schlüssel.
 # Give the key of {name} to whom?
 t2cdda213 = Schlüssel von { $name } an wen weitergeben?
 
+# All changed: take this list away
+tc0346301 = Alle geändert: Liste entfernen
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Ändere jedes dort, wo es verwendet wird, dann hier in der Sammlung.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Jemand, der den Zugriff auf { $name } verloren hat, konnte diese lesen: Ändere sie
+
 # {name} has the key of {collection} now.
 t4dd83f7b = { $name } hat jetzt den Schlüssel von { $collection }.
 
@@ -3977,6 +3998,9 @@ t586cd916 = Noch nichts gespeichert: wenn ein Passwort funktioniert, bietet der 
 
 # Pairing cancelled.
 t9bf01ace = Kopplung abgebrochen.
+
+# Cannot take the list away: {e}
+t65900621 = Die Liste kann nicht entfernt werden: { $e }
 
 # Forgotten.
 te8ff7bb9 = Vergessen.

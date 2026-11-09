@@ -3442,6 +3442,12 @@ ta4580143 = shellwing 잠그기
 # Sync now with {place}
 t8aad97ad = 지금 { $place }과(와) 동기화
 
+# Secrets to change in {name}…
+t6dbdbc5f = { $name }에서 변경할 비밀 정보…
+
+# Somebody who lost access could read them
+t19bcc0de = 접근 권한을 잃은 사용자가 읽을 수 있었음
+
 # Give the key of {name}…
 t57ffca8e = { $name } 키 전달…
 
@@ -3501,6 +3507,12 @@ t9024ea9c = 노트가 두 기기에서 변경되었습니다. 다른 버전은 {
 
 # {n} note was changed on two devices: the other version is kept beside it. | {n} notes were changed on two devices: the other versions are kept beside them.
 tbe970732 = 노트 { $n }개가 두 기기에서 변경되었습니다. 다른 버전은 옆에 보관했습니다.
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다. 그 사용자가 읽을 수 있었던 항목을 변경하세요: 팔레트의 "{ $name }에서 변경할 비밀 정보".
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다.
 
 # Sync: {e}
 t8cb8c8c3 = 동기화: { $e }
@@ -3778,6 +3790,15 @@ td9e661ee = 접근 권한이 있는 모든 사용자가 키를 갖고 있습니�
 # Give the key of {name} to whom?
 t2cdda213 = { $name } 키를 누구에게 전달할까요?
 
+# All changed: take this list away
+tc0346301 = 모두 변경함: 이 목록 제거
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = 각 항목을 사용하는 곳에서 변경한 다음, 여기 컬렉션에서 변경하세요.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = { $name }에 대한 접근 권한을 잃은 사용자가 이 항목을 읽을 수 있었습니다: 변경하세요
+
 # {name} has the key of {collection} now.
 t4dd83f7b = 이제 { $name }님이 { $collection } 키를 갖고 있습니다.
 
@@ -3849,6 +3870,9 @@ t586cd916 = 아직 저장된 항목이 없습니다. 비밀번호로 로그인�
 
 # Pairing cancelled.
 t9bf01ace = 페어링이 취소되었습니다.
+
+# Cannot take the list away: {e}
+t65900621 = 목록을 제거할 수 없습니다: { $e }
 
 # Forgotten.
 te8ff7bb9 = 삭제했습니다.

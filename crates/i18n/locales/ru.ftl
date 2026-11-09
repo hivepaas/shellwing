@@ -3640,6 +3640,12 @@ ta4580143 = Заблокировать shellwing
 # Sync now with {place}
 t8aad97ad = Синхронизировать с { $place }
 
+# Secrets to change in {name}…
+t6dbdbc5f = Секреты для смены в коллекции { $name }…
+
+# Somebody who lost access could read them
+t19bcc0de = Их мог прочитать тот, кто потерял доступ
+
 # Give the key of {name}…
 t57ffca8e = Передать ключ коллекции { $name }…
 
@@ -3711,6 +3717,12 @@ tbe970732 =
         [many] { $n } заметок изменено на двух устройствах: другие версии сохранены рядом.
        *[other] { $n } заметки изменено на двух устройствах: другие версии сохранены рядом.
     }
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
+t6b22b8e8 = Кто-то потерял доступ к коллекции { $name }: её ключ заменён. Смените то, что он мог прочитать: «Секреты для смены в коллекции { $name }» в палитре.
+
+# Somebody lost access to {name}: its key is replaced.
+t189f91dc = Кто-то потерял доступ к коллекции { $name }: её ключ заменён.
 
 # Sync: {e}
 t8cb8c8c3 = Синхронизация: { $e }
@@ -3988,6 +4000,15 @@ td9e661ee = Ключ есть у всех, у кого есть доступ.
 # Give the key of {name} to whom?
 t2cdda213 = Кому передать ключ коллекции { $name }?
 
+# All changed: take this list away
+tc0346301 = Всё сменено: убрать этот список
+
+# Change each where it is used, then here in the collection.
+t4e94b74c = Смените каждый там, где он используется, затем здесь, в коллекции.
+
+# Somebody who lost access to {name} could read these: change them
+t4bd96d3f = Это мог прочитать тот, кто потерял доступ к коллекции { $name }: смените
+
 # {name} has the key of {collection} now.
 t4dd83f7b = Теперь у { $name } есть ключ коллекции { $collection }.
 
@@ -4071,6 +4092,9 @@ t586cd916 = Пока ничего не сохранено: когда парол
 
 # Pairing cancelled.
 t9bf01ace = Сопряжение отменено.
+
+# Cannot take the list away: {e}
+t65900621 = Не удалось убрать список: { $e }
 
 # Forgotten.
 te8ff7bb9 = Забыто.

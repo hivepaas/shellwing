@@ -328,6 +328,8 @@ struct SpaceAnswer {
     key_version: u32,
     #[serde(default)]
     permission: String,
+    #[serde(default)]
+    needs_new_key: bool,
 }
 
 #[derive(Deserialize)]
@@ -759,6 +761,7 @@ impl shellwing_vault::Collections for Server {
                 name: s.name,
                 key_version: s.key_version,
                 permission: s.permission,
+                needs_new_key: s.needs_new_key,
             })
             .collect())
     }

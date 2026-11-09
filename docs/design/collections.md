@@ -110,9 +110,18 @@ it.
 - **Suspending** a member stops the server serving them; their wraps stay, and
   reactivating them gives it back.
 - **Losing access** (a grant removed, leaving a group, being removed from the
-  organization) marks the collection for a new key. The first app with Manage
-  that runs makes version + 1, seals every record again, wraps it for who still
-  has access, and lists the secrets the person could read, to change them.
+  organization) marks the collection for a new key: the spaces the app syncs
+  say `needsNewKey` to those with Manage. The first of their apps that syncs
+  holding the current key makes version + 1, wrapped for everybody who still
+  has access and an identity (those suspended too); the server takes one, and
+  the other apps take its key as any other.
+- Records are sealed again as they sync: a file of the store sealed with an
+  older version is written again with the newest, by any app that may change
+  the collection. The older keys stay held, so what is not sealed again yet
+  still opens.
+- The app that replaced it keeps, on that device, the names of the
+  collection's secrets (its records other than hosts), which the person could
+  read: "Secrets to change in …" in the palette lists them until marked done.
 - What the person copied before stays theirs: that is the limit
   [teams.md](teams.md) states, and why SSH certificates matter.
 
@@ -157,7 +166,8 @@ it.
    after the personal space.
 3. The app: spaces in the vault, syncing collections, wrapping on making one and
    on confirming who waits, and the sidebar. Done for the desktop.
-4. Replacing the key when somebody loses access, with the checklist.
+4. Replacing the key when somebody loses access, with the checklist. Done for the
+   desktop.
 5. A format document with test vectors for the Rust app and the Go server, and
    an end-to-end test of two people sharing a collection.
 
