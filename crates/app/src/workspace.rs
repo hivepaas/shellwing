@@ -159,6 +159,8 @@ pub struct Workspace {
     /// Counts changes to the tabs, to save them shortly after the last one.
     layout_change: u64,
     vault: VaultSlot,
+    /// The vault's collections are in the host list (it was open to read them).
+    collections_loaded: bool,
     /// A vault that failed to open was reported.
     vault_reported: bool,
     /// The locked vault was asked about at start.
@@ -262,6 +264,11 @@ enum Asking {
     },
     /// A file of the host to keep in the vault.
     SaveFile,
+    /// Who of a collection's people to give its key to.
+    GiveKey {
+        collection: shellwing_vault::CollectionInfo,
+        members: Vec<shellwing_vault::CollectionMember>,
+    },
 }
 
 /// A snippet on its way to running.
@@ -355,6 +362,7 @@ impl Workspace {
             held_requests: Vec::new(),
             layout_change: 0,
             vault,
+            collections_loaded: false,
             vault_reported: false,
             vault_asked: false,
             updates: Default::default(),
@@ -2018,6 +2026,15 @@ impl Workspace {
                     tr!("Show the recovery key"),
                     String::new(),
                 );
+                for c in self.live.collections() {
+                    if c.permission == "manage" && !c.waiting {
+                        setting(
+                            Action::GiveCollectionKey(c.id.clone()),
+                            tr!("Give the key of {name}…", name = c.name.clone()),
+                            tr!("To the people granted it who wait for it"),
+                        );
+                    }
+                }
                 setting(Action::StopSync, tr!("Stop syncing"), String::new());
             }
             None => {
@@ -2166,6 +2183,7 @@ impl Workspace {
             SyncEvent::Done(_) => {
                 self.syncing = false;
                 self.last_synced = Some(std::time::SystemTime::now());
+                self.reload_collections(cx);
             }
             SyncEvent::Failed(_) => self.syncing = false,
             _ => {}
@@ -3477,6 +3495,7 @@ impl Workspace {
             keys: self.key_choices(),
             vault: self.vault.clone(),
             orgs: self.orgs.clone(),
+            collections: self.live.collections().to_vec(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),
@@ -3500,6 +3519,7 @@ impl Workspace {
                     let (name, connect, install) = (name.clone(), *connect, install.clone());
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
+                    ws.reload_collections(cx);
                     ws.sync.now();
                     if let Some(key) = install {
                         ws.install_on(&name, key, window, cx);
@@ -3517,6 +3537,7 @@ impl Workspace {
                     let name = name.clone();
                     ws.close_editor(window, cx);
                     ws.poll_config(cx);
+                    ws.reload_collections(cx);
                     ws.sync.now();
                     ws.say(
                         Notice::good(tr!("Deleted {name}.", name = name)),
@@ -3560,6 +3581,157 @@ impl Workspace {
             };
             let orgs = orgs.into_iter().map(|o| (o.id, o.name)).collect();
             let _ = this.update(cx, |ws, cx| ws.know_orgs(orgs, cx));
+        })
+        .detach();
+    }
+
+    /// The shellwing server this device syncs with, opened with its sign-in:
+    /// where collections are.
+    fn collections_server(
+        &self,
+    ) -> Option<(String, String, std::sync::Arc<shellwing_vault::Vault>)> {
+        let (Some(SyncPlace::Server(server)), Some(vault)) =
+            (self.sync.place(), self.vault.ready())
+        else {
+            return None;
+        };
+        let token = vault
+            .device_secret(crate::syncing::PLACE_SECRET)
+            .ok()??
+            .to_string();
+        Some((server.url, token, vault))
+    }
+
+    /// Lists who waits for a collection's key, with their fingerprints, to
+    /// choose whom to give it.
+    fn ask_give_key(&mut self, id: &str, cx: &mut Context<Self>) {
+        let Some((url, token, vault)) = self.collections_server() else {
+            return self.say(
+                Notice::bad(tr!("Collections need syncing with a shellwing server.")),
+                CONFIG_NOTICE,
+                cx,
+            );
+        };
+        let Some(info) = vault
+            .known_collections()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|c| c.id == id)
+        else {
+            return;
+        };
+        let asked = info.clone();
+        let job = cx.background_spawn(async move {
+            use shellwing_vault::Collections as _;
+            shellwing_remote::server::Server::open(&url, &token)?.collection_members(&asked)
+        });
+        cx.spawn(async move |this, cx| {
+            let found = job.await;
+            let _ = this.update(cx, |ws, cx| match found {
+                Ok(members) => ws.in_window(cx, move |ws, window, cx| {
+                    ws.show_give_key(info, members, window, cx);
+                }),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("Cannot list who waits: {e}", e = e.to_string())),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
+        })
+        .detach();
+    }
+
+    /// The people of a collection waiting for its key, each with the
+    /// fingerprint to compare before giving it.
+    fn show_give_key(
+        &mut self,
+        collection: shellwing_vault::CollectionInfo,
+        members: Vec<shellwing_vault::CollectionMember>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let waiting: Vec<&shellwing_vault::CollectionMember> =
+            members.iter().filter(|m| !m.has_key).collect();
+        let mut entries = Vec::new();
+        for m in &waiting {
+            let name = if m.full_name.is_empty() {
+                m.username.clone()
+            } else {
+                format!("{} ({})", m.full_name, m.username)
+            };
+            match &m.identity {
+                Some(identity) if m.served => entries.push(
+                    Entry::new(Kind::Choice(m.user_id.clone()), "", name).detail(tr!(
+                        "Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.",
+                        fingerprint = identity.fingerprint()
+                    )),
+                ),
+                Some(_) => entries.push(
+                    Entry::new(Kind::Note, "", name)
+                        .detail(tr!("Suspended in the organization: they can have it once they are back.")),
+                ),
+                None => entries.push(Entry::new(Kind::Note, "", name).detail(tr!(
+                    "Has no encryption key yet: they sync the shellwing app with the server once."
+                ))),
+            }
+        }
+        if waiting.is_empty() {
+            entries.push(Entry::new(
+                Kind::Note,
+                "",
+                tr!("Everybody with access holds the key."),
+            ));
+        }
+        let title = tr!(
+            "Give the key of {name} to whom?",
+            name = collection.name.clone()
+        );
+        self.asking = Some(Asking::GiveKey {
+            collection,
+            members,
+        });
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Wraps the collection's key for one person, whose fingerprint was
+    /// compared, and tells the server.
+    fn give_key(
+        &mut self,
+        collection: shellwing_vault::CollectionInfo,
+        member: shellwing_vault::CollectionMember,
+        cx: &mut Context<Self>,
+    ) {
+        let Some((url, token, vault)) = self.collections_server() else {
+            return;
+        };
+        let name = member.username.clone();
+        let collection_name = collection.name.clone();
+        let job = cx.background_spawn(async move {
+            let server =
+                shellwing_remote::server::Server::open(&url, &token).map_err(|e| e.to_string())?;
+            vault
+                .give_collection_key(&server, &collection, &[member])
+                .map_err(|e| e.to_string())
+        });
+        cx.spawn(async move |this, cx| {
+            let given = job.await;
+            let _ = this.update(cx, |ws, cx| match given {
+                Ok(()) => ws.say(
+                    Notice::good(tr!(
+                        "{name} has the key of {collection} now.",
+                        name = name,
+                        collection = collection_name
+                    )),
+                    THEME_NOTICE,
+                    cx,
+                ),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("The key was not given: {e}", e = e)),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
         })
         .detach();
     }
@@ -4039,6 +4211,19 @@ impl Workspace {
                 let how = how.clone();
                 self.chose_place(&how, window, cx);
             }
+            PaletteEvent::Chose(user) if matches!(self.asking, Some(Asking::GiveKey { .. })) => {
+                let Some(Asking::GiveKey {
+                    collection,
+                    members,
+                }) = self.asking.take()
+                else {
+                    return;
+                };
+                self.close_palette(window, cx);
+                if let Some(m) = members.into_iter().find(|m| &m.user_id == user) {
+                    self.give_key(collection, m, cx);
+                }
+            }
             PaletteEvent::Chose(spec) => {
                 let (spec, key) = (spec.clone(), self.choosing.take());
                 self.close_palette(window, cx);
@@ -4091,7 +4276,12 @@ impl Workspace {
                     Some(Asking::FolderPassphrase { .. } | Asking::JoinPassphrase(_)) => {
                         return self.answer_folder_passphrase(text.clone(), window, cx);
                     }
-                    Some(Asking::JoinHow { .. } | Asking::Pairing(_) | Asking::PlaceHow { .. })
+                    Some(
+                        Asking::JoinHow { .. }
+                        | Asking::Pairing(_)
+                        | Asking::PlaceHow { .. }
+                        | Asking::GiveKey { .. },
+                    )
                     | None => {
                         return self.close_palette(window, cx);
                     }
@@ -4229,6 +4419,7 @@ impl Workspace {
                 self.sync.now();
                 self.say(tr!("Syncing…"), THEME_NOTICE, cx);
             }
+            Action::GiveCollectionKey(id) => self.ask_give_key(&id, cx),
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(
@@ -5314,6 +5505,45 @@ impl Workspace {
         self.live.hosts().find(entry?).and_then(|h| h.color_rgb())
     }
 
+    /// Reads the collections and their hosts from the vault again, and shows
+    /// them if they changed.
+    fn reload_collections(&mut self, cx: &mut Context<Self>) {
+        if self.load_collections() {
+            self.refresh_sidebar(cx);
+        }
+    }
+
+    /// The collections the vault knows from the last sync, with the hosts of
+    /// those whose key it holds. Whether the host list changed.
+    fn load_collections(&mut self) -> bool {
+        let Some(vault) = self.vault.ready() else {
+            return false;
+        };
+        self.collections_loaded = true;
+        let views = vault
+            .known_collections()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|c| {
+                let waiting = vault.collection_versions(&c.id).is_empty();
+                let hosts = if waiting {
+                    Vec::new()
+                } else {
+                    collection_hosts(&vault, &c)
+                };
+                crate::look::CollectionHosts {
+                    id: c.id,
+                    name: c.name,
+                    org_id: c.org_id,
+                    permission: c.permission,
+                    waiting,
+                    hosts,
+                }
+            })
+            .collect();
+        self.live.set_collections(views)
+    }
+
     /// What the host list shows now: hosts.toml by group, then ssh config
     /// aliases it does not already name, each with its tabs' status.
     fn sidebar_sections(&self, cx: &Context<Self>) -> Vec<Section> {
@@ -5370,7 +5600,15 @@ impl Workspace {
                 ),
             }],
         });
-        let favorites: Vec<Row> = hosts.hosts.iter().filter(|h| h.favorite).map(row).collect();
+        // hosts.toml's: a collection's have a section of their own.
+        let own = |h: &&Host| h.collection.is_none();
+        let favorites: Vec<Row> = hosts
+            .hosts
+            .iter()
+            .filter(own)
+            .filter(|h| h.favorite)
+            .map(row)
+            .collect();
         if !favorites.is_empty() {
             sections.push(Section {
                 title: tr!("Favorites").into(),
@@ -5384,6 +5622,7 @@ impl Workspace {
             let rows: Vec<Row> = hosts
                 .hosts
                 .iter()
+                .filter(own)
                 .filter(|h| h.group.as_deref() == Some(g.name.as_str()))
                 .map(row)
                 .collect();
@@ -5399,6 +5638,7 @@ impl Workspace {
         let loose: Vec<Row> = hosts
             .hosts
             .iter()
+            .filter(own)
             .filter(|h| hosts.group_of(h).is_none())
             .map(row)
             .collect();
@@ -5409,6 +5649,37 @@ impl Workspace {
                 group: None,
                 color: None,
                 rows: loose,
+            });
+        }
+        // Each collection of an organization, by its name; its hosts go by
+        // their ids, which no other host shares.
+        for c in self.live.collections() {
+            let rows: Vec<Row> = c
+                .hosts
+                .iter()
+                .map(|h| {
+                    let id = h.id.clone().unwrap_or_else(|| h.name.clone());
+                    let mut r = row(h);
+                    r.status = self.host_status(cx, |s| s.entry.as_deref() == Some(id.as_str()));
+                    r.active = active_entry.as_deref() == Some(id.as_str());
+                    r.edit = EditTarget::Saved(id.clone());
+                    r.spec = id;
+                    r
+                })
+                .collect();
+            let note = if c.waiting {
+                tr!("waiting for its key")
+            } else if !c.edits() {
+                tr!("read only")
+            } else {
+                rows.len().to_string()
+            };
+            sections.push(Section {
+                title: c.name.clone().into(),
+                note: note.into(),
+                group: None,
+                color: None,
+                rows,
             });
         }
         let aliases: Vec<Row> = self
@@ -5440,6 +5711,10 @@ impl Workspace {
 
     /// Hands the host list a fresh snapshot (it redraws only if it differs).
     fn refresh_sidebar(&mut self, cx: &mut Context<Self>) {
+        // The collections the vault knows, once it is open.
+        if !self.collections_loaded {
+            self.load_collections();
+        }
         self.refresh_overview(cx);
         let sections = self.sidebar_sections(cx);
         let collapsed = self.sidebar_collapsed;
@@ -6152,4 +6427,36 @@ mod tests {
             "Alt+Shift+Left selects"
         );
     }
+}
+
+/// A collection's hosts, as the vault holds them: read as hosts.toml's are,
+/// in no group, and signing in with the organization's certificates unless
+/// one says otherwise.
+fn collection_hosts(
+    vault: &shellwing_vault::Vault,
+    c: &shellwing_vault::CollectionInfo,
+) -> Vec<Host> {
+    let space = shellwing_vault::Space::Collection(c.id.clone());
+    let (Ok(hosts), Ok(groups)) = (
+        vault.entries_in(&space, "host"),
+        vault.entries_in(&space, "group"),
+    ) else {
+        return Vec::new();
+    };
+    let Ok(parsed) = shellwing_config::Hosts::from_synced(&hosts, &groups) else {
+        return Vec::new();
+    };
+    parsed
+        .hosts
+        .into_iter()
+        .map(|mut h| {
+            h.collection = Some(c.id.clone());
+            h.group = None;
+            h.favorite = false;
+            if h.org.is_none() {
+                h.org = Some(c.org_id.clone());
+            }
+            h
+        })
+        .collect()
 }

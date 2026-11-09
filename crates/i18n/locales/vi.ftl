@@ -361,6 +361,12 @@ t97a4b927 = kho chưa mở
 # No key made: {e}
 t4e14e42b = Chưa tạo được khoá: { $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = Bạn được kết nối tới các máy chủ của { $name }, nhưng không được sửa chúng.
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = Bộ sưu tập của máy chủ này không còn được đồng bộ ở đây.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Không tìm thấy máy chủ này trong hosts.toml.
 
@@ -522,6 +528,21 @@ tb6562d26 = { $n } (chỉ máy chủ này)
 
 # Organize
 t6ddb17ec = Sắp xếp
+
+# My hosts
+tcb6506f0 = Máy chủ của tôi
+
+# Saved in
+tf3fe99c3 = Lưu trong
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = Mọi người có quyền truy cập bộ sưu tập đều thấy, được mã hoá đầu-cuối.
+
+# Only you see it, on your devices.
+t6f22a0a3 = Chỉ bạn thấy, trên thiết bị của bạn.
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = Trong bộ sưu tập { $name }: mọi người có quyền truy cập đều thấy.
 
 # Tags
 t76bda0c0 = Thẻ
@@ -3421,6 +3442,12 @@ ta4580143 = Khoá shellwing
 # Sync now with {place}
 t8aad97ad = Đồng bộ ngay với { $place }
 
+# Give the key of {name}…
+t57ffca8e = Trao khoá của { $name }…
+
+# To the people granted it who wait for it
+tee158d1d = Cho những người được cấp quyền đang chờ khoá
+
 # Sync passwords with a folder…
 t74de6b57 = Đồng bộ mật khẩu qua một thư mục…
 
@@ -3730,6 +3757,33 @@ t917924da = Không sửa được hosts.toml: { $e }
 # Saved {name}.
 t966c9f6d = Đã lưu { $name }.
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = Bộ sưu tập cần được đồng bộ với máy chủ shellwing.
+
+# Cannot list who waits: {e}
+t27666c65 = Không liệt kê được ai đang chờ: { $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = Dấu vân tay { $fingerprint }: so sánh với dấu vân tay trên trang Hồ sơ của họ, rồi mới trao.
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = Bị tạm ngưng trong tổ chức: họ có thể nhận khoá khi quay lại.
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = Chưa có khoá mã hoá: họ cần đồng bộ ứng dụng shellwing với máy chủ một lần.
+
+# Everybody with access holds the key.
+td9e661ee = Mọi người có quyền truy cập đều đã có khoá.
+
+# Give the key of {name} to whom?
+t2cdda213 = Trao khoá của { $name } cho ai?
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } giờ đã có khoá của { $collection }.
+
+# The key was not given: {e}
+t9260982f = Chưa trao được khoá: { $e }
+
 # Saved the group {name}.
 t58507cbd = Đã lưu nhóm { $name }.
 
@@ -3876,6 +3930,9 @@ tfa0d176a = Máy tính này
 
 # Favorites
 t7c2c53ba = Yêu thích
+
+# waiting for its key
+tb827ed42 = đang chờ khoá
 
 # read only
 t0d7ec241 = chỉ đọc

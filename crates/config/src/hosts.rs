@@ -97,6 +97,10 @@ pub struct Host {
     /// the app's setting (`[log] always`).
     #[serde(default)]
     pub log: Option<bool>,
+    /// The collection it is in (its id): a host the vault holds for an
+    /// organization, never in hosts.toml.
+    #[serde(skip)]
+    pub collection: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
@@ -122,12 +126,19 @@ pub enum AuthMethod {
 pub const NO_ORG: &str = "none";
 
 impl Hosts {
-    /// The host whose alias, or else whose name, is `name`.
+    /// The host whose alias, or else whose name, is `name`; else the
+    /// collection's host whose id it is.
     pub fn find(&self, name: &str) -> Option<&Host> {
         self.hosts
             .iter()
             .find(|h| h.alias.as_deref() == Some(name))
             .or_else(|| self.hosts.iter().find(|h| h.name == name))
+            // A collection's host by its id: names may repeat across them.
+            .or_else(|| {
+                self.hosts
+                    .iter()
+                    .find(|h| h.collection.is_some() && h.id.as_deref() == Some(name))
+            })
     }
 
     pub fn group_of(&self, host: &Host) -> Option<&Group> {

@@ -209,6 +209,7 @@ fn host_of(f: &Found, name: &str, tag: &str) -> Host {
         favorite: false,
         run: None,
         log: None,
+        collection: None,
     }
 }
 

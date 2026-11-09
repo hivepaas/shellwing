@@ -60,10 +60,45 @@ pub fn rgb(c: shellwing_config::Color) -> Rgb {
     }
 }
 
+/// A collection of an organization, as the host list shows it
+/// (docs/design/collections.md).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CollectionHosts {
+    pub id: String,
+    pub name: String,
+    /// The organization it belongs to: its certificates sign in to its hosts.
+    pub org_id: String,
+    /// `connect`, `edit` or `manage`.
+    pub permission: String,
+    /// Its key is not held here yet: somebody holding it gives it.
+    pub waiting: bool,
+    pub hosts: Vec<shellwing_config::Host>,
+}
+
+impl CollectionHosts {
+    /// Whether the person may change its hosts.
+    pub fn edits(&self) -> bool {
+        matches!(self.permission.as_str(), "edit" | "manage")
+    }
+}
+
+/// hosts.toml's hosts, then the collections'.
+fn merged(personal: &Hosts, collections: &[CollectionHosts]) -> Hosts {
+    let mut hosts = personal.clone();
+    for c in collections {
+        hosts.hosts.extend(c.hosts.iter().cloned());
+    }
+    hosts
+}
+
 pub struct Live {
     store: Option<Store>,
     stamp: Stamp,
     settings: Settings,
+    /// hosts.toml's.
+    personal: Hosts,
+    collections: Vec<CollectionHosts>,
+    /// hosts.toml's, then the collections': what names and connects.
     hosts: Hosts,
     themes: Themes,
     /// The window's shortcuts, as `[shortcuts]` sets them.
@@ -79,6 +114,8 @@ impl Live {
             stamp: Stamp::default(),
             store,
             settings: Settings::default(),
+            personal: Hosts::default(),
+            collections: Vec::new(),
             hosts: Hosts::default(),
             themes: Themes::builtin(),
             keymap: Arc::new(Keymap::defaults(Os::this())),
@@ -184,6 +221,21 @@ impl Live {
         &self.hosts
     }
 
+    pub fn collections(&self) -> &[CollectionHosts] {
+        &self.collections
+    }
+
+    /// Shows these collections' hosts beside hosts.toml's. Whether anything
+    /// changed.
+    pub fn set_collections(&mut self, collections: Vec<CollectionHosts>) -> bool {
+        if self.collections == collections {
+            return false;
+        }
+        self.collections = collections;
+        self.hosts = merged(&self.personal, &self.collections);
+        true
+    }
+
     fn load(&mut self) -> Vec<String> {
         let Some(store) = &self.store else {
             return vec![];
@@ -195,9 +247,10 @@ impl Live {
             Err(e) => problems.push(e),
         }
         match store.hosts() {
-            Ok(h) => self.hosts = h,
+            Ok(h) => self.personal = h,
             Err(e) => problems.push(e),
         }
+        self.hosts = merged(&self.personal, &self.collections);
         let (themes, errors) = store.themes();
         self.themes = themes;
         problems.extend(errors);

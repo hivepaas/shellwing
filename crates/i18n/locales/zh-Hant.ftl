@@ -370,6 +370,12 @@ t97a4b927 = 保險庫未開啟
 # No key made: {e}
 t4e14e42b = 未產生金鑰：{ $e }
 
+# You may connect to the hosts of {name}, not change them.
+t90a5554d = 你可以連線至 { $name } 中的主機，但不能變更它們。
+
+# This host's collection is no longer synced here.
+tdd3d6aa3 = 此主機所屬的集合已不再於此同步。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = 在 hosts.toml 中找不到此主機。
 
@@ -531,6 +537,21 @@ tb6562d26 = { $n }（僅此主機）
 
 # Organize
 t6ddb17ec = 分類
+
+# My hosts
+tcb6506f0 = 我的主機
+
+# Saved in
+tf3fe99c3 = 儲存位置
+
+# Everybody with access to the collection sees it, end-to-end encrypted.
+t4152ce3a = 具備該集合存取權的所有人都能看到，端對端加密。
+
+# Only you see it, on your devices.
+t6f22a0a3 = 只有你能看到，僅在你的裝置上。
+
+# In the collection {name}: everybody with access to it sees it.
+t98d877a2 = 位於集合 { $name } 中：具備其存取權的所有人都能看到。
 
 # Tags
 t76bda0c0 = 標籤
@@ -3490,6 +3511,12 @@ ta4580143 = 鎖定 shellwing
 # Sync now with {place}
 t8aad97ad = 立即與 { $place } 同步
 
+# Give the key of {name}…
+t57ffca8e = 發放 { $name } 的金鑰…
+
+# To the people granted it who wait for it
+tee158d1d = 發給已獲授權並在等待的人
+
 # Sync passwords with a folder…
 t74de6b57 = 與資料夾同步密碼…
 
@@ -3805,6 +3832,33 @@ t917924da = 無法編輯 hosts.toml：{ $e }
 # Saved {name}.
 t966c9f6d = 已儲存 { $name }。
 
+# Collections need syncing with a shellwing server.
+t2c569ab8 = 集合需要與 shellwing 伺服器同步。
+
+# Cannot list who waits: {e}
+t27666c65 = 無法列出等待者：{ $e }
+
+# Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.
+te5720513 = 指紋 { $fingerprint }：請與對方個人資料頁面上的指紋核對，然後再發放。
+
+# Suspended in the organization: they can have it once they are back.
+t52d41370 = 已在組織中停權：恢復後即可取得。
+
+# Has no encryption key yet: they sync the shellwing app with the server once.
+t7c7319f3 = 尚無加密金鑰：需要對方將 shellwing 應用程式與伺服器同步一次。
+
+# Everybody with access holds the key.
+td9e661ee = 所有具備存取權的人都已持有金鑰。
+
+# Give the key of {name} to whom?
+t2cdda213 = 將 { $name } 的金鑰發放給誰？
+
+# {name} has the key of {collection} now.
+t4dd83f7b = { $name } 現在已持有 { $collection } 的金鑰。
+
+# The key was not given: {e}
+t9260982f = 金鑰未發放：{ $e }
+
 # Saved the group {name}.
 t58507cbd = 已儲存群組 { $name }。
 
@@ -3963,6 +4017,9 @@ tfa0d176a = 這台電腦
 
 # Favorites
 t7c2c53ba = 我的最愛
+
+# waiting for its key
+tb827ed42 = 等待金鑰
 
 # read only
 t0d7ec241 = 唯讀
