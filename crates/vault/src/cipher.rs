@@ -65,7 +65,17 @@ impl Cipher {
 
 pub fn seal(cipher: Cipher, key: &[u8; KEY_LEN], plain: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
     let nonce: [u8; 24] = random()?;
-    let nonce = &nonce[..cipher.nonce_len()];
+    seal_with(cipher, key, plain, aad, &nonce[..cipher.nonce_len()])
+}
+
+/// [`seal`] with the nonce given (as long as the cipher's): for test vectors.
+pub(crate) fn seal_with(
+    cipher: Cipher,
+    key: &[u8; KEY_LEN],
+    plain: &[u8],
+    aad: &[u8],
+    nonce: &[u8],
+) -> Result<Vec<u8>> {
     let sealed = cipher
         .encrypt(key, nonce, Payload { msg: plain, aad })
         .ok_or(Error::Decrypt)?;

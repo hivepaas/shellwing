@@ -820,6 +820,69 @@ mod tests {
         assert_eq!(*opened, key);
     }
 
+    /// The steps of the wrap vector, for implementations to check theirs on
+    /// the way (docs/design/collections-format.md).
+    #[test]
+    fn the_wraps_steps_are_the_documented_ones() {
+        let recipient = vector_identity().public().x25519;
+        let ephemeral = MontgomeryPoint::mul_base_clamped([1; KEY_LEN]).to_bytes();
+        let shared = agree(&[1; KEY_LEN], &recipient).expect("agree");
+        assert_eq!(
+            B64.encode(*shared),
+            "n7N3S7Rf6yLXUjr7Rik1/xE7woA8DndtxaUMe1DC7DQ="
+        );
+        let info = [
+            INFO,
+            &bound("01JC0LLECT10N0000000000000", 1).expect("bound"),
+        ]
+        .concat();
+        assert_eq!(
+            hex(&info),
+            "7368656c6c77696e6720636f6c6c656374696f6e206b6579207631\
+             001a30314a43304c4c45435431304e3030303030303030303030303000000001"
+        );
+        let sealing = wrapping_key(&shared, &ephemeral, &recipient, &info).expect("derive");
+        assert_eq!(
+            B64.encode(*sealing),
+            "Rz1rtIlGoxq+04hvepUDwsOw4JxQCgXPn8thLKcpb0Y="
+        );
+    }
+
+    /// A collection's record, sealed with its key: the format document's
+    /// vector. The key 201, 202, 203…, version 1, and the nonce 7, 7, 7….
+    #[test]
+    fn a_collection_record_is_the_documented_one() {
+        let plain = br#"{"v":1,"type":"host","name":"db","f":{"address":{"val":"10.0.0.9","t":"1792312831000-0000-dev1"}}}"#;
+        let aad = crate::space_aad(
+            "01JC0LLECT10N0000000000000",
+            1,
+            "c0110000000000000000000000000001",
+            "host",
+        );
+        assert_eq!(
+            aad,
+            b"c0110000000000000000000000000001\x00host\x0001JC0LLECT10N0000000000000\x001"
+        );
+        let sealed = cipher::seal_with(
+            cipher::Cipher::XChaCha20Poly1305,
+            &counting(201),
+            plain,
+            &aad,
+            &[7; NONCE_LEN],
+        )
+        .expect("seal");
+        assert_eq!(
+            B64.encode(&sealed),
+            "AQcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz3cVlKzDzIoGY6n90kcS7luilmfa80P8cBXS+cwiUEtSKAjE8UnX/sSTJphbM9dG4haPwAW3e9pGIPT2DJRRMXuW++aWOHj5AG4yIRBuaTGQO1cjEvbqk02T+9mtifTGSa+m8lsrCoNT3oJ+K8qo6Nrbw=="
+        );
+        let (opened, _) = cipher::open(&counting(201), &sealed, &aad).expect("open");
+        assert_eq!(&opened[..], plain);
+    }
+
+    fn hex(b: &[u8]) -> String {
+        b.iter().map(|x| format!("{x:02x}")).collect()
+    }
+
     mod spaces {
         use super::super::*;
         use crate::{Folder, MemoryKeys};

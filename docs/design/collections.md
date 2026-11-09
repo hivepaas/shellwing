@@ -73,8 +73,8 @@ member's X25519 key (32) ‖ ephemeral public key (32)
 sealed key (72) ‖ commitment (32)
 ```
 
-shellwing-server's `pkg/collectionkey` checks it, with a test vector the app
-checks too.
+[collections-format.md](collections-format.md) has every step, byte for byte,
+with the test vectors the app and shellwing-server's `pkg/collectionkey` check.
 
 The wrap also carries a commitment, `SHA-256("shellwing collection key
 commitment v1" ‖ key)`. Neither Poly1305 nor GCM commits to its key; with it, a
@@ -169,6 +169,9 @@ it.
 4. Replacing the key when somebody loses access, with the checklist. Done for the
    desktop.
 5. A format document with test vectors for the Rust app and the Go server, and
-   an end-to-end test of two people sharing a collection.
+   an end-to-end test of people sharing a collection. Done:
+   [collections-format.md](collections-format.md), and in
+   `crates/core/tests/shellwing_server.rs` three people share one and one loses
+   access (shellwing-server's `scripts/e2e.sh` runs it).
 
 The phone apps follow the desktop.

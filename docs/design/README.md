@@ -6,6 +6,8 @@ it is implemented yet. Questions still to settle are marked **Open**.
 
 | Note | Covers |
 | --- | --- |
+| [collections.md](collections.md) | Hosts and secrets an organization shares, end-to-end encrypted |
+| [collections-format.md](collections-format.md) | Their identities, wrapped keys and records, byte for byte, with test vectors |
 | [config.md](config.md) | Files on disk, their formats, settings precedence |
 | [import.md](import.md) | Hosts read from other SSH clients into `hosts.toml` |
 | [note-conflicts.md](note-conflicts.md) | A note changed on two devices: both texts kept |
