@@ -112,7 +112,7 @@ The same envelope is used on disk and on every backend:
 ```
 id     01JAQ9…                  clear
 kind   host | other             clear; the cloud only needs to count hosts
-space  personal | col_01J…      clear
+space  personal | collection id clear
 key    3                        version of the space key used
 data   cipher id ‖ nonce ‖ AEAD(space key, nonce, payload,
                                 aad = id ‖ kind ‖ space ‖ key)
@@ -132,9 +132,9 @@ New values are sealed with the vault's chosen cipher (a setting later); old
 ones open with whatever they carry. Values from the first builds had no id
 byte (`nonce ‖ ciphertext`, XChaCha20-Poly1305) and are rewritten on open.
 
-**Later, for collections:** neither Poly1305 nor GCM commits to its key, so a
-crafted ciphertext could decrypt under two keys. Shared collections should add
-a key commitment (a hash of the key) to the envelope.
+**Collections:** neither Poly1305 nor GCM commits to its key, so a crafted
+ciphertext could decrypt under two keys. A collection's key is therefore
+committed to in each wrap of it ([collections-format.md](collections-format.md)).
 
 - **The AAD binds the ciphertext to its record.** A server cannot swap host A's
   data into host B.
