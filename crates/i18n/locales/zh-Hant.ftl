@@ -3331,6 +3331,18 @@ taee668c2 = 正在下載… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 正在下載… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = 連線至其中的主機；不能變更它們
+
+# Changes its hosts and passwords
+t0e93b1e8 = 變更其中的主機和密碼
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 編輯、授予存取權並發放金鑰
+
 # Over SSH only
 t14e43465 = 僅限 SSH
 
@@ -3516,6 +3528,12 @@ t6dbdbc5f = { $name } 中需變更的機密…
 
 # Somebody who lost access could read them
 t19bcc0de = 已失去存取權的人可以讀取它們
+
+# Manage access to {name}…
+t56bf0afe = 管理 { $name } 的存取權…
+
+# Who may connect, edit or manage it
+t63fb49f5 = 誰可以連線、編輯或管理它
 
 # Give the key of {name}…
 t57ffca8e = 發放 { $name } 的金鑰…
@@ -3864,6 +3882,60 @@ td9e661ee = 所有具備存取權的人都已持有金鑰。
 
 # Give the key of {name} to whom?
 t2cdda213 = 將 { $name } 的金鑰發放給誰？
+
+# Cannot read who has access: {e}
+t5566362d = 無法讀取誰有存取權：{ $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }，群組
+
+# Grant somebody…
+td007775d = 授予某人存取權…
+
+# A person or a group of the organization
+tf1974207 = 組織中的個人或群組
+
+# Who has access to {name}
+t7a73df49 = 誰有 { $name } 的存取權
+
+# Owner: has Manage already
+t430fba35 = 擁有者：已具備「管理」權限
+
+# Suspended: has it once active again
+td816223c = 已停權：恢復後即可取得
+
+# A group: everybody in it
+t185fe798 = 群組：其中的所有人
+
+# Everybody of the organization has access already.
+t65fbe8e5 = 組織中的所有人都已有存取權。
+
+# Grant {name} to whom?
+tc1a460bb = 將 { $name } 的存取權授予誰？
+
+# {detail} · now
+t9ca9aebd = { $detail } · 目前
+
+# Take access away
+t095b309e = 撤銷存取權
+
+# The collection gets a new key, which they never have
+tf16d52b6 = 集合將取得新的金鑰，對方永遠無法取得
+
+# What may {who} do in {name}?
+tcfce5912 = { $who } 可以在 { $name } 中做什麼？
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } 已不再擁有 { $name } 的存取權。
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } 現在擁有 { $name } 的「{ $permission }」權限。
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } 擁有 { $name } 的「{ $permission }」權限。對方等待金鑰時，請發放給對方：在命令面板中使用「發放 { $name } 的金鑰」。
+
+# Access was not changed: {e}
+tdf3aeb2c = 存取權未變更：{ $e }
 
 # All changed: take this list away
 tc0346301 = 已全部變更：移除此清單

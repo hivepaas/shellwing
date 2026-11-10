@@ -3274,6 +3274,18 @@ taee668c2 = ダウンロード中… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = ダウンロード中… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = ホストに接続できます（変更はできません）
+
+# Changes its hosts and passwords
+t0e93b1e8 = ホストとパスワードを変更できます
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 編集、アクセス権の付与、鍵の受け渡しができます
+
 # Over SSH only
 t14e43465 = SSH のみ
 
@@ -3447,6 +3459,12 @@ t6dbdbc5f = { $name } で変更するシークレット…
 
 # Somebody who lost access could read them
 t19bcc0de = アクセスを失ったユーザーが読めたもの
+
+# Manage access to {name}…
+t56bf0afe = { $name } のアクセス権を管理…
+
+# Who may connect, edit or manage it
+t63fb49f5 = 接続・編集・管理できるユーザー
 
 # Give the key of {name}…
 t57ffca8e = { $name } の鍵を渡す…
@@ -3789,6 +3807,60 @@ td9e661ee = アクセス権のある全員が鍵を持っています。
 
 # Give the key of {name} to whom?
 t2cdda213 = { $name } の鍵を誰に渡しますか？
+
+# Cannot read who has access: {e}
+t5566362d = アクセスできるユーザーを読み込めません：{ $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }（グループ）
+
+# Grant somebody…
+td007775d = アクセス権を付与…
+
+# A person or a group of the organization
+tf1974207 = 組織のユーザーまたはグループ
+
+# Who has access to {name}
+t7a73df49 = { $name } にアクセスできるユーザー
+
+# Owner: has Manage already
+t430fba35 = 所有者：すでに「管理」があります
+
+# Suspended: has it once active again
+td816223c = 利用停止中：再び有効になると付与されます
+
+# A group: everybody in it
+t185fe798 = グループ：所属する全員
+
+# Everybody of the organization has access already.
+t65fbe8e5 = 組織の全員がすでにアクセスできます。
+
+# Grant {name} to whom?
+tc1a460bb = { $name } へのアクセス権を誰に付与しますか？
+
+# {detail} · now
+t9ca9aebd = { $detail } · 現在
+
+# Take access away
+t095b309e = アクセス権を取り消す
+
+# The collection gets a new key, which they never have
+tf16d52b6 = コレクションには新しい鍵が設定され、相手がそれを持つことはありません
+
+# What may {who} do in {name}?
+tcfce5912 = { $who } は { $name } で何ができますか？
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } は { $name } にアクセスできなくなりました。
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } に { $name } の「{ $permission }」が付与されました。
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } に { $name } の「{ $permission }」があります。相手が鍵を待つようになったら渡してください：パレットの「{ $name } の鍵を渡す」から。
+
+# Access was not changed: {e}
+tdf3aeb2c = アクセス権は変更されませんでした：{ $e }
 
 # All changed: take this list away
 tc0346301 = すべて変更済み：このリストを削除

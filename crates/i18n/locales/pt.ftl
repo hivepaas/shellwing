@@ -3369,6 +3369,18 @@ taee668c2 = Baixando… { $got } de { $total }
 # Downloading… {got}
 t4873b921 = Baixando… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Conecta-se aos servidores dela; não pode alterá-los
+
+# Changes its hosts and passwords
+t0e93b1e8 = Altera os servidores e as senhas dela
+
+# Manage
+td7aff116 = Gerenciar
+
+# Edits, grants access and gives the key
+t7c52884e = Edita, concede acesso e dá a chave
+
 # Over SSH only
 t14e43465 = Só por SSH
 
@@ -3559,6 +3571,12 @@ t6dbdbc5f = Segredos a trocar em { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Alguém que perdeu o acesso podia lê-los
+
+# Manage access to {name}…
+t56bf0afe = Gerenciar o acesso a { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Quem pode se conectar, editá-la ou gerenciá-la
 
 # Give the key of {name}…
 t57ffca8e = Dar a chave de { $name }…
@@ -3909,6 +3927,60 @@ td9e661ee = Todos com acesso já têm a chave.
 
 # Give the key of {name} to whom?
 t2cdda213 = Dar a chave de { $name } a quem?
+
+# Cannot read who has access: {e}
+t5566362d = Não é possível ler quem tem acesso: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, um grupo
+
+# Grant somebody…
+td007775d = Conceder acesso a alguém…
+
+# A person or a group of the organization
+tf1974207 = Uma pessoa ou um grupo da organização
+
+# Who has access to {name}
+t7a73df49 = Quem tem acesso a { $name }
+
+# Owner: has Manage already
+t430fba35 = Proprietário: já tem “Gerenciar”
+
+# Suspended: has it once active again
+td816223c = Suspenso: terá acesso quando estiver ativo de novo
+
+# A group: everybody in it
+t185fe798 = Um grupo: todos que fazem parte dele
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Todos da organização já têm acesso.
+
+# Grant {name} to whom?
+tc1a460bb = Conceder acesso a { $name } a quem?
+
+# {detail} · now
+t9ca9aebd = { $detail } · atual
+
+# Take access away
+t095b309e = Remover o acesso
+
+# The collection gets a new key, which they never have
+tf16d52b6 = A coleção recebe uma nova chave, que essa pessoa nunca terá
+
+# What may {who} do in {name}?
+tcfce5912 = O que { $who } pode fazer em { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } não tem mais acesso a { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } agora tem “{ $permission }” em { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } tem “{ $permission }” em { $name }. Dê a chave quando essa pessoa a aguardar: Dar a chave de { $name }, na paleta.
+
+# Access was not changed: {e}
+tdf3aeb2c = O acesso não foi alterado: { $e }
 
 # All changed: take this list away
 tc0346301 = Tudo trocado: remover esta lista

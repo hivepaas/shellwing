@@ -156,7 +156,11 @@ it.
   space.
 - With Manage, the palette's "Give the key of …" lists who waits, each with the
   fingerprint to compare with their Profile page; choosing one gives it.
-- Granting and taking away access is on the web for now.
+- With Manage, the palette's "Manage access to …" lists the grants, to change
+  one's permission or take it away, and grants the collection to a person or a
+  group of the organization (`GET …/grantable` lists them; an app's token
+  reaches it). Taking access away syncs at once, so that this app replaces the
+  key if it holds it.
 
 ## Order
 

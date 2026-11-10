@@ -3331,6 +3331,18 @@ taee668c2 = Mengunduh… { $got } dari { $total }
 # Downloading… {got}
 t4873b921 = Mengunduh… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Terhubung ke host-nya; tidak dapat mengubahnya
+
+# Changes its hosts and passwords
+t0e93b1e8 = Mengubah host dan kata sandinya
+
+# Manage
+td7aff116 = Kelola
+
+# Edits, grants access and gives the key
+t7c52884e = Mengedit, memberi akses, dan memberikan kunci
+
 # Over SSH only
 t14e43465 = Hanya melalui SSH
 
@@ -3516,6 +3528,12 @@ t6dbdbc5f = Rahasia yang perlu diganti di { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Seseorang yang kehilangan akses dapat membacanya
+
+# Manage access to {name}…
+t56bf0afe = Kelola akses ke { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Siapa yang boleh terhubung, mengedit, atau mengelolanya
 
 # Give the key of {name}…
 t57ffca8e = Berikan kunci { $name }…
@@ -3864,6 +3882,60 @@ td9e661ee = Semua yang memiliki akses sudah memegang kuncinya.
 
 # Give the key of {name} to whom?
 t2cdda213 = Berikan kunci { $name } kepada siapa?
+
+# Cannot read who has access: {e}
+t5566362d = Tidak dapat membaca siapa yang memiliki akses: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, sebuah grup
+
+# Grant somebody…
+td007775d = Beri akses ke seseorang…
+
+# A person or a group of the organization
+tf1974207 = Seseorang atau grup di organisasi
+
+# Who has access to {name}
+t7a73df49 = Siapa yang memiliki akses ke { $name }
+
+# Owner: has Manage already
+t430fba35 = Pemilik: sudah memiliki Kelola
+
+# Suspended: has it once active again
+td816223c = Ditangguhkan: mendapatkannya setelah aktif kembali
+
+# A group: everybody in it
+t185fe798 = Sebuah grup: semua anggotanya
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Semua anggota organisasi sudah memiliki akses.
+
+# Grant {name} to whom?
+tc1a460bb = Beri akses ke { $name } kepada siapa?
+
+# {detail} · now
+t9ca9aebd = { $detail } · saat ini
+
+# Take access away
+t095b309e = Cabut akses
+
+# The collection gets a new key, which they never have
+tf16d52b6 = Koleksi mendapat kunci baru, yang tidak pernah mereka miliki
+
+# What may {who} do in {name}?
+tcfce5912 = Apa yang boleh dilakukan { $who } di { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } tidak lagi memiliki akses ke { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } sekarang memiliki izin { $permission } di { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } memiliki izin { $permission } di { $name }. Berikan kuncinya setelah mereka menunggunya: Berikan kunci { $name }, di palet.
+
+# Access was not changed: {e}
+tdf3aeb2c = Akses tidak diubah: { $e }
 
 # All changed: take this list away
 tc0346301 = Semua sudah diganti: hapus daftar ini

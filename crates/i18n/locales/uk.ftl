@@ -3445,6 +3445,18 @@ taee668c2 = Завантаження… { $got } з { $total }
 # Downloading… {got}
 t4873b921 = Завантаження… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Підключається до її хостів; не може їх змінювати
+
+# Changes its hosts and passwords
+t0e93b1e8 = Змінює її хости й паролі
+
+# Manage
+td7aff116 = Керувати
+
+# Edits, grants access and gives the key
+t7c52884e = Редагує, надає доступ і передає ключ
+
 # Over SSH only
 t14e43465 = Лише через SSH
 
@@ -3645,6 +3657,12 @@ t6dbdbc5f = Секрети для зміни в колекції { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Їх міг прочитати той, хто втратив доступ
+
+# Manage access to {name}…
+t56bf0afe = Керувати доступом до колекції { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Хто може підключатися, редагувати її або керувати нею
 
 # Give the key of {name}…
 t57ffca8e = Передати ключ колекції { $name }…
@@ -3999,6 +4017,60 @@ td9e661ee = Ключ є в усіх, хто має доступ.
 
 # Give the key of {name} to whom?
 t2cdda213 = Кому передати ключ колекції { $name }?
+
+# Cannot read who has access: {e}
+t5566362d = Не вдалося прочитати, хто має доступ: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, група
+
+# Grant somebody…
+td007775d = Надати доступ…
+
+# A person or a group of the organization
+tf1974207 = Користувач або група організації
+
+# Who has access to {name}
+t7a73df49 = Хто має доступ до колекції { $name }
+
+# Owner: has Manage already
+t430fba35 = Власник: уже має «Керувати»
+
+# Suspended: has it once active again
+td816223c = Призупинено: отримає доступ, коли знову стане активним
+
+# A group: everybody in it
+t185fe798 = Група: усі її учасники
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Доступ уже мають усі в організації.
+
+# Grant {name} to whom?
+tc1a460bb = Кому надати доступ до колекції { $name }?
+
+# {detail} · now
+t9ca9aebd = { $detail } · зараз
+
+# Take access away
+t095b309e = Відкликати доступ
+
+# The collection gets a new key, which they never have
+tf16d52b6 = Колекція отримує новий ключ, якого в нього ніколи не буде
+
+# What may {who} do in {name}?
+tcfce5912 = Що може { $who } у колекції { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } більше не має доступу до колекції { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = Тепер { $who } має право «{ $permission }» у колекції { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } має право «{ $permission }» у колекції { $name }. Передайте ключ, коли користувач чекатиме на нього: «Передати ключ колекції { $name }» у палітрі.
+
+# Access was not changed: {e}
+tdf3aeb2c = Доступ не змінено: { $e }
 
 # All changed: take this list away
 tc0346301 = Усе змінено: прибрати цей список

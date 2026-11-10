@@ -560,9 +560,28 @@ fn three_people_share_a_collection_and_one_loses_access() {
         "10.2.0.2"
     );
 
-    // Carol loses access: Alice's app replaces the key, for who still has
+    // Alice's app, with Manage, takes Carol's access away, as the palette
+    // does: the grants as they are, and whom it could grant.
+    let grantable = alice.server.grantable(&info).expect("grantable");
+    for p in [&alice, &bob, &carol] {
+        assert!(
+            grantable.people.iter().any(|g| g.user_id == p.id),
+            "{} can be granted it",
+            p.id
+        );
+    }
+    let now = alice.server.collection_grants(&info).expect("grants");
+    assert_eq!(now.len(), 3);
+    let kept: Vec<_> = now.into_iter().filter(|g| g.user_id != carol.id).collect();
+    let saved = alice.server.set_grants(&info, &kept).expect("set grants");
+    assert_eq!(saved.len(), 2);
+    assert!(
+        bob.server.grantable(&info).is_err(),
+        "Bob edits: whom to grant it to is not his to see"
+    );
+
+    // Carol has lost access: Alice's app replaces the key, for who still has
     // it, and lists the password to change.
-    grants(&[(&alice, "manage"), (&bob, "edit")]);
     assert!(carol.sync(&col).is_none(), "no longer served");
     let replaced = alice.sync(&col).expect("served");
     assert_eq!(replaced.replaced, Some(2));

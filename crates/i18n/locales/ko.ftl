@@ -3274,6 +3274,18 @@ taee668c2 = 다운로드 중… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 다운로드 중… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = 호스트에 연결할 수 있음, 변경은 불가
+
+# Changes its hosts and passwords
+t0e93b1e8 = 호스트와 비밀번호를 변경할 수 있음
+
+# Manage
+td7aff116 = 관리
+
+# Edits, grants access and gives the key
+t7c52884e = 편집, 접근 권한 부여, 키 전달 가능
+
 # Over SSH only
 t14e43465 = SSH 전용
 
@@ -3448,6 +3460,12 @@ t6dbdbc5f = { $name }에서 변경할 비밀 정보…
 # Somebody who lost access could read them
 t19bcc0de = 접근 권한을 잃은 사용자가 읽을 수 있었음
 
+# Manage access to {name}…
+t56bf0afe = { $name } 접근 권한 관리…
+
+# Who may connect, edit or manage it
+t63fb49f5 = 연결, 편집 또는 관리할 수 있는 사용자
+
 # Give the key of {name}…
 t57ffca8e = { $name } 키 전달…
 
@@ -3509,7 +3527,7 @@ t9024ea9c = 노트가 두 기기에서 변경되었습니다. 다른 버전은 {
 tbe970732 = 노트 { $n }개가 두 기기에서 변경되었습니다. 다른 버전은 옆에 보관했습니다.
 
 # Somebody lost access to {name}: its key is replaced. Change what they could read: Secrets to change in {name}, in the palette.
-t6b22b8e8 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다. 그 사용자가 읽을 수 있었던 항목을 변경하세요: 팔레트의 "{ $name }에서 변경할 비밀 정보".
+t6b22b8e8 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다. 그 사용자가 읽을 수 있었던 항목을 변경하세요: 팔레트의 '{ $name }에서 변경할 비밀 정보'.
 
 # Somebody lost access to {name}: its key is replaced.
 t189f91dc = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다.
@@ -3789,6 +3807,60 @@ td9e661ee = 접근 권한이 있는 모든 사용자가 키를 갖고 있습니�
 
 # Give the key of {name} to whom?
 t2cdda213 = { $name } 키를 누구에게 전달할까요?
+
+# Cannot read who has access: {e}
+t5566362d = 접근 권한이 있는 사용자를 읽을 수 없습니다: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, 그룹
+
+# Grant somebody…
+td007775d = 접근 권한 부여…
+
+# A person or a group of the organization
+tf1974207 = 조직의 사용자 또는 그룹
+
+# Who has access to {name}
+t7a73df49 = { $name }에 접근할 수 있는 사용자
+
+# Owner: has Manage already
+t430fba35 = 소유자: 이미 '관리' 권한 있음
+
+# Suspended: has it once active again
+td816223c = 정지됨: 다시 활성화되면 권한을 받음
+
+# A group: everybody in it
+t185fe798 = 그룹: 그룹의 모든 사용자
+
+# Everybody of the organization has access already.
+t65fbe8e5 = 조직의 모든 사용자가 이미 접근 권한을 갖고 있습니다.
+
+# Grant {name} to whom?
+tc1a460bb = { $name } 접근 권한을 누구에게 부여할까요?
+
+# {detail} · now
+t9ca9aebd = { $detail } · 현재
+
+# Take access away
+t095b309e = 접근 권한 회수
+
+# The collection gets a new key, which they never have
+tf16d52b6 = 컬렉션에 새 키가 생기며, 그 사용자는 이 키를 갖지 못합니다
+
+# What may {who} do in {name}?
+tcfce5912 = { $who }님은 { $name }에서 무엇을 할 수 있나요?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who }님은 이제 { $name }에 접근할 수 없습니다.
+
+# {who} has {permission} on {name} now.
+tf84e42da = 이제 { $who }님은 { $name }에 대해 '{ $permission }' 권한을 갖습니다.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who }님은 { $name }에 대해 '{ $permission }' 권한을 갖습니다. 키를 기다리게 되면 전달하세요: 팔레트의 '{ $name } 키 전달'.
+
+# Access was not changed: {e}
+tdf3aeb2c = 접근 권한이 변경되지 않음: { $e }
 
 # All changed: take this list away
 tc0346301 = 모두 변경함: 이 목록 제거

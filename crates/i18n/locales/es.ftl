@@ -3369,6 +3369,18 @@ taee668c2 = Descargando… { $got } de { $total }
 # Downloading… {got}
 t4873b921 = Descargando… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Se conecta a sus servidores; no puede cambiarlos
+
+# Changes its hosts and passwords
+t0e93b1e8 = Cambia sus servidores y contraseñas
+
+# Manage
+td7aff116 = Administrar
+
+# Edits, grants access and gives the key
+t7c52884e = Edita, concede acceso y da la clave
+
 # Over SSH only
 t14e43465 = Solo por SSH
 
@@ -3559,6 +3571,12 @@ t6dbdbc5f = Secretos que cambiar en { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Alguien que perdió el acceso podía leerlos
+
+# Manage access to {name}…
+t56bf0afe = Administrar el acceso a { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Quién puede conectarse, editarla o administrarla
 
 # Give the key of {name}…
 t57ffca8e = Dar la clave de { $name }…
@@ -3909,6 +3927,60 @@ td9e661ee = Todas las personas con acceso tienen la clave.
 
 # Give the key of {name} to whom?
 t2cdda213 = ¿A quién dar la clave de { $name }?
+
+# Cannot read who has access: {e}
+t5566362d = No se puede leer quién tiene acceso: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, un grupo
+
+# Grant somebody…
+td007775d = Conceder acceso a alguien…
+
+# A person or a group of the organization
+tf1974207 = Una persona o un grupo de la organización
+
+# Who has access to {name}
+t7a73df49 = Quién tiene acceso a { $name }
+
+# Owner: has Manage already
+t430fba35 = Propietario: ya tiene «Administrar»
+
+# Suspended: has it once active again
+td816223c = Suspendido: lo tendrá cuando vuelva a estar activo
+
+# A group: everybody in it
+t185fe798 = Un grupo: todas las personas que lo forman
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Todas las personas de la organización ya tienen acceso.
+
+# Grant {name} to whom?
+tc1a460bb = ¿A quién conceder acceso a { $name }?
+
+# {detail} · now
+t9ca9aebd = { $detail } · actual
+
+# Take access away
+t095b309e = Quitar el acceso
+
+# The collection gets a new key, which they never have
+tf16d52b6 = La colección recibe una clave nueva, que nunca tendrá
+
+# What may {who} do in {name}?
+tcfce5912 = ¿Qué puede hacer { $who } en { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } ya no tiene acceso a { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } ahora tiene «{ $permission }» en { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } tiene «{ $permission }» en { $name }. Dale su clave cuando la espere: Dar la clave de { $name }, en la paleta.
+
+# Access was not changed: {e}
+tdf3aeb2c = No se cambió el acceso: { $e }
 
 # All changed: take this list away
 tc0346301 = Todo cambiado: quitar esta lista

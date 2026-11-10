@@ -3445,6 +3445,18 @@ taee668c2 = Загрузка… { $got } из { $total }
 # Downloading… {got}
 t4873b921 = Загрузка… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Подключается к её хостам; не может их изменять
+
+# Changes its hosts and passwords
+t0e93b1e8 = Изменяет её хосты и пароли
+
+# Manage
+td7aff116 = Управлять
+
+# Edits, grants access and gives the key
+t7c52884e = Изменяет, выдаёт доступ и передаёт ключ
+
 # Over SSH only
 t14e43465 = Только по SSH
 
@@ -3645,6 +3657,12 @@ t6dbdbc5f = Секреты для смены в коллекции { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Их мог прочитать тот, кто потерял доступ
+
+# Manage access to {name}…
+t56bf0afe = Управлять доступом к коллекции { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Кто может подключаться, изменять её или управлять ею
 
 # Give the key of {name}…
 t57ffca8e = Передать ключ коллекции { $name }…
@@ -3999,6 +4017,60 @@ td9e661ee = Ключ есть у всех, у кого есть доступ.
 
 # Give the key of {name} to whom?
 t2cdda213 = Кому передать ключ коллекции { $name }?
+
+# Cannot read who has access: {e}
+t5566362d = Не удалось прочитать, у кого есть доступ: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, группа
+
+# Grant somebody…
+td007775d = Выдать доступ…
+
+# A person or a group of the organization
+tf1974207 = Пользователь или группа организации
+
+# Who has access to {name}
+t7a73df49 = У кого есть доступ к коллекции { $name }
+
+# Owner: has Manage already
+t430fba35 = Владелец: уже есть «Управлять»
+
+# Suspended: has it once active again
+td816223c = Приостановлен: получит доступ, когда снова станет активным
+
+# A group: everybody in it
+t185fe798 = Группа: все её участники
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Доступ уже есть у всех в организации.
+
+# Grant {name} to whom?
+tc1a460bb = Кому выдать доступ к коллекции { $name }?
+
+# {detail} · now
+t9ca9aebd = { $detail } · сейчас
+
+# Take access away
+t095b309e = Отозвать доступ
+
+# The collection gets a new key, which they never have
+tf16d52b6 = Коллекция получает новый ключ, которого у него никогда не будет
+
+# What may {who} do in {name}?
+tcfce5912 = Что может { $who } в коллекции { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = У { $who } больше нет доступа к коллекции { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = Теперь у { $who } есть право «{ $permission }» в коллекции { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = У { $who } есть право «{ $permission }» в коллекции { $name }. Передайте ключ, когда пользователь будет его ждать: «Передать ключ коллекции { $name }» в палитре.
+
+# Access was not changed: {e}
+tdf3aeb2c = Доступ не изменён: { $e }
 
 # All changed: take this list away
 tc0346301 = Всё сменено: убрать этот список

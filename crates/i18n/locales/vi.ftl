@@ -3274,6 +3274,18 @@ taee668c2 = Đang tải xuống… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = Đang tải xuống… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Kết nối tới các máy chủ của nó; không sửa được chúng
+
+# Changes its hosts and passwords
+t0e93b1e8 = Sửa các máy chủ và mật khẩu của nó
+
+# Manage
+td7aff116 = Quản lý
+
+# Edits, grants access and gives the key
+t7c52884e = Sửa, cấp quyền truy cập và trao khoá
+
 # Over SSH only
 t14e43465 = Chỉ qua SSH
 
@@ -3447,6 +3459,12 @@ t6dbdbc5f = Bí mật cần đổi trong { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Người đã mất quyền truy cập có thể đọc được chúng
+
+# Manage access to {name}…
+t56bf0afe = Quản lý quyền truy cập { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Ai được kết nối, sửa hoặc quản lý nó
 
 # Give the key of {name}…
 t57ffca8e = Trao khoá của { $name }…
@@ -3789,6 +3807,60 @@ td9e661ee = Mọi người có quyền truy cập đều đã có khoá.
 
 # Give the key of {name} to whom?
 t2cdda213 = Trao khoá của { $name } cho ai?
+
+# Cannot read who has access: {e}
+t5566362d = Không đọc được ai có quyền truy cập: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, một nhóm
+
+# Grant somebody…
+td007775d = Cấp quyền truy cập cho ai đó…
+
+# A person or a group of the organization
+tf1974207 = Một người hoặc một nhóm trong tổ chức
+
+# Who has access to {name}
+t7a73df49 = Những ai có quyền truy cập { $name }
+
+# Owner: has Manage already
+t430fba35 = Chủ sở hữu: đã có quyền Quản lý
+
+# Suspended: has it once active again
+td816223c = Bị tạm ngưng: có quyền khi hoạt động lại
+
+# A group: everybody in it
+t185fe798 = Một nhóm: mọi người trong nhóm
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Mọi người trong tổ chức đều đã có quyền truy cập.
+
+# Grant {name} to whom?
+tc1a460bb = Cấp quyền truy cập { $name } cho ai?
+
+# {detail} · now
+t9ca9aebd = { $detail } · hiện tại
+
+# Take access away
+t095b309e = Thu hồi quyền truy cập
+
+# The collection gets a new key, which they never have
+tf16d52b6 = Bộ sưu tập nhận khoá mới mà họ không bao giờ có
+
+# What may {who} do in {name}?
+tcfce5912 = { $who } được làm gì trong { $name }?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } không còn quyền truy cập { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } giờ có quyền { $permission } trên { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } có quyền { $permission } trên { $name }. Hãy trao khoá cho họ khi họ chờ khoá: Trao khoá của { $name }, trong bảng lệnh.
+
+# Access was not changed: {e}
+tdf3aeb2c = Chưa đổi được quyền truy cập: { $e }
 
 # All changed: take this list away
 tc0346301 = Đã đổi hết: bỏ danh sách này
