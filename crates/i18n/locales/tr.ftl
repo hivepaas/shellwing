@@ -3369,6 +3369,18 @@ taee668c2 = İndiriliyor… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = İndiriliyor… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Ana makinelerine bağlanır; onları değiştiremez
+
+# Changes its hosts and passwords
+t0e93b1e8 = Ana makinelerini ve parolalarını değiştirir
+
+# Manage
+td7aff116 = Yönet
+
+# Edits, grants access and gives the key
+t7c52884e = Düzenler, erişim verir ve anahtarı verir
+
 # Over SSH only
 t14e43465 = Yalnızca SSH üzerinden
 
@@ -3559,6 +3571,12 @@ t6dbdbc5f = { $name } koleksiyonunda değiştirilecek gizli bilgiler…
 
 # Somebody who lost access could read them
 t19bcc0de = Erişimini kaybeden biri bunları okuyabiliyordu
+
+# Manage access to {name}…
+t56bf0afe = { $name } koleksiyonuna erişimi yönet…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Kimlerin bağlanabileceği, düzenleyebileceği veya yönetebileceği
 
 # Give the key of {name}…
 t57ffca8e = { $name } koleksiyonunun anahtarını ver…
@@ -3909,6 +3927,60 @@ td9e661ee = Erişimi olan herkeste anahtar var.
 
 # Give the key of {name} to whom?
 t2cdda213 = { $name } koleksiyonunun anahtarı kime verilsin?
+
+# Cannot read who has access: {e}
+t5566362d = Kimin erişimi olduğu okunamıyor: { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, bir grup
+
+# Grant somebody…
+td007775d = Birine erişim ver…
+
+# A person or a group of the organization
+tf1974207 = Kuruluştan bir kişi veya grup
+
+# Who has access to {name}
+t7a73df49 = { $name } koleksiyonuna erişimi olanlar
+
+# Owner: has Manage already
+t430fba35 = Sahip: zaten Yönet izni var
+
+# Suspended: has it once active again
+td816223c = Askıya alınmış: yeniden etkin olduğunda erişim alır
+
+# A group: everybody in it
+t185fe798 = Bir grup: içindeki herkes
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Kuruluştaki herkesin zaten erişimi var.
+
+# Grant {name} to whom?
+tc1a460bb = { $name } koleksiyonuna erişim kime verilsin?
+
+# {detail} · now
+t9ca9aebd = { $detail } · şu anki
+
+# Take access away
+t095b309e = Erişimi kaldır
+
+# The collection gets a new key, which they never have
+tf16d52b6 = Koleksiyon, onun asla sahip olmayacağı yeni bir anahtar alır
+
+# What may {who} do in {name}?
+tcfce5912 = { $who }, { $name } koleksiyonunda ne yapabilir?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } artık { $name } koleksiyonuna erişemiyor.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } artık { $name } koleksiyonunda { $permission } iznine sahip.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who }, { $name } koleksiyonunda { $permission } iznine sahip. Anahtarı beklediğinde verin: { $name } koleksiyonunun anahtarını ver, palette.
+
+# Access was not changed: {e}
+tdf3aeb2c = Erişim değiştirilemedi: { $e }
 
 # All changed: take this list away
 tc0346301 = Hepsi değiştirildi: bu listeyi kaldır

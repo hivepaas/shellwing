@@ -3274,6 +3274,18 @@ taee668c2 = 正在下载… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 正在下载… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = 连接到其中的主机；不能更改它们
+
+# Changes its hosts and passwords
+t0e93b1e8 = 更改其中的主机和密码
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 编辑、授予访问权限并发放密钥
+
 # Over SSH only
 t14e43465 = 仅限 SSH
 
@@ -3447,6 +3459,12 @@ t6dbdbc5f = { $name } 中需更改的机密…
 
 # Somebody who lost access could read them
 t19bcc0de = 已失去访问权限的人可以读取它们
+
+# Manage access to {name}…
+t56bf0afe = 管理 { $name } 的访问权限…
+
+# Who may connect, edit or manage it
+t63fb49f5 = 谁可以连接、编辑或管理它
 
 # Give the key of {name}…
 t57ffca8e = 发放 { $name } 的密钥…
@@ -3789,6 +3807,60 @@ td9e661ee = 所有有权访问的人都已持有密钥。
 
 # Give the key of {name} to whom?
 t2cdda213 = 将 { $name } 的密钥发放给谁？
+
+# Cannot read who has access: {e}
+t5566362d = 无法读取谁有访问权限：{ $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }，组
+
+# Grant somebody…
+td007775d = 授予某人访问权限…
+
+# A person or a group of the organization
+tf1974207 = 组织中的个人或组
+
+# Who has access to {name}
+t7a73df49 = 谁有权访问 { $name }
+
+# Owner: has Manage already
+t430fba35 = 所有者：已拥有“管理”权限
+
+# Suspended: has it once active again
+td816223c = 已停用：恢复后即可获得
+
+# A group: everybody in it
+t185fe798 = 组：其中的所有人
+
+# Everybody of the organization has access already.
+t65fbe8e5 = 组织中的所有人都已有访问权限。
+
+# Grant {name} to whom?
+tc1a460bb = 将 { $name } 的访问权限授予谁？
+
+# {detail} · now
+t9ca9aebd = { $detail } · 当前
+
+# Take access away
+t095b309e = 撤销访问权限
+
+# The collection gets a new key, which they never have
+tf16d52b6 = 集合将获得一个新密钥，对方永远无法得到
+
+# What may {who} do in {name}?
+tcfce5912 = { $who } 可以在 { $name } 中做什么？
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } 已不再有权访问 { $name }。
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } 现在拥有 { $name } 的“{ $permission }”权限。
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } 拥有 { $name } 的“{ $permission }”权限。对方等待密钥时，请发放给对方：在命令面板中使用“发放 { $name } 的密钥”。
+
+# Access was not changed: {e}
+tdf3aeb2c = 访问权限未更改：{ $e }
 
 # All changed: take this list away
 tc0346301 = 已全部更改：移除此清单

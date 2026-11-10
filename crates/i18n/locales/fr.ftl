@@ -3369,6 +3369,18 @@ taee668c2 = Téléchargement… { $got } sur { $total }
 # Downloading… {got}
 t4873b921 = Téléchargement… { $got }
 
+# Connects to its hosts; cannot change them
+t316bd4ec = Se connecte à ses serveurs ; ne peut pas les modifier
+
+# Changes its hosts and passwords
+t0e93b1e8 = Modifie ses serveurs et mots de passe
+
+# Manage
+td7aff116 = Gérer
+
+# Edits, grants access and gives the key
+t7c52884e = Modifie, accorde l'accès et donne la clé
+
 # Over SSH only
 t14e43465 = Par SSH uniquement
 
@@ -3559,6 +3571,12 @@ t6dbdbc5f = Secrets à changer dans { $name }…
 
 # Somebody who lost access could read them
 t19bcc0de = Une personne qui a perdu l'accès pouvait les lire
+
+# Manage access to {name}…
+t56bf0afe = Gérer l'accès à { $name }…
+
+# Who may connect, edit or manage it
+t63fb49f5 = Qui peut s'y connecter, la modifier ou la gérer
 
 # Give the key of {name}…
 t57ffca8e = Donner la clé de { $name }…
@@ -3909,6 +3927,60 @@ td9e661ee = Toutes les personnes ayant accès détiennent la clé.
 
 # Give the key of {name} to whom?
 t2cdda213 = Donner la clé de { $name } à qui ?
+
+# Cannot read who has access: {e}
+t5566362d = Impossible de lire qui a accès : { $e }
+
+# {permission}, a group
+t7a59c6dc = { $permission }, un groupe
+
+# Grant somebody…
+td007775d = Accorder l'accès à quelqu'un…
+
+# A person or a group of the organization
+tf1974207 = Une personne ou un groupe de l'organisation
+
+# Who has access to {name}
+t7a73df49 = Qui a accès à { $name }
+
+# Owner: has Manage already
+t430fba35 = Propriétaire : a déjà « Gérer »
+
+# Suspended: has it once active again
+td816223c = Suspendu : l'aura dès qu'il sera de nouveau actif
+
+# A group: everybody in it
+t185fe798 = Un groupe : tous ses membres
+
+# Everybody of the organization has access already.
+t65fbe8e5 = Toute l'organisation a déjà accès.
+
+# Grant {name} to whom?
+tc1a460bb = Accorder l'accès à { $name } à qui ?
+
+# {detail} · now
+t9ca9aebd = { $detail } · actuel
+
+# Take access away
+t095b309e = Retirer l'accès
+
+# The collection gets a new key, which they never have
+tf16d52b6 = La collection reçoit une nouvelle clé, que cette personne n'aura jamais
+
+# What may {who} do in {name}?
+tcfce5912 = Que peut faire { $who } dans { $name } ?
+
+# {who} no longer has access to {name}.
+tc39eb663 = { $who } n'a plus accès à { $name }.
+
+# {who} has {permission} on {name} now.
+tf84e42da = { $who } a maintenant « { $permission } » sur { $name }.
+
+# {who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.
+t73393a50 = { $who } a « { $permission } » sur { $name }. Donnez-lui sa clé dès qu'il l'attend : Donner la clé de { $name }, dans la palette.
+
+# Access was not changed: {e}
+tdf3aeb2c = L'accès n'a pas été modifié : { $e }
 
 # All changed: take this list away
 tc0346301 = Tout est changé : retirer cette liste

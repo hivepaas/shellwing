@@ -271,6 +271,35 @@ enum Asking {
     },
     /// The secrets to change in a collection (its id): done, or not yet.
     Checklist(String),
+    /// A collection's grants: one to change, or somebody to grant.
+    Access(AccessEdit),
+    /// Whom to grant a collection to.
+    AccessPick(AccessEdit),
+    /// What `who` may do in a collection, or nothing.
+    AccessPermission {
+        edit: AccessEdit,
+        who: shellwing_remote::server::Grant,
+    },
+}
+
+/// A collection's access as the server gave it, being changed.
+#[derive(Clone)]
+struct AccessEdit {
+    collection: shellwing_vault::CollectionInfo,
+    grants: Vec<shellwing_remote::server::Grant>,
+    grantable: shellwing_remote::server::Grantable,
+}
+
+/// A permission as people read it, with what it lets them do.
+fn permission_text(permission: &str) -> (String, String) {
+    match permission {
+        "connect" => (
+            tr!("Connect"),
+            tr!("Connects to its hosts; cannot change them"),
+        ),
+        "edit" => (tr!("Edit"), tr!("Changes its hosts and passwords")),
+        _ => (tr!("Manage"), tr!("Edits, grants access and gives the key")),
+    }
 }
 
 /// A snippet on its way to running.
@@ -2041,6 +2070,13 @@ impl Workspace {
                     );
                 }
                 for c in self.live.collections() {
+                    if c.permission == "manage" {
+                        setting(
+                            Action::CollectionAccess(c.id.clone()),
+                            tr!("Manage access to {name}…", name = c.name.clone()),
+                            tr!("Who may connect, edit or manage it"),
+                        );
+                    }
                     if c.permission == "manage" && !c.waiting {
                         setting(
                             Action::GiveCollectionKey(c.id.clone()),
@@ -3730,6 +3766,306 @@ impl Workspace {
         self.show_palette(palette, false, window, cx);
     }
 
+    /// Fetches a collection's grants and whom it can be granted to, to show
+    /// them.
+    fn ask_access(&mut self, id: &str, cx: &mut Context<Self>) {
+        let Some((url, token, vault)) = self.collections_server() else {
+            return self.say(
+                Notice::bad(tr!("Collections need syncing with a shellwing server.")),
+                CONFIG_NOTICE,
+                cx,
+            );
+        };
+        let Some(collection) = vault
+            .known_collections()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|c| c.id == id)
+        else {
+            return;
+        };
+        let asked = collection.clone();
+        let job = cx.background_spawn(async move {
+            let server = shellwing_remote::server::Server::open(&url, &token)?;
+            Ok::<_, std::io::Error>((server.collection_grants(&asked)?, server.grantable(&asked)?))
+        });
+        cx.spawn(async move |this, cx| {
+            let found = job.await;
+            let _ = this.update(cx, |ws, cx| match found {
+                Ok((grants, grantable)) => ws.in_window(cx, move |ws, window, cx| {
+                    ws.show_access(
+                        AccessEdit {
+                            collection,
+                            grants,
+                            grantable,
+                        },
+                        window,
+                        cx,
+                    );
+                }),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("Cannot read who has access: {e}", e = e.to_string())),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
+        })
+        .detach();
+    }
+
+    /// A collection's grants, each to change or take away, and granting it
+    /// to somebody else.
+    fn show_access(&mut self, edit: AccessEdit, window: &mut Window, cx: &mut Context<Self>) {
+        let mut entries: Vec<Entry> = edit
+            .grants
+            .iter()
+            .enumerate()
+            .map(|(i, g)| {
+                let (permission, _) = permission_text(&g.permission);
+                let detail = if g.group_id.is_empty() {
+                    permission
+                } else {
+                    tr!("{permission}, a group", permission = permission)
+                };
+                Entry::new(Kind::Choice(format!("grant:{i}")), "", g.name()).detail(detail)
+            })
+            .collect();
+        entries.push(
+            Entry::new(Kind::Choice("add".into()), "", tr!("Grant somebody…"))
+                .detail(tr!("A person or a group of the organization")),
+        );
+        let title = tr!(
+            "Who has access to {name}",
+            name = edit.collection.name.clone()
+        );
+        self.asking = Some(Asking::Access(edit));
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    fn chose_access(
+        &mut self,
+        edit: AccessEdit,
+        choice: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if choice == "add" {
+            return self.show_grantable(edit, window, cx);
+        }
+        let Some(who) = choice
+            .strip_prefix("grant:")
+            .and_then(|i| i.parse::<usize>().ok())
+            .and_then(|i| edit.grants.get(i).cloned())
+        else {
+            return;
+        };
+        self.show_permissions(edit, who, window, cx);
+    }
+
+    /// The people and groups not granted the collection yet.
+    fn show_grantable(&mut self, edit: AccessEdit, window: &mut Window, cx: &mut Context<Self>) {
+        let granted = |user: &str, group: &str| {
+            edit.grants
+                .iter()
+                .any(|g| g.user_id == user && g.group_id == group)
+        };
+        let mut entries = Vec::new();
+        for p in &edit.grantable.people {
+            if granted(&p.user_id, "") {
+                continue;
+            }
+            let name = if p.full_name.is_empty() {
+                p.username.clone()
+            } else {
+                format!("{} ({})", p.full_name, p.username)
+            };
+            let detail = match (p.role.as_str(), p.suspended) {
+                ("owner", _) => tr!("Owner: has Manage already"),
+                (_, true) => tr!("Suspended: has it once active again"),
+                _ => String::new(),
+            };
+            entries.push(
+                Entry::new(Kind::Choice(format!("user:{}", p.user_id)), "", name).detail(detail),
+            );
+        }
+        for g in &edit.grantable.groups {
+            if granted("", &g.group_id) {
+                continue;
+            }
+            entries.push(
+                Entry::new(
+                    Kind::Choice(format!("group:{}", g.group_id)),
+                    "",
+                    g.name.clone(),
+                )
+                .detail(tr!("A group: everybody in it")),
+            );
+        }
+        if entries.is_empty() {
+            entries.push(Entry::new(
+                Kind::Note,
+                "",
+                tr!("Everybody of the organization has access already."),
+            ));
+        }
+        let title = tr!("Grant {name} to whom?", name = edit.collection.name.clone());
+        self.asking = Some(Asking::AccessPick(edit));
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    fn chose_grantee(
+        &mut self,
+        edit: AccessEdit,
+        choice: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let who = if let Some(id) = choice.strip_prefix("user:") {
+            edit.grantable
+                .people
+                .iter()
+                .find(|p| p.user_id == id)
+                .map(|p| shellwing_remote::server::Grant {
+                    user_id: p.user_id.clone(),
+                    username: p.username.clone(),
+                    full_name: p.full_name.clone(),
+                    ..Default::default()
+                })
+        } else if let Some(id) = choice.strip_prefix("group:") {
+            edit.grantable
+                .groups
+                .iter()
+                .find(|g| g.group_id == id)
+                .map(|g| shellwing_remote::server::Grant {
+                    group_id: g.group_id.clone(),
+                    group_name: g.name.clone(),
+                    ..Default::default()
+                })
+        } else {
+            None
+        };
+        if let Some(who) = who {
+            self.show_permissions(edit, who, window, cx);
+        }
+    }
+
+    /// What `who` may do in the collection: Connect, Edit, Manage, or (for
+    /// one granted it) nothing.
+    fn show_permissions(
+        &mut self,
+        edit: AccessEdit,
+        who: shellwing_remote::server::Grant,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let mut entries: Vec<Entry> = ["connect", "edit", "manage"]
+            .into_iter()
+            .map(|p| {
+                let (name, detail) = permission_text(p);
+                let detail = if p == who.permission {
+                    tr!("{detail} · now", detail = detail)
+                } else {
+                    detail
+                };
+                Entry::new(Kind::Choice(p.into()), "", name).detail(detail)
+            })
+            .collect();
+        if edit.grants.iter().any(|g| g.same_grantee(&who)) {
+            entries.push(
+                Entry::new(Kind::Choice("remove".into()), "", tr!("Take access away"))
+                    .detail(tr!("The collection gets a new key, which they never have")),
+            );
+        }
+        let title = tr!(
+            "What may {who} do in {name}?",
+            who = who.name(),
+            name = edit.collection.name.clone()
+        );
+        self.asking = Some(Asking::AccessPermission { edit, who });
+        let palette = cx.new(|cx| Palette::chooser(&title, entries, cx));
+        self.show_palette(palette, false, window, cx);
+    }
+
+    /// Sends the grants with `who`'s changed, and says what follows: the key
+    /// to give a person granted it, or a new key once one has lost access.
+    fn chose_permission(
+        &mut self,
+        edit: AccessEdit,
+        who: shellwing_remote::server::Grant,
+        choice: &str,
+        cx: &mut Context<Self>,
+    ) {
+        let Some((url, token, _)) = self.collections_server() else {
+            return;
+        };
+        let removed = choice == "remove";
+        let had = edit.grants.iter().any(|g| g.same_grantee(&who));
+        let mut grants: Vec<shellwing_remote::server::Grant> = edit
+            .grants
+            .into_iter()
+            .filter(|g| !g.same_grantee(&who))
+            .collect();
+        if !removed {
+            grants.push(shellwing_remote::server::Grant {
+                permission: choice.to_string(),
+                ..who.clone()
+            });
+        }
+        let collection = edit.collection;
+        let name = collection.name.clone();
+        let job = cx.background_spawn(async move {
+            shellwing_remote::server::Server::open(&url, &token)?.set_grants(&collection, &grants)
+        });
+        let (who, permission) = (who.name(), permission_text(choice).0);
+        cx.spawn(async move |this, cx| {
+            let saved = job.await;
+            let _ = this.update(cx, |ws, cx| match saved {
+                Ok(_) if removed => {
+                    ws.say(
+                        Notice::good(tr!(
+                            "{who} no longer has access to {name}.",
+                            who = who,
+                            name = name
+                        )),
+                        KEPT_NOTICE,
+                        cx,
+                    );
+                    // Its key is replaced by the first app that manages it
+                    // and holds it: this one, if it does, at once.
+                    ws.sync.now();
+                }
+                Ok(_) if had => ws.say(
+                    Notice::good(tr!(
+                        "{who} has {permission} on {name} now.",
+                        who = who,
+                        permission = permission,
+                        name = name
+                    )),
+                    THEME_NOTICE,
+                    cx,
+                ),
+                Ok(_) => ws.say(
+                    Notice::good(tr!(
+                        "{who} has {permission} on {name}. Give them its key once they wait for it: Give the key of {name}, in the palette.",
+                        who = who,
+                        permission = permission,
+                        name = name
+                    )),
+                    KEPT_NOTICE,
+                    cx,
+                ),
+                Err(e) => ws.say(
+                    Notice::bad(tr!("Access was not changed: {e}", e = e.to_string())),
+                    CONFIG_NOTICE,
+                    cx,
+                ),
+            });
+        })
+        .detach();
+    }
+
     /// The secrets of a collection whose key this app replaced, which
     /// somebody who lost access could read: to change, then mark done.
     fn show_key_checklist(&mut self, id: &str, window: &mut Window, cx: &mut Context<Self>) {
@@ -4284,6 +4620,25 @@ impl Workspace {
                 let how = how.clone();
                 self.chose_place(&how, window, cx);
             }
+            PaletteEvent::Chose(choice)
+                if matches!(
+                    self.asking,
+                    Some(
+                        Asking::Access(_) | Asking::AccessPick(_) | Asking::AccessPermission { .. }
+                    )
+                ) =>
+            {
+                let (choice, asking) = (choice.clone(), self.asking.take());
+                self.close_palette(window, cx);
+                match asking {
+                    Some(Asking::Access(edit)) => self.chose_access(edit, &choice, window, cx),
+                    Some(Asking::AccessPick(edit)) => self.chose_grantee(edit, &choice, window, cx),
+                    Some(Asking::AccessPermission { edit, who }) => {
+                        self.chose_permission(edit, who, &choice, cx)
+                    }
+                    _ => {}
+                }
+            }
             PaletteEvent::Chose(_) if matches!(self.asking, Some(Asking::Checklist(_))) => {
                 let Some(Asking::Checklist(id)) = self.asking.take() else {
                     return;
@@ -4369,7 +4724,10 @@ impl Workspace {
                         | Asking::Pairing(_)
                         | Asking::PlaceHow { .. }
                         | Asking::GiveKey { .. }
-                        | Asking::Checklist(_),
+                        | Asking::Checklist(_)
+                        | Asking::Access(_)
+                        | Asking::AccessPick(_)
+                        | Asking::AccessPermission { .. },
                     )
                     | None => {
                         return self.close_palette(window, cx);
@@ -4510,6 +4868,7 @@ impl Workspace {
             }
             Action::GiveCollectionKey(id) => self.ask_give_key(&id, cx),
             Action::KeyChecklist(id) => self.show_key_checklist(&id, window, cx),
+            Action::CollectionAccess(id) => self.ask_access(&id, cx),
             Action::ShowRecoveryKey => match self.vault.ready().map(|v| v.recovery_key()) {
                 Some(Ok(Some(rk))) => self.show_recovery_key(rk.to_string(), false, window, cx),
                 Some(Err(e)) => self.say(

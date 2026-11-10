@@ -357,6 +357,69 @@ struct MemberAnswer {
 #[derive(Deserialize)]
 struct CollectionAnswer {
     members: Vec<MemberAnswer>,
+    #[serde(default)]
+    grants: Vec<Grant>,
+}
+
+/// A collection's grant: to a person (`user_id`) or a group (`group_id`),
+/// with `connect`, `edit` or `manage`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Grant {
+    pub user_id: String,
+    pub username: String,
+    pub full_name: String,
+    pub group_id: String,
+    pub group_name: String,
+    pub permission: String,
+}
+
+impl Grant {
+    /// Who it is to, as people read it.
+    pub fn name(&self) -> String {
+        if !self.group_id.is_empty() {
+            return self.group_name.clone();
+        }
+        match self.full_name.as_str() {
+            "" => self.username.clone(),
+            full => format!("{full} ({})", self.username),
+        }
+    }
+
+    /// The same person or group as `other`.
+    pub fn same_grantee(&self, other: &Grant) -> bool {
+        self.user_id == other.user_id && self.group_id == other.group_id
+    }
+}
+
+/// Somebody of the organization a collection can be granted to.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GrantablePerson {
+    pub user_id: String,
+    pub username: String,
+    #[serde(default)]
+    pub full_name: String,
+    /// `owner`, `admin` or `member`: owners have Manage already.
+    #[serde(default)]
+    pub role: String,
+    #[serde(default)]
+    pub suspended: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GrantableGroup {
+    pub group_id: String,
+    pub name: String,
+}
+
+/// Whom a collection can be granted to.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct Grantable {
+    pub people: Vec<GrantablePerson>,
+    pub groups: Vec<GrantableGroup>,
 }
 
 #[derive(Deserialize)]
@@ -736,6 +799,45 @@ impl Server {
             .block_on(async move { answer.json().await })
             .map_err(|e| io::Error::other(short(&e.to_string())))?;
         Ok(certificate.data.certificate)
+    }
+}
+
+/// Who has access to a collection, for those who manage it.
+impl Server {
+    /// The collection's grants.
+    pub fn collection_grants(&self, c: &shellwing_vault::CollectionInfo) -> io::Result<Vec<Grant>> {
+        let answer = self.authorized(Method::GET, &collection_path(c, ""), |r| r)?;
+        let detail: CollectionAnswer = self.answered(answer)?;
+        Ok(detail.grants)
+    }
+
+    /// Whom it can be granted to.
+    pub fn grantable(&self, c: &shellwing_vault::CollectionInfo) -> io::Result<Grantable> {
+        let answer = self.authorized(Method::GET, &collection_path(c, "/grantable"), |r| r)?;
+        self.answered(answer)
+    }
+
+    /// Makes these its grants, and no others; gives them as the server keeps
+    /// them.
+    pub fn set_grants(
+        &self,
+        c: &shellwing_vault::CollectionInfo,
+        grants: &[Grant],
+    ) -> io::Result<Vec<Grant>> {
+        let body = serde_json::json!({
+            "grants": grants
+                .iter()
+                .map(|g| serde_json::json!({
+                    "userId": g.user_id,
+                    "groupId": g.group_id,
+                    "permission": g.permission,
+                }))
+                .collect::<Vec<_>>(),
+        });
+        let answer = self.authorized(Method::PUT, &collection_path(c, "/grants"), |r| {
+            r.json(&body)
+        })?;
+        self.answered(answer)
     }
 }
 
