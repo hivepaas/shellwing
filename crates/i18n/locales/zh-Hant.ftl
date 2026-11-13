@@ -4519,6 +4519,15 @@ t1978793c = 發放
 # Give the key to {name}?
 t51bb693b = 將金鑰發放給 { $name }？
 
+# Permission
+t9bc44a22 = 權限
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = 已儲存存取權。新獲授權的人會等待金鑰：請透過金鑰按鈕發放。
+
+# Access saved.
+t59c55f0a = 已儲存存取權。
+
 # the Keychain said {status}
 tc1738579 = 鑰匙圈回傳了 { $status }
 

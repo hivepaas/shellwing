@@ -4572,6 +4572,15 @@ t1978793c = Weitergeben
 # Give the key to {name}?
 t51bb693b = Schlüssel an { $name } weitergeben?
 
+# Permission
+t9bc44a22 = Berechtigung
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Zugriff gespeichert. Neu Berechtigte warten auf den Schlüssel: Gib ihn über die Schlüssel-Taste weiter.
+
+# Access saved.
+t59c55f0a = Zugriff gespeichert.
+
 # the Keychain said {status}
 tc1738579 = der Schlüsselbund meldete { $status }
 

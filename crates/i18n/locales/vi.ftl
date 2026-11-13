@@ -4432,6 +4432,15 @@ t1978793c = Trao
 # Give the key to {name}?
 t51bb693b = Trao khoá cho { $name }?
 
+# Permission
+t9bc44a22 = Quyền
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Đã lưu quyền truy cập. Người mới được cấp quyền sẽ chờ khoá: hãy trao khoá từ nút khoá.
+
+# Access saved.
+t59c55f0a = Đã lưu quyền truy cập.
+
 # the Keychain said {status}
 tc1738579 = Keychain báo { $status }
 

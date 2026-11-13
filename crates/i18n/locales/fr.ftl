@@ -4572,6 +4572,15 @@ t1978793c = Donner
 # Give the key to {name}?
 t51bb693b = Donner la clé à { $name } ?
 
+# Permission
+t9bc44a22 = Autorisation
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Accès enregistré. Toute personne nouvellement autorisée attend la clé : donnez-la depuis le bouton de la clé.
+
+# Access saved.
+t59c55f0a = Accès enregistré.
+
 # the Keychain said {status}
 tc1738579 = le trousseau a répondu { $status }
 

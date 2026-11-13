@@ -58,5 +58,10 @@ Somebody who manages a collection and holds its key gives it from the key
 button beside its name: each person waiting shows the fingerprint to compare
 with their Profile page.
 
+The people button beside a collection's name, for those who manage it, opens
+who has access: each grant's permission changed or taken away, people and
+groups granted it, then saved at once, as the web app does. Taking somebody's
+access away syncs at once, so that the phone replaces the key if it holds it.
+
 Not yet, for collections ([docs/design/collections.md](../docs/design/collections.md)):
-editing their hosts, and managing who has access.
+editing their hosts.

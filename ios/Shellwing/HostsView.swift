@@ -10,6 +10,7 @@ struct HostsView: View {
     @State private var doomed: Doomed?
     @State private var checklist: KeyChecklist?
     @State private var givingKey: CollectionSection?
+    @State private var managing: CollectionSection?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -137,6 +138,16 @@ struct HostsView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "building.2").font(.system(size: 10)).foregroundStyle(Dusk.muted)
                             SectionHeading(text: c.name)
+                            if c.permission == "manage" {
+                                Button {
+                                    managing = c
+                                } label: {
+                                    Image(systemName: "person.2").font(.system(size: 11, weight: .semibold))
+                                        .frame(width: 28, height: 22)
+                                }
+                                .foregroundStyle(Dusk.muted)
+                                .accessibilityLabel(tr("Manage access to {name}…", ["name": c.name]))
+                            }
                             if c.permission == "manage" && !c.waiting {
                                 Button {
                                     givingKey = c
@@ -222,6 +233,9 @@ struct HostsView: View {
             }
             .sheet(item: $givingKey) { c in
                 GiveKeyView(collection: c) { givingKey = nil }
+            }
+            .sheet(item: $managing) { c in
+                AccessView(collection: c) { managing = nil }
             }
             .alert(tr("A collection has a new key"), isPresented: Binding(
                 get: { !app.replaced.isEmpty },
@@ -533,6 +547,155 @@ struct GiveKeyView: View {
             await load()
         } catch {
             problem = tr("The key was not given: {e}", ["e": "\(error)"])
+        }
+    }
+}
+
+extension AccessGrant: Identifiable {
+    public var id: String { userId + "|" + groupId }
+}
+
+/// A permission's name, and what it lets people do.
+private func permissionText(_ p: String) -> (String, String) {
+    switch p {
+    case "connect": return (tr("Connect"), tr("Connects to its hosts; cannot change them"))
+    case "edit": return (tr("Edit"), tr("Changes its hosts and passwords"))
+    default: return (tr("Manage"), tr("Edits, grants access and gives the key"))
+    }
+}
+
+/// Who has access to a collection, for somebody who manages it: each grant's
+/// permission changed or taken away, people and groups granted it, then
+/// saved at once, as the web app does.
+struct AccessView: View {
+    @EnvironmentObject private var app: AppModel
+    let collection: CollectionSection
+    let done: () -> Void
+    @State private var access: CollectionAccess?
+    @State private var grants: [AccessGrant] = []
+    @State private var problem: String?
+    @State private var saved: String?
+    @State private var saving = false
+
+    private var changed: Bool { access.map { $0.grants != grants } ?? false }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let problem {
+                    Text(problem).foregroundStyle(Dusk.bad).listRowBackground(Dusk.surface)
+                }
+                if let saved {
+                    Text(saved).foregroundStyle(Dusk.ok).listRowBackground(Dusk.surface)
+                }
+                if access == nil && problem == nil {
+                    ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
+                }
+                if let access {
+                    Section {
+                        ForEach($grants) { $g in
+                            HStack(spacing: 10) {
+                                Image(systemName: g.groupId.isEmpty ? "person" : "person.3")
+                                    .foregroundStyle(Dusk.muted)
+                                Text(g.name).foregroundStyle(Dusk.text).lineLimit(1)
+                                Spacer()
+                                Picker(tr("Permission"), selection: $g.permission) {
+                                    ForEach(["connect", "edit", "manage"], id: \.self) { p in
+                                        Text(permissionText(p).0).tag(p)
+                                    }
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                            }
+                            .listRowBackground(Dusk.surface)
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    grants.removeAll { $0.id == g.id }
+                                } label: {
+                                    Text(tr("Take access away"))
+                                }
+                            }
+                        }
+                        Menu {
+                            ForEach(access.people.filter { p in !grants.contains { $0.userId == p.userId } }, id: \.userId) { p in
+                                Button {
+                                    grants.append(AccessGrant(userId: p.userId, groupId: "", name: p.name, permission: "connect"))
+                                } label: {
+                                    Text(p.name)
+                                    if p.owner {
+                                        Text(tr("Owner: has Manage already"))
+                                    } else if p.suspended {
+                                        Text(tr("Suspended: has it once active again"))
+                                    }
+                                }
+                            }
+                            ForEach(access.groups.filter { g in !grants.contains { $0.groupId == g.groupId } }, id: \.groupId) { g in
+                                Button {
+                                    grants.append(AccessGrant(userId: "", groupId: g.groupId, name: g.name, permission: "connect"))
+                                } label: {
+                                    Text(g.name)
+                                    Text(tr("A group: everybody in it"))
+                                }
+                            }
+                        } label: {
+                            Label(tr("Grant somebody…"), systemImage: "plus")
+                        }
+                        .listRowBackground(Dusk.surface)
+                    } header: {
+                        Text(tr("Who has access to {name}", ["name": collection.name])).textCase(nil)
+                    } footer: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(["connect", "edit", "manage"], id: \.self) { p in
+                                Text("\(permissionText(p).0): \(permissionText(p).1)")
+                            }
+                            Text("\(tr("Take access away")): \(tr("The collection gets a new key, which they never have"))")
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Dusk.panel.ignoresSafeArea())
+            .navigationTitle(collection.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(changed ? tr("Discard") : tr("Close")) { done() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(tr("Save")) { Task { await save() } }
+                        .disabled(!changed || saving)
+                }
+            }
+            .task { await load() }
+        }
+    }
+
+    private func load() async {
+        guard let core = app.core else { return }
+        do {
+            let a = try await core.collectionAccess(collection: collection.id)
+            access = a
+            grants = a.grants
+            problem = nil
+        } catch {
+            problem = tr("Cannot read who has access: {e}", ["e": "\(error)"])
+        }
+    }
+
+    private func save() async {
+        guard let core = app.core, let before = access?.grants else { return }
+        saving = true
+        defer { saving = false }
+        do {
+            try await core.setAccess(collection: collection.id, grants: grants)
+            let added = grants.contains { g in !before.contains { $0.id == g.id } }
+            saved = added
+                ? tr("Access saved. Anybody newly granted waits for the key: give it from the key button.")
+                : tr("Access saved.")
+            problem = nil
+            await load()
+        } catch {
+            problem = tr("Access was not changed: {e}", ["e": "\(error)"])
         }
     }
 }

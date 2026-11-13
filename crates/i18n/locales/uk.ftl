@@ -4678,6 +4678,15 @@ t1978793c = Передати
 # Give the key to {name}?
 t51bb693b = Передати ключ користувачеві { $name }?
 
+# Permission
+t9bc44a22 = Право
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Доступ збережено. Ті, кому доступ щойно надано, чекають на ключ: передайте його кнопкою з ключем.
+
+# Access saved.
+t59c55f0a = Доступ збережено.
+
 # the Keychain said {status}
 tc1738579 = в'язка ключів повернула { $status }
 

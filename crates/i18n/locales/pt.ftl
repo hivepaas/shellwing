@@ -4572,6 +4572,15 @@ t1978793c = Dar
 # Give the key to {name}?
 t51bb693b = Dar a chave a { $name }?
 
+# Permission
+t9bc44a22 = Permissão
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Acesso salvo. Quem acabou de receber acesso aguarda a chave: dê a chave pelo botão da chave.
+
+# Access saved.
+t59c55f0a = Acesso salvo.
+
 # the Keychain said {status}
 tc1738579 = o chaveiro respondeu { $status }
 
