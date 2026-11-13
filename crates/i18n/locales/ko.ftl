@@ -4405,6 +4405,9 @@ t4d6f66b8 = 다른 세션
 # Edit {name}
 t4688b082 = { $name } 편집
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = 관리 권한이 있는 사용자가 키를 전달하기를 기다리는 중입니다.
+
 # Add a host
 t38d39c8f = 호스트 추가
 

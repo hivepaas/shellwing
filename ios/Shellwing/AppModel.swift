@@ -10,6 +10,9 @@ final class AppModel: ObservableObject {
     let problem: String?
 
     @Published private(set) var sections: [HostSection] = []
+    /// The organizations' collections the vault holds: their hosts open by
+    /// id, and are not edited here.
+    @Published private(set) var collections: [CollectionSection] = []
     @Published private(set) var sessions: [SessionModel] = []
     @Published private(set) var sync: SyncStatus?
     @Published var error: String?
@@ -121,6 +124,7 @@ final class AppModel: ObservableObject {
         guard let core else { return }
         do {
             sections = try core.sections()
+            collections = core.collections()
         } catch {
             self.error = "\(error)"
         }

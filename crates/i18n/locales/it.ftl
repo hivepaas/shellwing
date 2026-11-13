@@ -4545,6 +4545,9 @@ t4d6f66b8 = Un'altra sessione
 # Edit {name}
 t4688b082 = Modifica { $name }
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = In attesa che qualcuno che la gestisce ti dia la sua chiave.
+
 # Add a host
 t38d39c8f = Aggiungi un host
 

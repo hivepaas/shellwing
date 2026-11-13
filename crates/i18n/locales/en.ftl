@@ -1657,6 +1657,7 @@ t13e524f5 = Keepalive (s)
 tf8e77e19 = as in Settings
 t4d6f66b8 = Another session
 t4688b082 = Edit { $name }
+t42b71640 = Waiting for somebody who manages it to give you its key.
 t38d39c8f = Add a host
 t85e4b82f = OK
 tceb03600 = Add one with +, or sync the hosts of your other devices.

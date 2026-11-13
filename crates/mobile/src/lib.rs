@@ -102,6 +102,21 @@ pub struct HostSection {
     pub favorites: bool,
 }
 
+/// A collection of an organization, as the host list shows it: its hosts
+/// open by their ids, and are not edited here.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct CollectionSection {
+    pub id: String,
+    pub name: String,
+    /// `connect`, `edit` or `manage`.
+    pub permission: String,
+    /// Connect only: the hosts are not the person's to change.
+    pub read_only: bool,
+    /// Its key is not held here yet: somebody who manages it gives it.
+    pub waiting: bool,
+    pub hosts: Vec<HostRow>,
+}
+
 /// A group as its editor has it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GroupEdit {
@@ -234,6 +249,12 @@ impl Shellwing {
     /// the file's order, then the hosts in none.
     pub fn sections(&self) -> Result<Vec<HostSection>, MobileError> {
         Ok(sections(&self.hosts()?))
+    }
+
+    /// The organizations' collections the vault holds, after hosts.toml's
+    /// sections: each with its hosts once its key is here.
+    pub fn collections(&self) -> Vec<CollectionSection> {
+        collection_sections(&self.collections_held())
     }
 
     /// The host with `id`, to edit.
@@ -379,7 +400,11 @@ impl Shellwing {
         listener: Arc<dyn SessionListener>,
     ) -> Result<Arc<MobileSession>, MobileError> {
         let settings = self.store.settings().unwrap_or_default();
-        let hosts = self.hosts().unwrap_or_default();
+        // A collection's host goes by its id.
+        let hosts = shellwing_core::collections::merged(
+            &self.hosts().unwrap_or_default(),
+            &self.collections_held(),
+        );
         let target = shellwing_core::target::resolve(&spec, &hosts, None);
         let session = Session::start(
             &spec,
@@ -410,9 +435,61 @@ impl Shellwing {
 }
 
 impl Shellwing {
+    /// hosts.toml's: what the editors change.
     fn hosts(&self) -> Result<Hosts, MobileError> {
         self.store.hosts().map_err(MobileError::of)
     }
+
+    /// The collections of the vault, once it is open.
+    fn collections_held(&self) -> Vec<shellwing_core::collections::CollectionHosts> {
+        self.vault
+            .ready()
+            .map(|v| shellwing_core::collections::read(&v))
+            .unwrap_or_default()
+    }
+}
+
+/// A host's `user@address:port`, the parts it sets.
+fn host_detail(h: &Host) -> String {
+    let mut detail = h.address.clone();
+    if let Some(u) = &h.user {
+        detail = format!("{u}@{detail}");
+    }
+    if let Some(p) = h.port.filter(|p| *p != 22) {
+        detail = format!("{detail}:{p}");
+    }
+    detail
+}
+
+fn collection_sections(
+    collections: &[shellwing_core::collections::CollectionHosts],
+) -> Vec<CollectionSection> {
+    collections
+        .iter()
+        .map(|c| CollectionSection {
+            id: c.id.clone(),
+            name: c.name.clone(),
+            permission: c.permission.clone(),
+            read_only: !c.edits(),
+            waiting: c.waiting,
+            hosts: c
+                .hosts
+                .iter()
+                .map(|h| {
+                    let id = h.id.clone().unwrap_or_else(|| h.name.clone());
+                    HostRow {
+                        spec: id.clone(),
+                        id,
+                        name: h.name.clone(),
+                        detail: host_detail(h),
+                        color: h.color_rgb(),
+                        tags: h.tags.clone(),
+                        favorite: false,
+                    }
+                })
+                .collect(),
+        })
+        .collect()
 }
 
 /// `edit` as the host to write over the one with its id (or a new one), or
@@ -549,17 +626,10 @@ fn new_host(address: &str) -> Host {
 fn sections(hosts: &Hosts) -> Vec<HostSection> {
     let row = |h: &Host| {
         let group_color = hosts.group_of(h).and_then(|g| g.color_rgb());
-        let mut detail = h.address.clone();
-        if let Some(u) = &h.user {
-            detail = format!("{u}@{detail}");
-        }
-        if let Some(p) = h.port.filter(|p| *p != 22) {
-            detail = format!("{detail}:{p}");
-        }
         HostRow {
             id: h.id.clone().unwrap_or_default(),
             name: h.name.clone(),
-            detail,
+            detail: host_detail(h),
             color: h.color_rgb().or(group_color),
             spec: h.alias.clone().unwrap_or_else(|| h.name.clone()),
             tags: h.tags.clone(),
@@ -624,6 +694,63 @@ fn sections(hosts: &Hosts) -> Vec<HostSection> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A collection's hosts open by their ids, beside hosts.toml's of the
+    /// same name; one with Connect only is read only, one without its key
+    /// waits.
+    #[test]
+    fn collections_list_their_hosts_by_id() {
+        use shellwing_core::collections::{CollectionHosts, merged};
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"db\"\naddress = \"192.168.1.5\"\n\n\
+             [[host]]\nname = \"theirs\"\naddress = \"10.0.0.9\"\nuser = \"deploy\"\n",
+        );
+        let own = app.hosts().expect("hosts");
+        // Theirs, as the vault gives it: named db too, in a collection.
+        let mut theirs = own.hosts[1].clone();
+        theirs.id = Some("c01".into());
+        theirs.name = "db".into();
+        theirs.collection = Some("col1".into());
+        let mut mine = own.clone();
+        mine.hosts.truncate(1);
+        let collections = vec![
+            CollectionHosts {
+                id: "col1".into(),
+                name: "Production".into(),
+                org_id: "org1".into(),
+                permission: "connect".into(),
+                waiting: false,
+                hosts: vec![theirs],
+            },
+            CollectionHosts {
+                id: "col2".into(),
+                name: "Staging".into(),
+                org_id: "org1".into(),
+                permission: "edit".into(),
+                waiting: true,
+                hosts: vec![],
+            },
+        ];
+        let sections = collection_sections(&collections);
+        assert_eq!(sections.len(), 2);
+        assert!(sections[0].read_only);
+        assert!(!sections[0].waiting);
+        assert_eq!(sections[0].hosts[0].spec, "c01");
+        assert_eq!(sections[0].hosts[0].detail, "deploy@10.0.0.9");
+        assert!(!sections[1].read_only);
+        assert!(sections[1].waiting);
+
+        let all = merged(&mine, &collections);
+        assert_eq!(
+            all.find("db").map(|h| h.address.as_str()),
+            Some("192.168.1.5")
+        );
+        assert_eq!(
+            all.find("c01").map(|h| h.address.as_str()),
+            Some("10.0.0.9")
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// The platform's keychain, in memory.
     #[derive(Default)]

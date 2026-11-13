@@ -4492,6 +4492,9 @@ t4d6f66b8 = 再開一個工作階段
 # Edit {name}
 t4688b082 = 編輯 { $name }
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = 正在等待該集合的管理者向你發放金鑰。
+
 # Add a host
 t38d39c8f = 新增主機
 

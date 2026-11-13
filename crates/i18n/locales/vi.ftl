@@ -4405,6 +4405,9 @@ t4d6f66b8 = Phiên khác
 # Edit {name}
 t4688b082 = Sửa { $name }
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = Đang chờ người quản lý bộ sưu tập trao khoá cho bạn.
+
 # Add a host
 t38d39c8f = Thêm máy chủ
 

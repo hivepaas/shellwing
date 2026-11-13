@@ -60,36 +60,8 @@ pub fn rgb(c: shellwing_config::Color) -> Rgb {
     }
 }
 
-/// A collection of an organization, as the host list shows it
-/// (docs/design/collections.md).
-#[derive(Clone, Debug, PartialEq)]
-pub struct CollectionHosts {
-    pub id: String,
-    pub name: String,
-    /// The organization it belongs to: its certificates sign in to its hosts.
-    pub org_id: String,
-    /// `connect`, `edit` or `manage`.
-    pub permission: String,
-    /// Its key is not held here yet: somebody holding it gives it.
-    pub waiting: bool,
-    pub hosts: Vec<shellwing_config::Host>,
-}
-
-impl CollectionHosts {
-    /// Whether the person may change its hosts.
-    pub fn edits(&self) -> bool {
-        matches!(self.permission.as_str(), "edit" | "manage")
-    }
-}
-
-/// hosts.toml's hosts, then the collections'.
-fn merged(personal: &Hosts, collections: &[CollectionHosts]) -> Hosts {
-    let mut hosts = personal.clone();
-    for c in collections {
-        hosts.hosts.extend(c.hosts.iter().cloned());
-    }
-    hosts
-}
+pub use shellwing_core::collections::CollectionHosts;
+use shellwing_core::collections::merged;
 
 pub struct Live {
     store: Option<Store>,
