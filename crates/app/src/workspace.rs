@@ -5969,27 +5969,7 @@ impl Workspace {
             return false;
         };
         self.collections_loaded = true;
-        let views = vault
-            .known_collections()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|c| {
-                let waiting = vault.collection_versions(&c.id).is_empty();
-                let hosts = if waiting {
-                    Vec::new()
-                } else {
-                    collection_hosts(&vault, &c)
-                };
-                crate::look::CollectionHosts {
-                    id: c.id,
-                    name: c.name,
-                    org_id: c.org_id,
-                    permission: c.permission,
-                    waiting,
-                    hosts,
-                }
-            })
-            .collect();
+        let views = shellwing_core::collections::read(&vault);
         self.live.set_collections(views)
     }
 
@@ -6876,36 +6856,4 @@ mod tests {
             "Alt+Shift+Left selects"
         );
     }
-}
-
-/// A collection's hosts, as the vault holds them: read as hosts.toml's are,
-/// in no group, and signing in with the organization's certificates unless
-/// one says otherwise.
-fn collection_hosts(
-    vault: &shellwing_vault::Vault,
-    c: &shellwing_vault::CollectionInfo,
-) -> Vec<Host> {
-    let space = shellwing_vault::Space::Collection(c.id.clone());
-    let (Ok(hosts), Ok(groups)) = (
-        vault.entries_in(&space, "host"),
-        vault.entries_in(&space, "group"),
-    ) else {
-        return Vec::new();
-    };
-    let Ok(parsed) = shellwing_config::Hosts::from_synced(&hosts, &groups) else {
-        return Vec::new();
-    };
-    parsed
-        .hosts
-        .into_iter()
-        .map(|mut h| {
-            h.collection = Some(c.id.clone());
-            h.group = None;
-            h.favorite = false;
-            if h.org.is_none() {
-                h.org = Some(c.org_id.clone());
-            }
-            h
-        })
-        .collect()
 }

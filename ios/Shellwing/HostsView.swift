@@ -86,7 +86,39 @@ struct HostsView: View {
                         }
                     }
                 }
-                if app.sections.isEmpty {
+                ForEach(shownCollections, id: \.id) { c in
+                    Section {
+                        if c.waiting {
+                            Text(tr("Waiting for somebody who manages it to give you its key."))
+                                .font(.system(size: 14))
+                                .foregroundStyle(Dusk.muted)
+                                .listRowBackground(Dusk.surface)
+                        }
+                        ForEach(c.hosts, id: \.id) { host in
+                            Button {
+                                if let s = app.session(for: host.spec) { path = [s] }
+                            } label: {
+                                HostRowView(host: host, status: status(of: host))
+                            }
+                            .listRowBackground(Dusk.surface)
+                            .contextMenu {
+                                Button(tr("Another session"), systemImage: "plus.rectangle.on.rectangle") {
+                                    if let s = app.open(host.spec) { path = [s] }
+                                }
+                            }
+                        }
+                    } header: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "building.2").font(.system(size: 10)).foregroundStyle(Dusk.muted)
+                            SectionHeading(text: c.name)
+                            Spacer()
+                            Text(collectionNote(c))
+                                .font(.system(size: 12))
+                                .foregroundStyle(Dusk.muted)
+                        }
+                    }
+                }
+                if app.sections.isEmpty && app.collections.isEmpty {
                     empty.listRowBackground(Color.clear)
                 }
             }
@@ -170,6 +202,31 @@ struct HostsView: View {
             }
             return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts, favorites: s.favorites)
         }
+    }
+
+    /// The collections, filtered as the sections are; one waiting for its key
+    /// stays while nothing is typed.
+    private var shownCollections: [CollectionSection] {
+        let q = filter.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return app.collections }
+        return app.collections.compactMap { c in
+            let hosts = c.hosts.filter {
+                $0.name.lowercased().contains(q) || $0.detail.lowercased().contains(q)
+                    || $0.tags.contains { $0.lowercased().contains(q) }
+            }
+            guard !hosts.isEmpty else { return nil }
+            var shown = c
+            shown.hosts = hosts
+            return shown
+        }
+    }
+
+    /// Beside a collection's name: waiting for its key, read only, or how
+    /// many hosts.
+    private func collectionNote(_ c: CollectionSection) -> String {
+        if c.waiting { return tr("waiting for its key") }
+        if c.readOnly { return tr("read only") }
+        return trN(c.hosts.count, "{n} host", "{n} hosts")
     }
 
     /// A row's own: a favorite is listed twice, first and in its group.

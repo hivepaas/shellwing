@@ -4405,6 +4405,9 @@ t4d6f66b8 = 再开一个会话
 # Edit {name}
 t4688b082 = 编辑 { $name }
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = 正在等待该集合的管理者向你发放密钥。
+
 # Add a host
 t38d39c8f = 添加主机
 

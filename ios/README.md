@@ -46,9 +46,11 @@ finds it in the Simulator.
 | `Shellwing/AppModel.swift` | The core, the hosts, the open sessions; each session's frames and status |
 | `Shellwing/TerminalView.swift` | The terminal: draws a frame's runs, takes the keyboard, scrolls the history |
 | `Shellwing/TerminalScreen.swift` | A session full screen, with the keys a phone lacks (Esc, Tab, Ctrl, Alt, arrows) |
-| `Shellwing/HostsView.swift`, `HostEditorView.swift` | The host list by group, and a host's fields |
+| `Shellwing/HostsView.swift`, `HostEditorView.swift` | The host list by group, then the organizations' collections (their hosts open by id, read only here); a host's fields |
 | `Shellwing/SessionsView.swift` | Every open session, as the desktop's tab overview |
 | `Shellwing/AppLock.swift` | Lock shellwing when away: Face ID or the passcode |
 
-Not yet: the vault (saved passwords and keys), sync, snippets and config
-files, SFTP.
+Not yet, for collections ([docs/design/collections.md](../docs/design/collections.md)):
+editing their hosts, giving their key, managing who has access, and the list
+of secrets to change once the key is replaced. The vault syncs them already,
+and makes or replaces a key as the desktop's does.

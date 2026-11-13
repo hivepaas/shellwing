@@ -4,6 +4,7 @@
 
 pub mod bench;
 pub mod certs;
+pub mod collections;
 pub mod command;
 pub mod environment;
 pub mod envs;

@@ -4651,6 +4651,9 @@ t4d6f66b8 = Ще один сеанс
 # Edit {name}
 t4688b082 = Редагувати { $name }
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = Очікування, поки хтось, хто керує колекцією, передасть вам її ключ.
+
 # Add a host
 t38d39c8f = Додати хост
 

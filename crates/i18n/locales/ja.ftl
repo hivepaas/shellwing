@@ -4405,6 +4405,9 @@ t4d6f66b8 = 別のセッション
 # Edit {name}
 t4688b082 = { $name } を編集
 
+# Waiting for somebody who manages it to give you its key.
+t42b71640 = 管理権限を持つユーザーが鍵を渡すのを待っています。
+
 # Add a host
 t38d39c8f = ホストを追加
 
