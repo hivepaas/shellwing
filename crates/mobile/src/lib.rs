@@ -117,6 +117,45 @@ pub struct CollectionSection {
     pub hosts: Vec<HostRow>,
 }
 
+/// A collection's grant: to a person (`user_id`) or a group (`group_id`),
+/// with `connect`, `edit` or `manage`.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct AccessGrant {
+    /// Empty for a group's.
+    pub user_id: String,
+    /// Empty for a person's.
+    pub group_id: String,
+    /// The person's full name and username, or the group's name.
+    pub name: String,
+    pub permission: String,
+}
+
+/// Somebody of the organization a collection can be granted to.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct GrantablePerson {
+    pub user_id: String,
+    pub name: String,
+    /// Owners have Manage on every collection already.
+    pub owner: bool,
+    /// Suspended: they have it once active again.
+    pub suspended: bool,
+}
+
+/// A group of the organization a collection can be granted to.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct GrantableGroup {
+    pub group_id: String,
+    pub name: String,
+}
+
+/// Who has access to a collection, and whom it can be granted to.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct CollectionAccess {
+    pub grants: Vec<AccessGrant>,
+    pub people: Vec<GrantablePerson>,
+    pub groups: Vec<GrantableGroup>,
+}
+
 /// Somebody granted a collection who waits for its key, as its managers see
 /// them before giving it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -294,6 +333,60 @@ impl Shellwing {
                 use shellwing_vault::Collections as _;
                 let members = server.collection_members(&info).map_err(MobileError::of)?;
                 Ok(waiting(members))
+            })
+            .await
+            .map_err(MobileError::of)?
+        })
+        .await
+    }
+
+    /// `collection`'s grants and whom it can be granted to, for somebody
+    /// who manages it. On the network.
+    pub async fn collection_access(
+        self: Arc<Self>,
+        collection: String,
+    ) -> Result<CollectionAccess, MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            tokio::task::spawn_blocking(move || {
+                let (server, _, info) = self.collections_server(&collection)?;
+                let grants = server.collection_grants(&info).map_err(MobileError::of)?;
+                let grantable = server.grantable(&info).map_err(MobileError::of)?;
+                Ok(access(grants, grantable))
+            })
+            .await
+            .map_err(MobileError::of)?
+        })
+        .await
+    }
+
+    /// Makes `grants` the collection's, and no others. Somebody whose grant
+    /// went may have lost access: this phone syncs at once, which replaces
+    /// the key if it holds it. On the network.
+    pub async fn set_access(
+        self: Arc<Self>,
+        collection: String,
+        grants: Vec<AccessGrant>,
+    ) -> Result<(), MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            tokio::task::spawn_blocking(move || {
+                let (server, _, info) = self.collections_server(&collection)?;
+                let before = server.collection_grants(&info).map_err(MobileError::of)?;
+                let wanted: Vec<shellwing_remote::server::Grant> = grants
+                    .into_iter()
+                    .map(|g| shellwing_remote::server::Grant {
+                        user_id: g.user_id,
+                        group_id: g.group_id,
+                        permission: g.permission,
+                        ..Default::default()
+                    })
+                    .collect();
+                server.set_grants(&info, &wanted).map_err(MobileError::of)?;
+                if removed_any(&before, &wanted) {
+                    self.sync.worker.now();
+                }
+                Ok(())
             })
             .await
             .map_err(MobileError::of)?
@@ -590,6 +683,57 @@ impl Shellwing {
             .map(|v| shellwing_core::collections::read(&v))
             .unwrap_or_default()
     }
+}
+
+/// What the server gave of a collection's access, for the phone.
+fn access(
+    grants: Vec<shellwing_remote::server::Grant>,
+    grantable: shellwing_remote::server::Grantable,
+) -> CollectionAccess {
+    let person = |full: &str, username: &str| match full {
+        "" => username.to_string(),
+        full => format!("{full} ({username})"),
+    };
+    CollectionAccess {
+        grants: grants
+            .into_iter()
+            .map(|g| AccessGrant {
+                name: g.name(),
+                user_id: g.user_id,
+                group_id: g.group_id,
+                permission: g.permission,
+            })
+            .collect(),
+        people: grantable
+            .people
+            .into_iter()
+            .map(|p| GrantablePerson {
+                name: person(&p.full_name, &p.username),
+                owner: p.role == "owner",
+                suspended: p.suspended,
+                user_id: p.user_id,
+            })
+            .collect(),
+        groups: grantable
+            .groups
+            .into_iter()
+            .map(|g| GrantableGroup {
+                group_id: g.group_id,
+                name: g.name,
+            })
+            .collect(),
+    }
+}
+
+/// Whether a person or group of `before` is not in `after`: they may have
+/// lost access, and the key needs replacing.
+fn removed_any(
+    before: &[shellwing_remote::server::Grant],
+    after: &[shellwing_remote::server::Grant],
+) -> bool {
+    before
+        .iter()
+        .any(|b| !after.iter().any(|a| a.same_grantee(b)))
 }
 
 /// The people of a collection who wait for its key.
@@ -911,6 +1055,36 @@ mod tests {
             Some("10.0.0.9")
         );
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A grant taken away means a new key; a permission changed does not.
+    #[test]
+    fn a_grant_taken_away_is_noticed() {
+        use shellwing_remote::server::Grant;
+        let grant = |user: &str, group: &str, permission: &str| Grant {
+            user_id: user.into(),
+            group_id: group.into(),
+            permission: permission.into(),
+            ..Default::default()
+        };
+        let before = [grant("ed", "", "edit"), grant("", "ops", "connect")];
+        assert!(!removed_any(
+            &before,
+            &[grant("ed", "", "connect"), grant("", "ops", "edit")]
+        ));
+        assert!(!removed_any(
+            &before,
+            &[
+                grant("ed", "", "edit"),
+                grant("", "ops", "connect"),
+                grant("vic", "", "connect")
+            ]
+        ));
+        assert!(removed_any(&before, &[grant("", "ops", "connect")]));
+        assert!(removed_any(
+            &before,
+            &[grant("ed", "", "edit"), grant("ops", "", "connect")]
+        ));
     }
 
     /// Only who lacks the key waits; somebody without an identity has no

@@ -4519,6 +4519,15 @@ t1978793c = Berikan
 # Give the key to {name}?
 t51bb693b = Berikan kunci kepada { $name }?
 
+# Permission
+t9bc44a22 = Izin
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Akses disimpan. Siapa pun yang baru diberi akses menunggu kuncinya: berikan dari tombol kunci.
+
+# Access saved.
+t59c55f0a = Akses disimpan.
+
 # the Keychain said {status}
 tc1738579 = Rantai Kunci menjawab { $status }
 

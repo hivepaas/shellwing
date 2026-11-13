@@ -4572,6 +4572,15 @@ t1978793c = Dai
 # Give the key to {name}?
 t51bb693b = Dare la chiave a { $name }?
 
+# Permission
+t9bc44a22 = Permesso
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Accesso salvato. Chi ha appena ricevuto l'accesso aspetta la chiave: dagliela dal pulsante della chiave.
+
+# Access saved.
+t59c55f0a = Accesso salvato.
+
 # the Keychain said {status}
 tc1738579 = il Portachiavi ha risposto { $status }
 

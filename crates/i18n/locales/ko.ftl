@@ -4432,6 +4432,15 @@ t1978793c = 전달
 # Give the key to {name}?
 t51bb693b = { $name }님에게 키를 전달할까요?
 
+# Permission
+t9bc44a22 = 권한
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = 접근 권한을 저장했습니다. 새로 권한을 받은 사용자는 키를 기다립니다: 키 버튼에서 전달하세요.
+
+# Access saved.
+t59c55f0a = 접근 권한을 저장했습니다.
+
 # the Keychain said {status}
 tc1738579 = 키체인 응답: { $status }
 

@@ -4432,6 +4432,15 @@ t1978793c = 渡す
 # Give the key to {name}?
 t51bb693b = { $name } に鍵を渡しますか？
 
+# Permission
+t9bc44a22 = 権限
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = アクセス権を保存しました。新たに付与されたユーザーは鍵を待っています：鍵のボタンから渡してください。
+
+# Access saved.
+t59c55f0a = アクセス権を保存しました。
+
 # the Keychain said {status}
 tc1738579 = キーチェーンの応答：{ $status }
 

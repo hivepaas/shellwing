@@ -4432,6 +4432,15 @@ t1978793c = 发放
 # Give the key to {name}?
 t51bb693b = 将密钥发放给 { $name }？
 
+# Permission
+t9bc44a22 = 权限
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = 已保存访问权限。新获授权的人会等待密钥：请通过密钥按钮发放。
+
+# Access saved.
+t59c55f0a = 已保存访问权限。
+
 # the Keychain said {status}
 tc1738579 = 钥匙串返回了 { $status }
 

@@ -4572,6 +4572,15 @@ t1978793c = Ver
 # Give the key to {name}?
 t51bb693b = Anahtar { $name } kişisine verilsin mi?
 
+# Permission
+t9bc44a22 = İzin
+
+# Access saved. Anybody newly granted waits for the key: give it from the key button.
+tffdfd275 = Erişim kaydedildi. Yeni erişim verilen herkes anahtarı bekler: anahtar düğmesinden verin.
+
+# Access saved.
+t59c55f0a = Erişim kaydedildi.
+
 # the Keychain said {status}
 tc1738579 = Anahtar Zinciri yanıtı: { $status }
 
