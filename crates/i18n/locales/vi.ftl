@@ -4414,8 +4414,14 @@ t42b71640 = Đang chờ người quản lý bộ sưu tập trao khoá cho bạn
 # Add a host
 t38d39c8f = Thêm máy chủ
 
+# A collection has a new key
+t0dc9c1a6 = Một bộ sưu tập có khoá mới
+
 # OK
 t85e4b82f = OK
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = Có người đã mất quyền truy cập { $name }: khoá của bộ sưu tập đã được thay. Hãy đổi những gì họ có thể đọc: chúng được liệt kê phía trên các máy chủ của bạn.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Thêm bằng +, hoặc đồng bộ máy chủ từ các thiết bị khác của bạn.

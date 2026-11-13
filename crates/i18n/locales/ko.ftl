@@ -4414,8 +4414,14 @@ t42b71640 = 관리 권한이 있는 사용자가 키를 전달하기를 기다�
 # Add a host
 t38d39c8f = 호스트 추가
 
+# A collection has a new key
+t0dc9c1a6 = 컬렉션에 새 키가 생겼습니다
+
 # OK
 t85e4b82f = 확인
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다. 그 사용자가 읽을 수 있었던 항목을 변경하세요: 호스트 위에 표시됩니다.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = +로 추가하거나, 다른 기기의 호스트를 동기화하세요.

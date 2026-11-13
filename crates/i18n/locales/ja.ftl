@@ -4414,8 +4414,14 @@ t42b71640 = 管理権限を持つユーザーが鍵を渡すのを待ってい�
 # Add a host
 t38d39c8f = ホストを追加
 
+# A collection has a new key
+t0dc9c1a6 = コレクションの鍵が新しくなりました
+
 # OK
 t85e4b82f = OK
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = { $name } へのアクセスを失ったユーザーがいます：鍵は置き換えられました。そのユーザーが読めたものを変更してください：ホストの上に一覧表示されています。
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = + で追加するか、他のデバイスのホストを同期してください。

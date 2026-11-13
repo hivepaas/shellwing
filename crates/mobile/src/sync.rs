@@ -153,6 +153,9 @@ pub struct SyncStatus {
     pub error: Option<String>,
     pub pairing: Option<Pairing>,
     pub requests: Vec<JoinRequest>,
+    /// The collections whose key the last sync replaced here, as somebody
+    /// lost access: what they could read is in `key_checklists`.
+    pub replaced: Vec<String>,
 }
 
 /// What the worker said, kept for the app to read.
@@ -163,6 +166,7 @@ pub(crate) struct State {
     pulled: u32,
     error: Option<String>,
     pairing: Option<Pairing>,
+    replaced: Vec<String>,
     /// Where this device asked to join, to sync at once it is in.
     asking_at: Option<SyncPlace>,
     requests: Vec<Request>,
@@ -199,6 +203,12 @@ impl Syncing {
                             s.syncing = false;
                             s.error = None;
                             s.pulled = u32::try_from(r.pulled).unwrap_or(u32::MAX);
+                            s.replaced = r
+                                .collections
+                                .iter()
+                                .filter(|o| o.replaced.is_some())
+                                .map(|o| o.collection.name.clone())
+                                .collect();
                             s.last = SystemTime::now()
                                 .duration_since(SystemTime::UNIX_EPOCH)
                                 .ok()
@@ -296,6 +306,7 @@ impl Shellwing {
                     code: r.code.clone(),
                 })
                 .collect(),
+            replaced: s.replaced.clone(),
         }
     }
 

@@ -4554,8 +4554,14 @@ t42b71640 = Esperando a que alguien que la administra te dé su clave.
 # Add a host
 t38d39c8f = Añadir un servidor
 
+# A collection has a new key
+t0dc9c1a6 = Una colección tiene una clave nueva
+
 # OK
 t85e4b82f = Aceptar
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = Alguien perdió el acceso a { $name }: su clave se ha reemplazado. Cambia lo que podía leer: aparece en una lista encima de tus servidores.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Añade uno con +, o sincroniza los servidores de tus otros dispositivos.
