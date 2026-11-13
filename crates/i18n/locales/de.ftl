@@ -4268,6 +4268,9 @@ t37ca034c = Ziel: der Pfad einer Datei ab / oder ab ~/, z. B. ~/.kube/config.
 # Nothing is at {path}.
 ta5cf42ea = Unter { $path } liegt nichts.
 
+# They do not wait for its key any more.
+tf982de37 = Die Person wartet nicht mehr auf den Schlüssel.
+
 # Address: an address is needed.
 t3f9c8dd7 = Adresse: Eine Adresse ist erforderlich.
 
@@ -4556,6 +4559,12 @@ t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Füge einen mit + hinzu oder synchronisiere die Hosts deiner anderen Geräte.
+
+# Give
+t1978793c = Weitergeben
+
+# Give the key to {name}?
+t51bb693b = Schlüssel an { $name } weitergeben?
 
 # the Keychain said {status}
 tc1738579 = der Schlüsselbund meldete { $status }

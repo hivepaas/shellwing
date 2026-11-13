@@ -4268,6 +4268,9 @@ t37ca034c = Onde ele vai: o caminho de um arquivo a partir de / ou de ~/, como ~
 # Nothing is at {path}.
 ta5cf42ea = Não há nada em { $path }.
 
+# They do not wait for its key any more.
+tf982de37 = Essa pessoa não aguarda mais a chave.
+
 # Address: an address is needed.
 t3f9c8dd7 = Endereço: é preciso um endereço.
 
@@ -4556,6 +4559,12 @@ t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Adicione um com + ou sincronize os servidores dos seus outros dispositivos.
+
+# Give
+t1978793c = Dar
+
+# Give the key to {name}?
+t51bb693b = Dar a chave a { $name }?
 
 # the Keychain said {status}
 tc1738579 = o chaveiro respondeu { $status }

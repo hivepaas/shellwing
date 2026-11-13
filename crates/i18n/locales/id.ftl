@@ -4219,6 +4219,9 @@ t37ca034c = Lokasinya: jalur berkas dari / atau dari ~/, misalnya ~/.kube/config
 # Nothing is at {path}.
 ta5cf42ea = Tidak ada apa pun di { $path }.
 
+# They do not wait for its key any more.
+tf982de37 = Mereka tidak lagi menunggu kuncinya.
+
 # Address: an address is needed.
 t3f9c8dd7 = Alamat: alamat wajib diisi.
 
@@ -4503,6 +4506,12 @@ t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Tambahkan dengan +, atau sinkronkan host dari perangkat Anda yang lain.
+
+# Give
+t1978793c = Berikan
+
+# Give the key to {name}?
+t51bb693b = Berikan kunci kepada { $name }?
 
 # the Keychain said {status}
 tc1738579 = Rantai Kunci menjawab { $status }

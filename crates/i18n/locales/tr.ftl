@@ -4268,6 +4268,9 @@ t37ca034c = Konumu: / veya ~/ ile başlayan bir dosya yolu, örneğin ~/.kube/co
 # Nothing is at {path}.
 ta5cf42ea = { $path } konumunda bir şey yok.
 
+# They do not wait for its key any more.
+tf982de37 = Artık anahtarı beklemiyor.
+
 # Address: an address is needed.
 t3f9c8dd7 = Adres: bir adres gerekli.
 
@@ -4556,6 +4559,12 @@ t85e4b82f = Tamam
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = + ile bir tane ekleyin ya da diğer cihazlarınızın ana makinelerini eşitleyin.
+
+# Give
+t1978793c = Ver
+
+# Give the key to {name}?
+t51bb693b = Anahtar { $name } kişisine verilsin mi?
 
 # the Keychain said {status}
 tc1738579 = Anahtar Zinciri yanıtı: { $status }

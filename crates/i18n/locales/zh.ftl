@@ -4132,6 +4132,9 @@ t37ca034c = 放置位置：以 / 或 ~/ 开头的文件路径，例如 ~/.kube/c
 # Nothing is at {path}.
 ta5cf42ea = { $path } 处没有任何内容。
 
+# They do not wait for its key any more.
+tf982de37 = 对方已不再等待密钥。
+
 # Address: an address is needed.
 t3f9c8dd7 = 地址：必须填写地址。
 
@@ -4416,6 +4419,12 @@ t85e4b82f = 好
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = 用 + 添加，或同步你其他设备上的主机。
+
+# Give
+t1978793c = 发放
+
+# Give the key to {name}?
+t51bb693b = 将密钥发放给 { $name }？
 
 # the Keychain said {status}
 tc1738579 = 钥匙串返回了 { $status }

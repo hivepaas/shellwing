@@ -4268,6 +4268,9 @@ t37ca034c = Dove va: il percorso di un file da / o da ~/, ad esempio ~/.kube/con
 # Nothing is at {path}.
 ta5cf42ea = Non c'è niente in { $path }.
 
+# They do not wait for its key any more.
+tf982de37 = Non aspetta più la sua chiave.
+
 # Address: an address is needed.
 t3f9c8dd7 = Indirizzo: serve un indirizzo.
 
@@ -4556,6 +4559,12 @@ t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Aggiungine uno con +, o sincronizza gli host dei tuoi altri dispositivi.
+
+# Give
+t1978793c = Dai
+
+# Give the key to {name}?
+t51bb693b = Dare la chiave a { $name }?
 
 # the Keychain said {status}
 tc1738579 = il Portachiavi ha risposto { $status }

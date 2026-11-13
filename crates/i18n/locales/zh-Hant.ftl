@@ -4219,6 +4219,9 @@ t37ca034c = 放置位置：以 / 或 ~/ 開頭的檔案路徑，例如 ~/.kube/c
 # Nothing is at {path}.
 ta5cf42ea = { $path } 處沒有任何內容。
 
+# They do not wait for its key any more.
+tf982de37 = 對方已不再等待金鑰。
+
 # Address: an address is needed.
 t3f9c8dd7 = 位址：必須填寫位址。
 
@@ -4503,6 +4506,12 @@ t85e4b82f = 好
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = 用 + 新增，或同步你其他裝置上的主機。
+
+# Give
+t1978793c = 發放
+
+# Give the key to {name}?
+t51bb693b = 將金鑰發放給 { $name }？
 
 # the Keychain said {status}
 tc1738579 = 鑰匙圈回傳了 { $status }

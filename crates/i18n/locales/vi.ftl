@@ -4132,6 +4132,9 @@ t37ca034c = Vị trí đặt: đường dẫn tệp bắt đầu bằng / hoặc
 # Nothing is at {path}.
 ta5cf42ea = Không có gì ở { $path }.
 
+# They do not wait for its key any more.
+tf982de37 = Họ không còn chờ khoá nữa.
+
 # Address: an address is needed.
 t3f9c8dd7 = Địa chỉ: cần có địa chỉ.
 
@@ -4416,6 +4419,12 @@ t85e4b82f = OK
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Thêm bằng +, hoặc đồng bộ máy chủ từ các thiết bị khác của bạn.
+
+# Give
+t1978793c = Trao
+
+# Give the key to {name}?
+t51bb693b = Trao khoá cho { $name }?
 
 # the Keychain said {status}
 tc1738579 = Keychain báo { $status }
