@@ -4411,8 +4411,14 @@ t42b71640 = 正在等待该集合的管理者向你发放密钥。
 # Add a host
 t38d39c8f = 添加主机
 
+# A collection has a new key
+t0dc9c1a6 = 某个集合有了新的密钥
+
 # OK
 t85e4b82f = 好
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = 有人已失去对 { $name } 的访问权限：其密钥已更换。请更改对方可读取的内容：它们列在你的主机上方。
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = 用 + 添加，或同步你其他设备上的主机。

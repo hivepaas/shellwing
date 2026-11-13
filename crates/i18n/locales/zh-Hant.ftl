@@ -4498,8 +4498,14 @@ t42b71640 = 正在等待該集合的管理者向你發放金鑰。
 # Add a host
 t38d39c8f = 新增主機
 
+# A collection has a new key
+t0dc9c1a6 = 某個集合有了新的金鑰
+
 # OK
 t85e4b82f = 好
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = 有人已失去 { $name } 的存取權：其金鑰已更換。請變更對方可讀取的內容：它們列在你的主機上方。
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = 用 + 新增，或同步你其他裝置上的主機。

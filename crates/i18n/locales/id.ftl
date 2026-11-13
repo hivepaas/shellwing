@@ -4498,8 +4498,14 @@ t42b71640 = Menunggu seseorang yang mengelolanya memberikan kuncinya kepada Anda
 # Add a host
 t38d39c8f = Tambah host
 
+# A collection has a new key
+t0dc9c1a6 = Koleksi memiliki kunci baru
+
 # OK
 t85e4b82f = OK
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = Seseorang kehilangan akses ke { $name }: kuncinya sudah diganti. Ganti apa yang dapat dibacanya: daftarnya ada di atas host Anda.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Tambahkan dengan +, atau sinkronkan host dari perangkat Anda yang lain.

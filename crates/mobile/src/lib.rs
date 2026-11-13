@@ -117,6 +117,16 @@ pub struct CollectionSection {
     pub hosts: Vec<HostRow>,
 }
 
+/// What somebody who lost access to a collection could read: its secrets
+/// when this device replaced its key, to change, until marked done.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct KeyChecklist {
+    pub collection: String,
+    pub name: String,
+    pub version: u32,
+    pub secrets: Vec<String>,
+}
+
 /// A group as its editor has it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct GroupEdit {
@@ -255,6 +265,34 @@ impl Shellwing {
     /// sections: each with its hosts once its key is here.
     pub fn collections(&self) -> Vec<CollectionSection> {
         collection_sections(&self.collections_held())
+    }
+
+    /// The secrets to change in the collections whose key this device
+    /// replaced.
+    pub fn key_checklists(&self) -> Vec<KeyChecklist> {
+        self.vault
+            .ready()
+            .and_then(|v| v.key_checklists().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|l| KeyChecklist {
+                collection: l.collection,
+                name: l.name,
+                version: l.version,
+                secrets: l.secrets,
+            })
+            .collect()
+    }
+
+    /// The secrets of `collection` are changed: its checklist goes.
+    pub fn finish_key_checklist(&self, collection: String) -> Result<(), MobileError> {
+        let vault = self
+            .vault
+            .ready()
+            .ok_or_else(|| MobileError::of(tr!("The vault is locked.")))?;
+        vault
+            .finish_key_checklist(&collection)
+            .map_err(MobileError::of)
     }
 
     /// The host with `id`, to edit.

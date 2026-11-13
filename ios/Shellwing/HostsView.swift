@@ -8,6 +8,7 @@ struct HostsView: View {
     @State private var editing: HostEdit?
     @State private var editingGroup: GroupSheet?
     @State private var doomed: Doomed?
+    @State private var checklist: KeyChecklist?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -26,6 +27,30 @@ struct HostsView: View {
                         .listRowBackground(Color.clear)
                     } header: {
                         SectionHeading(text: tr("Open"))
+                    }
+                }
+                if !app.checklists.isEmpty && filter.isEmpty {
+                    Section {
+                        ForEach(app.checklists) { list in
+                            Button { checklist = list } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "exclamationmark.shield")
+                                        .foregroundStyle(Dusk.amber)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(tr("Secrets to change in {name}…", ["name": list.name]))
+                                            .foregroundStyle(Dusk.text)
+                                        Text(tr("Somebody who lost access could read them"))
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(Dusk.muted)
+                                    }
+                                    Spacer()
+                                    Text("\(list.secrets.count)")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Dusk.muted)
+                                }
+                            }
+                            .listRowBackground(Dusk.surface)
+                        }
                     }
                 }
                 ForEach(shown, id: \.self) { section in
@@ -181,6 +206,21 @@ struct HostsView: View {
             .sheet(item: $editingGroup) { g in
                 GroupEditorView(edit: g.edit) { editingGroup = nil }
             }
+            .sheet(item: $checklist) { list in
+                KeyChecklistView(list: list) { checklist = nil }
+            }
+            .alert(tr("A collection has a new key"), isPresented: Binding(
+                get: { !app.replaced.isEmpty },
+                set: { if !$0 { app.replaced = [] } }
+            )) {
+                Button(tr("OK")) { app.replaced = [] }
+            } message: {
+                Text(app.replaced.map { name in
+                    app.checklists.contains { $0.name == name }
+                        ? tr("Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.", ["name": name])
+                        : tr("Somebody lost access to {name}: its key is replaced.", ["name": name])
+                }.joined(separator: "\n\n"))
+            }
             .alert("shellwing", isPresented: Binding(
                 get: { app.error != nil },
                 set: { if !$0 { app.error = nil } }
@@ -325,4 +365,51 @@ extension HostEdit: Identifiable {}
 struct GroupSheet: Identifiable {
     let id = UUID()
     let edit: GroupEdit
+}
+
+extension KeyChecklist: Identifiable {
+    public var id: String { collection }
+}
+
+/// The secrets of a collection whose key this phone replaced, which somebody
+/// who lost access could read: to change where they are used, then mark done.
+struct KeyChecklistView: View {
+    @EnvironmentObject private var app: AppModel
+    let list: KeyChecklist
+    let done: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(list.secrets, id: \.self) { name in
+                        Label(name, systemImage: "key")
+                            .foregroundStyle(Dusk.text)
+                            .listRowBackground(Dusk.surface)
+                    }
+                } header: {
+                    Text(tr("Somebody who lost access to {name} could read these: change them", ["name": list.name]))
+                        .textCase(nil)
+                } footer: {
+                    Text(tr("Change each where it is used, then here in the collection."))
+                }
+                Section {
+                    Button(tr("All changed: take this list away")) {
+                        app.finishChecklist(list.collection)
+                        done()
+                    }
+                    .listRowBackground(Dusk.surface)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Dusk.panel.ignoresSafeArea())
+            .navigationTitle(list.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(tr("Close")) { done() }
+                }
+            }
+        }
+    }
 }
