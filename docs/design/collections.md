@@ -94,8 +94,10 @@ A collection made on the web has no key, version 0: the first app with Manage
 that opens it makes version 1, wrapped for itself and every owner.
 
 1. An admin, or somebody with Manage, grants a person or a group Connect, Edit
-   or Manage: on the web or in the app. An admin with no grant manages access,
-   and cannot read the collection.
+   or Manage. Admins do it on the web: its Collections page is theirs only. An
+   admin with no grant manages access, and cannot read the collection. Somebody
+   with Manage who is not an admin does it in the app, which also gives the
+   key: granting without giving it would leave the person waiting anyway.
 2. The server keeps the grant **waiting for the key**. The web never wraps a key:
    it has none.
 3. The app of somebody holding the key lists who waits, each with their
