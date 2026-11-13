@@ -9,6 +9,7 @@ struct HostsView: View {
     @State private var editingGroup: GroupSheet?
     @State private var doomed: Doomed?
     @State private var checklist: KeyChecklist?
+    @State private var givingKey: CollectionSection?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -136,6 +137,16 @@ struct HostsView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "building.2").font(.system(size: 10)).foregroundStyle(Dusk.muted)
                             SectionHeading(text: c.name)
+                            if c.permission == "manage" && !c.waiting {
+                                Button {
+                                    givingKey = c
+                                } label: {
+                                    Image(systemName: "key").font(.system(size: 11, weight: .semibold))
+                                        .frame(width: 28, height: 22)
+                                }
+                                .foregroundStyle(Dusk.muted)
+                                .accessibilityLabel(tr("Give the key of {name}…", ["name": c.name]))
+                            }
                             Spacer()
                             Text(collectionNote(c))
                                 .font(.system(size: 12))
@@ -208,6 +219,9 @@ struct HostsView: View {
             }
             .sheet(item: $checklist) { list in
                 KeyChecklistView(list: list) { checklist = nil }
+            }
+            .sheet(item: $givingKey) { c in
+                GiveKeyView(collection: c) { givingKey = nil }
             }
             .alert(tr("A collection has a new key"), isPresented: Binding(
                 get: { !app.replaced.isEmpty },
@@ -410,6 +424,115 @@ struct KeyChecklistView: View {
                     Button(tr("Close")) { done() }
                 }
             }
+        }
+    }
+}
+
+extension CollectionSection: Identifiable {}
+
+/// Who waits for a collection's key, for somebody who manages it and holds
+/// it: each with the fingerprint to compare with their Profile page before
+/// giving it.
+struct GiveKeyView: View {
+    @EnvironmentObject private var app: AppModel
+    let collection: CollectionSection
+    let done: () -> Void
+    @State private var members: [WaitingMember]?
+    @State private var problem: String?
+    @State private var asking: WaitingMember?
+    @State private var giving = false
+    @State private var given: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let problem {
+                    Text(problem).foregroundStyle(Dusk.bad).listRowBackground(Dusk.surface)
+                }
+                if let given {
+                    Text(given).foregroundStyle(Dusk.ok).listRowBackground(Dusk.surface)
+                }
+                if members == nil && problem == nil {
+                    ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
+                }
+                if let members, members.isEmpty {
+                    Text(tr("Everybody with access holds the key."))
+                        .foregroundStyle(Dusk.muted)
+                        .listRowBackground(Dusk.surface)
+                }
+                ForEach(members ?? [], id: \.userId) { m in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(m.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Dusk.text)
+                        if let f = m.fingerprint, m.served {
+                            Text(f)
+                                .font(.system(size: 15, design: .monospaced))
+                                .foregroundStyle(Dusk.text)
+                                .textSelection(.enabled)
+                            Text(tr("Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.", ["fingerprint": f]))
+                                .font(.system(size: 12))
+                                .foregroundStyle(Dusk.muted)
+                            Button(tr("Give")) { asking = m }
+                                .buttonStyle(.bordered)
+                                .disabled(giving)
+                        } else if m.fingerprint != nil {
+                            Text(tr("Suspended in the organization: they can have it once they are back."))
+                                .font(.system(size: 12))
+                                .foregroundStyle(Dusk.muted)
+                        } else {
+                            Text(tr("Has no encryption key yet: they sync the shellwing app with the server once."))
+                                .font(.system(size: 12))
+                                .foregroundStyle(Dusk.muted)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    .listRowBackground(Dusk.surface)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Dusk.panel.ignoresSafeArea())
+            .navigationTitle(tr("Give the key of {name} to whom?", ["name": collection.name]))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(tr("Close")) { done() }
+                }
+            }
+            .task { await load() }
+            .refreshable { await load() }
+            .alert(
+                tr("Give the key to {name}?", ["name": asking?.name ?? ""]),
+                isPresented: Binding(get: { asking != nil }, set: { if !$0 { asking = nil } }),
+                presenting: asking
+            ) { m in
+                Button(tr("Give")) { Task { await give(m) } }
+                Button(tr("Cancel"), role: .cancel) {}
+            } message: { m in
+                Text(tr("Fingerprint {fingerprint}: compare it with the one on their Profile page, then give.", ["fingerprint": m.fingerprint ?? ""]))
+            }
+        }
+    }
+
+    private func load() async {
+        guard let core = app.core else { return }
+        do {
+            members = try await core.waitingForKey(collection: collection.id)
+            problem = nil
+        } catch {
+            problem = tr("Cannot list who waits: {e}", ["e": "\(error)"])
+        }
+    }
+
+    private func give(_ m: WaitingMember) async {
+        guard let core = app.core else { return }
+        giving = true
+        defer { giving = false }
+        do {
+            try await core.giveKey(collection: collection.id, userId: m.userId)
+            given = tr("{name} has the key of {collection} now.", ["name": m.name, "collection": collection.name])
+            problem = nil
+            await load()
+        } catch {
+            problem = tr("The key was not given: {e}", ["e": "\(error)"])
         }
     }
 }

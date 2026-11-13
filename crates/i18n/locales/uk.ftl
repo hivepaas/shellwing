@@ -4366,6 +4366,9 @@ t37ca034c = Куди він потрапить: шлях до файлу, що �
 # Nothing is at {path}.
 ta5cf42ea = За шляхом { $path } нічого немає.
 
+# They do not wait for its key any more.
+tf982de37 = Користувач більше не чекає на ключ.
+
 # Address: an address is needed.
 t3f9c8dd7 = Адреса: потрібно вказати адресу.
 
@@ -4668,6 +4671,12 @@ t4672bd05 = Хтось втратив доступ до колекції { $name
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Додайте хост кнопкою + або синхронізуйте хости з інших ваших пристроїв.
+
+# Give
+t1978793c = Передати
+
+# Give the key to {name}?
+t51bb693b = Передати ключ користувачеві { $name }?
 
 # the Keychain said {status}
 tc1738579 = в'язка ключів повернула { $status }

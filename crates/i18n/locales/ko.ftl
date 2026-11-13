@@ -4132,6 +4132,9 @@ t37ca034c = 놓을 위치: /로 시작하거나 ~/로 시작하는 파일 경로
 # Nothing is at {path}.
 ta5cf42ea = { $path }에 아무것도 없습니다.
 
+# They do not wait for its key any more.
+tf982de37 = 이 사용자는 더 이상 키를 기다리지 않습니다.
+
 # Address: an address is needed.
 t3f9c8dd7 = 주소: 주소가 필요합니다.
 
@@ -4422,6 +4425,12 @@ t4672bd05 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = +로 추가하거나, 다른 기기의 호스트를 동기화하세요.
+
+# Give
+t1978793c = 전달
+
+# Give the key to {name}?
+t51bb693b = { $name }님에게 키를 전달할까요?
 
 # the Keychain said {status}
 tc1738579 = 키체인 응답: { $status }

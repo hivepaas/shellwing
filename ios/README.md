@@ -54,5 +54,9 @@ When a sync on the phone replaces a collection's key, as somebody lost access,
 an alert says so, and the secrets they could read are listed above the hosts
 until marked changed.
 
+Somebody who manages a collection and holds its key gives it from the key
+button beside its name: each person waiting shows the fingerprint to compare
+with their Profile page.
+
 Not yet, for collections ([docs/design/collections.md](../docs/design/collections.md)):
-editing their hosts, giving their key, and managing who has access.
+editing their hosts, and managing who has access.

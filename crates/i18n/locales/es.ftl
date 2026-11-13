@@ -4268,6 +4268,9 @@ t37ca034c = Dónde va: la ruta de un archivo que empiece por / o por ~/, por eje
 # Nothing is at {path}.
 ta5cf42ea = No hay nada en { $path }.
 
+# They do not wait for its key any more.
+tf982de37 = Ya no espera su clave.
+
 # Address: an address is needed.
 t3f9c8dd7 = Dirección: se necesita una dirección.
 
@@ -4562,6 +4565,12 @@ t4672bd05 = Alguien perdió el acceso a { $name }: su clave se ha reemplazado. C
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Añade uno con +, o sincroniza los servidores de tus otros dispositivos.
+
+# Give
+t1978793c = Dar
+
+# Give the key to {name}?
+t51bb693b = ¿Dar la clave a { $name }?
 
 # the Keychain said {status}
 tc1738579 = el Llavero respondió { $status }

@@ -4132,6 +4132,9 @@ t37ca034c = 配置先：/ または ~/ から始まるファイルのパス（�
 # Nothing is at {path}.
 ta5cf42ea = { $path } には何もありません。
 
+# They do not wait for its key any more.
+tf982de37 = このユーザーはもう鍵を待っていません。
+
 # Address: an address is needed.
 t3f9c8dd7 = アドレス：アドレスが必要です。
 
@@ -4422,6 +4425,12 @@ t4672bd05 = { $name } へのアクセスを失ったユーザーがいます：�
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = + で追加するか、他のデバイスのホストを同期してください。
+
+# Give
+t1978793c = 渡す
+
+# Give the key to {name}?
+t51bb693b = { $name } に鍵を渡しますか？
 
 # the Keychain said {status}
 tc1738579 = キーチェーンの応答：{ $status }

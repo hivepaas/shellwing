@@ -117,6 +117,20 @@ pub struct CollectionSection {
     pub hosts: Vec<HostRow>,
 }
 
+/// Somebody granted a collection who waits for its key, as its managers see
+/// them before giving it.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct WaitingMember {
+    pub user_id: String,
+    /// Their full name and username, or the username.
+    pub name: String,
+    /// Six groups of five digits, to compare with their Profile page; None
+    /// until their app published an identity, and nobody can give it before.
+    pub fingerprint: Option<String>,
+    /// False while suspended in the organization: given it once back.
+    pub served: bool,
+}
+
 /// What somebody who lost access to a collection could read: its secrets
 /// when this device replaced its key, to change, until marked done.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -265,6 +279,56 @@ impl Shellwing {
     /// sections: each with its hosts once its key is here.
     pub fn collections(&self) -> Vec<CollectionSection> {
         collection_sections(&self.collections_held())
+    }
+
+    /// Who waits for `collection`'s key, for somebody who manages it and
+    /// holds it. On the network.
+    pub async fn waiting_for_key(
+        self: Arc<Self>,
+        collection: String,
+    ) -> Result<Vec<WaitingMember>, MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            tokio::task::spawn_blocking(move || {
+                let (server, _, info) = self.collections_server(&collection)?;
+                use shellwing_vault::Collections as _;
+                let members = server.collection_members(&info).map_err(MobileError::of)?;
+                Ok(waiting(members))
+            })
+            .await
+            .map_err(MobileError::of)?
+        })
+        .await
+    }
+
+    /// Gives `collection`'s key to `user_id`, whose fingerprint the person
+    /// compared: their identity as the server lists it now. On the network.
+    pub async fn give_key(
+        self: Arc<Self>,
+        collection: String,
+        user_id: String,
+    ) -> Result<(), MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            tokio::task::spawn_blocking(move || {
+                let (server, vault, info) = self.collections_server(&collection)?;
+                use shellwing_vault::Collections as _;
+                let member = server
+                    .collection_members(&info)
+                    .map_err(MobileError::of)?
+                    .into_iter()
+                    .find(|m| m.user_id == user_id && !m.has_key && m.served)
+                    .ok_or_else(|| {
+                        MobileError::of(tr!("They do not wait for its key any more."))
+                    })?;
+                vault
+                    .give_collection_key(&server, &info, &[member])
+                    .map_err(MobileError::of)
+            })
+            .await
+            .map_err(MobileError::of)?
+        })
+        .await
     }
 
     /// The secrets to change in the collections whose key this device
@@ -478,6 +542,47 @@ impl Shellwing {
         self.store.hosts().map_err(MobileError::of)
     }
 
+    /// The shellwing server this phone syncs with, signed in, with the vault
+    /// and what the vault knows of `collection`.
+    fn collections_server(
+        &self,
+        collection: &str,
+    ) -> Result<
+        (
+            shellwing_remote::server::Server,
+            Arc<shellwing_vault::Vault>,
+            shellwing_vault::CollectionInfo,
+        ),
+        MobileError,
+    > {
+        let vault = self
+            .vault
+            .ready()
+            .ok_or_else(|| MobileError::of(tr!("The vault is locked.")))?;
+        let Some(shellwing_config::SyncPlace::Server(place)) = self.sync.worker.place() else {
+            return Err(MobileError::of(tr!(
+                "Collections need syncing with a shellwing server."
+            )));
+        };
+        let token = vault
+            .device_secret(shellwing_core::sync::PLACE_SECRET)
+            .map_err(MobileError::of)?
+            .ok_or_else(|| {
+                MobileError::of(tr!("Collections need syncing with a shellwing server."))
+            })?;
+        let info = vault
+            .known_collections()
+            .map_err(MobileError::of)?
+            .into_iter()
+            .find(|c| c.id == collection)
+            .ok_or_else(|| {
+                MobileError::of(tr!("This host's collection is no longer synced here."))
+            })?;
+        let server =
+            shellwing_remote::server::Server::open(&place.url, &token).map_err(MobileError::of)?;
+        Ok((server, vault, info))
+    }
+
     /// The collections of the vault, once it is open.
     fn collections_held(&self) -> Vec<shellwing_core::collections::CollectionHosts> {
         self.vault
@@ -485,6 +590,24 @@ impl Shellwing {
             .map(|v| shellwing_core::collections::read(&v))
             .unwrap_or_default()
     }
+}
+
+/// The people of a collection who wait for its key.
+fn waiting(members: Vec<shellwing_vault::CollectionMember>) -> Vec<WaitingMember> {
+    members
+        .into_iter()
+        .filter(|m| !m.has_key)
+        .map(|m| WaitingMember {
+            name: if m.full_name.is_empty() {
+                m.username.clone()
+            } else {
+                format!("{} ({})", m.full_name, m.username)
+            },
+            fingerprint: m.identity.as_ref().map(|i| i.fingerprint()),
+            served: m.served,
+            user_id: m.user_id,
+        })
+        .collect()
 }
 
 /// A host's `user@address:port`, the parts it sets.
@@ -788,6 +911,54 @@ mod tests {
             Some("10.0.0.9")
         );
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Only who lacks the key waits; somebody without an identity has no
+    /// fingerprint yet, and a suspended person is not served.
+    #[test]
+    fn who_waits_for_a_key() {
+        let member = |id: &str, full: &str, has_key: bool, served: bool, identity: bool| {
+            shellwing_vault::CollectionMember {
+                user_id: id.into(),
+                username: id.into(),
+                full_name: full.into(),
+                role: "member".into(),
+                permission: "edit".into(),
+                served,
+                has_key,
+                identity: identity.then(|| {
+                    shellwing_vault::Vault::open(
+                        &std::env::temp_dir().join(format!(
+                            "shellwing-mobile-waits-{}-{id}.db",
+                            std::process::id()
+                        )),
+                        &shellwing_vault::MemoryKeys::default(),
+                    )
+                    .expect("vault")
+                    .ensure_identity()
+                    .expect("identity")
+                    .public()
+                }),
+            }
+        };
+        let got = waiting(vec![
+            member("olga", "Olga", true, true, true),
+            member("ed", "Ed Edwards", false, true, true),
+            member("new", "", false, true, false),
+            member("pat", "", false, false, true),
+        ]);
+        let ids: Vec<&str> = got.iter().map(|m| m.user_id.as_str()).collect();
+        assert_eq!(ids, ["ed", "new", "pat"]);
+        assert_eq!(got[0].name, "Ed Edwards (ed)");
+        assert_eq!(got[0].fingerprint.as_ref().map(|f| f.len()), Some(35));
+        assert_eq!(got[1].fingerprint, None);
+        assert!(!got[2].served);
+        for id in ["olga", "ed", "pat"] {
+            let _ = std::fs::remove_file(std::env::temp_dir().join(format!(
+                "shellwing-mobile-waits-{}-{id}.db",
+                std::process::id()
+            )));
+        }
     }
 
     /// The platform's keychain, in memory.
