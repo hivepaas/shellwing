@@ -13,6 +13,10 @@ final class AppModel: ObservableObject {
     /// The organizations' collections the vault holds: their hosts open by
     /// id, and are not edited here.
     @Published private(set) var collections: [CollectionSection] = []
+    /// The secrets to change in collections whose key this phone replaced.
+    @Published private(set) var checklists: [KeyChecklist] = []
+    /// The collections whose key the last sync replaced here: said once.
+    @Published var replaced: [String] = []
     @Published private(set) var sessions: [SessionModel] = []
     @Published private(set) var sync: SyncStatus?
     @Published var error: String?
@@ -69,8 +73,21 @@ final class AppModel: ObservableObject {
     func refreshSync() {
         guard let core else { return }
         let now = core.syncStatus()
-        if now.last != sync?.last { reload() }
+        if now.last != sync?.last {
+            reload()
+            if !now.replaced.isEmpty { replaced = now.replaced }
+        }
         sync = now
+    }
+
+    /// The secrets of `collection` are changed: its list goes.
+    func finishChecklist(_ collection: String) {
+        do {
+            try core?.finishKeyChecklist(collection: collection)
+        } catch {
+            self.error = "\(error)"
+        }
+        reload()
     }
 
     // The app in the background, and back. iOS suspends an app moments
@@ -125,6 +142,7 @@ final class AppModel: ObservableObject {
         do {
             sections = try core.sections()
             collections = core.collections()
+            checklists = core.keyChecklists()
         } catch {
             self.error = "\(error)"
         }

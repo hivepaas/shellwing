@@ -4551,8 +4551,14 @@ t42b71640 = Koleksiyonu yöneten birinin anahtarını size vermesi bekleniyor.
 # Add a host
 t38d39c8f = Ana makine ekle
 
+# A collection has a new key
+t0dc9c1a6 = Bir koleksiyonun yeni anahtarı var
+
 # OK
 t85e4b82f = Tamam
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = Biri { $name } koleksiyonuna erişimini kaybetti: anahtarı değiştirildi. Okuyabildiklerini değiştirin: ana makinelerinizin üstünde listelenir.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = + ile bir tane ekleyin ya da diğer cihazlarınızın ana makinelerini eşitleyin.

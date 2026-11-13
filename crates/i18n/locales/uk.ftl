@@ -4657,8 +4657,14 @@ t42b71640 = Очікування, поки хтось, хто керує кол�
 # Add a host
 t38d39c8f = Додати хост
 
+# A collection has a new key
+t0dc9c1a6 = Колекція має новий ключ
+
 # OK
 t85e4b82f = OK
+
+# Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
+t4672bd05 = Хтось втратив доступ до колекції { $name }: її ключ замінено. Змініть те, що він міг прочитати: це перелічено над вашими хостами.
 
 # Add one with +, or sync the hosts of your other devices.
 tceb03600 = Додайте хост кнопкою + або синхронізуйте хости з інших ваших пристроїв.
