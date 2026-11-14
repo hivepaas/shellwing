@@ -25,7 +25,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CreateNewFolder
+import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.GppMaybe
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
@@ -141,9 +143,26 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                     }
                 }
             }
+            if (words.isEmpty()) {
+                items(model.checklists, key = { "checklist:" + it.collection }) { list ->
+                    Row(
+                        Modifier.fillMaxWidth().combinedClickable(onClick = { onOpen(Screen.KeyChecklist(list.collection)) })
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.GppMaybe, null, tint = Dusk.amber, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(tr("Secrets to change in {name}…", "name" to list.name), fontSize = 16.sp)
+                            Text(tr("Somebody who lost access could read them"), fontSize = 14.sp, color = Dusk.muted)
+                        }
+                        Text(list.secrets.size.toString(), fontSize = 12.sp, color = Dusk.muted)
+                    }
+                }
+            }
             if (model.problem != null) {
                 item { Text(model.problem, color = Dusk.bad, modifier = Modifier.padding(16.dp)) }
-            } else if (model.sections.isEmpty()) {
+            } else if (model.sections.isEmpty() && model.collections.isEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(tr("No hosts yet"), style = MaterialTheme.typography.titleMedium)
@@ -203,8 +222,74 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                     )
                 }
             }
+            // Each collection of an organization: its hosts by their ids, which
+            // no other host shares; read only here.
+            for (c in model.collections) {
+                val hosts = c.hosts.filter { h ->
+                    words.isEmpty() || h.name.lowercase().contains(words) || h.detail.lowercase().contains(words) ||
+                        h.tags.any { it.lowercase().contains(words) }
+                }
+                if (words.isNotEmpty() && hosts.isEmpty()) continue
+                item(key = "collection:" + c.id) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.Business, null, tint = Dusk.muted, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Heading(c.name)
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            when {
+                                c.waiting -> tr("waiting for its key")
+                                c.readOnly -> tr("read only")
+                                else -> trN(c.hosts.size, "{n} host", "{n} hosts")
+                            },
+                            fontSize = 12.sp, color = Dusk.muted,
+                        )
+                    }
+                }
+                if (c.waiting) {
+                    item(key = "waiting:" + c.id) {
+                        Text(
+                            tr("Waiting for somebody who manages it to give you its key."),
+                            fontSize = 14.sp, color = Dusk.muted,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+                items(hosts, key = { "collection:" + c.id + ":" + it.id }) { host ->
+                    HostItem(
+                        host = host,
+                        session = model.sessions.lastOrNull { it.spec == host.spec },
+                        onConnect = { connect(host.spec) },
+                        onAnother = { another(host.spec) },
+                        onEdit = null,
+                        onDelete = null,
+                    )
+                }
+            }
             item { Spacer(Modifier.height(96.dp)) }
         }
+    }
+
+    if (model.replaced.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { model.replaced = emptyList() },
+            title = { Text(tr("A collection has a new key")) },
+            text = {
+                Text(
+                    model.replaced.joinToString("\n\n") { name ->
+                        if (model.checklists.any { it.name == name }) {
+                            tr("Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.", "name" to name)
+                        } else {
+                            tr("Somebody lost access to {name}: its key is replaced.", "name" to name)
+                        }
+                    },
+                )
+            },
+            confirmButton = { TextButton(onClick = { model.replaced = emptyList() }) { Text(tr("OK")) } },
+        )
     }
 
     doomed?.let { host ->
@@ -248,8 +333,9 @@ private fun HostItem(
     session: SessionModel?,
     onConnect: () -> Unit,
     onAnother: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
+    /** None for a host not edited here (a read only collection's). */
+    onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
 ) {
     var menu by remember { mutableStateOf(false) }
     val tint = host.color?.let { rgb(it) } ?: Dusk.soft
@@ -282,9 +368,9 @@ private fun HostItem(
             if (host.favorite) Icon(Icons.Filled.Star, null, tint = Dusk.amber, modifier = Modifier.size(18.dp))
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text(tr("Edit")) }, onClick = { menu = false; onEdit() })
+            onEdit?.let { DropdownMenuItem(text = { Text(tr("Edit")) }, onClick = { menu = false; it() }) }
             DropdownMenuItem(text = { Text(tr("Another session")) }, onClick = { menu = false; onAnother() })
-            DropdownMenuItem(text = { Text(tr("Delete"), color = Dusk.bad) }, onClick = { menu = false; onDelete() })
+            onDelete?.let { DropdownMenuItem(text = { Text(tr("Delete"), color = Dusk.bad) }, onClick = { menu = false; it() }) }
         }
     }
 }
