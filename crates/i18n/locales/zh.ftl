@@ -4345,6 +4345,9 @@ t8d5eff39 =
 # No color
 te96206b1 = 无颜色
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = 为有权访问 { $collection } 的所有人删除 { $title }？
+
 # as the server says
 ta204abe7 = 由服务器决定
 

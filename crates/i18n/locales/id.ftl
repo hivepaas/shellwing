@@ -4432,6 +4432,9 @@ t8d5eff39 =
 # No color
 te96206b1 = Tanpa warna
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Hapus { $title } untuk semua yang memiliki akses ke { $collection }?
+
 # as the server says
 ta204abe7 = sesuai server
 

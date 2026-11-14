@@ -18,9 +18,12 @@ struct HostEditorView: View {
     @State private var madeKey: KeyRow?
     @State private var problem: String?
     @State private var confirmDelete = false
+    /// The collection the host is saved in; nil: hosts.toml.
+    let collection: CollectionSection?
 
-    init(edit: HostEdit, done: @escaping (String?) -> Void) {
+    init(edit: HostEdit, in collection: CollectionSection? = nil, done: @escaping (String?) -> Void) {
         self.done = done
+        self.collection = collection
         _edit = State(initialValue: edit)
         _port = State(initialValue: edit.port.map(String.init) ?? "")
         _tags = State(initialValue: edit.tags.joined(separator: ", "))
@@ -67,12 +70,20 @@ struct HostEditorView: View {
                         Button(tr("Delete…"), role: .destructive) { confirmDelete = true }
                             .frame(maxWidth: .infinity)
                             .confirmationDialog(
-                                tr("Delete {title} from hosts.toml?", ["title": title]),
+                                collection.map {
+                                    tr("Delete {title} for everybody with access to {collection}?", ["title": title, "collection": $0.name])
+                                } ?? tr("Delete {title} from hosts.toml?", ["title": title]),
                                 isPresented: $confirmDelete,
                                 titleVisibility: .visible
                             ) {
                                 Button(tr("Delete"), role: .destructive) {
-                                    if let id = edit.id { app.delete(hostId: id) }
+                                    if let id = edit.id {
+                                        if let c = collection {
+                                            app.delete(hostId: id, in: c.id)
+                                        } else {
+                                            app.delete(hostId: id)
+                                        }
+                                    }
                                     done(nil)
                                 }
                             }
@@ -242,10 +253,12 @@ struct HostEditorView: View {
 
     private var organize: some View {
         Section {
-            LabeledContent(tr("Group")) {
-                TextField(tr("None"), text: text($edit.group)).multilineTextAlignment(.trailing)
+            if collection == nil {
+                LabeledContent(tr("Group")) {
+                    TextField(tr("None"), text: text($edit.group)).multilineTextAlignment(.trailing)
+                }
             }
-            let groups = app.groups()
+            let groups = collection == nil ? app.groups() : []
             if !groups.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
@@ -273,9 +286,16 @@ struct HostEditorView: View {
                     swatch(c.name, color: Color(hex: c.rgb))
                 }
             }
-            Toggle(tr("Favorite: listed first"), isOn: $edit.favorite)
+            if collection == nil {
+                Toggle(tr("Favorite: listed first"), isOn: $edit.favorite)
+            }
         } header: {
             SectionHeading(text: tr("Organize"))
+        } footer: {
+            if let c = collection {
+                Text(tr("In the collection {name}: everybody with access to it sees it.", ["name": c.name]))
+                    .foregroundStyle(Dusk.muted)
+            }
         }
         .listRowBackground(Dusk.surface)
     }
@@ -340,14 +360,18 @@ struct HostEditorView: View {
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
             }
-            Toggle(tr("Keep on this device only"), isOn: $edit.localOnly)
+            if collection == nil {
+                Toggle(tr("Keep on this device only"), isOn: $edit.localOnly)
+            }
         } header: {
             SectionHeading(text: tr("Advanced"))
         } footer: {
-            Text(edit.localOnly
-                ? tr("Not synced: other devices do not see this host.")
-                : tr("Synced with your other devices when sync is on."))
-                .foregroundStyle(Dusk.muted)
+            if collection == nil {
+                Text(edit.localOnly
+                    ? tr("Not synced: other devices do not see this host.")
+                    : tr("Synced with your other devices when sync is on."))
+                    .foregroundStyle(Dusk.muted)
+            }
         }
         .listRowBackground(Dusk.surface)
     }
@@ -399,7 +423,7 @@ struct HostEditorView: View {
         e.keepalive = UInt64(k)
         e.tags = tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         do {
-            let saved = try app.trySave(e)
+            let saved = try collection.map { try app.trySave(e, in: $0.id) } ?? app.trySave(e)
             done(connect ? saved : nil)
         } catch {
             problem = "\(error)"

@@ -4345,6 +4345,9 @@ t8d5eff39 =
 # No color
 te96206b1 = 色なし
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $collection } にアクセスできる全員に対して { $title } を削除しますか？
+
 # as the server says
 ta204abe7 = サーバーの既定
 

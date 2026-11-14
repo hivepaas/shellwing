@@ -4432,6 +4432,9 @@ t8d5eff39 =
 # No color
 te96206b1 = 無色彩
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = 要為具備 { $collection } 存取權的所有人刪除 { $title } 嗎？
+
 # as the server says
 ta204abe7 = 由伺服器決定
 

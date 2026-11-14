@@ -4485,6 +4485,9 @@ t8d5eff39 =
 # No color
 te96206b1 = Renk yok
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $title }, { $collection } koleksiyonuna erişimi olan herkes için silinsin mi?
+
 # as the server says
 ta204abe7 = sunucunun dediği gibi
 
