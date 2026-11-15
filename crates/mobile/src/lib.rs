@@ -456,35 +456,82 @@ impl Shellwing {
     pub fn host(&self, id: String) -> Option<HostEdit> {
         let hosts = self.hosts().ok()?;
         let h = hosts.hosts.iter().find(|h| h.id.as_deref() == Some(&id))?;
-        Some(HostEdit {
-            id: h.id.clone(),
-            name: h.name.clone(),
-            alias: h.alias.clone(),
-            address: h.address.clone(),
-            port: h.port,
-            user: h.user.clone(),
-            group: h.group.clone(),
-            tags: h.tags.clone(),
-            jump: h.jump.clone(),
-            forward: h.forward.clone(),
-            auth: match h.auth.method {
-                AuthMethod::Auto => AuthWay::Auto,
-                AuthMethod::Key => AuthWay::Key,
-                AuthMethod::Password => AuthWay::Password,
-                AuthMethod::Agent => AuthWay::Agent,
-            },
-            key: h.auth.key.clone(),
-            theme: h.theme.clone(),
-            color: h.color.clone(),
-            favorite: h.favorite,
-            local_only: h.local_only,
-            forward_agent: h.forward_agent,
-            keepalive: h.keepalive,
-            host_key: h.host_key.map(Into::into),
-            run: h.run.clone(),
-        })
+        Some(edit_of(h))
     }
 
+    /// The host `id` of `collection`, to edit if the person may.
+    pub fn collection_host(&self, collection: String, id: String) -> Option<HostEdit> {
+        let c = self
+            .collections_held()
+            .into_iter()
+            .find(|c| c.id == collection)?;
+        c.hosts
+            .iter()
+            .find(|h| h.id.as_deref() == Some(&id))
+            .map(edit_of)
+    }
+
+    /// Saves `edit` in `collection`, where it syncs to the others with
+    /// access; gives its id. Its name is checked against the collection's
+    /// hosts, as hosts.toml's are against hosts.toml's.
+    pub fn save_collection_host(
+        &self,
+        collection: String,
+        edit: HostEdit,
+    ) -> Result<String, MobileError> {
+        let (vault, c) = self.writable(&collection)?;
+        let theirs = Hosts {
+            hosts: c.hosts.clone(),
+            ..Default::default()
+        };
+        let host = checked(edit, &theirs).map_err(MobileError::Failed)?;
+        shellwing_core::collections::save_host(&vault, &c, host).map_err(MobileError::Failed)
+    }
+
+    /// Deletes the host `id` of `collection`, for everybody with access.
+    pub fn delete_collection_host(
+        &self,
+        collection: String,
+        id: String,
+    ) -> Result<(), MobileError> {
+        let (vault, c) = self.writable(&collection)?;
+        shellwing_core::collections::delete_host(&vault, &c, &id).map_err(MobileError::Failed)
+    }
+}
+
+/// A host as its editor has it.
+fn edit_of(h: &Host) -> HostEdit {
+    HostEdit {
+        id: h.id.clone(),
+        name: h.name.clone(),
+        alias: h.alias.clone(),
+        address: h.address.clone(),
+        port: h.port,
+        user: h.user.clone(),
+        group: h.group.clone(),
+        tags: h.tags.clone(),
+        jump: h.jump.clone(),
+        forward: h.forward.clone(),
+        auth: match h.auth.method {
+            AuthMethod::Auto => AuthWay::Auto,
+            AuthMethod::Key => AuthWay::Key,
+            AuthMethod::Password => AuthWay::Password,
+            AuthMethod::Agent => AuthWay::Agent,
+        },
+        key: h.auth.key.clone(),
+        theme: h.theme.clone(),
+        color: h.color.clone(),
+        favorite: h.favorite,
+        local_only: h.local_only,
+        forward_agent: h.forward_agent,
+        keepalive: h.keepalive,
+        host_key: h.host_key.map(Into::into),
+        run: h.run.clone(),
+    }
+}
+
+#[uniffi::export]
+impl Shellwing {
     /// The hosts another can jump through: all but `except` (its name).
     pub fn jump_choices(&self, except: Option<String>) -> Vec<String> {
         self.hosts()
@@ -674,6 +721,30 @@ impl Shellwing {
         let server =
             shellwing_remote::server::Server::open(&place.url, &token).map_err(MobileError::of)?;
         Ok((server, vault, info))
+    }
+
+    /// The vault and `collection`, if the person may change its hosts.
+    fn writable(
+        &self,
+        collection: &str,
+    ) -> Result<
+        (
+            Arc<shellwing_vault::Vault>,
+            shellwing_core::collections::CollectionHosts,
+        ),
+        MobileError,
+    > {
+        let vault = self
+            .vault
+            .ready()
+            .ok_or_else(|| MobileError::of(tr!("The vault is locked.")))?;
+        let c = shellwing_core::collections::read(&vault)
+            .into_iter()
+            .find(|c| c.id == collection)
+            .ok_or_else(|| {
+                MobileError::of(tr!("This host's collection is no longer synced here."))
+            })?;
+        Ok((vault, c))
     }
 
     /// The collections of the vault, once it is open.

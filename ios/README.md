@@ -63,5 +63,8 @@ who has access: each grant's permission changed or taken away, people and
 groups granted it, then saved at once, as the web app does. Taking somebody's
 access away syncs at once, so that the phone replaces the key if it holds it.
 
-Not yet, for collections ([docs/design/collections.md](../docs/design/collections.md)):
-editing their hosts.
+With Edit or Manage, a collection's hosts are edited, deleted and added (its
++ button) as hosts.toml's are, saved in the vault, where they sync to the others
+with access; a group, a favorite and "this device only" are hosts.toml's alone.
+shellwing-core's `collections::save_host` and `delete_host` do it for the
+desktop too.

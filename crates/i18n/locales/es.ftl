@@ -4485,6 +4485,9 @@ t8d5eff39 =
 # No color
 te96206b1 = Sin color
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = ¿Eliminar { $title } para todas las personas con acceso a { $collection }?
+
 # as the server says
 ta204abe7 = el que indique el servidor
 

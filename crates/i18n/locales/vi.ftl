@@ -4345,6 +4345,9 @@ t8d5eff39 =
 # No color
 te96206b1 = Không màu
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Xoá { $title } cho mọi người có quyền truy cập { $collection }?
+
 # as the server says
 ta204abe7 = theo máy chủ
 

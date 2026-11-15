@@ -178,6 +178,25 @@ final class AppModel: ObservableObject {
         return id
     }
 
+    /// Saves `edit` in the collection `collection`; gives its id.
+    func trySave(_ edit: HostEdit, in collection: String) throws -> String {
+        guard let core else { throw MobileError.Failed(problem ?? "") }
+        let id = try core.saveCollectionHost(collection: collection, edit: edit)
+        reload()
+        return id
+    }
+
+    /// Deletes the collection's host `hostId`, for everybody with access.
+    func delete(hostId: String, in collection: String) {
+        guard let core else { return }
+        do {
+            try core.deleteCollectionHost(collection: collection, id: hostId)
+            reload()
+        } catch {
+            self.error = "\(error)"
+        }
+    }
+
     func delete(hostId: String) {
         guard let core else { return }
         do {

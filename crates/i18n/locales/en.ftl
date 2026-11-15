@@ -1637,6 +1637,7 @@ t8d5eff39 =
        *[other] Delete { $group }? Its { $n } hosts stay, in no group.
     }
 te96206b1 = No color
+t29fd2554 = Delete { $title } for everybody with access to { $collection }?
 ta204abe7 = as the server says
 t22e1f2f7 = Alias
 tfc47113a = Make a key for this host

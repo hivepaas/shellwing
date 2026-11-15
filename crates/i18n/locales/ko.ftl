@@ -4345,6 +4345,9 @@ t8d5eff39 =
 # No color
 te96206b1 = 색 없음
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $collection }에 접근 권한이 있는 모든 사용자에게서 { $title }을(를) 삭제하시겠습니까?
+
 # as the server says
 ta204abe7 = 서버가 정한 대로
 

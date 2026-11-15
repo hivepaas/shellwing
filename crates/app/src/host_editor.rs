@@ -571,33 +571,18 @@ impl HostEditor {
     /// with access.
     fn save_in_collection(
         &mut self,
-        mut host: Host,
+        host: Host,
         connect: bool,
         install: Option<crate::workspace::KeyToInstall>,
         cx: &mut Context<Self>,
     ) {
         let saved = self.writable_collection(&host).and_then(|c| {
-            // The organization's certificates are the collection's own: not
-            // written down unless another is chosen.
-            if host.org.as_deref() == Some(c.org_id.as_str()) {
-                host.org = None;
-            }
             let vault = self
                 .ctx
                 .vault
                 .get()
                 .ok_or_else(|| tr!("the vault is not open"))?;
-            let id = host.id.clone().unwrap_or_else(shellwing_config::new_id);
-            vault
-                .update_in(
-                    &shellwing_vault::Space::Collection(c.id.clone()),
-                    &id,
-                    "host",
-                    &host.name,
-                    &host.sync_fields(),
-                )
-                .map_err(|e| e.to_string())?;
-            Ok(id)
+            shellwing_core::collections::save_host(&vault, &c, host)
         });
         match saved {
             // The host list opens a collection's host by its id.
@@ -622,13 +607,13 @@ impl HostEditor {
             return cx.notify();
         }
         let result = match (&self.ctx.store, &original.id, &original.collection) {
-            (_, Some(id), Some(_)) => self.writable_collection(original).and_then(|_| {
+            (_, Some(id), Some(_)) => self.writable_collection(original).and_then(|c| {
                 let vault = self
                     .ctx
                     .vault
                     .get()
                     .ok_or_else(|| tr!("the vault is not open"))?;
-                vault.delete(id).map_err(|e| e.to_string())
+                shellwing_core::collections::delete_host(&vault, &c, id)
             }),
             (Some(store), Some(id), None) => store.delete_host(id).map_err(|e| e.to_string()),
             _ => Err(tr!("This host cannot be found in hosts.toml.")),

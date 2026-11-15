@@ -4591,6 +4591,9 @@ t8d5eff39 =
 # No color
 te96206b1 = Без цвета
 
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Удалить { $title } для всех, у кого есть доступ к коллекции { $collection }?
+
 # as the server says
 ta204abe7 = как скажет сервер
 

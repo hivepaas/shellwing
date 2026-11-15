@@ -11,6 +11,7 @@ struct HostsView: View {
     @State private var checklist: KeyChecklist?
     @State private var givingKey: CollectionSection?
     @State private var managing: CollectionSection?
+    @State private var editingInCollection: CollectionHostEdit?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -128,7 +129,25 @@ struct HostsView: View {
                                 HostRowView(host: host, status: status(of: host))
                             }
                             .listRowBackground(Dusk.surface)
+                            .confirming($doomed, about: "\(c.id):\(host.id)")
+                            .swipeActions {
+                                if !c.readOnly {
+                                    DeleteSwipe {
+                                        doomed = Doomed(
+                                            key: "\(c.id):\(host.id)",
+                                            title: tr("Delete {title} for everybody with access to {collection}?", ["title": host.name, "collection": c.name])
+                                        ) {
+                                            app.delete(hostId: host.id, in: c.id)
+                                        }
+                                    }
+                                    Button(tr("Edit")) { editInCollection(c, host.id) }
+                                        .tint(Dusk.button)
+                                }
+                            }
                             .contextMenu {
+                                if !c.readOnly {
+                                    Button(tr("Edit"), systemImage: "pencil") { editInCollection(c, host.id) }
+                                }
                                 Button(tr("Another session"), systemImage: "plus.rectangle.on.rectangle") {
                                     if let s = app.open(host.spec) { path = [s] }
                                 }
@@ -138,6 +157,16 @@ struct HostsView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "building.2").font(.system(size: 10)).foregroundStyle(Dusk.muted)
                             SectionHeading(text: c.name)
+                            if !c.readOnly && !c.waiting {
+                                Button {
+                                    editingInCollection = CollectionHostEdit(collection: c, edit: HostEditorView.blank())
+                                } label: {
+                                    Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                                        .frame(width: 28, height: 22)
+                                }
+                                .foregroundStyle(Dusk.muted)
+                                .accessibilityLabel(tr("New host"))
+                            }
                             if c.permission == "manage" {
                                 Button {
                                     managing = c
@@ -237,6 +266,13 @@ struct HostsView: View {
             .sheet(item: $managing) { c in
                 AccessView(collection: c) { managing = nil }
             }
+            .sheet(item: $editingInCollection) { e in
+                HostEditorView(edit: e.edit, in: e.collection) { saved in
+                    editingInCollection = nil
+                    // A collection's host opens by its id.
+                    if let saved, let s = app.session(for: saved) { path = [s] }
+                }
+            }
             .alert(tr("A collection has a new key"), isPresented: Binding(
                 get: { !app.replaced.isEmpty },
                 set: { if !$0 { app.replaced = [] } }
@@ -269,6 +305,12 @@ struct HostsView: View {
                     || $0.tags.contains { $0.lowercased().contains(q) }
             }
             return hosts.isEmpty ? nil : HostSection(name: s.name, color: s.color, hosts: hosts, favorites: s.favorites)
+        }
+    }
+
+    private func editInCollection(_ c: CollectionSection, _ id: String) {
+        if let edit = app.core?.collectionHost(collection: c.id, id: id) {
+            editingInCollection = CollectionHostEdit(collection: c, edit: edit)
         }
     }
 
@@ -698,4 +740,11 @@ struct AccessView: View {
             problem = tr("Access was not changed: {e}", ["e": "\(error)"])
         }
     }
+}
+
+/// A host of a collection, being edited there.
+struct CollectionHostEdit: Identifiable {
+    let id = UUID()
+    let collection: CollectionSection
+    let edit: HostEdit
 }
