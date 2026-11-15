@@ -86,6 +86,8 @@ sealed interface Screen {
     data object KnownHosts : Screen
     data object SnippetLibrary : Screen
     data object Sync : Screen
+    /** The secrets to change in a collection whose key this phone replaced. */
+    data class KeyChecklist(val collection: String) : Screen
 }
 
 enum class Tab { Hosts, Sessions, Library, Settings }
@@ -175,6 +177,7 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
         Screen.KnownHosts -> { KnownHostsScreen(model, onBack = back); return }
         Screen.SnippetLibrary -> { SnippetLibraryScreen(model, onBack = back); return }
         Screen.Sync -> { SyncScreen(model, onBack = back); return }
+        is Screen.KeyChecklist -> { KeyChecklistScreen(model, top.collection, onBack = back); return }
         null -> {}
     }
 

@@ -12,8 +12,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.hivepaas.shellwing.core.CollectionSection
 import com.hivepaas.shellwing.core.HostEdit
 import com.hivepaas.shellwing.core.HostSection
+import com.hivepaas.shellwing.core.KeyChecklist
 import com.hivepaas.shellwing.core.MobileException
 import com.hivepaas.shellwing.core.OnDisconnectWay
 import com.hivepaas.shellwing.core.SessionStatus
@@ -37,6 +39,14 @@ class AppModel(private val app: ShellwingApp) {
 
     var sections by mutableStateOf<List<HostSection>>(emptyList())
         private set
+    /** The organizations' collections the vault holds: their hosts open by id. */
+    var collections by mutableStateOf<List<CollectionSection>>(emptyList())
+        private set
+    /** The secrets to change in collections whose key this phone replaced. */
+    var checklists by mutableStateOf<List<KeyChecklist>>(emptyList())
+        private set
+    /** The collections whose key the last sync replaced here: said once. */
+    var replaced by mutableStateOf<List<String>>(emptyList())
     val sessions = mutableStateListOf<SessionModel>()
     var error by mutableStateOf<String?>(null)
     /** The sync's state: where, when last, devices asking to join. */
@@ -105,6 +115,8 @@ class AppModel(private val app: ShellwingApp) {
         val core = core ?: return
         try {
             sections = core.sections()
+            collections = core.collections()
+            checklists = core.keyChecklists()
         } catch (e: Exception) {
             error = e.said()
         }
@@ -113,8 +125,21 @@ class AppModel(private val app: ShellwingApp) {
     /** The sync's state, read again; a sync done may have brought hosts. */
     fun refreshSync() {
         val now = core?.syncStatus() ?: return
-        if (now.last != sync?.last) reload()
+        if (now.last != sync?.last) {
+            reload()
+            if (now.replaced.isNotEmpty()) replaced = now.replaced
+        }
         sync = now
+    }
+
+    /** The secrets of `collection` are changed: its list goes. */
+    fun finishChecklist(collection: String) {
+        try {
+            core?.finishKeyChecklist(collection)
+        } catch (e: Exception) {
+            error = e.said()
+        }
+        reload()
     }
 
     fun groups(): List<String> = core?.groups() ?: emptyList()
