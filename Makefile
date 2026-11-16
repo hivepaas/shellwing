@@ -1,4 +1,4 @@
-# Building shellwing in one word: `make build`, `make run`; `make` alone lists
+# Building shellwing in one word: `make build`, `make debug`; `make` alone lists
 # the rest. Needs Rust (rustup) and Zig 0.17 on PATH, plus each platform's
 # tools (docs/platforms.md). On Windows, run it from Git Bash or MSYS2.
 #
@@ -30,7 +30,7 @@ endif
 ARCH := $(shell uname -m 2>/dev/null)
 
 .DEFAULT_GOAL := help
-.PHONY: help e2e-openssh build run dev build-mac build-linux build-windows build-ios-core \
+.PHONY: help e2e-openssh build debug release build-debug build-mac build-linux build-windows build-ios-core \
 	build-android-core ios ios-sim android test lint fmt check install-desktop package doctor clean zig
 
 help: ## List the targets
@@ -49,10 +49,13 @@ else
 	@echo "no desktop build for $(HOST)"; exit 1
 endif
 
-run: zig ## Build (debug) and start the app
+debug: zig ## Build and run the debug version: quicker to build, slower to run
 	$(CARGO) run -p shellwing
 
-dev: zig ## Debug build: quicker to make, slower to run
+release: zig ## Build and run the release version
+	$(CARGO) run --release -p shellwing
+
+build-debug: zig ## Build the debug version: target/debug/shellwing
 	$(CARGO) build -p shellwing
 
 build-mac: zig ## macOS release build -> dist/shellwing-macos-<arch>
