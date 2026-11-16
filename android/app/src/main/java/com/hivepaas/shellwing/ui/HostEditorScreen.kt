@@ -84,8 +84,22 @@ private fun blank() = HostEdit(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HostEditorScreen(model: AppModel, hostId: String?, onDone: () -> Unit, onConnect: (SessionModel) -> Unit) {
-    var edit by remember { mutableStateOf(hostId?.let { model.host(it) } ?: blank()) }
+fun HostEditorScreen(
+    model: AppModel,
+    hostId: String?,
+    collection: String?,
+    onDone: () -> Unit,
+    onConnect: (SessionModel) -> Unit,
+) {
+    /** The collection the host is saved in; null: hosts.toml. */
+    val inCollection = collection?.let { id -> model.collections.firstOrNull { it.id == id } }
+    var edit by remember {
+        mutableStateOf(
+            hostId?.let { id ->
+                if (collection != null) model.core?.collectionHost(collection, id) else model.host(id)
+            } ?: blank(),
+        )
+    }
     var port by remember { mutableStateOf(edit.port?.toString() ?: "") }
     var tags by remember { mutableStateOf(edit.tags.joinToString(", ")) }
     var keepalive by remember { mutableStateOf(edit.keepalive?.toString() ?: "") }
@@ -130,8 +144,9 @@ fun HostEditorScreen(model: AppModel, hostId: String?, onDone: () -> Unit, onCon
             tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
         )
         try {
-            val id = model.save(done)
-            val spec = model.sections.flatMap { it.hosts }.firstOrNull { it.id == id }?.spec
+            val id = if (collection != null) model.save(done, collection) else model.save(done)
+            // A collection's host opens by its id.
+            val spec = if (collection != null) id else model.sections.flatMap { it.hosts }.firstOrNull { it.id == id }?.spec
             if (connect && spec != null) model.session(spec)?.let { onConnect(it); return }
             onDone()
         } catch (e: Exception) {
@@ -294,12 +309,18 @@ fun HostEditorScreen(model: AppModel, hostId: String?, onDone: () -> Unit, onCon
             Hint("-L [bind:]port:host:hostport · -R [bind:]port:host:hostport · -D [bind:]port\n" + tr("Set up every time this host connects."))
 
             Section(tr("Organize"))
-            Picker(tr("Group"), listOf<Pair<String?, String>>(null to tr("None")) + model.groups().map { it to it }, edit.group) {
-                edit = edit.copy(group = it)
+            if (collection == null) {
+                Picker(tr("Group"), listOf<Pair<String?, String>>(null to tr("None")) + model.groups().map { it to it }, edit.group) {
+                    edit = edit.copy(group = it)
+                }
             }
             Field(tr("Tags"), tags, placeholder = "web, docker") { tags = it }
             ColorChoice(edit.color) { edit = edit.copy(color = it) }
-            SwitchLine(tr("Favorite: listed first"), null, edit.favorite) { edit = edit.copy(favorite = it) }
+            if (collection == null) {
+                SwitchLine(tr("Favorite: listed first"), null, edit.favorite) { edit = edit.copy(favorite = it) }
+            } else {
+                Hint(tr("In the collection {name}: everybody with access to it sees it.", "name" to (inCollection?.name ?: "")))
+            }
 
             Section(tr("Terminal"))
             Column(
@@ -332,12 +353,14 @@ fun HostEditorScreen(model: AppModel, hostId: String?, onDone: () -> Unit, onCon
                 edit.hostKey,
             ) { edit = edit.copy(hostKey = it) }
             Field(tr("Keepalive (s)"), keepalive, type = KeyboardType.Number, placeholder = tr("as in Settings")) { keepalive = it }
-            SwitchLine(
-                tr("Keep on this device only"),
-                if (edit.localOnly) tr("Not synced: other devices do not see this host.")
-                else tr("Synced with your other devices when sync is on."),
-                edit.localOnly,
-            ) { edit = edit.copy(localOnly = it) }
+            if (collection == null) {
+                SwitchLine(
+                    tr("Keep on this device only"),
+                    if (edit.localOnly) tr("Not synced: other devices do not see this host.")
+                    else tr("Synced with your other devices when sync is on."),
+                    edit.localOnly,
+                ) { edit = edit.copy(localOnly = it) }
+            }
 
             problem?.let { Text(it, color = Dusk.bad) }
 
@@ -355,9 +378,24 @@ fun HostEditorScreen(model: AppModel, hostId: String?, onDone: () -> Unit, onCon
     if (deleting && hostId != null) {
         AlertDialog(
             onDismissRequest = { deleting = false },
-            title = { Text(tr("Delete {title} from hosts.toml?", "title" to title)) },
+            title = {
+                Text(
+                    if (collection != null) {
+                        tr(
+                            "Delete {title} for everybody with access to {collection}?",
+                            "title" to title, "collection" to (inCollection?.name ?: ""),
+                        )
+                    } else {
+                        tr("Delete {title} from hosts.toml?", "title" to title)
+                    },
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { model.delete(hostId); deleting = false; onDone() }) {
+                TextButton(onClick = {
+                    if (collection != null) model.delete(hostId, collection) else model.delete(hostId)
+                    deleting = false
+                    onDone()
+                }) {
                     Text(tr("Delete"), color = Dusk.bad)
                 }
             },

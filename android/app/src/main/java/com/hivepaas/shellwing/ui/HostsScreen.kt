@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.GppMaybe
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.hivepaas.shellwing.AppModel
 import com.hivepaas.shellwing.R
 import com.hivepaas.shellwing.SessionModel
+import com.hivepaas.shellwing.core.CollectionSection
 import com.hivepaas.shellwing.core.HostRow
 import com.hivepaas.shellwing.core.SessionStatus
 import com.hivepaas.shellwing.statusWord
@@ -74,6 +77,8 @@ import com.hivepaas.shellwing.trN
 fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Unit) {
     var filter by rememberSaveable { mutableStateOf("") }
     var doomed by remember { mutableStateOf<HostRow?>(null) }
+    /** A collection's host to delete, with the collection. */
+    var doomedIn by remember { mutableStateOf<Pair<CollectionSection, HostRow>?>(null) }
     val connect: (String) -> Unit = { spec -> model.session(spec)?.let { onOpen(Screen.Terminal(it.id)) } }
     val another: (String) -> Unit = { spec -> model.open(spec)?.let { onOpen(Screen.Terminal(it.id)) } }
 
@@ -238,6 +243,21 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                         Icon(Icons.Outlined.Business, null, tint = Dusk.muted, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(8.dp))
                         Heading(c.name)
+                        if (!c.readOnly && !c.waiting) {
+                            IconButton(onClick = { onOpen(Screen.HostEditor(null, c.id)) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Add, tr("New host"), tint = Dusk.muted, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        if (c.permission == "manage") {
+                            IconButton(onClick = { onOpen(Screen.Access(c.id)) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Group, tr("Manage access to {name}…", "name" to c.name), tint = Dusk.muted, modifier = Modifier.size(16.dp))
+                            }
+                            if (!c.waiting) {
+                                IconButton(onClick = { onOpen(Screen.GiveKey(c.id)) }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.Outlined.Key, tr("Give the key of {name}…", "name" to c.name), tint = Dusk.muted, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
                         Spacer(Modifier.weight(1f))
                         Text(
                             when {
@@ -264,13 +284,26 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                         session = model.sessions.lastOrNull { it.spec == host.spec },
                         onConnect = { connect(host.spec) },
                         onAnother = { another(host.spec) },
-                        onEdit = null,
-                        onDelete = null,
+                        onEdit = if (c.readOnly) null else ({ onOpen(Screen.HostEditor(host.id, c.id)) }),
+                        onDelete = if (c.readOnly) null else ({ doomedIn = c to host }),
                     )
                 }
             }
             item { Spacer(Modifier.height(96.dp)) }
         }
+    }
+
+    doomedIn?.let { (c, host) ->
+        AlertDialog(
+            onDismissRequest = { doomedIn = null },
+            title = {
+                Text(tr("Delete {title} for everybody with access to {collection}?", "title" to host.name, "collection" to c.name))
+            },
+            confirmButton = {
+                TextButton(onClick = { model.delete(host.id, c.id); doomedIn = null }) { Text(tr("Delete"), color = Dusk.bad) }
+            },
+            dismissButton = { TextButton(onClick = { doomedIn = null }) { Text(tr("Cancel")) } },
+        )
     }
 
     if (model.replaced.isNotEmpty()) {
