@@ -71,8 +71,8 @@ sealed interface Screen {
     data class Terminal(val sessionId: String) : Screen
     /** A session's files over SFTP. */
     data class Files(val sessionId: String) : Screen
-    /** A host's editor; a new host's without an id. */
-    data class HostEditor(val hostId: String?) : Screen
+    /** A host's editor; a new host's without an id; a collection's with [collection]. */
+    data class HostEditor(val hostId: String?, val collection: String? = null) : Screen
     /** A group's editor; a new group's without a name. */
     data class GroupEditor(val name: String?) : Screen
     data class SnippetEditor(val edit: SnippetEdit) : Screen
@@ -88,6 +88,10 @@ sealed interface Screen {
     data object Sync : Screen
     /** The secrets to change in a collection whose key this phone replaced. */
     data class KeyChecklist(val collection: String) : Screen
+    /** Who waits for a collection's key, to give it. */
+    data class GiveKey(val collection: String) : Screen
+    /** Who has access to a collection, to change. */
+    data class Access(val collection: String) : Screen
 }
 
 enum class Tab { Hosts, Sessions, Library, Settings }
@@ -160,7 +164,7 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
             return
         }
         is Screen.HostEditor -> {
-            HostEditorScreen(model, top.hostId, onDone = back, onConnect = { session ->
+            HostEditorScreen(model, top.hostId, top.collection, onDone = back, onConnect = { session ->
                 back()
                 open(Screen.Terminal(session.id))
             })
@@ -178,6 +182,8 @@ fun AppRoot(model: AppModel, lock: AppLock, onLockNow: () -> Unit) {
         Screen.SnippetLibrary -> { SnippetLibraryScreen(model, onBack = back); return }
         Screen.Sync -> { SyncScreen(model, onBack = back); return }
         is Screen.KeyChecklist -> { KeyChecklistScreen(model, top.collection, onBack = back); return }
+        is Screen.GiveKey -> { GiveKeyScreen(model, top.collection, onBack = back); return }
+        is Screen.Access -> { AccessScreen(model, top.collection, onBack = back); return }
         null -> {}
     }
 

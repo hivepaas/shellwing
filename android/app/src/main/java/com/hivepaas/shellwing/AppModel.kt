@@ -154,6 +154,24 @@ class AppModel(private val app: ShellwingApp) {
         return id
     }
 
+    /** Saves the host in the collection [collection]: its id, or why not. */
+    fun save(edit: HostEdit, collection: String): String {
+        val core = core ?: throw MobileException.Failed(problem ?: "")
+        val id = core.saveCollectionHost(collection, edit)
+        reload()
+        return id
+    }
+
+    /** Deletes the collection's host, for everybody with access. */
+    fun delete(hostId: String, collection: String) {
+        try {
+            core?.deleteCollectionHost(collection, hostId)
+            reload()
+        } catch (e: Exception) {
+            error = e.said()
+        }
+    }
+
     fun delete(hostId: String) {
         try {
             core?.deleteHost(hostId)
