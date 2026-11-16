@@ -51,7 +51,7 @@ libghostty-vt is compiled from source with it. rustup installs the Rust version 
 | Debian/Ubuntu | `sudo apt-get install build-essential pkg-config libfontconfig-dev libfreetype-dev libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev libvulkan-dev libdbus-1-dev libzstd-dev libpam0g-dev` |
 
 `make build` builds a release for this computer into `dist/`; `make` alone lists
-the other targets (`make run`, `make check`, `make doctor`, the phone cores). By
+the other targets (`make debug`, `make check`, `make doctor`, the phone cores). By
 hand:
 
 ```sh
