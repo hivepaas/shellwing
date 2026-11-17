@@ -5188,6 +5188,9 @@ t3ef97d99 = { $path } останется после завершения сеа�
 # {path} taken away.
 tb65f4b23 = { $path } удалён.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = Подключено без того, что запрашивают эти хосты из коллекции организации. Это задают те, кто может изменять коллекцию, и это действует на этом устройстве: разрешайте, только если доверяете им.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = Сохранить { $offer } в хранилище? В следующий раз сначала будет испробовано сохранённое.
 

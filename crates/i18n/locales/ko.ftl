@@ -4933,6 +4933,9 @@ t3ef97d99 = 세션이 끝나도 { $path }은(는) 남습니다.
 # {path} taken away.
 tb65f4b23 = { $path }을(를) 삭제했습니다.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = 조직 컬렉션의 이 호스트들이 요청한 설정 없이 연결했습니다. 컬렉션을 편집할 수 있는 사람이 설정하며, 이 기기에서 동작합니다. 그 사람들을 신뢰할 때만 허용하세요.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = { $offer }을(를) 보관함에 저장하시겠습니까? 다음에는 먼저 시도합니다.
 

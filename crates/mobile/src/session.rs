@@ -150,6 +150,18 @@ pub struct MobileSession {
     listener: Arc<dyn SessionListener>,
     /// Config files placed on the host until the session ends.
     placed: Mutex<Vec<shellwing_core::placing::Placed>>,
+    /// What the organization's collections' hosts on the way asked, which
+    /// it connected without: until allowed, or put aside.
+    held: Mutex<Vec<shellwing_core::collections::Unallowed>>,
+}
+
+/// A collection's host that connected without what it asks, and what that
+/// is: for the person to read before allowing it.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct HeldBack {
+    pub name: String,
+    /// Each thing it asks, as people read it.
+    pub items: Vec<String>,
 }
 
 /// An environment loaded into a session's shell.
@@ -164,6 +176,26 @@ impl MobileSession {
     #[cfg(test)]
     pub(crate) fn shell_size(&self) -> Option<(u32, u32)> {
         lock(&self.session).writer.size()
+    }
+
+    /// What the collections' hosts on the way asked, which it connected
+    /// without.
+    pub(crate) fn hold_back(&self, held: Vec<shellwing_core::collections::Unallowed>) {
+        *lock(&self.held) = held;
+    }
+
+    /// The hosts held back, with what each asks to have allowed: taken.
+    pub(crate) fn take_held(&self) -> Vec<(String, String)> {
+        lock(&self.held)
+            .drain(..)
+            .map(|h| (h.id, h.asks.fingerprint))
+            .collect()
+    }
+
+    /// Connects again to `resolved`, which may have changed (more allowed).
+    pub(crate) fn retarget(&self, resolved: shellwing_ssh::Resolved, run: Option<String>) {
+        self.start_retrying_over();
+        lock(&self.session).retarget(resolved, run);
     }
 
     pub(crate) fn new(
@@ -187,6 +219,7 @@ impl MobileSession {
             copied: Mutex::new(None),
             sftp: tokio::sync::Mutex::new(None),
             placed: Mutex::default(),
+            held: Mutex::default(),
             rt: rt.clone(),
             store,
             retry: Mutex::default(),
@@ -374,6 +407,24 @@ impl MobileSession {
     /// The text copied last, once.
     pub fn copied(&self) -> Option<String> {
         lock(&self.copied).take()
+    }
+
+    /// What the organization's collections' hosts on the way asked to do,
+    /// which it connected without: set by whoever may edit the collection,
+    /// so the person reads it before allowing it (`Shellwing::allow_held_back`).
+    pub fn held_back(&self) -> Vec<HeldBack> {
+        lock(&self.held)
+            .iter()
+            .map(|h| HeldBack {
+                name: h.name.clone(),
+                items: h.asks.items.clone(),
+            })
+            .collect()
+    }
+
+    /// Not now: it stays connected without them, and is asked next time.
+    pub fn dismiss_held_back(&self) {
+        lock(&self.held).clear();
     }
 
     /// Connects again, after it was lost or closed; trying by itself starts

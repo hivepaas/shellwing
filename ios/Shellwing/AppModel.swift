@@ -418,6 +418,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     @MainActor @Published private(set) var ended: String?
     /// A password that worked, offered to keep: `the password for deploy@web-1`.
     @MainActor @Published private(set) var offer: String?
+    /// What a collection's hosts on the way asked, which it connected without.
+    @MainActor @Published private(set) var heldBack: [HeldBack] = []
     /// Something said once: an environment loaded, a load given up.
     @MainActor @Published var notice: String?
     @MainActor @Published private(set) var envs: [LoadedEnvRow] = []
@@ -478,6 +480,8 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
         if e != ended { ended = e }
         let o = session.offer()
         if o != offer { offer = o }
+        let held = session.heldBack()
+        if held != heldBack { heldBack = held }
         if let n = session.notice() { notice = n }
         // A selection copied: its text, on the pasteboard.
         if let copied = session.copied() { UIPasteboard.general.string = copied }
@@ -589,6 +593,22 @@ final class SessionModel: ObservableObject, SessionListener, Identifiable, @unch
     func dismissOffer() {
         session?.dismissOffer()
         offer = nil
+    }
+
+    /// Not now: it stays connected without what was held back.
+    @MainActor
+    func dismissHeldBack() {
+        session?.dismissHeldBack()
+        heldBack = []
+    }
+
+    /// Allows what was held back, on this phone, and connects again with it.
+    @MainActor
+    func allowHeldBack(_ core: Shellwing) throws {
+        guard let session else { return }
+        heldBack = []
+        try core.allowHeldBack(session: session)
+        heldBack = session.heldBack()
     }
 
     /// Puts the public key `line` in the host's authorized_keys: true when added, false

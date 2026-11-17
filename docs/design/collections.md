@@ -177,7 +177,9 @@ it.
   and "Allow and reconnect" keeps the host's id with a SHA-256 of those
   settings in `state/allowed.json` on this device. Changed, they are asked
   again. Their own `~/.ssh/config` for the address still applies. The
-  phones connect without them, with no way to allow them yet.
+  phones do the same: the terminal lists them above the keys row, with the
+  same two choices, and keep what is allowed in the phone's own
+  `state/allowed.json`.
 - A collection's host never takes the name of one's own: names and aliases
   are looked up in hosts.toml first, so one with alias `bastion` cannot stand
   in for one's own `bastion`, a jump host of theirs, say.

@@ -1842,6 +1842,7 @@ t7fad2b94 = { $name }, placed until the session ends
 t4f418d0b = Unload { $name }
 t3ef97d99 = { $path } stays when the session ends.
 tb65f4b23 = { $path } taken away.
+t5e57676a = Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
 t3fd5ca20 = Save { $offer } in the vault? It is tried first next time.
 tf423ea3c = Files (SFTP)…
 t8b267127 = Load an environment…

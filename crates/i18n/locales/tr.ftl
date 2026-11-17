@@ -5076,6 +5076,9 @@ t3ef97d99 = { $path }, oturum bittiğinde kalır.
 # {path} taken away.
 tb65f4b23 = { $path } kaldırıldı.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = Bir kuruluş koleksiyonundaki bu ana makinelerin istedikleri olmadan bağlanıldı. Bunu koleksiyonu düzenleyebilenler ayarlar ve bu cihazda çalışır: yalnızca onlara güveniyorsanız izin verin.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = { $offer } kasaya kaydedilsin mi? Bir dahaki sefere önce o denenir.
 
