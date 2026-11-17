@@ -34,10 +34,11 @@ struct Inner {
 pub struct VaultSlot(Arc<Inner>);
 
 impl VaultSlot {
-    /// Opens the vault with its key in the system keychain.
+    /// Opens the vault with its key in the system keychain, under `service`
+    /// ([`shellwing_config::Store::keychain_service`]).
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
-    pub fn open(path: PathBuf) -> Self {
-        Self::open_with(path, shellwing_vault::OsKeychain::default())
+    pub fn open(path: PathBuf, service: &str) -> Self {
+        Self::open_with(path, shellwing_vault::OsKeychain::named(service))
     }
 
     /// Opens the vault with its key in `keys`: on iOS and Android, a store the
