@@ -29,6 +29,8 @@ const STATE: &str = "state";
 const WINDOW: &str = "window.json";
 const RECENT: &str = "recent.json";
 const ALLOWED: &str = "allowed.json";
+/// The organizations' names, as the server last gave them.
+const ORGS: &str = "orgs.json";
 const SESSION: &str = "session.json";
 const PLACED: &str = "placed.json";
 const NOTE_WINDOW: &str = "note-window.json";
@@ -600,6 +602,21 @@ impl Store {
         let mut allowed = self.allowed();
         allowed.insert(id.to_string(), fingerprint.to_string());
         self.save_state(ALLOWED, &allowed)
+    }
+
+    /// The organizations this device's sign-in belongs to, as the server
+    /// last gave them: id → name (`state/orgs.json`). For the host list to
+    /// name them before the server is reached.
+    pub fn orgs(&self) -> std::collections::BTreeMap<String, String> {
+        self.load_state(ORGS).unwrap_or_default()
+    }
+
+    /// Keeps the organizations the server gave, if they changed.
+    pub fn keep_orgs(&self, orgs: &std::collections::BTreeMap<String, String>) -> io::Result<()> {
+        if &self.orgs() == orgs {
+            return Ok(());
+        }
+        self.save_state(ORGS, orgs)
     }
 
     fn load_state<T: DeserializeOwned>(&self, file: &str) -> Option<T> {

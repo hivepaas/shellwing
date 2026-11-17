@@ -26,6 +26,41 @@ impl CollectionHosts {
     }
 }
 
+/// What a permission is called, and what it lets the person do: `Manage`,
+/// `Edits, grants access and gives the key`.
+pub fn permission_words(permission: &str) -> (String, String) {
+    match permission {
+        "connect" => (
+            tr!("Connect"),
+            tr!("Connects to its hosts; cannot change them"),
+        ),
+        "edit" => (tr!("Edit"), tr!("Changes its hosts")),
+        _ => (tr!("Manage"), tr!("Edits, grants access and gives the key")),
+    }
+}
+
+/// Who sees a collection of organization `org` (its name, if known), and
+/// what this person may do with it: two lines.
+pub fn who_sees(c: &CollectionHosts, org: Option<&str>) -> String {
+    let (name, what) = permission_words(&c.permission);
+    let shared = match org {
+        Some(org) => tr!(
+            "Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.",
+            org = org
+        ),
+        None => tr!(
+            "Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted."
+        ),
+    };
+    // "Manage · Edits, grants access and gives the key".
+    let yours = if c.waiting {
+        tr!("waiting for its key")
+    } else {
+        what
+    };
+    format!("{shared}\n{name} · {yours}")
+}
+
 /// The collections the server served at the last sync, each with its hosts
 /// if its key is held.
 pub fn read(vault: &Vault) -> Vec<CollectionHosts> {

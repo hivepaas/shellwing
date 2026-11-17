@@ -13,6 +13,8 @@ final class AppModel: ObservableObject {
     /// The organizations' collections the vault holds: their hosts open by
     /// id, and are not edited here.
     @Published private(set) var collections: [CollectionSection] = []
+    /// The server was asked for the organizations' names since the app started.
+    private var orgsAsked = false
     /// The secrets to change in collections whose key this phone replaced.
     @Published private(set) var checklists: [KeyChecklist] = []
     /// The collections whose key the last sync replaced here: said once.
@@ -145,6 +147,14 @@ final class AppModel: ObservableObject {
             checklists = core.keyChecklists()
         } catch {
             self.error = "\(error)"
+        }
+        // The organizations' names, for their collections' headings: asked
+        // once a run, kept for the next.
+        if !collections.isEmpty && !orgsAsked {
+            orgsAsked = true
+            Task { @MainActor in
+                if (try? await core.refreshOrgs()) == true { collections = core.collections() }
+            }
         }
     }
 

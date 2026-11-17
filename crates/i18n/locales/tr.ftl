@@ -3387,18 +3387,6 @@ taee668c2 = İndiriliyor… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = İndiriliyor… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Ana makinelerine bağlanır; onları değiştiremez
-
-# Changes its hosts and passwords
-t0e93b1e8 = Ana makinelerini ve parolalarını değiştirir
-
-# Manage
-td7aff116 = Yönet
-
-# Edits, grants access and gives the key
-t7c52884e = Düzenler, erişim verir ve anahtarı verir
-
 # New host…
 t13806b73 = Yeni ana makine…
 
@@ -3410,15 +3398,6 @@ t5f2231e7 = Anahtarını ver…
 
 # Secrets to change…
 tdba41f83 = Değiştirilecek gizli bilgiler…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = { $org } içinde paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Bir kuruluşta paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
-
-# waiting for its key
-tb827ed42 = anahtarını bekliyor
 
 # Over SSH only
 t14e43465 = Yalnızca SSH üzerinden
@@ -4205,6 +4184,9 @@ t7c2c53ba = Sık kullanılanlar
 # read only
 t0d7ec241 = salt okunur
 
+# waiting for its key
+tb827ed42 = anahtarını bekliyor
+
 # Shared · {org}
 t280d0e57 = Paylaşılan · { $org }
 
@@ -4234,6 +4216,24 @@ t8354c717 = Bağlanmak için soldan bir ana makine seçin
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ya da birini bulmak veya user@host adresine bağlanmak için { $keys } tuşlarına basın
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Ana makinelerine bağlanır; onları değiştiremez
+
+# Changes its hosts
+t8d9014d3 = Ana makinelerini değiştirir
+
+# Manage
+td7aff116 = Yönet
+
+# Edits, grants access and gives the key
+t7c52884e = Düzenler, erişim verir ve anahtarı verir
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org } içinde paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Bir kuruluşta paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Bağlanmak için bu bilgisayarda bir komut çalıştırır: { $command }

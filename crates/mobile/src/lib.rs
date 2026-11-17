@@ -108,8 +108,15 @@ pub struct HostSection {
 pub struct CollectionSection {
     pub id: String,
     pub name: String,
+    /// The organization it belongs to; its name once the server gave it.
+    pub org_id: String,
+    pub org: Option<String>,
     /// `connect`, `edit` or `manage`.
     pub permission: String,
+    /// The permission as people read it: `Manage`.
+    pub permission_name: String,
+    /// Who sees it, and what this person may do with it: two lines.
+    pub who_sees: String,
     /// Connect only: the hosts are not the person's to change.
     pub read_only: bool,
     /// Its key is not held here yet: somebody who manages it gives it.
@@ -317,7 +324,26 @@ impl Shellwing {
     /// The organizations' collections the vault holds, after hosts.toml's
     /// sections: each with its hosts once its key is here.
     pub fn collections(&self) -> Vec<CollectionSection> {
-        collection_sections(&self.collections_held())
+        collection_sections(&self.collections_held(), &self.store.orgs())
+    }
+
+    /// Asks the server for the organizations' names, for the collections'
+    /// headings; kept for next time. Whether they changed. On the network.
+    pub async fn refresh_orgs(self: Arc<Self>) -> Result<bool, MobileError> {
+        let rt = self.rt.handle().clone();
+        on_runtime(&rt, async move {
+            tokio::task::spawn_blocking(move || {
+                let (server, _) = self.server()?;
+                let orgs = server.orgs().map_err(MobileError::of)?;
+                let orgs = orgs.into_iter().map(|o| (o.id, o.name)).collect();
+                let changed = self.store.orgs() != orgs;
+                self.store.keep_orgs(&orgs).map_err(MobileError::of)?;
+                Ok(changed)
+            })
+            .await
+            .map_err(MobileError::of)?
+        })
+        .await
     }
 
     /// Who waits for `collection`'s key, for somebody who manages it and
@@ -732,6 +758,28 @@ impl Shellwing {
         ),
         MobileError,
     > {
+        let (server, vault) = self.server()?;
+        let info = vault
+            .known_collections()
+            .map_err(MobileError::of)?
+            .into_iter()
+            .find(|c| c.id == collection)
+            .ok_or_else(|| {
+                MobileError::of(tr!("This host's collection is no longer synced here."))
+            })?;
+        Ok((server, vault, info))
+    }
+
+    /// The shellwing server this phone syncs with, signed in, with the vault.
+    fn server(
+        &self,
+    ) -> Result<
+        (
+            shellwing_remote::server::Server,
+            Arc<shellwing_vault::Vault>,
+        ),
+        MobileError,
+    > {
         let vault = self
             .vault
             .ready()
@@ -747,17 +795,9 @@ impl Shellwing {
             .ok_or_else(|| {
                 MobileError::of(tr!("Collections need syncing with a shellwing server."))
             })?;
-        let info = vault
-            .known_collections()
-            .map_err(MobileError::of)?
-            .into_iter()
-            .find(|c| c.id == collection)
-            .ok_or_else(|| {
-                MobileError::of(tr!("This host's collection is no longer synced here."))
-            })?;
         let server =
             shellwing_remote::server::Server::open(&place.url, &token).map_err(MobileError::of)?;
-        Ok((server, vault, info))
+        Ok((server, vault))
     }
 
     /// The vault and `collection`, if the person may change its hosts.
@@ -874,15 +914,39 @@ fn host_detail(h: &Host) -> String {
     detail
 }
 
+/// A permission on a collection as people read it, and what it lets them do.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct PermissionWords {
+    /// `Manage`.
+    pub name: String,
+    /// `Edits, grants access and gives the key`.
+    pub detail: String,
+}
+
+/// `connect`, `edit` or `manage`, as people read it: the desktop's words.
+#[uniffi::export]
+pub fn permission_words(permission: String) -> PermissionWords {
+    let (name, detail) = shellwing_core::collections::permission_words(&permission);
+    PermissionWords { name, detail }
+}
+
 fn collection_sections(
     collections: &[shellwing_core::collections::CollectionHosts],
+    orgs: &std::collections::BTreeMap<String, String>,
 ) -> Vec<CollectionSection> {
     collections
         .iter()
         .map(|c| CollectionSection {
             id: c.id.clone(),
             name: c.name.clone(),
+            org_id: c.org_id.clone(),
+            org: orgs.get(&c.org_id).cloned(),
             permission: c.permission.clone(),
+            permission_name: shellwing_core::collections::permission_words(&c.permission).0,
+            who_sees: shellwing_core::collections::who_sees(
+                c,
+                orgs.get(&c.org_id).map(String::as_str),
+            ),
             read_only: !c.edits(),
             waiting: c.waiting,
             hosts: c
@@ -1144,7 +1208,15 @@ mod tests {
                 hosts: vec![],
             },
         ];
-        let sections = collection_sections(&collections);
+        let orgs = [("org1".to_string(), "Acme".to_string())].into();
+        let sections = collection_sections(&collections, &orgs);
+        assert_eq!(sections[0].org.as_deref(), Some("Acme"));
+        assert_eq!(sections[0].permission_name, "Connect");
+        assert!(
+            sections[0].who_sees.starts_with("Shared in Acme"),
+            "{}",
+            sections[0].who_sees
+        );
         assert_eq!(sections.len(), 2);
         assert!(sections[0].read_only);
         assert!(!sections[0].waiting);

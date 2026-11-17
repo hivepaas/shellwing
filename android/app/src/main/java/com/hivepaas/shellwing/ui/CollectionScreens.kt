@@ -41,6 +41,7 @@ import com.hivepaas.shellwing.AppModel
 import com.hivepaas.shellwing.core.AccessGrant
 import com.hivepaas.shellwing.core.CollectionAccess
 import com.hivepaas.shellwing.core.WaitingMember
+import com.hivepaas.shellwing.core.permissionWords
 import com.hivepaas.shellwing.said
 import com.hivepaas.shellwing.tr
 import kotlinx.coroutines.launch
@@ -165,12 +166,9 @@ fun GiveKeyScreen(model: AppModel, collection: String, onBack: () -> Unit) {
     }
 }
 
-/** A permission's name, and what it lets people do. */
-private fun permissionText(p: String): Pair<String, String> = when (p) {
-    "connect" -> tr("Connect") to tr("Connects to its hosts; cannot change them")
-    "edit" -> tr("Edit") to tr("Changes its hosts and passwords")
-    else -> tr("Manage") to tr("Edits, grants access and gives the key")
-}
+/** A permission's name, and what it lets people do: the desktop's words. */
+private fun permissionText(p: String): Pair<String, String> =
+    permissionWords(p).let { it.name to it.detail }
 
 private val PERMISSIONS = listOf("connect", "edit", "manage")
 

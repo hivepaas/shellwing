@@ -12,6 +12,8 @@ struct HostsView: View {
     @State private var givingKey: CollectionSection?
     @State private var managing: CollectionSection?
     @State private var editingInCollection: CollectionHostEdit?
+    /// A collection whose sharing is explained: who sees it, what one may do.
+    @State private var about: CollectionSection?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -89,6 +91,11 @@ struct HostsView: View {
                             }
                         }
                     } header: {
+                        VStack(alignment: .leading, spacing: 6) {
+                        // Once some are shared, the person's own read apart.
+                        if section == shown.first && !shownCollections.isEmpty {
+                            PartHeading(text: tr("My hosts"))
+                        }
                         HStack(spacing: 8) {
                             if let c = section.color {
                                 RoundedRectangle(cornerRadius: 2).fill(Color(hex: c)).frame(width: 8, height: 8)
@@ -111,6 +118,7 @@ struct HostsView: View {
                             Text(trN(section.hosts.count, "{n} host", "{n} hosts"))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Dusk.muted)
+                        }
                         }
                     }
                 }
@@ -154,9 +162,17 @@ struct HostsView: View {
                             }
                         }
                     } header: {
+                        VStack(alignment: .leading, spacing: 6) {
+                        if let part = partHeading(c) { PartHeading(text: part) }
                         HStack(spacing: 8) {
-                            Image(systemName: "building.2").font(.system(size: 10)).foregroundStyle(Dusk.muted)
-                            SectionHeading(text: c.name)
+                            // Others see it: what that means, on a tap.
+                            Button { about = c } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "person.2.fill").font(.system(size: 10)).foregroundStyle(Dusk.accent)
+                                    SectionHeading(text: c.name)
+                                }
+                            }
+                            .accessibilityHint(c.whoSees)
                             if !c.readOnly && !c.waiting {
                                 Button {
                                     editingInCollection = CollectionHostEdit(collection: c, edit: HostEditorView.blank())
@@ -188,9 +204,15 @@ struct HostsView: View {
                                 .accessibilityLabel(tr("Give the key of {name}…", ["name": c.name]))
                             }
                             Spacer()
+                            Text(c.permissionName)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Dusk.soft)
+                                .padding(.horizontal, 5)
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Dusk.edge, lineWidth: 1))
                             Text(collectionNote(c))
                                 .font(.system(size: 12))
                                 .foregroundStyle(Dusk.muted)
+                        }
                         }
                     }
                 }
@@ -285,6 +307,14 @@ struct HostsView: View {
                         : tr("Somebody lost access to {name}: its key is replaced.", ["name": name])
                 }.joined(separator: "\n\n"))
             }
+            .alert(about?.name ?? "", isPresented: Binding(
+                get: { about != nil },
+                set: { if !$0 { about = nil } }
+            )) {
+                Button(tr("OK")) { about = nil }
+            } message: {
+                Text(about?.whoSees ?? "")
+            }
             .alert("shellwing", isPresented: Binding(
                 get: { app.error != nil },
                 set: { if !$0 { app.error = nil } }
@@ -331,12 +361,18 @@ struct HostsView: View {
         }
     }
 
-    /// Beside a collection's name: waiting for its key, read only, or how
-    /// many hosts.
+    /// Beside a collection's permission: waiting for its key, or how many
+    /// hosts.
     private func collectionNote(_ c: CollectionSection) -> String {
         if c.waiting { return tr("waiting for its key") }
-        if c.readOnly { return tr("read only") }
         return trN(c.hosts.count, "{n} host", "{n} hosts")
+    }
+
+    /// Above the first collection shown of each organization: whose they are.
+    private func partHeading(_ c: CollectionSection) -> String? {
+        guard shownCollections.first(where: { $0.orgId == c.orgId })?.id == c.id else { return nil }
+        if let org = c.org { return tr("Shared · {org}", ["org": org]) }
+        return tr("Shared")
     }
 
     /// A row's own: a favorite is listed twice, first and in its group.
@@ -597,13 +633,10 @@ extension AccessGrant: Identifiable {
     public var id: String { userId + "|" + groupId }
 }
 
-/// A permission's name, and what it lets people do.
+/// A permission's name, and what it lets people do: the desktop's words.
 private func permissionText(_ p: String) -> (String, String) {
-    switch p {
-    case "connect": return (tr("Connect"), tr("Connects to its hosts; cannot change them"))
-    case "edit": return (tr("Edit"), tr("Changes its hosts and passwords"))
-    default: return (tr("Manage"), tr("Edits, grants access and gives the key"))
-    }
+    let w = permissionWords(permission: p)
+    return (w.name, w.detail)
 }
 
 /// Who has access to a collection, for somebody who manages it: each grant's

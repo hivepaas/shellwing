@@ -3387,18 +3387,6 @@ taee668c2 = Descargando… { $got } de { $total }
 # Downloading… {got}
 t4873b921 = Descargando… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Se conecta a sus servidores; no puede cambiarlos
-
-# Changes its hosts and passwords
-t0e93b1e8 = Cambia sus servidores y contraseñas
-
-# Manage
-td7aff116 = Administrar
-
-# Edits, grants access and gives the key
-t7c52884e = Edita, concede acceso y da la clave
-
 # New host…
 t13806b73 = Nuevo servidor…
 
@@ -3410,15 +3398,6 @@ t5f2231e7 = Dar su clave…
 
 # Secrets to change…
 tdba41f83 = Secretos que cambiar…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Compartida en { $org }: todas las personas con acceso ven sus servidores, cifrado de extremo a extremo.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Compartida en una organización: todas las personas con acceso ven sus servidores, cifrado de extremo a extremo.
-
-# waiting for its key
-tb827ed42 = esperando su clave
 
 # Over SSH only
 t14e43465 = Solo por SSH
@@ -4205,6 +4184,9 @@ t7c2c53ba = Favoritos
 # read only
 t0d7ec241 = solo lectura
 
+# waiting for its key
+tb827ed42 = esperando su clave
+
 # Shared · {org}
 t280d0e57 = Compartidos · { $org }
 
@@ -4234,6 +4216,24 @@ t8354c717 = Elige un servidor a la izquierda para conectarte
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = o pulsa { $keys } para buscar uno, o para conectarte a user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Se conecta a sus servidores; no puede cambiarlos
+
+# Changes its hosts
+t8d9014d3 = Cambia sus servidores
+
+# Manage
+td7aff116 = Administrar
+
+# Edits, grants access and gives the key
+t7c52884e = Edita, concede acceso y da la clave
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Compartida en { $org }: todas las personas con acceso ven sus servidores, cifrado de extremo a extremo.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Compartida en una organización: todas las personas con acceso ven sus servidores, cifrado de extremo a extremo.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Ejecuta un comando en este equipo para conectarse: { $command }

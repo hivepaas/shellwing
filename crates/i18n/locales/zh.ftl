@@ -3292,18 +3292,6 @@ taee668c2 = 正在下载… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 正在下载… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = 连接到其中的主机；不能更改它们
-
-# Changes its hosts and passwords
-t0e93b1e8 = 更改其中的主机和密码
-
-# Manage
-td7aff116 = 管理
-
-# Edits, grants access and gives the key
-t7c52884e = 编辑、授予访问权限并发放密钥
-
 # New host…
 t13806b73 = 新建主机…
 
@@ -3315,15 +3303,6 @@ t5f2231e7 = 发放密钥…
 
 # Secrets to change…
 tdba41f83 = 需更改的机密…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = 在 { $org } 中共享：所有获得访问权限的人都能看到其主机，端到端加密。
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = 在组织中共享：所有获得访问权限的人都能看到其主机，端到端加密。
-
-# waiting for its key
-tb827ed42 = 等待密钥
 
 # Over SSH only
 t14e43465 = 仅限 SSH
@@ -4069,6 +4048,9 @@ t7c2c53ba = 收藏
 # read only
 t0d7ec241 = 只读
 
+# waiting for its key
+tb827ed42 = 等待密钥
+
 # Shared · {org}
 t280d0e57 = 共享 · { $org }
 
@@ -4098,6 +4080,24 @@ t8354c717 = 在左侧选择一台主机以连接
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 查找主机，或连接到 user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = 连接到其中的主机；不能更改它们
+
+# Changes its hosts
+t8d9014d3 = 更改其中的主机
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 编辑、授予访问权限并发放密钥
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = 在 { $org } 中共享：所有获得访问权限的人都能看到其主机，端到端加密。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 在组织中共享：所有获得访问权限的人都能看到其主机，端到端加密。
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = 在这台电脑上运行命令以建立连接：{ $command }

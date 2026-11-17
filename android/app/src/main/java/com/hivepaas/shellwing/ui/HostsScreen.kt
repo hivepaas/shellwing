@@ -3,6 +3,7 @@ package com.hivepaas.shellwing.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CreateNewFolder
-import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.GppMaybe
 import androidx.compose.material.icons.outlined.Group
@@ -79,6 +80,8 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
     var doomed by remember { mutableStateOf<HostRow?>(null) }
     /** A collection's host to delete, with the collection. */
     var doomedIn by remember { mutableStateOf<Pair<CollectionSection, HostRow>?>(null) }
+    /** A collection whose sharing is explained: who sees it, what one may do. */
+    var about by remember { mutableStateOf<CollectionSection?>(null) }
     val connect: (String) -> Unit = { spec -> model.session(spec)?.let { onOpen(Screen.Terminal(it.id)) } }
     val another: (String) -> Unit = { spec -> model.open(spec)?.let { onOpen(Screen.Terminal(it.id)) } }
 
@@ -118,6 +121,14 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
             }
             // A group with no hosts yet shows, to be edited, unless filtered out.
             if (hosts.isEmpty() && (words.isNotEmpty() || s.hosts.isNotEmpty())) null else s.copy(hosts = hosts)
+        }
+        // Each collection's hosts the filter matches; one with none is left out.
+        val collections = model.collections.mapNotNull { c ->
+            val hosts = c.hosts.filter { h ->
+                words.isEmpty() || h.name.lowercase().contains(words) || h.detail.lowercase().contains(words) ||
+                    h.tags.any { it.lowercase().contains(words) }
+            }
+            if (words.isNotEmpty() && hosts.isEmpty()) null else c.copy(hosts = hosts)
         }
         LazyColumn(Modifier.fillMaxSize().padding(pad)) {
             item {
@@ -180,6 +191,10 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                 }
             }
             for (section in sections) {
+                // Once some are shared, the person's own read apart.
+                if (section == sections.first() && collections.isNotEmpty()) {
+                    item(key = "part:mine") { PartHeading(tr("My hosts")) }
+                }
                 item(key = "section:" + (if (section.favorites) "*" else "") + section.name) {
                     Row(
                         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
@@ -229,20 +244,28 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
             }
             // Each collection of an organization: its hosts by their ids, which
             // no other host shares; read only here.
-            for (c in model.collections) {
-                val hosts = c.hosts.filter { h ->
-                    words.isEmpty() || h.name.lowercase().contains(words) || h.detail.lowercase().contains(words) ||
-                        h.tags.any { it.lowercase().contains(words) }
+            for (c in collections) {
+                val hosts = c.hosts
+                // Above the first of each organization: whose they are.
+                if (collections.first { it.orgId == c.orgId }.id == c.id) {
+                    item(key = "part:" + c.orgId) {
+                        PartHeading(c.org?.let { tr("Shared · {org}", "org" to it) } ?: tr("Shared"))
+                    }
                 }
-                if (words.isNotEmpty() && hosts.isEmpty()) continue
                 item(key = "collection:" + c.id) {
                     Row(
                         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Outlined.Business, null, tint = Dusk.muted, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Heading(c.name)
+                        // Others see it: what that means, on a tap.
+                        Row(
+                            Modifier.clip(RoundedCornerShape(6.dp)).clickable { about = c }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.Group, null, tint = Dusk.accent, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Heading(c.name)
+                        }
                         if (!c.readOnly && !c.waiting) {
                             IconButton(onClick = { onOpen(Screen.HostEditor(null, c.id)) }, modifier = Modifier.size(32.dp)) {
                                 Icon(Icons.Filled.Add, tr("New host"), tint = Dusk.muted, modifier = Modifier.size(16.dp))
@@ -260,11 +283,12 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
                         }
                         Spacer(Modifier.weight(1f))
                         Text(
-                            when {
-                                c.waiting -> tr("waiting for its key")
-                                c.readOnly -> tr("read only")
-                                else -> trN(c.hosts.size, "{n} host", "{n} hosts")
-                            },
+                            c.permissionName, fontSize = 11.sp, color = Dusk.soft,
+                            modifier = Modifier.border(1.dp, Dusk.edge, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            if (c.waiting) tr("waiting for its key") else trN(c.hosts.size, "{n} host", "{n} hosts"),
                             fontSize = 12.sp, color = Dusk.muted,
                         )
                     }
@@ -325,6 +349,15 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
         )
     }
 
+    about?.let { c ->
+        AlertDialog(
+            onDismissRequest = { about = null },
+            title = { Text(c.name) },
+            text = { Text(c.whoSees) },
+            confirmButton = { TextButton(onClick = { about = null }) { Text(tr("OK")) } },
+        )
+    }
+
     doomed?.let { host ->
         AlertDialog(
             onDismissRequest = { doomed = null },
@@ -334,6 +367,22 @@ fun HostsScreen(model: AppModel, onOpen: (Screen) -> Unit, onSessions: () -> Uni
             },
             dismissButton = { TextButton(onClick = { doomed = null }) { Text(tr("Cancel")) } },
         )
+    }
+}
+
+/**
+ * Opens a part of the host list: "My hosts", or the organization whose
+ * collections follow. Quieter than the sections' titles under it, with a rule.
+ */
+@Composable
+private fun PartHeading(text: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, fontSize = 12.sp, color = Dusk.idle)
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.weight(1f).height(1.dp).background(Dusk.edge))
     }
 }
 

@@ -3349,18 +3349,6 @@ taee668c2 = 正在下載… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 正在下載… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = 連線至其中的主機；不能變更它們
-
-# Changes its hosts and passwords
-t0e93b1e8 = 變更其中的主機和密碼
-
-# Manage
-td7aff116 = 管理
-
-# Edits, grants access and gives the key
-t7c52884e = 編輯、授予存取權並發放金鑰
-
 # New host…
 t13806b73 = 新增主機…
 
@@ -3372,15 +3360,6 @@ t5f2231e7 = 發放金鑰…
 
 # Secrets to change…
 tdba41f83 = 需變更的機密…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = 在 { $org } 中共用：所有取得存取權的人都能看到其主機，端對端加密。
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = 在組織中共用：所有取得存取權的人都能看到其主機，端對端加密。
-
-# waiting for its key
-tb827ed42 = 等待金鑰
 
 # Over SSH only
 t14e43465 = 僅限 SSH
@@ -4156,6 +4135,9 @@ t7c2c53ba = 我的最愛
 # read only
 t0d7ec241 = 唯讀
 
+# waiting for its key
+tb827ed42 = 等待金鑰
+
 # Shared · {org}
 t280d0e57 = 共用 · { $org }
 
@@ -4185,6 +4167,24 @@ t8354c717 = 在左側選擇一台主機以連線
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 尋找主機，或連線到 user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = 連線至其中的主機；不能變更它們
+
+# Changes its hosts
+t8d9014d3 = 變更其中的主機
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 編輯、授予存取權並發放金鑰
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = 在 { $org } 中共用：所有取得存取權的人都能看到其主機，端對端加密。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 在組織中共用：所有取得存取權的人都能看到其主機，端對端加密。
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = 在這台電腦上執行指令以建立連線：{ $command }

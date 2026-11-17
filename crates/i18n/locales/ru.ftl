@@ -3463,18 +3463,6 @@ taee668c2 = Загрузка… { $got } из { $total }
 # Downloading… {got}
 t4873b921 = Загрузка… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Подключается к её хостам; не может их изменять
-
-# Changes its hosts and passwords
-t0e93b1e8 = Изменяет её хосты и пароли
-
-# Manage
-td7aff116 = Управлять
-
-# Edits, grants access and gives the key
-t7c52884e = Изменяет, выдаёт доступ и передаёт ключ
-
 # New host…
 t13806b73 = Новый хост…
 
@@ -3486,15 +3474,6 @@ t5f2231e7 = Передать ключ…
 
 # Secrets to change…
 tdba41f83 = Секреты для смены…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Общая в { $org }: её хосты видят все, у кого есть доступ; сквозное шифрование.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Общая в организации: её хосты видят все, у кого есть доступ; сквозное шифрование.
-
-# waiting for its key
-tb827ed42 = ожидает ключ
 
 # Over SSH only
 t14e43465 = Только по SSH
@@ -4303,6 +4282,9 @@ t7c2c53ba = Избранное
 # read only
 t0d7ec241 = только чтение
 
+# waiting for its key
+tb827ed42 = ожидает ключ
+
 # Shared · {org}
 t280d0e57 = Общие · { $org }
 
@@ -4332,6 +4314,24 @@ t8354c717 = Выберите хост слева, чтобы подключит�
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = или нажмите { $keys }, чтобы найти его или подключиться к user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Подключается к её хостам; не может их изменять
+
+# Changes its hosts
+t8d9014d3 = Изменяет её хосты
+
+# Manage
+td7aff116 = Управлять
+
+# Edits, grants access and gives the key
+t7c52884e = Изменяет, выдаёт доступ и передаёт ключ
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Общая в { $org }: её хосты видят все, у кого есть доступ; сквозное шифрование.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Общая в организации: её хосты видят все, у кого есть доступ; сквозное шифрование.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Запускает команду на этом компьютере для подключения: { $command }

@@ -3387,18 +3387,6 @@ taee668c2 = Téléchargement… { $got } sur { $total }
 # Downloading… {got}
 t4873b921 = Téléchargement… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Se connecte à ses serveurs ; ne peut pas les modifier
-
-# Changes its hosts and passwords
-t0e93b1e8 = Modifie ses serveurs et mots de passe
-
-# Manage
-td7aff116 = Gérer
-
-# Edits, grants access and gives the key
-t7c52884e = Modifie, accorde l'accès et donne la clé
-
 # New host…
 t13806b73 = Nouveau serveur…
 
@@ -3410,15 +3398,6 @@ t5f2231e7 = Donner sa clé…
 
 # Secrets to change…
 tdba41f83 = Secrets à changer…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Partagée dans { $org } : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Partagée dans une organisation : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
-
-# waiting for its key
-tb827ed42 = en attente de sa clé
 
 # Over SSH only
 t14e43465 = Par SSH uniquement
@@ -4205,6 +4184,9 @@ t7c2c53ba = Favoris
 # read only
 t0d7ec241 = lecture seule
 
+# waiting for its key
+tb827ed42 = en attente de sa clé
+
 # Shared · {org}
 t280d0e57 = Partagés · { $org }
 
@@ -4234,6 +4216,24 @@ t8354c717 = Choisissez un serveur à gauche pour vous connecter
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ou appuyez sur { $keys } pour en trouver un, ou pour vous connecter à user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Se connecte à ses serveurs ; ne peut pas les modifier
+
+# Changes its hosts
+t8d9014d3 = Modifie ses serveurs
+
+# Manage
+td7aff116 = Gérer
+
+# Edits, grants access and gives the key
+t7c52884e = Modifie, accorde l'accès et donne la clé
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Partagée dans { $org } : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Partagée dans une organisation : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Exécute une commande sur cet ordinateur pour se connecter : { $command }
