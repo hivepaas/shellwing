@@ -262,6 +262,15 @@ impl HostEditor {
         e
     }
 
+    /// A new host, saved in a collection (by its id) unless another place is
+    /// chosen.
+    pub fn new_in(ctx: EditorContext, collection: String, cx: &mut Context<Self>) -> Self {
+        let mut e = Self::blank(ctx, Mode::Edit, cx);
+        e.collection = Some(collection);
+        e.opened_as = Some(e.current(cx));
+        e
+    }
+
     pub fn edit(ctx: EditorContext, host: Host, cx: &mut Context<Self>) -> Self {
         let mut e = Self::blank(ctx, Mode::Edit, cx);
         e.fill(&host, cx);

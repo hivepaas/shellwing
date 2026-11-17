@@ -198,6 +198,10 @@ it.
   group of the organization (`GET …/grantable` lists them; an app's token
   reaches it). Taking access away syncs at once, so that this app replaces the
   key if it holds it.
+- A collection's title in the host list has a menu (a right click, or its
+  button on hover) with what the person may do to it: with Edit, a new host
+  saved in it; with Manage, these two; and its "Secrets to change", while
+  listed. With Connect only there is nothing to do, and no menu.
 
 ## Order
 
