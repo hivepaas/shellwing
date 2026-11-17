@@ -302,6 +302,28 @@ fn permission_text(permission: &str) -> (String, String) {
     }
 }
 
+/// A collection's tooltip in the host list: who sees it, and what this
+/// person may do with it.
+fn collection_tip(c: &crate::look::CollectionHosts, org: Option<&str>) -> String {
+    let (name, what) = permission_text(&c.permission);
+    let shared = match org {
+        Some(org) => tr!(
+            "Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.",
+            org = org
+        ),
+        None => tr!(
+            "Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted."
+        ),
+    };
+    // "Manage · Edits, grants access and gives the key".
+    let yours = if c.waiting {
+        tr!("waiting for its key")
+    } else {
+        what
+    };
+    format!("{shared}\n{name} · {yours}")
+}
+
 /// A snippet on its way to running.
 #[derive(Clone)]
 struct SnippetRun {
@@ -575,6 +597,27 @@ impl Workspace {
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn import_view(&self) -> Option<Entity<ImportView>> {
         self.import.as_ref().map(|(v, _)| v.clone())
+    }
+
+    /// The host hosts.toml or a collection names `name`.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn saved_host(&self, name: &str) -> Option<Host> {
+        self.live.hosts().find(name).cloned()
+    }
+
+    /// Shows `collections` of the organizations `orgs` (ids and names) as a
+    /// sync would have left them, for the UI tests of the host list.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn show_collections(
+        &mut self,
+        orgs: Vec<(String, String)>,
+        collections: Vec<crate::look::CollectionHosts>,
+        cx: &mut Context<Self>,
+    ) {
+        self.orgs = orgs;
+        self.collections_loaded = true;
+        self.live.set_collections(collections);
+        self.refresh_sidebar(cx);
     }
 
     /// The host list as shown: each section's title and its hosts' names.
@@ -6011,9 +6054,6 @@ impl Workspace {
         let shell_name = crate::local::shell_name(&shell);
         sections.push(Section {
             title: tr!("This computer").into(),
-            note: SharedString::default(),
-            group: None,
-            color: None,
             rows: vec![Row {
                 name: tr!("Local terminal").into(),
                 detail: shell_name.clone().into(),
@@ -6028,9 +6068,11 @@ impl Workspace {
                     tr!("this computer")
                 ),
             }],
+            ..Default::default()
         });
         // hosts.toml's: a collection's have a section of their own.
         let own = |h: &&Host| h.collection.is_none();
+        let mut mine = vec![];
         let favorites: Vec<Row> = hosts
             .hosts
             .iter()
@@ -6039,12 +6081,10 @@ impl Workspace {
             .map(row)
             .collect();
         if !favorites.is_empty() {
-            sections.push(Section {
+            mine.push(Section {
                 title: tr!("Favorites").into(),
-                note: SharedString::default(),
-                group: None,
-                color: None,
                 rows: favorites,
+                ..Default::default()
             });
         }
         for g in &hosts.groups {
@@ -6056,12 +6096,13 @@ impl Workspace {
                 .map(row)
                 .collect();
             // Shown even when empty: a new group is there to put hosts in.
-            sections.push(Section {
+            mine.push(Section {
                 title: g.name.clone().into(),
                 note: rows.len().to_string().into(),
                 group: Some(g.name.clone()),
                 color: g.color.as_deref().and_then(shellwing_config::color_rgb),
                 rows,
+                ..Default::default()
             });
         }
         let loose: Vec<Row> = hosts
@@ -6072,43 +6113,11 @@ impl Workspace {
             .map(row)
             .collect();
         if !loose.is_empty() {
-            sections.push(Section {
+            mine.push(Section {
                 title: tr!("Hosts").into(),
                 note: loose.len().to_string().into(),
-                group: None,
-                color: None,
                 rows: loose,
-            });
-        }
-        // Each collection of an organization, by its name; its hosts go by
-        // their ids, which no other host shares.
-        for c in self.live.collections() {
-            let rows: Vec<Row> = c
-                .hosts
-                .iter()
-                .map(|h| {
-                    let id = h.id.clone().unwrap_or_else(|| h.name.clone());
-                    let mut r = row(h);
-                    r.status = self.host_status(cx, |s| s.entry.as_deref() == Some(id.as_str()));
-                    r.active = active_entry.as_deref() == Some(id.as_str());
-                    r.edit = EditTarget::Saved(id.clone());
-                    r.spec = id;
-                    r
-                })
-                .collect();
-            let note = if c.waiting {
-                tr!("waiting for its key")
-            } else if !c.edits() {
-                tr!("read only")
-            } else {
-                rows.len().to_string()
-            };
-            sections.push(Section {
-                title: c.name.clone().into(),
-                note: note.into(),
-                group: None,
-                color: None,
-                rows,
+                ..Default::default()
             });
         }
         let aliases: Vec<Row> = self
@@ -6127,14 +6136,66 @@ impl Workspace {
             })
             .collect();
         if !aliases.is_empty() {
-            sections.push(Section {
+            mine.push(Section {
                 title: "~/.ssh/config".into(),
                 note: tr!("read only").into(),
-                group: None,
-                color: None,
                 rows: aliases,
+                ..Default::default()
             });
         }
+        // Each collection of an organization, by its name; its hosts go by
+        // their ids, which no other host shares. After the person's own, with
+        // a heading for each organization, so what others see reads apart.
+        let mut shared = vec![];
+        let mut org_shown: Option<&str> = None;
+        for c in self.live.collections() {
+            let rows: Vec<Row> = c
+                .hosts
+                .iter()
+                .map(|h| {
+                    let id = h.id.clone().unwrap_or_else(|| h.name.clone());
+                    let mut r = row(h);
+                    r.status = self.host_status(cx, |s| s.entry.as_deref() == Some(id.as_str()));
+                    r.active = active_entry.as_deref() == Some(id.as_str());
+                    r.edit = EditTarget::Saved(id.clone());
+                    r.spec = id;
+                    r
+                })
+                .collect();
+            let note = if c.waiting {
+                tr!("waiting for its key")
+            } else {
+                rows.len().to_string()
+            };
+            let org = self
+                .orgs
+                .iter()
+                .find(|(id, _)| id == &c.org_id)
+                .map(|(_, name)| name.clone());
+            let heading = (org_shown != Some(c.org_id.as_str())).then(|| match &org {
+                Some(name) => tr!("Shared · {org}", org = name.clone()).into(),
+                None => tr!("Shared").into(),
+            });
+            org_shown = Some(c.org_id.as_str());
+            shared.push(Section {
+                title: c.name.clone().into(),
+                note: note.into(),
+                heading,
+                shared: Some(crate::sidebar::Shared {
+                    permission: permission_text(&c.permission).0.into(),
+                    tip: collection_tip(c, org.as_deref()).into(),
+                }),
+                rows,
+                ..Default::default()
+            });
+        }
+        if !shared.is_empty()
+            && let Some(first) = mine.first_mut()
+        {
+            first.heading = Some(tr!("My hosts").into());
+        }
+        sections.extend(mine);
+        sections.extend(shared);
         sections
     }
 

@@ -3457,6 +3457,15 @@ td7aff116 = Управлять
 # Edits, grants access and gives the key
 t7c52884e = Изменяет, выдаёт доступ и передаёт ключ
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Общая в { $org }: её хосты видят все, у кого есть доступ; сквозное шифрование.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Общая в организации: её хосты видят все, у кого есть доступ; сквозное шифрование.
+
+# waiting for its key
+tb827ed42 = ожидает ключ
+
 # Over SSH only
 t14e43465 = Только по SSH
 
@@ -4261,11 +4270,14 @@ tfa0d176a = Этот компьютер
 # Favorites
 t7c2c53ba = Избранное
 
-# waiting for its key
-tb827ed42 = ожидает ключ
-
 # read only
 t0d7ec241 = только чтение
+
+# Shared · {org}
+t280d0e57 = Общие · { $org }
+
+# Shared
+teb0bbef4 = Общие
 
 # find a host, connect, run an action
 t4b795631 = найти хост, подключиться, выполнить действие

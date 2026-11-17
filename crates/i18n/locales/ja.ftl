@@ -3286,6 +3286,15 @@ td7aff116 = 管理
 # Edits, grants access and gives the key
 t7c52884e = 編集、アクセス権の付与、鍵の受け渡しができます
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org } で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 組織で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
+
+# waiting for its key
+tb827ed42 = 鍵待ち
+
 # Over SSH only
 t14e43465 = SSH のみ
 
@@ -4027,11 +4036,14 @@ tfa0d176a = このコンピュータ
 # Favorites
 t7c2c53ba = お気に入り
 
-# waiting for its key
-tb827ed42 = 鍵待ち
-
 # read only
 t0d7ec241 = 読み取り専用
+
+# Shared · {org}
+t280d0e57 = 共有 · { $org }
+
+# Shared
+teb0bbef4 = 共有
 
 # find a host, connect, run an action
 t4b795631 = ホストの検索、接続、アクションの実行

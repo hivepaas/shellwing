@@ -717,3 +717,65 @@ scenario!(
         });
     }
 );
+
+scenario!(
+    /// The host list reads in two parts once an organization shares a
+    /// collection: the person's own hosts under "My hosts", then the
+    /// collections under "Shared · <organization>", each marked with what
+    /// the person may do. With none shared, there are no parts.
+    shared_collections_read_apart_from_my_hosts,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", 22));
+        ui.open();
+        assert!(ui.find("part:My hosts").is_none(), "no parts yet");
+        let web = ui.ws(|ws, _, _| ws.saved_host("web")).expect("web");
+        let shared_host = |id: &str, name: &str, collection: &str| {
+            let mut h = web.clone();
+            h.id = Some(id.into());
+            h.name = name.into();
+            h.collection = Some(collection.into());
+            h
+        };
+        let collection = |id: &str, name: &str, org: &str, permission: &str, hosts| {
+            crate::look::CollectionHosts {
+                id: id.into(),
+                name: name.into(),
+                org_id: org.into(),
+                permission: permission.into(),
+                waiting: false,
+                hosts,
+            }
+        };
+        let production = collection(
+            "c1",
+            "Production",
+            "org1",
+            "manage",
+            vec![shared_host("h1", "db", "c1")],
+        );
+        let staging = collection("c2", "Staging", "org1", "connect", vec![]);
+        ui.ws(|ws, _, cx| {
+            ws.show_collections(
+                vec![("org1".into(), "Acme".into())],
+                vec![production, staging],
+                cx,
+            )
+        });
+        let list = ui.host_list();
+        let titles: Vec<&str> = list.iter().map(|(t, _)| t.as_str()).collect();
+        assert_eq!(
+            titles,
+            ["This computer", "Hosts", "Production", "Staging"],
+            "{list:?}"
+        );
+        let my = ui.bounds("part:My hosts");
+        let shared = ui.bounds("part:Shared · Acme");
+        let hosts = ui.bounds("section:Hosts");
+        let production = ui.bounds("section:Production");
+        assert!(my.origin.y < hosts.origin.y, "My hosts heads the own hosts");
+        assert!(hosts.origin.y < shared.origin.y && shared.origin.y < production.origin.y);
+        assert!(ui.find("permission:Production").is_some());
+        assert!(ui.find("permission:Staging").is_some());
+        assert!(ui.find("permission:Hosts").is_none(), "only collections are marked");
+    }
+);

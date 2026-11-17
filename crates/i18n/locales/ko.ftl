@@ -3286,6 +3286,15 @@ td7aff116 = 관리
 # Edits, grants access and gives the key
 t7c52884e = 편집, 접근 권한 부여, 키 전달 가능
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org }에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 조직에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
+
+# waiting for its key
+tb827ed42 = 키 대기 중
+
 # Over SSH only
 t14e43465 = SSH 전용
 
@@ -4027,11 +4036,14 @@ tfa0d176a = 이 컴퓨터
 # Favorites
 t7c2c53ba = 즐겨찾기
 
-# waiting for its key
-tb827ed42 = 키 대기 중
-
 # read only
 t0d7ec241 = 읽기 전용
+
+# Shared · {org}
+t280d0e57 = 공유됨 · { $org }
+
+# Shared
+teb0bbef4 = 공유됨
 
 # find a host, connect, run an action
 t4b795631 = 호스트 찾기, 연결, 작업 실행

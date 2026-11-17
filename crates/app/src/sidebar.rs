@@ -22,7 +22,7 @@ pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Section {
     pub title: SharedString,
     /// Beside the title: a count, or "read only".
@@ -31,7 +31,21 @@ pub struct Section {
     pub group: Option<String>,
     /// The group's color, as a chip before the title.
     pub color: Option<u32>,
+    /// Above the section, opening a part of the list: "My hosts", or the
+    /// organization whose collections follow. Only once some are shared.
+    pub heading: Option<SharedString>,
+    /// An organization's collection: others see it, so it is marked.
+    pub shared: Option<Shared>,
     pub rows: Vec<Row>,
+}
+
+/// What marks a collection's section apart from a group.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Shared {
+    /// What the person may do: "Manage", "Edit" or "Read only".
+    pub permission: SharedString,
+    /// The title's tooltip: who sees it, and how.
+    pub tip: SharedString,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -142,14 +156,19 @@ impl Render for Tip {
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(self.title.clone()),
             )
-            .when(!self.detail.is_empty(), |d| {
-                d.child(
-                    div()
-                        .text_xs()
-                        .text_color(rgb(colors().muted))
-                        .child(self.detail.clone()),
-                )
-            })
+            // A line each, wrapped when long.
+            .children(
+                self.detail
+                    .split('\n')
+                    .filter(|l| !l.is_empty())
+                    .map(|line| {
+                        div()
+                            .max_w(px(320.))
+                            .text_xs()
+                            .text_color(rgb(colors().muted))
+                            .child(SharedString::from(line.to_string()))
+                    }),
+            )
     }
 }
 
@@ -175,9 +194,14 @@ impl Sidebar {
         if words.is_empty() {
             return self.sections.clone();
         }
+        // A part's heading goes to the first of its sections still shown.
+        let mut heading = None;
         self.sections
             .iter()
             .filter_map(|s| {
+                if s.heading.is_some() {
+                    heading = s.heading.clone();
+                }
                 let rows: Vec<Row> = s
                     .rows
                     .iter()
@@ -186,6 +210,7 @@ impl Sidebar {
                     .collect();
                 (!rows.is_empty()).then(|| Section {
                     note: rows.len().to_string().into(),
+                    heading: heading.take(),
                     rows,
                     ..s.clone()
                 })
@@ -437,6 +462,26 @@ impl Sidebar {
     }
 }
 
+/// Opens a part of the host list: a quiet label and a rule, so it reads
+/// apart from the sections' titles under it.
+fn part_heading(n: usize, label: SharedString) -> impl IntoElement {
+    div()
+        .id(("part", n))
+        .debug_selector({
+            let label = label.clone();
+            move || format!("part:{label}")
+        })
+        .flex()
+        .items_center()
+        .gap(px(8.))
+        .px_3()
+        .pt_3()
+        .text_size(px(11.))
+        .text_color(rgb(colors().faint))
+        .child(div().flex_shrink_0().child(label.clone()))
+        .child(div().flex_1().h(px(1.)).bg(rgb(colors().field_edge)))
+}
+
 impl Render for Sidebar {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.collapsed {
@@ -457,6 +502,9 @@ impl Render for Sidebar {
         for (n, section) in shown.iter().enumerate() {
             let over = self.hovered_group == Some(n) && section.group.is_some();
             let (group, ws) = (section.group.clone(), self.workspace.clone());
+            if let Some(heading) = &section.heading {
+                list = list.child(part_heading(n, heading.clone()));
+            }
             list = list.child(
                 div()
                     .id(("section", n))
@@ -501,21 +549,60 @@ impl Render for Sidebar {
                                         .bg(rgb(c)),
                                 )
                             })
-                            .child(
-                                div()
+                            .when(section.shared.is_some(), |d| {
+                                d.child(
+                                    svg()
+                                        .path("icons/users.svg")
+                                        .size(px(13.))
+                                        .flex_shrink_0()
+                                        .text_color(rgb(colors().accent)),
+                                )
+                            })
+                            .child({
+                                let title = div()
+                                    .id(("section-title", n))
                                     .min_w_0()
                                     .overflow_hidden()
                                     .text_ellipsis()
                                     .whitespace_nowrap()
-                                    .child(section.title.to_uppercase()),
-                            ),
+                                    .child(section.title.to_uppercase());
+                                match &section.shared {
+                                    Some(shared) => {
+                                        let (title_tip, detail) =
+                                            (section.title.clone(), shared.tip.clone());
+                                        title.tooltip(move |_, cx| {
+                                            let (title, detail) =
+                                                (title_tip.clone(), detail.clone());
+                                            cx.new(|_| Tip { title, detail }).into()
+                                        })
+                                    }
+                                    None => title,
+                                }
+                            }),
                     )
                     .when(!over, |d| {
                         d.child(
                             div()
                                 .flex_shrink_0()
+                                .flex()
+                                .items_center()
+                                .gap(px(6.))
                                 .pl_2()
                                 .font_weight(FontWeight::NORMAL)
+                                .when_some(section.shared.as_ref(), |d, shared| {
+                                    d.child(
+                                        div()
+                                            .debug_selector(|| {
+                                                format!("permission:{}", section.title)
+                                            })
+                                            .px(px(5.))
+                                            .rounded(px(4.))
+                                            .border_1()
+                                            .border_color(rgb(colors().field_edge))
+                                            .text_color(rgb(colors().soft))
+                                            .child(shared.permission.clone()),
+                                    )
+                                })
                                 .child(section.note.clone()),
                         )
                     })
