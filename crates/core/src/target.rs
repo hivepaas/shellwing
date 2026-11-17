@@ -37,20 +37,6 @@ pub fn resolve(
     }
 }
 
-/// What a host's password is saved under, `user@host[:port]`, as signing
-/// in to it looks it up: the address as `~/.ssh/config` resolves it, then
-/// the entry's user and port.
-pub fn password_target(h: &Host, ssh_config: Option<&Path>) -> Option<String> {
-    let mut r = config::resolve(&h.address, ssh_config).ok()?;
-    if let Some(u) = &h.user {
-        r.target.user = u.clone();
-    }
-    if let Some(p) = h.port {
-        r.target.port = p;
-    }
-    Some(r.target.to_string())
-}
-
 fn hop(
     name: &str,
     hosts: &Hosts,

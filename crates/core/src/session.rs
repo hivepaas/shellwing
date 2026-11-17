@@ -95,8 +95,6 @@ pub struct Session {
     pub learned: async_channel::Receiver<Learned>,
     secrets: Arc<dyn Secrets>,
     vault: VaultSlot,
-    /// The collection the host is in (its id), where its passwords can go.
-    collection: Option<String>,
     /// The forwards the current connection runs.
     held: Weak<Held>,
     /// The app's defaults for hosts that set none.
@@ -236,13 +234,6 @@ impl Session {
     ) -> std::io::Result<Session> {
         let (writer, shown) = Writer::new();
         let (learned_tx, learned) = async_channel::unbounded();
-        let collection = match &opens {
-            Opens::Host(t) => (**t)
-                .as_ref()
-                .ok()
-                .and_then(|(_, h)| h.as_ref()?.collection.clone()),
-            Opens::Local(_) => None,
-        };
         // The terminal thread wakes the UI through this; one pending wake is enough.
         let (wake_tx, wake) = async_channel::bounded::<()>(1);
         // Events the UI has to act on, such as copied text.
@@ -295,10 +286,8 @@ impl Session {
                     Some(shellwing_config::SyncPlace::Server(s)) => Some(s.url),
                     _ => None,
                 },
-                collection: collection.clone(),
             }),
             vault,
-            collection,
             held: Weak::new(),
             ssh: settings.ssh.clone(),
             run: None,
@@ -392,31 +381,6 @@ impl Session {
     /// Saves a typed password or passphrase in the vault.
     pub fn save(&self, secret: &Learned) -> Result<(), String> {
         self.vault.save(secret)
-    }
-
-    /// The collection this host is in, when the person may change it and
-    /// holds its key: a password typed for it can be saved for everybody
-    /// with access.
-    pub fn shared_collection(&self) -> Option<shellwing_vault::CollectionInfo> {
-        let id = self.collection.as_ref()?;
-        let vault = self.vault.get()?;
-        if vault.collection_versions(id).is_empty() {
-            return None;
-        }
-        vault
-            .known_collections()
-            .ok()?
-            .into_iter()
-            .find(|c| &c.id == id && matches!(c.permission.as_str(), "edit" | "manage"))
-    }
-
-    /// Saves a typed password in this host's collection, for everybody with
-    /// access to it ([`Session::shared_collection`]).
-    pub fn save_shared(&self, secret: &Learned) -> Result<(), String> {
-        let c = self.shared_collection().ok_or_else(|| {
-            shellwing_i18n::tr!("This host's collection is no longer synced here.")
-        })?;
-        self.vault.save_in(secret, Some(&c.id))
     }
 
     pub fn status(&self) -> Status {

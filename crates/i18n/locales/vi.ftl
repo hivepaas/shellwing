@@ -550,9 +550,6 @@ t4c0827d7 = Lưu sẽ chuyển nó từ { $from } sang { $to }: nó bị xoá v�
 # Saving moves it from {from} to {to}.
 taf4375c8 = Lưu sẽ chuyển nó từ { $from } sang { $to }.
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = Mang theo mật khẩu đã lưu: mọi người có quyền truy cập { $name } đều đăng nhập được bằng nó
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Trong bộ sưu tập { $name }: mọi người có quyền truy cập đều thấy.
 
@@ -3028,26 +3025,14 @@ tc1b10302 = Biểu thức chính quy (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Bảng Tệp duyệt máy chủ qua SFTP; khung này là shell trên máy tính này.
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = Đã lưu cho mọi người có quyền truy cập bộ sưu tập.
-
 # Saved in the vault.
 t0d69c4e6 = Đã lưu vào kho.
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = Lưu mật khẩu cho { $target }? Được lưu trong { $name }, mọi người có quyền truy cập đều đăng nhập được bằng nó.
 
 # Save the password for {target} in the vault?
 tceb19137 = Lưu mật khẩu cho { $target } vào kho?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Lưu cụm mật khẩu của { $key_path } vào kho?
-
-# Only for me
-t358787f6 = Chỉ cho tôi
-
-# For everybody in {name}
-t65e9e7fb = Cho mọi người trong { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = Khoá máy chủ của { $host } đã thay đổi.

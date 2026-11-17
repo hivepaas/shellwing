@@ -269,25 +269,11 @@ impl VaultSlot {
 
     /// Saves a typed secret.
     pub fn save(&self, secret: &Learned) -> Result<(), String> {
-        self.save_in(secret, None)
-    }
-
-    /// Saves a typed secret: a password in the collection `collection`, for
-    /// everybody with access to it, else in the personal space. A
-    /// passphrase is always the person's own: it opens their key.
-    pub fn save_in(&self, secret: &Learned, collection: Option<&str>) -> Result<(), String> {
         let vault = self
             .get()
             .ok_or_else(|| self.problem().unwrap_or_default())?;
         match secret {
-            Learned::Password { target, password } => match collection {
-                Some(c) => vault.set_password_in(
-                    &shellwing_vault::Space::Collection(c.to_string()),
-                    target,
-                    password,
-                ),
-                None => vault.set_password(target, password),
-            },
+            Learned::Password { target, password } => vault.set_password(target, password),
             Learned::Passphrase {
                 fingerprint,
                 key_path,
@@ -329,24 +315,13 @@ pub struct SessionSecrets {
     /// The shellwing server this device syncs with, by its address: where
     /// organizations' certificates come from.
     pub server: Option<String>,
-    /// The collection the host is in (its id): its passwords are looked for
-    /// there first.
-    pub collection: Option<String>,
 }
 
 impl Secrets for SessionSecrets {
+    /// The person's own: passwords are never shared, not even for a
+    /// collection's host (docs/design/collections.md).
     fn password(&self, target: &str) -> Option<String> {
-        let vault = self.vault.get()?;
-        let in_collection = self.collection.as_ref().and_then(|c| {
-            vault
-                .password_in(&shellwing_vault::Space::Collection(c.clone()), target)
-                .ok()
-                .flatten()
-        });
-        let saved = match in_collection {
-            Some(p) => p,
-            None => vault.password(target).ok()??,
-        };
+        let saved = self.vault.get()?.password(target).ok()??;
         Some(String::from(saved.as_str()))
     }
 
@@ -396,46 +371,6 @@ impl Secrets for SessionSecrets {
 mod tests {
     use super::*;
     use shellwing_vault::MemoryKeys;
-
-    #[test]
-    fn a_typed_password_is_saved_in_the_collection_when_asked() {
-        let dir =
-            std::env::temp_dir().join(format!("shellwing-slot-shared-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let slot = VaultSlot::open_with(dir.join("vault.db"), MemoryKeys::default());
-        let vault = slot.get().expect("open");
-        let me = vault.ensure_identity().expect("identity").public();
-        let wraps = vault
-            .make_collection_key("col1", 1, std::slice::from_ref(&me))
-            .expect("key");
-        let given = shellwing_vault::Given {
-            version: 1,
-            wrap: wraps[0].clone(),
-            wrapper: me.ed25519,
-        };
-        vault.take_collection_keys("col1", &[given]).expect("take");
-        let typed = |password: &str| Learned::Password {
-            target: "deploy@db".into(),
-            password: password.into(),
-        };
-        slot.save_in(&typed("shared"), Some("col1"))
-            .expect("shared");
-        slot.save(&typed("mine")).expect("mine");
-        let col = shellwing_vault::Space::Collection("col1".into());
-        let read = |space: &shellwing_vault::Space| {
-            vault
-                .password_in(space, "deploy@db")
-                .expect("read")
-                .map(|p| p.to_string())
-        };
-        assert_eq!(read(&col).as_deref(), Some("shared"));
-        assert_eq!(
-            read(&shellwing_vault::Space::Personal).as_deref(),
-            Some("mine")
-        );
-        drop(vault);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
 
     #[test]
     fn a_vault_out_of_the_keychain_locks_and_opens_with_its_passphrase() {

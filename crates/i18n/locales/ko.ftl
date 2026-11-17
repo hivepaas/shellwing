@@ -550,9 +550,6 @@ t4c0827d7 = 저장하면 { $from }에서 { $to }(으)로 이동합니다. { $fro
 # Saving moves it from {from} to {to}.
 taf4375c8 = 저장하면 { $from }에서 { $to }(으)로 이동합니다.
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = 저장된 비밀번호도 함께 옮기기: { $name }에 접근 권한이 있는 모든 사용자가 이 비밀번호로 로그인할 수 있습니다
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = 컬렉션 { $name }에 있음: 접근 권한이 있는 모든 사용자가 볼 수 있습니다.
 
@@ -3028,26 +3025,14 @@ tc1b10302 = 정규식 (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 파일 패널은 SFTP로 서버를 탐색합니다. 이 창은 이 컴퓨터의 셸입니다.
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = 컬렉션에 접근 권한이 있는 모든 사용자를 위해 저장했습니다.
-
 # Saved in the vault.
 t0d69c4e6 = 보관함에 저장했습니다.
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = { $target }의 비밀번호를 저장하시겠습니까? { $name }에 저장되어 접근 권한이 있는 모든 사용자가 로그인에 사용할 수 있습니다.
 
 # Save the password for {target} in the vault?
 tceb19137 = { $target }의 비밀번호를 보관함에 저장하시겠습니까?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path }의 암호 문구를 보관함에 저장하시겠습니까?
-
-# Only for me
-t358787f6 = 나만
-
-# For everybody in {name}
-t65e9e7fb = { $name }의 모든 사용자
 
 # The host key for {host} has changed.
 t1e510d66 = { $host }의 호스트 키가 변경되었습니다.

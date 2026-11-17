@@ -1156,6 +1156,10 @@ impl Vault {
             .find(|(_, r)| r.kind == kind && r.f.get(field).is_some_and(|f| f.val == value)))
     }
 
+    fn write(&self, id: &str, record: &Record) -> Result<()> {
+        self.write_in(&Space::Personal, id, record)
+    }
+
     fn write_in(&self, space: &Space, id: &str, record: &Record) -> Result<()> {
         let plain = Zeroizing::new(serde_json::to_vec(record)?);
         let kind = clear_kind(&record.kind);
@@ -1347,19 +1351,7 @@ impl Vault {
         name: &str,
         fields: &[(&str, &str)],
     ) -> Result<()> {
-        self.put_in(&Space::Personal, kind, key_field, name, fields)
-    }
-
-    /// [`Vault::put`] in a space.
-    fn put_in(
-        &self,
-        space: &Space,
-        kind: &str,
-        key_field: (&str, &str),
-        name: &str,
-        fields: &[(&str, &str)],
-    ) -> Result<()> {
-        let id = match self.find_in(space, kind, key_field.0, key_field.1)? {
+        let id = match self.find(kind, key_field.0, key_field.1)? {
             Some((id, _)) => id,
             None => new_id()?,
         };
@@ -1375,8 +1367,7 @@ impl Vault {
                 },
             );
         }
-        self.write_in(
-            space,
+        self.write(
             &id,
             &Record {
                 v: 1,
@@ -1400,14 +1391,7 @@ impl Vault {
     }
 
     pub fn set_password(&self, target: &str, password: &str) -> Result<()> {
-        self.set_password_in(&Space::Personal, target, password)
-    }
-
-    /// Saves the password for `target` in a space: a collection's, for
-    /// everybody with access to it.
-    pub fn set_password_in(&self, space: &Space, target: &str, password: &str) -> Result<()> {
-        self.put_in(
-            space,
+        self.put(
             "password",
             ("target", target),
             &format!("{target} password"),

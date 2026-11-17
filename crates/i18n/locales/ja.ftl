@@ -550,9 +550,6 @@ t4c0827d7 = 保存すると { $from } から { $to } に移動します。{ $fro
 # Saving moves it from {from} to {to}.
 taf4375c8 = 保存すると { $from } から { $to } に移動します。
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = 保存済みのパスワードも移す：{ $name } にアクセスできる全員がこのパスワードでサインインできます
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = コレクション { $name } 内：アクセスできる全員に表示されます。
 
@@ -3028,26 +3025,14 @@ tc1b10302 = 正規表現（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = ファイルパネルは SFTP でサーバーを閲覧します。このペインはこのコンピュータ上のシェルです。
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = コレクションにアクセスできる全員のために保存しました。
-
 # Saved in the vault.
 t0d69c4e6 = 保管庫に保存しました。
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = { $target } のパスワードを保存しますか？{ $name } に保存され、アクセスできる全員がサインインに使えます。
 
 # Save the password for {target} in the vault?
 tceb19137 = { $target } のパスワードを保管庫に保存しますか？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path } のパスフレーズを保管庫に保存しますか？
-
-# Only for me
-t358787f6 = 自分だけ
-
-# For everybody in {name}
-t65e9e7fb = { $name } の全員
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } のホスト鍵が変更されています。

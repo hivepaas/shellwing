@@ -817,10 +817,10 @@ fn production(
 
 scenario!(
     /// A host of hosts.toml moved into a collection from its editor's
-    /// "Saved in": the editor says it moves and offers its saved password;
-    /// saved, it is in the collection with the password, and no longer in
-    /// hosts.toml.
-    move_a_host_into_a_collection_with_its_password,
+    /// "Saved in": the editor says it moves; saved, it is in the collection
+    /// and no longer in hosts.toml. Its saved password stays the person's
+    /// own: none goes into the collection, which shares no passwords.
+    move_a_host_into_a_collection,
     |ui| {
         let port = closed_port();
         ui.config_file("hosts.toml", &host("web", port));
@@ -843,37 +843,16 @@ scenario!(
         assert!(ui.find("group-select").is_none(), "no group in a collection");
         assert!(ui.find("favorite").is_none());
         assert!(ui.find("local-only").is_none());
-        assert!(ui.find("carry-password").is_some(), "its password is offered");
         save_host(ui);
 
         assert!(!ui.hosts_toml().contains("name = \"web\""), "{}", ui.hosts_toml());
         let col = shellwing_vault::Space::Collection("c1".into());
         let hosts = vault.entries_in(&col, "host").expect("entries");
         assert_eq!(hosts.len(), 1, "in the collection");
-        let carried = vault.password_in(&col, &target).expect("read");
-        assert_eq!(carried.as_deref().map(String::as_str), Some("pw"));
-    }
-);
-
-scenario!(
-    /// Moving a host into a collection without its password: unticked, the
-    /// password stays the person's own.
-    move_a_host_and_keep_its_password_mine,
-    |ui| {
-        let port = closed_port();
-        ui.config_file("hosts.toml", &host("web", port));
-        ui.open();
-        let vault = hold_collection_key(ui, "c1");
-        let target = format!("{USER}@127.0.0.1:{port}");
-        vault.set_password(&target, "pw").expect("password");
-        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("manage", vec![])], cx));
-        edit_host(ui, "web");
-        ui.click("place-select");
-        ui.click("choice:Production");
-        ui.click("carry-password");
-        save_host(ui);
-        let col = shellwing_vault::Space::Collection("c1".into());
-        assert!(vault.password_in(&col, &target).expect("read").is_none());
+        assert!(
+            vault.entries_in(&col, "password").expect("entries").is_empty(),
+            "no password shared"
+        );
         assert!(vault.password(&target).expect("read").is_some(), "still mine");
     }
 );

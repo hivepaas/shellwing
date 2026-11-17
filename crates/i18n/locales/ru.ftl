@@ -568,9 +568,6 @@ t4c0827d7 = При сохранении он переместится из { $fr
 # Saving moves it from {from} to {to}.
 taf4375c8 = При сохранении он переместится из { $from } в { $to }.
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = Перенести сохранённый пароль: все, у кого есть доступ к { $name }, смогут входить с ним
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = В коллекции { $name }: его видят все, у кого есть к ней доступ.
 
@@ -3190,26 +3187,14 @@ tc1b10302 = Регулярное выражение (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Панель «Файлы» просматривает сервер по SFTP; эта панель — оболочка на этом компьютере.
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = Сохранено для всех, у кого есть доступ к коллекции.
-
 # Saved in the vault.
 t0d69c4e6 = Сохранено в хранилище.
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = Сохранить пароль для { $target }? Он будет сохранён в { $name }, и все, у кого есть доступ, смогут входить с ним.
 
 # Save the password for {target} in the vault?
 tceb19137 = Сохранить пароль для { $target } в хранилище?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Сохранить парольную фразу { $key_path } в хранилище?
-
-# Only for me
-t358787f6 = Только для меня
-
-# For everybody in {name}
-t65e9e7fb = Для всех в { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = Ключ хоста { $host } изменился.

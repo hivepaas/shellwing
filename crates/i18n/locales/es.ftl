@@ -562,9 +562,6 @@ t4c0827d7 = Al guardar se mueve de { $from } a { $to }: se elimina para todas la
 # Saving moves it from {from} to {to}.
 taf4375c8 = Al guardar se mueve de { $from } a { $to }.
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = Llevar su contraseña guardada: todas las personas con acceso a { $name } podrán iniciar sesión con ella
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = En la colección { $name }: todas las personas con acceso a ella lo ven.
 
@@ -3118,26 +3115,14 @@ tc1b10302 = Expresión regular (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = El panel Archivos explora un servidor por SFTP; este panel es una shell en este equipo.
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = Guardado para todas las personas con acceso a la colección.
-
 # Saved in the vault.
 t0d69c4e6 = Guardado en la bóveda.
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = ¿Guardar la contraseña de { $target }? Guardada en { $name }, todas las personas con acceso podrán iniciar sesión con ella.
 
 # Save the password for {target} in the vault?
 tceb19137 = ¿Guardar la contraseña de { $target } en la bóveda?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = ¿Guardar la frase de contraseña de { $key_path } en la bóveda?
-
-# Only for me
-t358787f6 = Solo para mí
-
-# For everybody in {name}
-t65e9e7fb = Para todos en { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = La clave del servidor { $host } ha cambiado.

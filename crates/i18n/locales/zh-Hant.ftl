@@ -559,9 +559,6 @@ t4c0827d7 = 儲存後會從 { $from } 移到 { $to }：具備 { $from } 存取�
 # Saving moves it from {from} to {to}.
 taf4375c8 = 儲存後會從 { $from } 移到 { $to }。
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = 一併帶上已儲存的密碼：具備 { $name } 存取權的所有人都能用它登入
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = 位於集合 { $name } 中：具備其存取權的所有人都能看到。
 
@@ -3082,26 +3079,14 @@ tc1b10302 = 規則運算式（Alt+R）
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 「檔案」面板透過 SFTP 瀏覽伺服器；此窗格是這台電腦上的 shell。
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = 已為具備該集合存取權的所有人儲存。
-
 # Saved in the vault.
 t0d69c4e6 = 已儲存到保險庫。
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = 要儲存 { $target } 的密碼嗎？它將儲存在 { $name } 中，具備存取權的所有人都能用它登入。
 
 # Save the password for {target} in the vault?
 tceb19137 = 要將 { $target } 的密碼儲存到保險庫嗎？
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = 要將 { $key_path } 的密碼片語儲存到保險庫嗎？
-
-# Only for me
-t358787f6 = 僅限我自己
-
-# For everybody in {name}
-t65e9e7fb = { $name } 中的所有人
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } 的主機金鑰已變更。

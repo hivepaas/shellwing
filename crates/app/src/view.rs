@@ -272,17 +272,6 @@ fn link_mod(m: &Modifiers) -> bool {
     }
 }
 
-/// Where a password or passphrase typed at a prompt is kept.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Keep {
-    /// Not kept.
-    No,
-    /// In the person's own vault.
-    Mine,
-    /// In the host's collection, for everybody with access to it.
-    Shared,
-}
-
 pub struct TermView {
     focus: FocusHandle,
     session: Session,
@@ -1479,29 +1468,15 @@ impl TermView {
     /// The bar offering to save a password or passphrase that worked: Save
     /// puts it in the vault, Not now drops it.
     pub fn answer_save_offer(&mut self, save: bool, cx: &mut Context<Self>) {
-        self.answer_save(if save { Keep::Mine } else { Keep::No }, cx);
-    }
-
-    /// Keeps the secret offered as `keep` says: in the person's own vault, or
-    /// for a collection's host in the collection, for everybody with access.
-    pub fn answer_save(&mut self, keep: Keep, cx: &mut Context<Self>) {
-        if keep == Keep::No {
+        if !save {
             self.save_offer = None;
             cx.notify();
             return;
         }
         if let Some(secret) = self.save_offer.take() {
-            let saved = match keep {
-                Keep::Shared => self.session.save_shared(&secret),
-                _ => self.session.save(&secret),
-            };
-            match saved {
+            match self.session.save(&secret) {
                 Ok(()) => {
-                    let done = match keep {
-                        Keep::Shared => tr!("Saved for everybody with access to the collection."),
-                        _ => tr!("Saved in the vault."),
-                    };
-                    self.show_notice(Notice::good(done), CONFIRM_PASTE, cx);
+                    self.show_notice(Notice::good(tr!("Saved in the vault.")), CONFIRM_PASTE, cx);
                     cx.emit(VaultChanged);
                 }
                 Err(e) => self.show_notice(
@@ -1625,27 +1600,16 @@ impl TermView {
         cx.notify();
     }
 
-    /// Asks whether to keep a password or passphrase that was just typed:
-    /// for a collection's host the person may change, also for everybody
-    /// with access to it.
+    /// Asks whether to keep a password or passphrase that was just typed.
     fn save_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
         let offer = self.save_offer.as_ref()?;
-        let shared = match offer {
-            shellwing_ssh::Learned::Password { .. } => self.session.shared_collection(),
-            shellwing_ssh::Learned::Passphrase { .. } => None,
-        };
         let what = match offer {
-            shellwing_ssh::Learned::Password { target, .. } => match &shared {
-                Some(c) => tr!(
-                    "Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.",
-                    target = target,
-                    name = c.name.clone()
-                ),
-                None => tr!(
+            shellwing_ssh::Learned::Password { target, .. } => {
+                tr!(
                     "Save the password for {target} in the vault?",
                     target = target
-                ),
-            },
+                )
+            }
             shellwing_ssh::Learned::Passphrase { key_path, .. } => {
                 tr!(
                     "Save the passphrase of {key_path} in the vault?",
@@ -1694,26 +1658,10 @@ impl TermView {
                     button("save-not-now", tr!("Not now"), false)
                         .on_click(cx.listener(|v, _, _, cx| v.answer_save_offer(false, cx))),
                 )
-                .when(shared.is_none(), |d| {
-                    d.child(
-                        button("save-secret", tr!("Save"), true)
-                            .on_click(cx.listener(|v, _, _, cx| v.answer_save(Keep::Mine, cx))),
-                    )
-                })
-                .when_some(shared.as_ref(), |d, c| {
-                    d.child(
-                        button("save-mine", tr!("Only for me"), false)
-                            .on_click(cx.listener(|v, _, _, cx| v.answer_save(Keep::Mine, cx))),
-                    )
-                    .child(
-                        button(
-                            "save-shared",
-                            tr!("For everybody in {name}", name = c.name.clone()),
-                            true,
-                        )
-                        .on_click(cx.listener(|v, _, _, cx| v.answer_save(Keep::Shared, cx))),
-                    )
-                })
+                .child(
+                    button("save-secret", tr!("Save"), true)
+                        .on_click(cx.listener(|v, _, _, cx| v.answer_save_offer(true, cx))),
+                )
                 .into_any_element(),
         )
     }

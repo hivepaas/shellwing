@@ -151,9 +151,6 @@ pub struct HostEditor {
     naming_group: bool,
     /// The collection the host is saved in (its id); None: hosts.toml.
     collection: Option<String>,
-    /// Moving the host into a collection takes the password saved for it
-    /// along: None when none is saved, else whether to.
-    carry_password: Option<bool>,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -234,7 +231,6 @@ impl HostEditor {
             favorite: false,
             naming_group: false,
             collection: None,
-            carry_password: None,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -572,30 +568,10 @@ impl HostEditor {
         }
     }
 
-    /// Whether a password is saved for the host where it is now, to offer
-    /// taking it along into the collection it is moved to.
-    fn offer_password(&mut self) {
-        self.carry_password = None;
-        let Some(original) = &self.original else {
-            return;
-        };
-        if self.collection.is_none() || self.collection == original.collection {
-            return;
-        }
-        let (Some(vault), Some(target)) = (self.ctx.vault.get(), password_target(original)) else {
-            return;
-        };
-        let from = shellwing_core::collections::space_of(original);
-        if vault.password_in(&from, &target).ok().flatten().is_some() {
-            self.carry_password = Some(true);
-        }
-    }
-
     /// Saves `host` where it now goes and deletes `original` where it was:
-    /// a record lives in one space, so a move is a copy, then a delete. The
-    /// password goes along into a collection when chosen, and always into
-    /// the person's own hosts, where only they see it. Gives what the host
-    /// list opens it by.
+    /// a record lives in one space, so a move is a copy, then a delete. Its
+    /// saved password stays the person's own, found by `user@host[:port]`
+    /// wherever the host is. Gives what the host list opens it by.
     fn moved(&self, original: &Host, mut host: Host) -> Result<String, String> {
         let vault = || {
             self.ctx
@@ -615,26 +591,17 @@ impl HostEditor {
             None => None,
         };
         host.id = None;
-        let to = shellwing_core::collections::space_of(&host);
         let opened_by = match &host.collection {
             Some(_) => {
                 let c = self.writable_collection(&host)?;
-                {
-                    let v = vault()?;
-                    shellwing_core::collections::save_host(&v, &c, host.clone())?
-                }
+                let v = vault()?;
+                shellwing_core::collections::save_host(&v, &c, host.clone())?
             }
             None => {
                 store()?.save_host(&host).map_err(|e| e.to_string())?;
                 host.name.clone()
             }
         };
-        let carry = host.collection.is_none() || self.carry_password == Some(true);
-        if carry && let Some(target) = password_target(original) {
-            let from = shellwing_core::collections::space_of(original);
-            let v = vault()?;
-            shellwing_core::collections::carry_password(&v, &from, &to, &target)?;
-        }
         match (&original.id, from) {
             (Some(id), Some(c)) => {
                 let v = vault()?;
@@ -1145,10 +1112,7 @@ impl HostEditor {
                             }
                             Menu::Theme => e.theme = value.clone(),
                             Menu::Org => e.org = value.clone(),
-                            Menu::Place => {
-                                e.collection = value.clone();
-                                e.offer_password();
-                            }
+                            Menu::Place => e.collection = value.clone(),
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
@@ -1958,28 +1922,6 @@ impl Render for HostEditor {
                             ),
                         })),
                 );
-                if let (Some(carry), Some(name)) =
-                    (self.carry_password, collection_name(&self.collection))
-                {
-                    organize = organize.child(
-                        div()
-                            .id("carry-password")
-                            .debug_selector(|| "carry-password".into())
-                            .flex()
-                            .items_center()
-                            .gap_2()
-                            .cursor_pointer()
-                            .on_click(cx.listener(|e, _, _, cx| {
-                                e.carry_password = e.carry_password.map(|c| !c);
-                                cx.notify();
-                            }))
-                            .child(checkbox(carry))
-                            .child(label_text(&tr!(
-                                "Take its saved password along: everybody with access to {name} can sign in with it",
-                                name = name
-                            ))),
-                    );
-                }
             }
         } else if let Some(c) = self
             .collection
@@ -2400,11 +2342,6 @@ impl Render for HostEditor {
             )
             .child(footer)
     }
-}
-
-/// What the password for `host` is saved under, as signing in looks it up.
-fn password_target(host: &Host) -> Option<String> {
-    shellwing_core::target::password_target(host, ssh_config::default_config_path().as_deref())
 }
 
 pub(crate) fn checkbox(on: bool) -> gpui::Div {

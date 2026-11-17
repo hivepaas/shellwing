@@ -559,9 +559,6 @@ t4c0827d7 = Menyimpan akan memindahkannya dari { $from } ke { $to }: host ini di
 # Saving moves it from {from} to {to}.
 taf4375c8 = Menyimpan akan memindahkannya dari { $from } ke { $to }.
 
-# Take its saved password along: everybody with access to {name} can sign in with it
-t1de408c5 = Bawa kata sandi tersimpannya: semua yang memiliki akses ke { $name } dapat masuk dengannya
-
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Di koleksi { $name }: semua yang memiliki akses ke koleksi itu dapat melihatnya.
 
@@ -3082,26 +3079,14 @@ tc1b10302 = Ekspresi reguler (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Panel Berkas menjelajahi server melalui SFTP; panel ini adalah shell di komputer ini.
 
-# Saved for everybody with access to the collection.
-t9f5236e2 = Disimpan untuk semua yang memiliki akses ke koleksi.
-
 # Saved in the vault.
 t0d69c4e6 = Disimpan di brankas.
-
-# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
-t12e0bfb2 = Simpan kata sandi untuk { $target }? Disimpan di { $name }, semua yang memiliki akses dapat masuk dengannya.
 
 # Save the password for {target} in the vault?
 tceb19137 = Simpan kata sandi untuk { $target } di brankas?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Simpan frasa sandi { $key_path } di brankas?
-
-# Only for me
-t358787f6 = Hanya untuk saya
-
-# For everybody in {name}
-t65e9e7fb = Untuk semua di { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = Kunci host untuk { $host } telah berubah.

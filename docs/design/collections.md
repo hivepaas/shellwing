@@ -156,8 +156,7 @@ it.
   the permission allows.
 - A collection's hosts are read from the vault as hosts.toml's are, and found by
   their id, since names may repeat across collections. They sign in with the
-  organization's certificates unless one says otherwise, and their passwords are
-  looked for in the collection first.
+  organization's certificates unless one says otherwise.
 - The host editor saves a host in hosts.toml or a collection the person may
   change ("Saved in"). Choosing another place for a saved host moves it: a
   record lives in one space, so the editor saves a copy there, then deletes the
@@ -167,12 +166,16 @@ it.
 - A collection's host has no group, favorite or "this device only": those are
   the person's own. A key from the person's own vault is flagged, since the
   others with access cannot sign in with it.
-- Passwords are found by `user@host[:port]`, in the host's collection first,
-  then the person's own. Moving a host into a collection offers to take its
-  saved password along (ticked); moving one out takes it into the person's own
-  vault. A password typed for a collection's host the person may change is
-  offered "Only for me" or "For everybody in <collection>"; with Connect, or
-  for a passphrase, it is the person's own.
+- **Passwords are never shared.** A collection shares the list of hosts; how
+  each person signs in is their own. A password typed for a collection's host
+  is saved, if they choose, in their own vault, found by `user@host[:port]` as
+  any other, so it keeps working when a host moves in or out. A collection
+  holding passwords would hand them to everybody with access, Connect too
+  (their app opens the records), and taking access away would not take back
+  what was read: every password would have to be changed. The organization's
+  certificates are the way in that is shared, one per person and revocable.
+  Nor does an app look in a collection for a password: a record another app
+  put there must not win over the person's own.
 - With Manage, the palette's "Give the key of …" lists who waits, each with the
   fingerprint to compare with their Profile page; choosing one gives it.
 - With Manage, the palette's "Manage access to …" lists the grants, to change
