@@ -3381,6 +3381,15 @@ td7aff116 = Gérer
 # Edits, grants access and gives the key
 t7c52884e = Modifie, accorde l'accès et donne la clé
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Partagée dans { $org } : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Partagée dans une organisation : toutes les personnes ayant accès voient ses serveurs, chiffré de bout en bout.
+
+# waiting for its key
+tb827ed42 = en attente de sa clé
+
 # Over SSH only
 t14e43465 = Par SSH uniquement
 
@@ -4163,11 +4172,14 @@ tfa0d176a = Cet ordinateur
 # Favorites
 t7c2c53ba = Favoris
 
-# waiting for its key
-tb827ed42 = en attente de sa clé
-
 # read only
 t0d7ec241 = lecture seule
+
+# Shared · {org}
+t280d0e57 = Partagés · { $org }
+
+# Shared
+teb0bbef4 = Partagés
 
 # find a host, connect, run an action
 t4b795631 = trouver un serveur, se connecter, lancer une action

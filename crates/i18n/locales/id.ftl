@@ -3343,6 +3343,15 @@ td7aff116 = Kelola
 # Edits, grants access and gives the key
 t7c52884e = Mengedit, memberi akses, dan memberikan kunci
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Dibagikan di { $org }: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Dibagikan di sebuah organisasi: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
+
+# waiting for its key
+tb827ed42 = menunggu kuncinya
+
 # Over SSH only
 t14e43465 = Hanya melalui SSH
 
@@ -4114,11 +4123,14 @@ tfa0d176a = Komputer ini
 # Favorites
 t7c2c53ba = Favorit
 
-# waiting for its key
-tb827ed42 = menunggu kuncinya
-
 # read only
 t0d7ec241 = hanya baca
+
+# Shared · {org}
+t280d0e57 = Dibagikan · { $org }
+
+# Shared
+teb0bbef4 = Dibagikan
 
 # find a host, connect, run an action
 t4b795631 = cari host, hubungkan, jalankan tindakan

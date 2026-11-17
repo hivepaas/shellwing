@@ -3286,6 +3286,15 @@ td7aff116 = Quản lý
 # Edits, grants access and gives the key
 t7c52884e = Sửa, cấp quyền truy cập và trao khoá
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Dùng chung trong { $org }: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Dùng chung trong một tổ chức: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
+
+# waiting for its key
+tb827ed42 = đang chờ khoá
+
 # Over SSH only
 t14e43465 = Chỉ qua SSH
 
@@ -4027,11 +4036,14 @@ tfa0d176a = Máy tính này
 # Favorites
 t7c2c53ba = Yêu thích
 
-# waiting for its key
-tb827ed42 = đang chờ khoá
-
 # read only
 t0d7ec241 = chỉ đọc
+
+# Shared · {org}
+t280d0e57 = Dùng chung · { $org }
+
+# Shared
+teb0bbef4 = Dùng chung
 
 # find a host, connect, run an action
 t4b795631 = tìm máy chủ, kết nối, chạy thao tác

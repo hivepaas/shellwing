@@ -3381,6 +3381,15 @@ td7aff116 = Yönet
 # Edits, grants access and gives the key
 t7c52884e = Düzenler, erişim verir ve anahtarı verir
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org } içinde paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Bir kuruluşta paylaşılıyor: erişim verilen herkes ana makinelerini görür, uçtan uca şifreli.
+
+# waiting for its key
+tb827ed42 = anahtarını bekliyor
+
 # Over SSH only
 t14e43465 = Yalnızca SSH üzerinden
 
@@ -4163,11 +4172,14 @@ tfa0d176a = Bu bilgisayar
 # Favorites
 t7c2c53ba = Sık kullanılanlar
 
-# waiting for its key
-tb827ed42 = anahtarını bekliyor
-
 # read only
 t0d7ec241 = salt okunur
+
+# Shared · {org}
+t280d0e57 = Paylaşılan · { $org }
+
+# Shared
+teb0bbef4 = Paylaşılan
 
 # find a host, connect, run an action
 t4b795631 = ana makine bul, bağlan, eylem çalıştır

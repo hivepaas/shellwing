@@ -146,8 +146,14 @@ it.
 - The vault holds several spaces: the personal one as it is now, and each
   collection, with its own key and versions.
 - Each collection is a section of the sidebar: its hosts once the key is held,
-  else "waiting for its key"; "read only" with Connect. The vault keeps the
-  collections the server served at the last sync, so they show offline too.
+  else "waiting for its key". The vault keeps the collections the server served
+  at the last sync, so they show offline too.
+- Once any is shared, the sidebar reads in two parts, so what others see is not
+  taken for a group: "My hosts" (favorites, groups, hosts, `~/.ssh/config`),
+  then "Shared · <organization>" with that organization's collections. A
+  collection's title has the shared mark and a chip with the person's
+  permission (Manage, Edit, Connect); its tooltip says who sees it and what
+  the permission allows.
 - A collection's hosts are read from the vault as hosts.toml's are, and found by
   their id, since names may repeat across collections. They sign in with the
   organization's certificates unless one says otherwise, and their passwords are

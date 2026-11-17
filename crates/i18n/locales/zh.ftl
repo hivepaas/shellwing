@@ -3286,6 +3286,15 @@ td7aff116 = 管理
 # Edits, grants access and gives the key
 t7c52884e = 编辑、授予访问权限并发放密钥
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = 在 { $org } 中共享：所有获得访问权限的人都能看到其主机，端到端加密。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 在组织中共享：所有获得访问权限的人都能看到其主机，端到端加密。
+
+# waiting for its key
+tb827ed42 = 等待密钥
+
 # Over SSH only
 t14e43465 = 仅限 SSH
 
@@ -4027,11 +4036,14 @@ tfa0d176a = 此计算机
 # Favorites
 t7c2c53ba = 收藏
 
-# waiting for its key
-tb827ed42 = 等待密钥
-
 # read only
 t0d7ec241 = 只读
+
+# Shared · {org}
+t280d0e57 = 共享 · { $org }
+
+# Shared
+teb0bbef4 = 共享
 
 # find a host, connect, run an action
 t4b795631 = 查找主机、连接、执行操作

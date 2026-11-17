@@ -3343,6 +3343,15 @@ td7aff116 = 管理
 # Edits, grants access and gives the key
 t7c52884e = 編輯、授予存取權並發放金鑰
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = 在 { $org } 中共用：所有取得存取權的人都能看到其主機，端對端加密。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 在組織中共用：所有取得存取權的人都能看到其主機，端對端加密。
+
+# waiting for its key
+tb827ed42 = 等待金鑰
+
 # Over SSH only
 t14e43465 = 僅限 SSH
 
@@ -4114,11 +4123,14 @@ tfa0d176a = 這台電腦
 # Favorites
 t7c2c53ba = 我的最愛
 
-# waiting for its key
-tb827ed42 = 等待金鑰
-
 # read only
 t0d7ec241 = 唯讀
+
+# Shared · {org}
+t280d0e57 = 共用 · { $org }
+
+# Shared
+teb0bbef4 = 共用
 
 # find a host, connect, run an action
 t4b795631 = 尋找主機、連線、執行動作

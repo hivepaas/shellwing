@@ -3457,6 +3457,15 @@ td7aff116 = Керувати
 # Edits, grants access and gives the key
 t7c52884e = Редагує, надає доступ і передає ключ
 
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Спільна в { $org }: її хости бачать усі, хто має доступ; наскрізне шифрування.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Спільна в організації: її хости бачать усі, хто має доступ; наскрізне шифрування.
+
+# waiting for its key
+tb827ed42 = чекає на ключ
+
 # Over SSH only
 t14e43465 = Лише через SSH
 
@@ -4261,11 +4270,14 @@ tfa0d176a = Цей комп'ютер
 # Favorites
 t7c2c53ba = Вибране
 
-# waiting for its key
-tb827ed42 = чекає на ключ
-
 # read only
 t0d7ec241 = лише читання
+
+# Shared · {org}
+t280d0e57 = Спільні · { $org }
+
+# Shared
+teb0bbef4 = Спільні
 
 # find a host, connect, run an action
 t4b795631 = знайти хост, підключитися, виконати дію
