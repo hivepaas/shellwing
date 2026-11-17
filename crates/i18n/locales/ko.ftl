@@ -4123,6 +4123,12 @@ tbda4f1d9 = 처음에는 묻지 않고 호스트 키를 받아들입니다
 # Types a command into its shell once connected: {command}
 t0a40f947 = 연결 후 셸에 명령을 입력합니다: { $command }
 
+# Name: another host has this name.
+tcf956656 = 이름: 다른 호스트가 이미 이 이름을 사용합니다.
+
+# Alias: another host uses this.
+t6d4194b8 = 별칭: 다른 호스트가 이미 사용합니다.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 명령이 { $size }KB입니다. 최대 { $max }KB입니다.
 
@@ -4207,14 +4213,8 @@ t3f9c8dd7 = 주소: 주소가 필요합니다.
 # Address: no spaces.
 t1a9d2c69 = 주소: 공백을 넣을 수 없습니다.
 
-# Name: another host has this name.
-tcf956656 = 이름: 다른 호스트가 이미 이 이름을 사용합니다.
-
 # Alias: no spaces.
 t240468fd = 별칭: 공백을 넣을 수 없습니다.
-
-# Alias: another host uses this.
-t6d4194b8 = 별칭: 다른 호스트가 이미 사용합니다.
 
 # Port: 1 to 65535.
 t48e7bff2 = 포트: 1에서 65535 사이.

@@ -172,6 +172,14 @@ class AppModel(private val app: ShellwingApp) {
         return id
     }
 
+    /** Moves the host [edit] is of from [from] to [to] (collections' ids; null: hosts.toml): its id where it went. */
+    fun move(edit: HostEdit, from: String?, to: String?): String {
+        val core = core ?: throw MobileException.Failed(problem ?: "")
+        val id = core.moveHost(from, to, edit)
+        reload()
+        return id
+    }
+
     /** Deletes the collection's host, for everybody with access. */
     fun delete(hostId: String, collection: String) {
         try {

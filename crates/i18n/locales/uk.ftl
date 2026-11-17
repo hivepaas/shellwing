@@ -4357,6 +4357,12 @@ tbda4f1d9 = Приймає ключ хоста першого разу, не п�
 # Types a command into its shell once connected: {command}
 t0a40f947 = Вводить команду в його оболонку після підключення: { $command }
 
+# Name: another host has this name.
+tcf956656 = Назва: інший хост уже має таку назву.
+
+# Alias: another host uses this.
+t6d4194b8 = Псевдонім: його вже використовує інший хост.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Команда займає { $size } КБ; щонайбільше { $max } КБ.
 
@@ -4441,14 +4447,8 @@ t3f9c8dd7 = Адреса: потрібно вказати адресу.
 # Address: no spaces.
 t1a9d2c69 = Адреса: без пробілів.
 
-# Name: another host has this name.
-tcf956656 = Назва: інший хост уже має таку назву.
-
 # Alias: no spaces.
 t240468fd = Псевдонім: без пробілів.
-
-# Alias: another host uses this.
-t6d4194b8 = Псевдонім: його вже використовує інший хост.
 
 # Port: 1 to 65535.
 t48e7bff2 = Порт: від 1 до 65535.

@@ -580,46 +580,40 @@ impl HostEditor {
     /// Saves `host` where it now goes and deletes `original` where it was:
     /// a record lives in one space, so a move is a copy, then a delete. Its
     /// saved password stays the person's own, found by `user@host[:port]`
-    /// wherever the host is. Gives what the host list opens it by.
-    fn moved(&self, original: &Host, mut host: Host) -> Result<String, String> {
-        let vault = || {
-            self.ctx
-                .vault
-                .get()
-                .ok_or_else(|| tr!("the vault is not open"))
-        };
-        let store = || {
-            self.ctx
-                .store
-                .as_ref()
-                .ok_or_else(|| tr!("There is no config directory to save in."))
-        };
-        // Checked first, so nothing is copied that cannot then be deleted.
-        let from = match &original.collection {
-            Some(_) => Some(self.writable_collection(original)?),
-            None => None,
-        };
-        host.id = None;
-        let opened_by = match &host.collection {
-            Some(_) => {
-                let c = self.writable_collection(&host)?;
-                let v = vault()?;
-                shellwing_core::collections::save_host(&v, &c, host.clone())?
-            }
-            None => {
-                store()?.save_host(&host).map_err(|e| e.to_string())?;
-                host.name.clone()
-            }
-        };
-        match (&original.id, from) {
-            (Some(id), Some(c)) => {
-                let v = vault()?;
-                shellwing_core::collections::delete_host(&v, &c, id)?
-            }
-            (Some(id), None) => store()?.delete_host(id).map_err(|e| e.to_string())?,
-            (None, _) => return Err(tr!("This host cannot be found in hosts.toml.")),
-        }
-        Ok(opened_by)
+    /// wherever the host is. Gives what the host list opens it by: a
+    /// collection's host by its id, hosts.toml's by name.
+    fn moved(&self, original: &Host, host: Host) -> Result<String, String> {
+        use shellwing_core::collections::{Place, move_host};
+        let store = self
+            .ctx
+            .store
+            .as_ref()
+            .ok_or_else(|| tr!("There is no config directory to save in."))?;
+        let id = original
+            .id
+            .clone()
+            .ok_or_else(|| tr!("This host cannot be found in hosts.toml."))?;
+        let from = original
+            .collection
+            .as_ref()
+            .map(|_| self.writable_collection(original))
+            .transpose()?;
+        let to = host
+            .collection
+            .as_ref()
+            .map(|_| self.writable_collection(&host))
+            .transpose()?;
+        let vault = self.ctx.vault.get();
+        let name = host.name.clone();
+        let saved = move_host(
+            store,
+            vault.as_deref(),
+            Place::of(from.as_ref()),
+            Place::of(to.as_ref()),
+            &id,
+            host,
+        )?;
+        Ok(if to.is_some() { saved } else { name })
     }
 
     /// The collection a host is in, if the person may change its hosts; else

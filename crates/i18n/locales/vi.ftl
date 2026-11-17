@@ -4123,6 +4123,12 @@ tbda4f1d9 = Nhận khoá của máy chủ ở lần đầu mà không hỏi bạ
 # Types a command into its shell once connected: {command}
 t0a40f947 = Gõ một lệnh vào shell của nó sau khi kết nối: { $command }
 
+# Name: another host has this name.
+tcf956656 = Tên: đã có máy chủ khác tên này.
+
+# Alias: another host uses this.
+t6d4194b8 = Tên gọi: máy chủ khác đã dùng.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.
 
@@ -4207,14 +4213,8 @@ t3f9c8dd7 = Địa chỉ: cần có địa chỉ.
 # Address: no spaces.
 t1a9d2c69 = Địa chỉ: không có khoảng trắng.
 
-# Name: another host has this name.
-tcf956656 = Tên: đã có máy chủ khác tên này.
-
 # Alias: no spaces.
 t240468fd = Tên gọi: không có khoảng trắng.
-
-# Alias: another host uses this.
-t6d4194b8 = Tên gọi: máy chủ khác đã dùng.
 
 # Port: 1 to 65535.
 t48e7bff2 = Cổng: từ 1 đến 65535.

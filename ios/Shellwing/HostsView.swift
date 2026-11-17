@@ -291,8 +291,8 @@ struct HostsView: View {
             .sheet(item: $editingInCollection) { e in
                 HostEditorView(edit: e.edit, in: e.collection) { saved in
                     editingInCollection = nil
-                    // A collection's host opens by its id.
-                    if let saved, let s = app.session(for: saved) { path = [s] }
+                    // Moved out, it opens as hosts.toml's do.
+                    if let saved, let spec = specOf(id: saved), let s = app.session(for: spec) { path = [s] }
                 }
             }
             .alert(tr("A collection has a new key"), isPresented: Binding(
@@ -384,8 +384,10 @@ struct HostsView: View {
         app.sessions.last(where: { $0.spec == host.spec })?.status
     }
 
+    /// What opens the host saved as `id`: in hosts.toml or a collection,
+    /// wherever it went.
     private func specOf(id: String) -> String? {
-        app.sections.flatMap(\.hosts).first(where: { $0.id == id })?.spec
+        (app.sections.flatMap(\.hosts) + app.collections.flatMap(\.hosts)).first(where: { $0.id == id })?.spec
     }
 
     private var empty: some View {

@@ -4259,6 +4259,12 @@ tbda4f1d9 = Accepte la clé du serveur la première fois sans vous demander
 # Types a command into its shell once connected: {command}
 t0a40f947 = Tape une commande dans son shell une fois connecté : { $command }
 
+# Name: another host has this name.
+tcf956656 = Nom : un autre serveur porte ce nom.
+
+# Alias: another host uses this.
+t6d4194b8 = Alias : un autre serveur l'utilise.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = La commande fait { $size } Ko ; { $max } Ko au maximum.
 
@@ -4343,14 +4349,8 @@ t3f9c8dd7 = Adresse : une adresse est requise.
 # Address: no spaces.
 t1a9d2c69 = Adresse : sans espaces.
 
-# Name: another host has this name.
-tcf956656 = Nom : un autre serveur porte ce nom.
-
 # Alias: no spaces.
 t240468fd = Alias : sans espaces.
-
-# Alias: another host uses this.
-t6d4194b8 = Alias : un autre serveur l'utilise.
 
 # Port: 1 to 65535.
 t48e7bff2 = Port : de 1 à 65535.

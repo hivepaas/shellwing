@@ -4259,6 +4259,12 @@ tbda4f1d9 = Übernimmt den Schlüssel des Hosts beim ersten Mal, ohne dich zu fr
 # Types a command into its shell once connected: {command}
 t0a40f947 = Tippt nach dem Verbinden einen Befehl in seine Shell: { $command }
 
+# Name: another host has this name.
+tcf956656 = Name: Ein anderer Host hat diesen Namen.
+
+# Alias: another host uses this.
+t6d4194b8 = Alias: Ein anderer Host nutzt ihn.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Der Befehl hat { $size } KB; höchstens { $max } KB.
 
@@ -4343,14 +4349,8 @@ t3f9c8dd7 = Adresse: Eine Adresse ist erforderlich.
 # Address: no spaces.
 t1a9d2c69 = Adresse: keine Leerzeichen.
 
-# Name: another host has this name.
-tcf956656 = Name: Ein anderer Host hat diesen Namen.
-
 # Alias: no spaces.
 t240468fd = Alias: keine Leerzeichen.
-
-# Alias: another host uses this.
-t6d4194b8 = Alias: Ein anderer Host nutzt ihn.
 
 # Port: 1 to 65535.
 t48e7bff2 = Port: 1 bis 65535.
