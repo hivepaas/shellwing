@@ -858,6 +858,73 @@ scenario!(
 );
 
 scenario!(
+    /// A collection's title has a menu, by a right click or its button on
+    /// hover, with what the person may do to it: a new host in it, and what
+    /// the palette offers for it. Its New host saves in the collection.
+    /// Connect only, there is nothing to do, and no menu.
+    a_collections_title_has_a_menu,
+    |ui| {
+        ui.open();
+        let vault = hold_collection_key(ui, "c1");
+        ui.ws(|ws, _, cx| {
+            ws.show_collections(
+                vec![("org1".into(), "Acme".into())],
+                vec![production("manage", vec![])],
+                cx,
+            )
+        });
+        let items = [
+            "collection-new-host",
+            "collection-access",
+            "collection-give-key",
+        ];
+        ui.right_click("section:Production");
+        for id in items {
+            assert!(ui.find(id).is_some(), "{id}");
+        }
+        assert!(ui.find("collection-checklist").is_none(), "no key replaced");
+        ui.keys("escape");
+        assert!(ui.find("collection-menu").is_none(), "Esc closes it");
+
+        // Manage access goes where the palette's does: with no server here,
+        // it says collections need one.
+        ui.hover("section:Production");
+        ui.click("collection-more:Production");
+        ui.click("collection-access");
+        assert!(ui.find("collection-menu").is_none());
+        ui.wait_for_notice("Collections need syncing with a shellwing server.");
+
+        ui.right_click("section:Production");
+        ui.click("collection-new-host");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        assert!(ui.find("group-select").is_none(), "in the collection: no group");
+        ui.type_text("api");
+        ui.keys("tab tab");
+        ui.type_text("127.0.0.1");
+        ui.keys("tab");
+        ui.type_text(&closed_port().to_string());
+        ui.keys("tab");
+        ui.type_text(USER);
+        save_host(ui);
+        assert!(!ui.hosts_toml().contains("name = \"api\""), "{}", ui.hosts_toml());
+        let col = shellwing_vault::Space::Collection("c1".into());
+        assert_eq!(vault.entries_in(&col, "host").expect("entries").len(), 1);
+
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("edit", vec![])], cx));
+        ui.right_click("section:Production");
+        assert!(ui.find("collection-new-host").is_some());
+        assert!(ui.find("collection-access").is_none(), "Edit: no access to manage");
+        ui.keys("escape");
+
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("connect", vec![])], cx));
+        ui.right_click("section:Production");
+        assert!(ui.find("collection-menu").is_none(), "Connect: no menu");
+        ui.hover("section:Production");
+        assert!(ui.find("collection-more:Production").is_none());
+    }
+);
+
+scenario!(
     /// A collection's host in the editor: no group, favorite or this-device
     /// toggle, and a key from the person's own vault is flagged, since the
     /// others with access do not have it. Connect only: it cannot be moved.

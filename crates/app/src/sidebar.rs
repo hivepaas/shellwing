@@ -2,8 +2,9 @@
 //! hands it, so the terminal's frames do not lay it out again (it is cached).
 
 use gpui::{
-    App, Context, Div, ElementId, Entity, FontWeight, KeyDownEvent, Render, SharedString,
-    WeakEntity, Window, div, prelude::*, px, rgb, rgba, svg,
+    App, Context, Div, ElementId, Entity, FocusHandle, FontWeight, KeyDownEvent, MouseButton,
+    MouseDownEvent, Pixels, Point, Render, SharedString, WeakEntity, Window, div, prelude::*, px,
+    rgb, rgba, svg,
 };
 
 use shellwing_i18n::tr;
@@ -11,6 +12,7 @@ use shellwing_i18n::tr;
 use crate::input::{Changed, TextInput};
 
 use crate::colors::colors;
+use crate::palette::Action;
 use crate::session::Status;
 use crate::settings_view::Page;
 use crate::workspace::{EditTarget, Workspace};
@@ -42,10 +44,24 @@ pub struct Section {
 /// What marks a collection's section apart from a group.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shared {
+    /// The collection's id.
+    pub id: String,
     /// What the person may do: "Manage", "Edit" or "Read only".
     pub permission: SharedString,
     /// The title's tooltip: who sees it, and how.
     pub tip: SharedString,
+    /// What the person may do to it, from its title's menu: a right click,
+    /// or its button on hover. Empty, it has none.
+    pub menu: Vec<MenuItem>,
+}
+
+/// An item of a collection's menu.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MenuItem {
+    /// For the UI tests.
+    pub id: &'static str,
+    pub label: SharedString,
+    pub action: Action,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -96,6 +112,11 @@ pub struct Sidebar {
     filter: Entity<TextInput>,
     /// Shown as a rail of host tiles.
     collapsed: bool,
+    /// A collection's menu, open: the collection's id, and where.
+    menu: Option<(String, Point<Pixels>)>,
+    /// The menu's, while open, for Esc; and what had the keyboard before.
+    menu_focus: FocusHandle,
+    focus_before: Option<FocusHandle>,
 }
 
 /// A host's tile on the rail: two letters from its name. `api-1` is A1,
@@ -184,6 +205,9 @@ impl Sidebar {
             hovered_group: None,
             filter,
             collapsed: false,
+            menu: None,
+            menu_focus: cx.focus_handle(),
+            focus_before: None,
         }
     }
 
@@ -460,6 +484,121 @@ impl Sidebar {
             cx.notify();
         }
     }
+
+    /// The items of the menu of the collection `id`, as the list shows it
+    /// now: none once it is gone, or nothing may be done to it any more.
+    fn menu_items(&self, id: &str) -> Vec<MenuItem> {
+        self.sections
+            .iter()
+            .filter_map(|s| s.shared.as_ref())
+            .find(|s| s.id == id)
+            .map(|s| s.menu.clone())
+            .unwrap_or_default()
+    }
+
+    /// Opens a collection's menu, if it has one: it has the keyboard, for
+    /// Esc, until it closes.
+    fn open_menu(
+        &mut self,
+        id: String,
+        at: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.menu_items(&id).is_empty() {
+            return;
+        }
+        if self.menu.is_none() {
+            self.focus_before = window.focused(cx);
+        }
+        self.menu = Some((id, at));
+        window.focus(&self.menu_focus, cx);
+        cx.notify();
+    }
+
+    /// Closes the menu; the keyboard goes back where it was, unless what was
+    /// chosen takes it.
+    fn close_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.menu = None;
+        if self.menu_focus.is_focused(window)
+            && let Some(f) = self.focus_before.take()
+        {
+            window.focus(&f, cx);
+        }
+        self.focus_before = None;
+        cx.notify();
+    }
+
+    fn collection_menu(
+        &self,
+        items: &[MenuItem],
+        at: Point<Pixels>,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        let mut menu = div()
+            .id("collection-menu")
+            .debug_selector(|| "collection-menu".into())
+            .min_w(px(200.))
+            .p_1()
+            .flex()
+            .flex_col()
+            .rounded(px(8.))
+            .bg(rgb(colors().raised))
+            .border_1()
+            .border_color(rgb(colors().edge))
+            .shadow_lg()
+            .text_sm()
+            .track_focus(&self.menu_focus)
+            .on_key_down(cx.listener(|s, ev: &KeyDownEvent, window, cx| {
+                if ev.keystroke.key == "escape" {
+                    s.close_menu(window, cx);
+                    cx.stop_propagation();
+                }
+            }))
+            // A press on it is its own, not the list's under it.
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            // Another click anywhere closes it (a right click on a title
+            // opens that one's).
+            .on_mouse_down_out(cx.listener(|s, e: &MouseDownEvent, window, cx| {
+                if e.button != MouseButton::Right {
+                    s.close_menu(window, cx);
+                }
+            }));
+        for item in items {
+            let (id, action, ws) = (item.id, item.action.clone(), self.workspace.clone());
+            menu = menu.child(
+                div()
+                    .id(id)
+                    .debug_selector(move || id.into())
+                    .px_3()
+                    .py(px(5.))
+                    .rounded(px(4.))
+                    .whitespace_nowrap()
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().selected)))
+                    .text_color(rgb(colors().text))
+                    .on_click(cx.listener(move |s, _, window, cx| {
+                        s.close_menu(window, cx);
+                        let (action, ws) = (action.clone(), ws.clone());
+                        // Once this click is handled: the action may refresh
+                        // this list, which cannot be updated while it
+                        // handles the click.
+                        window.defer(cx, move |window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.run(action, window, cx));
+                        });
+                    }))
+                    .child(item.label.clone()),
+            );
+        }
+        gpui::deferred(
+            gpui::anchored()
+                .position(at)
+                .snap_to_window_with_margin(px(8.))
+                .child(menu),
+        )
+        .with_priority(1)
+        .into_any_element()
+    }
 }
 
 /// Opens a part of the host list: a quiet label and a rule, so it reads
@@ -483,8 +622,11 @@ fn part_heading(n: usize, label: SharedString) -> impl IntoElement {
 }
 
 impl Render for Sidebar {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.collapsed {
+            if self.menu.is_some() {
+                self.close_menu(window, cx);
+            }
             return self.rail();
         }
         let mut list = div()
@@ -501,6 +643,15 @@ impl Render for Sidebar {
         let filtering = !self.filter.read(cx).text().trim().is_empty();
         for (n, section) in shown.iter().enumerate() {
             let over = self.hovered_group == Some(n) && section.group.is_some();
+            // A collection's menu: its button on hover, in place of the count.
+            let has_menu = section.shared.as_ref().is_some_and(|s| !s.menu.is_empty());
+            let more = self.hovered_group == Some(n) && has_menu;
+            let collection = section
+                .shared
+                .as_ref()
+                .map(|s| s.id.clone())
+                .unwrap_or_default();
+            let collection_more = collection.clone();
             let (group, ws) = (section.group.clone(), self.workspace.clone());
             if let Some(heading) = &section.heading {
                 list = list.child(part_heading(n, heading.clone()));
@@ -518,6 +669,15 @@ impl Render for Sidebar {
                     .text_xs()
                     .font_weight(FontWeight::SEMIBOLD)
                     .text_color(rgb(colors().muted))
+                    .when(has_menu, |d| {
+                        d.on_mouse_down(
+                            MouseButton::Right,
+                            cx.listener(move |s, e: &MouseDownEvent, window, cx| {
+                                cx.stop_propagation();
+                                s.open_menu(collection.clone(), e.position, window, cx);
+                            }),
+                        )
+                    })
                     .on_hover(cx.listener(move |s, over: &bool, _, cx| {
                         let now = if *over {
                             Some(n)
@@ -603,7 +763,33 @@ impl Render for Sidebar {
                                             .child(shared.permission.clone()),
                                     )
                                 })
-                                .child(section.note.clone()),
+                                .when(!more, |d| d.child(section.note.clone()))
+                                .when(more, |d| {
+                                    d.child(
+                                        div()
+                                            .id(("collection-more", n))
+                                            .debug_selector(|| {
+                                                format!("collection-more:{}", section.title)
+                                            })
+                                            .px(px(6.))
+                                            .rounded_md()
+                                            .cursor_pointer()
+                                            .text_color(rgb(colors().text))
+                                            .hover(|s| s.bg(rgb(colors().hover)))
+                                            .on_click(cx.listener(
+                                                move |s, e: &gpui::ClickEvent, window, cx| {
+                                                    cx.stop_propagation();
+                                                    s.open_menu(
+                                                        collection_more.clone(),
+                                                        e.position(),
+                                                        window,
+                                                        cx,
+                                                    );
+                                                },
+                                            ))
+                                            .child("⋯"),
+                                    )
+                                }),
                         )
                     })
                     .when(over, |d| {
@@ -865,6 +1051,20 @@ impl Render for Sidebar {
                     ),
             );
         let collapse = self.workspace.clone();
+        // The collection gone from under its open menu, or nothing left to
+        // do to it: the menu closes.
+        let menu = match self.menu.clone() {
+            Some((id, at)) => {
+                let items = self.menu_items(&id);
+                if items.is_empty() {
+                    self.close_menu(window, cx);
+                    None
+                } else {
+                    Some(self.collection_menu(&items, at, cx))
+                }
+            }
+            None => None,
+        };
         // The ground is the workspace's, which rounds the window's corner.
         div()
             .size_full()
@@ -938,6 +1138,7 @@ impl Render for Sidebar {
             )
             .child(list)
             .child(footer)
+            .when_some(menu, |d, m| d.child(m))
     }
 }
 

@@ -223,6 +223,8 @@ pub struct KeyToInstall {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EditTarget {
     New,
+    /// A new host, in a collection by its id.
+    NewIn(String),
     /// A host in hosts.toml, by name.
     Saved(String),
     /// A host from `~/.ssh/config`, by alias: shown read only.
@@ -304,6 +306,46 @@ fn permission_text(permission: &str) -> (String, String) {
 
 /// A collection's tooltip in the host list: who sees it, and what this
 /// person may do with it.
+/// What the person may do to a collection, from its title in the host list:
+/// what the palette offers for it, and a new host in it.
+fn collection_menu(
+    c: &crate::look::CollectionHosts,
+    checklist: bool,
+) -> Vec<crate::sidebar::MenuItem> {
+    use crate::sidebar::MenuItem;
+    let manages = c.permission == "manage";
+    let mut items = vec![];
+    if c.edits() && !c.waiting {
+        items.push(MenuItem {
+            id: "collection-new-host",
+            label: tr!("New host…").into(),
+            action: Action::NewHostIn(c.id.clone()),
+        });
+    }
+    if manages {
+        items.push(MenuItem {
+            id: "collection-access",
+            label: tr!("Manage access…").into(),
+            action: Action::CollectionAccess(c.id.clone()),
+        });
+    }
+    if manages && !c.waiting {
+        items.push(MenuItem {
+            id: "collection-give-key",
+            label: tr!("Give its key…").into(),
+            action: Action::GiveCollectionKey(c.id.clone()),
+        });
+    }
+    if checklist {
+        items.push(MenuItem {
+            id: "collection-checklist",
+            label: tr!("Secrets to change…").into(),
+            action: Action::KeyChecklist(c.id.clone()),
+        });
+    }
+    items
+}
+
 fn collection_tip(c: &crate::look::CollectionHosts, org: Option<&str>) -> String {
     let (name, what) = permission_text(&c.permission);
     let shared = match org {
@@ -2262,7 +2304,7 @@ impl Workspace {
         {
             let name = match &target {
                 EditTarget::Saved(n) | EditTarget::Ssh(n) => n.clone(),
-                EditTarget::New | EditTarget::Local => String::new(),
+                EditTarget::New | EditTarget::NewIn(_) | EditTarget::Local => String::new(),
             };
             action(
                 Action::EditHost(target),
@@ -3687,6 +3729,7 @@ impl Workspace {
         let editor = cx.new(|cx| match (target, found) {
             (EditTarget::Saved(_), Some(host)) => HostEditor::edit(ctx, host, cx),
             (EditTarget::Ssh(alias), _) => HostEditor::ssh_config(ctx, alias, cx),
+            (EditTarget::NewIn(id), _) => HostEditor::new_in(ctx, id, cx),
             _ => HostEditor::new_host(ctx, cx),
         });
         let sub = cx.subscribe_in(
@@ -4764,6 +4807,8 @@ impl Workspace {
                         cx,
                     );
                 }
+                // Its collection's menu offers it no more.
+                self.refresh_sidebar(cx);
             }
             PaletteEvent::Chose(user) if matches!(self.asking, Some(Asking::GiveKey { .. })) => {
                 let Some(Asking::GiveKey {
@@ -4910,7 +4955,7 @@ impl Workspace {
         }
     }
 
-    fn run(&mut self, a: Action, window: &mut Window, cx: &mut Context<Self>) {
+    pub fn run(&mut self, a: Action, window: &mut Window, cx: &mut Context<Self>) {
         if self.lock.is_some() {
             return;
         }
@@ -4964,6 +5009,7 @@ impl Workspace {
             Action::Log => self.toggle_log(cx),
             Action::SaveOutput { html } => self.save_output(html, window, cx),
             Action::NewHost => self.edit_host(EditTarget::New, window, cx),
+            Action::NewHostIn(id) => self.edit_host(EditTarget::NewIn(id), window, cx),
             Action::NewGroup => self.edit_group(None, window, cx),
             Action::ImportHosts => self.open_import(window, cx),
             Action::UndoImport => self.undo_import(cx),
@@ -6216,6 +6262,16 @@ impl Workspace {
         // a heading for each organization, so what others see reads apart.
         let mut shared = vec![];
         let mut org_shown: Option<&str> = None;
+        // The vault is read only once some collection is shown.
+        let checklists: Vec<String> = self
+            .vault
+            .ready()
+            .filter(|_| !self.live.collections().is_empty())
+            .and_then(|v| v.key_checklists().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|l| l.collection)
+            .collect();
         for c in self.live.collections() {
             let rows: Vec<Row> = c
                 .hosts
@@ -6250,8 +6306,10 @@ impl Workspace {
                 note: note.into(),
                 heading,
                 shared: Some(crate::sidebar::Shared {
+                    id: c.id.clone(),
                     permission: permission_text(&c.permission).0.into(),
                     tip: collection_tip(c, org.as_deref()).into(),
+                    menu: collection_menu(c, checklists.contains(&c.id)),
                 }),
                 rows,
                 ..Default::default()
