@@ -2992,11 +2992,17 @@ t12a2b3c2 = { $host } には既に { $key } があります。
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } を { $host } にインストールできませんでした：{ $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } を { $host } にインストールしました。今後 { $host } へのサインインにこの鍵を使いますか？
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = 組織のコレクションにあるこれらのホストが求める設定なしで接続しました。設定はコレクションを編集できる人が行い、このコンピューター上で動作します。その人たちを信頼できる場合にのみ許可してください。
 
 # Not now
 t2c3d6fce = 後で
+
+# Allow and reconnect
+t6f3784ee = 許可して再接続
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } を { $host } にインストールしました。今後 { $host } へのサインインにこの鍵を使いますか？
 
 # Use it for {host}
 t704df588 = { $host } で使用
@@ -3369,6 +3375,9 @@ t7958d376 = { $one } への接続が開いています。閉じると切断さ�
 
 # {n} connection is open; closing ends it. | {n} connections are open; closing ends them.
 tbac763bb = { $n } 件の接続が開いています。閉じると切断されます。
+
+# Not allowed: {e}
+t839d4e8b = 許可できません: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = ターミナルを開けません：{ $e }
@@ -4080,6 +4089,30 @@ t8354c717 = 左のホストを選んで接続
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = または { $keys } を押してホストを検索するか、user@host に接続
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = 接続のためにこのコンピューターでコマンドを実行します: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = 先に { $hosts } を経由します（このコンピューターでの設定どおり）
+
+# Forwards ports: {forward}
+tde2adb5a = ポートを転送します: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = 接続中、ホストにあなたの ssh-agent を使わせます
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = そのプログラムにここでウィンドウを開かせ、キーボード入力を読ませます（信頼された X11）
+
+# Lets its programs open windows here (X11)
+t7d003faa = そのプログラムにここでウィンドウを開かせます（X11）
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = 初回はホストの鍵を確認なしで受け入れます
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = 接続後にシェルへコマンドを入力します: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = コマンドは { $size } KB です。最大 { $max } KB です。

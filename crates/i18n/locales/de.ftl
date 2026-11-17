@@ -3082,11 +3082,17 @@ t12a2b3c2 = { $host } hat { $key } bereits.
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } wurde nicht auf { $host } installiert: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } ist auf { $host } installiert. Ab jetzt damit bei { $host } anmelden?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Ohne das verbunden, was diese Hosts aus der Sammlung einer Organisation verlangen. Wer die Sammlung bearbeiten darf, legt es fest, und es wirkt auf diesem Computer: Erlaube es nur, wenn du diesen Personen vertraust.
 
 # Not now
 t2c3d6fce = Nicht jetzt
+
+# Allow and reconnect
+t6f3784ee = Erlauben und neu verbinden
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } ist auf { $host } installiert. Ab jetzt damit bei { $host } anmelden?
 
 # Use it for {host}
 t704df588 = Für { $host } verwenden
@@ -3477,6 +3483,9 @@ tbac763bb =
         [one] { $n } Verbindung ist offen; Schließen beendet sie.
        *[other] { $n } Verbindungen sind offen; Schließen beendet sie.
     }
+
+# Not allowed: {e}
+t839d4e8b = Nicht erlaubt: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Terminal kann nicht geöffnet werden: { $e }
@@ -4216,6 +4225,30 @@ t8354c717 = Wähle links einen Host zum Verbinden
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = oder drücke { $keys }, um einen zu suchen oder mit user@host zu verbinden
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Führt zum Verbinden einen Befehl auf diesem Computer aus: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Geht zuerst über { $hosts }, wie dieser Computer sie kennt
+
+# Forwards ports: {forward}
+tde2adb5a = Leitet Ports weiter: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Lässt den Host deinen ssh-agent nutzen, solange du verbunden bist
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Lässt seine Programme hier Fenster öffnen und deine Tastatur lesen (vertrauenswürdiges X11)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Lässt seine Programme hier Fenster öffnen (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Übernimmt den Schlüssel des Hosts beim ersten Mal, ohne dich zu fragen
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Tippt nach dem Verbinden einen Befehl in seine Shell: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Der Befehl hat { $size } KB; höchstens { $max } KB.

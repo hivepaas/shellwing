@@ -511,6 +511,18 @@ impl Session {
         })
     }
 
+    /// Connects again to `resolved` instead, running `run` once connected:
+    /// a collection's host with what it asks, once allowed.
+    pub fn retarget(&mut self, resolved: Resolved, run: Option<String>) {
+        if self.local.is_some() {
+            return;
+        }
+        self.title = resolved.alias.clone();
+        self.target = Some(resolved);
+        self.run = run.filter(|r| !r.trim().is_empty());
+        self.restart();
+    }
+
     /// Connects again to the same target, below what the terminal shows.
     pub fn reconnect(&mut self) {
         if (self.target.is_none() && self.local.is_none())

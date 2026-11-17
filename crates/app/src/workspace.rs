@@ -44,7 +44,7 @@ mod updates;
 pub(crate) use updates::{Stage as UpdateStage, UpdateSnap, by_said};
 
 use crate::view::{
-    CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
+    AllowAsks, CloseRequested, FilesResized, ListenToggled, PaneCommand, StatusChanged, TermView,
     TitleChanged, Unplaced, UseKey, VaultChanged, hsla,
 };
 use shellwing_config::SyncPlace;
@@ -1326,6 +1326,63 @@ impl Workspace {
         }
     }
 
+    /// The hosts to resolve `spec` with when collections' hosts on the way
+    /// ask what the person has not allowed: those without it, and which.
+    fn held_back(
+        &self,
+        spec: &str,
+    ) -> Option<(
+        shellwing_config::Hosts,
+        Vec<shellwing_core::collections::Unallowed>,
+    )> {
+        let allowed = self.live.store().map(|s| s.allowed()).unwrap_or_default();
+        shellwing_core::collections::unless_allowed(self.live.hosts(), spec, &allowed)
+    }
+
+    /// Keeps what the person allowed collections' hosts to ask, then connects
+    /// the pane again with it.
+    fn allow_asks(
+        &mut self,
+        spec: &str,
+        forwards: &[String],
+        view: &Entity<TermView>,
+        ev: &AllowAsks,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(store) = self.live.store() {
+            for (id, fingerprint) in &ev.0 {
+                if let Err(e) = store.allow(id, fingerprint) {
+                    self.notice = Some(Notice::bad(tr!("Not allowed: {e}", e = e.to_string())));
+                    return cx.notify();
+                }
+            }
+        }
+        // What may still be held back: changed since, say.
+        let held = self.held_back(spec);
+        let resolved = target::resolve(
+            spec,
+            held.as_ref().map_or(self.live.hosts(), |(h, _)| h),
+            ssh_config::default_config_path().as_deref(),
+        );
+        match resolved {
+            Ok((mut r, entry)) => {
+                r.forwards.extend_from_slice(forwards);
+                let run = entry.and_then(|h| h.run);
+                view.update(cx, |v, cx| {
+                    v.session_mut().retarget(r, run);
+                    if let Some((_, which)) = held {
+                        v.hold_back(which, cx);
+                    }
+                    cx.notify();
+                });
+            }
+            Err(e) => {
+                self.notice = Some(Notice::bad(e.to_string()));
+                cx.notify();
+            }
+        }
+    }
+
     /// A terminal connected to `spec`, ready for a tab or a split.
     fn make_view(
         &mut self,
@@ -1345,6 +1402,9 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) -> Option<Entity<TermView>> {
         let local = spec == crate::local::SPEC;
+        // A collection's hosts on the way connect without what they ask until
+        // the person allows it: others wrote it, and it acts here.
+        let held = if local { None } else { self.held_back(spec) };
         let opens = if local {
             Opens::Local(crate::local::shell(
                 self.live.settings().terminal.local_shell.as_deref(),
@@ -1353,7 +1413,7 @@ impl Workspace {
             Opens::Host(Box::new(
                 target::resolve(
                     spec,
-                    self.live.hosts(),
+                    held.as_ref().map_or(self.live.hosts(), |(h, _)| h),
                     ssh_config::default_config_path().as_deref(),
                 )
                 .map(|(mut r, h)| {
@@ -1400,6 +1460,14 @@ impl Workspace {
             eprintln!("cannot save the recent hosts: {e}");
         }
         let view = cx.new(|cx| TermView::new(session, look, probe, cx));
+        if let Some((_, which)) = held {
+            view.update(cx, |v, cx| v.hold_back(which, cx));
+        }
+        let allowing = (spec.to_string(), forwards.to_vec());
+        cx.subscribe(&view, move |ws, view, ev: &AllowAsks, cx| {
+            ws.allow_asks(&allowing.0, &allowing.1, &view, ev, cx)
+        })
+        .detach();
         // Tab and host list dots follow the session's status; a key waiting
         // for the connection is installed once it is up.
         cx.subscribe(&view, |ws, view, _: &StatusChanged, cx| {

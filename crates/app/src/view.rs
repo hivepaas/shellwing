@@ -233,6 +233,10 @@ pub struct TitleChanged;
 /// A secret was saved in the vault.
 pub struct VaultChanged;
 
+/// The person allowed what these collections' hosts ask (ids and
+/// fingerprints): to keep, then connect again with it.
+pub struct AllowAsks(pub Vec<(String, String)>);
+
 /// Config files no longer placed until the tab closes on the pane's host
 /// (their full paths), taken away or kept there: no longer to tidy up later.
 pub struct Unplaced(pub Vec<String>);
@@ -318,6 +322,9 @@ pub struct TermView {
     scrollbar_grab: Option<f32>,
     /// A typed password or passphrase that worked, offered for saving.
     save_offer: Option<shellwing_ssh::Learned>,
+    /// Collections' hosts on the way that connected without what they ask,
+    /// not allowed yet: offered to allow.
+    held_back: Vec<shellwing_core::collections::Unallowed>,
     /// When the next automatic reconnect happens, if one is planned.
     retry_at: Option<Instant>,
     /// Automatic reconnects since the last successful connection.
@@ -381,6 +388,7 @@ impl gpui::EventEmitter<UseKey> for TermView {}
 impl gpui::EventEmitter<CloseRequested> for TermView {}
 impl gpui::EventEmitter<TitleChanged> for TermView {}
 impl gpui::EventEmitter<VaultChanged> for TermView {}
+impl gpui::EventEmitter<AllowAsks> for TermView {}
 impl gpui::EventEmitter<Unplaced> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
 impl gpui::EventEmitter<PaneCommand> for TermView {}
@@ -459,6 +467,7 @@ impl TermView {
             scrollbar_hover: false,
             scrollbar_grab: None,
             save_offer: None,
+            held_back: vec![],
             retry_at: None,
             retries: 0,
             retry_plan: 0,
@@ -1112,6 +1121,123 @@ impl TermView {
             });
         })
         .detach();
+    }
+
+    /// Says what collections' hosts on the way asked and did not get: the
+    /// connection went without it.
+    pub fn hold_back(
+        &mut self,
+        held: Vec<shellwing_core::collections::Unallowed>,
+        cx: &mut Context<Self>,
+    ) {
+        self.held_back = held;
+        cx.notify();
+    }
+
+    /// Whether the bar offering to allow what a collection's host asks shows:
+    /// for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn holds_back(&self) -> bool {
+        !self.held_back.is_empty()
+    }
+
+    /// The bar listing what a collection's hosts asked to do on this computer,
+    /// which the connection went without: set by whoever may edit the
+    /// collection, so the person reads it before allowing it.
+    fn held_back_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        if self.held_back.is_empty() {
+            return None;
+        }
+        let button = |id: &'static str, label: String, primary: bool| {
+            div()
+                .id(id)
+                .debug_selector(|| id.into())
+                .px_3()
+                .py_1()
+                .rounded_md()
+                .cursor_pointer()
+                .whitespace_nowrap()
+                .when(primary, |d| {
+                    d.border_1()
+                        .border_color(rgb(colors().warn_edge))
+                        .text_color(rgb(colors().warn_text))
+                        .hover(|s| s.bg(rgb(colors().warn_hover)))
+                })
+                .when(!primary, |d| {
+                    d.border_1()
+                        .border_color(rgb(colors().edge))
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                })
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(label)
+        };
+        let mut list = div().flex().flex_col().gap(px(4.));
+        for h in &self.held_back {
+            list = list.child(
+                div()
+                    .font_weight(gpui::FontWeight::SEMIBOLD)
+                    .child(h.name.clone()),
+            );
+            for item in &h.asks.items {
+                list = list.child(
+                    div()
+                        .pl_3()
+                        .text_color(rgb(colors().muted))
+                        .child(format!("• {item}")),
+                );
+            }
+        }
+        Some(
+            div()
+                .id("held-back")
+                .debug_selector(|| "held-back".into())
+                .absolute()
+                .bottom_3()
+                .left_3()
+                .right_3()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .px_3()
+                .py_2()
+                .rounded_lg()
+                .border_1()
+                .border_color(rgb(colors().warn_edge))
+                .bg(gpui::rgba(colors().banner))
+                .text_sm()
+                .text_color(rgb(colors().text))
+                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                .child(tr!(
+                    "Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them."
+                ))
+                .child(list)
+                .child(
+                    div()
+                        .flex()
+                        .justify_end()
+                        .gap_2()
+                        .child(button("held-not-now", tr!("Not now"), false).on_click(
+                            cx.listener(|v, _, _, cx| {
+                                v.held_back.clear();
+                                cx.notify();
+                            }),
+                        ))
+                        .child(
+                            button("held-allow", tr!("Allow and reconnect"), true).on_click(
+                                cx.listener(|v, _, _, cx| {
+                                    let allowed = v
+                                        .held_back
+                                        .drain(..)
+                                        .map(|h| (h.id, h.asks.fingerprint))
+                                        .collect();
+                                    cx.emit(AllowAsks(allowed));
+                                    cx.notify();
+                                }),
+                            ),
+                        ),
+                )
+                .into_any_element(),
+        )
     }
 
     fn key_bar(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
@@ -3035,6 +3161,9 @@ impl Render for TermView {
         }
         if let Some(k) = self.key_bar(cx) {
             terminal = terminal.child(k);
+        }
+        if let Some(h) = self.held_back_bar(cx) {
+            terminal = terminal.child(h);
         }
         // Typing in every pane: an amber edge on those that listen, the
         // others dimmed; each with its badge.

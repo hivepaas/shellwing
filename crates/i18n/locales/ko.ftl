@@ -2992,11 +2992,17 @@ t12a2b3c2 = { $host }에 이미 { $key }이(가) 있습니다.
 # {key} was not installed on {host}: {why}
 t25610553 = { $host }에 { $key }을(를) 설치하지 못했습니다: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $host }에 { $key }을(를) 설치했습니다. 이제부터 이 키로 { $host }에 로그인하시겠습니까?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = 조직 컬렉션의 이 호스트들이 요청한 설정 없이 연결했습니다. 컬렉션을 편집할 수 있는 사람이 설정하며, 이 컴퓨터에서 동작합니다. 그 사람들을 신뢰할 때만 허용하세요.
 
 # Not now
 t2c3d6fce = 나중에
+
+# Allow and reconnect
+t6f3784ee = 허용하고 다시 연결
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $host }에 { $key }을(를) 설치했습니다. 이제부터 이 키로 { $host }에 로그인하시겠습니까?
 
 # Use it for {host}
 t704df588 = { $host }에 사용
@@ -3369,6 +3375,9 @@ t7958d376 = { $one }에 대한 연결이 열려 있습니다. 닫으면 연결�
 
 # {n} connection is open; closing ends it. | {n} connections are open; closing ends them.
 tbac763bb = 연결 { $n }개가 열려 있습니다. 닫으면 연결이 종료됩니다.
+
+# Not allowed: {e}
+t839d4e8b = 허용하지 못했습니다: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = 터미널을 열 수 없습니다: { $e }
@@ -4080,6 +4089,30 @@ t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = 연결하려고 이 컴퓨터에서 명령을 실행합니다: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = 먼저 { $hosts }을(를) 거칩니다(이 컴퓨터에 설정된 대로)
+
+# Forwards ports: {forward}
+tde2adb5a = 포트를 전달합니다: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = 연결된 동안 호스트가 내 ssh-agent를 사용하게 합니다
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = 그 프로그램이 여기에 창을 열고 키보드 입력을 읽게 합니다(신뢰된 X11)
+
+# Lets its programs open windows here (X11)
+t7d003faa = 그 프로그램이 여기에 창을 열게 합니다(X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = 처음에는 묻지 않고 호스트 키를 받아들입니다
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = 연결 후 셸에 명령을 입력합니다: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 명령이 { $size }KB입니다. 최대 { $max }KB입니다.

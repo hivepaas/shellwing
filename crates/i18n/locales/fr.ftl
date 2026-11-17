@@ -3082,11 +3082,17 @@ t12a2b3c2 = { $host } a déjà { $key }.
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } n'a pas été installée sur { $host } : { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } est installée sur { $host }. Se connecter désormais à { $host } avec elle ?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Connecté sans ce que demandent ces serveurs de la collection d'une organisation. Ce sont les personnes pouvant modifier la collection qui le définissent, et cela agit sur cet ordinateur : ne l'autorisez que si vous leur faites confiance.
 
 # Not now
 t2c3d6fce = Pas maintenant
+
+# Allow and reconnect
+t6f3784ee = Autoriser et se reconnecter
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } est installée sur { $host }. Se connecter désormais à { $host } avec elle ?
 
 # Use it for {host}
 t704df588 = L'utiliser pour { $host }
@@ -3477,6 +3483,9 @@ tbac763bb =
         [one] { $n } connexion est ouverte ; fermer y met fin.
        *[other] { $n } connexions sont ouvertes ; fermer y met fin.
     }
+
+# Not allowed: {e}
+t839d4e8b = Non autorisé : { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Impossible d'ouvrir un terminal : { $e }
@@ -4216,6 +4225,30 @@ t8354c717 = Choisissez un serveur à gauche pour vous connecter
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ou appuyez sur { $keys } pour en trouver un, ou pour vous connecter à user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Exécute une commande sur cet ordinateur pour se connecter : { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Passe d'abord par { $hosts }, tels que cet ordinateur les connaît
+
+# Forwards ports: {forward}
+tde2adb5a = Redirige des ports : { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Laisse le serveur utiliser votre ssh-agent pendant la connexion
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Laisse ses programmes ouvrir des fenêtres ici et lire votre clavier (X11 de confiance)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Laisse ses programmes ouvrir des fenêtres ici (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Accepte la clé du serveur la première fois sans vous demander
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Tape une commande dans son shell une fois connecté : { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = La commande fait { $size } Ko ; { $max } Ko au maximum.

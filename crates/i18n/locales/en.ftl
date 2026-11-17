@@ -1124,8 +1124,10 @@ t36d02558 = the connection ended
 t4ae79143 = { $key } is installed on { $host }.
 t12a2b3c2 = { $host } has { $key } already.
 t25610553 = { $key } was not installed on { $host }: { $why }
-ta04e62fb = { $key } is installed on { $host }. Sign in to { $host } with it from now on?
+t108152c1 = Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
 t2c3d6fce = Not now
+t6f3784ee = Allow and reconnect
+ta04e62fb = { $key } is installed on { $host }. Sign in to { $host } with it from now on?
 t704df588 = Use it for { $host }
 t3e1cd17a = Find
 t5b9dcaca = Invalid pattern
@@ -1272,6 +1274,7 @@ tbac763bb =
         [one] { $n } connection is open; closing ends it.
        *[other] { $n } connections are open; closing ends them.
     }
+t839d4e8b = Not allowed: { $e }
 t3ffc1c98 = Cannot open a terminal: { $e }
 t222eeef4 = shellwing cannot lock here: this system has no way to ask that it is you.
 tf3732b18 = A connection is open; quitting closes it.
@@ -1537,6 +1540,14 @@ tf70ede40 = go to a tab
 t9489dcc2 = show or hide the host list
 t8354c717 = Choose a host on the left to connect
 t4f67c373 = or press { $keys } to find one, or to connect to user@host
+tb315c6bd = Runs a command on this computer to connect: { $command }
+t819b0018 = Goes through { $hosts } first, as this computer knows them
+tde2adb5a = Forwards ports: { $forward }
+t848bef88 = Lets the host use your ssh-agent while connected
+ted3d4c0e = Lets its programs open windows here and read your keyboard (trusted X11)
+t7d003faa = Lets its programs open windows here (X11)
+tbda4f1d9 = Takes the host's key the first time without asking you
+t0a40f947 = Types a command into its shell once connected: { $command }
 ta78b9fbd = The command is { $size } KB; { $max } KB at most.
 t190cce46 = { $name }: a name takes { $max } characters at most.
 t8a0064ca = { $name } is { $size } KB; a value takes { $max } KB at most.

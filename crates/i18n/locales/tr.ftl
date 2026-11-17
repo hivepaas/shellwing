@@ -3082,11 +3082,17 @@ t12a2b3c2 = { $host } üzerinde { $key } zaten var.
 # {key} was not installed on {host}: {why}
 t25610553 = { $key }, { $host } üzerine kurulmadı: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key }, { $host } üzerine kuruldu. Bundan sonra { $host } üzerinde bununla giriş yapılsın mı?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Bir kuruluş koleksiyonundaki bu ana makinelerin istedikleri olmadan bağlanıldı. Bunu koleksiyonu düzenleyebilenler ayarlar ve bu bilgisayarda çalışır: yalnızca onlara güveniyorsanız izin verin.
 
 # Not now
 t2c3d6fce = Şimdi değil
+
+# Allow and reconnect
+t6f3784ee = İzin ver ve yeniden bağlan
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key }, { $host } üzerine kuruldu. Bundan sonra { $host } üzerinde bununla giriş yapılsın mı?
 
 # Use it for {host}
 t704df588 = { $host } için kullan
@@ -3477,6 +3483,9 @@ tbac763bb =
         [one] { $n } bağlantı açık; kapatınca sona erer.
        *[other] { $n } bağlantı açık; kapatınca hepsi sona erer.
     }
+
+# Not allowed: {e}
+t839d4e8b = İzin verilemedi: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Terminal açılamıyor: { $e }
@@ -4216,6 +4225,30 @@ t8354c717 = Bağlanmak için soldan bir ana makine seçin
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ya da birini bulmak veya user@host adresine bağlanmak için { $keys } tuşlarına basın
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Bağlanmak için bu bilgisayarda bir komut çalıştırır: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Önce { $hosts } üzerinden geçer, bu bilgisayarın bildiği şekliyle
+
+# Forwards ports: {forward}
+tde2adb5a = Bağlantı noktalarını yönlendirir: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Bağlıyken ana makinenin ssh-agent'ınızı kullanmasına izin verir
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Programlarının burada pencere açmasına ve klavyenizi okumasına izin verir (güvenilir X11)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Programlarının burada pencere açmasına izin verir (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Ana makinenin anahtarını ilk seferde size sormadan kabul eder
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Bağlandıktan sonra kabuğuna bir komut yazar: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Komut { $size } KB; en fazla { $max } KB olabilir.

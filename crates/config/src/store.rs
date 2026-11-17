@@ -28,6 +28,7 @@ const THEMES: &str = "themes";
 const STATE: &str = "state";
 const WINDOW: &str = "window.json";
 const RECENT: &str = "recent.json";
+const ALLOWED: &str = "allowed.json";
 const SESSION: &str = "session.json";
 const PLACED: &str = "placed.json";
 const NOTE_WINDOW: &str = "note-window.json";
@@ -586,6 +587,19 @@ impl Store {
         recent.insert(0, spec.to_string());
         recent.truncate(MAX_RECENT);
         self.save_state(RECENT, &recent)
+    }
+
+    /// What the person allowed collections' hosts to ask on this device:
+    /// host id → the fingerprint of what it asked (`state/allowed.json`).
+    pub fn allowed(&self) -> std::collections::BTreeMap<String, String> {
+        self.load_state(ALLOWED).unwrap_or_default()
+    }
+
+    /// Allows the collection's host `id` what it asks now (`fingerprint`).
+    pub fn allow(&self, id: &str, fingerprint: &str) -> io::Result<()> {
+        let mut allowed = self.allowed();
+        allowed.insert(id.to_string(), fingerprint.to_string());
+        self.save_state(ALLOWED, &allowed)
     }
 
     fn load_state<T: DeserializeOwned>(&self, file: &str) -> Option<T> {

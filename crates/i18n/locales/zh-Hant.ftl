@@ -3046,11 +3046,17 @@ t12a2b3c2 = { $host } 上已有 { $key }。
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } 未能安裝到 { $host }：{ $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } 已安裝到 { $host }。今後要使用它登入 { $host } 嗎？
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = 已連線，但未採用組織集合中這些主機所要求的設定。這些設定由可編輯該集合的人設定，並會在這台電腦上生效：僅在你信任他們時才允許。
 
 # Not now
 t2c3d6fce = 暫時不要
+
+# Allow and reconnect
+t6f3784ee = 允許並重新連線
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } 已安裝到 { $host }。今後要使用它登入 { $host } 嗎？
 
 # Use it for {host}
 t704df588 = 用於 { $host }
@@ -3435,6 +3441,9 @@ tbac763bb =
     { $n ->
        *[other] 有 { $n } 個連線仍在使用中；關閉將中斷這些連線。
     }
+
+# Not allowed: {e}
+t839d4e8b = 未能允許：{ $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = 無法開啟終端機：{ $e }
@@ -4167,6 +4176,30 @@ t8354c717 = 在左側選擇一台主機以連線
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 尋找主機，或連線到 user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = 在這台電腦上執行指令以建立連線：{ $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = 先經過 { $hosts }（依這台電腦上的設定）
+
+# Forwards ports: {forward}
+tde2adb5a = 轉送連接埠：{ $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = 連線期間允許主機使用你的 ssh-agent
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = 允許其程式在此開啟視窗並讀取你的鍵盤輸入（受信任的 X11）
+
+# Lets its programs open windows here (X11)
+t7d003faa = 允許其程式在此開啟視窗（X11）
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = 首次連線時不詢問就接受主機的金鑰
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = 連線後在其 shell 中輸入指令：{ $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 指令為 { $size } KB；最多 { $max } KB。

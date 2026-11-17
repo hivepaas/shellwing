@@ -3046,11 +3046,17 @@ t12a2b3c2 = { $host } sudah memiliki { $key }.
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } tidak terpasang di { $host }: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } terpasang di { $host }. Masuk ke { $host } dengan kunci ini mulai sekarang?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Terhubung tanpa yang diminta host-host dari koleksi organisasi ini. Pengaturannya dibuat oleh siapa pun yang boleh mengedit koleksi, dan berlaku di komputer ini: izinkan hanya jika Anda memercayai mereka.
 
 # Not now
 t2c3d6fce = Nanti saja
+
+# Allow and reconnect
+t6f3784ee = Izinkan dan sambungkan ulang
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } terpasang di { $host }. Masuk ke { $host } dengan kunci ini mulai sekarang?
 
 # Use it for {host}
 t704df588 = Gunakan untuk { $host }
@@ -3435,6 +3441,9 @@ tbac763bb =
     { $n ->
        *[other] { $n } koneksi terbuka; menutup akan mengakhirinya.
     }
+
+# Not allowed: {e}
+t839d4e8b = Tidak diizinkan: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Tidak dapat membuka terminal: { $e }
@@ -4167,6 +4176,30 @@ t8354c717 = Pilih host di sebelah kiri untuk terhubung
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = atau tekan { $keys } untuk mencarinya, atau untuk terhubung ke user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Menjalankan perintah di komputer ini untuk terhubung: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Melewati { $hosts } lebih dulu, seperti yang dikenal komputer ini
+
+# Forwards ports: {forward}
+tde2adb5a = Meneruskan port: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Mengizinkan host memakai ssh-agent Anda selama terhubung
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Mengizinkan programnya membuka jendela di sini dan membaca keyboard Anda (X11 tepercaya)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Mengizinkan programnya membuka jendela di sini (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Menerima kunci host pada kali pertama tanpa menanyakan Anda
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Mengetikkan perintah ke shell-nya setelah terhubung: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Perintah berukuran { $size } KB; maksimal { $max } KB.
