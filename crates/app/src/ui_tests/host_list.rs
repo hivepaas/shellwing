@@ -779,3 +779,131 @@ scenario!(
         assert!(ui.find("permission:Hosts").is_none(), "only collections are marked");
     }
 );
+
+/// The test vault holds version 1 of the key of collection `id`, as the app
+/// of somebody with access does once given it.
+fn hold_collection_key(
+    ui: &mut crate::ui_tests::Ui,
+    id: &str,
+) -> std::sync::Arc<shellwing_vault::Vault> {
+    ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+    let vault = ui.vault().expect("vault");
+    let me = vault.ensure_identity().expect("identity").public();
+    let wraps = vault
+        .make_collection_key(id, 1, std::slice::from_ref(&me))
+        .expect("key");
+    let given = shellwing_vault::Given {
+        version: 1,
+        wrap: wraps[0].clone(),
+        wrapper: me.ed25519,
+    };
+    vault.take_collection_keys(id, &[given]).expect("take");
+    vault
+}
+
+fn production(
+    permission: &str,
+    hosts: Vec<shellwing_config::Host>,
+) -> crate::look::CollectionHosts {
+    crate::look::CollectionHosts {
+        id: "c1".into(),
+        name: "Production".into(),
+        org_id: "org1".into(),
+        permission: permission.into(),
+        waiting: false,
+        hosts,
+    }
+}
+
+scenario!(
+    /// A host of hosts.toml moved into a collection from its editor's
+    /// "Saved in": the editor says it moves and offers its saved password;
+    /// saved, it is in the collection with the password, and no longer in
+    /// hosts.toml.
+    move_a_host_into_a_collection_with_its_password,
+    |ui| {
+        let port = closed_port();
+        ui.config_file("hosts.toml", &host("web", port));
+        ui.open();
+        let vault = hold_collection_key(ui, "c1");
+        let target = format!("{USER}@127.0.0.1:{port}");
+        vault.set_password(&target, "pw").expect("password");
+        ui.ws(|ws, _, cx| {
+            ws.show_collections(
+                vec![("org1".into(), "Acme".into())],
+                vec![production("edit", vec![])],
+                cx,
+            )
+        });
+        edit_host(ui, "web");
+        assert!(ui.find("move-note").is_none(), "where it is: no move");
+        ui.click("place-select");
+        ui.click("choice:Production");
+        assert!(ui.find("move-note").is_some(), "saving moves it");
+        assert!(ui.find("group-select").is_none(), "no group in a collection");
+        assert!(ui.find("favorite").is_none());
+        assert!(ui.find("local-only").is_none());
+        assert!(ui.find("carry-password").is_some(), "its password is offered");
+        save_host(ui);
+
+        assert!(!ui.hosts_toml().contains("name = \"web\""), "{}", ui.hosts_toml());
+        let col = shellwing_vault::Space::Collection("c1".into());
+        let hosts = vault.entries_in(&col, "host").expect("entries");
+        assert_eq!(hosts.len(), 1, "in the collection");
+        let carried = vault.password_in(&col, &target).expect("read");
+        assert_eq!(carried.as_deref().map(String::as_str), Some("pw"));
+    }
+);
+
+scenario!(
+    /// Moving a host into a collection without its password: unticked, the
+    /// password stays the person's own.
+    move_a_host_and_keep_its_password_mine,
+    |ui| {
+        let port = closed_port();
+        ui.config_file("hosts.toml", &host("web", port));
+        ui.open();
+        let vault = hold_collection_key(ui, "c1");
+        let target = format!("{USER}@127.0.0.1:{port}");
+        vault.set_password(&target, "pw").expect("password");
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("manage", vec![])], cx));
+        edit_host(ui, "web");
+        ui.click("place-select");
+        ui.click("choice:Production");
+        ui.click("carry-password");
+        save_host(ui);
+        let col = shellwing_vault::Space::Collection("c1".into());
+        assert!(vault.password_in(&col, &target).expect("read").is_none());
+        assert!(vault.password(&target).expect("read").is_some(), "still mine");
+    }
+);
+
+scenario!(
+    /// A collection's host in the editor: no group, favorite or this-device
+    /// toggle, and a key from the person's own vault is flagged, since the
+    /// others with access do not have it. Connect only: it cannot be moved.
+    a_collections_host_in_the_editor,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", 22));
+        ui.open();
+        let mut db = ui.ws(|ws, _, _| ws.saved_host("web")).expect("web");
+        db.id = Some("h1".into());
+        db.name = "db".into();
+        db.collection = Some("c1".into());
+        db.auth.method = shellwing_config::AuthMethod::Key;
+        db.auth.key = Some(format!("{}k1", crate::target::VAULT_KEY));
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("edit", vec![db.clone()])], cx));
+        edit_host(ui, "db");
+        assert!(ui.find("group-select").is_none());
+        assert!(ui.find("favorite").is_none());
+        assert!(ui.find("local-only").is_none());
+        assert!(ui.find("vault-key-shared").is_some(), "the others have no such key");
+        assert!(ui.find("place-select").is_some(), "Edit: it may be moved");
+        ui.keys("escape");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("connect", vec![db])], cx));
+        edit_host(ui, "db");
+        assert!(ui.find("place-select").is_none(), "Connect: it stays where it is");
+    }
+);

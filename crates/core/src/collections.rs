@@ -129,6 +129,31 @@ pub fn save_host(vault: &Vault, c: &CollectionHosts, mut host: Host) -> Result<S
     Ok(id)
 }
 
+/// Where a host's records are: its collection's space, or the personal one.
+pub fn space_of(host: &Host) -> Space {
+    match &host.collection {
+        Some(c) => Space::Collection(c.clone()),
+        None => Space::Personal,
+    }
+}
+
+/// Copies the password saved for `target` in `from` to `to`, as a host
+/// moves there: true when there was one to copy.
+pub fn carry_password(
+    vault: &Vault,
+    from: &Space,
+    to: &Space,
+    target: &str,
+) -> Result<bool, String> {
+    let Some(password) = vault.password_in(from, target).map_err(|e| e.to_string())? else {
+        return Ok(false);
+    };
+    vault
+        .set_password_in(to, target, &password)
+        .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
 /// Deletes the collection's host `id`, for everybody with access.
 pub fn delete_host(vault: &Vault, c: &CollectionHosts, id: &str) -> Result<(), String> {
     writable(c)?;
@@ -220,5 +245,63 @@ mod tests {
         delete_host(&v, &c, &id).expect("delete");
         assert!(hosts_of(&v, &info()).is_empty());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_password_moves_with_its_host_into_the_collection_only() {
+        let (dir, v) = vault("password");
+        let col = Space::Collection("col1".into());
+        v.set_password("deploy@10.0.0.9", "s3cret").expect("save");
+        assert!(
+            v.password_in(&col, "deploy@10.0.0.9")
+                .expect("read")
+                .is_none(),
+            "a personal password is not the collection's"
+        );
+        assert!(carry_password(&v, &Space::Personal, &col, "deploy@10.0.0.9").expect("carry"));
+        let carried = v.password_in(&col, "deploy@10.0.0.9").expect("read");
+        assert_eq!(carried.as_deref().map(String::as_str), Some("s3cret"));
+        assert!(
+            !carry_password(&v, &Space::Personal, &col, "nobody@10.0.0.1").expect("carry"),
+            "nothing saved, nothing carried"
+        );
+        // Saved again, it replaces the collection's, as a personal one does.
+        v.set_password_in(&col, "deploy@10.0.0.9", "n3w")
+            .expect("save");
+        let again = v.password_in(&col, "deploy@10.0.0.9").expect("read");
+        assert_eq!(again.as_deref().map(String::as_str), Some("n3w"));
+        assert_eq!(
+            v.entries_in(&col, "password").expect("entries").len(),
+            1,
+            "one record per target"
+        );
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_hosts_password_is_found_under_its_user_host_and_port() {
+        let toml =
+            "[[host]]\nname = \"db\"\naddress = \"10.0.0.9\"\nuser = \"deploy\"\nport = 2202\n";
+        let dir =
+            std::env::temp_dir().join(format!("shellwing-core-target-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        std::fs::write(dir.join("hosts.toml"), toml).expect("write");
+        let mut host = shellwing_config::Store::new(dir.clone())
+            .hosts()
+            .expect("hosts")
+            .hosts
+            .remove(0);
+        let none = dir.join("no-ssh-config");
+        assert_eq!(
+            crate::target::password_target(&host, Some(&none)).as_deref(),
+            Some("deploy@10.0.0.9:2202")
+        );
+        host.port = None;
+        assert_eq!(
+            crate::target::password_target(&host, Some(&none)).as_deref(),
+            Some("deploy@10.0.0.9")
+        );
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -158,10 +158,21 @@ it.
   their id, since names may repeat across collections. They sign in with the
   organization's certificates unless one says otherwise, and their passwords are
   looked for in the collection first.
-- The host editor saves a new host in hosts.toml or a collection the person may
-  change ("Saved in"); a host saved stays where it is. Moving one is duplicating
-  it into another place and deleting the original, since a record lives in one
-  space.
+- The host editor saves a host in hosts.toml or a collection the person may
+  change ("Saved in"). Choosing another place for a saved host moves it: a
+  record lives in one space, so the editor saves a copy there, then deletes the
+  original. It may, when the person may also change where the host is: Connect
+  only, it stays. Moving out of a collection deletes it for everybody with
+  access, and the editor says so before saving.
+- A collection's host has no group, favorite or "this device only": those are
+  the person's own. A key from the person's own vault is flagged, since the
+  others with access cannot sign in with it.
+- Passwords are found by `user@host[:port]`, in the host's collection first,
+  then the person's own. Moving a host into a collection offers to take its
+  saved password along (ticked); moving one out takes it into the person's own
+  vault. A password typed for a collection's host the person may change is
+  offered "Only for me" or "For everybody in <collection>"; with Connect, or
+  for a passphrase, it is the person's own.
 - With Manage, the palette's "Give the key of …" lists who waits, each with the
   fingerprint to compare with their Profile page; choosing one gives it.
 - With Manage, the palette's "Manage access to …" lists the grants, to change

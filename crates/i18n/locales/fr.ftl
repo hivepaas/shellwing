@@ -373,14 +373,14 @@ t97a4b927 = le coffre n'est pas ouvert
 # No key made: {e}
 t4e14e42b = Aucune clé créée : { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Ce serveur est introuvable dans hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Vous pouvez vous connecter aux serveurs de { $name }, pas les modifier.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = La collection de ce serveur n'est plus synchronisée ici.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Ce serveur est introuvable dans hosts.toml.
 
 # {name} copy
 t0d616a81 = copie de { $name }
@@ -472,6 +472,9 @@ t7ecf0d6d = { $name } est nouvelle : { $host } ne l'a pas encore. Enregistrer et
 # Save and install on {host}
 t1707b1d3 = Enregistrer et installer sur { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Cette clé est dans votre propre coffre : les autres personnes ayant accès à { $name } ne peuvent pas se connecter avec. Choisissez un fichier de clé qu'elles ont, un mot de passe ou les certificats de l'organisation.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Essaie l'agent, puis vos clés dans ~/.ssh et le coffre, puis demande un mot de passe, comme ssh.
 
@@ -552,6 +555,15 @@ t4152ce3a = Toutes les personnes ayant accès à la collection le voient, chiffr
 
 # Only you see it, on your devices.
 t6f22a0a3 = Vous seul le voyez, sur vos appareils.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = L'enregistrer le déplace de { $from } vers { $to } : il est supprimé pour toutes les personnes ayant accès à { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = L'enregistrer le déplace de { $from } vers { $to }.
+
+# Take its saved password along: everybody with access to {name} can sign in with it
+t1de408c5 = Emporter son mot de passe enregistré : toutes les personnes ayant accès à { $name } pourront se connecter avec
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Dans la collection { $name } : toutes les personnes qui y ont accès le voient.
@@ -663,6 +675,9 @@ t07477a92 = Permet aux programmes du serveur d'ouvrir des fenêtres ici, sur un 
 
 # Some fields need a look.
 teaa35f1a = Certains champs sont à vérifier.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Supprimer { $title } pour toutes les personnes ayant accès à { $collection } ?
 
 # Delete {title} from hosts.toml?
 t596a83da = Supprimer { $title } de hosts.toml ?
@@ -3103,14 +3118,26 @@ tc1b10302 = Expression régulière (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Le panneau Fichiers parcourt un serveur via SFTP ; ce volet est un shell sur cet ordinateur.
 
+# Saved for everybody with access to the collection.
+t9f5236e2 = Enregistré pour toutes les personnes ayant accès à la collection.
+
 # Saved in the vault.
 t0d69c4e6 = Enregistré dans le coffre.
+
+# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
+t12e0bfb2 = Enregistrer le mot de passe de { $target } ? Enregistré dans { $name }, toutes les personnes qui y ont accès pourront se connecter avec.
 
 # Save the password for {target} in the vault?
 tceb19137 = Enregistrer le mot de passe de { $target } dans le coffre ?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Enregistrer la phrase secrète de { $key_path } dans le coffre ?
+
+# Only for me
+t358787f6 = Seulement pour moi
+
+# For everybody in {name}
+t65e9e7fb = Pour tous dans { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = La clé du serveur { $host } a changé.
@@ -4496,9 +4523,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Aucune couleur
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Supprimer { $title } pour toutes les personnes ayant accès à { $collection } ?
 
 # as the server says
 ta204abe7 = selon le serveur

@@ -373,14 +373,14 @@ t97a4b927 = kasa açık değil
 # No key made: {e}
 t4e14e42b = Anahtar oluşturulmadı: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Bu ana makine hosts.toml içinde bulunamıyor.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = { $name } koleksiyonunun ana makinelerine bağlanabilirsiniz, ancak onları değiştiremezsiniz.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = Bu ana makinenin koleksiyonu artık burada eşitlenmiyor.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Bu ana makine hosts.toml içinde bulunamıyor.
 
 # {name} copy
 t0d616a81 = { $name } kopyası
@@ -472,6 +472,9 @@ t7ecf0d6d = { $name } yeni: { $host } üzerinde henüz yok. Kaydedip kurduğunuz
 # Save and install on {host}
 t1707b1d3 = Kaydet ve { $host } üzerine kur
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Bu anahtar kendi kasanızda: { $name } koleksiyonuna erişimi olan diğerleri onunla oturum açamaz. Onlarda olan bir anahtar dosyası, bir parola ya da kuruluşun sertifikalarını seçin.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = ssh gibi önce ajanı, sonra ~/.ssh içindeki ve kasadaki anahtarlarınızı dener, ardından parola sorar.
 
@@ -552,6 +555,15 @@ t4152ce3a = Koleksiyona erişimi olan herkes görür, uçtan uca şifreli.
 
 # Only you see it, on your devices.
 t6f22a0a3 = Yalnızca siz görürsünüz, cihazlarınızda.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Kaydetmek onu { $from } konumundan { $to } konumuna taşır: { $from } erişimi olan herkes için silinir.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Kaydetmek onu { $from } konumundan { $to } konumuna taşır.
+
+# Take its saved password along: everybody with access to {name} can sign in with it
+t1de408c5 = Kayıtlı parolasını da taşı: { $name } erişimi olan herkes onunla oturum açabilir
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = { $name } koleksiyonunda: erişimi olan herkes görür.
@@ -663,6 +675,9 @@ t07477a92 = Ana makinedeki programların burada, bir X sunucusunda pencere açma
 
 # Some fields need a look.
 teaa35f1a = Bazı alanların gözden geçirilmesi gerekiyor.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $title }, { $collection } koleksiyonuna erişimi olan herkes için silinsin mi?
 
 # Delete {title} from hosts.toml?
 t596a83da = { $title } hosts.toml dosyasından silinsin mi?
@@ -3103,14 +3118,26 @@ tc1b10302 = Düzenli ifade (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Dosyalar paneli bir sunucuya SFTP üzerinden göz atar; bu bölme ise bu bilgisayardaki bir kabuktur.
 
+# Saved for everybody with access to the collection.
+t9f5236e2 = Koleksiyona erişimi olan herkes için kaydedildi.
+
 # Saved in the vault.
 t0d69c4e6 = Kasaya kaydedildi.
+
+# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
+t12e0bfb2 = { $target } için parola kaydedilsin mi? { $name } içine kaydedilir, erişimi olan herkes onunla oturum açabilir.
 
 # Save the password for {target} in the vault?
 tceb19137 = { $target } için parola kasaya kaydedilsin mi?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path } anahtarının parola ifadesi kasaya kaydedilsin mi?
+
+# Only for me
+t358787f6 = Yalnızca benim için
+
+# For everybody in {name}
+t65e9e7fb = { $name } içindeki herkes için
 
 # The host key for {host} has changed.
 t1e510d66 = { $host } için ana makine anahtarı değişti.
@@ -4496,9 +4523,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Renk yok
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = { $title }, { $collection } koleksiyonuna erişimi olan herkes için silinsin mi?
 
 # as the server says
 ta204abe7 = sunucunun dediği gibi

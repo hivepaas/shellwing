@@ -151,6 +151,9 @@ pub struct HostEditor {
     naming_group: bool,
     /// The collection the host is saved in (its id); None: hosts.toml.
     collection: Option<String>,
+    /// Moving the host into a collection takes the password saved for it
+    /// along: None when none is saved, else whether to.
+    carry_password: Option<bool>,
     menu: Option<Menu>,
     adding_jump: bool,
     adding_forward: bool,
@@ -231,6 +234,7 @@ impl HostEditor {
             favorite: false,
             naming_group: false,
             collection: None,
+            carry_password: None,
             menu: None,
             adding_jump: false,
             adding_forward: false,
@@ -533,6 +537,21 @@ impl HostEditor {
             self.save_problem = None;
             return cx.notify();
         };
+        if let Some(original) = &self.original
+            && original.collection != host.collection
+        {
+            return match self.moved(original, host) {
+                Ok(name) => cx.emit(EditorEvent::Saved {
+                    name,
+                    connect,
+                    install,
+                }),
+                Err(e) => {
+                    self.save_problem = Some(e);
+                    cx.notify();
+                }
+            };
+        }
         if host.collection.is_some() {
             return self.save_in_collection(host, connect, install, cx);
         }
@@ -551,6 +570,80 @@ impl HostEditor {
                 cx.notify();
             }
         }
+    }
+
+    /// Whether a password is saved for the host where it is now, to offer
+    /// taking it along into the collection it is moved to.
+    fn offer_password(&mut self) {
+        self.carry_password = None;
+        let Some(original) = &self.original else {
+            return;
+        };
+        if self.collection.is_none() || self.collection == original.collection {
+            return;
+        }
+        let (Some(vault), Some(target)) = (self.ctx.vault.get(), password_target(original)) else {
+            return;
+        };
+        let from = shellwing_core::collections::space_of(original);
+        if vault.password_in(&from, &target).ok().flatten().is_some() {
+            self.carry_password = Some(true);
+        }
+    }
+
+    /// Saves `host` where it now goes and deletes `original` where it was:
+    /// a record lives in one space, so a move is a copy, then a delete. The
+    /// password goes along into a collection when chosen, and always into
+    /// the person's own hosts, where only they see it. Gives what the host
+    /// list opens it by.
+    fn moved(&self, original: &Host, mut host: Host) -> Result<String, String> {
+        let vault = || {
+            self.ctx
+                .vault
+                .get()
+                .ok_or_else(|| tr!("the vault is not open"))
+        };
+        let store = || {
+            self.ctx
+                .store
+                .as_ref()
+                .ok_or_else(|| tr!("There is no config directory to save in."))
+        };
+        // Checked first, so nothing is copied that cannot then be deleted.
+        let from = match &original.collection {
+            Some(_) => Some(self.writable_collection(original)?),
+            None => None,
+        };
+        host.id = None;
+        let to = shellwing_core::collections::space_of(&host);
+        let opened_by = match &host.collection {
+            Some(_) => {
+                let c = self.writable_collection(&host)?;
+                {
+                    let v = vault()?;
+                    shellwing_core::collections::save_host(&v, &c, host.clone())?
+                }
+            }
+            None => {
+                store()?.save_host(&host).map_err(|e| e.to_string())?;
+                host.name.clone()
+            }
+        };
+        let carry = host.collection.is_none() || self.carry_password == Some(true);
+        if carry && let Some(target) = password_target(original) {
+            let from = shellwing_core::collections::space_of(original);
+            let v = vault()?;
+            shellwing_core::collections::carry_password(&v, &from, &to, &target)?;
+        }
+        match (&original.id, from) {
+            (Some(id), Some(c)) => {
+                let v = vault()?;
+                shellwing_core::collections::delete_host(&v, &c, id)?
+            }
+            (Some(id), None) => store()?.delete_host(id).map_err(|e| e.to_string())?,
+            (None, _) => return Err(tr!("This host cannot be found in hosts.toml.")),
+        }
+        Ok(opened_by)
     }
 
     /// The collection a host is in, if the person may change its hosts; else
@@ -1052,7 +1145,10 @@ impl HostEditor {
                             }
                             Menu::Theme => e.theme = value.clone(),
                             Menu::Org => e.org = value.clone(),
-                            Menu::Place => e.collection = value.clone(),
+                            Menu::Place => {
+                                e.collection = value.clone();
+                                e.offer_password();
+                            }
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
@@ -1556,6 +1652,22 @@ impl Render for HostEditor {
                         ),
                 );
             }
+            // The vault's keys are the person's own: the others with access
+            // to the collection have no such key.
+            if key_text.starts_with(crate::target::VAULT_KEY)
+                && let Some(name) = self
+                    .collection
+                    .as_ref()
+                    .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                    .map(|c| c.name.clone())
+            {
+                sign_in = sign_in.child(
+                    div().debug_selector(|| "vault-key-shared".into()).child(problem_text(&tr!(
+                        "This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.",
+                        name = name
+                    ))),
+                );
+            }
             if let Some((_, p)) = self.problems.iter().find(|(f, _)| *f == Field::Key) {
                 sign_in = sign_in.child(problem_text(p));
             }
@@ -1777,8 +1889,9 @@ impl Render for HostEditor {
             })
             .unwrap_or_else(|| tr!("Same as the app"));
         let mut organize = section(&tr!("Organize"));
-        // A new host goes in hosts.toml or a collection; one saved stays where
-        // it is.
+        // A host goes in hosts.toml or a collection the person may change;
+        // one saved moves when another is chosen, if it may be taken out of
+        // where it is.
         let places: Vec<(Option<String>, String)> = self
             .ctx
             .collections
@@ -1786,7 +1899,20 @@ impl Render for HostEditor {
             .filter(|c| c.edits() && !c.waiting)
             .map(|c| (Some(c.id.clone()), c.name.clone()))
             .collect();
-        if self.original.is_none() && !places.is_empty() {
+        let collection_name = |id: &Option<String>| {
+            id.as_ref()
+                .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                .map(|c| c.name.clone())
+        };
+        let movable = match self.original.as_ref().and_then(|o| o.collection.as_ref()) {
+            Some(id) => self
+                .ctx
+                .collections
+                .iter()
+                .any(|c| &c.id == id && c.edits()),
+            None => true,
+        };
+        if movable && !places.is_empty() {
             let place_label = self
                 .collection
                 .as_ref()
@@ -1810,6 +1936,51 @@ impl Render for HostEditor {
             } else {
                 tr!("Only you see it, on your devices.")
             }));
+            // Another place than where it is: saving moves it.
+            if let Some(o) = &self.original
+                && o.collection != self.collection
+            {
+                let place =
+                    |id: &Option<String>| collection_name(id).unwrap_or_else(|| tr!("My hosts"));
+                organize = organize.child(
+                    div()
+                        .debug_selector(|| "move-note".into())
+                        .child(hint_text(&match &o.collection {
+                            Some(_) => tr!(
+                                "Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.",
+                                from = place(&o.collection),
+                                to = place(&self.collection)
+                            ),
+                            None => tr!(
+                                "Saving moves it from {from} to {to}.",
+                                from = place(&o.collection),
+                                to = place(&self.collection)
+                            ),
+                        })),
+                );
+                if let (Some(carry), Some(name)) =
+                    (self.carry_password, collection_name(&self.collection))
+                {
+                    organize = organize.child(
+                        div()
+                            .id("carry-password")
+                            .debug_selector(|| "carry-password".into())
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .cursor_pointer()
+                            .on_click(cx.listener(|e, _, _, cx| {
+                                e.carry_password = e.carry_password.map(|c| !c);
+                                cx.notify();
+                            }))
+                            .child(checkbox(carry))
+                            .child(label_text(&tr!(
+                                "Take its saved password along: everybody with access to {name} can sign in with it",
+                                name = name
+                            ))),
+                    );
+                }
+            }
         } else if let Some(c) = self
             .collection
             .as_ref()
@@ -1820,9 +1991,20 @@ impl Render for HostEditor {
                 name = c.name.clone()
             )));
         }
+        // A collection's hosts are in no group, and nobody's favorite: those
+        // are the person's own, in hosts.toml.
+        let own = self.collection.is_none();
         organize = organize.child(
             row()
-                .child(self.select("group-select", &tr!("Group"), group_label, Menu::Group, cx))
+                .when(own, |r| {
+                    r.child(self.select(
+                        "group-select",
+                        &tr!("Group"),
+                        group_label,
+                        Menu::Group,
+                        cx,
+                    ))
+                })
                 .child(
                     div()
                         .flex()
@@ -1926,21 +2108,23 @@ impl Render for HostEditor {
         }
         swatches =
             swatches.child(hint_text(&tr!("Shown on the tab and the pane border")).ml(px(8.)));
-        organize = organize.child(swatches).child(
-            div()
-                .id("favorite")
-                .debug_selector(|| "favorite".into())
-                .flex()
-                .items_center()
-                .gap_2()
-                .cursor_pointer()
-                .on_click(cx.listener(|e, _, _, cx| {
-                    e.favorite = !e.favorite;
-                    cx.notify();
-                }))
-                .child(checkbox(self.favorite))
-                .child(label_text(&tr!("Favorite: listed first in the host list"))),
-        );
+        organize = organize.child(swatches).when(own, |o| {
+            o.child(
+                div()
+                    .id("favorite")
+                    .debug_selector(|| "favorite".into())
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .cursor_pointer()
+                    .on_click(cx.listener(|e, _, _, cx| {
+                        e.favorite = !e.favorite;
+                        cx.notify();
+                    }))
+                    .child(checkbox(self.favorite))
+                    .child(label_text(&tr!("Favorite: listed first in the host list"))),
+            )
+        });
 
         let mut terminal = section(&tr!("Terminal")).child(row().child(self.select(
             "theme-select",
@@ -2129,11 +2313,21 @@ impl Render for HostEditor {
                 .items_center()
                 .gap_2()
                 .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .text_size(ui(12.5))
-                        .child(tr!("Delete {title} from hosts.toml?", title = &title)),
+                    div().flex_1().min_w_0().text_size(ui(12.5)).child(
+                        match self
+                            .original
+                            .as_ref()
+                            .and_then(|o| o.collection.as_ref())
+                            .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                        {
+                            Some(c) => tr!(
+                                "Delete {title} for everybody with access to {collection}?",
+                                title = &title,
+                                collection = c.name.clone()
+                            ),
+                            None => tr!("Delete {title} from hosts.toml?", title = &title),
+                        },
+                    ),
                 )
                 .child(
                     text_button("delete-yes", &tr!("Delete"), colors().bad)
@@ -2198,13 +2392,19 @@ impl Render for HostEditor {
                     .child(sign_in)
                     .child(route)
                     .child(forwarding)
-                    .child(sync)
+                    // A collection's syncs to all with access, never kept here only.
+                    .when(self.collection.is_none(), |b| b.child(sync))
                     .child(organize)
                     .child(terminal)
                     .child(advanced),
             )
             .child(footer)
     }
+}
+
+/// What the password for `host` is saved under, as signing in looks it up.
+fn password_target(host: &Host) -> Option<String> {
+    shellwing_core::target::password_target(host, ssh_config::default_config_path().as_deref())
 }
 
 pub(crate) fn checkbox(on: bool) -> gpui::Div {

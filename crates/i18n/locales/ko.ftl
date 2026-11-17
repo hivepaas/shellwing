@@ -361,14 +361,14 @@ t97a4b927 = 보관함이 열려 있지 않음
 # No key made: {e}
 t4e14e42b = 키를 만들지 못함: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = hosts.toml에서 이 호스트를 찾을 수 없습니다.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = { $name }의 호스트에 연결할 수는 있지만 변경할 수는 없습니다.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = 이 호스트의 컬렉션은 더 이상 여기에서 동기화되지 않습니다.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = hosts.toml에서 이 호스트를 찾을 수 없습니다.
 
 # {name} copy
 t0d616a81 = { $name } 사본
@@ -460,6 +460,9 @@ t7ecf0d6d = { $name }은(는) 새 키이며 { $host }에는 아직 없습니다.
 # Save and install on {host}
 t1707b1d3 = 저장하고 { $host }에 설치
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = 이 키는 내 보관함에 있습니다. { $name }에 접근 권한이 있는 다른 사용자는 이 키로 로그인할 수 없습니다. 그들이 가진 키 파일, 비밀번호 또는 조직의 인증서를 선택하세요.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = ssh와 마찬가지로 에이전트, ~/.ssh와 보관함의 키를 차례로 시도한 뒤 비밀번호를 묻습니다.
 
@@ -540,6 +543,15 @@ t4152ce3a = 컬렉션에 접근 권한이 있는 모든 사용자가 볼 수 있
 
 # Only you see it, on your devices.
 t6f22a0a3 = 내 기기에서 나만 볼 수 있습니다.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = 저장하면 { $from }에서 { $to }(으)로 이동합니다. { $from }에 접근 권한이 있는 모든 사용자에게서 삭제됩니다.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = 저장하면 { $from }에서 { $to }(으)로 이동합니다.
+
+# Take its saved password along: everybody with access to {name} can sign in with it
+t1de408c5 = 저장된 비밀번호도 함께 옮기기: { $name }에 접근 권한이 있는 모든 사용자가 이 비밀번호로 로그인할 수 있습니다
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = 컬렉션 { $name }에 있음: 접근 권한이 있는 모든 사용자가 볼 수 있습니다.
@@ -651,6 +663,9 @@ t07477a92 = 호스트의 프로그램이 이곳의 X 서버에 창을 열 수 �
 
 # Some fields need a look.
 teaa35f1a = 일부 필드를 확인하세요.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $collection }에 접근 권한이 있는 모든 사용자에게서 { $title }을(를) 삭제하시겠습니까?
 
 # Delete {title} from hosts.toml?
 t596a83da = hosts.toml에서 { $title }을(를) 삭제하시겠습니까?
@@ -3013,14 +3028,26 @@ tc1b10302 = 정규식 (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 파일 패널은 SFTP로 서버를 탐색합니다. 이 창은 이 컴퓨터의 셸입니다.
 
+# Saved for everybody with access to the collection.
+t9f5236e2 = 컬렉션에 접근 권한이 있는 모든 사용자를 위해 저장했습니다.
+
 # Saved in the vault.
 t0d69c4e6 = 보관함에 저장했습니다.
+
+# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
+t12e0bfb2 = { $target }의 비밀번호를 저장하시겠습니까? { $name }에 저장되어 접근 권한이 있는 모든 사용자가 로그인에 사용할 수 있습니다.
 
 # Save the password for {target} in the vault?
 tceb19137 = { $target }의 비밀번호를 보관함에 저장하시겠습니까?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = { $key_path }의 암호 문구를 보관함에 저장하시겠습니까?
+
+# Only for me
+t358787f6 = 나만
+
+# For everybody in {name}
+t65e9e7fb = { $name }의 모든 사용자
 
 # The host key for {host} has changed.
 t1e510d66 = { $host }의 호스트 키가 변경되었습니다.
@@ -4356,9 +4383,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 색 없음
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = { $collection }에 접근 권한이 있는 모든 사용자에게서 { $title }을(를) 삭제하시겠습니까?
 
 # as the server says
 ta204abe7 = 서버가 정한 대로

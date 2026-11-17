@@ -379,14 +379,14 @@ t97a4b927 = сховище не відкрито
 # No key made: {e}
 t4e14e42b = Ключ не створено: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Цей хост не знайдено в hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Ви можете підключатися до хостів { $name }, але не змінювати їх.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = Колекція цього хоста тут більше не синхронізується.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Цей хост не знайдено в hosts.toml.
 
 # {name} copy
 t0d616a81 = { $name } копія
@@ -478,6 +478,9 @@ t7ecf0d6d = { $name } — новий ключ: на { $host } його ще не
 # Save and install on {host}
 t1707b1d3 = Зберегти та встановити на { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Цей ключ у вашому власному сховищі: інші, хто має доступ до { $name }, не зможуть увійти з ним. Виберіть файл ключа, який у них є, пароль або сертифікати організації.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Пробує агент, потім ваші ключі в ~/.ssh і сховищі, потім запитує пароль, як ssh.
 
@@ -558,6 +561,15 @@ t4152ce3a = Його бачать усі, хто має доступ до кол
 
 # Only you see it, on your devices.
 t6f22a0a3 = Його бачите лише ви, на своїх пристроях.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Під час збереження його буде переміщено з { $from } до { $to } і видалено для всіх, хто має доступ до { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Під час збереження його буде переміщено з { $from } до { $to }.
+
+# Take its saved password along: everybody with access to {name} can sign in with it
+t1de408c5 = Перенести збережений пароль: усі, хто має доступ до { $name }, зможуть входити з ним
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = У колекції { $name }: його бачать усі, хто має до неї доступ.
@@ -669,6 +681,9 @@ t07477a92 = Дозволяє програмам на хості відкрива
 
 # Some fields need a look.
 teaa35f1a = Перевірте деякі поля.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Видалити { $title } для всіх, хто має доступ до колекції { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Видалити { $title } з hosts.toml?
@@ -3175,14 +3190,26 @@ tc1b10302 = Регулярний вираз (Alt+R)
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Панель «Файли» переглядає сервер через SFTP; ця панель — оболонка на цьому комп'ютері.
 
+# Saved for everybody with access to the collection.
+t9f5236e2 = Збережено для всіх, хто має доступ до колекції.
+
 # Saved in the vault.
 t0d69c4e6 = Збережено у сховищі.
+
+# Save the password for {target}? Saved in {name}, everybody with access to it can sign in with it.
+t12e0bfb2 = Зберегти пароль для { $target }? Його буде збережено в { $name }, і всі, хто має доступ, зможуть входити з ним.
 
 # Save the password for {target} in the vault?
 tceb19137 = Зберегти пароль для { $target } у сховищі?
 
 # Save the passphrase of {key_path} in the vault?
 tc75d3456 = Зберегти парольну фразу { $key_path } у сховищі?
+
+# Only for me
+t358787f6 = Лише для мене
+
+# For everybody in {name}
+t65e9e7fb = Для всіх у { $name }
 
 # The host key for {host} has changed.
 t1e510d66 = Ключ хоста { $host } змінився.
@@ -4602,9 +4629,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Без кольору
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Видалити { $title } для всіх, хто має доступ до колекції { $collection }?
 
 # as the server says
 ta204abe7 = як вкаже сервер
