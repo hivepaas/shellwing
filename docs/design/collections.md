@@ -166,6 +166,21 @@ it.
 - A collection's host has no group, favorite or "this device only": those are
   the person's own. A key from the person's own vault is flagged, since the
   others with access cannot sign in with it.
+- **What a collection's host asks of the computer that connects is allowed by
+  each person.** Anybody with Edit writes a host's settings, and some act on
+  the computer of whoever connects: a ProxyCommand runs there, `run` types a
+  command as them on the server, forwards open ports, agent forwarding and
+  trusted X11 hand the server their keys and keyboard, `accept-new` takes a
+  new host key unasked, and jump hosts are found by name among their own. So
+  a collection's host, and each of the collection's jump hosts on its way,
+  connects without these until the person allows them: the pane lists them,
+  and "Allow and reconnect" keeps the host's id with a SHA-256 of those
+  settings in `state/allowed.json` on this device. Changed, they are asked
+  again. Their own `~/.ssh/config` for the address still applies. The
+  phones connect without them, with no way to allow them yet.
+- A collection's host never takes the name of one's own: names and aliases
+  are looked up in hosts.toml first, so one with alias `bastion` cannot stand
+  in for one's own `bastion`, a jump host of theirs, say.
 - **Passwords are never shared.** A collection shares the list of hosts; how
   each person signs in is their own. A password typed for a collection's host
   is saved, if they choose, in their own vault, found by `user@host[:port]` as

@@ -126,13 +126,22 @@ pub enum AuthMethod {
 pub const NO_ORG: &str = "none";
 
 impl Hosts {
-    /// The host whose alias, or else whose name, is `name`; else the
+    /// The host whose alias, or else whose name, is `name`: the person's
+    /// own first, then a collection's, so that one written by others never
+    /// takes the name of theirs (a jump host of theirs, say). Else the
     /// collection's host whose id it is.
     pub fn find(&self, name: &str) -> Option<&Host> {
-        self.hosts
-            .iter()
-            .find(|h| h.alias.as_deref() == Some(name))
-            .or_else(|| self.hosts.iter().find(|h| h.name == name))
+        let by_name = |own: bool| {
+            let mut of = self
+                .hosts
+                .iter()
+                .filter(move |h| h.collection.is_none() == own);
+            of.clone()
+                .find(|h| h.alias.as_deref() == Some(name))
+                .or_else(|| of.find(|h| h.name == name))
+        };
+        by_name(true)
+            .or_else(|| by_name(false))
             // A collection's host by its id: names may repeat across them.
             .or_else(|| {
                 self.hosts
@@ -186,6 +195,23 @@ mod tests {
         name = "web"
         address = "10.0.0.5"
     "#;
+
+    #[test]
+    fn a_collections_host_never_takes_the_name_of_ones_own() {
+        let mut h: Hosts = toml::from_str(
+            "[[host]]\nname = \"bastion\"\naddress = \"10.0.0.1\"\n\n\
+             [[host]]\nname = \"db\"\nalias = \"bastion\"\naddress = \"10.6.6.6\"\n\n\
+             [[host]]\nname = \"web\"\naddress = \"10.0.0.2\"\n",
+        )
+        .expect("parse");
+        for (i, id) in [(1, "c-db"), (2, "c-web")] {
+            h.hosts[i].collection = Some("col1".into());
+            h.hosts[i].id = Some(id.into());
+        }
+        assert_eq!(h.find("bastion").expect("own").address, "10.0.0.1");
+        assert_eq!(h.find("web").expect("the collection's").address, "10.0.0.2");
+        assert_eq!(h.find("c-db").expect("by id").address, "10.6.6.6");
+    }
 
     #[test]
     fn reads_the_documented_shape() {

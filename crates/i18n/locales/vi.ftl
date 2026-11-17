@@ -2992,11 +2992,17 @@ t12a2b3c2 = { $host } đã có { $key }.
 # {key} was not installed on {host}: {why}
 t25610553 = Chưa cài được { $key } lên { $host }: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = Đã cài { $key } lên { $host }. Từ giờ đăng nhập { $host } bằng khoá này?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Đã kết nối mà không dùng những gì các máy chủ này trong bộ sưu tập của tổ chức yêu cầu. Người có quyền sửa bộ sưu tập đặt chúng, và chúng chạy trên máy tính này: chỉ cho phép nếu bạn tin họ.
 
 # Not now
 t2c3d6fce = Để sau
+
+# Allow and reconnect
+t6f3784ee = Cho phép và kết nối lại
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = Đã cài { $key } lên { $host }. Từ giờ đăng nhập { $host } bằng khoá này?
 
 # Use it for {host}
 t704df588 = Dùng cho { $host }
@@ -3369,6 +3375,9 @@ t7958d376 = Kết nối tới { $one } đang mở; đóng sẽ ngắt kết nố
 
 # {n} connection is open; closing ends it. | {n} connections are open; closing ends them.
 tbac763bb = { $n } kết nối đang mở; đóng sẽ ngắt các kết nối đó.
+
+# Not allowed: {e}
+t839d4e8b = Chưa cho phép được: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Không mở được terminal: { $e }
@@ -4080,6 +4089,30 @@ t8354c717 = Chọn một máy chủ bên trái để kết nối
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Chạy một lệnh trên máy tính này để kết nối: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Đi qua { $hosts } trước, theo cách máy tính này biết chúng
+
+# Forwards ports: {forward}
+tde2adb5a = Chuyển tiếp cổng: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Cho máy chủ dùng ssh-agent của bạn trong lúc kết nối
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Cho các chương trình của nó mở cửa sổ ở đây và đọc bàn phím của bạn (X11 tin cậy)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Cho các chương trình của nó mở cửa sổ ở đây (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Nhận khoá của máy chủ ở lần đầu mà không hỏi bạn
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Gõ một lệnh vào shell của nó sau khi kết nối: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Lệnh dài { $size } KB; tối đa { $max } KB.

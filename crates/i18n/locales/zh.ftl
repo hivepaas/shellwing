@@ -2992,11 +2992,17 @@ t12a2b3c2 = { $host } 上已有 { $key }。
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } 未能安装到 { $host }：{ $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } 已安装到 { $host }。今后使用它登录 { $host } 吗？
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = 已连接，但未采用组织集合中这些主机所要求的设置。这些设置由可编辑该集合的人设定，并会在这台电脑上生效：仅在你信任他们时才允许。
 
 # Not now
 t2c3d6fce = 暂不
+
+# Allow and reconnect
+t6f3784ee = 允许并重新连接
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } 已安装到 { $host }。今后使用它登录 { $host } 吗？
 
 # Use it for {host}
 t704df588 = 用于 { $host }
@@ -3369,6 +3375,9 @@ t7958d376 = 与 { $one } 的连接处于打开状态；关闭将断开连接。
 
 # {n} connection is open; closing ends it. | {n} connections are open; closing ends them.
 tbac763bb = { $n } 个连接处于打开状态；关闭将断开这些连接。
+
+# Not allowed: {e}
+t839d4e8b = 未能允许：{ $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = 无法打开终端：{ $e }
@@ -4080,6 +4089,30 @@ t8354c717 = 在左侧选择一台主机以连接
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 查找主机，或连接到 user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = 在这台电脑上运行命令以建立连接：{ $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = 先经过 { $hosts }（按这台电脑上的设置）
+
+# Forwards ports: {forward}
+tde2adb5a = 转发端口：{ $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = 连接期间允许主机使用你的 ssh-agent
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = 允许其程序在此打开窗口并读取你的键盘输入（受信任的 X11）
+
+# Lets its programs open windows here (X11)
+t7d003faa = 允许其程序在此打开窗口（X11）
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = 首次连接时不询问就接受主机的密钥
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = 连接后在其 shell 中输入命令：{ $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 命令为 { $size } KB；最多 { $max } KB。

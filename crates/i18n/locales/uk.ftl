@@ -3154,11 +3154,17 @@ t12a2b3c2 = На { $host } уже є { $key }.
 # {key} was not installed on {host}: {why}
 t25610553 = { $key } не встановлено на { $host }: { $why }
 
-# {key} is installed on {host}. Sign in to {host} with it from now on?
-ta04e62fb = { $key } встановлено на { $host }. Відтепер входити на { $host } із цим ключем?
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this computer: allow it only if you trust them.
+t108152c1 = Підключено без того, що запитують ці хости з колекції організації. Це задають ті, хто може редагувати колекцію, і це діє на цьому комп'ютері: дозволяйте, лише якщо довіряєте їм.
 
 # Not now
 t2c3d6fce = Не зараз
+
+# Allow and reconnect
+t6f3784ee = Дозволити й перепідключитися
+
+# {key} is installed on {host}. Sign in to {host} with it from now on?
+ta04e62fb = { $key } встановлено на { $host }. Відтепер входити на { $host } із цим ключем?
 
 # Use it for {host}
 t704df588 = Використовувати для { $host }
@@ -3561,6 +3567,9 @@ tbac763bb =
         [many] Відкрито { $n } з'єднань; закриття завершить їх.
        *[other] Відкрито { $n } з'єднання; закриття завершить їх.
     }
+
+# Not allowed: {e}
+t839d4e8b = Не дозволено: { $e }
 
 # Cannot open a terminal: {e}
 t3ffc1c98 = Не вдалося відкрити термінал: { $e }
@@ -4314,6 +4323,30 @@ t8354c717 = Виберіть хост ліворуч, щоб підключит�
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = або натисніть { $keys }, щоб знайти його чи підключитися до user@host
+
+# Runs a command on this computer to connect: {command}
+tb315c6bd = Запускає команду на цьому комп'ютері для підключення: { $command }
+
+# Goes through {hosts} first, as this computer knows them
+t819b0018 = Спершу йде через { $hosts }, як їх знає цей комп'ютер
+
+# Forwards ports: {forward}
+tde2adb5a = Переспрямовує порти: { $forward }
+
+# Lets the host use your ssh-agent while connected
+t848bef88 = Дозволяє хосту користуватися вашим ssh-agent, поки ви підключені
+
+# Lets its programs open windows here and read your keyboard (trusted X11)
+ted3d4c0e = Дозволяє його програмам відкривати тут вікна й читати вашу клавіатуру (довірений X11)
+
+# Lets its programs open windows here (X11)
+t7d003faa = Дозволяє його програмам відкривати тут вікна (X11)
+
+# Takes the host's key the first time without asking you
+tbda4f1d9 = Приймає ключ хоста першого разу, не питаючи вас
+
+# Types a command into its shell once connected: {command}
+t0a40f947 = Вводить команду в його оболонку після підключення: { $command }
 
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Команда займає { $size } КБ; щонайбільше { $max } КБ.

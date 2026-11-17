@@ -647,6 +647,15 @@ impl Shellwing {
             &self.hosts().unwrap_or_default(),
             &self.collections_held(),
         );
+        // A collection's hosts on the way connect without what they ask
+        // (ProxyCommand, forwards, the agent…): others wrote it, and the
+        // phones have no way to allow it yet.
+        let hosts =
+            match shellwing_core::collections::unless_allowed(&hosts, &spec, &self.store.allowed())
+            {
+                Some((held, _)) => held,
+                None => hosts,
+            };
         let target = shellwing_core::target::resolve(&spec, &hosts, None);
         let session = Session::start(
             &spec,

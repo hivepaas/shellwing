@@ -886,3 +886,41 @@ scenario!(
         assert!(ui.find("place-select").is_none(), "Connect: it stays where it is");
     }
 );
+
+scenario!(
+    /// A collection's host that asks for a command typed once connected:
+    /// others wrote it, so it connects without it and says so. Allowed, it
+    /// connects again with it, and is not asked again.
+    a_collections_host_connects_without_what_it_asks_until_allowed,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        let mut db = ui.ws(|ws, _, _| ws.saved_host("web")).expect("web");
+        db.id = Some("h1".into());
+        db.name = "db".into();
+        db.collection = Some("c1".into());
+        db.run = Some("echo ASKED-RUN".into());
+        ui.ws(|ws, _, cx| ws.show_collections(vec![], vec![production("edit", vec![db])], cx));
+        ui.click("host:db");
+        ui.login();
+        ui.settle(std::time::Duration::from_millis(300));
+        assert!(ui.view(|v, _| v.holds_back()), "the bar says what was held back");
+        assert!(!ui.screen().contains("ASKED-RUN"), "not run:\n{}", ui.screen());
+
+        ui.click("held-allow");
+        // The same pane connects again: its second prompt.
+        ui.wait_for_count("password:", 2);
+        ui.line(crate::ui_tests::server::PASSWORD);
+        ui.wait_for("ASKED-RUN");
+        assert!(!ui.view(|v, _| v.holds_back()));
+        let allowed = shellwing_config::Store::new(ui.config_dir()).allowed();
+        assert!(allowed.contains_key("h1"), "{allowed:?}");
+
+        // Opened again: allowed already.
+        ui.click("host:db");
+        ui.login();
+        assert!(!ui.view(|v, _| v.holds_back()), "not asked again");
+    }
+);
