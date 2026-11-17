@@ -3349,18 +3349,6 @@ taee668c2 = Mengunduh… { $got } dari { $total }
 # Downloading… {got}
 t4873b921 = Mengunduh… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Terhubung ke host-nya; tidak dapat mengubahnya
-
-# Changes its hosts and passwords
-t0e93b1e8 = Mengubah host dan kata sandinya
-
-# Manage
-td7aff116 = Kelola
-
-# Edits, grants access and gives the key
-t7c52884e = Mengedit, memberi akses, dan memberikan kunci
-
 # New host…
 t13806b73 = Host baru…
 
@@ -3372,15 +3360,6 @@ t5f2231e7 = Berikan kuncinya…
 
 # Secrets to change…
 tdba41f83 = Rahasia yang perlu diganti…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Dibagikan di { $org }: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Dibagikan di sebuah organisasi: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
-
-# waiting for its key
-tb827ed42 = menunggu kuncinya
 
 # Over SSH only
 t14e43465 = Hanya melalui SSH
@@ -4156,6 +4135,9 @@ t7c2c53ba = Favorit
 # read only
 t0d7ec241 = hanya baca
 
+# waiting for its key
+tb827ed42 = menunggu kuncinya
+
 # Shared · {org}
 t280d0e57 = Dibagikan · { $org }
 
@@ -4185,6 +4167,24 @@ t8354c717 = Pilih host di sebelah kiri untuk terhubung
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = atau tekan { $keys } untuk mencarinya, atau untuk terhubung ke user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Terhubung ke host-nya; tidak dapat mengubahnya
+
+# Changes its hosts
+t8d9014d3 = Mengubah host-nya
+
+# Manage
+td7aff116 = Kelola
+
+# Edits, grants access and gives the key
+t7c52884e = Mengedit, memberi akses, dan memberikan kunci
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Dibagikan di { $org }: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Dibagikan di sebuah organisasi: semua yang diberi akses dapat melihat host-nya, terenkripsi end-to-end.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Menjalankan perintah di komputer ini untuk terhubung: { $command }

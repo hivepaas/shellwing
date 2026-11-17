@@ -44,6 +44,8 @@ class AppModel(private val app: ShellwingApp) {
         private set
     /** The secrets to change in collections whose key this phone replaced. */
     var checklists by mutableStateOf<List<KeyChecklist>>(emptyList())
+    /** The server was asked for the organizations' names since the app started. */
+    private var orgsAsked = false
         private set
     /** The collections whose key the last sync replaced here: said once. */
     var replaced by mutableStateOf<List<String>>(emptyList())
@@ -119,6 +121,14 @@ class AppModel(private val app: ShellwingApp) {
             checklists = core.keyChecklists()
         } catch (e: Exception) {
             error = e.said()
+        }
+        // The organizations' names, for their collections' headings: asked
+        // once a run, kept for the next.
+        if (collections.isNotEmpty() && !orgsAsked) {
+            orgsAsked = true
+            scope.launch {
+                if (runCatching { core.refreshOrgs() }.getOrDefault(false)) collections = core.collections()
+            }
         }
     }
 

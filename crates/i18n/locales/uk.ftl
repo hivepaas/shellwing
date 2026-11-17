@@ -3463,18 +3463,6 @@ taee668c2 = Завантаження… { $got } з { $total }
 # Downloading… {got}
 t4873b921 = Завантаження… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Підключається до її хостів; не може їх змінювати
-
-# Changes its hosts and passwords
-t0e93b1e8 = Змінює її хости й паролі
-
-# Manage
-td7aff116 = Керувати
-
-# Edits, grants access and gives the key
-t7c52884e = Редагує, надає доступ і передає ключ
-
 # New host…
 t13806b73 = Новий хост…
 
@@ -3486,15 +3474,6 @@ t5f2231e7 = Передати ключ…
 
 # Secrets to change…
 tdba41f83 = Секрети для зміни…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Спільна в { $org }: її хости бачать усі, хто має доступ; наскрізне шифрування.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Спільна в організації: її хости бачать усі, хто має доступ; наскрізне шифрування.
-
-# waiting for its key
-tb827ed42 = чекає на ключ
 
 # Over SSH only
 t14e43465 = Лише через SSH
@@ -4303,6 +4282,9 @@ t7c2c53ba = Вибране
 # read only
 t0d7ec241 = лише читання
 
+# waiting for its key
+tb827ed42 = чекає на ключ
+
 # Shared · {org}
 t280d0e57 = Спільні · { $org }
 
@@ -4332,6 +4314,24 @@ t8354c717 = Виберіть хост ліворуч, щоб підключит�
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = або натисніть { $keys }, щоб знайти його чи підключитися до user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Підключається до її хостів; не може їх змінювати
+
+# Changes its hosts
+t8d9014d3 = Змінює її хости
+
+# Manage
+td7aff116 = Керувати
+
+# Edits, grants access and gives the key
+t7c52884e = Редагує, надає доступ і передає ключ
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Спільна в { $org }: її хости бачать усі, хто має доступ; наскрізне шифрування.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Спільна в організації: її хости бачать усі, хто має доступ; наскрізне шифрування.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Запускає команду на цьому комп'ютері для підключення: { $command }

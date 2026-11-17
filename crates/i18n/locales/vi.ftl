@@ -3292,18 +3292,6 @@ taee668c2 = Đang tải xuống… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = Đang tải xuống… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = Kết nối tới các máy chủ của nó; không sửa được chúng
-
-# Changes its hosts and passwords
-t0e93b1e8 = Sửa các máy chủ và mật khẩu của nó
-
-# Manage
-td7aff116 = Quản lý
-
-# Edits, grants access and gives the key
-t7c52884e = Sửa, cấp quyền truy cập và trao khoá
-
 # New host…
 t13806b73 = Máy chủ mới…
 
@@ -3315,15 +3303,6 @@ t5f2231e7 = Trao khoá…
 
 # Secrets to change…
 tdba41f83 = Bí mật cần đổi…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = Dùng chung trong { $org }: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = Dùng chung trong một tổ chức: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
-
-# waiting for its key
-tb827ed42 = đang chờ khoá
 
 # Over SSH only
 t14e43465 = Chỉ qua SSH
@@ -4069,6 +4048,9 @@ t7c2c53ba = Yêu thích
 # read only
 t0d7ec241 = chỉ đọc
 
+# waiting for its key
+tb827ed42 = đang chờ khoá
+
 # Shared · {org}
 t280d0e57 = Dùng chung · { $org }
 
@@ -4098,6 +4080,24 @@ t8354c717 = Chọn một máy chủ bên trái để kết nối
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host
+
+# Connects to its hosts; cannot change them
+t316bd4ec = Kết nối tới các máy chủ của nó; không sửa được chúng
+
+# Changes its hosts
+t8d9014d3 = Sửa các máy chủ của nó
+
+# Manage
+td7aff116 = Quản lý
+
+# Edits, grants access and gives the key
+t7c52884e = Sửa, cấp quyền truy cập và trao khoá
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = Dùng chung trong { $org }: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = Dùng chung trong một tổ chức: mọi người có quyền truy cập đều thấy các máy chủ của nó, được mã hoá đầu-cuối.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = Chạy một lệnh trên máy tính này để kết nối: { $command }

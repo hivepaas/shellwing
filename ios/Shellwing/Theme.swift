@@ -61,6 +61,19 @@ extension UIColor {
 }
 
 /// A section's heading: small capitals in the muted color, as the desktop's.
+/// Opens a part of the host list: "My hosts", or the organization whose
+/// collections follow. Quieter than the sections' titles under it, with a rule.
+struct PartHeading: View {
+    let text: String
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(text).font(.system(size: 11)).foregroundStyle(Dusk.idle)
+            Rectangle().fill(Dusk.fieldEdge).frame(height: 1)
+        }
+        .textCase(nil)
+    }
+}
+
 struct SectionHeading: View {
     let text: String
     var body: some View {

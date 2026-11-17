@@ -3292,18 +3292,6 @@ taee668c2 = 다운로드 중… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = 다운로드 중… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = 호스트에 연결할 수 있음, 변경은 불가
-
-# Changes its hosts and passwords
-t0e93b1e8 = 호스트와 비밀번호를 변경할 수 있음
-
-# Manage
-td7aff116 = 관리
-
-# Edits, grants access and gives the key
-t7c52884e = 편집, 접근 권한 부여, 키 전달 가능
-
 # New host…
 t13806b73 = 새 호스트…
 
@@ -3315,15 +3303,6 @@ t5f2231e7 = 키 전달…
 
 # Secrets to change…
 tdba41f83 = 변경할 비밀 정보…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = { $org }에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = 조직에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
-
-# waiting for its key
-tb827ed42 = 키 대기 중
 
 # Over SSH only
 t14e43465 = SSH 전용
@@ -4069,6 +4048,9 @@ t7c2c53ba = 즐겨찾기
 # read only
 t0d7ec241 = 읽기 전용
 
+# waiting for its key
+tb827ed42 = 키 대기 중
+
 # Shared · {org}
 t280d0e57 = 공유됨 · { $org }
 
@@ -4098,6 +4080,24 @@ t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요
+
+# Connects to its hosts; cannot change them
+t316bd4ec = 호스트에 연결할 수 있음, 변경은 불가
+
+# Changes its hosts
+t8d9014d3 = 호스트를 변경할 수 있음
+
+# Manage
+td7aff116 = 관리
+
+# Edits, grants access and gives the key
+t7c52884e = 편집, 접근 권한 부여, 키 전달 가능
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org }에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 조직에서 공유됨: 접근 권한이 있는 모든 사용자가 호스트를 볼 수 있으며, 종단 간 암호화됩니다.
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = 연결하려고 이 컴퓨터에서 명령을 실행합니다: { $command }

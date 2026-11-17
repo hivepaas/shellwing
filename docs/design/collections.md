@@ -153,7 +153,11 @@ it.
   then "Shared · <organization>" with that organization's collections. A
   collection's title has the shared mark and a chip with the person's
   permission (Manage, Edit, Connect); its tooltip says who sees it and what
-  the permission allows.
+  the permission allows. The phones' host lists read the same; a tap on the
+  title says it. The organizations' names come from the server (`GET
+  /api/orgs`) once collections are found, and are kept in `state/orgs.json`
+  so the headings name them before it is reached; unnamed, the heading says
+  "Shared".
 - A collection's hosts are read from the vault as hosts.toml's are, and found by
   their id, since names may repeat across collections. They sign in with the
   organization's certificates unless one says otherwise.

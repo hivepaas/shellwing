@@ -3292,18 +3292,6 @@ taee668c2 = ダウンロード中… { $got } / { $total }
 # Downloading… {got}
 t4873b921 = ダウンロード中… { $got }
 
-# Connects to its hosts; cannot change them
-t316bd4ec = ホストに接続できます（変更はできません）
-
-# Changes its hosts and passwords
-t0e93b1e8 = ホストとパスワードを変更できます
-
-# Manage
-td7aff116 = 管理
-
-# Edits, grants access and gives the key
-t7c52884e = 編集、アクセス権の付与、鍵の受け渡しができます
-
 # New host…
 t13806b73 = 新しいホスト…
 
@@ -3315,15 +3303,6 @@ t5f2231e7 = 鍵を渡す…
 
 # Secrets to change…
 tdba41f83 = 変更するシークレット…
-
-# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
-t2b0a441e = { $org } で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
-
-# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
-tb7742f20 = 組織で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
-
-# waiting for its key
-tb827ed42 = 鍵待ち
 
 # Over SSH only
 t14e43465 = SSH のみ
@@ -4069,6 +4048,9 @@ t7c2c53ba = お気に入り
 # read only
 t0d7ec241 = 読み取り専用
 
+# waiting for its key
+tb827ed42 = 鍵待ち
+
 # Shared · {org}
 t280d0e57 = 共有 · { $org }
 
@@ -4098,6 +4080,24 @@ t8354c717 = 左のホストを選んで接続
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = または { $keys } を押してホストを検索するか、user@host に接続
+
+# Connects to its hosts; cannot change them
+t316bd4ec = ホストに接続できます（変更はできません）
+
+# Changes its hosts
+t8d9014d3 = ホストを変更できます
+
+# Manage
+td7aff116 = 管理
+
+# Edits, grants access and gives the key
+t7c52884e = 編集、アクセス権の付与、鍵の受け渡しができます
+
+# Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.
+t2b0a441e = { $org } で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
+
+# Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted.
+tb7742f20 = 組織で共有：アクセス権を持つ全員にホストが表示されます。エンドツーエンドで暗号化されます。
 
 # Runs a command on this computer to connect: {command}
 tb315c6bd = 接続のためにこのコンピューターでコマンドを実行します: { $command }

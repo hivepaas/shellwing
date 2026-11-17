@@ -191,6 +191,9 @@ pub struct Workspace {
     /// and names), as last fetched: where groups and hosts can take
     /// certificates from.
     orgs: Vec<(String, String)>,
+    /// The server was asked for them since the app started, once collections
+    /// were found: the host list's headings name them.
+    orgs_asked: bool,
     /// Importing hosts from another app.
     import: Option<(Entity<ImportView>, Subscription)>,
     /// What the last import put in, with its notes' ids: *Undo import* takes
@@ -292,20 +295,6 @@ struct AccessEdit {
     grantable: shellwing_remote::server::Grantable,
 }
 
-/// A permission as people read it, with what it lets them do.
-fn permission_text(permission: &str) -> (String, String) {
-    match permission {
-        "connect" => (
-            tr!("Connect"),
-            tr!("Connects to its hosts; cannot change them"),
-        ),
-        "edit" => (tr!("Edit"), tr!("Changes its hosts and passwords")),
-        _ => (tr!("Manage"), tr!("Edits, grants access and gives the key")),
-    }
-}
-
-/// A collection's tooltip in the host list: who sees it, and what this
-/// person may do with it.
 /// What the person may do to a collection, from its title in the host list:
 /// what the palette offers for it, and a new host in it.
 fn collection_menu(
@@ -344,26 +333,6 @@ fn collection_menu(
         });
     }
     items
-}
-
-fn collection_tip(c: &crate::look::CollectionHosts, org: Option<&str>) -> String {
-    let (name, what) = permission_text(&c.permission);
-    let shared = match org {
-        Some(org) => tr!(
-            "Shared in {org}: everybody granted it sees its hosts, end-to-end encrypted.",
-            org = org
-        ),
-        None => tr!(
-            "Shared in an organization: everybody granted it sees its hosts, end-to-end encrypted."
-        ),
-    };
-    // "Manage · Edits, grants access and gives the key".
-    let yours = if c.waiting {
-        tr!("waiting for its key")
-    } else {
-        what
-    };
-    format!("{shared}\n{name} · {yours}")
 }
 
 /// A snippet on its way to running.
@@ -423,6 +392,11 @@ impl Workspace {
             }
         })
         .detach();
+        // Named as the server last did, until it is asked again.
+        let orgs = live
+            .store()
+            .map(|s| s.orgs().into_iter().collect())
+            .unwrap_or_default();
         let mut ws = Workspace {
             focus: cx.focus_handle(),
             tabs: vec![],
@@ -470,7 +444,8 @@ impl Workspace {
             asking: None,
             editor: None,
             group_editor: None,
-            orgs: vec![],
+            orgs,
+            orgs_asked: false,
             import: None,
             last_import: None,
             settings: None,
@@ -3975,7 +3950,7 @@ impl Workspace {
             .iter()
             .enumerate()
             .map(|(i, g)| {
-                let (permission, _) = permission_text(&g.permission);
+                let (permission, _) = shellwing_core::collections::permission_words(&g.permission);
                 let detail = if g.group_id.is_empty() {
                     permission
                 } else {
@@ -4117,7 +4092,7 @@ impl Workspace {
         let mut entries: Vec<Entry> = ["connect", "edit", "manage"]
             .into_iter()
             .map(|p| {
-                let (name, detail) = permission_text(p);
+                let (name, detail) = shellwing_core::collections::permission_words(p);
                 let detail = if p == who.permission {
                     tr!("{detail} · now", detail = detail)
                 } else {
@@ -4172,7 +4147,10 @@ impl Workspace {
         let job = cx.background_spawn(async move {
             shellwing_remote::server::Server::open(&url, &token)?.set_grants(&collection, &grants)
         });
-        let (who, permission) = (who.name(), permission_text(choice).0);
+        let (who, permission) = (
+            who.name(),
+            shellwing_core::collections::permission_words(choice).0,
+        );
         cx.spawn(async move |this, cx| {
             let saved = job.await;
             let _ = this.update(cx, |ws, cx| match saved {
@@ -4302,7 +4280,15 @@ impl Workspace {
     /// The organizations the server listed (ids and names), for the editors
     /// open now and those opened later.
     pub fn know_orgs(&mut self, orgs: Vec<(String, String)>, cx: &mut Context<Self>) {
+        if let Some(store) = self.live.store() {
+            // Only a cache: named again next time it is reached.
+            let _ = store.keep_orgs(&orgs.iter().cloned().collect());
+        }
+        let changed = self.orgs != orgs;
         self.orgs = orgs.clone();
+        if changed {
+            self.refresh_sidebar(cx);
+        }
         if let Some((e, _)) = &self.group_editor {
             e.update(cx, |e, cx| e.set_orgs(orgs.clone(), cx));
         }
@@ -6307,8 +6293,10 @@ impl Workspace {
                 heading,
                 shared: Some(crate::sidebar::Shared {
                     id: c.id.clone(),
-                    permission: permission_text(&c.permission).0.into(),
-                    tip: collection_tip(c, org.as_deref()).into(),
+                    permission: shellwing_core::collections::permission_words(&c.permission)
+                        .0
+                        .into(),
+                    tip: shellwing_core::collections::who_sees(c, org.as_deref()).into(),
                     menu: collection_menu(c, checklists.contains(&c.id)),
                 }),
                 rows,
@@ -6330,6 +6318,11 @@ impl Workspace {
         // The collections the vault knows, once it is open.
         if !self.collections_loaded {
             self.load_collections();
+        }
+        // The organizations' names, for the headings of their collections.
+        if !self.orgs_asked && !self.live.collections().is_empty() {
+            self.orgs_asked = true;
+            self.fetch_orgs(cx);
         }
         self.refresh_overview(cx);
         let sections = self.sidebar_sections(cx);
