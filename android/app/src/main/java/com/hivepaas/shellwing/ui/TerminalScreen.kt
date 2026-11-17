@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -244,6 +245,14 @@ fun TerminalScreen(
             session.notice?.let { said ->
                 Bar(said, Dusk.surface, Dusk.text) { TextButton(onClick = { session.notice = null }) { Text(tr("OK")) } }
             }
+            if (session.heldBack.isNotEmpty()) {
+                HeldBackBar(session) {
+                    val core = model.core ?: return@HeldBackBar
+                    runCatching { session.allowHeldBack(core) }.onFailure {
+                        session.notice = tr("Not allowed: {e}", "e" to it.said())
+                    }
+                }
+            }
             session.offer?.let { offer ->
                 Bar(tr("Save {offer} in the vault? It is tried first next time.", "offer" to offer), Color(0xff3a2a14), Color(0xfffde68a)) {
                     TextButton(onClick = { session.dismissOffer() }) { Text(tr("Not now"), color = Color(0xfffde68a)) }
@@ -370,6 +379,33 @@ private fun Badges(session: SessionModel, onPlaced: (keep: Boolean, path: String
                 label = { Text("ENV ${e.name}", fontFamily = FontFamily.Monospace, fontSize = 12.sp) },
                 trailingIcon = { Icon(Icons.Filled.Close, tr("Unload {name}", "name" to e.name), modifier = Modifier.size(16.dp)) },
             )
+        }
+    }
+}
+
+/**
+ * What a collection's hosts asked to do, which the connection went without:
+ * set by whoever may edit the collection, so it is read before it is allowed.
+ */
+@Composable
+private fun HeldBackBar(session: SessionModel, onAllow: () -> Unit) {
+    val (background, color) = Color(0xff3a2a14) to Color(0xfffde68a)
+    Column(
+        Modifier.fillMaxWidth().background(background).padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 6.dp),
+    ) {
+        Text(
+            tr("Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them."),
+            color = color, fontSize = 14.sp,
+        )
+        for (h in session.heldBack) {
+            Text(h.name, color = color, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+            for (item in h.items) {
+                Text("• $item", color = Dusk.soft, fontSize = 13.sp, modifier = Modifier.padding(start = 10.dp))
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = { session.dismissHeldBack() }) { Text(tr("Not now"), color = color) }
+            OutlinedButton(onClick = onAllow) { Text(tr("Allow and reconnect"), color = color) }
         }
     }
 }

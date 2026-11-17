@@ -5076,6 +5076,9 @@ t3ef97d99 = { $path } fica quando a sessão terminar.
 # {path} taken away.
 tb65f4b23 = { $path } retirado.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = Conectado sem o que estes servidores da coleção de uma organização pedem. Quem pode editar a coleção define isso, e age neste dispositivo: permita só se confiar nessas pessoas.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = Salvar { $offer } no cofre? Na próxima vez, ela é tentada primeiro.
 

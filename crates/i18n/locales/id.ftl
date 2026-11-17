@@ -5020,6 +5020,9 @@ t3ef97d99 = { $path } tetap ada saat sesi berakhir.
 # {path} taken away.
 tb65f4b23 = { $path } dihapus.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = Terhubung tanpa yang diminta host-host dari koleksi organisasi ini. Pengaturannya dibuat oleh siapa pun yang boleh mengedit koleksi, dan berlaku di perangkat ini: izinkan hanya jika Anda memercayai mereka.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = Simpan { $offer } di brankas? Ini akan dicoba lebih dulu lain kali.
 

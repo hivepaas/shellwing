@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hivepaas.shellwing.core.FrameData
+import com.hivepaas.shellwing.core.HeldBack
 import com.hivepaas.shellwing.core.Key
 import com.hivepaas.shellwing.core.LoadedEnvRow
 import com.hivepaas.shellwing.core.MobileSession
@@ -14,6 +15,7 @@ import com.hivepaas.shellwing.core.Retrying
 import com.hivepaas.shellwing.core.Selecting
 import com.hivepaas.shellwing.core.SessionListener
 import com.hivepaas.shellwing.core.SessionStatus
+import com.hivepaas.shellwing.core.Shellwing
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -37,6 +39,9 @@ class SessionModel(val spec: String) : SessionListener {
         private set
     /** A password that worked, offered to keep: `the password for deploy@web-1`. */
     var offer by mutableStateOf<String?>(null)
+        private set
+    /** What a collection's hosts on the way asked, which it connected without. */
+    var heldBack by mutableStateOf<List<HeldBack>>(emptyList())
         private set
     /** Something said once: an environment loaded, a load given up. */
     var notice by mutableStateOf<String?>(null)
@@ -84,6 +89,7 @@ class SessionModel(val spec: String) : SessionListener {
         session.title().let { if (it != title) title = it }
         session.ended().let { if (it != ended) ended = it }
         session.offer().let { if (it != offer) offer = it }
+        session.heldBack().let { if (it != heldBack) heldBack = it }
         session.notice()?.let { notice = it }
         session.copied()?.let { copied = it }
         session.loadedEnvs().let { if (it != envs) envs = it }
@@ -163,6 +169,20 @@ class SessionModel(val spec: String) : SessionListener {
     fun dismissOffer() {
         handle?.dismissOffer()
         offer = null
+    }
+
+    /** Not now: it stays connected without what was held back. */
+    fun dismissHeldBack() {
+        handle?.dismissHeldBack()
+        heldBack = emptyList()
+    }
+
+    /** Allows what was held back, on this phone, and connects again with it. */
+    fun allowHeldBack(core: Shellwing) {
+        val h = handle ?: return
+        heldBack = emptyList()
+        core.allowHeldBack(h)
+        heldBack = h.heldBack()
     }
 
     val isLive get() = status == SessionStatus.CONNECTED || status == SessionStatus.CONNECTING

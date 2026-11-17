@@ -5020,6 +5020,9 @@ t3ef97d99 = 工作階段結束後 { $path } 仍會保留。
 # {path} taken away.
 tb65f4b23 = 已移除 { $path }。
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = 已連線，但未採用組織集合中這些主機所要求的設定。這些設定由可編輯該集合的人設定，並會在這台裝置上生效：僅在你信任他們時才允許。
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = 要將 { $offer } 儲存到保險庫嗎？下次會優先嘗試它。
 

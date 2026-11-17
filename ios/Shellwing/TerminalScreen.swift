@@ -26,6 +26,7 @@ struct TerminalScreen: View {
                     VStack(spacing: 0) {
                         if let said { note(said) }
                         if let offer = model.offer { offerBar(offer) }
+                        if !model.heldBack.isEmpty { heldBackBar }
                     }
                 }
             // Below the terminal, not over it: its last lines say why the
@@ -245,6 +246,53 @@ struct TerminalScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
             .background(Dusk.raised.opacity(0.97))
+    }
+
+    /// What a collection's hosts asked to do, which the connection went
+    /// without: set by whoever may edit the collection, so it is read before
+    /// it is allowed.
+    private var heldBackBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(tr("Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them."))
+                .font(.system(size: 13))
+                .foregroundStyle(Dusk.text)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(model.heldBack, id: \.name) { h in
+                    Text(h.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(Dusk.text)
+                    ForEach(h.items, id: \.self) { item in
+                        Text("• \(item)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Dusk.muted)
+                            .padding(.leading, 10)
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                Spacer()
+                Button(tr("Not now")) { model.dismissHeldBack() }
+                    .font(.system(size: 14))
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(Dusk.button, in: Capsule())
+                    .foregroundStyle(Dusk.text)
+                Button(tr("Allow and reconnect")) {
+                    guard let core = app.core else { return }
+                    do {
+                        try model.allowHeldBack(core)
+                    } catch {
+                        show(tr("Not allowed: {e}", ["e": "\(error)"]))
+                    }
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .overlay(Capsule().stroke(Dusk.amber, lineWidth: 1))
+                .foregroundStyle(Dusk.amber)
+            }
+        }
+        .padding(12)
+        .background(Dusk.raised.opacity(0.97))
+        .overlay(alignment: .top) { Dusk.amber.frame(height: 1) }
     }
 
     /// A password that worked, offered to keep in the vault.

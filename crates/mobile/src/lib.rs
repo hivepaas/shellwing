@@ -37,8 +37,8 @@ pub use library::{
 pub use markdown::{MdAlert, MdAlign, MdBlock, MdCell, MdKind, MdRow, MdSpan};
 pub use md_edit::{MdEdit, MdImageLine, MdLines, MdRole, MdRun, MdTable, MdWrap};
 pub use session::{
-    FrameData, Key, LoadedEnvRow, MobileSession, Retrying, RowData, RunData, SessionListener,
-    SessionStatus,
+    FrameData, HeldBack, Key, LoadedEnvRow, MobileSession, Retrying, RowData, RunData,
+    SessionListener, SessionStatus,
 };
 pub use settings::{HostKeyWay, KnownHostRow, OnDisconnectWay, SettingsRow, ThemeRow};
 pub use sync::{Connected, JoinRequest, Pairing, Place, SyncListener, SyncStatus};
@@ -642,20 +642,7 @@ impl Shellwing {
         listener: Arc<dyn SessionListener>,
     ) -> Result<Arc<MobileSession>, MobileError> {
         let settings = self.store.settings().unwrap_or_default();
-        // A collection's host goes by its id.
-        let hosts = shellwing_core::collections::merged(
-            &self.hosts().unwrap_or_default(),
-            &self.collections_held(),
-        );
-        // A collection's hosts on the way connect without what they ask
-        // (ProxyCommand, forwards, the agent…): others wrote it, and the
-        // phones have no way to allow it yet.
-        let hosts =
-            match shellwing_core::collections::unless_allowed(&hosts, &spec, &self.store.allowed())
-            {
-                Some((held, _)) => held,
-                None => hosts,
-            };
+        let (hosts, held) = self.hosts_to_connect(&spec, &self.collections_held());
         let target = shellwing_core::target::resolve(&spec, &hosts, None);
         let session = Session::start(
             &spec,
@@ -676,16 +663,57 @@ impl Shellwing {
                 .or_else(|| hosts.group_of(h).and_then(|g| g.theme.clone()))
         });
         session.term.set_colors(self.colors(theme.as_deref()));
-        Ok(MobileSession::new(
-            session,
-            listener,
-            self.rt.handle(),
-            self.store.clone(),
-        ))
+        let session = MobileSession::new(session, listener, self.rt.handle(), self.store.clone());
+        session.hold_back(held);
+        Ok(session)
+    }
+
+    /// Allows what `session`'s collection hosts asked, which it connected
+    /// without (`MobileSession::held_back`), and connects it again with
+    /// them. On this phone only, until a host's settings change.
+    pub fn allow_held_back(&self, session: Arc<MobileSession>) -> Result<(), MobileError> {
+        self.allow_held_back_in(&session, &self.collections_held())
     }
 }
 
 impl Shellwing {
+    /// The hosts to connect to `spec` with: hosts.toml's and the
+    /// collections' (theirs by their ids). A collection's hosts on the way
+    /// go without what they ask (ProxyCommand, forwards, the agent…) until
+    /// the person allows it here: others wrote it. Gives those held back.
+    fn hosts_to_connect(
+        &self,
+        spec: &str,
+        collections: &[shellwing_core::collections::CollectionHosts],
+    ) -> (Hosts, Vec<shellwing_core::collections::Unallowed>) {
+        let hosts =
+            shellwing_core::collections::merged(&self.hosts().unwrap_or_default(), collections);
+        match shellwing_core::collections::unless_allowed(&hosts, spec, &self.store.allowed()) {
+            Some((held, which)) => (held, which),
+            None => (hosts, vec![]),
+        }
+    }
+
+    fn allow_held_back_in(
+        &self,
+        session: &MobileSession,
+        collections: &[shellwing_core::collections::CollectionHosts],
+    ) -> Result<(), MobileError> {
+        for (id, fingerprint) in session.take_held() {
+            self.store
+                .allow(&id, &fingerprint)
+                .map_err(MobileError::of)?;
+        }
+        // What is still held back: changed since, say.
+        let spec = session.spec();
+        let (hosts, held) = self.hosts_to_connect(&spec, collections);
+        let (resolved, entry) =
+            shellwing_core::target::resolve(&spec, &hosts, None).map_err(MobileError::of)?;
+        session.retarget(resolved, entry.and_then(|h| h.run));
+        session.hold_back(held);
+        Ok(())
+    }
+
     /// hosts.toml's: what the editors change.
     fn hosts(&self) -> Result<Hosts, MobileError> {
         self.store.hosts().map_err(MobileError::of)
@@ -1310,6 +1338,52 @@ mod tests {
 
     impl SessionListener for Quiet {
         fn changed(&self) {}
+    }
+
+    /// A collection's host that asks for a command run once connected and
+    /// the agent connects without them, and says so; allowed, it connects
+    /// again with them, and is not held back again until they change.
+    #[test]
+    fn a_collections_host_is_held_back_until_allowed() {
+        use shellwing_core::collections::CollectionHosts;
+        let (dir, app) = store_with(
+            "[[host]]\nname = \"theirs\"\naddress = \"127.0.0.1\"\nport = 1\n\
+             run = \"uptime\"\nforward_agent = true\n",
+        );
+        let mut theirs = app.hosts().expect("hosts").hosts.remove(0);
+        theirs.id = Some("h1".into());
+        theirs.collection = Some("col1".into());
+        let mut collections = vec![CollectionHosts {
+            id: "col1".into(),
+            name: "Production".into(),
+            org_id: "org1".into(),
+            permission: "edit".into(),
+            waiting: false,
+            hosts: vec![theirs],
+        }];
+
+        let (hosts, held) = app.hosts_to_connect("h1", &collections);
+        assert_eq!(held.len(), 1);
+        assert_eq!(held[0].asks.items.len(), 2, "{:?}", held[0].asks.items);
+        let h = hosts.find("h1").expect("h1");
+        assert!(h.run.is_none() && !h.forward_agent, "connects without them");
+
+        let s = app.open("h1".into(), Arc::new(Quiet)).expect("open");
+        s.hold_back(held);
+        assert_eq!(s.held_back()[0].name, "theirs");
+        app.allow_held_back_in(&s, &collections).expect("allow");
+        assert!(s.held_back().is_empty());
+        assert!(app.store.allowed().contains_key("h1"));
+        assert!(
+            app.hosts_to_connect("h1", &collections).1.is_empty(),
+            "allowed"
+        );
+
+        // Changed by whoever edits the collection: asked again.
+        collections[0].hosts[0].run = Some("rm -rf ~".into());
+        assert_eq!(app.hosts_to_connect("h1", &collections).1.len(), 1);
+        drop(s);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     /// The phone's terminal size reaches the shell on the host, as the

@@ -4933,6 +4933,9 @@ t3ef97d99 = 会话结束后 { $path } 仍会保留。
 # {path} taken away.
 tb65f4b23 = 已移除 { $path }。
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = 已连接，但未采用组织集合中这些主机所要求的设置。这些设置由可编辑该集合的人设定，并会在这台设备上生效：仅在你信任他们时才允许。
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = 将 { $offer } 保存到保险库？下次会先尝试它。
 

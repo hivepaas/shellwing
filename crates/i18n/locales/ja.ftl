@@ -4933,6 +4933,9 @@ t3ef97d99 = { $path } はセッション終了後も残ります。
 # {path} taken away.
 tb65f4b23 = { $path } を削除しました。
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = 組織のコレクションにあるこれらのホストが求める設定なしで接続しました。設定はコレクションを編集できる人が行い、このデバイス上で動作します。その人たちを信頼できる場合にのみ許可してください。
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = { $offer } を保管庫に保存しますか？次回は最初に試します。
 

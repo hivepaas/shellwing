@@ -4933,6 +4933,9 @@ t3ef97d99 = { $path } vẫn ở đó khi phiên kết thúc.
 # {path} taken away.
 tb65f4b23 = Đã gỡ { $path }.
 
+# Connected without what these hosts of an organization's collection ask. Whoever may edit the collection sets it, and it acts on this device: allow it only if you trust them.
+t5e57676a = Đã kết nối mà không dùng những gì các máy chủ này trong bộ sưu tập của tổ chức yêu cầu. Người có quyền sửa bộ sưu tập đặt chúng, và chúng chạy trên thiết bị này: chỉ cho phép nếu bạn tin họ.
+
 # Save {offer} in the vault? It is tried first next time.
 t3fd5ca20 = Lưu { $offer } vào kho? Lần sau sẽ được thử trước tiên.
 
