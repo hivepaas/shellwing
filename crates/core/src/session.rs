@@ -690,12 +690,6 @@ impl Session {
                 Box::new(move |ended| {
                     // The ports are closed now.
                     drop(held);
-                    // One given up on ends after the next began: that one's
-                    // input, status and terminal are not its own.
-                    if end_state.lock().is_ok_and(|s| s.attempt != attempt) {
-                        return;
-                    }
-                    end_writer.stop();
                     let (status, why) = match ended {
                         Ended::Closed {
                             exit_status: Some(s),
@@ -705,12 +699,30 @@ impl Session {
                         }
                         Ended::Error(e) => (Status::Lost, format!("connection lost: {e}")),
                     };
-                    if status == Status::Lost {
-                        failure(&end_term, &why);
-                    } else {
-                        status_line(&end_term, &why);
+                    // One given up on ends after the next began: that one's
+                    // input, status and terminal are not its own. Checked and
+                    // acted on under the lock, so the next cannot begin in
+                    // between (a restart's end comes on another thread): its
+                    // input stopped, or its status said closed, the next one
+                    // would take its password's Enter for "connect again".
+                    {
+                        let Ok(mut st) = end_state.lock() else {
+                            return;
+                        };
+                        if st.attempt != attempt {
+                            return;
+                        }
+                        end_writer.stop();
+                        if status == Status::Lost {
+                            failure(&end_term, &why);
+                        } else {
+                            status_line(&end_term, &why);
+                        }
+                        st.status = Some(status);
+                        st.changes += 1;
+                        st.ended = Some(why);
                     }
-                    set_status(&end_state, &end_wake, status, Some(why));
+                    let _ = end_wake.try_send(());
                     let _ = done_tx.send(());
                 }),
             )
