@@ -345,7 +345,7 @@ impl Workspace {
                 shellwing_vault::MemoryKeys::default(),
             ),
             #[cfg(not(test))]
-            Some(store) => VaultSlot::open(store.dir().join("vault.db")),
+            Some(store) => VaultSlot::open(store.dir().join("vault.db"), &store.keychain_service()),
             None => VaultSlot::none(),
         };
         let (sync_tx, sync_rx) = async_channel::unbounded();

@@ -174,6 +174,23 @@ impl Store {
         if let Some(d) = std::env::var_os("SHELLWING_CONFIG_DIR").filter(|d| !d.is_empty()) {
             return Some(d.into());
         }
+        Self::platform_dir()
+    }
+
+    /// The keychain service that holds this directory's vault key: `shellwing`
+    /// for the platform's directory, and one naming the directory for any
+    /// other, so a second app (`$SHELLWING_CONFIG_DIR`) never replaces the
+    /// first one's key.
+    pub fn keychain_service(&self) -> String {
+        if Self::platform_dir().is_some_and(|d| d == self.dir) {
+            "shellwing".into()
+        } else {
+            format!("shellwing {}", self.dir.display())
+        }
+    }
+
+    /// The platform's config directory plus `shellwing`.
+    fn platform_dir() -> Option<PathBuf> {
         let home = std::env::home_dir();
         let base = if cfg!(target_os = "windows") {
             std::env::var_os("APPDATA").map(PathBuf::from)
@@ -993,5 +1010,17 @@ mod tests {
         assert_eq!((read.hosts.len(), read.groups.len()), (1, 0));
         let text = fs::read_to_string(store.dir().join(HOSTS)).expect("read");
         assert!(text.contains("# the front"), "{text}");
+    }
+
+    #[test]
+    fn a_vault_elsewhere_keeps_its_key_under_its_own_name() {
+        if let Some(usual) = Store::platform_dir() {
+            assert_eq!(Store::new(usual).keychain_service(), "shellwing");
+        }
+        let other = std::env::temp_dir().join("shellwing-second");
+        assert_eq!(
+            Store::new(&other).keychain_service(),
+            format!("shellwing {}", other.display())
+        );
     }
 }

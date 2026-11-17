@@ -33,6 +33,14 @@ impl Default for OsKeychain {
 
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 impl OsKeychain {
+    /// The key under `service` instead of `shellwing`: a vault elsewhere than
+    /// the usual one keeps its own.
+    pub fn named(service: impl Into<String>) -> Self {
+        OsKeychain {
+            service: service.into(),
+        }
+    }
+
     fn entry(&self) -> Result<keyring::Entry, String> {
         keyring::Entry::new(&self.service, "vault account key").map_err(|e| e.to_string())
     }

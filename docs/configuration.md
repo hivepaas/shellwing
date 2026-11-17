@@ -8,7 +8,9 @@ shellwing reads TOML files from its config directory:
 | macOS | `~/Library/Application Support/shellwing` |
 | Windows | `%APPDATA%\shellwing` |
 
-`$SHELLWING_CONFIG_DIR` points it somewhere else.
+`$SHELLWING_CONFIG_DIR` points it somewhere else. The vault there keeps its
+key in the keychain under its own name (`shellwing <directory>`), so a second
+app run this way, to try something, never replaces the usual one's key.
 
 How the files behave:
 
