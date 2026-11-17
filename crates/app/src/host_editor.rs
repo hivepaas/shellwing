@@ -533,6 +533,21 @@ impl HostEditor {
             self.save_problem = None;
             return cx.notify();
         };
+        if let Some(original) = &self.original
+            && original.collection != host.collection
+        {
+            return match self.moved(original, host) {
+                Ok(name) => cx.emit(EditorEvent::Saved {
+                    name,
+                    connect,
+                    install,
+                }),
+                Err(e) => {
+                    self.save_problem = Some(e);
+                    cx.notify();
+                }
+            };
+        }
         if host.collection.is_some() {
             return self.save_in_collection(host, connect, install, cx);
         }
@@ -551,6 +566,51 @@ impl HostEditor {
                 cx.notify();
             }
         }
+    }
+
+    /// Saves `host` where it now goes and deletes `original` where it was:
+    /// a record lives in one space, so a move is a copy, then a delete. Its
+    /// saved password stays the person's own, found by `user@host[:port]`
+    /// wherever the host is. Gives what the host list opens it by.
+    fn moved(&self, original: &Host, mut host: Host) -> Result<String, String> {
+        let vault = || {
+            self.ctx
+                .vault
+                .get()
+                .ok_or_else(|| tr!("the vault is not open"))
+        };
+        let store = || {
+            self.ctx
+                .store
+                .as_ref()
+                .ok_or_else(|| tr!("There is no config directory to save in."))
+        };
+        // Checked first, so nothing is copied that cannot then be deleted.
+        let from = match &original.collection {
+            Some(_) => Some(self.writable_collection(original)?),
+            None => None,
+        };
+        host.id = None;
+        let opened_by = match &host.collection {
+            Some(_) => {
+                let c = self.writable_collection(&host)?;
+                let v = vault()?;
+                shellwing_core::collections::save_host(&v, &c, host.clone())?
+            }
+            None => {
+                store()?.save_host(&host).map_err(|e| e.to_string())?;
+                host.name.clone()
+            }
+        };
+        match (&original.id, from) {
+            (Some(id), Some(c)) => {
+                let v = vault()?;
+                shellwing_core::collections::delete_host(&v, &c, id)?
+            }
+            (Some(id), None) => store()?.delete_host(id).map_err(|e| e.to_string())?,
+            (None, _) => return Err(tr!("This host cannot be found in hosts.toml.")),
+        }
+        Ok(opened_by)
     }
 
     /// The collection a host is in, if the person may change its hosts; else
@@ -1556,6 +1616,22 @@ impl Render for HostEditor {
                         ),
                 );
             }
+            // The vault's keys are the person's own: the others with access
+            // to the collection have no such key.
+            if key_text.starts_with(crate::target::VAULT_KEY)
+                && let Some(name) = self
+                    .collection
+                    .as_ref()
+                    .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                    .map(|c| c.name.clone())
+            {
+                sign_in = sign_in.child(
+                    div().debug_selector(|| "vault-key-shared".into()).child(problem_text(&tr!(
+                        "This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.",
+                        name = name
+                    ))),
+                );
+            }
             if let Some((_, p)) = self.problems.iter().find(|(f, _)| *f == Field::Key) {
                 sign_in = sign_in.child(problem_text(p));
             }
@@ -1777,8 +1853,9 @@ impl Render for HostEditor {
             })
             .unwrap_or_else(|| tr!("Same as the app"));
         let mut organize = section(&tr!("Organize"));
-        // A new host goes in hosts.toml or a collection; one saved stays where
-        // it is.
+        // A host goes in hosts.toml or a collection the person may change;
+        // one saved moves when another is chosen, if it may be taken out of
+        // where it is.
         let places: Vec<(Option<String>, String)> = self
             .ctx
             .collections
@@ -1786,7 +1863,20 @@ impl Render for HostEditor {
             .filter(|c| c.edits() && !c.waiting)
             .map(|c| (Some(c.id.clone()), c.name.clone()))
             .collect();
-        if self.original.is_none() && !places.is_empty() {
+        let collection_name = |id: &Option<String>| {
+            id.as_ref()
+                .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                .map(|c| c.name.clone())
+        };
+        let movable = match self.original.as_ref().and_then(|o| o.collection.as_ref()) {
+            Some(id) => self
+                .ctx
+                .collections
+                .iter()
+                .any(|c| &c.id == id && c.edits()),
+            None => true,
+        };
+        if movable && !places.is_empty() {
             let place_label = self
                 .collection
                 .as_ref()
@@ -1810,6 +1900,29 @@ impl Render for HostEditor {
             } else {
                 tr!("Only you see it, on your devices.")
             }));
+            // Another place than where it is: saving moves it.
+            if let Some(o) = &self.original
+                && o.collection != self.collection
+            {
+                let place =
+                    |id: &Option<String>| collection_name(id).unwrap_or_else(|| tr!("My hosts"));
+                organize = organize.child(
+                    div()
+                        .debug_selector(|| "move-note".into())
+                        .child(hint_text(&match &o.collection {
+                            Some(_) => tr!(
+                                "Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.",
+                                from = place(&o.collection),
+                                to = place(&self.collection)
+                            ),
+                            None => tr!(
+                                "Saving moves it from {from} to {to}.",
+                                from = place(&o.collection),
+                                to = place(&self.collection)
+                            ),
+                        })),
+                );
+            }
         } else if let Some(c) = self
             .collection
             .as_ref()
@@ -1820,9 +1933,20 @@ impl Render for HostEditor {
                 name = c.name.clone()
             )));
         }
+        // A collection's hosts are in no group, and nobody's favorite: those
+        // are the person's own, in hosts.toml.
+        let own = self.collection.is_none();
         organize = organize.child(
             row()
-                .child(self.select("group-select", &tr!("Group"), group_label, Menu::Group, cx))
+                .when(own, |r| {
+                    r.child(self.select(
+                        "group-select",
+                        &tr!("Group"),
+                        group_label,
+                        Menu::Group,
+                        cx,
+                    ))
+                })
                 .child(
                     div()
                         .flex()
@@ -1926,21 +2050,23 @@ impl Render for HostEditor {
         }
         swatches =
             swatches.child(hint_text(&tr!("Shown on the tab and the pane border")).ml(px(8.)));
-        organize = organize.child(swatches).child(
-            div()
-                .id("favorite")
-                .debug_selector(|| "favorite".into())
-                .flex()
-                .items_center()
-                .gap_2()
-                .cursor_pointer()
-                .on_click(cx.listener(|e, _, _, cx| {
-                    e.favorite = !e.favorite;
-                    cx.notify();
-                }))
-                .child(checkbox(self.favorite))
-                .child(label_text(&tr!("Favorite: listed first in the host list"))),
-        );
+        organize = organize.child(swatches).when(own, |o| {
+            o.child(
+                div()
+                    .id("favorite")
+                    .debug_selector(|| "favorite".into())
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .cursor_pointer()
+                    .on_click(cx.listener(|e, _, _, cx| {
+                        e.favorite = !e.favorite;
+                        cx.notify();
+                    }))
+                    .child(checkbox(self.favorite))
+                    .child(label_text(&tr!("Favorite: listed first in the host list"))),
+            )
+        });
 
         let mut terminal = section(&tr!("Terminal")).child(row().child(self.select(
             "theme-select",
@@ -2129,11 +2255,21 @@ impl Render for HostEditor {
                 .items_center()
                 .gap_2()
                 .child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .text_size(ui(12.5))
-                        .child(tr!("Delete {title} from hosts.toml?", title = &title)),
+                    div().flex_1().min_w_0().text_size(ui(12.5)).child(
+                        match self
+                            .original
+                            .as_ref()
+                            .and_then(|o| o.collection.as_ref())
+                            .and_then(|id| self.ctx.collections.iter().find(|c| &c.id == id))
+                        {
+                            Some(c) => tr!(
+                                "Delete {title} for everybody with access to {collection}?",
+                                title = &title,
+                                collection = c.name.clone()
+                            ),
+                            None => tr!("Delete {title} from hosts.toml?", title = &title),
+                        },
+                    ),
                 )
                 .child(
                     text_button("delete-yes", &tr!("Delete"), colors().bad)
@@ -2198,7 +2334,8 @@ impl Render for HostEditor {
                     .child(sign_in)
                     .child(route)
                     .child(forwarding)
-                    .child(sync)
+                    // A collection's syncs to all with access, never kept here only.
+                    .when(self.collection.is_none(), |b| b.child(sync))
                     .child(organize)
                     .child(terminal)
                     .child(advanced),

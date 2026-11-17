@@ -286,13 +286,6 @@ impl Session {
                     Some(shellwing_config::SyncPlace::Server(s)) => Some(s.url),
                     _ => None,
                 },
-                collection: match &opens {
-                    Opens::Host(t) => (**t)
-                        .as_ref()
-                        .ok()
-                        .and_then(|(_, h)| h.as_ref()?.collection.clone()),
-                    Opens::Local(_) => None,
-                },
             }),
             vault,
             held: Weak::new(),

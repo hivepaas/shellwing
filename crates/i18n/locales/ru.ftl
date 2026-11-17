@@ -379,14 +379,14 @@ t97a4b927 = хранилище не открыто
 # No key made: {e}
 t4e14e42b = Ключ не создан: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Этот хост не найден в hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Вы можете подключаться к хостам { $name }, но не изменять их.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = Коллекция этого хоста здесь больше не синхронизируется.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Этот хост не найден в hosts.toml.
 
 # {name} copy
 t0d616a81 = { $name } копия
@@ -478,6 +478,9 @@ t7ecf0d6d = { $name } — новый ключ: на { $host } его ещё не
 # Save and install on {host}
 t1707b1d3 = Сохранить и установить на { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Этот ключ хранится в вашем собственном хранилище: остальные, у кого есть доступ к { $name }, не смогут войти с ним. Выберите файл ключа, который у них есть, пароль или сертификаты организации.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Пробует агент, затем ваши ключи в ~/.ssh и хранилище, затем запрашивает пароль, как ssh.
 
@@ -558,6 +561,12 @@ t4152ce3a = Его видят все, у кого есть доступ к ко�
 
 # Only you see it, on your devices.
 t6f22a0a3 = Его видите только вы, на своих устройствах.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = При сохранении он переместится из { $from } в { $to } и будет удалён у всех, у кого есть доступ к { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = При сохранении он переместится из { $from } в { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = В коллекции { $name }: его видят все, у кого есть к ней доступ.
@@ -669,6 +678,9 @@ t07477a92 = Позволяет программам на хосте открыв
 
 # Some fields need a look.
 teaa35f1a = Проверьте некоторые поля.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Удалить { $title } для всех, у кого есть доступ к коллекции { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Удалить { $title } из hosts.toml?
@@ -4602,9 +4614,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Без цвета
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Удалить { $title } для всех, у кого есть доступ к коллекции { $collection }?
 
 # as the server says
 ta204abe7 = как скажет сервер

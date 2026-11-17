@@ -361,14 +361,14 @@ t97a4b927 = 保险库未打开
 # No key made: {e}
 t4e14e42b = 未生成密钥：{ $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = 在 hosts.toml 中找不到此主机。
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = 你可以连接 { $name } 中的主机，但不能更改它们。
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = 此主机所属的集合已不再在此同步。
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = 在 hosts.toml 中找不到此主机。
 
 # {name} copy
 t0d616a81 = { $name } 副本
@@ -460,6 +460,9 @@ t7ecf0d6d = { $name } 是新密钥：{ $host } 上还没有它。保存并安装
 # Save and install on {host}
 t1707b1d3 = 保存并安装到 { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = 此密钥在你自己的保险库中：有权访问 { $name } 的其他人无法用它登录。请选择他们拥有的密钥文件、密码或组织的证书。
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = 先尝试代理，再尝试 ~/.ssh 和保险库中的密钥，最后询问密码，与 ssh 相同。
 
@@ -540,6 +543,12 @@ t4152ce3a = 有权访问该集合的所有人都能看到，端到端加密。
 
 # Only you see it, on your devices.
 t6f22a0a3 = 只有你能看到，仅在你的设备上。
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = 保存后会从 { $from } 移到 { $to }：有权访问 { $from } 的所有人都将看不到它。
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = 保存后会从 { $from } 移到 { $to }。
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = 位于集合 { $name } 中：有权访问它的所有人都能看到。
@@ -651,6 +660,9 @@ t07477a92 = 让主机上的程序在此处的 X 服务器打开窗口。不信�
 
 # Some fields need a look.
 teaa35f1a = 部分字段需要检查。
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = 为有权访问 { $collection } 的所有人删除 { $title }？
 
 # Delete {title} from hosts.toml?
 t596a83da = 从 hosts.toml 中删除 { $title }？
@@ -4356,9 +4368,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 无颜色
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = 为有权访问 { $collection } 的所有人删除 { $title }？
 
 # as the server says
 ta204abe7 = 由服务器决定

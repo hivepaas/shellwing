@@ -370,14 +370,14 @@ t97a4b927 = brankas tidak terbuka
 # No key made: {e}
 t4e14e42b = Kunci tidak dibuat: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Host ini tidak ditemukan di hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Anda boleh terhubung ke host { $name }, tetapi tidak mengubahnya.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = Koleksi host ini tidak lagi disinkronkan di sini.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Host ini tidak ditemukan di hosts.toml.
 
 # {name} copy
 t0d616a81 = Salinan { $name }
@@ -469,6 +469,9 @@ t7ecf0d6d = { $name } masih baru: { $host } belum memilikinya. Simpan dan pasang
 # Save and install on {host}
 t1707b1d3 = Simpan dan pasang di { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Kunci ini ada di brankas Anda sendiri: orang lain yang memiliki akses ke { $name } tidak dapat masuk dengannya. Pilih file kunci yang mereka miliki, kata sandi, atau sertifikat organisasi.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Mencoba agen, lalu kunci Anda di ~/.ssh dan brankas, lalu meminta kata sandi, seperti ssh.
 
@@ -549,6 +552,12 @@ t4152ce3a = Semua yang memiliki akses ke koleksi dapat melihatnya, terenkripsi e
 
 # Only you see it, on your devices.
 t6f22a0a3 = Hanya Anda yang melihatnya, di perangkat Anda.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Menyimpan akan memindahkannya dari { $from } ke { $to }: host ini dihapus untuk semua yang memiliki akses ke { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Menyimpan akan memindahkannya dari { $from } ke { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Di koleksi { $name }: semua yang memiliki akses ke koleksi itu dapat melihatnya.
@@ -660,6 +669,9 @@ t07477a92 = Mengizinkan program di host membuka jendela di sini, pada server X. 
 
 # Some fields need a look.
 teaa35f1a = Beberapa kolom perlu diperiksa.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Hapus { $title } untuk semua yang memiliki akses ke { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Hapus { $title } dari hosts.toml?
@@ -4443,9 +4455,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Tanpa warna
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Hapus { $title } untuk semua yang memiliki akses ke { $collection }?
 
 # as the server says
 ta204abe7 = sesuai server

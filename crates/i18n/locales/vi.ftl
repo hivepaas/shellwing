@@ -361,14 +361,14 @@ t97a4b927 = kho chưa mở
 # No key made: {e}
 t4e14e42b = Chưa tạo được khoá: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Không tìm thấy máy chủ này trong hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Bạn được kết nối tới các máy chủ của { $name }, nhưng không được sửa chúng.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = Bộ sưu tập của máy chủ này không còn được đồng bộ ở đây.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Không tìm thấy máy chủ này trong hosts.toml.
 
 # {name} copy
 t0d616a81 = { $name } bản sao
@@ -460,6 +460,9 @@ t7ecf0d6d = { $name } là khoá mới: { $host } chưa có nó. Lưu và cài đ
 # Save and install on {host}
 t1707b1d3 = Lưu và cài đặt lên { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Khoá này nằm trong kho riêng của bạn: những người khác có quyền truy cập { $name } không đăng nhập được bằng nó. Hãy chọn một tệp khoá họ có, một mật khẩu, hoặc chứng chỉ của tổ chức.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Thử agent, rồi các khoá trong ~/.ssh và trong kho, rồi hỏi mật khẩu, như ssh.
 
@@ -540,6 +543,12 @@ t4152ce3a = Mọi người có quyền truy cập bộ sưu tập đều thấy,
 
 # Only you see it, on your devices.
 t6f22a0a3 = Chỉ bạn thấy, trên thiết bị của bạn.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Lưu sẽ chuyển nó từ { $from } sang { $to }: nó bị xoá với mọi người có quyền truy cập { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Lưu sẽ chuyển nó từ { $from } sang { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Trong bộ sưu tập { $name }: mọi người có quyền truy cập đều thấy.
@@ -651,6 +660,9 @@ t07477a92 = Cho phép chương trình trên máy chủ mở cửa sổ tại đ�
 
 # Some fields need a look.
 teaa35f1a = Có vài trường cần xem lại.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Xoá { $title } cho mọi người có quyền truy cập { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Xoá { $title } khỏi hosts.toml?
@@ -4356,9 +4368,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Không màu
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Xoá { $title } cho mọi người có quyền truy cập { $collection }?
 
 # as the server says
 ta204abe7 = theo máy chủ

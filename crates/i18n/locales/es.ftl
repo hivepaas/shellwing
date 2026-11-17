@@ -373,14 +373,14 @@ t97a4b927 = la bóveda no está abierta
 # No key made: {e}
 t4e14e42b = No se creó la clave: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Este servidor no se encuentra en hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Puedes conectarte a los servidores de { $name }, pero no cambiarlos.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = La colección de este servidor ya no se sincroniza aquí.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Este servidor no se encuentra en hosts.toml.
 
 # {name} copy
 t0d616a81 = { $name } copia
@@ -472,6 +472,9 @@ t7ecf0d6d = { $name } es nueva: { $host } aún no la tiene. Al guardar e instala
 # Save and install on {host}
 t1707b1d3 = Guardar e instalar en { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Esta clave está en tu propia bóveda: las demás personas con acceso a { $name } no pueden iniciar sesión con ella. Elige un archivo de clave que tengan, una contraseña o los certificados de la organización.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Prueba el agente, luego tus claves en ~/.ssh y en la bóveda, y después pide una contraseña, como ssh.
 
@@ -552,6 +555,12 @@ t4152ce3a = Todas las personas con acceso a la colección lo ven, cifrado de ext
 
 # Only you see it, on your devices.
 t6f22a0a3 = Solo tú lo ves, en tus dispositivos.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Al guardar se mueve de { $from } a { $to }: se elimina para todas las personas con acceso a { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Al guardar se mueve de { $from } a { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = En la colección { $name }: todas las personas con acceso a ella lo ven.
@@ -663,6 +672,9 @@ t07477a92 = Permite que los programas del servidor abran ventanas aquí, en un s
 
 # Some fields need a look.
 teaa35f1a = Revisa algunos campos.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = ¿Eliminar { $title } para todas las personas con acceso a { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = ¿Eliminar { $title } de hosts.toml?
@@ -4496,9 +4508,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Sin color
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = ¿Eliminar { $title } para todas las personas con acceso a { $collection }?
 
 # as the server says
 ta204abe7 = el que indique el servidor

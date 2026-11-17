@@ -373,14 +373,14 @@ t97a4b927 = o cofre não está aberto
 # No key made: {e}
 t4e14e42b = Nenhuma chave criada: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Este servidor não foi encontrado em hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Você pode se conectar aos servidores de { $name }, mas não alterá-los.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = A coleção deste servidor não é mais sincronizada aqui.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Este servidor não foi encontrado em hosts.toml.
 
 # {name} copy
 t0d616a81 = cópia de { $name }
@@ -472,6 +472,9 @@ t7ecf0d6d = { $name } é nova: { $host } ainda não a tem. Salvar e instalar ent
 # Save and install on {host}
 t1707b1d3 = Salvar e instalar em { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Esta chave está no seu próprio cofre: os outros com acesso a { $name } não conseguem entrar com ela. Escolha um arquivo de chave que eles tenham, uma senha ou os certificados da organização.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Tenta o agente, depois suas chaves em ~/.ssh e no cofre, depois pede uma senha, como o ssh.
 
@@ -552,6 +555,12 @@ t4152ce3a = Todos com acesso à coleção o veem, com criptografia de ponta a po
 
 # Only you see it, on your devices.
 t6f22a0a3 = Só você o vê, nos seus dispositivos.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Salvar o move de { $from } para { $to }: ele é excluído para todos com acesso a { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Salvar o move de { $from } para { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Na coleção { $name }: todos com acesso a ela o veem.
@@ -663,6 +672,9 @@ t07477a92 = Permite que programas do servidor abram janelas aqui, em um servidor
 
 # Some fields need a look.
 teaa35f1a = Alguns campos precisam de atenção.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Excluir { $title } para todos com acesso a { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Excluir { $title } de hosts.toml?
@@ -4496,9 +4508,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Sem cor
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Excluir { $title } para todos com acesso a { $collection }?
 
 # as the server says
 ta204abe7 = como o servidor disser

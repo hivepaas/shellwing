@@ -373,14 +373,14 @@ t97a4b927 = la cassaforte non è aperta
 # No key made: {e}
 t4e14e42b = Nessuna chiave creata: { $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = Questo host non si trova in hosts.toml.
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = Puoi connetterti agli host di { $name }, ma non modificarli.
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = La raccolta di questo host non è più sincronizzata qui.
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = Questo host non si trova in hosts.toml.
 
 # {name} copy
 t0d616a81 = { $name } copia
@@ -472,6 +472,9 @@ t7ecf0d6d = La chiave { $name } è nuova: { $host } non ce l'ha ancora. Con Salv
 # Save and install on {host}
 t1707b1d3 = Salva e installa su { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = Questa chiave è nella tua cassaforte: gli altri con accesso a { $name } non possono accedere con essa. Scegli un file di chiave che hanno, una password o i certificati dell'organizzazione.
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = Prova l'agent, poi le tue chiavi in ~/.ssh e nella cassaforte, poi chiede una password, come ssh.
 
@@ -552,6 +555,12 @@ t4152ce3a = Chiunque abbia accesso alla raccolta lo vede, cifrato end-to-end.
 
 # Only you see it, on your devices.
 t6f22a0a3 = Solo tu lo vedi, sui tuoi dispositivi.
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = Salvando lo sposti da { $from } a { $to }: viene eliminato per chiunque abbia accesso a { $from }.
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = Salvando lo sposti da { $from } a { $to }.
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = Nella raccolta { $name }: chiunque vi abbia accesso lo vede.
@@ -663,6 +672,9 @@ t07477a92 = Consente ai programmi dell'host di aprire finestre qui, su un server
 
 # Some fields need a look.
 teaa35f1a = Alcuni campi vanno controllati.
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = Eliminare { $title } per chiunque abbia accesso a { $collection }?
 
 # Delete {title} from hosts.toml?
 t596a83da = Eliminare { $title } da hosts.toml?
@@ -4496,9 +4508,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = Nessun colore
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = Eliminare { $title } per chiunque abbia accesso a { $collection }?
 
 # as the server says
 ta204abe7 = come indica il server

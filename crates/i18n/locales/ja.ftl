@@ -361,14 +361,14 @@ t97a4b927 = 保管庫が開いていません
 # No key made: {e}
 t4e14e42b = 鍵を作成できませんでした：{ $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = このホストが hosts.toml に見つかりません。
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = { $name } のホストには接続できますが、変更はできません。
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = このホストのコレクションは、ここでは同期されなくなりました。
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = このホストが hosts.toml に見つかりません。
 
 # {name} copy
 t0d616a81 = { $name } のコピー
@@ -460,6 +460,9 @@ t7ecf0d6d = { $name } は新しい鍵で、{ $host } にはまだ登録されて
 # Save and install on {host}
 t1707b1d3 = 保存して { $host } にインストール
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = このキーはあなた自身の保管庫にあります。{ $name } にアクセスできる他のメンバーはこのキーでサインインできません。メンバーが持っているキーファイル、パスワード、または組織の証明書を選んでください。
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = ssh と同様に、エージェント、~/.ssh と保管庫の鍵を順に試し、最後にパスワードを尋ねます。
 
@@ -540,6 +543,12 @@ t4152ce3a = コレクションにアクセスできる全員に表示されま�
 
 # Only you see it, on your devices.
 t6f22a0a3 = あなたのデバイス上で、あなただけに表示されます。
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = 保存すると { $from } から { $to } に移動します。{ $from } にアクセスできる全員から削除されます。
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = 保存すると { $from } から { $to } に移動します。
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = コレクション { $name } 内：アクセスできる全員に表示されます。
@@ -651,6 +660,9 @@ t07477a92 = ホスト上のプログラムがここの X サーバーにウィ�
 
 # Some fields need a look.
 teaa35f1a = 確認が必要な項目があります。
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = { $collection } にアクセスできる全員に対して { $title } を削除しますか？
 
 # Delete {title} from hosts.toml?
 t596a83da = { $title } を hosts.toml から削除しますか？
@@ -4356,9 +4368,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 色なし
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = { $collection } にアクセスできる全員に対して { $title } を削除しますか？
 
 # as the server says
 ta204abe7 = サーバーの既定

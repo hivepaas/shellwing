@@ -370,14 +370,14 @@ t97a4b927 = 保險庫未開啟
 # No key made: {e}
 t4e14e42b = 未產生金鑰：{ $e }
 
+# This host cannot be found in hosts.toml.
+ta0e18527 = 在 hosts.toml 中找不到此主機。
+
 # You may connect to the hosts of {name}, not change them.
 t90a5554d = 你可以連線至 { $name } 中的主機，但不能變更它們。
 
 # This host's collection is no longer synced here.
 tdd3d6aa3 = 此主機所屬的集合已不再於此同步。
-
-# This host cannot be found in hosts.toml.
-ta0e18527 = 在 hosts.toml 中找不到此主機。
 
 # {name} copy
 t0d616a81 = { $name } 副本
@@ -469,6 +469,9 @@ t7ecf0d6d = { $name } 是新金鑰：{ $host } 上還沒有它。儲存並安裝
 # Save and install on {host}
 t1707b1d3 = 儲存並安裝到 { $host }
 
+# This key is in your own vault: the others with access to {name} cannot sign in with it. Choose a key file they have, a password, or the organization's certificates.
+t123028f6 = 此金鑰在你自己的保險庫中：具備 { $name } 存取權的其他人無法用它登入。請選擇他們擁有的金鑰檔案、密碼或組織的憑證。
+
 # Tries the agent, then your keys in ~/.ssh and the vault, then asks for a password, like ssh.
 t786a9bff = 先嘗試代理程式，再嘗試 ~/.ssh 和保險庫中的金鑰，最後詢問密碼，與 ssh 相同。
 
@@ -549,6 +552,12 @@ t4152ce3a = 具備該集合存取權的所有人都能看到，端對端加密�
 
 # Only you see it, on your devices.
 t6f22a0a3 = 只有你能看到，僅在你的裝置上。
+
+# Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.
+t4c0827d7 = 儲存後會從 { $from } 移到 { $to }：具備 { $from } 存取權的所有人都將看不到它。
+
+# Saving moves it from {from} to {to}.
+taf4375c8 = 儲存後會從 { $from } 移到 { $to }。
 
 # In the collection {name}: everybody with access to it sees it.
 t98d877a2 = 位於集合 { $name } 中：具備其存取權的所有人都能看到。
@@ -660,6 +669,9 @@ t07477a92 = 讓主機上的程式在此處的 X 伺服器開啟視窗。不信�
 
 # Some fields need a look.
 teaa35f1a = 部分欄位需要檢查。
+
+# Delete {title} for everybody with access to {collection}?
+t29fd2554 = 要為具備 { $collection } 存取權的所有人刪除 { $title } 嗎？
 
 # Delete {title} from hosts.toml?
 t596a83da = 要從 hosts.toml 中刪除 { $title } 嗎？
@@ -4443,9 +4455,6 @@ t8d5eff39 =
 
 # No color
 te96206b1 = 無色彩
-
-# Delete {title} for everybody with access to {collection}?
-t29fd2554 = 要為具備 { $collection } 存取權的所有人刪除 { $title } 嗎？
 
 # as the server says
 ta204abe7 = 由伺服器決定
