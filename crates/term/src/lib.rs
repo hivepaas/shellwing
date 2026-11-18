@@ -30,12 +30,14 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use libghostty_vt::color::Rgb as RgbColor;
+use libghostty_vt::effect::ClipboardMime;
+use libghostty_vt::fmt::{Format, Formatter};
+use libghostty_vt::point::{Coordinate as PointCoordinate, Point};
 use libghostty_vt::render::{CellIterator, Dirty, RenderState, RowIterator};
 use libghostty_vt::screen::{CellWide, Screen};
-use libghostty_vt::selection::FormatOptions;
 use libghostty_vt::selection::gesture::{DragEvent, Geometry, Gesture, PressEvent, ReleaseEvent};
-use libghostty_vt::style::RgbColor;
-use libghostty_vt::terminal::{ClipboardMime, Point, PointCoordinate, ScrollViewport};
+use libghostty_vt::terminal::ScrollViewport;
 use libghostty_vt::{Terminal, key, mouse, paste};
 
 pub use find::FindQuery;
@@ -659,7 +661,7 @@ impl Finding {
 /// by default, about a thousand lines, which would win over any line count:
 /// that cap goes.
 fn set_scrollback(term: &mut Terminal, lines: usize) -> libghostty_vt::error::Result<()> {
-    term.set_scrollback_max_bytes(None)?
+    term.set_scrollback_max_bytes(Some(usize::MAX))?
         .set_scrollback_max_lines(Some(lines))?;
     Ok(())
 }
@@ -788,7 +790,7 @@ fn run(
                     write(t.into_bytes());
                 }
                 Cmd::Paste { text, allow_unsafe } => {
-                    let mime = ClipboardMime::new("text/plain");
+                    let mime = ClipboardMime::new(b"text/plain");
                     let opts = paste::Options::new().with_allow_unsafe(allow_unsafe);
                     let sent = line_ends_as_newlines(&text);
                     match e
@@ -803,8 +805,11 @@ fn run(
                     }
                 }
                 Cmd::Copy => {
-                    let opts = FormatOptions::new().with_unwrap(true).with_trim(true);
-                    if let Some(bytes) = e.term.format_selection_alloc(None, opts)? {
+                    if let Some(mut f) = Formatter::new_selection(&e.term)? {
+                        f.set_format(Format::Plain)?
+                            .set_unwrap(true)?
+                            .set_trim(true)?;
+                        let bytes = f.format_alloc(None)?;
                         let text = String::from_utf8_lossy(&bytes).into_owned();
                         if !text.is_empty() {
                             (e.events)(Event::Copied(text));
@@ -955,24 +960,12 @@ impl Drop for Logging {
 impl Engine {
     /// The text of the history and the screen.
     fn format_all(&mut self, html: bool) -> libghostty_vt::error::Result<Vec<u8>> {
-        let Some(all) = self.term.select_all()? else {
-            return Ok(Vec::new());
-        };
-        let format = if html {
-            libghostty_vt::fmt::Format::Html
-        } else {
-            libghostty_vt::fmt::Format::Plain
-        };
-        let opts = FormatOptions::new()
-            .with_emit_format(format)
-            .with_unwrap(true)
-            .with_trim(true)
-            .with_selection(&all);
-        Ok(self
-            .term
-            .format_selection_alloc(None, opts)?
-            .map(|b| b.to_vec())
-            .unwrap_or_default())
+        // With no selection, a formatter takes all of it.
+        let mut f = Formatter::new(&self.term)?;
+        f.set_format(if html { Format::Html } else { Format::Plain })?
+            .set_unwrap(true)?
+            .set_trim(true)?;
+        Ok(f.format_alloc(None)?.to_vec())
     }
 
     fn encode_key(
@@ -1036,9 +1029,10 @@ impl Engine {
             padding_left: 0,
             padding_right: 0,
         };
+        self.mouse_enc.set_options_from_terminal(&self.term);
+        // Refused while a cell has no size yet: the encoder keeps the last.
+        let _ = self.mouse_enc.set_size(size);
         self.mouse_enc
-            .set_options_from_terminal(&self.term)
-            .set_size(size)
             .set_any_button_pressed(self.held.is_some())
             .set_track_last_cell(true);
     }
