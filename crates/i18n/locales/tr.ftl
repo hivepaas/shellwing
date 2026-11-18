@@ -4259,6 +4259,12 @@ tbda4f1d9 = Ana makinenin anahtarını ilk seferde size sormadan kabul eder
 # Types a command into its shell once connected: {command}
 t0a40f947 = Bağlandıktan sonra kabuğuna bir komut yazar: { $command }
 
+# Name: another host has this name.
+tcf956656 = Ad: başka bir ana makine bu adı kullanıyor.
+
+# Alias: another host uses this.
+t6d4194b8 = Takma ad: başka bir ana makine bunu kullanıyor.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Komut { $size } KB; en fazla { $max } KB olabilir.
 
@@ -4343,14 +4349,8 @@ t3f9c8dd7 = Adres: bir adres gerekli.
 # Address: no spaces.
 t1a9d2c69 = Adres: boşluk olmamalı.
 
-# Name: another host has this name.
-tcf956656 = Ad: başka bir ana makine bu adı kullanıyor.
-
 # Alias: no spaces.
 t240468fd = Takma ad: boşluk olmamalı.
-
-# Alias: another host uses this.
-t6d4194b8 = Takma ad: başka bir ana makine bunu kullanıyor.
 
 # Port: 1 to 65535.
 t48e7bff2 = Port: 1 ile 65535 arası.

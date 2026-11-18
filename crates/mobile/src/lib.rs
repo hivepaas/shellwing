@@ -514,6 +514,48 @@ impl Shellwing {
         shellwing_core::collections::save_host(&vault, &c, host).map_err(MobileError::Failed)
     }
 
+    /// Moves the host `edit` is of from `from` to `to` (each a collection's
+    /// id, or none for hosts.toml), saved as `edit` has it: saved where it
+    /// goes, then deleted where it was. Its saved password stays the
+    /// person's own. Gives what the host list opens it by.
+    pub fn move_host(
+        &self,
+        from: Option<String>,
+        to: Option<String>,
+        edit: HostEdit,
+    ) -> Result<String, MobileError> {
+        use shellwing_core::collections::{Place, move_host};
+        let id = edit
+            .id
+            .clone()
+            .ok_or_else(|| MobileError::of(tr!("This host cannot be found in hosts.toml.")))?;
+        let vault = self.vault.ready();
+        let held = |c: &Option<String>| match c {
+            Some(c) => self.writable(c).map(|(_, c)| Some(c)),
+            None => Ok(None),
+        };
+        let (here, there) = (held(&from)?, held(&to)?);
+        // Checked as an edit where it is now: what the editor does not show
+        // comes from there.
+        let source = match &here {
+            Some(c) => Hosts {
+                hosts: c.hosts.clone(),
+                ..Default::default()
+            },
+            None => self.hosts()?,
+        };
+        let host = checked(edit, &source).map_err(MobileError::Failed)?;
+        move_host(
+            &self.store,
+            vault.as_deref(),
+            Place::of(here.as_ref()),
+            Place::of(there.as_ref()),
+            &id,
+            host,
+        )
+        .map_err(MobileError::Failed)
+    }
+
     /// Deletes the host `id` of `collection`, for everybody with access.
     pub fn delete_collection_host(
         &self,
@@ -1455,6 +1497,27 @@ mod tests {
         collections[0].hosts[0].run = Some("rm -rf ~".into());
         assert_eq!(app.hosts_to_connect("h1", &collections).1.len(), 1);
         drop(s);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    /// A host moved to a collection this phone does not hold stays where it
+    /// is: nothing is deleted that was not saved elsewhere.
+    #[test]
+    fn a_host_moved_nowhere_stays() {
+        let (dir, app) =
+            store_with("[[host]]\nid = \"h1\"\nname = \"db\"\naddress = \"10.0.0.9\"\n");
+        let edit = app.host("h1".into()).expect("db");
+        assert!(
+            app.move_host(None, Some("col9".into()), edit.clone())
+                .is_err()
+        );
+        assert!(app.host("h1".into()).is_some(), "still in hosts.toml");
+        let mut noid = edit;
+        noid.id = None;
+        assert!(
+            app.move_host(None, None, noid).is_err(),
+            "a new host has nowhere to move from"
+        );
         let _ = std::fs::remove_dir_all(dir);
     }
 

@@ -4123,6 +4123,12 @@ tbda4f1d9 = 首次连接时不询问就接受主机的密钥
 # Types a command into its shell once connected: {command}
 t0a40f947 = 连接后在其 shell 中输入命令：{ $command }
 
+# Name: another host has this name.
+tcf956656 = 名称：已有其他主机使用此名称。
+
+# Alias: another host uses this.
+t6d4194b8 = 别名：已有其他主机使用此别名。
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 命令为 { $size } KB；最多 { $max } KB。
 
@@ -4207,14 +4213,8 @@ t3f9c8dd7 = 地址：必须填写地址。
 # Address: no spaces.
 t1a9d2c69 = 地址：不能包含空格。
 
-# Name: another host has this name.
-tcf956656 = 名称：已有其他主机使用此名称。
-
 # Alias: no spaces.
 t240468fd = 别名：不能包含空格。
-
-# Alias: another host uses this.
-t6d4194b8 = 别名：已有其他主机使用此别名。
 
 # Port: 1 to 65535.
 t48e7bff2 = 端口：1 到 65535。

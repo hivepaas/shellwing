@@ -4210,6 +4210,12 @@ tbda4f1d9 = Menerima kunci host pada kali pertama tanpa menanyakan Anda
 # Types a command into its shell once connected: {command}
 t0a40f947 = Mengetikkan perintah ke shell-nya setelah terhubung: { $command }
 
+# Name: another host has this name.
+tcf956656 = Nama: host lain sudah memakai nama ini.
+
+# Alias: another host uses this.
+t6d4194b8 = Alias: host lain sudah memakainya.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Perintah berukuran { $size } KB; maksimal { $max } KB.
 
@@ -4294,14 +4300,8 @@ t3f9c8dd7 = Alamat: alamat wajib diisi.
 # Address: no spaces.
 t1a9d2c69 = Alamat: tanpa spasi.
 
-# Name: another host has this name.
-tcf956656 = Nama: host lain sudah memakai nama ini.
-
 # Alias: no spaces.
 t240468fd = Alias: tanpa spasi.
-
-# Alias: another host uses this.
-t6d4194b8 = Alias: host lain sudah memakainya.
 
 # Port: 1 to 65535.
 t48e7bff2 = Port: 1 sampai 65535.

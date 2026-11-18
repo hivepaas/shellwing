@@ -4259,6 +4259,12 @@ tbda4f1d9 = Accetta la chiave dell'host la prima volta senza chiedertelo
 # Types a command into its shell once connected: {command}
 t0a40f947 = Digita un comando nella sua shell una volta connesso: { $command }
 
+# Name: another host has this name.
+tcf956656 = Nome: un altro host ha questo nome.
+
+# Alias: another host uses this.
+t6d4194b8 = Alias: un altro host lo usa già.
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = Il comando è di { $size } KB; al massimo { $max } KB.
 
@@ -4343,14 +4349,8 @@ t3f9c8dd7 = Indirizzo: serve un indirizzo.
 # Address: no spaces.
 t1a9d2c69 = Indirizzo: niente spazi.
 
-# Name: another host has this name.
-tcf956656 = Nome: un altro host ha questo nome.
-
 # Alias: no spaces.
 t240468fd = Alias: niente spazi.
-
-# Alias: another host uses this.
-t6d4194b8 = Alias: un altro host lo usa già.
 
 # Port: 1 to 65535.
 t48e7bff2 = Porta: da 1 a 65535.

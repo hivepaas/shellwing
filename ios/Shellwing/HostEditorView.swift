@@ -20,10 +20,14 @@ struct HostEditorView: View {
     @State private var confirmDelete = false
     /// The collection the host is saved in; nil: hosts.toml.
     let collection: CollectionSection?
+    /// Where saving puts it: a collection's id; nil: hosts.toml. Another
+    /// than where it is, saving moves it.
+    @State private var place: String?
 
     init(edit: HostEdit, in collection: CollectionSection? = nil, done: @escaping (String?) -> Void) {
         self.done = done
         self.collection = collection
+        _place = State(initialValue: collection?.id)
         _edit = State(initialValue: edit)
         _port = State(initialValue: edit.port.map(String.init) ?? "")
         _tags = State(initialValue: edit.tags.joined(separator: ", "))
@@ -111,6 +115,23 @@ struct HostEditorView: View {
     }
 
     private var title: String { edit.name.isEmpty ? edit.address : edit.name }
+
+    /// The collections it can be saved in: those the person may change.
+    private var places: [CollectionSection] {
+        app.collections.filter { !$0.readOnly && !$0.waiting }
+    }
+
+    /// It may be taken out of where it is.
+    private var movable: Bool { collection.map { !$0.readOnly } ?? true }
+
+    /// The collection chosen, if one is.
+    private var placed: CollectionSection? {
+        place.flatMap { id in app.collections.first { $0.id == id } }
+    }
+
+    private func placeName(_ id: String?) -> String {
+        id.flatMap { id in app.collections.first { $0.id == id }?.name } ?? tr("My hosts")
+    }
     private var blankAddress: Bool { edit.address.trimmingCharacters(in: .whitespaces).isEmpty }
 
     // MARK: Sections
@@ -253,12 +274,20 @@ struct HostEditorView: View {
 
     private var organize: some View {
         Section {
-            if collection == nil {
+            if movable && !places.isEmpty {
+                Picker(tr("Saved in"), selection: $place) {
+                    Text(tr("My hosts")).tag(String?.none)
+                    ForEach(places, id: \.id) { c in
+                        Text(c.name).tag(Optional(c.id))
+                    }
+                }
+            }
+            if place == nil {
                 LabeledContent(tr("Group")) {
                     TextField(tr("None"), text: text($edit.group)).multilineTextAlignment(.trailing)
                 }
             }
-            let groups = collection == nil ? app.groups() : []
+            let groups = place == nil ? app.groups() : []
             if !groups.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
@@ -286,16 +315,28 @@ struct HostEditorView: View {
                     swatch(c.name, color: Color(hex: c.rgb))
                 }
             }
-            if collection == nil {
+            if place == nil {
                 Toggle(tr("Favorite: listed first"), isOn: $edit.favorite)
             }
         } header: {
             SectionHeading(text: tr("Organize"))
         } footer: {
-            if let c = collection {
-                Text(tr("In the collection {name}: everybody with access to it sees it.", ["name": c.name]))
-                    .foregroundStyle(Dusk.muted)
+            VStack(alignment: .leading, spacing: 6) {
+                if let c = placed {
+                    Text(tr("In the collection {name}: everybody with access to it sees it.", ["name": c.name]))
+                } else if movable && !places.isEmpty {
+                    Text(tr("Only you see it, on your devices."))
+                }
+                // Another place than where it is: saving moves it.
+                if edit.id != nil && place != collection?.id {
+                    let (from, to) = (placeName(collection?.id), placeName(place))
+                    Text(collection == nil
+                        ? tr("Saving moves it from {from} to {to}.", ["from": from, "to": to])
+                        : tr("Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.", ["from": from, "to": to]))
+                        .foregroundStyle(Dusk.amber)
+                }
             }
+            .foregroundStyle(Dusk.muted)
         }
         .listRowBackground(Dusk.surface)
     }
@@ -423,7 +464,14 @@ struct HostEditorView: View {
         e.keepalive = UInt64(k)
         e.tags = tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         do {
-            let saved = try collection.map { try app.trySave(e, in: $0.id) } ?? app.trySave(e)
+            let saved: String
+            if edit.id != nil && place != collection?.id {
+                saved = try app.tryMove(e, from: collection?.id, to: place)
+            } else if let place {
+                saved = try app.trySave(e, in: place)
+            } else {
+                saved = try app.trySave(e)
+            }
             done(connect ? saved : nil)
         } catch {
             problem = "\(error)"

@@ -334,6 +334,81 @@ pub fn delete_host(vault: &Vault, c: &CollectionHosts, id: &str) -> Result<(), S
     vault.delete(id).map_err(|e| e.to_string())
 }
 
+/// Where a host is saved: hosts.toml, or a collection the person may change.
+pub enum Place<'a> {
+    Mine,
+    Collection(&'a CollectionHosts),
+}
+
+impl<'a> Place<'a> {
+    /// The collection, else hosts.toml.
+    pub fn of(collection: Option<&'a CollectionHosts>) -> Self {
+        collection.map_or(Place::Mine, Place::Collection)
+    }
+}
+
+/// Moves the host `id` from `from` to `to`, as `host` (what its editor made
+/// of it): a record lives in one place, so it is saved where it goes, then
+/// deleted where it was. Both are checked first, so nothing is copied that
+/// cannot then be deleted. Its saved password stays the person's own, found
+/// by `user@host[:port]` wherever the host is. Gives its id where it went
+/// (a new one: the records are not the same).
+pub fn move_host(
+    store: &shellwing_config::Store,
+    vault: Option<&Vault>,
+    from: Place,
+    to: Place,
+    id: &str,
+    mut host: Host,
+) -> Result<String, String> {
+    let vault = || vault.ok_or_else(|| tr!("the vault is not open"));
+    // The names where it goes, which it must not take.
+    let there = match &to {
+        Place::Mine => store.hosts().map_err(|e| e.to_string())?.hosts,
+        Place::Collection(c) => {
+            writable(c)?;
+            c.hosts.clone()
+        }
+    };
+    match &from {
+        Place::Mine => {}
+        Place::Collection(c) => {
+            writable(c)?;
+            if !c.hosts.iter().any(|h| h.id.as_deref() == Some(id)) {
+                return Err(tr!("This host's collection is no longer synced here."));
+            }
+            vault()?;
+        }
+    }
+    let taken = |n: &str| {
+        there
+            .iter()
+            .any(|h| h.id.as_deref() != Some(id) && (h.name == n || h.alias.as_deref() == Some(n)))
+    };
+    if taken(&host.name) {
+        return Err(tr!("Name: another host has this name."));
+    }
+    if host.alias.as_deref().is_some_and(taken) {
+        return Err(tr!("Alias: another host uses this."));
+    }
+    host.id = None;
+    let saved = match &to {
+        Place::Mine => {
+            host.collection = None;
+            store.save_host(&host).map_err(|e| e.to_string())?
+        }
+        Place::Collection(c) => {
+            host.collection = Some(c.id.clone());
+            save_host(vault()?, c, host)?
+        }
+    };
+    match &from {
+        Place::Mine => store.delete_host(id).map_err(|e| e.to_string())?,
+        Place::Collection(c) => delete_host(vault()?, c, id)?,
+    }
+    Ok(saved)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -414,6 +489,86 @@ mod tests {
         assert!(delete_host(&v, &collection("connect", read.clone()), &id).is_err());
         delete_host(&v, &c, &id).expect("delete");
         assert!(hosts_of(&v, &info()).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A host moves from hosts.toml into a collection and back: saved where
+    /// it goes, gone from where it was; a name taken there stops it before
+    /// anything is copied.
+    #[test]
+    fn a_host_moves_into_a_collection_and_back() {
+        let (dir, v) = vault("move");
+        let toml = "[[host]]\nid = \"h1\"\nname = \"db\"\naddress = \"10.0.0.9\"\n\n\
+                    [[host]]\nid = \"h2\"\nname = \"web\"\naddress = \"10.0.0.8\"\n";
+        std::fs::write(dir.join("hosts.toml"), toml).expect("write");
+        let store = shellwing_config::Store::new(dir.clone());
+        let db = store.hosts().expect("hosts").hosts.remove(0);
+
+        let c = collection("edit", vec![]);
+        let refused = move_host(
+            &store,
+            Some(&v),
+            Place::Mine,
+            Place::Collection(&collection("connect", vec![])),
+            "h1",
+            db.clone(),
+        );
+        assert!(refused.is_err(), "Connect only");
+        let id = move_host(
+            &store,
+            Some(&v),
+            Place::Mine,
+            Place::Collection(&c),
+            "h1",
+            db,
+        )
+        .expect("in");
+        let names: Vec<String> = store
+            .hosts()
+            .expect("hosts")
+            .hosts
+            .into_iter()
+            .map(|h| h.name)
+            .collect();
+        assert_eq!(names, ["web"], "gone from hosts.toml");
+        let read = hosts_of(&v, &info());
+        assert_eq!(read.len(), 1);
+        assert_eq!(read[0].id.as_deref(), Some(id.as_str()));
+
+        // Back: but hosts.toml has a web, so another named web stays put.
+        let c = collection("edit", read.clone());
+        let mut web = read[0].clone();
+        web.name = "web".into();
+        let clash = move_host(
+            &store,
+            Some(&v),
+            Place::Collection(&c),
+            Place::Mine,
+            &id,
+            web,
+        );
+        assert!(clash.is_err(), "the name is taken there");
+        assert_eq!(hosts_of(&v, &info()).len(), 1, "nothing moved");
+
+        let back_id = move_host(
+            &store,
+            Some(&v),
+            Place::Collection(&c),
+            Place::Mine,
+            &id,
+            read[0].clone(),
+        )
+        .expect("out");
+        assert!(hosts_of(&v, &info()).is_empty(), "gone from the collection");
+        let back = store.hosts().expect("hosts");
+        let db = back.hosts.iter().find(|h| h.name == "db").expect("db");
+        assert_eq!(db.id.as_deref(), Some(back_id.as_str()));
+        assert_eq!(db.collection, None);
+        assert_eq!(
+            db.org.as_deref(),
+            Some("org1"),
+            "still signs in with its certificates"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

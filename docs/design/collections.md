@@ -166,7 +166,10 @@ it.
   record lives in one space, so the editor saves a copy there, then deletes the
   original. It may, when the person may also change where the host is: Connect
   only, it stays. Moving out of a collection deletes it for everybody with
-  access, and the editor says so before saving.
+  access, and the editor says so before saving. A name or alias taken where
+  it goes stops the move before anything is copied. Moved out, it keeps
+  signing in with the organization's certificates, as it did there. The
+  desktop and the phones move it alike (`shellwing_core::collections::move_host`).
 - A collection's host has no group, favorite or "this device only": those are
   the person's own. A key from the person's own vault is flagged, since the
   others with access cannot sign in with it.

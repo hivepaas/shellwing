@@ -4123,6 +4123,12 @@ tbda4f1d9 = 初回はホストの鍵を確認なしで受け入れます
 # Types a command into its shell once connected: {command}
 t0a40f947 = 接続後にシェルへコマンドを入力します: { $command }
 
+# Name: another host has this name.
+tcf956656 = 名前：同じ名前のホストがすでにあります。
+
+# Alias: another host uses this.
+t6d4194b8 = エイリアス：別のホストが使用しています。
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = コマンドは { $size } KB です。最大 { $max } KB です。
 
@@ -4207,14 +4213,8 @@ t3f9c8dd7 = アドレス：アドレスが必要です。
 # Address: no spaces.
 t1a9d2c69 = アドレス：スペースは使えません。
 
-# Name: another host has this name.
-tcf956656 = 名前：同じ名前のホストがすでにあります。
-
 # Alias: no spaces.
 t240468fd = エイリアス：スペースは使えません。
-
-# Alias: another host uses this.
-t6d4194b8 = エイリアス：別のホストが使用しています。
 
 # Port: 1 to 65535.
 t48e7bff2 = ポート：1〜65535。

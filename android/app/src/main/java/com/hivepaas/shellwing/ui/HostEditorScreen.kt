@@ -116,6 +116,15 @@ fun HostEditorScreen(
     val scroll = rememberScrollState()
     val title = edit.name.ifEmpty { edit.address }
     val blankAddress = edit.address.isBlank()
+    /** Where saving puts it: a collection's id; null: hosts.toml. Another than where it is, saving moves it. */
+    var place by remember { mutableStateOf(collection) }
+    /** The collections it can be saved in: those the person may change. */
+    val places = model.collections.filter { !it.readOnly && !it.waiting }
+    /** It may be taken out of where it is. */
+    val movable = inCollection?.let { !it.readOnly } ?: true
+    val placed = place?.let { id -> model.collections.firstOrNull { it.id == id } }
+    val moving = hostId != null && place != collection
+    fun placeName(id: String?) = id?.let { i -> model.collections.firstOrNull { it.id == i }?.name } ?: tr("My hosts")
 
     if (picking) {
         BackHandler { picking = false }
@@ -144,9 +153,15 @@ fun HostEditorScreen(
             tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
         )
         try {
-            val id = if (collection != null) model.save(done, collection) else model.save(done)
-            // A collection's host opens by its id.
-            val spec = if (collection != null) id else model.sections.flatMap { it.hosts }.firstOrNull { it.id == id }?.spec
+            val to = place
+            val id = when {
+                moving -> model.move(done, collection, to)
+                to != null -> model.save(done, to)
+                else -> model.save(done)
+            }
+            // What opens it, wherever it went: a collection's host by its id.
+            val spec = (model.sections.flatMap { it.hosts } + model.collections.flatMap { it.hosts })
+                .firstOrNull { it.id == id }?.spec
             if (connect && spec != null) model.session(spec)?.let { onConnect(it); return }
             onDone()
         } catch (e: Exception) {
@@ -309,17 +324,31 @@ fun HostEditorScreen(
             Hint("-L [bind:]port:host:hostport · -R [bind:]port:host:hostport · -D [bind:]port\n" + tr("Set up every time this host connects."))
 
             Section(tr("Organize"))
-            if (collection == null) {
+            if (movable && places.isNotEmpty()) {
+                Picker(tr("Saved in"), listOf<Pair<String?, String>>(null to tr("My hosts")) + places.map { it.id to it.name }, place) {
+                    place = it
+                }
+            }
+            if (place == null) {
                 Picker(tr("Group"), listOf<Pair<String?, String>>(null to tr("None")) + model.groups().map { it to it }, edit.group) {
                     edit = edit.copy(group = it)
                 }
             }
             Field(tr("Tags"), tags, placeholder = "web, docker") { tags = it }
             ColorChoice(edit.color) { edit = edit.copy(color = it) }
-            if (collection == null) {
+            if (placed == null) {
                 SwitchLine(tr("Favorite: listed first"), null, edit.favorite) { edit = edit.copy(favorite = it) }
+                if (movable && places.isNotEmpty()) Hint(tr("Only you see it, on your devices."))
             } else {
-                Hint(tr("In the collection {name}: everybody with access to it sees it.", "name" to (inCollection?.name ?: "")))
+                Hint(tr("In the collection {name}: everybody with access to it sees it.", "name" to placed.name))
+            }
+            if (moving) {
+                val (from, to) = placeName(collection) to placeName(place)
+                Hint(
+                    if (collection == null) tr("Saving moves it from {from} to {to}.", "from" to from, "to" to to)
+                    else tr("Saving moves it from {from} to {to}: it is deleted for everybody with access to {from}.", "from" to from, "to" to to),
+                    Dusk.amber,
+                )
             }
 
             Section(tr("Terminal"))
@@ -353,7 +382,7 @@ fun HostEditorScreen(
                 edit.hostKey,
             ) { edit = edit.copy(hostKey = it) }
             Field(tr("Keepalive (s)"), keepalive, type = KeyboardType.Number, placeholder = tr("as in Settings")) { keepalive = it }
-            if (collection == null) {
+            if (place == null) {
                 SwitchLine(
                     tr("Keep on this device only"),
                     if (edit.localOnly) tr("Not synced: other devices do not see this host.")

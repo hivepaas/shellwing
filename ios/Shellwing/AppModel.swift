@@ -196,6 +196,15 @@ final class AppModel: ObservableObject {
         return id
     }
 
+    /// Moves the host `edit` is of from `from` to `to` (collections' ids; nil:
+    /// hosts.toml); gives its id where it went.
+    func tryMove(_ edit: HostEdit, from: String?, to: String?) throws -> String {
+        guard let core else { throw MobileError.Failed(problem ?? "") }
+        let id = try core.moveHost(from: from, to: to, edit: edit)
+        reload()
+        return id
+    }
+
     /// Deletes the collection's host `hostId`, for everybody with access.
     func delete(hostId: String, in collection: String) {
         guard let core else { return }

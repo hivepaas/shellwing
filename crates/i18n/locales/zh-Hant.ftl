@@ -4210,6 +4210,12 @@ tbda4f1d9 = 首次連線時不詢問就接受主機的金鑰
 # Types a command into its shell once connected: {command}
 t0a40f947 = 連線後在其 shell 中輸入指令：{ $command }
 
+# Name: another host has this name.
+tcf956656 = 名稱：已有其他主機使用此名稱。
+
+# Alias: another host uses this.
+t6d4194b8 = 別名：已有其他主機使用此別名。
+
 # The command is {size} KB; {max} KB at most.
 ta78b9fbd = 指令為 { $size } KB；最多 { $max } KB。
 
@@ -4294,14 +4300,8 @@ t3f9c8dd7 = 位址：必須填寫位址。
 # Address: no spaces.
 t1a9d2c69 = 位址：不能包含空格。
 
-# Name: another host has this name.
-tcf956656 = 名稱：已有其他主機使用此名稱。
-
 # Alias: no spaces.
 t240468fd = 別名：不能包含空格。
-
-# Alias: another host uses this.
-t6d4194b8 = 別名：已有其他主機使用此別名。
 
 # Port: 1 to 65535.
 t48e7bff2 = 連接埠：1 到 65535。
