@@ -323,6 +323,10 @@ tiles (initials, color, status; hover for the name, click to connect), with a
 button to unfold it and one to find a host in the palette. **Ctrl+Shift+B**
 still hides the host list altogether.
 
+The drawer where a host or a group is edited can be widened by dragging its
+left edge (420 to 1000 px; a double-click goes back to 520). Both drawers keep
+the same width, saved with the window's layout.
+
 The host list's filter matches every word typed against a host's name, alias,
 address, user and tags; **Enter** opens the first host shown, **Esc** clears it.
 

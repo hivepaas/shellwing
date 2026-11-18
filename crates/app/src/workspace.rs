@@ -119,6 +119,10 @@ pub struct Workspace {
     sidebar_collapsed: bool,
     /// Dragging the host list's edge: where the drag began, and the width then.
     sidebar_drag: Option<(f32, f32)>,
+    /// The drawer's width, where hosts and groups are edited, as dragged.
+    drawer_width: f32,
+    /// Dragging the drawer's edge: where the drag began, and the width then.
+    drawer_drag: Option<(f32, f32)>,
     live: Live,
     /// Hosts named in `~/.ssh/config`, for the sidebar.
     ssh_aliases: Vec<String>,
@@ -409,6 +413,8 @@ impl Workspace {
             sidebar_width: sidebar::WIDTH,
             sidebar_collapsed: false,
             sidebar_drag: None,
+            drawer_width: host_editor::WIDTH,
+            drawer_drag: None,
             live,
             ssh_aliases: ssh_config::aliases(ssh_config::default_config_path().as_deref()),
             rt,
@@ -460,6 +466,10 @@ impl Workspace {
                 .unwrap_or(sidebar::WIDTH)
                 .clamp(sidebar::MIN_WIDTH, sidebar::MAX_WIDTH);
             ws.sidebar_collapsed = s.sidebar_collapsed;
+            ws.drawer_width = s
+                .drawer_width
+                .unwrap_or(host_editor::WIDTH)
+                .clamp(host_editor::MIN_WIDTH, host_editor::MAX_WIDTH);
             if let Some(w) = s.files_width {
                 cx.set_global(crate::files::PanelWidth(
                     w.clamp(crate::files::MIN_WIDTH, crate::files::MAX_WIDTH),
@@ -506,12 +516,108 @@ impl Workspace {
         self.save_sidebar(window, cx);
     }
 
+    /// The drawer on the window's right, where hosts and groups are edited,
+    /// holding `content`. Its left edge: drag to resize, double-click for
+    /// the default.
+    fn drawer(&self, content: AnyElement, width: f32, cx: &mut Context<Self>) -> gpui::Div {
+        let dragging = self.drawer_drag.is_some();
+        div()
+            .absolute()
+            .top_0()
+            .right_0()
+            .h_full()
+            .w(px(width))
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .child(content)
+            .child(
+                div()
+                    .id("drawer-edge")
+                    .debug_selector(|| "drawer-edge".into())
+                    .group("drawer-edge")
+                    .absolute()
+                    .top_0()
+                    .left(px(-3.))
+                    .h_full()
+                    .w(px(6.))
+                    .flex()
+                    .justify_center()
+                    .cursor(CursorStyle::ResizeLeftRight)
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |ws, e: &gpui::MouseDownEvent, window, cx| {
+                            cx.stop_propagation();
+                            if e.click_count >= 2 {
+                                ws.drawer_drag = None;
+                                ws.drawer_width = host_editor::WIDTH;
+                                ws.save_sidebar(window, cx);
+                            } else {
+                                ws.drawer_drag = Some((f32::from(e.position.x), width));
+                            }
+                            cx.notify();
+                        }),
+                    )
+                    .child(
+                        div()
+                            .h_full()
+                            .w(px(if dragging { 3. } else { 0. }))
+                            .bg(rgb(colors().accent))
+                            .group_hover("drawer-edge", |s| s.w(px(2.))),
+                    ),
+            )
+            .when(dragging, |d| {
+                d.child(
+                    div()
+                        .absolute()
+                        .top(relative(0.45))
+                        .left(px(12.))
+                        .px(px(9.))
+                        .py(px(3.))
+                        .rounded_md()
+                        .bg(rgb(colors().accent))
+                        .text_color(rgb(colors().on_accent))
+                        .text_xs()
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .child(format!("{} px", width.round())),
+                )
+            })
+    }
+
+    /// While the drawer's edge is dragged: over the whole window, so the
+    /// drag goes on wherever the pointer is, over the drawer too.
+    fn drawer_drag_cover(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .id("drawer-drag")
+            .absolute()
+            .top_0()
+            .left_0()
+            .size_full()
+            .occlude()
+            .cursor(CursorStyle::ResizeLeftRight)
+            .on_mouse_move(cx.listener(|ws, e: &MouseMoveEvent, _, cx| {
+                if let Some((x0, w0)) = ws.drawer_drag {
+                    // Dragging left widens it.
+                    ws.drawer_width = (w0 - (f32::from(e.position.x) - x0))
+                        .clamp(host_editor::MIN_WIDTH, host_editor::MAX_WIDTH);
+                    cx.notify();
+                }
+            }))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|ws, _, window, cx| {
+                    ws.drawer_drag = None;
+                    ws.save_sidebar(window, cx);
+                    cx.notify();
+                }),
+            )
+    }
+
     /// Remembers the host list's width and fold with the window's place.
     fn save_sidebar(&mut self, window: &Window, cx: &gpui::App) {
         let mut state = crate::placement::state(window.window_bounds());
         state.sidebar_width = Some(self.sidebar_width);
         state.sidebar_collapsed = self.sidebar_collapsed;
         state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
+        state.drawer_width = Some(self.drawer_width);
         if let Some(store) = self.live.store()
             && let Err(e) = store.save_window_state(&state)
         {
@@ -5441,6 +5547,7 @@ impl Workspace {
             state.sidebar_width = Some(self.sidebar_width);
             state.sidebar_collapsed = self.sidebar_collapsed;
             state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
+            state.drawer_width = Some(self.drawer_width);
             if let Err(e) = store.save_window_state(&state) {
                 eprintln!("cannot save the window size: {e}");
             }
@@ -6615,6 +6722,12 @@ impl Render for Workspace {
         } else {
             self.sidebar_width
         };
+        // Never wider than the window leaves room for: a strip beside it
+        // still closes it.
+        let drawer_w = self
+            .drawer_width
+            .min(f32::from(window.viewport_size().width) - 48.)
+            .max(host_editor::MIN_WIDTH.min(f32::from(window.viewport_size().width)));
         let body = div()
             .relative()
             .flex()
@@ -6724,16 +6837,7 @@ impl Render for Workspace {
                                 }
                             }),
                         )
-                        .child(
-                            div()
-                                .absolute()
-                                .top_0()
-                                .right_0()
-                                .h_full()
-                                .w(px(host_editor::WIDTH))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                                .child(e),
-                        ),
+                        .child(self.drawer(e.into_any_element(), drawer_w, cx)),
                 )
             })
             .when_some(
@@ -6758,18 +6862,7 @@ impl Render for Workspace {
                                     }
                                 }),
                             )
-                            .child(
-                                div()
-                                    .absolute()
-                                    .top_0()
-                                    .right_0()
-                                    .h_full()
-                                    .w(px(host_editor::WIDTH))
-                                    .on_mouse_down(MouseButton::Left, |_, _, cx| {
-                                        cx.stop_propagation()
-                                    })
-                                    .child(e),
-                            ),
+                            .child(self.drawer(e.into_any_element(), drawer_w, cx)),
                     )
                 },
             )
@@ -6803,17 +6896,11 @@ impl Render for Workspace {
                             MouseButton::Left,
                             cx.listener(|ws, _, window, cx| ws.close_import(window, cx)),
                         )
-                        .child(
-                            div()
-                                .absolute()
-                                .top_0()
-                                .right_0()
-                                .h_full()
-                                .w(px(host_editor::WIDTH))
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                                .child(v),
-                        ),
+                        .child(self.drawer(v.into_any_element(), drawer_w, cx)),
                 )
+            })
+            .when(self.drawer_drag.is_some(), |d| {
+                d.child(self.drawer_drag_cover(cx))
             })
             // Hangs from the tab button; a press elsewhere puts it away.
             .when_some(self.overview.as_ref().map(|(o, _)| o.clone()), |d, o| {
