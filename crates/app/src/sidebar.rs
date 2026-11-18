@@ -23,6 +23,13 @@ pub const MIN_WIDTH: f32 = 200.;
 pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
+/// A host's row, from the list's edge: its margin, then its padding. What
+/// leads it, the local terminal's icon, a host's color or else its name,
+/// starts a little in from its section's title (12), all at the same place
+/// (24); a name follows an icon or a color after a gap.
+const ROW_MARGIN: f32 = 4.;
+const ROW_PAD: f32 = 20.;
+const ROW_GAP: f32 = 5.;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Section {
@@ -818,7 +825,9 @@ impl Render for Sidebar {
             if section.rows.is_empty() {
                 list = list.child(
                     div()
-                        .px_3()
+                        // Where its hosts would start.
+                        .pl(px(ROW_MARGIN + ROW_PAD))
+                        .pr_3()
                         .pb_1()
                         .text_xs()
                         .text_color(rgb(colors().faint))
@@ -850,10 +859,11 @@ impl Render for Sidebar {
                         }))
                         .flex()
                         .items_center()
-                        .gap(px(9.))
+                        .gap(px(ROW_GAP))
                         .h(px(30.))
-                        .px(px(10.))
-                        .mx_1()
+                        .pl(px(ROW_PAD))
+                        .pr(px(10.))
+                        .mx(px(ROW_MARGIN))
                         .rounded_md()
                         .cursor_pointer()
                         // The host of the active tab.
@@ -862,24 +872,30 @@ impl Render for Sidebar {
                         .on_click(move |_, window, cx| {
                             let _ = workspace.update(cx, |ws, cx| ws.open(&spec, window, cx));
                         })
-                        // A shell here has its icon; a host its color, or the
-                        // place for one, so the names line up.
-                        .child(if matches!(row.edit, EditTarget::Local) {
-                            svg()
-                                .path("icons/terminal.svg")
-                                .size(px(14.))
-                                .flex_shrink_0()
-                                .text_color(rgb(colors().soft))
-                                .into_any_element()
-                        } else {
-                            div()
-                                .w(px(3.))
-                                .h(px(14.))
-                                .flex_shrink_0()
-                                .rounded(px(2.))
-                                .when_some(row.color, |d, c| d.bg(rgb(c)))
-                                .into_any_element()
+                        // A shell here has its icon; a host its color, if it
+                        // has one, by its name.
+                        .when(matches!(row.edit, EditTarget::Local), |d| {
+                            d.child(
+                                svg()
+                                    .path("icons/terminal.svg")
+                                    .size(px(14.))
+                                    .flex_shrink_0()
+                                    .text_color(rgb(colors().soft)),
+                            )
                         })
+                        .when_some(
+                            row.color.filter(|_| !matches!(row.edit, EditTarget::Local)),
+                            |d, c| {
+                                d.child(
+                                    div()
+                                        .w(px(3.))
+                                        .h(px(14.))
+                                        .flex_shrink_0()
+                                        .rounded(px(2.))
+                                        .bg(rgb(c)),
+                                )
+                            },
+                        )
                         .child(
                             div()
                                 .flex_1()
