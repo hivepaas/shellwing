@@ -21,7 +21,11 @@ use crate::colors::colors;
 use crate::input::TextInput;
 use crate::look::ui;
 
+/// The drawer's width by default, where hosts and groups are edited, and
+/// how far its edge can be dragged.
 pub const WIDTH: f32 = 520.;
+pub const MIN_WIDTH: f32 = 420.;
+pub const MAX_WIDTH: f32 = 1000.;
 
 pub enum EditorEvent {
     Close,

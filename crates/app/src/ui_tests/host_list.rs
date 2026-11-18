@@ -135,6 +135,33 @@ scenario!(
 );
 
 scenario!(
+    /// The drawer where a host is edited: its left edge drags it wider, up
+    /// to 1000px, and a double click puts it back. The width is kept for
+    /// the next drawer, a group's too, and with the window's layout.
+    drag_the_editors_edge,
+    |ui| {
+        ui.open();
+        ui.click("new-host");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        assert_eq!(ui.drawer_width().round(), 520.);
+        ui.drag_by("drawer-edge", -200.);
+        assert_eq!(ui.drawer_width().round(), 720.);
+        ui.keys("escape");
+        ui.wait_until("the editor to close", |ui| !ui.host_editor_open());
+        ui.click("new-group");
+        ui.wait_until("the group editor", |ui| ui.group_editor_open());
+        assert_eq!(ui.drawer_width().round(), 720.);
+        let saved = std::fs::read_to_string(ui.config_dir().join("state/window.json"))
+            .expect("the window's layout is saved");
+        assert!(saved.contains("\"drawer_width\": 720.0"), "{saved}");
+        ui.drag_by("drawer-edge", -600.);
+        assert_eq!(ui.drawer_width().round(), 1000.);
+        ui.double_click("drawer-edge");
+        assert_eq!(ui.drawer_width().round(), 520.);
+    }
+);
+
+scenario!(
     /// "+ Group": the group editor opens; a name and Enter add the group to
     /// hosts.toml, and the list shows it, empty.
     add_a_group,

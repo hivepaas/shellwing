@@ -887,6 +887,7 @@ mod tests {
             sidebar_width: Some(300.0),
             sidebar_collapsed: true,
             files_width: Some(520.0),
+            drawer_width: Some(760.0),
         };
         s.save_window_state(&w).expect("save");
         assert_eq!(s.window_state(), Some(w));

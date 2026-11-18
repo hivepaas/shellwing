@@ -676,6 +676,24 @@ impl Ui {
         self.cx.run_until_parked();
     }
 
+    /// Presses the left button on the middle of the element marked
+    /// `selector` and lets it go `dx` pixels to the side, moving there in
+    /// steps, as a user drags an edge.
+    pub fn drag_by(&mut self, selector: &str, dx: f32) {
+        let a = self.reach(selector);
+        let b = a + gpui::point(gpui::px(dx), gpui::px(0.));
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        let (left, none) = (gpui::MouseButton::Left, gpui::Modifiers::none());
+        vcx.simulate_mouse_move(a, None, none);
+        vcx.simulate_mouse_down(a, left, none);
+        for i in 1..=4 {
+            let t = i as f32 / 4.;
+            vcx.simulate_mouse_move(a + (b - a) * t, left, none);
+        }
+        vcx.simulate_mouse_up(b, left, none);
+        self.cx.run_until_parked();
+    }
+
     /// Right-clicks the middle of the element marked `selector` (a context
     /// menu).
     pub fn right_click(&mut self, selector: &str) {
@@ -819,6 +837,13 @@ impl Ui {
 
     pub fn group_editor_open(&mut self) -> bool {
         self.ws(|ws, _, _| ws.group_editor_open())
+    }
+
+    /// The width of the drawer where hosts and groups are edited, as drawn.
+    pub fn drawer_width(&mut self) -> f32 {
+        let edge = self.bounds("drawer-edge");
+        let window = self.ws(|_, window, _| f32::from(window.viewport_size().width));
+        window - f32::from(edge.center().x)
     }
 
     /// hosts.toml as it is on disk.

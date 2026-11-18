@@ -49,6 +49,10 @@ pub struct WindowState {
     /// The Files panel's width as dragged; None: the default.
     #[serde(default)]
     pub files_width: Option<f32>,
+    /// The drawer's width as dragged, where hosts and groups are edited;
+    /// None: the default.
+    #[serde(default)]
+    pub drawer_width: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
