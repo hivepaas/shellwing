@@ -23,6 +23,9 @@ pub const MIN_WIDTH: f32 = 200.;
 pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
+/// How far a host's row is in from the list's edge: past its section's
+/// title, which starts at 12.
+const ROW_INDENT: f32 = 14.;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Section {
@@ -818,7 +821,9 @@ impl Render for Sidebar {
             if section.rows.is_empty() {
                 list = list.child(
                     div()
-                        .px_3()
+                        // Where the names of its hosts would be.
+                        .pl(px(ROW_INDENT + 10. + 3. + 9.))
+                        .pr_3()
                         .pb_1()
                         .text_xs()
                         .text_color(rgb(colors().faint))
@@ -853,7 +858,10 @@ impl Render for Sidebar {
                         .gap(px(9.))
                         .h(px(30.))
                         .px(px(10.))
-                        .mx_1()
+                        // In from its section's title, so what is in it reads
+                        // as such.
+                        .ml(px(ROW_INDENT))
+                        .mr_1()
                         .rounded_md()
                         .cursor_pointer()
                         // The host of the active tab.
