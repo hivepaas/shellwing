@@ -25,7 +25,7 @@ pub const MAX_WIDTH: f32 = 480.;
 pub const RAIL_WIDTH: f32 = 56.;
 /// How far a host's row is in from the list's edge: past its section's
 /// title, which starts at 12.
-const ROW_INDENT: f32 = 14.;
+const ROW_INDENT: f32 = 9.;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Section {
