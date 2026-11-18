@@ -860,3 +860,28 @@ scenario!(
         assert!(!config.contains("[sync]"), "{config}");
     }
 );
+
+scenario!(
+    /// Sync now with no tab open: "Syncing…" is said in place of the terminal
+    /// and goes after a moment, as it does over a tab, not kept for good.
+    syncing_is_said_and_goes_with_no_tab_open,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        let shared = ui.dir.join("cloud-drive");
+        std::fs::create_dir_all(&shared).expect("folder");
+        ui.palette("Sync passwords with a folder");
+        ui.wait_until("the folder dialog", |ui| ui.cx.did_prompt_for_paths());
+        let chosen = shared.clone();
+        ui.cx.simulate_path_prompt_response(move |_| Some(vec![chosen]));
+        ui.wait_until("the folder set up", |_| {
+            shared.join("shellwing/format.json").exists()
+        });
+        ui.keys("escape");
+        assert_eq!(ui.tabs(), 0);
+        sync_now(ui);
+        ui.wait_for_notice("Syncing…");
+        ui.advance(std::time::Duration::from_secs(4));
+        assert_ne!(ui.notice().as_deref(), Some("Syncing…"), "it goes");
+    }
+);
