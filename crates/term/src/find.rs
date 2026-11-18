@@ -21,8 +21,10 @@ use std::time::{Duration, Instant};
 
 use libghostty_vt::Terminal;
 use libghostty_vt::error::Result;
-use libghostty_vt::screen::{CellWide, Screen, TrackedGridRef};
-use libghostty_vt::terminal::{Point, PointCoordinate, PointSpace, ScrollViewport};
+use libghostty_vt::grid_ref::TrackedGridRef;
+use libghostty_vt::point::{Coordinate as PointCoordinate, Point, Space as PointSpace};
+use libghostty_vt::screen::{CellWide, Screen};
+use libghostty_vt::terminal::ScrollViewport;
 use regex::{Regex, RegexBuilder};
 
 use crate::{FindStatus, Found};
