@@ -5241,9 +5241,21 @@ impl Workspace {
         }
         match self.active_tab().cloned() {
             Some(tab) => tab.update(cx, |v, cx| v.show_notice(msg, shown, cx)),
+            // In place of the terminal, for as long as a tab would show it:
+            // unless something else was said since.
             None => {
-                self.notice = Some(msg);
+                self.notice = Some(msg.clone());
                 cx.notify();
+                cx.spawn(async move |this, cx| {
+                    cx.background_executor().timer(shown).await;
+                    let _ = this.update(cx, |ws, cx| {
+                        if ws.notice.as_ref() == Some(&msg) {
+                            ws.notice = None;
+                            cx.notify();
+                        }
+                    });
+                })
+                .detach();
             }
         }
     }
