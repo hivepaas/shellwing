@@ -26,9 +26,9 @@ pub const RAIL_WIDTH: f32 = 56.;
 /// A host's row, from the list's edge: its margin, then its padding. What
 /// leads it, the local terminal's icon, a host's color or else its name,
 /// starts a little in from its section's title (12), all at the same place
-/// (20); a name follows an icon or a color after a gap.
+/// (24); a name follows an icon or a color after a gap.
 const ROW_MARGIN: f32 = 4.;
-const ROW_PAD: f32 = 16.;
+const ROW_PAD: f32 = 20.;
 const ROW_GAP: f32 = 5.;
 
 #[derive(Clone, Debug, Default, PartialEq)]
