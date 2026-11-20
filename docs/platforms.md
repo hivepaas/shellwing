@@ -139,3 +139,11 @@ your ssh-agent (OpenSSH agent or Pageant on Windows) or, in a debug build,
 8. HiDPI: text is sharp at the display's scale (e.g. 125 % or 150 % on Windows).
 9. Performance: `SHELLWING_BENCH=flood shellwing user@host` prints frames per second
    (expect the display's refresh rate); `SHELLWING_BENCH=latency` prints echo latency.
+10. Windows, the title bar's three buttons: minimise, maximise and close.
+    `scripts/check_windows_titlebar.ps1 target/release/shellwing.exe` does it by
+    machine -- it reads what the window answers Windows along the bar and clicks
+    minimise for real -- and must run in the desktop session, not over ssh. The
+    buttons are drawn by shellwing and exist to Windows only as the answer to a
+    hit test, so a drag area over them makes Windows take the press and they go
+    dead while the bar still drags: met in all three of these apps, and
+    invisible to every test on Linux and macOS.
