@@ -174,7 +174,7 @@ pub fn tile_face(
 
 /// A tile's face for a box `size` px square: its corners, its icon and its
 /// initials in proportion to the list's, the initials never below 9.5 px.
-fn tile_face_sized(
+pub fn tile_face_sized(
     icon: Option<&'static HostIcon>,
     name: &str,
     color: Option<u32>,
