@@ -3064,17 +3064,17 @@ t81dee99e = shellwing cloud зберігає все за вас: увійдіт�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud скоро з'явиться: вхід стане доступним разом із ним.
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a =
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a =
     { $n ->
-        [one] { $n } хост · $3.99/міс.
-        [few] { $n } хости · $3.99/міс.
-        [many] { $n } хостів · $3.99/міс.
-       *[other] { $n } хоста · $3.99/міс.
+        [one] { $n } хост · незабаром
+        [few] { $n } хости · незабаром
+        [many] { $n } хостів · незабаром
+       *[other] { $n } хоста · незабаром
     }
 
-# unlimited · $7.99/mo
-t6cc4bcad = без обмежень · $7.99/міс.
+# unlimited · coming soon
+t7c4d88dd = без обмежень · незабаром
 
 # just now
 ta715ef0f = щойно

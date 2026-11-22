@@ -2944,11 +2944,11 @@ t81dee99e = shellwing cloud が代わりに保管します。各デバイスで�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud は近日提供予定です。提供開始後はサインインで使えます。
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a = ホスト { $n } 件 · $3.99/月
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a = ホスト { $n } 件 · 近日公開
 
-# unlimited · $7.99/mo
-t6cc4bcad = 無制限 · $7.99/月
+# unlimited · coming soon
+t7c4d88dd = 無制限 · 近日公開
 
 # just now
 ta715ef0f = たった今

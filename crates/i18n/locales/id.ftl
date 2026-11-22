@@ -2980,14 +2980,14 @@ t81dee99e = shellwing cloud menyimpannya untuk Anda: cukup masuk di setiap peran
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud segera hadir: fitur masuk dibuka bersamanya.
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a =
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a =
     { $n ->
-       *[other] { $n } host · $3.99/bln
+       *[other] { $n } host · segera hadir
     }
 
-# unlimited · $7.99/mo
-t6cc4bcad = tanpa batas · $7.99/bln
+# unlimited · coming soon
+t7c4d88dd = tanpa batas · segera hadir
 
 # just now
 ta715ef0f = baru saja

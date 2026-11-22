@@ -3008,15 +3008,15 @@ t81dee99e = shellwing cloud la custodisce per te: accedi su ogni dispositivo, e 
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud è in arrivo: l'accesso sarà disponibile con il lancio.
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a =
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a =
     { $n ->
-        [one] { $n } host · $3.99/mese
-       *[other] { $n } host · $3.99/mese
+        [one] { $n } host · in arrivo
+       *[other] { $n } host · in arrivo
     }
 
-# unlimited · $7.99/mo
-t6cc4bcad = illimitati · $7.99/mese
+# unlimited · coming soon
+t7c4d88dd = illimitati · in arrivo
 
 # just now
 ta715ef0f = proprio ora

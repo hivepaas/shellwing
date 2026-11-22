@@ -2980,14 +2980,14 @@ t81dee99e = shellwing cloud 替你保管：在每台裝置上登入即可。依�
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud 即將推出：屆時將開放登入。
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a =
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a =
     { $n ->
-       *[other] { $n } 台主機 · $3.99/月
+       *[other] { $n } 台主機 · 即將推出
     }
 
-# unlimited · $7.99/mo
-t6cc4bcad = 不限數量 · $7.99/月
+# unlimited · coming soon
+t7c4d88dd = 不限數量 · 即將推出
 
 # just now
 ta715ef0f = 剛剛

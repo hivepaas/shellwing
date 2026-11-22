@@ -539,11 +539,12 @@ fn plans() -> gpui::Div {
         .bg(rgb(c.page))
         .text_size(ui(12.))
         .child(plan("Free", &tr_n!(10, "{n} host", "{n} hosts")))
+        // Prices are not set yet.
         .child(plan(
             "Starter",
-            &tr_n!(20, "{n} host · $3.99/mo", "{n} hosts · $3.99/mo"),
+            &tr_n!(20, "{n} host · coming soon", "{n} hosts · coming soon"),
         ))
-        .child(plan("Pro", &tr!("unlimited · $7.99/mo")))
+        .child(plan("Pro", &tr!("unlimited · coming soon")))
 }
 
 /// The panel's foot: a word, and Settings › Sync to open.
