@@ -129,20 +129,34 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
         _ if matches!(row.edit, EditTarget::Local) => host_icons::find("terminal"),
         icon => icon,
     };
+    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring)
+}
+
+/// A host's tile `size` px square, as [`tile_face`] draws it, with its status
+/// dot at the corner, ringed in `ground`: in the host list and on a tab.
+pub fn host_tile(
+    icon: Option<&'static HostIcon>,
+    name: &str,
+    color: Option<u32>,
+    status: Option<Status>,
+    size: f32,
+    ground: u32,
+    ring: bool,
+) -> Div {
     // The dot is a sibling after the face: a border is drawn over an
     // element's own children.
     div()
         .relative()
         .flex_shrink_0()
-        .size(px(TILE))
-        .child(tile_face(icon, &row.name, row.color, ring))
+        .size(px(size))
+        .child(tile_face_sized(icon, name, color, ring, size))
         .child(
             div().absolute().right(px(-3.)).bottom(px(-3.)).child(
                 div()
                     .p(px(2.))
                     .rounded_full()
                     .bg(rgb(ground))
-                    .child(dot(row.status)),
+                    .child(dot(status)),
             ),
         )
 }
@@ -155,6 +169,19 @@ pub fn tile_face(
     color: Option<u32>,
     ring: bool,
 ) -> Div {
+    tile_face_sized(icon, name, color, ring, TILE)
+}
+
+/// A tile's face for a box `size` px square: its corners, its icon and its
+/// initials in proportion to the list's, the initials never below 9.5 px.
+fn tile_face_sized(
+    icon: Option<&'static HostIcon>,
+    name: &str,
+    color: Option<u32>,
+    ring: bool,
+    size: f32,
+) -> Div {
+    let scale = size / TILE;
     let (bg, fg) = match color {
         Some(c) => (rgba((c << 8) | 0x2e), c),
         None => (rgb(colors().button), colors().soft),
@@ -164,7 +191,7 @@ pub fn tile_face(
         .flex()
         .items_center()
         .justify_center()
-        .rounded(px(TILE_RADIUS))
+        .rounded(px((TILE_RADIUS * scale).round()))
         .border_2()
         .border_color(if ring {
             rgb(colors().accent)
@@ -173,7 +200,7 @@ pub fn tile_face(
         })
         .bg(bg)
         .text_color(rgb(fg))
-        .text_size(px(13.))
+        .text_size(px((13. * scale).max(9.5)))
         .font_weight(FontWeight::SEMIBOLD);
     let icon_svg = |path: &'static str, size: f32, color: u32| {
         svg().path(path).size(px(size)).text_color(rgb(color))
@@ -184,9 +211,9 @@ pub fn tile_face(
                 .color
                 .filter(|c| host_icons::reads_on(*c, colors().button))
                 .unwrap_or(fg);
-            face.child(icon_svg(i.path, TILE_ICON, color))
+            face.child(icon_svg(i.path, (TILE_ICON * scale).round(), color))
         }
-        Some(i) => face.child(icon_svg(i.path, TILE_ICON, fg)),
+        Some(i) => face.child(icon_svg(i.path, (TILE_ICON * scale).round(), fg)),
         None => face.child(initials(name)),
     }
 }
