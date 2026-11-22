@@ -320,11 +320,13 @@ without a group.
 
 Each host in the list is a tile (its icon, or else its initials, in its
 color, with its status at the corner) beside its name and, under it, its
-address. The host list's right edge can be dragged (200 to 480 px; a
-double-click goes back to 248). The button at the right of *HOSTS* folds it to
-a rail of the same tiles (hover for the name, click to connect), with a button
-to unfold it and one to find a host in the palette. **Ctrl+Shift+B** still
-hides the host list altogether.
+address. A click on a host goes to its last tab, unless the tab shown is on
+it already, or opens one if it has none; a double click always opens a new
+tab. The host list's right edge can be
+dragged (200 to 480 px; a double-click goes back to 248). The button at the
+right of *HOSTS* folds it to a rail of the same tiles (hover for the name;
+clicks as in the list), with a button to unfold it and one to find a host in
+the palette. **Ctrl+Shift+B** still hides the host list altogether.
 
 A host's `icon`, chosen in the host editor (*Icon*, then *Change*) or written
 in hosts.toml, is one of the app's: a system's mark (`ubuntu`, `debian`,

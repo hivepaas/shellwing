@@ -133,6 +133,9 @@ pub struct Workspace {
     systems: std::collections::BTreeMap<String, SystemSeen>,
     /// The hosts being asked now, so that a second tab does not ask too.
     asking_system: std::collections::HashSet<String>,
+    /// The host a click just opened a tab for: the double click it began
+    /// opens no second one.
+    opened_on_click: Option<String>,
     live: Live,
     /// Hosts named in `~/.ssh/config`, for the sidebar.
     ssh_aliases: Vec<String>,
@@ -427,6 +430,7 @@ impl Workspace {
             drawer_drag: None,
             systems: live.store().map(|s| s.systems()).unwrap_or_default(),
             asking_system: Default::default(),
+            opened_on_click: None,
             live,
             ssh_aliases: ssh_config::aliases(ssh_config::default_config_path().as_deref()),
             rt,
@@ -761,6 +765,12 @@ impl Workspace {
         self.sidebar.read(cx).shown_names(cx)
     }
 
+    /// The host the list marks as the tab shown's.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn host_marked(&self, cx: &gpui::App) -> Option<String> {
+        self.sidebar.read(cx).marked()
+    }
+
     /// The icon on the tile of the host listed as `name`.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn host_icon_shown(&self, name: &str, cx: &gpui::App) -> Option<&'static str> {
@@ -785,6 +795,65 @@ impl Workspace {
     /// Every pane of every tab.
     fn all_views(&self) -> Vec<Entity<TermView>> {
         self.tabs.iter().flat_map(Tab::views).collect()
+    }
+
+    /// A click on a host in the list or on the rail: one leaves the tab
+    /// shown if it is on the host, else goes to the host's last tab, opening
+    /// one if it has none; a double click always opens a new one, unless its
+    /// first click just did.
+    pub fn click_host(
+        &mut self,
+        target: &EditTarget,
+        spec: &str,
+        clicks: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if clicks == 2 {
+            if self.opened_on_click.take().as_deref() == Some(spec) {
+                // Its press took the keyboard from the tab just opened.
+                self.activate(self.active, window, cx);
+            } else {
+                self.open(spec, window, cx);
+            }
+            return;
+        }
+        self.opened_on_click = None;
+        if clicks > 2 {
+            return;
+        }
+        let is_it = |s: &Session| match target {
+            EditTarget::Local => s.is_local(),
+            EditTarget::Saved(name) => s.entry.as_deref() == Some(name.as_str()),
+            EditTarget::Ssh(alias) => s.entry.is_none() && &s.spec == alias,
+            EditTarget::New | EditTarget::NewIn(_) => false,
+        };
+        // The tab with a pane on the host: the one shown, if it has one (it
+        // stays as it is), else the last; that pane focused.
+        let on_host = |i: usize| {
+            let t = &self.tabs[i];
+            let on_it = |v: &Entity<TermView>| is_it(v.read(cx).session());
+            if on_it(&t.focused) {
+                return Some((i, None));
+            }
+            t.views().into_iter().find(on_it).map(|v| (i, Some(v)))
+        };
+        let found = (self.active < self.tabs.len())
+            .then(|| on_host(self.active))
+            .flatten()
+            .or_else(|| (0..self.tabs.len()).rev().find_map(on_host));
+        match found {
+            Some((i, pane)) => {
+                if let Some(pane) = pane {
+                    self.tabs[i].focused = pane;
+                }
+                self.activate(i, window, cx);
+            }
+            None => {
+                self.open(spec, window, cx);
+                self.opened_on_click = Some(spec.to_string());
+            }
+        }
     }
 
     /// Opens a tab connected to `spec`: a hosts.toml name, an ssh config alias or
@@ -1894,7 +1963,8 @@ impl Workspace {
         }
         self.keep_keys_locked(window, cx);
         self.title_window(window, cx);
-        cx.notify();
+        // The host list marks the host of the tab shown.
+        self.refresh_sidebar(cx);
     }
 
     /// Moves a tab to `to`, the others making room; the active one stays
