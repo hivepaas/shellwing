@@ -450,6 +450,11 @@ scenario!(
         ui.click("host:db");
         ui.click("host:web");
         assert_eq!((ui.tabs(), active(ui)), (3, 2), "web's last tab");
+        ui.ws(|ws, window, cx| ws.activate(0, window, cx));
+        ui.click("host:web");
+        assert_eq!((ui.tabs(), active(ui)), (3, 0), "on web already: stays");
+        ui.click("host:db");
+        ui.click("host:web");
         ui.double_click("host:cache");
         ui.login();
         assert_eq!((ui.tabs(), active(ui)), (4, 3), "one tab, not two");

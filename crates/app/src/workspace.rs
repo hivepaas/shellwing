@@ -791,9 +791,10 @@ impl Workspace {
         self.tabs.iter().flat_map(Tab::views).collect()
     }
 
-    /// A click on a host in the list or on the rail: one goes to the host's
-    /// last tab, opening one if it has none; a double click always opens a
-    /// new one, unless its first click just did.
+    /// A click on a host in the list or on the rail: one leaves the tab
+    /// shown if it is on the host, else goes to the host's last tab, opening
+    /// one if it has none; a double click always opens a new one, unless its
+    /// first click just did.
     pub fn click_host(
         &mut self,
         target: &EditTarget,
@@ -821,15 +822,20 @@ impl Workspace {
             EditTarget::Ssh(alias) => s.entry.is_none() && &s.spec == alias,
             EditTarget::New | EditTarget::NewIn(_) => false,
         };
-        // The last tab with a pane on the host, that pane focused.
-        let found = self.tabs.iter().enumerate().rev().find_map(|(i, t)| {
-            let views = t.views();
+        // The tab with a pane on the host: the one shown, if it has one (it
+        // stays as it is), else the last; that pane focused.
+        let on_host = |i: usize| {
+            let t = &self.tabs[i];
             let on_it = |v: &Entity<TermView>| is_it(v.read(cx).session());
             if on_it(&t.focused) {
                 return Some((i, None));
             }
-            views.into_iter().find(on_it).map(|v| (i, Some(v)))
-        });
+            t.views().into_iter().find(on_it).map(|v| (i, Some(v)))
+        };
+        let found = (self.active < self.tabs.len())
+            .then(|| on_host(self.active))
+            .flatten()
+            .or_else(|| (0..self.tabs.len()).rev().find_map(on_host));
         match found {
             Some((i, pane)) => {
                 if let Some(pane) = pane {
