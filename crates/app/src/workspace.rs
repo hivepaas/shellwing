@@ -31,7 +31,7 @@ use crate::pane::{Dir, Pane, SplitState, neighbor};
 use crate::secrets::VaultSlot;
 use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
-use crate::sidebar::{self, Row, Section, Sidebar, dot};
+use crate::sidebar::{self, Row, Section, Sidebar};
 use crate::snippets;
 use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
@@ -52,6 +52,10 @@ use shellwing_config::SyncPlace;
 use shellwing_i18n::{tr, tr_n};
 use shellwing_vault::FolderState;
 use shellwing_vault::{AskState, Request};
+
+/// A tab's height in the title bar, and its host's tile.
+const TAB_H: f32 = 34.;
+const TAB_TILE: f32 = 22.;
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
@@ -5915,6 +5919,8 @@ impl Workspace {
             )
     }
 
+    /// A tab in the title bar, and the host's tile at its start: the bar
+    /// keeps its height, a few pixels above and below the tab.
     fn tab_strip(&self, cx: &mut Context<Self>) -> Div {
         let mut strip = div()
             .flex()
@@ -5929,15 +5935,28 @@ impl Workspace {
             let title = v.session().title.clone();
             let detail = v.title_detail();
             let color = self.host_color(v.session().entry.as_deref());
+            let icon = if v.session().is_local() {
+                crate::host_icons::find("terminal")
+            } else {
+                let named = v
+                    .session()
+                    .entry
+                    .as_deref()
+                    .and_then(|e| self.live.hosts().find(e))
+                    .and_then(|h| h.icon.as_deref());
+                self.host_icon(named, &v.session().spec)
+            };
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
+                    .debug_selector(move || format!("tab:{i}"))
                     .flex()
                     .flex_shrink_0()
                     .items_center()
                     .gap(px(8.))
-                    .h(px(30.))
-                    .pl(px(9.))
+                    .h(px(TAB_H))
+                    // The tile as far from the tab's edge as from its top.
+                    .pl(px((TAB_H - TAB_TILE) / 2. - 1.))
                     .pr(px(4.))
                     .max_w(px(if detail.is_some() { 280. } else { 220. }))
                     .rounded(px(7.))
@@ -5958,16 +5977,6 @@ impl Workspace {
                         d.border_color(gpui::transparent_black())
                             .hover(|s| s.bg(rgb(colors().hover)))
                     })
-                    // The host's color, as a mark at the start; a host without
-                    // one keeps the place, so the titles line up.
-                    .child(
-                        div()
-                            .w(px(3.))
-                            .h(px(14.))
-                            .flex_shrink_0()
-                            .rounded(px(2.))
-                            .when_some(color, |d, c| d.bg(rgb(c))),
-                    )
                     // A press on a tab must not start moving the window.
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(move |ws, _, window, cx| ws.activate(i, window, cx)))
@@ -5984,7 +5993,24 @@ impl Workspace {
                         MouseButton::Middle,
                         cx.listener(move |ws, _, window, cx| ws.request_close_tab(i, window, cx)),
                     )
-                    .child(dot(Some(v.status())))
+                    // The host's tile, as the host list draws it: its icon or
+                    // initials in its color, its status at the corner.
+                    .child(
+                        sidebar::host_tile(
+                            icon,
+                            &title,
+                            color,
+                            Some(v.status()),
+                            TAB_TILE,
+                            if active {
+                                colors().tab_on
+                            } else {
+                                colors().chrome
+                            },
+                            false,
+                        )
+                        .debug_selector(move || format!("tab-tile:{i}")),
+                    )
                     // Typing in every pane: said on the tab too.
                     .when(tab.broadcast, |d| {
                         d.child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))

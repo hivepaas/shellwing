@@ -395,6 +395,29 @@ scenario!(
     }
 );
 
+scenario!(
+    /// A tab starts with its host's tile, smaller than the list's and as far
+    /// from the tab's left edge as from its top, within a title bar that
+    /// keeps its height.
+    a_tab_shows_its_hosts_tile,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        ui.click("host:web");
+        ui.login();
+        let tab = ui.bounds("tab:0");
+        let tile = ui.bounds("tab-tile:0");
+        assert_eq!(tab.size.height, gpui::px(34.));
+        assert_eq!(tile.size.width, gpui::px(22.));
+        assert_eq!(tile.size.height, gpui::px(22.));
+        let above = tile.origin.y - tab.origin.y;
+        assert_eq!(tile.origin.x - tab.origin.x, above, "as far in as down");
+        assert!(tab.size.height <= gpui::px(crate::chrome::TITLEBAR_H));
+    }
+);
+
 /// Opens the editor on a saved host, as hovering it and clicking Edit does.
 fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
     ui.hover(&format!("host:{name}"));
