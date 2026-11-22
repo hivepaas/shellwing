@@ -826,6 +826,12 @@ impl Ui {
         self.ws(|ws, _, cx| ws.host_list(cx))
     }
 
+    /// The icon on the tile of the host listed as `name`: its id.
+    pub fn host_icon(&mut self, name: &str) -> Option<&'static str> {
+        self.cx.run_until_parked();
+        self.ws(|ws, _, cx| ws.host_icon_shown(name, cx))
+    }
+
     /// The names of the hosts the sidebar shows, in order.
     pub fn host_names(&mut self) -> Vec<String> {
         self.host_list().into_iter().flat_map(|(_, h)| h).collect()

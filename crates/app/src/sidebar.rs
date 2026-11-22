@@ -12,6 +12,7 @@ use shellwing_i18n::tr;
 use crate::input::{Changed, TextInput};
 
 use crate::colors::colors;
+use crate::host_icons::{self, HostIcon};
 use crate::palette::Action;
 use crate::session::Status;
 use crate::settings_view::Page;
@@ -87,6 +88,9 @@ pub struct Row {
     pub edit: EditTarget,
     /// The host's color (its tile on the rail).
     pub color: Option<u32>,
+    /// Its tile's icon: the one it names, else its system's once seen;
+    /// None: its initials.
+    pub icon: Option<&'static HostIcon>,
     /// The active tab is connected to it.
     pub active: bool,
     /// What the filter matches, lowercase: name, alias, address, user, tags.
@@ -114,13 +118,14 @@ pub fn dot(status: Option<Status>) -> Div {
 }
 
 /// A host's tile, the same in the list and on the rail: the local terminal's
-/// icon, or the host's initials, in its color if it has one; its status dot
-/// at the corner, ringed in `ground`, what the tile sits on. `ring` marks the
+/// icon, the host's icon or else its initials, in its color if it has one; a
+/// system's mark keeps its own color where that reads. Its status dot is at
+/// the corner, ringed in `ground`, what the tile sits on. `ring` marks the
 /// host of the active tab (the list marks its row instead).
 fn tile(row: &Row, ground: u32, ring: bool) -> Div {
     let (bg, fg) = match row.color {
-        Some(c) => (rgba((c << 8) | 0x2e), rgb(c)),
-        None => (rgb(colors().button), rgb(colors().soft)),
+        Some(c) => (rgba((c << 8) | 0x2e), c),
+        None => (rgb(colors().button), colors().soft),
     };
     let face = div()
         .size_full()
@@ -135,18 +140,25 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
             rgba(0x00000000)
         })
         .bg(bg)
-        .text_color(fg)
+        .text_color(rgb(fg))
         .text_size(px(12.))
         .font_weight(FontWeight::SEMIBOLD);
-    let face = if matches!(row.edit, EditTarget::Local) {
-        face.child(
-            svg()
-                .path("icons/terminal.svg")
-                .size(px(18.))
-                .text_color(fg),
-        )
-    } else {
-        face.child(initials(&row.name))
+    let icon = |path: &'static str, size: f32, color: u32| {
+        svg().path(path).size(px(size)).text_color(rgb(color))
+    };
+    let face = match row.icon {
+        _ if matches!(row.edit, EditTarget::Local) => {
+            face.child(icon("icons/terminal.svg", 18., fg))
+        }
+        Some(i) if i.system => {
+            let color = i
+                .color
+                .filter(|c| host_icons::reads_on(*c, colors().button))
+                .unwrap_or(fg);
+            face.child(icon(i.path, 19., color))
+        }
+        Some(i) => face.child(icon(i.path, 18., fg)),
+        None => face.child(initials(&row.name)),
     };
     // The dot is a sibling after the face: a border is drawn over an
     // element's own children.
@@ -496,6 +508,17 @@ impl Sidebar {
 
     /// The sections shown, each title with its hosts' names: for the UI
     /// tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn icon_of(&self, name: &str) -> Option<&'static str> {
+        self.sections
+            .iter()
+            .flat_map(|s| &s.rows)
+            .find(|r| r.name == name)
+            .and_then(|r| r.icon)
+            .map(|i| i.id)
+    }
+
+    /// For the UI tests: the sections' titles and their hosts' names.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn shown_names(&self, cx: &App) -> Vec<(String, Vec<String>)> {
         self.shown(cx)

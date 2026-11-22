@@ -22,6 +22,18 @@ pub struct UpdateState {
     pub staged: Option<(String, String)>,
 }
 
+/// What a host was last seen running (`state/systems.json`, by what opens
+/// it): looked for at most once a day, while its icon is the system's.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SystemSeen {
+    /// The system's icon (`ubuntu`); None: the host would not say.
+    #[serde(default)]
+    pub system: Option<String>,
+    /// When it was looked for, in seconds since 1970.
+    #[serde(default)]
+    pub checked_at: u64,
+}
+
 /// A note's window's size when one last closed, in logical pixels: the
 /// next opens so.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

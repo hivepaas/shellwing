@@ -64,6 +64,7 @@ impl Host {
         put(&mut f, "host_key", self.host_key.map(|k| k.name()));
         put(&mut f, "x11", self.x11.map(|x| x.name()));
         put(&mut f, "color", self.color.as_deref());
+        put(&mut f, "icon", self.icon.as_deref());
         if self.favorite {
             f.insert("favorite".into(), "true".into());
         }
@@ -241,6 +242,7 @@ fn apply_host(t: &mut Table, f: &Fields) -> bool {
     changed |= set_str(t, "host_key", g("host_key"));
     changed |= set_str(t, "x11", g("x11"));
     changed |= set_str(t, "color", g("color"));
+    changed |= set_str(t, "icon", g("icon"));
     changed |= set_flag(t, "favorite", g("favorite") == Some("true"));
     changed |= set_str(t, "run", g("run"));
     changed |= set_str(t, "proxy_command", g("proxy_command"));
@@ -616,6 +618,7 @@ local_only = true
             keepalive: Some(15),
             host_key: Some(crate::hosts::HostKey::AcceptNew),
             color: Some("pink".into()),
+            icon: Some("database".into()),
             favorite: true,
             run: Some("cd ~/apps && ls".into()),
             log: Some(false),
@@ -647,6 +650,7 @@ local_only = true
             (cache.color.as_deref(), cache.favorite, cache.run.as_deref()),
             (Some("pink"), true, Some("cd ~/apps && ls"))
         );
+        assert_eq!(cache.icon.as_deref(), Some("database"));
         assert_eq!(cache.log, Some(false), "false is kept, not left out");
         assert_eq!(
             cache.proxy_command.as_deref(),

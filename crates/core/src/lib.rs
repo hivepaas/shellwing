@@ -17,6 +17,7 @@ pub mod secrets;
 pub mod session;
 pub mod snippets;
 pub mod sync;
+pub mod systems;
 pub mod target;
 pub mod writer;
 

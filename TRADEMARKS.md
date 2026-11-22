@@ -11,3 +11,9 @@ not cover them.
   must not suggest that HivePaaS made, checked or endorses it.
 
 Questions, or a use not covered here: open an issue.
+
+## Others' marks
+
+The operating systems' marks a host's tile can show (Ubuntu, Debian and the
+others) are their owners' trademarks, shown only to say which system a host
+runs. Where they come from: [crates/app/assets/icons/os](crates/app/assets/icons/os/README.md).

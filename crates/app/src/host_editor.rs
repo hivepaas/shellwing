@@ -150,6 +150,8 @@ pub struct HostEditor {
     x11: Option<HostX11>,
     log: Option<bool>,
     color: Option<String>,
+    /// Its icon, kept as it was: hosts.toml sets it, for now.
+    icon: Option<String>,
     favorite: bool,
     /// A group being named here, made when the host is saved.
     naming_group: bool,
@@ -232,6 +234,7 @@ impl HostEditor {
             x11: None,
             log: None,
             color: None,
+            icon: None,
             favorite: false,
             naming_group: false,
             collection: None,
@@ -331,6 +334,7 @@ impl HostEditor {
         self.set(&i.run, h.run.as_deref().unwrap_or(""), cx);
         self.set(&i.proxy, h.proxy_command.as_deref().unwrap_or(""), cx);
         self.color = h.color.clone();
+        self.icon = h.icon.clone();
         self.favorite = h.favorite;
         self.method = h.auth.method;
         self.jumps = h.jump.clone();
@@ -386,6 +390,7 @@ impl HostEditor {
             keepalive: self.text(&i.keepalive, cx).parse().ok(),
             host_key: self.host_key,
             color: self.color.clone(),
+            icon: self.icon.clone(),
             favorite: self.favorite,
             run: opt(self.text(&i.run, cx)),
             log: self.log,
@@ -756,6 +761,7 @@ impl HostEditor {
             keepalive: None,
             host_key: None,
             color: None,
+            icon: None,
             favorite: false,
             run: None,
             log: None,
