@@ -334,6 +334,9 @@ tdcf5544b = host di sini, alias ssh, atau user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Cari ikon
+
 # Another host has this name.
 te27e50cd = Host lain sudah memakai nama ini.
 
@@ -384,6 +387,36 @@ t0d616a81 = Salinan { $name }
 
 # Choose
 t73c66160 = Pilih
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Dipilih di sini: host tidak ditanya sistem apa yang dijalankannya.
+
+# Automatic: {system}
+td31d5fc9 = Otomatis: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Dilaporkan oleh host, yang ditanya lagi paling banyak sekali sehari.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = Host tidak memberi tahu sistem apa yang dijalankannya. Host ditanya lagi paling banyak sekali sehari.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Menampilkan sistem yang dijalankan host, setelah host terhubung.
+
+# Icon
+t68e6cb10 = Ikon
+
+# Change
+ta1de2fdd = Ubah
+
+# Systems
+t39f411dd = Sistem
+
+# Themes
+tbf419633 = Tema
+
+# No icon matches.
+t23c804ac = Tidak ada ikon yang cocok.
 
 # host name
 t8465975e = nama host
@@ -681,6 +714,51 @@ tfc330336 = Duplikatkan
 
 # Save and connect
 t83731197 = Simpan dan hubungkan
+
+# Server
+t6d7302f2 = Server
+
+# Database
+tf09430d8 = Basis data
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = Cloud
+
+# Container
+tb23d4718 = Kontainer
+
+# Firewall
+tce907b11 = Firewall
+
+# Router
+t922ed124 = Router
+
+# Storage
+t34eddf06 = Penyimpanan
+
+# Home network
+t674f73a8 = Jaringan rumah
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Komputasi
+
+# Mail
+t53707c4e = Surel
+
+# Desktop
+t64215c53 = Desktop
+
+# Bastion
+tad4e4b8f = Bastion
+
+# Test
+t2ffcbe05 = Uji
 
 # Command palette
 td54729b1 = Palet perintah
@@ -2706,9 +2784,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Variabelnya dihapus dari brankas, dan dari perangkat Anda yang lain setelah tersinkron. Shell tempat lingkungan ini dimuat tetap menyimpannya sampai dilepas.
-
-# Change
-ta1de2fdd = Ubah
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Palet hanya menawarkan untuk memuatnya di panel host tersebut.

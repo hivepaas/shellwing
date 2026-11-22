@@ -3817,6 +3817,7 @@ impl Workspace {
             vault: self.vault.clone(),
             orgs: self.orgs.clone(),
             collections: self.live.collections().to_vec(),
+            systems: self.systems.clone(),
         };
         let found = match &target {
             EditTarget::Saved(name) => self.live.hosts().find(name).cloned(),

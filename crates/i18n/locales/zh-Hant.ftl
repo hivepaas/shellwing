@@ -334,6 +334,9 @@ tdcf5544b = 此處的主機、ssh 別名或 user@host
 # Staging
 tcb81d7c6 = 預備環境
 
+# Search icons
+t024abc2b = 搜尋圖示
+
 # Another host has this name.
 te27e50cd = 已有其他主機使用此名稱。
 
@@ -384,6 +387,36 @@ t0d616a81 = { $name } 副本
 
 # Choose
 t73c66160 = 選擇
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = 在此選擇：不會詢問主機執行的系統。
+
+# Automatic: {system}
+td31d5fc9 = 自動：{ $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = 由主機回報，每天最多再詢問一次。
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = 主機未回報執行的系統。每天最多再詢問一次。
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = 連線後顯示主機執行的系統。
+
+# Icon
+t68e6cb10 = 圖示
+
+# Change
+ta1de2fdd = 變更
+
+# Systems
+t39f411dd = 系統
+
+# Themes
+tbf419633 = 主題
+
+# No icon matches.
+t23c804ac = 沒有符合的圖示。
 
 # host name
 t8465975e = 主機名稱
@@ -681,6 +714,51 @@ tfc330336 = 建立副本
 
 # Save and connect
 t83731197 = 儲存並連線
+
+# Server
+t6d7302f2 = 伺服器
+
+# Database
+tf09430d8 = 資料庫
+
+# Web
+t72645431 = 網頁
+
+# Cloud
+tc0821b1e = 雲端
+
+# Container
+tb23d4718 = 容器
+
+# Firewall
+tce907b11 = 防火牆
+
+# Router
+t922ed124 = 路由器
+
+# Storage
+t34eddf06 = 儲存空間
+
+# Home network
+t674f73a8 = 家用網路
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = 運算
+
+# Mail
+t53707c4e = 郵件
+
+# Desktop
+t64215c53 = 桌面電腦
+
+# Bastion
+tad4e4b8f = 跳板機
+
+# Test
+t2ffcbe05 = 測試
 
 # Command palette
 td54729b1 = 命令面板
@@ -2706,9 +2784,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其變數將從保險庫中刪除，你的其他裝置同步後也會刪除。已載入它的 shell 會保留這些變數，直到卸載為止。
-
-# Change
-ta1de2fdd = 變更
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = 命令面板只會在這些主機的窗格中提供載入選項。

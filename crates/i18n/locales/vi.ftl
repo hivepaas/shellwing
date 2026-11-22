@@ -325,6 +325,9 @@ tdcf5544b = một máy chủ ở đây, một alias của ssh, hoặc user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Tìm icon
+
 # Another host has this name.
 te27e50cd = Đã có máy chủ khác tên này.
 
@@ -375,6 +378,36 @@ t0d616a81 = { $name } bản sao
 
 # Choose
 t73c66160 = Chọn
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Chọn ở đây: không hỏi máy chủ đang chạy hệ điều hành nào.
+
+# Automatic: {system}
+td31d5fc9 = Tự động: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Lấy từ máy chủ, hỏi lại tối đa một lần mỗi ngày.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = Máy chủ không cho biết đang chạy hệ điều hành nào. Hỏi lại tối đa một lần mỗi ngày.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Hiện hệ điều hành máy chủ đang chạy, sau khi đã kết nối.
+
+# Icon
+t68e6cb10 = Icon
+
+# Change
+ta1de2fdd = Đổi
+
+# Systems
+t39f411dd = Hệ điều hành
+
+# Themes
+tbf419633 = Chủ đề
+
+# No icon matches.
+t23c804ac = Không có icon nào khớp.
 
 # host name
 t8465975e = tên máy chủ
@@ -672,6 +705,51 @@ tfc330336 = Nhân bản
 
 # Save and connect
 t83731197 = Lưu và kết nối
+
+# Server
+t6d7302f2 = Máy chủ
+
+# Database
+tf09430d8 = Cơ sở dữ liệu
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = Đám mây
+
+# Container
+tb23d4718 = Container
+
+# Firewall
+tce907b11 = Tường lửa
+
+# Router
+t922ed124 = Router
+
+# Storage
+t34eddf06 = Lưu trữ
+
+# Home network
+t674f73a8 = Mạng gia đình
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Tính toán
+
+# Mail
+t53707c4e = Thư
+
+# Desktop
+t64215c53 = Máy bàn
+
+# Bastion
+tad4e4b8f = Bastion
+
+# Test
+t2ffcbe05 = Thử nghiệm
 
 # Command palette
 td54729b1 = Bảng lệnh
@@ -2676,9 +2754,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Các biến của nó bị xoá khỏi kho, và khỏi các thiết bị khác khi chúng đồng bộ. Các shell đang nạp nó vẫn giữ biến cho tới khi gỡ.
-
-# Change
-ta1de2fdd = Đổi
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Bảng lệnh chỉ đề nghị nạp nó trong các pane của những máy chủ đó.

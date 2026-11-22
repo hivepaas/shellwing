@@ -325,6 +325,9 @@ tdcf5544b = 此处的主机、ssh 别名或 user@host
 # Staging
 tcb81d7c6 = 预发布环境
 
+# Search icons
+t024abc2b = 搜索图标
+
 # Another host has this name.
 te27e50cd = 已有其他主机使用此名称。
 
@@ -375,6 +378,36 @@ t0d616a81 = { $name } 副本
 
 # Choose
 t73c66160 = 选择
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = 在此选择：不会询问主机运行的系统。
+
+# Automatic: {system}
+td31d5fc9 = 自动：{ $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = 由主机报告，每天最多再询问一次。
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = 主机未报告运行的系统。每天最多再询问一次。
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = 连接后显示主机运行的系统。
+
+# Icon
+t68e6cb10 = 图标
+
+# Change
+ta1de2fdd = 更改
+
+# Systems
+t39f411dd = 系统
+
+# Themes
+tbf419633 = 主题
+
+# No icon matches.
+t23c804ac = 没有匹配的图标。
 
 # host name
 t8465975e = 主机名
@@ -672,6 +705,51 @@ tfc330336 = 创建副本
 
 # Save and connect
 t83731197 = 保存并连接
+
+# Server
+t6d7302f2 = 服务器
+
+# Database
+tf09430d8 = 数据库
+
+# Web
+t72645431 = 网页
+
+# Cloud
+tc0821b1e = 云
+
+# Container
+tb23d4718 = 容器
+
+# Firewall
+tce907b11 = 防火墙
+
+# Router
+t922ed124 = 路由器
+
+# Storage
+t34eddf06 = 存储
+
+# Home network
+t674f73a8 = 家庭网络
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = 计算
+
+# Mail
+t53707c4e = 邮件
+
+# Desktop
+t64215c53 = 台式机
+
+# Bastion
+tad4e4b8f = 跳板机
+
+# Test
+t2ffcbe05 = 测试
 
 # Command palette
 td54729b1 = 命令面板
@@ -2676,9 +2754,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 其变量将从保险库中删除，你的其他设备同步后也会删除。已加载它的 shell 会保留这些变量，直到卸载。
-
-# Change
-ta1de2fdd = 更改
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = 命令面板只会在这些主机的窗格中提供加载它。

@@ -337,6 +337,9 @@ tdcf5544b = buradaki bir ana makine, bir ssh takma adı veya user@host
 # Staging
 tcb81d7c6 = Hazırlık
 
+# Search icons
+t024abc2b = Simge ara
+
 # Another host has this name.
 te27e50cd = Bu adı başka bir ana makine kullanıyor.
 
@@ -387,6 +390,36 @@ t0d616a81 = { $name } kopyası
 
 # Choose
 t73c66160 = Seç
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Burada seçildi: ana makineye hangi sistemi çalıştırdığı sorulmaz.
+
+# Automatic: {system}
+td31d5fc9 = Otomatik: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Ana makineden öğrenildi; en fazla günde bir kez yeniden sorulur.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = Ana makine hangi sistemi çalıştırdığını söylemedi. En fazla günde bir kez yeniden sorulur.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Bağlandıktan sonra ana makinenin çalıştırdığı sistemi gösterir.
+
+# Icon
+t68e6cb10 = Simge
+
+# Change
+ta1de2fdd = Değiştir
+
+# Systems
+t39f411dd = Sistemler
+
+# Themes
+tbf419633 = Temalar
+
+# No icon matches.
+t23c804ac = Eşleşen simge yok.
 
 # host name
 t8465975e = ana makine adı
@@ -684,6 +717,51 @@ tfc330336 = Çoğalt
 
 # Save and connect
 t83731197 = Kaydet ve bağlan
+
+# Server
+t6d7302f2 = Sunucu
+
+# Database
+tf09430d8 = Veritabanı
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = Bulut
+
+# Container
+tb23d4718 = Konteyner
+
+# Firewall
+tce907b11 = Güvenlik duvarı
+
+# Router
+t922ed124 = Yönlendirici
+
+# Storage
+t34eddf06 = Depolama
+
+# Home network
+t674f73a8 = Ev ağı
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Hesaplama
+
+# Mail
+t53707c4e = E-posta
+
+# Desktop
+t64215c53 = Masaüstü
+
+# Bastion
+tad4e4b8f = Bastion
+
+# Test
+t2ffcbe05 = Test
 
 # Command palette
 td54729b1 = Komut paleti
@@ -2728,9 +2806,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Değişkenleri kasadan ve eşitlemeden sonra diğer cihazlarınızdan da silinir. Yüklendiği kabuklar onları boşaltılana kadar tutar.
-
-# Change
-ta1de2fdd = Değiştir
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Palet bunu yalnızca bu ana makinelerin bölmelerinde yüklemeyi önerir.

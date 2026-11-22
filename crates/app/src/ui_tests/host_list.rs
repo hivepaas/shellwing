@@ -364,6 +364,37 @@ scenario!(
     }
 );
 
+scenario!(
+    /// The editor's Icon: *Change* opens the app's icons, narrowed by what is
+    /// typed; the one picked closes them, shows on the host's tile once
+    /// saved, and is written to hosts.toml. *Automatic* takes it away again.
+    pick_a_hosts_icon,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", closed_port()));
+        ui.open();
+        edit_host(ui, "web");
+        assert!(ui.find("icon-menu").is_none(), "closed until asked");
+        ui.click("icon-change");
+        ui.type_text("data");
+        assert!(ui.find("icon:database").is_some());
+        assert!(ui.find("icon:ubuntu").is_none(), "narrowed by the search");
+        ui.click("icon:database");
+        assert!(ui.find("icon-menu").is_none());
+        save_host(ui);
+        let toml = ui.hosts_toml();
+        assert!(toml.contains("icon = \"database\""), "{toml}");
+        assert_eq!(ui.host_icon("web"), Some("database"));
+
+        edit_host(ui, "web");
+        ui.click("icon-change");
+        ui.click("icon-auto");
+        save_host(ui);
+        let toml = ui.hosts_toml();
+        assert!(!toml.contains("icon ="), "{toml}");
+        assert_eq!(ui.host_icon("web"), None);
+    }
+);
+
 /// Opens the editor on a saved host, as hovering it and clicking Edit does.
 fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
     ui.hover(&format!("host:{name}"));

@@ -2,10 +2,15 @@
 //! and themes', in the tile's. A host names one with `icon` in hosts.toml,
 //! or leaves it to the system it was seen running.
 
+use shellwing_i18n::tr;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct HostIcon {
     /// What hosts.toml names it by.
     pub id: &'static str,
+    /// A system's own name; a theme's is said in the app's language
+    /// ([`label`]).
+    pub name: &'static str,
     pub path: &'static str,
     /// A system's mark, filled; else a theme's, drawn in strokes.
     pub system: bool,
@@ -14,9 +19,10 @@ pub struct HostIcon {
 }
 
 macro_rules! system {
-    ($id:literal, $color:expr) => {
+    ($id:literal, $name:literal, $color:expr) => {
         HostIcon {
             id: $id,
+            name: $name,
             path: concat!("icons/os/", $id, ".svg"),
             system: true,
             color: $color,
@@ -28,6 +34,7 @@ macro_rules! theme {
     ($id:literal, $path:literal) => {
         HostIcon {
             id: $id,
+            name: "",
             path: $path,
             system: false,
             color: None,
@@ -39,26 +46,26 @@ macro_rules! theme {
 /// mark, or one with no color of its own that reads (Linux's yellow), takes
 /// the tile's.
 pub const SYSTEMS: &[HostIcon] = &[
-    system!("ubuntu", Some(0xe95420)),
-    system!("debian", Some(0xa81d33)),
-    system!("fedora", Some(0x51a2da)),
-    system!("redhat", Some(0xee0000)),
-    system!("centos", Some(0x262577)),
-    system!("rocky", Some(0x10b981)),
-    system!("alma", None),
-    system!("alpine", Some(0x0d597f)),
-    system!("arch", Some(0x1793d1)),
-    system!("opensuse", Some(0x73ba25)),
-    system!("kali", Some(0x557c94)),
-    system!("mint", Some(0x86be43)),
-    system!("raspberry-pi", Some(0xa22846)),
-    system!("freebsd", Some(0xab2b28)),
-    system!("macos", None),
-    system!("nixos", Some(0x5277c3)),
-    system!("proxmox", Some(0xe57000)),
-    system!("truenas", Some(0x0095d5)),
-    system!("openwrt", Some(0x00b5e2)),
-    system!("linux", None),
+    system!("ubuntu", "Ubuntu", Some(0xe95420)),
+    system!("debian", "Debian", Some(0xa81d33)),
+    system!("fedora", "Fedora", Some(0x51a2da)),
+    system!("redhat", "Red Hat", Some(0xee0000)),
+    system!("centos", "CentOS", Some(0x262577)),
+    system!("rocky", "Rocky Linux", Some(0x10b981)),
+    system!("alma", "AlmaLinux", None),
+    system!("alpine", "Alpine Linux", Some(0x0d597f)),
+    system!("arch", "Arch Linux", Some(0x1793d1)),
+    system!("opensuse", "openSUSE", Some(0x73ba25)),
+    system!("kali", "Kali Linux", Some(0x557c94)),
+    system!("mint", "Linux Mint", Some(0x86be43)),
+    system!("raspberry-pi", "Raspberry Pi", Some(0xa22846)),
+    system!("freebsd", "FreeBSD", Some(0xab2b28)),
+    system!("macos", "macOS", None),
+    system!("nixos", "NixOS", Some(0x5277c3)),
+    system!("proxmox", "Proxmox", Some(0xe57000)),
+    system!("truenas", "TrueNAS", Some(0x0095d5)),
+    system!("openwrt", "OpenWrt", Some(0x00b5e2)),
+    system!("linux", "Linux", None),
 ];
 
 pub const THEMES: &[HostIcon] = &[
@@ -83,6 +90,29 @@ pub const THEMES: &[HostIcon] = &[
 /// The icon named `id`, if the app has it.
 pub fn find(id: &str) -> Option<&'static HostIcon> {
     SYSTEMS.iter().chain(THEMES).find(|i| i.id == id)
+}
+
+/// What the icon is called, in the app's language for a theme's.
+pub fn label(icon: &HostIcon) -> String {
+    match icon.id {
+        "server" => tr!("Server"),
+        "database" => tr!("Database"),
+        "web" => tr!("Web"),
+        "cloud" => tr!("Cloud"),
+        "container" => tr!("Container"),
+        "firewall" => tr!("Firewall"),
+        "router" => tr!("Router"),
+        "storage" => tr!("Storage"),
+        "home" => tr!("Home network"),
+        "terminal" => tr!("Terminal"),
+        "git" => tr!("Git"),
+        "compute" => tr!("Compute"),
+        "mail" => tr!("Mail"),
+        "desktop" => tr!("Desktop"),
+        "bastion" => tr!("Bastion"),
+        "test" => tr!("Test"),
+        _ => icon.name.to_string(),
+    }
 }
 
 /// Whether `color` stands out from `ground` enough to draw a mark in: their
