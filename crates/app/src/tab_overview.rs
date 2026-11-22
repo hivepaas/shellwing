@@ -10,10 +10,18 @@ use gpui::{
 use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
+use crate::host_icons::HostIcon;
 use crate::input::{Changed, TextInput};
 use crate::look::ui;
 use crate::session::Status;
-use crate::sidebar::dot;
+use crate::sidebar::{dot, tile_face_sized};
+
+/// A host's tile over its tabs, as on a tab; each tab's status dot sits
+/// under the tile's middle, its title under the host's name.
+const TILE: f32 = 22.;
+const TILE_GAP: f32 = 8.;
+const HEADER_PAD: f32 = 8.;
+const DOT: f32 = 7.;
 
 /// One open tab, as the workspace sees it.
 #[derive(Clone, Debug, PartialEq)]
@@ -27,6 +35,8 @@ pub struct TabRow {
     pub local: bool,
     /// The host's color.
     pub mark: Option<u32>,
+    /// Its tile's icon, as on its tab; None: its initials.
+    pub icon: Option<&'static HostIcon>,
     /// `user@address`, or "this computer".
     pub address: SharedString,
     /// What the program says it is (OSC 0/2), else the address.
@@ -206,26 +216,20 @@ impl Render for TabOverview {
                     div()
                         .flex()
                         .items_center()
-                        .gap(px(8.))
-                        .px(px(8.))
+                        .gap(px(TILE_GAP))
+                        .px(px(HEADER_PAD))
                         .pt(px(9.))
                         .pb(px(4.))
-                        .child(if r.local {
-                            svg()
-                                .path("icons/terminal.svg")
-                                .size(px(13.))
-                                .flex_shrink_0()
-                                .text_color(rgb(c.soft))
-                                .into_any_element()
-                        } else {
+                        .child(
                             div()
-                                .w(px(3.))
-                                .h(px(13.))
+                                .debug_selector({
+                                    let host = r.host.clone();
+                                    move || format!("overview-tile:{host}")
+                                })
                                 .flex_shrink_0()
-                                .rounded(px(2.))
-                                .when_some(r.mark, |d, m| d.bg(rgb(m)))
-                                .into_any_element()
-                        })
+                                .size(px(TILE))
+                                .child(tile_face_sized(r.icon, &r.host, r.mark, false, TILE)),
+                        )
                         .child(
                             div()
                                 .font_weight(FontWeight::SEMIBOLD)
@@ -260,8 +264,8 @@ impl Render for TabOverview {
                     .flex()
                     .flex_shrink_0()
                     .items_center()
-                    .gap(px(10.))
-                    .pl(px(20.))
+                    .gap(px(TILE / 2. - DOT / 2. + TILE_GAP))
+                    .pl(px(HEADER_PAD + TILE / 2. - DOT / 2.))
                     .pr(px(8.))
                     .rounded(px(6.))
                     .cursor_pointer()
@@ -269,7 +273,9 @@ impl Render for TabOverview {
                     .when(!chosen && r.here, |d| d.bg(rgb(c.selected)))
                     .when(!chosen, |d| d.hover(|s| s.bg(rgb(c.hover))))
                     .on_click(cx.listener(move |_, _, _, cx| cx.emit(OverviewEvent::Go(tab))))
-                    .child(dot(Some(r.status)))
+                    .child(
+                        dot(Some(r.status)).debug_selector(move || format!("overview-dot:{tab}")),
+                    )
                     .child(
                         div()
                             .flex_1()
@@ -430,6 +436,7 @@ mod tests {
             host: host.to_string().into(),
             local: false,
             mark: None,
+            icon: None,
             address: format!("deploy@{host}").into(),
             title: title.to_string().into(),
             status: Status::Connected,

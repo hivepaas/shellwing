@@ -285,6 +285,12 @@ scenario!(
         assert_eq!(ui.ws(|ws, _, _| ws.active_index()), 1);
         ui.palette("All 2 tabs");
         ui.wait_until("the overview", |ui| ui.ws(|ws, _, _| ws.overview_open()));
+        // Each host's tile heads its tabs, their dots under its middle.
+        let tile = ui.bounds("overview-tile:web");
+        assert_eq!(tile.size.width, gpui::px(22.));
+        let dot = ui.bounds("overview-dot:0");
+        let middle = |b: gpui::Bounds<gpui::Pixels>| f32::from(b.origin.x + b.size.width / 2.);
+        assert!((middle(dot) - middle(tile)).abs() <= 0.5, "{dot:?} under {tile:?}");
         ui.type_text("web");
         ui.keys("enter");
         ui.wait_until("the overview to close", |ui| !ui.ws(|ws, _, _| ws.overview_open()));

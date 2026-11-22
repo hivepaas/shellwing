@@ -5682,6 +5682,20 @@ impl Workspace {
         }
     }
 
+    /// The icon on a tab's host tile: the terminal's for a shell here, else
+    /// the one its host names, else the system it was seen running.
+    fn session_icon(&self, s: &Session) -> Option<&'static crate::host_icons::HostIcon> {
+        if s.is_local() {
+            return crate::host_icons::find("terminal");
+        }
+        let named = s
+            .entry
+            .as_deref()
+            .and_then(|e| self.live.hosts().find(e))
+            .and_then(|h| h.icon.as_deref());
+        self.host_icon(named, &s.spec)
+    }
+
     /// The open tabs, for the overview.
     fn overview_rows(&self, cx: &gpui::App) -> Vec<TabRow> {
         self.tabs
@@ -5710,6 +5724,7 @@ impl Workspace {
                     },
                     local,
                     mark: self.host_color(s.entry.as_deref()),
+                    icon: self.session_icon(s),
                     title: v.shell_title().cloned().unwrap_or_else(|| address.clone()),
                     address,
                     status: v.status(),
@@ -5935,17 +5950,7 @@ impl Workspace {
             let title = v.session().title.clone();
             let detail = v.title_detail();
             let color = self.host_color(v.session().entry.as_deref());
-            let icon = if v.session().is_local() {
-                crate::host_icons::find("terminal")
-            } else {
-                let named = v
-                    .session()
-                    .entry
-                    .as_deref()
-                    .and_then(|e| self.live.hosts().find(e))
-                    .and_then(|h| h.icon.as_deref());
-                self.host_icon(named, &v.session().spec)
-            };
+            let icon = self.session_icon(v.session());
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
