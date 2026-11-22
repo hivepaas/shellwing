@@ -317,10 +317,12 @@ Hovering a group's header shows *Edit*: its name, color and the theme of its
 hosts. Renaming a group takes its hosts along; deleting one keeps its hosts,
 without a group.
 
-The host list's right edge can be dragged (200 to 480 px; a double-click goes
-back to 248). The button at the right of *HOSTS* folds it to a rail of host
-tiles (initials, color, status; hover for the name, click to connect), with a
-button to unfold it and one to find a host in the palette. **Ctrl+Shift+B**
+Each host in the list is a tile (its initials in its color, with its status
+at the corner) beside its name and, under it, its address. The host list's
+right edge can be dragged (200 to 480 px; a double-click goes back to 248).
+The button at the right of *HOSTS* folds it to a rail of the same tiles (hover
+for the name, click to connect), with a button to unfold it and one to find a
+host in the palette. **Ctrl+Shift+B**
 still hides the host list altogether.
 
 The drawer where a host or a group is edited can be widened by dragging its
