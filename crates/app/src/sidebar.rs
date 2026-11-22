@@ -25,8 +25,10 @@ pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
 /// A host's tile, in the list as on the rail.
-pub const TILE: f32 = 32.;
-const TILE_RADIUS: f32 = 9.;
+pub const TILE: f32 = 36.;
+const TILE_RADIUS: f32 = 10.;
+/// What a tile shows, a system's mark or a theme's icon, inside it.
+const TILE_ICON: f32 = 24.;
 /// A host's row, from the list's edge: its margin, then its padding. Its
 /// tile starts a little in from its section's title (12), at 24; its name,
 /// and its address under it, follow the tile after a gap. The row is the
@@ -171,7 +173,7 @@ pub fn tile_face(
         })
         .bg(bg)
         .text_color(rgb(fg))
-        .text_size(px(12.))
+        .text_size(px(13.))
         .font_weight(FontWeight::SEMIBOLD);
     let icon_svg = |path: &'static str, size: f32, color: u32| {
         svg().path(path).size(px(size)).text_color(rgb(color))
@@ -182,9 +184,9 @@ pub fn tile_face(
                 .color
                 .filter(|c| host_icons::reads_on(*c, colors().button))
                 .unwrap_or(fg);
-            face.child(icon_svg(i.path, 19., color))
+            face.child(icon_svg(i.path, TILE_ICON, color))
         }
-        Some(i) => face.child(icon_svg(i.path, 18., fg)),
+        Some(i) => face.child(icon_svg(i.path, TILE_ICON, fg)),
         None => face.child(initials(name)),
     }
 }
