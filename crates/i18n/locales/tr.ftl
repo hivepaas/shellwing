@@ -3008,15 +3008,15 @@ t81dee99e = shellwing cloud onu sizin için saklar: her cihazda giriş yapın, o
 # shellwing cloud is coming: signing in opens with it.
 t8de35792 = shellwing cloud yakında geliyor: giriş onunla birlikte açılacak.
 
-# {n} host · $3.99/mo | {n} hosts · $3.99/mo
-td1ec974a =
+# {n} host · coming soon | {n} hosts · coming soon
+t08904d1a =
     { $n ->
-        [one] { $n } ana makine · $3.99/ay
-       *[other] { $n } ana makine · $3.99/ay
+        [one] { $n } ana makine · yakında
+       *[other] { $n } ana makine · yakında
     }
 
-# unlimited · $7.99/mo
-t6cc4bcad = sınırsız · $7.99/ay
+# unlimited · coming soon
+t7c4d88dd = sınırsız · yakında
 
 # just now
 ta715ef0f = az önce
