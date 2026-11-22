@@ -325,6 +325,9 @@ tdcf5544b = 여기의 호스트, ssh 별칭 또는 user@host
 # Staging
 tcb81d7c6 = 스테이징
 
+# Search icons
+t024abc2b = 아이콘 검색
+
 # Another host has this name.
 te27e50cd = 같은 이름의 호스트가 이미 있습니다.
 
@@ -375,6 +378,36 @@ t0d616a81 = { $name } 사본
 
 # Choose
 t73c66160 = 선택
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = 여기서 선택함: 호스트에 실행 중인 시스템을 묻지 않습니다.
+
+# Automatic: {system}
+td31d5fc9 = 자동: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = 호스트에서 확인함. 하루에 최대 한 번 다시 묻습니다.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = 호스트가 실행 중인 시스템을 알려 주지 않았습니다. 하루에 최대 한 번 다시 묻습니다.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = 연결되면 호스트에서 실행 중인 시스템을 표시합니다.
+
+# Icon
+t68e6cb10 = 아이콘
+
+# Change
+ta1de2fdd = 변경
+
+# Systems
+t39f411dd = 시스템
+
+# Themes
+tbf419633 = 테마
+
+# No icon matches.
+t23c804ac = 일치하는 아이콘이 없습니다.
 
 # host name
 t8465975e = 호스트 이름
@@ -672,6 +705,51 @@ tfc330336 = 복제
 
 # Save and connect
 t83731197 = 저장 후 연결
+
+# Server
+t6d7302f2 = 서버
+
+# Database
+tf09430d8 = 데이터베이스
+
+# Web
+t72645431 = 웹
+
+# Cloud
+tc0821b1e = 클라우드
+
+# Container
+tb23d4718 = 컨테이너
+
+# Firewall
+tce907b11 = 방화벽
+
+# Router
+t922ed124 = 라우터
+
+# Storage
+t34eddf06 = 스토리지
+
+# Home network
+t674f73a8 = 홈 네트워크
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = 컴퓨팅
+
+# Mail
+t53707c4e = 메일
+
+# Desktop
+t64215c53 = 데스크톱
+
+# Bastion
+tad4e4b8f = 배스천
+
+# Test
+t2ffcbe05 = 테스트
 
 # Command palette
 td54729b1 = 명령 팔레트
@@ -2676,9 +2754,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 변수는 보관함에서 삭제되며, 다른 기기에서도 동기화되면 삭제됩니다. 불러온 셸은 불러오기를 해제할 때까지 변수를 유지합니다.
-
-# Change
-ta1de2fdd = 변경
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = 팔레트는 이 호스트들의 창에서만 불러오도록 제안합니다.

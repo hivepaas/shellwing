@@ -343,6 +343,9 @@ tdcf5544b = хост зі списку, псевдонім ssh або user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Шукати значки
+
 # Another host has this name.
 te27e50cd = Інший хост уже має таку назву.
 
@@ -393,6 +396,36 @@ t0d616a81 = { $name } копія
 
 # Choose
 t73c66160 = Вибрати
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Вибрано тут: хост не питають, яка на ньому система.
+
+# Automatic: {system}
+td31d5fc9 = Автоматично: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Повідомлено хостом; його питають знову не частіше ніж раз на день.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = Хост не повідомив, яка на ньому система. Його питають знову не частіше ніж раз на день.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Показує систему хоста після підключення до нього.
+
+# Icon
+t68e6cb10 = Значок
+
+# Change
+ta1de2fdd = Змінити
+
+# Systems
+t39f411dd = Системи
+
+# Themes
+tbf419633 = Теми
+
+# No icon matches.
+t23c804ac = Немає відповідних значків.
 
 # host name
 t8465975e = назва хоста
@@ -690,6 +723,51 @@ tfc330336 = Дублювати
 
 # Save and connect
 t83731197 = Зберегти та підключитися
+
+# Server
+t6d7302f2 = Сервер
+
+# Database
+tf09430d8 = База даних
+
+# Web
+t72645431 = Веб
+
+# Cloud
+tc0821b1e = Хмара
+
+# Container
+tb23d4718 = Контейнер
+
+# Firewall
+tce907b11 = Брандмауер
+
+# Router
+t922ed124 = Маршрутизатор
+
+# Storage
+t34eddf06 = Сховище
+
+# Home network
+t674f73a8 = Домашня мережа
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Обчислення
+
+# Mail
+t53707c4e = Пошта
+
+# Desktop
+t64215c53 = Робочий стіл
+
+# Bastion
+tad4e4b8f = Бастіон
+
+# Test
+t2ffcbe05 = Тест
 
 # Command palette
 td54729b1 = Палітра команд
@@ -2772,9 +2850,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Його змінні буде видалено зі сховища, а після синхронізації — і з інших ваших пристроїв. Оболонки, у які його завантажено, зберігають їх до вивантаження.
-
-# Change
-ta1de2fdd = Змінити
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Палітра пропонує завантажити його лише в панелі цих хостів.

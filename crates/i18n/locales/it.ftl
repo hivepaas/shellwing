@@ -337,6 +337,9 @@ tdcf5544b = un host già presente, un alias ssh o user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Cerca icone
+
 # Another host has this name.
 te27e50cd = Un altro host ha già questo nome.
 
@@ -387,6 +390,36 @@ t0d616a81 = { $name } copia
 
 # Choose
 t73c66160 = Scegli
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Scelta qui: all'host non si chiede quale sistema esegue.
+
+# Automatic: {system}
+td31d5fc9 = Automatica: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Indicato dall'host, a cui lo si chiede di nuovo al massimo una volta al giorno.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = L'host non ha indicato quale sistema esegue. Glielo si chiede di nuovo al massimo una volta al giorno.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Mostra il sistema dell'host, una volta che si è connesso.
+
+# Icon
+t68e6cb10 = Icona
+
+# Change
+ta1de2fdd = Cambia
+
+# Systems
+t39f411dd = Sistemi
+
+# Themes
+tbf419633 = Temi
+
+# No icon matches.
+t23c804ac = Nessuna icona corrisponde.
 
 # host name
 t8465975e = nome host
@@ -684,6 +717,51 @@ tfc330336 = Duplica
 
 # Save and connect
 t83731197 = Salva e connetti
+
+# Server
+t6d7302f2 = Server
+
+# Database
+tf09430d8 = Database
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = Cloud
+
+# Container
+tb23d4718 = Container
+
+# Firewall
+tce907b11 = Firewall
+
+# Router
+t922ed124 = Router
+
+# Storage
+t34eddf06 = Archiviazione
+
+# Home network
+t674f73a8 = Rete domestica
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Calcolo
+
+# Mail
+t53707c4e = Posta
+
+# Desktop
+t64215c53 = Desktop
+
+# Bastion
+tad4e4b8f = Bastion
+
+# Test
+t2ffcbe05 = Test
 
 # Command palette
 td54729b1 = Palette dei comandi
@@ -2728,9 +2806,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Le sue variabili spariscono dalla cassaforte, e dai tuoi altri dispositivi quando si sincronizzano. Le shell in cui è caricato le mantengono finché non viene rimosso.
-
-# Change
-ta1de2fdd = Cambia
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = La palette propone di caricarlo solo nei riquadri di quegli host.

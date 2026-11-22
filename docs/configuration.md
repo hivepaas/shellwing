@@ -326,7 +326,8 @@ a rail of the same tiles (hover for the name, click to connect), with a button
 to unfold it and one to find a host in the palette. **Ctrl+Shift+B** still
 hides the host list altogether.
 
-A host's `icon` is one of the app's: a system's mark (`ubuntu`, `debian`,
+A host's `icon`, chosen in the host editor (*Icon*, then *Change*) or written
+in hosts.toml, is one of the app's: a system's mark (`ubuntu`, `debian`,
 `fedora`, `redhat`, `centos`, `rocky`, `alma`, `alpine`, `arch`, `opensuse`,
 `kali`, `mint`, `raspberry-pi`, `freebsd`, `macos`, `nixos`, `proxmox`,
 `truenas`, `openwrt`, `linux`) or a theme's (`server`, `database`, `web`,

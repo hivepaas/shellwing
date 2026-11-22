@@ -343,6 +343,9 @@ tdcf5544b = хост из списка, алиас ssh или user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Искать значки
+
 # Another host has this name.
 te27e50cd = Другой хост уже называется так.
 
@@ -393,6 +396,36 @@ t0d616a81 = { $name } копия
 
 # Choose
 t73c66160 = Выбрать
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Выбран здесь: хост не спрашивают, какая на нём система.
+
+# Automatic: {system}
+td31d5fc9 = Автоматически: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Сообщено хостом; его спрашивают снова не чаще раза в день.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = Хост не сообщил, какая на нём система. Его спрашивают снова не чаще раза в день.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Показывает систему хоста после подключения к нему.
+
+# Icon
+t68e6cb10 = Значок
+
+# Change
+ta1de2fdd = Изменить
+
+# Systems
+t39f411dd = Системы
+
+# Themes
+tbf419633 = Темы
+
+# No icon matches.
+t23c804ac = Нет подходящих значков.
 
 # host name
 t8465975e = имя хоста
@@ -690,6 +723,51 @@ tfc330336 = Дублировать
 
 # Save and connect
 t83731197 = Сохранить и подключиться
+
+# Server
+t6d7302f2 = Сервер
+
+# Database
+tf09430d8 = База данных
+
+# Web
+t72645431 = Веб
+
+# Cloud
+tc0821b1e = Облако
+
+# Container
+tb23d4718 = Контейнер
+
+# Firewall
+tce907b11 = Файрвол
+
+# Router
+t922ed124 = Маршрутизатор
+
+# Storage
+t34eddf06 = Хранилище
+
+# Home network
+t674f73a8 = Домашняя сеть
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Вычисления
+
+# Mail
+t53707c4e = Почта
+
+# Desktop
+t64215c53 = Рабочий стол
+
+# Bastion
+tad4e4b8f = Бастион
+
+# Test
+t2ffcbe05 = Тест
 
 # Command palette
 td54729b1 = Палитра команд
@@ -2772,9 +2850,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Его переменные будут удалены из хранилища и с других ваших устройств после синхронизации. Оболочки, в которые оно загружено, сохраняют их до выгрузки.
-
-# Change
-ta1de2fdd = Изменить
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = Палитра предлагает загрузить его только в панели этих хостов.

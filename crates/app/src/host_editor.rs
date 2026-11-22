@@ -18,6 +18,7 @@ use shellwing_i18n::tr;
 use shellwing_ssh::config::{self as ssh_config, Resolved};
 
 use crate::colors::colors;
+use crate::host_icons;
 use crate::input::TextInput;
 use crate::look::ui;
 
@@ -61,6 +62,8 @@ pub struct EditorContext {
     pub orgs: Vec<(String, String)>,
     /// The organizations' collections this person syncs.
     pub collections: Vec<crate::look::CollectionHosts>,
+    /// What each host was last seen running, by what opens it.
+    pub systems: std::collections::BTreeMap<String, shellwing_config::SystemSeen>,
 }
 
 /// The Key list's choice that makes a key for the host.
@@ -95,6 +98,8 @@ enum Menu {
     Org,
     /// hosts.toml, or a collection the person may change.
     Place,
+    /// The app's icons, for the host's tile.
+    Icon,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -125,6 +130,8 @@ struct Inputs {
     run: Entity<TextInput>,
     proxy: Entity<TextInput>,
     new_group: Entity<TextInput>,
+    /// Narrows the icons shown.
+    icon_search: Entity<TextInput>,
 }
 
 pub struct HostEditor {
@@ -150,7 +157,7 @@ pub struct HostEditor {
     x11: Option<HostX11>,
     log: Option<bool>,
     color: Option<String>,
-    /// Its icon, kept as it was: hosts.toml sets it, for now.
+    /// The icon its tile shows; None: the system it runs, once seen.
     icon: Option<String>,
     favorite: bool,
     /// A group being named here, made when the host is saved.
@@ -214,6 +221,7 @@ impl HostEditor {
             run: input(cx, || "cd ~/apps && exec $SHELL -l".to_string()),
             proxy: input(cx, || "cloudflared access ssh --hostname %h".to_string()),
             new_group: input(cx, || tr!("Staging")),
+            icon_search: input(cx, || tr!("Search icons")),
         };
         HostEditor {
             focus: cx.focus_handle(),
@@ -1086,6 +1094,7 @@ impl HostEditor {
             Menu::Key => Some(self.text(&self.inputs.key, cx)),
             Menu::Org => self.org.clone(),
             Menu::Place => self.collection.clone(),
+            Menu::Icon => self.icon.clone(),
         };
         let mut list = div()
             .id(match menu {
@@ -1094,6 +1103,7 @@ impl HostEditor {
                 Menu::Key => "key-menu",
                 Menu::Org => "org-menu",
                 Menu::Place => "place-menu",
+                Menu::Icon => "icon-list",
             })
             .flex()
             .flex_col()
@@ -1126,6 +1136,7 @@ impl HostEditor {
                             Menu::Theme => e.theme = value.clone(),
                             Menu::Org => e.org = value.clone(),
                             Menu::Place => e.collection = value.clone(),
+                            Menu::Icon => e.icon = value.clone(),
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
@@ -1144,6 +1155,250 @@ impl HostEditor {
             );
         }
         list
+    }
+
+    /// The host's icon: the one chosen, else the system it was seen
+    /// running; *Change* opens the app's set under it.
+    fn icon_field(&self, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
+        let name = self.text(&self.inputs.name, cx);
+        let alias = self.text(&self.inputs.alias, cx);
+        let spec = if alias.is_empty() { &name } else { &alias };
+        let seen = self.ctx.systems.get(spec);
+        let seen_icon = seen
+            .and_then(|s| s.system.as_deref())
+            .and_then(host_icons::find);
+        let chosen = self.icon.as_deref().and_then(host_icons::find);
+        let (title, note) = if let Some(i) = chosen {
+            (
+                host_icons::label(i),
+                tr!("Chosen here: the host is not asked which system it runs."),
+            )
+        } else if let Some(i) = seen_icon {
+            (
+                tr!("Automatic: {system}", system = i.name),
+                tr!("Seen on the host, which is asked again at most once a day."),
+            )
+        } else if seen.is_some() {
+            (
+                tr!("Automatic"),
+                tr!(
+                    "The host would not say which system it runs. It is asked again at most once a day."
+                ),
+            )
+        } else {
+            (
+                tr!("Automatic"),
+                tr!("Shows the system the host runs, once it has connected."),
+            )
+        };
+        let color = self.color.as_deref().and_then(shellwing_config::color_rgb);
+        let open = self.menu == Some(Menu::Icon);
+        let field = div()
+            .flex()
+            .flex_col()
+            .gap(px(4.))
+            .child(label_text(&tr!("Icon")))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(12.))
+                    .px(px(10.))
+                    .py(px(8.))
+                    .rounded(px(6.))
+                    .border_1()
+                    .border_color(rgb(colors().field_edge))
+                    .bg(rgb(colors().field))
+                    .child(
+                        div()
+                            .debug_selector(|| "icon-preview".into())
+                            .size(px(crate::sidebar::TILE))
+                            .flex_shrink_0()
+                            .child(crate::sidebar::tile_face(
+                                chosen.or(seen_icon),
+                                &name,
+                                color,
+                                false,
+                            )),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .flex()
+                            .flex_col()
+                            .gap(px(1.))
+                            .child(div().text_size(ui(13.)).child(title))
+                            .child(hint_text(&note)),
+                    )
+                    .child(
+                        div()
+                            .id("icon-change")
+                            .debug_selector(|| "icon-change".into())
+                            .flex_shrink_0()
+                            .h(px(28.))
+                            .px(px(10.))
+                            .flex()
+                            .items_center()
+                            .gap(px(6.))
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(if open {
+                                colors().accent
+                            } else {
+                                colors().field_edge
+                            }))
+                            .bg(rgb(if open { colors().hover } else { colors().field }))
+                            .text_size(ui(12.))
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(colors().hover)))
+                            .on_click(cx.listener(|e, _, window, cx| {
+                                if e.menu == Some(Menu::Icon) {
+                                    e.menu = None;
+                                } else {
+                                    e.menu = Some(Menu::Icon);
+                                    window.focus(&e.inputs.icon_search.focus_handle(cx), cx);
+                                }
+                                cx.notify();
+                            }))
+                            .child(tr!("Change"))
+                            .child(div().text_color(rgb(colors().muted)).child("▾")),
+                    ),
+            );
+        if open {
+            field.child(self.icon_menu(color, window, cx))
+        } else {
+            field
+        }
+    }
+
+    /// The app's icons, systems' then themes', narrowed by what is typed;
+    /// *Automatic* leaves the tile to the system the host runs.
+    fn icon_menu(
+        &self,
+        color: Option<u32>,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> gpui::Stateful<gpui::Div> {
+        let query = self.text(&self.inputs.icon_search, cx).to_lowercase();
+        let auto = self.icon.is_none();
+        let mut panel = div()
+            .id("icon-menu")
+            .flex()
+            .flex_col()
+            .gap(px(6.))
+            .max_h(px(420.))
+            .overflow_y_scroll()
+            .p(px(10.))
+            .rounded(px(8.))
+            .border_1()
+            .border_color(rgb(colors().edge))
+            .bg(rgb(colors().raised))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(8.))
+                    .child(
+                        self.input_box(&self.inputs.icon_search, false, window, cx)
+                            .flex_1(),
+                    )
+                    .child(
+                        div()
+                            .id("icon-auto")
+                            .debug_selector(|| "icon-auto".into())
+                            .h(px(30.))
+                            .px(px(10.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(colors().field_edge))
+                            .when(auto, |d| d.bg(rgb(colors().selected)))
+                            .text_size(ui(12.))
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(colors().hover)))
+                            .on_click(cx.listener(|e, _, _, cx| {
+                                e.icon = None;
+                                e.menu = None;
+                                cx.notify();
+                            }))
+                            .child(tr!("Automatic")),
+                    ),
+            );
+        let mut any = false;
+        for (title, set) in [
+            (tr!("Systems"), host_icons::SYSTEMS),
+            (tr!("Themes"), host_icons::THEMES),
+        ] {
+            let shown: Vec<_> = set
+                .iter()
+                .filter(|i| {
+                    query.is_empty()
+                        || i.id.contains(&query)
+                        || host_icons::label(i).to_lowercase().contains(&query)
+                })
+                .collect();
+            if shown.is_empty() {
+                continue;
+            }
+            any = true;
+            let mut grid = div().flex().flex_wrap().gap(px(2.));
+            for icon in shown {
+                let on = self.icon.as_deref() == Some(icon.id);
+                let id = icon.id;
+                grid = grid.child(
+                    div()
+                        .id(SharedString::from(format!("icon:{id}")))
+                        .debug_selector(move || format!("icon:{id}"))
+                        .w(px(64.))
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(4.))
+                        .py(px(6.))
+                        .rounded(px(8.))
+                        .cursor_pointer()
+                        .when(on, |d| d.bg(rgb(colors().selected)))
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(cx.listener(move |e, _, _, cx| {
+                            e.icon = Some(id.to_string());
+                            e.menu = None;
+                            cx.notify();
+                        }))
+                        .child(
+                            div()
+                                .size(px(crate::sidebar::TILE))
+                                .child(crate::sidebar::tile_face(Some(icon), "", color, on)),
+                        )
+                        .child(
+                            div()
+                                .max_w_full()
+                                .px(px(2.))
+                                .overflow_hidden()
+                                .text_ellipsis()
+                                .whitespace_nowrap()
+                                .text_size(ui(10.5))
+                                .text_color(rgb(colors().soft))
+                                .child(host_icons::label(icon)),
+                        ),
+                );
+            }
+            panel = panel
+                .child(
+                    div()
+                        .mt(px(4.))
+                        .text_size(ui(11.))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(rgb(colors().label))
+                        .child(title),
+                )
+                .child(grid);
+        }
+        if !any {
+            panel = panel.child(hint_text(&tr!("No icon matches.")));
+        }
+        panel
     }
 
     fn jump_detail(&self, name: &str) -> String {
@@ -2063,23 +2318,26 @@ impl Render for HostEditor {
         }
         swatches =
             swatches.child(hint_text(&tr!("Shown on the tab and the pane border")).ml(px(8.)));
-        organize = organize.child(swatches).when(own, |o| {
-            o.child(
-                div()
-                    .id("favorite")
-                    .debug_selector(|| "favorite".into())
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .cursor_pointer()
-                    .on_click(cx.listener(|e, _, _, cx| {
-                        e.favorite = !e.favorite;
-                        cx.notify();
-                    }))
-                    .child(checkbox(self.favorite))
-                    .child(label_text(&tr!("Favorite: listed first in the host list"))),
-            )
-        });
+        organize = organize
+            .child(swatches)
+            .child(self.icon_field(window, cx))
+            .when(own, |o| {
+                o.child(
+                    div()
+                        .id("favorite")
+                        .debug_selector(|| "favorite".into())
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        .cursor_pointer()
+                        .on_click(cx.listener(|e, _, _, cx| {
+                            e.favorite = !e.favorite;
+                            cx.notify();
+                        }))
+                        .child(checkbox(self.favorite))
+                        .child(label_text(&tr!("Favorite: listed first in the host list"))),
+                )
+            });
 
         let mut terminal = section(&tr!("Terminal")).child(row().child(self.select(
             "theme-select",

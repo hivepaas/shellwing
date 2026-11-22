@@ -123,7 +123,37 @@ pub fn dot(status: Option<Status>) -> Div {
 /// the corner, ringed in `ground`, what the tile sits on. `ring` marks the
 /// host of the active tab (the list marks its row instead).
 fn tile(row: &Row, ground: u32, ring: bool) -> Div {
-    let (bg, fg) = match row.color {
+    let icon = match row.icon {
+        _ if matches!(row.edit, EditTarget::Local) => host_icons::find("terminal"),
+        icon => icon,
+    };
+    // The dot is a sibling after the face: a border is drawn over an
+    // element's own children.
+    div()
+        .relative()
+        .flex_shrink_0()
+        .size(px(TILE))
+        .child(tile_face(icon, &row.name, row.color, ring))
+        .child(
+            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
+                div()
+                    .p(px(2.))
+                    .rounded_full()
+                    .bg(rgb(ground))
+                    .child(dot(row.status)),
+            ),
+        )
+}
+
+/// What a tile shows, filling its box: `icon`, or else the initials of
+/// `name`, on the tile's ground in `color` if there is one.
+pub fn tile_face(
+    icon: Option<&'static HostIcon>,
+    name: &str,
+    color: Option<u32>,
+    ring: bool,
+) -> Div {
+    let (bg, fg) = match color {
         Some(c) => (rgba((c << 8) | 0x2e), c),
         None => (rgb(colors().button), colors().soft),
     };
@@ -143,39 +173,20 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
         .text_color(rgb(fg))
         .text_size(px(12.))
         .font_weight(FontWeight::SEMIBOLD);
-    let icon = |path: &'static str, size: f32, color: u32| {
+    let icon_svg = |path: &'static str, size: f32, color: u32| {
         svg().path(path).size(px(size)).text_color(rgb(color))
     };
-    let face = match row.icon {
-        _ if matches!(row.edit, EditTarget::Local) => {
-            face.child(icon("icons/terminal.svg", 18., fg))
-        }
+    match icon {
         Some(i) if i.system => {
             let color = i
                 .color
                 .filter(|c| host_icons::reads_on(*c, colors().button))
                 .unwrap_or(fg);
-            face.child(icon(i.path, 19., color))
+            face.child(icon_svg(i.path, 19., color))
         }
-        Some(i) => face.child(icon(i.path, 18., fg)),
-        None => face.child(initials(&row.name)),
-    };
-    // The dot is a sibling after the face: a border is drawn over an
-    // element's own children.
-    div()
-        .relative()
-        .flex_shrink_0()
-        .size(px(TILE))
-        .child(face)
-        .child(
-            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
-                div()
-                    .p(px(2.))
-                    .rounded_full()
-                    .bg(rgb(ground))
-                    .child(dot(row.status)),
-            ),
-        )
+        Some(i) => face.child(icon_svg(i.path, 18., fg)),
+        None => face.child(initials(name)),
+    }
 }
 
 pub struct Sidebar {

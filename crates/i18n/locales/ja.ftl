@@ -325,6 +325,9 @@ tdcf5544b = ここにあるホスト、ssh エイリアス、または user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = アイコンを検索
+
 # Another host has this name.
 te27e50cd = この名前は別のホストで使われています。
 
@@ -375,6 +378,36 @@ t0d616a81 = { $name } のコピー
 
 # Choose
 t73c66160 = 選択
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = ここで選択：ホストに実行中のシステムを問い合わせません。
+
+# Automatic: {system}
+td31d5fc9 = 自動：{ $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = ホストから取得。問い合わせは最大で1日1回です。
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = ホストは実行中のシステムを返しませんでした。問い合わせは最大で1日1回です。
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = 接続後、ホストで動いているシステムを表示します。
+
+# Icon
+t68e6cb10 = アイコン
+
+# Change
+ta1de2fdd = 変更
+
+# Systems
+t39f411dd = システム
+
+# Themes
+tbf419633 = テーマ
+
+# No icon matches.
+t23c804ac = 一致するアイコンがありません。
 
 # host name
 t8465975e = ホスト名
@@ -672,6 +705,51 @@ tfc330336 = 複製
 
 # Save and connect
 t83731197 = 保存して接続
+
+# Server
+t6d7302f2 = サーバー
+
+# Database
+tf09430d8 = データベース
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = クラウド
+
+# Container
+tb23d4718 = コンテナ
+
+# Firewall
+tce907b11 = ファイアウォール
+
+# Router
+t922ed124 = ルーター
+
+# Storage
+t34eddf06 = ストレージ
+
+# Home network
+t674f73a8 = ホームネットワーク
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = コンピュート
+
+# Mail
+t53707c4e = メール
+
+# Desktop
+t64215c53 = デスクトップ
+
+# Bastion
+tad4e4b8f = 踏み台
+
+# Test
+t2ffcbe05 = テスト
 
 # Command palette
 td54729b1 = コマンドパレット
@@ -2676,9 +2754,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = 変数は保管庫から削除され、同期後は他のデバイスからも削除されます。読み込み済みのシェルは、読み込みを解除するまで変数を保持します。
-
-# Change
-ta1de2fdd = 変更
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = パレットでは、これらのホストのペインにのみ読み込みを提案します。

@@ -337,6 +337,9 @@ tdcf5544b = un servidor de aquí, un alias de ssh o user@host
 # Staging
 tcb81d7c6 = Staging
 
+# Search icons
+t024abc2b = Buscar iconos
+
 # Another host has this name.
 te27e50cd = Otro servidor tiene este nombre.
 
@@ -387,6 +390,36 @@ t0d616a81 = { $name } copia
 
 # Choose
 t73c66160 = Elegir
+
+# Chosen here: the host is not asked which system it runs.
+tcef39ba0 = Elegido aquí: no se pregunta al servidor qué sistema ejecuta.
+
+# Automatic: {system}
+td31d5fc9 = Automático: { $system }
+
+# Seen on the host, which is asked again at most once a day.
+tfafb596b = Indicado por el servidor, al que se vuelve a preguntar como mucho una vez al día.
+
+# The host would not say which system it runs. It is asked again at most once a day.
+t65649443 = El servidor no indicó qué sistema ejecuta. Se le vuelve a preguntar como mucho una vez al día.
+
+# Shows the system the host runs, once it has connected.
+t1cc0e6ad = Muestra el sistema que ejecuta el servidor, una vez que se ha conectado.
+
+# Icon
+t68e6cb10 = Icono
+
+# Change
+ta1de2fdd = Cambiar
+
+# Systems
+t39f411dd = Sistemas
+
+# Themes
+tbf419633 = Temas
+
+# No icon matches.
+t23c804ac = Ningún icono coincide.
 
 # host name
 t8465975e = nombre del servidor
@@ -684,6 +717,51 @@ tfc330336 = Duplicar
 
 # Save and connect
 t83731197 = Guardar y conectar
+
+# Server
+t6d7302f2 = Servidor
+
+# Database
+tf09430d8 = Base de datos
+
+# Web
+t72645431 = Web
+
+# Cloud
+tc0821b1e = Nube
+
+# Container
+tb23d4718 = Contenedor
+
+# Firewall
+tce907b11 = Cortafuegos
+
+# Router
+t922ed124 = Router
+
+# Storage
+t34eddf06 = Almacenamiento
+
+# Home network
+t674f73a8 = Red doméstica
+
+# Git
+tb6b5540b = Git
+
+# Compute
+t5bc0161a = Cómputo
+
+# Mail
+t53707c4e = Correo
+
+# Desktop
+t64215c53 = Escritorio
+
+# Bastion
+tad4e4b8f = Bastión
+
+# Test
+t2ffcbe05 = Pruebas
 
 # Command palette
 td54729b1 = Paleta de comandos
@@ -2728,9 +2806,6 @@ t79d75da2 =
 
 # Its variables go from the vault, and from your other devices once they sync. Shells it is loaded in keep them until unloaded.
 td2d90383 = Sus variables se eliminan de la bóveda, y de tus otros dispositivos cuando se sincronicen. Las shells en las que está cargado las conservan hasta que se descargue.
-
-# Change
-ta1de2fdd = Cambiar
 
 # The palette offers to load it in panes of those hosts only.
 t67715aad = La paleta ofrece cargarlo solo en los paneles de esos servidores.
