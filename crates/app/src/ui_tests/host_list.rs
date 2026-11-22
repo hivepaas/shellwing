@@ -287,6 +287,25 @@ scenario!(
     }
 );
 
+scenario!(
+    /// A host's row is its tile beside its name and address, the tile with
+    /// a little room above and below; folded to the rail, the tile keeps its
+    /// size.
+    rows_and_rail_tiles_match,
+    |ui| {
+        ui.config_file("hosts.toml", &host("web", closed_port()));
+        ui.open();
+        let row = ui.bounds("host:web");
+        let tile = ui.bounds("host-tile:web");
+        assert_eq!(tile.size.width, gpui::px(crate::sidebar::TILE));
+        assert_eq!(tile.size.height, gpui::px(crate::sidebar::TILE));
+        assert_eq!(row.size.height, gpui::px(crate::sidebar::TILE + 12.));
+        ui.click("collapse-hosts");
+        ui.wait_until("the rail", |ui| ui.find("hosts").is_none());
+        assert_eq!(ui.bounds("tile:web").size, tile.size);
+    }
+);
+
 /// Opens the editor on a saved host, as hovering it and clicking Edit does.
 fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
     ui.hover(&format!("host:{name}"));

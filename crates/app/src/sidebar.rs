@@ -23,13 +23,17 @@ pub const MIN_WIDTH: f32 = 200.;
 pub const MAX_WIDTH: f32 = 480.;
 /// Folded to a rail of host tiles.
 pub const RAIL_WIDTH: f32 = 56.;
-/// A host's row, from the list's edge: its margin, then its padding. What
-/// leads it, the local terminal's icon, a host's color or else its name,
-/// starts a little in from its section's title (12), all at the same place
-/// (24); a name follows an icon or a color after a gap.
+/// A host's tile, in the list as on the rail.
+pub const TILE: f32 = 32.;
+const TILE_RADIUS: f32 = 9.;
+/// A host's row, from the list's edge: its margin, then its padding. Its
+/// tile starts a little in from its section's title (12), at 24; its name,
+/// and its address under it, follow the tile after a gap. The row is the
+/// tile and a little above and below it.
 const ROW_MARGIN: f32 = 4.;
 const ROW_PAD: f32 = 20.;
-const ROW_GAP: f32 = 5.;
+const ROW_GAP: f32 = 10.;
+const ROW_HEIGHT: f32 = TILE + 12.;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Section {
@@ -107,6 +111,59 @@ pub fn dot(status: Option<Status>) -> Div {
         Some(s) => d.bg(rgb(status_color(s))),
         None => d.border_1().border_color(rgb(colors().faint)),
     }
+}
+
+/// A host's tile, the same in the list and on the rail: the local terminal's
+/// icon, or the host's initials, in its color if it has one; its status dot
+/// at the corner, ringed in `ground`, what the tile sits on. `ring` marks the
+/// host of the active tab (the list marks its row instead).
+fn tile(row: &Row, ground: u32, ring: bool) -> Div {
+    let (bg, fg) = match row.color {
+        Some(c) => (rgba((c << 8) | 0x2e), rgb(c)),
+        None => (rgb(colors().button), rgb(colors().soft)),
+    };
+    let face = div()
+        .size_full()
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(px(TILE_RADIUS))
+        .border_2()
+        .border_color(if ring {
+            rgb(colors().accent)
+        } else {
+            rgba(0x00000000)
+        })
+        .bg(bg)
+        .text_color(fg)
+        .text_size(px(12.))
+        .font_weight(FontWeight::SEMIBOLD);
+    let face = if matches!(row.edit, EditTarget::Local) {
+        face.child(
+            svg()
+                .path("icons/terminal.svg")
+                .size(px(18.))
+                .text_color(fg),
+        )
+    } else {
+        face.child(initials(&row.name))
+    };
+    // The dot is a sibling after the face: a border is drawn over an
+    // element's own children.
+    div()
+        .relative()
+        .flex_shrink_0()
+        .size(px(TILE))
+        .child(face)
+        .child(
+            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
+                div()
+                    .p(px(2.))
+                    .rounded_full()
+                    .bg(rgb(ground))
+                    .child(dot(row.status)),
+            ),
+        )
 }
 
 pub struct Sidebar {
@@ -352,17 +409,11 @@ impl Sidebar {
                     .collect::<Vec<_>>()
                     .join(" · ")
                     .into();
-                let (bg, fg) = match row.color {
-                    Some(c) => (rgba((c << 8) | 0x2e), rgb(c)),
-                    None => (rgb(colors().button), rgb(colors().soft)),
-                };
                 tiles = tiles.child(
                     div()
                         .id(ElementId::NamedInteger("tile".into(), id))
                         .debug_selector(|| format!("tile:{}", row.name))
-                        .relative()
                         .flex_shrink_0()
-                        .size(px(36.))
                         .cursor_pointer()
                         .hover(|s| s.opacity(0.85))
                         .tooltip(move |_, cx| {
@@ -372,36 +423,7 @@ impl Sidebar {
                         .on_click(move |_, window, cx| {
                             let _ = ws.update(cx, |ws, cx| ws.open(&spec, window, cx));
                         })
-                        // The tile with its ring, then the status dot as a sibling
-                        // after it: a border is drawn over an element's own children.
-                        .child(
-                            div()
-                                .size_full()
-                                .flex()
-                                .items_center()
-                                .justify_center()
-                                .rounded(px(10.))
-                                .border_2()
-                                .border_color(if row.active {
-                                    rgb(colors().accent)
-                                } else {
-                                    rgba(0x00000000)
-                                })
-                                .bg(bg)
-                                .text_color(fg)
-                                .text_xs()
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .child(initials(&row.name)),
-                        )
-                        .child(
-                            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
-                                div()
-                                    .p(px(2.))
-                                    .rounded_full()
-                                    .bg(rgb(colors().panel))
-                                    .child(dot(row.status)),
-                            ),
-                        ),
+                        .child(tile(row, colors().panel, row.active)),
                 );
             }
         }
@@ -860,7 +882,7 @@ impl Render for Sidebar {
                         .flex()
                         .items_center()
                         .gap(px(ROW_GAP))
-                        .h(px(30.))
+                        .h(px(ROW_HEIGHT))
                         .pl(px(ROW_PAD))
                         .pr(px(10.))
                         .mx(px(ROW_MARGIN))
@@ -872,53 +894,50 @@ impl Render for Sidebar {
                         .on_click(move |_, window, cx| {
                             let _ = workspace.update(cx, |ws, cx| ws.open(&spec, window, cx));
                         })
-                        // A shell here has its icon; a host its color, if it
-                        // has one, by its name.
-                        .when(matches!(row.edit, EditTarget::Local), |d| {
-                            d.child(
-                                svg()
-                                    .path("icons/terminal.svg")
-                                    .size(px(14.))
-                                    .flex_shrink_0()
-                                    .text_color(rgb(colors().soft)),
+                        // The dot's ring is the row's own ground when it is
+                        // marked, so the dot does not sit in a hole.
+                        .child(
+                            tile(
+                                row,
+                                if row.active {
+                                    colors().selected
+                                } else {
+                                    colors().panel
+                                },
+                                false,
                             )
-                        })
-                        .when_some(
-                            row.color.filter(|_| !matches!(row.edit, EditTarget::Local)),
-                            |d, c| {
-                                d.child(
-                                    div()
-                                        .w(px(3.))
-                                        .h(px(14.))
-                                        .flex_shrink_0()
-                                        .rounded(px(2.))
-                                        .bg(rgb(c)),
-                                )
-                            },
+                            .debug_selector(|| format!("host-tile:{}", row.name)),
                         )
                         .child(
                             div()
                                 .flex_1()
                                 .min_w_0()
-                                .overflow_hidden()
-                                .text_ellipsis()
-                                .whitespace_nowrap()
-                                .text_color(rgb(colors().text))
-                                .child(row.name.clone()),
+                                .flex()
+                                .flex_col()
+                                .child(
+                                    div()
+                                        .overflow_hidden()
+                                        .text_ellipsis()
+                                        .whitespace_nowrap()
+                                        .text_size(px(13.))
+                                        .line_height(px(18.))
+                                        .text_color(rgb(colors().text))
+                                        .child(row.name.clone()),
+                                )
+                                .when(!row.detail.is_empty(), |d| {
+                                    d.child(
+                                        div()
+                                            .overflow_hidden()
+                                            .text_ellipsis()
+                                            .whitespace_nowrap()
+                                            .text_size(px(11.5))
+                                            .line_height(px(15.))
+                                            .text_color(rgb(colors().muted))
+                                            .child(row.detail.clone()),
+                                    )
+                                }),
                         )
-                        .when(!hovered, |d| {
-                            d.child(
-                                div()
-                                    .max_w(px(110.))
-                                    .overflow_hidden()
-                                    .text_ellipsis()
-                                    .whitespace_nowrap()
-                                    .text_xs()
-                                    .text_color(rgb(colors().muted))
-                                    .child(row.detail.clone()),
-                            )
-                        })
-                        // Hovered: Edit instead of the address.
+                        // Hovered: Edit, at the end.
                         .when(hovered, |d| {
                             d.child(
                                 div()
@@ -942,8 +961,7 @@ impl Render for Sidebar {
                                     })
                                     .child(tr!("Edit")),
                             )
-                        })
-                        .child(dot(row.status)),
+                        }),
                 );
             }
         }
