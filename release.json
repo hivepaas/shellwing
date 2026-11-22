@@ -1,6 +1,6 @@
 {
   "channels": {
-    "stable": "v0.2.1"
+    "stable": "v0.3.0"
   },
   "releases": {
     "v0.2.0": {
@@ -93,6 +93,49 @@
         "rpm_aarch64": {
           "file": "shellwing_0.2.1_aarch64.rpm",
           "sha256": "83e634bfd119a96131a8cdd7e3b7576ccd1622543c580f02d4718a4a0c8a73d1"
+        }
+      }
+    },
+    "v0.3.0": {
+      "releaseDate": "2026-11-22",
+      "archives": {
+        "linux_x86_64": {
+          "file": "shellwing_0.3.0_linux_x86_64.AppImage",
+          "sha256": "cd149959f0c2e48bd057f302b465db3d44df0d77133b834aaa12aa8822a2723a"
+        },
+        "linux_aarch64": {
+          "file": "shellwing_0.3.0_linux_aarch64.AppImage",
+          "sha256": "6732d6c9b64d13b90489fab5778a2abe887b31b504c35acf4e8c0efdc9800d5a"
+        },
+        "macos_aarch64": {
+          "file": "shellwing_0.3.0_macos_aarch64.app.tar.gz",
+          "sha256": "bca79a9eedd5df58353e7576998a34964f60edf0d71f045c70f200b8dd4922f0"
+        },
+        "macos_x86_64": {
+          "file": "shellwing_0.3.0_macos_x86_64.app.tar.gz",
+          "sha256": "dee2214bd9fcc4807b79f8d3e5cc525d8524d5cbb930e021c3a196f0dea80644"
+        },
+        "windows_x86_64": {
+          "file": "shellwing_0.3.0_windows_x86_64-setup.exe",
+          "sha256": "8cb58c669b80cbb5a6e8271376b0da3b8831affb0a33622d91d41b022e7999f8"
+        }
+      },
+      "packages": {
+        "deb_x86_64": {
+          "file": "shellwing_0.3.0_amd64.deb",
+          "sha256": "847c20493d1c6c48fee8f6f3ec9bea7252cac59c54c8b4b23fa1e13310451533"
+        },
+        "deb_aarch64": {
+          "file": "shellwing_0.3.0_arm64.deb",
+          "sha256": "aa7d7f2c662abaaa359c1bc9fdef616ee20ddd5f9c87b5d633e8058be2cf88c5"
+        },
+        "rpm_x86_64": {
+          "file": "shellwing_0.3.0_x86_64.rpm",
+          "sha256": "4987bbb0f60417b08e2e5ce933b77b0c40b82916a3003128aa6b46058737422f"
+        },
+        "rpm_aarch64": {
+          "file": "shellwing_0.3.0_aarch64.rpm",
+          "sha256": "f559aef303b81c67ec6cf9cc6d5059e8ffc29c71273e8e80628f937bf00fb1b4"
         }
       }
     }
