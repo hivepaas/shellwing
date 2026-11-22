@@ -306,6 +306,7 @@ x11 = "untrusted"           # let the host's programs open windows here (see bel
 keepalive = 15              # seconds; beats [ssh] keepalive
 host_key = "accept-new"     # beats [ssh] host_key
 color = "pink"              # pink, sky, green, amber, red or "#rrggbb": on its tab and pane
+icon = "database"           # its tile's icon (see below); none: the system it runs
 favorite = true             # listed first in the host list
 run = "cd ~/apps"           # typed into the shell once it is ready, after every connect
 log = true                  # logged from the start (false: never); beats [log] always
@@ -317,13 +318,25 @@ Hovering a group's header shows *Edit*: its name, color and the theme of its
 hosts. Renaming a group takes its hosts along; deleting one keeps its hosts,
 without a group.
 
-Each host in the list is a tile (its initials in its color, with its status
-at the corner) beside its name and, under it, its address. The host list's
-right edge can be dragged (200 to 480 px; a double-click goes back to 248).
-The button at the right of *HOSTS* folds it to a rail of the same tiles (hover
-for the name, click to connect), with a button to unfold it and one to find a
-host in the palette. **Ctrl+Shift+B**
-still hides the host list altogether.
+Each host in the list is a tile (its icon, or else its initials, in its
+color, with its status at the corner) beside its name and, under it, its
+address. The host list's right edge can be dragged (200 to 480 px; a
+double-click goes back to 248). The button at the right of *HOSTS* folds it to
+a rail of the same tiles (hover for the name, click to connect), with a button
+to unfold it and one to find a host in the palette. **Ctrl+Shift+B** still
+hides the host list altogether.
+
+A host's `icon` is one of the app's: a system's mark (`ubuntu`, `debian`,
+`fedora`, `redhat`, `centos`, `rocky`, `alma`, `alpine`, `arch`, `opensuse`,
+`kali`, `mint`, `raspberry-pi`, `freebsd`, `macos`, `nixos`, `proxmox`,
+`truenas`, `openwrt`, `linux`) or a theme's (`server`, `database`, `web`,
+`cloud`, `container`, `firewall`, `router`, `storage`, `home`, `terminal`,
+`git`, `compute`, `mail`, `desktop`, `bastion`, `test`). A host that names
+none shows the system it runs: once it is connected, shellwing runs `cat
+/etc/os-release` and `uname -sr` beside the shell, at most once a day, and
+keeps the answer on this computer (`state/systems.json`, never synced). A host
+that names an icon is never asked; one that will not run the command keeps
+its initials and is asked again the next day.
 
 The drawer where a host or a group is edited can be widened by dragging its
 left edge (420 to 1000 px; a double-click goes back to 520). Both drawers keep

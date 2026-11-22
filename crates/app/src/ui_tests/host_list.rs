@@ -306,6 +306,64 @@ scenario!(
     }
 );
 
+scenario!(
+    /// Connected, a host is asked which system it runs, and its tile shows
+    /// that system's mark, kept for the next start; connected again the same
+    /// day, it is not asked again. A host whose icon is chosen in hosts.toml
+    /// shows that one and is never asked.
+    a_hosts_tile_shows_its_system,
+    |ui| {
+        let server = ui.server(Policy {
+            os_release: Some("PRETTY_NAME=\"Debian GNU/Linux 12\"\nID=debian".into()),
+            ..Policy::password()
+        });
+        ui.trust(&server);
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "{}{}icon = \"database\"\n",
+                host("web", server.port),
+                host("db", server.port)
+            ),
+        );
+        ui.open();
+        assert_eq!(ui.host_icon("web"), None, "not seen yet: initials");
+        assert_eq!(ui.host_icon("db"), Some("database"));
+        ui.click("host:web");
+        ui.login();
+        ui.wait_until("the system seen", |ui| ui.host_icon("web") == Some("debian"));
+        let systems = std::fs::read_to_string(ui.config_dir().join("state/systems.json"))
+            .expect("systems.json");
+        assert!(systems.contains("\"web\"") && systems.contains("debian"), "{systems}");
+        ui.click("host:db");
+        ui.login();
+        ui.click("host:web");
+        ui.login();
+        assert_eq!(ui.tabs(), 3);
+        assert_eq!(server.seen.lock().expect("seen").systems_asked, 1);
+    }
+);
+
+scenario!(
+    /// A host that will not run the question keeps its initials, and is not
+    /// asked again the same day.
+    a_host_that_will_not_say_keeps_its_initials,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        ui.click("host:web");
+        ui.login();
+        ui.wait_until("the answer kept", |ui| {
+            std::fs::read_to_string(ui.config_dir().join("state/systems.json"))
+                .is_ok_and(|s| s.contains("\"web\""))
+        });
+        assert_eq!(ui.host_icon("web"), None);
+        assert_eq!(server.seen.lock().expect("seen").systems_asked, 1);
+    }
+);
+
 /// Opens the editor on a saved host, as hovering it and clicking Edit does.
 fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
     ui.hover(&format!("host:{name}"));

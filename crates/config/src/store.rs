@@ -36,6 +36,7 @@ const PLACED: &str = "placed.json";
 const NOTE_WINDOW: &str = "note-window.json";
 const SNIPPET_WINDOW: &str = "snippet-window.json";
 const UPDATES: &str = "updates.json";
+const SYSTEMS: &str = "systems.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -555,6 +556,19 @@ impl Store {
 
     pub fn save_update_state(&self, state: &crate::UpdateState) -> io::Result<()> {
         self.save_state(UPDATES, state)
+    }
+
+    /// What each host was last seen running, by what opens it
+    /// (`state/systems.json`).
+    pub fn systems(&self) -> std::collections::BTreeMap<String, crate::SystemSeen> {
+        self.load_state(SYSTEMS).unwrap_or_default()
+    }
+
+    pub fn save_systems(
+        &self,
+        systems: &std::collections::BTreeMap<String, crate::SystemSeen>,
+    ) -> io::Result<()> {
+        self.save_state(SYSTEMS, systems)
     }
 
     /// A snippet's window's size when one last closed

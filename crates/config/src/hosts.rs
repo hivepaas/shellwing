@@ -87,6 +87,12 @@ pub struct Host {
     /// `red`) or `#rrggbb`.
     #[serde(default)]
     pub color: Option<String>,
+    /// Its tile in the host list: an icon of the app's set, a system's
+    /// (`ubuntu`, `debian`, `alpine`…) or a theme's (`database`, `web`,
+    /// `router`…). None: the system the host was last seen running, which
+    /// is looked for at most once a day while it is None.
+    #[serde(default)]
+    pub icon: Option<String>,
     /// Listed first in the host list.
     #[serde(default)]
     pub favorite: bool,

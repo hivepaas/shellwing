@@ -12,7 +12,7 @@ use gpui::{
     Window, WindowControlArea, canvas, div, prelude::*, px, relative, rgb, rgba, svg,
 };
 use shellwing_config::{
-    EditFile, Host, Hotkey, Keymap, PaneState, SessionState, TabState, WindowState,
+    EditFile, Host, Hotkey, Keymap, PaneState, SessionState, SystemSeen, TabState, WindowState,
 };
 use shellwing_ssh::config as ssh_config;
 use tokio::runtime::Handle;
@@ -40,6 +40,7 @@ use crate::target;
 mod config_files;
 mod notes;
 mod snippet_windows;
+mod systems;
 mod updates;
 pub(crate) use updates::{Stage as UpdateStage, UpdateSnap, by_said};
 
@@ -123,6 +124,11 @@ pub struct Workspace {
     drawer_width: f32,
     /// Dragging the drawer's edge: where the drag began, and the width then.
     drawer_drag: Option<(f32, f32)>,
+    /// What each host was last seen running, by what opens it
+    /// (`state/systems.json`).
+    systems: std::collections::BTreeMap<String, SystemSeen>,
+    /// The hosts being asked now, so that a second tab does not ask too.
+    asking_system: std::collections::HashSet<String>,
     live: Live,
     /// Hosts named in `~/.ssh/config`, for the sidebar.
     ssh_aliases: Vec<String>,
@@ -415,6 +421,8 @@ impl Workspace {
             sidebar_drag: None,
             drawer_width: host_editor::WIDTH,
             drawer_drag: None,
+            systems: live.store().map(|s| s.systems()).unwrap_or_default(),
+            asking_system: Default::default(),
             live,
             ssh_aliases: ssh_config::aliases(ssh_config::default_config_path().as_deref()),
             rt,
@@ -747,6 +755,12 @@ impl Workspace {
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn host_list(&self, cx: &gpui::App) -> Vec<(String, Vec<String>)> {
         self.sidebar.read(cx).shown_names(cx)
+    }
+
+    /// The icon on the tile of the host listed as `name`.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn host_icon_shown(&self, name: &str, cx: &gpui::App) -> Option<&'static str> {
+        self.sidebar.read(cx).icon_of(name)
     }
 
     /// The focused pane of the active tab: for the UI tests to read.
@@ -1598,6 +1612,7 @@ impl Workspace {
             ws.run_installs(cx);
             if view.read(cx).session().status() == Status::Connected {
                 ws.tidy_placed(&view, cx);
+                ws.look_for_system(&view, cx);
             }
         })
         .detach();
@@ -6257,6 +6272,7 @@ impl Workspace {
             status: self.host_status(cx, |s| s.entry.as_deref() == Some(h.name.as_str())),
             edit: EditTarget::Saved(h.name.clone()),
             color: h.color_rgb(),
+            icon: self.host_icon(h.icon.as_deref(), h.alias.as_deref().unwrap_or(&h.name)),
             active: active_entry.as_deref() == Some(h.name.as_str()),
             search: [
                 h.name.as_str(),
@@ -6280,6 +6296,7 @@ impl Workspace {
                 status: self.host_status(cx, Session::is_local),
                 edit: EditTarget::Local,
                 color: None,
+                icon: None,
                 active: active_spec.as_deref() == Some(crate::local::SPEC),
                 search: format!(
                     "{} {} local terminal this computer shell {shell_name}",
@@ -6350,6 +6367,7 @@ impl Workspace {
                 status: self.host_status(cx, |s| s.entry.is_none() && &s.spec == a),
                 edit: EditTarget::Ssh(a.clone()),
                 color: None,
+                icon: self.host_icon(None, a),
                 active: active_entry.is_none() && active_spec.as_deref() == Some(a.as_str()),
                 search: a.to_lowercase(),
             })

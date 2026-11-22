@@ -104,6 +104,9 @@ pub struct Policy {
     pub sftp: Option<PathBuf>,
     /// Wait this long before answering the first message of a connection.
     pub slow_start: Option<Duration>,
+    /// Answer the app's question of which system it runs with this as its
+    /// os-release, on Linux; None: refuse to run it.
+    pub os_release: Option<String>,
 }
 
 impl Policy {
@@ -137,6 +140,8 @@ pub struct Seen {
     pub agent_keys: Option<Result<u32, String>>,
     /// Keys installed through `Install on…`, as their lines.
     pub installed: Vec<String>,
+    /// Times the app asked which system it runs.
+    pub systems_asked: usize,
     /// Ports opened for -L/-D (host:port) and bound for -R.
     pub forwards: Vec<String>,
 }
@@ -1204,13 +1209,30 @@ impl server::Handler for Shell {
 
     /// shellwing's key install script (`Install on…`) adds the key it reads
     /// to the server's authorized keys, as the real script does to
-    /// ~/.ssh/authorized_keys; any other command is refused.
+    /// ~/.ssh/authorized_keys; its question of which system this is gets
+    /// the policy's os-release; any other command is refused.
     async fn exec_request(
         &mut self,
         channel: ChannelId,
         data: &[u8],
         session: &mut Session,
     ) -> Result<(), Self::Error> {
+        if data == shellwing_core::systems::COMMAND.as_bytes() {
+            self.seen.lock().expect("seen").systems_asked += 1;
+            let opened = self.opened.remove(&channel);
+            let (Some(ch), Some(release)) = (opened, self.policy.os_release.clone()) else {
+                return session.channel_failure(channel);
+            };
+            session.channel_success(channel)?;
+            tokio::spawn(async move {
+                let out = format!("{release}\n\nuname=Linux 6.8.0-45-generic\n");
+                let _ = ch.data(out.as_bytes()).await;
+                let _ = ch.exit_status(0).await;
+                let _ = ch.eof().await;
+                let _ = ch.close().await;
+            });
+            return Ok(());
+        }
         let installing = self.policy.install && data == shellwing_ssh::keys::INSTALL.as_bytes();
         let Some(ch) = self.opened.remove(&channel).filter(|_| installing) else {
             return session.channel_failure(channel);

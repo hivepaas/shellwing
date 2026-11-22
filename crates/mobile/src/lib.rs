@@ -1135,6 +1135,7 @@ fn new_host(address: &str) -> Host {
         keepalive: None,
         host_key: None,
         color: None,
+        icon: None,
         favorite: false,
         run: None,
         log: None,

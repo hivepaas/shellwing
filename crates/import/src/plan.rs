@@ -206,6 +206,7 @@ fn host_of(f: &Found, name: &str, tag: &str) -> Host {
         keepalive: None,
         host_key: None,
         color: f.color.as_deref().map(color),
+        icon: None,
         favorite: false,
         run: None,
         log: None,
