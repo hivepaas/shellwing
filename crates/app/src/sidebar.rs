@@ -554,6 +554,15 @@ impl Sidebar {
     /// The sections shown, each title with its hosts' names: for the UI
     /// tests.
     #[cfg(all(test, feature = "ui-tests"))]
+    pub fn marked(&self) -> Option<String> {
+        self.sections
+            .iter()
+            .flat_map(|s| &s.rows)
+            .find(|r| r.active)
+            .map(|r| r.name.to_string())
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
     pub fn icon_of(&self, name: &str) -> Option<&'static str> {
         self.sections
             .iter()

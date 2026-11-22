@@ -765,6 +765,12 @@ impl Workspace {
         self.sidebar.read(cx).shown_names(cx)
     }
 
+    /// The host the list marks as the tab shown's.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn host_marked(&self, cx: &gpui::App) -> Option<String> {
+        self.sidebar.read(cx).marked()
+    }
+
     /// The icon on the tile of the host listed as `name`.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn host_icon_shown(&self, name: &str, cx: &gpui::App) -> Option<&'static str> {
@@ -1957,7 +1963,8 @@ impl Workspace {
         }
         self.keep_keys_locked(window, cx);
         self.title_window(window, cx);
-        cx.notify();
+        // The host list marks the host of the tab shown.
+        self.refresh_sidebar(cx);
     }
 
     /// Moves a tab to `to`, the others making room; the active one stays

@@ -442,8 +442,11 @@ scenario!(
         ui.click("host:db");
         ui.login();
         assert_eq!((ui.tabs(), active(ui)), (2, 1));
+        let marked = |ui: &mut crate::ui_tests::Ui| ui.ws(|ws, _, cx| ws.host_marked(cx));
+        assert_eq!(marked(ui).as_deref(), Some("db"));
         ui.click("host:web");
         assert_eq!((ui.tabs(), active(ui)), (2, 0), "back to web's tab");
+        assert_eq!(marked(ui).as_deref(), Some("web"), "the list marks it at once");
         ui.double_click("host:web");
         ui.login();
         assert_eq!((ui.tabs(), active(ui)), (3, 2), "a second tab on web");
