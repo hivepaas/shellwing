@@ -133,6 +133,9 @@ pub struct Workspace {
     systems: std::collections::BTreeMap<String, SystemSeen>,
     /// The hosts being asked now, so that a second tab does not ask too.
     asking_system: std::collections::HashSet<String>,
+    /// The host a click just opened a tab for: the double click it began
+    /// opens no second one.
+    opened_on_click: Option<String>,
     live: Live,
     /// Hosts named in `~/.ssh/config`, for the sidebar.
     ssh_aliases: Vec<String>,
@@ -427,6 +430,7 @@ impl Workspace {
             drawer_drag: None,
             systems: live.store().map(|s| s.systems()).unwrap_or_default(),
             asking_system: Default::default(),
+            opened_on_click: None,
             live,
             ssh_aliases: ssh_config::aliases(ssh_config::default_config_path().as_deref()),
             rt,
@@ -785,6 +789,59 @@ impl Workspace {
     /// Every pane of every tab.
     fn all_views(&self) -> Vec<Entity<TermView>> {
         self.tabs.iter().flat_map(Tab::views).collect()
+    }
+
+    /// A click on a host in the list or on the rail: one goes to the host's
+    /// last tab, opening one if it has none; a double click always opens a
+    /// new one, unless its first click just did.
+    pub fn click_host(
+        &mut self,
+        target: &EditTarget,
+        spec: &str,
+        clicks: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if clicks == 2 {
+            if self.opened_on_click.take().as_deref() == Some(spec) {
+                // Its press took the keyboard from the tab just opened.
+                self.activate(self.active, window, cx);
+            } else {
+                self.open(spec, window, cx);
+            }
+            return;
+        }
+        self.opened_on_click = None;
+        if clicks > 2 {
+            return;
+        }
+        let is_it = |s: &Session| match target {
+            EditTarget::Local => s.is_local(),
+            EditTarget::Saved(name) => s.entry.as_deref() == Some(name.as_str()),
+            EditTarget::Ssh(alias) => s.entry.is_none() && &s.spec == alias,
+            EditTarget::New | EditTarget::NewIn(_) => false,
+        };
+        // The last tab with a pane on the host, that pane focused.
+        let found = self.tabs.iter().enumerate().rev().find_map(|(i, t)| {
+            let views = t.views();
+            let on_it = |v: &Entity<TermView>| is_it(v.read(cx).session());
+            if on_it(&t.focused) {
+                return Some((i, None));
+            }
+            views.into_iter().find(on_it).map(|v| (i, Some(v)))
+        });
+        match found {
+            Some((i, pane)) => {
+                if let Some(pane) = pane {
+                    self.tabs[i].focused = pane;
+                }
+                self.activate(i, window, cx);
+            }
+            None => {
+                self.open(spec, window, cx);
+                self.opened_on_click = Some(spec.to_string());
+            }
+        }
     }
 
     /// Opens a tab connected to `spec`: a hosts.toml name, an ssh config alias or

@@ -337,7 +337,7 @@ scenario!(
         assert!(systems.contains("\"web\"") && systems.contains("debian"), "{systems}");
         ui.click("host:db");
         ui.login();
-        ui.click("host:web");
+        ui.double_click("host:web");
         ui.login();
         assert_eq!(ui.tabs(), 3);
         assert_eq!(server.seen.lock().expect("seen").systems_asked, 1);
@@ -415,6 +415,52 @@ scenario!(
         let above = tile.origin.y - tab.origin.y;
         assert_eq!(tile.origin.x - tab.origin.x, above, "as far in as down");
         assert!(tab.size.height <= gpui::px(crate::chrome::TITLEBAR_H));
+    }
+);
+
+scenario!(
+    /// A click on a host goes to its last tab, opening one only when it has
+    /// none; a double click opens a new tab, but just one when the host had
+    /// none. The rail's tiles do the same.
+    a_click_goes_to_the_hosts_tab,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "{}{}{}",
+                host("web", server.port),
+                host("db", server.port),
+                host("cache", server.port)
+            ),
+        );
+        ui.open();
+        let active = |ui: &mut crate::ui_tests::Ui| ui.ws(|ws, _, _| ws.active_index());
+        ui.click("host:web");
+        ui.login();
+        ui.click("host:db");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (2, 1));
+        ui.click("host:web");
+        assert_eq!((ui.tabs(), active(ui)), (2, 0), "back to web's tab");
+        ui.double_click("host:web");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (3, 2), "a second tab on web");
+        ui.click("host:db");
+        ui.click("host:web");
+        assert_eq!((ui.tabs(), active(ui)), (3, 2), "web's last tab");
+        ui.double_click("host:cache");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (4, 3), "one tab, not two");
+
+        ui.click("collapse-hosts");
+        ui.wait_until("the rail", |ui| ui.find("hosts").is_none());
+        ui.click("tile:db");
+        assert_eq!((ui.tabs(), active(ui)), (4, 1));
+        ui.double_click("tile:db");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (5, 4));
     }
 );
 

@@ -472,8 +472,13 @@ impl Sidebar {
                             let (title, detail) = (title.clone(), detail.clone());
                             cx.new(|_| Tip { title, detail }).into()
                         })
-                        .on_click(move |_, window, cx| {
-                            let _ = ws.update(cx, |ws, cx| ws.open(&spec, window, cx));
+                        .on_click({
+                            let target = row.edit.clone();
+                            move |ev, window, cx| {
+                                let _ = ws.update(cx, |ws, cx| {
+                                    ws.click_host(&target, &spec, ev.click_count(), window, cx)
+                                });
+                            }
                         })
                         .child(tile(row, colors().panel, row.active)),
                 );
@@ -954,8 +959,13 @@ impl Render for Sidebar {
                         // The host of the active tab.
                         .when(row.active, |d| d.bg(rgb(colors().selected)))
                         .when(!row.active, |d| d.hover(|s| s.bg(rgb(colors().hover))))
-                        .on_click(move |_, window, cx| {
-                            let _ = workspace.update(cx, |ws, cx| ws.open(&spec, window, cx));
+                        .on_click({
+                            let target = row.edit.clone();
+                            move |ev, window, cx| {
+                                let _ = workspace.update(cx, |ws, cx| {
+                                    ws.click_host(&target, &spec, ev.click_count(), window, cx)
+                                });
+                            }
                         })
                         // The dot's ring is the row's own ground when it is
                         // marked, so the dot does not sit in a hole.
