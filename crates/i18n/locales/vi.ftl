@@ -1738,8 +1738,8 @@ t850e9777 = Nhấn Enter lần nữa để quên
 # Nothing matches.
 tf8e003c3 = Không có kết quả.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ di chuyển   Tab sang nhóm khác   Enter mở   Esc đóng   gõ > để chỉ xem thao tác
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ di chuyển   Tab sang nhóm khác   Enter tới   { $new_tab } tab mới   Esc đóng   gõ > để chỉ xem thao tác
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ xem trước   Enter giữ   Esc quay lại

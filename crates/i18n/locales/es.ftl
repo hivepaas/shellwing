@@ -1782,8 +1782,8 @@ t850e9777 = Enter otra vez para olvidar
 # Nothing matches.
 tf8e003c3 = No hay coincidencias.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ mover   Tab siguiente grupo   Enter abrir   Esc cerrar   escribe > para ver solo acciones
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ mover   Tab siguiente grupo   Enter ir   { $new_tab } nueva pestaña   Esc cerrar   escribe > para ver solo acciones
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ previsualizar   Enter conservar   Esc volver

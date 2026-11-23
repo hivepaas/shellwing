@@ -1782,8 +1782,8 @@ t850e9777 = Unutmak için yeniden Enter
 # Nothing matches.
 tf8e003c3 = Eşleşen bir şey yok.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ gezin   Tab sonraki grup   Enter aç   Esc kapat   yalnızca eylemler için > yazın
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ gezin   Tab sonraki grup   Enter git   { $new_tab } yeni sekme   Esc kapat   yalnızca eylemler için > yazın
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ önizle   Enter koru   Esc geri dön

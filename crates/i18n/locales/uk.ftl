@@ -1816,8 +1816,8 @@ t850e9777 = Enter ще раз, щоб забути
 # Nothing matches.
 tf8e003c3 = Збігів немає.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ вибір   Tab наступна група   Enter відкрити   Esc закрити   > лише дії
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ вибір   Tab наступна група   Enter перейти   { $new_tab } нова вкладка   Esc закрити   > лише дії
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ перегляд   Enter залишити   Esc назад

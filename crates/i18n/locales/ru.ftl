@@ -1816,8 +1816,8 @@ t850e9777 = Enter ещё раз, чтобы забыть
 # Nothing matches.
 tf8e003c3 = Совпадений нет.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ выбор   Tab следующая группа   Enter открыть   Esc закрыть   > только действия
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ выбор   Tab следующая группа   Enter перейти   { $new_tab } новая вкладка   Esc закрыть   > только действия
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ просмотр   Enter оставить   Esc назад

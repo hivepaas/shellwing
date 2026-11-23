@@ -1738,8 +1738,8 @@ t850e9777 = 再按 Enter 忘记
 # Nothing matches.
 tf8e003c3 = 没有匹配项。
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ 移动   Tab 下一组   Enter 打开   Esc 关闭   输入 > 仅显示操作
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ 移动   Tab 下一组   Enter 前往   { $new_tab } 新标签页   Esc 关闭   输入 > 仅显示操作
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 预览   Enter 保留   Esc 返回

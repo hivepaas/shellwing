@@ -1782,8 +1782,8 @@ t850e9777 = Enter de nouveau pour oublier
 # Nothing matches.
 tf8e003c3 = Aucun résultat.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ déplacer   Tab groupe suivant   Enter ouvrir   Esc fermer   saisissez > pour les actions uniquement
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ déplacer   Tab groupe suivant   Enter y aller   { $new_tab } nouvel onglet   Esc fermer   saisissez > pour les actions uniquement
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ aperçu   Enter garder   Esc revenir

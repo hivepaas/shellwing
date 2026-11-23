@@ -38,7 +38,7 @@ scenario!(
     go_to_a_tab_by_number,
     |ui| {
         let server = signed_in(ui);
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.login();
         let first = if cfg!(target_os = "macos") { "cmd-1" } else { "alt-1" };

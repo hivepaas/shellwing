@@ -54,7 +54,7 @@ scenario!(
         ui.wait_until("hosts.toml to name the key", |ui| {
             ui.hosts_toml().contains("key = \"vault:")
         });
-        ui.palette("web");
+        ui.palette_new_tab("web");
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for(WELCOME);
         assert!(!ui.screen().contains("password:"), "asked for the password");

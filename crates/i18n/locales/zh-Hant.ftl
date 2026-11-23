@@ -1765,8 +1765,8 @@ t850e9777 = 再按一次 Enter 即可忘記
 # Nothing matches.
 tf8e003c3 = 沒有符合的項目。
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ 移動   Tab 下一組   Enter 開啟   Esc 關閉   輸入 > 僅顯示動作
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ 移動   Tab 下一組   Enter 前往   { $new_tab } 新分頁   Esc 關閉   輸入 > 僅顯示動作
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 預覽   Enter 保留   Esc 返回
