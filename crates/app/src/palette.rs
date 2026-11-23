@@ -20,7 +20,11 @@ use crate::sidebar::dot;
 /// What the palette asks the workspace to do.
 pub enum PaletteEvent {
     Dismiss,
-    Open(String),
+    /// A host to open: its tab, or (`new_tab`) a new one.
+    Open {
+        spec: String,
+        new_tab: bool,
+    },
     Act(Action),
     /// A theme is highlighted: show it, without saving.
     Preview(String),
@@ -644,15 +648,17 @@ impl Palette {
     }
 
     /// `all`: Alt+Enter, a snippet for every pane of the tab, a library
-    /// command to add.
-    fn choose(&mut self, ix: usize, all: bool, cx: &mut Context<Self>) {
+    /// command to add. `new_tab`: Ctrl+Enter (Cmd+Enter on macOS), a host in
+    /// a new tab even when it has one.
+    fn choose(&mut self, ix: usize, all: bool, new_tab: bool, cx: &mut Context<Self>) {
         let Some(e) = self.shown.get(ix) else {
             return;
         };
         cx.emit(match &e.kind {
-            Kind::Host(spec) | Kind::Recent(spec) | Kind::Connect(spec) => {
-                PaletteEvent::Open(spec.clone())
-            }
+            Kind::Host(spec) | Kind::Recent(spec) | Kind::Connect(spec) => PaletteEvent::Open {
+                spec: spec.clone(),
+                new_tab,
+            },
             Kind::Action(a) => PaletteEvent::Act(a.clone()),
             Kind::Theme(id) => PaletteEvent::Pick(id.clone()),
             // Forgetting cannot be undone, so it takes a second Enter.
@@ -699,7 +705,7 @@ impl Palette {
                     cx.emit(PaletteEvent::Answer(answer));
                 }
             }
-            "enter" => self.choose(self.selected, k.modifiers.alt, cx),
+            "enter" => self.choose(self.selected, k.modifiers.alt, k.modifiers.secondary(), cx),
             "down" => step(1, self, cx),
             "up" => step(-1, self, cx),
             "n" if k.modifiers.control => step(1, self, cx),
@@ -835,7 +841,7 @@ impl Render for Palette {
                     .when(selected, |d| d.bg(rgb(colors().selected)))
                     .when(!selected, |d| d.hover(|s| s.bg(rgb(colors().hover))))
                     .on_click(cx.listener(move |p, e: &gpui::ClickEvent, _, cx| {
-                        p.choose(i, e.modifiers().alt, cx)
+                        p.choose(i, e.modifiers().alt, e.modifiers().secondary(), cx)
                     }))
                     .when(has_dot, |d| d.child(dot(e.status)))
                     .child(
@@ -892,9 +898,14 @@ impl Render for Palette {
             );
         }
         let footer = match self.mode {
-            Mode::Connect => {
-                tr!("↑↓ move   Tab next group   Enter open   Esc close   type > for actions only")
-            }
+            Mode::Connect => tr!(
+                "↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only",
+                new_tab = if cfg!(target_os = "macos") {
+                    "⌘Enter"
+                } else {
+                    "Ctrl+Enter"
+                }
+            ),
             Mode::Themes => tr!("↑↓ preview   Enter keep   Esc go back"),
             Mode::Secrets => {
                 tr!("↑↓ move   Enter twice forget   Esc close   secrets are never shown")

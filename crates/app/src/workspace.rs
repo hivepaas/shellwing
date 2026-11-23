@@ -828,8 +828,48 @@ impl Workspace {
             EditTarget::Ssh(alias) => s.entry.is_none() && &s.spec == alias,
             EditTarget::New | EditTarget::NewIn(_) => false,
         };
-        // The tab with a pane on the host: the one shown, if it has one (it
-        // stays as it is), else the last; that pane focused.
+        if self.go_to_host(is_it, spec, window, cx) {
+            self.opened_on_click = Some(spec.to_string());
+        }
+    }
+
+    /// Opens `spec` from the palette: like a click on the host in the list
+    /// ([`Self::go_to_host`]), or always a new tab (Ctrl+Enter, Cmd+Enter
+    /// on macOS). `spec` is what the palette lists: this computer, a
+    /// hosts.toml name or alias, an ssh config alias, or an address typed.
+    fn open_from_palette(
+        &mut self,
+        spec: &str,
+        new_tab: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if new_tab {
+            return self.open(spec, window, cx);
+        }
+        let entry = self.live.hosts().find(spec).map(|h| h.name.clone());
+        let is_it = |s: &Session| {
+            if spec == crate::local::SPEC {
+                s.is_local()
+            } else if let Some(name) = &entry {
+                s.entry.as_deref() == Some(name.as_str())
+            } else {
+                s.entry.is_none() && s.spec == spec
+            }
+        };
+        self.go_to_host(is_it, spec, window, cx);
+    }
+
+    /// Goes to a tab with a pane on the host `is_it` says: the tab shown,
+    /// if it has one (it stays as it is), else the last; that pane focused.
+    /// With none, opens a tab to `spec`, and says so.
+    fn go_to_host(
+        &mut self,
+        is_it: impl Fn(&Session) -> bool,
+        spec: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
         let on_host = |i: usize| {
             let t = &self.tabs[i];
             let on_it = |v: &Entity<TermView>| is_it(v.read(cx).session());
@@ -848,10 +888,11 @@ impl Workspace {
                     self.tabs[i].focused = pane;
                 }
                 self.activate(i, window, cx);
+                false
             }
             None => {
                 self.open(spec, window, cx);
-                self.opened_on_click = Some(spec.to_string());
+                true
             }
         }
     }
@@ -4896,10 +4937,10 @@ impl Workspace {
                 }
                 self.close_palette(window, cx)
             }
-            PaletteEvent::Open(spec) => {
-                let spec = spec.clone();
+            PaletteEvent::Open { spec, new_tab } => {
+                let (spec, new_tab) = (spec.clone(), *new_tab);
                 self.close_palette(window, cx);
-                self.open(&spec, window, cx);
+                self.open_from_palette(&spec, new_tab, window, cx);
             }
             PaletteEvent::Snippet { id, all } => {
                 let (id, all) = (id.clone(), *all);

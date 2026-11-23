@@ -1738,8 +1738,8 @@ t850e9777 = もう一度 Enter で消去
 # Nothing matches.
 tf8e003c3 = 一致するものがありません。
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ 移動   Tab 次のグループ   Enter 開く   Esc 閉じる   > を入力でアクションのみ
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ 移動   Tab 次のグループ   Enter 移動先へ   { $new_tab } 新しいタブ   Esc 閉じる   > を入力でアクションのみ
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ プレビュー   Enter 決定   Esc 戻る

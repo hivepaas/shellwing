@@ -22,7 +22,7 @@ scenario!(
         ui.login();
         answer_offer(ui, true);
         ui.wait_for_notice_in("Saved in the vault", crate::notice::Tone::Good);
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for(WELCOME);
         assert!(!ui.screen().contains("password:"), "asked again");
@@ -42,7 +42,7 @@ scenario!(
         ui.connect(&server.spec());
         ui.login();
         answer_offer(ui, false);
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.login();
     }
@@ -77,7 +77,7 @@ scenario!(
         // Its key is new too: trust it, as after a reinstall.
         std::fs::write(ui.dir.join("known_hosts"), format!("{}\n", changed.known_hosts_line()))
             .expect("known_hosts");
-        ui.palette(&changed.spec());
+        ui.palette_new_tab(&changed.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for("password:");
         ui.line("new-password");
@@ -116,7 +116,7 @@ scenario!(
         ui.palette("Lock the vault");
         ui.wait_for_notice("The vault is locked.");
         // Locked: the password is asked for.
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for(&format!("{USER}@127.0.0.1's password:"));
         ui.keys("ctrl-c");
@@ -127,7 +127,7 @@ scenario!(
         });
         ui.line(PASSPHRASE);
         ui.wait_for_notice("The vault is open.");
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a third tab", |ui| ui.tabs() == 3);
         ui.wait_for(WELCOME);
         assert!(!ui.screen().contains("password:"), "asked again");
@@ -178,7 +178,7 @@ scenario!(
         ui.wait_until("the question", |ui| ui.ws(|ws, _, _| ws.palette_open()));
         ui.line(&key);
         ui.wait_for_notice("The vault is open.");
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.wait_for(WELCOME);
         assert!(!ui.screen().contains("password:"), "asked again");
@@ -201,7 +201,7 @@ scenario!(
         ui.keys("enter");
         ui.keys("enter");
         ui.wait_for_notice("Forgotten.");
-        ui.palette(&server.spec());
+        ui.palette_new_tab(&server.spec());
         ui.wait_until("a second tab", |ui| ui.tabs() == 2);
         ui.login();
     }

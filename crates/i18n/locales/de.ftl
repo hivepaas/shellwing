@@ -1782,8 +1782,8 @@ t850e9777 = Erneut Enter zum Vergessen
 # Nothing matches.
 tf8e003c3 = Keine Treffer.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ bewegen   Tab nächste Gruppe   Enter öffnen   Esc schließen   > tippen nur für Aktionen
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ bewegen   Tab nächste Gruppe   Enter hingehen   { $new_tab } neuer Tab   Esc schließen   > tippen nur für Aktionen
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ Vorschau   Enter behalten   Esc zurück

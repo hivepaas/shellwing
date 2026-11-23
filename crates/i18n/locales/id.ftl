@@ -1765,8 +1765,8 @@ t850e9777 = Enter lagi untuk melupakan
 # Nothing matches.
 tf8e003c3 = Tidak ada yang cocok.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ pindah   Tab grup berikutnya   Enter buka   Esc tutup   ketik > untuk tindakan saja
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ pindah   Tab grup berikutnya   Enter buka   { $new_tab } tab baru   Esc tutup   ketik > untuk tindakan saja
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ pratinjau   Enter pakai   Esc kembali

@@ -407,6 +407,18 @@ impl Ui {
         self.line(text);
     }
 
+    /// As [`Self::palette`], with Ctrl+Enter (Cmd+Enter on macOS): a host
+    /// in a new tab, even one it has a tab of.
+    pub fn palette_new_tab(&mut self, text: &str) {
+        self.shortcut("k");
+        self.type_text(text);
+        self.keys(if cfg!(target_os = "macos") {
+            "cmd-enter"
+        } else {
+            "ctrl-enter"
+        });
+    }
+
     /// Lets `d` pass, on the clock and for GPUI's timers (which run on a fake
     /// clock in tests: reconnect countdowns, notices).
     pub fn advance(&mut self, d: Duration) {

@@ -1738,8 +1738,8 @@ t850e9777 = 삭제하려면 Enter를 한 번 더 누르세요
 # Nothing matches.
 tf8e003c3 = 일치하는 항목이 없습니다.
 
-# ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
-t007c4e08 = ↑↓ 이동   Tab 다음 그룹   Enter 열기   Esc 닫기   > 입력 시 작업만 표시
+# ↑↓ move   Tab next group   Enter go to   {new_tab} new tab   Esc close   type > for actions only
+tb494b680 = ↑↓ 이동   Tab 다음 그룹   Enter 열기   { $new_tab } 새 탭   Esc 닫기   > 입력 시 작업만 표시
 
 # ↑↓ preview   Enter keep   Esc go back
 t60259b3c = ↑↓ 미리 보기   Enter 적용   Esc 돌아가기

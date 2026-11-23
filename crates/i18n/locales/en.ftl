@@ -640,7 +640,7 @@ t51d15edf =
     }
 t850e9777 = Enter again to forget
 tf8e003c3 = Nothing matches.
-t007c4e08 = ↑↓ move   Tab next group   Enter open   Esc close   type > for actions only
+tb494b680 = ↑↓ move   Tab next group   Enter go to   { $new_tab } new tab   Esc close   type > for actions only
 t60259b3c = ↑↓ preview   Enter keep   Esc go back
 tbc202ae0 = ↑↓ move   Enter twice forget   Esc close   secrets are never shown
 t39061ccf = Enter copies   Esc close

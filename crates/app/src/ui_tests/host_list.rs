@@ -472,6 +472,39 @@ scenario!(
     }
 );
 
+scenario!(
+    /// A host chosen in the palette with Enter goes as a click in the list
+    /// does: the tab shown stays if it is on the host, else the host's last
+    /// tab, else a new one. Ctrl+Enter (Cmd+Enter on macOS) always opens a
+    /// new tab.
+    the_palette_goes_to_the_hosts_tab,
+    |ui| {
+        let server = ui.server(Policy::password());
+        ui.trust(&server);
+        ui.config_file(
+            "hosts.toml",
+            &format!("{}{}", host("web", server.port), host("db", server.port)),
+        );
+        ui.open();
+        let active = |ui: &mut crate::ui_tests::Ui| ui.ws(|ws, _, _| ws.active_index());
+        ui.palette("web");
+        ui.login();
+        ui.palette("db");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (2, 1));
+        ui.palette("web");
+        assert_eq!((ui.tabs(), active(ui)), (2, 0), "back to web's tab");
+        ui.palette("web");
+        assert_eq!((ui.tabs(), active(ui)), (2, 0), "on web already: stays");
+        ui.palette_new_tab("web");
+        ui.login();
+        assert_eq!((ui.tabs(), active(ui)), (3, 2), "a new tab on web");
+        ui.palette("db");
+        ui.palette("web");
+        assert_eq!((ui.tabs(), active(ui)), (3, 2), "web's last tab");
+    }
+);
+
 /// Opens the editor on a saved host, as hovering it and clicking Edit does.
 fn edit_host(ui: &mut crate::ui_tests::Ui, name: &str) {
     ui.hover(&format!("host:{name}"));
