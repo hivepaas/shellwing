@@ -1184,9 +1184,9 @@ What it may do, each on its own:
 
 What happens to a command:
 
-- **Run freely** (the default): it runs at once.
-- **Ask for risky ones**: a command with words from the risky list waits for
-  you; the rest run.
+- **Run freely**: it runs at once.
+- **Ask for risky ones** (the default): a command with words from the risky
+  list waits for you; the rest run.
 - **Ask every time**: each command waits for you.
 
 The default for new grants is set under *When AI runs a command*, and the

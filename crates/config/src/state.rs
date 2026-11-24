@@ -42,7 +42,8 @@ pub struct AiState {
     pub clients: Vec<AiClient>,
     #[serde(default)]
     pub grants: Vec<AiGrant>,
-    /// What a new grant does with a command.
+    /// What a new grant does with a command: ask for risky ones, unless
+    /// the person chose otherwise.
     #[serde(default)]
     pub default_mode: AiMode,
     /// What makes a command risky, for grants that ask for risky ones: a
@@ -163,9 +164,9 @@ pub enum AiHow {
 #[serde(rename_all = "lowercase")]
 pub enum AiMode {
     /// Commands run at once; each is kept in the activity.
-    #[default]
     Free,
-    /// One that looks risky waits for the person.
+    /// One that looks risky waits for the person; the rest run.
+    #[default]
     Risky,
     /// Each waits for the person.
     Ask,
@@ -273,8 +274,21 @@ pub enum PaneState {
 }
 
 #[cfg(test)]
-mod grant_tests {
+mod ai_tests {
     use super::*;
+
+    /// Risky commands wait unless the person says otherwise: for a new
+    /// state, and for a grant or a file that says nothing.
+    #[test]
+    fn risky_ones_wait_by_default() {
+        assert_eq!(AiState::default().default_mode, AiMode::Risky);
+        let s: AiState =
+            serde_json::from_str(r#"{"grants": [{"client": "c", "host": "web"}]}"#).expect("json");
+        assert_eq!(s.default_mode, AiMode::Risky);
+        assert_eq!(s.grants[0].mode, AiMode::Risky);
+        let s: AiState = serde_json::from_str(r#"{"default_mode": "free"}"#).expect("json");
+        assert_eq!(s.default_mode, AiMode::Free, "a choice made is kept");
+    }
 
     /// A grant that says nothing of them may run commands and read files,
     /// not write them.
