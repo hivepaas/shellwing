@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = sizi bekliyor
 
 # running
 t147eb74c = çalışıyor
@@ -23,55 +23,55 @@ tf05d1c4a = çalışmadı
 t6ee2f34e = durduruldu
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = reddettiniz
 
 # All
-# t75afe364 =
+t75afe364 = Tümü
 
 # Waiting for you
-# te8233afc =
+te8233afc = Sizi bekleyen
 
 # Running
-# t452925ec =
+t452925ec = Çalışan
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = Başarısız
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = Henüz hiçbir AI istemcisi komut çalıştırmadı.
 
 # Nothing here.
 ta7006e9a = Burada bir şey yok.
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = Tüm AI'ı durdur
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi bekliyor: verilen erişim her komut için onay istiyor.
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi bekliyor: riskli listeden { $words } içeriyor.
 
 # Run it
-# t72430853 =
+t72430853 = Çalıştır
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = Çalıştır ve bu oturumda bu komutu yeniden de çalıştır
 
-# Refuse
-t9bcada35 = Reddet
+# Refuse it
+tbea0b112 = Reddet
 
 # Stop
 t4b7f7705 = Durdur
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = Hiç çıktı vermedi.
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = Henüz çıktı yok.
 
 # Copy output
 t64749f61 = Çıktıyı kopyala
@@ -92,28 +92,28 @@ t0ff991db = Cline'da, MCP Servers › Configure içinde, bunu cline_mcp_settings
 td4ff0be4 = MCP sunucusunu stdio üzerinden kendisi başlatan bir istemci:
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = Serbestçe çalıştır
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = Komutlar hemen çalışır. Her biri, çalışırken AI etkinliği içinde saklanır.
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = Riskli olanlar için sor
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = Aşağıdaki listeden sözcükler içeren bir komut sizi bekler; diğerleri çalışır.
 
 # Ask every time
-# t26ab736e =
+t26ab736e = Her seferinde sor
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = Her komut, siz izin verene kadar bekler: bir kez ya da oturum boyunca.
 
 # Find a host
 t5f515591 = Bir ana makine arayın
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = Bu sözcükleri içeren bir komut bekler
 
 # AI clients
 ta302119f = AI istemcileri
@@ -161,10 +161,10 @@ tf69e6847 = Token'ın kendisi saklanmaz, yalnızca karması: yeniden görmek iç
 t1ef9da69 = Verilen ana makineler
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = Bir istemci yalnızca bunlara ulaşır. Komutları arka planda, kendine ait bir bağlantıda çalışır ve her biri AI etkinliği içinde saklanır.
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = AI etkinliği
 
 # Take every one back
 tb3911aec = Tüm erişimleri kaldır
@@ -212,7 +212,7 @@ t41f59644 = Kime
 t0f7e1b30 = Süre
 
 # Commands
-# t971550f3 =
+t971550f3 = Komutlar
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine de. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
@@ -224,16 +224,16 @@ t35afca3b = İptal
 te96c4c6e = Erişim ver
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = AI bir komut çalıştırdığında
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = Bundan sonra verilen ana makineler için; her biri yukarıdaki tabloda ayrıca ayarlanabilir. Hangisi seçilirse seçilsin, her komut AI etkinliği içinde saklanır.
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = Riskli: bu sözcüklerden birini içeren bir komut sizi bekler; her satıra bir tane
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = Olağan liste
 
 # unlock its windows
 t7c69953e = pencerelerinin kilidini açmak
@@ -2867,6 +2867,9 @@ tc1d15743 = Bulundu. Önce onun anahtarları denenir.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Bulunamadı (SSH_AUTH_SOCK ayarlı değil).
 
+# Refuse
+t9bcada35 = Reddet
+
 # Unknown host keys
 t2534790f = Bilinmeyen ana makine anahtarları
 
@@ -3145,7 +3148,7 @@ t05dcb762 = Tek komut, çok sayıda ana makine
 t62d7de84 = EYLEMLER
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = AI istemcilerinin çalıştırdıkları
 
 # Cmd+click to add or take away
 t36133970 = Eklemek veya çıkarmak için Cmd+click
@@ -3913,7 +3916,7 @@ t21a947cf = Bölmeyi kapat
 t5a2b7304 = ↓ En alta dön (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client }, { $host } üzerinde bir komut çalıştırmak istiyor: komut AI etkinliği içinde sizi bekliyor.
 
 # Config files · {category}
 t59edc3e9 = Yapılandırma dosyaları · { $category }

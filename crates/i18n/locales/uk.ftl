@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = чекає на вас
 
 # running
 t147eb74c = виконується
@@ -23,55 +23,55 @@ tf05d1c4a = не виконано
 t6ee2f34e = зупинено
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = відхилено вами
 
 # All
-# t75afe364 =
+t75afe364 = Усі
 
 # Waiting for you
-# te8233afc =
+te8233afc = Чекають на вас
 
 # Running
-# t452925ec =
+t452925ec = Виконуються
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = З помилкою
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = Жоден AI-клієнт ще не виконав команди.
 
 # Nothing here.
 ta7006e9a = Тут нічого немає.
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = Зупинити весь AI
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · розпочато о { $when } · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client } хоче виконати це на { $host }. Команда чекає на вас: наданий доступ вимагає підтверджувати кожну команду.
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client } хоче виконати це на { $host }. Команда чекає на вас: у ній є { $words } зі списку ризикованих.
 
 # Run it
-# t72430853 =
+t72430853 = Виконати
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = Виконати, і цю команду знову в цьому сеансі
 
-# Refuse
-t9bcada35 = Відхиляти
+# Refuse it
+tbea0b112 = Відхилити
 
 # Stop
 t4b7f7705 = Зупинити
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = Нічого не виведено.
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = Поки нічого не виведено.
 
 # Copy output
 t64749f61 = Копіювати вивід
@@ -92,28 +92,28 @@ t0ff991db = У Cline, MCP Servers › Configure, додайте це до cline_
 td4ff0be4 = Клієнт, який сам запускає свій MCP-сервер, через stdio:
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = Виконувати вільно
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = Команди виконуються одразу. Кожна зберігається на вкладці «Активність AI» під час виконання.
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = Запитувати про ризиковані
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = Команда зі словами зі списку нижче чекає на вас; решта виконуються.
 
 # Ask every time
-# t26ab736e =
+t26ab736e = Запитувати щоразу
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = Кожна команда чекає, доки ви її не дозволите: один раз або на весь сеанс.
 
 # Find a host
 t5f515591 = Знайдіть хост
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = Команда з цими словами чекає
 
 # AI clients
 ta302119f = AI-клієнти
@@ -161,10 +161,10 @@ tf69e6847 = Сам токен не зберігається, лише його �
 t1ef9da69 = Надані хости
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = Клієнту доступні лише ці хости. Його команди виконуються у фоні, окремим підключенням, і кожна зберігається на вкладці «Активність AI».
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = Активність AI
 
 # Take every one back
 tb3911aec = Відкликати всі
@@ -212,7 +212,7 @@ t41f59644 = Кому
 t0f7e1b30 = Термін
 
 # Commands
-# t971550f3 =
+t971550f3 = Команди
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
@@ -224,16 +224,16 @@ t35afca3b = Скасувати
 te96c4c6e = Надати доступ
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = Коли AI виконує команду
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = Для хостів, наданих відтепер; для кожного можна задати своє в таблиці вище. Кожна команда зберігається на вкладці «Активність AI», хоч би що тут було вибрано.
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = Ризиковані: команда з будь-яким із цих слів (по одному на рядок) чекає на вас
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = Звичайний список
 
 # unlock its windows
 t7c69953e = розблокувати свої вікна
@@ -2911,6 +2911,9 @@ tc1d15743 = Знайдено. Його ключі пробуються перш�
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Не знайдено (SSH_AUTH_SOCK не задано).
 
+# Refuse
+t9bcada35 = Відхиляти
+
 # Unknown host keys
 t2534790f = Невідомі ключі хостів
 
@@ -3191,7 +3194,7 @@ t05dcb762 = Одна команда — багато хостів
 t62d7de84 = ДІЇ
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = Що виконують AI-клієнти
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click — додати або прибрати
@@ -4001,7 +4004,7 @@ t21a947cf = Закрити панель
 t5a2b7304 = ↓ Повернутися донизу (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client } хоче виконати команду на { $host }: вона на вкладці «Активність AI» і чекає на вас.
 
 # Config files · {category}
 t59edc3e9 = Файли конфігурації · { $category }

@@ -1227,7 +1227,7 @@ palette, opens a tab with every command AI clients ran:
   *Stop* while it runs, and *Copy output*.
 - **A command that waits for you** says why: the risky words it has, or that
   its grant asks every time. *Run it*, *Run it, and this command again this
-  session*, or *Refuse*.
+  session*, or *Refuse it*.
   - The agent is told it waits, and `job_output` tells it once you chose.
   - A notice says when one comes in, and *Actions* counts those waiting, even
     while folded.

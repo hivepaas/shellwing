@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = đang chờ bạn
 
 # running
 t147eb74c = đang chạy
@@ -23,55 +23,55 @@ tf05d1c4a = không chạy được
 t6ee2f34e = đã dừng
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = bạn đã từ chối
 
 # All
-# t75afe364 =
+t75afe364 = Tất cả
 
 # Waiting for you
-# te8233afc =
+te8233afc = Đang chờ bạn
 
 # Running
-# t452925ec =
+t452925ec = Đang chạy
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = Thất bại
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = Chưa có client AI nào chạy lệnh.
 
 # Nothing here.
 ta7006e9a = Không có gì ở đây.
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = Dừng tất cả AI
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: quyền đã cấp yêu cầu hỏi trước mọi lệnh.
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: nó có { $words }, thuộc danh sách rủi ro.
 
 # Run it
-# t72430853 =
+t72430853 = Chạy lệnh
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = Chạy lệnh, và cho phép lệnh này trong suốt phiên này
 
-# Refuse
-t9bcada35 = Từ chối
+# Refuse it
+tbea0b112 = Từ chối
 
 # Stop
 t4b7f7705 = Dừng
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = Lệnh không in ra gì.
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = Chưa in ra gì.
 
 # Copy output
 t64749f61 = Sao chép đầu ra
@@ -92,28 +92,28 @@ t0ff991db = Trong Cline, MCP Servers › Configure, thêm đoạn này vào clin
 td4ff0be4 = Client tự khởi chạy MCP server của nó, qua stdio:
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = Chạy tự do
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = Lệnh chạy ngay. Mỗi lệnh được giữ trong Hoạt động AI, ngay trong lúc chạy.
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = Hỏi với lệnh rủi ro
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = Lệnh có từ trong danh sách bên dưới sẽ chờ bạn; các lệnh khác thì chạy.
 
 # Ask every time
-# t26ab736e =
+t26ab736e = Hỏi mỗi lần
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = Mỗi lệnh chờ đến khi bạn cho phép, hoặc cho phép trong cả phiên.
 
 # Find a host
 t5f515591 = Tìm máy chủ
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = Lệnh có những từ này sẽ chờ
 
 # AI clients
 ta302119f = Client AI
@@ -161,10 +161,10 @@ tf69e6847 = Token không được giữ, chỉ giữ mã băm: muốn thấy l�
 t1ef9da69 = Máy chủ đã cấp
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = Client chỉ truy cập được các máy chủ này. Lệnh của nó chạy nền, trên kết nối riêng, và mỗi lệnh được giữ trong Hoạt động AI.
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = Hoạt động AI
 
 # Take every one back
 tb3911aec = Thu hồi tất cả
@@ -212,7 +212,7 @@ t41f59644 = Cấp cho
 t0f7e1b30 = Thời hạn
 
 # Commands
-# t971550f3 =
+t971550f3 = Lệnh
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
@@ -224,16 +224,16 @@ t35afca3b = Huỷ
 te96c4c6e = Cấp quyền
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = Khi AI chạy lệnh
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = Cho các máy chủ được cấp từ giờ trở đi; mỗi máy chủ có thể đặt riêng trong bảng phía trên. Mọi lệnh đều được giữ trong Hoạt động AI, dù chọn chế độ nào.
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = Rủi ro: lệnh có bất kỳ từ nào sau đây, mỗi từ một dòng, sẽ chờ bạn
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = Danh sách mặc định
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó
@@ -2818,6 +2818,9 @@ tc1d15743 = Đã tìm thấy. Các khoá của nó được thử trước.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Không tìm thấy (chưa đặt SSH_AUTH_SOCK).
 
+# Refuse
+t9bcada35 = Từ chối
+
 # Unknown host keys
 t2534790f = Khoá máy chủ chưa biết
 
@@ -3092,7 +3095,7 @@ t05dcb762 = Một lệnh, nhiều máy chủ
 t62d7de84 = THAO TÁC
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = Những gì client AI chạy
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click để thêm hoặc bỏ
@@ -3812,7 +3815,7 @@ t21a947cf = Đóng khung
 t5a2b7304 = ↓ Về cuối (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client } muốn chạy một lệnh trên { $host }: lệnh đang chờ bạn trong Hoạt động AI.
 
 # Config files · {category}
 t59edc3e9 = Tệp cấu hình · { $category }

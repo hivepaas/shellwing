@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = 確認待ち
 
 # running
 t147eb74c = 実行中
@@ -23,55 +23,55 @@ tf05d1c4a = 未実行
 t6ee2f34e = 停止
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = あなたが拒否
 
 # All
-# t75afe364 =
+t75afe364 = すべて
 
 # Waiting for you
-# te8233afc =
+te8233afc = 確認待ち
 
 # Running
-# t452925ec =
+t452925ec = 実行中
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = 失敗
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = AI クライアントが実行したコマンドはまだありません。
 
 # Nothing here.
 ta7006e9a = 何もありません。
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = すべての AI を停止
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client } が { $host } でこれを実行しようとしています。指示を待っています。この許可では、すべてのコマンドに確認が必要です。
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client } が { $host } でこれを実行しようとしています。指示を待っています。危険リストにある { $words } が含まれています。
 
 # Run it
-# t72430853 =
+t72430853 = 実行
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = 実行し、このセッション中は同じコマンドも実行
 
-# Refuse
-t9bcada35 = 拒否
+# Refuse it
+tbea0b112 = 拒否
 
 # Stop
 t4b7f7705 = 停止
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = 何も出力されませんでした。
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = まだ何も出力されていません。
 
 # Copy output
 t64749f61 = 出力をコピー
@@ -92,28 +92,28 @@ t0ff991db = Cline の MCP Servers › Configure で、cline_mcp_settings.json �
 td4ff0be4 = MCP サーバーを自分で起動するクライアント（stdio 経由）：
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = 自由に実行
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = コマンドはすぐに実行されます。それぞれ実行中から AI アクティビティに記録されます。
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = 危険なものは確認
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = 下のリストの語を含むコマンドは指示を待ち、それ以外は実行されます。
 
 # Ask every time
-# t26ab736e =
+t26ab736e = 毎回確認
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = 各コマンドは、許可するか、このセッション中の実行を許可するまで待ちます。
 
 # Find a host
 t5f515591 = ホストを検索
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = これらの語を含むコマンドは待機します
 
 # AI clients
 ta302119f = AI クライアント
@@ -161,10 +161,10 @@ tf69e6847 = トークンは保存されず、ハッシュのみが残ります�
 t1ef9da69 = 許可したホスト
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = クライアントがアクセスできるのはこれらのホストだけです。コマンドはバックグラウンドで専用の接続を使って実行され、それぞれ AI アクティビティに記録されます。
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = AI アクティビティ
 
 # Take every one back
 tb3911aec = すべて取り消す
@@ -212,7 +212,7 @@ t41f59644 = 許可先
 t0f7e1b30 = 期間
 
 # Commands
-# t971550f3 =
+t971550f3 = コマンド
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
@@ -224,16 +224,16 @@ t35afca3b = キャンセル
 te96c4c6e = アクセスを許可
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = AI がコマンドを実行するとき
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = 今後許可するホストに適用されます。各ホストは上の表で個別に設定できます。どの設定でも、すべてのコマンドが AI アクティビティに記録されます。
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = 危険：これらのいずれかを含むコマンドは指示を待ちます（1 行に 1 つ）
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = 標準のリスト
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除
@@ -2818,6 +2818,9 @@ tc1d15743 = 見つかりました。その鍵が最初に試されます。
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = 見つかりません（SSH_AUTH_SOCK が設定されていません）。
 
+# Refuse
+t9bcada35 = 拒否
+
 # Unknown host keys
 t2534790f = 不明なホスト鍵
 
@@ -3092,7 +3095,7 @@ t05dcb762 = 1 つのコマンドを多数のホストで
 t62d7de84 = アクション
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = AI クライアントが実行するコマンド
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click で追加・解除
@@ -3812,7 +3815,7 @@ t21a947cf = ペインを閉じる
 t5a2b7304 = ↓ 最下部に戻る（Shift+End）
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client } が { $host } でコマンドを実行しようとしています。AI アクティビティで指示を待っています。
 
 # Config files · {category}
 t59edc3e9 = 設定ファイル · { $category }

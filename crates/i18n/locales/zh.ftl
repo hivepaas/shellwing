@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = 等你确认
 
 # running
 t147eb74c = 正在运行
@@ -23,55 +23,55 @@ tf05d1c4a = 未运行
 t6ee2f34e = 已停止
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = 你已拒绝
 
 # All
-# t75afe364 =
+t75afe364 = 全部
 
 # Waiting for you
-# te8233afc =
+te8233afc = 等你确认
 
 # Running
-# t452925ec =
+t452925ec = 正在运行
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = 失败
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = 还没有 AI 客户端运行过命令。
 
 # Nothing here.
 ta7006e9a = 这里什么都没有。
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = 停止所有 AI
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client } 想在 { $host } 上运行此命令。它在等你确认：其授权要求每条命令都需确认。
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client } 想在 { $host } 上运行此命令。它在等你确认：其中含有危险列表里的 { $words }。
 
 # Run it
-# t72430853 =
+t72430853 = 运行
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = 运行，并在本会话中再遇到此命令时也运行
 
-# Refuse
-t9bcada35 = 拒绝
+# Refuse it
+tbea0b112 = 拒绝
 
 # Stop
 t4b7f7705 = 停止
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = 没有任何输出。
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = 尚无输出。
 
 # Copy output
 t64749f61 = 复制输出
@@ -92,28 +92,28 @@ t0ff991db = 在 Cline 的 MCP Servers › Configure 中，将以下内容添加�
 td4ff0be4 = 自行启动 MCP 服务器的客户端，通过 stdio：
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = 直接运行
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = 命令会立即运行。每条命令在运行时就会记录在 AI 活动中。
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = 危险命令需确认
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = 含有下方列表中词语的命令会等你确认；其余直接运行。
 
 # Ask every time
-# t26ab736e =
+t26ab736e = 每次都确认
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = 每条命令都会等到你允许它，或在本会话中允许它。
 
 # Find a host
 t5f515591 = 查找主机
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = 含有这些词语的命令会等待
 
 # AI clients
 ta302119f = AI 客户端
@@ -161,10 +161,10 @@ tf69e6847 = 令牌不会被保存，只保存其哈希值：要再次查看，�
 t1ef9da69 = 已授权的主机
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = 客户端只能访问这些主机。其命令在后台通过独立的连接运行，每条都会记录在 AI 活动中。
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = AI 活动
 
 # Take every one back
 tb3911aec = 全部收回
@@ -212,7 +212,7 @@ t41f59644 = 授权给
 t0f7e1b30 = 期限
 
 # Commands
-# t971550f3 =
+t971550f3 = 命令
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它永远看不到密钥、密码或密码短语：需要其中任何一项的主机会被拒绝，尚不知道其密钥的主机也一样。主机的输出可能含有试图操纵智能体的文字：只把主机授权给你在这方面信任的智能体。
@@ -224,16 +224,16 @@ t35afca3b = 取消
 te96c4c6e = 授予访问权限
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = AI 运行命令时
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = 适用于今后授权的主机；每台主机都可在上方表格中单独设置。无论选哪种，每条命令都会记录在 AI 活动中。
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = 危险：含有其中任何一项的命令会等你确认（每行一项）
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = 默认列表
 
 # unlock its windows
 t7c69953e = 解锁其窗口
@@ -2818,6 +2818,9 @@ tc1d15743 = 已找到。会优先尝试其中的密钥。
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = 未找到（未设置 SSH_AUTH_SOCK）。
 
+# Refuse
+t9bcada35 = 拒绝
+
 # Unknown host keys
 t2534790f = 未知主机密钥
 
@@ -3092,7 +3095,7 @@ t05dcb762 = 一条命令，多台主机
 t62d7de84 = 操作
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = AI 客户端运行的命令
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click 添加或移除
@@ -3812,7 +3815,7 @@ t21a947cf = 关闭窗格
 t5a2b7304 = ↓ 回到底部（Shift+End）
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client } 想在 { $host } 上运行一条命令：它已在 AI 活动中等你确认。
 
 # Config files · {category}
 t59edc3e9 = 配置文件 · { $category }

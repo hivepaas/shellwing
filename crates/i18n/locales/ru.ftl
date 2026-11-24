@@ -2,7 +2,7 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # waiting for you
-# t49268f5c =
+t49268f5c = ждёт вас
 
 # running
 t147eb74c = выполняется
@@ -23,55 +23,55 @@ tf05d1c4a = не выполнено
 t6ee2f34e = остановлено
 
 # refused by you
-# t2fd484b3 =
+t2fd484b3 = отклонено вами
 
 # All
-# t75afe364 =
+t75afe364 = Все
 
 # Waiting for you
-# te8233afc =
+te8233afc = Ждут вас
 
 # Running
-# t452925ec =
+t452925ec = Выполняются
 
 # Failed
-# t5579c3d4 =
+t5579c3d4 = С ошибкой
 
 # No AI client has run a command yet.
-# td29d28d8 =
+td29d28d8 = Ни один AI-клиент ещё не выполнил команду.
 
 # Nothing here.
 ta7006e9a = Здесь ничего нет.
 
 # Stop all AI
-# tddf9c9cc =
+tddf9c9cc = Остановить весь AI
 
 # {client} · {host} · started {when} · {job}
-# tafbed557 =
+tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
-# t2a306810 =
+t2a306810 = { $client } хочет выполнить это на { $host }. Команда ждёт вас: предоставленный доступ требует подтверждать каждую команду.
 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
-# t85e6d49e =
+t85e6d49e = { $client } хочет выполнить это на { $host }. Команда ждёт вас: в ней есть { $words } из списка рискованных.
 
 # Run it
-# t72430853 =
+t72430853 = Выполнить
 
 # Run it, and this command again this session
-# t2efebee7 =
+t2efebee7 = Выполнить, и эту команду снова в этом сеансе
 
-# Refuse
-t9bcada35 = Отклонять
+# Refuse it
+tbea0b112 = Отклонить
 
 # Stop
 t4b7f7705 = Остановить
 
 # It printed nothing.
-# tbb876a9f =
+tbb876a9f = Ничего не выведено.
 
 # Nothing printed yet.
-# t1051cbec =
+t1051cbec = Пока ничего не выведено.
 
 # Copy output
 t64749f61 = Копировать вывод
@@ -92,28 +92,28 @@ t0ff991db = В Cline, MCP Servers › Configure, добавьте это в clin
 td4ff0be4 = Клиент, который сам запускает свой MCP-сервер, через stdio:
 
 # Run freely
-# t77cb7aab =
+t77cb7aab = Выполнять свободно
 
 # Commands run at once. Each is kept in AI activity, as it runs.
-# t1bfe0ae2 =
+t1bfe0ae2 = Команды выполняются сразу. Каждая сохраняется на вкладке «Активность AI» по ходу выполнения.
 
 # Ask for risky ones
-# td43721d0 =
+td43721d0 = Спрашивать о рискованных
 
 # A command with words from the list below waits for you; the rest run.
-# t846e6005 =
+t846e6005 = Команда со словами из списка ниже ждёт вас; остальные выполняются.
 
 # Ask every time
-# t26ab736e =
+t26ab736e = Спрашивать каждый раз
 
 # Each command waits until you allow it, or allow it for the session.
-# tdcef213b =
+tdcef213b = Каждая команда ждёт, пока вы её не разрешите: один раз или на весь сеанс.
 
 # Find a host
 t5f515591 = Найдите хост
 
 # A command with these words waits
-# t1678b953 =
+t1678b953 = Команда с этими словами ждёт
 
 # AI clients
 ta302119f = AI-клиенты
@@ -161,10 +161,10 @@ tf69e6847 = Сам токен не хранится, только его хеш:
 t1ef9da69 = Предоставленные хосты
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
-# t396f69c1 =
+t396f69c1 = Клиенту доступны только эти хосты. Его команды выполняются в фоне, по отдельному подключению, и каждая сохраняется на вкладке «Активность AI».
 
 # AI activity
-# t07e2f764 =
+t07e2f764 = Активность AI
 
 # Take every one back
 tb3911aec = Отозвать все
@@ -212,7 +212,7 @@ t41f59644 = Кому
 t0f7e1b30 = Срок
 
 # Commands
-# t971550f3 =
+t971550f3 = Команды
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Он никогда не видит ни ключа, ни пароля, ни парольной фразы: хост, который запросил бы их, отклоняется, как и хост, ключ которого ещё неизвестен. Вывод хоста может содержать слова, рассчитанные на то, чтобы управлять агентом: предоставляйте хосты только клиенту, которому доверяете их.
@@ -224,16 +224,16 @@ t35afca3b = Отмена
 te96c4c6e = Предоставить доступ
 
 # When AI runs a command
-# tc94fc353 =
+tc94fc353 = Когда AI выполняет команду
 
 # For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
-# t608375b2 =
+t608375b2 = Для хостов, предоставленных с этого момента; для каждого можно задать своё в таблице выше. Каждая команда сохраняется на вкладке «Активность AI», что бы здесь ни было выбрано.
 
 # Risky: a command with any of these, a line each, waits for you
-# te371b0dd =
+te371b0dd = Рискованные: команда с любым из этих слов (по одному на строку) ждёт вас
 
 # The usual list
-# tcc58d242 =
+tcc58d242 = Обычный список
 
 # unlock its windows
 t7c69953e = разблокировать свои окна
@@ -2911,6 +2911,9 @@ tc1d15743 = Найден. Его ключи пробуются первыми.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Не найден (SSH_AUTH_SOCK не задан).
 
+# Refuse
+t9bcada35 = Отклонять
+
 # Unknown host keys
 t2534790f = Неизвестные ключи хостов
 
@@ -3191,7 +3194,7 @@ t05dcb762 = Одна команда — много хостов
 t62d7de84 = ДЕЙСТВИЯ
 
 # What AI clients run
-# t81fb801a =
+t81fb801a = Что выполняют AI-клиенты
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click — добавить или убрать
@@ -4001,7 +4004,7 @@ t21a947cf = Закрыть панель
 t5a2b7304 = ↓ Вернуться вниз (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
-# tc4369c9f =
+tc4369c9f = { $client } хочет выполнить команду на { $host }: она на вкладке «Активность AI» и ждёт вас.
 
 # Config files · {category}
 t59edc3e9 = Файлы конфигурации · { $category }

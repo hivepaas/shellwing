@@ -354,7 +354,7 @@ impl ActivityView {
                                 })),
                         )
                         .child(
-                            outline_button("ai-refuse", &tr!("Refuse"))
+                            outline_button("ai-refuse", &tr!("Refuse it"))
                                 .text_color(rgb(colors().bad))
                                 .on_click(cx.listener(move |v, _, _, cx| {
                                     v.answer(&refuse, Approval::Refuse, cx)
