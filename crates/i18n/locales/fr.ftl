@@ -49,6 +49,9 @@ tddf9c9cc = Arrêter toute l'AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · lancé à { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+# t2b63bd77 =
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } veut exécuter ceci sur { $host }. La commande vous attend : son accès demande votre accord pour chaque commande.
 
@@ -181,6 +184,12 @@ t04874b67 = en arrière-plan
 # through a tab
 t6bca7a6e = via un onglet
 
+# reads files
+# te3f10929 =
+
+# writes files
+# t0a7257de =
+
 # while shellwing stays open
 t938960ff = tant que shellwing reste ouvert
 
@@ -231,6 +240,27 @@ tfe61838e = Via un onglet
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Saisies dans un onglet ouvert sur le serveur, dans son shell, sous vos yeux ; un onglet s'ouvre s'il n'y en a aucun. Un mot de passe que le serveur y demande, c'est à vous de le saisir.
+
+# It may
+# t5c846351 =
+
+# Run commands
+# t65b79874 =
+
+# and see what they print
+# tef4e221a =
+
+# Read files
+# te1736866 =
+
+# list folders and read files, over SFTP
+# tf3b3e2e7 =
+
+# Write files
+# tc9796e43 =
+
+# over SFTP; where risky ones wait, every write waits for you
+# t2d9c8c34 =
 
 # Commands
 t971550f3 = Commandes

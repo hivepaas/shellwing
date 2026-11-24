@@ -7959,6 +7959,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "base64 0.22.1",
  "chrono",
  "dirs 7.0.0",
  "getrandom 0.3.4",

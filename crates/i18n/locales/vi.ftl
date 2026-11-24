@@ -49,6 +49,9 @@ tddf9c9cc = Dừng tất cả AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+# t2b63bd77 =
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: quyền đã cấp yêu cầu hỏi trước mọi lệnh.
 
@@ -181,6 +184,12 @@ t04874b67 = chạy nền
 # through a tab
 t6bca7a6e = qua tab
 
+# reads files
+# te3f10929 =
+
+# writes files
+# t0a7257de =
+
 # while shellwing stays open
 t938960ff = khi shellwing còn mở
 
@@ -231,6 +240,27 @@ tfe61838e = Qua một tab
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Được gõ vào một tab tới máy chủ, trong shell của nó, nơi bạn nhìn thấy; nếu chưa có tab thì một tab sẽ mở ra. Mật khẩu mà máy chủ hỏi ở đó do bạn tự gõ.
+
+# It may
+# t5c846351 =
+
+# Run commands
+# t65b79874 =
+
+# and see what they print
+# tef4e221a =
+
+# Read files
+# te1736866 =
+
+# list folders and read files, over SFTP
+# tf3b3e2e7 =
+
+# Write files
+# tc9796e43 =
+
+# over SFTP; where risky ones wait, every write waits for you
+# t2d9c8c34 =
 
 # Commands
 t971550f3 = Lệnh

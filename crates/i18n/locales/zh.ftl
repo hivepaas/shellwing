@@ -49,6 +49,9 @@ tddf9c9cc = 停止所有 AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+# t2b63bd77 =
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } 想在 { $host } 上运行此命令。它在等你确认：其授权要求每条命令都需确认。
 
@@ -181,6 +184,12 @@ t04874b67 = 在后台
 # through a tab
 t6bca7a6e = 通过标签页
 
+# reads files
+# te3f10929 =
+
+# writes files
+# t0a7257de =
+
 # while shellwing stays open
 t938960ff = shellwing 保持打开期间
 
@@ -231,6 +240,27 @@ tfe61838e = 通过标签页
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = 输入到连接该主机的标签页的 shell 中，你能看到；如果没有这样的标签页，会打开一个。主机在那里要求的密码需由你自己输入。
+
+# It may
+# t5c846351 =
+
+# Run commands
+# t65b79874 =
+
+# and see what they print
+# tef4e221a =
+
+# Read files
+# te1736866 =
+
+# list folders and read files, over SFTP
+# tf3b3e2e7 =
+
+# Write files
+# tc9796e43 =
+
+# over SFTP; where risky ones wait, every write waits for you
+# t2d9c8c34 =
 
 # Commands
 t971550f3 = 命令

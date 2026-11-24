@@ -65,6 +65,17 @@ impl Progress {
     }
 }
 
+/// How [`Sftp::write_file`] writes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WriteHow {
+    /// A new file: one there already is an error.
+    Create,
+    /// The file as given, whatever was there.
+    Overwrite,
+    /// After what is there.
+    Append,
+}
+
 /// A file open on the server, to read or write as a stream.
 pub type RemoteFile = russh_sftp::client::fs::File;
 
@@ -268,6 +279,54 @@ impl Sftp {
             )
             .await
             .map_err(err)
+    }
+
+    /// Writes `bytes` to `path`, as `how` says.
+    pub async fn write_file(&self, path: &str, bytes: &[u8], how: WriteHow) -> Result<(), Error> {
+        use russh_sftp::protocol::OpenFlags;
+        use tokio::io::AsyncWriteExt;
+        let flags = match how {
+            WriteHow::Create => OpenFlags::CREATE | OpenFlags::EXCLUDE | OpenFlags::WRITE,
+            WriteHow::Overwrite => OpenFlags::CREATE | OpenFlags::TRUNCATE | OpenFlags::WRITE,
+            WriteHow::Append => OpenFlags::CREATE | OpenFlags::APPEND | OpenFlags::WRITE,
+        };
+        let mut f = self.0.open_with_flags(path, flags).await.map_err(err)?;
+        for chunk in bytes.chunks(CHUNK) {
+            f.write_all(chunk).await.map_err(io)?;
+        }
+        f.shutdown().await.map_err(io)?;
+        Ok(())
+    }
+
+    /// Up to `len` bytes of the file at `path` from `offset`, and its size.
+    pub async fn read_range(
+        &self,
+        path: &str,
+        offset: u64,
+        len: usize,
+    ) -> Result<(Vec<u8>, u64), Error> {
+        use tokio::io::{AsyncReadExt, AsyncSeekExt};
+        let Some(e) = self.stat(path).await? else {
+            return Err(Error::Sftp(format!("{path}: no such file")));
+        };
+        if e.kind != Kind::File {
+            return Err(Error::Sftp(format!("{path} is not a file")));
+        }
+        let mut f = self.reader(path).await?;
+        if offset > 0 {
+            f.seek(std::io::SeekFrom::Start(offset)).await.map_err(io)?;
+        }
+        let mut out = vec![0u8; len.min(e.size.saturating_sub(offset) as usize)];
+        let mut got = 0;
+        while got < out.len() {
+            let n = f.read(&mut out[got..]).await.map_err(io)?;
+            if n == 0 {
+                break;
+            }
+            got += n;
+        }
+        out.truncate(got);
+        Ok((out, e.size))
     }
 
     /// Sets the permissions and the time a file was modified, of those given.

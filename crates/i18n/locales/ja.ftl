@@ -49,6 +49,9 @@ tddf9c9cc = すべての AI を停止
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+# t2b63bd77 =
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } が { $host } でこれを実行しようとしています。指示を待っています。この許可では、すべてのコマンドに確認が必要です。
 
@@ -181,6 +184,12 @@ t04874b67 = バックグラウンド
 # through a tab
 t6bca7a6e = タブ経由
 
+# reads files
+# te3f10929 =
+
+# writes files
+# t0a7257de =
+
 # while shellwing stays open
 t938960ff = shellwing を開いている間
 
@@ -231,6 +240,27 @@ tfe61838e = タブ経由
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = ホストへのタブのシェルに入力され、その様子を見られます。タブがなければ開きます。そこでホストが求めるパスワードは、ご自身で入力してください。
+
+# It may
+# t5c846351 =
+
+# Run commands
+# t65b79874 =
+
+# and see what they print
+# tef4e221a =
+
+# Read files
+# te1736866 =
+
+# list folders and read files, over SFTP
+# tf3b3e2e7 =
+
+# Write files
+# tc9796e43 =
+
+# over SFTP; where risky ones wait, every write waits for you
+# t2d9c8c34 =
 
 # Commands
 t971550f3 = コマンド

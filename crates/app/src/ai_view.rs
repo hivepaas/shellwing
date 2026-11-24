@@ -146,6 +146,8 @@ struct Giving {
     until: Until,
     mode: AiMode,
     how: AiHow,
+    /// What it may do: run commands, read files, write files.
+    may: [bool; 3],
 }
 
 /// A mode's name, and what it does.
@@ -280,6 +282,9 @@ impl AiView {
             mode: g.mode,
             until,
             session,
+            run: g.may[0],
+            read: g.may[1],
+            write: g.may[2],
         };
         self.change(cx, move |s| {
             s.grants.retain(|g| !(g.client == client && g.host == host));
@@ -553,6 +558,7 @@ impl AiView {
                                     until: Until::TakenBack,
                                     mode,
                                     how: AiHow::Background,
+                                    may: [true, true, false],
                                 });
                                 window.focus(&v.filter.focus_handle(cx), cx);
                                 cx.notify();
@@ -582,10 +588,20 @@ impl AiView {
         }
         for (i, g) in snap.state.grants.iter().enumerate() {
             let host = name_of(&g.host);
-            let how = match g.how {
-                AiHow::Background => tr!("in the background"),
-                AiHow::Tab => tr!("through a tab"),
-            };
+            let mut how = vec![];
+            if g.run {
+                how.push(match g.how {
+                    AiHow::Background => tr!("in the background"),
+                    AiHow::Tab => tr!("through a tab"),
+                });
+            }
+            if g.read {
+                how.push(tr!("reads files"));
+            }
+            if g.write {
+                how.push(tr!("writes files"));
+            }
+            let how = how.join(", ");
             let until = match (g.until, g.session) {
                 (_, true) => tr!("while shellwing stays open"),
                 (None, _) => tr!("until taken back"),
@@ -616,7 +632,7 @@ impl AiView {
                             .child(host.clone()),
                     )
                     .child(div().w(px(150.)).child(client_of(&g.client)))
-                    .child(div().w(px(140.)).text_color(rgb(colors().muted)).child(how))
+                    .child(div().w(px(230.)).text_color(rgb(colors().muted)).child(how))
                     .child(div().flex_1().text_color(rgb(colors().muted)).child(until))
                     .child({
                         let (client, spec, mode) = (g.client.clone(), g.host.clone(), g.mode);
@@ -749,7 +765,7 @@ impl AiView {
                     })),
             );
         }
-        let ready = g.host.is_some() && g.client.is_some();
+        let ready = g.host.is_some() && g.client.is_some() && g.may.iter().any(|m| *m);
         let focused = self.filter.focus_handle(cx).is_focused(window);
         card()
             .debug_selector(|| "ai-give-form".into())
@@ -820,6 +836,43 @@ impl AiView {
                     );
                 }
                 hows
+            })
+            .child(label_text(&tr!("It may")))
+            .child({
+                let mut may = div().flex().flex_col().gap(px(6.));
+                for (i, (label, what, sel)) in [
+                    (tr!("Run commands"), tr!("and see what they print"), "ai-may:run"),
+                    (tr!("Read files"), tr!("list folders and read files, over SFTP"), "ai-may:read"),
+                    (
+                        tr!("Write files"),
+                        tr!("over SFTP; where risky ones wait, every write waits for you"),
+                        "ai-may:write",
+                    ),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let on = g.may[i];
+                    may = may.child(
+                        div()
+                            .id(sel)
+                            .debug_selector(move || sel.into())
+                            .flex()
+                            .items_center()
+                            .gap(px(8.))
+                            .cursor_pointer()
+                            .on_click(cx.listener(move |v, _, _, cx| {
+                                if let Some(g) = &mut v.giving {
+                                    g.may[i] = !g.may[i];
+                                }
+                                cx.notify();
+                            }))
+                            .child(crate::host_editor::checkbox(on))
+                            .child(div().font_weight(FontWeight::MEDIUM).child(label))
+                            .child(hint_text(&what)),
+                    );
+                }
+                may
             })
             .child(label_text(&tr!("Commands")))
             .child({

@@ -49,6 +49,9 @@ tddf9c9cc = 모든 AI 중지
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+# t2b63bd77 =
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client }이(가) { $host }에서 이것을 실행하려고 합니다. 지시를 기다립니다. 이 허용은 모든 명령마다 확인을 요구합니다.
 
@@ -181,6 +184,12 @@ t04874b67 = 백그라운드에서
 # through a tab
 t6bca7a6e = 탭을 통해
 
+# reads files
+# te3f10929 =
+
+# writes files
+# t0a7257de =
+
 # while shellwing stays open
 t938960ff = shellwing이 열려 있는 동안
 
@@ -231,6 +240,27 @@ tfe61838e = 탭을 통해
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = 호스트에 연결된 탭의 셸에 입력되어 직접 볼 수 있습니다. 탭이 없으면 새로 열립니다. 호스트가 그곳에서 묻는 비밀번호는 직접 입력해야 합니다.
+
+# It may
+# t5c846351 =
+
+# Run commands
+# t65b79874 =
+
+# and see what they print
+# tef4e221a =
+
+# Read files
+# te1736866 =
+
+# list folders and read files, over SFTP
+# tf3b3e2e7 =
+
+# Write files
+# tc9796e43 =
+
+# over SFTP; where risky ones wait, every write waits for you
+# t2d9c8c34 =
 
 # Commands
 t971550f3 = 명령

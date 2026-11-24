@@ -322,7 +322,13 @@ impl ActivityView {
                         .border_1()
                         .border_color(rgb(colors().warn_edge))
                         .text_color(rgb(colors().warn_text))
-                        .child(if why.is_empty() {
+                        .child(if why == shellwing_core::ai::WRITES {
+                            tr!(
+                                "{client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else if why.is_empty() {
                             tr!(
                                 "{client} wants to run this on {host}. It waits for you: its grant asks for every command.",
                                 client = a.client.clone(),

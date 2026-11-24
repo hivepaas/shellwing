@@ -6,6 +6,7 @@
 //! is refused. What it runs is a job, whose output it reads as it comes
 //! ([`Job::wait`]), so a long command does not keep it waiting for its end.
 
+pub mod files;
 pub mod mcp;
 pub mod socket;
 pub mod tab;
@@ -122,6 +123,8 @@ impl End {
         }
     }
 }
+
+pub use files::{FileOp, WRITES};
 
 /// What the app hears from the hub.
 #[derive(Clone, Debug)]
@@ -457,14 +460,9 @@ impl Hub {
             .collect()
     }
 
-    /// Starts `command` on the host `client` calls `host` (its name, as
-    /// [`Hub::given`] says it), if it was given that host.
-    pub fn run(
-        self: &Arc<Self>,
-        client: &AiClient,
-        host: &str,
-        command: &str,
-    ) -> Result<Arc<Job>, String> {
+    /// The grant `client` holds for the host it calls `host` (its name, as
+    /// [`Hub::given`] says it), and where the host is.
+    fn grant_for(&self, client: &AiClient, host: &str) -> Result<(Given, Resolved), String> {
         let given = self.given(&client.id);
         let Some(g) = given
             .iter()
@@ -476,7 +474,6 @@ impl Hub {
                 client.name
             ));
         };
-        let through_tab = g.grant.how == AiHow::Tab;
         let target = {
             let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
             inner
@@ -485,22 +482,33 @@ impl Hub {
                 .map(|h| h.target.clone())
                 .ok_or_else(|| format!("{host} is no longer in the host list"))?
         }?;
-        let (job, slot, asks) = {
+        Ok((g.clone(), target))
+    }
+
+    /// A new job `label` on `g`'s host, waiting for the person if `asks`;
+    /// its host's connection slot, and where the person's answer comes.
+    #[allow(clippy::type_complexity)]
+    fn begin(
+        &self,
+        client: &AiClient,
+        g: &Given,
+        label: &str,
+        tab: bool,
+        asks: Option<String>,
+    ) -> Result<
+        (
+            Arc<Job>,
+            Slot,
+            Option<tokio::sync::oneshot::Receiver<Approval>>,
+        ),
+        String,
+    > {
+        let (job, slot) = {
             let mut inner = self.inner.lock().map_err(|_| "busy".to_string())?;
-            let allowed = inner
-                .allowed
-                .iter()
-                .any(|(c, h, cmd)| *c == client.id && *h == g.spec && cmd == command);
-            let asks = match g.grant.mode {
-                _ if allowed => None,
-                AiMode::Free => None,
-                AiMode::Ask => Some(String::new()),
-                AiMode::Risky => risky(command, &inner.state.risky()),
-            };
             let id = format!("j-{}", inner.next);
             inner.next += 1;
-            let mut job = Job::new(id.clone(), client, &g.spec, &g.name, command);
-            job.tab = through_tab;
+            let mut job = Job::new(id.clone(), client, &g.spec, &g.name, label);
+            job.tab = tab;
             let job = Arc::new(job);
             inner.jobs.insert(id, job.clone());
             // The ended ones beyond the activity's length are let go.
@@ -517,7 +525,7 @@ impl Hub {
                 }
             }
             let slot = inner.slots.entry(g.spec.clone()).or_default().clone();
-            (job, slot, asks)
+            (job, slot)
         };
         let answer = asks.map(|why| {
             let (tx, rx) = tokio::sync::oneshot::channel();
@@ -528,28 +536,103 @@ impl Hub {
             rx
         });
         let _ = self.events.try_send(HubEvent::Changed(job.activity()));
+        Ok((job, slot, answer))
+    }
+
+    /// Whether `label`, allowed for the session, needs no asking.
+    fn allowed_before(&self, client: &AiClient, spec: &str, label: &str) -> bool {
+        self.inner.lock().is_ok_and(|i| {
+            i.allowed
+                .iter()
+                .any(|(c, h, x)| *c == client.id && h == spec && x == label)
+        })
+    }
+
+    /// Waits for the person's answer to `job`, if it asks; whether it goes
+    /// on. Refused, it ends so.
+    async fn wait_answer(
+        hub: &Arc<Hub>,
+        job: &Arc<Job>,
+        answer: Option<tokio::sync::oneshot::Receiver<Approval>>,
+        client: String,
+        label: &str,
+    ) -> bool {
+        let Some(answer) = answer else {
+            return true;
+        };
+        let said = answer.await.unwrap_or(Approval::Refuse);
+        job.set_waiting(None);
+        match said {
+            Approval::Refuse => {
+                job.end(End::Refused);
+                hub.ended(job);
+                return false;
+            }
+            Approval::Session => {
+                if let Ok(mut inner) = hub.inner.lock() {
+                    inner
+                        .allowed
+                        .push((client, job.host.clone(), label.to_string()));
+                }
+            }
+            Approval::Once => {}
+        }
+        let _ = hub.events.try_send(HubEvent::Changed(job.activity()));
+        true
+    }
+
+    /// The host's connection, made if it is not.
+    async fn connection(slot: &Slot, options: Options) -> Result<Arc<ExecConnection>, String> {
+        let mut slot = slot.lock().await;
+        match slot.clone() {
+            Some(c) => Ok(c),
+            None => match shellwing_ssh::connect_exec(options).await {
+                Ok(c) => {
+                    let c = Arc::new(c);
+                    *slot = Some(c.clone());
+                    Ok(c)
+                }
+                Err(e) => Err(e.to_string()),
+            },
+        }
+    }
+
+    /// Starts `command` on the host `client` calls `host` (its name, as
+    /// [`Hub::given`] says it), if it was given that host to run commands.
+    pub fn run(
+        self: &Arc<Self>,
+        client: &AiClient,
+        host: &str,
+        command: &str,
+    ) -> Result<Arc<Job>, String> {
+        let (g, target) = self.grant_for(client, host)?;
+        if !g.grant.run {
+            return Err(format!(
+                "{} is given to {} to read files, not to run commands",
+                g.name, client.name
+            ));
+        }
+        let asks = match g.grant.mode {
+            _ if self.allowed_before(client, &g.spec, command) => None,
+            AiMode::Free => None,
+            AiMode::Ask => Some(String::new()),
+            AiMode::Risky => {
+                let words = self
+                    .inner
+                    .lock()
+                    .map(|i| i.state.risky())
+                    .unwrap_or_default();
+                risky(command, &words)
+            }
+        };
+        let (job, slot, answer) =
+            self.begin(client, &g, command, g.grant.how == AiHow::Tab, asks)?;
         let options = self.options(target);
         let (hub, running, command) = (self.clone(), job.clone(), command.to_string());
-        let (client_id, spec) = (client.id.clone(), g.spec.clone());
+        let client_id = client.id.clone();
         let task = self.rt.spawn(async move {
-            // It waits for the person first, when it must.
-            if let Some(answer) = answer {
-                let said = answer.await.unwrap_or(Approval::Refuse);
-                running.set_waiting(None);
-                match said {
-                    Approval::Refuse => {
-                        running.end(End::Refused);
-                        hub.ended(&running);
-                        return;
-                    }
-                    Approval::Session => {
-                        if let Ok(mut inner) = hub.inner.lock() {
-                            inner.allowed.push((client_id, spec, command.clone()));
-                        }
-                    }
-                    Approval::Once => {}
-                }
-                let _ = hub.events.try_send(HubEvent::Changed(running.activity()));
+            if !Hub::wait_answer(&hub, &running, answer, client_id, &command).await {
+                return;
             }
             // Through a tab: the app types it, and says what came of it.
             if running.tab {
@@ -561,21 +644,7 @@ impl Hub {
                 });
                 return;
             }
-            let connection = {
-                let mut slot = slot.lock().await;
-                match slot.clone() {
-                    Some(c) => Ok(c),
-                    None => match shellwing_ssh::connect_exec(options).await {
-                        Ok(c) => {
-                            let c = Arc::new(c);
-                            *slot = Some(c.clone());
-                            Ok(c)
-                        }
-                        Err(e) => Err(e.to_string()),
-                    },
-                }
-            };
-            let end = match connection {
+            let end = match Hub::connection(&slot, options).await {
                 Err(why) => End::Failed(why),
                 Ok(c) => {
                     let printing = running.clone();
@@ -602,6 +671,69 @@ impl Hub {
                         }
                     }
                 }
+            };
+            running.end(end);
+            hub.ended(&running);
+        });
+        if let Ok(mut t) = job.task.lock() {
+            *t = Some(task.abort_handle());
+        }
+        Ok(job)
+    }
+
+    /// Starts `op` on the host `client` calls `host`, over SFTP on its own
+    /// connection (a host given through a tab too), if the grant lets it:
+    /// reading for a list or a read, writing for a write. Its output is what
+    /// the agent reads.
+    pub fn file(
+        self: &Arc<Self>,
+        client: &AiClient,
+        host: &str,
+        op: FileOp,
+    ) -> Result<Arc<Job>, String> {
+        let (g, target) = self.grant_for(client, host)?;
+        let writes = matches!(op, FileOp::Write { .. });
+        if writes && !g.grant.write {
+            return Err(format!(
+                "{} is not given to {} to write files",
+                g.name, client.name
+            ));
+        }
+        if !writes && !g.grant.read {
+            return Err(format!(
+                "{} is not given to {} to read files",
+                g.name, client.name
+            ));
+        }
+        let label = op.label();
+        let asks = match g.grant.mode {
+            _ if self.allowed_before(client, &g.spec, &label) => None,
+            AiMode::Free => None,
+            AiMode::Ask => Some(String::new()),
+            // A write is risky: it changes the host, and is not undone.
+            AiMode::Risky if writes => Some(WRITES.to_string()),
+            AiMode::Risky => None,
+        };
+        let (job, slot, answer) = self.begin(client, &g, &label, false, asks)?;
+        let options = self.options(target);
+        let (hub, running) = (self.clone(), job.clone());
+        let client_id = client.id.clone();
+        let task = self.rt.spawn(async move {
+            if !Hub::wait_answer(&hub, &running, answer, client_id, &label).await {
+                return;
+            }
+            let done = async {
+                let c = Hub::connection(&slot, options).await?;
+                let sftp = c.sftp().await.map_err(|e| e.to_string())?;
+                files::serve(&sftp, op).await
+            }
+            .await;
+            let end = match done {
+                Ok(text) => {
+                    running.print(text.as_bytes());
+                    End::Exited(Some(0))
+                }
+                Err(why) => End::Failed(why),
             };
             running.end(end);
             hub.ended(&running);

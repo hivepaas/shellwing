@@ -1172,7 +1172,17 @@ config to paste into that client, with a token of its own.
 
 **Giving hosts.** *Hosts given › Give a host…*: choose a host, the client, for
 how long (until you take it back, while shellwing stays open, 1 hour or 8
-hours), and what happens to a command:
+hours), what it may do, and what happens to a command.
+
+What it may do, each on its own:
+
+- **Run commands** (on unless turned off).
+- **Read files**: list folders and read files, over SFTP (on unless turned
+  off). With *Run commands* off, that is a grant to read alone.
+- **Write files**: over SFTP (off unless turned on). Where risky ones wait,
+  every write waits for you, whatever it writes.
+
+What happens to a command:
 
 - **Run freely** (the default): it runs at once.
 - **Ask for risky ones**: a command with words from the risky list waits for
@@ -1235,6 +1245,19 @@ they print:
   follows a long command a few seconds behind it. A client that asks for
   progress is told how far it got, each second.
 - `job_stop(job)`: stops a job.
+- `list_dir(host, path)`: a folder's entries, a line each, with their kind,
+  size and when they changed.
+- `read_file(host, path, offset, length)`: a file, or a part of it (up to
+  512 KB at a time, 256 KB if not told): text as it is, anything else in
+  base64, with where the rest begins.
+- `write_file(host, path, content, encoding, mode)`: writes a file, as a new
+  one (`create`), over what is there (`overwrite`, the default) or after it
+  (`append`); `content` is text, or base64 with `encoding` `base64`; 8 MB at
+  the most.
+
+The file tools work over SFTP on the agent's own connection, a host given
+through a tab too; a path not starting with `/` is from the home folder.
+Each one is in AI activity like a command: a write with what it wrote.
 
 A command that asks for input gets none: `sudo` with a password fails at once,
 so agents are told to use `sudo -n` and `-y` forms.
