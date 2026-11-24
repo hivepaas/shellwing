@@ -7,7 +7,7 @@ use gpui::{
     rgb, rgba, svg,
 };
 
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 use crate::input::{Changed, TextInput};
 
@@ -247,6 +247,16 @@ pub struct Sidebar {
     /// The menu's, while open, for Esc; and what had the keyboard before.
     menu_focus: FocusHandle,
     focus_before: Option<FocusHandle>,
+    /// Hosts picked with Ctrl+click (Cmd+click on macOS), by spec, to run a
+    /// command on.
+    picked: Vec<String>,
+    /// What is folded: Actions, and sections by [`Section::key`].
+    folds: shellwing_config::SidebarState,
+}
+
+/// The Run on hosts tile, at the top of the host list and of the rail.
+fn run_tile(ground: u32) -> Div {
+    host_tile(Some(&host_icons::RUN), "", None, None, TILE, ground, false)
 }
 
 /// A host's tile on the rail: two letters from its name. `api-1` is A1,
@@ -333,6 +343,8 @@ impl Sidebar {
             sections: vec![],
             hovered: None,
             hovered_group: None,
+            picked: vec![],
+            folds: Default::default(),
             filter,
             collapsed: false,
             menu: None,
@@ -531,6 +543,32 @@ impl Sidebar {
                             },
                         ),
                     ),
+            )
+            .child(
+                div()
+                    .id("rail-run")
+                    .debug_selector(|| "rail-run".into())
+                    .flex_shrink_0()
+                    .pb(px(8.))
+                    .mb(px(4.))
+                    .border_b_1()
+                    .border_color(rgb(colors().line))
+                    .cursor_pointer()
+                    .hover(|s| s.opacity(0.85))
+                    .tooltip(|_, cx| {
+                        cx.new(|_| Tip {
+                            title: tr!("Run on hosts").into(),
+                            detail: tr!("One command, many hosts").into(),
+                        })
+                        .into()
+                    })
+                    .on_click({
+                        let ws = self.workspace.clone();
+                        move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open_run(vec![], window, cx));
+                        }
+                    })
+                    .child(run_tile(colors().panel)),
             )
             .child(tiles)
             .child(
@@ -741,6 +779,231 @@ fn part_heading(n: usize, label: SharedString) -> impl IntoElement {
         .child(div().flex_1().h(px(1.)).bg(rgb(colors().field_edge)))
 }
 
+impl Section {
+    /// What its folding is kept by: a collection's id, a group's name, else
+    /// its title.
+    pub fn key(&self) -> String {
+        match (&self.shared, &self.group) {
+            (Some(s), _) => format!("collection:{}", s.id),
+            (None, Some(g)) => format!("group:{g}"),
+            (None, None) => self.title.to_string(),
+        }
+    }
+}
+
+impl Sidebar {
+    /// What was folded when the app last ran.
+    pub fn set_folds(&mut self, folds: shellwing_config::SidebarState, cx: &mut Context<Self>) {
+        self.folds = folds;
+        cx.notify();
+    }
+
+    /// Folds Actions (None) or a section, or unfolds it; then the workspace
+    /// keeps what is folded. Called from a plain click handler: the
+    /// workspace is not being updated then.
+    fn toggle_fold(me: &WeakEntity<Sidebar>, section: Option<String>, cx: &mut gpui::App) {
+        let Ok((ws, folds)) = me.update(cx, |s, cx| {
+            match &section {
+                None => s.folds.actions_open = !s.folds.actions_open,
+                Some(key) => match s.folds.folded.iter().position(|k| k == key) {
+                    Some(i) => {
+                        s.folds.folded.remove(i);
+                    }
+                    None => s.folds.folded.push(key.clone()),
+                },
+            }
+            cx.notify();
+            (s.workspace.clone(), s.folds.clone())
+        }) else {
+            return;
+        };
+        let _ = ws.update(cx, |ws, _| ws.save_folds(&folds));
+    }
+
+    /// Picks a host to run on, or takes it away.
+    fn pick(&mut self, spec: &str, cx: &mut Context<Self>) {
+        match self.picked.iter().position(|s| s == spec) {
+            Some(i) => {
+                self.picked.remove(i);
+            }
+            None => self.picked.push(spec.to_string()),
+        }
+        cx.notify();
+    }
+
+    /// The hosts picked went to a Run tab, or were let go.
+    pub fn clear_picked(&mut self, cx: &mut Context<Self>) {
+        if !self.picked.is_empty() {
+            self.picked.clear();
+            cx.notify();
+        }
+    }
+
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn picked(&self) -> Vec<String> {
+        self.picked.clone()
+    }
+
+    /// What can be done across hosts, above them: Run on hosts.
+    fn actions(&self, cx: &mut Context<Self>) -> Div {
+        let ws = self.workspace.clone();
+        let open = self.folds.actions_open;
+        let me = cx.entity().downgrade();
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(2.))
+            .pt_2()
+            .pb(px(if open { 6. } else { 2. }))
+            .border_b_1()
+            .border_color(rgb(colors().line))
+            .child(
+                div()
+                    .id("actions-fold")
+                    .debug_selector(|| "actions-fold".into())
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .h(px(26.))
+                    .mx(px(ROW_MARGIN))
+                    .pl(px(12. - ROW_MARGIN))
+                    .pr(px(6.))
+                    .rounded_md()
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(colors().hover)))
+                    .text_xs()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(rgb(colors().muted))
+                    .on_click(move |_, _, cx| Sidebar::toggle_fold(&me, None, cx))
+                    .child(tr!("ACTIONS"))
+                    .child(
+                        svg()
+                            .path(if open {
+                                "icons/chevron-down.svg"
+                            } else {
+                                "icons/chevron-right.svg"
+                            })
+                            .size(px(14.))
+                            .text_color(rgb(colors().muted)),
+                    ),
+            )
+            .when(open, |d| {
+                d.child(
+                    div()
+                        .id("action-run")
+                        .debug_selector(|| "action-run".into())
+                        .flex()
+                        .items_center()
+                        .gap(px(ROW_GAP))
+                        .h(px(ROW_HEIGHT))
+                        .pl(px(ROW_PAD))
+                        .pr(px(10.))
+                        .mx(px(ROW_MARGIN))
+                        .rounded_md()
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open_run(vec![], window, cx));
+                        })
+                        .child(run_tile(colors().panel))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .min_w_0()
+                                .child(
+                                    div()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(rgb(colors().text))
+                                        .child(tr!("Run on hosts")),
+                                )
+                                .child(
+                                    div()
+                                        .text_xs()
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("One command, many hosts")),
+                                ),
+                        ),
+                )
+            })
+    }
+
+    /// Under the list while hosts are picked: run on them, or let them go.
+    fn picked_bar(&self, cx: &mut Context<Self>) -> Div {
+        let n = self.picked.len();
+        let (ws, picked) = (self.workspace.clone(), self.picked.clone());
+        let how = if cfg!(target_os = "macos") {
+            tr!("Cmd+click to add or take away")
+        } else {
+            tr!("Ctrl+click to add or take away")
+        };
+        div()
+            .debug_selector(|| "picked-bar".into())
+            .flex()
+            .flex_col()
+            .gap(px(8.))
+            .mx_2()
+            .mb_2()
+            .p(px(10.))
+            .rounded(px(10.))
+            .bg(rgb(colors().chip))
+            .text_color(rgb(colors().text))
+            .child(
+                div()
+                    .text_xs()
+                    .child(tr_n!(
+                        n,
+                        "{n} host chosen",
+                        "{n} hosts chosen",
+                        n = n.to_string()
+                    ))
+                    .child(div().text_color(rgb(colors().muted)).child(how)),
+            )
+            .child(
+                div()
+                    .flex()
+                    .gap(px(6.))
+                    .child(
+                        div()
+                            .id("picked-run")
+                            .debug_selector(|| "picked-run".into())
+                            .flex_1()
+                            .h(px(30.))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .rounded(px(6.))
+                            .bg(rgb(colors().accent))
+                            .hover(|s| s.bg(rgb(colors().accent_hover)))
+                            .text_color(rgb(colors().on_accent))
+                            .font_weight(FontWeight::MEDIUM)
+                            .cursor_pointer()
+                            .on_click(move |_, window, cx| {
+                                let picked = picked.clone();
+                                let _ = ws.update(cx, |ws, cx| ws.open_run(picked, window, cx));
+                            })
+                            .child(format!("▶  {}", tr!("Run on hosts"))),
+                    )
+                    .child(
+                        div()
+                            .id("picked-clear")
+                            .debug_selector(|| "picked-clear".into())
+                            .h(px(30.))
+                            .px(px(10.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(colors().field_edge))
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(colors().hover)))
+                            .on_click(cx.listener(|s, _, _, cx| s.clear_picked(cx)))
+                            .child(tr!("Clear")),
+                    ),
+            )
+    }
+}
+
 impl Render for Sidebar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.collapsed {
@@ -776,10 +1039,16 @@ impl Render for Sidebar {
             if let Some(heading) = &section.heading {
                 list = list.child(part_heading(n, heading.clone()));
             }
+            let key = section.key();
+            // A filter shows what it finds, folded or not.
+            let folded = !filtering && self.folds.folded.contains(&key);
+            let me = cx.entity().downgrade();
             list = list.child(
                 div()
                     .id(("section", n))
                     .debug_selector(|| format!("section:{}", section.title))
+                    .cursor_pointer()
+                    .on_click(move |_, _, cx| Sidebar::toggle_fold(&me, Some(key.clone()), cx))
                     .flex()
                     .items_center()
                     .justify_between()
@@ -912,6 +1181,57 @@ impl Render for Sidebar {
                                 }),
                         )
                     })
+                    .when(over && !section.rows.is_empty(), |d| {
+                        let (ws, specs) = (
+                            self.workspace.clone(),
+                            section
+                                .rows
+                                .iter()
+                                .map(|r| r.spec.clone())
+                                .collect::<Vec<_>>(),
+                        );
+                        let title = section.title.clone();
+                        d.child(
+                            div()
+                                .id(("run-group", n))
+                                .debug_selector(move || format!("run-group:{title}"))
+                                .flex_shrink_0()
+                                .ml_2()
+                                .px(px(7.))
+                                .py(px(1.))
+                                .rounded_md()
+                                .border_1()
+                                .border_color(rgb(colors().field_edge))
+                                .bg(rgb(colors().field))
+                                .text_color(rgb(colors().accent))
+                                .cursor_pointer()
+                                .hover(|s| s.bg(rgb(colors().hover)))
+                                .tooltip({
+                                    let n = section.rows.len();
+                                    let group = section.title.clone();
+                                    move |_, cx| {
+                                        let title = tr_n!(
+                                            n,
+                                            "Run on the {n} host of {group}",
+                                            "Run on the {n} hosts of {group}",
+                                            n = n.to_string(),
+                                            group = group.to_string()
+                                        );
+                                        cx.new(|_| Tip {
+                                            title: title.into(),
+                                            detail: SharedString::default(),
+                                        })
+                                        .into()
+                                    }
+                                })
+                                .on_click(move |_, window, cx| {
+                                    cx.stop_propagation();
+                                    let specs = specs.clone();
+                                    let _ = ws.update(cx, |ws, cx| ws.open_run(specs, window, cx));
+                                })
+                                .child("▶"),
+                        )
+                    })
                     .when(over, |d| {
                         d.child(
                             div()
@@ -935,6 +1255,10 @@ impl Render for Sidebar {
                         )
                     }),
             );
+            if folded {
+                id += section.rows.len() as u64;
+                continue;
+            }
             if section.rows.is_empty() {
                 list = list.child(
                     div()
@@ -953,6 +1277,7 @@ impl Render for Sidebar {
                 let this = id;
                 let hovered = self.hovered == Some(this);
                 let (edit, editing) = (row.edit.clone(), self.workspace.clone());
+                let picked = self.picked.contains(&row.spec);
                 list = list.child(
                     div()
                         .id(ElementId::NamedInteger("host".into(), id))
@@ -979,12 +1304,23 @@ impl Render for Sidebar {
                         .mx(px(ROW_MARGIN))
                         .rounded_md()
                         .cursor_pointer()
-                        // The host of the active tab.
-                        .when(row.active, |d| d.bg(rgb(colors().selected)))
-                        .when(!row.active, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+                        // The host of the active tab; one picked to run on.
+                        .when(row.active || picked, |d| d.bg(rgb(colors().selected)))
+                        .when(picked, |d| d.border_1().border_color(rgb(colors().accent)))
+                        .when(!row.active && !picked, |d| {
+                            d.hover(|s| s.bg(rgb(colors().hover)))
+                        })
                         .on_click({
                             let target = row.edit.clone();
-                            move |ev, window, cx| {
+                            let local = matches!(row.edit, EditTarget::Local);
+                            // Not as the list's listener: going to a host
+                            // draws the list again.
+                            let me = cx.entity().downgrade();
+                            move |ev: &gpui::ClickEvent, window, cx| {
+                                if ev.modifiers().secondary() && !local {
+                                    let _ = me.update(cx, |s, cx| s.pick(&spec, cx));
+                                    return;
+                                }
                                 let _ = workspace.update(cx, |ws, cx| {
                                     ws.click_host(&target, &spec, ev.click_count(), window, cx)
                                 });
@@ -1204,13 +1540,14 @@ impl Render for Sidebar {
             .border_color(rgb(colors().line))
             .text_sm()
             .on_key_down(cx.listener(Self::on_key))
+            .child(self.actions(cx))
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap(px(6.))
                     .px_3()
-                    .pt_3()
+                    .pt_2()
                     .pb_1()
                     .child(
                         div()
@@ -1267,6 +1604,7 @@ impl Render for Sidebar {
                     ),
             )
             .child(list)
+            .when(!self.picked.is_empty(), |d| d.child(self.picked_bar(cx)))
             .child(footer)
             .when_some(menu, |d, m| d.child(m))
     }

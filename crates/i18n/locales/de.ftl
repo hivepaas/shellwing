@@ -1890,6 +1890,269 @@ tbfdc091c = Enter antworten   Esc abbrechen
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ bewegen   Enter wählen   Esc abbrechen
 
+# Find hosts
+t1f19b271 = Hosts suchen
+
+# sudo password
+t6f1147fd = sudo-Passwort
+
+# Run on hosts
+t20ee87e4 = Auf Hosts ausführen
+
+# Choose at least one host.
+t98a361a0 = Wähle mindestens einen Host.
+
+# Type a command or a script first.
+tc08b2b46 = Gib zuerst einen Befehl oder ein Skript ein.
+
+# The script is larger than {kb} KB.
+t3c583c57 = Das Skript ist größer als { $kb } KB.
+
+# none chosen
+t23b63bc7 = keiner ausgewählt
+
+# {picked} of {all}
+tb6c0f13d = { $picked } von { $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = Noch keine Hosts: Füge einen in der Hostliste hinzu.
+
+# chosen
+t88efc3c3 = gewählt
+
+# from #!
+te59619bf = aus #!
+
+# default
+t933b5bde = Standard
+
+# Command or script
+t9263b49e = Befehl oder Skript
+
+# Open file…
+teb1476db = Datei öffnen…
+
+# From a snippet…
+t5b2e9f81 = Aus einem Snippet…
+
+# From the first line
+t4eea1d86 = Aus der ersten Zeile
+
+# No snippets yet.
+ta1f34f58 = Noch keine Snippets.
+
+# At most
+tc4220f87 = Höchstens
+
+# at once
+t73078e59 = gleichzeitig
+
+# Give up after
+t72dfc173 = Aufgeben nach
+
+# seconds
+t66b6cdea = Sekunden
+
+# One host first, the rest when you say
+t2dc320ca = Erst ein Host, der Rest auf dein Zeichen
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter ausführen
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter ausführen
+
+# Run
+t8d57e66a = Ausführen
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+        [one] Auf { $n } Host ausführen
+       *[other] Auf { $n } Hosts ausführen
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = Zuerst auf { $first } ausführen, dann auf den { $n } übrigen?
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+        [one] Auf { $n } Host ausführen?
+       *[other] Auf { $n } Hosts ausführen?
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } Zeile
+       *[other] { $interpreter }, { $n } Zeilen
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = Anmeldung bei { $n } von { $all }…
+
+# {n} of {all} signed in
+t11ab0d58 = { $n } von { $all } angemeldet
+
+# at most {n} at once
+td03e9105 = höchstens { $n } gleichzeitig
+
+# Signing in: asked now, once
+t41418846 = Anmeldung: jetzt abgefragt, nur einmal
+
+# {target}'s password, again: that one was refused
+t39e81801 = Passwort von { $target }, noch einmal: dieses wurde abgelehnt
+
+# {target}'s password
+t8989af6d = Passwort von { $target }
+
+# The passphrase of {key}
+tb9a076ee = Passphrase von { $key }
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = Ein noch nie gesehener Host-Schlüssel: { $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = Auslassen
+
+# Trust it
+tf80adc72 = Vertrauen
+
+# OK
+t85e4b82f = OK
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } wird ausgelassen: { $why }
+
+# sudo password, for every host
+tf9f4ad8f = sudo-Passwort, für alle Hosts
+
+# The same on every host
+t09beea56 = Auf allen Hosts dasselbe
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = Das Skript nutzt sudo: Das Passwort geht mit ihm an jeden Host, nur damit sudo es dort liest, nie in eine Befehlszeile, eine Datei oder in das, was angezeigt wird. Sobald der Lauf beginnt, wird es vergessen.
+
+# Run on {host}
+t53629f2b = Auf { $host } ausführen
+
+# started {when}
+t0addf546 = gestartet um { $when }
+
+# ran at {when}
+tc1949fbd = ausgeführt um { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+        [one] Erneut auf dem { $n } fehlgeschlagenen Host
+       *[other] Erneut auf den { $n } fehlgeschlagenen Hosts
+    }
+
+# Run again
+t7e879b86 = Erneut ausführen
+
+# {n} ok
+t230daddb = { $n } OK
+
+# {n} failed
+t747c50a8 = { $n } fehlgeschlagen
+
+# {n} to go
+t9b6bf176 = { $n } ausstehend
+
+# {n} stopped
+td3275eca = { $n } gestoppt
+
+# By output
+t58a5f0b1 = Nach Ausgabe
+
+# By host
+ta32dd06e = Nach Host
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = Der erste Host ist fertig. Die anderen { $n } warten auf dich.
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+        [one] Auf dem { $n } übrigen Host ausführen
+       *[other] Auf den { $n } übrigen Hosts ausführen
+    }
+
+# Still going: {hosts}
+tfacf50d8 = Läuft noch: { $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = Vor dem Ende gestoppt: { $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = Nach { $s } Sekunden aufgegeben.
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = Mehr als { $mb } MB ausgegeben: Der Rest wird nicht behalten.
+
+# Open a tab
+t85019429 = Tab öffnen
+
+# Copy output
+t64749f61 = Ausgabe kopieren
+
+# exit {code}
+te0c7c2fc = Exit-Code { $code }
+
+# ended by a signal
+t450a0cd5 = durch ein Signal beendet
+
+# sudo did not take the password
+tb2c3fb01 = sudo hat das Passwort nicht angenommen
+
+# sudo asked for a password
+t31a388e9 = sudo hat nach einem Passwort gefragt
+
+# did not connect
+t7efff279 = keine Verbindung
+
+# given up on
+t4eec5298 = aufgegeben
+
+# did not run
+tf05d1c4a = nicht ausgeführt
+
+# signing in
+t727e0a33 = meldet sich an
+
+# asks something
+tf96d1b57 = fragt etwas
+
+# signed in
+t1a42c214 = angemeldet
+
+# left out
+t73aeedd4 = ausgelassen
+
+# waiting
+teeda06a8 = wartet
+
+# running
+t147eb74c = läuft
+
+# stopped
+t6ee2f34e = gestoppt
+
+# exit 0
+tf83c441d = Exit-Code 0
+
+# sudo refused
+tdd8b1f54 = sudo abgelehnt
+
+# What each host says shows here, grouped by output.
+taede9a2c = Was jeder Host ausgibt, erscheint hier, nach Ausgabe gruppiert.
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = Es läuft wie ssh host 'command', ohne Terminal, vor dem Start ganz gelesen, sodass nichts darin den Rest davon liest. Das sudo-Passwort wird einmal abgefragt, bevor es läuft; alles andere, was fragt (ein y/n), bekommt keine Antwort.
+
 # About
 t58e096de = Über
 
@@ -2677,6 +2940,32 @@ t87553579 = Verbindung fehlgeschlagen
 # closed
 tebee50c5 = geschlossen
 
+# One command, many hosts
+t05dcb762 = Ein Befehl, viele Hosts
+
+# ACTIONS
+t62d7de84 = AKTIONEN
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click zum Hinzufügen oder Entfernen
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click zum Hinzufügen oder Entfernen
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } Host ausgewählt
+       *[other] { $n } Hosts ausgewählt
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+        [one] Auf dem { $n } Host von { $group } ausführen
+       *[other] Auf den { $n } Hosts von { $group } ausführen
+    }
+
 # No hosts yet
 ta58f36ff = Noch keine Hosts
 
@@ -3235,9 +3524,6 @@ t897ecb9e = protokolliert
 # listening
 t77104bea = lauscht
 
-# left out
-t73aeedd4 = ausgelassen
-
 # Installing {key} on {host}…
 t9e6d8462 = { $key } wird auf { $host } installiert…
 
@@ -3528,6 +3814,21 @@ ta77bd589 = Notizen für { $host }
 # Notes · {category}
 tbb112cdf = Notizen · { $category }
 
+# The window closed.
+t26993482 = Das Fenster wurde geschlossen.
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = die Einstellungen seiner Sammlung für { $names } warten, bis du sie erlaubst, in einem Tab zu ihm
+
+# Stop and close
+tb789bdac = Stoppen und schließen
+
+# Close the tab?
+tc626ae98 = Tab schließen?
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = Es läuft noch: Schließen stoppt es auf den Hosts, auf denen es noch nicht beendet ist.
+
 # the system's package manager
 t11465c20 = der Paketmanager des Systems
 
@@ -3630,9 +3931,6 @@ t1a97d76a = geladen: Mit Enter wird sie erneut geladen
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Teile zuerst den Tab: es gibt nur einen Bereich zum Tippen.
 
-# Close the tab?
-tc626ae98 = Tab schließen?
-
 # Close the pane?
 tf2b43783 = Bereich schließen?
 
@@ -3733,6 +4031,9 @@ t9f033387 = Port über { $title } weiterleiten…
 
 # Unload environment: {names}
 tbe80f7b5 = Umgebung entladen: { $names }
+
+# Run on hosts…
+t8ceaeff0 = Auf Hosts ausführen…
 
 # Change theme…
 t85a401b4 = Design ändern…
@@ -4794,9 +5095,6 @@ t38d39c8f = Host hinzufügen
 # A collection has a new key
 t0dc9c1a6 = Eine Sammlung hat einen neuen Schlüssel
 
-# OK
-t85e4b82f = OK
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = Jemand hat den Zugriff auf { $name } verloren: Der Schlüssel der Sammlung wurde ersetzt. Ändere, was die Person lesen konnte: Die Liste steht über deinen Hosts.
 
@@ -4868,9 +5166,6 @@ te90c2175 = Läuft mit
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = Nur es erhält ihre Variablen, in einer Subshell, ohne ihre Werte zu zeigen.
-
-# Run
-t8d57e66a = Ausführen
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Noch keine Umgebungen: Variablen im Tresor, die in die Shell einer Sitzung geladen werden, ohne ihre Werte zu zeigen.

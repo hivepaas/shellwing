@@ -2129,6 +2129,48 @@ async fn a_key_the_app_keeps_signs_in_without_a_file() {
     assert!(connect(opts).await.is_err());
 }
 
+/// A connection for commands alone: each runs on its own channel, its input
+/// given whole, what it prints kept up to the limit asked for.
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_connection_for_commands_alone_runs_them() {
+    let fx = Fixture::new("exec-alone");
+    let home = fx.dir.join("home");
+    std::fs::create_dir_all(&home).expect("home");
+    let (port, _) = serve(
+        Policy {
+            password: Some("pw"),
+            home: Some(home.clone()),
+            ..Default::default()
+        },
+        &[MethodKind::Password],
+    )
+    .await;
+    let (p, asked) = scripted(vec![Some("yes"), Some("pw")]);
+    let mut target = local(port, "me");
+    target.identity_files = vec![fx.dir.join("no-key")];
+    let connection = shellwing_ssh::connect_exec(fx.options(target, p))
+        .await
+        .unwrap_or_else(|e| panic!("connect: {e}: {:?}", asked.lock().expect("log")));
+    let out = connection
+        .run(
+            "read a; read b; echo \"$b $a\"; echo oops >&2; exit 5",
+            b"one\ntwo\n",
+            1024,
+        )
+        .await
+        .expect("ran");
+    assert_eq!(out.status, Some(5));
+    assert_eq!(out.stdout, b"two one\n");
+    assert_eq!(out.stderr, b"oops\n");
+    // A second command, on the same connection; its output cut at the limit.
+    let out = connection
+        .run("head -c 5000 /dev/zero", b"", 1000)
+        .await
+        .expect("ran again");
+    assert_eq!((out.status, out.stdout.len()), (Some(0), 1000));
+}
+
 #[cfg(unix)]
 #[tokio::test(flavor = "multi_thread")]
 async fn a_public_key_is_installed_beside_the_shell() {

@@ -1846,6 +1846,264 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移动   Enter 选择   Esc 取消
 
+# Find hosts
+t1f19b271 = 查找主机
+
+# sudo password
+t6f1147fd = sudo 密码
+
+# Run on hosts
+t20ee87e4 = 在主机上运行
+
+# Choose at least one host.
+t98a361a0 = 请至少选择一台主机。
+
+# Type a command or a script first.
+tc08b2b46 = 请先输入命令或脚本。
+
+# The script is larger than {kb} KB.
+t3c583c57 = 脚本超过 { $kb } KB。
+
+# none chosen
+t23b63bc7 = 未选择
+
+# {picked} of {all}
+tb6c0f13d = { $picked }/{ $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = 还没有主机：请在主机列表中添加。
+
+# chosen
+t88efc3c3 = 手动选择
+
+# from #!
+te59619bf = 来自 #!
+
+# default
+t933b5bde = 默认
+
+# Command or script
+t9263b49e = 命令或脚本
+
+# Open file…
+teb1476db = 打开文件…
+
+# From a snippet…
+t5b2e9f81 = 从代码片段…
+
+# From the first line
+t4eea1d86 = 根据第一行
+
+# No snippets yet.
+ta1f34f58 = 还没有代码片段。
+
+# At most
+tc4220f87 = 最多同时
+
+# at once
+t73078e59 = 台
+
+# Give up after
+t72dfc173 = 超过
+
+# seconds
+t66b6cdea = 秒后放弃
+
+# One host first, the rest when you say
+t2dc320ca = 先在一台主机上运行，其余等你确认
+
+# Cmd+Enter runs
+tc5c50a00 = 按 Cmd+Enter 运行
+
+# Ctrl+Enter runs
+t1e0dc7f1 = 按 Ctrl+Enter 运行
+
+# Run
+t8d57e66a = 运行
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+       *[other] 在 { $n } 台主机上运行
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = 先在 { $first } 上运行，再在其余 { $n } 台上运行？
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+       *[other] 在 { $n } 台主机上运行？
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }，{ $n } 行
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = 正在登录 { $all } 台中的 { $n } 台…
+
+# {n} of {all} signed in
+t11ab0d58 = { $all } 台中已登录 { $n } 台
+
+# at most {n} at once
+td03e9105 = 最多同时 { $n } 台
+
+# Signing in: asked now, once
+t41418846 = 登录：现在询问，仅此一次
+
+# {target}'s password, again: that one was refused
+t39e81801 = { $target } 的密码，请重新输入：上一个被拒绝了
+
+# {target}'s password
+t8989af6d = { $target } 的密码
+
+# The passphrase of {key}
+tb9a076ee = { $key } 的密码短语
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = 从未见过的主机密钥：{ $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = 排除
+
+# Trust it
+tf80adc72 = 信任
+
+# OK
+t85e4b82f = 好
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } 已排除：{ $why }
+
+# sudo password, for every host
+tf9f4ad8f = sudo 密码，用于所有主机
+
+# The same on every host
+t09beea56 = 所有主机相同
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = 脚本使用了 sudo：密码会随脚本发送到每台主机，供那里的 sudo 读取，绝不会出现在命令行、文件或显示的内容中。运行一开始就会忘记它。
+
+# Run on {host}
+t53629f2b = 在 { $host } 上运行
+
+# started {when}
+t0addf546 = 开始于 { $when }
+
+# ran at {when}
+tc1949fbd = 运行于 { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+       *[other] 在失败的 { $n } 台上重新运行
+    }
+
+# Run again
+t7e879b86 = 再次运行
+
+# {n} ok
+t230daddb = { $n } 台成功
+
+# {n} failed
+t747c50a8 = { $n } 台失败
+
+# {n} to go
+t9b6bf176 = 还剩 { $n } 台
+
+# {n} stopped
+td3275eca = { $n } 台已停止
+
+# By output
+t58a5f0b1 = 按输出
+
+# By host
+ta32dd06e = 按主机
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = 第一台主机已完成。其余 { $n } 台在等你确认。
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+       *[other] 在其余 { $n } 台上运行
+    }
+
+# Still going: {hosts}
+tfacf50d8 = 仍在运行：{ $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = 结束前已停止：{ $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } 秒后已放弃。
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = 输出超过 { $mb } MB：其余部分不会保留。
+
+# Open a tab
+t85019429 = 打开标签页
+
+# Copy output
+t64749f61 = 复制输出
+
+# exit {code}
+te0c7c2fc = 退出码 { $code }
+
+# ended by a signal
+t450a0cd5 = 被信号终止
+
+# sudo did not take the password
+tb2c3fb01 = sudo 未接受密码
+
+# sudo asked for a password
+t31a388e9 = sudo 要求输入密码
+
+# did not connect
+t7efff279 = 未能连接
+
+# given up on
+t4eec5298 = 已放弃
+
+# did not run
+tf05d1c4a = 未运行
+
+# signing in
+t727e0a33 = 正在登录
+
+# asks something
+tf96d1b57 = 需要输入
+
+# signed in
+t1a42c214 = 已登录
+
+# left out
+t73aeedd4 = 已排除
+
+# waiting
+teeda06a8 = 等待中
+
+# running
+t147eb74c = 正在运行
+
+# stopped
+t6ee2f34e = 已停止
+
+# exit 0
+tf83c441d = 退出码 0
+
+# sudo refused
+tdd8b1f54 = sudo 拒绝
+
+# What each host says shows here, grouped by output.
+taede9a2c = 每台主机的输出会显示在这里，按输出分组。
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = 它像 ssh host 'command' 那样运行：没有终端，开始前会完整读入，因此其中的任何命令都不会读到其余部分。sudo 的密码在运行前询问一次；其他任何询问（如 y/n）都不会得到回答。
+
 # About
 t58e096de = 关于
 
@@ -2629,6 +2887,30 @@ t87553579 = 无法连接
 # closed
 tebee50c5 = 已关闭
 
+# One command, many hosts
+t05dcb762 = 一条命令，多台主机
+
+# ACTIONS
+t62d7de84 = 操作
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click 添加或移除
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click 添加或移除
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 已选 { $n } 台主机
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+       *[other] 在 { $group } 的 { $n } 台主机上运行
+    }
+
 # No hosts yet
 ta58f36ff = 还没有主机
 
@@ -3145,9 +3427,6 @@ t897ecb9e = 正在记录
 # listening
 t77104bea = 接收输入
 
-# left out
-t73aeedd4 = 已排除
-
 # Installing {key} on {host}…
 t9e6d8462 = 正在将 { $key } 安装到 { $host }…
 
@@ -3433,6 +3712,21 @@ ta77bd589 = { $host } 的笔记
 # Notes · {category}
 tbb112cdf = 笔记 · { $category }
 
+# The window closed.
+t26993482 = 窗口已关闭。
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = 其集合的 { $names } 设置需先在连接到它的标签页中允许
+
+# Stop and close
+tb789bdac = 停止并关闭
+
+# Close the tab?
+tc626ae98 = 关闭标签页？
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = 仍在运行：关闭会在尚未结束的主机上将其停止。
+
 # the system's package manager
 t11465c20 = 系统包管理器
 
@@ -3526,9 +3820,6 @@ t1a97d76a = 已加载：按 Enter 可再次加载
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 请先拆分标签页：当前只有一个窗格可输入。
 
-# Close the tab?
-tc626ae98 = 关闭标签页？
-
 # Close the pane?
 tf2b43783 = 关闭窗格？
 
@@ -3621,6 +3912,9 @@ t9f033387 = 通过 { $title } 转发端口…
 
 # Unload environment: {names}
 tbe80f7b5 = 卸载环境：{ $names }
+
+# Run on hosts…
+t8ceaeff0 = 在主机上运行…
 
 # Change theme…
 t85a401b4 = 更换主题…
@@ -4654,9 +4948,6 @@ t38d39c8f = 添加主机
 # A collection has a new key
 t0dc9c1a6 = 某个集合有了新的密钥
 
-# OK
-t85e4b82f = 好
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = 有人已失去对 { $name } 的访问权限：其密钥已更换。请更改对方可读取的内容：它们列在你的主机上方。
 
@@ -4728,9 +5019,6 @@ te90c2175 = 运行时使用的环境
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = 其变量只在子 shell 中单独提供给它，且不显示变量值。
-
-# Run
-t8d57e66a = 运行
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 还没有环境：环境是保存在保险库中的变量，可加载到会话的 shell 中，且不显示其值。

@@ -1924,6 +1924,279 @@ tbfdc091c = Enter відповідає   Esc скасовує
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ вибір   Enter вибрати   Esc скасувати
 
+# Find hosts
+t1f19b271 = Знайдіть хости
+
+# sudo password
+t6f1147fd = Пароль sudo
+
+# Run on hosts
+t20ee87e4 = Виконати на хостах
+
+# Choose at least one host.
+t98a361a0 = Виберіть принаймні один хост.
+
+# Type a command or a script first.
+tc08b2b46 = Спершу введіть команду або скрипт.
+
+# The script is larger than {kb} KB.
+t3c583c57 = Скрипт більший за { $kb } KB.
+
+# none chosen
+t23b63bc7 = нічого не вибрано
+
+# {picked} of {all}
+tb6c0f13d = { $picked } з { $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = Хостів ще немає: додайте хост у списку хостів.
+
+# chosen
+t88efc3c3 = вибрано
+
+# from #!
+te59619bf = з #!
+
+# default
+t933b5bde = за замовчуванням
+
+# Command or script
+t9263b49e = Команда або скрипт
+
+# Open file…
+teb1476db = Відкрити файл…
+
+# From a snippet…
+t5b2e9f81 = Зі сніпета…
+
+# From the first line
+t4eea1d86 = За першим рядком
+
+# No snippets yet.
+ta1f34f58 = Сніпетів ще немає.
+
+# At most
+tc4220f87 = Не більше
+
+# at once
+t73078e59 = одночасно
+
+# Give up after
+t72dfc173 = Перервати через
+
+# seconds
+t66b6cdea = секунд
+
+# One host first, the rest when you say
+t2dc320ca = Спершу один хост, решта — за вашою командою
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter — виконати
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter — виконати
+
+# Run
+t8d57e66a = Виконати
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+        [one] Виконати на { $n } хості
+        [few] Виконати на { $n } хостах
+        [many] Виконати на { $n } хостах
+       *[other] Виконати на { $n } хоста
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = Виконати спершу на { $first }, потім на решті ({ $n })?
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+        [one] Виконати на { $n } хості?
+        [few] Виконати на { $n } хостах?
+        [many] Виконати на { $n } хостах?
+       *[other] Виконати на { $n } хоста?
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } рядок
+        [few] { $interpreter }, { $n } рядки
+        [many] { $interpreter }, { $n } рядків
+       *[other] { $interpreter }, { $n } рядка
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = вхід на { $n } з { $all }…
+
+# {n} of {all} signed in
+t11ab0d58 = вхід виконано на { $n } з { $all }
+
+# at most {n} at once
+td03e9105 = не більше { $n } одночасно
+
+# Signing in: asked now, once
+t41418846 = Вхід: запитується зараз, один раз
+
+# {target}'s password, again: that one was refused
+t39e81801 = Пароль { $target } ще раз: попередній відхилено
+
+# {target}'s password
+t8989af6d = Пароль { $target }
+
+# The passphrase of {key}
+tb9a076ee = Парольна фраза { $key }
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = Ключ хоста, якого ще не бачили: { $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = Пропустити
+
+# Trust it
+tf80adc72 = Довіряти
+
+# OK
+t85e4b82f = OK
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } пропущено: { $why }
+
+# sudo password, for every host
+tf9f4ad8f = Пароль sudo для всіх хостів
+
+# The same on every host
+t09beea56 = Однаковий на всіх хостах
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = Скрипт використовує sudo: пароль передається кожному хосту разом із ним, щоб його прочитав sudo на хості, і ніколи не потрапляє в командний рядок, у файл чи в те, що показується. Він забувається, щойно запуск почнеться.
+
+# Run on {host}
+t53629f2b = Виконати на { $host }
+
+# started {when}
+t0addf546 = розпочато о { $when }
+
+# ran at {when}
+tc1949fbd = виконано о { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+        [one] Знову на { $n } хості з помилкою
+        [few] Знову на { $n } хостах з помилкою
+        [many] Знову на { $n } хостах з помилкою
+       *[other] Знову на { $n } хоста з помилкою
+    }
+
+# Run again
+t7e879b86 = Виконати знову
+
+# {n} ok
+t230daddb = { $n } успішно
+
+# {n} failed
+t747c50a8 = { $n } з помилкою
+
+# {n} to go
+t9b6bf176 = { $n } залишилось
+
+# {n} stopped
+td3275eca = { $n } зупинено
+
+# By output
+t58a5f0b1 = За виводом
+
+# By host
+ta32dd06e = За хостами
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = Перший хост готовий. Решта ({ $n }) чекають на вас.
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+        [one] Виконати на решті ({ $n })
+        [few] Виконати на решті ({ $n })
+        [many] Виконати на решті ({ $n })
+       *[other] Виконати на решті ({ $n })
+    }
+
+# Still going: {hosts}
+tfacf50d8 = Ще виконується: { $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = Зупинено до завершення: { $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = Перервано через { $s } с.
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = Виведено понад { $mb } MB: решта не зберігається.
+
+# Open a tab
+t85019429 = Відкрити вкладку
+
+# Copy output
+t64749f61 = Копіювати вивід
+
+# exit {code}
+te0c7c2fc = код виходу { $code }
+
+# ended by a signal
+t450a0cd5 = завершено сигналом
+
+# sudo did not take the password
+tb2c3fb01 = sudo не прийняв пароль
+
+# sudo asked for a password
+t31a388e9 = sudo запитав пароль
+
+# did not connect
+t7efff279 = не підключено
+
+# given up on
+t4eec5298 = перервано
+
+# did not run
+tf05d1c4a = не виконано
+
+# signing in
+t727e0a33 = вхід
+
+# asks something
+tf96d1b57 = щось питає
+
+# signed in
+t1a42c214 = вхід виконано
+
+# left out
+t73aeedd4 = пропущено
+
+# waiting
+teeda06a8 = очікування
+
+# running
+t147eb74c = виконується
+
+# stopped
+t6ee2f34e = зупинено
+
+# exit 0
+tf83c441d = код виходу 0
+
+# sudo refused
+tdd8b1f54 = sudo відмовив
+
+# What each host says shows here, grouped by output.
+taede9a2c = Тут з'явиться те, що виведе кожен хост, з групуванням за виводом.
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = Виконується так само, як ssh host 'command': без термінала й повністю зчитується перед запуском, тож ніщо в ньому не читає його решту. Пароль sudo запитується один раз, перед запуском; усе інше, що питає (y/n), не отримає відповіді.
+
 # About
 t58e096de = Про застосунок
 
@@ -2713,6 +2986,36 @@ t87553579 = не вдалося підключитися
 # closed
 tebee50c5 = закрито
 
+# One command, many hosts
+t05dcb762 = Одна команда — багато хостів
+
+# ACTIONS
+t62d7de84 = ДІЇ
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click — додати або прибрати
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click — додати або прибрати
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] Вибрано { $n } хост
+        [few] Вибрано { $n } хости
+        [many] Вибрано { $n } хостів
+       *[other] Вибрано { $n } хоста
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+        [one] Виконати на { $n } хості групи { $group }
+        [few] Виконати на { $n } хостах групи { $group }
+        [many] Виконати на { $n } хостах групи { $group }
+       *[other] Виконати на { $n } хоста групи { $group }
+    }
+
 # No hosts yet
 ta58f36ff = Хостів поки немає
 
@@ -3307,9 +3610,6 @@ t897ecb9e = запис журналу
 # listening
 t77104bea = очікування підключень
 
-# left out
-t73aeedd4 = пропущено
-
 # Installing {key} on {host}…
 t9e6d8462 = Встановлення { $key } на { $host }…
 
@@ -3604,6 +3904,21 @@ ta77bd589 = Нотатки для { $host }
 # Notes · {category}
 tbb112cdf = Нотатки · { $category }
 
+# The window closed.
+t26993482 = Вікно закрито.
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = налаштування його колекції для { $names } чекають на ваш дозвіл у вкладці цього хоста
+
+# Stop and close
+tb789bdac = Зупинити й закрити
+
+# Close the tab?
+tc626ae98 = Закрити вкладку?
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = Виконання ще триває: закриття зупинить його на хостах, де воно не завершилося.
+
 # the system's package manager
 t11465c20 = системний менеджер пакетів
 
@@ -3712,9 +4027,6 @@ t1a97d76a = завантажено: Enter завантажить знову
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Спочатку розділіть вкладку: зараз у ній лише одна панель для введення.
 
-# Close the tab?
-tc626ae98 = Закрити вкладку?
-
 # Close the pane?
 tf2b43783 = Закрити панель?
 
@@ -3819,6 +4131,9 @@ t9f033387 = Переадресувати порт через { $title }…
 
 # Unload environment: {names}
 tbe80f7b5 = Вивантажити середовище: { $names }
+
+# Run on hosts…
+t8ceaeff0 = Виконати на хостах…
 
 # Change theme…
 t85a401b4 = Змінити тему…
@@ -4900,9 +5215,6 @@ t38d39c8f = Додати хост
 # A collection has a new key
 t0dc9c1a6 = Колекція має новий ключ
 
-# OK
-t85e4b82f = OK
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = Хтось втратив доступ до колекції { $name }: її ключ замінено. Змініть те, що він міг прочитати: це перелічено над вашими хостами.
 
@@ -4974,9 +5286,6 @@ te90c2175 = Виконується з
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = Їхні змінні передаються лише йому, у підоболонці, без показу значень.
-
-# Run
-t8d57e66a = Виконати
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Середовищ поки немає: це змінні у сховищі, які завантажуються в оболонку сеансу без показу значень.

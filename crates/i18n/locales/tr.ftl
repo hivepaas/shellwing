@@ -1890,6 +1890,269 @@ tbfdc091c = Enter yanıtlar   Esc iptal eder
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ gezin   Enter seç   Esc iptal
 
+# Find hosts
+t1f19b271 = Ana makine arayın
+
+# sudo password
+t6f1147fd = sudo parolası
+
+# Run on hosts
+t20ee87e4 = Ana makinelerde çalıştır
+
+# Choose at least one host.
+t98a361a0 = En az bir ana makine seçin.
+
+# Type a command or a script first.
+tc08b2b46 = Önce bir komut veya betik yazın.
+
+# The script is larger than {kb} KB.
+t3c583c57 = Betik { $kb } KB sınırından büyük.
+
+# none chosen
+t23b63bc7 = hiçbiri seçilmedi
+
+# {picked} of {all}
+tb6c0f13d = { $picked }/{ $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = Henüz ana makine yok: ana makine listesinden bir tane ekleyin.
+
+# chosen
+t88efc3c3 = seçildi
+
+# from #!
+te59619bf = #! satırından
+
+# default
+t933b5bde = varsayılan
+
+# Command or script
+t9263b49e = Komut veya betik
+
+# Open file…
+teb1476db = Dosya aç…
+
+# From a snippet…
+t5b2e9f81 = Kod parçacığından…
+
+# From the first line
+t4eea1d86 = İlk satırdan
+
+# No snippets yet.
+ta1f34f58 = Henüz kod parçacığı yok.
+
+# At most
+tc4220f87 = Aynı anda en fazla
+
+# at once
+t73078e59 = ana makine
+
+# Give up after
+t72dfc173 = Vazgeç:
+
+# seconds
+t66b6cdea = saniye sonra
+
+# One host first, the rest when you say
+t2dc320ca = Önce bir ana makine, kalanlar siz deyince
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter çalıştırır
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter çalıştırır
+
+# Run
+t8d57e66a = Çalıştır
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+        [one] { $n } ana makinede çalıştır
+       *[other] { $n } ana makinede çalıştır
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = Önce { $first } üzerinde, sonra kalan { $n } ana makinede çalıştırılsın mı?
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+        [one] { $n } ana makinede çalıştırılsın mı?
+       *[other] { $n } ana makinede çalıştırılsın mı?
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } satır
+       *[other] { $interpreter }, { $n } satır
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = { $all } ana makineden { $n } tanesine giriş yapılıyor…
+
+# {n} of {all} signed in
+t11ab0d58 = { $all } ana makineden { $n } tanesine giriş yapıldı
+
+# at most {n} at once
+td03e9105 = aynı anda en fazla { $n }
+
+# Signing in: asked now, once
+t41418846 = Giriş: şimdi, bir kez sorulur
+
+# {target}'s password, again: that one was refused
+t39e81801 = { $target } parolası, tekrar: öncekisi reddedildi
+
+# {target}'s password
+t8989af6d = { $target } parolası
+
+# The passphrase of {key}
+tb9a076ee = { $key } için parola ifadesi
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = Daha önce hiç görülmemiş bir ana makine anahtarı: { $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = Hariç tut
+
+# Trust it
+tf80adc72 = Güven
+
+# OK
+t85e4b82f = Tamam
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } hariç tutuldu: { $why }
+
+# sudo password, for every host
+tf9f4ad8f = Tüm ana makineler için sudo parolası
+
+# The same on every host
+t09beea56 = Tüm ana makinelerde aynı
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = Betik sudo kullanıyor: parola her ana makineye betikle birlikte, oradaki sudo okusun diye gider; asla bir komut satırında, bir dosyada ya da gösterilenlerde yer almaz. Çalıştırma başlar başlamaz unutulur.
+
+# Run on {host}
+t53629f2b = { $host } üzerinde çalıştır
+
+# started {when}
+t0addf546 = başladı: { $when }
+
+# ran at {when}
+tc1949fbd = çalıştı: { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+        [one] Başarısız olan { $n } ana makinede yeniden
+       *[other] Başarısız olan { $n } ana makinede yeniden
+    }
+
+# Run again
+t7e879b86 = Yeniden çalıştır
+
+# {n} ok
+t230daddb = { $n } başarılı
+
+# {n} failed
+t747c50a8 = { $n } başarısız
+
+# {n} to go
+t9b6bf176 = { $n } kaldı
+
+# {n} stopped
+td3275eca = { $n } durduruldu
+
+# By output
+t58a5f0b1 = Çıktıya göre
+
+# By host
+ta32dd06e = Ana makineye göre
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = İlk ana makine bitti. Kalan { $n } ana makine sizi bekliyor.
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+        [one] Kalan { $n } ana makinede çalıştır
+       *[other] Kalan { $n } ana makinede çalıştır
+    }
+
+# Still going: {hosts}
+tfacf50d8 = Hâlâ sürüyor: { $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = Bitmeden durduruldu: { $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } saniye sonra vazgeçildi.
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = Çıktı { $mb } MB sınırını aştı: gerisi saklanmaz.
+
+# Open a tab
+t85019429 = Sekme aç
+
+# Copy output
+t64749f61 = Çıktıyı kopyala
+
+# exit {code}
+te0c7c2fc = çıkış kodu { $code }
+
+# ended by a signal
+t450a0cd5 = bir sinyalle sonlandı
+
+# sudo did not take the password
+tb2c3fb01 = sudo parolayı kabul etmedi
+
+# sudo asked for a password
+t31a388e9 = sudo parola istedi
+
+# did not connect
+t7efff279 = bağlanmadı
+
+# given up on
+t4eec5298 = vazgeçildi
+
+# did not run
+tf05d1c4a = çalışmadı
+
+# signing in
+t727e0a33 = giriş yapılıyor
+
+# asks something
+tf96d1b57 = bir şey soruyor
+
+# signed in
+t1a42c214 = giriş yapıldı
+
+# left out
+t73aeedd4 = hariç
+
+# waiting
+teeda06a8 = bekliyor
+
+# running
+t147eb74c = çalışıyor
+
+# stopped
+t6ee2f34e = durduruldu
+
+# exit 0
+tf83c441d = çıkış kodu 0
+
+# sudo refused
+tdd8b1f54 = sudo reddetti
+
+# What each host says shows here, grouped by output.
+taede9a2c = Her ana makinenin söyledikleri burada, çıktıya göre gruplanmış olarak görünür.
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = ssh host 'command' gibi çalışır: terminal olmadan, başlamadan önce tamamen okunur, bu yüzden içindeki hiçbir şey geri kalanını okumaz. sudo parolası çalışmadan önce bir kez sorulur; soru soran başka her şey (bir y/n) yanıt almaz.
+
 # About
 t58e096de = Hakkında
 
@@ -2677,6 +2940,32 @@ t87553579 = bağlanılamadı
 # closed
 tebee50c5 = kapandı
 
+# One command, many hosts
+t05dcb762 = Tek komut, çok sayıda ana makine
+
+# ACTIONS
+t62d7de84 = EYLEMLER
+
+# Cmd+click to add or take away
+t36133970 = Eklemek veya çıkarmak için Cmd+click
+
+# Ctrl+click to add or take away
+t47785603 = Eklemek veya çıkarmak için Ctrl+click
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } ana makine seçildi
+       *[other] { $n } ana makine seçildi
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+        [one] { $group } grubundaki { $n } ana makinede çalıştır
+       *[other] { $group } grubundaki { $n } ana makinede çalıştır
+    }
+
 # No hosts yet
 ta58f36ff = Henüz ana makine yok
 
@@ -3235,9 +3524,6 @@ t897ecb9e = günlük tutuluyor
 # listening
 t77104bea = dinliyor
 
-# left out
-t73aeedd4 = hariç
-
 # Installing {key} on {host}…
 t9e6d8462 = { $key }, { $host } üzerine kuruluyor…
 
@@ -3528,6 +3814,21 @@ ta77bd589 = { $host } için notlar
 # Notes · {category}
 tbb112cdf = Notlar · { $category }
 
+# The window closed.
+t26993482 = Pencere kapandı.
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = koleksiyonunun { $names } ayarları, ona açılan bir sekmede siz izin verene kadar bekliyor
+
+# Stop and close
+tb789bdac = Durdur ve kapat
+
+# Close the tab?
+tc626ae98 = Sekme kapatılsın mı?
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = Hâlâ çalışıyor: kapatmak, bitmediği ana makinelerde onu durdurur.
+
 # the system's package manager
 t11465c20 = sistemin paket yöneticisi
 
@@ -3630,9 +3931,6 @@ t1a97d76a = yüklendi: Enter yeniden yükler
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Önce sekmeyi bölün: yazılacak yalnızca bir bölme var.
 
-# Close the tab?
-tc626ae98 = Sekme kapatılsın mı?
-
 # Close the pane?
 tf2b43783 = Bölme kapatılsın mı?
 
@@ -3733,6 +4031,9 @@ t9f033387 = { $title } üzerinden port yönlendir…
 
 # Unload environment: {names}
 tbe80f7b5 = Ortamı boşalt: { $names }
+
+# Run on hosts…
+t8ceaeff0 = Ana makinelerde çalıştır…
 
 # Change theme…
 t85a401b4 = Temayı değiştir…
@@ -4794,9 +5095,6 @@ t38d39c8f = Ana makine ekle
 # A collection has a new key
 t0dc9c1a6 = Bir koleksiyonun yeni anahtarı var
 
-# OK
-t85e4b82f = Tamam
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = Biri { $name } koleksiyonuna erişimini kaybetti: anahtarı değiştirildi. Okuyabildiklerini değiştirin: ana makinelerinizin üstünde listelenir.
 
@@ -4868,9 +5166,6 @@ te90c2175 = Şununla çalışır
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = Değişkenleri yalnızca ona, bir alt kabukta, değerleri gösterilmeden verilir.
-
-# Run
-t8d57e66a = Çalıştır
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Henüz ortam yok: kasada saklanan ve değerleri gösterilmeden bir oturumun kabuğuna yüklenen değişkenler.

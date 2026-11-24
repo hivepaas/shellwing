@@ -234,6 +234,16 @@ pub struct Exec {
 pub const EXEC_KEEP: usize = 64 * 1024;
 
 async fn exec(handle: &Handle<Checker>, command: &str, stdin: &[u8]) -> Result<Exec, Error> {
+    exec_keeping(handle, command, stdin, EXEC_KEEP).await
+}
+
+/// [`exec`], keeping the first `most` bytes of each stream.
+async fn exec_keeping(
+    handle: &Handle<Checker>,
+    command: &str,
+    stdin: &[u8],
+    most: usize,
+) -> Result<Exec, Error> {
     let mut ch = handle.channel_open_session().await?;
     ch.exec(true, command).await?;
     if !stdin.is_empty() {
@@ -242,7 +252,7 @@ async fn exec(handle: &Handle<Checker>, command: &str, stdin: &[u8]) -> Result<E
     ch.eof().await?;
     let mut out = Exec::default();
     let keep = |buf: &mut Vec<u8>, data: &[u8]| {
-        let room = EXEC_KEEP.saturating_sub(buf.len());
+        let room = most.saturating_sub(buf.len());
         buf.extend_from_slice(&data[..data.len().min(room)]);
     };
     while let Some(msg) = ch.wait().await {
@@ -515,12 +525,13 @@ impl FilesConnection {
     }
 }
 
-/// Connects (through any ProxyJump hosts), authenticates and opens SFTP, with no
-/// shell beside it, for what browses and transfers files and nothing else.
-pub async fn connect_files(opts: Options) -> Result<FilesConnection, Error> {
+/// Connects through any ProxyJump hosts and authenticates, with no shell,
+/// forwards, agent or X11: the target's connection and the jumps' it goes
+/// through.
+async fn connect_alone(opts: &Options) -> Result<(Handle<Checker>, Vec<Handle<Checker>>), Error> {
     let mut jumps: Vec<Handle<Checker>> = Vec::new();
     for hop in &opts.target.jumps {
-        let h = open_hop(hop, jumps.last(), &opts, Routes::default(), false, None)
+        let h = open_hop(hop, jumps.last(), opts, Routes::default(), false, None)
             .await
             .map_err(|e| Error::Jump {
                 host: hop.alias.clone(),
@@ -531,12 +542,45 @@ pub async fn connect_files(opts: Options) -> Result<FilesConnection, Error> {
     let target = open_hop(
         &opts.target,
         jumps.last(),
-        &opts,
+        opts,
         Routes::default(),
         false,
         None,
     )
     .await?;
+    Ok((target, jumps))
+}
+
+/// A connection for commands alone: no shell, no forwards. Each command
+/// runs on a channel of its own. It closes when dropped.
+pub struct ExecConnection {
+    target: Handle<Checker>,
+    /// The jump connections carry the target's.
+    _jumps: Vec<Handle<Checker>>,
+}
+
+impl ExecConnection {
+    /// Runs `command` with `stdin` as its input, then the end of it,
+    /// keeping the first `most` bytes of each stream it prints.
+    pub async fn run(&self, command: &str, stdin: &[u8], most: usize) -> Result<Exec, Error> {
+        exec_keeping(&self.target, command, stdin, most).await
+    }
+}
+
+/// Connects (through any ProxyJump hosts) and authenticates, with no shell
+/// beside it, to run commands and nothing else.
+pub async fn connect_exec(opts: Options) -> Result<ExecConnection, Error> {
+    let (target, jumps) = connect_alone(&opts).await?;
+    Ok(ExecConnection {
+        target,
+        _jumps: jumps,
+    })
+}
+
+/// Connects (through any ProxyJump hosts), authenticates and opens SFTP, with no
+/// shell beside it, for what browses and transfers files and nothing else.
+pub async fn connect_files(opts: Options) -> Result<FilesConnection, Error> {
+    let (target, jumps) = connect_alone(&opts).await?;
     let sftp = sftp::open(&target).await?;
     Ok(FilesConnection {
         sftp,

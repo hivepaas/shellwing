@@ -676,6 +676,107 @@ tbc202ae0 = ↑↓ move   Enter twice forget   Esc close   secrets are never sho
 t39061ccf = Enter copies   Esc close
 tbfdc091c = Enter answers   Esc cancels
 te39c67c2 = ↑↓ move   Enter choose   Esc cancel
+t1f19b271 = Find hosts
+t6f1147fd = sudo password
+t20ee87e4 = Run on hosts
+t98a361a0 = Choose at least one host.
+tc08b2b46 = Type a command or a script first.
+t3c583c57 = The script is larger than { $kb } KB.
+t23b63bc7 = none chosen
+tb6c0f13d = { $picked } of { $all }
+tb1cb1380 = No hosts yet: add one in the host list.
+t88efc3c3 = chosen
+te59619bf = from #!
+t933b5bde = default
+t9263b49e = Command or script
+teb1476db = Open file…
+t5b2e9f81 = From a snippet…
+t4eea1d86 = From the first line
+ta1f34f58 = No snippets yet.
+tc4220f87 = At most
+t73078e59 = at once
+t72dfc173 = Give up after
+t66b6cdea = seconds
+t2dc320ca = One host first, the rest when you say
+tc5c50a00 = Cmd+Enter runs
+t1e0dc7f1 = Ctrl+Enter runs
+t8d57e66a = Run
+t9f3562b2 =
+    { $n ->
+        [one] Run on { $n } host
+       *[other] Run on { $n } hosts
+    }
+tdeeed76d = Run it on { $first } first, then the other { $n }?
+t15434ee6 =
+    { $n ->
+        [one] Run it on { $n } host?
+       *[other] Run it on { $n } hosts?
+    }
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } line
+       *[other] { $interpreter }, { $n } lines
+    }
+t6d7d8e5a = signing in to { $n } of { $all }…
+t11ab0d58 = { $n } of { $all } signed in
+td03e9105 = at most { $n } at once
+t41418846 = Signing in: asked now, once
+t39e81801 = { $target }'s password, again: that one was refused
+t8989af6d = { $target }'s password
+tb9a076ee = The passphrase of { $key }
+t064ebede = A host key never seen before: { $algorithm } { $fingerprint }
+taaff8ec9 = Leave it out
+tf80adc72 = Trust it
+t85e4b82f = OK
+ta0fb8060 = { $host } is left out: { $why }
+tf9f4ad8f = sudo password, for every host
+t09beea56 = The same on every host
+t893beb5f = The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t53629f2b = Run on { $host }
+t0addf546 = started { $when }
+tc1949fbd = ran at { $when }
+t40c7552d =
+    { $n ->
+        [one] Again on the { $n } that failed
+       *[other] Again on the { $n } that failed
+    }
+t7e879b86 = Run again
+t230daddb = { $n } ok
+t747c50a8 = { $n } failed
+t9b6bf176 = { $n } to go
+td3275eca = { $n } stopped
+t58a5f0b1 = By output
+ta32dd06e = By host
+tdc76953e = The first host is done. The other { $n } wait for you.
+t4cc1f343 =
+    { $n ->
+        [one] Run on the other { $n }
+       *[other] Run on the other { $n }
+    }
+tfacf50d8 = Still going: { $hosts }
+tde1adb0a = Stopped before they ended: { $hosts }
+tf245d128 = Given up on after { $s } seconds.
+t3b5e54ea = It printed more than { $mb } MB: the rest is not kept.
+t85019429 = Open a tab
+t64749f61 = Copy output
+te0c7c2fc = exit { $code }
+t450a0cd5 = ended by a signal
+tb2c3fb01 = sudo did not take the password
+t31a388e9 = sudo asked for a password
+t7efff279 = did not connect
+t4eec5298 = given up on
+tf05d1c4a = did not run
+t727e0a33 = signing in
+tf96d1b57 = asks something
+t1a42c214 = signed in
+t73aeedd4 = left out
+teeda06a8 = waiting
+t147eb74c = running
+t6ee2f34e = stopped
+tf83c441d = exit 0
+tdd8b1f54 = sudo refused
+taede9a2c = What each host says shows here, grouped by output.
+t82319ee2 = It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
 t58e096de = About
 ta956e96f = © { $year } HivePaaS. The shellwing name and logo are trademarks of HivePaaS.
 t182e3bec = A native SSH client for Linux, macOS and Windows.
@@ -941,6 +1042,20 @@ t5fb60aa7 = connecting
 te76d62e9 = connection lost
 t87553579 = could not connect
 tebee50c5 = closed
+t05dcb762 = One command, many hosts
+t62d7de84 = ACTIONS
+t36133970 = Cmd+click to add or take away
+t47785603 = Ctrl+click to add or take away
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } host chosen
+       *[other] { $n } hosts chosen
+    }
+t4ecd858a =
+    { $n ->
+        [one] Run on the { $n } host of { $group }
+       *[other] Run on the { $n } hosts of { $group }
+    }
 ta58f36ff = No hosts yet
 t2a8f8871 = No host matches.
 tbbe50baa = No hosts yet. Add one, or Host blocks to ~/.ssh/config.
@@ -1175,7 +1290,6 @@ t17977298 = Saved as text: { $path }
 t555cbe68 = Keep
 t897ecb9e = logging
 t77104bea = listening
-t73aeedd4 = left out
 t9e6d8462 = Installing { $key } on { $host }…
 t36d02558 = the connection ended
 t4ae79143 = { $key } is installed on { $host }.
@@ -1278,6 +1392,11 @@ t6460fddf = Open a tab first
 t0b55252f = Connect first
 ta77bd589 = Notes for { $host }
 tbb112cdf = Notes · { $category }
+t26993482 = The window closed.
+t3306232b = its collection's settings for { $names } wait until you allow them, on a tab to it
+tb789bdac = Stop and close
+tc626ae98 = Close the tab?
+t853369a2 = It is still running: closing stops it on the hosts it has not ended on.
 t11465c20 = the system's package manager
 ta8cbd72e = the App Store
 t1df799a1 = the Microsoft Store
@@ -1320,7 +1439,6 @@ teaaf5750 = Will run
 tb37e7456 = An environment this needs was deleted: edit the snippet.
 t1a97d76a = loaded: Enter loads it again
 t72699bd1 = Split the tab first: there is one pane to type in.
-tc626ae98 = Close the tab?
 tf2b43783 = Close the pane?
 t7958d376 = The connection to { $one } is open; closing ends it.
 tbac763bb =
@@ -1360,6 +1478,7 @@ td567c539 = Hide the files
 t13c5bc91 = Files on { $title }
 t9f033387 = Forward a port through { $title }…
 tbe80f7b5 = Unload environment: { $names }
+t8ceaeff0 = Run on hosts…
 t85a401b4 = Change theme…
 td7560c88 = Hide the host list
 t4754a8f9 = Show the host list
@@ -1740,7 +1859,6 @@ t4688b082 = Edit { $name }
 t42b71640 = Waiting for somebody who manages it to give you its key.
 t38d39c8f = Add a host
 t0dc9c1a6 = A collection has a new key
-t85e4b82f = OK
 t4672bd05 = Somebody lost access to { $name }: its key is replaced. Change what they could read: they are listed above your hosts.
 tceb03600 = Add one with +, or sync the hosts of your other devices.
 t1978793c = Give
@@ -1765,7 +1883,6 @@ tc67c8f52 = Command
 td02256f4 = {"{{"}name{"}}"} asks for a value when it runs; {"{{"}host{"}}"}, {"{{"}user{"}}"} and {"{{"}address{"}}"} come from the session.
 te90c2175 = Runs with
 t4ef64333 = Their variables are given to it alone, in a subshell, without showing their values.
-t8d57e66a = Run
 tbcdba796 = No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tab6d76ed = Hide values
 t68f568ba = Show values

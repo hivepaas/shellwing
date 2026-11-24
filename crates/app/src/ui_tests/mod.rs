@@ -46,6 +46,7 @@ mod lock;
 mod mouse;
 mod notes;
 mod overlays;
+mod run;
 mod security;
 mod session_life;
 mod snippets;
@@ -330,7 +331,10 @@ impl Ui {
                 return;
             }
             if start.elapsed() > limit {
-                let screen = if self.window.is_some() && self.tabs() > 0 {
+                let run = self.window.is_some() && self.ws(|ws, _, _| ws.active_run().is_some());
+                let screen = if run {
+                    "(a Run on hosts tab)".into()
+                } else if self.window.is_some() && self.tabs() > 0 {
                     self.screen()
                 } else {
                     "(no tab)".into()
@@ -681,6 +685,23 @@ impl Ui {
     }
 
     /// Clicks the middle of the element marked `selector`, as the mouse does.
+    /// The active tab's Run view: what `f` makes of it.
+    pub fn run<R>(&mut self, f: impl FnOnce(&crate::run_view::RunView, &gpui::App) -> R) -> R {
+        self.cx.run_until_parked();
+        self.ws(|ws, _, cx| {
+            let run = ws.active_run().expect("a Run on hosts tab");
+            f(run.read(cx), cx)
+        })
+    }
+
+    /// A click with `modifiers` held, as Ctrl+click.
+    pub fn click_with(&mut self, selector: &str, modifiers: gpui::Modifiers) {
+        let at = self.reach(selector);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.simulate_click(at, modifiers);
+        self.cx.run_until_parked();
+    }
+
     pub fn click(&mut self, selector: &str) {
         let at = self.reach(selector);
         let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);

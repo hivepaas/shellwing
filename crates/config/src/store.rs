@@ -37,6 +37,7 @@ const NOTE_WINDOW: &str = "note-window.json";
 const SNIPPET_WINDOW: &str = "snippet-window.json";
 const UPDATES: &str = "updates.json";
 const SYSTEMS: &str = "systems.json";
+const SIDEBAR: &str = "sidebar.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -569,6 +570,15 @@ impl Store {
         systems: &std::collections::BTreeMap<String, crate::SystemSeen>,
     ) -> io::Result<()> {
         self.save_state(SYSTEMS, systems)
+    }
+
+    /// What the host list has folded (`state/sidebar.json`).
+    pub fn sidebar_state(&self) -> crate::SidebarState {
+        self.load_state(SIDEBAR).unwrap_or_default()
+    }
+
+    pub fn save_sidebar_state(&self, state: &crate::SidebarState) -> io::Result<()> {
+        self.save_state(SIDEBAR, state)
     }
 
     /// A snippet's window's size when one last closed

@@ -1873,6 +1873,264 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選擇   Esc 取消
 
+# Find hosts
+t1f19b271 = 尋找主機
+
+# sudo password
+t6f1147fd = sudo 密碼
+
+# Run on hosts
+t20ee87e4 = 在多台主機上執行
+
+# Choose at least one host.
+t98a361a0 = 請至少選擇一台主機。
+
+# Type a command or a script first.
+tc08b2b46 = 請先輸入指令或指令碼。
+
+# The script is larger than {kb} KB.
+t3c583c57 = 指令碼超過 { $kb } KB。
+
+# none chosen
+t23b63bc7 = 未選擇
+
+# {picked} of {all}
+tb6c0f13d = { $picked }/{ $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = 還沒有主機：請在主機清單中新增。
+
+# chosen
+t88efc3c3 = 已選擇
+
+# from #!
+te59619bf = 來自 #!
+
+# default
+t933b5bde = 預設
+
+# Command or script
+t9263b49e = 指令或指令碼
+
+# Open file…
+teb1476db = 開啟檔案…
+
+# From a snippet…
+t5b2e9f81 = 從程式碼片段…
+
+# From the first line
+t4eea1d86 = 依第一行
+
+# No snippets yet.
+ta1f34f58 = 還沒有程式碼片段。
+
+# At most
+tc4220f87 = 最多
+
+# at once
+t73078e59 = 台同時執行
+
+# Give up after
+t72dfc173 = 等待
+
+# seconds
+t66b6cdea = 秒後放棄
+
+# One host first, the rest when you say
+t2dc320ca = 先在一台主機上執行，其餘待你確認
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter 執行
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter 執行
+
+# Run
+t8d57e66a = 執行
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+       *[other] 在 { $n } 台主機上執行
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = 要先在 { $first } 上執行，再在其餘 { $n } 台主機上執行嗎？
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+       *[other] 要在 { $n } 台主機上執行嗎？
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }，{ $n } 行
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = 正在登入 { $n }/{ $all } 台主機…
+
+# {n} of {all} signed in
+t11ab0d58 = 已登入 { $n }/{ $all } 台
+
+# at most {n} at once
+td03e9105 = 最多 { $n } 台同時執行
+
+# Signing in: asked now, once
+t41418846 = 登入：現在一次問完
+
+# {target}'s password, again: that one was refused
+t39e81801 = { $target } 的密碼，請重新輸入：剛才的密碼被拒絕
+
+# {target}'s password
+t8989af6d = { $target } 的密碼
+
+# The passphrase of {key}
+tb9a076ee = { $key } 的密碼片語
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = 從未見過的主機金鑰：{ $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = 排除
+
+# Trust it
+tf80adc72 = 信任此金鑰
+
+# OK
+t85e4b82f = 好
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } 已排除：{ $why }
+
+# sudo password, for every host
+tf9f4ad8f = sudo 密碼，適用於所有主機
+
+# The same on every host
+t09beea56 = 所有主機皆相同
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = 指令碼使用了 sudo：密碼會隨指令碼傳送到每台主機，供該主機上的 sudo 讀取，絕不會出現在命令列、檔案或顯示的內容中。開始執行後即會忘記密碼。
+
+# Run on {host}
+t53629f2b = 在 { $host } 上執行
+
+# started {when}
+t0addf546 = 開始於 { $when }
+
+# ran at {when}
+tc1949fbd = 執行於 { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+       *[other] 在失敗的 { $n } 台主機上重新執行
+    }
+
+# Run again
+t7e879b86 = 重新執行
+
+# {n} ok
+t230daddb = { $n } 台成功
+
+# {n} failed
+t747c50a8 = { $n } 台失敗
+
+# {n} to go
+t9b6bf176 = 還剩 { $n } 台
+
+# {n} stopped
+td3275eca = { $n } 台已停止
+
+# By output
+t58a5f0b1 = 依輸出
+
+# By host
+ta32dd06e = 依主機
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = 第一台主機已完成。其餘 { $n } 台正在等你。
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+       *[other] 在其餘 { $n } 台主機上執行
+    }
+
+# Still going: {hosts}
+tfacf50d8 = 仍在執行：{ $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = 在結束前已停止：{ $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } 秒後已放棄。
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = 輸出超過 { $mb } MB：其餘部分不會保留。
+
+# Open a tab
+t85019429 = 開啟分頁
+
+# Copy output
+t64749f61 = 複製輸出
+
+# exit {code}
+te0c7c2fc = 結束代碼 { $code }
+
+# ended by a signal
+t450a0cd5 = 因訊號而結束
+
+# sudo did not take the password
+tb2c3fb01 = sudo 未接受密碼
+
+# sudo asked for a password
+t31a388e9 = sudo 要求輸入密碼
+
+# did not connect
+t7efff279 = 未能連線
+
+# given up on
+t4eec5298 = 已放棄
+
+# did not run
+tf05d1c4a = 未能執行
+
+# signing in
+t727e0a33 = 正在登入
+
+# asks something
+tf96d1b57 = 正在詢問
+
+# signed in
+t1a42c214 = 已登入
+
+# left out
+t73aeedd4 = 已排除
+
+# waiting
+teeda06a8 = 正在等待
+
+# running
+t147eb74c = 正在執行
+
+# stopped
+t6ee2f34e = 已停止
+
+# exit 0
+tf83c441d = 結束代碼 0
+
+# sudo refused
+tdd8b1f54 = sudo 已拒絕
+
+# What each host says shows here, grouped by output.
+taede9a2c = 每台主機的輸出會顯示在這裡，依輸出分組。
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = 它的執行方式如同 ssh host 'command'：沒有終端機，開始前會完整讀入，因此其中的內容不會讀取其餘部分。sudo 的密碼會在執行前詢問一次；其他任何詢問（例如 y/n）都不會得到回答。
+
 # About
 t58e096de = 關於
 
@@ -2659,6 +2917,30 @@ t87553579 = 無法連線
 # closed
 tebee50c5 = 已關閉
 
+# One command, many hosts
+t05dcb762 = 一個指令，多台主機
+
+# ACTIONS
+t62d7de84 = 動作
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click 可加入或移除
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click 可加入或移除
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 已選擇 { $n } 台主機
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+       *[other] 在 { $group } 的 { $n } 台主機上執行
+    }
+
 # No hosts yet
 ta58f36ff = 還沒有主機
 
@@ -3199,9 +3481,6 @@ t897ecb9e = 正在記錄
 # listening
 t77104bea = 接收輸入
 
-# left out
-t73aeedd4 = 已排除
-
 # Installing {key} on {host}…
 t9e6d8462 = 正在將 { $key } 安裝到 { $host }…
 
@@ -3490,6 +3769,21 @@ ta77bd589 = { $host } 的筆記
 # Notes · {category}
 tbb112cdf = 筆記 · { $category }
 
+# The window closed.
+t26993482 = 視窗已關閉。
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = 其集合針對 { $names } 的設定需等你在連到它的分頁中允許
+
+# Stop and close
+tb789bdac = 停止並關閉
+
+# Close the tab?
+tc626ae98 = 要關閉分頁嗎？
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = 仍在執行中：關閉會在尚未結束的主機上停止它。
+
 # the system's package manager
 t11465c20 = 系統的套件管理員
 
@@ -3589,9 +3883,6 @@ t1a97d76a = 已載入：按 Enter 再次載入
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 請先分割分頁：目前只有一個窗格可輸入。
 
-# Close the tab?
-tc626ae98 = 要關閉分頁嗎？
-
 # Close the pane?
 tf2b43783 = 要關閉窗格嗎？
 
@@ -3690,6 +3981,9 @@ t9f033387 = 透過 { $title } 轉送連接埠…
 
 # Unload environment: {names}
 tbe80f7b5 = 卸載環境：{ $names }
+
+# Run on hosts…
+t8ceaeff0 = 在多台主機上執行…
 
 # Change theme…
 t85a401b4 = 變更主題…
@@ -4741,9 +5035,6 @@ t38d39c8f = 新增主機
 # A collection has a new key
 t0dc9c1a6 = 某個集合有了新的金鑰
 
-# OK
-t85e4b82f = 好
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = 有人已失去 { $name } 的存取權：其金鑰已更換。請變更對方可讀取的內容：它們列在你的主機上方。
 
@@ -4815,9 +5106,6 @@ te90c2175 = 執行時使用的環境
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = 其變數只會在子 shell 中單獨提供給它，且不會顯示變數值。
-
-# Run
-t8d57e66a = 執行
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 還沒有環境：環境是儲存在保險庫中的變數，可載入到工作階段的 shell 中，且不會顯示其值。

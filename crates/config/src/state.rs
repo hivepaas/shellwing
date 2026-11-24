@@ -34,6 +34,18 @@ pub struct SystemSeen {
     pub checked_at: u64,
 }
 
+/// What the host list has folded (`state/sidebar.json`): its Actions,
+/// and sections by key (a group's name, a collection's id, else the
+/// section's title).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SidebarState {
+    /// Actions shown; folded by default.
+    #[serde(default)]
+    pub actions_open: bool,
+    #[serde(default)]
+    pub folded: Vec<String>,
+}
+
 /// A note's window's size when one last closed, in logical pixels: the
 /// next opens so.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

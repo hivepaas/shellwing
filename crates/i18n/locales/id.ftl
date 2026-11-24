@@ -1873,6 +1873,264 @@ tbfdc091c = Enter jawab   Esc batal
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ pindah   Enter pilih   Esc batal
 
+# Find hosts
+t1f19b271 = Cari host
+
+# sudo password
+t6f1147fd = kata sandi sudo
+
+# Run on hosts
+t20ee87e4 = Jalankan di host
+
+# Choose at least one host.
+t98a361a0 = Pilih setidaknya satu host.
+
+# Type a command or a script first.
+tc08b2b46 = Ketik perintah atau skrip terlebih dahulu.
+
+# The script is larger than {kb} KB.
+t3c583c57 = Skrip lebih dari { $kb } KB.
+
+# none chosen
+t23b63bc7 = tidak ada yang dipilih
+
+# {picked} of {all}
+tb6c0f13d = { $picked } dari { $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = Belum ada host: tambahkan di daftar host.
+
+# chosen
+t88efc3c3 = dipilih
+
+# from #!
+te59619bf = dari #!
+
+# default
+t933b5bde = bawaan
+
+# Command or script
+t9263b49e = Perintah atau skrip
+
+# Open file…
+teb1476db = Buka berkas…
+
+# From a snippet…
+t5b2e9f81 = Dari snippet…
+
+# From the first line
+t4eea1d86 = Dari baris pertama
+
+# No snippets yet.
+ta1f34f58 = Belum ada snippet.
+
+# At most
+tc4220f87 = Paling banyak
+
+# at once
+t73078e59 = sekaligus
+
+# Give up after
+t72dfc173 = Menyerah setelah
+
+# seconds
+t66b6cdea = detik
+
+# One host first, the rest when you say
+t2dc320ca = Satu host dulu, sisanya saat Anda bilang
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter menjalankan
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter menjalankan
+
+# Run
+t8d57e66a = Jalankan
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+       *[other] Jalankan di { $n } host
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = Jalankan di { $first } dulu, lalu di { $n } lainnya?
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+       *[other] Jalankan di { $n } host?
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }, { $n } baris
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = masuk ke { $n } dari { $all }…
+
+# {n} of {all} signed in
+t11ab0d58 = { $n } dari { $all } sudah masuk
+
+# at most {n} at once
+td03e9105 = paling banyak { $n } sekaligus
+
+# Signing in: asked now, once
+t41418846 = Masuk: ditanyakan sekarang, sekali saja
+
+# {target}'s password, again: that one was refused
+t39e81801 = Kata sandi { $target }, sekali lagi: yang tadi ditolak
+
+# {target}'s password
+t8989af6d = Kata sandi { $target }
+
+# The passphrase of {key}
+tb9a076ee = Frasa sandi { $key }
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = Kunci host yang belum pernah terlihat: { $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = Kecualikan
+
+# Trust it
+tf80adc72 = Percayai
+
+# OK
+t85e4b82f = OK
+
+# {host} is left out: {why}
+ta0fb8060 = { $host } dikecualikan: { $why }
+
+# sudo password, for every host
+tf9f4ad8f = kata sandi sudo, untuk setiap host
+
+# The same on every host
+t09beea56 = Sama di setiap host
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = Skrip memakai sudo: kata sandi dikirim ke setiap host bersama skrip, untuk dibaca sudo di sana, tidak pernah di baris perintah, di berkas, atau di yang ditampilkan. Kata sandi dilupakan begitu proses dimulai.
+
+# Run on {host}
+t53629f2b = Jalankan di { $host }
+
+# started {when}
+t0addf546 = dimulai pukul { $when }
+
+# ran at {when}
+tc1949fbd = dijalankan pukul { $when }
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+       *[other] Lagi di { $n } yang gagal
+    }
+
+# Run again
+t7e879b86 = Jalankan lagi
+
+# {n} ok
+t230daddb = { $n } ok
+
+# {n} failed
+t747c50a8 = { $n } gagal
+
+# {n} to go
+t9b6bf176 = { $n } tersisa
+
+# {n} stopped
+td3275eca = { $n } dihentikan
+
+# By output
+t58a5f0b1 = Per keluaran
+
+# By host
+ta32dd06e = Per host
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = Host pertama selesai. { $n } lainnya menunggu Anda.
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+       *[other] Jalankan di { $n } lainnya
+    }
+
+# Still going: {hosts}
+tfacf50d8 = Masih berjalan: { $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = Dihentikan sebelum selesai: { $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = Ditinggalkan setelah { $s } detik.
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = Keluarannya lebih dari { $mb } MB: sisanya tidak disimpan.
+
+# Open a tab
+t85019429 = Buka tab
+
+# Copy output
+t64749f61 = Salin keluaran
+
+# exit {code}
+te0c7c2fc = exit { $code }
+
+# ended by a signal
+t450a0cd5 = diakhiri oleh sinyal
+
+# sudo did not take the password
+tb2c3fb01 = sudo tidak menerima kata sandi
+
+# sudo asked for a password
+t31a388e9 = sudo meminta kata sandi
+
+# did not connect
+t7efff279 = tidak terhubung
+
+# given up on
+t4eec5298 = ditinggalkan
+
+# did not run
+tf05d1c4a = tidak dijalankan
+
+# signing in
+t727e0a33 = sedang masuk
+
+# asks something
+tf96d1b57 = menanyakan sesuatu
+
+# signed in
+t1a42c214 = sudah masuk
+
+# left out
+t73aeedd4 = dikecualikan
+
+# waiting
+teeda06a8 = menunggu
+
+# running
+t147eb74c = berjalan
+
+# stopped
+t6ee2f34e = dihentikan
+
+# exit 0
+tf83c441d = exit 0
+
+# sudo refused
+tdd8b1f54 = sudo menolak
+
+# What each host says shows here, grouped by output.
+taede9a2c = Yang dikatakan setiap host tampil di sini, dikelompokkan per keluaran.
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = Berjalan seperti ssh host 'command', tanpa terminal, dibaca utuh sebelum dimulai, jadi tidak ada bagian di dalamnya yang membaca sisanya. Kata sandi sudo ditanyakan sekali, sebelum dijalankan; hal lain yang bertanya (y/n) tidak mendapat jawaban.
+
 # About
 t58e096de = Tentang
 
@@ -2659,6 +2917,30 @@ t87553579 = tidak dapat terhubung
 # closed
 tebee50c5 = ditutup
 
+# One command, many hosts
+t05dcb762 = Satu perintah, banyak host
+
+# ACTIONS
+t62d7de84 = TINDAKAN
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click untuk menambah atau mengurangi
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click untuk menambah atau mengurangi
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] { $n } host dipilih
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+       *[other] Jalankan di { $n } host dari { $group }
+    }
+
 # No hosts yet
 ta58f36ff = Belum ada host
 
@@ -3199,9 +3481,6 @@ t897ecb9e = mencatat log
 # listening
 t77104bea = mendengarkan
 
-# left out
-t73aeedd4 = dikecualikan
-
 # Installing {key} on {host}…
 t9e6d8462 = Memasang { $key } di { $host }…
 
@@ -3490,6 +3769,21 @@ ta77bd589 = Catatan untuk { $host }
 # Notes · {category}
 tbb112cdf = Catatan · { $category }
 
+# The window closed.
+t26993482 = Jendela ditutup.
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = pengaturan koleksinya untuk { $names } menunggu sampai Anda mengizinkannya, di tab ke host itu
+
+# Stop and close
+tb789bdac = Hentikan dan tutup
+
+# Close the tab?
+tc626ae98 = Tutup tab?
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = Masih berjalan: menutup akan menghentikannya di host yang belum selesai.
+
 # the system's package manager
 t11465c20 = pengelola paket sistem
 
@@ -3589,9 +3883,6 @@ t1a97d76a = dimuat: Enter memuatnya lagi
 # Split the tab first: there is one pane to type in.
 t72699bd1 = Bagi tab terlebih dahulu: hanya ada satu panel untuk diketik.
 
-# Close the tab?
-tc626ae98 = Tutup tab?
-
 # Close the pane?
 tf2b43783 = Tutup panel?
 
@@ -3690,6 +3981,9 @@ t9f033387 = Teruskan port melalui { $title }…
 
 # Unload environment: {names}
 tbe80f7b5 = Lepaskan lingkungan: { $names }
+
+# Run on hosts…
+t8ceaeff0 = Jalankan di host…
 
 # Change theme…
 t85a401b4 = Ganti tema…
@@ -4741,9 +5035,6 @@ t38d39c8f = Tambah host
 # A collection has a new key
 t0dc9c1a6 = Koleksi memiliki kunci baru
 
-# OK
-t85e4b82f = OK
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = Seseorang kehilangan akses ke { $name }: kuncinya sudah diganti. Ganti apa yang dapat dibacanya: daftarnya ada di atas host Anda.
 
@@ -4815,9 +5106,6 @@ te90c2175 = Dijalankan dengan
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = Variabelnya hanya diberikan ke snippet ini, di subshell, tanpa menampilkan nilainya.
-
-# Run
-t8d57e66a = Jalankan
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = Belum ada lingkungan: variabel yang disimpan di brankas, dimuat ke shell sesi tanpa menampilkan nilainya.

@@ -1846,6 +1846,264 @@ tbfdc091c = Enter 응답   Esc 취소
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 이동   Enter 선택   Esc 취소
 
+# Find hosts
+t1f19b271 = 호스트 찾기
+
+# sudo password
+t6f1147fd = sudo 비밀번호
+
+# Run on hosts
+t20ee87e4 = 호스트에서 실행
+
+# Choose at least one host.
+t98a361a0 = 호스트를 하나 이상 선택하세요.
+
+# Type a command or a script first.
+tc08b2b46 = 먼저 명령 또는 스크립트를 입력하세요.
+
+# The script is larger than {kb} KB.
+t3c583c57 = 스크립트가 { $kb }KB보다 큽니다.
+
+# none chosen
+t23b63bc7 = 선택 없음
+
+# {picked} of {all}
+tb6c0f13d = { $picked }/{ $all }
+
+# No hosts yet: add one in the host list.
+tb1cb1380 = 아직 호스트가 없습니다. 호스트 목록에서 추가하세요.
+
+# chosen
+t88efc3c3 = 직접 선택
+
+# from #!
+te59619bf = #!에서
+
+# default
+t933b5bde = 기본값
+
+# Command or script
+t9263b49e = 명령 또는 스크립트
+
+# Open file…
+teb1476db = 파일 열기…
+
+# From a snippet…
+t5b2e9f81 = 스니펫에서…
+
+# From the first line
+t4eea1d86 = 첫 줄에서
+
+# No snippets yet.
+ta1f34f58 = 아직 스니펫이 없습니다.
+
+# At most
+tc4220f87 = 한 번에 최대
+
+# at once
+t73078e59 = 개씩
+
+# Give up after
+t72dfc173 = 중단까지
+
+# seconds
+t66b6cdea = 초
+
+# One host first, the rest when you say
+t2dc320ca = 먼저 호스트 하나에서 실행하고, 나머지는 지시할 때
+
+# Cmd+Enter runs
+tc5c50a00 = Cmd+Enter로 실행
+
+# Ctrl+Enter runs
+t1e0dc7f1 = Ctrl+Enter로 실행
+
+# Run
+t8d57e66a = 실행
+
+# Run on {n} host | Run on {n} hosts
+t9f3562b2 =
+    { $n ->
+       *[other] 호스트 { $n }개에서 실행
+    }
+
+# Run it on {first} first, then the other {n}?
+tdeeed76d = 먼저 { $first }에서 실행한 다음 나머지 { $n }개에서 실행하시겠습니까?
+
+# Run it on {n} host? | Run it on {n} hosts?
+t15434ee6 =
+    { $n ->
+       *[other] 호스트 { $n }개에서 실행하시겠습니까?
+    }
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }, { $n }줄
+    }
+
+# signing in to {n} of {all}…
+t6d7d8e5a = { $all }개 중 { $n }개에 로그인하는 중…
+
+# {n} of {all} signed in
+t11ab0d58 = { $all }개 중 { $n }개 로그인됨
+
+# at most {n} at once
+td03e9105 = 한 번에 최대 { $n }개
+
+# Signing in: asked now, once
+t41418846 = 로그인: 지금 한 번만 묻습니다
+
+# {target}'s password, again: that one was refused
+t39e81801 = { $target }의 비밀번호, 다시 입력: 이전 비밀번호가 거부되었습니다
+
+# {target}'s password
+t8989af6d = { $target }의 비밀번호
+
+# The passphrase of {key}
+tb9a076ee = { $key }의 암호 문구
+
+# A host key never seen before: {algorithm} {fingerprint}
+t064ebede = 처음 보는 호스트 키: { $algorithm } { $fingerprint }
+
+# Leave it out
+taaff8ec9 = 제외하기
+
+# Trust it
+tf80adc72 = 신뢰하기
+
+# OK
+t85e4b82f = 확인
+
+# {host} is left out: {why}
+ta0fb8060 = { $host }은(는) 제외되었습니다: { $why }
+
+# sudo password, for every host
+tf9f4ad8f = sudo 비밀번호 (모든 호스트 공통)
+
+# The same on every host
+t09beea56 = 모든 호스트에서 동일
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+t893beb5f = 스크립트가 sudo를 사용합니다. 비밀번호는 스크립트와 함께 각 호스트로 전달되어 그곳의 sudo가 읽으며, 명령줄이나 파일, 화면에 표시되는 내용에는 절대 들어가지 않습니다. 실행이 시작되면 삭제됩니다.
+
+# Run on {host}
+t53629f2b = { $host }에서 실행
+
+# started {when}
+t0addf546 = { $when } 시작
+
+# ran at {when}
+tc1949fbd = { $when } 실행
+
+# Again on the {n} that failed | Again on the {n} that failed
+t40c7552d =
+    { $n ->
+       *[other] 실패한 { $n }개에서 다시 실행
+    }
+
+# Run again
+t7e879b86 = 다시 실행
+
+# {n} ok
+t230daddb = { $n }개 성공
+
+# {n} failed
+t747c50a8 = { $n }개 실패
+
+# {n} to go
+t9b6bf176 = { $n }개 남음
+
+# {n} stopped
+td3275eca = { $n }개 중지됨
+
+# By output
+t58a5f0b1 = 출력별
+
+# By host
+ta32dd06e = 호스트별
+
+# The first host is done. The other {n} wait for you.
+tdc76953e = 첫 번째 호스트가 끝났습니다. 나머지 { $n }개는 지시를 기다립니다.
+
+# Run on the other {n} | Run on the other {n}
+t4cc1f343 =
+    { $n ->
+       *[other] 나머지 { $n }개에서 실행
+    }
+
+# Still going: {hosts}
+tfacf50d8 = 아직 실행 중: { $hosts }
+
+# Stopped before they ended: {hosts}
+tde1adb0a = 끝나기 전에 중지됨: { $hosts }
+
+# Given up on after {s} seconds.
+tf245d128 = { $s }초 후 중단했습니다.
+
+# It printed more than {mb} MB: the rest is not kept.
+t3b5e54ea = { $mb }MB 넘게 출력하여 나머지는 보관하지 않습니다.
+
+# Open a tab
+t85019429 = 탭 열기
+
+# Copy output
+t64749f61 = 출력 복사
+
+# exit {code}
+te0c7c2fc = 종료 코드 { $code }
+
+# ended by a signal
+t450a0cd5 = 시그널로 종료됨
+
+# sudo did not take the password
+tb2c3fb01 = sudo가 비밀번호를 받아들이지 않았습니다
+
+# sudo asked for a password
+t31a388e9 = sudo가 비밀번호를 물었습니다
+
+# did not connect
+t7efff279 = 연결 실패
+
+# given up on
+t4eec5298 = 중단됨
+
+# did not run
+tf05d1c4a = 실행 안 됨
+
+# signing in
+t727e0a33 = 로그인 중
+
+# asks something
+tf96d1b57 = 입력 필요
+
+# signed in
+t1a42c214 = 로그인됨
+
+# left out
+t73aeedd4 = 제외됨
+
+# waiting
+teeda06a8 = 대기 중
+
+# running
+t147eb74c = 실행 중
+
+# stopped
+t6ee2f34e = 중지됨
+
+# exit 0
+tf83c441d = 종료 코드 0
+
+# sudo refused
+tdd8b1f54 = sudo 거부
+
+# What each host says shows here, grouped by output.
+taede9a2c = 각 호스트의 출력이 같은 출력끼리 묶여 여기에 표시됩니다.
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+t82319ee2 = ssh host 'command'처럼 터미널 없이 실행되며, 시작하기 전에 전체를 읽어 들이므로 그 안의 어떤 명령도 나머지 부분을 읽지 않습니다. sudo 비밀번호는 실행 전에 한 번 묻습니다. 그 밖에 묻는 것(y/n 등)에는 응답하지 않습니다.
+
 # About
 t58e096de = 정보
 
@@ -2629,6 +2887,30 @@ t87553579 = 연결 실패
 # closed
 tebee50c5 = 닫힘
 
+# One command, many hosts
+t05dcb762 = 명령 하나, 여러 호스트
+
+# ACTIONS
+t62d7de84 = 작업
+
+# Cmd+click to add or take away
+t36133970 = Cmd+click으로 추가 또는 제외
+
+# Ctrl+click to add or take away
+t47785603 = Ctrl+click으로 추가 또는 제외
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 호스트 { $n }개 선택됨
+    }
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+t4ecd858a =
+    { $n ->
+       *[other] { $group }의 호스트 { $n }개에서 실행
+    }
+
 # No hosts yet
 ta58f36ff = 아직 호스트 없음
 
@@ -3145,9 +3427,6 @@ t897ecb9e = 기록 중
 # listening
 t77104bea = 입력 수신
 
-# left out
-t73aeedd4 = 제외됨
-
 # Installing {key} on {host}…
 t9e6d8462 = { $host }에 { $key } 설치하는 중…
 
@@ -3433,6 +3712,21 @@ ta77bd589 = { $host }용 노트
 # Notes · {category}
 tbb112cdf = 노트 · { $category }
 
+# The window closed.
+t26993482 = 창이 닫혔습니다.
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+t3306232b = 컬렉션의 { $names } 설정이 이 호스트로 연결된 탭에서 허용되기를 기다리고 있습니다
+
+# Stop and close
+tb789bdac = 중지하고 닫기
+
+# Close the tab?
+tc626ae98 = 탭을 닫으시겠습니까?
+
+# It is still running: closing stops it on the hosts it has not ended on.
+t853369a2 = 아직 실행 중입니다. 닫으면 아직 끝나지 않은 호스트에서 중지됩니다.
+
 # the system's package manager
 t11465c20 = 시스템 패키지 관리자
 
@@ -3526,9 +3820,6 @@ t1a97d76a = 불러옴: Enter를 누르면 다시 불러옵니다
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 먼저 탭을 분할하세요. 입력할 창이 하나뿐입니다.
 
-# Close the tab?
-tc626ae98 = 탭을 닫으시겠습니까?
-
 # Close the pane?
 tf2b43783 = 창을 닫으시겠습니까?
 
@@ -3621,6 +3912,9 @@ t9f033387 = { $title }을(를) 통해 포트 포워딩…
 
 # Unload environment: {names}
 tbe80f7b5 = 환경 해제: { $names }
+
+# Run on hosts…
+t8ceaeff0 = 호스트에서 실행…
 
 # Change theme…
 t85a401b4 = 테마 변경…
@@ -4654,9 +4948,6 @@ t38d39c8f = 호스트 추가
 # A collection has a new key
 t0dc9c1a6 = 컬렉션에 새 키가 생겼습니다
 
-# OK
-t85e4b82f = 확인
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = 누군가 { $name }에 대한 접근 권한을 잃음: 키가 교체되었습니다. 그 사용자가 읽을 수 있었던 항목을 변경하세요: 호스트 위에 표시됩니다.
 
@@ -4728,9 +5019,6 @@ te90c2175 = 함께 쓰는 환경
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = 해당 변수는 값을 보여 주지 않고 서브셸에서 이 스니펫에만 전달됩니다.
-
-# Run
-t8d57e66a = 실행
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 아직 환경이 없습니다. 보관함에 보관되는 변수로, 값을 보여 주지 않고 세션의 셸에 불러옵니다.
