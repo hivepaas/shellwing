@@ -49,6 +49,9 @@ tddf9c9cc = Interrompi tutta l'AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · avviato alle { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+t2b63bd77 = { $client } vuole scrivere questo file su { $host }. La scrittura ti aspetta: dove quelli rischiosi aspettano, ogni scrittura aspetta.
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } vuole eseguire questo comando su { $host }. Il comando ti aspetta: la sua concessione chiede conferma per ogni comando.
 
@@ -181,6 +184,12 @@ t04874b67 = in background
 # through a tab
 t6bca7a6e = tramite una scheda
 
+# reads files
+te3f10929 = legge file
+
+# writes files
+t0a7257de = scrive file
+
 # while shellwing stays open
 t938960ff = finché shellwing resta aperto
 
@@ -231,6 +240,27 @@ tfe61838e = Tramite una scheda
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Digitati in una scheda sull'host, nella sua shell, dove li vedi; se non ce n'è una, se ne apre una. Una password che l'host chiede lì la digiti tu.
+
+# It may
+t5c846351 = Può
+
+# Run commands
+t65b79874 = Eseguire comandi
+
+# and see what they print
+tef4e221a = e vedere cosa stampano
+
+# Read files
+te1736866 = Leggere file
+
+# list folders and read files, over SFTP
+tf3b3e2e7 = elencare cartelle e leggere file, tramite SFTP
+
+# Write files
+tc9796e43 = Scrivere file
+
+# over SFTP; where risky ones wait, every write waits for you
+t2d9c8c34 = tramite SFTP; dove quelli rischiosi aspettano, ogni scrittura ti aspetta
 
 # Commands
 t971550f3 = Comandi

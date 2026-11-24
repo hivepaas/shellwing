@@ -218,13 +218,20 @@ fn given_web(ui: &mut Ui, mode: &str) -> String {
 
 /// [`given_web`], `how` the host is reached: `background` or `tab`.
 fn given_web_so(ui: &mut Ui, mode: &str, how: &str) -> String {
+    given_web_may(ui, mode, how, &[])
+}
+
+/// [`given_web_so`], the boxes of *It may* named in `flip` (`run`, `read`,
+/// `write`) clicked; its home served over SFTP too.
+fn given_web_may(ui: &mut Ui, mode: &str, how: &str, flip: &[&str]) -> String {
     let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
     ui.agent(&[&key]);
     let home = ui.config_dir().join("remote-home");
     std::fs::create_dir_all(&home).expect("home");
     let server = ui.server(Policy {
         key: Some(key.public_key().clone()),
-        shell: Some((home.clone(), home)),
+        shell: Some((home.clone(), home.clone())),
+        sftp: Some(home),
         ..Default::default()
     });
     ui.trust(&server);
@@ -249,6 +256,9 @@ fn given_web_so(ui: &mut Ui, mode: &str, how: &str) -> String {
     ui.click("ai-give-to:Codex CLI");
     ui.click(&format!("ai-give-mode:{mode}"));
     ui.click(&format!("ai-give-how:{how}"));
+    for f in flip {
+        ui.click(&format!("ai-may:{f}"));
+    }
     ui.click("ai-give-ok");
     ui.click("settings-close");
     token
@@ -376,5 +386,72 @@ scenario!(
         }
         assert!(rest.contains("exit 0") && rest.contains("later"), "{rest}");
         assert_eq!(ui.tabs(), 1, "the same tab, again");
+    }
+);
+
+scenario!(
+    /// Files over SFTP, where the grant lets: a folder listed, text read as
+    /// it is and a binary file in base64, a write that waits (risky ones
+    /// do) and is written once allowed.
+    an_ai_reads_and_writes_files,
+    |ui| {
+        if !crate::ui_tests::server::has_sftp() {
+            eprintln!("skipped: no sftp-server on this system");
+            return;
+        }
+        let token = given_web_may(ui, "Risky", "background", &["write"]);
+        let home = ui.config_dir().join("remote-home");
+        std::fs::write(home.join("bin.dat"), [0u8, 1, 2, 255]).expect("bin");
+        let (mut c, _) = Client::open(ui, &token);
+
+        let (said, error) = c.tool_in(ui, "write_file", json!({"host": "web", "path": "notes.txt", "content": "it's here\n", "wait_seconds": 1}));
+        assert!(!error && said.contains("waits for the user"), "a write waits: {said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click("ai-allow");
+        let mut rest = String::new();
+        for _ in 0..5 {
+            let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+            rest.push_str(&said);
+            if said.starts_with("exit") {
+                break;
+            }
+        }
+        assert!(rest.contains("Wrote 10 B at"), "{rest}");
+        assert_eq!(std::fs::read_to_string(home.join("notes.txt")).expect("written"), "it's here\n");
+
+        let (said, error) = c.tool_in(ui, "read_file", json!({"host": "web", "path": "notes.txt"}));
+        assert!(!error && said.contains("(text)") && said.ends_with("it's here\n"), "{said}");
+        let (said, _) = c.tool_in(ui, "read_file", json!({"host": "web", "path": "~/bin.dat"}));
+        assert!(said.contains("binary, in base64") && said.ends_with("AAEC/w=="), "{said}");
+        let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web"}));
+        assert!(said.contains("-  notes.txt  10 B") && said.contains("-  bin.dat  4 B"), "{said}");
+        let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web", "pattern": "*.dat"}));
+        assert!(said.starts_with(&format!("{}: 1 entry like *.dat", home.display())) && !said.contains("notes.txt"), "{said}");
+        let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web", "limit": 1}));
+        assert!(said.contains("showing 1 to 1; the rest from offset 1") && said.lines().count() == 2, "{said}");
+        let (said, error) = c.tool_in(ui, "read_file", json!({"host": "web", "path": "nope.txt"}));
+        assert!(error && said.contains("no such file"), "{said}");
+    }
+);
+
+scenario!(
+    /// A grant to read files alone: no commands, no writes.
+    a_grant_to_read_files_alone,
+    |ui| {
+        if !crate::ui_tests::server::has_sftp() {
+            return;
+        }
+        let token = given_web_may(ui, "Free", "background", &["run"]);
+        let (mut c, _) = Client::open(ui, &token);
+        let (hosts, _) = c.tool("list_hosts", json!({}));
+        assert!(hosts.contains("reading files") && !hosts.contains("run"), "{hosts}");
+        let (said, error) = c.tool("run", json!({"host": "web", "command": "true"}));
+        assert!(error && said.contains("not to run commands"), "{said}");
+        let (said, error) = c.tool("write_file", json!({"host": "web", "path": "x", "content": "x"}));
+        assert!(error && said.contains("not given") && said.contains("write"), "{said}");
+        let (said, error) = c.tool_in(ui, "list_dir", json!({"host": "web"}));
+        assert!(!error && said.contains("entries"), "{said}");
     }
 );

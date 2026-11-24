@@ -49,6 +49,9 @@ tddf9c9cc = Остановить весь AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+t2b63bd77 = { $client } хочет записать это на { $host }. Запись ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждая запись.
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } хочет выполнить это на { $host }. Команда ждёт вас: предоставленный доступ требует подтверждать каждую команду.
 
@@ -181,6 +184,12 @@ t04874b67 = в фоне
 # through a tab
 t6bca7a6e = через вкладку
 
+# reads files
+te3f10929 = читает файлы
+
+# writes files
+t0a7257de = записывает файлы
+
 # while shellwing stays open
 t938960ff = пока shellwing открыт
 
@@ -231,6 +240,27 @@ tfe61838e = Через вкладку
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Команды вводятся во вкладку с этим хостом, в его оболочку, у вас на виду; если такой вкладки нет, она открывается. Пароль, который хост там запросит, вводите вы сами.
+
+# It may
+t5c846351 = Разрешено
+
+# Run commands
+t65b79874 = Выполнять команды
+
+# and see what they print
+tef4e221a = и видеть их вывод
+
+# Read files
+te1736866 = Читать файлы
+
+# list folders and read files, over SFTP
+tf3b3e2e7 = просматривать папки и читать файлы по SFTP
+
+# Write files
+tc9796e43 = Записывать файлы
+
+# over SFTP; where risky ones wait, every write waits for you
+t2d9c8c34 = по SFTP; в режиме «Спрашивать о рискованных» каждая запись ждёт вас
 
 # Commands
 t971550f3 = Команды

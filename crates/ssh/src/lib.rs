@@ -40,7 +40,7 @@ use hostkey::Checker;
 pub use hostkey::HostKeyPolicy;
 pub use prompt::{Prompt, PromptRequest, Prompter};
 pub use secrets::{Certified, Learned, Secrets};
-pub use sftp::{RemoteFile, Sftp};
+pub use sftp::{RemoteFile, Sftp, WriteHow};
 
 /// Used when the config sets no ServerAliveInterval.
 const DEFAULT_KEEPALIVE: Duration = Duration::from_secs(30);
@@ -557,9 +557,19 @@ pub struct ExecConnection {
     target: Handle<Checker>,
     /// The jump connections carry the target's.
     _jumps: Vec<Handle<Checker>>,
+    /// SFTP on it, opened the first time it is asked for.
+    files: tokio::sync::OnceCell<Sftp>,
 }
 
 impl ExecConnection {
+    /// SFTP on this connection: opened once, then the same.
+    pub async fn sftp(&self) -> Result<Sftp, Error> {
+        self.files
+            .get_or_try_init(|| sftp::open(&self.target))
+            .await
+            .cloned()
+    }
+
     /// Runs `command` with `stdin` as its input, then the end of it,
     /// keeping the first `most` bytes of each stream it prints.
     pub async fn run(&self, command: &str, stdin: &[u8], most: usize) -> Result<Exec, Error> {
@@ -613,6 +623,7 @@ pub async fn connect_exec(opts: Options) -> Result<ExecConnection, Error> {
     Ok(ExecConnection {
         target,
         _jumps: jumps,
+        files: tokio::sync::OnceCell::new(),
     })
 }
 

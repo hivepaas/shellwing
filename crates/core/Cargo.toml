@@ -26,6 +26,8 @@ toml = "1"
 tokio = { workspace = true, features = ["io-util", "io-std"] }
 # AI clients' tokens (ai.rs).
 getrandom = "0.3"
+# A binary file an AI reads or writes (ai/files.rs).
+base64 = "0.22"
 async-channel.workspace = true
 anyhow.workspace = true
 # Local terminals: a PTY on Unix, ConPTY on Windows.

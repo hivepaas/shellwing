@@ -49,6 +49,9 @@ tddf9c9cc = Tüm AI'ı durdur
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+t2b63bd77 = { $client }, bunu { $host } üzerine yazmak istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her yazma bekler.
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi bekliyor: verilen erişim her komut için onay istiyor.
 
@@ -181,6 +184,12 @@ t04874b67 = arka planda
 # through a tab
 t6bca7a6e = bir sekme üzerinden
 
+# reads files
+te3f10929 = dosya okur
+
+# writes files
+t0a7257de = dosya yazar
+
 # while shellwing stays open
 t938960ff = shellwing açıkken
 
@@ -231,6 +240,27 @@ tfe61838e = Bir sekme üzerinden
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Ana makineye bağlı bir sekmeye, kabuğuna, sizin gördüğünüz yerde yazılır; böyle bir sekme yoksa bir tane açılır. Ana makine orada bir parola isterse onu siz yazarsınız.
+
+# It may
+t5c846351 = İzinler
+
+# Run commands
+t65b79874 = Komut çalıştırma
+
+# and see what they print
+tef4e221a = ve çıktılarını görme
+
+# Read files
+te1736866 = Dosya okuma
+
+# list folders and read files, over SFTP
+tf3b3e2e7 = SFTP üzerinden klasörleri listeleme ve dosyaları okuma
+
+# Write files
+tc9796e43 = Dosya yazma
+
+# over SFTP; where risky ones wait, every write waits for you
+t2d9c8c34 = SFTP üzerinden; "Riskli olanlar için sor" seçiliyken her yazma sizi bekler
 
 # Commands
 t971550f3 = Komutlar

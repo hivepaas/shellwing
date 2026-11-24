@@ -9,7 +9,8 @@ use serde_json::{Value, json};
 use shellwing_config::{AiClient, AiHow};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWrite, AsyncWriteExt};
 
-use super::{End, Hub, Said};
+use super::{End, FileOp, Hub, Said};
+use shellwing_ssh::WriteHow;
 
 /// The protocol's versions this server speaks, newest first.
 pub const VERSIONS: [&str; 3] = ["2025-06-18", "2025-03-26", "2024-11-05"];
@@ -24,7 +25,10 @@ on one, as `ssh host 'command'` would, with no terminal, and waits up to wait_se
 end; a longer one goes on as a job, whose new output job_output gives you as it comes. \
 job_stop stops it. A command that asks for input (a sudo password, y/n) gets none: use \
 non-interactive forms (sudo -n, apt-get -y). The user sees every command you run, and may \
-have one wait until they allow it: run then says so, and job_output tells you once it ran.";
+have one wait until they allow it: run then says so, and job_output tells you once it ran. \
+list_dir, read_file and write_file work on a host's files over SFTP, where the user gave you \
+reading or writing: read_file gives text as it is and anything else in base64, a large file a \
+part at a time; write_file takes text, or base64 for anything else.";
 
 /// Serves `client` on `reader` and `writer` until it goes: a request at a
 /// time is read, and each answered on its own, so a long `run` does not
@@ -194,6 +198,57 @@ pub fn tools() -> Value {
                 "required": ["job"],
             },
         },
+        {
+            "name": "list_dir",
+            "title": "List a folder",
+            "description": format!("The entries of a folder on a host, folders first, then by name: each one's kind (d a folder, - a file, l a link), name, size and when it changed. First, how many there are; a large folder comes a part at a time ({} entries if not told, {} at the most), with where the rest begins. pattern keeps the names like it (* any run of characters, ? one). A path not starting with / is from the home folder; ~ is the home folder.", super::files::LIST, super::files::MOST_LIST),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
+                    "path": {"type": "string", "description": "The folder; the home folder if not given."},
+                    "pattern": {"type": "string", "description": "Only names like it, as *.log or nginx*."},
+                    "offset": {"type": "integer", "minimum": 0, "description": "The entry to start at; 0 if not given."},
+                    "limit": {"type": "integer", "minimum": 1, "description": "How many entries."},
+                },
+                "required": ["host"],
+            },
+            "annotations": {"readOnlyHint": true},
+        },
+        {
+            "name": "read_file",
+            "title": "Read a file",
+            "description": format!("A file on a host, or a part of it: text as it is, anything else in base64. It gives up to length bytes from offset ({} at the most, {} if not given), and says where the rest begins.", super::files::size(super::files::MOST_READ as u64), super::files::size(super::files::READ as u64)),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
+                    "path": {"type": "string", "description": "The file. A path not starting with / is from the home folder."},
+                    "offset": {"type": "integer", "minimum": 0, "description": "The byte to start at; 0 if not given."},
+                    "length": {"type": "integer", "minimum": 1, "description": "How many bytes."},
+                },
+                "required": ["host", "path"],
+            },
+            "annotations": {"readOnlyHint": true},
+        },
+        {
+            "name": "write_file",
+            "title": "Write a file",
+            "description": format!("Writes a file on a host: as a new file (create; one there already is an error), over what is there (overwrite, the default), or after it (append). content is text, or base64 with encoding base64; {} at the most. The user may have it wait until they allow it.", super::files::size(super::files::MOST_WRITE as u64)),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
+                    "path": {"type": "string", "description": "The file. A path not starting with / is from the home folder."},
+                    "content": {"type": "string"},
+                    "encoding": {"type": "string", "enum": ["text", "base64"]},
+                    "mode": {"type": "string", "enum": ["create", "overwrite", "append"]},
+                    "wait_seconds": wait,
+                },
+                "required": ["host", "path", "content"],
+            },
+            "annotations": {"destructiveHint": true},
+        },
     ])
 }
 
@@ -231,13 +286,22 @@ async fn call(
             Ok(given
                 .iter()
                 .map(|g| {
-                    let how = match g.grant.how {
-                        AiHow::Background => "commands with run",
-                        AiHow::Tab => {
-                            "commands with run, typed into its tab, where the user sees them"
-                        }
-                    };
-                    format!("{}\t{}\t{how}", g.name, g.detail)
+                    let mut may = vec![];
+                    if g.grant.run {
+                        may.push(match g.grant.how {
+                            AiHow::Background => "commands with run",
+                            AiHow::Tab => {
+                                "commands with run, typed into its tab, where the user sees them"
+                            }
+                        });
+                    }
+                    if g.grant.read {
+                        may.push("reading files (list_dir, read_file)");
+                    }
+                    if g.grant.write {
+                        may.push("writing files (write_file)");
+                    }
+                    format!("{}\t{}\t{}", g.name, g.detail, may.join("; "))
                 })
                 .collect::<Vec<_>>()
                 .join("\n"))
@@ -248,6 +312,72 @@ async fn call(
             let job = hub.run(client, &host, &command).map_err(Problem::Tool)?;
             let said = follow(&job, wait_arg(args), true, progress, tx).await;
             Ok(report(&job.id, &said))
+        }
+        "list_dir" | "read_file" | "write_file" => {
+            let host = text_arg(args, "host")?;
+            let path = args
+                .get("path")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let op = match name {
+                "list_dir" => FileOp::List {
+                    path,
+                    pattern: args
+                        .get("pattern")
+                        .and_then(Value::as_str)
+                        .filter(|p| !p.is_empty())
+                        .map(str::to_string),
+                    offset: args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize,
+                    limit: args
+                        .get("limit")
+                        .and_then(Value::as_u64)
+                        .map_or(super::files::LIST, |n| n as usize),
+                },
+                "read_file" => FileOp::Read {
+                    path: text_arg(args, "path")?,
+                    offset: args.get("offset").and_then(Value::as_u64).unwrap_or(0),
+                    length: args
+                        .get("length")
+                        .and_then(Value::as_u64)
+                        .map_or(super::files::READ, |n| n as usize),
+                },
+                _ => {
+                    let content = args
+                        .get("content")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| Problem::Tool("content is missing".into()))?;
+                    let bytes =
+                        super::files::decode(content, args.get("encoding").and_then(Value::as_str))
+                            .map_err(Problem::Tool)?;
+                    let how = match args.get("mode").and_then(Value::as_str) {
+                        None | Some("overwrite") => WriteHow::Overwrite,
+                        Some("create") => WriteHow::Create,
+                        Some("append") => WriteHow::Append,
+                        Some(m) => {
+                            return Err(Problem::Tool(format!(
+                                "mode is create, overwrite or append, not {m}"
+                            )));
+                        }
+                    };
+                    FileOp::Write {
+                        path: text_arg(args, "path")?,
+                        bytes,
+                        how,
+                    }
+                }
+            };
+            let writes = name == "write_file";
+            let job = hub.file(client, &host, op).map_err(Problem::Tool)?;
+            let said = follow(&job, wait_arg(args), true, progress, tx).await;
+            match &said.end {
+                Some(End::Exited(Some(0))) if writes => {
+                    Ok(said.new.lines().next().unwrap_or("").to_string())
+                }
+                Some(End::Exited(Some(0))) => Ok(said.new),
+                Some(End::Failed(why)) => Err(Problem::Tool(why.clone())),
+                _ => Ok(report(&job.id, &said)),
+            }
         }
         "job_output" => {
             let id = text_arg(args, "job")?;
@@ -437,7 +567,18 @@ mod tests {
             .iter()
             .filter_map(|t| t["name"].as_str())
             .collect();
-        assert_eq!(names, ["list_hosts", "run", "job_output", "job_stop"]);
+        assert_eq!(
+            names,
+            [
+                "list_hosts",
+                "run",
+                "job_output",
+                "job_stop",
+                "list_dir",
+                "read_file",
+                "write_file"
+            ]
+        );
         let a = ask(
             &hub,
             json!({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "list_hosts", "arguments": {}}}),

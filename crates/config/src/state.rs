@@ -135,6 +135,19 @@ pub struct AiGrant {
     /// It ends when shellwing quits: not kept for the next start.
     #[serde(default)]
     pub session: bool,
+    /// It may run commands.
+    #[serde(default = "yes")]
+    pub run: bool,
+    /// It may read files and list folders.
+    #[serde(default = "yes")]
+    pub read: bool,
+    /// It may write files.
+    #[serde(default)]
+    pub write: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -275,5 +288,21 @@ mod ai_tests {
         assert_eq!(s.grants[0].mode, AiMode::Risky);
         let s: AiState = serde_json::from_str(r#"{"default_mode": "free"}"#).expect("json");
         assert_eq!(s.default_mode, AiMode::Free, "a choice made is kept");
+    }
+
+    /// A grant that says nothing of them may run commands and read files,
+    /// not write them.
+    #[test]
+    fn a_grant_runs_and_reads_unless_it_says_otherwise() {
+        let s: AiState =
+            serde_json::from_str(r#"{"grants": [{"client": "c", "host": "web"}]}"#).expect("json");
+        let g = &s.grants[0];
+        assert!(g.run && g.read && !g.write);
+        let s: AiState = serde_json::from_str(
+            r#"{"grants": [{"client": "c", "host": "web", "run": false, "write": true}]}"#,
+        )
+        .expect("json");
+        let g = &s.grants[0];
+        assert!(!g.run && g.read && g.write);
     }
 }

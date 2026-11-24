@@ -49,6 +49,9 @@ tddf9c9cc = Dừng tất cả AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
+# {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
+t2b63bd77 = { $client } muốn ghi tệp này trên { $host }. Thao tác ghi đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ.
+
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: quyền đã cấp yêu cầu hỏi trước mọi lệnh.
 
@@ -181,6 +184,12 @@ t04874b67 = chạy nền
 # through a tab
 t6bca7a6e = qua tab
 
+# reads files
+te3f10929 = đọc tệp
+
+# writes files
+t0a7257de = ghi tệp
+
 # while shellwing stays open
 t938960ff = khi shellwing còn mở
 
@@ -231,6 +240,27 @@ tfe61838e = Qua một tab
 
 # Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 ta797f7de = Được gõ vào một tab tới máy chủ, trong shell của nó, nơi bạn nhìn thấy; nếu chưa có tab thì một tab sẽ mở ra. Mật khẩu mà máy chủ hỏi ở đó do bạn tự gõ.
+
+# It may
+t5c846351 = Được phép
+
+# Run commands
+t65b79874 = Chạy lệnh
+
+# and see what they print
+tef4e221a = và xem lệnh in ra gì
+
+# Read files
+te1736866 = Đọc tệp
+
+# list folders and read files, over SFTP
+tf3b3e2e7 = liệt kê thư mục và đọc tệp, qua SFTP
+
+# Write files
+tc9796e43 = Ghi tệp
+
+# over SFTP; where risky ones wait, every write waits for you
+t2d9c8c34 = qua SFTP; khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ bạn
 
 # Commands
 t971550f3 = Lệnh
