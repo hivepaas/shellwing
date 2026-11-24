@@ -4,10 +4,14 @@
 //! Views ask [`colors`] for a role (`colors().text`, `colors().edge`), never
 //! for a value, so a palette is changed here alone. There are two, [`DUSK`]
 //! and [`LIGHT`], filling in the same roles; the workspace picks one with
-//! [`set_light`] and redraws.
+//! [`set_light`] and redraws. Each comes in styles ([`LightStyle`],
+//! [`DarkStyle`]): the same palette on other grounds, chosen with
+//! [`set_styles`].
 //!
 //! Values are `0xRRGGBB` for `gpui::rgb`; those ending in an alpha byte
 //! (`0xRRGGBBAA`, see [`Palette::scrim`]) are for `gpui::rgba`.
+
+use shellwing_i18n::tr;
 
 /// Every color the app draws with, by what it is for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -343,10 +347,10 @@ static LIGHT_IN_USE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBo
 static ACCENT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(NO_ACCENT);
 const NO_ACCENT: u32 = u32::MAX;
 
-/// The palette in use, with the theme's accent if one was set.
+/// The palette in use, in its style, with the theme's accent if one was set.
 pub fn colors() -> Palette {
     let light = LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed);
-    let mut p = if light { LIGHT } else { DUSK };
+    let mut p = grounds(light);
     let accent = ACCENT.load(std::sync::atomic::Ordering::Relaxed);
     if accent != NO_ACCENT {
         p.accent = accent;
@@ -373,12 +377,261 @@ pub fn set_light(light: bool) {
 /// left out: the palette's is used instead.
 pub fn set_accent(accent: Option<u32>) {
     let light = LIGHT_IN_USE.load(std::sync::atomic::Ordering::Relaxed);
-    let page = if light { LIGHT.page } else { DUSK.page };
+    let page = grounds(light).page;
     let accent = accent.filter(|a| contrast(*a, page) >= 3.);
     ACCENT.store(
         accent.unwrap_or(NO_ACCENT),
         std::sync::atomic::Ordering::Relaxed,
     );
+}
+
+/// Which style each palette is in, as its place in `ALL`.
+static LIGHT_STYLE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+static DARK_STYLE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+/// Each style's palette, worked out once.
+static LIGHT_STYLES: std::sync::LazyLock<Vec<Palette>> =
+    std::sync::LazyLock::new(|| LightStyle::ALL.map(LightStyle::make).to_vec());
+static DARK_STYLES: std::sync::LazyLock<Vec<Palette>> =
+    std::sync::LazyLock::new(|| DarkStyle::ALL.map(DarkStyle::make).to_vec());
+
+/// The light or the dark palette, in the style chosen for it, before the
+/// theme's accent.
+fn grounds(light: bool) -> Palette {
+    let order = std::sync::atomic::Ordering::Relaxed;
+    if light {
+        LIGHT_STYLES[usize::from(LIGHT_STYLE.load(order)).min(LightStyle::ALL.len() - 1)]
+    } else {
+        DARK_STYLES[usize::from(DARK_STYLE.load(order)).min(DarkStyle::ALL.len() - 1)]
+    }
+}
+
+/// Chooses each palette's style. Views pick it up when drawn next; cached
+/// ones must be told to redraw.
+pub fn set_styles(light: LightStyle, dark: DarkStyle) {
+    let order = std::sync::atomic::Ordering::Relaxed;
+    LIGHT_STYLE.store(light as u8, order);
+    DARK_STYLE.store(dark as u8, order);
+}
+
+/// Kept in config.toml by a name of its own (`light_style = "paper"`); a
+/// name this build does not know, from a later one, is the default.
+macro_rules! styles {
+    ($(#[$doc:meta])* $style:ident, $base:ident, $made:ident {
+        $($variant:ident = $key:literal, $page:expr,)+
+    }) => {
+        $(#[$doc])*
+        #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+        #[repr(u8)]
+        pub enum $style {
+            #[default]
+            $($variant,)+
+        }
+
+        impl $style {
+            pub const ALL: [Self; [$(Self::$variant),+].len()] = [$(Self::$variant),+];
+
+            /// Its name in config.toml.
+            pub fn key(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $key,)+
+                }
+            }
+
+            /// The style named `key`; the default for a name not known.
+            pub fn from_key(key: &str) -> Self {
+                Self::ALL.into_iter().find(|s| s.key() == key).unwrap_or_default()
+            }
+
+            /// Its palette, as chosen it is drawn with.
+            pub fn palette(self) -> Palette {
+                $made[self as usize]
+            }
+
+            /// The palette on this style's page: none, the palette itself.
+            fn make(self) -> Palette {
+                let page: Option<u32> = match self {
+                    $(Self::$variant => $page,)+
+                };
+                let p = page.map_or($base, |page| reground(&$base, page));
+                self.touch(p)
+            }
+        }
+    };
+}
+
+styles! {
+    /// How the light palette looks: Daylight is the app's own.
+    LightStyle, LIGHT, LIGHT_STYLES {
+        Daylight = "daylight", None,
+        Paper = "paper", Some(0xf4f0e8),
+        SoftGray = "soft-gray", Some(0xe9ebee),
+        Contrast = "contrast", Some(0xffffff),
+        Mist = "mist", Some(0xe3e9f2),
+        Sage = "sage", Some(0xebf0eb),
+        Lavender = "lavender", Some(0xefedf7),
+        Sand = "sand", Some(0xe2dfd8),
+    }
+}
+
+styles! {
+    /// How the dark palette looks: Dusk is the app's own.
+    DarkStyle, DUSK, DARK_STYLES {
+        Dusk = "dusk", None,
+        Neutral = "neutral", Some(0x26272b),
+        Graphite = "graphite", Some(0x1c1d21),
+        Midnight = "midnight", Some(0x121315),
+        Slate = "slate", Some(0x232932),
+        Dim = "dim", Some(0x32373f),
+        DeepSea = "deep-sea", Some(0x152036),
+        Espresso = "espresso", Some(0x24201c),
+        Forest = "forest", Some(0x192420),
+        Plum = "plum", Some(0x221c2b),
+    }
+}
+
+impl LightStyle {
+    /// What a style changes beyond its grounds: High contrast draws its
+    /// lines and edges nearer the text, and its hints and placeholders a
+    /// step darker.
+    fn touch(self, mut p: Palette) -> Palette {
+        if self == Self::Contrast {
+            p.line = mix(p.line, p.text, 0.3);
+            p.field_edge = mix(p.field_edge, p.text, 0.45);
+            p.edge = mix(p.edge, p.text, 0.45);
+            p.window_edge = mix(p.window_edge, p.text, 0.45);
+            p.muted = p.label;
+            p.faint = LIGHT.muted;
+        }
+        p
+    }
+
+    /// Its name, in the app's language.
+    pub fn name(self) -> String {
+        match self {
+            Self::Daylight => tr!("Daylight"),
+            Self::Paper => tr!("Paper"),
+            Self::SoftGray => tr!("Soft gray"),
+            Self::Contrast => tr!("High contrast"),
+            Self::Mist => tr!("Mist"),
+            Self::Sage => tr!("Sage"),
+            Self::Lavender => tr!("Lavender"),
+            Self::Sand => tr!("Sand"),
+        }
+    }
+}
+
+impl DarkStyle {
+    fn touch(self, p: Palette) -> Palette {
+        p
+    }
+
+    /// Its name, in the app's language.
+    pub fn name(self) -> String {
+        match self {
+            Self::Dusk => tr!("Dusk"),
+            Self::Neutral => tr!("Neutral"),
+            Self::Graphite => tr!("Graphite"),
+            Self::Midnight => tr!("Midnight"),
+            Self::Slate => tr!("Slate"),
+            Self::Dim => tr!("Dim"),
+            Self::DeepSea => tr!("Deep sea"),
+            Self::Espresso => tr!("Espresso"),
+            Self::Forest => tr!("Forest"),
+            Self::Plum => tr!("Plum"),
+        }
+    }
+}
+
+/// `base` on another page: each of its grounds, lines and states stands to
+/// the new page as it stood to its own, moved as far toward white, black or
+/// the accent. So a style keeps the steps between panels, fields and rows
+/// its palette was drawn with. Its text is the palette's, made darker (or
+/// lighter, when dark) where the page would take from how it reads: as far
+/// as it stands out from its own page. The rest is the palette's.
+fn reground(base: &Palette, page: u32) -> Palette {
+    let to = |role: u32| -> u32 {
+        let mut best = (f32::MAX, page);
+        for target in [0xffffff, 0x000000, base.accent] {
+            let t = toward(base.page, target, role);
+            let off = distance(mix(base.page, target, t), role);
+            if off < best.0 {
+                best = (off, mix(page, target, t));
+            }
+        }
+        best.1
+    };
+    let grounded = Palette {
+        chrome: to(base.chrome),
+        panel: to(base.panel),
+        page,
+        surface: to(base.surface),
+        raised: to(base.raised),
+        chip: to(base.chip),
+        field: to(base.field),
+        tab_on: to(base.tab_on),
+        line: to(base.line),
+        field_edge: to(base.field_edge),
+        edge: to(base.edge),
+        window_edge: to(base.window_edge),
+        hover: to(base.hover),
+        menu_hover: to(base.menu_hover),
+        selected: to(base.selected),
+        button: to(base.button),
+        button_hover: to(base.button_hover),
+        drop: to(base.drop),
+        ..*base
+    };
+    // Text is read on all of these: on each, as well as on the palette's.
+    let grounds = |p: &Palette| {
+        [
+            p.page, p.panel, p.chrome, p.surface, p.raised, p.field, p.selected, p.hover,
+        ]
+    };
+    let pairs: Vec<(u32, u32)> = grounds(&grounded).into_iter().zip(grounds(base)).collect();
+    let away = if luminance(page) > 0.5 {
+        0x000000
+    } else {
+        0xffffff
+    };
+    let text = |role: u32| -> u32 {
+        (0..=50)
+            .map(|i| mix(role, away, i as f32 / 50.))
+            .find(|c| {
+                pairs
+                    .iter()
+                    .all(|&(new, old)| contrast(*c, new) >= contrast(role, old))
+            })
+            .unwrap_or(away)
+    };
+    Palette {
+        text: text(base.text),
+        soft: text(base.soft),
+        label: text(base.label),
+        muted: text(base.muted),
+        faint: text(base.faint),
+        ..grounded
+    }
+}
+
+/// How far from `a` toward `b` comes nearest `c`, 0 to 1.
+fn toward(a: u32, b: u32, c: u32) -> f32 {
+    let (a, b, c) = (channels(a), channels(b), channels(c));
+    let (mut num, mut den) = (0., 0.);
+    for i in 0..3 {
+        num += (c[i] - a[i]) * (b[i] - a[i]);
+        den += (b[i] - a[i]) * (b[i] - a[i]);
+    }
+    if den == 0. {
+        0.
+    } else {
+        (num / den).clamp(0., 1.)
+    }
+}
+
+fn distance(a: u32, b: u32) -> f32 {
+    let (a, b) = (channels(a), channels(b));
+    (0..3).map(|i| (a[i] - b[i]) * (a[i] - b[i])).sum()
 }
 
 fn channels(c: u32) -> [f32; 3] {
@@ -420,6 +673,57 @@ pub fn with_alpha(color: u32, alpha: u8) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Each style's text reads on its grounds as well as the palette's own
+    /// does: text at 7:1, the second text and hints at WCAG AA (4.5:1),
+    /// placeholders at 2.5:1, on the page, panels, cards, menus, fields and
+    /// rows; where the palette itself falls short of that, no less than it
+    /// does. The defaults are the palettes.
+    #[test]
+    fn every_style_reads() {
+        assert_eq!(LightStyle::Daylight.palette(), LIGHT);
+        assert_eq!(DarkStyle::Dusk.palette(), DUSK);
+        let mut short = vec![];
+        let mut check = |name: &str, p: Palette, base: Palette| {
+            let grounds = |p: &Palette| {
+                [
+                    ("page", p.page),
+                    ("panel", p.panel),
+                    ("chrome", p.chrome),
+                    ("surface", p.surface),
+                    ("raised", p.raised),
+                    ("field", p.field),
+                    ("selected", p.selected),
+                    ("hover", p.hover),
+                ]
+            };
+            for ((ground, g), (_, b)) in grounds(&p).into_iter().zip(grounds(&base)) {
+                for (role, c, least) in [
+                    ("text", p.text, 7.),
+                    ("soft", p.soft, 4.5),
+                    ("muted", p.muted, 4.5),
+                    ("faint", p.faint, 2.5_f32),
+                ] {
+                    let (got, own) = (contrast(c, g), contrast(c, b));
+                    if got < least.min(own) - 0.05 {
+                        short.push(format!(
+                            "{name}: {role} on {ground} is {got:.2}:1, the palette's {own:.2}:1"
+                        ));
+                    }
+                }
+            }
+            // The steps between grounds stay as they were: a field still
+            // apart from its card, a row under the pointer from the page.
+            assert_ne!(p.hover, p.page, "{name}");
+        };
+        for s in LightStyle::ALL {
+            check(s.key(), s.palette(), LIGHT);
+        }
+        for s in DarkStyle::ALL {
+            check(s.key(), s.palette(), DUSK);
+        }
+        assert!(short.is_empty(), "{}", short.join("\n"));
+    }
 
     #[test]
     fn a_theme_accent_is_taken_unless_it_would_not_show() {

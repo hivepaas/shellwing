@@ -201,6 +201,40 @@ scenario!(
 );
 
 scenario!(
+    /// The app's colors, in Settings › Appearance: under a light mode only
+    /// the light styles are offered; choosing Sage draws the app on its
+    /// grounds at once, and config.toml keeps it. The terminal's theme is
+    /// left as it was.
+    app_colors_chosen_in_settings,
+    |ui| {
+        ui.config_file("config.toml", "[appearance]\nmode = \"light\"\n");
+        let _server = signed_in(ui);
+        appearance(ui);
+        assert!(ui.find("dark_style:dusk").is_none(), "light: no dark styles");
+        let before = ui.view(|v, _| v.latest_frame().background);
+        ui.click("light_style:sage");
+        ui.wait_until("config.toml", |ui| {
+            std::fs::read_to_string(ui.config_dir().join("config.toml"))
+                .is_ok_and(|c| c.contains("light_style = \"sage\""))
+        });
+        ui.wait_until("Sage's page", |ui| {
+            ui.cx.run_until_parked();
+            crate::colors::colors().page == crate::colors::LightStyle::Sage.palette().page
+        });
+        assert_ne!(crate::colors::colors().page, crate::colors::LIGHT.page);
+        ui.click("settings-close");
+        assert_eq!(ui.view(|v, _| v.latest_frame().background), before);
+        // Back to the app's own.
+        appearance(ui);
+        ui.click("light_style:daylight");
+        ui.wait_until("Daylight again", |ui| {
+            ui.cx.run_until_parked();
+            crate::colors::colors().page == crate::colors::LIGHT.page
+        });
+    }
+);
+
+scenario!(
     /// A bigger font in Settings › Appearance: the terminal's cells grow, and
     /// the server is told the smaller size in cells.
     font_size_chosen_in_settings,

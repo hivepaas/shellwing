@@ -58,6 +58,8 @@ padding = { x = 4, y = 4 }   # pixels between the text and the pane's edges
 # does). Size 10 to 20, default 14, as the terminal's.
 ui_font = { family = "Inter", size = 14 }
 theme_accent = true          # the app's accent (logo, choices, buttons) is the theme's
+light_style = "daylight"     # the app's own colors when light, see Themes
+dark_style = "dusk"          # the app's own colors when dark
 
 [terminal]
 scrollback = 10000           # lines of history
@@ -219,6 +221,16 @@ desktop is with `system` (the default), and changes when the desktop does
 `theme` when dark, `light_theme` when light. Choosing a theme, in Settings,
 the palette or with the shortcut, sets the one of the mode the app is in. A
 host's or a group's own theme is kept in both.
+
+**The app's colors** (the title bar, the host list, panels, menus) are its
+own, not the terminal theme's, and come in styles for each mode (*Settings ›
+Appearance › App colors*): `light_style` is `daylight` (the default),
+`paper`, `soft-gray`, `contrast`, `mist`, `sage`, `lavender` or `sand`;
+`dark_style` is `dusk` (the default), `neutral`, `graphite`, `midnight`,
+`slate`, `dim`, `deep-sea`, `espresso`, `forest` or `plum`. A style changes
+the grounds, lines and rows; text is made darker or lighter on it where
+needed, so it reads as well as on the default. *High contrast* also darkens
+lines, edges and hints.
 
 **The app's accent** (the logo, what is chosen, the main buttons) is the
 theme's `accent`, unless `theme_accent = false` (*Settings › Appearance ›

@@ -43,6 +43,60 @@ t2348e42c = Tu contraseña de inicio de sesión
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing está bloqueado: desbloquéalo en su ventana principal.
 
+# Daylight
+t29cc3b47 = Luz de día
+
+# Paper
+tfea8bfd9 = Papel
+
+# Soft gray
+t6d3b9d7c = Gris suave
+
+# High contrast
+tdc2a9fd1 = Alto contraste
+
+# Mist
+td071b28c = Niebla
+
+# Sage
+t5152348d = Salvia
+
+# Lavender
+t40f6ad0e = Lavanda
+
+# Sand
+t3e40cd83 = Arena
+
+# Dusk
+t44655688 = Atardecer
+
+# Neutral
+te9330778 = Neutro
+
+# Graphite
+tcc5f9dad = Grafito
+
+# Midnight
+tfc321421 = Medianoche
+
+# Slate
+t9637e38e = Pizarra
+
+# Dim
+t35691dd9 = Atenuado
+
+# Deep sea
+t372a2e54 = Mar profundo
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Bosque
+
+# Plum
+t1d8d478b = Ciruela
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Una edición de { $remote } no se guardó en el servidor; el archivo se conserva como { $path }.
 
@@ -1463,9 +1517,6 @@ tfc91f0a1 = Verde y turquesa
 # Warm
 t04a11b58 = Cálido
 
-# Neutral
-te9330778 = Neutro
-
 # Gradient
 t993c73c5 = Degradado
 
@@ -2208,11 +2259,17 @@ t50316f27 = El sistema está en modo claro ahora.
 # The system is dark now.
 t03050ee1 = El sistema está en modo oscuro ahora.
 
-# Light theme
-tf8e348fa = Tema claro
+# App colors
+tfb1bbe48 = Colores de la app
 
-# Dark theme
-t5a026490 = Tema oscuro
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Los propios de la app: la barra de título, la lista de servidores, los paneles y los menús. El terminal usa los de su tema.
+
+# Terminal theme, light
+t7d52a2a4 = Tema del terminal, claro
+
+# Terminal theme, dark
+tf112a1cc = Tema del terminal, oscuro
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = El de la terminal, mientras la app está en modo claro; el modo oscuro conserva el suyo. Un servidor puede tener el suyo en su editor.

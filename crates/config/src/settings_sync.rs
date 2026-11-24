@@ -26,6 +26,8 @@ pub const SYNCED: &[&str] = &[
     "appearance.ui_font.family",
     "appearance.ui_font.size",
     "appearance.theme_accent",
+    "appearance.light_style",
+    "appearance.dark_style",
     "terminal.scrollback",
     "terminal.on_disconnect",
     "ssh.host_key",

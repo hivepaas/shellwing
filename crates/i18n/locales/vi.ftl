@@ -43,6 +43,60 @@ t2348e42c = Mật khẩu đăng nhập của bạn
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing đang khoá: hãy mở khoá ở cửa sổ chính của nó.
 
+# Daylight
+t29cc3b47 = Ánh ngày
+
+# Paper
+tfea8bfd9 = Giấy
+
+# Soft gray
+t6d3b9d7c = Xám dịu
+
+# High contrast
+tdc2a9fd1 = Tương phản cao
+
+# Mist
+td071b28c = Sương
+
+# Sage
+t5152348d = Xô thơm
+
+# Lavender
+t40f6ad0e = Oải hương
+
+# Sand
+t3e40cd83 = Cát
+
+# Dusk
+t44655688 = Hoàng hôn
+
+# Neutral
+te9330778 = Trung tính
+
+# Graphite
+tcc5f9dad = Than chì
+
+# Midnight
+tfc321421 = Nửa đêm
+
+# Slate
+t9637e38e = Đá phiến
+
+# Dim
+t35691dd9 = Dịu
+
+# Deep sea
+t372a2e54 = Biển sâu
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Rừng
+
+# Plum
+t1d8d478b = Mận
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Bản sửa của { $remote } chưa được ghi lại lên máy chủ; tệp được giữ ở { $path }.
 
@@ -1423,9 +1477,6 @@ tfc91f0a1 = Xanh lá và xanh ngọc
 # Warm
 t04a11b58 = Ấm
 
-# Neutral
-te9330778 = Trung tính
-
 # Gradient
 t993c73c5 = Chuyển màu
 
@@ -2164,11 +2215,17 @@ t50316f27 = Hệ thống đang ở chế độ sáng.
 # The system is dark now.
 t03050ee1 = Hệ thống đang ở chế độ tối.
 
-# Light theme
-tf8e348fa = Chủ đề sáng
+# App colors
+tfb1bbe48 = Màu của ứng dụng
 
-# Dark theme
-t5a026490 = Chủ đề tối
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Màu riêng của ứng dụng: thanh tiêu đề, danh sách máy chủ, các khung và menu. Terminal dùng màu theo chủ đề của nó.
+
+# Terminal theme, light
+t7d52a2a4 = Chủ đề terminal, sáng
+
+# Terminal theme, dark
+tf112a1cc = Chủ đề terminal, tối
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Của terminal, khi ứng dụng ở chế độ sáng; chế độ tối giữ chủ đề riêng. Một máy chủ có thể có chủ đề riêng trong trình sửa của nó.

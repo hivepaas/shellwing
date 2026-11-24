@@ -43,6 +43,60 @@ t2348e42c = 로그인 비밀번호
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing이 잠겨 있습니다. 기본 창에서 잠금을 해제하세요.
 
+# Daylight
+t29cc3b47 = 데이라이트
+
+# Paper
+tfea8bfd9 = 페이퍼
+
+# Soft gray
+t6d3b9d7c = 소프트 그레이
+
+# High contrast
+tdc2a9fd1 = 고대비
+
+# Mist
+td071b28c = 미스트
+
+# Sage
+t5152348d = 세이지
+
+# Lavender
+t40f6ad0e = 라벤더
+
+# Sand
+t3e40cd83 = 샌드
+
+# Dusk
+t44655688 = 황혼
+
+# Neutral
+te9330778 = 중립 톤
+
+# Graphite
+tcc5f9dad = 그래파이트
+
+# Midnight
+tfc321421 = 미드나이트
+
+# Slate
+t9637e38e = 슬레이트
+
+# Dim
+t35691dd9 = 딤
+
+# Deep sea
+t372a2e54 = 딥 시
+
+# Espresso
+t77f4d515 = 에스프레소
+
+# Forest
+t953ca480 = 포레스트
+
+# Plum
+t1d8d478b = 플럼
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = { $remote }의 편집 내용이 서버에 반영되지 않았습니다. 파일은 { $path }에 보관됩니다.
 
@@ -1423,9 +1477,6 @@ tfc91f0a1 = 그린과 틸
 # Warm
 t04a11b58 = 따뜻한 톤
 
-# Neutral
-te9330778 = 중립 톤
-
 # Gradient
 t993c73c5 = 그라데이션
 
@@ -2164,11 +2215,17 @@ t50316f27 = 현재 시스템은 라이트 모드입니다.
 # The system is dark now.
 t03050ee1 = 현재 시스템은 다크 모드입니다.
 
-# Light theme
-tf8e348fa = 라이트 테마
+# App colors
+tfb1bbe48 = 앱 색상
 
-# Dark theme
-t5a026490 = 다크 테마
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = 앱 자체의 색상: 제목 표시줄, 호스트 목록, 패널, 메뉴. 터미널은 테마의 색상을 씁니다.
+
+# Terminal theme, light
+t7d52a2a4 = 터미널 테마, 라이트
+
+# Terminal theme, dark
+tf112a1cc = 터미널 테마, 다크
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = 앱이 라이트 모드일 때의 터미널 테마입니다. 다크 모드는 별도의 테마를 유지합니다. 호스트별 테마는 호스트 편집기에서 지정할 수 있습니다.

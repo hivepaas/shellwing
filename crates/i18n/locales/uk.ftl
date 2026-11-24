@@ -43,6 +43,60 @@ t2348e42c = Ваш пароль для входу в систему
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing заблоковано: розблокуйте його в головному вікні.
 
+# Daylight
+t29cc3b47 = Денний
+
+# Paper
+tfea8bfd9 = Папір
+
+# Soft gray
+t6d3b9d7c = М'який сірий
+
+# High contrast
+tdc2a9fd1 = Висока контрастність
+
+# Mist
+td071b28c = Туман
+
+# Sage
+t5152348d = Шавлія
+
+# Lavender
+t40f6ad0e = Лаванда
+
+# Sand
+t3e40cd83 = Пісок
+
+# Dusk
+t44655688 = Сутінки
+
+# Neutral
+te9330778 = Нейтральні
+
+# Graphite
+tcc5f9dad = Графіт
+
+# Midnight
+tfc321421 = Північ
+
+# Slate
+t9637e38e = Сланець
+
+# Dim
+t35691dd9 = Приглушений
+
+# Deep sea
+t372a2e54 = Глибоке море
+
+# Espresso
+t77f4d515 = Еспресо
+
+# Forest
+t953ca480 = Ліс
+
+# Plum
+t1d8d478b = Слива
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Зміну { $remote } не записано на сервер; файл збережено як { $path }.
 
@@ -1489,9 +1543,6 @@ tfc91f0a1 = Зелений і бірюзовий
 # Warm
 t04a11b58 = Теплі
 
-# Neutral
-te9330778 = Нейтральні
-
 # Gradient
 t993c73c5 = Градієнт
 
@@ -2242,11 +2293,17 @@ t50316f27 = Зараз у системі світлий режим.
 # The system is dark now.
 t03050ee1 = Зараз у системі темний режим.
 
-# Light theme
-tf8e348fa = Світла тема
+# App colors
+tfb1bbe48 = Кольори застосунку
 
-# Dark theme
-t5a026490 = Темна тема
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Власні кольори застосунку: заголовок вікна, список хостів, панелі й меню. Термінал бере кольори своєї теми.
+
+# Terminal theme, light
+t7d52a2a4 = Тема термінала, світла
+
+# Terminal theme, dark
+tf112a1cc = Тема термінала, темна
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Тема термінала, поки застосунок світлий; темний режим має власну. Хост може мати власну у своєму редакторі.
