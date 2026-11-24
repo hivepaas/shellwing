@@ -86,8 +86,8 @@ pub struct Activity {
     /// What it printed, the first [`LOGGED`] bytes of it once logged.
     #[serde(default)]
     pub output: String,
-    /// It waits for the person to allow it: why it asks (the risky words
-    /// it has, or that its grant asks for every command).
+    /// It waits for the person to allow it: the risky words it has, or
+    /// nothing when its grant asks for every command.
     #[serde(default)]
     pub waiting: Option<String>,
 }
@@ -478,9 +478,8 @@ impl Hub {
             let asks = match g.grant.mode {
                 _ if allowed => None,
                 AiMode::Free => None,
-                AiMode::Ask => Some("its grant asks for every command".to_string()),
-                AiMode::Risky => risky(command, &inner.state.risky())
-                    .map(|w| format!("it has {w}, which is on the risky list")),
+                AiMode::Ask => Some(String::new()),
+                AiMode::Risky => risky(command, &inner.state.risky()),
             };
             let id = format!("j-{}", inner.next);
             inner.next += 1;

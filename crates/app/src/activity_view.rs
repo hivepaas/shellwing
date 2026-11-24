@@ -322,12 +322,20 @@ impl ActivityView {
                         .border_1()
                         .border_color(rgb(colors().warn_edge))
                         .text_color(rgb(colors().warn_text))
-                        .child(tr!(
-                            "{client} wants to run this on {host}. It waits for you, because {why}.",
-                            client = a.client.clone(),
-                            host = a.host.clone(),
-                            why = why.clone()
-                        )),
+                        .child(if why.is_empty() {
+                            tr!(
+                                "{client} wants to run this on {host}. It waits for you: its grant asks for every command.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else {
+                            tr!(
+                                "{client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.",
+                                client = a.client.clone(),
+                                host = a.host.clone(),
+                                words = why.clone()
+                            )
+                        }),
                 )
                 .child(
                     div()

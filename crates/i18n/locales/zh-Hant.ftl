@@ -49,8 +49,11 @@ ta7006e9a = 這裡什麼都沒有。
 # {client} · {host} · started {when} · {job}
 # tafbed557 =
 
-# {client} wants to run this on {host}. It waits for you, because {why}.
-# t21e55161 =
+# {client} wants to run this on {host}. It waits for you: its grant asks for every command.
+# t2a306810 =
+
+# {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
+# t85e6d49e =
 
 # Run it
 # t72430853 =
