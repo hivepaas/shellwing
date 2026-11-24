@@ -156,6 +156,14 @@ pub const THEMES: &[HostIcon] = &[
     theme!("test", "icons/theme/test.svg"),
 ];
 
+/// A Run on hosts tab's, and the host list's Actions: not a host's.
+pub const RUN: HostIcon = HostIcon {
+    id: "run",
+    name: "",
+    face: Face::Glyph("icons/run.svg"),
+    color: None,
+};
+
 /// The icon named `id`, if the app has it.
 pub fn find(id: &str) -> Option<&'static HostIcon> {
     SYSTEMS

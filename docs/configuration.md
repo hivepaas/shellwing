@@ -1090,6 +1090,65 @@ Ctrl+Shift+I again, *Stop* on the strip, or leaving the tab with one pane
 stops it. Passwords and passphrases that shellwing itself asks for are never
 copied to other panes.
 
+## Run on hosts
+
+A command or a script, run on many hosts at once in a tab of its own, with
+what each host printed side by side. Where to start one:
+
+- **Actions › Run on hosts**, at the top of the host list, or its tile on the
+  rail;
+- **▶** beside a group's name when the pointer is over it: its hosts start
+  chosen;
+- **Ctrl+click** (**Cmd+click** on macOS) hosts in the list, then *Run on
+  hosts* in the bar under it;
+- the palette: *Run on hosts…*.
+
+In the tab:
+
+- **Hosts**: *Change* chooses them, by group or one by one; ✕ takes one away.
+- **Command or script**: one line, or many (Enter starts a line). Its first
+  line picks what runs it: `#!/bin/bash`, `#!/usr/bin/env python3`, and so on;
+  else `sh`. The chip above it shows which, and chooses another (`sh`, `bash`,
+  `zsh`, `python3`, `powershell`). *Open file…* loads a script; *From a
+  snippet…* starts from one.
+- **At most** hosts at once (8), **give up after** seconds (60), and **one host
+  first**: the others wait until you say.
+- **Ctrl+Enter** (**Cmd+Enter**), or *Run*, signs in to the hosts and says what
+  will run where. Nothing runs before that. Each password or passphrase is
+  asked there, once (a key's passphrase once for every host that uses it), and
+  a host key never seen before is trusted or left out there. A host that does
+  not connect is left out, and says why. So is a collection's host whose
+  settings that act on this computer are held back: allow them on a tab to it
+  first.
+
+How it runs: as `ssh host 'command'` would, with no terminal, on a connection
+of its own beside any tab's. The script goes to the host on the command's
+input and is read whole before any of it runs, so nothing in it can read the
+rest of it; what reads its input gets nothing.
+
+**sudo**: when the script calls `sudo`, the confirm step asks for sudo's
+password, the same for every host or one per host. It goes to each host on the
+script's input and sudo there gets it from `printenv`, as its askpass program
+(`sudo -A`): never on a command line, in a file or in what is shown. A host
+whose sudo needs no password never asks for it. The password is forgotten
+once the run starts, so *Run again* asks again. Only sudo the script calls
+itself gets it: not `sudo` inside another program.
+
+The results:
+
+- **By output**: hosts that printed the same and ended the same are one group,
+  those that ended well first, so the one host that stands out is easy to see.
+  A host whose sudo refused the password says so.
+- **By host**: one row per host, its status, its time and its last line; a row
+  opens on all it printed (up to 1 MB of each stream), with *Open a tab* to the
+  host and *Copy output*.
+- **Stop** leaves the hosts not started alone and cuts off those running.
+  *Again on the N that failed* and *Run again* go back to the confirm step; the
+  hosts stay connected while the tab is open.
+
+Run tabs are not opened again at the next start, and nothing of them is kept
+once they close.
+
 ## SSH keys
 
 *Settings › Keys* lists the keys there are, in three groups:

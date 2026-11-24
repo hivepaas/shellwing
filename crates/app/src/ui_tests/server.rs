@@ -110,6 +110,9 @@ pub struct Policy {
     /// A Windows host's `ver`, answered to the app's second question once
     /// the first is refused; None: refuse that one too.
     pub windows_ver: Option<String>,
+    /// Run any other command with `sh -c`, here as `$HOME`, with this
+    /// folder first in `PATH` (a stand-in for sudo); None: refuse it.
+    pub shell: Option<(PathBuf, PathBuf)>,
 }
 
 impl Policy {
@@ -145,6 +148,8 @@ pub struct Seen {
     pub installed: Vec<String>,
     /// Times the app asked which system it runs.
     pub systems_asked: usize,
+    /// Commands run with `sh -c` ([`Policy::shell`]), and their input.
+    pub commands: Vec<(String, Vec<u8>)>,
     /// Ports opened for -L/-D (host:port) and bound for -R.
     pub forwards: Vec<String>,
 }
@@ -419,6 +424,56 @@ async fn agent_keys(handle: &server::Handle) -> Result<u32, String> {
         [12, a, b, c, d, ..] => Ok(u32::from_be_bytes([*a, *b, *c, *d])),
         _ => Err(format!("unexpected answer {body:?}")),
     }
+}
+
+/// A command, as a host's shell runs it: `sh -c`, its input whole, its
+/// output and errors and exit status back.
+async fn shell(
+    mut ch: Channel<Msg>,
+    command: String,
+    home: PathBuf,
+    bin: PathBuf,
+    seen: Arc<Mutex<Seen>>,
+) {
+    let mut input = vec![];
+    let _ = ch.make_reader().read_to_end(&mut input).await;
+    seen.lock()
+        .expect("seen")
+        .commands
+        .push((command.clone(), input.clone()));
+    let path = format!(
+        "{}:{}",
+        bin.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let out = tokio::process::Command::new("sh")
+        .arg("-c")
+        .arg(&command)
+        .env("HOME", &home)
+        .env("PATH", path)
+        .current_dir(&home)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .spawn();
+    let Ok(mut child) = out else {
+        let _ = ch.exit_status(127).await;
+        let _ = ch.close().await;
+        return;
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(&input).await;
+    }
+    let Ok(out) = child.wait_with_output().await else {
+        let _ = ch.close().await;
+        return;
+    };
+    let _ = ch.data(&out.stdout[..]).await;
+    let _ = ch.extended_data(1, &out.stderr[..]).await;
+    let _ = ch.exit_status(out.status.code().unwrap_or(1) as u32).await;
+    let _ = ch.eof().await;
+    let _ = ch.close().await;
 }
 
 /// Reads the key the install script is given on its input, adds it to the
@@ -1251,6 +1306,15 @@ impl server::Handler for Shell {
             return Ok(());
         }
         let installing = self.policy.install && data == shellwing_ssh::keys::INSTALL.as_bytes();
+        if !installing && let Some((home, bin)) = self.policy.shell.clone() {
+            let Some(ch) = self.opened.remove(&channel) else {
+                return session.channel_failure(channel);
+            };
+            session.channel_success(channel)?;
+            let command = String::from_utf8_lossy(data).into_owned();
+            tokio::spawn(shell(ch, command, home, bin, self.seen.clone()));
+            return Ok(());
+        }
         let Some(ch) = self.opened.remove(&channel).filter(|_| installing) else {
             return session.channel_failure(channel);
         };

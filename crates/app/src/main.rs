@@ -39,6 +39,7 @@ mod palette;
 mod pane;
 mod placement;
 mod prompt;
+mod run_view;
 mod scrollbar;
 mod settings_view;
 mod shell_syntax;
@@ -76,6 +77,7 @@ const ICONS: &[(&str, &[u8])] = &[
     ),
     ("icons/home.svg", include_bytes!("../assets/icons/home.svg")),
     ("icons/info.svg", include_bytes!("../assets/icons/info.svg")),
+    ("icons/run.svg", include_bytes!("../assets/icons/run.svg")),
     (
         "icons/laptop.svg",
         include_bytes!("../assets/icons/laptop.svg"),

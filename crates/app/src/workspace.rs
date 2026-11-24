@@ -28,6 +28,7 @@ use crate::look::{self, Live, rgb as theme_rgb};
 use crate::notice::{Notice, colored};
 use crate::palette::{Action, Entry, Kind, Palette, PaletteEvent, Part};
 use crate::pane::{Dir, Pane, SplitState, neighbor};
+use crate::run_view::{Candidate, Pick, RunEvent, RunView};
 use crate::secrets::VaultSlot;
 use crate::session::{Opens, Session, Status};
 use crate::settings_view::{self, Page, SettingsEvent, SettingsView, Snap};
@@ -39,6 +40,7 @@ use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
 mod config_files;
 mod notes;
+mod runs;
 mod snippet_windows;
 mod systems;
 mod updates;
@@ -99,7 +101,10 @@ struct DraggedTab {
 /// A tab: its panes, and which one has the keyboard.
 struct Tab {
     root: Option<Pane<Entity<TermView>>>,
-    focused: Entity<TermView>,
+    /// The pane with the keyboard; None in a Run on hosts tab.
+    focused: Option<Entity<TermView>>,
+    /// A Run on hosts tab, which has no panes.
+    run: Option<Entity<RunView>>,
     /// What is typed in one pane goes to every pane that listens.
     broadcast: bool,
     /// Panes left out of that.
@@ -109,6 +114,26 @@ struct Tab {
 impl Tab {
     fn views(&self) -> Vec<Entity<TermView>> {
         self.root.as_ref().map(Pane::leaves).unwrap_or_default()
+    }
+
+    /// A tab of panes, with `view` focused.
+    fn of(root: Pane<Entity<TermView>>, view: Entity<TermView>) -> Tab {
+        Tab {
+            root: Some(root),
+            focused: Some(view),
+            run: None,
+            broadcast: false,
+            left_out: vec![],
+        }
+    }
+
+    /// What finds the tab again after tabs moved: its focused pane, or its
+    /// Run view.
+    fn key(&self) -> Option<gpui::EntityId> {
+        self.focused
+            .as_ref()
+            .map(|v| v.entity_id())
+            .or_else(|| self.run.as_ref().map(|r| r.entity_id()))
     }
 }
 
@@ -780,7 +805,10 @@ impl Workspace {
     /// The focused pane of the active tab: for the UI tests to read.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn active_view(&self) -> Entity<TermView> {
-        self.tabs[self.active].focused.clone()
+        self.tabs[self.active]
+            .focused
+            .clone()
+            .expect("a tab of panes")
     }
 
     pub fn active_index(&self) -> usize {
@@ -789,7 +817,7 @@ impl Workspace {
 
     /// The focused pane of the active tab.
     fn active_tab(&self) -> Option<&Entity<TermView>> {
-        self.tabs.get(self.active).map(|t| &t.focused)
+        self.tabs.get(self.active).and_then(|t| t.focused.as_ref())
     }
 
     /// Every pane of every tab.
@@ -873,7 +901,7 @@ impl Workspace {
         let on_host = |i: usize| {
             let t = &self.tabs[i];
             let on_it = |v: &Entity<TermView>| is_it(v.read(cx).session());
-            if on_it(&t.focused) {
+            if t.focused.as_ref().is_some_and(on_it) {
                 return Some((i, None));
             }
             t.views().into_iter().find(on_it).map(|v| (i, Some(v)))
@@ -885,7 +913,7 @@ impl Workspace {
         match found {
             Some((i, pane)) => {
                 if let Some(pane) = pane {
-                    self.tabs[i].focused = pane;
+                    self.tabs[i].focused = Some(pane);
                 }
                 self.activate(i, window, cx);
                 false
@@ -911,12 +939,7 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) {
         if let Some(view) = self.make_view_forwarding(spec, forwards, window, cx) {
-            self.tabs.push(Tab {
-                root: Some(Pane::Leaf(view.clone())),
-                focused: view,
-                broadcast: false,
-                left_out: vec![],
-            });
+            self.tabs.push(Tab::of(Pane::Leaf(view.clone()), view));
             self.activate(self.tabs.len() - 1, window, cx);
             self.refresh_sidebar(cx);
         }
@@ -936,7 +959,7 @@ impl Workspace {
                 .root
                 .take()
                 .map(|r| r.with_split(&focused, view.clone(), axis));
-            tab.focused = view;
+            tab.focused = Some(view);
         }
         self.refresh_broadcast(self.active, cx);
         self.activate(self.active, window, cx);
@@ -950,7 +973,7 @@ impl Workspace {
             return vec![];
         };
         if !all {
-            return vec![tab.focused.clone()];
+            return tab.focused.iter().cloned().collect();
         }
         tab.views()
             .into_iter()
@@ -1412,6 +1435,8 @@ impl Workspace {
     fn close_pane(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(view) = self.active_tab().cloned() {
             self.request_close_view(&view, window, cx);
+        } else if self.tabs.get(self.active).is_some_and(|t| t.run.is_some()) {
+            self.request_close_tab(self.active, window, cx);
         }
     }
 
@@ -1420,15 +1445,21 @@ impl Workspace {
         let Some(tab) = self.tabs.get(ix) else {
             return;
         };
-        // Found again by a pane on Close: tabs may have moved meanwhile.
-        let (views, key) = (tab.views(), tab.focused.clone());
+        // Found again by its key on Close: tabs may have moved meanwhile.
+        let (views, key) = (tab.views(), tab.key());
+        if let Some(run) = &tab.run {
+            if run.read(cx).busy() {
+                return self.confirm_close_run(ix, window, cx);
+            }
+            return self.close(ix, window, cx);
+        }
         self.confirm_close(
             &views,
             &tr!("Close the tab?"),
             window,
             cx,
             move |ws, window, cx| {
-                if let Some(ix) = ws.tabs.iter().position(|t| t.views().contains(&key)) {
+                if let Some(ix) = ws.tabs.iter().position(|t| t.key() == key) {
                     ws.close(ix, window, cx);
                 }
             },
@@ -1529,10 +1560,10 @@ impl Workspace {
             return self.close(ix, window, cx);
         }
         tab.root = tab.root.take().and_then(|r| r.without(view));
-        if &tab.focused == view
+        if tab.focused.as_ref() == Some(view)
             && let Some(r) = &tab.root
         {
-            tab.focused = r.first();
+            tab.focused = Some(r.first());
         }
         // One pane left: nothing to type in every pane of.
         if tab.views().len() < 2 {
@@ -1552,14 +1583,14 @@ impl Workspace {
             return false;
         };
         let views = tab.views();
-        if views.len() < 2 {
+        let Some(focused) = tab.focused.as_ref().filter(|_| views.len() >= 2) else {
             return false;
-        }
-        let from = tab.focused.read(cx).bounds();
+        };
+        let from = focused.read(cx).bounds();
         let others: Vec<_> = views
             .iter()
             .enumerate()
-            .filter(|(_, v)| **v != tab.focused)
+            .filter(|(_, v)| *v != focused)
             .map(|(i, v)| (i, v.read(cx).bounds()))
             .collect();
         if let Some(i) = neighbor(from, &others, dir) {
@@ -1570,9 +1601,9 @@ impl Workspace {
 
     fn set_focused(&mut self, view: Entity<TermView>, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(tab) = self.tabs.get_mut(self.active)
-            && tab.focused != view
+            && tab.focused.as_ref() != Some(&view)
         {
-            tab.focused = view;
+            tab.focused = Some(view);
             self.activate(self.active, window, cx);
         }
     }
@@ -1904,12 +1935,7 @@ impl Workspace {
                     .get(tab.focused)
                     .cloned()
                     .unwrap_or_else(|| root.first());
-                self.tabs.push(Tab {
-                    root: Some(root),
-                    focused,
-                    broadcast: false,
-                    left_out: vec![],
-                });
+                self.tabs.push(Tab::of(root, focused));
             }
         }
         let active = saved.active.min(self.tabs.len().saturating_sub(1));
@@ -1950,7 +1976,9 @@ impl Workspace {
         }
     }
 
+    /// The tabs of panes, to open again; Run on hosts tabs are not kept.
     fn snapshot(&self, cx: &gpui::App) -> SessionState {
+        let kept = |t: &Tab| t.root.is_some();
         SessionState {
             tabs: self
                 .tabs
@@ -1962,12 +1990,15 @@ impl Workspace {
                         focused: root
                             .leaves()
                             .iter()
-                            .position(|v| *v == t.focused)
+                            .position(|v| Some(v) == t.focused.as_ref())
                             .unwrap_or(0),
                     })
                 })
                 .collect(),
-            active: self.active,
+            active: self.tabs[..self.active.min(self.tabs.len())]
+                .iter()
+                .filter(|t| kept(t))
+                .count(),
         }
     }
 
@@ -1996,9 +2027,14 @@ impl Workspace {
 
     pub fn activate(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
         self.layout_changed(cx);
-        if let Some(tab) = self.tabs.get(ix).map(|t| t.focused.clone()) {
+        if let Some(tab) = self.tabs.get(ix) {
             self.active = ix;
-            window.focus(&tab.focus_handle(cx), cx);
+            let focus = match (&tab.focused, &tab.run) {
+                (Some(v), _) => v.focus_handle(cx),
+                (None, Some(r)) => r.read(cx).script_focus(cx),
+                (None, None) => self.focus.clone(),
+            };
+            window.focus(&focus, cx);
         } else {
             window.focus(&self.focus, cx);
         }
@@ -2014,14 +2050,14 @@ impl Workspace {
         if from == to || from >= self.tabs.len() || to >= self.tabs.len() {
             return;
         }
-        let active = self.active_tab().map(|t| t.entity_id());
+        let active = self.tabs.get(self.active).and_then(Tab::key);
         let tab = self.tabs.remove(from);
         self.tabs.insert(to, tab);
         if let Some(id) = active {
             self.active = self
                 .tabs
                 .iter()
-                .position(|t| t.focused.entity_id() == id)
+                .position(|t| t.key() == Some(id))
                 .unwrap_or(self.active);
         }
         self.layout_changed(cx);
@@ -2042,7 +2078,10 @@ impl Workspace {
                     None => format!("{} — shellwing", v.session().title),
                 }
             }
-            None => "shellwing".into(),
+            None => match self.tabs.get(self.active).and_then(|t| t.run.as_ref()) {
+                Some(r) => format!("{} — shellwing", r.read(cx).title(cx)),
+                None => "shellwing".into(),
+            },
         };
         window.set_window_title(&title);
     }
@@ -2373,6 +2412,7 @@ impl Workspace {
                 }
             }
         }
+        action(Action::RunOnHosts, tr!("Run on hosts…"), String::new());
         setting(
             Action::ChangeTheme,
             tr!("Change theme…"),
@@ -3809,7 +3849,7 @@ impl Workspace {
                 let before = self.tabs.len();
                 self.open(spec, window, cx);
                 if self.tabs.len() > before
-                    && let Some(view) = self.tabs.last().map(|t| t.focused.clone())
+                    && let Some(view) = self.tabs.last().and_then(|t| t.focused.clone())
                 {
                     view.update(cx, |v, cx| {
                         v.show_notice(
@@ -5191,6 +5231,7 @@ impl Workspace {
             Action::ChangeTheme => self.open_theme_picker(window, cx),
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
+            Action::RunOnHosts => self.open_run(vec![], window, cx),
             Action::NewSnippet => self.open_snippet(None, cx),
             Action::NewEnvironment | Action::NewConfigFile => {
                 let page = if a == Action::NewEnvironment {
@@ -5818,7 +5859,27 @@ impl Workspace {
             .iter()
             .enumerate()
             .map(|(i, tab)| {
-                let v = tab.focused.read(cx);
+                let Some(focused) = &tab.focused else {
+                    let r = tab.run.as_ref().map(|r| r.read(cx));
+                    return TabRow {
+                        tab: i,
+                        host_key: "\0run".into(),
+                        host: tr!("Run on hosts").into(),
+                        local: false,
+                        mark: None,
+                        icon: Some(&crate::host_icons::RUN),
+                        title: r.map(|r| r.title(cx)).unwrap_or_default().into(),
+                        address: r.and_then(|r| r.progress()).unwrap_or_default().into(),
+                        status: if r.is_some_and(|r| r.busy()) {
+                            Status::Connecting
+                        } else {
+                            Status::Closed
+                        },
+                        panes: 0,
+                        here: i == self.active,
+                    };
+                };
+                let v = focused.read(cx);
                 let s = v.session();
                 let local = s.is_local();
                 let address: SharedString = match s.reached() {
@@ -6061,12 +6122,31 @@ impl Workspace {
             .min_w_0()
             .overflow_hidden();
         for (i, tab) in self.tabs.iter().enumerate() {
-            let v = tab.focused.read(cx);
             let active = i == self.active;
-            let title = v.session().title.clone();
-            let detail = v.title_detail();
-            let color = self.host_color(v.session().entry.as_deref());
-            let icon = self.session_icon(v.session());
+            // A Run on hosts tab: its title, its progress, its own tile.
+            let (title, detail, color, icon, status) = match (&tab.focused, &tab.run) {
+                (Some(focused), _) => {
+                    let v = focused.read(cx);
+                    (
+                        v.session().title.clone(),
+                        v.title_detail(),
+                        self.host_color(v.session().entry.as_deref()),
+                        self.session_icon(v.session()),
+                        Some(v.status()),
+                    )
+                }
+                (None, Some(run)) => {
+                    let r = run.read(cx);
+                    (
+                        r.title(cx),
+                        r.progress(),
+                        None,
+                        Some(&crate::host_icons::RUN),
+                        r.busy().then_some(Status::Connecting),
+                    )
+                }
+                (None, None) => continue,
+            };
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
@@ -6121,7 +6201,7 @@ impl Workspace {
                             icon,
                             &title,
                             color,
-                            Some(v.status()),
+                            status,
                             TAB_TILE,
                             if active {
                                 colors().tab_on
@@ -6610,6 +6690,7 @@ impl Workspace {
             self.fetch_orgs(cx);
         }
         self.refresh_overview(cx);
+        self.refresh_runs(cx);
         let sections = self.sidebar_sections(cx);
         let collapsed = self.sidebar_collapsed;
         self.sidebar.update(cx, |s, cx| {
@@ -6850,12 +6931,21 @@ impl Render for Workspace {
         let tabs = self.tab_strip(cx);
         let update_row = self.update_row(cx);
         let main: AnyElement = match self.tabs.get(self.active) {
+            Some(Tab { run: Some(run), .. }) => div()
+                .flex_1()
+                .min_h_0()
+                .min_w_0()
+                .child(run.clone())
+                .into_any_element(),
             Some(tab) => {
                 let multi = tab.views().len() > 1;
                 let pane = match &tab.root {
-                    Some(root) => {
-                        self.render_pane(root, &tab.focused, multi, accent, main_corners, cx)
-                    }
+                    Some(root) => match &tab.focused {
+                        Some(focused) => {
+                            self.render_pane(root, focused, multi, accent, main_corners, cx)
+                        }
+                        None => div().into_any_element(),
+                    },
                     None => div().into_any_element(),
                 };
                 let strip = tab.broadcast.then(|| {

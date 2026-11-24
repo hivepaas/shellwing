@@ -77,6 +77,8 @@ pub enum Action {
     },
     NewHost,
     NewGroup,
+    /// A command or a script on many hosts, in a tab of its own.
+    RunOnHosts,
     /// Hosts from another SSH app (docs/design/import.md).
     ImportHosts,
     /// Take out what the last import put in.

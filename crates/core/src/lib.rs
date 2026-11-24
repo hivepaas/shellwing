@@ -14,6 +14,7 @@ pub mod library;
 pub mod local;
 pub mod logs;
 pub mod placing;
+pub mod run;
 pub mod secrets;
 pub mod session;
 pub mod snippets;

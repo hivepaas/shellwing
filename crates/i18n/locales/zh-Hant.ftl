@@ -1873,6 +1873,249 @@ tbfdc091c = Enter 回答   Esc 取消
 # ↑↓ move   Enter choose   Esc cancel
 te39c67c2 = ↑↓ 移動   Enter 選擇   Esc 取消
 
+# Find hosts
+# t1f19b271 =
+
+# sudo password
+# t6f1147fd =
+
+# Run on hosts
+# t20ee87e4 =
+
+# Choose at least one host.
+# t98a361a0 =
+
+# Type a command or a script first.
+# tc08b2b46 =
+
+# The script is larger than {kb} KB.
+# t3c583c57 =
+
+# none chosen
+# t23b63bc7 =
+
+# {picked} of {all}
+# tb6c0f13d =
+
+# No hosts yet: add one in the host list.
+# tb1cb1380 =
+
+# chosen
+# t88efc3c3 =
+
+# from #!
+# te59619bf =
+
+# default
+# t933b5bde =
+
+# Command or script
+# t9263b49e =
+
+# Open file…
+# teb1476db =
+
+# From a snippet…
+# t5b2e9f81 =
+
+# From the first line
+# t4eea1d86 =
+
+# No snippets yet.
+# ta1f34f58 =
+
+# At most
+# tc4220f87 =
+
+# at once
+# t73078e59 =
+
+# Give up after
+# t72dfc173 =
+
+# seconds
+# t66b6cdea =
+
+# One host first, the rest when you say
+# t2dc320ca =
+
+# Cmd+Enter runs
+# tc5c50a00 =
+
+# Ctrl+Enter runs
+# t1e0dc7f1 =
+
+# Run
+t8d57e66a = 執行
+
+# Run on {n} host | Run on {n} hosts
+# t9f3562b2 =
+
+# Run it on {first} first, then the other {n}?
+# tdeeed76d =
+
+# Run it on {n} host? | Run it on {n} hosts?
+# t15434ee6 =
+
+# {interpreter}, {n} line | {interpreter}, {n} lines
+# t8077e5da =
+
+# signing in to {n} of {all}…
+# t6d7d8e5a =
+
+# {n} of {all} signed in
+# t11ab0d58 =
+
+# at most {n} at once
+# td03e9105 =
+
+# Signing in: asked now, once
+# t41418846 =
+
+# {target}'s password, again: that one was refused
+# t39e81801 =
+
+# {target}'s password
+# t8989af6d =
+
+# The passphrase of {key}
+# tb9a076ee =
+
+# A host key never seen before: {algorithm} {fingerprint}
+# t064ebede =
+
+# Leave it out
+# taaff8ec9 =
+
+# Trust it
+# tf80adc72 =
+
+# OK
+t85e4b82f = 好
+
+# {host} is left out: {why}
+# ta0fb8060 =
+
+# sudo password, for every host
+# tf9f4ad8f =
+
+# The same on every host
+# t09beea56 =
+
+# The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
+# t893beb5f =
+
+# Run on {host}
+# t53629f2b =
+
+# started {when}
+# t0addf546 =
+
+# ran at {when}
+# tc1949fbd =
+
+# Again on the {n} that failed | Again on the {n} that failed
+# t40c7552d =
+
+# Run again
+# t7e879b86 =
+
+# {n} ok
+# t230daddb =
+
+# {n} failed
+# t747c50a8 =
+
+# {n} to go
+# t9b6bf176 =
+
+# {n} stopped
+# td3275eca =
+
+# By output
+# t58a5f0b1 =
+
+# By host
+# ta32dd06e =
+
+# The first host is done. The other {n} wait for you.
+# tdc76953e =
+
+# Run on the other {n} | Run on the other {n}
+# t4cc1f343 =
+
+# Still going: {hosts}
+# tfacf50d8 =
+
+# Stopped before they ended: {hosts}
+# tde1adb0a =
+
+# Given up on after {s} seconds.
+# tf245d128 =
+
+# It printed more than {mb} MB: the rest is not kept.
+# t3b5e54ea =
+
+# Open a tab
+# t85019429 =
+
+# Copy output
+# t64749f61 =
+
+# exit {code}
+# te0c7c2fc =
+
+# ended by a signal
+# t450a0cd5 =
+
+# sudo did not take the password
+# tb2c3fb01 =
+
+# sudo asked for a password
+# t31a388e9 =
+
+# did not connect
+# t7efff279 =
+
+# given up on
+# t4eec5298 =
+
+# did not run
+# tf05d1c4a =
+
+# signing in
+# t727e0a33 =
+
+# asks something
+# tf96d1b57 =
+
+# signed in
+# t1a42c214 =
+
+# left out
+t73aeedd4 = 已排除
+
+# waiting
+# teeda06a8 =
+
+# running
+# t147eb74c =
+
+# stopped
+# t6ee2f34e =
+
+# exit 0
+# tf83c441d =
+
+# sudo refused
+# tdd8b1f54 =
+
+# What each host says shows here, grouped by output.
+# taede9a2c =
+
+# It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
+# t82319ee2 =
+
 # About
 t58e096de = 關於
 
@@ -2659,6 +2902,24 @@ t87553579 = 無法連線
 # closed
 tebee50c5 = 已關閉
 
+# One command, many hosts
+# t05dcb762 =
+
+# ACTIONS
+# t62d7de84 =
+
+# Cmd+click to add or take away
+# t36133970 =
+
+# Ctrl+click to add or take away
+# t47785603 =
+
+# {n} host chosen | {n} hosts chosen
+# tf9b0b9a0 =
+
+# Run on the {n} host of {group} | Run on the {n} hosts of {group}
+# t4ecd858a =
+
 # No hosts yet
 ta58f36ff = 還沒有主機
 
@@ -3199,9 +3460,6 @@ t897ecb9e = 正在記錄
 # listening
 t77104bea = 接收輸入
 
-# left out
-t73aeedd4 = 已排除
-
 # Installing {key} on {host}…
 t9e6d8462 = 正在將 { $key } 安裝到 { $host }…
 
@@ -3490,6 +3748,21 @@ ta77bd589 = { $host } 的筆記
 # Notes · {category}
 tbb112cdf = 筆記 · { $category }
 
+# The window closed.
+# t26993482 =
+
+# its collection's settings for {names} wait until you allow them, on a tab to it
+# t3306232b =
+
+# Stop and close
+# tb789bdac =
+
+# Close the tab?
+tc626ae98 = 要關閉分頁嗎？
+
+# It is still running: closing stops it on the hosts it has not ended on.
+# t853369a2 =
+
 # the system's package manager
 t11465c20 = 系統的套件管理員
 
@@ -3589,9 +3862,6 @@ t1a97d76a = 已載入：按 Enter 再次載入
 # Split the tab first: there is one pane to type in.
 t72699bd1 = 請先分割分頁：目前只有一個窗格可輸入。
 
-# Close the tab?
-tc626ae98 = 要關閉分頁嗎？
-
 # Close the pane?
 tf2b43783 = 要關閉窗格嗎？
 
@@ -3690,6 +3960,9 @@ t9f033387 = 透過 { $title } 轉送連接埠…
 
 # Unload environment: {names}
 tbe80f7b5 = 卸載環境：{ $names }
+
+# Run on hosts…
+# t8ceaeff0 =
 
 # Change theme…
 t85a401b4 = 變更主題…
@@ -4741,9 +5014,6 @@ t38d39c8f = 新增主機
 # A collection has a new key
 t0dc9c1a6 = 某個集合有了新的金鑰
 
-# OK
-t85e4b82f = 好
-
 # Somebody lost access to {name}: its key is replaced. Change what they could read: they are listed above your hosts.
 t4672bd05 = 有人已失去 { $name } 的存取權：其金鑰已更換。請變更對方可讀取的內容：它們列在你的主機上方。
 
@@ -4815,9 +5085,6 @@ te90c2175 = 執行時使用的環境
 
 # Their variables are given to it alone, in a subshell, without showing their values.
 t4ef64333 = 其變數只會在子 shell 中單獨提供給它，且不會顯示變數值。
-
-# Run
-t8d57e66a = 執行
 
 # No environments yet: variables kept in the vault, loaded into a session's shell without showing their values.
 tbcdba796 = 還沒有環境：環境是儲存在保險庫中的變數，可載入到工作階段的 shell 中，且不會顯示其值。
