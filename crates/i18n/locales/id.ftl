@@ -496,6 +496,9 @@ ta1de2fdd = Ubah
 # Systems
 t39f411dd = Sistem
 
+# Cloud
+tc0821b1e = Cloud
+
 # Themes
 tbf419633 = Tema
 
@@ -810,9 +813,6 @@ tf09430d8 = Basis data
 
 # Web
 t72645431 = Web
-
-# Cloud
-tc0821b1e = Cloud
 
 # Container
 tb23d4718 = Kontainer

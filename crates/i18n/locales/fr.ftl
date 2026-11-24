@@ -499,6 +499,9 @@ ta1de2fdd = Modifier
 # Systems
 t39f411dd = Systèmes
 
+# Cloud
+tc0821b1e = Cloud
+
 # Themes
 tbf419633 = Thèmes
 
@@ -813,9 +816,6 @@ tf09430d8 = Base de données
 
 # Web
 t72645431 = Web
-
-# Cloud
-tc0821b1e = Cloud
 
 # Container
 tb23d4718 = Conteneur

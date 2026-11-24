@@ -12,7 +12,7 @@ use shellwing_i18n::tr;
 use crate::input::{Changed, TextInput};
 
 use crate::colors::colors;
-use crate::host_icons::{self, HostIcon};
+use crate::host_icons::{self, Face, HostIcon};
 use crate::palette::Action;
 use crate::session::Status;
 use crate::settings_view::Page;
@@ -205,15 +205,29 @@ pub fn tile_face_sized(
     let icon_svg = |path: &'static str, size: f32, color: u32| {
         svg().path(path).size(px(size)).text_color(rgb(color))
     };
-    match icon {
-        Some(i) if i.system => {
+    let icon_size = (TILE_ICON * scale).round();
+    match icon.map(|i| (i, &i.face)) {
+        Some((i, Face::Mark(path))) => {
             let color = i
                 .color
                 .filter(|c| host_icons::reads_on(*c, colors().button))
                 .unwrap_or(fg);
-            face.child(icon_svg(i.path, (TILE_ICON * scale).round(), color))
+            face.child(icon_svg(path, icon_size, color))
         }
-        Some(i) => face.child(icon_svg(i.path, (TILE_ICON * scale).round(), fg)),
+        Some((_, Face::Glyph(path))) => face.child(icon_svg(path, icon_size, fg)),
+        // Two letters as large as initials, three a little smaller, in
+        // bold: a name, not a host's initials.
+        Some((i, Face::Name(text))) => {
+            let color = i
+                .color
+                .filter(|c| host_icons::name_reads_on(*c, colors().button))
+                .unwrap_or(fg);
+            let size = if text.chars().count() > 2 { 12.5 } else { 14. };
+            face.text_size(px((size * scale).max(7.5)))
+                .font_weight(FontWeight::BOLD)
+                .text_color(rgb(color))
+                .child(*text)
+        }
         None => face.child(initials(name)),
     }
 }

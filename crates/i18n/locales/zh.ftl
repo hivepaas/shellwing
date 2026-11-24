@@ -487,6 +487,9 @@ ta1de2fdd = 更改
 # Systems
 t39f411dd = 系统
 
+# Cloud
+tc0821b1e = 云
+
 # Themes
 tbf419633 = 主题
 
@@ -801,9 +804,6 @@ tf09430d8 = 数据库
 
 # Web
 t72645431 = 网页
-
-# Cloud
-tc0821b1e = 云
 
 # Container
 tb23d4718 = 容器

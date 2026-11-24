@@ -345,13 +345,21 @@ A host's `icon`, chosen in the host editor (*Icon*, then *Change*) or written
 in hosts.toml, is one of the app's: a system's mark (`ubuntu`, `debian`,
 `fedora`, `redhat`, `centos`, `rocky`, `alma`, `alpine`, `arch`, `opensuse`,
 `kali`, `mint`, `raspberry-pi`, `freebsd`, `macos`, `nixos`, `proxmox`,
-`truenas`, `openwrt`, `linux`) or a theme's (`server`, `database`, `web`,
-`cloud`, `container`, `firewall`, `router`, `storage`, `home`, `terminal`,
-`git`, `compute`, `mail`, `desktop`, `bastion`, `test`). A host that names
-none shows the system it runs: once it is connected, shellwing runs `cat
-/etc/os-release` and `uname -sr` beside the shell, at most once a day, and
+`truenas`, `openwrt`, `windows`, `linux`), a cloud provider's (`aws`,
+`azure`, `google-cloud`, `oracle-cloud`, `ibm-cloud`, `digitalocean`,
+`hetzner`, `vultr`, `akamai`, `ovh`, `scaleway`, `upcloud`, `alibaba-cloud`,
+`cloudflare`, `openstack`, `vmware`) or a theme's (`server`, `database`,
+`web`, `cloud`, `container`, `firewall`, `router`, `storage`, `home`,
+`terminal`, `git`, `compute`, `mail`, `desktop`, `bastion`, `test`). AWS,
+Azure, Oracle Cloud and IBM Cloud show their name, as their marks are not the
+app's to show; Windows shows a window. A cloud provider's icon is only ever
+chosen: a host is never asked which cloud it runs on.
+
+A host that names none shows the system it runs: once it is connected,
+shellwing runs `cat /etc/os-release` and `uname -sr` beside the shell, and
+`cmd /c ver` when that says nothing (a Windows host), at most once a day, and
 keeps the answer on this computer (`state/systems.json`, never synced). A host
-that names an icon is never asked; one that will not run the command keeps
+that names an icon is never asked; one that will not run the commands keeps
 its initials and is asked again the next day.
 
 The drawer where a host or a group is edited can be widened by dragging its

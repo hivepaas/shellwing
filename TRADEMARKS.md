@@ -14,6 +14,10 @@ Questions, or a use not covered here: open an issue.
 
 ## Others' marks
 
-The operating systems' marks a host's tile can show (Ubuntu, Debian and the
-others) are their owners' trademarks, shown only to say which system a host
-runs. Where they come from: [crates/app/assets/icons/os](crates/app/assets/icons/os/README.md).
+The operating systems' and cloud providers' marks a host's tile can show
+(Ubuntu, Debian, Google Cloud, DigitalOcean and the others) are their owners'
+trademarks, shown only to say which system a host runs, or where. Where they
+come from: [crates/app/assets/icons/os](crates/app/assets/icons/os/README.md)
+and [crates/app/assets/icons/cloud](crates/app/assets/icons/cloud/README.md).
+Windows, Amazon Web Services, Microsoft Azure, Oracle Cloud and IBM Cloud are
+named, never shown by their marks.

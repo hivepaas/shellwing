@@ -499,6 +499,9 @@ ta1de2fdd = Değiştir
 # Systems
 t39f411dd = Sistemler
 
+# Cloud
+tc0821b1e = Bulut
+
 # Themes
 tbf419633 = Temalar
 
@@ -813,9 +816,6 @@ tf09430d8 = Veritabanı
 
 # Web
 t72645431 = Web
-
-# Cloud
-tc0821b1e = Bulut
 
 # Container
 tb23d4718 = Konteyner

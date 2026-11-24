@@ -31,4 +31,5 @@ host runs.
 | ubuntu.svg | ubuntu |
 
 Windows and Amazon Linux are not among them: Simple Icons no longer carries
-their marks, at their owners' request.
+their marks, at their owners' request. windows.svg is drawn for shellwing (a
+window, in the strokes of the app's own icons), not Microsoft's mark.
