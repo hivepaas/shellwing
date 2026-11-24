@@ -1,6 +1,81 @@
 # shellwing in ko. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+t49268f5c = 확인 대기 중
+
+# running
+t147eb74c = 실행 중
+
+# exit 0
+tf83c441d = 종료 코드 0
+
+# exit {code}
+te0c7c2fc = 종료 코드 { $code }
+
+# ended by a signal
+t450a0cd5 = 시그널로 종료됨
+
+# did not run
+tf05d1c4a = 실행 안 됨
+
+# stopped
+t6ee2f34e = 중지됨
+
+# refused by you
+t2fd484b3 = 직접 거부함
+
+# All
+t75afe364 = 전체
+
+# Waiting for you
+te8233afc = 확인 대기 중
+
+# Running
+t452925ec = 실행 중
+
+# Failed
+t5579c3d4 = 실패
+
+# No AI client has run a command yet.
+td29d28d8 = 아직 AI 클라이언트가 실행한 명령이 없습니다.
+
+# Nothing here.
+ta7006e9a = 아무것도 없습니다.
+
+# Stop all AI
+tddf9c9cc = 모든 AI 중지
+
+# {client} · {host} · started {when} · {job}
+tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
+
+# {client} wants to run this on {host}. It waits for you: its grant asks for every command.
+t2a306810 = { $client }이(가) { $host }에서 이것을 실행하려고 합니다. 지시를 기다립니다. 이 허용은 모든 명령마다 확인을 요구합니다.
+
+# {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
+t85e6d49e = { $client }이(가) { $host }에서 이것을 실행하려고 합니다. 지시를 기다립니다. 위험 목록에 있는 { $words }이(가) 들어 있습니다.
+
+# Run it
+t72430853 = 실행
+
+# Run it, and this command again this session
+t2efebee7 = 실행하고, 이 세션 동안 같은 명령도 실행
+
+# Refuse it
+tbea0b112 = 거부
+
+# Stop
+t4b7f7705 = 중지
+
+# It printed nothing.
+tbb876a9f = 출력된 내용이 없습니다.
+
+# Nothing printed yet.
+t1051cbec = 아직 출력된 내용이 없습니다.
+
+# Copy output
+t64749f61 = 출력 복사
+
 # Run this once in a terminal:
 t2a18fdaf = 터미널에서 다음을 한 번 실행하세요:
 
@@ -16,8 +91,29 @@ t0ff991db = Cline의 MCP Servers › Configure에서 cline_mcp_settings.json에 
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = MCP 서버를 직접 시작하는 클라이언트(stdio 사용):
 
+# Run freely
+t77cb7aab = 자유롭게 실행
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+t1bfe0ae2 = 명령이 바로 실행됩니다. 각 명령은 실행되는 동안에도 AI 활동에 기록됩니다.
+
+# Ask for risky ones
+td43721d0 = 위험한 명령은 확인
+
+# A command with words from the list below waits for you; the rest run.
+t846e6005 = 아래 목록의 단어가 들어간 명령은 지시를 기다리고, 나머지는 실행됩니다.
+
+# Ask every time
+t26ab736e = 매번 확인
+
+# Each command waits until you allow it, or allow it for the session.
+tdcef213b = 각 명령은 허용하거나 이 세션 동안 허용할 때까지 기다립니다.
+
 # Find a host
 t5f515591 = 호스트 찾기
+
+# A command with these words waits
+t1678b953 = 이 단어가 들어간 명령은 대기합니다
 
 # AI clients
 ta302119f = AI 클라이언트
@@ -64,8 +160,11 @@ tf69e6847 = 토큰은 보관되지 않고 해시만 남습니다. 다시 보려�
 # Hosts given
 t1ef9da69 = 허용된 호스트
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = 클라이언트는 이 호스트에만 접근할 수 있습니다. 명령은 별도의 연결에서 백그라운드로 실행되며, 각각 이 컴퓨터의 로그에 기록됩니다.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+t396f69c1 = 클라이언트는 이 호스트에만 접근할 수 있습니다. 명령은 별도의 연결로 백그라운드에서 실행되며, 각 명령은 AI 활동에 기록됩니다.
+
+# AI activity
+t07e2f764 = AI 활동
 
 # Take every one back
 tb3911aec = 모두 회수
@@ -112,6 +211,9 @@ t41f59644 = 대상
 # For
 t0f7e1b30 = 기간
 
+# Commands
+t971550f3 = 명령
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
 
@@ -120,6 +222,18 @@ t35afca3b = 취소
 
 # Give access
 te96c4c6e = 접근 허용
+
+# When AI runs a command
+tc94fc353 = AI가 명령을 실행할 때
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+t608375b2 = 앞으로 허용하는 호스트에 적용되며, 각 호스트는 위 표에서 따로 설정할 수 있습니다. 어느 쪽이든 모든 명령은 AI 활동에 기록됩니다.
+
+# Risky: a command with any of these, a line each, waits for you
+te371b0dd = 위험: 이 중 하나라도 들어간 명령은 지시를 기다립니다(한 줄에 하나씩)
+
+# The usual list
+tcc58d242 = 기본 목록
 
 # unlock its windows
 t7c69953e = 창 잠금 해제
@@ -282,9 +396,6 @@ tbc889b90 = 서버에 없음: Downloads에 { $name }(으)로 옮김
 
 # Open
 t538b10e9 = 열기
-
-# Stop
-t4b7f7705 = 중지
 
 # Discard
 t1e706c21 = 버리기
@@ -2158,15 +2269,6 @@ t3b5e54ea = { $mb }MB 넘게 출력하여 나머지는 보관하지 않습니다
 # Open a tab
 t85019429 = 탭 열기
 
-# Copy output
-t64749f61 = 출력 복사
-
-# exit {code}
-te0c7c2fc = 종료 코드 { $code }
-
-# ended by a signal
-t450a0cd5 = 시그널로 종료됨
-
 # sudo did not take the password
 tb2c3fb01 = sudo가 비밀번호를 받아들이지 않았습니다
 
@@ -2178,9 +2280,6 @@ t7efff279 = 연결 실패
 
 # given up on
 t4eec5298 = 중단됨
-
-# did not run
-tf05d1c4a = 실행 안 됨
 
 # signing in
 t727e0a33 = 로그인 중
@@ -2196,15 +2295,6 @@ t73aeedd4 = 제외됨
 
 # waiting
 teeda06a8 = 대기 중
-
-# running
-t147eb74c = 실행 중
-
-# stopped
-t6ee2f34e = 중지됨
-
-# exit 0
-tf83c441d = 종료 코드 0
 
 # sudo refused
 tdd8b1f54 = sudo 거부
@@ -3004,6 +3094,9 @@ t05dcb762 = 명령 하나, 여러 호스트
 # ACTIONS
 t62d7de84 = 작업
 
+# What AI clients run
+t81fb801a = AI 클라이언트가 실행하는 명령
+
 # Cmd+click to add or take away
 t36133970 = Cmd+click으로 추가 또는 제외
 
@@ -3720,6 +3813,9 @@ t21a947cf = 창 닫기
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 맨 아래로 (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+tc4369c9f = { $client }이(가) { $host }에서 명령을 실행하려고 합니다. AI 활동에서 지시를 기다리고 있습니다.
 
 # Config files · {category}
 t59edc3e9 = 설정 파일 · { $category }
@@ -4887,9 +4983,6 @@ t3b2e2230 = { $name }이(가) { $path }에 있습니다.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = 보관함을 동기화하고 있다면 다른 기기에서도 삭제됩니다.
-
-# Nothing here.
-ta7006e9a = 아무것도 없습니다.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = { $host }에서 폴더와 그 안의 모든 항목이 삭제됩니다.

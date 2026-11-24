@@ -1,6 +1,81 @@
 # shellwing in pt. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+t49268f5c = aguardando você
+
+# running
+t147eb74c = em execução
+
+# exit 0
+tf83c441d = código 0
+
+# exit {code}
+te0c7c2fc = código { $code }
+
+# ended by a signal
+t450a0cd5 = encerrado por um sinal
+
+# did not run
+tf05d1c4a = não executado
+
+# stopped
+t6ee2f34e = parado
+
+# refused by you
+t2fd484b3 = recusado por você
+
+# All
+t75afe364 = Todos
+
+# Waiting for you
+te8233afc = Aguardando você
+
+# Running
+t452925ec = Em execução
+
+# Failed
+t5579c3d4 = Com falha
+
+# No AI client has run a command yet.
+td29d28d8 = Nenhum cliente de AI executou um comando ainda.
+
+# Nothing here.
+ta7006e9a = Nada aqui.
+
+# Stop all AI
+tddf9c9cc = Parar toda a AI
+
+# {client} · {host} · started {when} · {job}
+tafbed557 = { $client } · { $host } · iniciado às { $when } · { $job }
+
+# {client} wants to run this on {host}. It waits for you: its grant asks for every command.
+t2a306810 = { $client } quer executar isto em { $host }. O comando espera por você: a concessão dele pede confirmação para cada comando.
+
+# {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
+t85e6d49e = { $client } quer executar isto em { $host }. O comando espera por você: ele contém { $words }, da lista de palavras arriscadas.
+
+# Run it
+t72430853 = Executar
+
+# Run it, and this command again this session
+t2efebee7 = Executar, e este comando de novo nesta sessão
+
+# Refuse it
+tbea0b112 = Recusar
+
+# Stop
+t4b7f7705 = Parar
+
+# It printed nothing.
+tbb876a9f = Não imprimiu nada.
+
+# Nothing printed yet.
+t1051cbec = Ainda não imprimiu nada.
+
+# Copy output
+t64749f61 = Copiar saída
+
 # Run this once in a terminal:
 t2a18fdaf = Execute isto uma vez em um terminal:
 
@@ -16,8 +91,29 @@ t0ff991db = No Cline, em MCP Servers › Configure, adicione isto a cline_mcp_se
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = Um cliente que inicia o próprio servidor MCP, via stdio:
 
+# Run freely
+t77cb7aab = Executar livremente
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+t1bfe0ae2 = Os comandos rodam na hora. Cada um fica em Atividade de AI, enquanto roda.
+
+# Ask for risky ones
+td43721d0 = Perguntar nos arriscados
+
+# A command with words from the list below waits for you; the rest run.
+t846e6005 = Um comando com palavras da lista abaixo espera por você; os demais rodam.
+
+# Ask every time
+t26ab736e = Perguntar sempre
+
+# Each command waits until you allow it, or allow it for the session.
+tdcef213b = Cada comando espera até você permiti-lo, ou permiti-lo para a sessão.
+
 # Find a host
 t5f515591 = Encontre um servidor
+
+# A command with these words waits
+t1678b953 = Um comando com estas palavras espera
 
 # AI clients
 ta302119f = Clientes de AI
@@ -64,8 +160,11 @@ tf69e6847 = O token não é guardado, só o hash dele: para ver um de novo, remo
 # Hosts given
 t1ef9da69 = Servidores concedidos
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = Um cliente alcança só estes. Os comandos dele rodam em segundo plano, numa conexão própria, e cada um fica em um registro neste computador.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+t396f69c1 = Um cliente alcança só estes. Os comandos dele rodam em segundo plano, numa conexão própria, e cada um fica em Atividade de AI.
+
+# AI activity
+t07e2f764 = Atividade de AI
 
 # Take every one back
 tb3911aec = Revogar todos
@@ -112,6 +211,9 @@ t41f59644 = Para
 # For
 t0f7e1b30 = Por
 
+# Commands
+t971550f3 = Comandos
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Ele nunca vê uma chave, uma senha ou uma frase secreta: um servidor que pediria uma é recusado, assim como um cuja chave ainda não é conhecida. A saída de um servidor pode trazer palavras feitas para direcionar um agente: conceda servidores apenas a um cliente a quem você os confiaria.
 
@@ -120,6 +222,18 @@ t35afca3b = Cancelar
 
 # Give access
 te96c4c6e = Conceder acesso
+
+# When AI runs a command
+tc94fc353 = Quando a AI executa um comando
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+t608375b2 = Para servidores concedidos daqui em diante; cada um pode ter a própria configuração na tabela acima. Todo comando fica em Atividade de AI, seja qual for esta opção.
+
+# Risky: a command with any of these, a line each, waits for you
+te371b0dd = Arriscados: um comando com qualquer uma destas, uma por linha, espera por você
+
+# The usual list
+tcc58d242 = A lista de sempre
 
 # unlock its windows
 t7c69953e = desbloquear suas janelas
@@ -286,9 +400,6 @@ tbc889b90 = não está no servidor; movido para Downloads como { $name }
 
 # Open
 t538b10e9 = Abrir
-
-# Stop
-t4b7f7705 = Parar
 
 # Discard
 t1e706c21 = Descartar
@@ -2207,15 +2318,6 @@ t3b5e54ea = Imprimiu mais de { $mb } MB: o resto não é guardado.
 # Open a tab
 t85019429 = Abrir uma aba
 
-# Copy output
-t64749f61 = Copiar saída
-
-# exit {code}
-te0c7c2fc = código { $code }
-
-# ended by a signal
-t450a0cd5 = encerrado por um sinal
-
 # sudo did not take the password
 tb2c3fb01 = o sudo não aceitou a senha
 
@@ -2227,9 +2329,6 @@ t7efff279 = não conectou
 
 # given up on
 t4eec5298 = abandonado
-
-# did not run
-tf05d1c4a = não executado
 
 # signing in
 t727e0a33 = fazendo login
@@ -2245,15 +2344,6 @@ t73aeedd4 = de fora
 
 # waiting
 teeda06a8 = aguardando
-
-# running
-t147eb74c = em execução
-
-# stopped
-t6ee2f34e = parado
-
-# exit 0
-tf83c441d = código 0
 
 # sudo refused
 tdd8b1f54 = recusado pelo sudo
@@ -3057,6 +3147,9 @@ t05dcb762 = Um comando, vários servidores
 # ACTIONS
 t62d7de84 = AÇÕES
 
+# What AI clients run
+t81fb801a = O que os clientes de AI executam
+
 # Cmd+click to add or take away
 t36133970 = Cmd+click para adicionar ou tirar
 
@@ -3821,6 +3914,9 @@ t21a947cf = Fechar painel
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Voltar ao final (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+tc4369c9f = { $client } quer executar um comando em { $host }: ele está em Atividade de AI, esperando por você.
 
 # Config files · {category}
 t59edc3e9 = Arquivos de configuração · { $category }
@@ -5031,9 +5127,6 @@ t3b2e2230 = { $name } está em { $path }.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = Se o cofre for sincronizado, ele some também dos seus outros dispositivos.
-
-# Nothing here.
-ta7006e9a = Nada aqui.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = A pasta e tudo o que há nela são excluídos em { $host }.

@@ -170,3 +170,126 @@ scenario!(
         assert!(log.contains("echo first"));
     }
 );
+
+/// A client let in and given `web` (and `db`, not given), its token; the
+/// grant's commands as `mode` says (`Free`, `Risky`, `Ask`).
+fn given_web(ui: &mut Ui, mode: &str) -> String {
+    let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+    ui.agent(&[&key]);
+    let home = ui.config_dir().join("remote-home");
+    std::fs::create_dir_all(&home).expect("home");
+    let server = ui.server(Policy {
+        key: Some(key.public_key().clone()),
+        shell: Some((home.clone(), home)),
+        ..Default::default()
+    });
+    ui.trust(&server);
+    ui.config_file(
+        "hosts.toml",
+        &format!("{}{}", host("web", server.port), host("db", server.port)),
+    );
+    ui.open();
+    ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+    ui.click("ai-add-client");
+    ui.click("ai-kind:codex");
+    ui.click("ai-copy-config");
+    let config = ui.clipboard().expect("the config");
+    let token = config
+        .split("SHELLWING_TOKEN = \"")
+        .nth(1)
+        .and_then(|t| t.split('"').next())
+        .expect("a token")
+        .to_string();
+    ui.click("ai-give");
+    ui.click("ai-pick:web");
+    ui.click("ai-give-to:Codex CLI");
+    ui.click(&format!("ai-give-mode:{mode}"));
+    ui.click("ai-give-ok");
+    ui.click("settings-close");
+    token
+}
+
+/// Follows a job until it ends: all it said.
+fn follow(c: &mut Client, job: &str) -> String {
+    let mut all = String::new();
+    for _ in 0..10 {
+        let (said, _) = c.tool("job_output", json!({"job": job, "wait_seconds": 5}));
+        all.push_str(&said);
+        if !said.contains("still running") && !said.contains("waits for the user") {
+            break;
+        }
+    }
+    all
+}
+
+scenario!(
+    /// A grant that asks every time: a command waits, the AI is told so,
+    /// AI activity shows it and the host list counts it; Run it runs it,
+    /// Refuse refuses it, and Run it this session lets the same command
+    /// run from then on without asking.
+    a_command_waits_until_allowed,
+    |ui| {
+        let token = given_web(ui, "Ask");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "echo allowed", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.wait_until("the host list to count it", |ui| ui.find("ai-waiting").is_some() || ui.find("actions-fold").is_some());
+        ui.click("actions-fold");
+        assert!(ui.find("ai-waiting").is_some(), "one waits");
+        ui.click("action-ai");
+        assert!(ui.find("ai-activity").is_some());
+        ui.click("ai-allow");
+        let said = follow(&mut c, &job);
+        assert!(said.contains("exit 0") && said.contains("allowed"), "{said}");
+
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "rm -rf /tmp/x", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.wait_until("it to wait", |ui| ui.find("ai-refuse").is_some());
+        ui.click("ai-refuse");
+        let said = follow(&mut c, &job);
+        assert!(said.contains("refused by the user"), "{said}");
+
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "hostname", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.wait_until("it to wait", |ui| ui.find("ai-allow-session").is_some());
+        ui.click("ai-allow-session");
+        assert!(follow(&mut c, &job).contains("exit 0"));
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "hostname", "wait_seconds": 5}));
+        assert!(said.starts_with("exit 0"), "allowed for the session: {said}");
+        assert!(ui.find("ai-waiting").is_none(), "nothing waits");
+    }
+);
+
+scenario!(
+    /// A grant that asks for risky ones: a plain command runs at once, one
+    /// with words from the risky list waits; the list is the person's to
+    /// change, and the table changes a grant's mode.
+    only_risky_commands_wait,
+    |ui| {
+        let token = given_web(ui, "Risky");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "df -h /", "wait_seconds": 5}));
+        assert!(said.starts_with("exit 0"), "{said}");
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "sudo systemctl stop nginx", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let (said, _) = c.tool("job_stop", json!({"job": job}));
+        assert!(said.contains("stopped"), "{said}");
+
+        // A word of the person's own.
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        ui.click("ai-risky");
+        ui.keys("ctrl-end");
+        ui.type_text("\nhostname");
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "hostname", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        c.tool("job_stop", json!({"job": job}));
+        // Run freely, from the table: it runs.
+        ui.click("ai-mode:0");
+        ui.click("ai-mode:0");
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "hostname", "wait_seconds": 5}));
+        assert!(said.starts_with("exit 0"), "{said}");
+    }
+);

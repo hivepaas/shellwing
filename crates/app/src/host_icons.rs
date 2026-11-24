@@ -164,6 +164,14 @@ pub const RUN: HostIcon = HostIcon {
     color: None,
 };
 
+/// The AI activity tab's, and the host list's Actions.
+pub const AI: HostIcon = HostIcon {
+    id: "ai",
+    name: "",
+    face: Face::Name("AI"),
+    color: Some(0x7c3aed),
+};
+
 /// The icon named `id`, if the app has it.
 pub fn find(id: &str) -> Option<&'static HostIcon> {
     SYSTEMS

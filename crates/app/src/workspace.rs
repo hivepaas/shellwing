@@ -104,8 +104,8 @@ struct Tab {
     root: Option<Pane<Entity<TermView>>>,
     /// The pane with the keyboard; None in a Run on hosts tab.
     focused: Option<Entity<TermView>>,
-    /// A Run on hosts tab, which has no panes.
-    run: Option<Entity<RunView>>,
+    /// A tab of no panes: Run on hosts, or AI activity.
+    page: Option<TabPage>,
     /// What is typed in one pane goes to every pane that listens.
     broadcast: bool,
     /// Panes left out of that.
@@ -122,19 +122,98 @@ impl Tab {
         Tab {
             root: Some(root),
             focused: Some(view),
-            run: None,
+            page: None,
+            broadcast: false,
+            left_out: vec![],
+        }
+    }
+
+    /// A tab showing `page`.
+    fn page(page: TabPage) -> Tab {
+        Tab {
+            root: None,
+            focused: None,
+            page: Some(page),
             broadcast: false,
             left_out: vec![],
         }
     }
 
     /// What finds the tab again after tabs moved: its focused pane, or its
-    /// Run view.
+    /// page.
     fn key(&self) -> Option<gpui::EntityId> {
         self.focused
             .as_ref()
             .map(|v| v.entity_id())
-            .or_else(|| self.run.as_ref().map(|r| r.entity_id()))
+            .or_else(|| self.page.as_ref().map(TabPage::id))
+    }
+
+    fn run(&self) -> Option<&Entity<RunView>> {
+        match &self.page {
+            Some(TabPage::Run(r)) => Some(r),
+            _ => None,
+        }
+    }
+}
+
+/// What a tab of no panes shows.
+#[derive(Clone)]
+enum TabPage {
+    Run(Entity<RunView>),
+    Activity(Entity<crate::activity_view::ActivityView>),
+}
+
+impl TabPage {
+    fn id(&self) -> gpui::EntityId {
+        match self {
+            TabPage::Run(r) => r.entity_id(),
+            TabPage::Activity(a) => a.entity_id(),
+        }
+    }
+
+    /// Where the keyboard goes when the tab is shown.
+    fn focus(&self, cx: &gpui::App) -> FocusHandle {
+        match self {
+            TabPage::Run(r) => r.read(cx).script_focus(cx),
+            TabPage::Activity(a) => a.focus_handle(cx),
+        }
+    }
+
+    fn title(&self, cx: &gpui::App) -> String {
+        match self {
+            TabPage::Run(r) => r.read(cx).title(cx),
+            TabPage::Activity(_) => tr!("AI activity"),
+        }
+    }
+
+    /// What follows the title: a run's progress, the commands `waiting`.
+    fn detail(&self, waiting: usize, cx: &gpui::App) -> Option<String> {
+        match self {
+            TabPage::Run(r) => r.read(cx).progress(),
+            TabPage::Activity(_) => (waiting > 0).then(|| waiting.to_string()),
+        }
+    }
+
+    /// Whether closing it stops something going on.
+    fn busy(&self, cx: &gpui::App) -> bool {
+        match self {
+            TabPage::Run(r) => r.read(cx).busy(),
+            TabPage::Activity(_) => false,
+        }
+    }
+
+    fn icon(&self) -> &'static crate::host_icons::HostIcon {
+        match self {
+            TabPage::Run(_) => &crate::host_icons::RUN,
+            TabPage::Activity(_) => &crate::host_icons::AI,
+        }
+    }
+
+    fn view(&self) -> gpui::AnyView {
+        match self {
+            TabPage::Run(r) => r.clone().into(),
+            TabPage::Activity(a) => a.clone().into(),
+        }
     }
 }
 
@@ -1453,7 +1532,7 @@ impl Workspace {
     fn close_pane(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(view) = self.active_tab().cloned() {
             self.request_close_view(&view, window, cx);
-        } else if self.tabs.get(self.active).is_some_and(|t| t.run.is_some()) {
+        } else if self.tabs.get(self.active).is_some_and(|t| t.page.is_some()) {
             self.request_close_tab(self.active, window, cx);
         }
     }
@@ -1465,8 +1544,8 @@ impl Workspace {
         };
         // Found again by its key on Close: tabs may have moved meanwhile.
         let (views, key) = (tab.views(), tab.key());
-        if let Some(run) = &tab.run {
-            if run.read(cx).busy() {
+        if let Some(page) = &tab.page {
+            if page.busy(cx) {
                 return self.confirm_close_run(ix, window, cx);
             }
             return self.close(ix, window, cx);
@@ -2047,9 +2126,9 @@ impl Workspace {
         self.layout_changed(cx);
         if let Some(tab) = self.tabs.get(ix) {
             self.active = ix;
-            let focus = match (&tab.focused, &tab.run) {
+            let focus = match (&tab.focused, &tab.page) {
                 (Some(v), _) => v.focus_handle(cx),
-                (None, Some(r)) => r.read(cx).script_focus(cx),
+                (None, Some(p)) => p.focus(cx),
                 (None, None) => self.focus.clone(),
             };
             window.focus(&focus, cx);
@@ -2096,8 +2175,8 @@ impl Workspace {
                     None => format!("{} — shellwing", v.session().title),
                 }
             }
-            None => match self.tabs.get(self.active).and_then(|t| t.run.as_ref()) {
-                Some(r) => format!("{} — shellwing", r.read(cx).title(cx)),
+            None => match self.tabs.get(self.active).and_then(|t| t.page.as_ref()) {
+                Some(p) => format!("{} — shellwing", p.title(cx)),
                 None => "shellwing".into(),
             },
         };
@@ -2431,6 +2510,13 @@ impl Workspace {
             }
         }
         action(Action::RunOnHosts, tr!("Run on hosts…"), String::new());
+        if self
+            .ai
+            .as_ref()
+            .is_some_and(|a| !a.state.clients.is_empty())
+        {
+            action(Action::AiActivity, tr!("AI activity"), String::new());
+        }
         setting(
             Action::ChangeTheme,
             tr!("Change theme…"),
@@ -3673,7 +3759,7 @@ impl Workspace {
         cx.notify();
     }
 
-    fn close_settings(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn close_settings(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.settings.take().is_some() {
             self.activate(self.active, window, cx);
             cx.notify();
@@ -5250,6 +5336,7 @@ impl Workspace {
             Action::Forward => self.ask_forward(None, window, cx),
             Action::NewNote => self.open_note(None, cx),
             Action::RunOnHosts => self.open_run(vec![], window, cx),
+            Action::AiActivity => self.open_activity(window, cx),
             Action::NewSnippet => self.open_snippet(None, cx),
             Action::NewEnvironment | Action::NewConfigFile => {
                 let page = if a == Action::NewEnvironment {
@@ -5878,17 +5965,24 @@ impl Workspace {
             .enumerate()
             .map(|(i, tab)| {
                 let Some(focused) = &tab.focused else {
-                    let r = tab.run.as_ref().map(|r| r.read(cx));
+                    let p = tab.page.as_ref();
+                    let (key, host) = match p {
+                        Some(TabPage::Activity(_)) => ("\0ai", tr!("AI activity")),
+                        _ => ("\0run", tr!("Run on hosts")),
+                    };
                     return TabRow {
                         tab: i,
-                        host_key: "\0run".into(),
-                        host: tr!("Run on hosts").into(),
+                        host_key: key.into(),
+                        host: host.into(),
                         local: false,
                         mark: None,
-                        icon: Some(&crate::host_icons::RUN),
-                        title: r.map(|r| r.title(cx)).unwrap_or_default().into(),
-                        address: r.and_then(|r| r.progress()).unwrap_or_default().into(),
-                        status: if r.is_some_and(|r| r.busy()) {
+                        icon: p.map(TabPage::icon),
+                        title: p.map(|p| p.title(cx)).unwrap_or_default().into(),
+                        address: p
+                            .and_then(|p| p.detail(self.ai_waiting(), cx))
+                            .unwrap_or_default()
+                            .into(),
+                        status: if p.is_some_and(|p| p.busy(cx)) {
                             Status::Connecting
                         } else {
                             Status::Closed
@@ -6142,7 +6236,7 @@ impl Workspace {
         for (i, tab) in self.tabs.iter().enumerate() {
             let active = i == self.active;
             // A Run on hosts tab: its title, its progress, its own tile.
-            let (title, detail, color, icon, status) = match (&tab.focused, &tab.run) {
+            let (title, detail, color, icon, status) = match (&tab.focused, &tab.page) {
                 (Some(focused), _) => {
                     let v = focused.read(cx);
                     (
@@ -6153,16 +6247,13 @@ impl Workspace {
                         Some(v.status()),
                     )
                 }
-                (None, Some(run)) => {
-                    let r = run.read(cx);
-                    (
-                        r.title(cx),
-                        r.progress(),
-                        None,
-                        Some(&crate::host_icons::RUN),
-                        r.busy().then_some(Status::Connecting),
-                    )
-                }
+                (None, Some(page)) => (
+                    page.title(cx),
+                    page.detail(self.ai_waiting(), cx),
+                    None,
+                    Some(page.icon()),
+                    page.busy(cx).then_some(Status::Connecting),
+                ),
                 (None, None) => continue,
             };
             strip = strip.child(
@@ -6720,9 +6811,15 @@ impl Workspace {
             r.ai = given.contains(&r.spec);
         }
         let collapsed = self.sidebar_collapsed;
+        let ai = self
+            .ai
+            .as_ref()
+            .filter(|a| !a.state.clients.is_empty())
+            .map(|_| self.ai_waiting());
         self.sidebar.update(cx, |s, cx| {
             s.set(sections, cx);
             s.set_collapsed(collapsed, cx);
+            s.set_ai(ai, cx);
         });
         cx.notify();
     }
@@ -6958,11 +7055,13 @@ impl Render for Workspace {
         let tabs = self.tab_strip(cx);
         let update_row = self.update_row(cx);
         let main: AnyElement = match self.tabs.get(self.active) {
-            Some(Tab { run: Some(run), .. }) => div()
+            Some(Tab {
+                page: Some(page), ..
+            }) => div()
                 .flex_1()
                 .min_h_0()
                 .min_w_0()
-                .child(run.clone())
+                .child(page.view())
                 .into_any_element(),
             Some(tab) => {
                 let multi = tab.views().len() > 1;

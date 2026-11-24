@@ -16,6 +16,7 @@
 // A GUI program on Windows: no console window opens beside it.
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+mod activity_view;
 mod ai_view;
 mod app_lock;
 mod chrome;

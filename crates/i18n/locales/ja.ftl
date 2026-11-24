@@ -1,6 +1,81 @@
 # shellwing in ja. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+t49268f5c = 確認待ち
+
+# running
+t147eb74c = 実行中
+
+# exit 0
+tf83c441d = 終了コード 0
+
+# exit {code}
+te0c7c2fc = 終了コード { $code }
+
+# ended by a signal
+t450a0cd5 = シグナルで終了
+
+# did not run
+tf05d1c4a = 未実行
+
+# stopped
+t6ee2f34e = 停止
+
+# refused by you
+t2fd484b3 = あなたが拒否
+
+# All
+t75afe364 = すべて
+
+# Waiting for you
+te8233afc = 確認待ち
+
+# Running
+t452925ec = 実行中
+
+# Failed
+t5579c3d4 = 失敗
+
+# No AI client has run a command yet.
+td29d28d8 = AI クライアントが実行したコマンドはまだありません。
+
+# Nothing here.
+ta7006e9a = 何もありません。
+
+# Stop all AI
+tddf9c9cc = すべての AI を停止
+
+# {client} · {host} · started {when} · {job}
+tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
+
+# {client} wants to run this on {host}. It waits for you: its grant asks for every command.
+t2a306810 = { $client } が { $host } でこれを実行しようとしています。指示を待っています。この許可では、すべてのコマンドに確認が必要です。
+
+# {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
+t85e6d49e = { $client } が { $host } でこれを実行しようとしています。指示を待っています。危険リストにある { $words } が含まれています。
+
+# Run it
+t72430853 = 実行
+
+# Run it, and this command again this session
+t2efebee7 = 実行し、このセッション中は同じコマンドも実行
+
+# Refuse it
+tbea0b112 = 拒否
+
+# Stop
+t4b7f7705 = 停止
+
+# It printed nothing.
+tbb876a9f = 何も出力されませんでした。
+
+# Nothing printed yet.
+t1051cbec = まだ何も出力されていません。
+
+# Copy output
+t64749f61 = 出力をコピー
+
 # Run this once in a terminal:
 t2a18fdaf = ターミナルでこれを一度実行してください：
 
@@ -16,8 +91,29 @@ t0ff991db = Cline の MCP Servers › Configure で、cline_mcp_settings.json �
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = MCP サーバーを自分で起動するクライアント（stdio 経由）：
 
+# Run freely
+t77cb7aab = 自由に実行
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+t1bfe0ae2 = コマンドはすぐに実行されます。それぞれ実行中から AI アクティビティに記録されます。
+
+# Ask for risky ones
+td43721d0 = 危険なものは確認
+
+# A command with words from the list below waits for you; the rest run.
+t846e6005 = 下のリストの語を含むコマンドは指示を待ち、それ以外は実行されます。
+
+# Ask every time
+t26ab736e = 毎回確認
+
+# Each command waits until you allow it, or allow it for the session.
+tdcef213b = 各コマンドは、許可するか、このセッション中の実行を許可するまで待ちます。
+
 # Find a host
 t5f515591 = ホストを検索
+
+# A command with these words waits
+t1678b953 = これらの語を含むコマンドは待機します
 
 # AI clients
 ta302119f = AI クライアント
@@ -64,8 +160,11 @@ tf69e6847 = トークンは保存されず、ハッシュのみが残ります�
 # Hosts given
 t1ef9da69 = 許可したホスト
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = クライアントがアクセスできるのはこれらのホストだけです。コマンドは専用の接続でバックグラウンド実行され、それぞれこのコンピュータ上のログに記録されます。
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+t396f69c1 = クライアントがアクセスできるのはこれらのホストだけです。コマンドはバックグラウンドで専用の接続を使って実行され、それぞれ AI アクティビティに記録されます。
+
+# AI activity
+t07e2f764 = AI アクティビティ
 
 # Take every one back
 tb3911aec = すべて取り消す
@@ -112,6 +211,9 @@ t41f59644 = 許可先
 # For
 t0f7e1b30 = 期間
 
+# Commands
+t971550f3 = コマンド
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
 
@@ -120,6 +222,18 @@ t35afca3b = キャンセル
 
 # Give access
 te96c4c6e = アクセスを許可
+
+# When AI runs a command
+tc94fc353 = AI がコマンドを実行するとき
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+t608375b2 = 今後許可するホストに適用されます。各ホストは上の表で個別に設定できます。どの設定でも、すべてのコマンドが AI アクティビティに記録されます。
+
+# Risky: a command with any of these, a line each, waits for you
+te371b0dd = 危険：これらのいずれかを含むコマンドは指示を待ちます（1 行に 1 つ）
+
+# The usual list
+tcc58d242 = 標準のリスト
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除
@@ -282,9 +396,6 @@ tbc889b90 = サーバー上にありません。{ $name } として Downloads �
 
 # Open
 t538b10e9 = 開く
-
-# Stop
-t4b7f7705 = 停止
 
 # Discard
 t1e706c21 = 破棄
@@ -2158,15 +2269,6 @@ t3b5e54ea = { $mb } MB を超えて出力されたため、残りは保存され
 # Open a tab
 t85019429 = タブを開く
 
-# Copy output
-t64749f61 = 出力をコピー
-
-# exit {code}
-te0c7c2fc = 終了コード { $code }
-
-# ended by a signal
-t450a0cd5 = シグナルで終了
-
 # sudo did not take the password
 tb2c3fb01 = sudo がパスワードを受け付けませんでした
 
@@ -2178,9 +2280,6 @@ t7efff279 = 接続失敗
 
 # given up on
 t4eec5298 = 打ち切り
-
-# did not run
-tf05d1c4a = 未実行
 
 # signing in
 t727e0a33 = サインイン中
@@ -2196,15 +2295,6 @@ t73aeedd4 = 除外
 
 # waiting
 teeda06a8 = 待機中
-
-# running
-t147eb74c = 実行中
-
-# stopped
-t6ee2f34e = 停止
-
-# exit 0
-tf83c441d = 終了コード 0
 
 # sudo refused
 tdd8b1f54 = sudo が拒否
@@ -3004,6 +3094,9 @@ t05dcb762 = 1 つのコマンドを多数のホストで
 # ACTIONS
 t62d7de84 = アクション
 
+# What AI clients run
+t81fb801a = AI クライアントが実行するコマンド
+
 # Cmd+click to add or take away
 t36133970 = Cmd+click で追加・解除
 
@@ -3720,6 +3813,9 @@ t21a947cf = ペインを閉じる
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 最下部に戻る（Shift+End）
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+tc4369c9f = { $client } が { $host } でコマンドを実行しようとしています。AI アクティビティで指示を待っています。
 
 # Config files · {category}
 t59edc3e9 = 設定ファイル · { $category }
@@ -4887,9 +4983,6 @@ t3b2e2230 = { $name } を { $path } に配置しました。
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = 保管庫を同期している場合、ほかのデバイスからも削除されます。
-
-# Nothing here.
-ta7006e9a = 何もありません。
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = { $host } 上のフォルダとその中身がすべて削除されます。

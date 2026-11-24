@@ -38,13 +38,7 @@ impl Workspace {
         .detach();
         // Its title and progress show on its tab.
         cx.observe(&run, |_, _, cx| cx.notify()).detach();
-        self.tabs.push(Tab {
-            root: None,
-            focused: None,
-            run: Some(run),
-            broadcast: false,
-            left_out: vec![],
-        });
+        self.tabs.push(Tab::page(TabPage::Run(run)));
         self.activate(self.tabs.len() - 1, window, cx);
         self.sidebar.update(cx, |s, cx| s.clear_picked(cx));
     }
@@ -52,7 +46,7 @@ impl Workspace {
     /// The active tab's Run view, if it is a Run on hosts tab.
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn active_run(&self) -> Option<Entity<RunView>> {
-        self.tabs.get(self.active).and_then(|t| t.run.clone())
+        self.tabs.get(self.active).and_then(|t| t.run().cloned())
     }
 
     /// The tabs `state/session.json` would keep, for the UI tests.
@@ -88,7 +82,8 @@ impl Workspace {
 
     /// The host list changed: the Run tabs choose from it as it is now.
     pub(super) fn refresh_runs(&mut self, picks: &[Pick], cx: &mut Context<Self>) {
-        let runs: Vec<Entity<RunView>> = self.tabs.iter().filter_map(|t| t.run.clone()).collect();
+        let runs: Vec<Entity<RunView>> =
+            self.tabs.iter().filter_map(|t| t.run().cloned()).collect();
         if runs.is_empty() {
             return;
         }

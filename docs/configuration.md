@@ -1170,9 +1170,22 @@ config to paste into that client, with a token of its own.
 - The config starts `shellwing mcp` by its full path, with the token in
   `SHELLWING_TOKEN`. It never puts the token on a command line.
 
-**Giving hosts.** *Hosts given › Give a host…*: choose a host, the client, and
-for how long: until you take it back, while shellwing stays open, 1 hour or 8
-hours. *Take back*, or *Take every one back*, ends it at once: its commands
+**Giving hosts.** *Hosts given › Give a host…*: choose a host, the client, for
+how long (until you take it back, while shellwing stays open, 1 hour or 8
+hours), and what happens to a command:
+
+- **Run freely** (the default): it runs at once.
+- **Ask for risky ones**: a command with words from the risky list waits for
+  you; the rest run.
+- **Ask every time**: each command waits for you.
+
+The default for new grants is set under *When AI runs a command*, and the
+table of hosts given changes a grant's mode with a click. The risky list is
+yours to change, a line each: its words in a row in the command, case aside
+(`rm -rf`, `systemctl stop`, `drop`); a word ending in `/` begins one
+(`> /etc/`). *The usual list* goes back to shellwing's.
+
+*Take back*, or *Take every one back*, ends a grant at once: its commands
 still running stop.
 
 How an agent reaches a host:
@@ -1203,9 +1216,24 @@ How an agent reaches a host:
 - `job_stop(job)`: stops a job.
 
 A command that asks for input gets none: `sudo` with a password fails at once,
-so agents are told to use `sudo -n` and `-y` forms. Every command an agent runs
-is kept on this computer, in `state/ai-activity.jsonl`: the last 1000, with the
-first 64 KB of each one's output.
+so agents are told to use `sudo -n` and `-y` forms.
+
+**AI activity.** *Actions › AI activity*, *Settings › AI › AI activity*, or the
+palette, opens a tab with every command AI clients ran:
+
+- **The list:** newest first, with *All*, *Waiting for you*, *Running* and
+  *Failed*. *Stop all AI* stops every command going.
+- **The command shown:** its output as it comes, its end and how long it took,
+  *Stop* while it runs, and *Copy output*.
+- **A command that waits for you** says why: the risky words it has, or that
+  its grant asks every time. *Run it*, *Run it, and this command again this
+  session*, or *Refuse it*.
+  - The agent is told it waits, and `job_output` tells it once you chose.
+  - A notice says when one comes in, and *Actions* counts those waiting, even
+    while folded.
+
+The activity is kept on this computer, in `state/ai-activity.jsonl`: the last
+1000 commands, with the first 64 KB of each one's output.
 
 **Where clients reach the app.** A socket only you may open:
 `state/mcp.sock` in the config directory (or a short path in the temp folder

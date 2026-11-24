@@ -1,6 +1,81 @@
 # shellwing in Indonesian. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+t49268f5c = menunggu Anda
+
+# running
+t147eb74c = berjalan
+
+# exit 0
+tf83c441d = exit 0
+
+# exit {code}
+te0c7c2fc = exit { $code }
+
+# ended by a signal
+t450a0cd5 = diakhiri oleh sinyal
+
+# did not run
+tf05d1c4a = tidak dijalankan
+
+# stopped
+t6ee2f34e = dihentikan
+
+# refused by you
+t2fd484b3 = ditolak oleh Anda
+
+# All
+t75afe364 = Semua
+
+# Waiting for you
+te8233afc = Menunggu Anda
+
+# Running
+t452925ec = Berjalan
+
+# Failed
+t5579c3d4 = Gagal
+
+# No AI client has run a command yet.
+td29d28d8 = Belum ada klien AI yang menjalankan perintah.
+
+# Nothing here.
+ta7006e9a = Tidak ada apa-apa di sini.
+
+# Stop all AI
+tddf9c9cc = Hentikan semua AI
+
+# {client} · {host} · started {when} · {job}
+tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
+
+# {client} wants to run this on {host}. It waits for you: its grant asks for every command.
+t2a306810 = { $client } ingin menjalankan ini di { $host }. Perintah ini menunggu Anda: aksesnya meminta persetujuan untuk setiap perintah.
+
+# {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
+t85e6d49e = { $client } ingin menjalankan ini di { $host }. Perintah ini menunggu Anda: perintah ini memuat { $words }, dari daftar kata berisiko.
+
+# Run it
+t72430853 = Jalankan
+
+# Run it, and this command again this session
+t2efebee7 = Jalankan, dan perintah ini lagi di sesi ini
+
+# Refuse it
+tbea0b112 = Tolak
+
+# Stop
+t4b7f7705 = Hentikan
+
+# It printed nothing.
+tbb876a9f = Tidak ada keluaran.
+
+# Nothing printed yet.
+t1051cbec = Belum ada keluaran.
+
+# Copy output
+t64749f61 = Salin keluaran
+
 # Run this once in a terminal:
 t2a18fdaf = Jalankan ini sekali di terminal:
 
@@ -16,8 +91,29 @@ t0ff991db = Di Cline, buka MCP Servers › Configure, lalu tambahkan ini ke clin
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = Klien yang menjalankan server MCP-nya sendiri, lewat stdio:
 
+# Run freely
+t77cb7aab = Jalankan bebas
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+t1bfe0ae2 = Perintah langsung berjalan. Masing-masing dicatat di Aktivitas AI, selagi berjalan.
+
+# Ask for risky ones
+td43721d0 = Tanya untuk yang berisiko
+
+# A command with words from the list below waits for you; the rest run.
+t846e6005 = Perintah yang memuat kata dari daftar di bawah menunggu Anda; sisanya berjalan.
+
+# Ask every time
+t26ab736e = Tanya setiap kali
+
+# Each command waits until you allow it, or allow it for the session.
+tdcef213b = Setiap perintah menunggu sampai Anda mengizinkannya, atau mengizinkannya untuk sesi ini.
+
 # Find a host
 t5f515591 = Cari host
+
+# A command with these words waits
+t1678b953 = Perintah dengan kata-kata ini menunggu
 
 # AI clients
 ta302119f = Klien AI
@@ -64,8 +160,11 @@ tf69e6847 = Token tidak disimpan, hanya hash-nya: untuk melihat token lagi, hapu
 # Hosts given
 t1ef9da69 = Host yang diberikan
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = Klien hanya dapat menjangkau host ini. Perintahnya berjalan di latar belakang, pada koneksinya sendiri, dan masing-masing dicatat di log di komputer ini.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+t396f69c1 = Klien hanya dapat menjangkau host ini. Perintahnya berjalan di latar belakang, pada koneksinya sendiri, dan masing-masing dicatat di Aktivitas AI.
+
+# AI activity
+t07e2f764 = Aktivitas AI
 
 # Take every one back
 tb3911aec = Cabut semua
@@ -112,6 +211,9 @@ t41f59644 = Kepada
 # For
 t0f7e1b30 = Selama
 
+# Commands
+t971550f3 = Perintah
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
 
@@ -120,6 +222,18 @@ t35afca3b = Batal
 
 # Give access
 te96c4c6e = Berikan akses
+
+# When AI runs a command
+tc94fc353 = Saat AI menjalankan perintah
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+t608375b2 = Untuk host yang diberikan mulai sekarang; masing-masing dapat diatur tersendiri di tabel di atas. Setiap perintah dicatat di Aktivitas AI, apa pun pilihan ini.
+
+# Risky: a command with any of these, a line each, waits for you
+te371b0dd = Berisiko: perintah dengan salah satu kata ini, satu per baris, menunggu Anda
+
+# The usual list
+tcc58d242 = Daftar bawaan
 
 # unlock its windows
 t7c69953e = membuka kunci jendelanya
@@ -285,9 +399,6 @@ tbc889b90 = tidak ada di server; dipindahkan ke Downloads sebagai { $name }
 
 # Open
 t538b10e9 = Buka
-
-# Stop
-t4b7f7705 = Hentikan
 
 # Discard
 t1e706c21 = Buang
@@ -2185,15 +2296,6 @@ t3b5e54ea = Keluarannya lebih dari { $mb } MB: sisanya tidak disimpan.
 # Open a tab
 t85019429 = Buka tab
 
-# Copy output
-t64749f61 = Salin keluaran
-
-# exit {code}
-te0c7c2fc = exit { $code }
-
-# ended by a signal
-t450a0cd5 = diakhiri oleh sinyal
-
 # sudo did not take the password
 tb2c3fb01 = sudo tidak menerima kata sandi
 
@@ -2205,9 +2307,6 @@ t7efff279 = tidak terhubung
 
 # given up on
 t4eec5298 = ditinggalkan
-
-# did not run
-tf05d1c4a = tidak dijalankan
 
 # signing in
 t727e0a33 = sedang masuk
@@ -2223,15 +2322,6 @@ t73aeedd4 = dikecualikan
 
 # waiting
 teeda06a8 = menunggu
-
-# running
-t147eb74c = berjalan
-
-# stopped
-t6ee2f34e = dihentikan
-
-# exit 0
-tf83c441d = exit 0
 
 # sudo refused
 tdd8b1f54 = sudo menolak
@@ -3034,6 +3124,9 @@ t05dcb762 = Satu perintah, banyak host
 # ACTIONS
 t62d7de84 = TINDAKAN
 
+# What AI clients run
+t81fb801a = Apa yang dijalankan klien AI
+
 # Cmd+click to add or take away
 t36133970 = Cmd+click untuk menambah atau mengurangi
 
@@ -3777,6 +3870,9 @@ t21a947cf = Tutup Panel
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Kembali ke bawah (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+tc4369c9f = { $client } ingin menjalankan perintah di { $host }: perintahnya ada di Aktivitas AI, menunggu Anda.
 
 # Config files · {category}
 t59edc3e9 = Berkas konfigurasi · { $category }
@@ -4974,9 +5070,6 @@ t3b2e2230 = { $name } ada di { $path }.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = Jika brankas tersinkron, ini juga terhapus dari perangkat Anda yang lain.
-
-# Nothing here.
-ta7006e9a = Tidak ada apa-apa di sini.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = Folder dan seluruh isinya dihapus di { $host }.
