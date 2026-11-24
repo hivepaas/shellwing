@@ -201,12 +201,15 @@ pub fn tools() -> Value {
         {
             "name": "list_dir",
             "title": "List a folder",
-            "description": "The entries of a folder on a host: each one's kind (d a folder, - a file, l a link), name, size and when it changed. A path not starting with / is from the home folder; ~ is the home folder.",
+            "description": format!("The entries of a folder on a host, folders first, then by name: each one's kind (d a folder, - a file, l a link), name, size and when it changed. First, how many there are; a large folder comes a part at a time ({} entries if not told, {} at the most), with where the rest begins. pattern keeps the names like it (* any run of characters, ? one). A path not starting with / is from the home folder; ~ is the home folder.", super::files::LIST, super::files::MOST_LIST),
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
                     "path": {"type": "string", "description": "The folder; the home folder if not given."},
+                    "pattern": {"type": "string", "description": "Only names like it, as *.log or nginx*."},
+                    "offset": {"type": "integer", "minimum": 0, "description": "The entry to start at; 0 if not given."},
+                    "limit": {"type": "integer", "minimum": 1, "description": "How many entries."},
                 },
                 "required": ["host"],
             },
@@ -318,7 +321,19 @@ async fn call(
                 .unwrap_or("")
                 .to_string();
             let op = match name {
-                "list_dir" => FileOp::List { path },
+                "list_dir" => FileOp::List {
+                    path,
+                    pattern: args
+                        .get("pattern")
+                        .and_then(Value::as_str)
+                        .filter(|p| !p.is_empty())
+                        .map(str::to_string),
+                    offset: args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize,
+                    limit: args
+                        .get("limit")
+                        .and_then(Value::as_u64)
+                        .map_or(super::files::LIST, |n| n as usize),
+                },
                 "read_file" => FileOp::Read {
                     path: text_arg(args, "path")?,
                     offset: args.get("offset").and_then(Value::as_u64).unwrap_or(0),

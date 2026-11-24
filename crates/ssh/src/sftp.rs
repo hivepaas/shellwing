@@ -231,6 +231,33 @@ impl Sftp {
         Ok(out)
     }
 
+    /// The entries of `dir` as the server gives them: in no order, and a
+    /// link's target not asked for ([`Sftp::points_to_dir`]), so a large
+    /// folder costs one listing.
+    pub async fn entries(&self, dir: &str) -> Result<Vec<Entry>, Error> {
+        Ok(self
+            .0
+            .read_dir(dir)
+            .await
+            .map_err(err)?
+            .map(|e| {
+                let meta = e.metadata();
+                Entry {
+                    name: e.file_name(),
+                    kind: kind(e.file_type()),
+                    dir_link: false,
+                    size: meta.len(),
+                    modified: meta.modified().ok(),
+                }
+            })
+            .collect())
+    }
+
+    /// Whether the link at `path` points at a directory.
+    pub async fn points_to_dir(&self, path: &str) -> bool {
+        self.0.metadata(path).await.is_ok_and(|m| m.is_dir())
+    }
+
     /// What is at `path`, following links; None when nothing is.
     pub async fn stat(&self, path: &str) -> Result<Option<Entry>, Error> {
         use russh_sftp::client::error::Error as E;

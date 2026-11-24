@@ -427,6 +427,10 @@ scenario!(
         assert!(said.contains("binary, in base64") && said.ends_with("AAEC/w=="), "{said}");
         let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web"}));
         assert!(said.contains("-  notes.txt  10 B") && said.contains("-  bin.dat  4 B"), "{said}");
+        let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web", "pattern": "*.dat"}));
+        assert!(said.starts_with(&format!("{}: 1 entry like *.dat", home.display())) && !said.contains("notes.txt"), "{said}");
+        let (said, _) = c.tool_in(ui, "list_dir", json!({"host": "web", "limit": 1}));
+        assert!(said.contains("showing 1 to 1; the rest from offset 1") && said.lines().count() == 2, "{said}");
         let (said, error) = c.tool_in(ui, "read_file", json!({"host": "web", "path": "nope.txt"}));
         assert!(error && said.contains("no such file"), "{said}");
     }

@@ -1245,8 +1245,12 @@ they print:
   follows a long command a few seconds behind it. A client that asks for
   progress is told how far it got, each second.
 - `job_stop(job)`: stops a job.
-- `list_dir(host, path)`: a folder's entries, a line each, with their kind,
-  size and when they changed.
+- `list_dir(host, path, pattern, offset, limit)`: a folder's entries, a line
+  each, folders first, with their kind, size and when they changed. It says
+  first how many there are (folders and files), and a large folder comes a
+  part at a time: 200 entries if not told, 1000 at the most, with where the
+  rest begins. `pattern` keeps the names like it (`*.log`, `nginx*`: `*`
+  any run of characters, `?` one).
 - `read_file(host, path, offset, length)`: a file, or a part of it (up to
   512 KB at a time, 256 KB if not told): text as it is, anything else in
   base64, with where the rest begins.

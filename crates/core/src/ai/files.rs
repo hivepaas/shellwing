@@ -7,6 +7,10 @@ use base64::Engine as _;
 use shellwing_ssh::sftp::{self, Entry, Kind};
 use shellwing_ssh::{Sftp, WriteHow};
 
+/// A listing gives this many entries at the most at a time; and this, when
+/// not told.
+pub const MOST_LIST: usize = 1000;
+pub const LIST: usize = 200;
 /// A read gives this much at the most at a time; and this, when not told.
 pub const MOST_READ: usize = 512 * 1024;
 pub const READ: usize = 256 * 1024;
@@ -21,6 +25,10 @@ pub const WRITES: &str = "\u{0}writes";
 pub enum FileOp {
     List {
         path: String,
+        /// Only names like it: `*` any run of characters, `?` one.
+        pattern: Option<String>,
+        offset: usize,
+        limit: usize,
     },
     Read {
         path: String,
@@ -38,7 +46,12 @@ impl FileOp {
     /// As AI activity lists it.
     pub fn label(&self) -> String {
         match self {
-            FileOp::List { path } => format!("list {path}"),
+            FileOp::List {
+                path,
+                pattern: Some(p),
+                ..
+            } => format!("list {path} ({p})"),
+            FileOp::List { path, .. } => format!("list {path}"),
             FileOp::Read {
                 path, offset: 0, ..
             } => format!("read {path}"),
@@ -82,10 +95,20 @@ async fn resolve(sftp: &Sftp, path: &str) -> Result<String, String> {
 /// Does `op`; what it says back.
 pub async fn serve(sftp: &Sftp, op: FileOp) -> Result<String, String> {
     match op {
-        FileOp::List { path } => {
+        FileOp::List {
+            path,
+            pattern,
+            offset,
+            limit,
+        } => {
             let path = resolve(sftp, &path).await?;
-            let entries = sftp.list(&path).await.map_err(|e| e.to_string())?;
-            Ok(listing(&path, &entries))
+            let all = sftp.entries(&path).await.map_err(|e| e.to_string())?;
+            let mut page = Page::of(all, pattern.as_deref(), offset, limit.clamp(1, MOST_LIST));
+            // Only the links shown are asked where they point.
+            for e in page.shown.iter_mut().filter(|e| e.kind == Kind::Link) {
+                e.dir_link = sftp.points_to_dir(&sftp::join(&path, &e.name)).await;
+            }
+            Ok(listing(&path, &page))
         }
         FileOp::Read {
             path,
@@ -109,19 +132,101 @@ pub async fn serve(sftp: &Sftp, op: FileOp) -> Result<String, String> {
     }
 }
 
-/// A folder's entries, a line each: its kind, its name, its size and when
-/// it changed.
-pub fn listing(path: &str, entries: &[Entry]) -> String {
-    let mut out = format!(
-        "{path}: {} {}\n",
-        entries.len(),
-        if entries.len() == 1 {
-            "entry"
+/// Whether `name` is like `pattern`: `*` any run of characters, `?` one.
+pub fn like(name: &str, pattern: &str) -> bool {
+    let (n, p): (Vec<char>, Vec<char>) = (name.chars().collect(), pattern.chars().collect());
+    // Where a `*` was last, and where in the name it stood for.
+    let (mut i, mut j, mut star, mut from) = (0, 0, None, 0);
+    while i < n.len() {
+        if j < p.len() && (p[j] == '?' || p[j] == n[i]) {
+            i += 1;
+            j += 1;
+        } else if j < p.len() && p[j] == '*' {
+            star = Some(j);
+            from = i;
+            j += 1;
+        } else if let Some(s) = star {
+            j = s + 1;
+            from += 1;
+            i = from;
         } else {
-            "entries"
+            return false;
         }
-    );
-    for e in entries {
+    }
+    p[j..].iter().all(|c| *c == '*')
+}
+
+/// A folder's entries, the part shown and how many there are.
+pub struct Page {
+    pub shown: Vec<Entry>,
+    /// Those like the pattern (all, with none).
+    pub matching: usize,
+    pub folders: usize,
+    pub files: usize,
+    /// All of them, the pattern aside.
+    pub total: usize,
+    pub pattern: Option<String>,
+    pub offset: usize,
+}
+
+impl Page {
+    /// `limit` of `all` from `offset`, those like `pattern`: folders first,
+    /// then by name.
+    pub fn of(all: Vec<Entry>, pattern: Option<&str>, offset: usize, limit: usize) -> Page {
+        let total = all.len();
+        let mut kept: Vec<Entry> = all
+            .into_iter()
+            .filter(|e| pattern.is_none_or(|p| like(&e.name, p)))
+            .collect();
+        kept.sort_by(|a, b| {
+            b.is_dir()
+                .cmp(&a.is_dir())
+                .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+                .then_with(|| a.name.cmp(&b.name))
+        });
+        let folders = kept.iter().filter(|e| e.is_dir()).count();
+        let matching = kept.len();
+        let shown = kept.into_iter().skip(offset).take(limit).collect();
+        Page {
+            shown,
+            matching,
+            folders,
+            files: matching - folders,
+            total,
+            pattern: pattern.map(str::to_string),
+            offset,
+        }
+    }
+}
+
+/// A folder's entries, a line each: its kind, its name, its size and when
+/// it changed; first, how many there are, and where the rest begins.
+pub fn listing(path: &str, page: &Page) -> String {
+    let n = |k: usize, one: &str, many: &str| format!("{k} {}", if k == 1 { one } else { many });
+    let mut out = match &page.pattern {
+        Some(p) => format!(
+            "{path}: {} like {p} ({}, {}), of {}",
+            n(page.matching, "entry", "entries"),
+            n(page.folders, "folder", "folders"),
+            n(page.files, "file", "files"),
+            page.total
+        ),
+        None => format!(
+            "{path}: {} ({}, {})",
+            n(page.matching, "entry", "entries"),
+            n(page.folders, "folder", "folders"),
+            n(page.files, "file", "files")
+        ),
+    };
+    let end = page.offset + page.shown.len();
+    if page.offset > 0 || end < page.matching {
+        out.push_str(&format!("; showing {} to {end}", page.offset + 1));
+    }
+    if end < page.matching {
+        out.push_str(&format!("; the rest from offset {end}"));
+    }
+    out.push('\n');
+    for e in &page.shown {
         let (mark, name) = match (e.kind, e.is_dir()) {
             (_, true) => ('d', format!("{}/", e.name)),
             (Kind::Link, false) => ('l', e.name.clone()),
@@ -222,18 +327,72 @@ mod tests {
         };
         let out = listing(
             "/etc/nginx",
-            &[
-                e("sites-enabled", Kind::Dir, 0),
-                e("nginx.conf", Kind::File, 2048),
-            ],
+            &Page::of(
+                vec![
+                    e("nginx.conf", Kind::File, 2048),
+                    e("sites-enabled", Kind::Dir, 0),
+                ],
+                None,
+                0,
+                LIST,
+            ),
         );
         let lines: Vec<&str> = out.lines().collect();
-        assert_eq!(lines[0], "/etc/nginx: 2 entries");
+        assert_eq!(lines[0], "/etc/nginx: 2 entries (1 folder, 1 file)");
         assert!(lines[1].starts_with("d  sites-enabled/  "), "{out}");
         assert!(
             lines[2].starts_with("-  nginx.conf  2.0 KB  2023-11-"),
             "{out}"
         );
+    }
+
+    #[test]
+    fn a_large_folder_a_page_at_a_time() {
+        let e = |name: String| Entry {
+            name,
+            kind: Kind::File,
+            dir_link: false,
+            size: 1,
+            modified: None,
+        };
+        let all: Vec<Entry> = (0..2500)
+            .map(|i| e(format!("f{i:04}.log")))
+            .chain([e("x.txt".into())])
+            .collect();
+        let out = listing("/var/log", &Page::of(all.clone(), None, 0, LIST));
+        assert_eq!(
+            out.lines().next(),
+            Some(
+                "/var/log: 2501 entries (0 folders, 2501 files); showing 1 to 200; the rest from offset 200"
+            )
+        );
+        assert_eq!(out.lines().count(), 201);
+        assert_eq!(
+            listing("/var/log", &Page::of(all.clone(), Some("*.txt"), 0, LIST))
+                .lines()
+                .next(),
+            Some("/var/log: 1 entry like *.txt (0 folders, 1 file), of 2501")
+        );
+        let last = Page::of(all, Some("f24??.log"), 90, LIST);
+        assert_eq!((last.matching, last.shown.len()), (100, 10));
+        assert!(
+            listing("/v", &last)
+                .lines()
+                .next()
+                .expect("head")
+                .ends_with("showing 91 to 100")
+        );
+    }
+
+    #[test]
+    fn names_like_a_pattern() {
+        assert!(like("nginx.conf", "*.conf"));
+        assert!(like("nginx.conf", "ng?nx*"));
+        assert!(like("a", "*"));
+        assert!(like("abcabd", "*abd"));
+        assert!(!like("nginx.conf", "*.log"));
+        assert!(!like("ab", "a?b"));
+        assert!(like("", "*") && !like("", "?"));
     }
 
     #[test]
