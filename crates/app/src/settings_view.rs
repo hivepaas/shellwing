@@ -51,10 +51,11 @@ pub enum Page {
     Notes,
     Sync,
     Vault,
+    Ai,
     About,
 }
 
-const PAGES: [Page; 14] = [
+const PAGES: [Page; 15] = [
     Page::General,
     Page::Appearance,
     Page::Terminal,
@@ -68,6 +69,7 @@ const PAGES: [Page; 14] = [
     Page::Notes,
     Page::Sync,
     Page::Vault,
+    Page::Ai,
     Page::About,
 ];
 
@@ -88,6 +90,7 @@ impl Page {
             Page::Notes => tr!("Notes"),
             Page::Sync => tr!("Sync"),
             Page::Vault => tr!("Vault"),
+            Page::Ai => tr!("AI"),
             Page::About => tr!("About"),
         }
     }
@@ -166,6 +169,7 @@ pub struct SettingsView {
     notes: Option<Entity<SnippetsView>>,
     /// The Known hosts page, once shown.
     known_hosts: Option<Entity<KnownHostsView>>,
+    ai: Option<Entity<crate::ai_view::AiView>>,
     /// Where to sync, as typed before connecting.
     sync_form: SyncForm,
     /// The Keyboard page taking a key, or asking about one.
@@ -482,6 +486,7 @@ impl SettingsView {
             config_files: None,
             notes: None,
             known_hosts: None,
+            ai: None,
             keyboard: Default::default(),
         }
     }
@@ -2923,6 +2928,14 @@ impl Render for SettingsView {
             }
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
+            Page::Ai => {
+                let ws = self.workspace.clone();
+                let view = self
+                    .ai
+                    .get_or_insert_with(|| cx.new(|cx| crate::ai_view::AiView::new(ws, cx)))
+                    .clone();
+                div().child(view)
+            }
             Page::About => self.about(cx),
         };
         corners

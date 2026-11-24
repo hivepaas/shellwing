@@ -4,28 +4,9 @@
 use super::*;
 
 impl Workspace {
-    /// The host list's sections as a Run tab chooses from them: hosts only,
-    /// not this computer's terminal.
+    /// The host list's sections as a Run tab chooses from them.
     pub(super) fn run_picks(&self, cx: &Context<Self>) -> Vec<Pick> {
-        self.sidebar_sections(cx)
-            .into_iter()
-            .map(|s| Pick {
-                group: s.title.to_string(),
-                hosts: s
-                    .rows
-                    .into_iter()
-                    .filter(|r| !matches!(r.edit, EditTarget::Local))
-                    .map(|r| Candidate {
-                        name: r.name.to_string(),
-                        spec: r.spec,
-                        detail: r.detail.to_string(),
-                        icon: r.icon,
-                        color: r.color,
-                    })
-                    .collect(),
-            })
-            .filter(|p| !p.hosts.is_empty())
-            .collect()
+        super::ai::picks_of(&self.sidebar_sections(cx))
     }
 
     /// Opens a Run on hosts tab with `chosen` (specs) chosen.
@@ -88,7 +69,7 @@ impl Workspace {
 
     /// Where a Run tab connects to `spec`, or why it is left out: a
     /// collection's host whose settings are held back is not run on.
-    fn resolve_for_run(&self, spec: &str) -> Result<ssh_config::Resolved, String> {
+    pub(super) fn resolve_for_run(&self, spec: &str) -> Result<ssh_config::Resolved, String> {
         if let Some((_, held)) = self.held_back(spec) {
             let names: Vec<String> = held.into_iter().map(|u| u.name).collect();
             return Err(tr!(
@@ -106,14 +87,13 @@ impl Workspace {
     }
 
     /// The host list changed: the Run tabs choose from it as it is now.
-    pub(super) fn refresh_runs(&mut self, cx: &mut Context<Self>) {
+    pub(super) fn refresh_runs(&mut self, picks: &[Pick], cx: &mut Context<Self>) {
         let runs: Vec<Entity<RunView>> = self.tabs.iter().filter_map(|t| t.run.clone()).collect();
         if runs.is_empty() {
             return;
         }
-        let picks = self.run_picks(cx);
         for r in runs {
-            r.update(cx, |r, cx| r.set_picks(picks.clone(), cx));
+            r.update(cx, |r, cx| r.set_picks(picks.to_vec(), cx));
         }
     }
 

@@ -567,6 +567,45 @@ impl ExecConnection {
     }
 }
 
+/// Which stream a command printed on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Stream {
+    Out,
+    Err,
+}
+
+impl ExecConnection {
+    /// Runs `command` with `stdin` as its input, handing what it prints to
+    /// `printed` as it comes; how it ended, its exit status (None for a
+    /// signal).
+    pub async fn stream(
+        &self,
+        command: &str,
+        stdin: &[u8],
+        mut printed: impl FnMut(Stream, &[u8]),
+    ) -> Result<Option<u32>, Error> {
+        let mut ch = self.target.channel_open_session().await?;
+        ch.exec(true, command).await?;
+        if !stdin.is_empty() {
+            ch.data(stdin).await?;
+        }
+        ch.eof().await?;
+        let mut status = None;
+        while let Some(msg) = ch.wait().await {
+            match msg {
+                ChannelMsg::Data { data } => printed(Stream::Out, &data),
+                ChannelMsg::ExtendedData { data, ext: 1 } => printed(Stream::Err, &data),
+                ChannelMsg::ExitStatus { exit_status } => status = Some(exit_status),
+                ChannelMsg::Failure => {
+                    return Err(Error::Exec("the server would not run a command".into()));
+                }
+                _ => {}
+            }
+        }
+        Ok(status)
+    }
+}
+
 /// Connects (through any ProxyJump hosts) and authenticates, with no shell
 /// beside it, to run commands and nothing else.
 pub async fn connect_exec(opts: Options) -> Result<ExecConnection, Error> {

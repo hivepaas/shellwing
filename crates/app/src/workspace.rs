@@ -38,6 +38,7 @@ use crate::sync_panel::{Standing, SyncPanel, SyncPanelEvent, SyncSnap};
 use crate::syncing::{SyncEvent, SyncWorker};
 use crate::tab_overview::{OverviewEvent, TabOverview, TabRow};
 use crate::target;
+mod ai;
 mod config_files;
 mod notes;
 mod runs;
@@ -251,6 +252,8 @@ pub struct Workspace {
     choosing: Option<KeyToInstall>,
     /// Keys to install on panes once they are connected.
     installs: Vec<(gpui::WeakEntity<TermView>, KeyToInstall)>,
+    /// AI access over MCP; None until started.
+    ai: Option<ai::AiWork>,
 }
 
 /// A public key to put in a host's `authorized_keys`.
@@ -500,6 +503,7 @@ impl Workspace {
             editors: vec![],
             choosing: None,
             installs: vec![],
+            ai: None,
         };
         if let Some(s) = ws.live.store().and_then(|s| s.window_state()) {
             ws.sidebar_width = s
@@ -521,6 +525,7 @@ impl Workspace {
             let folds = store.sidebar_state();
             ws.sidebar.update(cx, |s, cx| s.set_folds(folds, cx));
         }
+        ws.start_ai(cx);
         ws.share_settings(cx);
         ws.start_update_checks(cx);
         // The system editor's name is read from the desktop: once, off the UI thread.
@@ -6515,6 +6520,7 @@ impl Workspace {
             color: h.color_rgb(),
             icon: self.host_icon(h.icon.as_deref(), h.alias.as_deref().unwrap_or(&h.name)),
             active: active_entry.as_deref() == Some(h.name.as_str()),
+            ai: false,
             search: [
                 h.name.as_str(),
                 h.alias.as_deref().unwrap_or(""),
@@ -6544,6 +6550,7 @@ impl Workspace {
                     tr!("Local terminal"),
                     tr!("this computer")
                 ),
+                ai: false,
             }],
             ..Default::default()
         });
@@ -6611,6 +6618,7 @@ impl Workspace {
                 icon: self.host_icon(None, a),
                 active: active_entry.is_none() && active_spec.as_deref() == Some(a.as_str()),
                 search: a.to_lowercase(),
+                ai: false,
             })
             .collect();
         if !aliases.is_empty() {
@@ -6703,8 +6711,14 @@ impl Workspace {
             self.fetch_orgs(cx);
         }
         self.refresh_overview(cx);
-        self.refresh_runs(cx);
-        let sections = self.sidebar_sections(cx);
+        let mut sections = self.sidebar_sections(cx);
+        let picks = ai::picks_of(&sections);
+        self.refresh_runs(&picks, cx);
+        self.refresh_ai(&picks);
+        let given = self.ai_given();
+        for r in sections.iter_mut().flat_map(|s| s.rows.iter_mut()) {
+            r.ai = given.contains(&r.spec);
+        }
         let collapsed = self.sidebar_collapsed;
         self.sidebar.update(cx, |s, cx| {
             s.set(sections, cx);

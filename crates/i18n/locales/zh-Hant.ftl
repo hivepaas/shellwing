@@ -1,6 +1,126 @@
 # shellwing in traditional Chinese (Taiwan). Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+# t2a18fdaf =
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+# td57f67eb =
+
+# Add this to {file}:
+# t314ece69 =
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+# t0ff991db =
+
+# A client that starts its MCP server itself, over stdio:
+# td4ff0be4 =
+
+# Find a host
+# t5f515591 =
+
+# AI clients
+# ta302119f =
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+# t6c56bef3 =
+
+# Add client
+# td53111fb =
+
+# Which client?
+# t278d359e =
+
+# No client yet: Add client lets one in.
+# t6815a21c =
+
+# token …{end}
+# t4a145d1b =
+
+# connected now
+# t432c5c88 =
+
+# not connected
+# tb83f675d =
+
+# Config
+# t6a12e0e7 =
+
+# Remove
+t21a5901d = 移除
+
+# (the token shown when it was added)
+# t9375386f =
+
+# Copy
+t658f3664 = 複製
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+# t6ebf1609 =
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+# tf69e6847 =
+
+# Hosts given
+# t1ef9da69 =
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+# tf7a02825 =
+
+# Take every one back
+# tb3911aec =
+
+# Give a host…
+# tcb4de791 =
+
+# No host is given to an AI client.
+# t654696aa =
+
+# while shellwing stays open
+# t938960ff =
+
+# until taken back
+# tba10b16b =
+
+# ended
+# t1a30bf3b =
+
+# for {n} min more
+# t955674cd =
+
+# Take back
+# t0650c681 =
+
+# Until I take it back
+# taacfb8db =
+
+# While shellwing stays open
+# tdb1d179f =
+
+# 1 hour
+t0c43fb4a = 1 小時
+
+# 8 hours
+# t63affd14 =
+
+# Host
+# t302af18f =
+
+# To
+# t41f59644 =
+
+# For
+# t0f7e1b30 =
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+# t7620726b =
+
+# Cancel
+t35afca3b = 取消
+
+# Give access
+# te96c4c6e =
+
 # unlock its windows
 t7c69953e = 解鎖其視窗
 
@@ -174,9 +294,6 @@ t1e706c21 = 捨棄
 
 # Keep in Downloads
 t3052af2e = 保留在 Downloads
-
-# Cancel
-t35afca3b = 取消
 
 # Show
 t29742e5c = 顯示
@@ -907,9 +1024,6 @@ t4c4139ed = 上一個主題
 # Quit
 tc7b3d356 = 結束
 
-# Copy
-t658f3664 = 複製
-
 # Paste
 tb34a0288 = 貼上
 
@@ -1377,9 +1491,6 @@ t5299ff65 = 憑證授權單位
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · 第 { $line } 行
-
-# Remove
-t21a5901d = 移除
 
 # Known hosts
 tc951355f = 已知主機
@@ -2347,6 +2458,9 @@ t699a801a = SSH 與安全性
 # Vault
 td432914f = 保險庫
 
+# AI
+# t23d5135f =
+
 # Its password (an app password, where it has them)
 t22e462e2 = 該服務的密碼（若支援應用程式密碼，請使用應用程式密碼）
 
@@ -2847,9 +2961,6 @@ tc153db4a = 移除密碼片語
 
 # Keep it in the system keychain
 tc01bbcf0 = 保存在系統鑰匙圈中
-
-# 1 hour
-t0c43fb4a = 1 小時
 
 # {m} min
 t7eebb6a4 = { $m } 分鐘

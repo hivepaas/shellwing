@@ -32,6 +32,7 @@ use crate::workspace::Workspace;
 
 pub mod server;
 
+mod ai;
 mod config;
 mod config_files;
 mod connect;

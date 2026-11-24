@@ -1,0 +1,739 @@
+//! AI access to hosts, over MCP (docs/configuration.md, AI access): the
+//! clients let in, the hosts given them, and what they run there.
+//!
+//! An AI client never sees a key, a password or a passphrase: shellwing
+//! signs in for it, with what the person saved, and a host that would ask
+//! is refused. What it runs is a job, whose output it reads as it comes
+//! ([`Job::wait`]), so a long command does not keep it waiting for its end.
+
+pub mod mcp;
+pub mod socket;
+
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use shellwing_config::{AiClient, AiGrant, AiHow, AiState};
+use shellwing_ssh::config::Resolved;
+use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Secrets};
+use tokio::runtime::Handle;
+use tokio::sync::Notify;
+use tokio::task::AbortHandle;
+
+/// What a job keeps of its output.
+pub const KEEP: usize = 1024 * 1024;
+/// What the activity log keeps of each command's output.
+pub const LOGGED: usize = 64 * 1024;
+/// Commands the activity keeps, the oldest dropped first.
+pub const ACTIVITY: usize = 1000;
+/// How long a host may take to answer when its settings say nothing.
+pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+
+pub fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or_default()
+}
+
+/// A new client's token, to hand it once: `sw_` and 32 random bytes in hex.
+pub fn new_token() -> String {
+    let mut b = [0u8; 32];
+    let _ = getrandom::fill(&mut b);
+    format!("sw_{}", hex(&b))
+}
+
+/// What a token is kept as.
+pub fn token_hash(token: &str) -> String {
+    hex(&Sha256::digest(token.trim().as_bytes()))
+}
+
+fn hex(b: &[u8]) -> String {
+    b.iter().map(|x| format!("{x:02x}")).collect()
+}
+
+/// A host a client may be given: as the host list names it, and where it
+/// is (or why it cannot be reached through shellwing).
+#[derive(Clone, Debug)]
+pub struct Host {
+    pub name: String,
+    /// Its address, as the host list shows it.
+    pub detail: String,
+    pub target: Result<Resolved, String>,
+}
+
+/// One command an AI ran, as the activity keeps it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Activity {
+    /// The job's id.
+    pub id: String,
+    /// The client's name.
+    pub client: String,
+    /// The host's name.
+    pub host: String,
+    pub command: String,
+    /// Seconds since 1970.
+    pub started: u64,
+    #[serde(default)]
+    pub ended: Option<u64>,
+    /// How it ended: `exit 0`, a reason it did not run, `stopped`; None
+    /// while it runs.
+    #[serde(default)]
+    pub end: Option<End>,
+    /// What it printed, the first [`LOGGED`] bytes of it once logged.
+    #[serde(default)]
+    pub output: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum End {
+    /// Its exit status; None when a signal ended it.
+    Exited(Option<u32>),
+    /// It did not run, or its end was not seen: why.
+    Failed(String),
+    /// Stopped, by the AI or the person.
+    Stopped,
+}
+
+impl End {
+    pub fn ok(&self) -> bool {
+        *self == End::Exited(Some(0))
+    }
+
+    /// As the AI is told it.
+    pub fn said(&self) -> String {
+        match self {
+            End::Exited(Some(c)) => format!("exit {c}"),
+            End::Exited(None) => "ended by a signal".into(),
+            End::Failed(why) => format!("did not run: {why}"),
+            End::Stopped => "stopped".into(),
+        }
+    }
+}
+
+/// What the app hears from the hub.
+#[derive(Clone, Debug)]
+pub enum HubEvent {
+    /// A command started, or printed, or ended: the activity's entry now.
+    Changed(Activity),
+    /// A client connected (true) or went (false).
+    Client { id: String, connected: bool },
+}
+
+/// A command an AI started: its output so far, and its end once it came.
+pub struct Job {
+    pub id: String,
+    /// The client's id, which alone may read it.
+    pub client: String,
+    pub host: String,
+    began: Instant,
+    state: Mutex<JobState>,
+    changed: Notify,
+    task: Mutex<Option<AbortHandle>>,
+}
+
+struct JobState {
+    activity: Activity,
+    out: Vec<u8>,
+    cut: bool,
+    /// How much of `out` the AI has read.
+    read: usize,
+}
+
+/// What a job has to say now.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Said {
+    /// Output the AI had not read yet.
+    pub new: String,
+    pub end: Option<End>,
+    pub seconds: u64,
+    /// It printed more than [`KEEP`]: the rest was not kept.
+    pub cut: bool,
+}
+
+impl Job {
+    fn new(id: String, client: &AiClient, spec: &str, host: &str, command: &str) -> Job {
+        Job {
+            id: id.clone(),
+            client: client.id.clone(),
+            host: spec.to_string(),
+            began: Instant::now(),
+            state: Mutex::new(JobState {
+                activity: Activity {
+                    id,
+                    client: client.name.clone(),
+                    host: host.to_string(),
+                    command: command.to_string(),
+                    started: now(),
+                    ended: None,
+                    end: None,
+                    output: String::new(),
+                },
+                out: vec![],
+                cut: false,
+                read: 0,
+            }),
+            changed: Notify::new(),
+            task: Mutex::new(None),
+        }
+    }
+
+    pub fn activity(&self) -> Activity {
+        let st = self.state.lock().expect("job");
+        let mut a = st.activity.clone();
+        a.output = String::from_utf8_lossy(&st.out).into_owned();
+        a
+    }
+
+    pub fn ended(&self) -> bool {
+        self.state.lock().is_ok_and(|s| s.activity.end.is_some())
+    }
+
+    fn print(&self, data: &[u8]) {
+        if let Ok(mut st) = self.state.lock() {
+            let room = KEEP.saturating_sub(st.out.len());
+            st.cut |= data.len() > room;
+            st.out.extend_from_slice(&data[..data.len().min(room)]);
+        }
+        self.changed.notify_waiters();
+    }
+
+    fn end(&self, end: End) {
+        if let Ok(mut st) = self.state.lock()
+            && st.activity.end.is_none()
+        {
+            st.activity.end = Some(end);
+            st.activity.ended = Some(now());
+        }
+        self.changed.notify_waiters();
+    }
+
+    /// Waits up to `most` for its end (`for_end`), or else for output not
+    /// read yet, then says what it has: the new output, read now.
+    pub async fn wait(&self, most: Duration, for_end: bool) -> Said {
+        let deadline = tokio::time::Instant::now() + most;
+        loop {
+            let notified = self.changed.notified();
+            let ready = self
+                .state
+                .lock()
+                .is_ok_and(|st| st.activity.end.is_some() || (!for_end && st.out.len() > st.read));
+            if ready {
+                break;
+            }
+            if tokio::time::timeout_at(deadline, notified).await.is_err() {
+                break;
+            }
+        }
+        self.take()
+    }
+
+    /// The output not read yet, read now: whole characters only, until it
+    /// ends.
+    fn take(&self) -> Said {
+        let Ok(mut st) = self.state.lock() else {
+            return Said {
+                new: String::new(),
+                end: Some(End::Failed("lost".into())),
+                seconds: 0,
+                cut: false,
+            };
+        };
+        let ended = st.activity.end.is_some();
+        let tail = &st.out[st.read..];
+        let upto = match std::str::from_utf8(tail) {
+            Ok(_) => tail.len(),
+            Err(e) if e.error_len().is_none() && !ended => e.valid_up_to(),
+            Err(_) => tail.len(),
+        };
+        let new = String::from_utf8_lossy(&tail[..upto]).into_owned();
+        st.read += upto;
+        Said {
+            new,
+            end: st.activity.end.clone(),
+            seconds: self.began.elapsed().as_secs(),
+            cut: st.cut,
+        }
+    }
+
+    pub fn stop(&self) {
+        if let Some(t) = self.task.lock().ok().and_then(|mut t| t.take()) {
+            t.abort();
+        }
+        self.end(End::Stopped);
+    }
+}
+
+/// One connection per host, made once and shared by the jobs on it.
+type Slot = Arc<tokio::sync::Mutex<Option<Arc<ExecConnection>>>>;
+
+struct Inner {
+    state: AiState,
+    /// By spec.
+    hosts: BTreeMap<String, Host>,
+    jobs: BTreeMap<String, Arc<Job>>,
+    slots: BTreeMap<String, Slot>,
+    next: u64,
+    activity: Vec<Activity>,
+}
+
+/// The MCP server's side in the app: who may reach what, and the work.
+pub struct Hub {
+    rt: Handle,
+    secrets: Arc<dyn Secrets>,
+    policy: HostKeyPolicy,
+    keepalive: Duration,
+    log: Option<PathBuf>,
+    inner: Mutex<Inner>,
+    events: async_channel::Sender<HubEvent>,
+}
+
+/// A grant as a client sees it: the host's name and how it may use it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Given {
+    pub spec: String,
+    pub name: String,
+    pub detail: String,
+    pub grant: AiGrant,
+}
+
+impl Hub {
+    /// `log`: the activity's file (`state/ai-activity.jsonl`), read back now.
+    pub fn new(
+        rt: Handle,
+        secrets: Arc<dyn Secrets>,
+        ssh: &shellwing_config::Ssh,
+        log: Option<PathBuf>,
+        events: async_channel::Sender<HubEvent>,
+    ) -> Arc<Hub> {
+        let activity = log.as_deref().map(read_log).unwrap_or_default();
+        Arc::new(Hub {
+            rt,
+            secrets,
+            policy: crate::target::policy(ssh.host_key),
+            keepalive: Duration::from_secs(ssh.keepalive),
+            log,
+            inner: Mutex::new(Inner {
+                state: AiState::default(),
+                hosts: BTreeMap::new(),
+                jobs: BTreeMap::new(),
+                slots: BTreeMap::new(),
+                next: 1,
+                activity,
+            }),
+            events,
+        })
+    }
+
+    /// The clients and grants, as saved or changed: work on a host no
+    /// longer given stops, and its connection closes.
+    pub fn set_state(&self, state: AiState) {
+        let Ok(mut inner) = self.inner.lock() else {
+            return;
+        };
+        inner.state = state;
+        let given: Vec<(String, String)> = inner
+            .state
+            .grants
+            .iter()
+            .filter(|g| live(g))
+            .map(|g| (g.client.clone(), g.host.clone()))
+            .collect();
+        for job in inner.jobs.values() {
+            if !given.contains(&(job.client.clone(), job.host.clone())) && !job.ended() {
+                job.stop();
+            }
+        }
+        inner
+            .slots
+            .retain(|spec, _| given.iter().any(|(_, h)| h == spec));
+    }
+
+    /// The hosts that can be given, by spec.
+    pub fn set_hosts(&self, hosts: BTreeMap<String, Host>) {
+        if let Ok(mut inner) = self.inner.lock() {
+            inner.hosts = hosts;
+        }
+    }
+
+    /// The client `token` belongs to.
+    pub fn client(&self, token: &str) -> Option<AiClient> {
+        let hash = token_hash(token);
+        let inner = self.inner.lock().ok()?;
+        inner
+            .state
+            .clients
+            .iter()
+            .find(|c| c.token_sha256 == hash)
+            .cloned()
+    }
+
+    /// The hosts `client` may use now.
+    pub fn given(&self, client: &str) -> Vec<Given> {
+        let Ok(inner) = self.inner.lock() else {
+            return vec![];
+        };
+        inner
+            .state
+            .grants
+            .iter()
+            .filter(|g| g.client == client && live(g))
+            .filter_map(|g| {
+                let h = inner.hosts.get(&g.host)?;
+                Some(Given {
+                    spec: g.host.clone(),
+                    name: h.name.clone(),
+                    detail: h.detail.clone(),
+                    grant: g.clone(),
+                })
+            })
+            .collect()
+    }
+
+    /// Starts `command` on the host `client` calls `host` (its name, as
+    /// [`Hub::given`] says it), if it was given that host.
+    pub fn run(
+        self: &Arc<Self>,
+        client: &AiClient,
+        host: &str,
+        command: &str,
+    ) -> Result<Arc<Job>, String> {
+        let given = self.given(&client.id);
+        let Some(g) = given
+            .iter()
+            .find(|g| g.name == host)
+            .or_else(|| given.iter().find(|g| g.spec == host))
+        else {
+            return Err(format!(
+                "{host} is not one of the hosts given to {}: list_hosts says which are",
+                client.name
+            ));
+        };
+        if g.grant.how == AiHow::Tab {
+            return Err(format!(
+                "{} is given through a tab, which this shellwing does not do yet",
+                g.name
+            ));
+        }
+        let target = {
+            let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
+            inner
+                .hosts
+                .get(&g.spec)
+                .map(|h| h.target.clone())
+                .ok_or_else(|| format!("{host} is no longer in the host list"))?
+        }?;
+        let (job, slot) = {
+            let mut inner = self.inner.lock().map_err(|_| "busy".to_string())?;
+            let id = format!("j-{}", inner.next);
+            inner.next += 1;
+            let job = Arc::new(Job::new(id.clone(), client, &g.spec, &g.name, command));
+            inner.jobs.insert(id, job.clone());
+            // The ended ones beyond the activity's length are let go.
+            if inner.jobs.len() > ACTIVITY {
+                let old: Vec<String> = inner
+                    .jobs
+                    .iter()
+                    .filter(|(_, j)| j.ended())
+                    .map(|(id, _)| id.clone())
+                    .take(inner.jobs.len() - ACTIVITY)
+                    .collect();
+                for id in old {
+                    inner.jobs.remove(&id);
+                }
+            }
+            let slot = inner.slots.entry(g.spec.clone()).or_default().clone();
+            (job, slot)
+        };
+        let _ = self.events.try_send(HubEvent::Changed(job.activity()));
+        let options = self.options(target);
+        let (hub, running, command) = (self.clone(), job.clone(), command.to_string());
+        let task = self.rt.spawn(async move {
+            let connection = {
+                let mut slot = slot.lock().await;
+                match slot.clone() {
+                    Some(c) => Ok(c),
+                    None => match shellwing_ssh::connect_exec(options).await {
+                        Ok(c) => {
+                            let c = Arc::new(c);
+                            *slot = Some(c.clone());
+                            Ok(c)
+                        }
+                        Err(e) => Err(e.to_string()),
+                    },
+                }
+            };
+            let end = match connection {
+                Err(why) => End::Failed(why),
+                Ok(c) => {
+                    let printing = running.clone();
+                    let last = Mutex::new(Instant::now());
+                    let events = hub.events.clone();
+                    let status = c
+                        .stream(&command, b"", |_, data| {
+                            printing.print(data);
+                            // The activity follows the output, a few times a second.
+                            if let Ok(mut l) = last.lock()
+                                && l.elapsed() > Duration::from_millis(250)
+                            {
+                                *l = Instant::now();
+                                let _ = events.try_send(HubEvent::Changed(printing.activity()));
+                            }
+                        })
+                        .await;
+                    match status {
+                        Ok(s) => End::Exited(s),
+                        Err(e) => {
+                            // The connection is likely gone: the next connects again.
+                            *slot.lock().await = None;
+                            End::Failed(e.to_string())
+                        }
+                    }
+                }
+            };
+            running.end(end);
+            hub.ended(&running);
+        });
+        if let Ok(mut t) = job.task.lock() {
+            *t = Some(task.abort_handle());
+        }
+        Ok(job)
+    }
+
+    /// `client`'s job `id`.
+    pub fn job(&self, client: &str, id: &str) -> Option<Arc<Job>> {
+        let inner = self.inner.lock().ok()?;
+        inner.jobs.get(id).filter(|j| j.client == client).cloned()
+    }
+
+    /// Stops every job going: the person's Stop all.
+    pub fn stop_all(&self) {
+        let jobs: Vec<Arc<Job>> = self
+            .inner
+            .lock()
+            .map(|i| i.jobs.values().filter(|j| !j.ended()).cloned().collect())
+            .unwrap_or_default();
+        for j in jobs {
+            j.stop();
+            self.ended(&j);
+        }
+    }
+
+    /// The activity, newest last: what was logged and what runs now.
+    pub fn activity(&self) -> Vec<Activity> {
+        let Ok(inner) = self.inner.lock() else {
+            return vec![];
+        };
+        let mut all = inner.activity.clone();
+        all.extend(
+            inner
+                .jobs
+                .values()
+                .filter(|j| !j.ended())
+                .map(|j| j.activity()),
+        );
+        all
+    }
+
+    pub fn client_connected(&self, id: &str, connected: bool) {
+        let _ = self.events.try_send(HubEvent::Client {
+            id: id.to_string(),
+            connected,
+        });
+    }
+
+    /// A job ended: kept in the activity, and the log.
+    fn ended(&self, job: &Job) {
+        let mut a = job.activity();
+        let _ = self.events.try_send(HubEvent::Changed(a.clone()));
+        if a.output.len() > LOGGED {
+            let mut at = LOGGED;
+            while !a.output.is_char_boundary(at) {
+                at -= 1;
+            }
+            a.output.truncate(at);
+        }
+        if let Ok(mut inner) = self.inner.lock() {
+            if inner.activity.iter().any(|x| x.id == a.id) {
+                return;
+            }
+            inner.activity.push(a.clone());
+            let over = inner.activity.len().saturating_sub(ACTIVITY);
+            inner.activity.drain(..over);
+        }
+        if let Some(path) = &self.log {
+            append_log(path, &a);
+        }
+    }
+
+    /// How a host is reached for an AI: as a tab would, its forwards, agent
+    /// and X11 left out, nothing asked: what would ask is refused.
+    fn options(&self, mut target: Resolved) -> Options {
+        target.forwards.clear();
+        target.forward_agent = false;
+        for hop in target.jumps.iter_mut() {
+            hop.connect_timeout.get_or_insert(CONNECT_TIMEOUT);
+        }
+        target.connect_timeout.get_or_insert(CONNECT_TIMEOUT);
+        Options {
+            target,
+            auth: Auth {
+                agent: true,
+                password: None,
+                agent_socket: None,
+            },
+            // A host never seen is not trusted for an AI.
+            policy: match self.policy {
+                HostKeyPolicy::Ask => HostKeyPolicy::Strict,
+                p => p,
+            },
+            known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
+            prompter: None,
+            secrets: Some(self.secrets.clone()),
+            forwarded: None,
+            keepalive: Some(self.keepalive),
+            size: None,
+            cols: 80,
+            rows: 24,
+            term: "dumb".into(),
+        }
+    }
+}
+
+/// Whether a grant holds now.
+fn live(g: &AiGrant) -> bool {
+    g.until.is_none_or(|u| now() < u)
+}
+
+fn read_log(path: &std::path::Path) -> Vec<Activity> {
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return vec![];
+    };
+    let mut all: Vec<Activity> = text
+        .lines()
+        .filter_map(|l| serde_json::from_str(l).ok())
+        .collect();
+    let over = all.len().saturating_sub(ACTIVITY);
+    all.drain(..over);
+    // Written again once it holds twice what is kept.
+    if over > ACTIVITY {
+        let lines: String = all
+            .iter()
+            .filter_map(|a| serde_json::to_string(a).ok())
+            .map(|l| l + "\n")
+            .collect();
+        let _ = std::fs::write(path, lines);
+    }
+    all
+}
+
+fn append_log(path: &std::path::Path, a: &Activity) {
+    use std::io::Write;
+    let Ok(line) = serde_json::to_string(a) else {
+        return;
+    };
+    let mut open = std::fs::OpenOptions::new();
+    open.create(true).append(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        open.mode(0o600);
+    }
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(mut f) = open.open(path) {
+        let _ = writeln!(f, "{line}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn client() -> AiClient {
+        AiClient {
+            id: "c1".into(),
+            kind: "claude-code".into(),
+            name: "Claude Code".into(),
+            token_sha256: token_hash("sw_x"),
+            added_at: 0,
+        }
+    }
+
+    #[test]
+    fn a_token_is_kept_as_its_hash() {
+        let t = new_token();
+        assert!(t.starts_with("sw_") && t.len() == 3 + 64, "{t}");
+        assert_ne!(t, new_token());
+        assert_eq!(token_hash(&t), token_hash(&format!(" {t}\n")));
+        assert_ne!(token_hash(&t), t);
+    }
+
+    #[tokio::test]
+    async fn a_job_says_what_is_new_and_waits_for_more() {
+        let job = Job::new("j-1".into(), &client(), "web", "web", "x");
+        job.print(b"one\n");
+        let s = job.wait(Duration::from_secs(5), false).await;
+        assert_eq!((s.new.as_str(), s.end.clone()), ("one\n", None));
+        // Nothing new: it waits, and says nothing new.
+        let s = job.wait(Duration::from_millis(50), false).await;
+        assert_eq!(s.new, "");
+        // A character cut in two waits for its other half.
+        job.print(&"é".as_bytes()[..1]);
+        assert_eq!(job.wait(Duration::from_millis(20), false).await.new, "");
+        job.print(&"é".as_bytes()[1..]);
+        job.print(b"!");
+        assert_eq!(job.wait(Duration::from_secs(1), false).await.new, "é!");
+        job.end(End::Exited(Some(3)));
+        let s = job.wait(Duration::from_secs(1), true).await;
+        assert_eq!(s.end, Some(End::Exited(Some(3))));
+        assert_eq!(job.activity().output, "one\né!");
+    }
+
+    #[tokio::test]
+    async fn waiting_for_the_end_takes_what_came_meanwhile() {
+        let job = Arc::new(Job::new("j-1".into(), &client(), "web", "web", "x"));
+        let later = job.clone();
+        tokio::spawn(async move {
+            later.print(b"a");
+            tokio::time::sleep(Duration::from_millis(30)).await;
+            later.print(b"b");
+            later.end(End::Exited(Some(0)));
+        });
+        let s = job.wait(Duration::from_secs(5), true).await;
+        assert_eq!((s.new.as_str(), s.end), ("ab", Some(End::Exited(Some(0)))));
+    }
+
+    #[test]
+    fn the_log_keeps_the_last_ones() {
+        let dir = std::env::temp_dir().join(format!("shellwing-ai-log-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("ai-activity.jsonl");
+        for i in 0..(ACTIVITY * 2 + 5) {
+            append_log(
+                &path,
+                &Activity {
+                    id: format!("j-{i}"),
+                    client: "c".into(),
+                    host: "h".into(),
+                    command: "true".into(),
+                    started: 0,
+                    ended: Some(0),
+                    end: Some(End::Exited(Some(0))),
+                    output: String::new(),
+                },
+            );
+        }
+        let read = read_log(&path);
+        assert_eq!(read.len(), ACTIVITY);
+        assert_eq!(read.last().map(|a| a.id.as_str()), Some("j-2004"));
+        let lines = std::fs::read_to_string(&path).expect("log").lines().count();
+        assert_eq!(lines, ACTIVITY, "written again, shorter");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

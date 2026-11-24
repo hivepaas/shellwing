@@ -38,6 +38,7 @@ const SNIPPET_WINDOW: &str = "snippet-window.json";
 const UPDATES: &str = "updates.json";
 const SYSTEMS: &str = "systems.json";
 const SIDEBAR: &str = "sidebar.json";
+const AI: &str = "ai.json";
 const MAX_RECENT: usize = 10;
 
 /// A file that could not be read or parsed.
@@ -570,6 +571,25 @@ impl Store {
         systems: &std::collections::BTreeMap<String, crate::SystemSeen>,
     ) -> io::Result<()> {
         self.save_state(SYSTEMS, systems)
+    }
+
+    /// The AI clients let in and the hosts given them (`state/ai.json`).
+    pub fn ai_state(&self) -> crate::AiState {
+        self.load_state(AI).unwrap_or_default()
+    }
+
+    /// Kept as the person's alone: only they may read it.
+    pub fn save_ai_state(&self, state: &crate::AiState) -> io::Result<()> {
+        self.save_state(AI, state)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(
+                self.dir.join(STATE).join(AI),
+                fs::Permissions::from_mode(0o600),
+            )?;
+        }
+        Ok(())
     }
 
     /// What the host list has folded (`state/sidebar.json`).

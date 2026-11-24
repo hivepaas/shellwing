@@ -97,6 +97,8 @@ pub struct Row {
     pub active: bool,
     /// What the filter matches, lowercase: name, alias, address, user, tags.
     pub search: String,
+    /// Given to an AI client: its tile says so.
+    pub ai: bool,
 }
 
 fn status_color(s: Status) -> u32 {
@@ -129,7 +131,30 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
         _ if matches!(row.edit, EditTarget::Local) => host_icons::find("terminal"),
         icon => icon,
     };
-    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring)
+    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring).when(row.ai, |d| {
+        d.child(
+            div()
+                .debug_selector({
+                    let n = row.name.clone();
+                    move || format!("ai-badge:{n}")
+                })
+                .absolute()
+                .top(px(-4.))
+                .right(px(-6.))
+                .h(px(15.))
+                .px(px(4.))
+                .flex()
+                .items_center()
+                .rounded_full()
+                .border_2()
+                .border_color(rgb(ground))
+                .bg(rgb(AI_MARK))
+                .text_color(rgb(colors().on_accent))
+                .text_size(px(9.))
+                .font_weight(FontWeight::BOLD)
+                .child("AI"),
+        )
+    })
 }
 
 /// A host's tile `size` px square, as [`tile_face`] draws it, with its status
@@ -253,6 +278,10 @@ pub struct Sidebar {
     /// What is folded: Actions, and sections by [`Section::key`].
     folds: shellwing_config::SidebarState,
 }
+
+/// What marks a host given to an AI client: the same violet in every
+/// theme, white text on it reading in each.
+pub const AI_MARK: u32 = 0x7c3aed;
 
 /// The Run on hosts tile, at the top of the host list and of the rail.
 fn run_tile(ground: u32) -> Div {

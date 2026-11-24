@@ -1153,6 +1153,69 @@ The results:
 Run tabs are not opened again at the next start, and nothing of them is kept
 once they close.
 
+## AI access
+
+AI agents reach the hosts you give them through shellwing, over the Model
+Context Protocol (MCP). An agent never sees a key, a password or a passphrase:
+shellwing signs in for it.
+
+**Letting a client in.** *Settings › AI › Add client*, then the client: Claude
+Code, Claude Desktop, Cursor, VS Code, Windsurf, Zed, Codex CLI, Gemini CLI,
+Cline, or another that starts its MCP server itself. shellwing shows the
+config to paste into that client, with a token of its own.
+
+- The token shows that once. shellwing keeps only its SHA-256, in
+  `state/ai.json`, which only you may read.
+- *Remove* takes a client's token back, and the hosts given to it.
+- The config starts `shellwing mcp` by its full path, with the token in
+  `SHELLWING_TOKEN`. It never puts the token on a command line.
+
+**Giving hosts.** *Hosts given › Give a host…*: choose a host, the client, and
+for how long: until you take it back, while shellwing stays open, 1 hour or 8
+hours. *Take back*, or *Take every one back*, ends it at once: its commands
+still running stop.
+
+How an agent reaches a host:
+
+- A host given to an agent is reached on a connection of its own, as
+  `ssh host 'command'` would, with no terminal and no input.
+- It signs in with what you saved (the vault's passwords and keys, the agent's
+  keys, an organization's certificate) and asks nothing. A host that would ask
+  for a password, a passphrase or a host key never seen is refused, with the
+  reason.
+- Its forwards, agent forwarding and X11 are left out.
+- A collection's host whose settings are held back is refused until you allow
+  them on a tab.
+- Its tile in the host list carries a violet **AI** mark.
+
+**What an agent can do** (MCP tools):
+
+- `list_hosts`: the hosts given to it.
+- `run(host, command, wait_seconds)`: runs a command, and waits up to
+  `wait_seconds` (10 by default, 60 at most) for its end. Then it returns the
+  output (stdout and stderr as they came, up to 1 MB) and the exit status. A
+  command still running goes on as a job: the agent gets its output so far and
+  its id.
+- `job_output(job, wait_seconds)`: what the job printed since the agent last
+  asked, waiting for something new when there is nothing yet. So the agent
+  follows a long command a few seconds behind it. A client that asks for
+  progress is told how far it got, each second.
+- `job_stop(job)`: stops a job.
+
+A command that asks for input gets none: `sudo` with a password fails at once,
+so agents are told to use `sudo -n` and `-y` forms. Every command an agent runs
+is kept on this computer, in `state/ai-activity.jsonl`: the last 1000, with the
+first 64 KB of each one's output.
+
+**Where clients reach the app.** A socket only you may open:
+`state/mcp.sock` in the config directory (or a short path in the temp folder
+when that path is too long), or a named pipe on Windows. `shellwing mcp`
+connects to it, so shellwing must be open while an agent works; when it is
+not, the agent is told so.
+
+A host's output can hold words meant to steer an agent. Give hosts to agents
+you trust with them.
+
 ## SSH keys
 
 *Settings › Keys* lists the keys there are, in three groups:
