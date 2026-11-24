@@ -175,6 +175,12 @@ tcb4de791 = ホストを許可…
 # No host is given to an AI client.
 t654696aa = AI クライアントに許可したホストはありません。
 
+# in the background
+t04874b67 = バックグラウンド
+
+# through a tab
+t6bca7a6e = タブ経由
+
 # while shellwing stays open
 t938960ff = shellwing を開いている間
 
@@ -210,6 +216,21 @@ t41f59644 = 許可先
 
 # For
 t0f7e1b30 = 期間
+
+# How
+t644e442d = 実行方法
+
+# In the background
+t206da987 = バックグラウンド
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = タブを使わず、専用の接続で実行します。各コマンドとその出力は AI アクティビティに記録されます。
+
+# Through a tab
+tfe61838e = タブ経由
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = ホストへのタブのシェルに入力され、その様子を見られます。タブがなければ開きます。そこでホストが求めるパスワードは、ご自身で入力してください。
 
 # Commands
 t971550f3 = コマンド
@@ -3817,6 +3838,24 @@ t5a2b7304 = ↓ 最下部に戻る（Shift+End）
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } が { $host } でコマンドを実行しようとしています。AI アクティビティで指示を待っています。
 
+# Paused: {client} waits until you let it go on.
+t56154080 = 一時停止中：再開するまで { $client } は待機します。
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client } がこのタブを使用中：これまでに { $n } 件のコマンド。
+    }
+
+# Let it go on
+t6f36d148 = 再開
+
+# Pause
+t44f9bf2d = 一時停止
+
+# Take access back
+td619baa7 = アクセスを取り消す
+
 # Config files · {category}
 t59edc3e9 = 設定ファイル · { $category }
 
@@ -5703,9 +5742,6 @@ td20a2320 = すべて閉じる
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = 指紋、顔、または画面ロックでロックを解除します。
-
-# In the background
-t206da987 = バックグラウンド
 
 # Keep sessions connected
 t0bc12e52 = セッションの接続を保つ

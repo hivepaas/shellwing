@@ -175,6 +175,12 @@ tcb4de791 = Conceder um servidor…
 # No host is given to an AI client.
 t654696aa = Nenhum servidor foi concedido a um cliente de AI.
 
+# in the background
+t04874b67 = em segundo plano
+
+# through a tab
+t6bca7a6e = por uma aba
+
 # while shellwing stays open
 t938960ff = enquanto o shellwing estiver aberto
 
@@ -210,6 +216,21 @@ t41f59644 = Para
 
 # For
 t0f7e1b30 = Por
+
+# How
+t644e442d = Modo
+
+# In the background
+t206da987 = Em segundo plano
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Numa conexão própria, sem aba. Cada comando e a saída dele ficam em Atividade de AI.
+
+# Through a tab
+tfe61838e = Por uma aba
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Digitados numa aba do servidor, no shell dele, onde você os vê; uma aba se abre se não houver nenhuma. Uma senha que o servidor pedir ali é você quem digita.
 
 # Commands
 t971550f3 = Comandos
@@ -3918,6 +3939,25 @@ t5a2b7304 = ↓ Voltar ao final (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } quer executar um comando em { $host }: ele está em Atividade de AI, esperando por você.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Pausado: { $client } espera até você o deixar continuar.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } está usando esta aba: { $n } comando até agora.
+       *[other] { $client } está usando esta aba: { $n } comandos até agora.
+    }
+
+# Let it go on
+t6f36d148 = Deixar continuar
+
+# Pause
+t44f9bf2d = Pausar
+
+# Take access back
+td619baa7 = Revogar acesso
+
 # Config files · {category}
 t59edc3e9 = Arquivos de configuração · { $category }
 
@@ -5854,9 +5894,6 @@ td20a2320 = Fechar todas
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Sua digital, seu rosto ou o bloqueio de tela desbloqueia.
-
-# In the background
-t206da987 = Em segundo plano
 
 # Keep sessions connected
 t0bc12e52 = Manter as sessões conectadas

@@ -175,6 +175,12 @@ tcb4de791 = Host freigeben…
 # No host is given to an AI client.
 t654696aa = Kein Host ist für einen AI-Client freigegeben.
 
+# in the background
+t04874b67 = im Hintergrund
+
+# through a tab
+t6bca7a6e = über einen Tab
+
 # while shellwing stays open
 t938960ff = solange shellwing offen bleibt
 
@@ -210,6 +216,21 @@ t41f59644 = An
 
 # For
 t0f7e1b30 = Dauer
+
+# How
+t644e442d = Ausführung
+
+# In the background
+t206da987 = Im Hintergrund
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Über eine eigene Verbindung, ohne Tab. Jeder Befehl und seine Ausgabe stehen in AI-Aktivität.
+
+# Through a tab
+tfe61838e = Über einen Tab
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = In einen Tab zum Host getippt, in dessen Shell, wo du es siehst; gibt es keinen, öffnet sich einer. Ein Passwort, nach dem der Host dort fragt, tippst du selbst.
 
 # Commands
 t971550f3 = Befehle
@@ -3918,6 +3939,25 @@ t5a2b7304 = ↓ Zurück nach unten (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } möchte einen Befehl auf { $host } ausführen: Er wartet in AI-Aktivität auf dich.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Pausiert: { $client } wartet, bis du ihn weitermachen lässt.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } nutzt diesen Tab: bisher { $n } Befehl.
+       *[other] { $client } nutzt diesen Tab: bisher { $n } Befehle.
+    }
+
+# Let it go on
+t6f36d148 = Weitermachen lassen
+
+# Pause
+t44f9bf2d = Pausieren
+
+# Take access back
+td619baa7 = Zugriff entziehen
+
 # Config files · {category}
 t59edc3e9 = Konfigurationsdateien · { $category }
 
@@ -5854,9 +5894,6 @@ td20a2320 = Alle schließen
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Fingerabdruck, Gesicht oder Displaysperre entsperren es.
-
-# In the background
-t206da987 = Im Hintergrund
 
 # Keep sessions connected
 t0bc12e52 = Sitzungen verbunden halten

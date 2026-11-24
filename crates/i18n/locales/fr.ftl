@@ -175,6 +175,12 @@ tcb4de791 = Accorder un serveur…
 # No host is given to an AI client.
 t654696aa = Aucun serveur n'est accordé à un client AI.
 
+# in the background
+t04874b67 = en arrière-plan
+
+# through a tab
+t6bca7a6e = via un onglet
+
 # while shellwing stays open
 t938960ff = tant que shellwing reste ouvert
 
@@ -210,6 +216,21 @@ t41f59644 = À
 
 # For
 t0f7e1b30 = Durée
+
+# How
+t644e442d = Mode
+
+# In the background
+t206da987 = En arrière-plan
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Sur une connexion à part, sans onglet. Chaque commande et sa sortie sont dans Activité AI.
+
+# Through a tab
+tfe61838e = Via un onglet
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Saisies dans un onglet ouvert sur le serveur, dans son shell, sous vos yeux ; un onglet s'ouvre s'il n'y en a aucun. Un mot de passe que le serveur y demande, c'est à vous de le saisir.
 
 # Commands
 t971550f3 = Commandes
@@ -3918,6 +3939,25 @@ t5a2b7304 = ↓ Revenir en bas (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } veut exécuter une commande sur { $host } : elle vous attend dans Activité AI.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = En pause : { $client } attend que vous le laissiez continuer.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } utilise cet onglet : { $n } commande jusqu'ici.
+       *[other] { $client } utilise cet onglet : { $n } commandes jusqu'ici.
+    }
+
+# Let it go on
+t6f36d148 = Laisser continuer
+
+# Pause
+t44f9bf2d = Mettre en pause
+
+# Take access back
+td619baa7 = Retirer l'accès
+
 # Config files · {category}
 t59edc3e9 = Fichiers de configuration · { $category }
 
@@ -5854,9 +5894,6 @@ td20a2320 = Tout fermer
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Votre empreinte, votre visage ou le verrouillage de l'écran le déverrouille.
-
-# In the background
-t206da987 = En arrière-plan
 
 # Keep sessions connected
 t0bc12e52 = Garder les sessions connectées

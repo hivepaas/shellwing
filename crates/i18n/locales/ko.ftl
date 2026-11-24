@@ -175,6 +175,12 @@ tcb4de791 = 호스트 허용…
 # No host is given to an AI client.
 t654696aa = AI 클라이언트에 허용된 호스트가 없습니다.
 
+# in the background
+t04874b67 = 백그라운드에서
+
+# through a tab
+t6bca7a6e = 탭을 통해
+
 # while shellwing stays open
 t938960ff = shellwing이 열려 있는 동안
 
@@ -210,6 +216,21 @@ t41f59644 = 대상
 
 # For
 t0f7e1b30 = 기간
+
+# How
+t644e442d = 방식
+
+# In the background
+t206da987 = 백그라운드에서
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = 탭 없이 별도의 연결로 실행됩니다. 각 명령과 출력은 AI 활동에 기록됩니다.
+
+# Through a tab
+tfe61838e = 탭을 통해
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = 호스트에 연결된 탭의 셸에 입력되어 직접 볼 수 있습니다. 탭이 없으면 새로 열립니다. 호스트가 그곳에서 묻는 비밀번호는 직접 입력해야 합니다.
 
 # Commands
 t971550f3 = 명령
@@ -3817,6 +3838,24 @@ t5a2b7304 = ↓ 맨 아래로 (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }이(가) { $host }에서 명령을 실행하려고 합니다. AI 활동에서 지시를 기다리고 있습니다.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = 일시 중지됨: 계속하도록 허용할 때까지 { $client }은(는) 기다립니다.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client }이(가) 이 탭을 사용 중입니다: 지금까지 명령 { $n }개.
+    }
+
+# Let it go on
+t6f36d148 = 계속
+
+# Pause
+t44f9bf2d = 일시 중지
+
+# Take access back
+td619baa7 = 접근 회수
+
 # Config files · {category}
 t59edc3e9 = 설정 파일 · { $category }
 
@@ -5703,9 +5742,6 @@ td20a2320 = 모두 닫기
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = 지문, 얼굴 또는 화면 잠금으로 잠금을 해제합니다.
-
-# In the background
-t206da987 = 백그라운드에서
 
 # Keep sessions connected
 t0bc12e52 = 세션 연결 유지

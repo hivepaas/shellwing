@@ -105,7 +105,13 @@ pub struct Session {
     local: Option<Vec<String>>,
     /// The file the terminal is logged to.
     log: Option<PathBuf>,
+    /// A copy of what the host prints, while an AI's command typed here
+    /// runs ([`Session::tap`]).
+    tap: Tap,
 }
+
+/// Where a copy of a session's output goes, if anywhere.
+type Tap = Arc<Mutex<Option<async_channel::Sender<Vec<u8>>>>>;
 
 /// What a Files panel needs from its pane's connection.
 #[derive(Clone)]
@@ -293,6 +299,7 @@ impl Session {
             run: None,
             local: None,
             log: None,
+            tap: Tap::default(),
         };
         let target = match opens {
             Opens::Host(target) => *target,
@@ -335,6 +342,23 @@ impl Session {
 
     fn set_status(&self, status: Status, ended: Option<String>) {
         set_status(&self.state, &self.wake_tx, status, ended);
+    }
+
+    /// A copy of what the host prints from now on, until the receiver is
+    /// dropped or another tap replaces it.
+    pub fn tap(&self) -> async_channel::Receiver<Vec<u8>> {
+        let (tx, rx) = async_channel::unbounded();
+        if let Ok(mut t) = self.tap.lock() {
+            *t = Some(tx);
+        }
+        rx
+    }
+
+    /// Stops copying what the host prints.
+    pub fn untap(&self) {
+        if let Ok(mut t) = self.tap.lock() {
+            *t = None;
+        }
     }
 
     /// Logs the terminal from now on, to a new file in the settings' folder.
@@ -617,6 +641,7 @@ impl Session {
             self.wake_tx.clone(),
         );
         let secrets = Some(self.secrets.clone());
+        let tap = self.tap.clone();
         let policy = crate::target::policy(self.ssh.host_key);
         let run = self.run.clone();
         let keepalive = std::time::Duration::from_secs(self.ssh.keepalive);
@@ -676,6 +701,7 @@ impl Session {
             };
             let probe = bench.as_ref().map(|(_, p)| p.clone());
             let out_term = term.clone();
+            let out_tap = tap.clone();
             let (end_term, end_writer, end_state, end_wake) =
                 (term.clone(), writer.clone(), state.clone(), wake_tx.clone());
             let (done_tx, done_rx) = tokio::sync::oneshot::channel();
@@ -684,6 +710,14 @@ impl Session {
                 Box::new(move |bytes| {
                     if let Some(p) = &probe {
                         p.saw_output(bytes);
+                    }
+                    if let Some(t) = out_tap.lock().ok().and_then(|t| t.clone())
+                        && t.try_send(bytes.to_vec()).is_err()
+                    {
+                        // Nobody reads it any more.
+                        if let Ok(mut t) = out_tap.lock() {
+                            *t = None;
+                        }
                     }
                     out_term.feed(bytes.to_vec());
                 }),

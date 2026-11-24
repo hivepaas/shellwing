@@ -8,6 +8,7 @@
 
 pub mod mcp;
 pub mod socket;
+pub mod tab;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -129,6 +130,18 @@ pub enum HubEvent {
     Changed(Activity),
     /// A client connected (true) or went (false).
     Client { id: String, connected: bool },
+    /// A command for a host given through a tab, allowed: the app types it
+    /// there ([`tab::wrap`]) and hands back what it prints
+    /// ([`Hub::tab_print`], [`Hub::tab_end`]).
+    Tab {
+        id: String,
+        /// The host, as the host list opens it.
+        spec: String,
+        command: String,
+        client: String,
+    },
+    /// A command typed into a tab was stopped: the app interrupts it there.
+    TabStop { id: String },
 }
 
 /// A command an AI started: its output so far, and its end once it came.
@@ -141,6 +154,8 @@ pub struct Job {
     state: Mutex<JobState>,
     changed: Notify,
     task: Mutex<Option<AbortHandle>>,
+    /// Typed into a tab, rather than run on a connection of its own.
+    pub tab: bool,
     /// While it waits for the person: where their answer goes.
     asking: Mutex<Option<tokio::sync::oneshot::Sender<Approval>>>,
 }
@@ -201,6 +216,7 @@ impl Job {
             }),
             changed: Notify::new(),
             task: Mutex::new(None),
+            tab: false,
             asking: Mutex::new(None),
         }
     }
@@ -385,14 +401,19 @@ impl Hub {
             .filter(|g| live(g))
             .map(|g| (g.client.clone(), g.host.clone()))
             .collect();
-        for job in inner.jobs.values() {
-            if !given.contains(&(job.client.clone(), job.host.clone())) && !job.ended() {
-                job.stop();
-            }
-        }
+        let stopping: Vec<Arc<Job>> = inner
+            .jobs
+            .values()
+            .filter(|j| !given.contains(&(j.client.clone(), j.host.clone())) && !j.ended())
+            .cloned()
+            .collect();
         inner
             .slots
             .retain(|spec, _| given.iter().any(|(_, h)| h == spec));
+        drop(inner);
+        for job in stopping {
+            self.stop_job(&job);
+        }
     }
 
     /// The hosts that can be given, by spec.
@@ -455,12 +476,7 @@ impl Hub {
                 client.name
             ));
         };
-        if g.grant.how == AiHow::Tab {
-            return Err(format!(
-                "{} is given through a tab, which this shellwing does not do yet",
-                g.name
-            ));
-        }
+        let through_tab = g.grant.how == AiHow::Tab;
         let target = {
             let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
             inner
@@ -483,7 +499,9 @@ impl Hub {
             };
             let id = format!("j-{}", inner.next);
             inner.next += 1;
-            let job = Arc::new(Job::new(id.clone(), client, &g.spec, &g.name, command));
+            let mut job = Job::new(id.clone(), client, &g.spec, &g.name, command);
+            job.tab = through_tab;
+            let job = Arc::new(job);
             inner.jobs.insert(id, job.clone());
             // The ended ones beyond the activity's length are let go.
             if inner.jobs.len() > ACTIVITY {
@@ -532,6 +550,16 @@ impl Hub {
                     Approval::Once => {}
                 }
                 let _ = hub.events.try_send(HubEvent::Changed(running.activity()));
+            }
+            // Through a tab: the app types it, and says what came of it.
+            if running.tab {
+                let _ = hub.events.try_send(HubEvent::Tab {
+                    id: running.id.clone(),
+                    spec: running.host.clone(),
+                    command: command.clone(),
+                    client: running.activity().client,
+                });
+                return;
             }
             let connection = {
                 let mut slot = slot.lock().await;
@@ -596,7 +624,36 @@ impl Hub {
     pub fn stop(&self, id: &str) {
         let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
         if let Some(j) = job.filter(|j| !j.ended()) {
-            j.stop();
+            self.stop_job(&j);
+        }
+    }
+
+    /// Stops `job`: in its tab too, if it was typed there.
+    pub fn stop_job(&self, job: &Job) {
+        let was_typed = job.tab && !job.waiting();
+        job.stop();
+        if was_typed {
+            let _ = self
+                .events
+                .try_send(HubEvent::TabStop { id: job.id.clone() });
+        }
+        self.ended(job);
+    }
+
+    /// What job `id`, typed into a tab, printed there: plain text.
+    pub fn tab_print(&self, id: &str, text: &str) {
+        let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
+        if let Some(j) = job.filter(|j| !j.ended()) {
+            j.print(text.as_bytes());
+            let _ = self.events.try_send(HubEvent::Changed(j.activity()));
+        }
+    }
+
+    /// Job `id`, typed into a tab, ended so.
+    pub fn tab_end(&self, id: &str, end: End) {
+        let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
+        if let Some(j) = job.filter(|j| !j.ended()) {
+            j.end(end);
             self.ended(&j);
         }
     }
@@ -615,8 +672,7 @@ impl Hub {
             .map(|i| i.jobs.values().filter(|j| !j.ended()).cloned().collect())
             .unwrap_or_default();
         for j in jobs {
-            j.stop();
-            self.ended(&j);
+            self.stop_job(&j);
         }
     }
 

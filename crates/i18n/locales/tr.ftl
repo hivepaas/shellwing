@@ -175,6 +175,12 @@ tcb4de791 = Ana makine ver…
 # No host is given to an AI client.
 t654696aa = Hiçbir AI istemcisine ana makine verilmedi.
 
+# in the background
+t04874b67 = arka planda
+
+# through a tab
+t6bca7a6e = bir sekme üzerinden
+
 # while shellwing stays open
 t938960ff = shellwing açıkken
 
@@ -210,6 +216,21 @@ t41f59644 = Kime
 
 # For
 t0f7e1b30 = Süre
+
+# How
+t644e442d = Yöntem
+
+# In the background
+t206da987 = Arka planda
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Sekme olmadan, kendine ait bir bağlantıda. Her komut ve çıktısı AI etkinliği içinde saklanır.
+
+# Through a tab
+tfe61838e = Bir sekme üzerinden
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Ana makineye bağlı bir sekmeye, kabuğuna, sizin gördüğünüz yerde yazılır; böyle bir sekme yoksa bir tane açılır. Ana makine orada bir parola isterse onu siz yazarsınız.
 
 # Commands
 t971550f3 = Komutlar
@@ -3918,6 +3939,25 @@ t5a2b7304 = ↓ En alta dön (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }, { $host } üzerinde bir komut çalıştırmak istiyor: komut AI etkinliği içinde sizi bekliyor.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Duraklatıldı: { $client }, siz devam etmesine izin verene kadar bekler.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } bu sekmeyi kullanıyor: şu ana kadar { $n } komut.
+       *[other] { $client } bu sekmeyi kullanıyor: şu ana kadar { $n } komut.
+    }
+
+# Let it go on
+t6f36d148 = Devam ettir
+
+# Pause
+t44f9bf2d = Duraklat
+
+# Take access back
+td619baa7 = Erişimi kaldır
+
 # Config files · {category}
 t59edc3e9 = Yapılandırma dosyaları · { $category }
 
@@ -5854,9 +5894,6 @@ td20a2320 = Tümünü kapat
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Kilidi parmak iziniz, yüzünüz ya da ekran kilidiniz açar.
-
-# In the background
-t206da987 = Arka planda
 
 # Keep sessions connected
 t0bc12e52 = Oturumları bağlı tut

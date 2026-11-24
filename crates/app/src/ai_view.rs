@@ -145,6 +145,7 @@ struct Giving {
     client: Option<String>,
     until: Until,
     mode: AiMode,
+    how: AiHow,
 }
 
 /// A mode's name, and what it does.
@@ -275,7 +276,7 @@ impl AiView {
         let grant = AiGrant {
             client: client.clone(),
             host: host.clone(),
-            how: AiHow::Background,
+            how: g.how,
             mode: g.mode,
             until,
             session,
@@ -551,6 +552,7 @@ impl AiView {
                                     client: None,
                                     until: Until::TakenBack,
                                     mode,
+                                    how: AiHow::Background,
                                 });
                                 window.focus(&v.filter.focus_handle(cx), cx);
                                 cx.notify();
@@ -580,6 +582,10 @@ impl AiView {
         }
         for (i, g) in snap.state.grants.iter().enumerate() {
             let host = name_of(&g.host);
+            let how = match g.how {
+                AiHow::Background => tr!("in the background"),
+                AiHow::Tab => tr!("through a tab"),
+            };
             let until = match (g.until, g.session) {
                 (_, true) => tr!("while shellwing stays open"),
                 (None, _) => tr!("until taken back"),
@@ -610,6 +616,7 @@ impl AiView {
                             .child(host.clone()),
                     )
                     .child(div().w(px(150.)).child(client_of(&g.client)))
+                    .child(div().w(px(140.)).text_color(rgb(colors().muted)).child(how))
                     .child(div().flex_1().text_color(rgb(colors().muted)).child(until))
                     .child({
                         let (client, spec, mode) = (g.client.clone(), g.host.clone(), g.mode);
@@ -769,6 +776,51 @@ impl AiView {
             .child(clients)
             .child(label_text(&tr!("For")))
             .child(untils)
+            .child(label_text(&tr!("How")))
+            .child({
+                let mut hows = div().flex().gap(px(10.));
+                for (h, name, what, sel) in [
+                    (
+                        AiHow::Background,
+                        tr!("In the background"),
+                        tr!("On a connection of its own, with no tab. Each command and its output are in AI activity."),
+                        "ai-give-how:background",
+                    ),
+                    (
+                        AiHow::Tab,
+                        tr!("Through a tab"),
+                        tr!("Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type."),
+                        "ai-give-how:tab",
+                    ),
+                ] {
+                    let on = g.how == h;
+                    hows = hows.child(
+                        div()
+                            .id(sel)
+                            .debug_selector(move || sel.into())
+                            .flex_1()
+                            .min_w_0()
+                            .flex()
+                            .flex_col()
+                            .gap(px(4.))
+                            .p(px(12.))
+                            .rounded(px(10.))
+                            .border_1()
+                            .border_color(rgb(if on { colors().accent } else { colors().line }))
+                            .bg(rgb(if on { colors().selected } else { colors().surface }))
+                            .cursor_pointer()
+                            .on_click(cx.listener(move |v, _, _, cx| {
+                                if let Some(g) = &mut v.giving {
+                                    g.how = h;
+                                }
+                                cx.notify();
+                            }))
+                            .child(div().font_weight(FontWeight::SEMIBOLD).child(name))
+                            .child(hint_text(&what)),
+                    );
+                }
+                hows
+            })
             .child(label_text(&tr!("Commands")))
             .child({
                 let mut modes = div().flex().flex_wrap().gap(px(6.));

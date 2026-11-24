@@ -59,6 +59,8 @@ t07e2f764 = AI activity
 tb3911aec = Take every one back
 tcb4de791 = Give a host…
 t654696aa = No host is given to an AI client.
+t04874b67 = in the background
+t6bca7a6e = through a tab
 t938960ff = while shellwing stays open
 tba10b16b = until taken back
 t1a30bf3b = ended
@@ -71,6 +73,11 @@ t63affd14 = 8 hours
 t302af18f = Host
 t41f59644 = To
 t0f7e1b30 = For
+t644e442d = How
+t206da987 = In the background
+t4353fb5e = On a connection of its own, with no tab. Each command and its output are in AI activity.
+tfe61838e = Through a tab
+ta797f7de = Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
 t971550f3 = Commands
 t7620726b = It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t35afca3b = Cancel
@@ -1424,6 +1431,15 @@ t1165de29 = Split Down
 t21a947cf = Close Pane
 t5a2b7304 = ↓ Back to bottom (Shift+End)
 tc4369c9f = { $client } wants to run a command on { $host }: AI activity has it, waiting for you.
+t56154080 = Paused: { $client } waits until you let it go on.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } is using this tab: { $n } command so far.
+       *[other] { $client } is using this tab: { $n } commands so far.
+    }
+t6f36d148 = Let it go on
+t44f9bf2d = Pause
+td619baa7 = Take access back
 t59edc3e9 = Config files · { $category }
 taf8f6d41 = placed: Enter places it again
 ta22bb64e = { $name } · { $size } · permissions { $mode }
@@ -2123,7 +2139,6 @@ t113905d0 =
     }
 td20a2320 = Close all
 t218f9703 = Your fingerprint, face or screen lock unlocks it.
-t206da987 = In the background
 t0bc12e52 = Keep sessions connected
 t1bfce276 = While a session is open, a notification shows it and Android keeps it connected.
 taa2fc90d = Battery use

@@ -175,6 +175,12 @@ tcb4de791 = 授權主機…
 # No host is given to an AI client.
 t654696aa = 沒有授權給 AI 用戶端的主機。
 
+# in the background
+t04874b67 = 在背景
+
+# through a tab
+t6bca7a6e = 透過分頁
+
 # while shellwing stays open
 t938960ff = shellwing 開啟期間
 
@@ -210,6 +216,21 @@ t41f59644 = 授權給
 
 # For
 t0f7e1b30 = 期限
+
+# How
+t644e442d = 方式
+
+# In the background
+t206da987 = 在背景
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = 使用各自的連線，不開分頁。每個指令及其輸出都會保留在「AI 活動」中。
+
+# Through a tab
+tfe61838e = 透過分頁
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = 輸入到連往該主機之分頁的 shell 中，你看得到；若沒有這樣的分頁，會開啟一個。主機在那裡要求的密碼由你自己輸入。
 
 # Commands
 t971550f3 = 指令
@@ -3874,6 +3895,24 @@ t5a2b7304 = ↓ 回到底部（Shift+End）
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } 想在 { $host } 上執行指令：已列在「AI 活動」中，正在等你確認。
 
+# Paused: {client} waits until you let it go on.
+t56154080 = 已暫停：{ $client } 會一直等到你讓它繼續。
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client } 正在使用此分頁：目前已執行 { $n } 個指令。
+    }
+
+# Let it go on
+t6f36d148 = 繼續
+
+# Pause
+t44f9bf2d = 暫停
+
+# Take access back
+td619baa7 = 撤銷存取權
+
 # Config files · {category}
 t59edc3e9 = 設定檔 · { $category }
 
@@ -5790,9 +5829,6 @@ td20a2320 = 全部關閉
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = 可使用指紋、臉孔或螢幕鎖定解鎖。
-
-# In the background
-t206da987 = 在背景
 
 # Keep sessions connected
 t0bc12e52 = 保持工作階段連線
