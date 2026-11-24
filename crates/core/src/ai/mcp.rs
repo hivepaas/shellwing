@@ -370,7 +370,7 @@ mod tests {
             id: "c1".into(),
             kind: "stdio".into(),
             name: "Some agent".into(),
-            token_sha256: super::super::token_hash("sw_t"),
+            token_sha256: super::super::token_hash("shw_t"),
             added_at: 0,
         }
     }

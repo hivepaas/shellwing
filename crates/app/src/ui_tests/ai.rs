@@ -109,7 +109,7 @@ scenario!(
             .and_then(|t| t.split_whitespace().next())
             .expect("a token")
             .to_string();
-        assert!(token.starts_with("sw_"), "{config}");
+        assert!(token.starts_with("shw_"), "{config}");
         let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
         assert!(!saved.contains(&token), "the token itself is not kept");
         assert!(saved.contains(&shellwing_core::ai::token_hash(&token)));
@@ -125,7 +125,7 @@ scenario!(
         assert!(ui.find("ai-badge:db").is_none());
 
         // A client with no known token hears why.
-        let (_, hello) = Client::open(ui, "sw_nope");
+        let (_, hello) = Client::open(ui, "shw_nope");
         assert!(hello["error"].as_str().expect("error").contains("not known"), "{hello}");
 
         let (mut c, hello) = Client::open(ui, &token);

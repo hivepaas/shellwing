@@ -3,7 +3,7 @@
 //! socket only its owner may open, or a named pipe on Windows.
 //!
 //! The first line each way says who is there: the client's token
-//! (`{"token": "sw_…"}`), and the app's answer (`{"ok": true}`, or
+//! (`{"token": "shw_…"}`), and the app's answer (`{"ok": true}`, or
 //! `{"error": "…"}`). MCP's messages follow, a line each.
 
 use std::path::{Path, PathBuf};
@@ -297,7 +297,7 @@ mod through {
         let ask = b"{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ping\"}\n".to_vec();
 
         let mut out = vec![];
-        bridge_on(at.clone(), Some("sw_t".into()), &ask[..], &mut out)
+        bridge_on(at.clone(), Some("shw_t".into()), &ask[..], &mut out)
             .await
             .expect("bridge");
         assert!(String::from_utf8_lossy(&out).contains("is not open"));
@@ -315,7 +315,7 @@ mod through {
                 id: "c".into(),
                 kind: "stdio".into(),
                 name: "x".into(),
-                token_sha256: super::super::token_hash("sw_t"),
+                token_sha256: super::super::token_hash("shw_t"),
                 added_at: 0,
             }],
             ..Default::default()
@@ -328,7 +328,7 @@ mod through {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
         let mut out = vec![];
-        bridge_on(at.clone(), Some("sw_t".into()), &ask[..], &mut out)
+        bridge_on(at.clone(), Some("shw_t".into()), &ask[..], &mut out)
             .await
             .expect("bridge");
         let v: Value = serde_json::from_str(String::from_utf8_lossy(&out).trim()).expect("json");
@@ -338,7 +338,7 @@ mod through {
         );
 
         let mut out = vec![];
-        bridge_on(at.clone(), Some("sw_other".into()), &ask[..], &mut out)
+        bridge_on(at.clone(), Some("shw_other".into()), &ask[..], &mut out)
             .await
             .expect("bridge");
         assert!(String::from_utf8_lossy(&out).contains("not known"));

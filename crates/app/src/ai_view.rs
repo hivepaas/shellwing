@@ -753,8 +753,8 @@ mod tests {
     fn every_config_is_well_formed() {
         let exe = r"C:\Program Files\shellwing\shellwing.exe";
         for (kind, _) in KINDS {
-            let (_, text) = config_for(kind, exe, "sw_abc");
-            assert!(text.contains("sw_abc"), "{kind}");
+            let (_, text) = config_for(kind, exe, "shw_abc");
+            assert!(text.contains("shw_abc"), "{kind}");
             match kind {
                 "claude-code" => assert!(text.contains("\"C:\\Program Files")),
                 "codex" => {
@@ -762,7 +762,7 @@ mod tests {
                     assert_eq!(v["mcp_servers"]["shellwing"]["command"].as_str(), Some(exe));
                     assert_eq!(
                         v["mcp_servers"]["shellwing"]["env"]["SHELLWING_TOKEN"].as_str(),
-                        Some("sw_abc")
+                        Some("shw_abc")
                     );
                 }
                 "stdio" => {}
@@ -775,7 +775,7 @@ mod tests {
                     };
                     assert_eq!(v[key]["shellwing"]["command"], exe, "{kind}");
                     assert_eq!(v[key]["shellwing"]["args"][0], "mcp");
-                    assert_eq!(v[key]["shellwing"]["env"]["SHELLWING_TOKEN"], "sw_abc");
+                    assert_eq!(v[key]["shellwing"]["env"]["SHELLWING_TOKEN"], "shw_abc");
                 }
             }
         }

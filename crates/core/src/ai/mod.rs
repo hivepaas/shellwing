@@ -39,11 +39,11 @@ pub fn now() -> u64 {
         .unwrap_or_default()
 }
 
-/// A new client's token, to hand it once: `sw_` and 32 random bytes in hex.
+/// A new client's token, to hand it once: `shw_` and 32 random bytes in hex.
 pub fn new_token() -> String {
     let mut b = [0u8; 32];
     let _ = getrandom::fill(&mut b);
-    format!("sw_{}", hex(&b))
+    format!("shw_{}", hex(&b))
 }
 
 /// What a token is kept as.
@@ -660,7 +660,7 @@ mod tests {
             id: "c1".into(),
             kind: "claude-code".into(),
             name: "Claude Code".into(),
-            token_sha256: token_hash("sw_x"),
+            token_sha256: token_hash("shw_x"),
             added_at: 0,
         }
     }
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn a_token_is_kept_as_its_hash() {
         let t = new_token();
-        assert!(t.starts_with("sw_") && t.len() == 3 + 64, "{t}");
+        assert!(t.starts_with("shw_") && t.len() == 4 + 64, "{t}");
         assert_ne!(t, new_token());
         assert_eq!(token_hash(&t), token_hash(&format!(" {t}\n")));
         assert_ne!(token_hash(&t), t);
