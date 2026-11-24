@@ -496,6 +496,9 @@ ta1de2fdd = 變更
 # Systems
 t39f411dd = 系統
 
+# Cloud
+tc0821b1e = 雲端
+
 # Themes
 tbf419633 = 主題
 
@@ -810,9 +813,6 @@ tf09430d8 = 資料庫
 
 # Web
 t72645431 = 網頁
-
-# Cloud
-tc0821b1e = 雲端
 
 # Container
 tb23d4718 = 容器

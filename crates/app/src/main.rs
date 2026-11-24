@@ -166,6 +166,54 @@ const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../assets/icons/win-close.svg"),
     ),
     (
+        "icons/cloud/akamai.svg",
+        include_bytes!("../assets/icons/cloud/akamai.svg"),
+    ),
+    (
+        "icons/cloud/alibaba-cloud.svg",
+        include_bytes!("../assets/icons/cloud/alibaba-cloud.svg"),
+    ),
+    (
+        "icons/cloud/cloudflare.svg",
+        include_bytes!("../assets/icons/cloud/cloudflare.svg"),
+    ),
+    (
+        "icons/cloud/digitalocean.svg",
+        include_bytes!("../assets/icons/cloud/digitalocean.svg"),
+    ),
+    (
+        "icons/cloud/google-cloud.svg",
+        include_bytes!("../assets/icons/cloud/google-cloud.svg"),
+    ),
+    (
+        "icons/cloud/hetzner.svg",
+        include_bytes!("../assets/icons/cloud/hetzner.svg"),
+    ),
+    (
+        "icons/cloud/openstack.svg",
+        include_bytes!("../assets/icons/cloud/openstack.svg"),
+    ),
+    (
+        "icons/cloud/ovh.svg",
+        include_bytes!("../assets/icons/cloud/ovh.svg"),
+    ),
+    (
+        "icons/cloud/scaleway.svg",
+        include_bytes!("../assets/icons/cloud/scaleway.svg"),
+    ),
+    (
+        "icons/cloud/upcloud.svg",
+        include_bytes!("../assets/icons/cloud/upcloud.svg"),
+    ),
+    (
+        "icons/cloud/vmware.svg",
+        include_bytes!("../assets/icons/cloud/vmware.svg"),
+    ),
+    (
+        "icons/cloud/vultr.svg",
+        include_bytes!("../assets/icons/cloud/vultr.svg"),
+    ),
+    (
         "icons/os/alma.svg",
         include_bytes!("../assets/icons/os/alma.svg"),
     ),
@@ -244,6 +292,10 @@ const ICONS: &[(&str, &[u8])] = &[
     (
         "icons/os/ubuntu.svg",
         include_bytes!("../assets/icons/os/ubuntu.svg"),
+    ),
+    (
+        "icons/os/windows.svg",
+        include_bytes!("../assets/icons/os/windows.svg"),
     ),
     (
         "icons/theme/bastion.svg",

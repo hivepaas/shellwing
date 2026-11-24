@@ -9,6 +9,10 @@ use shellwing_config::SystemSeen;
 pub const COMMAND: &str =
     "cat /etc/os-release 2>/dev/null; echo; echo \"uname=$(uname -sr 2>/dev/null)\"";
 
+/// What is run when [`COMMAND`] gave nothing to go by, as on Windows,
+/// where the shell is `cmd` or PowerShell: `cmd` runs from either.
+pub const WINDOWS_COMMAND: &str = "cmd /c ver";
+
 /// How long what was seen holds before the host is asked again, whatever
 /// the answer was.
 pub const RECHECK_SECS: u64 = 24 * 60 * 60;
@@ -51,8 +55,23 @@ pub fn parse(out: &str) -> Option<&'static str> {
         "linux" => Some("linux"),
         "darwin" => Some("macos"),
         "freebsd" => Some("freebsd"),
+        // Git Bash, MSYS2 and Cygwin as the shell of a Windows host.
+        k if ["mingw", "msys_nt", "cygwin_nt"]
+            .iter()
+            .any(|p| k.starts_with(p)) =>
+        {
+            Some("windows")
+        }
         _ => None,
     }
+}
+
+/// The system icon for what [`WINDOWS_COMMAND`] printed:
+/// `Microsoft Windows [Version 10.0.20348.2340]`.
+pub fn parse_windows(out: &str) -> Option<&'static str> {
+    out.lines()
+        .any(|l| l.trim().starts_with("Microsoft Windows"))
+        .then_some("windows")
 }
 
 /// The icon for an `os-release` id.
@@ -118,6 +137,19 @@ mod tests {
         assert_eq!(parse(&out("", "")), None);
         // A shell that is not sh: nothing it printed makes sense.
         assert_eq!(parse("'cat' is not recognized as a command"), None);
+    }
+
+    #[test]
+    fn windows_by_ver_or_its_unix_shell() {
+        let ver = "\r\nMicrosoft Windows [Version 10.0.20348.2340]\r\n";
+        assert_eq!(parse_windows(ver), Some("windows"));
+        assert_eq!(parse_windows("sh: 1: cmd: not found"), None);
+        assert_eq!(parse_windows(""), None);
+        assert_eq!(
+            parse(&out("", "MINGW64_NT-10.0-20348 3.5.4-0bc1222b.x86_64")),
+            Some("windows")
+        );
+        assert_eq!(parse(&out("", "MSYS_NT-10.0-26100 3.5.4")), Some("windows"));
     }
 
     #[test]

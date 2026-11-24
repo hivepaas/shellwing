@@ -365,9 +365,29 @@ scenario!(
 );
 
 scenario!(
+    /// A host that refuses the POSIX question but answers `ver` runs
+    /// Windows: its tile shows a window.
+    a_windows_host_shows_a_window,
+    |ui| {
+        let server = ui.server(Policy {
+            windows_ver: Some("Microsoft Windows [Version 10.0.20348.2340]".into()),
+            ..Policy::password()
+        });
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("win", server.port));
+        ui.open();
+        ui.click("host:win");
+        ui.login();
+        ui.wait_until("Windows seen", |ui| ui.host_icon("win") == Some("windows"));
+        assert_eq!(server.seen.lock().expect("seen").systems_asked, 1);
+    }
+);
+
+scenario!(
     /// The editor's Icon: *Change* opens the app's icons, narrowed by what is
     /// typed; the one picked closes them, shows on the host's tile once
     /// saved, and is written to hosts.toml. *Automatic* takes it away again.
+    /// A cloud provider's is found by its name.
     pick_a_hosts_icon,
     |ui| {
         ui.config_file("hosts.toml", &host("web", closed_port()));
@@ -392,6 +412,17 @@ scenario!(
         let toml = ui.hosts_toml();
         assert!(!toml.contains("icon ="), "{toml}");
         assert_eq!(ui.host_icon("web"), None);
+
+        // A cloud provider's, found by its name: AWS is set in type.
+        edit_host(ui, "web");
+        ui.click("icon-change");
+        ui.type_text("amazon");
+        assert!(ui.find("icon:aws").is_some());
+        assert!(ui.find("icon:hetzner").is_none());
+        ui.click("icon:aws");
+        save_host(ui);
+        assert!(ui.hosts_toml().contains("icon = \"aws\""));
+        assert_eq!(ui.host_icon("web"), Some("aws"));
     }
 );
 

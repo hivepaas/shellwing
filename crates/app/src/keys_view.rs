@@ -195,11 +195,13 @@ pub(crate) fn can_read_as_admin() -> bool {
     shellwing_core::as_admin::supported()
 }
 
+/// What the UI tests read a file as an administrator with.
+#[cfg(all(test, feature = "ui-tests"))]
+pub(crate) type ReadAsAdmin = fn(&Path) -> Result<zeroize::Zeroizing<String>, String>;
+
 /// The UI tests' stand-in for the administrator's prompt.
 #[cfg(all(test, feature = "ui-tests"))]
-pub(crate) static TEST_AS_ADMIN: std::sync::OnceLock<
-    fn(&Path) -> Result<zeroize::Zeroizing<String>, String>,
-> = std::sync::OnceLock::new();
+pub(crate) static TEST_AS_ADMIN: std::sync::OnceLock<ReadAsAdmin> = std::sync::OnceLock::new();
 
 pub(crate) fn machine() -> String {
     std::env::var("HOSTNAME")

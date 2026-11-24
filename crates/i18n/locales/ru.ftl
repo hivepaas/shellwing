@@ -505,6 +505,9 @@ ta1de2fdd = Изменить
 # Systems
 t39f411dd = Системы
 
+# Cloud
+tc0821b1e = Облако
+
 # Themes
 tbf419633 = Темы
 
@@ -819,9 +822,6 @@ tf09430d8 = База данных
 
 # Web
 t72645431 = Веб
-
-# Cloud
-tc0821b1e = Облако
 
 # Container
 tb23d4718 = Контейнер

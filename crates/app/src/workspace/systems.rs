@@ -45,19 +45,33 @@ impl Workspace {
         {
             return;
         }
-        let Some(answer) = session.remote().exec(systems::COMMAND, vec![]) else {
+        let remote = session.remote();
+        let Some(answer) = remote.exec(systems::COMMAND, vec![]) else {
             return;
         };
         self.asking_system.insert(spec.clone());
         cx.spawn(async move |ws, cx| {
-            let result = answer.await;
+            // None: the connection ended before it answered, so it is asked
+            // the next time.
+            let mut system = match answer.await {
+                Ok(Ok(out)) => Some(systems::parse(&String::from_utf8_lossy(&out.stdout))),
+                // The host would not run it: as good as an answer.
+                Ok(Err(_)) => Some(None),
+                Err(_) => None,
+            };
+            // Nothing a POSIX shell would say: maybe Windows.
+            if system == Some(None)
+                && let Some(answer) = remote.exec(systems::WINDOWS_COMMAND, vec![])
+                && let Ok(Ok(out)) = answer.await
+            {
+                system = Some(systems::parse_windows(&String::from_utf8_lossy(
+                    &out.stdout,
+                )));
+            }
             let _ = ws.update(cx, |ws, cx| {
                 ws.asking_system.remove(&spec);
-                let system = match result {
-                    Ok(Ok(out)) => systems::parse(&String::from_utf8_lossy(&out.stdout)),
-                    // The host would not run it: as good as an answer.
-                    Ok(Err(_)) => None,
-                    Err(_) => return,
+                let Some(system) = system else {
+                    return;
                 };
                 ws.systems.insert(
                     spec,

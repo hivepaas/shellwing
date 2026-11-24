@@ -487,6 +487,9 @@ ta1de2fdd = Đổi
 # Systems
 t39f411dd = Hệ điều hành
 
+# Cloud
+tc0821b1e = Đám mây
+
 # Themes
 tbf419633 = Chủ đề
 
@@ -801,9 +804,6 @@ tf09430d8 = Cơ sở dữ liệu
 
 # Web
 t72645431 = Web
-
-# Cloud
-tc0821b1e = Đám mây
 
 # Container
 tb23d4718 = Container

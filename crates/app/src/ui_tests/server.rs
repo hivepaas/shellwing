@@ -107,6 +107,9 @@ pub struct Policy {
     /// Answer the app's question of which system it runs with this as its
     /// os-release, on Linux; None: refuse to run it.
     pub os_release: Option<String>,
+    /// A Windows host's `ver`, answered to the app's second question once
+    /// the first is refused; None: refuse that one too.
+    pub windows_ver: Option<String>,
 }
 
 impl Policy {
@@ -1227,6 +1230,20 @@ impl server::Handler for Shell {
             tokio::spawn(async move {
                 let out = format!("{release}\n\nuname=Linux 6.8.0-45-generic\n");
                 let _ = ch.data(out.as_bytes()).await;
+                let _ = ch.exit_status(0).await;
+                let _ = ch.eof().await;
+                let _ = ch.close().await;
+            });
+            return Ok(());
+        }
+        if data == shellwing_core::systems::WINDOWS_COMMAND.as_bytes() {
+            let opened = self.opened.remove(&channel);
+            let (Some(ch), Some(ver)) = (opened, self.policy.windows_ver.clone()) else {
+                return session.channel_failure(channel);
+            };
+            session.channel_success(channel)?;
+            tokio::spawn(async move {
+                let _ = ch.data(format!("\r\n{ver}\r\n").as_bytes()).await;
                 let _ = ch.exit_status(0).await;
                 let _ = ch.eof().await;
                 let _ = ch.close().await;

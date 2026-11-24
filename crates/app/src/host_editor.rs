@@ -1518,6 +1518,7 @@ impl HostEditor {
         let mut any = false;
         for (title, set) in [
             (tr!("Systems"), host_icons::SYSTEMS),
+            (tr!("Cloud"), host_icons::CLOUDS),
             (tr!("Themes"), host_icons::THEMES),
         ] {
             let shown: Vec<_> = set

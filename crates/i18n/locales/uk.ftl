@@ -505,6 +505,9 @@ ta1de2fdd = Змінити
 # Systems
 t39f411dd = Системи
 
+# Cloud
+tc0821b1e = Хмара
+
 # Themes
 tbf419633 = Теми
 
@@ -819,9 +822,6 @@ tf09430d8 = База даних
 
 # Web
 t72645431 = Веб
-
-# Cloud
-tc0821b1e = Хмара
 
 # Container
 tb23d4718 = Контейнер

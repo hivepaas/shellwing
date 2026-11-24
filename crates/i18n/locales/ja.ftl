@@ -487,6 +487,9 @@ ta1de2fdd = 変更
 # Systems
 t39f411dd = システム
 
+# Cloud
+tc0821b1e = クラウド
+
 # Themes
 tbf419633 = テーマ
 
@@ -801,9 +804,6 @@ tf09430d8 = データベース
 
 # Web
 t72645431 = Web
-
-# Cloud
-tc0821b1e = クラウド
 
 # Container
 tb23d4718 = コンテナ
