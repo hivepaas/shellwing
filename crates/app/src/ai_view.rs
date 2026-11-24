@@ -296,6 +296,7 @@ impl AiView {
                 .child(
                     div()
                         .flex_1()
+                        .min_w_0()
                         .flex()
                         .flex_col()
                         .gap(px(2.))
@@ -508,6 +509,7 @@ impl AiView {
                 .child(
                     div()
                         .flex_1()
+                        .min_w_0()
                         .flex()
                         .flex_col()
                         .gap(px(2.))
@@ -825,6 +827,7 @@ impl AiView {
                     .id(SharedString::from(format!("ai-default:{m:?}")))
                     .debug_selector(move || format!("ai-default:{m:?}"))
                     .flex_1()
+                    .min_w_0()
                     .flex()
                     .flex_col()
                     .gap(px(4.))
