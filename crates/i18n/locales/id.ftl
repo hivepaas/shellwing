@@ -50,7 +50,7 @@ tddf9c9cc = Hentikan semua AI
 tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
-# t2b63bd77 =
+t2b63bd77 = { $client } ingin menulis ini di { $host }. Penulisan ini menunggu Anda: jika perintah berisiko menunggu, setiap penulisan juga menunggu.
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } ingin menjalankan ini di { $host }. Perintah ini menunggu Anda: aksesnya meminta persetujuan untuk setiap perintah.
@@ -185,10 +185,10 @@ t04874b67 = di latar belakang
 t6bca7a6e = lewat tab
 
 # reads files
-# te3f10929 =
+te3f10929 = membaca berkas
 
 # writes files
-# t0a7257de =
+t0a7257de = menulis berkas
 
 # while shellwing stays open
 t938960ff = selama shellwing tetap terbuka
@@ -242,25 +242,25 @@ tfe61838e = Lewat tab
 ta797f7de = Diketik ke tab menuju host, di shell-nya, tempat Anda melihatnya; tab dibuka jika belum ada. Kata sandi yang diminta host di sana Anda ketik sendiri.
 
 # It may
-# t5c846351 =
+t5c846351 = Boleh
 
 # Run commands
-# t65b79874 =
+t65b79874 = Jalankan perintah
 
 # and see what they print
-# tef4e221a =
+tef4e221a = dan lihat keluarannya
 
 # Read files
-# te1736866 =
+te1736866 = Baca berkas
 
 # list folders and read files, over SFTP
-# tf3b3e2e7 =
+tf3b3e2e7 = lihat isi folder dan baca berkas, melalui SFTP
 
 # Write files
-# tc9796e43 =
+tc9796e43 = Tulis berkas
 
 # over SFTP; where risky ones wait, every write waits for you
-# t2d9c8c34 =
+t2d9c8c34 = melalui SFTP; jika perintah berisiko menunggu, setiap penulisan menunggu Anda
 
 # Commands
 t971550f3 = Perintah

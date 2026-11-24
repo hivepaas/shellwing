@@ -50,7 +50,7 @@ tddf9c9cc = 停止所有 AI
 tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
-# t2b63bd77 =
+t2b63bd77 = { $client } 想在 { $host } 上写入此内容。它在等你确认：在“危险命令需确认”模式下，每次写入都需确认。
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } 想在 { $host } 上运行此命令。它在等你确认：其授权要求每条命令都需确认。
@@ -185,10 +185,10 @@ t04874b67 = 在后台
 t6bca7a6e = 通过标签页
 
 # reads files
-# te3f10929 =
+te3f10929 = 读取文件
 
 # writes files
-# t0a7257de =
+t0a7257de = 写入文件
 
 # while shellwing stays open
 t938960ff = shellwing 保持打开期间
@@ -242,25 +242,25 @@ tfe61838e = 通过标签页
 ta797f7de = 输入到连接该主机的标签页的 shell 中，你能看到；如果没有这样的标签页，会打开一个。主机在那里要求的密码需由你自己输入。
 
 # It may
-# t5c846351 =
+t5c846351 = 允许
 
 # Run commands
-# t65b79874 =
+t65b79874 = 运行命令
 
 # and see what they print
-# tef4e221a =
+tef4e221a = 并查看其输出
 
 # Read files
-# te1736866 =
+te1736866 = 读取文件
 
 # list folders and read files, over SFTP
-# tf3b3e2e7 =
+tf3b3e2e7 = 通过 SFTP 列出文件夹并读取文件
 
 # Write files
-# tc9796e43 =
+tc9796e43 = 写入文件
 
 # over SFTP; where risky ones wait, every write waits for you
-# t2d9c8c34 =
+t2d9c8c34 = 通过 SFTP；在“危险命令需确认”模式下，每次写入都会等你确认
 
 # Commands
 t971550f3 = 命令

@@ -50,7 +50,7 @@ tddf9c9cc = Detener toda la AI
 tafbed557 = { $client } · { $host } · iniciado a las { $when } · { $job }
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
-# t2b63bd77 =
+t2b63bd77 = { $client } quiere escribir esto en { $host }. Te espera: donde los de riesgo esperan, toda escritura espera.
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } quiere ejecutar esto en { $host }. Te espera: su acceso concedido pide permiso para cada comando.
@@ -185,10 +185,10 @@ t04874b67 = en segundo plano
 t6bca7a6e = por una pestaña
 
 # reads files
-# te3f10929 =
+te3f10929 = lee archivos
 
 # writes files
-# t0a7257de =
+t0a7257de = escribe archivos
 
 # while shellwing stays open
 t938960ff = mientras shellwing siga abierto
@@ -242,25 +242,25 @@ tfe61838e = Por una pestaña
 ta797f7de = Se escriben en una pestaña al servidor, en su shell, donde los ves; si no hay ninguna, se abre una. Una contraseña que el servidor pida ahí la escribes tú.
 
 # It may
-# t5c846351 =
+t5c846351 = Puede
 
 # Run commands
-# t65b79874 =
+t65b79874 = Ejecutar comandos
 
 # and see what they print
-# tef4e221a =
+tef4e221a = y ver lo que muestran
 
 # Read files
-# te1736866 =
+te1736866 = Leer archivos
 
 # list folders and read files, over SFTP
-# tf3b3e2e7 =
+tf3b3e2e7 = listar carpetas y leer archivos, por SFTP
 
 # Write files
-# tc9796e43 =
+tc9796e43 = Escribir archivos
 
 # over SFTP; where risky ones wait, every write waits for you
-# t2d9c8c34 =
+t2d9c8c34 = por SFTP; donde los de riesgo esperan, toda escritura te espera
 
 # Commands
 t971550f3 = Comandos

@@ -50,7 +50,7 @@ tddf9c9cc = 停止所有 AI
 tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
-# t2b63bd77 =
+t2b63bd77 = { $client } 想在 { $host } 上寫入此內容。它正在等你確認：在「有風險時詢問」模式下，每次寫入都要詢問。
 
 # {client} wants to run this on {host}. It waits for you: its grant asks for every command.
 t2a306810 = { $client } 想在 { $host } 上執行此指令。它正在等你確認：其授權設定為每個指令都要詢問。
@@ -185,10 +185,10 @@ t04874b67 = 在背景
 t6bca7a6e = 透過分頁
 
 # reads files
-# te3f10929 =
+te3f10929 = 讀取檔案
 
 # writes files
-# t0a7257de =
+t0a7257de = 寫入檔案
 
 # while shellwing stays open
 t938960ff = shellwing 開啟期間
@@ -242,25 +242,25 @@ tfe61838e = 透過分頁
 ta797f7de = 輸入到連往該主機之分頁的 shell 中，你看得到；若沒有這樣的分頁，會開啟一個。主機在那裡要求的密碼由你自己輸入。
 
 # It may
-# t5c846351 =
+t5c846351 = 允許
 
 # Run commands
-# t65b79874 =
+t65b79874 = 執行指令
 
 # and see what they print
-# tef4e221a =
+tef4e221a = 並查看其輸出
 
 # Read files
-# te1736866 =
+te1736866 = 讀取檔案
 
 # list folders and read files, over SFTP
-# tf3b3e2e7 =
+tf3b3e2e7 = 透過 SFTP 列出資料夾並讀取檔案
 
 # Write files
-# tc9796e43 =
+tc9796e43 = 寫入檔案
 
 # over SFTP; where risky ones wait, every write waits for you
-# t2d9c8c34 =
+t2d9c8c34 = 透過 SFTP；在「有風險時詢問」模式下，每次寫入都會等你確認
 
 # Commands
 t971550f3 = 指令
