@@ -265,8 +265,10 @@ fn frames_keep_coming_while_output_floods() {
     let term = h.term.clone();
     let line = format!("{}\r\n", "x".repeat(78));
     let chunk = line.repeat(800); // ~64 KB
+    // About 50 MB: Ghostty's parser since vt-1.0.1 takes 6 MB in about
+    // 10 ms, so a smaller flood can end before a second frame is asked for.
     let feeder = std::thread::spawn(move || {
-        for _ in 0..100 {
+        for _ in 0..800 {
             term.feed(chunk.clone().into_bytes());
         }
         term.feed(b"the end\r\n".to_vec());
