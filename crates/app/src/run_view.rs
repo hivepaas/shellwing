@@ -1257,7 +1257,12 @@ impl RunView {
                 .on_click(cx.listener(|v, _, window, cx| {
                     window.focus(&v.script.focus_handle(cx), cx);
                 }))
-                .h(px(lines as f32 * 20. + 18.))
+                // The field is as high as this box, which has room for its
+                // lines, up to SCRIPT_ROWS.
+                .h(px(lines as f32 * 22. + 22.))
+                .flex()
+                .min_w_0()
+                .py(px(10.))
                 .rounded(px(8.))
                 .border_1()
                 .border_color(rgb(if focused {
@@ -1269,6 +1274,7 @@ impl RunView {
                 .overflow_hidden()
                 .font_family(self.mono.clone())
                 .text_size(ui(13.))
+                .line_height(px(22.))
                 .child(self.script.clone()),
         )
         .child(
@@ -2259,7 +2265,6 @@ impl Render for RunView {
             .flex()
             .flex_col()
             .gap(px(18.))
-            .max_w(px(1100.))
             .w_full()
             .px(px(32.))
             .py(px(22.))
@@ -2308,7 +2313,6 @@ impl Render for RunView {
             .text_size(ui(13.))
             .flex()
             .flex_col()
-            .items_center()
             .child(page)
     }
 }

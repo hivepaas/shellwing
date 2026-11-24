@@ -250,6 +250,8 @@ pub struct Sidebar {
     /// Hosts picked with Ctrl+click (Cmd+click on macOS), by spec, to run a
     /// command on.
     picked: Vec<String>,
+    /// What is folded: Actions, and sections by [`Section::key`].
+    folds: shellwing_config::SidebarState,
 }
 
 /// The Run on hosts tile, at the top of the host list and of the rail.
@@ -342,6 +344,7 @@ impl Sidebar {
             hovered: None,
             hovered_group: None,
             picked: vec![],
+            folds: Default::default(),
             filter,
             collapsed: false,
             menu: None,
@@ -776,7 +779,47 @@ fn part_heading(n: usize, label: SharedString) -> impl IntoElement {
         .child(div().flex_1().h(px(1.)).bg(rgb(colors().field_edge)))
 }
 
+impl Section {
+    /// What its folding is kept by: a collection's id, a group's name, else
+    /// its title.
+    pub fn key(&self) -> String {
+        match (&self.shared, &self.group) {
+            (Some(s), _) => format!("collection:{}", s.id),
+            (None, Some(g)) => format!("group:{g}"),
+            (None, None) => self.title.to_string(),
+        }
+    }
+}
+
 impl Sidebar {
+    /// What was folded when the app last ran.
+    pub fn set_folds(&mut self, folds: shellwing_config::SidebarState, cx: &mut Context<Self>) {
+        self.folds = folds;
+        cx.notify();
+    }
+
+    /// Folds Actions (None) or a section, or unfolds it; then the workspace
+    /// keeps what is folded. Called from a plain click handler: the
+    /// workspace is not being updated then.
+    fn toggle_fold(me: &WeakEntity<Sidebar>, section: Option<String>, cx: &mut gpui::App) {
+        let Ok((ws, folds)) = me.update(cx, |s, cx| {
+            match &section {
+                None => s.folds.actions_open = !s.folds.actions_open,
+                Some(key) => match s.folds.folded.iter().position(|k| k == key) {
+                    Some(i) => {
+                        s.folds.folded.remove(i);
+                    }
+                    None => s.folds.folded.push(key.clone()),
+                },
+            }
+            cx.notify();
+            (s.workspace.clone(), s.folds.clone())
+        }) else {
+            return;
+        };
+        let _ = ws.update(cx, |ws, _| ws.save_folds(&folds));
+    }
+
     /// Picks a host to run on, or takes it away.
     fn pick(&mut self, spec: &str, cx: &mut Context<Self>) {
         match self.picked.iter().position(|s| s == spec) {
@@ -802,62 +845,87 @@ impl Sidebar {
     }
 
     /// What can be done across hosts, above them: Run on hosts.
-    fn actions(&self) -> Div {
+    fn actions(&self, cx: &mut Context<Self>) -> Div {
         let ws = self.workspace.clone();
+        let open = self.folds.actions_open;
+        let me = cx.entity().downgrade();
         div()
             .flex()
             .flex_col()
             .gap(px(2.))
-            .pt_3()
-            .pb(px(6.))
+            .pt_2()
+            .pb(px(if open { 6. } else { 2. }))
             .border_b_1()
             .border_color(rgb(colors().line))
             .child(
                 div()
-                    .px_3()
-                    .h(px(20.))
-                    .text_xs()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(rgb(colors().muted))
-                    .child(tr!("ACTIONS")),
-            )
-            .child(
-                div()
-                    .id("action-run")
-                    .debug_selector(|| "action-run".into())
+                    .id("actions-fold")
+                    .debug_selector(|| "actions-fold".into())
                     .flex()
                     .items_center()
-                    .gap(px(ROW_GAP))
-                    .h(px(ROW_HEIGHT))
-                    .pl(px(ROW_PAD))
-                    .pr(px(10.))
+                    .justify_between()
+                    .h(px(26.))
                     .mx(px(ROW_MARGIN))
+                    .pl(px(12. - ROW_MARGIN))
+                    .pr(px(6.))
                     .rounded_md()
                     .cursor_pointer()
                     .hover(|s| s.bg(rgb(colors().hover)))
-                    .on_click(move |_, window, cx| {
-                        let _ = ws.update(cx, |ws, cx| ws.open_run(vec![], window, cx));
-                    })
-                    .child(run_tile(colors().panel))
+                    .text_xs()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(rgb(colors().muted))
+                    .on_click(move |_, _, cx| Sidebar::toggle_fold(&me, None, cx))
+                    .child(tr!("ACTIONS"))
                     .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .min_w_0()
-                            .child(
-                                div()
-                                    .font_weight(FontWeight::MEDIUM)
-                                    .text_color(rgb(colors().text))
-                                    .child(tr!("Run on hosts")),
-                            )
-                            .child(
-                                div()
-                                    .text_xs()
-                                    .text_color(rgb(colors().muted))
-                                    .child(tr!("One command, many hosts")),
-                            ),
+                        svg()
+                            .path(if open {
+                                "icons/chevron-down.svg"
+                            } else {
+                                "icons/chevron-right.svg"
+                            })
+                            .size(px(14.))
+                            .text_color(rgb(colors().muted)),
                     ),
             )
+            .when(open, |d| {
+                d.child(
+                    div()
+                        .id("action-run")
+                        .debug_selector(|| "action-run".into())
+                        .flex()
+                        .items_center()
+                        .gap(px(ROW_GAP))
+                        .h(px(ROW_HEIGHT))
+                        .pl(px(ROW_PAD))
+                        .pr(px(10.))
+                        .mx(px(ROW_MARGIN))
+                        .rounded_md()
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open_run(vec![], window, cx));
+                        })
+                        .child(run_tile(colors().panel))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .min_w_0()
+                                .child(
+                                    div()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(rgb(colors().text))
+                                        .child(tr!("Run on hosts")),
+                                )
+                                .child(
+                                    div()
+                                        .text_xs()
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("One command, many hosts")),
+                                ),
+                        ),
+                )
+            })
     }
 
     /// Under the list while hosts are picked: run on them, or let them go.
@@ -971,10 +1039,16 @@ impl Render for Sidebar {
             if let Some(heading) = &section.heading {
                 list = list.child(part_heading(n, heading.clone()));
             }
+            let key = section.key();
+            // A filter shows what it finds, folded or not.
+            let folded = !filtering && self.folds.folded.contains(&key);
+            let me = cx.entity().downgrade();
             list = list.child(
                 div()
                     .id(("section", n))
                     .debug_selector(|| format!("section:{}", section.title))
+                    .cursor_pointer()
+                    .on_click(move |_, _, cx| Sidebar::toggle_fold(&me, Some(key.clone()), cx))
                     .flex()
                     .items_center()
                     .justify_between()
@@ -1181,6 +1255,10 @@ impl Render for Sidebar {
                         )
                     }),
             );
+            if folded {
+                id += section.rows.len() as u64;
+                continue;
+            }
             if section.rows.is_empty() {
                 list = list.child(
                     div()
@@ -1462,7 +1540,7 @@ impl Render for Sidebar {
             .border_color(rgb(colors().line))
             .text_sm()
             .on_key_down(cx.listener(Self::on_key))
-            .child(self.actions())
+            .child(self.actions(cx))
             .child(
                 div()
                     .flex()

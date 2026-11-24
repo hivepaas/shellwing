@@ -125,6 +125,8 @@ scenario!(
         let (server, _) = shell_server(ui);
         ui.config_file("hosts.toml", &host("db", server.port, "Production"));
         ui.open();
+        assert!(ui.find("action-run").is_none(), "Actions start folded");
+        ui.click("actions-fold");
         ui.click("action-run");
         assert!(ui.run(|r, _| r.chosen_names().is_empty()));
         ui.click("run-pick:db");
@@ -242,5 +244,38 @@ scenario!(
             assert_eq!(outcome(&ended, h).stdout, "ok\n");
         }
         assert!(ui.find("run-go-on").is_none());
+    }
+);
+
+scenario!(
+    /// Actions and each section fold with a click on their title, and stay
+    /// so at the next start; a filter shows the hosts it finds, folded or
+    /// not.
+    the_host_list_folds,
+    |ui| {
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "[[group]]\nname = \"Production\"\n\n{}{}",
+                host("api-1", 1, "Production"),
+                host("api-2", 1, "Production"),
+            ),
+        );
+        ui.open();
+        assert!(ui.find("action-run").is_none());
+        ui.click("actions-fold");
+        assert!(ui.find("action-run").is_some());
+        assert!(ui.find("host:api-1").is_some());
+        ui.click("section:Production");
+        assert!(ui.find("host:api-1").is_none(), "folded");
+        assert!(ui.find("section:Production").is_some(), "its title stays");
+        ui.click("host-filter");
+        ui.type_text("api-2");
+        assert!(ui.find("host:api-2").is_some(), "found, though folded");
+        let saved = std::fs::read_to_string(ui.config_dir().join("state/sidebar.json"))
+            .expect("sidebar.json");
+        let saved: shellwing_config::SidebarState = serde_json::from_str(&saved).expect("json");
+        assert!(saved.actions_open);
+        assert_eq!(saved.folded, ["group:Production"]);
     }
 );

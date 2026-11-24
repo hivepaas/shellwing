@@ -517,6 +517,10 @@ impl Workspace {
                 ));
             }
         }
+        if let Some(store) = ws.live.store() {
+            let folds = store.sidebar_state();
+            ws.sidebar.update(cx, |s, cx| s.set_folds(folds, cx));
+        }
         ws.share_settings(cx);
         ws.start_update_checks(cx);
         // The system editor's name is read from the desktop: once, off the UI thread.
@@ -542,6 +546,15 @@ impl Workspace {
     /// The rail's search button: the palette, to find a host by typing.
     pub fn open_palette_from_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.open_palette(window, cx);
+    }
+
+    /// Keeps what the host list has folded, for the next start.
+    pub fn save_folds(&self, folds: &shellwing_config::SidebarState) {
+        if let Some(store) = self.live.store()
+            && let Err(e) = store.save_sidebar_state(folds)
+        {
+            eprintln!("cannot save the host list's folds: {e}");
+        }
     }
 
     /// Folds the host list to a rail of host tiles, or unfolds it.

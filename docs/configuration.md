@@ -339,7 +339,11 @@ tab. A host chosen in the palette with **Enter** goes the same way, and with
 edge can be dragged (200 to 480 px; a double-click goes back to 248). The
 button at the right of *HOSTS* folds it to a rail of the same tiles (hover for
 the name; clicks as in the list), with a button to unfold it and one to find a
-host in the palette. **Ctrl+Shift+B** still hides the host list altogether.
+host in the palette. **Ctrl+Shift+B** still hides the host list altogether. A click on a
+section's title (a group, a collection, *Hosts*) folds its hosts away or shows
+them again; so does a click on *ACTIONS*, above the hosts, which starts folded.
+What is folded is kept for the next start (`state/sidebar.json`), and a filter
+shows the hosts it finds, folded or not.
 
 A host's `icon`, chosen in the host editor (*Icon*, then *Change*) or written
 in hosts.toml, is one of the app's: a system's mark (`ubuntu`, `debian`,
@@ -1095,8 +1099,8 @@ copied to other panes.
 A command or a script, run on many hosts at once in a tab of its own, with
 what each host printed side by side. Where to start one:
 
-- **Actions › Run on hosts**, at the top of the host list, or its tile on the
-  rail;
+- **Actions › Run on hosts**, at the top of the host list (click *ACTIONS* to
+  unfold it), or its tile on the rail;
 - **▶** beside a group's name when the pointer is over it: its hosts start
   chosen;
 - **Ctrl+click** (**Cmd+click** on macOS) hosts in the list, then *Run on
