@@ -2,6 +2,7 @@
 //! terminals, the prompts they ask through, saved secrets and host targets.
 //! The desktop app draws it with GPUI; other front ends can use it as is.
 
+pub mod as_admin;
 pub mod bench;
 pub mod certs;
 pub mod collections;

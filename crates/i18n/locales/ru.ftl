@@ -436,6 +436,36 @@ t97a4b927 = хранилище не открыто
 # No key made: {e}
 t4e14e42b = Ключ не создан: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Полный путь, например /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Его парольная фраза
+
+# That passphrase does not open it.
+t05c6a9c1 = Эта парольная фраза не подходит.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } не является закрытым ключом OpenSSH.
+
+# Not copied: {e}
+t03370a6b = Не скопировано: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Ожидание пароля…
+
+# Add to the vault
+t236cfbb2 = Добавить в хранилище
+
+# Read as administrator
+t44c7c72e = Прочитать от имени администратора
+
+# Key file, read as administrator
+t023daf07 = Файл ключа, прочитанный от имени администратора
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Система один раз спросит пароль администратора. Затем ключ попадёт в хранилище как ваш собственный: с этого момента его хранит ваше хранилище, а не владелец файла, и он синхронизируется с другими вашими устройствами.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Этот хост не найден в hosts.toml.
 
@@ -549,6 +579,9 @@ ta6d50f9b = { $name }   в хранилище · { $kind }
 
 # Another key file…
 t6f4497c1 = Другой файл ключа…
+
+# Key file as administrator…
+t7c2b0195 = Файл ключа от имени администратора…
 
 # + Generate a key for this host
 ta1a39e38 = + Создать ключ для этого хоста
@@ -1045,6 +1078,18 @@ t040b2da6 =
        *[other] Импортировать { $n } хоста
     }
 
+# Not read: the password was not given.
+tf6b727a9 = Не прочитано: пароль не введён.
+
+# Not read: the system did not allow it.
+t0def7028 = Не прочитано: система не разрешила.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Эта система не может запросить пароль администратора.
+
+# Not read: {why}
+t9133669c = Не прочитано: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (рекомендуется)
 
@@ -1087,15 +1132,6 @@ t3ccd278a = Не записано: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = Не удалось прочитать { $path }: { $e }
 
-# Its passphrase
-t279e8bbb = Его парольная фраза
-
-# That passphrase does not open it.
-t05c6a9c1 = Эта парольная фраза не подходит.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } не является закрытым ключом OpenSSH.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Парольная фраза { $file_name } сохранена: больше не запрашивается.
 
@@ -1104,9 +1140,6 @@ ta9354472 = Не сохранено: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } теперь в хранилище и синхронизируется с другими вашими устройствами.
-
-# Not copied: {e}
-t03370a6b = Не скопировано: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } теперь в ssh-agent, до его остановки.
@@ -1246,6 +1279,9 @@ t8dd31791 = Готово
 # Install on a host…
 ta8313af0 = Установить на хост…
 
+# Import a key file as administrator
+t74d1b96b = Импорт файла ключа от имени администратора
+
 # Rename the key
 t2c552c07 = Переименовать ключ
 
@@ -1293,6 +1329,9 @@ t602b32ed = Ключи
 
 # Import key file…
 t68acce01 = Импортировать файл ключа…
+
+# As administrator…
+t51b1ff28 = От имени администратора…
 
 # Generate key…
 t0d000853 = Создать ключ…

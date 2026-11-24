@@ -430,6 +430,36 @@ t97a4b927 = der Tresor ist nicht geöffnet
 # No key made: {e}
 t4e14e42b = Kein Schlüssel erstellt: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Ein vollständiger Pfad, etwa /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Zugehörige Passphrase
+
+# That passphrase does not open it.
+t05c6a9c1 = Diese Passphrase öffnet ihn nicht.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } ist kein privater OpenSSH-Schlüssel.
+
+# Not copied: {e}
+t03370a6b = Nicht kopiert: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Warte auf das Passwort…
+
+# Add to the vault
+t236cfbb2 = In den Tresor
+
+# Read as administrator
+t44c7c72e = Als Administrator lesen
+
+# Key file, read as administrator
+t023daf07 = Schlüsseldatei, als Administrator gelesen
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Das System fragt einmal nach dem Passwort eines Administrators. Danach kommt der Schlüssel als einer Ihrer eigenen in den Tresor: von da an bewahrt ihn Ihr Tresor auf, nicht der Besitzer der Datei, und er wird mit Ihren anderen Geräten synchronisiert.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Dieser Host ist nicht in hosts.toml zu finden.
 
@@ -543,6 +573,9 @@ ta6d50f9b = { $name }   im Tresor · { $kind }
 
 # Another key file…
 t6f4497c1 = Andere Schlüsseldatei…
+
+# Key file as administrator…
+t7c2b0195 = Schlüsseldatei als Administrator…
 
 # + Generate a key for this host
 ta1a39e38 = + Schlüssel für diesen Host erzeugen
@@ -1031,6 +1064,18 @@ t040b2da6 =
        *[other] { $n } Hosts importieren
     }
 
+# Not read: the password was not given.
+tf6b727a9 = Nicht gelesen: Das Passwort wurde nicht eingegeben.
+
+# Not read: the system did not allow it.
+t0def7028 = Nicht gelesen: Das System hat es nicht erlaubt.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Dieses System kann nicht nach dem Passwort eines Administrators fragen.
+
+# Not read: {why}
+t9133669c = Nicht gelesen: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (empfohlen)
 
@@ -1073,15 +1118,6 @@ t3ccd278a = Nicht geschrieben: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = { $path } nicht lesbar: { $e }
 
-# Its passphrase
-t279e8bbb = Zugehörige Passphrase
-
-# That passphrase does not open it.
-t05c6a9c1 = Diese Passphrase öffnet ihn nicht.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } ist kein privater OpenSSH-Schlüssel.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Passphrase von { $file_name } gespeichert: sie wird nicht mehr abgefragt.
 
@@ -1090,9 +1126,6 @@ ta9354472 = Nicht gespeichert: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } ist jetzt im Tresor und wird mit deinen anderen Geräten synchronisiert.
-
-# Not copied: {e}
-t03370a6b = Nicht kopiert: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } ist jetzt im ssh-agent, bis dieser beendet wird.
@@ -1230,6 +1263,9 @@ t8dd31791 = Fertig
 # Install on a host…
 ta8313af0 = Auf einem Host installieren…
 
+# Import a key file as administrator
+t74d1b96b = Schlüsseldatei als Administrator importieren
+
 # Rename the key
 t2c552c07 = Schlüssel umbenennen
 
@@ -1277,6 +1313,9 @@ t602b32ed = Schlüssel
 
 # Import key file…
 t68acce01 = Schlüsseldatei importieren…
+
+# As administrator…
+t51b1ff28 = Als Administrator…
 
 # Generate key…
 t0d000853 = Schlüssel erzeugen…

@@ -418,6 +418,36 @@ t97a4b927 = kho chưa mở
 # No key made: {e}
 t4e14e42b = Chưa tạo được khoá: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Một đường dẫn đầy đủ, như /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Cụm mật khẩu của nó
+
+# That passphrase does not open it.
+t05c6a9c1 = Cụm mật khẩu đó không mở được.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } không phải khoá riêng OpenSSH.
+
+# Not copied: {e}
+t03370a6b = Chưa sao chép: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Đang chờ mật khẩu…
+
+# Add to the vault
+t236cfbb2 = Thêm vào kho
+
+# Read as administrator
+t44c7c72e = Đọc bằng quyền quản trị
+
+# Key file, read as administrator
+t023daf07 = Tệp khoá, đọc bằng quyền quản trị
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Hệ thống hỏi mật khẩu quản trị một lần. Sau đó khoá vào kho như một khoá của bạn: từ đó kho của bạn giữ nó, không còn chủ của tệp, và nó đồng bộ sang các thiết bị khác của bạn.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Không tìm thấy máy chủ này trong hosts.toml.
 
@@ -531,6 +561,9 @@ ta6d50f9b = { $name }   trong kho · { $kind }
 
 # Another key file…
 t6f4497c1 = Tệp khoá khác…
+
+# Key file as administrator…
+t7c2b0195 = Tệp khoá bằng quyền quản trị…
 
 # + Generate a key for this host
 ta1a39e38 = + Tạo khoá cho máy chủ này
@@ -1003,6 +1036,18 @@ tc2954bc2 = Quay lại
 # Import {n} host | Import {n} hosts
 t040b2da6 = Nhập { $n } máy chủ
 
+# Not read: the password was not given.
+tf6b727a9 = Chưa đọc: mật khẩu chưa được nhập.
+
+# Not read: the system did not allow it.
+t0def7028 = Chưa đọc: hệ thống không cho phép.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Hệ thống này không hỏi được mật khẩu quản trị.
+
+# Not read: {why}
+t9133669c = Chưa đọc: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (khuyên dùng)
 
@@ -1045,15 +1090,6 @@ t3ccd278a = Chưa ghi: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = Không đọc được { $path }: { $e }
 
-# Its passphrase
-t279e8bbb = Cụm mật khẩu của nó
-
-# That passphrase does not open it.
-t05c6a9c1 = Cụm mật khẩu đó không mở được.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } không phải khoá riêng OpenSSH.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Đã lưu cụm mật khẩu của { $file_name }: sẽ không bị hỏi lại.
 
@@ -1062,9 +1098,6 @@ ta9354472 = Chưa lưu: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } đã ở trong kho, và được đồng bộ sang các thiết bị khác của bạn.
-
-# Not copied: {e}
-t03370a6b = Chưa sao chép: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } đã ở trong ssh-agent, cho đến khi agent dừng.
@@ -1198,6 +1231,9 @@ t8dd31791 = Xong
 # Install on a host…
 ta8313af0 = Cài đặt lên một máy chủ…
 
+# Import a key file as administrator
+t74d1b96b = Nhập tệp khoá bằng quyền quản trị
+
 # Rename the key
 t2c552c07 = Đổi tên khoá
 
@@ -1245,6 +1281,9 @@ t602b32ed = Khoá
 
 # Import key file…
 t68acce01 = Nhập tệp khoá…
+
+# As administrator…
+t51b1ff28 = Bằng quyền quản trị…
 
 # Generate key…
 t0d000853 = Tạo khoá…

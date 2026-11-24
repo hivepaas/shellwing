@@ -430,6 +430,36 @@ t97a4b927 = la cassaforte non è aperta
 # No key made: {e}
 t4e14e42b = Nessuna chiave creata: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Un percorso completo, come /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = La sua passphrase
+
+# That passphrase does not open it.
+t05c6a9c1 = Questa passphrase non la apre.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } non è una chiave privata OpenSSH.
+
+# Not copied: {e}
+t03370a6b = Impossibile copiare: { $e }
+
+# Waiting for the password…
+tc4be2aeb = In attesa della password…
+
+# Add to the vault
+t236cfbb2 = Aggiungi alla cassaforte
+
+# Read as administrator
+t44c7c72e = Leggi come amministratore
+
+# Key file, read as administrator
+t023daf07 = File di chiave, letto come amministratore
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Il sistema chiede una volta la password di un amministratore. Poi la chiave va nella cassaforte come una delle tue: da allora la custodisce la tua cassaforte, non il proprietario del file, e si sincronizza con gli altri tuoi dispositivi.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Questo host non si trova in hosts.toml.
 
@@ -543,6 +573,9 @@ ta6d50f9b = { $name }   nella cassaforte · { $kind }
 
 # Another key file…
 t6f4497c1 = Un altro file di chiave…
+
+# Key file as administrator…
+t7c2b0195 = File di chiave come amministratore…
 
 # + Generate a key for this host
 ta1a39e38 = + Genera una chiave per questo host
@@ -1031,6 +1064,18 @@ t040b2da6 =
        *[other] Importa { $n } host
     }
 
+# Not read: the password was not given.
+tf6b727a9 = Non letto: la password non è stata data.
+
+# Not read: the system did not allow it.
+t0def7028 = Non letto: il sistema non l'ha permesso.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Questo sistema non può chiedere la password di un amministratore.
+
+# Not read: {why}
+t9133669c = Non letto: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (consigliato)
 
@@ -1073,15 +1118,6 @@ t3ccd278a = Impossibile scrivere: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = Impossibile leggere { $path }: { $e }
 
-# Its passphrase
-t279e8bbb = La sua passphrase
-
-# That passphrase does not open it.
-t05c6a9c1 = Questa passphrase non la apre.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } non è una chiave privata OpenSSH.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Passphrase di { $file_name } salvata: non verrà più chiesta.
 
@@ -1090,9 +1126,6 @@ ta9354472 = Impossibile salvare: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } ora è nella cassaforte e si sincronizza con gli altri tuoi dispositivi.
-
-# Not copied: {e}
-t03370a6b = Impossibile copiare: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } ora è nell'ssh-agent, finché l'agent resta attivo.
@@ -1230,6 +1263,9 @@ t8dd31791 = Fine
 # Install on a host…
 ta8313af0 = Installa su un host…
 
+# Import a key file as administrator
+t74d1b96b = Importa un file di chiave come amministratore
+
 # Rename the key
 t2c552c07 = Rinomina la chiave
 
@@ -1277,6 +1313,9 @@ t602b32ed = Chiavi
 
 # Import key file…
 t68acce01 = Importa file di chiave…
+
+# As administrator…
+t51b1ff28 = Come amministratore…
 
 # Generate key…
 t0d000853 = Genera chiave…

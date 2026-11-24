@@ -69,6 +69,16 @@ enum Dialog {
         again: Entity<TextInput>,
         problem: Option<String>,
     },
+    /// A key file only an administrator can read: where it is, its text
+    /// once read, and its passphrase if it asks one.
+    AsAdmin {
+        path: Entity<TextInput>,
+        text: Option<zeroize::Zeroizing<String>>,
+        pass: Option<Entity<TextInput>>,
+        problem: Option<String>,
+        /// The system's password prompt is open.
+        busy: bool,
+    },
     /// A key file with a passphrase: its passphrase, for `then`.
     Unlock {
         path: PathBuf,
@@ -120,6 +130,77 @@ fn ssh_dir() -> Option<PathBuf> {
 }
 
 /// This computer's name, for a new key's name and comment.
+/// Why a key's text did not go into the vault.
+#[derive(Debug)]
+pub(crate) enum NotAdded {
+    /// It has a passphrase, and none (or a wrong one) was given.
+    Passphrase,
+    /// It is not an OpenSSH private key.
+    NotAKey,
+    /// The vault would not take it: why.
+    Vault(String),
+}
+
+/// Puts a private key's `text` in the vault as `name`, opened with `pass`
+/// when it has one: its id there, and what it is.
+pub(crate) fn add_to_vault(
+    vault: &VaultSlot,
+    name: &str,
+    text: &str,
+    pass: Option<&str>,
+) -> Result<(String, KeyInfo), NotAdded> {
+    let key = keys::parse(text, pass).map_err(|e| match e {
+        ReadError::Passphrase => NotAdded::Passphrase,
+        ReadError::NotAKey(_) => NotAdded::NotAKey,
+    })?;
+    let info = keys::info(key.public_key());
+    let pem = keys::to_vault(&key).map_err(|e| NotAdded::Vault(e.to_string()))?;
+    let id = vault
+        .get()
+        .ok_or_else(|| NotAdded::Vault(tr!("the vault is not open")))?
+        .add_ssh_key(name, &info.public, &pem)
+        .map_err(|e| NotAdded::Vault(e.to_string()))?;
+    Ok((id, info))
+}
+
+/// Reads `path` as an administrator, asking for the password, off the UI
+/// thread. In the UI tests, a reader of their own stands in for the prompt.
+pub(crate) async fn read_as_admin(
+    path: PathBuf,
+    cx: &gpui::AsyncApp,
+) -> Result<zeroize::Zeroizing<String>, String> {
+    use shellwing_core::as_admin::Error;
+    #[cfg(all(test, feature = "ui-tests"))]
+    if let Some(read) = TEST_AS_ADMIN.get() {
+        return read(&path);
+    }
+    let read = cx
+        .background_executor()
+        .spawn(async move { shellwing_core::as_admin::read(&path) })
+        .await;
+    read.map_err(|e| match e {
+        Error::Cancelled => tr!("Not read: the password was not given."),
+        Error::NotAllowed => tr!("Not read: the system did not allow it."),
+        Error::Unsupported => tr!("This system cannot ask for an administrator's password."),
+        Error::Failed(why) => tr!("Not read: {why}", why = why),
+    })
+}
+
+/// Whether "as administrator" can be offered here.
+pub(crate) fn can_read_as_admin() -> bool {
+    #[cfg(all(test, feature = "ui-tests"))]
+    if TEST_AS_ADMIN.get().is_some() {
+        return true;
+    }
+    shellwing_core::as_admin::supported()
+}
+
+/// The UI tests' stand-in for the administrator's prompt.
+#[cfg(all(test, feature = "ui-tests"))]
+pub(crate) static TEST_AS_ADMIN: std::sync::OnceLock<
+    fn(&Path) -> Result<zeroize::Zeroizing<String>, String>,
+> = std::sync::OnceLock::new();
+
 pub(crate) fn machine() -> String {
     std::env::var("HOSTNAME")
         .or_else(|_| std::env::var("COMPUTERNAME"))
@@ -296,6 +377,7 @@ impl KeysView {
             Dialog::Generate { name, .. } => Some(name.clone()),
             Dialog::Rename { input, .. } => Some(input.clone()),
             Dialog::Export { pass, .. } | Dialog::Unlock { pass, .. } => Some(pass.clone()),
+            Dialog::AsAdmin { pass, path, .. } => Some(pass.clone().unwrap_or(path.clone())),
             Dialog::Generated { .. } => None,
         };
         self.dialog = Some(dialog);
@@ -836,6 +918,133 @@ impl KeysView {
         .detach();
     }
 
+    /// Asks where a key file only an administrator can read is.
+    fn as_admin_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let path = Self::input(|| "/root/.ssh/id_ed25519".to_string(), "", false, cx);
+        self.open(
+            Dialog::AsAdmin {
+                path,
+                text: None,
+                pass: None,
+                problem: None,
+                busy: false,
+            },
+            window,
+            cx,
+        );
+    }
+
+    /// The dialog's next step: read the file as an administrator, then
+    /// put the key in the vault, asking its passphrase if it has one.
+    fn as_admin_next(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(Dialog::AsAdmin {
+            path,
+            text,
+            pass,
+            busy,
+            problem,
+        }) = self.dialog.as_mut()
+        else {
+            return;
+        };
+        if *busy {
+            return;
+        }
+        let file = PathBuf::from(path.read(cx).text().trim());
+        let Some(text) = text.clone() else {
+            if !file.is_absolute() {
+                *problem = Some(tr!("A full path, such as /root/.ssh/id_ed25519."));
+                return cx.notify();
+            }
+            *busy = true;
+            *problem = None;
+            cx.notify();
+            cx.spawn_in(window, async move |this, cx| {
+                let read = read_as_admin(file, cx).await;
+                let _ = this.update_in(cx, |v, window, cx| {
+                    let Some(Dialog::AsAdmin {
+                        text,
+                        busy,
+                        problem,
+                        ..
+                    }) = v.dialog.as_mut()
+                    else {
+                        return;
+                    };
+                    *busy = false;
+                    match read {
+                        Ok(read) => {
+                            *text = Some(read);
+                            v.as_admin_next(window, cx);
+                        }
+                        Err(why) => {
+                            *problem = Some(why);
+                            cx.notify();
+                        }
+                    }
+                });
+            })
+            .detach();
+            return;
+        };
+        let typed = pass.as_ref().map(|p| p.read(cx).text().to_string());
+        let pass_input = pass.clone();
+        let name = file
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "key".into());
+        let added = add_to_vault(&self.vault, &name, &text, typed.as_deref());
+        if added.is_ok() {
+            self.close(window, cx);
+            self.say(
+                tr!(
+                    "{name} is in the vault now, and syncs to your other devices.",
+                    name = &name
+                ),
+                false,
+                cx,
+            );
+            self.vault_changed(cx);
+            return self.refresh(cx);
+        }
+        let asked = match added {
+            Err(NotAdded::Passphrase) => Some(
+                pass_input.unwrap_or_else(|| Self::input(|| tr!("Its passphrase"), "", true, cx)),
+            ),
+            _ => None,
+        };
+        if let Some(input) = &asked {
+            window.focus(&input.focus_handle(cx), cx);
+        }
+        let Some(Dialog::AsAdmin {
+            text,
+            pass,
+            problem,
+            ..
+        }) = self.dialog.as_mut()
+        else {
+            return;
+        };
+        match added {
+            Ok(_) => {}
+            Err(NotAdded::Passphrase) => {
+                *pass = asked;
+                *problem = typed
+                    .is_some()
+                    .then(|| tr!("That passphrase does not open it."));
+            }
+            Err(NotAdded::NotAKey) => {
+                *text = None;
+                *problem = Some(tr!(
+                    "{path} is not an OpenSSH private key.",
+                    path = tilde(&file)
+                ));
+            }
+            Err(NotAdded::Vault(e)) => *problem = Some(tr!("Not copied: {e}", e = e)),
+        }
+        cx.notify();
+    }
+
     fn on_key(&mut self, ev: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
         let key = ev.keystroke.key.as_str();
         if self.menu.is_some() && key == "escape" {
@@ -860,6 +1069,7 @@ impl KeysView {
                     self.with_file(path, Some(typed), then, window, cx);
                 }
                 Some(Dialog::Generated { .. }) => self.close(window, cx),
+                Some(Dialog::AsAdmin { .. }) => self.as_admin_next(window, cx),
                 None => {}
             },
             _ => return,
@@ -1455,6 +1665,7 @@ impl KeysView {
                             (path.clone(), pass.read(cx).text().to_string(), *then);
                         v.with_file(path, Some(typed), then, w, cx);
                     }
+                    Some(Dialog::AsAdmin { .. }) => v.as_admin_next(w, cx),
                     Some(Dialog::Generated { .. }) | None => v.close(w, cx),
                 },
             )))
@@ -1670,6 +1881,49 @@ impl KeysView {
                             )),
                     )
             }
+            Dialog::AsAdmin {
+                path,
+                pass,
+                problem,
+                busy,
+                ..
+            } => {
+                let ok = if *busy {
+                    tr!("Waiting for the password…")
+                } else if pass.is_some() {
+                    tr!("Copy to vault")
+                } else {
+                    tr!("Read as administrator")
+                };
+                let mut b = card
+                    .child(title(tr!("Import a key file as administrator")))
+                    .child(div().text_size(ui(12.5)).text_color(rgb(colors().label)).child(tr!(
+                        "The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices."
+                    )))
+                    .child(Self::field(&tr!("Key file"), path, focused(path, window, cx), None));
+                if let Some(pass) = pass {
+                    b = b.child(div().debug_selector(|| "as-admin-pass".into()).child(
+                        Self::field(
+                            &tr!("Its passphrase"),
+                            pass,
+                            focused(pass, window, cx),
+                            None,
+                        ),
+                    ));
+                }
+                if let Some(p) = problem {
+                    b = b.child(
+                        div()
+                            .debug_selector(|| "as-admin-problem".into())
+                            .child(problem_text(p)),
+                    );
+                }
+                b.child(buttons(
+                    Some(tr!("Cancel").as_str()),
+                    ("as-admin-ok", ok.as_str()),
+                    cx,
+                ))
+            }
             Dialog::Rename { input, .. } => card
                 .child(title(tr!("Rename the key")))
                 .child(Self::field(&tr!("Name"), input, true, None))
@@ -1789,6 +2043,12 @@ impl Render for KeysView {
                         outline_button("keys-import", &tr!("Import key file…"))
                             .on_click(cx.listener(|v, _, _, cx| v.import(cx))),
                     )
+                    .when(can_read_as_admin(), |d| {
+                        d.child(
+                            outline_button("keys-import-admin", &tr!("As administrator…"))
+                                .on_click(cx.listener(|v, _, w, cx| v.as_admin_dialog(w, cx))),
+                        )
+                    })
                     .child(
                         primary_button("keys-generate", &tr!("Generate key…"))
                             .on_click(cx.listener(|v, _, w, cx| v.generate_dialog(w, cx))),

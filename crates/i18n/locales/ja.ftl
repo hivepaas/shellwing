@@ -418,6 +418,36 @@ t97a4b927 = 保管庫が開いていません
 # No key made: {e}
 t4e14e42b = 鍵を作成できませんでした：{ $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = /root/.ssh/id_ed25519 のようなフルパス。
+
+# Its passphrase
+t279e8bbb = 鍵のパスフレーズ
+
+# That passphrase does not open it.
+t05c6a9c1 = このパスフレーズでは開けません。
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } は OpenSSH の秘密鍵ではありません。
+
+# Not copied: {e}
+t03370a6b = コピーできませんでした：{ $e }
+
+# Waiting for the password…
+tc4be2aeb = パスワードを待っています…
+
+# Add to the vault
+t236cfbb2 = 保管庫に追加
+
+# Read as administrator
+t44c7c72e = 管理者として読み込む
+
+# Key file, read as administrator
+t023daf07 = 管理者として読み込む鍵ファイル
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = システムが管理者のパスワードを一度だけ求めます。その後、鍵は自分の鍵として保管庫に入ります。以降はファイルの所有者ではなく保管庫が鍵を守り、ほかのデバイスとも同期されます。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = このホストが hosts.toml に見つかりません。
 
@@ -531,6 +561,9 @@ ta6d50f9b = { $name }   保管庫内 · { $kind }
 
 # Another key file…
 t6f4497c1 = 別の鍵ファイル…
+
+# Key file as administrator…
+t7c2b0195 = 管理者として鍵ファイルを読み込む…
 
 # + Generate a key for this host
 ta1a39e38 = + このホスト用の鍵を生成
@@ -1003,6 +1036,18 @@ tc2954bc2 = 戻る
 # Import {n} host | Import {n} hosts
 t040b2da6 = { $n } 件のホストをインポート
 
+# Not read: the password was not given.
+tf6b727a9 = 読み込めませんでした：パスワードが入力されませんでした。
+
+# Not read: the system did not allow it.
+t0def7028 = 読み込めませんでした：システムが許可しませんでした。
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = このシステムは管理者のパスワードを求めることができません。
+
+# Not read: {why}
+t9133669c = 読み込めませんでした：{ $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推奨）
 
@@ -1045,15 +1090,6 @@ t3ccd278a = 書き出せませんでした：{ $e }
 # Cannot read {path}: {e}
 t7b24cd24 = { $path } を読み込めません：{ $e }
 
-# Its passphrase
-t279e8bbb = 鍵のパスフレーズ
-
-# That passphrase does not open it.
-t05c6a9c1 = このパスフレーズでは開けません。
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } は OpenSSH の秘密鍵ではありません。
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = { $file_name } のパスフレーズを保存しました。今後は尋ねられません。
 
@@ -1062,9 +1098,6 @@ ta9354472 = 保存できませんでした：{ $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } を保管庫に追加しました。他のデバイスにも同期されます。
-
-# Not copied: {e}
-t03370a6b = コピーできませんでした：{ $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } を ssh-agent に追加しました。エージェントが停止するまで有効です。
@@ -1198,6 +1231,9 @@ t8dd31791 = 完了
 # Install on a host…
 ta8313af0 = ホストにインストール…
 
+# Import a key file as administrator
+t74d1b96b = 管理者として鍵ファイルをインポート
+
 # Rename the key
 t2c552c07 = 鍵の名前を変更
 
@@ -1245,6 +1281,9 @@ t602b32ed = 鍵
 
 # Import key file…
 t68acce01 = 鍵ファイルをインポート…
+
+# As administrator…
+t51b1ff28 = 管理者として…
 
 # Generate key…
 t0d000853 = 鍵を生成…

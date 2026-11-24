@@ -185,3 +185,99 @@ scenario!(
         assert!(public.starts_with("ssh-ed25519 "), "{public}");
     }
 );
+
+/// A key file only an administrator could read, in the test's folder: here
+/// the stand-in for the system's prompt reads it. Its private key.
+fn root_only_key(
+    ui: &Ui,
+    name: &str,
+    passphrase: Option<&str>,
+) -> (std::path::PathBuf, russh::keys::PrivateKey) {
+    use shellwing_ssh::keys;
+    let _ = crate::keys_view::TEST_AS_ADMIN.set(|p| {
+        std::fs::read_to_string(p)
+            .map(zeroize::Zeroizing::new)
+            .map_err(|e| e.to_string())
+    });
+    let key = keys::generate(keys::KeyKind::Ed25519, "root@server").expect("key");
+    let path = ui.config_dir().join(name);
+    std::fs::write(
+        &path,
+        keys::export(&key, passphrase).expect("export").as_bytes(),
+    )
+    .expect("write");
+    (path, key)
+}
+
+scenario!(
+    /// The host editor's Key › Key file as administrator…: the path typed,
+    /// the file read once (here by the tests' stand-in for the system's
+    /// password prompt), the key goes into the vault and becomes the
+    /// host's; saved, the host signs in with it, with no password.
+    a_key_only_root_can_read_signs_in,
+    |ui| {
+        let (path, key) = root_only_key(ui, "root_key", None);
+        let server = ui.server(Policy {
+            key: Some(key.public_key().clone()),
+            ..Policy::default()
+        });
+        ui.trust(&server);
+        web(ui, &server);
+        ui.open();
+        ui.hover("host:web");
+        ui.click("edit-host:web");
+        ui.wait_until("the host editor", |ui| ui.host_editor_open());
+        ui.click("method:1");
+        ui.click("key-select");
+        ui.click("choice:Key file as administrator…");
+        ui.type_text(&path.display().to_string());
+        ui.keys("enter");
+        ui.wait_until("the key in the vault", |ui| ui.find("admin-key-read").is_none());
+        ui.click("save");
+        ui.wait_until("hosts.toml to name the key", |ui| {
+            ui.hosts_toml().contains("key = \"vault:")
+        });
+        let kept = ui.vault().expect("vault").ssh_keys().expect("keys");
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].name, "root_key");
+        ui.click("host:web");
+        ui.wait_for(WELCOME);
+        assert!(!ui.screen().contains("password:"), "asked for the password");
+    }
+);
+
+scenario!(
+    /// Settings › Keys › As administrator…: a key file with a passphrase is
+    /// read, then its passphrase asked; a wrong one says so, the right one
+    /// puts the key in the vault. A path that is not one is refused first.
+    import_a_root_only_key_with_a_passphrase,
+    |ui| {
+        let (path, _) = root_only_key(ui, "locked_key", Some("hunter2"));
+        ui.open();
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Keys");
+        ui.click("keys-import-admin");
+        ui.type_text("root/key");
+        ui.keys("enter");
+        ui.wait_until("a full path asked for", |ui| ui.find("as-admin-problem").is_some());
+        assert!(ui.find("as-admin-pass").is_none());
+        ui.keys("secondary-a");
+        ui.type_text(&path.display().to_string());
+        ui.keys("enter");
+        ui.wait_until("its passphrase asked", |ui| ui.find("as-admin-pass").is_some());
+        assert!(ui.find("as-admin-problem").is_none(), "not wrong yet");
+        ui.type_text("nope");
+        ui.keys("enter");
+        ui.wait_until("a wrong passphrase said", |ui| ui.find("as-admin-problem").is_some());
+        ui.keys("secondary-a");
+        ui.type_text("hunter2");
+        ui.keys("enter");
+        ui.wait_until("the key in the vault", |ui| {
+            ui.vault()
+                .and_then(|v| v.ssh_keys().ok())
+                .is_some_and(|k| k.iter().any(|k| k.name == "locked_key"))
+        });
+        assert!(ui.find("as-admin-ok").is_none(), "the dialog closed");
+    }
+);

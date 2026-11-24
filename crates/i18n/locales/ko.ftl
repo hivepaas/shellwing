@@ -418,6 +418,36 @@ t97a4b927 = 보관함이 열려 있지 않음
 # No key made: {e}
 t4e14e42b = 키를 만들지 못함: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = /root/.ssh/id_ed25519 같은 전체 경로.
+
+# Its passphrase
+t279e8bbb = 암호 문구
+
+# That passphrase does not open it.
+t05c6a9c1 = 이 암호 문구로는 열 수 없습니다.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path }은(는) OpenSSH 개인 키가 아닙니다.
+
+# Not copied: {e}
+t03370a6b = 복사되지 않음: { $e }
+
+# Waiting for the password…
+tc4be2aeb = 암호를 기다리는 중…
+
+# Add to the vault
+t236cfbb2 = 보관함에 추가
+
+# Read as administrator
+t44c7c72e = 관리자로 읽기
+
+# Key file, read as administrator
+t023daf07 = 관리자로 읽는 키 파일
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = 시스템이 관리자 암호를 한 번 묻습니다. 그다음 키는 내 키로 보관함에 들어갑니다. 그때부터는 파일 소유자가 아니라 보관함이 키를 지키며, 다른 기기와 동기화됩니다.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = hosts.toml에서 이 호스트를 찾을 수 없습니다.
 
@@ -531,6 +561,9 @@ ta6d50f9b = { $name }   보관함에 있음 · { $kind }
 
 # Another key file…
 t6f4497c1 = 다른 키 파일…
+
+# Key file as administrator…
+t7c2b0195 = 관리자로 키 파일 읽기…
 
 # + Generate a key for this host
 ta1a39e38 = + 이 호스트용 키 생성
@@ -1003,6 +1036,18 @@ tc2954bc2 = 뒤로
 # Import {n} host | Import {n} hosts
 t040b2da6 = 호스트 { $n }개 가져오기
 
+# Not read: the password was not given.
+tf6b727a9 = 읽지 못함: 암호를 입력하지 않았습니다.
+
+# Not read: the system did not allow it.
+t0def7028 = 읽지 못함: 시스템이 허용하지 않았습니다.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = 이 시스템은 관리자 암호를 물을 수 없습니다.
+
+# Not read: {why}
+t9133669c = 읽지 못함: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (권장)
 
@@ -1045,15 +1090,6 @@ t3ccd278a = 저장되지 않음: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = { $path }을(를) 읽을 수 없습니다: { $e }
 
-# Its passphrase
-t279e8bbb = 암호 문구
-
-# That passphrase does not open it.
-t05c6a9c1 = 이 암호 문구로는 열 수 없습니다.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path }은(는) OpenSSH 개인 키가 아닙니다.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = { $file_name }의 암호 문구를 저장했습니다. 다시 묻지 않습니다.
 
@@ -1062,9 +1098,6 @@ ta9354472 = 저장되지 않음: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = 이제 { $name }이(가) 보관함에 있으며 다른 기기와 동기화됩니다.
-
-# Not copied: {e}
-t03370a6b = 복사되지 않음: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = 이제 { $name }이(가) ssh-agent에 있습니다. ssh-agent가 종료될 때까지 유지됩니다.
@@ -1198,6 +1231,9 @@ t8dd31791 = 완료
 # Install on a host…
 ta8313af0 = 호스트에 설치…
 
+# Import a key file as administrator
+t74d1b96b = 관리자로 키 파일 가져오기
+
 # Rename the key
 t2c552c07 = 키 이름 바꾸기
 
@@ -1245,6 +1281,9 @@ t602b32ed = 키
 
 # Import key file…
 t68acce01 = 키 파일 가져오기…
+
+# As administrator…
+t51b1ff28 = 관리자로…
 
 # Generate key…
 t0d000853 = 키 생성…

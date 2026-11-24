@@ -1098,6 +1098,16 @@ copied to other panes.
 it in the vault. *Export to file…* writes a kept key out for other tools, with
 its `.pub` beside it and an optional passphrase.
 
+**A key file only an administrator can read**, such as one in `/root/.ssh`:
+*As administrator…* in *Settings › Keys*, or *Key file as administrator…* in
+the host editor's *Key* list (where it also becomes the host's key). Type its
+full path; the system asks for an administrator's password once (polkit's
+`pkexec` on Linux, the usual password dialog on macOS), and then, if the key
+has one, its passphrase. The key goes into the vault as one of yours: from
+then on the vault keeps it, not the file's owner, and it syncs to your other
+devices. The file is not changed. Not yet on Windows, nor where `pkexec` is
+missing.
+
 Each key's ⋯ menu has more:
 
 - **Add to ssh-agent.** Available for kept keys and key files, so that ssh, git
