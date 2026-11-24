@@ -43,6 +43,60 @@ t2348e42c = La tua password di accesso
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing è bloccato: sbloccalo nella sua finestra principale.
 
+# Daylight
+t29cc3b47 = Luce del giorno
+
+# Paper
+tfea8bfd9 = Carta
+
+# Soft gray
+t6d3b9d7c = Grigio tenue
+
+# High contrast
+tdc2a9fd1 = Contrasto elevato
+
+# Mist
+td071b28c = Nebbia
+
+# Sage
+t5152348d = Salvia
+
+# Lavender
+t40f6ad0e = Lavanda
+
+# Sand
+t3e40cd83 = Sabbia
+
+# Dusk
+t44655688 = Crepuscolo
+
+# Neutral
+te9330778 = Neutro
+
+# Graphite
+tcc5f9dad = Grafite
+
+# Midnight
+tfc321421 = Mezzanotte
+
+# Slate
+t9637e38e = Ardesia
+
+# Dim
+t35691dd9 = Attenuato
+
+# Deep sea
+t372a2e54 = Mare profondo
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Foresta
+
+# Plum
+t1d8d478b = Prugna
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Una modifica a { $remote } non è stata salvata sul server; il file è conservato come { $path }.
 
@@ -1463,9 +1517,6 @@ tfc91f0a1 = Verde e verde acqua
 # Warm
 t04a11b58 = Caldo
 
-# Neutral
-te9330778 = Neutro
-
 # Gradient
 t993c73c5 = Sfumato
 
@@ -2208,11 +2259,17 @@ t50316f27 = Ora il sistema è chiaro.
 # The system is dark now.
 t03050ee1 = Ora il sistema è scuro.
 
-# Light theme
-tf8e348fa = Tema chiaro
+# App colors
+tfb1bbe48 = Colori dell'app
 
-# Dark theme
-t5a026490 = Tema scuro
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Quelli dell'app: la barra del titolo, la lista degli host, i pannelli e i menu. Il terminale usa quelli del suo tema.
+
+# Terminal theme, light
+t7d52a2a4 = Tema del terminale, chiaro
+
+# Terminal theme, dark
+tf112a1cc = Tema del terminale, scuro
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Quello del terminale, quando l'app è chiara; la modalità scura ha il suo. Un host può avere il proprio nel suo editor.

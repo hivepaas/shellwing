@@ -43,6 +43,60 @@ t2348e42c = Votre mot de passe de connexion
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing est verrouillé : déverrouillez-le dans sa fenêtre principale.
 
+# Daylight
+t29cc3b47 = Lumière du jour
+
+# Paper
+tfea8bfd9 = Papier
+
+# Soft gray
+t6d3b9d7c = Gris doux
+
+# High contrast
+tdc2a9fd1 = Contraste élevé
+
+# Mist
+td071b28c = Brume
+
+# Sage
+t5152348d = Sauge
+
+# Lavender
+t40f6ad0e = Lavande
+
+# Sand
+t3e40cd83 = Sable
+
+# Dusk
+t44655688 = Crépuscule
+
+# Neutral
+te9330778 = Neutre
+
+# Graphite
+tcc5f9dad = Graphite
+
+# Midnight
+tfc321421 = Minuit
+
+# Slate
+t9637e38e = Ardoise
+
+# Dim
+t35691dd9 = Tamisé
+
+# Deep sea
+t372a2e54 = Mer profonde
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Forêt
+
+# Plum
+t1d8d478b = Prune
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Une modification de { $remote } n'a pas été renvoyée au serveur ; le fichier est conservé sous { $path }.
 
@@ -1463,9 +1517,6 @@ tfc91f0a1 = Vert et sarcelle
 # Warm
 t04a11b58 = Chaud
 
-# Neutral
-te9330778 = Neutre
-
 # Gradient
 t993c73c5 = Dégradé
 
@@ -2208,11 +2259,17 @@ t50316f27 = Le système est actuellement en mode clair.
 # The system is dark now.
 t03050ee1 = Le système est actuellement en mode sombre.
 
-# Light theme
-tf8e348fa = Thème clair
+# App colors
+tfb1bbe48 = Couleurs de l'app
 
-# Dark theme
-t5a026490 = Thème sombre
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Celles de l'app : la barre de titre, la liste des serveurs, les volets et les menus. Le terminal prend celles de son thème.
+
+# Terminal theme, light
+t7d52a2a4 = Thème du terminal, clair
+
+# Terminal theme, dark
+tf112a1cc = Thème du terminal, sombre
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Celui du terminal, quand l'application est claire ; le mode sombre garde le sien. Un serveur peut avoir le sien dans son éditeur.

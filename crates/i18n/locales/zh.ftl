@@ -43,6 +43,60 @@ t2348e42c = 你的登录密码
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing 已锁定：请在其主窗口中解锁。
 
+# Daylight
+t29cc3b47 = 日光
+
+# Paper
+tfea8bfd9 = 纸张
+
+# Soft gray
+t6d3b9d7c = 柔灰
+
+# High contrast
+tdc2a9fd1 = 高对比度
+
+# Mist
+td071b28c = 薄雾
+
+# Sage
+t5152348d = 鼠尾草
+
+# Lavender
+t40f6ad0e = 薰衣草
+
+# Sand
+t3e40cd83 = 沙色
+
+# Dusk
+t44655688 = 黄昏
+
+# Neutral
+te9330778 = 中性
+
+# Graphite
+tcc5f9dad = 石墨
+
+# Midnight
+tfc321421 = 午夜
+
+# Slate
+t9637e38e = 板岩
+
+# Dim
+t35691dd9 = 柔暗
+
+# Deep sea
+t372a2e54 = 深海
+
+# Espresso
+t77f4d515 = 浓缩咖啡
+
+# Forest
+t953ca480 = 森林
+
+# Plum
+t1d8d478b = 梅子
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = 对 { $remote } 的修改未回写到服务器；文件保留为 { $path }。
 
@@ -1423,9 +1477,6 @@ tfc91f0a1 = 绿色与青色
 # Warm
 t04a11b58 = 暖色
 
-# Neutral
-te9330778 = 中性
-
 # Gradient
 t993c73c5 = 渐变
 
@@ -2164,11 +2215,17 @@ t50316f27 = 系统当前为浅色。
 # The system is dark now.
 t03050ee1 = 系统当前为深色。
 
-# Light theme
-tf8e348fa = 浅色主题
+# App colors
+tfb1bbe48 = 应用颜色
 
-# Dark theme
-t5a026490 = 深色主题
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = 应用自己的颜色：标题栏、主机列表、面板和菜单。终端使用其主题的颜色。
+
+# Terminal theme, light
+t7d52a2a4 = 终端主题（浅色）
+
+# Terminal theme, dark
+tf112a1cc = 终端主题（深色）
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = 应用为浅色时终端使用的主题；深色模式保留自己的主题。主机可在其编辑器中单独设置。

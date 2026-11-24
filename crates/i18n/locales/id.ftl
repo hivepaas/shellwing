@@ -43,6 +43,60 @@ t2348e42c = Kata sandi login Anda
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing terkunci: buka kuncinya di jendela utama.
 
+# Daylight
+t29cc3b47 = Siang
+
+# Paper
+tfea8bfd9 = Kertas
+
+# Soft gray
+t6d3b9d7c = Abu-abu lembut
+
+# High contrast
+tdc2a9fd1 = Kontras tinggi
+
+# Mist
+td071b28c = Kabut
+
+# Sage
+t5152348d = Sage
+
+# Lavender
+t40f6ad0e = Lavender
+
+# Sand
+t3e40cd83 = Pasir
+
+# Dusk
+t44655688 = Senja
+
+# Neutral
+te9330778 = Netral
+
+# Graphite
+tcc5f9dad = Grafit
+
+# Midnight
+tfc321421 = Tengah malam
+
+# Slate
+t9637e38e = Batu tulis
+
+# Dim
+t35691dd9 = Redup
+
+# Deep sea
+t372a2e54 = Laut dalam
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Hutan
+
+# Plum
+t1d8d478b = Plum
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = Perubahan pada { $remote } tidak ditulis kembali ke server; berkasnya disimpan sebagai { $path }.
 
@@ -1450,9 +1504,6 @@ tfc91f0a1 = Hijau dan toska
 # Warm
 t04a11b58 = Hangat
 
-# Neutral
-te9330778 = Netral
-
 # Gradient
 t993c73c5 = Gradien
 
@@ -2191,11 +2242,17 @@ t50316f27 = Sistem saat ini terang.
 # The system is dark now.
 t03050ee1 = Sistem saat ini gelap.
 
-# Light theme
-tf8e348fa = Tema terang
+# App colors
+tfb1bbe48 = Warna aplikasi
 
-# Dark theme
-t5a026490 = Tema gelap
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Milik aplikasi: bilah judul, daftar host, panel, dan menu. Terminal memakai warna temanya.
+
+# Terminal theme, light
+t7d52a2a4 = Tema terminal, terang
+
+# Terminal theme, dark
+tf112a1cc = Tema terminal, gelap
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Tema terminal saat aplikasi terang; mode gelap punya temanya sendiri. Host dapat memiliki tema sendiri di editornya.

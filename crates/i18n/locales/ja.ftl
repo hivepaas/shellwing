@@ -43,6 +43,60 @@ t2348e42c = ログインパスワード
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing はロックされています。メインウィンドウでロックを解除してください。
 
+# Daylight
+t29cc3b47 = デイライト
+
+# Paper
+tfea8bfd9 = ペーパー
+
+# Soft gray
+t6d3b9d7c = ソフトグレー
+
+# High contrast
+tdc2a9fd1 = ハイコントラスト
+
+# Mist
+td071b28c = ミスト
+
+# Sage
+t5152348d = セージ
+
+# Lavender
+t40f6ad0e = ラベンダー
+
+# Sand
+t3e40cd83 = サンド
+
+# Dusk
+t44655688 = ダスク
+
+# Neutral
+te9330778 = ニュートラル
+
+# Graphite
+tcc5f9dad = グラファイト
+
+# Midnight
+tfc321421 = ミッドナイト
+
+# Slate
+t9637e38e = スレート
+
+# Dim
+t35691dd9 = ディム
+
+# Deep sea
+t372a2e54 = ディープシー
+
+# Espresso
+t77f4d515 = エスプレッソ
+
+# Forest
+t953ca480 = フォレスト
+
+# Plum
+t1d8d478b = プラム
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = { $remote } の編集内容はサーバーに書き戻されませんでした。ファイルは { $path } に保存されています。
 
@@ -1423,9 +1477,6 @@ tfc91f0a1 = グリーンとティール
 # Warm
 t04a11b58 = ウォーム
 
-# Neutral
-te9330778 = ニュートラル
-
 # Gradient
 t993c73c5 = グラデーション
 
@@ -2164,11 +2215,17 @@ t50316f27 = 現在、システムはライトモードです。
 # The system is dark now.
 t03050ee1 = 現在、システムはダークモードです。
 
-# Light theme
-tf8e348fa = ライトテーマ
+# App colors
+tfb1bbe48 = アプリの色
 
-# Dark theme
-t5a026490 = ダークテーマ
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = アプリ自身の色：タイトルバー、ホスト一覧、パネル、メニュー。ターミナルはテーマの色を使います。
+
+# Terminal theme, light
+t7d52a2a4 = ターミナルのテーマ（ライト）
+
+# Terminal theme, dark
+tf112a1cc = ターミナルのテーマ（ダーク）
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = アプリがライトのときのターミナルのテーマです。ダークモードでは別のテーマを使います。ホストごとのテーマはホストのエディタで設定できます。

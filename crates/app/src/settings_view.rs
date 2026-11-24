@@ -841,6 +841,61 @@ impl SettingsView {
         row
     }
 
+    /// A style of the app's own colors to choose, each a chip with its name
+    /// after a dot of its grounds, so it shows how it looks before it is
+    /// chosen: (its key in config.toml, its name, its palette).
+    fn style_chips(
+        &self,
+        id: &'static str,
+        styles: Vec<(&'static str, String, crate::colors::Palette)>,
+        current: &str,
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
+        let mut row = div().flex().flex_wrap().gap(px(6.));
+        for (n, (key, name, p)) in styles.into_iter().enumerate() {
+            let on = key == current;
+            row = row.child(
+                div()
+                    .id((id, n))
+                    .debug_selector(move || format!("{id}:{key}"))
+                    .h(px(28.))
+                    .pl(px(6.))
+                    .pr(px(10.))
+                    .flex()
+                    .items_center()
+                    .gap(px(7.))
+                    .rounded(px(14.))
+                    .border_1()
+                    .border_color(rgb(if on {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(if on { colors().selected } else { colors().page }))
+                    .text_size(ui(12.5))
+                    .text_color(rgb(if on { colors().text } else { colors().soft }))
+                    .cursor_pointer()
+                    .when(!on, |d| d.hover(|s| s.bg(rgb(colors().hover))))
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        v.change(&["appearance", id], Some(SettingValue::Str(key.into())), cx)
+                    }))
+                    .child(
+                        div()
+                            .size(px(18.))
+                            .flex_shrink_0()
+                            .rounded_full()
+                            .border_1()
+                            .border_color(rgb(p.edge))
+                            .bg(rgb(p.panel))
+                            .p(px(4.))
+                            .child(div().size_full().rounded_full().bg(rgb(p.surface))),
+                    )
+                    .child(name),
+            );
+        }
+        row
+    }
+
     /// The fonts to choose from, the default first: (family, shown as).
     fn font_choices(&self, which: Fonts) -> Vec<(Option<String>, String)> {
         let (default, list) = match which {
@@ -1485,6 +1540,49 @@ impl SettingsView {
                         _ => String::new(),
                     })),
             )
+            // The app's own colors in each mode the app can be in: panels,
+            // menus, the host list. The terminal's are its theme's.
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(8.))
+                    .child(
+                        div()
+                            .flex()
+                            .items_baseline()
+                            .gap_3()
+                            .child(
+                                div()
+                                    .text_size(ui(18.))
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .child(tr!("App colors")),
+                            )
+                            .child(label(&tr!(
+                                "The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's."
+                            ))),
+                    )
+                    .when(a.mode != ColorMode::Dark, |d| {
+                        let styles = crate::colors::LightStyle::ALL
+                            .into_iter()
+                            .map(|s| (s.key(), s.name(), s.palette()))
+                            .collect();
+                        d.child(labelled(
+                            &tr!("Light"),
+                            self.style_chips("light_style", styles, &a.light_style, cx),
+                        ))
+                    })
+                    .when(a.mode != ColorMode::Light, |d| {
+                        let styles = crate::colors::DarkStyle::ALL
+                            .into_iter()
+                            .map(|s| (s.key(), s.name(), s.palette()))
+                            .collect();
+                        d.child(labelled(
+                            &tr!("Dark"),
+                            self.style_chips("dark_style", styles, &a.dark_style, cx),
+                        ))
+                    }),
+            )
             .child(
                 div()
                     .flex()
@@ -1494,7 +1592,11 @@ impl SettingsView {
                         div()
                             .text_size(ui(18.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child(if light { tr!("Light theme") } else { tr!("Dark theme") }),
+                            .child(if light {
+                                tr!("Terminal theme, light")
+                            } else {
+                                tr!("Terminal theme, dark")
+                            }),
                     )
                     .child(label(&if light {
                         tr!("The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.")

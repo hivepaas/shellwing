@@ -5512,6 +5512,11 @@ impl Workspace {
             self.in_window(cx, |ws, window, cx| ws.title_window(window, cx));
         }
         let light = self.live.light_for(self.system_light);
+        let a = &self.live.settings().appearance;
+        crate::colors::set_styles(
+            crate::colors::LightStyle::from_key(&a.light_style),
+            crate::colors::DarkStyle::from_key(&a.dark_style),
+        );
         crate::colors::set_light(light);
         self.live.set_light(light);
         let accent = self.live.settings().appearance.theme_accent.then(|| {

@@ -296,6 +296,14 @@ pub struct Appearance {
     pub ui_font: UiFont,
     /// The app's accent (the logo, what is chosen, buttons) is the theme's.
     pub theme_accent: bool,
+    /// The app's own colors when light: `daylight`, `paper`, `soft-gray`,
+    /// `contrast`, `mist`, `sage`, `lavender` or `sand`. A name not known
+    /// is the default.
+    pub light_style: String,
+    /// The app's own colors when dark: `dusk`, `neutral`, `graphite`,
+    /// `midnight`, `slate`, `dim`, `deep-sea`, `espresso`, `forest` or
+    /// `plum`.
+    pub dark_style: String,
 }
 
 /// The font of everything but the terminal.
@@ -346,6 +354,8 @@ impl Default for Appearance {
             padding: Padding::default(),
             ui_font: UiFont::default(),
             theme_accent: true,
+            light_style: "daylight".into(),
+            dark_style: "dusk".into(),
         }
     }
 }

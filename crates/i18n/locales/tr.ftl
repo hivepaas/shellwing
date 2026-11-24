@@ -43,6 +43,60 @@ t2348e42c = Giriş parolanız
 # shellwing is locked: unlock it in its main window.
 tf4ae07e3 = shellwing kilitli: ana penceresinden kilidini açın.
 
+# Daylight
+t29cc3b47 = Gün ışığı
+
+# Paper
+tfea8bfd9 = Kâğıt
+
+# Soft gray
+t6d3b9d7c = Yumuşak gri
+
+# High contrast
+tdc2a9fd1 = Yüksek kontrast
+
+# Mist
+td071b28c = Sis
+
+# Sage
+t5152348d = Adaçayı
+
+# Lavender
+t40f6ad0e = Lavanta
+
+# Sand
+t3e40cd83 = Kum
+
+# Dusk
+t44655688 = Alacakaranlık
+
+# Neutral
+te9330778 = Nötr
+
+# Graphite
+tcc5f9dad = Grafit
+
+# Midnight
+tfc321421 = Gece yarısı
+
+# Slate
+t9637e38e = Arduvaz
+
+# Dim
+t35691dd9 = Loş
+
+# Deep sea
+t372a2e54 = Derin deniz
+
+# Espresso
+t77f4d515 = Espresso
+
+# Forest
+t953ca480 = Orman
+
+# Plum
+t1d8d478b = Erik
+
 # An edit of {remote} was not written back to the server; the file is kept as {path}.
 t62769e5b = { $remote } dosyasındaki bir düzenleme sunucuya geri yazılmadı; dosya { $path } olarak saklandı.
 
@@ -1463,9 +1517,6 @@ tfc91f0a1 = Yeşil ve camgöbeği
 # Warm
 t04a11b58 = Sıcak
 
-# Neutral
-te9330778 = Nötr
-
 # Gradient
 t993c73c5 = Gradyan
 
@@ -2208,11 +2259,17 @@ t50316f27 = Sistem şu an açık modda.
 # The system is dark now.
 t03050ee1 = Sistem şu an koyu modda.
 
-# Light theme
-tf8e348fa = Açık tema
+# App colors
+tfb1bbe48 = Uygulama renkleri
 
-# Dark theme
-t5a026490 = Koyu tema
+# The app's own: the title bar, the host list, panels and menus. The terminal takes its theme's.
+t04d02208 = Uygulamanın kendi renkleri: başlık çubuğu, ana makine listesi, paneller ve menüler. Terminal temasının renklerini kullanır.
+
+# Terminal theme, light
+t7d52a2a4 = Terminal teması, açık
+
+# Terminal theme, dark
+tf112a1cc = Terminal teması, koyu
 
 # The terminal's, while the app is light; the dark mode keeps its own. A host can have its own in its editor.
 t0b71dd99 = Uygulama açık moddayken terminalin teması; koyu mod kendi temasını korur. Bir ana makinenin düzenleyicisinde kendi teması olabilir.
