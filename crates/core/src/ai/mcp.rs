@@ -95,21 +95,7 @@ pub async fn answer(
     let id = msg.get("id").cloned()?;
     let params = msg.get("params").cloned().unwrap_or(Value::Null);
     Some(match method {
-        "initialize" => {
-            let asked = params.get("protocolVersion").and_then(Value::as_str);
-            let version = asked
-                .filter(|v| VERSIONS.contains(v))
-                .unwrap_or(VERSIONS[0]);
-            ok(
-                id,
-                json!({
-                    "protocolVersion": version,
-                    "capabilities": {"tools": {"listChanged": false}},
-                    "serverInfo": {"name": "shellwing", "version": env!("CARGO_PKG_VERSION")},
-                    "instructions": INSTRUCTIONS,
-                }),
-            )
-        }
+        "initialize" => ok(id, initialized(&params)),
         "ping" => ok(id, json!({})),
         "tools/list" => ok(id, json!({"tools": tools()})),
         "tools/call" => {
@@ -138,7 +124,23 @@ enum Problem {
     Unknown,
 }
 
-fn tools() -> Value {
+/// The answer to `initialize`, with `params` as the client sent them: the
+/// version it asked for if this server speaks it.
+pub fn initialized(params: &Value) -> Value {
+    let asked = params.get("protocolVersion").and_then(Value::as_str);
+    let version = asked
+        .filter(|v| VERSIONS.contains(v))
+        .unwrap_or(VERSIONS[0]);
+    json!({
+        "protocolVersion": version,
+        "capabilities": {"tools": {"listChanged": false}},
+        "serverInfo": {"name": "shellwing", "version": env!("CARGO_PKG_VERSION")},
+        "instructions": INSTRUCTIONS,
+    })
+}
+
+/// The tools, as `tools/list` gives them.
+pub fn tools() -> Value {
     let wait = json!({
         "type": "integer",
         "minimum": 0,

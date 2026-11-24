@@ -1259,8 +1259,10 @@ The activity is kept on this computer, in `state/ai-activity.jsonl`: the last
 **Where clients reach the app.** A socket only you may open:
 `state/mcp.sock` in the config directory (or a short path in the temp folder
 when that path is too long), or a named pipe on Windows. `shellwing mcp`
-connects to it, so shellwing must be open while an agent works; when it is
-not, the agent is told so.
+connects to it. It begins and lists its tools even while shellwing is
+closed or the token is not known, so the client counts it as up; a tool
+called then tells the agent why it cannot be used, and each call tries
+again, so opening shellwing is enough, with no need to restart the agent.
 
 A host's output can hold words meant to steer an agent. Give hosts to agents
 you trust with them.
