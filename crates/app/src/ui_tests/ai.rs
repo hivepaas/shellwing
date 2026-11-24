@@ -317,6 +317,38 @@ scenario!(
 );
 
 scenario!(
+    /// The title bar says when a command waits, wherever the person is: no
+    /// fold to open, no tab to be on. It opens AI activity, and goes when
+    /// the command is answered.
+    the_title_bar_says_a_command_waits,
+    |ui| {
+        let token = given_web(ui, "Ask");
+        let (mut c, _) = Client::open(ui, &token);
+        assert!(ui.find("ai-waiting-bar").is_none(), "nothing waits yet");
+
+        let (said, _) = c.tool(
+            "run",
+            json!({"host": "web", "command": "echo waiting", "wait_seconds": 1}),
+        );
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+
+        // The host list's count needs Actions unfolded; this does not.
+        ui.wait_until("the title bar to say so", |ui| {
+            ui.find("ai-waiting-bar").is_some()
+        });
+        ui.click("ai-waiting-bar");
+        assert!(ui.find("ai-activity").is_some(), "it opens AI activity");
+
+        ui.click("ai-allow");
+        assert!(follow(&mut c, &job).contains("exit 0"));
+        ui.wait_until("the title bar to stop saying so", |ui| {
+            ui.find("ai-waiting-bar").is_none()
+        });
+    }
+);
+
+scenario!(
     /// A grant that asks for risky ones: a plain command runs at once, one
     /// with words from the risky list waits; the list is the person's to
     /// change, and the table changes a grant's mode.

@@ -6422,6 +6422,46 @@ impl Workspace {
                     .h_full()
                     .window_control_area(WindowControlArea::Drag),
             )
+            // A command an AI client wants to run, waiting for the person to
+            // allow it. The rest of this row goes somewhere; this one has to be
+            // answered, and until it is, nothing that client asked for happens -
+            // so it is filled amber rather than outlined, and it is here only
+            // while something waits.
+            //
+            // Leftmost of the row because the stretch before it takes up the
+            // slack: the buttons after it keep their places as this comes and
+            // goes, instead of shifting under the pointer.
+            .when(self.ai_waiting() > 0, |d| {
+                let waiting = self.ai_waiting();
+                d.child(
+                    div()
+                        .id("ai-waiting-button")
+                        .debug_selector(|| "ai-waiting-bar".into())
+                        .flex_shrink_0()
+                        .h(px(30.))
+                        .mr(px(6.))
+                        .px(px(9.))
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .rounded(px(7.))
+                        .cursor_pointer()
+                        .bg(rgb(colors().amber))
+                        .text_color(rgb(colors().on_amber))
+                        .text_size(look::ui(12.5))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .hover(|s| s.bg(rgb(colors().amber_hover)))
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .on_click(cx.listener(|ws, _, window, cx| ws.open_activity(window, cx)))
+                        .child(
+                            svg()
+                                .path("icons/run.svg")
+                                .size(px(14.))
+                                .text_color(rgb(colors().on_amber)),
+                        )
+                        .child(waiting.to_string()),
+                )
+            })
             // Every tab by host: for when the strip has more than it shows.
             .when(self.tabs.len() >= 2, |d| {
                 d.child(
