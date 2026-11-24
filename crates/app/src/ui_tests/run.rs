@@ -203,3 +203,44 @@ scenario!(
         assert_eq!(saved, 0, "Run tabs are not opened again at the next start");
     }
 );
+
+scenario!(
+    /// One host first: it runs alone; the others wait until *Run on the
+    /// other N*, and then run too.
+    one_host_first_then_the_others,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        let (server, _) = shell_server(ui);
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "[[group]]\nname = \"Production\"\n\n{}{}",
+                host("api-1", server.port, "Production"),
+                host("api-2", server.port, "Production"),
+            ),
+        );
+        ui.open();
+        ui.hover("section:Production");
+        ui.click("run-group:Production");
+        ui.type_text("echo ok");
+        ui.click("run-one-first");
+        ui.keys("ctrl-enter");
+        answer_passwords(ui, 2);
+        ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
+        ui.click("run-confirm-go");
+        ui.wait_until("the first host's end", |ui| ui.run(|r, _| r.done()));
+        let ended = ui.run(|r, _| r.outcomes());
+        assert_eq!(ended.len(), 1, "{ended:?}");
+        assert_eq!(server.seen.lock().expect("seen").commands.len(), 1);
+        ui.click("run-go-on");
+        ui.wait_until("the others' end", |ui| ui.run(|r, _| r.done()));
+        let ended = ui.run(|r, _| r.outcomes());
+        assert_eq!(ended.len(), 2);
+        for h in ["api-1", "api-2"] {
+            assert_eq!(outcome(&ended, h).stdout, "ok\n");
+        }
+        assert!(ui.find("run-go-on").is_none());
+    }
+);

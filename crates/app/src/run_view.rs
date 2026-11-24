@@ -122,7 +122,7 @@ pub struct RunView {
     order: Vec<String>,
     states: BTreeMap<String, State>,
     /// One host first: the job the others wait for, and who they are.
-    rest: Option<(Job, Vec<String>)>,
+    rest: Vec<(Job, Vec<String>)>,
     /// What last ran: its script, its interpreter, when.
     ran: Option<(String, Interpreter, String, Instant)>,
     by_host: bool,
@@ -209,7 +209,7 @@ impl RunView {
             asks: vec![],
             order: vec![],
             states: BTreeMap::new(),
-            rest: None,
+            rest: vec![],
             ran: None,
             by_host: false,
             open_row: None,
@@ -378,7 +378,7 @@ impl RunView {
         self.stage = Stage::Confirm;
         self.menu = None;
         self.picker = false;
-        self.rest = None;
+        self.rest.clear();
         self.asks.clear();
         self.order = self.chosen.clone();
         self.states.clear();
@@ -513,27 +513,20 @@ impl RunView {
                 self.states.remove(h);
             }
             self.order.retain(|h| !rest.contains(h));
-            // The others' jobs wait: one, with each one's password if so.
-            let (first_job, others) = match jobs.len() {
-                1 => {
-                    let (j, _) = jobs.remove(0);
-                    (j.clone(), Some((j, rest)))
+            // Each job's other hosts wait, with their own password if so.
+            let mut first_job = None;
+            for (j, hosts) in jobs {
+                let others: Vec<String> = hosts.iter().filter(|h| **h != first).cloned().collect();
+                if hosts.contains(&first) {
+                    first_job = Some(j.clone());
                 }
-                _ => {
-                    let (j, _) = jobs.remove(0);
-                    let others = jobs
-                        .into_iter()
-                        .flat_map(|(j, hs)| hs.into_iter().map(move |h| (j.clone(), h)));
-                    let (mut job, mut hosts) = (None, vec![]);
-                    for (j, h) in others {
-                        job.get_or_insert(j);
-                        hosts.push(h);
-                    }
-                    (j, job.map(|j| (j, hosts)))
+                if !others.is_empty() {
+                    self.rest.push((j, others));
                 }
-            };
-            self.rest = others;
-            self.start(first_job, vec![first], cx);
+            }
+            if let Some(j) = first_job {
+                self.start(j, vec![first], cx);
+            }
         } else {
             for (j, hosts) in jobs {
                 self.start(j, hosts, cx);
@@ -546,14 +539,16 @@ impl RunView {
 
     /// After one host first: the others.
     fn go_on(&mut self, cx: &mut Context<Self>) {
-        let Some((job, hosts)) = self.rest.take() else {
+        if self.rest.is_empty() {
             return;
-        };
-        for h in &hosts {
-            self.order.push(h.clone());
-            self.states.insert(h.clone(), State::Waiting);
         }
-        self.start(job, hosts, cx);
+        for (job, hosts) in std::mem::take(&mut self.rest) {
+            for h in &hosts {
+                self.order.push(h.clone());
+                self.states.insert(h.clone(), State::Waiting);
+            }
+            self.start(job, hosts, cx);
+        }
         self.stage = Stage::Running;
         cx.notify();
     }
@@ -588,7 +583,7 @@ impl RunView {
                 *s = State::Stopped;
             }
         }
-        self.rest = None;
+        self.rest.clear();
         self.stage = Stage::Done;
         cx.notify();
     }
@@ -1838,8 +1833,8 @@ impl RunView {
                             )),
                     ),
             );
-        if self.rest.is_some() && !running {
-            let n = self.rest.as_ref().map_or(0, |(_, h)| h.len());
+        if !self.rest.is_empty() && !running {
+            let n: usize = self.rest.iter().map(|(_, h)| h.len()).sum();
             head = head.child(
                 div()
                     .flex()

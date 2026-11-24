@@ -1847,247 +1847,262 @@ tbfdc091c = Enter trả lời   Esc huỷ
 te39c67c2 = ↑↓ di chuyển   Enter chọn   Esc huỷ
 
 # Find hosts
-# t1f19b271 =
+t1f19b271 = Tìm máy chủ
 
 # sudo password
-# t6f1147fd =
+t6f1147fd = Mật khẩu sudo
 
 # Run on hosts
-# t20ee87e4 =
+t20ee87e4 = Chạy trên các máy chủ
 
 # Choose at least one host.
-# t98a361a0 =
+t98a361a0 = Hãy chọn ít nhất một máy chủ.
 
 # Type a command or a script first.
-# tc08b2b46 =
+tc08b2b46 = Hãy gõ lệnh hoặc script trước.
 
 # The script is larger than {kb} KB.
-# t3c583c57 =
+t3c583c57 = Script lớn hơn { $kb } KB.
 
 # none chosen
-# t23b63bc7 =
+t23b63bc7 = chưa chọn
 
 # {picked} of {all}
-# tb6c0f13d =
+tb6c0f13d = { $picked } / { $all }
 
 # No hosts yet: add one in the host list.
-# tb1cb1380 =
+tb1cb1380 = Chưa có máy chủ: hãy thêm trong danh sách máy chủ.
 
 # chosen
-# t88efc3c3 =
+t88efc3c3 = đã chọn
 
 # from #!
-# te59619bf =
+te59619bf = theo #!
 
 # default
-# t933b5bde =
+t933b5bde = mặc định
 
 # Command or script
-# t9263b49e =
+t9263b49e = Lệnh hoặc script
 
 # Open file…
-# teb1476db =
+teb1476db = Mở tệp…
 
 # From a snippet…
-# t5b2e9f81 =
+t5b2e9f81 = Từ đoạn lệnh…
 
 # From the first line
-# t4eea1d86 =
+t4eea1d86 = Theo dòng đầu tiên
 
 # No snippets yet.
-# ta1f34f58 =
+ta1f34f58 = Chưa có đoạn lệnh nào.
 
 # At most
-# tc4220f87 =
+tc4220f87 = Tối đa
 
 # at once
-# t73078e59 =
+t73078e59 = cùng lúc
 
 # Give up after
-# t72dfc173 =
+t72dfc173 = Ngừng chờ sau
 
 # seconds
-# t66b6cdea =
+t66b6cdea = giây
 
 # One host first, the rest when you say
-# t2dc320ca =
+t2dc320ca = Một máy chủ trước, các máy chủ còn lại khi bạn đồng ý
 
 # Cmd+Enter runs
-# tc5c50a00 =
+tc5c50a00 = Cmd+Enter để chạy
 
 # Ctrl+Enter runs
-# t1e0dc7f1 =
+t1e0dc7f1 = Ctrl+Enter để chạy
 
 # Run
 t8d57e66a = Chạy
 
 # Run on {n} host | Run on {n} hosts
-# t9f3562b2 =
+t9f3562b2 =
+    { $n ->
+       *[other] Chạy trên { $n } máy chủ
+    }
 
 # Run it on {first} first, then the other {n}?
-# tdeeed76d =
+tdeeed76d = Chạy trên { $first } trước, rồi trên { $n } máy chủ còn lại?
 
 # Run it on {n} host? | Run it on {n} hosts?
-# t15434ee6 =
+t15434ee6 =
+    { $n ->
+       *[other] Chạy trên { $n } máy chủ?
+    }
 
 # {interpreter}, {n} line | {interpreter}, {n} lines
-# t8077e5da =
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }, { $n } dòng
+    }
 
 # signing in to {n} of {all}…
-# t6d7d8e5a =
+t6d7d8e5a = đang đăng nhập { $n } / { $all } máy chủ…
 
 # {n} of {all} signed in
-# t11ab0d58 =
+t11ab0d58 = đã đăng nhập { $n } / { $all }
 
 # at most {n} at once
-# td03e9105 =
+td03e9105 = tối đa { $n } cùng lúc
 
 # Signing in: asked now, once
-# t41418846 =
+t41418846 = Đăng nhập: hỏi một lần, ngay bây giờ
 
 # {target}'s password, again: that one was refused
-# t39e81801 =
+t39e81801 = Mật khẩu của { $target }, nhập lại: mật khẩu vừa rồi bị từ chối
 
 # {target}'s password
-# t8989af6d =
+t8989af6d = Mật khẩu của { $target }
 
 # The passphrase of {key}
-# tb9a076ee =
+tb9a076ee = Cụm mật khẩu của { $key }
 
 # A host key never seen before: {algorithm} {fingerprint}
-# t064ebede =
+t064ebede = Khoá máy chủ chưa từng thấy: { $algorithm } { $fingerprint }
 
 # Leave it out
-# taaff8ec9 =
+taaff8ec9 = Bỏ qua
 
 # Trust it
-# tf80adc72 =
+tf80adc72 = Tin khoá này
 
 # OK
 t85e4b82f = OK
 
 # {host} is left out: {why}
-# ta0fb8060 =
+ta0fb8060 = { $host } bị bỏ ra: { $why }
 
 # sudo password, for every host
-# tf9f4ad8f =
+tf9f4ad8f = Mật khẩu sudo, cho mọi máy chủ
 
 # The same on every host
-# t09beea56 =
+t09beea56 = Giống nhau trên mọi máy chủ
 
 # The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
-# t893beb5f =
+t893beb5f = Script dùng sudo: mật khẩu được gửi kèm tới từng máy chủ để sudo ở đó đọc, không bao giờ nằm trên dòng lệnh, trong tệp hay trong những gì được hiển thị. Mật khẩu bị quên ngay khi bắt đầu chạy.
 
 # Run on {host}
-# t53629f2b =
+t53629f2b = Chạy trên { $host }
 
 # started {when}
-# t0addf546 =
+t0addf546 = bắt đầu lúc { $when }
 
 # ran at {when}
-# tc1949fbd =
+tc1949fbd = đã chạy lúc { $when }
 
 # Again on the {n} that failed | Again on the {n} that failed
-# t40c7552d =
+t40c7552d =
+    { $n ->
+       *[other] Chạy lại trên { $n } máy chủ thất bại
+    }
 
 # Run again
-# t7e879b86 =
+t7e879b86 = Chạy lại
 
 # {n} ok
-# t230daddb =
+t230daddb = { $n } thành công
 
 # {n} failed
-# t747c50a8 =
+t747c50a8 = { $n } thất bại
 
 # {n} to go
-# t9b6bf176 =
+t9b6bf176 = { $n } còn lại
 
 # {n} stopped
-# td3275eca =
+td3275eca = { $n } đã dừng
 
 # By output
-# t58a5f0b1 =
+t58a5f0b1 = Theo đầu ra
 
 # By host
-# ta32dd06e =
+ta32dd06e = Theo máy chủ
 
 # The first host is done. The other {n} wait for you.
-# tdc76953e =
+tdc76953e = Máy chủ đầu tiên đã xong. { $n } máy chủ còn lại đang chờ bạn.
 
 # Run on the other {n} | Run on the other {n}
-# t4cc1f343 =
+t4cc1f343 =
+    { $n ->
+       *[other] Chạy trên { $n } máy chủ còn lại
+    }
 
 # Still going: {hosts}
-# tfacf50d8 =
+tfacf50d8 = Vẫn đang chạy: { $hosts }
 
 # Stopped before they ended: {hosts}
-# tde1adb0a =
+tde1adb0a = Đã dừng trước khi chạy xong: { $hosts }
 
 # Given up on after {s} seconds.
-# tf245d128 =
+tf245d128 = Đã ngừng chờ sau { $s } giây.
 
 # It printed more than {mb} MB: the rest is not kept.
-# t3b5e54ea =
+t3b5e54ea = Đầu ra dài hơn { $mb } MB: phần còn lại không được giữ.
 
 # Open a tab
-# t85019429 =
+t85019429 = Mở tab
 
 # Copy output
-# t64749f61 =
+t64749f61 = Sao chép đầu ra
 
 # exit {code}
-# te0c7c2fc =
+te0c7c2fc = mã thoát { $code }
 
 # ended by a signal
-# t450a0cd5 =
+t450a0cd5 = bị dừng bởi tín hiệu
 
 # sudo did not take the password
-# tb2c3fb01 =
+tb2c3fb01 = sudo không nhận mật khẩu
 
 # sudo asked for a password
-# t31a388e9 =
+t31a388e9 = sudo đã hỏi mật khẩu
 
 # did not connect
-# t7efff279 =
+t7efff279 = không kết nối được
 
 # given up on
-# t4eec5298 =
+t4eec5298 = hết giờ
 
 # did not run
-# tf05d1c4a =
+tf05d1c4a = không chạy được
 
 # signing in
-# t727e0a33 =
+t727e0a33 = đang đăng nhập
 
 # asks something
-# tf96d1b57 =
+tf96d1b57 = đang hỏi
 
 # signed in
-# t1a42c214 =
+t1a42c214 = đã đăng nhập
 
 # left out
 t73aeedd4 = đã bỏ ra
 
 # waiting
-# teeda06a8 =
+teeda06a8 = đang chờ
 
 # running
-# t147eb74c =
+t147eb74c = đang chạy
 
 # stopped
-# t6ee2f34e =
+t6ee2f34e = đã dừng
 
 # exit 0
-# tf83c441d =
+tf83c441d = mã thoát 0
 
 # sudo refused
-# tdd8b1f54 =
+tdd8b1f54 = sudo đã từ chối
 
 # What each host says shows here, grouped by output.
-# taede9a2c =
+taede9a2c = Những gì từng máy chủ trả về hiện ở đây, nhóm theo đầu ra.
 
 # It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
-# t82319ee2 =
+t82319ee2 = Lệnh chạy như ssh host 'command', không có terminal, được đọc trọn trước khi bắt đầu, nên không phần nào trong đó đọc phần còn lại của nó. Mật khẩu của sudo được hỏi một lần, trước khi chạy; mọi thứ khác cần hỏi (một câu y/n) sẽ không được trả lời.
 
 # About
 t58e096de = Giới thiệu
@@ -2873,22 +2888,28 @@ t87553579 = không kết nối được
 tebee50c5 = đã đóng
 
 # One command, many hosts
-# t05dcb762 =
+t05dcb762 = Một lệnh, nhiều máy chủ
 
 # ACTIONS
-# t62d7de84 =
+t62d7de84 = THAO TÁC
 
 # Cmd+click to add or take away
-# t36133970 =
+t36133970 = Cmd+click để thêm hoặc bỏ
 
 # Ctrl+click to add or take away
-# t47785603 =
+t47785603 = Ctrl+click để thêm hoặc bỏ
 
 # {n} host chosen | {n} hosts chosen
-# tf9b0b9a0 =
+tf9b0b9a0 =
+    { $n ->
+       *[other] Đã chọn { $n } máy chủ
+    }
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
-# t4ecd858a =
+t4ecd858a =
+    { $n ->
+       *[other] Chạy trên { $n } máy chủ của { $group }
+    }
 
 # No hosts yet
 ta58f36ff = Chưa có máy chủ
@@ -3692,19 +3713,19 @@ ta77bd589 = Ghi chú cho { $host }
 tbb112cdf = Ghi chú · { $category }
 
 # The window closed.
-# t26993482 =
+t26993482 = Cửa sổ đã đóng.
 
 # its collection's settings for {names} wait until you allow them, on a tab to it
-# t3306232b =
+t3306232b = cài đặt của bộ sưu tập cho { $names } đang chờ bạn cho phép, trên một tab tới máy chủ đó
 
 # Stop and close
-# tb789bdac =
+tb789bdac = Dừng và đóng
 
 # Close the tab?
 tc626ae98 = Đóng tab?
 
 # It is still running: closing stops it on the hosts it has not ended on.
-# t853369a2 =
+t853369a2 = Lệnh vẫn đang chạy: đóng sẽ dừng nó trên những máy chủ chưa chạy xong.
 
 # the system's package manager
 t11465c20 = trình quản lý gói của hệ thống
@@ -3893,7 +3914,7 @@ t9f033387 = Chuyển tiếp một cổng qua { $title }…
 tbe80f7b5 = Gỡ biến môi trường: { $names }
 
 # Run on hosts…
-# t8ceaeff0 =
+t8ceaeff0 = Chạy trên các máy chủ…
 
 # Change theme…
 t85a401b4 = Đổi chủ đề…

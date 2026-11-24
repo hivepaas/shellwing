@@ -1847,247 +1847,262 @@ tbfdc091c = Enter 回答   Esc キャンセル
 te39c67c2 = ↑↓ 移動   Enter 選択   Esc キャンセル
 
 # Find hosts
-# t1f19b271 =
+t1f19b271 = ホストを検索
 
 # sudo password
-# t6f1147fd =
+t6f1147fd = sudo のパスワード
 
 # Run on hosts
-# t20ee87e4 =
+t20ee87e4 = ホストで実行
 
 # Choose at least one host.
-# t98a361a0 =
+t98a361a0 = ホストを 1 つ以上選んでください。
 
 # Type a command or a script first.
-# tc08b2b46 =
+tc08b2b46 = 先にコマンドまたはスクリプトを入力してください。
 
 # The script is larger than {kb} KB.
-# t3c583c57 =
+t3c583c57 = スクリプトが { $kb } KB を超えています。
 
 # none chosen
-# t23b63bc7 =
+t23b63bc7 = 未選択
 
 # {picked} of {all}
-# tb6c0f13d =
+tb6c0f13d = { $picked } / { $all }
 
 # No hosts yet: add one in the host list.
-# tb1cb1380 =
+tb1cb1380 = まだホストはありません。ホスト一覧で追加してください。
 
 # chosen
-# t88efc3c3 =
+t88efc3c3 = 手動選択
 
 # from #!
-# te59619bf =
+te59619bf = #! から
 
 # default
-# t933b5bde =
+t933b5bde = 既定
 
 # Command or script
-# t9263b49e =
+t9263b49e = コマンドまたはスクリプト
 
 # Open file…
-# teb1476db =
+teb1476db = ファイルを開く…
 
 # From a snippet…
-# t5b2e9f81 =
+t5b2e9f81 = スニペットから…
 
 # From the first line
-# t4eea1d86 =
+t4eea1d86 = 1 行目から
 
 # No snippets yet.
-# ta1f34f58 =
+ta1f34f58 = まだスニペットはありません。
 
 # At most
-# tc4220f87 =
+tc4220f87 = 同時に最大
 
 # at once
-# t73078e59 =
+t73078e59 = 件
 
 # Give up after
-# t72dfc173 =
+t72dfc173 = 打ち切りまで
 
 # seconds
-# t66b6cdea =
+t66b6cdea = 秒
 
 # One host first, the rest when you say
-# t2dc320ca =
+t2dc320ca = まず 1 つのホストで実行し、残りは指示を待つ
 
 # Cmd+Enter runs
-# tc5c50a00 =
+tc5c50a00 = Cmd+Enter で実行
 
 # Ctrl+Enter runs
-# t1e0dc7f1 =
+t1e0dc7f1 = Ctrl+Enter で実行
 
 # Run
 t8d57e66a = 実行
 
 # Run on {n} host | Run on {n} hosts
-# t9f3562b2 =
+t9f3562b2 =
+    { $n ->
+       *[other] { $n } 件のホストで実行
+    }
 
 # Run it on {first} first, then the other {n}?
-# tdeeed76d =
+tdeeed76d = まず { $first } で実行し、その後残りの { $n } 件で実行しますか？
 
 # Run it on {n} host? | Run it on {n} hosts?
-# t15434ee6 =
+t15434ee6 =
+    { $n ->
+       *[other] { $n } 件のホストで実行しますか？
+    }
 
 # {interpreter}, {n} line | {interpreter}, {n} lines
-# t8077e5da =
+t8077e5da =
+    { $n ->
+       *[other] { $interpreter }、{ $n } 行
+    }
 
 # signing in to {n} of {all}…
-# t6d7d8e5a =
+t6d7d8e5a = { $all } 件中 { $n } 件にサインイン中…
 
 # {n} of {all} signed in
-# t11ab0d58 =
+t11ab0d58 = { $all } 件中 { $n } 件がサインイン済み
 
 # at most {n} at once
-# td03e9105 =
+td03e9105 = 同時に最大 { $n } 件
 
 # Signing in: asked now, once
-# t41418846 =
+t41418846 = サインイン：今、一度だけ尋ねます
 
 # {target}'s password, again: that one was refused
-# t39e81801 =
+t39e81801 = { $target } のパスワード（再入力：前回のパスワードは拒否されました）
 
 # {target}'s password
-# t8989af6d =
+t8989af6d = { $target } のパスワード
 
 # The passphrase of {key}
-# tb9a076ee =
+tb9a076ee = { $key } のパスフレーズ
 
 # A host key never seen before: {algorithm} {fingerprint}
-# t064ebede =
+t064ebede = 初めて見るホスト鍵：{ $algorithm } { $fingerprint }
 
 # Leave it out
-# taaff8ec9 =
+taaff8ec9 = 除外する
 
 # Trust it
-# tf80adc72 =
+tf80adc72 = 信頼する
 
 # OK
 t85e4b82f = OK
 
 # {host} is left out: {why}
-# ta0fb8060 =
+ta0fb8060 = { $host } は除外されました：{ $why }
 
 # sudo password, for every host
-# tf9f4ad8f =
+tf9f4ad8f = sudo のパスワード（全ホスト共通）
 
 # The same on every host
-# t09beea56 =
+t09beea56 = 全ホストで同じ
 
 # The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
-# t893beb5f =
+t893beb5f = スクリプトは sudo を使います。パスワードはスクリプトと一緒に各ホストへ送られ、そこで sudo が読み取ります。コマンドライン、ファイル、表示される内容に含まれることはありません。実行が始まると消去されます。
 
 # Run on {host}
-# t53629f2b =
+t53629f2b = { $host } で実行
 
 # started {when}
-# t0addf546 =
+t0addf546 = 開始：{ $when }
 
 # ran at {when}
-# tc1949fbd =
+tc1949fbd = 実行：{ $when }
 
 # Again on the {n} that failed | Again on the {n} that failed
-# t40c7552d =
+t40c7552d =
+    { $n ->
+       *[other] 失敗した { $n } 件で再実行
+    }
 
 # Run again
-# t7e879b86 =
+t7e879b86 = 再実行
 
 # {n} ok
-# t230daddb =
+t230daddb = { $n } 件成功
 
 # {n} failed
-# t747c50a8 =
+t747c50a8 = { $n } 件失敗
 
 # {n} to go
-# t9b6bf176 =
+t9b6bf176 = 残り { $n } 件
 
 # {n} stopped
-# td3275eca =
+td3275eca = { $n } 件停止
 
 # By output
-# t58a5f0b1 =
+t58a5f0b1 = 出力別
 
 # By host
-# ta32dd06e =
+ta32dd06e = ホスト別
 
 # The first host is done. The other {n} wait for you.
-# tdc76953e =
+tdc76953e = 最初のホストが完了しました。残りの { $n } 件は指示を待っています。
 
 # Run on the other {n} | Run on the other {n}
-# t4cc1f343 =
+t4cc1f343 =
+    { $n ->
+       *[other] 残りの { $n } 件で実行
+    }
 
 # Still going: {hosts}
-# tfacf50d8 =
+tfacf50d8 = まだ実行中：{ $hosts }
 
 # Stopped before they ended: {hosts}
-# tde1adb0a =
+tde1adb0a = 終了前に停止：{ $hosts }
 
 # Given up on after {s} seconds.
-# tf245d128 =
+tf245d128 = { $s } 秒で打ち切りました。
 
 # It printed more than {mb} MB: the rest is not kept.
-# t3b5e54ea =
+t3b5e54ea = { $mb } MB を超えて出力されたため、残りは保存されません。
 
 # Open a tab
-# t85019429 =
+t85019429 = タブを開く
 
 # Copy output
-# t64749f61 =
+t64749f61 = 出力をコピー
 
 # exit {code}
-# te0c7c2fc =
+te0c7c2fc = 終了コード { $code }
 
 # ended by a signal
-# t450a0cd5 =
+t450a0cd5 = シグナルで終了
 
 # sudo did not take the password
-# tb2c3fb01 =
+tb2c3fb01 = sudo がパスワードを受け付けませんでした
 
 # sudo asked for a password
-# t31a388e9 =
+t31a388e9 = sudo がパスワードを求めました
 
 # did not connect
-# t7efff279 =
+t7efff279 = 接続失敗
 
 # given up on
-# t4eec5298 =
+t4eec5298 = 打ち切り
 
 # did not run
-# tf05d1c4a =
+tf05d1c4a = 未実行
 
 # signing in
-# t727e0a33 =
+t727e0a33 = サインイン中
 
 # asks something
-# tf96d1b57 =
+tf96d1b57 = 入力待ち
 
 # signed in
-# t1a42c214 =
+t1a42c214 = サインイン済み
 
 # left out
 t73aeedd4 = 除外
 
 # waiting
-# teeda06a8 =
+teeda06a8 = 待機中
 
 # running
-# t147eb74c =
+t147eb74c = 実行中
 
 # stopped
-# t6ee2f34e =
+t6ee2f34e = 停止
 
 # exit 0
-# tf83c441d =
+tf83c441d = 終了コード 0
 
 # sudo refused
-# tdd8b1f54 =
+tdd8b1f54 = sudo が拒否
 
 # What each host says shows here, grouped by output.
-# taede9a2c =
+taede9a2c = 各ホストの出力が、同じ出力ごとにまとめてここに表示されます。
 
 # It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
-# t82319ee2 =
+t82319ee2 = ssh host 'command' と同じように、ターミナルなしで実行されます。開始前に全体が読み込まれるため、その中のコマンドが残りの部分を読み取ることはありません。sudo のパスワードは実行前に一度だけ尋ねます。それ以外の問いかけ（y/n など）には応答されません。
 
 # About
 t58e096de = 情報
@@ -2873,22 +2888,28 @@ t87553579 = 接続失敗
 tebee50c5 = 終了
 
 # One command, many hosts
-# t05dcb762 =
+t05dcb762 = 1 つのコマンドを多数のホストで
 
 # ACTIONS
-# t62d7de84 =
+t62d7de84 = アクション
 
 # Cmd+click to add or take away
-# t36133970 =
+t36133970 = Cmd+click で追加・解除
 
 # Ctrl+click to add or take away
-# t47785603 =
+t47785603 = Ctrl+click で追加・解除
 
 # {n} host chosen | {n} hosts chosen
-# tf9b0b9a0 =
+tf9b0b9a0 =
+    { $n ->
+       *[other] { $n } 件のホストを選択中
+    }
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
-# t4ecd858a =
+t4ecd858a =
+    { $n ->
+       *[other] { $group } の { $n } 件のホストで実行
+    }
 
 # No hosts yet
 ta58f36ff = まだホストはありません
@@ -3692,19 +3713,19 @@ ta77bd589 = { $host } のノート
 tbb112cdf = ノート · { $category }
 
 # The window closed.
-# t26993482 =
+t26993482 = ウィンドウが閉じられました。
 
 # its collection's settings for {names} wait until you allow them, on a tab to it
-# t3306232b =
+t3306232b = コレクションの { $names } の設定が、このホストへのタブで許可されるのを待っています
 
 # Stop and close
-# tb789bdac =
+tb789bdac = 停止して閉じる
 
 # Close the tab?
 tc626ae98 = タブを閉じますか？
 
 # It is still running: closing stops it on the hosts it has not ended on.
-# t853369a2 =
+t853369a2 = まだ実行中です。閉じると、まだ終了していないホストでは停止されます。
 
 # the system's package manager
 t11465c20 = システムのパッケージマネージャー
@@ -3893,7 +3914,7 @@ t9f033387 = { $title } 経由でポートをフォワード…
 tbe80f7b5 = 環境の読み込みを解除: { $names }
 
 # Run on hosts…
-# t8ceaeff0 =
+t8ceaeff0 = ホストで実行…
 
 # Change theme…
 t85a401b4 = テーマを変更…

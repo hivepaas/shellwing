@@ -1891,247 +1891,267 @@ tbfdc091c = Enter risponde   Esc annulla
 te39c67c2 = ↑↓ sposta   Enter scegli   Esc annulla
 
 # Find hosts
-# t1f19b271 =
+t1f19b271 = Cerca host
 
 # sudo password
-# t6f1147fd =
+t6f1147fd = password di sudo
 
 # Run on hosts
-# t20ee87e4 =
+t20ee87e4 = Esegui sugli host
 
 # Choose at least one host.
-# t98a361a0 =
+t98a361a0 = Scegli almeno un host.
 
 # Type a command or a script first.
-# tc08b2b46 =
+tc08b2b46 = Prima digita un comando o uno script.
 
 # The script is larger than {kb} KB.
-# t3c583c57 =
+t3c583c57 = Lo script supera { $kb } KB.
 
 # none chosen
-# t23b63bc7 =
+t23b63bc7 = nessuno scelto
 
 # {picked} of {all}
-# tb6c0f13d =
+tb6c0f13d = { $picked } di { $all }
 
 # No hosts yet: add one in the host list.
-# tb1cb1380 =
+tb1cb1380 = Ancora nessun host: aggiungine uno nella lista degli host.
 
 # chosen
-# t88efc3c3 =
+t88efc3c3 = scelto
 
 # from #!
-# te59619bf =
+te59619bf = da #!
 
 # default
-# t933b5bde =
+t933b5bde = predefinito
 
 # Command or script
-# t9263b49e =
+t9263b49e = Comando o script
 
 # Open file…
-# teb1476db =
+teb1476db = Apri file…
 
 # From a snippet…
-# t5b2e9f81 =
+t5b2e9f81 = Da uno snippet…
 
 # From the first line
-# t4eea1d86 =
+t4eea1d86 = Dalla prima riga
 
 # No snippets yet.
-# ta1f34f58 =
+ta1f34f58 = Ancora nessuno snippet.
 
 # At most
-# tc4220f87 =
+tc4220f87 = Al massimo
 
 # at once
-# t73078e59 =
+t73078e59 = alla volta
 
 # Give up after
-# t72dfc173 =
+t72dfc173 = Abbandona dopo
 
 # seconds
-# t66b6cdea =
+t66b6cdea = secondi
 
 # One host first, the rest when you say
-# t2dc320ca =
+t2dc320ca = Prima un host, gli altri quando lo dici tu
 
 # Cmd+Enter runs
-# tc5c50a00 =
+tc5c50a00 = Cmd+Enter esegue
 
 # Ctrl+Enter runs
-# t1e0dc7f1 =
+t1e0dc7f1 = Ctrl+Enter esegue
 
 # Run
 t8d57e66a = Esegui
 
 # Run on {n} host | Run on {n} hosts
-# t9f3562b2 =
+t9f3562b2 =
+    { $n ->
+        [one] Esegui su { $n } host
+       *[other] Esegui su { $n } host
+    }
 
 # Run it on {first} first, then the other {n}?
-# tdeeed76d =
+tdeeed76d = Eseguirlo prima su { $first }, poi sugli altri { $n }?
 
 # Run it on {n} host? | Run it on {n} hosts?
-# t15434ee6 =
+t15434ee6 =
+    { $n ->
+        [one] Eseguirlo su { $n } host?
+       *[other] Eseguirlo su { $n } host?
+    }
 
 # {interpreter}, {n} line | {interpreter}, {n} lines
-# t8077e5da =
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } riga
+       *[other] { $interpreter }, { $n } righe
+    }
 
 # signing in to {n} of {all}…
-# t6d7d8e5a =
+t6d7d8e5a = accesso in corso su { $n } di { $all }…
 
 # {n} of {all} signed in
-# t11ab0d58 =
+t11ab0d58 = accesso effettuato su { $n } di { $all }
 
 # at most {n} at once
-# td03e9105 =
+td03e9105 = al massimo { $n } alla volta
 
 # Signing in: asked now, once
-# t41418846 =
+t41418846 = Accesso: chiesto ora, una volta sola
 
 # {target}'s password, again: that one was refused
-# t39e81801 =
+t39e81801 = Password di { $target }, di nuovo: quella è stata rifiutata
 
 # {target}'s password
-# t8989af6d =
+t8989af6d = Password di { $target }
 
 # The passphrase of {key}
-# tb9a076ee =
+tb9a076ee = La passphrase di { $key }
 
 # A host key never seen before: {algorithm} {fingerprint}
-# t064ebede =
+t064ebede = Una chiave host mai vista prima: { $algorithm } { $fingerprint }
 
 # Leave it out
-# taaff8ec9 =
+taaff8ec9 = Escludilo
 
 # Trust it
-# tf80adc72 =
+tf80adc72 = Fidati
 
 # OK
 t85e4b82f = OK
 
 # {host} is left out: {why}
-# ta0fb8060 =
+ta0fb8060 = { $host } è escluso: { $why }
 
 # sudo password, for every host
-# tf9f4ad8f =
+tf9f4ad8f = password di sudo, per ogni host
 
 # The same on every host
-# t09beea56 =
+t09beea56 = La stessa su ogni host
 
 # The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
-# t893beb5f =
+t893beb5f = Lo script usa sudo: la password va a ogni host insieme allo script, perché sudo la legga lì, mai su una riga di comando, in un file o in ciò che viene mostrato. Viene dimenticata appena l'esecuzione inizia.
 
 # Run on {host}
-# t53629f2b =
+t53629f2b = Esegui su { $host }
 
 # started {when}
-# t0addf546 =
+t0addf546 = avviato alle { $when }
 
 # ran at {when}
-# tc1949fbd =
+tc1949fbd = eseguito alle { $when }
 
 # Again on the {n} that failed | Again on the {n} that failed
-# t40c7552d =
+t40c7552d =
+    { $n ->
+        [one] Di nuovo su { $n } host con errore
+       *[other] Di nuovo sui { $n } host con errore
+    }
 
 # Run again
-# t7e879b86 =
+t7e879b86 = Esegui di nuovo
 
 # {n} ok
-# t230daddb =
+t230daddb = { $n } ok
 
 # {n} failed
-# t747c50a8 =
+t747c50a8 = { $n } con errore
 
 # {n} to go
-# t9b6bf176 =
+t9b6bf176 = ancora { $n }
 
 # {n} stopped
-# td3275eca =
+td3275eca = { $n } interrotti
 
 # By output
-# t58a5f0b1 =
+t58a5f0b1 = Per output
 
 # By host
-# ta32dd06e =
+ta32dd06e = Per host
 
 # The first host is done. The other {n} wait for you.
-# tdc76953e =
+tdc76953e = Il primo host ha finito. Gli altri { $n } ti aspettano.
 
 # Run on the other {n} | Run on the other {n}
-# t4cc1f343 =
+t4cc1f343 =
+    { $n ->
+        [one] Esegui su { $n } altro host
+       *[other] Esegui sugli altri { $n }
+    }
 
 # Still going: {hosts}
-# tfacf50d8 =
+tfacf50d8 = Ancora in corso: { $hosts }
 
 # Stopped before they ended: {hosts}
-# tde1adb0a =
+tde1adb0a = Interrotti prima di finire: { $hosts }
 
 # Given up on after {s} seconds.
-# tf245d128 =
+tf245d128 = Abbandonato dopo { $s } secondi.
 
 # It printed more than {mb} MB: the rest is not kept.
-# t3b5e54ea =
+t3b5e54ea = Ha stampato più di { $mb } MB: il resto non viene conservato.
 
 # Open a tab
-# t85019429 =
+t85019429 = Apri una scheda
 
 # Copy output
-# t64749f61 =
+t64749f61 = Copia output
 
 # exit {code}
-# te0c7c2fc =
+te0c7c2fc = uscita { $code }
 
 # ended by a signal
-# t450a0cd5 =
+t450a0cd5 = terminato da un segnale
 
 # sudo did not take the password
-# tb2c3fb01 =
+tb2c3fb01 = sudo non ha accettato la password
 
 # sudo asked for a password
-# t31a388e9 =
+t31a388e9 = sudo ha chiesto una password
 
 # did not connect
-# t7efff279 =
+t7efff279 = connessione non riuscita
 
 # given up on
-# t4eec5298 =
+t4eec5298 = abbandonato
 
 # did not run
-# tf05d1c4a =
+tf05d1c4a = non eseguito
 
 # signing in
-# t727e0a33 =
+t727e0a33 = accesso in corso
 
 # asks something
-# tf96d1b57 =
+tf96d1b57 = chiede qualcosa
 
 # signed in
-# t1a42c214 =
+t1a42c214 = accesso effettuato
 
 # left out
 t73aeedd4 = escluso
 
 # waiting
-# teeda06a8 =
+teeda06a8 = in attesa
 
 # running
-# t147eb74c =
+t147eb74c = in esecuzione
 
 # stopped
-# t6ee2f34e =
+t6ee2f34e = interrotto
 
 # exit 0
-# tf83c441d =
+tf83c441d = uscita 0
 
 # sudo refused
-# tdd8b1f54 =
+tdd8b1f54 = rifiutato da sudo
 
 # What each host says shows here, grouped by output.
-# taede9a2c =
+taede9a2c = Qui compare ciò che dice ogni host, raggruppato per output.
 
 # It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
-# t82319ee2 =
+t82319ee2 = Viene eseguito come farebbe ssh host 'command', senza terminale, letto per intero prima di iniziare, quindi nulla al suo interno legge il resto. La password di sudo viene chiesta una volta, prima dell'esecuzione; qualsiasi altra domanda (un y/n) non riceve risposta.
 
 # About
 t58e096de = Informazioni
@@ -2921,22 +2941,30 @@ t87553579 = connessione non riuscita
 tebee50c5 = chiusa
 
 # One command, many hosts
-# t05dcb762 =
+t05dcb762 = Un comando, molti host
 
 # ACTIONS
-# t62d7de84 =
+t62d7de84 = AZIONI
 
 # Cmd+click to add or take away
-# t36133970 =
+t36133970 = Cmd+click per aggiungere o togliere
 
 # Ctrl+click to add or take away
-# t47785603 =
+t47785603 = Ctrl+click per aggiungere o togliere
 
 # {n} host chosen | {n} hosts chosen
-# tf9b0b9a0 =
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } host scelto
+       *[other] { $n } host scelti
+    }
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
-# t4ecd858a =
+t4ecd858a =
+    { $n ->
+        [one] Esegui su { $n } host di { $group }
+       *[other] Esegui sui { $n } host di { $group }
+    }
 
 # No hosts yet
 ta58f36ff = Ancora nessun host
@@ -3787,19 +3815,19 @@ ta77bd589 = Note per { $host }
 tbb112cdf = Note · { $category }
 
 # The window closed.
-# t26993482 =
+t26993482 = La finestra si è chiusa.
 
 # its collection's settings for {names} wait until you allow them, on a tab to it
-# t3306232b =
+t3306232b = le impostazioni della sua raccolta per { $names } aspettano che tu le consenta, in una scheda connessa all'host
 
 # Stop and close
-# tb789bdac =
+tb789bdac = Interrompi e chiudi
 
 # Close the tab?
 tc626ae98 = Chiudere la scheda?
 
 # It is still running: closing stops it on the hosts it has not ended on.
-# t853369a2 =
+t853369a2 = È ancora in esecuzione: chiudendo lo si interrompe sugli host dove non ha ancora finito.
 
 # the system's package manager
 t11465c20 = il gestore di pacchetti del sistema
@@ -4005,7 +4033,7 @@ t9f033387 = Inoltra una porta tramite { $title }…
 tbe80f7b5 = Rimuovi ambiente: { $names }
 
 # Run on hosts…
-# t8ceaeff0 =
+t8ceaeff0 = Esegui sugli host…
 
 # Change theme…
 t85a401b4 = Cambia tema…

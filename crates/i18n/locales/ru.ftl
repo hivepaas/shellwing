@@ -1925,247 +1925,277 @@ tbfdc091c = Enter отвечает   Esc отменяет
 te39c67c2 = ↑↓ выбор   Enter выбрать   Esc отмена
 
 # Find hosts
-# t1f19b271 =
+t1f19b271 = Найдите хосты
 
 # sudo password
-# t6f1147fd =
+t6f1147fd = Пароль sudo
 
 # Run on hosts
-# t20ee87e4 =
+t20ee87e4 = Выполнить на хостах
 
 # Choose at least one host.
-# t98a361a0 =
+t98a361a0 = Выберите хотя бы один хост.
 
 # Type a command or a script first.
-# tc08b2b46 =
+tc08b2b46 = Сначала введите команду или скрипт.
 
 # The script is larger than {kb} KB.
-# t3c583c57 =
+t3c583c57 = Скрипт больше { $kb } KB.
 
 # none chosen
-# t23b63bc7 =
+t23b63bc7 = ничего не выбрано
 
 # {picked} of {all}
-# tb6c0f13d =
+tb6c0f13d = { $picked } из { $all }
 
 # No hosts yet: add one in the host list.
-# tb1cb1380 =
+tb1cb1380 = Хостов пока нет: добавьте хост в списке хостов.
 
 # chosen
-# t88efc3c3 =
+t88efc3c3 = выбран
 
 # from #!
-# te59619bf =
+te59619bf = из #!
 
 # default
-# t933b5bde =
+t933b5bde = по умолчанию
 
 # Command or script
-# t9263b49e =
+t9263b49e = Команда или скрипт
 
 # Open file…
-# teb1476db =
+teb1476db = Открыть файл…
 
 # From a snippet…
-# t5b2e9f81 =
+t5b2e9f81 = Из сниппета…
 
 # From the first line
-# t4eea1d86 =
+t4eea1d86 = По первой строке
 
 # No snippets yet.
-# ta1f34f58 =
+ta1f34f58 = Сниппетов пока нет.
 
 # At most
-# tc4220f87 =
+tc4220f87 = Не более
 
 # at once
-# t73078e59 =
+t73078e59 = одновременно
 
 # Give up after
-# t72dfc173 =
+t72dfc173 = Прервать через
 
 # seconds
-# t66b6cdea =
+t66b6cdea = секунд
 
 # One host first, the rest when you say
-# t2dc320ca =
+t2dc320ca = Сначала один хост, остальные — по вашей команде
 
 # Cmd+Enter runs
-# tc5c50a00 =
+tc5c50a00 = Cmd+Enter — выполнить
 
 # Ctrl+Enter runs
-# t1e0dc7f1 =
+t1e0dc7f1 = Ctrl+Enter — выполнить
 
 # Run
 t8d57e66a = Выполнить
 
 # Run on {n} host | Run on {n} hosts
-# t9f3562b2 =
+t9f3562b2 =
+    { $n ->
+        [one] Выполнить на { $n } хосте
+        [few] Выполнить на { $n } хостах
+        [many] Выполнить на { $n } хостах
+       *[other] Выполнить на { $n } хоста
+    }
 
 # Run it on {first} first, then the other {n}?
-# tdeeed76d =
+tdeeed76d = Выполнить сначала на { $first }, затем на остальных ({ $n })?
 
 # Run it on {n} host? | Run it on {n} hosts?
-# t15434ee6 =
+t15434ee6 =
+    { $n ->
+        [one] Выполнить на { $n } хосте?
+        [few] Выполнить на { $n } хостах?
+        [many] Выполнить на { $n } хостах?
+       *[other] Выполнить на { $n } хоста?
+    }
 
 # {interpreter}, {n} line | {interpreter}, {n} lines
-# t8077e5da =
+t8077e5da =
+    { $n ->
+        [one] { $interpreter }, { $n } строка
+        [few] { $interpreter }, { $n } строки
+        [many] { $interpreter }, { $n } строк
+       *[other] { $interpreter }, { $n } строки
+    }
 
 # signing in to {n} of {all}…
-# t6d7d8e5a =
+t6d7d8e5a = вход на { $n } из { $all }…
 
 # {n} of {all} signed in
-# t11ab0d58 =
+t11ab0d58 = вход выполнен на { $n } из { $all }
 
 # at most {n} at once
-# td03e9105 =
+td03e9105 = не более { $n } одновременно
 
 # Signing in: asked now, once
-# t41418846 =
+t41418846 = Вход: спрашивается сейчас, один раз
 
 # {target}'s password, again: that one was refused
-# t39e81801 =
+t39e81801 = Пароль { $target } ещё раз: тот был отклонён
 
 # {target}'s password
-# t8989af6d =
+t8989af6d = Пароль { $target }
 
 # The passphrase of {key}
-# tb9a076ee =
+tb9a076ee = Парольная фраза { $key }
 
 # A host key never seen before: {algorithm} {fingerprint}
-# t064ebede =
+t064ebede = Ранее не встречавшийся ключ хоста: { $algorithm } { $fingerprint }
 
 # Leave it out
-# taaff8ec9 =
+taaff8ec9 = Пропустить
 
 # Trust it
-# tf80adc72 =
+tf80adc72 = Доверять
 
 # OK
 t85e4b82f = OK
 
 # {host} is left out: {why}
-# ta0fb8060 =
+ta0fb8060 = { $host } пропущен: { $why }
 
 # sudo password, for every host
-# tf9f4ad8f =
+tf9f4ad8f = Пароль sudo для всех хостов
 
 # The same on every host
-# t09beea56 =
+t09beea56 = Один и тот же на всех хостах
 
 # The script uses sudo: the password goes to each host with it, for sudo there to read, never on a command line, in a file or in what is shown. It is forgotten once the run starts.
-# t893beb5f =
+t893beb5f = Скрипт использует sudo: пароль передаётся каждому хосту вместе с ним, чтобы его прочитал sudo на хосте, и никогда не попадает в командную строку, в файл или в то, что показывается. Он забывается, как только запуск начнётся.
 
 # Run on {host}
-# t53629f2b =
+t53629f2b = Выполнить на { $host }
 
 # started {when}
-# t0addf546 =
+t0addf546 = начато в { $when }
 
 # ran at {when}
-# tc1949fbd =
+tc1949fbd = выполнено в { $when }
 
 # Again on the {n} that failed | Again on the {n} that failed
-# t40c7552d =
+t40c7552d =
+    { $n ->
+        [one] Снова на { $n } хосте с ошибкой
+        [few] Снова на { $n } хостах с ошибкой
+        [many] Снова на { $n } хостах с ошибкой
+       *[other] Снова на { $n } хоста с ошибкой
+    }
 
 # Run again
-# t7e879b86 =
+t7e879b86 = Выполнить снова
 
 # {n} ok
-# t230daddb =
+t230daddb = { $n } успешно
 
 # {n} failed
-# t747c50a8 =
+t747c50a8 = { $n } с ошибкой
 
 # {n} to go
-# t9b6bf176 =
+t9b6bf176 = { $n } осталось
 
 # {n} stopped
-# td3275eca =
+td3275eca = { $n } остановлено
 
 # By output
-# t58a5f0b1 =
+t58a5f0b1 = По выводу
 
 # By host
-# ta32dd06e =
+ta32dd06e = По хостам
 
 # The first host is done. The other {n} wait for you.
-# tdc76953e =
+tdc76953e = Первый хост готов. Остальные ({ $n }) ждут вас.
 
 # Run on the other {n} | Run on the other {n}
-# t4cc1f343 =
+t4cc1f343 =
+    { $n ->
+        [one] Выполнить на остальных ({ $n })
+        [few] Выполнить на остальных ({ $n })
+        [many] Выполнить на остальных ({ $n })
+       *[other] Выполнить на остальных ({ $n })
+    }
 
 # Still going: {hosts}
-# tfacf50d8 =
+tfacf50d8 = Ещё выполняется: { $hosts }
 
 # Stopped before they ended: {hosts}
-# tde1adb0a =
+tde1adb0a = Остановлены до завершения: { $hosts }
 
 # Given up on after {s} seconds.
-# tf245d128 =
+tf245d128 = Прервано через { $s } с.
 
 # It printed more than {mb} MB: the rest is not kept.
-# t3b5e54ea =
+t3b5e54ea = Выведено больше { $mb } MB: остальное не сохраняется.
 
 # Open a tab
-# t85019429 =
+t85019429 = Открыть вкладку
 
 # Copy output
-# t64749f61 =
+t64749f61 = Копировать вывод
 
 # exit {code}
-# te0c7c2fc =
+te0c7c2fc = код выхода { $code }
 
 # ended by a signal
-# t450a0cd5 =
+t450a0cd5 = завершено сигналом
 
 # sudo did not take the password
-# tb2c3fb01 =
+tb2c3fb01 = sudo не принял пароль
 
 # sudo asked for a password
-# t31a388e9 =
+t31a388e9 = sudo запросил пароль
 
 # did not connect
-# t7efff279 =
+t7efff279 = не подключено
 
 # given up on
-# t4eec5298 =
+t4eec5298 = прервано
 
 # did not run
-# tf05d1c4a =
+tf05d1c4a = не выполнено
 
 # signing in
-# t727e0a33 =
+t727e0a33 = вход
 
 # asks something
-# tf96d1b57 =
+tf96d1b57 = что-то спрашивает
 
 # signed in
-# t1a42c214 =
+t1a42c214 = вход выполнен
 
 # left out
 t73aeedd4 = пропущено
 
 # waiting
-# teeda06a8 =
+teeda06a8 = ожидание
 
 # running
-# t147eb74c =
+t147eb74c = выполняется
 
 # stopped
-# t6ee2f34e =
+t6ee2f34e = остановлено
 
 # exit 0
-# tf83c441d =
+tf83c441d = код выхода 0
 
 # sudo refused
-# tdd8b1f54 =
+tdd8b1f54 = sudo отказал
 
 # What each host says shows here, grouped by output.
-# taede9a2c =
+taede9a2c = Здесь появится то, что выведет каждый хост, с группировкой по выводу.
 
 # It runs as ssh host 'command' would, with no terminal, read whole before it starts, so nothing in it reads the rest of it. sudo's password is asked once, before it runs; anything else that asks (a y/n) gets no answer.
-# t82319ee2 =
+t82319ee2 = Выполняется так же, как ssh host 'command': без терминала и целиком считывается до запуска, поэтому ничто в нём не читает его остаток. Пароль sudo запрашивается один раз, до запуска; всё остальное, что спрашивает (y/n), ответа не получит.
 
 # About
 t58e096de = О программе
@@ -2957,22 +2987,34 @@ t87553579 = не удалось подключиться
 tebee50c5 = закрыто
 
 # One command, many hosts
-# t05dcb762 =
+t05dcb762 = Одна команда — много хостов
 
 # ACTIONS
-# t62d7de84 =
+t62d7de84 = ДЕЙСТВИЯ
 
 # Cmd+click to add or take away
-# t36133970 =
+t36133970 = Cmd+click — добавить или убрать
 
 # Ctrl+click to add or take away
-# t47785603 =
+t47785603 = Ctrl+click — добавить или убрать
 
 # {n} host chosen | {n} hosts chosen
-# tf9b0b9a0 =
+tf9b0b9a0 =
+    { $n ->
+        [one] Выбран { $n } хост
+        [few] Выбрано { $n } хоста
+        [many] Выбрано { $n } хостов
+       *[other] Выбрано { $n } хоста
+    }
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
-# t4ecd858a =
+t4ecd858a =
+    { $n ->
+        [one] Выполнить на { $n } хосте группы { $group }
+        [few] Выполнить на { $n } хостах группы { $group }
+        [many] Выполнить на { $n } хостах группы { $group }
+       *[other] Выполнить на { $n } хоста группы { $group }
+    }
 
 # No hosts yet
 ta58f36ff = Хостов пока нет
@@ -3863,19 +3905,19 @@ ta77bd589 = Заметки для { $host }
 tbb112cdf = Заметки · { $category }
 
 # The window closed.
-# t26993482 =
+t26993482 = Окно закрыто.
 
 # its collection's settings for {names} wait until you allow them, on a tab to it
-# t3306232b =
+t3306232b = настройки его коллекции для { $names } ждут вашего разрешения во вкладке этого хоста
 
 # Stop and close
-# tb789bdac =
+tb789bdac = Остановить и закрыть
 
 # Close the tab?
 tc626ae98 = Закрыть вкладку?
 
 # It is still running: closing stops it on the hosts it has not ended on.
-# t853369a2 =
+t853369a2 = Выполнение ещё идёт: закрытие остановит его на хостах, где оно не завершилось.
 
 # the system's package manager
 t11465c20 = системный менеджер пакетов
@@ -4091,7 +4133,7 @@ t9f033387 = Пробросить порт через { $title }…
 tbe80f7b5 = Выгрузить окружение: { $names }
 
 # Run on hosts…
-# t8ceaeff0 =
+t8ceaeff0 = Выполнить на хостах…
 
 # Change theme…
 t85a401b4 = Сменить тему…
