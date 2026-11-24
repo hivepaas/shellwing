@@ -175,6 +175,12 @@ tcb4de791 = Concedi un host…
 # No host is given to an AI client.
 t654696aa = Nessun host è concesso a un client AI.
 
+# in the background
+t04874b67 = in background
+
+# through a tab
+t6bca7a6e = tramite una scheda
+
 # while shellwing stays open
 t938960ff = finché shellwing resta aperto
 
@@ -210,6 +216,21 @@ t41f59644 = A
 
 # For
 t0f7e1b30 = Per
+
+# How
+t644e442d = Modo
+
+# In the background
+t206da987 = In background
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Su una connessione propria, senza scheda. Ogni comando e il suo output sono in Attività AI.
+
+# Through a tab
+tfe61838e = Tramite una scheda
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Digitati in una scheda sull'host, nella sua shell, dove li vedi; se non ce n'è una, se ne apre una. Una password che l'host chiede lì la digiti tu.
 
 # Commands
 t971550f3 = Comandi
@@ -3918,6 +3939,25 @@ t5a2b7304 = ↓ Torna in fondo (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } vuole eseguire un comando su { $host }: è in Attività AI, e ti aspetta.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = In pausa: { $client } aspetta finché non lo lasci continuare.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } sta usando questa scheda: { $n } comando finora.
+       *[other] { $client } sta usando questa scheda: { $n } comandi finora.
+    }
+
+# Let it go on
+t6f36d148 = Lascialo continuare
+
+# Pause
+t44f9bf2d = Metti in pausa
+
+# Take access back
+td619baa7 = Revoca l'accesso
+
 # Config files · {category}
 t59edc3e9 = File di configurazione · { $category }
 
@@ -5854,9 +5894,6 @@ td20a2320 = Chiudi tutto
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = La tua impronta, il volto o il blocco schermo lo sbloccano.
-
-# In the background
-t206da987 = In background
 
 # Keep sessions connected
 t0bc12e52 = Mantieni le sessioni connesse

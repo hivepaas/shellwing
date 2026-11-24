@@ -175,6 +175,12 @@ tcb4de791 = Berikan host…
 # No host is given to an AI client.
 t654696aa = Tidak ada host yang diberikan ke klien AI.
 
+# in the background
+t04874b67 = di latar belakang
+
+# through a tab
+t6bca7a6e = lewat tab
+
 # while shellwing stays open
 t938960ff = selama shellwing tetap terbuka
 
@@ -210,6 +216,21 @@ t41f59644 = Kepada
 
 # For
 t0f7e1b30 = Selama
+
+# How
+t644e442d = Cara
+
+# In the background
+t206da987 = Di latar belakang
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Pada koneksinya sendiri, tanpa tab. Setiap perintah dan keluarannya ada di Aktivitas AI.
+
+# Through a tab
+tfe61838e = Lewat tab
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Diketik ke tab menuju host, di shell-nya, tempat Anda melihatnya; tab dibuka jika belum ada. Kata sandi yang diminta host di sana Anda ketik sendiri.
 
 # Commands
 t971550f3 = Perintah
@@ -3874,6 +3895,24 @@ t5a2b7304 = ↓ Kembali ke bawah (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } ingin menjalankan perintah di { $host }: perintahnya ada di Aktivitas AI, menunggu Anda.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Dijeda: { $client } menunggu sampai Anda membiarkannya lanjut.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client } sedang memakai tab ini: { $n } perintah sejauh ini.
+    }
+
+# Let it go on
+t6f36d148 = Biarkan lanjut
+
+# Pause
+t44f9bf2d = Jeda
+
+# Take access back
+td619baa7 = Cabut akses
+
 # Config files · {category}
 t59edc3e9 = Berkas konfigurasi · { $category }
 
@@ -5790,9 +5829,6 @@ td20a2320 = Tutup semua
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Sidik jari, wajah, atau kunci layar Anda membukanya.
-
-# In the background
-t206da987 = Di latar belakang
 
 # Keep sessions connected
 t0bc12e52 = Pertahankan sesi tetap terhubung

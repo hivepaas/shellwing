@@ -175,6 +175,12 @@ tcb4de791 = 授权主机…
 # No host is given to an AI client.
 t654696aa = 尚未向 AI 客户端授权任何主机。
 
+# in the background
+t04874b67 = 在后台
+
+# through a tab
+t6bca7a6e = 通过标签页
+
 # while shellwing stays open
 t938960ff = shellwing 保持打开期间
 
@@ -210,6 +216,21 @@ t41f59644 = 授权给
 
 # For
 t0f7e1b30 = 期限
+
+# How
+t644e442d = 方式
+
+# In the background
+t206da987 = 在后台
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = 使用独立的连接，不占用标签页。每条命令及其输出都会记录在 AI 活动中。
+
+# Through a tab
+tfe61838e = 通过标签页
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = 输入到连接该主机的标签页的 shell 中，你能看到；如果没有这样的标签页，会打开一个。主机在那里要求的密码需由你自己输入。
 
 # Commands
 t971550f3 = 命令
@@ -3817,6 +3838,24 @@ t5a2b7304 = ↓ 回到底部（Shift+End）
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } 想在 { $host } 上运行一条命令：它已在 AI 活动中等你确认。
 
+# Paused: {client} waits until you let it go on.
+t56154080 = 已暂停：{ $client } 会一直等待，直到你让它继续。
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client } 正在使用此标签页：目前已运行 { $n } 条命令。
+    }
+
+# Let it go on
+t6f36d148 = 继续
+
+# Pause
+t44f9bf2d = 暂停
+
+# Take access back
+td619baa7 = 收回访问权限
+
 # Config files · {category}
 t59edc3e9 = 配置文件 · { $category }
 
@@ -5703,9 +5742,6 @@ td20a2320 = 全部关闭
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = 用指纹、面容或屏幕锁定解锁。
-
-# In the background
-t206da987 = 在后台
 
 # Keep sessions connected
 t0bc12e52 = 保持会话连接

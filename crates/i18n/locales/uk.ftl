@@ -175,6 +175,12 @@ tcb4de791 = Надати хост…
 # No host is given to an AI client.
 t654696aa = Жоден хост не надано AI-клієнту.
 
+# in the background
+t04874b67 = у фоні
+
+# through a tab
+t6bca7a6e = через вкладку
+
 # while shellwing stays open
 t938960ff = поки shellwing відкрито
 
@@ -210,6 +216,21 @@ t41f59644 = Кому
 
 # For
 t0f7e1b30 = Термін
+
+# How
+t644e442d = Спосіб
+
+# In the background
+t206da987 = У фоні
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Окремим підключенням, без вкладки. Кожна команда та її вивід зберігаються на вкладці «Активність AI».
+
+# Through a tab
+tfe61838e = Через вкладку
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Команди вводяться у вкладку з цим хостом, у його оболонку, у вас на очах; якщо такої вкладки немає, вона відкривається. Пароль, який хост там запитає, вводите ви самі.
 
 # Commands
 t971550f3 = Команди
@@ -4006,6 +4027,27 @@ t5a2b7304 = ↓ Повернутися донизу (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } хоче виконати команду на { $host }: вона на вкладці «Активність AI» і чекає на вас.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Призупинено: { $client } чекає, доки ви не дозволите продовжити.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } використовує цю вкладку: уже { $n } команда.
+        [few] { $client } використовує цю вкладку: уже { $n } команди.
+        [many] { $client } використовує цю вкладку: уже { $n } команд.
+       *[other] { $client } використовує цю вкладку: уже { $n } команди.
+    }
+
+# Let it go on
+t6f36d148 = Продовжити
+
+# Pause
+t44f9bf2d = Призупинити
+
+# Take access back
+td619baa7 = Відкликати доступ
+
 # Config files · {category}
 t59edc3e9 = Файли конфігурації · { $category }
 
@@ -5982,9 +6024,6 @@ td20a2320 = Закрити всі
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Його розблоковує відбиток пальця, обличчя або блокування екрана.
-
-# In the background
-t206da987 = У фоні
 
 # Keep sessions connected
 t0bc12e52 = Не розривати сеанси

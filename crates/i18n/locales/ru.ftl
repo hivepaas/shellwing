@@ -175,6 +175,12 @@ tcb4de791 = Предоставить хост…
 # No host is given to an AI client.
 t654696aa = Ни один хост не предоставлен AI-клиенту.
 
+# in the background
+t04874b67 = в фоне
+
+# through a tab
+t6bca7a6e = через вкладку
+
 # while shellwing stays open
 t938960ff = пока shellwing открыт
 
@@ -210,6 +216,21 @@ t41f59644 = Кому
 
 # For
 t0f7e1b30 = Срок
+
+# How
+t644e442d = Способ
+
+# In the background
+t206da987 = В фоне
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = По отдельному подключению, без вкладки. Каждая команда и её вывод сохраняются на вкладке «Активность AI».
+
+# Through a tab
+tfe61838e = Через вкладку
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Команды вводятся во вкладку с этим хостом, в его оболочку, у вас на виду; если такой вкладки нет, она открывается. Пароль, который хост там запросит, вводите вы сами.
 
 # Commands
 t971550f3 = Команды
@@ -4006,6 +4027,27 @@ t5a2b7304 = ↓ Вернуться вниз (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } хочет выполнить команду на { $host }: она на вкладке «Активность AI» и ждёт вас.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Приостановлено: { $client } ждёт, пока вы не разрешите продолжить.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+        [one] { $client } использует эту вкладку: уже { $n } команда.
+        [few] { $client } использует эту вкладку: уже { $n } команды.
+        [many] { $client } использует эту вкладку: уже { $n } команд.
+       *[other] { $client } использует эту вкладку: уже { $n } команды.
+    }
+
+# Let it go on
+t6f36d148 = Продолжить
+
+# Pause
+t44f9bf2d = Приостановить
+
+# Take access back
+td619baa7 = Отозвать доступ
+
 # Config files · {category}
 t59edc3e9 = Файлы конфигурации · { $category }
 
@@ -5982,9 +6024,6 @@ td20a2320 = Закрыть все
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Разблокируется отпечатком пальца, лицом или блокировкой экрана.
-
-# In the background
-t206da987 = В фоне
 
 # Keep sessions connected
 t0bc12e52 = Не разрывать сеансы

@@ -175,6 +175,12 @@ tcb4de791 = Cấp một máy chủ…
 # No host is given to an AI client.
 t654696aa = Không có máy chủ nào được cấp cho client AI.
 
+# in the background
+t04874b67 = chạy nền
+
+# through a tab
+t6bca7a6e = qua tab
+
 # while shellwing stays open
 t938960ff = khi shellwing còn mở
 
@@ -210,6 +216,21 @@ t41f59644 = Cấp cho
 
 # For
 t0f7e1b30 = Thời hạn
+
+# How
+t644e442d = Cách chạy
+
+# In the background
+t206da987 = Chạy nền
+
+# On a connection of its own, with no tab. Each command and its output are in AI activity.
+t4353fb5e = Trên kết nối riêng, không có tab. Mỗi lệnh và đầu ra của nó nằm trong Hoạt động AI.
+
+# Through a tab
+tfe61838e = Qua một tab
+
+# Typed into a tab to the host, in its shell, where you see it; a tab opens if none is. A password the host asks for there is yours to type.
+ta797f7de = Được gõ vào một tab tới máy chủ, trong shell của nó, nơi bạn nhìn thấy; nếu chưa có tab thì một tab sẽ mở ra. Mật khẩu mà máy chủ hỏi ở đó do bạn tự gõ.
 
 # Commands
 t971550f3 = Lệnh
@@ -3817,6 +3838,24 @@ t5a2b7304 = ↓ Về cuối (Shift+End)
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } muốn chạy một lệnh trên { $host }: lệnh đang chờ bạn trong Hoạt động AI.
 
+# Paused: {client} waits until you let it go on.
+t56154080 = Tạm dừng: { $client } chờ tới khi bạn cho nó tiếp tục.
+
+# {client} is using this tab: {n} command so far. | {client} is using this tab: {n} commands so far.
+ta805a0f4 =
+    { $n ->
+       *[other] { $client } đang dùng tab này: tới giờ đã có { $n } lệnh.
+    }
+
+# Let it go on
+t6f36d148 = Cho tiếp tục
+
+# Pause
+t44f9bf2d = Tạm dừng
+
+# Take access back
+td619baa7 = Thu hồi quyền
+
 # Config files · {category}
 t59edc3e9 = Tệp cấu hình · { $category }
 
@@ -5703,9 +5742,6 @@ td20a2320 = Đóng tất cả
 
 # Your fingerprint, face or screen lock unlocks it.
 t218f9703 = Vân tay, khuôn mặt hoặc khoá màn hình của bạn sẽ mở khoá.
-
-# In the background
-t206da987 = Khi chạy nền
 
 # Keep sessions connected
 t0bc12e52 = Giữ các phiên luôn kết nối
