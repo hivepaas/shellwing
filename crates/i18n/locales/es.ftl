@@ -2,124 +2,124 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # Run this once in a terminal:
-# t2a18fdaf =
+t2a18fdaf = Ejecuta esto una vez en una terminal:
 
 # In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
-# td57f67eb =
+td57f67eb = En Claude Desktop, Settings › Developer › Edit Config, añade esto a claude_desktop_config.json:
 
 # Add this to {file}:
-# t314ece69 =
+t314ece69 = Añade esto a { $file }:
 
 # In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
-# t0ff991db =
+t0ff991db = En Cline, MCP Servers › Configure, añade esto a cline_mcp_settings.json:
 
 # A client that starts its MCP server itself, over stdio:
-# td4ff0be4 =
+td4ff0be4 = Un cliente que inicia él mismo su servidor MCP, por stdio:
 
 # Find a host
-# t5f515591 =
+t5f515591 = Busca un servidor
 
 # AI clients
-# ta302119f =
+ta302119f = Clientes AI
 
 # Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
-# t6c56bef3 =
+t6c56bef3 = Agentes que llegan a tus servidores a través de shellwing, por MCP. Nunca ven una clave, una contraseña ni una frase de contraseña: shellwing inicia sesión por ellos.
 
 # Add client
-# td53111fb =
+td53111fb = Añadir cliente
 
 # Which client?
-# t278d359e =
+t278d359e = ¿Qué cliente?
 
 # No client yet: Add client lets one in.
-# t6815a21c =
+t6815a21c = Aún no hay clientes: Añadir cliente deja entrar uno.
 
 # token …{end}
-# t4a145d1b =
+t4a145d1b = token …{ $end }
 
 # connected now
-# t432c5c88 =
+t432c5c88 = conectado ahora
 
 # not connected
-# tb83f675d =
+tb83f675d = no conectado
 
 # Config
-# t6a12e0e7 =
+t6a12e0e7 = Configuración
 
 # Remove
 t21a5901d = Quitar
 
 # (the token shown when it was added)
-# t9375386f =
+t9375386f = (el token mostrado al añadirlo)
 
 # Copy
 t658f3664 = Copiar
 
 # The token shows this once: shellwing keeps only its hash. Remove takes it back.
-# t6ebf1609 =
+t6ebf1609 = El token se muestra solo esta vez: shellwing guarda solo su hash. Quitar lo revoca.
 
 # The token is not kept, only its hash: to see one again, remove the client and add it again.
-# tf69e6847 =
+tf69e6847 = El token no se guarda, solo su hash: para volver a ver uno, quita el cliente y añádelo de nuevo.
 
 # Hosts given
-# t1ef9da69 =
+t1ef9da69 = Servidores concedidos
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-# tf7a02825 =
+tf7a02825 = Un cliente solo llega a estos. Sus comandos se ejecutan en segundo plano, en una conexión propia, y cada uno se guarda en un registro en este equipo.
 
 # Take every one back
-# tb3911aec =
+tb3911aec = Retirar todos
 
 # Give a host…
-# tcb4de791 =
+tcb4de791 = Conceder un servidor…
 
 # No host is given to an AI client.
-# t654696aa =
+t654696aa = Ningún servidor está concedido a un cliente AI.
 
 # while shellwing stays open
-# t938960ff =
+t938960ff = mientras shellwing siga abierto
 
 # until taken back
-# tba10b16b =
+tba10b16b = hasta que se retire
 
 # ended
-# t1a30bf3b =
+t1a30bf3b = terminado
 
 # for {n} min more
-# t955674cd =
+t955674cd = { $n } min más
 
 # Take back
-# t0650c681 =
+t0650c681 = Retirar
 
 # Until I take it back
-# taacfb8db =
+taacfb8db = Hasta que lo retire
 
 # While shellwing stays open
-# tdb1d179f =
+tdb1d179f = Mientras shellwing siga abierto
 
 # 1 hour
 t0c43fb4a = 1 hora
 
 # 8 hours
-# t63affd14 =
+t63affd14 = 8 horas
 
 # Host
-# t302af18f =
+t302af18f = Servidor
 
 # To
-# t41f59644 =
+t41f59644 = Para
 
 # For
-# t0f7e1b30 =
+t0f7e1b30 = Duración
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-# t7620726b =
+t7620726b = Nunca ve una clave, una contraseña ni una frase de contraseña: se rechaza un servidor que la pediría, igual que uno cuya clave aún no se conoce. La salida de un servidor puede llevar palabras pensadas para dirigir a un agente: da servidores solo a uno en el que confíes para ello.
 
 # Cancel
 t35afca3b = Cancelar
 
 # Give access
-# te96c4c6e =
+te96c4c6e = Dar acceso
 
 # unlock its windows
 t7c69953e = desbloquear sus ventanas
@@ -2481,7 +2481,7 @@ t699a801a = SSH y seguridad
 td432914f = Bóveda
 
 # AI
-# t23d5135f =
+t23d5135f = AI
 
 # Its password (an app password, where it has them)
 t22e462e2 = Su contraseña (una contraseña de aplicación, si las tiene)

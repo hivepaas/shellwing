@@ -2,124 +2,124 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # Run this once in a terminal:
-# t2a18fdaf =
+t2a18fdaf = Выполните это один раз в терминале:
 
 # In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
-# td57f67eb =
+td57f67eb = В Claude Desktop, Settings › Developer › Edit Config, добавьте это в claude_desktop_config.json:
 
 # Add this to {file}:
-# t314ece69 =
+t314ece69 = Добавьте это в { $file }:
 
 # In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
-# t0ff991db =
+t0ff991db = В Cline, MCP Servers › Configure, добавьте это в cline_mcp_settings.json:
 
 # A client that starts its MCP server itself, over stdio:
-# td4ff0be4 =
+td4ff0be4 = Клиент, который сам запускает свой MCP-сервер, через stdio:
 
 # Find a host
-# t5f515591 =
+t5f515591 = Найдите хост
 
 # AI clients
-# ta302119f =
+ta302119f = AI-клиенты
 
 # Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
-# t6c56bef3 =
+t6c56bef3 = Агенты, которые подключаются к вашим хостам через shellwing по MCP. Они никогда не видят ни ключа, ни пароля, ни парольной фразы: shellwing входит за них.
 
 # Add client
-# td53111fb =
+td53111fb = Добавить клиент
 
 # Which client?
-# t278d359e =
+t278d359e = Какой клиент?
 
 # No client yet: Add client lets one in.
-# t6815a21c =
+t6815a21c = Клиентов пока нет: «Добавить клиент» впускает новый.
 
 # token …{end}
-# t4a145d1b =
+t4a145d1b = токен …{ $end }
 
 # connected now
-# t432c5c88 =
+t432c5c88 = сейчас подключено
 
 # not connected
-# tb83f675d =
+tb83f675d = не подключено
 
 # Config
-# t6a12e0e7 =
+t6a12e0e7 = Конфигурация
 
 # Remove
 t21a5901d = Удалить
 
 # (the token shown when it was added)
-# t9375386f =
+t9375386f = (токен, показанный при добавлении)
 
 # Copy
 t658f3664 = Копировать
 
 # The token shows this once: shellwing keeps only its hash. Remove takes it back.
-# t6ebf1609 =
+t6ebf1609 = Токен показывается только сейчас: shellwing хранит лишь его хеш. «Удалить» отзывает его.
 
 # The token is not kept, only its hash: to see one again, remove the client and add it again.
-# tf69e6847 =
+tf69e6847 = Сам токен не хранится, только его хеш: чтобы снова увидеть токен, удалите клиент и добавьте его заново.
 
 # Hosts given
-# t1ef9da69 =
+t1ef9da69 = Предоставленные хосты
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-# tf7a02825 =
+tf7a02825 = Клиенту доступны только эти хосты. Его команды выполняются в фоне, по отдельному соединению, и каждая записывается в журнал на этом компьютере.
 
 # Take every one back
-# tb3911aec =
+tb3911aec = Отозвать все
 
 # Give a host…
-# tcb4de791 =
+tcb4de791 = Предоставить хост…
 
 # No host is given to an AI client.
-# t654696aa =
+t654696aa = Ни один хост не предоставлен AI-клиенту.
 
 # while shellwing stays open
-# t938960ff =
+t938960ff = пока shellwing открыт
 
 # until taken back
-# tba10b16b =
+tba10b16b = до отзыва
 
 # ended
-# t1a30bf3b =
+t1a30bf3b = завершён
 
 # for {n} min more
-# t955674cd =
+t955674cd = ещё { $n } мин
 
 # Take back
-# t0650c681 =
+t0650c681 = Отозвать
 
 # Until I take it back
-# taacfb8db =
+taacfb8db = Пока я не отзову
 
 # While shellwing stays open
-# tdb1d179f =
+tdb1d179f = Пока shellwing открыт
 
 # 1 hour
 t0c43fb4a = 1 час
 
 # 8 hours
-# t63affd14 =
+t63affd14 = 8 часов
 
 # Host
-# t302af18f =
+t302af18f = Хост
 
 # To
-# t41f59644 =
+t41f59644 = Кому
 
 # For
-# t0f7e1b30 =
+t0f7e1b30 = Срок
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-# t7620726b =
+t7620726b = Он никогда не видит ни ключа, ни пароля, ни парольной фразы: хост, который запросил бы их, отклоняется, как и хост, ключ которого ещё неизвестен. Вывод хоста может содержать слова, рассчитанные на то, чтобы управлять агентом: предоставляйте хосты только клиенту, которому доверяете их.
 
 # Cancel
 t35afca3b = Отмена
 
 # Give access
-# te96c4c6e =
+te96c4c6e = Предоставить доступ
 
 # unlock its windows
 t7c69953e = разблокировать свои окна
@@ -2525,7 +2525,7 @@ t699a801a = SSH и безопасность
 td432914f = Хранилище
 
 # AI
-# t23d5135f =
+t23d5135f = AI
 
 # Its password (an app password, where it has them)
 t22e462e2 = Его пароль (пароль приложения, если они есть)

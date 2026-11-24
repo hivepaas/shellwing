@@ -2,124 +2,124 @@
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
 # Run this once in a terminal:
-# t2a18fdaf =
+t2a18fdaf = ターミナルでこれを一度実行してください：
 
 # In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
-# td57f67eb =
+td57f67eb = Claude Desktop の Settings › Developer › Edit Config で、claude_desktop_config.json に次を追加してください：
 
 # Add this to {file}:
-# t314ece69 =
+t314ece69 = { $file } に次を追加してください：
 
 # In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
-# t0ff991db =
+t0ff991db = Cline の MCP Servers › Configure で、cline_mcp_settings.json に次を追加してください：
 
 # A client that starts its MCP server itself, over stdio:
-# td4ff0be4 =
+td4ff0be4 = MCP サーバーを自分で起動するクライアント（stdio 経由）：
 
 # Find a host
-# t5f515591 =
+t5f515591 = ホストを検索
 
 # AI clients
-# ta302119f =
+ta302119f = AI クライアント
 
 # Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
-# t6c56bef3 =
+t6c56bef3 = shellwing を介して MCP でホストにアクセスするエージェントです。エージェントが鍵、パスワード、パスフレーズを目にすることはありません。サインインは shellwing が代わりに行います。
 
 # Add client
-# td53111fb =
+td53111fb = クライアントを追加
 
 # Which client?
-# t278d359e =
+t278d359e = どのクライアントですか？
 
 # No client yet: Add client lets one in.
-# t6815a21c =
+t6815a21c = まだクライアントはありません。「クライアントを追加」で接続を許可できます。
 
 # token …{end}
-# t4a145d1b =
+t4a145d1b = トークン …{ $end }
 
 # connected now
-# t432c5c88 =
+t432c5c88 = 接続済み
 
 # not connected
-# tb83f675d =
+tb83f675d = 未接続
 
 # Config
-# t6a12e0e7 =
+t6a12e0e7 = 設定
 
 # Remove
 t21a5901d = 削除
 
 # (the token shown when it was added)
-# t9375386f =
+t9375386f = （追加したときに表示されたトークン）
 
 # Copy
 t658f3664 = コピー
 
 # The token shows this once: shellwing keeps only its hash. Remove takes it back.
-# t6ebf1609 =
+t6ebf1609 = トークンが表示されるのはこの一度だけです。shellwing はそのハッシュのみを保存します。「削除」で取り消せます。
 
 # The token is not kept, only its hash: to see one again, remove the client and add it again.
-# tf69e6847 =
+tf69e6847 = トークンは保存されず、ハッシュのみが残ります。もう一度表示するには、クライアントを削除して追加し直してください。
 
 # Hosts given
-# t1ef9da69 =
+t1ef9da69 = 許可したホスト
 
 # A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-# tf7a02825 =
+tf7a02825 = クライアントがアクセスできるのはこれらのホストだけです。コマンドは専用の接続でバックグラウンド実行され、それぞれこのコンピュータ上のログに記録されます。
 
 # Take every one back
-# tb3911aec =
+tb3911aec = すべて取り消す
 
 # Give a host…
-# tcb4de791 =
+tcb4de791 = ホストを許可…
 
 # No host is given to an AI client.
-# t654696aa =
+t654696aa = AI クライアントに許可したホストはありません。
 
 # while shellwing stays open
-# t938960ff =
+t938960ff = shellwing を開いている間
 
 # until taken back
-# tba10b16b =
+tba10b16b = 取り消すまで
 
 # ended
-# t1a30bf3b =
+t1a30bf3b = 終了
 
 # for {n} min more
-# t955674cd =
+t955674cd = 残り { $n } 分
 
 # Take back
-# t0650c681 =
+t0650c681 = 取り消す
 
 # Until I take it back
-# taacfb8db =
+taacfb8db = 自分で取り消すまで
 
 # While shellwing stays open
-# tdb1d179f =
+tdb1d179f = shellwing を開いている間
 
 # 1 hour
 t0c43fb4a = 1 時間
 
 # 8 hours
-# t63affd14 =
+t63affd14 = 8 時間
 
 # Host
-# t302af18f =
+t302af18f = ホスト
 
 # To
-# t41f59644 =
+t41f59644 = 許可先
 
 # For
-# t0f7e1b30 =
+t0f7e1b30 = 期間
 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-# t7620726b =
+t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
 
 # Cancel
 t35afca3b = キャンセル
 
 # Give access
-# te96c4c6e =
+te96c4c6e = アクセスを許可
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除
@@ -2432,7 +2432,7 @@ t699a801a = SSH とセキュリティ
 td432914f = 保管庫
 
 # AI
-# t23d5135f =
+t23d5135f = AI
 
 # Its password (an app password, where it has them)
 t22e462e2 = パスワード（アプリパスワードがある場合はそちら）

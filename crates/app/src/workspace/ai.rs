@@ -167,7 +167,6 @@ impl Workspace {
             })
             .unwrap_or_default()
     }
-
 }
 
 /// The host list's sections as runs and AI access choose from them: hosts

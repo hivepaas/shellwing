@@ -559,7 +559,12 @@ impl AiView {
             return div();
         };
         let query = self.filter.read(cx).text().trim().to_lowercase();
-        let mut hosts = div().flex().flex_col().max_h(px(220.)).overflow_hidden();
+        let mut hosts = div()
+            .id("ai-hosts")
+            .flex()
+            .flex_col()
+            .max_h(px(220.))
+            .overflow_y_scroll();
         for p in &snap.picks {
             for h in &p.hosts {
                 if !query.is_empty()
