@@ -6653,7 +6653,7 @@ impl Workspace {
             color: h.color_rgb(),
             icon: self.host_icon(h.icon.as_deref(), h.alias.as_deref().unwrap_or(&h.name)),
             active: active_entry.as_deref() == Some(h.name.as_str()),
-            ai: false,
+            ai: None,
             search: [
                 h.name.as_str(),
                 h.alias.as_deref().unwrap_or(""),
@@ -6683,7 +6683,7 @@ impl Workspace {
                     tr!("Local terminal"),
                     tr!("this computer")
                 ),
-                ai: false,
+                ai: None,
             }],
             ..Default::default()
         });
@@ -6751,7 +6751,7 @@ impl Workspace {
                 icon: self.host_icon(None, a),
                 active: active_entry.is_none() && active_spec.as_deref() == Some(a.as_str()),
                 search: a.to_lowercase(),
-                ai: false,
+                ai: None,
             })
             .collect();
         if !aliases.is_empty() {
@@ -6850,7 +6850,7 @@ impl Workspace {
         self.refresh_ai(&picks);
         let given = self.ai_given();
         for r in sections.iter_mut().flat_map(|s| s.rows.iter_mut()) {
-            r.ai = given.contains(&r.spec);
+            r.ai = given.get(&r.spec).copied();
         }
         let collapsed = self.sidebar_collapsed;
         let ai = self

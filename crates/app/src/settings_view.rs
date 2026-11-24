@@ -428,6 +428,22 @@ pub fn mono_fonts(installed: &[String]) -> Vec<String> {
 }
 
 impl SettingsView {
+    /// The AI page, made the first time it is needed.
+    fn ai_view(&mut self, cx: &mut Context<Self>) -> Entity<crate::ai_view::AiView> {
+        let ws = self.workspace.clone();
+        self.ai
+            .get_or_insert_with(|| cx.new(|cx| crate::ai_view::AiView::new(ws, cx)))
+            .clone()
+    }
+
+    /// Settings › AI, its form open to give `hosts` (specs).
+    pub fn give_hosts(&mut self, hosts: Vec<String>, window: &mut Window, cx: &mut Context<Self>) {
+        self.page = Page::Ai;
+        let view = self.ai_view(cx);
+        view.update(cx, |v, cx| v.start_giving(hosts, window, cx));
+        cx.notify();
+    }
+
     pub fn new(
         workspace: WeakEntity<Workspace>,
         page: Page,
@@ -2928,14 +2944,7 @@ impl Render for SettingsView {
             }
             Page::Sync => self.sync(cx),
             Page::Vault => self.vault(cx),
-            Page::Ai => {
-                let ws = self.workspace.clone();
-                let view = self
-                    .ai
-                    .get_or_insert_with(|| cx.new(|cx| crate::ai_view::AiView::new(ws, cx)))
-                    .clone();
-                div().child(view)
-            }
+            Page::Ai => div().child(self.ai_view(cx)),
             Page::About => self.about(cx),
         };
         corners

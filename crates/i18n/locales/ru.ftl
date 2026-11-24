@@ -136,17 +136,29 @@ t6815a21c = Клиентов пока нет: «Добавить клиент» 
 # token …{end}
 t4a145d1b = токен …{ $end }
 
+# paused
+t0a1997cb = приостановлен
+
 # connected now
 t432c5c88 = сейчас подключено
 
 # not connected
 tb83f675d = не подключено
 
+# Resume
+t454d1d8a = Возобновить
+
+# Pause
+t44f9bf2d = Приостановить
+
 # Config
 t6a12e0e7 = Конфигурация
 
 # Remove
 t21a5901d = Удалить
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Приостановка останавливает клиента на время и сохраняет его токен и предоставленные ему хосты. Удаление отзывает его токен.
 
 # (the token shown when it was added)
 t9375386f = (токен, показанный при добавлении)
@@ -172,11 +184,35 @@ t07e2f764 = Активность AI
 # Take every one back
 tb3911aec = Отозвать все
 
-# Give a host…
-tcb4de791 = Предоставить хост…
+# Give hosts…
+t30b956e9 = Предоставить хосты…
 
 # No host is given to an AI client.
 t654696aa = Ни один хост не предоставлен AI-клиенту.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } хост
+        [few] { $n } хоста
+        [many] { $n } хостов
+       *[other] { $n } хоста
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+        [one] приостановлено: { $n }
+        [few] приостановлено: { $n }
+        [many] приостановлено: { $n }
+       *[other] приостановлено: { $n }
+    }
+
+# Client paused
+te9192f58 = Клиент приостановлен
+
+# Take all back
+t4a2d0a34 = Отозвать все
 
 # in the background
 t04874b67 = в фоне
@@ -202,8 +238,35 @@ t1a30bf3b = завершён
 # for {n} min more
 t955674cd = ещё { $n } мин
 
+# Paused
+tde281feb = Приостановлен
+
 # Take back
 t0650c681 = Отозвать
+
+# Clear group
+tc2447199 = Снять выбор с группы
+
+# Select all
+t6af21072 = Выбрать все
+
+# given already
+t0912be5e = уже предоставлен
+
+# No host chosen yet.
+t99637c8e = Хосты ещё не выбраны.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] Выбран { $n } хост
+        [few] Выбрано { $n } хоста
+        [many] Выбрано { $n } хостов
+       *[other] Выбрано { $n } хоста
+    }
+
+# Clear
+t04a57fc2 = Сбросить
 
 # Until I take it back
 taacfb8db = Пока я не отзову
@@ -217,8 +280,20 @@ t0c43fb4a = 1 час
 # 8 hours
 t63affd14 = 8 часов
 
-# Host
-t302af18f = Хост
+# Give access
+te96c4c6e = Предоставить доступ
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+        [one] Предоставить доступ к { $n } хосту
+        [few] Предоставить доступ к { $n } хостам
+        [many] Предоставить доступ к { $n } хостам
+       *[other] Предоставить доступ к { $n } хоста
+    }
+
+# Hosts
+tcf9aefb4 = Хосты
 
 # To
 t41f59644 = Кому
@@ -265,14 +340,14 @@ t2d9c8c34 = по SFTP; в режиме «Спрашивать о рискова�
 # Commands
 t971550f3 = Команды
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = Уже предоставлены { $client }: { $hosts }. Повторное предоставление заменит прежние настройки.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Он никогда не видит ни ключа, ни пароля, ни парольной фразы: хост, который запросил бы их, отклоняется, как и хост, ключ которого ещё неизвестен. Вывод хоста может содержать слова, рассчитанные на то, чтобы управлять агентом: предоставляйте хосты только клиенту, которому доверяете их.
 
 # Cancel
 t35afca3b = Отмена
-
-# Give access
-te96c4c6e = Предоставить доступ
 
 # When AI runs a command
 tc94fc353 = Когда AI выполняет команду
@@ -1255,15 +1330,6 @@ tb71f4415 = Поиск других SSH-приложений…
 # No other SSH app with hosts was found here.
 tecba4271 = Других SSH-приложений с хостами здесь не найдено.
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } хост
-        [few] { $n } хоста
-        [many] { $n } хостов
-       *[other] { $n } хоста
-    }
-
 # Import hosts
 t956d1e67 = Импорт хостов
 
@@ -1810,9 +1876,6 @@ tf375b5ad =
        *[other] Выбрано: { $n }
     }
 
-# Clear
-t04a57fc2 = Сбросить
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Отметьте команды для добавления: каждая станет вашим сниппетом.
 
@@ -2124,9 +2187,6 @@ t29ccb392 = Удалить таблицу
 
 # Untitled note
 t4ce277c4 = Заметка без названия
-
-# Hosts
-tcf9aefb4 = Хосты
 
 # Recent
 t50e888fe = Недавние
@@ -3253,14 +3313,8 @@ t36133970 = Cmd+click — добавить или убрать
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click — добавить или убрать
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-        [one] Выбран { $n } хост
-        [few] Выбрано { $n } хоста
-        [many] Выбрано { $n } хостов
-       *[other] Выбрано { $n } хоста
-    }
+# Give to AI…
+ta74a1e27 = Предоставить AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -4071,9 +4125,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Продолжить
-
-# Pause
-t44f9bf2d = Приостановить
 
 # Take access back
 td619baa7 = Отозвать доступ

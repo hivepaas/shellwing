@@ -487,3 +487,158 @@ scenario!(
         assert!(!error && said.contains("entries"), "{said}");
     }
 );
+
+/// A client let in (Codex CLI) and three hosts to give it, `web`, `db` and
+/// `cache`, none given yet; Settings › AI stays open. Its token.
+fn three_hosts(ui: &mut Ui) -> String {
+    let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+    ui.agent(&[&key]);
+    let home = ui.config_dir().join("remote-home");
+    std::fs::create_dir_all(&home).expect("home");
+    let server = ui.server(Policy {
+        key: Some(key.public_key().clone()),
+        shell: Some((home.clone(), home)),
+        ..Default::default()
+    });
+    ui.trust(&server);
+    ui.config_file(
+        "hosts.toml",
+        &format!(
+            "{}{}{}",
+            host("web", server.port),
+            host("db", server.port),
+            host("cache", server.port)
+        ),
+    );
+    ui.open();
+    ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+    ui.click("ai-add-client");
+    ui.click("ai-kind:codex");
+    ui.click("ai-copy-config");
+    let config = ui.clipboard().expect("the config");
+    config
+        .split("SHELLWING_TOKEN = \"")
+        .nth(1)
+        .and_then(|t| t.split('"').next())
+        .expect("a token")
+        .to_string()
+}
+
+/// Where `host`'s grant is in the saved order, which its buttons are named
+/// by.
+fn grant_of(ui: &mut Ui, host: &str) -> usize {
+    ui.ws(|ws, _, cx| {
+        let snap = ws.ai_snapshot(cx);
+        let spec = snap
+            .picks
+            .iter()
+            .flat_map(|p| &p.hosts)
+            .find(|h| h.name == host)
+            .map(|h| h.spec.clone())
+            .expect("the host");
+        snap.state
+            .grants
+            .iter()
+            .position(|g| g.host == spec)
+            .expect("its grant")
+    })
+}
+
+scenario!(
+    /// A whole group is given at once, a grant for each host; one given
+    /// again is said to be replaced, and is. Paused, a host stops what it
+    /// ran, is still listed, says it is paused and runs nothing; its tile
+    /// greys. Resumed, it runs again.
+    many_hosts_given_at_once_and_one_paused,
+    |ui| {
+        let token = three_hosts(ui);
+        ui.click("ai-give");
+        ui.click("ai-pick-group:Hosts");
+        assert!(ui.find("ai-give-replaces").is_none());
+        // The one client is chosen already.
+        ui.click("ai-give-ok");
+        for h in ["web", "db", "cache"] {
+            assert!(ui.find(&format!("ai-grant:{h}")).is_some(), "{h} given");
+        }
+        ui.click("ai-give");
+        ui.click("ai-pick:web");
+        assert!(ui.find("ai-give-replaces").is_some(), "web is given already");
+        ui.click("ai-give-ok");
+        let grants = ui.ws(|ws, _, cx| ws.ai_snapshot(cx).state.grants.len());
+        assert_eq!(grants, 3, "replaced, not added");
+
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool(
+            "run",
+            json!({"host": "db", "command": "sleep 30", "wait_seconds": 1}),
+        );
+        assert!(said.contains("still running"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let db = grant_of(ui, "db");
+        ui.click(&format!("ai-pause:{db}"));
+        assert!(ui.find("ai-grant-paused:db").is_some());
+        let (said, _) = c.tool("job_output", json!({"job": job, "wait_seconds": 5}));
+        assert!(said.contains("stopped"), "pausing stops what runs there: {said}");
+        let (hosts, _) = c.tool("list_hosts", json!({}));
+        assert!(hosts.contains("paused by the user"), "{hosts}");
+        assert_eq!(hosts.lines().count(), 3, "{hosts}");
+        let (said, error) = c.tool("run", json!({"host": "db", "command": "true"}));
+        assert!(error && said.contains("db is paused for Codex CLI"), "{said}");
+        let (said, error) = c.tool("run", json!({"host": "web", "command": "true"}));
+        assert!(!error && said.starts_with("exit 0"), "{said}");
+        let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
+        assert!(saved.contains("\"paused\""), "the pause is kept: {saved}");
+
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge-paused:db").is_some(), "its tile greys");
+        assert!(ui.find("ai-badge:web").is_some());
+
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        ui.click(&format!("ai-pause:{db}"));
+        assert!(ui.find("ai-grant-paused:db").is_none());
+        let (said, error) = c.tool("run", json!({"host": "db", "command": "true"}));
+        assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
+    }
+);
+
+scenario!(
+    /// Hosts picked in the host list go to the form, ticked. A client paused
+    /// is told so whatever it asks, and its hosts' tiles grey; resumed, it
+    /// reaches them again, its grants as they were.
+    picked_hosts_given_and_the_client_paused,
+    |ui| {
+        let token = three_hosts(ui);
+        ui.click("settings-close");
+        let ctrl = if cfg!(target_os = "macos") {
+            gpui::Modifiers::command()
+        } else {
+            gpui::Modifiers::control()
+        };
+        ui.click_with("host:web", ctrl);
+        ui.click_with("host:cache", ctrl);
+        ui.click("picked-give");
+        assert!(ui.find("ai-give-form").is_some(), "the form opens");
+        assert!(ui.find("picked-bar").is_none(), "the picks went to it");
+        ui.click("ai-give-ok");
+        assert!(ui.find("ai-grant:web").is_some() && ui.find("ai-grant:cache").is_some());
+        assert!(ui.find("ai-grant:db").is_none());
+
+        let (mut c, _) = Client::open(ui, &token);
+        ui.click("ai-pause-client:Codex CLI");
+        assert!(ui.find("ai-granted:Codex CLI").is_some());
+        let (hosts, _) = c.tool("list_hosts", json!({}));
+        assert!(hosts.contains("Codex CLI is paused"), "{hosts}");
+        let (said, error) = c.tool("run", json!({"host": "web", "command": "true"}));
+        assert!(error && said.contains("Codex CLI is paused"), "{said}");
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge-paused:web").is_some());
+        assert!(ui.find("ai-badge-paused:cache").is_some());
+
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        ui.click("ai-pause-client:Codex CLI");
+        let (said, error) = c.tool("run", json!({"host": "web", "command": "true"}));
+        assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
+        let (hosts, _) = c.tool("list_hosts", json!({}));
+        assert_eq!(hosts.lines().count(), 2, "{hosts}");
+    }
+);

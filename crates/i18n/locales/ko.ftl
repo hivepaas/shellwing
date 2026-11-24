@@ -136,17 +136,29 @@ t6815a21c = 아직 클라이언트가 없습니다. '클라이언트 추가'로 
 # token …{end}
 t4a145d1b = 토큰 …{ $end }
 
+# paused
+t0a1997cb = 일시 중지됨
+
 # connected now
 t432c5c88 = 연결됨
 
 # not connected
 tb83f675d = 연결되지 않음
 
+# Resume
+t454d1d8a = 재개
+
+# Pause
+t44f9bf2d = 일시 중지
+
 # Config
 t6a12e0e7 = 설정
 
 # Remove
 t21a5901d = 제거
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = 일시 중지하면 토큰과 허용된 호스트는 그대로 두고 클라이언트를 당분간 멈춥니다. 제거하면 토큰이 회수됩니다.
 
 # (the token shown when it was added)
 t9375386f = (추가할 때 표시된 토큰)
@@ -172,11 +184,26 @@ t07e2f764 = AI 활동
 # Take every one back
 tb3911aec = 모두 회수
 
-# Give a host…
-tcb4de791 = 호스트 허용…
+# Give hosts…
+t30b956e9 = 호스트 허용…
 
 # No host is given to an AI client.
 t654696aa = AI 클라이언트에 허용된 호스트가 없습니다.
+
+# {n} host | {n} hosts
+t2489674e = 호스트 { $n }개
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n }개 일시 중지됨
+    }
+
+# Client paused
+te9192f58 = 클라이언트 일시 중지됨
+
+# Take all back
+t4a2d0a34 = 모두 회수
 
 # in the background
 t04874b67 = 백그라운드에서
@@ -202,8 +229,32 @@ t1a30bf3b = 종료됨
 # for {n} min more
 t955674cd = { $n }분 남음
 
+# Paused
+tde281feb = 일시 중지됨
+
 # Take back
 t0650c681 = 회수
+
+# Clear group
+tc2447199 = 그룹 선택 해제
+
+# Select all
+t6af21072 = 모두 선택
+
+# given already
+t0912be5e = 이미 허용됨
+
+# No host chosen yet.
+t99637c8e = 아직 선택한 호스트가 없습니다.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 호스트 { $n }개 선택됨
+    }
+
+# Clear
+t04a57fc2 = 선택 해제
 
 # Until I take it back
 taacfb8db = 직접 회수할 때까지
@@ -217,8 +268,17 @@ t0c43fb4a = 1시간
 # 8 hours
 t63affd14 = 8시간
 
-# Host
-t302af18f = 호스트
+# Give access
+te96c4c6e = 접근 허용
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] 호스트 { $n }개에 접근 허용
+    }
+
+# Hosts
+tcf9aefb4 = 호스트
 
 # To
 t41f59644 = 대상
@@ -265,14 +325,14 @@ t2d9c8c34 = SFTP 사용. '위험한 명령은 확인'에서는 모든 쓰기가 
 # Commands
 t971550f3 = 명령
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = { $client }에 이미 허용됨: { $hosts }. 다시 허용하면 기존 설정이 바뀝니다.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
 
 # Cancel
 t35afca3b = 취소
-
-# Give access
-te96c4c6e = 접근 허용
 
 # When AI runs a command
 tc94fc353 = AI가 명령을 실행할 때
@@ -1237,9 +1297,6 @@ tb71f4415 = 다른 SSH 앱을 찾는 중…
 # No other SSH app with hosts was found here.
 tecba4271 = 호스트가 있는 다른 SSH 앱을 찾지 못했습니다.
 
-# {n} host | {n} hosts
-t2489674e = 호스트 { $n }개
-
 # Import hosts
 t956d1e67 = 호스트 가져오기
 
@@ -1747,9 +1804,6 @@ tf375b5ad =
        *[other] { $n }개 선택됨
     }
 
-# Clear
-t04a57fc2 = 선택 해제
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = 추가할 명령에 체크하세요. 각 명령은 내 스니펫이 됩니다.
 
@@ -2049,9 +2103,6 @@ t29ccb392 = 표 삭제
 
 # Untitled note
 t4ce277c4 = 제목 없는 노트
-
-# Hosts
-tcf9aefb4 = 호스트
 
 # Recent
 t50e888fe = 최근
@@ -3154,11 +3205,8 @@ t36133970 = Cmd+click으로 추가 또는 제외
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click으로 추가 또는 제외
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] 호스트 { $n }개 선택됨
-    }
+# Give to AI…
+ta74a1e27 = AI에 허용…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3879,9 +3927,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = 계속
-
-# Pause
-t44f9bf2d = 일시 중지
 
 # Take access back
 td619baa7 = 접근 회수

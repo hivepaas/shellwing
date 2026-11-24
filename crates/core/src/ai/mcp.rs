@@ -279,6 +279,9 @@ async fn call(
 ) -> Result<String, Problem> {
     match name {
         "list_hosts" => {
+            if hub.client_paused(&client.id) {
+                return Ok(super::paused_client(&client.name));
+            }
             let given = hub.given(&client.id);
             if given.is_empty() {
                 return Ok("No host is given to you yet: the user gives hosts in shellwing, under Settings › AI.".into());
@@ -286,6 +289,12 @@ async fn call(
             Ok(given
                 .iter()
                 .map(|g| {
+                    if g.grant.paused {
+                        return format!(
+                            "{}\t{}\tpaused by the user in shellwing",
+                            g.name, g.detail
+                        );
+                    }
                     let mut may = vec![];
                     if g.grant.run {
                         may.push(match g.grant.how {
@@ -513,6 +522,7 @@ mod tests {
             name: "Some agent".into(),
             token_sha256: super::super::token_hash("shw_t"),
             added_at: 0,
+            paused: false,
         }
     }
 
@@ -610,6 +620,72 @@ mod tests {
             .await
             .expect("answer");
         assert_eq!(a["error"]["code"], -32601);
+    }
+
+    /// A paused host is still listed, said to be paused, and runs nothing;
+    /// a paused client is told so, whatever it asks.
+    #[tokio::test]
+    async fn a_paused_host_or_client_says_so() {
+        let hub = hub();
+        let grant = |host: &str, paused: bool| shellwing_config::AiGrant {
+            client: "c1".into(),
+            host: host.into(),
+            how: AiHow::Background,
+            mode: shellwing_config::AiMode::Free,
+            until: None,
+            session: false,
+            run: true,
+            read: true,
+            write: false,
+            paused,
+        };
+        let mut state = shellwing_config::AiState {
+            clients: vec![client()],
+            grants: vec![grant("web", true), grant("db", false)],
+            ..Default::default()
+        };
+        hub.set_state(state.clone());
+        hub.set_hosts(
+            ["web", "db"]
+                .into_iter()
+                .map(|h| {
+                    (
+                        h.to_string(),
+                        super::super::Host {
+                            name: h.into(),
+                            detail: format!("me@{h}"),
+                            target: Err("not here".into()),
+                        },
+                    )
+                })
+                .collect(),
+        );
+        let text = |a: Value| {
+            a["result"]["content"][0]["text"]
+                .as_str()
+                .expect("text")
+                .to_string()
+        };
+        let list = json!({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_hosts", "arguments": {}}});
+        let listed = text(ask(&hub, list.clone()).await.expect("answer"));
+        assert!(
+            listed.contains("web\tme@web\tpaused by the user in shellwing"),
+            "{listed}"
+        );
+        assert!(listed.contains("db\tme@db\tcommands with run"), "{listed}");
+        let run = |host: &str| {
+            json!({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                   "params": {"name": "run", "arguments": {"host": host, "command": "true"}}})
+        };
+        let a = ask(&hub, run("web")).await.expect("answer");
+        assert_eq!(a["result"]["isError"], true);
+        assert!(text(a).contains("web is paused for Some agent"));
+
+        state.clients[0].paused = true;
+        hub.set_state(state);
+        assert!(text(ask(&hub, list).await.expect("answer")).contains("Some agent is paused"));
+        let said = text(ask(&hub, run("db")).await.expect("answer"));
+        assert!(said.contains("Some agent is paused"), "{said}");
     }
 
     #[test]

@@ -136,17 +136,29 @@ t6815a21c = まだクライアントはありません。「クライアント�
 # token …{end}
 t4a145d1b = トークン …{ $end }
 
+# paused
+t0a1997cb = 一時停止中
+
 # connected now
 t432c5c88 = 接続済み
 
 # not connected
 tb83f675d = 未接続
 
+# Resume
+t454d1d8a = 再開
+
+# Pause
+t44f9bf2d = 一時停止
+
 # Config
 t6a12e0e7 = 設定
 
 # Remove
 t21a5901d = 削除
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = 一時停止すると、トークンと許可したホストはそのままで、クライアントを当面止めます。削除するとトークンが取り消されます。
 
 # (the token shown when it was added)
 t9375386f = （追加したときに表示されたトークン）
@@ -172,11 +184,26 @@ t07e2f764 = AI アクティビティ
 # Take every one back
 tb3911aec = すべて取り消す
 
-# Give a host…
-tcb4de791 = ホストを許可…
+# Give hosts…
+t30b956e9 = ホストを許可…
 
 # No host is given to an AI client.
 t654696aa = AI クライアントに許可したホストはありません。
+
+# {n} host | {n} hosts
+t2489674e = ホスト { $n } 件
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n } 件一時停止中
+    }
+
+# Client paused
+te9192f58 = クライアント一時停止中
+
+# Take all back
+t4a2d0a34 = すべて取り消す
 
 # in the background
 t04874b67 = バックグラウンド
@@ -202,8 +229,32 @@ t1a30bf3b = 終了
 # for {n} min more
 t955674cd = 残り { $n } 分
 
+# Paused
+tde281feb = 一時停止中
+
 # Take back
 t0650c681 = 取り消す
+
+# Clear group
+tc2447199 = グループの選択を解除
+
+# Select all
+t6af21072 = すべて選択
+
+# given already
+t0912be5e = 許可済み
+
+# No host chosen yet.
+t99637c8e = ホストがまだ選択されていません。
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] { $n } 件のホストを選択中
+    }
+
+# Clear
+t04a57fc2 = クリア
 
 # Until I take it back
 taacfb8db = 自分で取り消すまで
@@ -217,8 +268,17 @@ t0c43fb4a = 1 時間
 # 8 hours
 t63affd14 = 8 時間
 
-# Host
-t302af18f = ホスト
+# Give access
+te96c4c6e = アクセスを許可
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] { $n } 件のホストへのアクセスを許可
+    }
+
+# Hosts
+tcf9aefb4 = ホスト
 
 # To
 t41f59644 = 許可先
@@ -265,14 +325,14 @@ t2d9c8c34 = SFTP 経由。「危険なものは確認」では、書き込みは
 # Commands
 t971550f3 = コマンド
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = { $client } に許可済み: { $hosts }。もう一度許可すると、以前の設定が置き換わります。
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
 
 # Cancel
 t35afca3b = キャンセル
-
-# Give access
-te96c4c6e = アクセスを許可
 
 # When AI runs a command
 tc94fc353 = AI がコマンドを実行するとき
@@ -1237,9 +1297,6 @@ tb71f4415 = ほかの SSH アプリを探しています…
 # No other SSH app with hosts was found here.
 tecba4271 = ホストを持つほかの SSH アプリは見つかりませんでした。
 
-# {n} host | {n} hosts
-t2489674e = ホスト { $n } 件
-
 # Import hosts
 t956d1e67 = ホストをインポート
 
@@ -1747,9 +1804,6 @@ tf375b5ad =
        *[other] { $n } 件選択中
     }
 
-# Clear
-t04a57fc2 = クリア
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = 追加するコマンドにチェックを入れてください。それぞれが自分のスニペットになります。
 
@@ -2049,9 +2103,6 @@ t29ccb392 = 表を削除
 
 # Untitled note
 t4ce277c4 = 無題のノート
-
-# Hosts
-tcf9aefb4 = ホスト
 
 # Recent
 t50e888fe = 最近使用
@@ -3154,11 +3205,8 @@ t36133970 = Cmd+click で追加・解除
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click で追加・解除
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] { $n } 件のホストを選択中
-    }
+# Give to AI…
+ta74a1e27 = AI に許可…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3879,9 +3927,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = 再開
-
-# Pause
-t44f9bf2d = 一時停止
 
 # Take access back
 td619baa7 = アクセスを取り消す

@@ -116,6 +116,10 @@ pub struct AiClient {
     /// Seconds since 1970.
     #[serde(default)]
     pub added_at: u64,
+    /// Stopped for now: its token still lets it in, but it may use no host
+    /// until the person resumes it. Its grants are kept as they are.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub paused: bool,
 }
 
 /// A host given to a client.
@@ -144,6 +148,10 @@ pub struct AiGrant {
     /// It may write files.
     #[serde(default)]
     pub write: bool,
+    /// Stopped for now, kept as it is to resume: the client may not use the
+    /// host meanwhile. Its time (`until`) runs on.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub paused: bool,
 }
 
 fn yes() -> bool {
@@ -304,5 +312,24 @@ mod ai_tests {
         .expect("json");
         let g = &s.grants[0];
         assert!(!g.run && g.read && g.write);
+    }
+
+    /// Nothing is paused unless saved so, and a pause is kept.
+    #[test]
+    fn a_pause_is_kept() {
+        let s: AiState = serde_json::from_str(
+            r#"{"clients": [{"id": "c", "kind": "stdio", "name": "C", "token_sha256": "ab"}],
+                "grants": [{"client": "c", "host": "web"}]}"#,
+        )
+        .expect("json");
+        assert!(!s.clients[0].paused && !s.grants[0].paused);
+        let mut paused = s.clone();
+        paused.clients[0].paused = true;
+        paused.grants[0].paused = true;
+        let back: AiState =
+            serde_json::from_str(&serde_json::to_string(&paused).expect("save")).expect("json");
+        assert_eq!(back, paused);
+        let plain = serde_json::to_string(&s).expect("save");
+        assert!(!plain.contains("paused"), "{plain}");
     }
 }

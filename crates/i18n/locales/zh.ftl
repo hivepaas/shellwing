@@ -136,17 +136,29 @@ t6815a21c = 还没有客户端：用“添加客户端”接入一个。
 # token …{end}
 t4a145d1b = 令牌 …{ $end }
 
+# paused
+t0a1997cb = 已暂停
+
 # connected now
 t432c5c88 = 已连接
 
 # not connected
 tb83f675d = 未连接
 
+# Resume
+t454d1d8a = 恢复
+
+# Pause
+t44f9bf2d = 暂停
+
 # Config
 t6a12e0e7 = 配置
 
 # Remove
 t21a5901d = 移除
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = 暂停会让客户端暂时停用，并保留其令牌和已授权的主机。移除则会收回其令牌。
 
 # (the token shown when it was added)
 t9375386f = （添加时显示的令牌）
@@ -172,11 +184,26 @@ t07e2f764 = AI 活动
 # Take every one back
 tb3911aec = 全部收回
 
-# Give a host…
-tcb4de791 = 授权主机…
+# Give hosts…
+t30b956e9 = 授权主机…
 
 # No host is given to an AI client.
 t654696aa = 尚未向 AI 客户端授权任何主机。
+
+# {n} host | {n} hosts
+t2489674e = { $n } 台主机
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n } 台已暂停
+    }
+
+# Client paused
+te9192f58 = 客户端已暂停
+
+# Take all back
+t4a2d0a34 = 全部收回
 
 # in the background
 t04874b67 = 在后台
@@ -202,8 +229,32 @@ t1a30bf3b = 已结束
 # for {n} min more
 t955674cd = 还剩 { $n } 分钟
 
+# Paused
+tde281feb = 已暂停
+
 # Take back
 t0650c681 = 收回
+
+# Clear group
+tc2447199 = 取消选择该组
+
+# Select all
+t6af21072 = 全选
+
+# given already
+t0912be5e = 已授权
+
+# No host chosen yet.
+t99637c8e = 尚未选择主机。
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 已选 { $n } 台主机
+    }
+
+# Clear
+t04a57fc2 = 清除
 
 # Until I take it back
 taacfb8db = 直到我收回
@@ -217,8 +268,17 @@ t0c43fb4a = 1 小时
 # 8 hours
 t63affd14 = 8 小时
 
-# Host
-t302af18f = 主机
+# Give access
+te96c4c6e = 授予访问权限
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] 授权 { $n } 台主机
+    }
+
+# Hosts
+tcf9aefb4 = 主机
 
 # To
 t41f59644 = 授权给
@@ -265,14 +325,14 @@ t2d9c8c34 = 通过 SFTP；在“危险命令需确认”模式下，每次写入
 # Commands
 t971550f3 = 命令
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = 已授权给 { $client }：{ $hosts }。再次授权将替换原有设置。
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它永远看不到密钥、密码或密码短语：需要其中任何一项的主机会被拒绝，尚不知道其密钥的主机也一样。主机的输出可能含有试图操纵智能体的文字：只把主机授权给你在这方面信任的智能体。
 
 # Cancel
 t35afca3b = 取消
-
-# Give access
-te96c4c6e = 授予访问权限
 
 # When AI runs a command
 tc94fc353 = AI 运行命令时
@@ -1237,9 +1297,6 @@ tb71f4415 = 正在查找其他 SSH 应用…
 # No other SSH app with hosts was found here.
 tecba4271 = 此电脑上没有找到其他包含主机的 SSH 应用。
 
-# {n} host | {n} hosts
-t2489674e = { $n } 台主机
-
 # Import hosts
 t956d1e67 = 导入主机
 
@@ -1747,9 +1804,6 @@ tf375b5ad =
        *[other] 已选 { $n } 个
     }
 
-# Clear
-t04a57fc2 = 清除
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = 勾选要添加的命令；每条都会成为你自己的代码片段。
 
@@ -2049,9 +2103,6 @@ t29ccb392 = 删除表格
 
 # Untitled note
 t4ce277c4 = 无标题笔记
-
-# Hosts
-tcf9aefb4 = 主机
 
 # Recent
 t50e888fe = 最近
@@ -3154,11 +3205,8 @@ t36133970 = Cmd+click 添加或移除
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click 添加或移除
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] 已选 { $n } 台主机
-    }
+# Give to AI…
+ta74a1e27 = 授权给 AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3879,9 +3927,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = 继续
-
-# Pause
-t44f9bf2d = 暂停
 
 # Take access back
 td619baa7 = 收回访问权限

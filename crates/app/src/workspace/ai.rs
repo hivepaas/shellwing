@@ -271,18 +271,37 @@ impl Workspace {
     }
 
     /// The hosts given to an AI client now, by spec: their tiles say so.
-    pub(super) fn ai_given(&self) -> BTreeSet<String> {
-        self.ai
-            .as_ref()
-            .map(|a| {
-                a.state
-                    .grants
-                    .iter()
-                    .filter(|g| g.until.is_none_or(|u| ai::now() < u))
-                    .map(|g| g.host.clone())
-                    .collect()
-            })
-            .unwrap_or_default()
+    /// The hosts given to an AI client, by spec: whether any of their grants
+    /// may be used now (false: each one paused, or its client).
+    pub(super) fn ai_given(&self) -> BTreeMap<String, bool> {
+        let mut given = BTreeMap::new();
+        if let Some(a) = &self.ai {
+            for g in a
+                .state
+                .grants
+                .iter()
+                .filter(|g| g.until.is_none_or(|u| ai::now() < u))
+            {
+                let client_paused = a.state.clients.iter().any(|c| c.id == g.client && c.paused);
+                *given.entry(g.host.clone()).or_insert(false) |= !g.paused && !client_paused;
+            }
+        }
+        given
+    }
+
+    /// Opens Settings › AI to give AI clients `hosts` (specs): the hosts
+    /// picked in the host list.
+    pub fn open_give(&mut self, hosts: Vec<String>, window: &mut Window, cx: &mut Context<Self>) {
+        self.open_settings(crate::settings_view::Page::Ai, window, cx);
+        self.sidebar.update(cx, |s, cx| s.clear_picked(cx));
+        let Some((view, _)) = &self.settings else {
+            return;
+        };
+        let view = view.clone();
+        // Once this update is done: the page reads the workspace.
+        window.defer(cx, move |window, cx| {
+            view.update(cx, |v, cx| v.give_hosts(hosts, window, cx));
+        });
     }
 }
 

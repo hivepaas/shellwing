@@ -46,10 +46,14 @@ td53111fb = Add client
 t278d359e = Which client?
 t6815a21c = No client yet: Add client lets one in.
 t4a145d1b = token …{ $end }
+t0a1997cb = paused
 t432c5c88 = connected now
 tb83f675d = not connected
+t454d1d8a = Resume
+t44f9bf2d = Pause
 t6a12e0e7 = Config
 t21a5901d = Remove
+t00a3399a = Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
 t9375386f = (the token shown when it was added)
 t658f3664 = Copy
 t6ebf1609 = The token shows this once: shellwing keeps only its hash. Remove takes it back.
@@ -58,8 +62,20 @@ t1ef9da69 = Hosts given
 t396f69c1 = A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
 t07e2f764 = AI activity
 tb3911aec = Take every one back
-tcb4de791 = Give a host…
+t30b956e9 = Give hosts…
 t654696aa = No host is given to an AI client.
+t2489674e =
+    { $n ->
+        [one] { $n } host
+       *[other] { $n } hosts
+    }
+t7fb84985 =
+    { $n ->
+        [one] { $n } paused
+       *[other] { $n } paused
+    }
+te9192f58 = Client paused
+t4a2d0a34 = Take all back
 t04874b67 = in the background
 t6bca7a6e = through a tab
 te3f10929 = reads files
@@ -68,12 +84,29 @@ t938960ff = while shellwing stays open
 tba10b16b = until taken back
 t1a30bf3b = ended
 t955674cd = for { $n } min more
+tde281feb = Paused
 t0650c681 = Take back
+tc2447199 = Clear group
+t6af21072 = Select all
+t0912be5e = given already
+t99637c8e = No host chosen yet.
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } host chosen
+       *[other] { $n } hosts chosen
+    }
+t04a57fc2 = Clear
 taacfb8db = Until I take it back
 tdb1d179f = While shellwing stays open
 t0c43fb4a = 1 hour
 t63affd14 = 8 hours
-t302af18f = Host
+te96c4c6e = Give access
+t58ec7fe6 =
+    { $n ->
+        [one] Give access to { $n } host
+       *[other] Give access to { $n } hosts
+    }
+tcf9aefb4 = Hosts
 t41f59644 = To
 t0f7e1b30 = For
 t644e442d = How
@@ -89,9 +122,9 @@ tf3b3e2e7 = list folders and read files, over SFTP
 tc9796e43 = Write files
 t2d9c8c34 = over SFTP; where risky ones wait, every write waits for you
 t971550f3 = Commands
+tebca595f = Given to { $client } already: { $hosts }. Giving them again replaces what they had.
 t7620726b = It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t35afca3b = Cancel
-te96c4c6e = Give access
 tc94fc353 = When AI runs a command
 t608375b2 = For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
 te371b0dd = Risky: a command with any of these, a line each, waits for you
@@ -425,11 +458,6 @@ t573e0af4 = Import
 tbb05fee9 = No hosts in it.
 tb71f4415 = Looking for other SSH apps…
 tecba4271 = No other SSH app with hosts was found here.
-t2489674e =
-    { $n ->
-        [one] { $n } host
-       *[other] { $n } hosts
-    }
 t956d1e67 = Import hosts
 td811df9d = Found on this computer
 t9e7f0266 = Or a file another app exported
@@ -628,7 +656,6 @@ tf375b5ad =
         [one] { $n } picked
        *[other] { $n } picked
     }
-t04a57fc2 = Clear
 t71ce4a51 = Tick the commands to add; each becomes a snippet of your own.
 t9489b24d =
     { $n ->
@@ -741,7 +768,6 @@ t33de1b52 = Delete row
 tea682d34 = Delete column
 t29ccb392 = Delete table
 t4ce277c4 = Untitled note
-tcf9aefb4 = Hosts
 t50e888fe = Recent
 t648fcbf7 = Snippets
 t273b1ccb = Environments
@@ -1131,11 +1157,7 @@ t62d7de84 = ACTIONS
 t81fb801a = What AI clients run
 t36133970 = Cmd+click to add or take away
 t47785603 = Ctrl+click to add or take away
-tf9b0b9a0 =
-    { $n ->
-        [one] { $n } host chosen
-       *[other] { $n } hosts chosen
-    }
+ta74a1e27 = Give to AI…
 t4ecd858a =
     { $n ->
         [one] Run on the { $n } host of { $group }
@@ -1448,7 +1470,6 @@ ta805a0f4 =
        *[other] { $client } is using this tab: { $n } commands so far.
     }
 t6f36d148 = Let it go on
-t44f9bf2d = Pause
 td619baa7 = Take access back
 t59edc3e9 = Config files · { $category }
 taf8f6d41 = placed: Enter places it again

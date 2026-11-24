@@ -136,17 +136,29 @@ t6815a21c = Chưa có client nào: Thêm client sẽ cho một client vào.
 # token …{end}
 t4a145d1b = token …{ $end }
 
+# paused
+t0a1997cb = đang tạm dừng
+
 # connected now
 t432c5c88 = đã kết nối
 
 # not connected
 tb83f675d = chưa kết nối
 
+# Resume
+t454d1d8a = Tiếp tục
+
+# Pause
+t44f9bf2d = Tạm dừng
+
 # Config
 t6a12e0e7 = Cấu hình
 
 # Remove
 t21a5901d = Gỡ
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Tạm dừng sẽ ngừng client trong lúc này, vẫn giữ token và các máy chủ đã cấp cho nó. Gỡ sẽ thu hồi token.
 
 # (the token shown when it was added)
 t9375386f = (token đã hiện khi thêm)
@@ -172,11 +184,26 @@ t07e2f764 = Hoạt động AI
 # Take every one back
 tb3911aec = Thu hồi tất cả
 
-# Give a host…
-tcb4de791 = Cấp một máy chủ…
+# Give hosts…
+t30b956e9 = Cấp máy chủ…
 
 # No host is given to an AI client.
 t654696aa = Không có máy chủ nào được cấp cho client AI.
+
+# {n} host | {n} hosts
+t2489674e = { $n } máy chủ
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n } đang tạm dừng
+    }
+
+# Client paused
+te9192f58 = Client đang tạm dừng
+
+# Take all back
+t4a2d0a34 = Thu hồi tất cả
 
 # in the background
 t04874b67 = chạy nền
@@ -202,8 +229,32 @@ t1a30bf3b = đã hết hạn
 # for {n} min more
 t955674cd = còn { $n } phút
 
+# Paused
+tde281feb = Đang tạm dừng
+
 # Take back
 t0650c681 = Thu hồi
+
+# Clear group
+tc2447199 = Bỏ chọn nhóm
+
+# Select all
+t6af21072 = Chọn tất cả
+
+# given already
+t0912be5e = đã cấp
+
+# No host chosen yet.
+t99637c8e = Chưa chọn máy chủ nào.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] Đã chọn { $n } máy chủ
+    }
+
+# Clear
+t04a57fc2 = Bỏ chọn
 
 # Until I take it back
 taacfb8db = Tới khi tôi thu hồi
@@ -217,8 +268,17 @@ t0c43fb4a = 1 giờ
 # 8 hours
 t63affd14 = 8 giờ
 
-# Host
-t302af18f = Máy chủ
+# Give access
+te96c4c6e = Cấp quyền
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] Cấp quyền cho { $n } máy chủ
+    }
+
+# Hosts
+tcf9aefb4 = Máy chủ
 
 # To
 t41f59644 = Cấp cho
@@ -265,14 +325,14 @@ t2d9c8c34 = qua SFTP; khi lệnh rủi ro phải chờ, mọi lần ghi đều c
 # Commands
 t971550f3 = Lệnh
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = Đã cấp cho { $client }: { $hosts }. Cấp lại sẽ thay thế quyền cũ của chúng.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
 
 # Cancel
 t35afca3b = Huỷ
-
-# Give access
-te96c4c6e = Cấp quyền
 
 # When AI runs a command
 tc94fc353 = Khi AI chạy lệnh
@@ -1237,9 +1297,6 @@ tb71f4415 = Đang tìm các app SSH khác…
 # No other SSH app with hosts was found here.
 tecba4271 = Không tìm thấy app SSH nào khác có máy chủ trên máy này.
 
-# {n} host | {n} hosts
-t2489674e = { $n } máy chủ
-
 # Import hosts
 t956d1e67 = Nhập máy chủ
 
@@ -1747,9 +1804,6 @@ tf375b5ad =
        *[other] Đã chọn { $n }
     }
 
-# Clear
-t04a57fc2 = Bỏ chọn
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Tick các lệnh muốn thêm; mỗi lệnh thành một đoạn lệnh của riêng bạn.
 
@@ -2049,9 +2103,6 @@ t29ccb392 = Xoá bảng
 
 # Untitled note
 t4ce277c4 = Ghi chú chưa đặt tên
-
-# Hosts
-tcf9aefb4 = Máy chủ
 
 # Recent
 t50e888fe = Gần đây
@@ -3154,11 +3205,8 @@ t36133970 = Cmd+click để thêm hoặc bỏ
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click để thêm hoặc bỏ
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] Đã chọn { $n } máy chủ
-    }
+# Give to AI…
+ta74a1e27 = Cấp cho AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3879,9 +3927,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Cho tiếp tục
-
-# Pause
-t44f9bf2d = Tạm dừng
 
 # Take access back
 td619baa7 = Thu hồi quyền
