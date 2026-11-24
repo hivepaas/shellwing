@@ -938,7 +938,7 @@ impl Render for AiView {
             .flex()
             .flex_col()
             .gap(px(26.))
-            .max_w(px(900.))
+            .max_w(px(1000.))
             .child(self.clients_part(&snap, cx))
             .child(self.grants_part(&snap, window, cx))
             .child(self.modes_part(&snap, window, cx))
