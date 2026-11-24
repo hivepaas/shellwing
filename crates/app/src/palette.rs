@@ -79,6 +79,8 @@ pub enum Action {
     NewGroup,
     /// A command or a script on many hosts, in a tab of its own.
     RunOnHosts,
+    /// What AI clients ran, and what waits for the person.
+    AiActivity,
     /// Hosts from another SSH app (docs/design/import.md).
     ImportHosts,
     /// Take out what the last import put in.

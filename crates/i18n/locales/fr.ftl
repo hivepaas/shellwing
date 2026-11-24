@@ -1,6 +1,78 @@
 # shellwing in fr. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+# t49268f5c =
+
+# running
+t147eb74c = en cours
+
+# exit 0
+tf83c441d = code de sortie 0
+
+# exit {code}
+te0c7c2fc = code de sortie { $code }
+
+# ended by a signal
+t450a0cd5 = terminé par un signal
+
+# did not run
+tf05d1c4a = non exécuté
+
+# stopped
+t6ee2f34e = arrêté
+
+# refused by you
+# t2fd484b3 =
+
+# All
+# t75afe364 =
+
+# Waiting for you
+# te8233afc =
+
+# Running
+# t452925ec =
+
+# Failed
+# t5579c3d4 =
+
+# No AI client has run a command yet.
+# td29d28d8 =
+
+# Nothing here.
+ta7006e9a = Rien ici.
+
+# Stop all AI
+# tddf9c9cc =
+
+# {client} · {host} · started {when} · {job}
+# tafbed557 =
+
+# {client} wants to run this on {host}. It waits for you, because {why}.
+# t21e55161 =
+
+# Run it
+# t72430853 =
+
+# Run it, and this command again this session
+# t2efebee7 =
+
+# Refuse
+t9bcada35 = Refuser
+
+# Stop
+t4b7f7705 = Arrêter
+
+# It printed nothing.
+# tbb876a9f =
+
+# Nothing printed yet.
+# t1051cbec =
+
+# Copy output
+t64749f61 = Copier la sortie
+
 # Run this once in a terminal:
 t2a18fdaf = Exécutez ceci une fois dans un terminal :
 
@@ -16,8 +88,29 @@ t0ff991db = Dans Cline, MCP Servers › Configure, ajoutez ceci à cline_mcp_set
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = Un client qui lance lui-même son serveur MCP, via stdio :
 
+# Run freely
+# t77cb7aab =
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+# t1bfe0ae2 =
+
+# Ask for risky ones
+# td43721d0 =
+
+# A command with words from the list below waits for you; the rest run.
+# t846e6005 =
+
+# Ask every time
+# t26ab736e =
+
+# Each command waits until you allow it, or allow it for the session.
+# tdcef213b =
+
 # Find a host
 t5f515591 = Cherchez un serveur
+
+# A command with these words waits
+# t1678b953 =
 
 # AI clients
 ta302119f = Clients AI
@@ -64,8 +157,11 @@ tf69e6847 = Le token n'est pas conservé, seulement son hachage : pour en revoir
 # Hosts given
 t1ef9da69 = Serveurs accordés
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = Un client n'atteint que ceux-ci. Ses commandes s'exécutent en arrière-plan, sur une connexion dédiée, et chacune est conservée dans un journal sur cet ordinateur.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+# t396f69c1 =
+
+# AI activity
+# t07e2f764 =
 
 # Take every one back
 tb3911aec = Tout retirer
@@ -112,6 +208,9 @@ t41f59644 = À
 # For
 t0f7e1b30 = Durée
 
+# Commands
+# t971550f3 =
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Il ne voit jamais de clé, de mot de passe ni de phrase secrète : un serveur qui en demanderait est refusé, tout comme un serveur dont la clé n'est pas encore connue. La sortie d'un serveur peut contenir des mots destinés à piloter un agent : n'accordez des serveurs qu'à un client à qui vous les confiez.
 
@@ -120,6 +219,18 @@ t35afca3b = Annuler
 
 # Give access
 te96c4c6e = Accorder l'accès
+
+# When AI runs a command
+# tc94fc353 =
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+# t608375b2 =
+
+# Risky: a command with any of these, a line each, waits for you
+# te371b0dd =
+
+# The usual list
+# tcc58d242 =
 
 # unlock its windows
 t7c69953e = déverrouiller ses fenêtres
@@ -286,9 +397,6 @@ tbc889b90 = absent du serveur ; déplacé dans Downloads sous le nom { $name }
 
 # Open
 t538b10e9 = Ouvrir
-
-# Stop
-t4b7f7705 = Arrêter
 
 # Discard
 t1e706c21 = Abandonner
@@ -2207,15 +2315,6 @@ t3b5e54ea = La sortie dépasse { $mb } Mo : le reste n'est pas conservé.
 # Open a tab
 t85019429 = Ouvrir un onglet
 
-# Copy output
-t64749f61 = Copier la sortie
-
-# exit {code}
-te0c7c2fc = code de sortie { $code }
-
-# ended by a signal
-t450a0cd5 = terminé par un signal
-
 # sudo did not take the password
 tb2c3fb01 = sudo n'a pas accepté le mot de passe
 
@@ -2227,9 +2326,6 @@ t7efff279 = non connecté
 
 # given up on
 t4eec5298 = abandonné
-
-# did not run
-tf05d1c4a = non exécuté
 
 # signing in
 t727e0a33 = authentification en cours
@@ -2245,15 +2341,6 @@ t73aeedd4 = omis
 
 # waiting
 teeda06a8 = en attente
-
-# running
-t147eb74c = en cours
-
-# stopped
-t6ee2f34e = arrêté
-
-# exit 0
-tf83c441d = code de sortie 0
 
 # sudo refused
 tdd8b1f54 = sudo refusé
@@ -2777,9 +2864,6 @@ tc1d15743 = Trouvé. Ses clés sont essayées en premier.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Introuvable (SSH_AUTH_SOCK n'est pas défini).
 
-# Refuse
-t9bcada35 = Refuser
-
 # Unknown host keys
 t2534790f = Clés de serveur inconnues
 
@@ -3056,6 +3140,9 @@ t05dcb762 = Une commande, de nombreux serveurs
 
 # ACTIONS
 t62d7de84 = ACTIONS
+
+# What AI clients run
+# t81fb801a =
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click pour ajouter ou retirer
@@ -3821,6 +3908,9 @@ t21a947cf = Fermer le volet
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Revenir en bas (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+# tc4369c9f =
 
 # Config files · {category}
 t59edc3e9 = Fichiers de configuration · { $category }
@@ -5031,9 +5121,6 @@ t3b2e2230 = { $name } est déposé sous { $path }.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = Si le coffre est synchronisé, il disparaît aussi de vos autres appareils.
-
-# Nothing here.
-ta7006e9a = Rien ici.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = Le dossier et tout son contenu sont supprimés sur { $host }.

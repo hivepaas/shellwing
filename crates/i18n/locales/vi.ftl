@@ -1,6 +1,78 @@
 # shellwing in Vietnamese. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+# t49268f5c =
+
+# running
+t147eb74c = đang chạy
+
+# exit 0
+tf83c441d = mã thoát 0
+
+# exit {code}
+te0c7c2fc = mã thoát { $code }
+
+# ended by a signal
+t450a0cd5 = bị dừng bởi tín hiệu
+
+# did not run
+tf05d1c4a = không chạy được
+
+# stopped
+t6ee2f34e = đã dừng
+
+# refused by you
+# t2fd484b3 =
+
+# All
+# t75afe364 =
+
+# Waiting for you
+# te8233afc =
+
+# Running
+# t452925ec =
+
+# Failed
+# t5579c3d4 =
+
+# No AI client has run a command yet.
+# td29d28d8 =
+
+# Nothing here.
+ta7006e9a = Không có gì ở đây.
+
+# Stop all AI
+# tddf9c9cc =
+
+# {client} · {host} · started {when} · {job}
+# tafbed557 =
+
+# {client} wants to run this on {host}. It waits for you, because {why}.
+# t21e55161 =
+
+# Run it
+# t72430853 =
+
+# Run it, and this command again this session
+# t2efebee7 =
+
+# Refuse
+t9bcada35 = Từ chối
+
+# Stop
+t4b7f7705 = Dừng
+
+# It printed nothing.
+# tbb876a9f =
+
+# Nothing printed yet.
+# t1051cbec =
+
+# Copy output
+t64749f61 = Sao chép đầu ra
+
 # Run this once in a terminal:
 t2a18fdaf = Chạy lệnh này một lần trong terminal:
 
@@ -16,8 +88,29 @@ t0ff991db = Trong Cline, MCP Servers › Configure, thêm đoạn này vào clin
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = Client tự khởi chạy MCP server của nó, qua stdio:
 
+# Run freely
+# t77cb7aab =
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+# t1bfe0ae2 =
+
+# Ask for risky ones
+# td43721d0 =
+
+# A command with words from the list below waits for you; the rest run.
+# t846e6005 =
+
+# Ask every time
+# t26ab736e =
+
+# Each command waits until you allow it, or allow it for the session.
+# tdcef213b =
+
 # Find a host
 t5f515591 = Tìm máy chủ
+
+# A command with these words waits
+# t1678b953 =
 
 # AI clients
 ta302119f = Client AI
@@ -64,8 +157,11 @@ tf69e6847 = Token không được giữ, chỉ giữ mã băm: muốn thấy l�
 # Hosts given
 t1ef9da69 = Máy chủ đã cấp
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = Client chỉ truy cập được các máy chủ này. Lệnh của nó chạy nền, trên kết nối riêng, và mỗi lệnh được ghi vào nhật ký trên máy tính này.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+# t396f69c1 =
+
+# AI activity
+# t07e2f764 =
 
 # Take every one back
 tb3911aec = Thu hồi tất cả
@@ -112,6 +208,9 @@ t41f59644 = Cấp cho
 # For
 t0f7e1b30 = Thời hạn
 
+# Commands
+# t971550f3 =
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
 
@@ -120,6 +219,18 @@ t35afca3b = Huỷ
 
 # Give access
 te96c4c6e = Cấp quyền
+
+# When AI runs a command
+# tc94fc353 =
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+# t608375b2 =
+
+# Risky: a command with any of these, a line each, waits for you
+# te371b0dd =
+
+# The usual list
+# tcc58d242 =
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó
@@ -282,9 +393,6 @@ tbc889b90 = không còn trên máy chủ; đã chuyển vào Downloads thành { 
 
 # Open
 t538b10e9 = Mở
-
-# Stop
-t4b7f7705 = Dừng
 
 # Discard
 t1e706c21 = Bỏ
@@ -2158,15 +2266,6 @@ t3b5e54ea = Đầu ra dài hơn { $mb } MB: phần còn lại không được gi
 # Open a tab
 t85019429 = Mở tab
 
-# Copy output
-t64749f61 = Sao chép đầu ra
-
-# exit {code}
-te0c7c2fc = mã thoát { $code }
-
-# ended by a signal
-t450a0cd5 = bị dừng bởi tín hiệu
-
 # sudo did not take the password
 tb2c3fb01 = sudo không nhận mật khẩu
 
@@ -2178,9 +2277,6 @@ t7efff279 = không kết nối được
 
 # given up on
 t4eec5298 = hết giờ
-
-# did not run
-tf05d1c4a = không chạy được
 
 # signing in
 t727e0a33 = đang đăng nhập
@@ -2196,15 +2292,6 @@ t73aeedd4 = đã bỏ ra
 
 # waiting
 teeda06a8 = đang chờ
-
-# running
-t147eb74c = đang chạy
-
-# stopped
-t6ee2f34e = đã dừng
-
-# exit 0
-tf83c441d = mã thoát 0
 
 # sudo refused
 tdd8b1f54 = sudo đã từ chối
@@ -2728,9 +2815,6 @@ tc1d15743 = Đã tìm thấy. Các khoá của nó được thử trước.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = Không tìm thấy (chưa đặt SSH_AUTH_SOCK).
 
-# Refuse
-t9bcada35 = Từ chối
-
 # Unknown host keys
 t2534790f = Khoá máy chủ chưa biết
 
@@ -3003,6 +3087,9 @@ t05dcb762 = Một lệnh, nhiều máy chủ
 
 # ACTIONS
 t62d7de84 = THAO TÁC
+
+# What AI clients run
+# t81fb801a =
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click để thêm hoặc bỏ
@@ -3720,6 +3807,9 @@ t21a947cf = Đóng khung
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ Về cuối (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+# tc4369c9f =
 
 # Config files · {category}
 t59edc3e9 = Tệp cấu hình · { $category }
@@ -4887,9 +4977,6 @@ t3b2e2230 = { $name } nằm ở { $path }.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = Nếu kho đang đồng bộ, nó cũng bị xoá khỏi các thiết bị khác của bạn.
-
-# Nothing here.
-ta7006e9a = Không có gì ở đây.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = Thư mục và mọi thứ bên trong sẽ bị xoá trên { $host }.

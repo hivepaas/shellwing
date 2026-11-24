@@ -1,6 +1,78 @@
 # shellwing in ko. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+# t49268f5c =
+
+# running
+t147eb74c = 실행 중
+
+# exit 0
+tf83c441d = 종료 코드 0
+
+# exit {code}
+te0c7c2fc = 종료 코드 { $code }
+
+# ended by a signal
+t450a0cd5 = 시그널로 종료됨
+
+# did not run
+tf05d1c4a = 실행 안 됨
+
+# stopped
+t6ee2f34e = 중지됨
+
+# refused by you
+# t2fd484b3 =
+
+# All
+# t75afe364 =
+
+# Waiting for you
+# te8233afc =
+
+# Running
+# t452925ec =
+
+# Failed
+# t5579c3d4 =
+
+# No AI client has run a command yet.
+# td29d28d8 =
+
+# Nothing here.
+ta7006e9a = 아무것도 없습니다.
+
+# Stop all AI
+# tddf9c9cc =
+
+# {client} · {host} · started {when} · {job}
+# tafbed557 =
+
+# {client} wants to run this on {host}. It waits for you, because {why}.
+# t21e55161 =
+
+# Run it
+# t72430853 =
+
+# Run it, and this command again this session
+# t2efebee7 =
+
+# Refuse
+t9bcada35 = 거부
+
+# Stop
+t4b7f7705 = 중지
+
+# It printed nothing.
+# tbb876a9f =
+
+# Nothing printed yet.
+# t1051cbec =
+
+# Copy output
+t64749f61 = 출력 복사
+
 # Run this once in a terminal:
 t2a18fdaf = 터미널에서 다음을 한 번 실행하세요:
 
@@ -16,8 +88,29 @@ t0ff991db = Cline의 MCP Servers › Configure에서 cline_mcp_settings.json에 
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = MCP 서버를 직접 시작하는 클라이언트(stdio 사용):
 
+# Run freely
+# t77cb7aab =
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+# t1bfe0ae2 =
+
+# Ask for risky ones
+# td43721d0 =
+
+# A command with words from the list below waits for you; the rest run.
+# t846e6005 =
+
+# Ask every time
+# t26ab736e =
+
+# Each command waits until you allow it, or allow it for the session.
+# tdcef213b =
+
 # Find a host
 t5f515591 = 호스트 찾기
+
+# A command with these words waits
+# t1678b953 =
 
 # AI clients
 ta302119f = AI 클라이언트
@@ -64,8 +157,11 @@ tf69e6847 = 토큰은 보관되지 않고 해시만 남습니다. 다시 보려�
 # Hosts given
 t1ef9da69 = 허용된 호스트
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = 클라이언트는 이 호스트에만 접근할 수 있습니다. 명령은 별도의 연결에서 백그라운드로 실행되며, 각각 이 컴퓨터의 로그에 기록됩니다.
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+# t396f69c1 =
+
+# AI activity
+# t07e2f764 =
 
 # Take every one back
 tb3911aec = 모두 회수
@@ -112,6 +208,9 @@ t41f59644 = 대상
 # For
 t0f7e1b30 = 기간
 
+# Commands
+# t971550f3 =
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
 
@@ -120,6 +219,18 @@ t35afca3b = 취소
 
 # Give access
 te96c4c6e = 접근 허용
+
+# When AI runs a command
+# tc94fc353 =
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+# t608375b2 =
+
+# Risky: a command with any of these, a line each, waits for you
+# te371b0dd =
+
+# The usual list
+# tcc58d242 =
 
 # unlock its windows
 t7c69953e = 창 잠금 해제
@@ -282,9 +393,6 @@ tbc889b90 = 서버에 없음: Downloads에 { $name }(으)로 옮김
 
 # Open
 t538b10e9 = 열기
-
-# Stop
-t4b7f7705 = 중지
 
 # Discard
 t1e706c21 = 버리기
@@ -2158,15 +2266,6 @@ t3b5e54ea = { $mb }MB 넘게 출력하여 나머지는 보관하지 않습니다
 # Open a tab
 t85019429 = 탭 열기
 
-# Copy output
-t64749f61 = 출력 복사
-
-# exit {code}
-te0c7c2fc = 종료 코드 { $code }
-
-# ended by a signal
-t450a0cd5 = 시그널로 종료됨
-
 # sudo did not take the password
 tb2c3fb01 = sudo가 비밀번호를 받아들이지 않았습니다
 
@@ -2178,9 +2277,6 @@ t7efff279 = 연결 실패
 
 # given up on
 t4eec5298 = 중단됨
-
-# did not run
-tf05d1c4a = 실행 안 됨
 
 # signing in
 t727e0a33 = 로그인 중
@@ -2196,15 +2292,6 @@ t73aeedd4 = 제외됨
 
 # waiting
 teeda06a8 = 대기 중
-
-# running
-t147eb74c = 실행 중
-
-# stopped
-t6ee2f34e = 중지됨
-
-# exit 0
-tf83c441d = 종료 코드 0
 
 # sudo refused
 tdd8b1f54 = sudo 거부
@@ -2728,9 +2815,6 @@ tc1d15743 = 찾았습니다. 에이전트의 키를 먼저 시도합니다.
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = 찾을 수 없습니다(SSH_AUTH_SOCK이 설정되지 않음).
 
-# Refuse
-t9bcada35 = 거부
-
 # Unknown host keys
 t2534790f = 알 수 없는 호스트 키
 
@@ -3003,6 +3087,9 @@ t05dcb762 = 명령 하나, 여러 호스트
 
 # ACTIONS
 t62d7de84 = 작업
+
+# What AI clients run
+# t81fb801a =
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click으로 추가 또는 제외
@@ -3720,6 +3807,9 @@ t21a947cf = 창 닫기
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 맨 아래로 (Shift+End)
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+# tc4369c9f =
 
 # Config files · {category}
 t59edc3e9 = 설정 파일 · { $category }
@@ -4887,9 +4977,6 @@ t3b2e2230 = { $name }이(가) { $path }에 있습니다.
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = 보관함을 동기화하고 있다면 다른 기기에서도 삭제됩니다.
-
-# Nothing here.
-ta7006e9a = 아무것도 없습니다.
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = { $host }에서 폴더와 그 안의 모든 항목이 삭제됩니다.

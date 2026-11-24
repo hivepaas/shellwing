@@ -45,6 +45,61 @@ pub struct AiState {
     /// What a new grant does with a command.
     #[serde(default)]
     pub default_mode: AiMode,
+    /// What makes a command risky, for grants that ask for risky ones: a
+    /// line each, its words in a row in the command (`rm -rf`); a word
+    /// ending in `/` begins one (`/etc/`). None: [`DEFAULT_RISKY`].
+    #[serde(default)]
+    pub risky: Option<Vec<String>>,
+}
+
+/// What makes a command risky when the person has said nothing.
+pub const DEFAULT_RISKY: &[&str] = &[
+    "rm -rf",
+    "rm -fr",
+    "rm -r",
+    "dd",
+    "mkfs",
+    "fdisk",
+    "parted",
+    "wipefs",
+    "shutdown",
+    "reboot",
+    "halt",
+    "poweroff",
+    "systemctl stop",
+    "systemctl disable",
+    "systemctl mask",
+    "iptables",
+    "nft",
+    "ufw",
+    "kill -9",
+    "killall",
+    "pkill",
+    "chmod -R",
+    "chown -R",
+    "userdel",
+    "passwd",
+    "crontab -r",
+    "drop",
+    "truncate",
+    "delete from",
+    "docker rm",
+    "docker system prune",
+    "kubectl delete",
+    "terraform destroy",
+    "git push --force",
+    "git reset --hard",
+    "> /etc/",
+    "> /dev/",
+];
+
+impl AiState {
+    /// What makes a command risky now.
+    pub fn risky(&self) -> Vec<String> {
+        self.risky
+            .clone()
+            .unwrap_or_else(|| DEFAULT_RISKY.iter().map(|s| s.to_string()).collect())
+    }
 }
 
 /// An AI client let in: by the SHA-256 of its token, never the token.

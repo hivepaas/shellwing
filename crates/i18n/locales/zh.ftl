@@ -1,6 +1,78 @@
 # shellwing in zh. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+# t49268f5c =
+
+# running
+t147eb74c = 正在运行
+
+# exit 0
+tf83c441d = 退出码 0
+
+# exit {code}
+te0c7c2fc = 退出码 { $code }
+
+# ended by a signal
+t450a0cd5 = 被信号终止
+
+# did not run
+tf05d1c4a = 未运行
+
+# stopped
+t6ee2f34e = 已停止
+
+# refused by you
+# t2fd484b3 =
+
+# All
+# t75afe364 =
+
+# Waiting for you
+# te8233afc =
+
+# Running
+# t452925ec =
+
+# Failed
+# t5579c3d4 =
+
+# No AI client has run a command yet.
+# td29d28d8 =
+
+# Nothing here.
+ta7006e9a = 这里什么都没有。
+
+# Stop all AI
+# tddf9c9cc =
+
+# {client} · {host} · started {when} · {job}
+# tafbed557 =
+
+# {client} wants to run this on {host}. It waits for you, because {why}.
+# t21e55161 =
+
+# Run it
+# t72430853 =
+
+# Run it, and this command again this session
+# t2efebee7 =
+
+# Refuse
+t9bcada35 = 拒绝
+
+# Stop
+t4b7f7705 = 停止
+
+# It printed nothing.
+# tbb876a9f =
+
+# Nothing printed yet.
+# t1051cbec =
+
+# Copy output
+t64749f61 = 复制输出
+
 # Run this once in a terminal:
 t2a18fdaf = 在终端中运行一次以下命令：
 
@@ -16,8 +88,29 @@ t0ff991db = 在 Cline 的 MCP Servers › Configure 中，将以下内容添加�
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = 自行启动 MCP 服务器的客户端，通过 stdio：
 
+# Run freely
+# t77cb7aab =
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+# t1bfe0ae2 =
+
+# Ask for risky ones
+# td43721d0 =
+
+# A command with words from the list below waits for you; the rest run.
+# t846e6005 =
+
+# Ask every time
+# t26ab736e =
+
+# Each command waits until you allow it, or allow it for the session.
+# tdcef213b =
+
 # Find a host
 t5f515591 = 查找主机
+
+# A command with these words waits
+# t1678b953 =
 
 # AI clients
 ta302119f = AI 客户端
@@ -64,8 +157,11 @@ tf69e6847 = 令牌不会被保存，只保存其哈希值：要再次查看，�
 # Hosts given
 t1ef9da69 = 已授权的主机
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = 客户端只能访问这些主机。它的命令在后台通过独立的连接运行，每条命令都会记录在此计算机上的日志中。
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+# t396f69c1 =
+
+# AI activity
+# t07e2f764 =
 
 # Take every one back
 tb3911aec = 全部收回
@@ -112,6 +208,9 @@ t41f59644 = 授权给
 # For
 t0f7e1b30 = 期限
 
+# Commands
+# t971550f3 =
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它永远看不到密钥、密码或密码短语：需要其中任何一项的主机会被拒绝，尚不知道其密钥的主机也一样。主机的输出可能含有试图操纵智能体的文字：只把主机授权给你在这方面信任的智能体。
 
@@ -120,6 +219,18 @@ t35afca3b = 取消
 
 # Give access
 te96c4c6e = 授予访问权限
+
+# When AI runs a command
+# tc94fc353 =
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+# t608375b2 =
+
+# Risky: a command with any of these, a line each, waits for you
+# te371b0dd =
+
+# The usual list
+# tcc58d242 =
 
 # unlock its windows
 t7c69953e = 解锁其窗口
@@ -282,9 +393,6 @@ tbc889b90 = 服务器上已不存在；已作为 { $name } 移至 Downloads
 
 # Open
 t538b10e9 = 打开
-
-# Stop
-t4b7f7705 = 停止
 
 # Discard
 t1e706c21 = 放弃
@@ -2158,15 +2266,6 @@ t3b5e54ea = 输出超过 { $mb } MB：其余部分不会保留。
 # Open a tab
 t85019429 = 打开标签页
 
-# Copy output
-t64749f61 = 复制输出
-
-# exit {code}
-te0c7c2fc = 退出码 { $code }
-
-# ended by a signal
-t450a0cd5 = 被信号终止
-
 # sudo did not take the password
 tb2c3fb01 = sudo 未接受密码
 
@@ -2178,9 +2277,6 @@ t7efff279 = 未能连接
 
 # given up on
 t4eec5298 = 已放弃
-
-# did not run
-tf05d1c4a = 未运行
 
 # signing in
 t727e0a33 = 正在登录
@@ -2196,15 +2292,6 @@ t73aeedd4 = 已排除
 
 # waiting
 teeda06a8 = 等待中
-
-# running
-t147eb74c = 正在运行
-
-# stopped
-t6ee2f34e = 已停止
-
-# exit 0
-tf83c441d = 退出码 0
 
 # sudo refused
 tdd8b1f54 = sudo 拒绝
@@ -2728,9 +2815,6 @@ tc1d15743 = 已找到。会优先尝试其中的密钥。
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = 未找到（未设置 SSH_AUTH_SOCK）。
 
-# Refuse
-t9bcada35 = 拒绝
-
 # Unknown host keys
 t2534790f = 未知主机密钥
 
@@ -3003,6 +3087,9 @@ t05dcb762 = 一条命令，多台主机
 
 # ACTIONS
 t62d7de84 = 操作
+
+# What AI clients run
+# t81fb801a =
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click 添加或移除
@@ -3720,6 +3807,9 @@ t21a947cf = 关闭窗格
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 回到底部（Shift+End）
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+# tc4369c9f =
 
 # Config files · {category}
 t59edc3e9 = 配置文件 · { $category }
@@ -4887,9 +4977,6 @@ t3b2e2230 = { $name } 已放置到 { $path }。
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = 如果保险库正在同步，它也会从你的其他设备上删除。
-
-# Nothing here.
-ta7006e9a = 这里什么都没有。
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = 将删除 { $host } 上的此文件夹及其中的所有内容。

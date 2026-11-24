@@ -16,7 +16,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use shellwing_config::{AiClient, AiGrant, AiHow, AiState};
+use shellwing_config::{AiClient, AiGrant, AiHow, AiMode, AiState};
 use shellwing_ssh::config::Resolved;
 use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Secrets};
 use tokio::runtime::Handle;
@@ -86,6 +86,10 @@ pub struct Activity {
     /// What it printed, the first [`LOGGED`] bytes of it once logged.
     #[serde(default)]
     pub output: String,
+    /// It waits for the person to allow it: why it asks (the risky words
+    /// it has, or that its grant asks for every command).
+    #[serde(default)]
+    pub waiting: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,6 +101,8 @@ pub enum End {
     Failed(String),
     /// Stopped, by the AI or the person.
     Stopped,
+    /// The person would not have it run.
+    Refused,
 }
 
 impl End {
@@ -111,6 +117,7 @@ impl End {
             End::Exited(None) => "ended by a signal".into(),
             End::Failed(why) => format!("did not run: {why}"),
             End::Stopped => "stopped".into(),
+            End::Refused => "refused by the user, who would not have it run".into(),
         }
     }
 }
@@ -134,6 +141,18 @@ pub struct Job {
     state: Mutex<JobState>,
     changed: Notify,
     task: Mutex<Option<AbortHandle>>,
+    /// While it waits for the person: where their answer goes.
+    asking: Mutex<Option<tokio::sync::oneshot::Sender<Approval>>>,
+}
+
+/// The person's answer to a command that waits for them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Approval {
+    /// This time.
+    Once,
+    /// This command, from this client on this host, until shellwing quits.
+    Session,
+    Refuse,
 }
 
 struct JobState {
@@ -153,6 +172,8 @@ pub struct Said {
     pub seconds: u64,
     /// It printed more than [`KEEP`]: the rest was not kept.
     pub cut: bool,
+    /// It waits for the person to allow it.
+    pub waiting: bool,
 }
 
 impl Job {
@@ -172,6 +193,7 @@ impl Job {
                     ended: None,
                     end: None,
                     output: String::new(),
+                    waiting: None,
                 },
                 out: vec![],
                 cut: false,
@@ -179,7 +201,21 @@ impl Job {
             }),
             changed: Notify::new(),
             task: Mutex::new(None),
+            asking: Mutex::new(None),
         }
+    }
+
+    pub fn waiting(&self) -> bool {
+        self.state
+            .lock()
+            .is_ok_and(|s| s.activity.waiting.is_some())
+    }
+
+    fn set_waiting(&self, why: Option<String>) {
+        if let Ok(mut st) = self.state.lock() {
+            st.activity.waiting = why;
+        }
+        self.changed.notify_waiters();
     }
 
     pub fn activity(&self) -> Activity {
@@ -241,6 +277,7 @@ impl Job {
                 end: Some(End::Failed("lost".into())),
                 seconds: 0,
                 cut: false,
+                waiting: false,
             };
         };
         let ended = st.activity.end.is_some();
@@ -257,6 +294,7 @@ impl Job {
             end: st.activity.end.clone(),
             seconds: self.began.elapsed().as_secs(),
             cut: st.cut,
+            waiting: st.activity.waiting.is_some(),
         }
     }
 
@@ -264,6 +302,7 @@ impl Job {
         if let Some(t) = self.task.lock().ok().and_then(|mut t| t.take()) {
             t.abort();
         }
+        self.set_waiting(None);
         self.end(End::Stopped);
     }
 }
@@ -279,6 +318,8 @@ struct Inner {
     slots: BTreeMap<String, Slot>,
     next: u64,
     activity: Vec<Activity>,
+    /// Commands the person allowed for the session: client, host, command.
+    allowed: Vec<(String, String, String)>,
 }
 
 /// The MCP server's side in the app: who may reach what, and the work.
@@ -324,6 +365,7 @@ impl Hub {
                 slots: BTreeMap::new(),
                 next: 1,
                 activity,
+                allowed: vec![],
             }),
             events,
         })
@@ -427,8 +469,19 @@ impl Hub {
                 .map(|h| h.target.clone())
                 .ok_or_else(|| format!("{host} is no longer in the host list"))?
         }?;
-        let (job, slot) = {
+        let (job, slot, asks) = {
             let mut inner = self.inner.lock().map_err(|_| "busy".to_string())?;
+            let allowed = inner
+                .allowed
+                .iter()
+                .any(|(c, h, cmd)| *c == client.id && *h == g.spec && cmd == command);
+            let asks = match g.grant.mode {
+                _ if allowed => None,
+                AiMode::Free => None,
+                AiMode::Ask => Some("its grant asks for every command".to_string()),
+                AiMode::Risky => risky(command, &inner.state.risky())
+                    .map(|w| format!("it has {w}, which is on the risky list")),
+            };
             let id = format!("j-{}", inner.next);
             inner.next += 1;
             let job = Arc::new(Job::new(id.clone(), client, &g.spec, &g.name, command));
@@ -447,12 +500,40 @@ impl Hub {
                 }
             }
             let slot = inner.slots.entry(g.spec.clone()).or_default().clone();
-            (job, slot)
+            (job, slot, asks)
         };
+        let answer = asks.map(|why| {
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            if let Ok(mut a) = job.asking.lock() {
+                *a = Some(tx);
+            }
+            job.set_waiting(Some(why));
+            rx
+        });
         let _ = self.events.try_send(HubEvent::Changed(job.activity()));
         let options = self.options(target);
         let (hub, running, command) = (self.clone(), job.clone(), command.to_string());
+        let (client_id, spec) = (client.id.clone(), g.spec.clone());
         let task = self.rt.spawn(async move {
+            // It waits for the person first, when it must.
+            if let Some(answer) = answer {
+                let said = answer.await.unwrap_or(Approval::Refuse);
+                running.set_waiting(None);
+                match said {
+                    Approval::Refuse => {
+                        running.end(End::Refused);
+                        hub.ended(&running);
+                        return;
+                    }
+                    Approval::Session => {
+                        if let Ok(mut inner) = hub.inner.lock() {
+                            inner.allowed.push((client_id, spec, command.clone()));
+                        }
+                    }
+                    Approval::Once => {}
+                }
+                let _ = hub.events.try_send(HubEvent::Changed(running.activity()));
+            }
             let connection = {
                 let mut slot = slot.lock().await;
                 match slot.clone() {
@@ -502,6 +583,23 @@ impl Hub {
             *t = Some(task.abort_handle());
         }
         Ok(job)
+    }
+
+    /// The person's answer to job `id`, which waits for them.
+    pub fn answer(&self, id: &str, approval: Approval) {
+        let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
+        if let Some(tx) = job.and_then(|j| j.asking.lock().ok().and_then(|mut a| a.take())) {
+            let _ = tx.send(approval);
+        }
+    }
+
+    /// Stops job `id`, whoever's it is: the person's Stop.
+    pub fn stop(&self, id: &str) {
+        let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
+        if let Some(j) = job.filter(|j| !j.ended()) {
+            j.stop();
+            self.ended(&j);
+        }
     }
 
     /// `client`'s job `id`.
@@ -602,6 +700,28 @@ impl Hub {
             term: "dumb".into(),
         }
     }
+}
+
+/// The words of `patterns` that make `command` risky: the first whose
+/// words come in a row in it, case aside; a word of a pattern ending in
+/// `/` begins one of the command's.
+pub fn risky(command: &str, patterns: &[String]) -> Option<String> {
+    let words: Vec<String> = command
+        .split(|c: char| c.is_whitespace() || ";&|()`".contains(c))
+        .filter(|w| !w.is_empty())
+        .map(|w| w.trim_matches(|c| c == '"' || c == '\'').to_lowercase())
+        .collect();
+    patterns.iter().find_map(|p| {
+        let want: Vec<String> = p.split_whitespace().map(str::to_lowercase).collect();
+        if want.is_empty() || want.len() > words.len() {
+            return None;
+        }
+        let fits = |w: &str, p: &str| w == p || (p.ends_with('/') && w.starts_with(p));
+        words
+            .windows(want.len())
+            .any(|win| win.iter().zip(&want).all(|(w, p)| fits(w, p)))
+            .then(|| p.trim().to_string())
+    })
 }
 
 /// Whether a grant holds now.
@@ -710,6 +830,42 @@ mod tests {
     }
 
     #[test]
+    fn what_makes_a_command_risky() {
+        let p = shellwing_config::AiState::default().risky();
+        assert_eq!(
+            risky("sudo rm -rf /var/cache/app", &p).as_deref(),
+            Some("rm -rf")
+        );
+        assert_eq!(risky("cd /x && RM -RF tmp", &p).as_deref(), Some("rm -rf"));
+        assert_eq!(risky("echo hi > /etc/motd", &p).as_deref(), Some("> /etc/"));
+        assert_eq!(risky("psql -c 'DROP TABLE x'", &p).as_deref(), Some("drop"));
+        assert_eq!(
+            risky("sudo systemctl stop nginx", &p).as_deref(),
+            Some("systemctl stop")
+        );
+        assert_eq!(risky("df -h / && free -m", &p), None);
+        assert_eq!(
+            risky("cat ddrescue.log", &p),
+            None,
+            "dd is a word, not a part of one"
+        );
+        assert_eq!(risky("systemctl status nginx", &p), None);
+        assert_eq!(risky("anything", &[]), None);
+    }
+
+    #[tokio::test]
+    async fn a_job_that_waits_says_so() {
+        let job = Job::new("j-1".into(), &client(), "web", "web", "x");
+        job.set_waiting(Some("it asks".into()));
+        let s = job.wait(Duration::from_millis(20), true).await;
+        assert!(s.waiting && s.end.is_none());
+        job.set_waiting(None);
+        job.end(End::Refused);
+        let s = job.wait(Duration::from_millis(20), true).await;
+        assert_eq!((s.waiting, s.end), (false, Some(End::Refused)));
+    }
+
+    #[test]
     fn the_log_keeps_the_last_ones() {
         let dir = std::env::temp_dir().join(format!("shellwing-ai-log-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -726,6 +882,7 @@ mod tests {
                     ended: Some(0),
                     end: Some(End::Exited(Some(0))),
                     output: String::new(),
+                    waiting: None,
                 },
             );
         }

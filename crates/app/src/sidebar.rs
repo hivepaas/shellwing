@@ -277,6 +277,9 @@ pub struct Sidebar {
     picked: Vec<String>,
     /// What is folded: Actions, and sections by [`Section::key`].
     folds: shellwing_config::SidebarState,
+    /// AI activity, among Actions once a client is let in: the commands
+    /// waiting for the person.
+    ai: Option<usize>,
 }
 
 /// What marks a host given to an AI client: the same violet in every
@@ -374,6 +377,7 @@ impl Sidebar {
             hovered_group: None,
             picked: vec![],
             folds: Default::default(),
+            ai: None,
             filter,
             collapsed: false,
             menu: None,
@@ -821,6 +825,14 @@ impl Section {
 }
 
 impl Sidebar {
+    /// AI activity among Actions (Some: how many wait), or not.
+    pub fn set_ai(&mut self, ai: Option<usize>, cx: &mut Context<Self>) {
+        if self.ai != ai {
+            self.ai = ai;
+            cx.notify();
+        }
+    }
+
     /// What was folded when the app last ran.
     pub fn set_folds(&mut self, folds: shellwing_config::SidebarState, cx: &mut Context<Self>) {
         self.folds = folds;
@@ -904,7 +916,23 @@ impl Sidebar {
                     .font_weight(FontWeight::SEMIBOLD)
                     .text_color(rgb(colors().muted))
                     .on_click(move |_, _, cx| Sidebar::toggle_fold(&me, None, cx))
-                    .child(tr!("ACTIONS"))
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(6.))
+                            .child(tr!("ACTIONS"))
+                            .when(!open && self.ai.is_some_and(|n| n > 0), |d| {
+                                d.child(
+                                    div()
+                                        .px(px(5.))
+                                        .rounded_full()
+                                        .bg(rgb(colors().amber))
+                                        .text_color(rgb(colors().on_amber))
+                                        .child(self.ai.unwrap_or(0).to_string()),
+                                )
+                            }),
+                    )
                     .child(
                         svg()
                             .path(if open {
@@ -953,6 +981,68 @@ impl Sidebar {
                                         .child(tr!("One command, many hosts")),
                                 ),
                         ),
+                )
+            })
+            .when_some(self.ai.filter(|_| open), |d, waiting| {
+                let ws = self.workspace.clone();
+                d.child(
+                    div()
+                        .id("action-ai")
+                        .debug_selector(|| "action-ai".into())
+                        .flex()
+                        .items_center()
+                        .gap(px(ROW_GAP))
+                        .h(px(ROW_HEIGHT))
+                        .pl(px(ROW_PAD))
+                        .pr(px(10.))
+                        .mx(px(ROW_MARGIN))
+                        .rounded_md()
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(move |_, window, cx| {
+                            let _ = ws.update(cx, |ws, cx| ws.open_activity(window, cx));
+                        })
+                        .child(host_tile(
+                            Some(&host_icons::AI),
+                            "",
+                            None,
+                            None,
+                            TILE,
+                            colors().panel,
+                            false,
+                        ))
+                        .child(
+                            div()
+                                .flex_1()
+                                .flex()
+                                .flex_col()
+                                .min_w_0()
+                                .child(
+                                    div()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(rgb(colors().text))
+                                        .child(tr!("AI activity")),
+                                )
+                                .child(
+                                    div()
+                                        .text_xs()
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("What AI clients run")),
+                                ),
+                        )
+                        .when(waiting > 0, |d| {
+                            d.child(
+                                div()
+                                    .debug_selector(|| "ai-waiting".into())
+                                    .px(px(6.))
+                                    .rounded_full()
+                                    .bg(rgb(colors().amber))
+                                    .text_color(rgb(colors().on_amber))
+                                    .text_xs()
+                                    .font_weight(FontWeight::BOLD)
+                                    .child(waiting.to_string()),
+                            )
+                        }),
                 )
             })
     }

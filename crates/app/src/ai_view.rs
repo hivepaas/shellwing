@@ -5,9 +5,9 @@
 use std::collections::BTreeSet;
 
 use gpui::{
-    App, ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, InteractiveElement,
-    IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement, Styled,
-    WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
+    App, AppContext, ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight,
+    InteractiveElement, IntoElement, ParentElement, Render, SharedString,
+    StatefulInteractiveElement, Styled, WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
 };
 use serde_json::json;
 use shellwing_config::{AiClient, AiGrant, AiHow, AiMode, AiState};
@@ -144,7 +144,28 @@ struct Giving {
     host: Option<String>,
     client: Option<String>,
     until: Until,
+    mode: AiMode,
 }
+
+/// A mode's name, and what it does.
+fn mode_text(mode: AiMode) -> (String, String) {
+    match mode {
+        AiMode::Free => (
+            tr!("Run freely"),
+            tr!("Commands run at once. Each is kept in AI activity, as it runs."),
+        ),
+        AiMode::Risky => (
+            tr!("Ask for risky ones"),
+            tr!("A command with words from the list below waits for you; the rest run."),
+        ),
+        AiMode::Ask => (
+            tr!("Ask every time"),
+            tr!("Each command waits until you allow it, or allow it for the session."),
+        ),
+    }
+}
+
+const MODES: [AiMode; 3] = [AiMode::Free, AiMode::Risky, AiMode::Ask];
 
 pub struct AiView {
     workspace: WeakEntity<Workspace>,
@@ -157,6 +178,8 @@ pub struct AiView {
     showing: Option<String>,
     giving: Option<Giving>,
     filter: Entity<TextInput>,
+    /// The risky list, a line each.
+    risky: Entity<TextInput>,
     mono: SharedString,
 }
 
@@ -171,6 +194,35 @@ impl AiView {
         let filter = crate::input::said(cx, || tr!("Find a host"));
         cx.subscribe(&filter, |_, _, _: &Changed, cx| cx.notify())
             .detach();
+        let words = workspace
+            .upgrade()
+            .map(|w| w.read(cx).ai_snapshot(cx).state.risky())
+            .unwrap_or_default()
+            .join("\n");
+        let risky = cx.new(|cx| {
+            let mut i =
+                TextInput::said(|| tr!("A command with these words waits"), cx).multiline(4, 10);
+            i.set_text(&words, 0..0, cx);
+            i
+        });
+        // Kept as it is typed: a line each, the empty ones left out.
+        cx.subscribe(&risky, |v: &mut AiView, input, _: &Changed, cx| {
+            let lines: Vec<String> = input
+                .read(cx)
+                .text()
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .map(str::to_string)
+                .collect();
+            // The usual list is kept as such, so it follows the app's.
+            let usual = lines
+                .iter()
+                .map(String::as_str)
+                .eq(shellwing_config::DEFAULT_RISKY.iter().copied());
+            v.change(cx, |s| s.risky = (!usual).then_some(lines));
+        })
+        .detach();
         AiView {
             workspace,
             focus: cx.focus_handle(),
@@ -179,6 +231,7 @@ impl AiView {
             showing: None,
             giving: None,
             filter,
+            risky,
             mono: SharedString::default(),
         }
     }
@@ -223,7 +276,7 @@ impl AiView {
             client: client.clone(),
             host: host.clone(),
             how: AiHow::Background,
-            mode: AiMode::Free,
+            mode: g.mode,
             until,
             session,
         };
@@ -460,8 +513,20 @@ impl AiView {
                         .gap(px(2.))
                         .child(heading(&tr!("Hosts given")))
                         .child(hint_text(&tr!(
-                            "A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer."
+                            "A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity."
                         ))),
+                )
+                .child(
+                    outline_button("ai-open-activity", &tr!("AI activity")).on_click(cx.listener(
+                        |v, _, window, cx| {
+                            if let Some(ws) = v.workspace.upgrade() {
+                                ws.update(cx, |ws, cx| {
+                                    ws.close_settings(window, cx);
+                                    ws.open_activity(window, cx);
+                                });
+                            }
+                        },
+                    )),
                 )
                 .when(!snap.state.grants.is_empty(), |d| {
                     d.child(
@@ -474,10 +539,16 @@ impl AiView {
                     d.child(
                         primary_button("ai-give", &tr!("Give a host…")).on_click(cx.listener(
                             |v, _, window, cx| {
+                                let mode = v
+                                    .workspace
+                                    .upgrade()
+                                    .map(|w| w.read(cx).ai_snapshot(cx).state.default_mode)
+                                    .unwrap_or_default();
                                 v.giving = Some(Giving {
                                     host: None,
                                     client: None,
                                     until: Until::TakenBack,
+                                    mode,
                                 });
                                 window.focus(&v.filter.focus_handle(cx), cx);
                                 cx.notify();
@@ -538,6 +609,24 @@ impl AiView {
                     )
                     .child(div().w(px(150.)).child(client_of(&g.client)))
                     .child(div().flex_1().text_color(rgb(colors().muted)).child(until))
+                    .child({
+                        let (client, spec, mode) = (g.client.clone(), g.host.clone(), g.mode);
+                        outline_button(&format!("ai-mode:{i}"), &mode_text(g.mode).0)
+                            .h(px(26.))
+                            .text_size(ui(12.))
+                            .on_click(cx.listener(move |v, _, _, cx| {
+                                let next = MODES
+                                    [(MODES.iter().position(|m| *m == mode).unwrap_or(0) + 1) % 3];
+                                let (client, spec) = (client.clone(), spec.clone());
+                                v.change(cx, move |s| {
+                                    for g in s.grants.iter_mut() {
+                                        if g.client == client && g.host == spec {
+                                            g.mode = next;
+                                        }
+                                    }
+                                })
+                            }))
+                    })
                     .child(
                         outline_button(&format!("ai-take-back:{i}"), &tr!("Take back"))
                             .h(px(26.))
@@ -678,6 +767,26 @@ impl AiView {
             .child(clients)
             .child(label_text(&tr!("For")))
             .child(untils)
+            .child(label_text(&tr!("Commands")))
+            .child({
+                let mut modes = div().flex().flex_wrap().gap(px(6.));
+                for m in MODES {
+                    let on = g.mode == m;
+                    modes = modes.child(
+                        outline_button(&format!("ai-give-mode:{m:?}"), &mode_text(m).0)
+                            .h(px(28.))
+                            .text_size(ui(12.))
+                            .when(on, |d| d.bg(rgb(colors().selected)))
+                            .on_click(cx.listener(move |v, _, _, cx| {
+                                if let Some(g) = &mut v.giving {
+                                    g.mode = m;
+                                }
+                                cx.notify();
+                            })),
+                    );
+                }
+                modes
+            })
             .child(hint_text(&tr!(
                 "It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them."
             )))
@@ -700,6 +809,95 @@ impl AiView {
                         outline_button("ai-give-ok", &tr!("Give access"))
                             .text_color(rgb(colors().muted))
                     }),
+            )
+    }
+}
+
+impl AiView {
+    /// What a new grant does with a command, and the risky list.
+    fn modes_part(&self, snap: &AiSnap, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
+        let mut cards = div().flex().gap(px(10.));
+        for m in MODES {
+            let on = snap.state.default_mode == m;
+            let (name, what) = mode_text(m);
+            cards = cards.child(
+                div()
+                    .id(SharedString::from(format!("ai-default:{m:?}")))
+                    .debug_selector(move || format!("ai-default:{m:?}"))
+                    .flex_1()
+                    .flex()
+                    .flex_col()
+                    .gap(px(4.))
+                    .p(px(12.))
+                    .rounded(px(10.))
+                    .border_1()
+                    .border_color(rgb(if on { colors().accent } else { colors().line }))
+                    .bg(rgb(if on {
+                        colors().selected
+                    } else {
+                        colors().surface
+                    }))
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |v, _, _, cx| v.change(cx, |s| s.default_mode = m)))
+                    .child(div().font_weight(FontWeight::SEMIBOLD).child(name))
+                    .child(hint_text(&what)),
+            );
+        }
+        let focused = self.risky.focus_handle(cx).is_focused(window);
+        let usual = snap.state.risky.is_none();
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(10.))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(heading(&tr!("When AI runs a command")))
+                    .child(hint_text(&tr!(
+                        "For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is."
+                    ))),
+            )
+            .child(cards)
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(10.))
+                    .child(label_text(&tr!(
+                        "Risky: a command with any of these, a line each, waits for you"
+                    )))
+                    .child(div().flex_1())
+                    .when(!usual, |d| {
+                        d.child(
+                            outline_button("ai-risky-usual", &tr!("The usual list"))
+                                .h(px(26.))
+                                .text_size(ui(12.))
+                                .on_click(cx.listener(|v, _, _, cx| {
+                                    v.change(cx, |s| s.risky = None);
+                                    let words = shellwing_config::DEFAULT_RISKY.join("\n");
+                                    v.risky.update(cx, |i, cx| i.set_text(&words, 0..0, cx));
+                                })),
+                        )
+                    }),
+            )
+            .child(
+                div()
+                    .debug_selector(|| "ai-risky".into())
+                    .px(px(10.))
+                    .py(px(8.))
+                    .rounded(px(8.))
+                    .border_1()
+                    .border_color(rgb(if focused {
+                        colors().accent
+                    } else {
+                        colors().field_edge
+                    }))
+                    .bg(rgb(colors().field))
+                    .font_family(self.mono.clone())
+                    .text_size(ui(12.5))
+                    .child(self.risky.clone()),
             )
     }
 }
@@ -740,6 +938,7 @@ impl Render for AiView {
             .max_w(px(900.))
             .child(self.clients_part(&snap, cx))
             .child(self.grants_part(&snap, window, cx))
+            .child(self.modes_part(&snap, window, cx))
     }
 }
 

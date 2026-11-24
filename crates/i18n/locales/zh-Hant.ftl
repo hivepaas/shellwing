@@ -1,6 +1,78 @@
 # shellwing in traditional Chinese (Taiwan). Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# waiting for you
+# t49268f5c =
+
+# running
+t147eb74c = 正在執行
+
+# exit 0
+tf83c441d = 結束代碼 0
+
+# exit {code}
+te0c7c2fc = 結束代碼 { $code }
+
+# ended by a signal
+t450a0cd5 = 因訊號而結束
+
+# did not run
+tf05d1c4a = 未能執行
+
+# stopped
+t6ee2f34e = 已停止
+
+# refused by you
+# t2fd484b3 =
+
+# All
+# t75afe364 =
+
+# Waiting for you
+# te8233afc =
+
+# Running
+# t452925ec =
+
+# Failed
+# t5579c3d4 =
+
+# No AI client has run a command yet.
+# td29d28d8 =
+
+# Nothing here.
+ta7006e9a = 這裡什麼都沒有。
+
+# Stop all AI
+# tddf9c9cc =
+
+# {client} · {host} · started {when} · {job}
+# tafbed557 =
+
+# {client} wants to run this on {host}. It waits for you, because {why}.
+# t21e55161 =
+
+# Run it
+# t72430853 =
+
+# Run it, and this command again this session
+# t2efebee7 =
+
+# Refuse
+t9bcada35 = 拒絕
+
+# Stop
+t4b7f7705 = 停止
+
+# It printed nothing.
+# tbb876a9f =
+
+# Nothing printed yet.
+# t1051cbec =
+
+# Copy output
+t64749f61 = 複製輸出
+
 # Run this once in a terminal:
 t2a18fdaf = 在終端機中執行一次此指令：
 
@@ -16,8 +88,29 @@ t0ff991db = 在 Cline 的 MCP Servers › Configure 中，將以下內容加入 
 # A client that starts its MCP server itself, over stdio:
 td4ff0be4 = 自行透過 stdio 啟動其 MCP 伺服器的用戶端：
 
+# Run freely
+# t77cb7aab =
+
+# Commands run at once. Each is kept in AI activity, as it runs.
+# t1bfe0ae2 =
+
+# Ask for risky ones
+# td43721d0 =
+
+# A command with words from the list below waits for you; the rest run.
+# t846e6005 =
+
+# Ask every time
+# t26ab736e =
+
+# Each command waits until you allow it, or allow it for the session.
+# tdcef213b =
+
 # Find a host
 t5f515591 = 尋找主機
+
+# A command with these words waits
+# t1678b953 =
 
 # AI clients
 ta302119f = AI 用戶端
@@ -64,8 +157,11 @@ tf69e6847 = 權杖不會保留，只保留其雜湊值：若要再次查看，�
 # Hosts given
 t1ef9da69 = 已授權的主機
 
-# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
-tf7a02825 = 用戶端只能連到這些主機。其指令會在背景以各自的連線執行，每個指令都會記錄在這台電腦上。
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in AI activity.
+# t396f69c1 =
+
+# AI activity
+# t07e2f764 =
 
 # Take every one back
 tb3911aec = 全部撤銷
@@ -112,6 +208,9 @@ t41f59644 = 授權給
 # For
 t0f7e1b30 = 期限
 
+# Commands
+# t971550f3 =
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它絕不會看到金鑰、密碼或密碼片語：會要求這些的主機會被拒絕，主機金鑰仍未知的主機也一樣。主機的輸出可能含有意圖操控代理程式的文字：只把主機授權給你放心託付的用戶端。
 
@@ -120,6 +219,18 @@ t35afca3b = 取消
 
 # Give access
 te96c4c6e = 授予存取權
+
+# When AI runs a command
+# tc94fc353 =
+
+# For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
+# t608375b2 =
+
+# Risky: a command with any of these, a line each, waits for you
+# te371b0dd =
+
+# The usual list
+# tcc58d242 =
 
 # unlock its windows
 t7c69953e = 解鎖其視窗
@@ -285,9 +396,6 @@ tbc889b90 = 伺服器上已不存在；已以 { $name } 移至 Downloads
 
 # Open
 t538b10e9 = 開啟
-
-# Stop
-t4b7f7705 = 停止
 
 # Discard
 t1e706c21 = 捨棄
@@ -2185,15 +2293,6 @@ t3b5e54ea = 輸出超過 { $mb } MB：其餘部分不會保留。
 # Open a tab
 t85019429 = 開啟分頁
 
-# Copy output
-t64749f61 = 複製輸出
-
-# exit {code}
-te0c7c2fc = 結束代碼 { $code }
-
-# ended by a signal
-t450a0cd5 = 因訊號而結束
-
 # sudo did not take the password
 tb2c3fb01 = sudo 未接受密碼
 
@@ -2205,9 +2304,6 @@ t7efff279 = 未能連線
 
 # given up on
 t4eec5298 = 已放棄
-
-# did not run
-tf05d1c4a = 未能執行
 
 # signing in
 t727e0a33 = 正在登入
@@ -2223,15 +2319,6 @@ t73aeedd4 = 已排除
 
 # waiting
 teeda06a8 = 正在等待
-
-# running
-t147eb74c = 正在執行
-
-# stopped
-t6ee2f34e = 已停止
-
-# exit 0
-tf83c441d = 結束代碼 0
 
 # sudo refused
 tdd8b1f54 = sudo 已拒絕
@@ -2755,9 +2842,6 @@ tc1d15743 = 已找到。會優先嘗試其中的金鑰。
 # Not found (SSH_AUTH_SOCK is not set).
 tb9e9f472 = 找不到（未設定 SSH_AUTH_SOCK）。
 
-# Refuse
-t9bcada35 = 拒絕
-
 # Unknown host keys
 t2534790f = 未知的主機金鑰
 
@@ -3033,6 +3117,9 @@ t05dcb762 = 一個指令，多台主機
 
 # ACTIONS
 t62d7de84 = 動作
+
+# What AI clients run
+# t81fb801a =
 
 # Cmd+click to add or take away
 t36133970 = Cmd+click 可加入或移除
@@ -3777,6 +3864,9 @@ t21a947cf = 關閉窗格
 
 # ↓ Back to bottom (Shift+End)
 t5a2b7304 = ↓ 回到底部（Shift+End）
+
+# {client} wants to run a command on {host}: AI activity has it, waiting for you.
+# tc4369c9f =
 
 # Config files · {category}
 t59edc3e9 = 設定檔 · { $category }
@@ -4974,9 +5064,6 @@ t3b2e2230 = { $name } 已放置到 { $path }。
 
 # If the vault syncs, it goes from your other devices too.
 t3c800198 = 如果保險庫有同步，它也會從你的其他裝置上刪除。
-
-# Nothing here.
-ta7006e9a = 這裡什麼都沒有。
 
 # The folder and everything in it are deleted on {host}.
 t200fdede = 將刪除 { $host } 上的此資料夾及其中的所有內容。

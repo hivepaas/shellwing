@@ -23,7 +23,8 @@ you never see a key or a password. list_hosts says which hosts you have. run sta
 on one, as `ssh host 'command'` would, with no terminal, and waits up to wait_seconds for its \
 end; a longer one goes on as a job, whose new output job_output gives you as it comes. \
 job_stop stops it. A command that asks for input (a sudo password, y/n) gets none: use \
-non-interactive forms (sudo -n, apt-get -y). The user sees every command you run.";
+non-interactive forms (sudo -n, apt-get -y). The user sees every command you run, and may \
+have one wait until they allow it: run then says so, and job_output tells you once it ran.";
 
 /// Serves `client` on `reader` and `writer` until it goes: a request at a
 /// time is read, and each answered on its own, so a long `run` does not
@@ -286,6 +287,7 @@ async fn follow(
         end: None,
         seconds: 0,
         cut: false,
+        waiting: false,
     };
     loop {
         let left = deadline.saturating_duration_since(tokio::time::Instant::now());
@@ -294,6 +296,7 @@ async fn follow(
         said.end = step.end;
         said.seconds = step.seconds;
         said.cut |= step.cut;
+        said.waiting = step.waiting;
         let last = said.new.trim_end().lines().last().unwrap_or("").to_string();
         let _ = tx.send(json!({
             "jsonrpc": "2.0",
@@ -315,6 +318,9 @@ fn report(id: &str, said: &Said) -> String {
     let mut out = match &said.end {
         Some(end @ End::Exited(_)) => format!("{} after {} s.", end.said(), said.seconds),
         Some(end) => format!("{}.", end.said()),
+        None if said.waiting => format!(
+            "{id} waits for the user, who chooses whether it runs: job_output says once they have; job_stop takes it back."
+        ),
         None => format!(
             "{id} is still running after {} s: job_output gives what comes next; job_stop stops it.",
             said.seconds
@@ -327,11 +333,13 @@ fn report(id: &str, said: &Said) -> String {
         ));
     }
     if said.new.is_empty() {
-        out.push_str(if said.end.is_some() {
-            " Nothing more was printed."
-        } else {
-            " Nothing new was printed."
-        });
+        if !said.waiting && said.end != Some(End::Refused) {
+            out.push_str(if said.end.is_some() {
+                " Nothing more was printed."
+            } else {
+                " Nothing new was printed."
+            });
+        }
     } else {
         out.push_str("\n\n");
         out.push_str(&said.new);
@@ -467,6 +475,7 @@ mod tests {
             end: None,
             seconds: 10,
             cut: false,
+            waiting: false,
         };
         let r = report("j-4", &running);
         assert!(r.starts_with("j-4 is still running after 10 s"), "{r}");
@@ -476,6 +485,7 @@ mod tests {
             end: Some(End::Exited(Some(2))),
             seconds: 3,
             cut: false,
+            waiting: false,
         };
         assert_eq!(
             report("j-4", &done),

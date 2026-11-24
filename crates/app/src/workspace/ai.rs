@@ -3,6 +3,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+/// How long the notice that a command waits for the person shows.
+const AI_NOTICE: Duration = Duration::from_secs(20);
+
 use super::*;
 use shellwing_config::AiState;
 use shellwing_core::ai::{self, Hub, HubEvent};
@@ -12,6 +15,8 @@ pub(super) struct AiWork {
     pub hub: Arc<Hub>,
     pub state: AiState,
     pub connected: BTreeSet<String>,
+    /// What AI clients ran, oldest first, as the hub says it.
+    pub activity: Vec<Arc<ai::Activity>>,
     /// What the hub was last told about hosts: the host list's, and the
     /// grants', so it is told again only when either changes.
     told: Option<(Vec<Pick>, AiState)>,
@@ -39,6 +44,7 @@ impl Workspace {
             events,
         );
         hub.set_state(state.clone());
+        let activity = hub.activity().into_iter().map(Arc::new).collect();
         if let Some(dir) = store.map(|s| s.dir().to_path_buf()) {
             let at = ai::socket::Endpoint::for_config(&dir);
             let listening = hub.clone();
@@ -60,6 +66,7 @@ impl Workspace {
             hub,
             state,
             connected: BTreeSet::new(),
+            activity,
             told: None,
         });
     }
@@ -77,8 +84,80 @@ impl Workspace {
                 }
                 cx.notify();
             }
-            HubEvent::Changed(_) => {}
+            HubEvent::Changed(a) => {
+                let asks = a.waiting.is_some();
+                let new_ask = asks
+                    && !ai
+                        .activity
+                        .iter()
+                        .any(|x| x.id == a.id && x.waiting.is_some());
+                let note = tr!(
+                    "{client} wants to run a command on {host}: AI activity has it, waiting for you.",
+                    client = a.client.clone(),
+                    host = a.host.clone()
+                );
+                match ai.activity.iter().position(|x| x.id == a.id) {
+                    Some(i) => ai.activity[i] = Arc::new(a),
+                    None => ai.activity.push(Arc::new(a)),
+                }
+                let over = ai.activity.len().saturating_sub(ai::ACTIVITY);
+                ai.activity.drain(..over);
+                if new_ask {
+                    self.say(Notice::warn(note), AI_NOTICE, cx);
+                }
+                self.refresh_sidebar(cx);
+                cx.notify();
+            }
         }
+    }
+
+    /// What AI clients ran, for the activity tab.
+    pub fn ai_activity(&self) -> Vec<Arc<ai::Activity>> {
+        self.ai
+            .as_ref()
+            .map(|a| a.activity.clone())
+            .unwrap_or_default()
+    }
+
+    /// Commands waiting for the person.
+    pub(super) fn ai_waiting(&self) -> usize {
+        self.ai.as_ref().map_or(0, |a| {
+            a.activity.iter().filter(|x| x.waiting.is_some()).count()
+        })
+    }
+
+    /// The person's answer to a command that waits.
+    pub fn ai_answer(&self, id: &str, approval: ai::Approval) {
+        if let Some(a) = &self.ai {
+            a.hub.answer(id, approval);
+        }
+    }
+
+    /// Stops one AI command, or (None) every one going.
+    pub fn ai_stop(&self, id: Option<&str>) {
+        if let Some(a) = &self.ai {
+            match id {
+                Some(id) => a.hub.stop(id),
+                None => a.hub.stop_all(),
+            }
+        }
+    }
+
+    /// Opens the AI activity tab, or goes to it: there is one.
+    pub fn open_activity(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(i) = self
+            .tabs
+            .iter()
+            .position(|t| matches!(t.page, Some(TabPage::Activity(_))))
+        {
+            return self.activate(i, window, cx);
+        }
+        let ws = cx.entity().downgrade();
+        let view = cx.new(|cx| crate::activity_view::ActivityView::new(ws, cx));
+        // Its count of commands waiting shows on its tab.
+        cx.observe(&view, |_, _, cx| cx.notify()).detach();
+        self.tabs.push(Tab::page(TabPage::Activity(view)));
+        self.activate(self.tabs.len() - 1, window, cx);
     }
 
     /// What Settings › AI shows.
