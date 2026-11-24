@@ -778,6 +778,35 @@ impl Shell {
         session: &mut Session,
     ) -> Result<(), russh::Error> {
         self.seen.lock().expect("seen").lines.push(line.to_string());
+        // An AI's command typed into the tab: run by a real sh, as a host's
+        // shell would, its marks and all.
+        if line.contains("swai-begin")
+            && let Some((home, bin)) = self.policy.shell.clone()
+        {
+            let path = format!(
+                "{}:{}",
+                bin.display(),
+                std::env::var("PATH").unwrap_or_default()
+            );
+            let out = std::process::Command::new("sh")
+                .arg("-c")
+                .arg(line)
+                .env("HOME", &home)
+                .env("PATH", path)
+                .current_dir(&home)
+                .output();
+            let mut text = vec![b'\r', b'\n'];
+            if let Ok(o) = out {
+                for b in o.stdout.iter().chain(&o.stderr) {
+                    if *b == b'\n' {
+                        text.push(b'\r');
+                    }
+                    text.push(*b);
+                }
+            }
+            text.extend_from_slice(PROMPT.as_bytes());
+            return session.data(channel, text);
+        }
         // shellwing loading variables: the echo goes off, the values are
         // read, then exported and a signal sent.
         if let (Some(ready), Some(done)) = (signal_in(line, "ready-"), signal_in(line, "done-")) {

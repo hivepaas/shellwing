@@ -1200,6 +1200,27 @@ How an agent reaches a host:
 - A collection's host whose settings are held back is refused until you allow
   them on a tab.
 - Its tile in the host list carries a violet **AI** mark.
+- Through a tab (below), it is typed into the host's tab instead.
+
+**Through a tab.** A host given *Through a tab* (the grant's *How*) has its
+commands typed into a tab to it, in that shell, where you see them and what
+they print:
+
+- The tab is one already connected to the host, the one AI used before if
+  there is one, else a tab opens. A password or a passphrase it asks for is
+  yours to type there.
+- A tab runs one command of AI's at a time; the others wait their turn.
+- Each command is typed as one line, kept out of the shell's history (its
+  leading space), between two marks the terminal does not show, so shellwing
+  tells its output and its exit status apart from the rest. The shell must
+  be at its prompt, and be `sh`, `bash`, `zsh` or the like.
+- A strip over the tab says whose it is and how many commands it ran.
+  *Pause* holds AI's next commands until *Let it go on*; *Take access back*
+  ends the grant. Ctrl+C stops a command, as any other, and Stop (in AI
+  activity, or `job_stop`) sends it.
+- What the agent gets is the command's output as plain text: colors and other
+  escape sequences out, and a line written over (a progress bar) as it was
+  last.
 
 **What an agent can do** (MCP tools):
 

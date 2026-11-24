@@ -17,6 +17,15 @@ pub(super) struct AiWork {
     pub connected: BTreeSet<String>,
     /// What AI clients ran, oldest first, as the hub says it.
     pub activity: Vec<Arc<ai::Activity>>,
+    /// Commands for hosts given through a tab, not typed yet: no tab to
+    /// the host is free.
+    queued: Vec<TabJob>,
+    /// The panes an AI's command is typed in now: the job's id.
+    typing: BTreeMap<gpui::EntityId, String>,
+    /// Panes where the person paused AI.
+    pub paused: BTreeSet<gpui::EntityId>,
+    /// Panes AI typed in, and whose: what their strip says.
+    pub used: BTreeMap<gpui::EntityId, (String, usize)>,
     /// What the hub was last told about hosts: the host list's, and the
     /// grants', so it is told again only when either changes.
     told: Option<(Vec<Pick>, AiState)>,
@@ -67,6 +76,10 @@ impl Workspace {
             state,
             connected: BTreeSet::new(),
             activity,
+            queued: vec![],
+            typing: BTreeMap::new(),
+            paused: BTreeSet::new(),
+            used: BTreeMap::new(),
             told: None,
         });
     }
@@ -83,6 +96,31 @@ impl Workspace {
                     ai.connected.remove(&id);
                 }
                 cx.notify();
+            }
+            HubEvent::Tab {
+                id,
+                spec,
+                command,
+                client,
+            } => {
+                ai.queued.push(TabJob {
+                    id,
+                    spec,
+                    command,
+                    client,
+                    opened: false,
+                });
+                self.type_next(cx);
+            }
+            HubEvent::TabStop { id } => {
+                let view = ai.typing.iter().find(|(_, j)| **j == id).map(|(v, _)| *v);
+                ai.queued.retain(|j| j.id != id);
+                if let Some(v) =
+                    view.and_then(|v| self.all_views().into_iter().find(|x| x.entity_id() == v))
+                {
+                    // Ctrl+C, as the person would press it.
+                    v.read(cx).session().writer.write(vec![0x03]);
+                }
             }
             HubEvent::Changed(a) => {
                 let asks = a.waiting.is_some();
@@ -245,6 +283,277 @@ impl Workspace {
                     .collect()
             })
             .unwrap_or_default()
+    }
+}
+
+/// A command for a host given through a tab.
+pub(super) struct TabJob {
+    id: String,
+    spec: String,
+    command: String,
+    client: String,
+    /// A tab was opened for it.
+    opened: bool,
+}
+
+impl Workspace {
+    /// Types the commands queued for tabs into the tabs free for them: a
+    /// pane to the host, connected, with nothing of AI's running nor paused.
+    /// A host with no tab gets one; a tab that will not connect ends its
+    /// commands.
+    pub(super) fn type_next(&mut self, cx: &mut Context<Self>) {
+        let Some(ai) = &self.ai else {
+            return;
+        };
+        if ai.queued.is_empty() {
+            return;
+        }
+        let views = self.all_views();
+        let mut start = vec![];
+        let mut open = vec![];
+        let mut failed = vec![];
+        let mut busy: BTreeSet<gpui::EntityId> = ai.typing.keys().copied().collect();
+        busy.extend(ai.paused.iter().copied());
+        for (i, job) in ai.queued.iter().enumerate() {
+            let to_host: Vec<&Entity<TermView>> = views
+                .iter()
+                .filter(|v| v.read(cx).session().spec == job.spec)
+                .collect();
+            let up = |v: &&Entity<TermView>| v.read(cx).session().status() == Status::Connected;
+            // A pane AI used before, else any.
+            let free = to_host
+                .iter()
+                .filter(|v| up(v) && !busy.contains(&v.entity_id()))
+                .max_by_key(|v| ai.used.contains_key(&v.entity_id()));
+            if let Some(v) = free {
+                busy.insert(v.entity_id());
+                start.push((i, (*v).clone()));
+            } else if to_host.is_empty() && !job.opened {
+                open.push(i);
+            } else if job.opened
+                && !to_host.is_empty()
+                && to_host.iter().all(|v| {
+                    matches!(
+                        v.read(cx).session().status(),
+                        Status::Failed | Status::Closed
+                    )
+                })
+            {
+                failed.push(i);
+            }
+        }
+        let hub = ai.hub.clone();
+        let Some(ai) = &mut self.ai else {
+            return;
+        };
+        for i in &open {
+            ai.queued[*i].opened = true;
+        }
+        let specs: Vec<String> = open.iter().map(|i| ai.queued[*i].spec.clone()).collect();
+        let mut gone = vec![];
+        for i in failed {
+            let job = &ai.queued[i];
+            hub.tab_end(&job.id, ai::End::Failed("its tab did not connect".into()));
+            gone.push(i);
+        }
+        let mut jobs = vec![];
+        for (i, view) in start {
+            gone.push(i);
+            let j = &ai.queued[i];
+            jobs.push((
+                view,
+                TabJob {
+                    id: j.id.clone(),
+                    spec: j.spec.clone(),
+                    command: j.command.clone(),
+                    client: j.client.clone(),
+                    opened: j.opened,
+                },
+            ));
+        }
+        gone.sort_unstable();
+        for i in gone.into_iter().rev() {
+            ai.queued.remove(i);
+        }
+        for (view, job) in jobs {
+            self.type_in(view, job, cx);
+        }
+        for spec in specs {
+            self.in_window(cx, move |ws, window, cx| ws.open(&spec, window, cx));
+        }
+    }
+
+    /// Types `job` into `view`, and hands the hub what comes back between
+    /// its marks.
+    fn type_in(&mut self, view: Entity<TermView>, job: TabJob, cx: &mut Context<Self>) {
+        let Some(ai) = &mut self.ai else {
+            return;
+        };
+        let id = view.entity_id();
+        ai.typing.insert(id, job.id.clone());
+        let n = ai.used.get(&id).map_or(0, |(_, n)| *n) + 1;
+        ai.used.insert(id, (job.client.clone(), n));
+        let hub = ai.hub.clone();
+        let session = view.read(cx).session();
+        let output = session.tap();
+        session
+            .writer
+            .write(ai::tab::wrap(&job.id, &job.command).into_bytes());
+        let job_id = job.id.clone();
+        cx.spawn(async move |ws, cx| {
+            let mut catch = ai::tab::Catch::new(&job_id);
+            // Whole lines only: a line end split across reads stays whole.
+            let mut pending: Vec<u8> = vec![];
+            let mut ended = None;
+            while let Ok(bytes) = output.recv().await {
+                let got = catch.feed(&bytes);
+                pending.extend_from_slice(&got.output);
+                if let Some(at) = pending.iter().rposition(|b| *b == b'\n') {
+                    let lines: Vec<u8> = pending.drain(..=at).collect();
+                    hub.tab_print(&job_id, &ai::tab::plain(&lines));
+                }
+                if got.ended.is_some() {
+                    ended = got.ended;
+                    break;
+                }
+            }
+            if !pending.is_empty() {
+                hub.tab_print(&job_id, &ai::tab::plain(&pending));
+            }
+            hub.tab_end(
+                &job_id,
+                match ended {
+                    Some(code) => ai::End::Exited(code),
+                    None => ai::End::Failed("its tab closed".into()),
+                },
+            );
+            let _ = ws.update(cx, |ws, cx| {
+                if let Some(v) = ws.all_views().into_iter().find(|v| v.entity_id() == id) {
+                    v.read(cx).session().untap();
+                }
+                if let Some(ai) = &mut ws.ai {
+                    ai.typing.remove(&id);
+                }
+                ws.type_next(cx);
+                cx.notify();
+            });
+        })
+        .detach();
+        cx.notify();
+    }
+
+    /// The strip over a pane AI typed in: whose, how many, and the person's
+    /// say.
+    pub(super) fn ai_strip(&self, view: &Entity<TermView>, cx: &mut Context<Self>) -> Option<Div> {
+        let ai = self.ai.as_ref()?;
+        let id = view.entity_id();
+        let (client, n) = ai.used.get(&id)?;
+        let spec = view.read(cx).session().spec.clone();
+        // Only while the grant holds.
+        let given = ai.state.grants.iter().any(|g| {
+            g.host == spec
+                && g.how == shellwing_config::AiHow::Tab
+                && g.until.is_none_or(|u| ai::now() < u)
+        });
+        if !given {
+            return None;
+        }
+        let paused = ai.paused.contains(&id);
+        let text = if paused {
+            tr!(
+                "Paused: {client} waits until you let it go on.",
+                client = client.clone()
+            )
+        } else {
+            tr_n!(
+                *n,
+                "{client} is using this tab: {n} command so far.",
+                "{client} is using this tab: {n} commands so far.",
+                client = client.clone()
+            )
+        };
+        let button = |sel: &'static str, label: String| {
+            div()
+                .id(sel)
+                .debug_selector(move || sel.into())
+                .h(px(24.))
+                .px(px(10.))
+                .flex()
+                .items_center()
+                .rounded(px(6.))
+                .border_1()
+                .border_color(rgb(crate::sidebar::AI_MARK))
+                .bg(rgb(colors().surface))
+                .text_xs()
+                .cursor_pointer()
+                .hover(|s| s.bg(rgb(colors().hover)))
+                .child(label)
+        };
+        let (client_name, spec2) = (client.clone(), spec.clone());
+        Some(
+            div()
+                .debug_selector(|| "ai-strip".into())
+                .h(px(34.))
+                .flex_shrink_0()
+                .flex()
+                .items_center()
+                .gap(px(10.))
+                .px(px(14.))
+                .bg(rgb(colors().info_bg))
+                .border_b_1()
+                .border_color(rgb(colors().info_edge))
+                .text_sm()
+                .text_color(rgb(colors().info_text))
+                .child(
+                    div()
+                        .px(px(6.))
+                        .rounded_full()
+                        .bg(rgb(crate::sidebar::AI_MARK))
+                        .text_color(rgb(colors().on_accent))
+                        .text_xs()
+                        .font_weight(gpui::FontWeight::BOLD)
+                        .child("AI"),
+                )
+                .child(div().flex_1().min_w_0().child(text))
+                .child(if paused {
+                    button("ai-resume", tr!("Let it go on")).on_click(cx.listener(
+                        move |ws, _, _, cx| {
+                            if let Some(ai) = &mut ws.ai {
+                                ai.paused.remove(&id);
+                            }
+                            ws.type_next(cx);
+                            cx.notify();
+                        },
+                    ))
+                } else {
+                    button("ai-pause", tr!("Pause")).on_click(cx.listener(move |ws, _, _, cx| {
+                        if let Some(ai) = &mut ws.ai {
+                            ai.paused.insert(id);
+                        }
+                        cx.notify();
+                    }))
+                })
+                .child(
+                    button("ai-take-tab", tr!("Take access back")).on_click(cx.listener(
+                        move |ws, _, _, cx| {
+                            let (client, spec) = (client_name.clone(), spec2.clone());
+                            ws.change_ai(
+                                |s| {
+                                    let ids: Vec<String> = s
+                                        .clients
+                                        .iter()
+                                        .filter(|c| c.name == client)
+                                        .map(|c| c.id.clone())
+                                        .collect();
+                                    s.grants
+                                        .retain(|g| !(g.host == spec && ids.contains(&g.client)));
+                                },
+                                cx,
+                            );
+                        },
+                    )),
+                ),
+        )
     }
 }
 

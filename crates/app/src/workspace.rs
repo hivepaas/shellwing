@@ -1856,6 +1856,8 @@ impl Workspace {
                 ws.tidy_placed(&view, cx);
                 ws.look_for_system(&view, cx);
             }
+            // A command for its host may have waited for it.
+            ws.type_next(cx);
         })
         .detach();
         cx.subscribe(&view, |ws, view, ev: &Unplaced, cx| {
@@ -7078,6 +7080,7 @@ impl Render for Workspace {
                     let n = tab.views().len();
                     self.broadcast_strip(n - tab.left_out.len(), n, cx)
                 });
+                let ai_strip = tab.focused.as_ref().and_then(|v| self.ai_strip(v, cx));
                 div()
                     .flex_1()
                     .min_h_0()
@@ -7085,6 +7088,7 @@ impl Render for Workspace {
                     .flex()
                     .flex_col()
                     .children(strip)
+                    .children(ai_strip)
                     .child(pane)
                     .into_any_element()
             }

@@ -64,6 +64,45 @@ impl Client {
         }
     }
 
+    /// [`Client::tool`], the app's window going on meanwhile: what a tab
+    /// does needs it, where the rest is the network's.
+    fn tool_in(&mut self, ui: &mut Ui, name: &str, args: Value) -> (String, bool) {
+        let id = self.next;
+        self.next += 1;
+        self.send(&json!({"jsonrpc": "2.0", "id": id, "method": "tools/call",
+                          "params": {"name": name, "arguments": args}}));
+        self.to
+            .set_read_timeout(Some(Duration::from_millis(15)))
+            .expect("timeout");
+        let mut line = String::new();
+        let start = std::time::Instant::now();
+        let v = loop {
+            ui.settle(Duration::from_millis(15));
+            match self.from.read_line(&mut line) {
+                Ok(_) if line.ends_with('\n') => {
+                    let v: Value = serde_json::from_str(&line).expect("json");
+                    line.clear();
+                    if v["id"] == id {
+                        break v;
+                    }
+                }
+                _ => {}
+            }
+            assert!(
+                start.elapsed() < Duration::from_secs(40),
+                "no answer to {name}"
+            );
+        };
+        self.to
+            .set_read_timeout(Some(Duration::from_secs(20)))
+            .expect("timeout");
+        let text = v["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{v}"))
+            .to_string();
+        (text, v["result"]["isError"] == true)
+    }
+
     /// A tool's text, and whether it is an error.
     fn tool(&mut self, name: &str, args: Value) -> (String, bool) {
         let v = self.call("tools/call", json!({"name": name, "arguments": args}));
@@ -174,6 +213,11 @@ scenario!(
 /// A client let in and given `web` (and `db`, not given), its token; the
 /// grant's commands as `mode` says (`Free`, `Risky`, `Ask`).
 fn given_web(ui: &mut Ui, mode: &str) -> String {
+    given_web_so(ui, mode, "background")
+}
+
+/// [`given_web`], `how` the host is reached: `background` or `tab`.
+fn given_web_so(ui: &mut Ui, mode: &str, how: &str) -> String {
     let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
     ui.agent(&[&key]);
     let home = ui.config_dir().join("remote-home");
@@ -204,6 +248,7 @@ fn given_web(ui: &mut Ui, mode: &str) -> String {
     ui.click("ai-pick:web");
     ui.click("ai-give-to:Codex CLI");
     ui.click(&format!("ai-give-mode:{mode}"));
+    ui.click(&format!("ai-give-how:{how}"));
     ui.click("ai-give-ok");
     ui.click("settings-close");
     token
@@ -291,5 +336,45 @@ scenario!(
         ui.click("ai-mode:0");
         let (said, _) = c.tool("run", json!({"host": "web", "command": "hostname", "wait_seconds": 5}));
         assert!(said.starts_with("exit 0"), "{said}");
+    }
+);
+
+scenario!(
+    /// A host given through a tab: with none open, one opens; the command is
+    /// typed there, where its output shows, and the AI gets that output and
+    /// the exit status, its marks unseen. A strip says whose tab it is;
+    /// paused, a command waits until the person lets it go on.
+    an_ai_command_is_typed_into_a_tab,
+    |ui| {
+        let token = given_web_so(ui, "Free", "tab");
+        let (mut c, _) = Client::open(ui, &token);
+        assert_eq!(ui.tabs(), 0);
+        let (said, error) = c.tool_in(ui, "run", json!({"host": "web", "command": "echo \"from the tab: $((6 * 7))\"", "wait_seconds": 15}));
+        assert!(!error, "{said}");
+        assert!(said.starts_with("exit 0"), "{said}");
+        assert!(said.contains("from the tab: 42"), "{said}");
+        assert!(!said.contains("swai"), "the marks are not output: {said}");
+        assert_eq!(ui.tabs(), 1, "a tab opened for it");
+        ui.wait_for("from the tab: 42");
+        assert!(ui.find("ai-strip").is_some());
+
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "false", "wait_seconds": 10}));
+        assert!(said.starts_with("exit 1"), "{said}");
+
+        ui.click("ai-pause");
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "echo later", "wait_seconds": 1}));
+        assert!(said.contains("still running"), "paused: {said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("ai-resume");
+        let mut rest = String::new();
+        for _ in 0..5 {
+            let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+            rest.push_str(&said);
+            if said.starts_with("exit") {
+                break;
+            }
+        }
+        assert!(rest.contains("exit 0") && rest.contains("later"), "{rest}");
+        assert_eq!(ui.tabs(), 1, "the same tab, again");
     }
 );

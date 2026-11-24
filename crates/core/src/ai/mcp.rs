@@ -231,7 +231,9 @@ async fn call(
                 .map(|g| {
                     let how = match g.grant.how {
                         AiHow::Background => "commands with run",
-                        AiHow::Tab => "through its tab (not yet in this shellwing)",
+                        AiHow::Tab => {
+                            "commands with run, typed into its tab, where the user sees them"
+                        }
                     };
                     format!("{}\t{}\t{how}", g.name, g.detail)
                 })
@@ -261,8 +263,7 @@ async fn call(
             if job.ended() {
                 return Ok(format!("{id} had ended already."));
             }
-            job.stop();
-            hub.ended(&job);
+            hub.stop_job(&job);
             Ok(format!("{id} is stopped."))
         }
         _ => Err(Problem::Unknown),
