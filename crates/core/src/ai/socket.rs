@@ -141,10 +141,73 @@ where
 }
 
 /// `shellwing mcp`: the client's stdio to the app at `at`, `token` its
-/// SHELLWING_TOKEN. With no app to reach, every request is answered with
-/// why, so the client can show it.
+/// SHELLWING_TOKEN.
+///
+/// It always says who it is (`initialize`) and what tools it has, so a
+/// client counts it as up even while the app is closed or its token is not
+/// known; a tool called then is the app's again once it is reached, each
+/// call trying anew, and else says why to the model.
 pub async fn bridge(at: Endpoint, token: Option<String>) -> std::io::Result<()> {
     bridge_on(at, token, tokio::io::stdin(), tokio::io::stdout()).await
+}
+
+type Reader = tokio::io::Lines<BufReader<Box<dyn AsyncRead + Unpin + Send>>>;
+type Writer = Box<dyn AsyncWrite + Unpin + Send>;
+
+/// The app, reached with `token`: its answers, a line each, and where the
+/// client's messages go; else why not.
+async fn reach(at: &Endpoint, token: Option<&str>) -> Result<(Reader, Writer), String> {
+    let Some(token) = token.map(str::trim).filter(|t| !t.is_empty()) else {
+        return Err(
+            "SHELLWING_TOKEN is not set: Settings › AI › Add client gives the config to paste"
+                .into(),
+        );
+    };
+    let not_open = |_| {
+        "the app is not open: start shellwing, keep it open while the agent works, and call the tool again"
+            .to_string()
+    };
+    #[cfg(unix)]
+    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
+        let s = tokio::net::UnixStream::connect(&at.0)
+            .await
+            .map_err(not_open)?;
+        let (r, w) = s.into_split();
+        (Box::new(r), Box::new(w))
+    };
+    #[cfg(windows)]
+    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
+        let s = tokio::net::windows::named_pipe::ClientOptions::new()
+            .open(&at.0)
+            .map_err(not_open)?;
+        let (r, w) = tokio::io::split(s);
+        (Box::new(r), Box::new(w))
+    };
+    #[cfg(not(any(unix, windows)))]
+    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
+        let _ = not_open;
+        return Err("no AI clients on this system".into());
+    };
+    let mut r = BufReader::new(r);
+    let mut w = w;
+    let hello = format!("{}\n", json!({ "token": token }));
+    w.write_all(hello.as_bytes())
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut reply = String::new();
+    r.read_line(&mut reply).await.map_err(|e| e.to_string())?;
+    let reply: Value =
+        serde_json::from_str(&reply).unwrap_or(json!({"error": "the app did not answer"}));
+    if let Some(why) = reply.get("error").and_then(Value::as_str) {
+        return Err(why.to_string());
+    }
+    Ok((r.lines(), w))
+}
+
+/// Writes `v` as a line, and sends it.
+async fn say<O: AsyncWrite + Unpin>(out: &mut O, v: Value) -> std::io::Result<()> {
+    out.write_all(format!("{v}\n").as_bytes()).await?;
+    out.flush().await
 }
 
 /// [`bridge`], between `stdin` and `stdout`.
@@ -152,86 +215,107 @@ pub async fn bridge_on<I, O>(
     at: Endpoint,
     token: Option<String>,
     stdin: I,
-    stdout: O,
+    mut stdout: O,
 ) -> std::io::Result<()>
 where
     I: AsyncRead + Unpin,
     O: AsyncWrite + Unpin,
 {
-    let Some(token) = token.filter(|t| !t.trim().is_empty()) else {
-        return refuse(
-            stdin,
-            stdout,
-            &refused_because(
-                "SHELLWING_TOKEN is not set: Settings › AI › Add client gives the config to paste",
-            ),
-        )
-        .await;
-    };
-    #[cfg(unix)]
-    let stream = tokio::net::UnixStream::connect(&at.0).await;
-    #[cfg(windows)]
-    let stream = tokio::net::windows::named_pipe::ClientOptions::new().open(&at.0);
-    #[cfg(not(any(unix, windows)))]
-    let stream: std::io::Result<tokio::io::DuplexStream> =
-        Err(std::io::Error::other("no AI clients on this system"));
-    let Ok(stream) = stream else {
-        return refuse(
-            stdin,
-            stdout,
-            &refused_because(
-                "the app is not open: start shellwing, and keep it open while the agent works",
-            ),
-        )
-        .await;
-    };
-    let (r, mut w) = tokio::io::split(stream);
-    let mut r = BufReader::new(r);
-    w.write_all(format!("{}\n", json!({ "token": token.trim() })).as_bytes())
-        .await?;
-    let mut reply = String::new();
-    r.read_line(&mut reply).await?;
-    let reply: Value = serde_json::from_str(&reply).unwrap_or(json!({"error": "no answer"}));
-    if let Some(why) = reply.get("error").and_then(Value::as_str) {
-        return refuse(stdin, stdout, &refused_because(why)).await;
-    }
-    let (mut stdin, mut stdout) = (stdin, stdout);
-    let up = async {
-        let _ = tokio::io::copy(&mut stdin, &mut w).await;
-        // The client is done asking: the app hears so, and answers what it
-        // was asked.
-        let _ = w.shutdown().await;
-    };
-    let down = tokio::io::copy(&mut r, &mut stdout);
-    tokio::pin!(up, down);
-    // The app gone ends it; the client done waits for the last answers.
-    tokio::select! {
-        _ = &mut down => return Ok(()),
-        _ = &mut up => {}
-    }
-    let _ = down.await;
-    Ok(())
-}
-
-/// Answers each request on `input` with `why`, until it ends.
-async fn refuse<R, W>(input: R, mut output: W, why: &str) -> std::io::Result<()>
-where
-    R: AsyncRead + Unpin,
-    W: AsyncWrite + Unpin,
-{
-    let mut lines = BufReader::new(input).lines();
-    while let Some(line) = lines.next_line().await? {
-        let Ok(msg) = serde_json::from_str::<Value>(&line) else {
+    let mut client = BufReader::new(stdin).lines();
+    let mut app = reach(&at, token.as_deref()).await;
+    // What the client said to begin with, to say again to an app reached
+    // later.
+    let mut begun: Option<Value> = None;
+    loop {
+        let Ok((answers, to_app)) = &mut app else {
+            // Not reached: what it can say alone, and a new try per tool.
+            let Some(line) = client.next_line().await? else {
+                return Ok(());
+            };
+            let Ok(msg) = serde_json::from_str::<Value>(&line) else {
+                continue;
+            };
+            let id = msg.get("id").cloned();
+            let method = msg.get("method").and_then(Value::as_str).unwrap_or("");
+            let params = msg.get("params").cloned().unwrap_or(Value::Null);
+            match (method, id) {
+                ("initialize", Some(id)) => {
+                    begun = Some(params.clone());
+                    say(&mut stdout, json!({"jsonrpc": "2.0", "id": id, "result": super::mcp::initialized(&params)})).await?;
+                }
+                ("ping", Some(id)) => {
+                    say(
+                        &mut stdout,
+                        json!({"jsonrpc": "2.0", "id": id, "result": {}}),
+                    )
+                    .await?;
+                }
+                ("tools/list", Some(id)) => {
+                    say(&mut stdout, json!({"jsonrpc": "2.0", "id": id, "result": {"tools": super::mcp::tools()}})).await?;
+                }
+                (_, None) => {}
+                (_, Some(id)) => {
+                    app = reach(&at, token.as_deref()).await;
+                    match &mut app {
+                        Ok((answers, to_app)) => {
+                            // Begun again with the app, its own answer let go.
+                            if let Some(params) = &begun {
+                                let hello = json!({"jsonrpc": "2.0", "id": "shellwing-bridge", "method": "initialize", "params": params});
+                                to_app.write_all(format!("{hello}\n").as_bytes()).await?;
+                                let _ = answers.next_line().await?;
+                                to_app
+                                    .write_all(b"{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n")
+                                    .await?;
+                            }
+                            to_app.write_all(format!("{line}\n").as_bytes()).await?;
+                        }
+                        Err(why) => {
+                            let why = refused_because(why);
+                            let answer = if method == "tools/call" {
+                                json!({"jsonrpc": "2.0", "id": id, "result": {"content": [{"type": "text", "text": why}], "isError": true}})
+                            } else {
+                                json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32000, "message": why}})
+                            };
+                            say(&mut stdout, answer).await?;
+                        }
+                    }
+                }
+            }
             continue;
         };
-        let Some(id) = msg.get("id").cloned() else {
-            continue;
-        };
-        let answer = json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32000, "message": why}});
-        output.write_all(format!("{answer}\n").as_bytes()).await?;
-        output.flush().await?;
+        tokio::select! {
+            line = client.next_line() => match line? {
+                Some(line) => {
+                    if let Ok(msg) = serde_json::from_str::<Value>(&line)
+                        && msg.get("method").and_then(Value::as_str) == Some("initialize")
+                    {
+                        begun = msg.get("params").cloned();
+                    }
+                    if to_app.write_all(format!("{line}\n").as_bytes()).await.is_err() {
+                        app = Err("the app went".into());
+                    }
+                }
+                // The client is done asking: the app hears so, and answers
+                // what it was asked.
+                None => {
+                    let _ = to_app.shutdown().await;
+                    while let Ok(Some(answer)) = answers.next_line().await {
+                        stdout.write_all(format!("{answer}\n").as_bytes()).await?;
+                    }
+                    stdout.flush().await?;
+                    return Ok(());
+                }
+            },
+            answer = answers.next_line() => match answer {
+                Ok(Some(answer)) => {
+                    stdout.write_all(format!("{answer}\n").as_bytes()).await?;
+                    stdout.flush().await?;
+                }
+                // The app quit: the next tool tries again.
+                _ => app = Err("the app quit".into()),
+            },
+        }
     }
-    Ok(())
 }
 
 #[cfg(all(test, unix))]
@@ -254,20 +338,6 @@ mod tests {
             "the same each time"
         );
     }
-
-    #[tokio::test]
-    async fn without_the_app_each_request_hears_why() {
-        let input = b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"}\n{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n".to_vec();
-        let mut out = vec![];
-        refuse(&input[..], &mut out, "shellwing: it is not open")
-            .await
-            .expect("refuse");
-        let out = String::from_utf8(out).expect("utf-8");
-        assert_eq!(out.lines().count(), 1, "a notification gets nothing");
-        let v: Value = serde_json::from_str(out.trim()).expect("json");
-        assert_eq!(v["id"], 1);
-        assert_eq!(v["error"]["message"], "shellwing: it is not open");
-    }
 }
 
 #[cfg(all(test, unix))]
@@ -286,21 +356,75 @@ mod through {
         fn learned(&self, _: shellwing_ssh::Learned) {}
     }
 
-    /// `shellwing mcp` to a listening app: the client's request goes
-    /// through, and its answer comes back; a wrong token, and no app, are
-    /// answered with why.
+    /// A client on the bridge, its messages a line each.
+    struct Talk {
+        to: tokio::io::DuplexStream,
+        from: tokio::io::Lines<BufReader<tokio::io::DuplexStream>>,
+    }
+
+    impl Talk {
+        fn start(at: &Endpoint, token: &str) -> Talk {
+            let (to, stdin) = tokio::io::duplex(1 << 16);
+            let (stdout, from) = tokio::io::duplex(1 << 16);
+            tokio::spawn(bridge_on(at.clone(), Some(token.into()), stdin, stdout));
+            Talk {
+                to,
+                from: BufReader::new(from).lines(),
+            }
+        }
+
+        async fn ask(&mut self, msg: Value) -> Value {
+            self.to
+                .write_all(format!("{msg}\n").as_bytes())
+                .await
+                .expect("write");
+            let line =
+                tokio::time::timeout(std::time::Duration::from_secs(5), self.from.next_line())
+                    .await
+                    .expect("in time")
+                    .expect("read")
+                    .expect("a line");
+            serde_json::from_str(&line).expect("json")
+        }
+
+        async fn tool(&mut self, id: u64, name: &str) -> (String, bool) {
+            let v = self
+                .ask(json!({"jsonrpc": "2.0", "id": id, "method": "tools/call", "params": {"name": name, "arguments": {}}}))
+                .await;
+            (
+                v["result"]["content"][0]["text"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string(),
+                v["result"]["isError"] == true,
+            )
+        }
+    }
+
+    /// With the app closed, the bridge still begins and lists its tools, so
+    /// the client counts it as up; a tool says why it cannot be used, and
+    /// works once the app is open, in the same session. A token the app does
+    /// not know: the same, and the tool says so.
     #[tokio::test]
-    async fn a_client_reaches_the_app_through_the_bridge() {
+    async fn the_bridge_is_up_before_the_app_is() {
         let dir = std::env::temp_dir().join(format!("sw-mcp-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let at = Endpoint::for_config(&dir);
-        let ask = b"{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ping\"}\n".to_vec();
 
-        let mut out = vec![];
-        bridge_on(at.clone(), Some("shw_t".into()), &ask[..], &mut out)
+        let mut c = Talk::start(&at, "shw_t");
+        let init = c
+            .ask(json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-03-26"}}))
+            .await;
+        assert_eq!(init["result"]["protocolVersion"], "2025-03-26", "{init}");
+        c.to.write_all(b"{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n")
             .await
-            .expect("bridge");
-        assert!(String::from_utf8_lossy(&out).contains("is not open"));
+            .expect("write");
+        let list = c
+            .ask(json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}))
+            .await;
+        assert_eq!(list["result"]["tools"].as_array().map(Vec::len), Some(4));
+        let (said, error) = c.tool(3, "list_hosts").await;
+        assert!(error && said.contains("not open"), "{said}");
 
         let (tx, _rx) = async_channel::unbounded();
         let hub = Hub::new(
@@ -327,21 +451,21 @@ mod through {
             }
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
-        let mut out = vec![];
-        bridge_on(at.clone(), Some("shw_t".into()), &ask[..], &mut out)
-            .await
-            .expect("bridge");
-        let v: Value = serde_json::from_str(String::from_utf8_lossy(&out).trim()).expect("json");
-        assert_eq!(
-            (v["id"].clone(), v["result"].clone()),
-            (json!(7), json!({}))
-        );
+        // The app open now: the same session reaches it.
+        let (said, error) = c.tool(4, "list_hosts").await;
+        assert!(!error && said.contains("No host is given"), "{said}");
+        let pong = c
+            .ask(json!({"jsonrpc": "2.0", "id": 5, "method": "ping"}))
+            .await;
+        assert_eq!(pong["result"], json!({}));
 
-        let mut out = vec![];
-        bridge_on(at.clone(), Some("shw_other".into()), &ask[..], &mut out)
-            .await
-            .expect("bridge");
-        assert!(String::from_utf8_lossy(&out).contains("not known"));
+        let mut other = Talk::start(&at, "shw_other");
+        let init = other
+            .ask(json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}))
+            .await;
+        assert_eq!(init["result"]["serverInfo"]["name"], "shellwing");
+        let (said, error) = other.tool(2, "list_hosts").await;
+        assert!(error && said.contains("not known"), "{said}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
