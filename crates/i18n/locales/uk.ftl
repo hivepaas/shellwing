@@ -1,6 +1,126 @@
 # shellwing in Ukrainian. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = Виконайте це один раз у терміналі:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = У Claude Desktop, Settings › Developer › Edit Config, додайте це до claude_desktop_config.json:
+
+# Add this to {file}:
+t314ece69 = Додайте це до { $file }:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = У Cline, MCP Servers › Configure, додайте це до cline_mcp_settings.json:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = Клієнт, який сам запускає свій MCP-сервер, через stdio:
+
+# Find a host
+t5f515591 = Знайдіть хост
+
+# AI clients
+ta302119f = AI-клієнти
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = Агенти, що підключаються до ваших хостів через shellwing за допомогою MCP. Вони ніколи не бачать ні ключа, ні пароля, ні парольної фрази: shellwing входить замість них.
+
+# Add client
+td53111fb = Додати клієнт
+
+# Which client?
+t278d359e = Який клієнт?
+
+# No client yet: Add client lets one in.
+t6815a21c = Клієнтів ще немає: «Додати клієнт» впускає новий.
+
+# token …{end}
+t4a145d1b = токен …{ $end }
+
+# connected now
+t432c5c88 = зараз підключено
+
+# not connected
+tb83f675d = не підключено
+
+# Config
+t6a12e0e7 = Конфігурація
+
+# Remove
+t21a5901d = Видалити
+
+# (the token shown when it was added)
+t9375386f = (токен, показаний під час додавання)
+
+# Copy
+t658f3664 = Копіювати
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = Токен показано лише цього разу: shellwing зберігає тільки його хеш. «Видалити» відкликає його.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = Сам токен не зберігається, лише його хеш: щоб знову побачити токен, видаліть клієнт і додайте його знову.
+
+# Hosts given
+t1ef9da69 = Надані хости
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = Клієнт має доступ лише до цих хостів. Його команди виконуються у фоні, через окреме з'єднання, і кожна записується в журнал на цьому комп'ютері.
+
+# Take every one back
+tb3911aec = Відкликати всі
+
+# Give a host…
+tcb4de791 = Надати хост…
+
+# No host is given to an AI client.
+t654696aa = Жоден хост не надано AI-клієнту.
+
+# while shellwing stays open
+t938960ff = поки shellwing відкрито
+
+# until taken back
+tba10b16b = до відкликання
+
+# ended
+t1a30bf3b = завершено
+
+# for {n} min more
+t955674cd = ще { $n } хв
+
+# Take back
+t0650c681 = Відкликати
+
+# Until I take it back
+taacfb8db = Доки я не відкличу
+
+# While shellwing stays open
+tdb1d179f = Поки shellwing відкрито
+
+# 1 hour
+t0c43fb4a = 1 година
+
+# 8 hours
+t63affd14 = 8 годин
+
+# Host
+t302af18f = Хост
+
+# To
+t41f59644 = Кому
+
+# For
+t0f7e1b30 = Термін
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
+
+# Cancel
+t35afca3b = Скасувати
+
+# Give access
+te96c4c6e = Надати доступ
+
 # unlock its windows
 t7c69953e = розблокувати свої вікна
 
@@ -177,9 +297,6 @@ t1e706c21 = Відкинути
 
 # Keep in Downloads
 t3052af2e = Залишити в Downloads
-
-# Cancel
-t35afca3b = Скасувати
 
 # Show
 t29742e5c = Показати
@@ -916,9 +1033,6 @@ t4c4139ed = Попередня тема
 # Quit
 tc7b3d356 = Вийти
 
-# Copy
-t658f3664 = Копіювати
-
 # Paste
 tb34a0288 = Вставити
 
@@ -1401,9 +1515,6 @@ t5299ff65 = центр сертифікації
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · рядок { $line }
-
-# Remove
-t21a5901d = Видалити
 
 # Known hosts
 tc951355f = Відомі хости
@@ -2413,6 +2524,9 @@ t699a801a = SSH і безпека
 # Vault
 td432914f = Сховище
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = Його пароль (пароль застосунку, якщо такі є)
 
@@ -2916,9 +3030,6 @@ tc153db4a = Видалити парольну фразу
 
 # Keep it in the system keychain
 tc01bbcf0 = Зберігати в системній в'язці ключів
-
-# 1 hour
-t0c43fb4a = 1 година
 
 # {m} min
 t7eebb6a4 = { $m } хв

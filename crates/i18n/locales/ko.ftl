@@ -1,6 +1,126 @@
 # shellwing in ko. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = 터미널에서 다음을 한 번 실행하세요:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = Claude Desktop의 Settings › Developer › Edit Config에서 claude_desktop_config.json에 다음을 추가하세요:
+
+# Add this to {file}:
+t314ece69 = { $file }에 다음을 추가하세요:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = Cline의 MCP Servers › Configure에서 cline_mcp_settings.json에 다음을 추가하세요:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = MCP 서버를 직접 시작하는 클라이언트(stdio 사용):
+
+# Find a host
+t5f515591 = 호스트 찾기
+
+# AI clients
+ta302119f = AI 클라이언트
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = shellwing을 통해 MCP로 호스트에 접근하는 에이전트입니다. 에이전트는 키, 비밀번호, 암호 문구를 볼 수 없으며, 로그인은 shellwing이 대신 합니다.
+
+# Add client
+td53111fb = 클라이언트 추가
+
+# Which client?
+t278d359e = 어떤 클라이언트인가요?
+
+# No client yet: Add client lets one in.
+t6815a21c = 아직 클라이언트가 없습니다. '클라이언트 추가'로 허용하세요.
+
+# token …{end}
+t4a145d1b = 토큰 …{ $end }
+
+# connected now
+t432c5c88 = 연결됨
+
+# not connected
+tb83f675d = 연결되지 않음
+
+# Config
+t6a12e0e7 = 설정
+
+# Remove
+t21a5901d = 제거
+
+# (the token shown when it was added)
+t9375386f = (추가할 때 표시된 토큰)
+
+# Copy
+t658f3664 = 복사
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = 토큰은 이번 한 번만 표시됩니다. shellwing은 해시만 보관합니다. '제거'하면 회수됩니다.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = 토큰은 보관되지 않고 해시만 남습니다. 다시 보려면 클라이언트를 제거한 뒤 다시 추가하세요.
+
+# Hosts given
+t1ef9da69 = 허용된 호스트
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = 클라이언트는 이 호스트에만 접근할 수 있습니다. 명령은 별도의 연결에서 백그라운드로 실행되며, 각각 이 컴퓨터의 로그에 기록됩니다.
+
+# Take every one back
+tb3911aec = 모두 회수
+
+# Give a host…
+tcb4de791 = 호스트 허용…
+
+# No host is given to an AI client.
+t654696aa = AI 클라이언트에 허용된 호스트가 없습니다.
+
+# while shellwing stays open
+t938960ff = shellwing이 열려 있는 동안
+
+# until taken back
+tba10b16b = 회수할 때까지
+
+# ended
+t1a30bf3b = 종료됨
+
+# for {n} min more
+t955674cd = { $n }분 남음
+
+# Take back
+t0650c681 = 회수
+
+# Until I take it back
+taacfb8db = 직접 회수할 때까지
+
+# While shellwing stays open
+tdb1d179f = shellwing이 열려 있는 동안
+
+# 1 hour
+t0c43fb4a = 1시간
+
+# 8 hours
+t63affd14 = 8시간
+
+# Host
+t302af18f = 호스트
+
+# To
+t41f59644 = 대상
+
+# For
+t0f7e1b30 = 기간
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
+
+# Cancel
+t35afca3b = 취소
+
+# Give access
+te96c4c6e = 접근 허용
+
 # unlock its windows
 t7c69953e = 창 잠금 해제
 
@@ -171,9 +291,6 @@ t1e706c21 = 버리기
 
 # Keep in Downloads
 t3052af2e = Downloads에 보관
-
-# Cancel
-t35afca3b = 취소
 
 # Show
 t29742e5c = 보기
@@ -898,9 +1015,6 @@ t4c4139ed = 이전 테마
 # Quit
 tc7b3d356 = 종료
 
-# Copy
-t658f3664 = 복사
-
 # Paste
 tb34a0288 = 붙여넣기
 
@@ -1353,9 +1467,6 @@ t5299ff65 = 인증 기관
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · { $line }번 줄
-
-# Remove
-t21a5901d = 제거
 
 # Known hosts
 tc951355f = 알려진 호스트
@@ -2320,6 +2431,9 @@ t699a801a = SSH 및 보안
 # Vault
 td432914f = 보관함
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = 비밀번호 (앱 비밀번호를 지원하면 앱 비밀번호)
 
@@ -2817,9 +2931,6 @@ tc153db4a = 암호 문구 제거
 
 # Keep it in the system keychain
 tc01bbcf0 = 시스템 키체인에 보관
-
-# 1 hour
-t0c43fb4a = 1시간
 
 # {m} min
 t7eebb6a4 = { $m }분

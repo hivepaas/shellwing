@@ -1,6 +1,126 @@
 # shellwing in Turkish. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = Bunu bir terminalde bir kez çalıştırın:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = Claude Desktop'ta, Settings › Developer › Edit Config içinde, bunu claude_desktop_config.json dosyasına ekleyin:
+
+# Add this to {file}:
+t314ece69 = Bunu { $file } dosyasına ekleyin:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = Cline'da, MCP Servers › Configure içinde, bunu cline_mcp_settings.json dosyasına ekleyin:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = MCP sunucusunu stdio üzerinden kendisi başlatan bir istemci:
+
+# Find a host
+t5f515591 = Bir ana makine arayın
+
+# AI clients
+ta302119f = AI istemcileri
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = Ana makinelerinize shellwing üzerinden, MCP ile ulaşan ajanlar. Hiçbir zaman bir anahtar, parola veya parola ifadesi görmezler: onlar adına shellwing giriş yapar.
+
+# Add client
+td53111fb = İstemci ekle
+
+# Which client?
+t278d359e = Hangi istemci?
+
+# No client yet: Add client lets one in.
+t6815a21c = Henüz istemci yok: İstemci ekle ile bir tane içeri alın.
+
+# token …{end}
+t4a145d1b = token …{ $end }
+
+# connected now
+t432c5c88 = şu an bağlı
+
+# not connected
+tb83f675d = bağlı değil
+
+# Config
+t6a12e0e7 = Yapılandırma
+
+# Remove
+t21a5901d = Kaldır
+
+# (the token shown when it was added)
+t9375386f = (eklendiğinde gösterilen token)
+
+# Copy
+t658f3664 = Kopyala
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = Token yalnızca bu kez gösterilir: shellwing yalnızca karmasını saklar. Kaldır ile geri alınır.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = Token'ın kendisi saklanmaz, yalnızca karması: yeniden görmek için istemciyi kaldırıp tekrar ekleyin.
+
+# Hosts given
+t1ef9da69 = Verilen ana makineler
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = Bir istemci yalnızca bunlara ulaşır. Komutları arka planda, kendine ait bir bağlantıda çalışır ve her biri bu bilgisayarda bir günlüğe kaydedilir.
+
+# Take every one back
+tb3911aec = Tüm erişimleri kaldır
+
+# Give a host…
+tcb4de791 = Ana makine ver…
+
+# No host is given to an AI client.
+t654696aa = Hiçbir AI istemcisine ana makine verilmedi.
+
+# while shellwing stays open
+t938960ff = shellwing açıkken
+
+# until taken back
+tba10b16b = geri alınana kadar
+
+# ended
+t1a30bf3b = sona erdi
+
+# for {n} min more
+t955674cd = { $n } dk daha
+
+# Take back
+t0650c681 = Erişimi kaldır
+
+# Until I take it back
+taacfb8db = Ben geri alana kadar
+
+# While shellwing stays open
+tdb1d179f = shellwing açıkken
+
+# 1 hour
+t0c43fb4a = 1 saat
+
+# 8 hours
+t63affd14 = 8 saat
+
+# Host
+t302af18f = Ana makine
+
+# To
+t41f59644 = Kime
+
+# For
+t0f7e1b30 = Süre
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine de. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
+
+# Cancel
+t35afca3b = İptal
+
+# Give access
+te96c4c6e = Erişim ver
+
 # unlock its windows
 t7c69953e = pencerelerinin kilidini açmak
 
@@ -175,9 +295,6 @@ t1e706c21 = At
 
 # Keep in Downloads
 t3052af2e = İndirilenler'de tut
-
-# Cancel
-t35afca3b = İptal
 
 # Show
 t29742e5c = Göster
@@ -910,9 +1027,6 @@ t4c4139ed = Önceki tema
 # Quit
 tc7b3d356 = Çık
 
-# Copy
-t658f3664 = Kopyala
-
 # Paste
 tb34a0288 = Yapıştır
 
@@ -1385,9 +1499,6 @@ t5299ff65 = sertifika yetkilisi
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · { $line }. satır
-
-# Remove
-t21a5901d = Kaldır
 
 # Known hosts
 tc951355f = Bilinen ana makineler
@@ -2369,6 +2480,9 @@ t699a801a = SSH ve güvenlik
 # Vault
 td432914f = Kasa
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = Parolası (varsa bir uygulama parolası)
 
@@ -2870,9 +2984,6 @@ tc153db4a = Parola ifadesini kaldır
 
 # Keep it in the system keychain
 tc01bbcf0 = Sistem anahtarlığında tut
-
-# 1 hour
-t0c43fb4a = 1 saat
 
 # {m} min
 t7eebb6a4 = { $m } dk

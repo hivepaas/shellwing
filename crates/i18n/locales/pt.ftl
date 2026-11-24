@@ -1,6 +1,126 @@
 # shellwing in pt. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = Execute isto uma vez em um terminal:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = No Claude Desktop, em Settings › Developer › Edit Config, adicione isto a claude_desktop_config.json:
+
+# Add this to {file}:
+t314ece69 = Adicione isto a { $file }:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = No Cline, em MCP Servers › Configure, adicione isto a cline_mcp_settings.json:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = Um cliente que inicia o próprio servidor MCP, via stdio:
+
+# Find a host
+t5f515591 = Encontre um servidor
+
+# AI clients
+ta302119f = Clientes de AI
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = Agentes que alcançam seus servidores pelo shellwing, via MCP. Eles nunca veem uma chave, uma senha ou uma frase secreta: o shellwing entra por eles.
+
+# Add client
+td53111fb = Adicionar cliente
+
+# Which client?
+t278d359e = Qual cliente?
+
+# No client yet: Add client lets one in.
+t6815a21c = Nenhum cliente ainda: Adicionar cliente permite a entrada de um.
+
+# token …{end}
+t4a145d1b = token …{ $end }
+
+# connected now
+t432c5c88 = conectado agora
+
+# not connected
+tb83f675d = não conectado
+
+# Config
+t6a12e0e7 = Configuração
+
+# Remove
+t21a5901d = Remover
+
+# (the token shown when it was added)
+t9375386f = (o token mostrado quando o cliente foi adicionado)
+
+# Copy
+t658f3664 = Copiar
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = O token aparece só esta vez: o shellwing guarda apenas o hash dele. Remover o revoga.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = O token não é guardado, só o hash dele: para ver um de novo, remova o cliente e adicione-o de novo.
+
+# Hosts given
+t1ef9da69 = Servidores concedidos
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = Um cliente alcança só estes. Os comandos dele rodam em segundo plano, numa conexão própria, e cada um fica em um registro neste computador.
+
+# Take every one back
+tb3911aec = Revogar todos
+
+# Give a host…
+tcb4de791 = Conceder um servidor…
+
+# No host is given to an AI client.
+t654696aa = Nenhum servidor foi concedido a um cliente de AI.
+
+# while shellwing stays open
+t938960ff = enquanto o shellwing estiver aberto
+
+# until taken back
+tba10b16b = até ser revogado
+
+# ended
+t1a30bf3b = encerrado
+
+# for {n} min more
+t955674cd = por mais { $n } min
+
+# Take back
+t0650c681 = Revogar
+
+# Until I take it back
+taacfb8db = Até eu revogar
+
+# While shellwing stays open
+tdb1d179f = Enquanto o shellwing estiver aberto
+
+# 1 hour
+t0c43fb4a = 1 hora
+
+# 8 hours
+t63affd14 = 8 horas
+
+# Host
+t302af18f = Servidor
+
+# To
+t41f59644 = Para
+
+# For
+t0f7e1b30 = Por
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = Ele nunca vê uma chave, uma senha ou uma frase secreta: um servidor que pediria uma é recusado, assim como um cuja chave ainda não é conhecida. A saída de um servidor pode trazer palavras feitas para direcionar um agente: conceda servidores apenas a um cliente a quem você os confiaria.
+
+# Cancel
+t35afca3b = Cancelar
+
+# Give access
+te96c4c6e = Conceder acesso
+
 # unlock its windows
 t7c69953e = desbloquear suas janelas
 
@@ -175,9 +295,6 @@ t1e706c21 = Descartar
 
 # Keep in Downloads
 t3052af2e = Manter em Downloads
-
-# Cancel
-t35afca3b = Cancelar
 
 # Show
 t29742e5c = Mostrar
@@ -910,9 +1027,6 @@ t4c4139ed = Tema anterior
 # Quit
 tc7b3d356 = Sair
 
-# Copy
-t658f3664 = Copiar
-
 # Paste
 tb34a0288 = Colar
 
@@ -1385,9 +1499,6 @@ t5299ff65 = autoridade certificadora
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · linha { $line }
-
-# Remove
-t21a5901d = Remover
 
 # Known hosts
 tc951355f = Servidores conhecidos
@@ -2369,6 +2480,9 @@ t699a801a = SSH e segurança
 # Vault
 td432914f = Cofre
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = A senha dele (uma senha de app, onde houver)
 
@@ -2870,9 +2984,6 @@ tc153db4a = Remover a frase secreta
 
 # Keep it in the system keychain
 tc01bbcf0 = Guardar no chaveiro do sistema
-
-# 1 hour
-t0c43fb4a = 1 hora
 
 # {m} min
 t7eebb6a4 = { $m } min

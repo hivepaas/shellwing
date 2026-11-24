@@ -1,6 +1,126 @@
 # shellwing in Vietnamese. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = Chạy lệnh này một lần trong terminal:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = Trong Claude Desktop, Settings › Developer › Edit Config, thêm đoạn này vào claude_desktop_config.json:
+
+# Add this to {file}:
+t314ece69 = Thêm đoạn này vào { $file }:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = Trong Cline, MCP Servers › Configure, thêm đoạn này vào cline_mcp_settings.json:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = Client tự khởi chạy MCP server của nó, qua stdio:
+
+# Find a host
+t5f515591 = Tìm máy chủ
+
+# AI clients
+ta302119f = Client AI
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = Các agent truy cập máy chủ của bạn qua shellwing, bằng MCP. Chúng không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: shellwing đăng nhập thay cho chúng.
+
+# Add client
+td53111fb = Thêm client
+
+# Which client?
+t278d359e = Client nào?
+
+# No client yet: Add client lets one in.
+t6815a21c = Chưa có client nào: Thêm client sẽ cho một client vào.
+
+# token …{end}
+t4a145d1b = token …{ $end }
+
+# connected now
+t432c5c88 = đã kết nối
+
+# not connected
+tb83f675d = chưa kết nối
+
+# Config
+t6a12e0e7 = Cấu hình
+
+# Remove
+t21a5901d = Gỡ
+
+# (the token shown when it was added)
+t9375386f = (token đã hiện khi thêm)
+
+# Copy
+t658f3664 = Sao chép
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = Token chỉ hiện lần này: shellwing chỉ giữ mã băm của nó. Gỡ sẽ thu hồi token.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = Token không được giữ, chỉ giữ mã băm: muốn thấy lại token, hãy gỡ client rồi thêm lại.
+
+# Hosts given
+t1ef9da69 = Máy chủ đã cấp
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = Client chỉ truy cập được các máy chủ này. Lệnh của nó chạy nền, trên kết nối riêng, và mỗi lệnh được ghi vào nhật ký trên máy tính này.
+
+# Take every one back
+tb3911aec = Thu hồi tất cả
+
+# Give a host…
+tcb4de791 = Cấp một máy chủ…
+
+# No host is given to an AI client.
+t654696aa = Không có máy chủ nào được cấp cho client AI.
+
+# while shellwing stays open
+t938960ff = khi shellwing còn mở
+
+# until taken back
+tba10b16b = tới khi thu hồi
+
+# ended
+t1a30bf3b = đã hết hạn
+
+# for {n} min more
+t955674cd = còn { $n } phút
+
+# Take back
+t0650c681 = Thu hồi
+
+# Until I take it back
+taacfb8db = Tới khi tôi thu hồi
+
+# While shellwing stays open
+tdb1d179f = Khi shellwing còn mở
+
+# 1 hour
+t0c43fb4a = 1 giờ
+
+# 8 hours
+t63affd14 = 8 giờ
+
+# Host
+t302af18f = Máy chủ
+
+# To
+t41f59644 = Cấp cho
+
+# For
+t0f7e1b30 = Thời hạn
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
+
+# Cancel
+t35afca3b = Huỷ
+
+# Give access
+te96c4c6e = Cấp quyền
+
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó
 
@@ -171,9 +291,6 @@ t1e706c21 = Bỏ
 
 # Keep in Downloads
 t3052af2e = Giữ trong Downloads
-
-# Cancel
-t35afca3b = Huỷ
 
 # Show
 t29742e5c = Hiện
@@ -898,9 +1015,6 @@ t4c4139ed = Giao diện trước
 # Quit
 tc7b3d356 = Thoát
 
-# Copy
-t658f3664 = Sao chép
-
 # Paste
 tb34a0288 = Dán
 
@@ -1353,9 +1467,6 @@ t5299ff65 = tổ chức cấp chứng chỉ
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · dòng { $line }
-
-# Remove
-t21a5901d = Gỡ
 
 # Known hosts
 tc951355f = Máy chủ đã biết
@@ -2320,6 +2431,9 @@ t699a801a = SSH và bảo mật
 # Vault
 td432914f = Kho
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = Mật khẩu của nó (mật khẩu ứng dụng, nếu dịch vụ có)
 
@@ -2817,9 +2931,6 @@ tc153db4a = Bỏ cụm mật khẩu
 
 # Keep it in the system keychain
 tc01bbcf0 = Giữ trong kho khoá của hệ thống
-
-# 1 hour
-t0c43fb4a = 1 giờ
 
 # {m} min
 t7eebb6a4 = { $m } phút

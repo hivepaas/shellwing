@@ -16,6 +16,7 @@
 // A GUI program on Windows: no console window opens beside it.
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+mod ai_view;
 mod app_lock;
 mod chrome;
 mod colors;
@@ -375,8 +376,10 @@ const CONFIG_POLL: Duration = Duration::from_millis(500);
 
 const USAGE: &str = "usage: shellwing [-L|-R|-D spec]... [[user@]host[:port]]
        shellwing --local
+       shellwing mcp
   host     a name from hosts.toml, an alias from ~/.ssh/config, or a host name
   --local  a shell on this computer
+  mcp      the MCP server an AI client starts (Settings › AI gives its config)
   -L spec  [bind:]port:host:hostport  a port here reaches host:hostport from the server
   -R spec  [bind:]port:host:hostport  a port on the server reaches host:hostport from here
   -D spec  [bind:]port                a SOCKS proxy here, going out from the server";
@@ -421,7 +424,28 @@ fn attach_console() {
     unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
 }
 
+/// `shellwing mcp`: what an AI client starts as its MCP server.
+fn mcp_bridge() -> anyhow::Result<()> {
+    let at = Store::default_dir()
+        .map(|d| shellwing_core::ai::socket::Endpoint::for_config(&d))
+        .ok_or_else(|| anyhow::anyhow!("no config directory"))?;
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    rt.block_on(shellwing_core::ai::socket::bridge(
+        at,
+        std::env::var("SHELLWING_TOKEN").ok(),
+    ))?;
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
+    // An AI client's MCP server: its stdio to the running app, and nothing
+    // drawn (docs/configuration.md, AI access). First: the stdio is the
+    // client's pipes, not a console's.
+    if std::env::args().nth(1).as_deref() == Some("mcp") {
+        return mcp_bridge();
+    }
     #[cfg(windows)]
     attach_console();
     if std::env::args().skip(1).any(|a| a == "-h" || a == "--help") {

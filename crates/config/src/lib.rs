@@ -33,8 +33,8 @@ pub use settings::{
 };
 pub use shortcuts::{Chord, Hotkey, Keymap, Mods, Os, ShortcutSettings};
 pub use state::{
-    NoteWindowState, PaneState, PlacedFile, SessionState, SidebarState, SystemSeen, TabState,
-    UpdateState, WindowMode, WindowState,
+    AiClient, AiGrant, AiHow, AiMode, AiState, NoteWindowState, PaneState, PlacedFile,
+    SessionState, SidebarState, SystemSeen, TabState, UpdateState, WindowMode, WindowState,
 };
 pub use store::{EditFile, LoadError, SettingValue, Stamp, Store, SyncPlaceText, WriteError};
 pub use theme::{DEFAULT_LIGHT_THEME, DEFAULT_THEME, GROUPS, Gradient, Theme, Themes};

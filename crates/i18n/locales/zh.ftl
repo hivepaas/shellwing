@@ -1,6 +1,126 @@
 # shellwing in zh. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = 在终端中运行一次以下命令：
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = 在 Claude Desktop 的 Settings › Developer › Edit Config 中，将以下内容添加到 claude_desktop_config.json：
+
+# Add this to {file}:
+t314ece69 = 将以下内容添加到 { $file }：
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = 在 Cline 的 MCP Servers › Configure 中，将以下内容添加到 cline_mcp_settings.json：
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = 自行启动 MCP 服务器的客户端，通过 stdio：
+
+# Find a host
+t5f515591 = 查找主机
+
+# AI clients
+ta302119f = AI 客户端
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = 通过 shellwing、经由 MCP 访问你的主机的智能体。它们永远看不到密钥、密码或密码短语：由 shellwing 代为登录。
+
+# Add client
+td53111fb = 添加客户端
+
+# Which client?
+t278d359e = 哪个客户端？
+
+# No client yet: Add client lets one in.
+t6815a21c = 还没有客户端：用“添加客户端”接入一个。
+
+# token …{end}
+t4a145d1b = 令牌 …{ $end }
+
+# connected now
+t432c5c88 = 已连接
+
+# not connected
+tb83f675d = 未连接
+
+# Config
+t6a12e0e7 = 配置
+
+# Remove
+t21a5901d = 移除
+
+# (the token shown when it was added)
+t9375386f = （添加时显示的令牌）
+
+# Copy
+t658f3664 = 复制
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = 令牌仅显示这一次：shellwing 只保存其哈希值。“移除”即可收回。
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = 令牌不会被保存，只保存其哈希值：要再次查看，请移除该客户端后重新添加。
+
+# Hosts given
+t1ef9da69 = 已授权的主机
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = 客户端只能访问这些主机。它的命令在后台通过独立的连接运行，每条命令都会记录在此计算机上的日志中。
+
+# Take every one back
+tb3911aec = 全部收回
+
+# Give a host…
+tcb4de791 = 授权主机…
+
+# No host is given to an AI client.
+t654696aa = 尚未向 AI 客户端授权任何主机。
+
+# while shellwing stays open
+t938960ff = shellwing 保持打开期间
+
+# until taken back
+tba10b16b = 直到收回
+
+# ended
+t1a30bf3b = 已结束
+
+# for {n} min more
+t955674cd = 还剩 { $n } 分钟
+
+# Take back
+t0650c681 = 收回
+
+# Until I take it back
+taacfb8db = 直到我收回
+
+# While shellwing stays open
+tdb1d179f = shellwing 保持打开期间
+
+# 1 hour
+t0c43fb4a = 1 小时
+
+# 8 hours
+t63affd14 = 8 小时
+
+# Host
+t302af18f = 主机
+
+# To
+t41f59644 = 授权给
+
+# For
+t0f7e1b30 = 期限
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = 它永远看不到密钥、密码或密码短语：需要其中任何一项的主机会被拒绝，尚不知道其密钥的主机也一样。主机的输出可能含有试图操纵智能体的文字：只把主机授权给你在这方面信任的智能体。
+
+# Cancel
+t35afca3b = 取消
+
+# Give access
+te96c4c6e = 授予访问权限
+
 # unlock its windows
 t7c69953e = 解锁其窗口
 
@@ -171,9 +291,6 @@ t1e706c21 = 放弃
 
 # Keep in Downloads
 t3052af2e = 保留在 Downloads
-
-# Cancel
-t35afca3b = 取消
 
 # Show
 t29742e5c = 显示
@@ -898,9 +1015,6 @@ t4c4139ed = 上一个主题
 # Quit
 tc7b3d356 = 退出
 
-# Copy
-t658f3664 = 复制
-
 # Paste
 tb34a0288 = 粘贴
 
@@ -1353,9 +1467,6 @@ t5299ff65 = 证书颁发机构
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · 第 { $line } 行
-
-# Remove
-t21a5901d = 移除
 
 # Known hosts
 tc951355f = 已知主机
@@ -2320,6 +2431,9 @@ t699a801a = SSH 与安全
 # Vault
 td432914f = 保险库
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = 该服务的密码（如支持应用专用密码，请使用它）
 
@@ -2817,9 +2931,6 @@ tc153db4a = 移除密码短语
 
 # Keep it in the system keychain
 tc01bbcf0 = 保存在系统钥匙串中
-
-# 1 hour
-t0c43fb4a = 1 小时
 
 # {m} min
 t7eebb6a4 = { $m } 分钟

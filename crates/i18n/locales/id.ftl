@@ -1,6 +1,126 @@
 # shellwing in Indonesian. Each message is found by its English, the
 # comment above it; scripts/i18n.py keeps this file in step with the code.
 
+# Run this once in a terminal:
+t2a18fdaf = Jalankan ini sekali di terminal:
+
+# In Claude Desktop, Settings › Developer › Edit Config, add this to claude_desktop_config.json:
+td57f67eb = Di Claude Desktop, buka Settings › Developer › Edit Config, lalu tambahkan ini ke claude_desktop_config.json:
+
+# Add this to {file}:
+t314ece69 = Tambahkan ini ke { $file }:
+
+# In Cline, MCP Servers › Configure, add this to cline_mcp_settings.json:
+t0ff991db = Di Cline, buka MCP Servers › Configure, lalu tambahkan ini ke cline_mcp_settings.json:
+
+# A client that starts its MCP server itself, over stdio:
+td4ff0be4 = Klien yang menjalankan server MCP-nya sendiri, lewat stdio:
+
+# Find a host
+t5f515591 = Cari host
+
+# AI clients
+ta302119f = Klien AI
+
+# Agents that reach your hosts through shellwing, over MCP. They never see a key, a password or a passphrase: shellwing signs in for them.
+t6c56bef3 = Agen yang menjangkau host Anda melalui shellwing, lewat MCP. Agen tidak pernah melihat kunci, kata sandi, atau frasa sandi: shellwing yang masuk untuk mereka.
+
+# Add client
+td53111fb = Tambah klien
+
+# Which client?
+t278d359e = Klien mana?
+
+# No client yet: Add client lets one in.
+t6815a21c = Belum ada klien: Tambah klien memberi akses ke satu klien.
+
+# token …{end}
+t4a145d1b = token …{ $end }
+
+# connected now
+t432c5c88 = terhubung sekarang
+
+# not connected
+tb83f675d = tidak terhubung
+
+# Config
+t6a12e0e7 = Konfigurasi
+
+# Remove
+t21a5901d = Hapus
+
+# (the token shown when it was added)
+t9375386f = (token yang ditampilkan saat klien ditambahkan)
+
+# Copy
+t658f3664 = Salin
+
+# The token shows this once: shellwing keeps only its hash. Remove takes it back.
+t6ebf1609 = Token hanya ditampilkan sekali ini: shellwing hanya menyimpan hash-nya. Hapus mencabutnya.
+
+# The token is not kept, only its hash: to see one again, remove the client and add it again.
+tf69e6847 = Token tidak disimpan, hanya hash-nya: untuk melihat token lagi, hapus klien lalu tambahkan lagi.
+
+# Hosts given
+t1ef9da69 = Host yang diberikan
+
+# A client reaches only these. Its commands run in the background, on a connection of their own, and each is kept in a log on this computer.
+tf7a02825 = Klien hanya dapat menjangkau host ini. Perintahnya berjalan di latar belakang, pada koneksinya sendiri, dan masing-masing dicatat di log di komputer ini.
+
+# Take every one back
+tb3911aec = Cabut semua
+
+# Give a host…
+tcb4de791 = Berikan host…
+
+# No host is given to an AI client.
+t654696aa = Tidak ada host yang diberikan ke klien AI.
+
+# while shellwing stays open
+t938960ff = selama shellwing tetap terbuka
+
+# until taken back
+tba10b16b = sampai dicabut
+
+# ended
+t1a30bf3b = berakhir
+
+# for {n} min more
+t955674cd = { $n } mnt lagi
+
+# Take back
+t0650c681 = Cabut
+
+# Until I take it back
+taacfb8db = Sampai saya cabut
+
+# While shellwing stays open
+tdb1d179f = Selama shellwing tetap terbuka
+
+# 1 hour
+t0c43fb4a = 1 jam
+
+# 8 hours
+t63affd14 = 8 jam
+
+# Host
+t302af18f = Host
+
+# To
+t41f59644 = Kepada
+
+# For
+t0f7e1b30 = Selama
+
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
+
+# Cancel
+t35afca3b = Batal
+
+# Give access
+te96c4c6e = Berikan akses
+
 # unlock its windows
 t7c69953e = membuka kunci jendelanya
 
@@ -174,9 +294,6 @@ t1e706c21 = Buang
 
 # Keep in Downloads
 t3052af2e = Simpan di Downloads
-
-# Cancel
-t35afca3b = Batal
 
 # Show
 t29742e5c = Tampilkan
@@ -907,9 +1024,6 @@ t4c4139ed = Tema sebelumnya
 # Quit
 tc7b3d356 = Keluar
 
-# Copy
-t658f3664 = Salin
-
 # Paste
 tb34a0288 = Tempel
 
@@ -1377,9 +1491,6 @@ t5299ff65 = otoritas sertifikat
 
 # {fingerprint} · line {line}
 t25339948 = { $fingerprint } · baris { $line }
-
-# Remove
-t21a5901d = Hapus
 
 # Known hosts
 tc951355f = Host yang dikenal
@@ -2347,6 +2458,9 @@ t699a801a = SSH dan keamanan
 # Vault
 td432914f = Brankas
 
+# AI
+t23d5135f = AI
+
 # Its password (an app password, where it has them)
 t22e462e2 = Kata sandinya (kata sandi aplikasi, jika tersedia)
 
@@ -2847,9 +2961,6 @@ tc153db4a = Hapus frasa sandi
 
 # Keep it in the system keychain
 tc01bbcf0 = Simpan di rantai kunci sistem
-
-# 1 hour
-t0c43fb4a = 1 jam
 
 # {m} min
 t7eebb6a4 = { $m } mnt

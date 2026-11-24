@@ -465,13 +465,28 @@ async fn shell(
     if let Some(mut stdin) = child.stdin.take() {
         let _ = stdin.write_all(&input).await;
     }
-    let Ok(out) = child.wait_with_output().await else {
-        let _ = ch.close().await;
-        return;
+    // What it prints goes out as it comes, as a real server's does.
+    let (mut out, mut err) = (child.stdout.take(), child.stderr.take());
+    let (mut to, mut errors) = (ch.make_writer(), ch.make_writer_ext(Some(1)));
+    let down = async {
+        if let Some(o) = &mut out {
+            let mut buf = [0u8; 4096];
+            while let Ok(n) = o.read(&mut buf).await {
+                if n == 0 || to.write_all(&buf[..n]).await.is_err() {
+                    break;
+                }
+                let _ = to.flush().await;
+            }
+        }
     };
-    let _ = ch.data(&out.stdout[..]).await;
-    let _ = ch.extended_data(1, &out.stderr[..]).await;
-    let _ = ch.exit_status(out.status.code().unwrap_or(1) as u32).await;
+    let err_down = async {
+        if let Some(e) = &mut err {
+            let _ = tokio::io::copy(e, &mut errors).await;
+        }
+    };
+    tokio::join!(down, err_down);
+    let code = child.wait().await.ok().and_then(|s| s.code()).unwrap_or(1);
+    let _ = ch.exit_status(code as u32).await;
     let _ = ch.eof().await;
     let _ = ch.close().await;
 }

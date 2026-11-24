@@ -23,7 +23,9 @@ zeroize = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "1"
-tokio.workspace = true
+tokio = { workspace = true, features = ["io-util", "io-std"] }
+# AI clients' tokens (ai.rs).
+getrandom = "0.3"
 async-channel.workspace = true
 anyhow.workspace = true
 # Local terminals: a PTY on Unix, ConPTY on Windows.

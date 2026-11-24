@@ -34,6 +34,75 @@ pub struct SystemSeen {
     pub checked_at: u64,
 }
 
+/// Who may reach which host through shellwing's MCP server, and how
+/// (`state/ai.json`): this computer's alone, never synced.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiState {
+    #[serde(default)]
+    pub clients: Vec<AiClient>,
+    #[serde(default)]
+    pub grants: Vec<AiGrant>,
+    /// What a new grant does with a command.
+    #[serde(default)]
+    pub default_mode: AiMode,
+}
+
+/// An AI client let in: by the SHA-256 of its token, never the token.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiClient {
+    pub id: String,
+    /// Which client it is (`claude-code`, `cursor`, `stdio`…), for its
+    /// config.
+    pub kind: String,
+    pub name: String,
+    /// Hex.
+    pub token_sha256: String,
+    /// Seconds since 1970.
+    #[serde(default)]
+    pub added_at: u64,
+}
+
+/// A host given to a client.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiGrant {
+    /// The client's id.
+    pub client: String,
+    /// What opening the host connects to, as the host list has it.
+    pub host: String,
+    #[serde(default)]
+    pub how: AiHow,
+    #[serde(default)]
+    pub mode: AiMode,
+    /// When it ends, in seconds since 1970; None: when it is taken back.
+    #[serde(default)]
+    pub until: Option<u64>,
+    /// It ends when shellwing quits: not kept for the next start.
+    #[serde(default)]
+    pub session: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AiHow {
+    /// On a connection of its own, with no tab.
+    #[default]
+    Background,
+    /// Typing into a tab to the host.
+    Tab,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AiMode {
+    /// Commands run at once; each is kept in the activity.
+    #[default]
+    Free,
+    /// One that looks risky waits for the person.
+    Risky,
+    /// Each waits for the person.
+    Ask,
+}
+
 /// What the host list has folded (`state/sidebar.json`): its Actions,
 /// and sections by key (a group's name, a collection's id, else the
 /// section's title).
