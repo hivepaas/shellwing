@@ -430,6 +430,36 @@ t97a4b927 = kasa açık değil
 # No key made: {e}
 t4e14e42b = Anahtar oluşturulmadı: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Tam bir yol, örneğin /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Parola ifadesi
+
+# That passphrase does not open it.
+t05c6a9c1 = Bu parola ifadesi onu açmıyor.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } bir OpenSSH özel anahtarı değil.
+
+# Not copied: {e}
+t03370a6b = Kopyalanmadı: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Parola bekleniyor…
+
+# Add to the vault
+t236cfbb2 = Kasaya ekle
+
+# Read as administrator
+t44c7c72e = Yönetici olarak oku
+
+# Key file, read as administrator
+t023daf07 = Yönetici olarak okunan anahtar dosyası
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Sistem bir kez yönetici parolası sorar. Ardından anahtar sizin anahtarlarınızdan biri olarak kasaya girer: o andan itibaren onu dosyanın sahibi değil kasanız saklar ve diğer cihazlarınızla eşitlenir.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Bu ana makine hosts.toml içinde bulunamıyor.
 
@@ -543,6 +573,9 @@ ta6d50f9b = { $name }   kasada · { $kind }
 
 # Another key file…
 t6f4497c1 = Başka bir anahtar dosyası…
+
+# Key file as administrator…
+t7c2b0195 = Yönetici olarak anahtar dosyası…
 
 # + Generate a key for this host
 ta1a39e38 = + Bu ana makine için anahtar oluştur
@@ -1031,6 +1064,18 @@ t040b2da6 =
        *[other] { $n } ana makineyi içe aktar
     }
 
+# Not read: the password was not given.
+tf6b727a9 = Okunmadı: parola girilmedi.
+
+# Not read: the system did not allow it.
+t0def7028 = Okunmadı: sistem izin vermedi.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Bu sistem yönetici parolası soramıyor.
+
+# Not read: {why}
+t9133669c = Okunmadı: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (önerilen)
 
@@ -1073,15 +1118,6 @@ t3ccd278a = Yazılmadı: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = { $path } okunamıyor: { $e }
 
-# Its passphrase
-t279e8bbb = Parola ifadesi
-
-# That passphrase does not open it.
-t05c6a9c1 = Bu parola ifadesi onu açmıyor.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } bir OpenSSH özel anahtarı değil.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = { $file_name } için parola ifadesi kaydedildi: bir daha sorulmayacak.
 
@@ -1090,9 +1126,6 @@ ta9354472 = Kaydedilmedi: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } artık kasada ve diğer cihazlarınızla eşitleniyor.
-
-# Not copied: {e}
-t03370a6b = Kopyalanmadı: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } artık ssh-agent içinde, ajan durana kadar.
@@ -1230,6 +1263,9 @@ t8dd31791 = Tamam
 # Install on a host…
 ta8313af0 = Bir ana makineye kur…
 
+# Import a key file as administrator
+t74d1b96b = Yönetici olarak anahtar dosyası içe aktar
+
 # Rename the key
 t2c552c07 = Anahtarı yeniden adlandır
 
@@ -1277,6 +1313,9 @@ t602b32ed = Anahtarlar
 
 # Import key file…
 t68acce01 = Anahtar dosyası içe aktar…
+
+# As administrator…
+t51b1ff28 = Yönetici olarak…
 
 # Generate key…
 t0d000853 = Anahtar oluştur…

@@ -430,6 +430,36 @@ t97a4b927 = la bóveda no está abierta
 # No key made: {e}
 t4e14e42b = No se creó la clave: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Una ruta completa, como /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Su frase de contraseña
+
+# That passphrase does not open it.
+t05c6a9c1 = Esa frase de contraseña no la abre.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } no es una clave privada de OpenSSH.
+
+# Not copied: {e}
+t03370a6b = No se copió: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Esperando la contraseña…
+
+# Add to the vault
+t236cfbb2 = Añadir a la bóveda
+
+# Read as administrator
+t44c7c72e = Leer como administrador
+
+# Key file, read as administrator
+t023daf07 = Archivo de clave, leído como administrador
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = El sistema pide una vez la contraseña de un administrador. Después la clave pasa a la bóveda como una de las tuyas: desde entonces la guarda tu bóveda, no el dueño del archivo, y se sincroniza con tus otros dispositivos.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Este servidor no se encuentra en hosts.toml.
 
@@ -543,6 +573,9 @@ ta6d50f9b = { $name }   en la bóveda · { $kind }
 
 # Another key file…
 t6f4497c1 = Otro archivo de clave…
+
+# Key file as administrator…
+t7c2b0195 = Archivo de clave como administrador…
 
 # + Generate a key for this host
 ta1a39e38 = + Generar una clave para este servidor
@@ -1031,6 +1064,18 @@ t040b2da6 =
        *[other] Importar { $n } servidores
     }
 
+# Not read: the password was not given.
+tf6b727a9 = No se leyó: no se dio la contraseña.
+
+# Not read: the system did not allow it.
+t0def7028 = No se leyó: el sistema no lo permitió.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Este sistema no puede pedir la contraseña de un administrador.
+
+# Not read: {why}
+t9133669c = No se leyó: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (recomendado)
 
@@ -1073,15 +1118,6 @@ t3ccd278a = No se escribió: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = No se puede leer { $path }: { $e }
 
-# Its passphrase
-t279e8bbb = Su frase de contraseña
-
-# That passphrase does not open it.
-t05c6a9c1 = Esa frase de contraseña no la abre.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } no es una clave privada de OpenSSH.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Se guardó la frase de contraseña de { $file_name }: no se volverá a pedir.
 
@@ -1090,9 +1126,6 @@ ta9354472 = No se guardó: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } está ahora en la bóveda y se sincroniza con tus otros dispositivos.
-
-# Not copied: {e}
-t03370a6b = No se copió: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } está ahora en el ssh-agent, hasta que se detenga.
@@ -1230,6 +1263,9 @@ t8dd31791 = Listo
 # Install on a host…
 ta8313af0 = Instalar en un servidor…
 
+# Import a key file as administrator
+t74d1b96b = Importar un archivo de clave como administrador
+
 # Rename the key
 t2c552c07 = Cambiar el nombre de la clave
 
@@ -1277,6 +1313,9 @@ t602b32ed = Claves
 
 # Import key file…
 t68acce01 = Importar archivo de clave…
+
+# As administrator…
+t51b1ff28 = Como administrador…
 
 # Generate key…
 t0d000853 = Generar clave…

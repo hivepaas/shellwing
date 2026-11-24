@@ -7,6 +7,8 @@
 //! Tab and Shift+Tab move between fields; Enter saves; Esc closes (or first
 //! closes an open list or field).
 
+use std::path::PathBuf;
+
 use gpui::{
     Context, ElementId, Entity, EventEmitter, FocusHandle, Focusable, FontWeight, KeyDownEvent,
     Render, SharedString, Window, div, prelude::*, px, rgb,
@@ -68,6 +70,19 @@ pub struct EditorContext {
 
 /// The Key list's choice that makes a key for the host.
 const GENERATE: &str = "\0generate";
+/// The Key list's choice that reads a key file as an administrator.
+const AS_ADMIN: &str = "\0as-admin";
+
+/// A key file only an administrator can read, being added to the vault:
+/// where it is, its text once read, and its passphrase if it asks one.
+struct AdminKey {
+    path: Entity<TextInput>,
+    text: Option<zeroize::Zeroizing<String>>,
+    pass: Option<Entity<TextInput>>,
+    problem: Option<String>,
+    /// The system's password prompt is open.
+    busy: bool,
+}
 
 /// A key the host can sign in with.
 #[derive(Clone)]
@@ -162,6 +177,8 @@ pub struct HostEditor {
     favorite: bool,
     /// A group being named here, made when the host is saved.
     naming_group: bool,
+    /// A key file being read as an administrator.
+    admin_key: Option<AdminKey>,
     /// The collection the host is saved in (its id); None: hosts.toml.
     collection: Option<String>,
     menu: Option<Menu>,
@@ -245,6 +262,7 @@ impl HostEditor {
             icon: None,
             favorite: false,
             naming_group: false,
+            admin_key: None,
             collection: None,
             menu: None,
             adding_jump: false,
@@ -546,6 +564,168 @@ impl HostEditor {
                 .push((Field::Key, tr!("No key made: {e}", e = e))),
         }
         cx.notify();
+    }
+
+    /// Opens the panel where a key file only an administrator can read is
+    /// named, then read and kept in the vault.
+    fn start_admin_key(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let path = crate::input::said(cx, || "/root/.ssh/id_ed25519".to_string());
+        window.focus(&path.focus_handle(cx), cx);
+        self.admin_key = Some(AdminKey {
+            path,
+            text: None,
+            pass: None,
+            problem: None,
+            busy: false,
+        });
+        cx.notify();
+    }
+
+    /// Reads the key file named in the panel as an administrator: the
+    /// system asks for the password.
+    fn read_admin_key(&mut self, cx: &mut Context<Self>) {
+        let Some(a) = self.admin_key.as_mut() else {
+            return;
+        };
+        if a.busy {
+            return;
+        }
+        if a.text.is_some() {
+            return self.add_admin_key(cx);
+        }
+        let path = PathBuf::from(a.path.read(cx).text().trim());
+        if !path.is_absolute() {
+            a.problem = Some(tr!("A full path, such as /root/.ssh/id_ed25519."));
+            return cx.notify();
+        }
+        a.busy = true;
+        a.problem = None;
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let read = crate::keys_view::read_as_admin(path, cx).await;
+            let _ = this.update(cx, |e, cx| {
+                let Some(a) = e.admin_key.as_mut() else {
+                    return;
+                };
+                a.busy = false;
+                match read {
+                    Ok(text) => {
+                        a.text = Some(text);
+                        e.add_admin_key(cx);
+                    }
+                    Err(why) => {
+                        a.problem = Some(why);
+                        cx.notify();
+                    }
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Puts the key read as an administrator in the vault and makes it the
+    /// host's; asks its passphrase first when it has one.
+    fn add_admin_key(&mut self, cx: &mut Context<Self>) {
+        use crate::keys_view::NotAdded;
+        let Some(a) = self.admin_key.as_ref() else {
+            return;
+        };
+        let Some(text) = a.text.clone() else {
+            return;
+        };
+        let path = PathBuf::from(a.path.read(cx).text().trim());
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "key".into());
+        let pass = a.pass.as_ref().map(|p| p.read(cx).text().to_string());
+        match crate::keys_view::add_to_vault(&self.ctx.vault, &name, &text, pass.as_deref()) {
+            Ok((id, info)) => {
+                let value = format!("{}{id}", crate::target::VAULT_KEY);
+                self.ctx.keys.insert(
+                    0,
+                    KeyChoice {
+                        value: value.clone(),
+                        name,
+                        kind: info.kind,
+                        vault: true,
+                    },
+                );
+                let key = self.inputs.key.clone();
+                self.set(&key, &value, cx);
+                self.problems.retain(|(f, _)| *f != Field::Key);
+                self.admin_key = None;
+            }
+            Err(NotAdded::Passphrase) => {
+                let wrong = pass.is_some();
+                let input = a.pass.clone().unwrap_or_else(|| {
+                    cx.new(|cx| TextInput::said(|| tr!("Its passphrase"), cx).masked())
+                });
+                if let Some(a) = self.admin_key.as_mut() {
+                    a.pass = Some(input);
+                    a.problem = wrong.then(|| tr!("That passphrase does not open it."));
+                }
+            }
+            Err(NotAdded::NotAKey) => {
+                if let Some(a) = self.admin_key.as_mut() {
+                    a.text = None;
+                    a.problem = Some(tr!(
+                        "{path} is not an OpenSSH private key.",
+                        path = path.display().to_string()
+                    ));
+                }
+            }
+            Err(NotAdded::Vault(e)) => {
+                if let Some(a) = self.admin_key.as_mut() {
+                    a.problem = Some(tr!("Not copied: {e}", e = e));
+                }
+            }
+        }
+        cx.notify();
+    }
+
+    /// The panel of a key file read as an administrator.
+    fn admin_key_panel(&self, a: &AdminKey, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
+        let action = if a.busy {
+            tr!("Waiting for the password…")
+        } else if a.pass.is_some() {
+            tr!("Add to the vault")
+        } else {
+            tr!("Read as administrator")
+        };
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(6.))
+            .p(px(10.))
+            .rounded(px(8.))
+            .border_1()
+            .border_color(rgb(colors().edge))
+            .bg(rgb(colors().raised))
+            .child(label_text(&tr!("Key file, read as administrator")))
+            .child(self.input_box(&a.path, false, window, cx))
+            .child(hint_text(&tr!(
+                "The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices."
+            )))
+            .when_some(a.pass.clone(), |d, pass| {
+                d.child(label_text(&tr!("Its passphrase")))
+                    .child(self.input_box(&pass, a.problem.is_some(), window, cx))
+            })
+            .when_some(a.problem.clone(), |d, p| d.child(problem_text(&p)))
+            .child(
+                div()
+                    .flex()
+                    .gap(px(8.))
+                    .child(primary_button("admin-key-read", &action).on_click(cx.listener(
+                        |e, _, _, cx| e.read_admin_key(cx),
+                    )))
+                    .child(outline_button("admin-key-cancel", &tr!("Cancel")).on_click(
+                        cx.listener(|e, _, _, cx| {
+                            e.admin_key = None;
+                            cx.notify();
+                        }),
+                    )),
+            )
     }
 
     fn save_with(
@@ -893,6 +1073,9 @@ impl HostEditor {
             "escape" => {
                 if self.menu.is_some() {
                     self.menu = None;
+                } else if self.admin_key.is_some() {
+                    self.admin_key = None;
+                    window.focus(&self.focus, cx);
                 } else if self.confirm_delete {
                     self.confirm_delete = false;
                 } else if focused(&self.inputs.jump, cx) && self.adding_jump {
@@ -918,7 +1101,12 @@ impl HostEditor {
                 window.focus(&order[next as usize], cx);
             }
             "enter" if matches!(self.mode, Mode::Edit) => {
-                if focused(&self.inputs.jump, cx) {
+                let in_admin_key = self.admin_key.as_ref().is_some_and(|a| {
+                    focused(&a.path, cx) || a.pass.as_ref().is_some_and(|p| focused(p, cx))
+                });
+                if in_admin_key {
+                    self.read_admin_key(cx);
+                } else if focused(&self.inputs.jump, cx) {
                     self.add_jump(cx);
                 } else if focused(&self.inputs.forward, cx) {
                     self.add_forward(cx);
@@ -1127,7 +1315,7 @@ impl HostEditor {
                     .cursor_pointer()
                     .when(chosen, |d| d.bg(rgb(colors().selected)))
                     .hover(|s| s.bg(rgb(colors().hover)))
-                    .on_click(cx.listener(move |e, _, _, cx| {
+                    .on_click(cx.listener(move |e, _, window, cx| {
                         match menu {
                             Menu::Group => {
                                 e.group = value.clone();
@@ -1140,6 +1328,7 @@ impl HostEditor {
                             // No value: another file, to look for.
                             Menu::Key => match &value {
                                 Some(v) if v == GENERATE => e.generate_key(cx),
+                                Some(v) if v == AS_ADMIN => e.start_admin_key(window, cx),
                                 Some(v) => {
                                     let key = e.inputs.key.clone();
                                     e.set(&key, v, cx);
@@ -1841,6 +2030,12 @@ impl Render for HostEditor {
                     })
                     .collect();
                 choices.push((None, tr!("Another key file…")));
+                if crate::keys_view::can_read_as_admin() {
+                    choices.push((
+                        Some(AS_ADMIN.to_string()),
+                        tr!("Key file as administrator…"),
+                    ));
+                }
                 let host = self.text(&i.name, cx);
                 choices.push((
                     Some(GENERATE.to_string()),
@@ -1851,6 +2046,9 @@ impl Render for HostEditor {
                     },
                 ));
                 sign_in = sign_in.child(self.menu_list(Menu::Key, choices, cx));
+            }
+            if let Some(a) = &self.admin_key {
+                sign_in = sign_in.child(self.admin_key_panel(a, window, cx));
             }
             // A key made here: the host has to be given it.
             if let Some(k) = self.new_key.clone()

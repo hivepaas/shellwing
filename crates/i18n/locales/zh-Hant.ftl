@@ -427,6 +427,36 @@ t97a4b927 = 保險庫未開啟
 # No key made: {e}
 t4e14e42b = 未產生金鑰：{ $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = 完整路徑，例如 /root/.ssh/id_ed25519。
+
+# Its passphrase
+t279e8bbb = 金鑰的密碼片語
+
+# That passphrase does not open it.
+t05c6a9c1 = 此密碼片語無法開啟它。
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } 不是 OpenSSH 私鑰。
+
+# Not copied: {e}
+t03370a6b = 未複製：{ $e }
+
+# Waiting for the password…
+tc4be2aeb = 正在等待密碼…
+
+# Add to the vault
+t236cfbb2 = 加入保險庫
+
+# Read as administrator
+t44c7c72e = 以管理員身分讀取
+
+# Key file, read as administrator
+t023daf07 = 以管理員身分讀取的金鑰檔案
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = 系統會詢問一次管理員密碼。之後金鑰會以你自己的金鑰身分放進保險庫：從此由你的保險庫保管，而不是檔案的擁有者，並同步到你的其他裝置。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = 在 hosts.toml 中找不到此主機。
 
@@ -540,6 +570,9 @@ ta6d50f9b = { $name }   在保險庫中 · { $kind }
 
 # Another key file…
 t6f4497c1 = 其他金鑰檔案…
+
+# Key file as administrator…
+t7c2b0195 = 以管理員身分讀取金鑰檔案…
 
 # + Generate a key for this host
 ta1a39e38 = + 為此主機產生金鑰
@@ -1024,6 +1057,18 @@ t040b2da6 =
        *[other] 匯入 { $n } 台主機
     }
 
+# Not read: the password was not given.
+tf6b727a9 = 未讀取：沒有輸入密碼。
+
+# Not read: the system did not allow it.
+t0def7028 = 未讀取：系統不允許。
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = 這個系統無法詢問管理員密碼。
+
+# Not read: {why}
+t9133669c = 未讀取：{ $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（建議）
 
@@ -1066,15 +1111,6 @@ t3ccd278a = 未寫入：{ $e }
 # Cannot read {path}: {e}
 t7b24cd24 = 無法讀取 { $path }：{ $e }
 
-# Its passphrase
-t279e8bbb = 金鑰的密碼片語
-
-# That passphrase does not open it.
-t05c6a9c1 = 此密碼片語無法開啟它。
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } 不是 OpenSSH 私鑰。
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = 已儲存 { $file_name } 的密碼片語：不會再詢問。
 
@@ -1083,9 +1119,6 @@ ta9354472 = 未儲存：{ $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } 現已在保險庫中，並會同步到你的其他裝置。
-
-# Not copied: {e}
-t03370a6b = 未複製：{ $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } 已加入 ssh-agent，直到其停止執行為止。
@@ -1222,6 +1255,9 @@ t8dd31791 = 完成
 # Install on a host…
 ta8313af0 = 安裝到主機…
 
+# Import a key file as administrator
+t74d1b96b = 以管理員身分匯入金鑰檔案
+
 # Rename the key
 t2c552c07 = 重新命名金鑰
 
@@ -1269,6 +1305,9 @@ t602b32ed = 金鑰
 
 # Import key file…
 t68acce01 = 匯入金鑰檔案…
+
+# As administrator…
+t51b1ff28 = 以管理員身分…
 
 # Generate key…
 t0d000853 = 產生金鑰…

@@ -418,6 +418,36 @@ t97a4b927 = 保险库未打开
 # No key made: {e}
 t4e14e42b = 未生成密钥：{ $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = 完整路径，例如 /root/.ssh/id_ed25519。
+
+# Its passphrase
+t279e8bbb = 密钥的密码短语
+
+# That passphrase does not open it.
+t05c6a9c1 = 该密码短语无法打开它。
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } 不是 OpenSSH 私钥。
+
+# Not copied: {e}
+t03370a6b = 未复制：{ $e }
+
+# Waiting for the password…
+tc4be2aeb = 正在等待密码…
+
+# Add to the vault
+t236cfbb2 = 添加到保险库
+
+# Read as administrator
+t44c7c72e = 以管理员身份读取
+
+# Key file, read as administrator
+t023daf07 = 以管理员身份读取的密钥文件
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = 系统会询问一次管理员密码。之后密钥会作为你自己的密钥放入保险库：从此由你的保险库保管，而不是文件的所有者，并同步到你的其他设备。
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = 在 hosts.toml 中找不到此主机。
 
@@ -531,6 +561,9 @@ ta6d50f9b = { $name }   在保险库中 · { $kind }
 
 # Another key file…
 t6f4497c1 = 其他密钥文件…
+
+# Key file as administrator…
+t7c2b0195 = 以管理员身份读取密钥文件…
 
 # + Generate a key for this host
 ta1a39e38 = + 为此主机生成密钥
@@ -1003,6 +1036,18 @@ tc2954bc2 = 返回
 # Import {n} host | Import {n} hosts
 t040b2da6 = 导入 { $n } 台主机
 
+# Not read: the password was not given.
+tf6b727a9 = 未读取：没有输入密码。
+
+# Not read: the system did not allow it.
+t0def7028 = 未读取：系统不允许。
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = 此系统无法询问管理员密码。
+
+# Not read: {why}
+t9133669c = 未读取：{ $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519（推荐）
 
@@ -1045,15 +1090,6 @@ t3ccd278a = 未写入：{ $e }
 # Cannot read {path}: {e}
 t7b24cd24 = 无法读取 { $path }：{ $e }
 
-# Its passphrase
-t279e8bbb = 密钥的密码短语
-
-# That passphrase does not open it.
-t05c6a9c1 = 该密码短语无法打开它。
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } 不是 OpenSSH 私钥。
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = 已保存 { $file_name } 的密码短语：不会再询问。
 
@@ -1062,9 +1098,6 @@ ta9354472 = 未保存：{ $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } 已在保险库中，并会同步到你的其他设备。
-
-# Not copied: {e}
-t03370a6b = 未复制：{ $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } 已加入 ssh-agent，直到其停止运行。
@@ -1198,6 +1231,9 @@ t8dd31791 = 完成
 # Install on a host…
 ta8313af0 = 安装到主机…
 
+# Import a key file as administrator
+t74d1b96b = 以管理员身份导入密钥文件
+
 # Rename the key
 t2c552c07 = 重命名密钥
 
@@ -1245,6 +1281,9 @@ t602b32ed = 密钥
 
 # Import key file…
 t68acce01 = 导入密钥文件…
+
+# As administrator…
+t51b1ff28 = 以管理员身份…
 
 # Generate key…
 t0d000853 = 生成密钥…

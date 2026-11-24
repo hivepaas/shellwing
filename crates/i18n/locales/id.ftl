@@ -427,6 +427,36 @@ t97a4b927 = brankas tidak terbuka
 # No key made: {e}
 t4e14e42b = Kunci tidak dibuat: { $e }
 
+# A full path, such as /root/.ssh/id_ed25519.
+ta80b048d = Path lengkap, misalnya /root/.ssh/id_ed25519.
+
+# Its passphrase
+t279e8bbb = Frasa sandinya
+
+# That passphrase does not open it.
+t05c6a9c1 = Frasa sandi itu tidak dapat membukanya.
+
+# {path} is not an OpenSSH private key.
+te16bf944 = { $path } bukan kunci privat OpenSSH.
+
+# Not copied: {e}
+t03370a6b = Tidak disalin: { $e }
+
+# Waiting for the password…
+tc4be2aeb = Menunggu kata sandi…
+
+# Add to the vault
+t236cfbb2 = Tambahkan ke brankas
+
+# Read as administrator
+t44c7c72e = Baca sebagai administrator
+
+# Key file, read as administrator
+t023daf07 = Berkas kunci, dibaca sebagai administrator
+
+# The system asks for an administrator's password, once. The key then goes into the vault as one of your own: from then on your vault keeps it, not the file's owner, and it syncs to your other devices.
+tfd88dc14 = Sistem meminta kata sandi administrator satu kali. Setelah itu kunci masuk ke brankas sebagai salah satu kunci Anda: sejak saat itu brankas Anda yang menyimpannya, bukan pemilik berkas, dan kunci disinkronkan ke perangkat Anda yang lain.
+
 # This host cannot be found in hosts.toml.
 ta0e18527 = Host ini tidak ditemukan di hosts.toml.
 
@@ -540,6 +570,9 @@ ta6d50f9b = { $name }   di brankas · { $kind }
 
 # Another key file…
 t6f4497c1 = Berkas kunci lain…
+
+# Key file as administrator…
+t7c2b0195 = Berkas kunci sebagai administrator…
 
 # + Generate a key for this host
 ta1a39e38 = + Buat kunci untuk host ini
@@ -1024,6 +1057,18 @@ t040b2da6 =
        *[other] Impor { $n } host
     }
 
+# Not read: the password was not given.
+tf6b727a9 = Tidak dibaca: kata sandi tidak diberikan.
+
+# Not read: the system did not allow it.
+t0def7028 = Tidak dibaca: sistem tidak mengizinkannya.
+
+# This system cannot ask for an administrator's password.
+t8f851e9c = Sistem ini tidak dapat meminta kata sandi administrator.
+
+# Not read: {why}
+t9133669c = Tidak dibaca: { $why }
+
 # Ed25519 (recommended)
 t7294b934 = Ed25519 (disarankan)
 
@@ -1066,15 +1111,6 @@ t3ccd278a = Tidak ditulis: { $e }
 # Cannot read {path}: {e}
 t7b24cd24 = Tidak dapat membaca { $path }: { $e }
 
-# Its passphrase
-t279e8bbb = Frasa sandinya
-
-# That passphrase does not open it.
-t05c6a9c1 = Frasa sandi itu tidak dapat membukanya.
-
-# {path} is not an OpenSSH private key.
-te16bf944 = { $path } bukan kunci privat OpenSSH.
-
 # Saved the passphrase of {file_name}: it is not asked for again.
 t181d393f = Frasa sandi { $file_name } disimpan: tidak akan diminta lagi.
 
@@ -1083,9 +1119,6 @@ ta9354472 = Tidak disimpan: { $e }
 
 # {name} is in the vault now, and syncs to your other devices.
 td3d8b162 = { $name } kini ada di brankas, dan disinkronkan ke perangkat Anda yang lain.
-
-# Not copied: {e}
-t03370a6b = Tidak disalin: { $e }
 
 # {name} is in the ssh-agent now, until it stops.
 tf6d081d4 = { $name } kini ada di ssh-agent, sampai agen berhenti.
@@ -1222,6 +1255,9 @@ t8dd31791 = Selesai
 # Install on a host…
 ta8313af0 = Pasang di host…
 
+# Import a key file as administrator
+t74d1b96b = Impor berkas kunci sebagai administrator
+
 # Rename the key
 t2c552c07 = Ganti nama kunci
 
@@ -1269,6 +1305,9 @@ t602b32ed = Kunci
 
 # Import key file…
 t68acce01 = Impor berkas kunci…
+
+# As administrator…
+t51b1ff28 = Sebagai administrator…
 
 # Generate key…
 t0d000853 = Buat kunci…
