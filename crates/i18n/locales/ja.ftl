@@ -79,6 +79,9 @@ t6e8860fa = スニペット { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } が { $host } に接続しようとしていますが、{ $shows } が known_hosts にないホスト鍵を提示しています。管理者から伝えられたそのホストの鍵である場合のみ信頼してください。信頼すると known_hosts に保存され、待っている処理が続行されます。
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } が sudo のパスワードを使って { $host } でこれを実行しようとしています。毎回指示を待ちます。パスワードを入力してください。{ $client } からは見えません。
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } が { $host } 向けにこのスニペットを提案しています。指示を待っています。「危険なものは確認」では、提案はすべて確認が必要です。追加後は Enter なしで入力されるため、実行前に確認できます。
 
@@ -112,8 +115,17 @@ tbea0b112 = 拒否
 # Add it
 t6cac0f01 = 追記
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] { $n } 分間記憶する
+    }
+
 # Run it
 t72430853 = 実行
+
+# Use the saved password
+ta3f63985 = 保存したパスワードを使う
 
 # Run it, and this command again this session
 t2efebee7 = 実行し、このセッション中は同じコマンドも実行
@@ -432,6 +444,15 @@ tc60b799b = このコンピュータに平文で、{ $part } MB ずつのファ�
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = { $least } MB 以上にしてください。それまでは { $mb } MB のままです。
+
+# sudo's password
+t056c2757 = sudo のパスワード
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = sudo のパスワードが必要なエージェントのコマンドは、毎回パスワードの入力を待ちます。エージェントからは見えません。許可すると、そのエージェントとホストについてこの時間だけ記憶できます (最大 { $most } 分、0 は記憶しない)。
+
+# minutes
+tadbcc5ee = 分
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除

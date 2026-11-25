@@ -79,6 +79,9 @@ t6e8860fa = Đoạn lệnh { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } muốn kết nối tới { $host }, và { $shows } đưa ra một khoá máy chủ không có trong known_hosts. Chỉ tin cậy nếu đó đúng là khoá của máy chủ ấy, như người quản lý đã đưa cho bạn: khoá được lưu vào known_hosts, và việc đang chờ sẽ tiếp tục.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } muốn chạy lệnh này trên { $host } với mật khẩu sudo. Lần nào cũng chờ bạn: hãy gõ mật khẩu, { $client } không bao giờ thấy nó.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } đề xuất đoạn lệnh này cho { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi đoạn lệnh được đề xuất đều chờ. Khi đã thêm, đoạn lệnh được gõ không kèm Enter, để bạn đọc trước khi chạy.
 
@@ -112,8 +115,17 @@ tbea0b112 = Từ chối
 # Add it
 t6cac0f01 = Thêm vào
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] Nhớ trong { $n } phút
+    }
+
 # Run it
 t72430853 = Chạy lệnh
+
+# Use the saved password
+ta3f63985 = Dùng mật khẩu đã lưu
 
 # Run it, and this command again this session
 t2efebee7 = Chạy lệnh, và cho phép lệnh này trong suốt phiên này
@@ -432,6 +444,15 @@ tc60b799b = Được lưu trên máy này dưới dạng văn bản thường, c
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Tối thiểu { $least } MB: trong lúc này vẫn giữ { $mb } MB.
+
+# sudo's password
+t056c2757 = Mật khẩu sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Lệnh của agent cần mật khẩu sudo luôn chờ bạn gõ mật khẩu; agent không bao giờ thấy nó. Khi đã cho phép, mật khẩu có thể được nhớ cho agent đó trên host đó trong khoảng thời gian này, tối đa { $most } phút; 0: không bao giờ nhớ.
+
+# minutes
+tadbcc5ee = phút
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó

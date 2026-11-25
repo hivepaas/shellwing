@@ -79,6 +79,9 @@ t6e8860fa = 程式碼片段 { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } 想連線到 { $host }，而 { $shows } 出示了一個不在 known_hosts 中的主機金鑰。只有確認這是該主機的金鑰（以其管理者提供的為準）時才信任它：它會儲存到 known_hosts，等待它的作業隨即繼續。
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } 想用 sudo 密碼在 { $host } 上執行這個。每次都會等你確認：請輸入密碼，{ $client } 永遠看不到。
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } 為 { $host } 建議這個程式碼片段。它正在等你確認：在「有風險時詢問」模式下，每個建議都要詢問。新增後輸入時不按 Enter，讓你在執行前先閱讀。
 
@@ -112,8 +115,17 @@ tbea0b112 = 拒絕
 # Add it
 t6cac0f01 = 新增
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] 記住 { $n } 分鐘
+    }
+
 # Run it
 t72430853 = 執行
+
+# Use the saved password
+ta3f63985 = 使用已儲存的密碼
 
 # Run it, and this command again this session
 t2efebee7 = 執行，並在此工作階段內允許此指令再次執行
@@ -435,6 +447,15 @@ tc60b799b = 以純文字保存在本機，每 { $part } MB 一個檔案：每個
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = 至少 { $least } MB：在此之前仍為 { $mb } MB。
+
+# sudo's password
+t056c2757 = sudo 密碼
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = 需要 sudo 密碼的代理命令每次都會等你輸入密碼；代理永遠看不到。允許後，可為該代理在該主機上記住這段時間，最多 { $most } 分鐘；0 表示從不記住。
+
+# minutes
+tadbcc5ee = 分鐘
 
 # unlock its windows
 t7c69953e = 解鎖其視窗

@@ -27,6 +27,7 @@ t812504dc = The commands AI ran and what they printed go, from this computer too
 tafbed557 = { $client } · { $host } · started { $when } · { $job }
 t6e8860fa = The snippet { $name }
 t8595135e = { $client } wants to reach { $host }, and { $shows } shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+tb61899bb = { $client } wants to run this on { $host } with sudo's password. It waits for you every time: type the password, which { $client } never sees.
 tccc5ba87 = { $client } suggests this snippet for { $host }. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tf83dfd33 = { $client } wants to add this to the notes about { $host }. It waits for you: where risky ones wait, every addition to a note does.
 tc50e2e47 = { $client } wants to run this snippet on { $host }, with the environments { $envs }. It waits for you every time: their values go in, though { $client } never sees them, and what it prints goes back.
@@ -38,7 +39,13 @@ t85e6d49e = { $client } wants to run this on { $host }. It waits for you: it has
 tc457169b = Trust and go on
 tbea0b112 = Refuse it
 t6cac0f01 = Add it
+t4f9d0788 =
+    { $n ->
+        [one] Remember it for { $n } minute
+       *[other] Remember it for { $n } minutes
+    }
 t72430853 = Run it
+ta3f63985 = Use the saved password
 t2efebee7 = Run it, and this command again this session
 t4b7f7705 = Stop
 t64749f61 = Copy output
@@ -158,6 +165,9 @@ te371b0dd = Risky: a command with any of these, a line each, waits for you
 tcc58d242 = The usual list
 tc60b799b = Kept on this computer, as plain text, in parts of { $part } MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
 t4a3240e4 = At least { $least } MB: { $mb } MB is kept until then.
+t056c2757 = sudo's password
+t1f477160 = An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most { $most } minutes; 0: never kept.
+tadbcc5ee = minutes
 t7c69953e = unlock its windows
 t31ace1f1 = Confirm it is you to unlock shellwing.
 t87f62cb7 = Checking…

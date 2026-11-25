@@ -13,6 +13,7 @@ pub mod mcp;
 pub mod notes;
 pub mod snippets;
 pub mod socket;
+pub mod sudo;
 pub mod tab;
 pub mod transfers;
 
@@ -221,6 +222,8 @@ pub struct Job {
     stopping: std::sync::atomic::AtomicBool,
     /// While it runs on its own connection: what asks it to stop there.
     stopper: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    /// sudo's password, as the person gave it for this run (sudo.rs).
+    sudo: Mutex<Option<zeroize::Zeroizing<String>>>,
 }
 
 /// The person's answer to a command that waits for them.
@@ -297,6 +300,7 @@ impl Job {
             asking: Mutex::new(None),
             stopping: Default::default(),
             stopper: Mutex::new(None),
+            sudo: Mutex::new(None),
         }
     }
 
@@ -481,6 +485,8 @@ struct Inner {
     snippets: Option<Arc<dyn snippets::SnippetStore>>,
     /// What an agent never reaches on this computer (transfers.rs).
     never: Vec<std::path::PathBuf>,
+    /// sudo's passwords kept a while, by client and host (sudo.rs).
+    sudo: BTreeMap<(String, String), sudo::Kept>,
 }
 
 /// The MCP server's side in the app: who may reach what, and the work.
@@ -534,6 +540,7 @@ impl Hub {
                 locked: false,
                 snippets: None,
                 never: vec![],
+                sudo: BTreeMap::new(),
             }),
             events,
         })
@@ -582,6 +589,7 @@ impl Hub {
         for job in stopping {
             self.stop_job(&job);
         }
+        self.keep_sudo_for_grants();
     }
 
     /// The hosts that can be given, by spec.
@@ -859,7 +867,7 @@ impl Hub {
         host: &str,
         command: &str,
     ) -> Result<Arc<Job>, String> {
-        self.run_with(client, host, command, None, None, None)
+        self.run_with(client, host, command, RunWith::default())
     }
 
     /// [`Hub::run`]; waiting for the person whatever the mode when
@@ -870,10 +878,14 @@ impl Hub {
         client: &AiClient,
         host: &str,
         command: &str,
-        always: Option<String>,
-        snippet: Option<String>,
-        envs: Option<snippets::EnvRun>,
+        with: RunWith,
     ) -> Result<Arc<Job>, String> {
+        let RunWith {
+            always,
+            snippet,
+            envs,
+            sudo,
+        } = with;
         let (g, target) = self.grant_for(client, host)?;
         if !g.grant.run {
             return Err(format!(
@@ -920,10 +932,33 @@ impl Hub {
                 return;
             }
             // With environments: the values on the input, the names alone
-            // on the command line.
-            let (run, input) = match &envs {
-                Some(e) => (e.command.clone(), e.input.clone()),
-                None => (command.clone(), Default::default()),
+            // on the command line. With sudo's password: on the input too,
+            // read by sudo as its askpass.
+            let with_sudo = sudo.is_some();
+            let (run, input) = match (&envs, sudo) {
+                (Some(e), _) => (e.command.clone(), e.input.clone()),
+                (None, Some(s)) => {
+                    let password = match s {
+                        sudo::SudoRun::Kept(p) => Some(p),
+                        sudo::SudoRun::Asked => running.sudo.lock().ok().and_then(|mut g| g.take()),
+                    };
+                    let Some(password) = password else {
+                        hub.finish(
+                            &running,
+                            End::Failed("no password was given for sudo".into()),
+                        );
+                        return;
+                    };
+                    crate::run::invocation(
+                        &command,
+                        &crate::run::Interpreter::Shell {
+                            program: "sh".into(),
+                            flags: vec![],
+                        },
+                        Some(&password),
+                    )
+                }
+                (None, None) => (command.clone(), Default::default()),
             };
             let end = match Hub::connection(&slot, options).await {
                 Err(why) => End::Failed(why),
@@ -937,6 +972,10 @@ impl Hub {
                     let status = c
                         .stream(&run, &input, |_, data| printing.print(data), asked)
                         .await;
+                    // A password sudo turned down is kept no longer.
+                    if with_sudo && sudo::refused(&running.activity().output) {
+                        hub.sudo_refused(&running.client, &running.host);
+                    }
                     match status {
                         Ok(_) if running.stopping() => End::Stopped,
                         Ok(Exit::Ended(s)) => End::Exited(s),
@@ -1262,6 +1301,19 @@ pub fn risky(command: &str, patterns: &[String]) -> Option<String> {
 
 /// Whether a grant holds now.
 /// What a paused client is told, whatever it asks.
+/// What a run may come with, besides its command (see [`Hub::run`]).
+#[derive(Default)]
+pub(crate) struct RunWith {
+    /// It waits for the person whatever the grant's mode: why.
+    pub always: Option<String>,
+    /// The snippet it is, by name.
+    pub snippet: Option<String>,
+    /// The environments it runs with, their values on its input.
+    pub envs: Option<snippets::EnvRun>,
+    /// sudo's password, kept or to be given.
+    pub sudo: Option<sudo::SudoRun>,
+}
+
 /// The number of the next job after those in `activity`: the activity
 /// read back from the log goes on from where it was, so a new job's id is
 /// never one it has already, which would put it in that one's place and

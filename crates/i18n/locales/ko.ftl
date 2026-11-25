@@ -79,6 +79,9 @@ t6e8860fa = 스니펫 { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client }이(가) { $host }에 연결하려 하는데, { $shows }이(가) known_hosts에 없는 호스트 키를 보여 줍니다. 관리자가 알려 준 그 호스트의 키가 맞을 때만 신뢰하세요. 신뢰하면 known_hosts에 저장되고, 이를 기다리던 작업이 계속됩니다.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client }이(가) sudo 비밀번호로 { $host }에서 이것을 실행하려고 합니다. 매번 지시를 기다립니다. 비밀번호를 입력하세요. { $client }은(는) 볼 수 없습니다.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client }이(가) { $host }용으로 이 스니펫을 제안합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 제안에 확인이 필요합니다. 추가되면 Enter 없이 입력되어 실행 전에 읽을 수 있습니다.
 
@@ -112,8 +115,17 @@ tbea0b112 = 거부
 # Add it
 t6cac0f01 = 추가
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] { $n }분 동안 기억
+    }
+
 # Run it
 t72430853 = 실행
+
+# Use the saved password
+ta3f63985 = 저장된 비밀번호 사용
 
 # Run it, and this command again this session
 t2efebee7 = 실행하고, 이 세션 동안 같은 명령도 실행
@@ -432,6 +444,15 @@ tc60b799b = 이 컴퓨터에 평문으로, { $part } MB씩 나눠 보관됩니�
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = 최소 { $least } MB: 그 전까지는 { $mb } MB로 유지됩니다.
+
+# sudo's password
+t056c2757 = sudo 비밀번호
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = sudo 비밀번호가 필요한 에이전트의 명령은 매번 비밀번호 입력을 기다립니다. 에이전트는 볼 수 없습니다. 허용하면 해당 에이전트와 호스트에 대해 이 시간 동안 기억할 수 있습니다(최대 { $most }분, 0은 기억하지 않음).
+
+# minutes
+tadbcc5ee = 분
 
 # unlock its windows
 t7c69953e = 창 잠금 해제

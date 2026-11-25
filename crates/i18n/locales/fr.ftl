@@ -79,6 +79,9 @@ t6e8860fa = L'extrait { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } veut joindre { $host }, et { $shows } présente une clé de serveur absente de known_hosts. Ne lui faites confiance que si c'est bien la clé de ce serveur, telle que son responsable vous l'a donnée : elle est enregistrée dans known_hosts, et ce qui l'attend continue.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } veut exécuter ceci sur { $host } avec le mot de passe sudo. Il vous attend à chaque fois : saisissez le mot de passe, que { $client } ne voit jamais.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } propose cet extrait pour { $host }. Il vous attend : là où les commandes risquées attendent, chaque proposition attend. Ajouté, il est saisi sans Entrée, pour que vous le lisiez avant qu'il s'exécute.
 
@@ -112,8 +115,18 @@ tbea0b112 = Refuser
 # Add it
 t6cac0f01 = Ajouter
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] Le retenir { $n } minute
+       *[other] Le retenir { $n } minutes
+    }
+
 # Run it
 t72430853 = Exécuter
+
+# Use the saved password
+ta3f63985 = Utiliser le mot de passe enregistré
 
 # Run it, and this command again this session
 t2efebee7 = Exécuter, et cette commande à nouveau durant cette session
@@ -439,6 +452,15 @@ tc60b799b = Gardée sur cet ordinateur, en texte clair, par parties de { $part }
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Au moins { $least } Mo : { $mb } Mo restent en attendant.
+
+# sudo's password
+t056c2757 = Mot de passe sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Une commande d'un agent qui demande le mot de passe sudo attend que vous le saisissiez, à chaque fois ; l'agent ne le voit jamais. Autorisé, il peut être retenu pour cet agent sur cet hôte pendant cette durée, au plus { $most } minutes ; 0 : jamais retenu.
+
+# minutes
+tadbcc5ee = minutes
 
 # unlock its windows
 t7c69953e = déverrouiller ses fenêtres

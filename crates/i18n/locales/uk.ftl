@@ -79,6 +79,9 @@ t6e8860fa = Сніпет { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } хоче під'єднатися до { $host }, і { $shows } показує ключ хоста, якого немає в known_hosts. Довіряйте йому, лише якщо це ключ цього хоста, отриманий від його власника: його буде збережено в known_hosts, і те, що на нього чекає, продовжиться.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } хоче виконати це на { $host } з паролем sudo. Він щоразу чекає на вас: введіть пароль, { $client } його ніколи не побачить.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } пропонує цей сніпет для { $host }. Він чекає на вас: у режимі «Запитувати про ризиковані» чекає кожна пропозиція. Після додавання його вводять без Enter, щоб ви прочитали його перед виконанням.
 
@@ -112,8 +115,20 @@ tbea0b112 = Відхилити
 # Add it
 t6cac0f01 = Додати
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] Запам'ятати на { $n } хвилину
+        [few] Запам'ятати на { $n } хвилини
+        [many] Запам'ятати на { $n } хвилин
+       *[other] Запам'ятати на { $n } хвилини
+    }
+
 # Run it
 t72430853 = Виконати
+
+# Use the saved password
+ta3f63985 = Використати збережений пароль
 
 # Run it, and this command again this session
 t2efebee7 = Виконати, і цю команду знову в цьому сеансі
@@ -447,6 +462,15 @@ tc60b799b = Зберігається на цьому комп’ютері ві�
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Не менше { $least } МБ: доти лишається { $mb } МБ.
+
+# sudo's password
+t056c2757 = Пароль sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Команда агента, якій потрібен пароль sudo, щоразу чекає, поки ви його введете; агент його ніколи не бачить. Дозволений пароль можна запам'ятати для цього агента на цьому хості на цей час, не більше { $most } хвилин; 0 — ніколи не запам'ятовувати.
+
+# minutes
+tadbcc5ee = хвилин
 
 # unlock its windows
 t7c69953e = розблокувати свої вікна
