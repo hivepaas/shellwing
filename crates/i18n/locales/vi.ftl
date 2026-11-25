@@ -70,8 +70,14 @@ t812504dc = Các lệnh AI đã chạy và output của chúng sẽ bị xoá, c
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = Đoạn lệnh { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } muốn thêm nội dung này vào ghi chú về { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần thêm vào ghi chú đều chờ.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } muốn chạy đoạn lệnh này trên { $host }. Lần nào cũng chờ bạn: đoạn lệnh này được gõ không kèm Enter, để đọc trước.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } muốn ghi tệp này trên { $host }. Thao tác ghi đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ.

@@ -70,8 +70,14 @@ t812504dc = Los comandos que ejecutó la AI y lo que imprimieron desaparecen, ta
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado a las { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = El fragmento { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } quiere añadir esto a las notas sobre { $host }. Te espera: donde los de riesgo esperan, toda adición a una nota espera.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } quiere ejecutar este fragmento en { $host }. Te espera cada vez: se escribe sin Enter, para leerlo antes.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } quiere escribir esto en { $host }. Te espera: donde los de riesgo esperan, toda escritura espera.

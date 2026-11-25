@@ -70,8 +70,14 @@ t812504dc = Os comandos que a AI executou e o que imprimiram somem, deste comput
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado às { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = O trecho { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } quer acrescentar isto às notas sobre { $host }. O acréscimo espera por você: onde os arriscados esperam, todo acréscimo a uma nota espera.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } quer executar este trecho em { $host }. Ele espera por você toda vez: é digitado sem Enter, para ser lido antes.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } quer gravar isto em { $host }. A gravação espera por você: onde os arriscados esperam, toda gravação espera.

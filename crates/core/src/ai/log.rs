@@ -193,6 +193,7 @@ mod tests {
             output: "x".repeat(output),
             waiting: None,
             adding: None,
+            snippet: None,
         })
         .expect("json")
     }

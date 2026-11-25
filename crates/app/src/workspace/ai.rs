@@ -53,10 +53,12 @@ impl Workspace {
             events,
         );
         hub.set_state(state.clone());
-        hub.set_notes(Some(Arc::new(ai::notes::VaultNotes {
+        let vault = Arc::new(ai::notes::VaultNotes {
             vault: self.vault.clone(),
             sync: Some(self.sync.clone()),
-        })));
+        });
+        hub.set_notes(Some(vault.clone()));
+        hub.set_snippets(Some(vault));
         hub.set_locked(
             cx.try_global::<crate::app_lock::Locked>()
                 .is_some_and(|l| l.0),

@@ -696,6 +696,68 @@ scenario!(
 );
 
 scenario!(
+    /// Given with Use snippets, an agent lists the snippets offered for its
+    /// host and runs one, its values filled in, the host's own too. One
+    /// typed without Enter waits for the person though the grant runs
+    /// freely, and no session allows it.
+    an_ai_runs_a_snippet,
+    |ui| {
+        let token = given_web_may(ui, "Free", "background", &["snippets"]);
+        let vault = ui.vault().expect("the vault");
+        let snippet = |name: &str, command: &str, scope: &str, enter: bool| shellwing_vault::Snippet {
+            id: String::new(),
+            name: name.into(),
+            command: command.into(),
+            scope: scope.into(),
+            enter,
+            category: String::new(),
+            needs: vec![],
+            origin: String::new(),
+        };
+        let greet = vault
+            .save_snippet(&snippet("Greet", "echo \"hello {{who}} from {{host}}\"", "host:web", true))
+            .expect("snippet");
+        let look = vault
+            .save_snippet(&snippet("Look first", "echo looked", "", false))
+            .expect("snippet");
+        vault
+            .save_snippet(&snippet("For db", "echo db", "host:db", true))
+            .expect("snippet");
+        let (mut c, _) = Client::open(ui, &token);
+
+        let (listed, error) = c.tool_in(ui, "list_snippets", json!({"host": "web"}));
+        assert!(!error && listed.starts_with("2 snippets offered for web"), "{listed}");
+        assert!(listed.contains(&format!("{greet}\tGreet\t-\tvalues: who\truns as a command")), "{listed}");
+        assert!(!listed.contains("For db"), "{listed}");
+
+        let (said, error) = c.tool_in(ui, "run_snippet", json!({"host": "web", "id": greet, "values": {"who": "world"}, "wait_seconds": 15}));
+        assert!(!error && said.starts_with("exit 0"), "{said}");
+        assert!(said.contains("hello world from web"), "{said}");
+        let (said, error) = c.tool_in(ui, "run_snippet", json!({"host": "web", "id": greet, "values": {"who": "$(id)"}}));
+        assert!(error && said.contains("who has '$'"), "{said}");
+
+        let (said, _) = c.tool_in(ui, "run_snippet", json!({"host": "web", "id": look, "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        assert!(ui.find("ai-snippet").is_some(), "the snippet is named");
+        assert!(ui.find("ai-allow-session").is_none(), "no session for it");
+        ui.click("ai-allow");
+        let mut rest = String::new();
+        for _ in 0..5 {
+            let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+            rest.push_str(&said);
+            if said.starts_with("exit") {
+                break;
+            }
+        }
+        assert!(rest.starts_with("exit 0") && rest.contains("looked"), "{rest}");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

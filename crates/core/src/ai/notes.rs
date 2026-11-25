@@ -49,7 +49,7 @@ pub trait NoteStore: Send + Sync {
     fn save(&self, note: &Note, text: &str) -> Result<String, String>;
 }
 
-const VAULT_LOCKED: &str = "The vault is locked, or not open yet: no note can be read until the user opens it in shellwing.";
+pub(crate) const VAULT_LOCKED: &str = "The vault is locked, or not open yet: no note can be read until the user opens it in shellwing.";
 
 /// The app's notes: its vault, and the syncs that hold a note open in its
 /// window and take what changed out.

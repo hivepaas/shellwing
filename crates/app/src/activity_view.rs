@@ -383,6 +383,14 @@ impl ActivityView {
                 when = when(a.started),
                 job = a.id.clone()
             )))
+            .when_some(a.snippet.clone(), |d, name| {
+                d.child(
+                    div()
+                        .debug_selector(|| "ai-snippet".into())
+                        .text_size(ui(12.5))
+                        .child(tr!("The snippet {name}", name = name)),
+                )
+            })
             .child(
                 div()
                     .debug_selector(|| "ai-standing".into())
@@ -412,6 +420,12 @@ impl ActivityView {
                         .child(if why == shellwing_core::ai::notes::NOTES {
                             tr!(
                                 "{client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else if why == shellwing_core::ai::snippets::LOOK {
+                            tr!(
+                                "{client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.",
                                 client = a.client.clone(),
                                 host = a.host.clone()
                             )
@@ -483,12 +497,16 @@ impl ActivityView {
                                     v.answer(&once, Approval::Once, cx)
                                 })),
                         )
-                        .child(
-                            outline_button("ai-allow-session", &tr!("Run it, and this command again this session"))
-                                .on_click(cx.listener(move |v, _, _, cx| {
-                                    v.answer(&session, Approval::Session, cx)
-                                })),
-                        )
+                        // A snippet typed without Enter asks every time: no
+                        // session to allow it for.
+                        .when(why != shellwing_core::ai::snippets::LOOK, |d| {
+                            d.child(
+                                outline_button("ai-allow-session", &tr!("Run it, and this command again this session"))
+                                    .on_click(cx.listener(move |v, _, _, cx| {
+                                        v.answer(&session, Approval::Session, cx)
+                                    })),
+                            )
+                        })
                         .child(
                             outline_button("ai-refuse", &tr!("Refuse it"))
                                 .text_color(rgb(colors().bad))

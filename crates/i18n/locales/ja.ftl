@@ -70,8 +70,14 @@ t812504dc = AI が実行したコマンドとその出力は、このコンピ�
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 
+# The snippet {name}
+t6e8860fa = スニペット { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } が { $host } についてのノートにこれを追記しようとしています。指示を待っています。「危険なものは確認」では、ノートへの追記はすべて確認が必要です。
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } が { $host } でこのスニペットを実行しようとしています。毎回指示を待ちます。Enter なしで入力されるため、先に確認が必要です。
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } が { $host } にこれを書き込もうとしています。指示を待っています。「危険なものは確認」では、書き込みはすべて確認が必要です。

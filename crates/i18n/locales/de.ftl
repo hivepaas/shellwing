@@ -70,8 +70,14 @@ t812504dc = Die Befehle, die AI ausgeführt hat, und ihre Ausgaben verschwinden,
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · gestartet um { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = Das Snippet { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } möchte dies zu den Notizen über { $host } hinzufügen. Es wartet auf dich: Wo riskante Befehle warten, wartet jede Ergänzung einer Notiz.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } möchte dieses Snippet auf { $host } ausführen. Es wartet jedes Mal auf dich: Es wird ohne Enter eingegeben, um zuerst gelesen zu werden.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } möchte dies auf { $host } schreiben. Es wartet auf dich: Wo riskante Befehle warten, wartet jeder Schreibvorgang.

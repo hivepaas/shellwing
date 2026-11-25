@@ -1226,6 +1226,15 @@ What it may do, each on its own:
   is refused. Where risky ones wait, every addition waits for you, and AI
   activity shows the text as it will go in: *Add it* or *Refuse it*. The log
   keeps the note's title and size, not the text.
+- **Use snippets**: list the snippets offered for the host (for every host,
+  its group, or it), and run one where it may run commands (off unless
+  turned on). A run goes as a command does, the risky list matched against
+  the command as filled in. `host`, `user` and `address` are filled in from
+  the host; a value the agent gives is one word of letters, digits and
+  `_ . / : @ = + , % -`, not starting with `-`, so it cannot change the
+  command. A snippet typed without Enter waits for you every time, whatever
+  happens to a command. One that needs environments is not run by an agent
+  yet. Design: [docs/design/ai-snippets.md](design/ai-snippets.md).
 
 What happens to a command:
 

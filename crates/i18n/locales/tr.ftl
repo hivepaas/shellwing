@@ -70,8 +70,14 @@ t812504dc = AI’ın çalıştırdığı komutlar ve çıktıları bu bilgisayar
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = { $name } kod parçacığı
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }, bunu { $host } ile ilgili notlara eklemek istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken notlara her ekleme bekler.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client }, bu kod parçacığını { $host } üzerinde çalıştırmak istiyor. Her seferinde sizi bekler: önce okunsun diye Enter olmadan yazılır.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }, bunu { $host } üzerine yazmak istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her yazma bekler.
