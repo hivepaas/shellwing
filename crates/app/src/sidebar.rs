@@ -34,6 +34,9 @@ const TILE_ICON: f32 = 24.;
 /// and its address under it, follow the tile after a gap. The row is the
 /// tile and a little above and below it.
 const ROW_MARGIN: f32 = 4.;
+/// The width of a heading's button (HOSTS' collapse), whose icon the
+/// ACTIONS chevron lines up with.
+const HEADING_BUTTON: f32 = 26.;
 const ROW_PAD: f32 = 20.;
 const ROW_GAP: f32 = 10.;
 const ROW_HEIGHT: f32 = TILE + 12.;
@@ -930,8 +933,11 @@ impl Sidebar {
                     .justify_between()
                     .h(px(26.))
                     .mx(px(ROW_MARGIN))
+                    // Its text and its chevron where the HOSTS heading below
+                    // has its own and its button's icon: 12 px in, the
+                    // chevron in a box as wide as that button.
                     .pl(px(12. - ROW_MARGIN))
-                    .pr(px(6.))
+                    .pr(px(12. - ROW_MARGIN))
                     .rounded_md()
                     .cursor_pointer()
                     .hover(|s| s.bg(rgb(colors().hover)))
@@ -957,14 +963,21 @@ impl Sidebar {
                             }),
                     )
                     .child(
-                        svg()
-                            .path(if open {
-                                "icons/chevron-down.svg"
-                            } else {
-                                "icons/chevron-right.svg"
-                            })
-                            .size(px(14.))
-                            .text_color(rgb(colors().muted)),
+                        div()
+                            .debug_selector(|| "actions-chevron".into())
+                            .w(px(HEADING_BUTTON))
+                            .flex()
+                            .justify_center()
+                            .child(
+                                svg()
+                                    .path(if open {
+                                        "icons/chevron-down.svg"
+                                    } else {
+                                        "icons/chevron-right.svg"
+                                    })
+                                    .size(px(14.))
+                                    .text_color(rgb(colors().muted)),
+                            ),
                     ),
             )
             .when(open, |d| {
@@ -1711,7 +1724,9 @@ impl Render for Sidebar {
                     .flex()
                     .flex_col()
                     .gap(px(6.))
-                    .px_3()
+                    // In px, as the rows and ACTIONS above are, whatever the
+                    // UI's size: its heading and button line up with theirs.
+                    .px(px(12.))
                     .pt_2()
                     .pb_1()
                     .child(
@@ -1731,7 +1746,7 @@ impl Render for Sidebar {
                                 div()
                                     .id("collapse-hosts")
                                     .debug_selector(|| "collapse-hosts".into())
-                                    .w(px(26.))
+                                    .w(px(HEADING_BUTTON))
                                     .h(px(24.))
                                     .flex()
                                     .items_center()

@@ -279,3 +279,23 @@ scenario!(
         assert_eq!(saved.folded, ["group:Production"]);
     }
 );
+
+scenario!(
+    /// The ACTIONS chevron and the HOSTS heading's button stand in one
+    /// column, folded or not.
+    the_headings_icons_line_up,
+    |ui| {
+        ui.config_file("hosts.toml", &host("a", 1, "G"));
+        ui.open();
+        for _ in 0..2 {
+            let chevron = ui.find("actions-chevron").expect("the chevron");
+            let button = ui.find("collapse-hosts").expect("the button");
+            let (a, b) = (chevron.center().x, button.center().x);
+            assert!(
+                (a - b).abs() < gpui::px(0.5),
+                "the chevron at {a:?}, the button's icon at {b:?}"
+            );
+            ui.click("actions-fold");
+        }
+    }
+);
