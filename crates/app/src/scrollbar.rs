@@ -7,17 +7,19 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use gpui::{
-    Bounds, DispatchPhase, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels,
-    ScrollHandle, Styled, canvas, fill, point, px, rgba, size,
+    Bounds, Context, DispatchPhase, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
+    MouseUpEvent, Pixels, Point, ScrollHandle, Styled, WeakEntity, canvas, fill, point, px, rgba,
+    size,
 };
 
 use crate::colors::colors;
 
 /// The thumb, at rest and under the pointer or held. A thin bar stays out of
 /// the way of what it is beside; a wider one is what a hand can take hold of,
-/// and the moment the pointer is over it is the moment that matters.
-const THIN: f32 = 6.;
-const WIDE: f32 = 8.;
+/// and the moment the pointer is over it is the moment that matters. The
+/// terminal's own bar (it scrolls by rows, not by a handle) takes the same.
+pub(crate) const THIN: f32 = 6.;
+pub(crate) const WIDE: f32 = 8.;
 /// The strip that takes the press, always the width of the wider thumb and
 /// more: it must not move or change size as the thumb does, or the pointer
 /// would fall out of what it is aiming at.
@@ -127,6 +129,38 @@ pub fn overlay(handle: ScrollHandle, drag: Drag) -> impl gpui::IntoElement {
     .absolute()
     .top_0()
     .left_0()
+    .size_full()
+}
+
+/// Keeps hold of a thumb taken in a bar drawn by a view of its own (the
+/// terminal's), for as long as the button stays down: every move of the
+/// pointer, wherever it is in the window, goes to `on_drag`. An element hears
+/// the pointer only while it is over it, and a quick hand is out of it in one
+/// move. A move with the button up goes to `on_release`: the release itself
+/// happened where nothing heard it. Paint it while the thumb is held.
+pub(crate) fn hold<T: 'static>(
+    view: WeakEntity<T>,
+    on_drag: impl Fn(&mut T, Point<Pixels>, &mut Context<T>) + 'static,
+    on_release: impl Fn(&mut T, &mut Context<T>) + 'static,
+) -> impl IntoElement {
+    canvas(
+        |_, _, _| {},
+        move |_, _, window, _| {
+            window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+                if phase != DispatchPhase::Capture {
+                    return;
+                }
+                let _ = view.update(cx, |v, cx| {
+                    if e.pressed_button == Some(MouseButton::Left) {
+                        on_drag(v, e.position, cx);
+                    } else {
+                        on_release(v, cx);
+                    }
+                });
+            });
+        },
+    )
+    .absolute()
     .size_full()
 }
 
