@@ -6238,7 +6238,7 @@ impl Workspace {
         for (i, tab) in self.tabs.iter().enumerate() {
             let active = i == self.active;
             // A Run on hosts tab: its title, its progress, its own tile.
-            let (title, detail, color, icon, status) = match (&tab.focused, &tab.page) {
+            let (title, detail, color, icon, status, page) = match (&tab.focused, &tab.page) {
                 (Some(focused), _) => {
                     let v = focused.read(cx);
                     (
@@ -6247,6 +6247,7 @@ impl Workspace {
                         self.host_color(v.session().entry.as_deref()),
                         self.session_icon(v.session()),
                         Some(v.status()),
+                        false,
                     )
                 }
                 (None, Some(page)) => (
@@ -6255,6 +6256,7 @@ impl Workspace {
                     None,
                     Some(page.icon()),
                     page.busy(cx).then_some(Status::Connecting),
+                    true,
                 ),
                 (None, None) => continue,
             };
@@ -6308,19 +6310,19 @@ impl Workspace {
                     // The host's tile, as the host list draws it: its icon or
                     // initials in its color, its status at the corner.
                     .child(
-                        sidebar::host_tile(
-                            icon,
-                            &title,
-                            color,
-                            status,
-                            TAB_TILE,
-                            if active {
+                        {
+                            let ground = if active {
                                 colors().tab_on
                             } else {
                                 colors().chrome
-                            },
-                            false,
-                        )
+                            };
+                            match icon.filter(|_| page) {
+                                Some(icon) => sidebar::page_tile(icon, status, TAB_TILE, ground),
+                                None => sidebar::host_tile(
+                                    icon, &title, color, status, TAB_TILE, ground, false,
+                                ),
+                            }
+                        }
                         .debug_selector(move || format!("tab-tile:{i}")),
                     )
                     // Typing in every pane: said on the tab too.
