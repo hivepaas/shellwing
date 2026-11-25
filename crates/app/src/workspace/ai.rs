@@ -95,6 +95,10 @@ impl Workspace {
     }
 
     fn on_ai(&mut self, ev: HubEvent, cx: &mut Context<Self>) {
+        if let HubEvent::Show { args } = ev {
+            self.show_again(args, cx);
+            return;
+        }
         let Some(ai) = &mut self.ai else {
             return;
         };
@@ -145,6 +149,8 @@ impl Workspace {
                     cx.defer(move |cx| view.update(cx, |v, cx| v.snippets_changed(cx)));
                 }
             }
+            // Taken before the AI's own.
+            HubEvent::Show { .. } => {}
             HubEvent::NotesChanged => {
                 if let Some((view, _)) = &self.settings {
                     let view = view.clone();
@@ -176,6 +182,22 @@ impl Workspace {
                 cx.notify();
             }
         }
+    }
+
+    /// A second shellwing was started on this config: this window comes
+    /// forward, and opens the host it was given, as at a start (not while
+    /// locked: the lock comes forward alone).
+    fn show_again(&mut self, args: Vec<String>, cx: &mut Context<Self>) {
+        let (spec, forwards) = crate::parse_args(args.into_iter()).unwrap_or_default();
+        self.in_window(cx, move |ws, window, cx| {
+            window.activate_window();
+            cx.activate(true);
+            if let Some(spec) = spec
+                && !crate::app_lock::is_locked(cx)
+            {
+                ws.open_forwarding(&spec, &forwards, window, cx);
+            }
+        });
     }
 
     /// What AI clients ran, for the activity tab.

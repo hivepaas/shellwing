@@ -12,6 +12,16 @@ shellwing reads TOML files from its config directory:
 key in the keychain under its own name (`shellwing <directory>`), so a second
 app run this way, to try something, never replaces the usual one's key.
 
+**One shellwing per config directory.** Started while one is open on the
+same directory, shellwing brings that one's window forward and ends. A host
+given on the command line (`shellwing user@host`, with its `-L`, `-R`, `-D`)
+opens in a new tab there, unless shellwing is locked. Two apps on one
+directory would each write the other's settings over. An older shellwing,
+or one that does not answer within 3 seconds, does not come forward, and the
+second one opens as before. `SHELLWING_SECOND_INSTANCE=1` opens a
+second one on purpose; `$SHELLWING_CONFIG_DIR` gives it a directory of its
+own.
+
 How the files behave:
 
 - **Every file is optional**, and so is every key; anything missing takes its

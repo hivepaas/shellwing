@@ -437,6 +437,32 @@ fn attach_console() {
     unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
 }
 
+/// One shellwing per config: with one open already, it comes forward and
+/// opens what this one was asked to, and this one ends. Two on the same
+/// config would each write it over the other's.
+/// `SHELLWING_SECOND_INSTANCE=1` opens a second one all the same.
+fn shown_by_the_open_one() -> bool {
+    if std::env::var_os("SHELLWING_SECOND_INSTANCE").is_some_and(|v| v == "1") {
+        return false;
+    }
+    let Some(dir) = Store::default_dir() else {
+        return false;
+    };
+    let at = shellwing_core::ai::socket::Endpoint::for_config(&dir);
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let shown = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .is_ok_and(|rt| rt.block_on(shellwing_core::ai::socket::show(&at, &args)));
+    if shown {
+        eprintln!(
+            "shellwing is open already (on {}): it came forward. SHELLWING_SECOND_INSTANCE=1 opens a second one.",
+            dir.display()
+        );
+    }
+    shown
+}
+
 /// `shellwing mcp`: what an AI client starts as its MCP server.
 fn mcp_bridge() -> anyhow::Result<()> {
     let at = Store::default_dir()
@@ -472,6 +498,9 @@ fn main() -> anyhow::Result<()> {
             std::process::exit(2);
         }
     };
+    if shown_by_the_open_one() {
+        return Ok(());
+    }
     let (live, problems) = look::Live::open(Store::default_dir().map(Store::new));
     // The app's language, before anything is said.
     shellwing_i18n::set_language(live.settings().general.language.as_deref());
