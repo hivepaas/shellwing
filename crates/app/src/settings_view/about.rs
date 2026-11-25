@@ -1,5 +1,6 @@
 //! The About page: the version, updates, where the code is and how to take
-//! part, and HivePaaS, from the same author.
+//! part, and what else comes from the same author: tracewing, packwing and
+//! HivePaaS.
 
 use gpui::{
     ClipboardItem, Context, FontWeight, InteractiveElement, ParentElement,
@@ -17,6 +18,10 @@ const SITE: &str = "https://shellwing.app";
 const REPO: &str = "https://github.com/hivepaas/shellwing";
 const HIVEPAAS: &str = "https://hivepaas.com";
 const HIVEPAAS_REPO: &str = "https://github.com/hivepaas/hivepaas";
+const TRACEWING: &str = "https://tracewing.app";
+const TRACEWING_REPO: &str = "https://github.com/hivepaas/tracewing";
+const PACKWING: &str = "https://packwing.app";
+const PACKWING_REPO: &str = "https://github.com/hivepaas/packwing";
 /// The year in the copyright line.
 const YEAR: u32 = 2026;
 
@@ -41,7 +46,7 @@ impl SettingsView {
             .child(self.identity(cx))
             .child(self.updates(cx))
             .child(open_source(cx))
-            .child(hivepaas(cx))
+            .child(same_author(cx))
             .child(
                 div()
                     .pt(px(12.))
@@ -518,6 +523,131 @@ fn open_source(cx: &mut Context<SettingsView>) -> gpui::Div {
     )
 }
 
+/// What else comes from the same author: the two other apps, then HivePaaS.
+fn same_author(cx: &mut Context<SettingsView>) -> gpui::Div {
+    let apps = div()
+        .flex()
+        .flex_wrap()
+        .gap(px(12.))
+        .child(other_app(
+            OtherApp {
+                id: "about-tracewing",
+                logo: "brands/tracewing.svg",
+                name: "tracewing",
+                what: tr!("A native HTTP(S) debugging proxy that keeps up with big sessions."),
+                more: tr!(
+                    "See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents."
+                ),
+                visit: tr!("Visit tracewing.app"),
+                site: TRACEWING,
+                fill: (
+                    brand_fill(0x4a6fcc, 0x2f55b4),
+                    brand_fill(0x5a7ed6, 0x3a61c0),
+                    0xffffff,
+                ),
+                repo: TRACEWING_REPO,
+                github_id: "about-tracewing-github",
+            },
+            cx,
+        ))
+        .child(other_app(
+            OtherApp {
+                id: "about-packwing",
+                logo: "brands/packwing.svg",
+                name: "packwing",
+                what: tr!("A file archiver that puts every core to work and opens archives safely."),
+                more: tr!("ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux."),
+                visit: tr!("Visit packwing.app"),
+                site: PACKWING,
+                fill: (
+                    brand_fill(0x2b8462, 0x185b42),
+                    brand_fill(0x34946f, 0x1f6a4e),
+                    0xffffff,
+                ),
+                repo: PACKWING_REPO,
+                github_id: "about-packwing-github",
+            },
+            cx,
+        ));
+    section(
+        &tr!("From the same author"),
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(12.))
+            .child(apps)
+            .child(hivepaas(cx)),
+    )
+}
+
+/// Another app from the same author, as its card shows it.
+struct OtherApp {
+    id: &'static str,
+    logo: &'static str,
+    name: &'static str,
+    /// What it is, in a line.
+    what: String,
+    /// What it does, under it.
+    more: String,
+    visit: String,
+    site: &'static str,
+    fill: (gpui::Background, gpui::Background, u32),
+    repo: &'static str,
+    github_id: &'static str,
+}
+
+/// An app's card: its icon in its own colors, its name and what it is,
+/// and its site and its code.
+fn other_app(app: OtherApp, cx: &mut Context<SettingsView>) -> gpui::Div {
+    let c = colors();
+    card()
+        .debug_selector(move || format!("{}-card", app.id))
+        .flex_1()
+        .min_w(px(280.))
+        .gap(px(12.))
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(12.))
+                .child(gpui::img(app.logo).size(px(44.)).flex_shrink_0())
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .flex()
+                        .flex_col()
+                        .gap(px(2.))
+                        .child(
+                            div()
+                                .text_size(ui(16.))
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(app.name),
+                        )
+                        .child(
+                            div()
+                                .text_size(ui(12.5))
+                                .text_color(rgb(c.muted))
+                                .child(app.what),
+                        ),
+                ),
+        )
+        .child(body_text(app.more))
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .gap(px(8.))
+                .child(primary_link(app.id, &app.visit, app.site, app.fill, cx))
+                .child(link_button(
+                    app.github_id,
+                    "GitHub",
+                    app.repo.to_string(),
+                    cx,
+                )),
+        )
+}
+
 /// HivePaaS: what it is, where it runs, and where to see more.
 fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
     let c = colors();
@@ -657,9 +787,7 @@ fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
             HIVEPAAS_REPO.to_string(),
             cx,
         ));
-    section(
-        &tr!("From the same author"),
-        card()
+    card()
             .gap(px(16.))
             .child(title)
             .child(
@@ -672,8 +800,7 @@ fn hivepaas(cx: &mut Context<SettingsView>) -> gpui::Div {
             )
             .child(places)
             .child(chips)
-            .child(actions),
-    )
+            .child(actions)
 }
 
 #[cfg(test)]

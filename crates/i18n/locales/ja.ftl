@@ -2536,6 +2536,27 @@ ta04619ce = オープンソース
 # shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
 tcde8081b = shellwing は GPL-3.0-or-later ライセンスの無料オープンソースソフトウェアです。コードを読む、自分でビルドする、問題を報告する、修正を送る、どれも自由です。
 
+# A native HTTP(S) debugging proxy that keeps up with big sessions.
+t86e5ad3e = 大きなセッションにもついていくネイティブ HTTP(S) デバッグプロキシ。
+
+# See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents.
+tb382bdc2 = アプリが送るすべてのリクエストを見て、止めて、書き換える。モバイルアプリ、デスクトップアプリ、サーバー、AI エージェントにも。
+
+# Visit tracewing.app
+t4668641f = tracewing.app を見る
+
+# A file archiver that puts every core to work and opens archives safely.
+t5d2a9fa0 = すべてのコアを働かせ、アーカイブを安全に開くファイルアーカイバ。
+
+# ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux.
+tc05c7ec9 = ZIP、7z、RAR、tar など。macOS、Windows、Linux に対応。
+
+# Visit packwing.app
+t11cbc28f = packwing.app を見る
+
+# From the same author
+te0bcddcb = 同じ作者のアプリ
+
 # Open source · Apache-2.0
 tf33a768c = オープンソース · Apache-2.0
 
@@ -2574,9 +2595,6 @@ t69d796ee = Functions
 
 # Visit hivepaas.com
 t0632975a = hivepaas.com を見る
-
-# From the same author
-te0bcddcb = 同じ作者のアプリ
 
 # You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
 t1f5d9e97 = こちらもおすすめ：同じ作者による HivePaaS。Heroku、Render、Coolify に代わる、オープンソースのセルフホスト型ソリューションです。

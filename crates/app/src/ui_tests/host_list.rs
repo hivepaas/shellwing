@@ -253,6 +253,16 @@ scenario!(
             ),
             ("about-hivepaas", "https://hivepaas.com"),
             ("about-hivepaas-github", "https://github.com/hivepaas/hivepaas"),
+            ("about-tracewing", "https://tracewing.app"),
+            (
+                "about-tracewing-github",
+                "https://github.com/hivepaas/tracewing",
+            ),
+            ("about-packwing", "https://packwing.app"),
+            (
+                "about-packwing-github",
+                "https://github.com/hivepaas/packwing",
+            ),
         ] {
             ui.click(button);
             assert_eq!(ui.opened_url().as_deref(), Some(url), "{button}");
@@ -264,6 +274,11 @@ scenario!(
             "{copied}"
         );
         ui.wait_for_notice("shellwing");
+        // The other apps' icons, drawn as images in their own colors.
+        for app in ["tracewing", "packwing"] {
+            let card = ui.bounds(&format!("about-{app}-card"));
+            assert!(card.size.width > gpui::px(0.), "{app}");
+        }
     }
 );
 

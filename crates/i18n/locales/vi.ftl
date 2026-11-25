@@ -2536,6 +2536,27 @@ ta04619ce = Mã nguồn mở
 # shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
 tcde8081b = shellwing là phần mềm miễn phí, mã nguồn mở theo giấy phép GPL-3.0-or-later. Bạn có thể đọc mã, tự build, báo lỗi hoặc gửi bản sửa.
 
+# A native HTTP(S) debugging proxy that keeps up with big sessions.
+t86e5ad3e = Proxy gỡ lỗi HTTP(S) chạy native, vẫn mượt với những phiên lớn.
+
+# See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents.
+tb382bdc2 = Xem, tạm dừng và sửa mọi request mà ứng dụng của bạn gửi đi: ứng dụng di động và máy tính, server và AI agent.
+
+# Visit tracewing.app
+t4668641f = Xem tracewing.app
+
+# A file archiver that puts every core to work and opens archives safely.
+t5d2a9fa0 = Trình nén tệp tận dụng mọi nhân của máy và mở tệp nén an toàn.
+
+# ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux.
+tc05c7ec9 = ZIP, 7z, RAR, tar và nhiều định dạng khác, trên macOS, Windows và Linux.
+
+# Visit packwing.app
+t11cbc28f = Xem packwing.app
+
+# From the same author
+te0bcddcb = Cùng tác giả
+
 # Open source · Apache-2.0
 tf33a768c = Mã nguồn mở · Apache-2.0
 
@@ -2574,9 +2595,6 @@ t69d796ee = Functions
 
 # Visit hivepaas.com
 t0632975a = Xem hivepaas.com
-
-# From the same author
-te0bcddcb = Cùng tác giả
 
 # You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
 t1f5d9e97 = Có thể bạn quan tâm: HivePaaS, ứng dụng từ cùng tác giả. Một giải pháp self-hosted, mã nguồn mở thay thế cho Heroku, Render và Coolify.

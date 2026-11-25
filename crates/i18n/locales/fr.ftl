@@ -2588,6 +2588,27 @@ ta04619ce = Open source
 # shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
 tcde8081b = shellwing est un logiciel libre et open source, sous licence GPL-3.0-or-later. Lisez le code, compilez-le vous-même, signalez un problème ou proposez un correctif.
 
+# A native HTTP(S) debugging proxy that keeps up with big sessions.
+t86e5ad3e = Un proxy de débogage HTTP(S) natif qui suit les grandes sessions.
+
+# See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents.
+tb382bdc2 = Voyez, mettez en pause et modifiez chaque requête de vos apps : apps mobiles et de bureau, serveurs et agents d’IA.
+
+# Visit tracewing.app
+t4668641f = Visiter tracewing.app
+
+# A file archiver that puts every core to work and opens archives safely.
+t5d2a9fa0 = Un archiveur de fichiers qui fait travailler chaque cœur et ouvre les archives en toute sécurité.
+
+# ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux.
+tc05c7ec9 = ZIP, 7z, RAR, tar et plus encore, sur macOS, Windows et Linux.
+
+# Visit packwing.app
+t11cbc28f = Visiter packwing.app
+
+# From the same author
+te0bcddcb = Du même auteur
+
 # Open source · Apache-2.0
 tf33a768c = Open source · Apache-2.0
 
@@ -2626,9 +2647,6 @@ t69d796ee = Fonctions
 
 # Visit hivepaas.com
 t0632975a = Visiter hivepaas.com
-
-# From the same author
-te0bcddcb = Du même auteur
 
 # You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
 t1f5d9e97 = Vous aimerez peut-être HivePaaS, du même auteur : une alternative open source et auto-hébergée à Heroku, Render et Coolify.
