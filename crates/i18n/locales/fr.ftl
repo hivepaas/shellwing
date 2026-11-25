@@ -49,6 +49,9 @@ tddf9c9cc = Arrêter toute l'AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · lancé à { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } veut ajouter ceci aux notes sur { $host }. L'ajout vous attend : là où les commandes risquées attendent, chaque ajout à une note attend.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } veut écrire ceci sur { $host }. L'écriture vous attend : là où les commandes risquées attendent, chaque écriture attend.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } veut exécuter ceci sur { $host }. La commande vous atte
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } veut exécuter ceci sur { $host }. La commande vous attend : elle contient { $words }, de la liste des mots risqués.
 
+# Add it
+t6cac0f01 = Ajouter
+
+# Refuse it
+tbea0b112 = Refuser
+
 # Run it
 t72430853 = Exécuter
 
 # Run it, and this command again this session
 t2efebee7 = Exécuter, et cette commande à nouveau durant cette session
-
-# Refuse it
-tbea0b112 = Refuser
 
 # Stop
 t4b7f7705 = Arrêter
@@ -5042,6 +5048,9 @@ t8354c717 = Choisissez un serveur à gauche pour vous connecter
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ou appuyez sur { $keys } pour en trouver un, ou pour vous connecter à user@host
+
+# Added by {client}, {date}
+t54bde893 = Ajouté par { $client }, le { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Se connecte à ses serveurs ; ne peut pas les modifier

@@ -601,6 +601,60 @@ scenario!(
 );
 
 scenario!(
+    /// Given with Add to notes, an agent's addition waits for the person
+    /// (risky ones wait, and every addition does), who sees what goes in:
+    /// allowed, it is at the note's end after the line saying who wrote it;
+    /// a new note refused is not made.
+    an_ai_adds_to_a_note_once_allowed,
+    |ui| {
+        let token = given_web_may(ui, "Risky", "background", &["notes-read", "notes-add"]);
+        let vault = ui.vault().expect("the vault");
+        let note = shellwing_vault::Note {
+            id: String::new(),
+            title: "Restarting web".into(),
+            category: String::new(),
+            format: shellwing_vault::NoteFormat::Markdown,
+            hosts: vec!["web".into()],
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        let id = vault.save_note(&note, Some("sudo systemctl restart nginx")).expect("note");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, error) = c.tool_in(ui, "append_note", json!({"id": id, "text": "The cert renews on the 1st.", "wait_seconds": 1}));
+        assert!(!error && said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        assert_eq!(vault.note_text(&id).expect("text").as_deref().map(String::as_str), Some("sudo systemctl restart nginx"), "not before it is allowed");
+
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        assert!(ui.find("ai-adding").is_some(), "what goes in is shown");
+        ui.click("ai-allow");
+        let mut rest = String::new();
+        for _ in 0..5 {
+            let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+            rest.push_str(&said);
+            if said.starts_with("exit") {
+                break;
+            }
+        }
+        assert!(rest.contains("Added") && rest.contains("Restarting web"), "{rest}");
+        let text = vault.note_text(&id).expect("text").expect("the note").to_string();
+        assert!(text.starts_with("sudo systemctl restart nginx\n\n> Added by Codex CLI, "), "{text}");
+        assert!(text.ends_with("\n\nThe cert renews on the 1st.\n"), "{text}");
+
+        let before = vault.notes().expect("notes").len();
+        let (said, _) = c.tool_in(ui, "add_note", json!({"hosts": ["web"], "title": "Disk", "text": "Cleaned /var/log.", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click(&format!("ai-row:{job}"));
+        ui.click("ai-refuse");
+        let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+        assert!(said.contains("refused by the user"), "{said}");
+        assert_eq!(vault.notes().expect("notes").len(), before, "no note made");
+    }
+);
+
+scenario!(
     /// Notes are given apart from files, and only when ticked: a host given
     /// as it comes has neither right, one given with both ticked has both,
     /// and they are kept.

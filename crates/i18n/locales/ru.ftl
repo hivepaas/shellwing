@@ -49,6 +49,9 @@ tddf9c9cc = Остановить весь AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } хочет добавить это в заметки о { $host }. Добавление ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое добавление в заметку.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } хочет записать это на { $host }. Запись ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждая запись.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } хочет выполнить это на { $host }. К�
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } хочет выполнить это на { $host }. Команда ждёт вас: в ней есть { $words } из списка рискованных.
 
+# Add it
+t6cac0f01 = Добавить
+
+# Refuse it
+tbea0b112 = Отклонить
+
 # Run it
 t72430853 = Выполнить
 
 # Run it, and this command again this session
 t2efebee7 = Выполнить, и эту команду снова в этом сеансе
-
-# Refuse it
-tbea0b112 = Отклонить
 
 # Stop
 t4b7f7705 = Остановить
@@ -5160,6 +5166,9 @@ t8354c717 = Выберите хост слева, чтобы подключит�
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = или нажмите { $keys }, чтобы найти его или подключиться к user@host
+
+# Added by {client}, {date}
+t54bde893 = Добавлено: { $client }, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Подключается к её хостам; не может их изменять

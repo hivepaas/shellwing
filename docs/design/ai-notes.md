@@ -135,8 +135,11 @@ person would never have typed. They should see it before it goes in.
 ## What is kept
 
 AI activity keeps each call as it keeps commands: the client, the tool, the
-note's title (and the image's id, for an image) and, for an add, the text
-added. A refused call is kept as well, with why.
+note's title (and the image's id, for an image) and what it gave, by size.
+A refused call is kept as well, with why. It keeps no note's text, read or
+added: its log (`state/ai-activity.jsonl`) is plain text, and the vault
+keeps notes encrypted. While an addition waits for the person, the activity
+shows the text as it will go in, in memory only.
 
 **In the note itself**, what an agent wrote starts with a line that
 shellwing puts there, not the agent, so that the person and the next agent

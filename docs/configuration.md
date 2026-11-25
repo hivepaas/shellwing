@@ -1215,8 +1215,14 @@ What it may do, each on its own:
   left out unless given too. Nothing goes out while the vault or shellwing is
   locked. AI activity keeps what was read, by title and size, never its text.
   Design: [docs/design/ai-notes.md](design/ai-notes.md).
-- **Add to notes**: kept for the tools that add to notes, which come next
-  (off unless turned on).
+- **Add to notes**: write a new note about the host, or add to the end of one
+  it may read (off unless turned on). It never changes what is there, never
+  re-files a note or makes it sensitive or not, and adds text only, no
+  images. What it adds starts with a line shellwing puts there, *Added by
+  Claude Code, 2026-11-25*, as a quote in Markdown. A note open in its window
+  is refused. Where risky ones wait, every addition waits for you, and AI
+  activity shows the text as it will go in: *Add it* or *Refuse it*. The log
+  keeps the note's title and size, not the text.
 
 What happens to a command:
 

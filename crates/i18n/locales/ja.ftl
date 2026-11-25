@@ -49,6 +49,9 @@ tddf9c9cc = すべての AI を停止
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } が { $host } についてのノートにこれを追記しようとしています。指示を待っています。「危険なものは確認」では、ノートへの追記はすべて確認が必要です。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } が { $host } にこれを書き込もうとしています。指示を待っています。「危険なものは確認」では、書き込みはすべて確認が必要です。
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } が { $host } でこれを実行しようとしていま
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } が { $host } でこれを実行しようとしています。指示を待っています。危険リストにある { $words } が含まれています。
 
+# Add it
+t6cac0f01 = 追記
+
+# Refuse it
+tbea0b112 = 拒否
+
 # Run it
 t72430853 = 実行
 
 # Run it, and this command again this session
 t2efebee7 = 実行し、このセッション中は同じコマンドも実行
-
-# Refuse it
-tbea0b112 = 拒否
 
 # Stop
 t4b7f7705 = 停止
@@ -4896,6 +4902,9 @@ t8354c717 = 左のホストを選んで接続
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = または { $keys } を押してホストを検索するか、user@host に接続
+
+# Added by {client}, {date}
+t54bde893 = { $client } が追記、{ $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = ホストに接続できます（変更はできません）

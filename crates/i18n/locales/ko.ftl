@@ -49,6 +49,9 @@ tddf9c9cc = 모든 AI 중지
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client }이(가) { $host }에 관한 노트에 이것을 추가하려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 노트에 추가할 때마다 확인이 필요합니다.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }이(가) { $host }에 이것을 쓰려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 쓰기에 확인이 필요합니다.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client }이(가) { $host }에서 이것을 실행하려고 합니
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client }이(가) { $host }에서 이것을 실행하려고 합니다. 지시를 기다립니다. 위험 목록에 있는 { $words }이(가) 들어 있습니다.
 
+# Add it
+t6cac0f01 = 추가
+
+# Refuse it
+tbea0b112 = 거부
+
 # Run it
 t72430853 = 실행
 
 # Run it, and this command again this session
 t2efebee7 = 실행하고, 이 세션 동안 같은 명령도 실행
-
-# Refuse it
-tbea0b112 = 거부
 
 # Stop
 t4b7f7705 = 중지
@@ -4896,6 +4902,9 @@ t8354c717 = 연결하려면 왼쪽에서 호스트를 선택하세요
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 또는 { $keys }을(를) 눌러 호스트를 찾거나 user@host에 연결하세요
+
+# Added by {client}, {date}
+t54bde893 = { $client }이(가) 추가함, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = 호스트에 연결할 수 있음, 변경은 불가

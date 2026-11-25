@@ -49,6 +49,9 @@ tddf9c9cc = Dừng tất cả AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } muốn thêm nội dung này vào ghi chú về { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần thêm vào ghi chú đều chờ.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } muốn ghi tệp này trên { $host }. Thao tác ghi đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: nó có { $words }, thuộc danh sách rủi ro.
 
+# Add it
+t6cac0f01 = Thêm vào
+
+# Refuse it
+tbea0b112 = Từ chối
+
 # Run it
 t72430853 = Chạy lệnh
 
 # Run it, and this command again this session
 t2efebee7 = Chạy lệnh, và cho phép lệnh này trong suốt phiên này
-
-# Refuse it
-tbea0b112 = Từ chối
 
 # Stop
 t4b7f7705 = Dừng
@@ -4896,6 +4902,9 @@ t8354c717 = Chọn một máy chủ bên trái để kết nối
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = hoặc nhấn { $keys } để tìm, hoặc để kết nối tới user@host
+
+# Added by {client}, {date}
+t54bde893 = { $client } đã thêm, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Kết nối tới các máy chủ của nó; không sửa được chúng

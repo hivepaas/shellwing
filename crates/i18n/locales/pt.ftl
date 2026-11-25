@@ -49,6 +49,9 @@ tddf9c9cc = Parar toda a AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado às { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } quer acrescentar isto às notas sobre { $host }. O acréscimo espera por você: onde os arriscados esperam, todo acréscimo a uma nota espera.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } quer gravar isto em { $host }. A gravação espera por você: onde os arriscados esperam, toda gravação espera.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } quer executar isto em { $host }. O comando espera por vo
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } quer executar isto em { $host }. O comando espera por você: ele contém { $words }, da lista de palavras arriscadas.
 
+# Add it
+t6cac0f01 = Acrescentar
+
+# Refuse it
+tbea0b112 = Recusar
+
 # Run it
 t72430853 = Executar
 
 # Run it, and this command again this session
 t2efebee7 = Executar, e este comando de novo nesta sessão
-
-# Refuse it
-tbea0b112 = Recusar
 
 # Stop
 t4b7f7705 = Parar
@@ -5042,6 +5048,9 @@ t8354c717 = Escolha um servidor à esquerda para conectar
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ou pressione { $keys } para encontrar um, ou para conectar a user@host
+
+# Added by {client}, {date}
+t54bde893 = Acrescentado por { $client }, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Conecta-se aos servidores dela; não pode alterá-los

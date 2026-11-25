@@ -49,6 +49,9 @@ tddf9c9cc = Tüm AI'ı durdur
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client }, bunu { $host } ile ilgili notlara eklemek istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken notlara her ekleme bekler.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }, bunu { $host } üzerine yazmak istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her yazma bekler.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi bekliyor: riskli listeden { $words } içeriyor.
 
+# Add it
+t6cac0f01 = Ekle
+
+# Refuse it
+tbea0b112 = Reddet
+
 # Run it
 t72430853 = Çalıştır
 
 # Run it, and this command again this session
 t2efebee7 = Çalıştır ve bu oturumda bu komutu yeniden de çalıştır
-
-# Refuse it
-tbea0b112 = Reddet
 
 # Stop
 t4b7f7705 = Durdur
@@ -5042,6 +5048,9 @@ t8354c717 = Bağlanmak için soldan bir ana makine seçin
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = ya da birini bulmak veya user@host adresine bağlanmak için { $keys } tuşlarına basın
+
+# Added by {client}, {date}
+t54bde893 = { $client } ekledi, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Ana makinelerine bağlanır; onları değiştiremez

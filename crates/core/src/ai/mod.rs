@@ -95,6 +95,10 @@ pub struct Activity {
     /// nothing when its grant asks for every command.
     #[serde(default)]
     pub waiting: Option<String>,
+    /// What it adds to a note, as it will go in: shown while it waits for
+    /// the person, never kept in the log (the vault keeps notes encrypted).
+    #[serde(skip)]
+    pub adding: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -148,6 +152,8 @@ pub enum HubEvent {
     },
     /// A command typed into a tab was stopped: the app interrupts it there.
     TabStop { id: String },
+    /// An AI added to the notes: lists showing them show them again.
+    NotesChanged,
 }
 
 /// A command an AI started: its output so far, and its end once it came.
@@ -215,6 +221,7 @@ impl Job {
                     end: None,
                     output: String::new(),
                     waiting: None,
+                    adding: None,
                 },
                 out: vec![],
                 cut: false,
@@ -231,6 +238,12 @@ impl Job {
         self.state
             .lock()
             .is_ok_and(|s| s.activity.waiting.is_some())
+    }
+
+    fn set_adding(&self, text: String) {
+        if let Ok(mut st) = self.state.lock() {
+            st.activity.adding = Some(text);
+        }
     }
 
     fn set_waiting(&self, why: Option<String>) {
@@ -1124,6 +1137,7 @@ mod tests {
                     end: Some(End::Exited(Some(0))),
                     output: String::new(),
                     waiting: None,
+                    adding: None,
                 },
             );
         }
