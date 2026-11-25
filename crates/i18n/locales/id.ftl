@@ -46,6 +46,27 @@ ta7006e9a = Tidak ada apa-apa di sini.
 # Stop all AI
 tddf9c9cc = Hentikan semua AI
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } dari { $most } MB disimpan di komputer ini
+
+# Show in folder
+t63890d31 = Tampilkan di folder
+
+# Clear…
+t725be072 = Kosongkan…
+
+# Clear activity
+t80bab37b = Kosongkan aktivitas
+
+# Cancel
+t35afca3b = Batal
+
+# Clear AI activity?
+t1d96272a = Kosongkan Aktivitas AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Perintah yang dijalankan AI dan keluarannya dihapus, dari komputer ini juga. Yang sedang berjalan atau menunggu Anda tetap ada.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 
@@ -352,9 +373,6 @@ tebca595f = Sudah diberikan ke { $client }: { $hosts }. Memberikannya lagi mengg
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
 
-# Cancel
-t35afca3b = Batal
-
 # When AI runs a command
 tc94fc353 = Saat AI menjalankan perintah
 
@@ -366,6 +384,12 @@ te371b0dd = Berisiko: perintah dengan salah satu kata ini, satu per baris, menun
 
 # The usual list
 tcc58d242 = Daftar bawaan
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Disimpan di komputer ini sebagai teks biasa, dalam bagian 20 MB: keluaran setiap perintah, 64 KB pertamanya. Jika lebih dari ini, bagian tertua dihapus. Aktivitas AI menampilkan 1000 terakhir, dan dapat mengosongkan semuanya.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Paling sedikit { $least } MB: sampai itu, tetap { $mb } MB.
 
 # unlock its windows
 t7c69953e = membuka kunci jendelanya

@@ -4,8 +4,8 @@
 
 use gpui::{
     App, ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, InteractiveElement,
-    IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement, Styled,
-    WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
+    IntoElement, ParentElement, PromptLevel, Render, SharedString, StatefulInteractiveElement,
+    Styled, WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
 };
 use std::sync::Arc;
 
@@ -289,6 +289,72 @@ impl ActivityView {
                     }),
             )
             .child(rows)
+            .child(self.kept_part(all.iter().any(|a| a.end.is_some()), cx))
+    }
+
+    /// Under the list: how much the log keeps on this computer, of how
+    /// much; its folder, and Clear.
+    fn kept_part(&self, any: bool, cx: &mut Context<Self>) -> gpui::Div {
+        let ws = self.workspace.upgrade();
+        let kept = ws.as_ref().and_then(|w| w.read(cx).ai_kept());
+        let path = ws.as_ref().and_then(|w| w.read(cx).ai_log_path());
+        let mb = |b: u64| b as f64 / (1024. * 1024.);
+        let said = match kept {
+            Some((size, most)) => tr!(
+                "{size} of {most} MB kept on this computer",
+                size = format!("{:.1}", mb(size)),
+                most = format!("{:.0}", mb(most))
+            ),
+            None => String::new(),
+        };
+        let small = |b: gpui::Stateful<gpui::Div>| b.h(px(26.)).px(px(10.)).text_size(ui(12.));
+        div()
+            .debug_selector(|| "ai-kept".into())
+            .flex()
+            .items_center()
+            .gap(px(8.))
+            .px(px(14.))
+            .py(px(8.))
+            .border_t_1()
+            .border_color(rgb(colors().line))
+            .child(div().flex_1().min_w_0().child(hint_text(&said)))
+            .when_some(path.filter(|p| p.exists()), |d, path| {
+                d.child(
+                    small(outline_button("ai-log-folder", &tr!("Show in folder")))
+                        .on_click(move |_, _, cx| cx.reveal_path(&path)),
+                )
+            })
+            .when(any || kept.is_some_and(|(size, _)| size > 0), |d| {
+                d.child(
+                    small(outline_button("ai-clear", &tr!("Clear…")))
+                        .on_click(cx.listener(|v, _, window, cx| v.ask_clear(window, cx))),
+                )
+            })
+    }
+
+    /// Clear, once the person says so: it cannot be undone.
+    fn ask_clear(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (yes, no) = (tr!("Clear activity"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Clear AI activity?"),
+            Some(&tr!(
+                "The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay."
+            )),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let yes = matches!(answer.await, Ok(0));
+            let _ = this.update_in(cx, |v, window, cx| {
+                window.focus(&v.focus, cx);
+                if yes && let Some(ws) = v.workspace.upgrade() {
+                    ws.read(cx).ai_clear();
+                }
+                cx.notify();
+            });
+        })
+        .detach();
     }
 
     fn detail(&mut self, a: &Activity, cx: &mut Context<Self>) -> gpui::Div {

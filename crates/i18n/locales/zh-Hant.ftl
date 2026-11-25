@@ -46,6 +46,27 @@ ta7006e9a = 這裡什麼都沒有。
 # Stop all AI
 tddf9c9cc = 停止所有 AI
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = 本機已保留 { $size } / { $most } MB
+
+# Show in folder
+t63890d31 = 在資料夾中顯示
+
+# Clear…
+t725be072 = 清除…
+
+# Clear activity
+t80bab37b = 清除活動
+
+# Cancel
+t35afca3b = 取消
+
+# Clear AI activity?
+t1d96272a = 清除 AI 活動？
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = AI 執行過的命令及其輸出將被刪除，包括本機上的紀錄。正在執行或等待你處理的命令會保留。
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 
@@ -352,9 +373,6 @@ tebca595f = 已授權給 { $client }：{ $hosts }。再次授權會取代原有�
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它絕不會看到金鑰、密碼或密碼片語：會要求這些的主機會被拒絕，主機金鑰仍未知的主機也一樣。主機的輸出可能含有意圖操控代理程式的文字：只把主機授權給你放心託付的用戶端。
 
-# Cancel
-t35afca3b = 取消
-
 # When AI runs a command
 tc94fc353 = AI 執行指令時
 
@@ -366,6 +384,12 @@ te371b0dd = 風險：含有以下任一項（每行一項）的指令會等你�
 
 # The usual list
 tcc58d242 = 預設清單
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = 以純文字保存在本機，每 20 MB 一個檔案：每個命令輸出的前 64 KB。超過此值時，最舊的檔案會被刪除。AI 活動顯示最近 1000 個，並可全部清除。
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = 至少 { $least } MB：在此之前仍為 { $mb } MB。
 
 # unlock its windows
 t7c69953e = 解鎖其視窗

@@ -130,6 +130,11 @@ impl Workspace {
                     v.read(cx).session().writer.write(vec![0x03]);
                 }
             }
+            HubEvent::Cleared => {
+                ai.activity.retain(|a| a.end.is_none());
+                self.refresh_sidebar(cx);
+                cx.notify();
+            }
             HubEvent::NotesChanged => {
                 if let Some((view, _)) = &self.settings {
                     let view = view.clone();
@@ -182,6 +187,24 @@ impl Workspace {
     pub fn ai_answer(&self, id: &str, approval: ai::Approval) {
         if let Some(a) = &self.ai {
             a.hub.answer(id, approval);
+        }
+    }
+
+    /// How much the activity's log keeps on this computer, and the most it
+    /// may (bytes).
+    pub fn ai_kept(&self) -> Option<(u64, u64)> {
+        self.ai.as_ref().and_then(|a| a.hub.kept())
+    }
+
+    /// Where the activity's log is written now.
+    pub fn ai_log_path(&self) -> Option<std::path::PathBuf> {
+        self.ai.as_ref().and_then(|a| a.hub.log_path())
+    }
+
+    /// Clears the activity: what ended goes, on this computer too.
+    pub fn ai_clear(&self) {
+        if let Some(a) = &self.ai {
+            a.hub.clear_activity();
         }
     }
 

@@ -46,6 +46,27 @@ ta7006e9a = Không có gì ở đây.
 # Stop all AI
 tddf9c9cc = Dừng tất cả AI
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = Đang giữ { $size } / { $most } MB trên máy này
+
+# Show in folder
+t63890d31 = Mở thư mục
+
+# Clear…
+t725be072 = Xoá…
+
+# Clear activity
+t80bab37b = Xoá hoạt động
+
+# Cancel
+t35afca3b = Huỷ
+
+# Clear AI activity?
+t1d96272a = Xoá Hoạt động AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Các lệnh AI đã chạy và output của chúng sẽ bị xoá, cả trên máy này. Lệnh đang chạy hoặc đang chờ bạn vẫn được giữ.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
@@ -349,9 +370,6 @@ tebca595f = Đã cấp cho { $client }: { $hosts }. Cấp lại sẽ thay thế 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
 
-# Cancel
-t35afca3b = Huỷ
-
 # When AI runs a command
 tc94fc353 = Khi AI chạy lệnh
 
@@ -363,6 +381,12 @@ te371b0dd = Rủi ro: lệnh có bất kỳ từ nào sau đây, mỗi từ mộ
 
 # The usual list
 tcc58d242 = Danh sách mặc định
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Được lưu trên máy này dưới dạng văn bản thường, chia thành các phần 20 MB: output của mỗi lệnh, 64 KB đầu. Khi vượt mức này, phần cũ nhất bị xoá. Hoạt động AI hiện 1000 lệnh gần nhất, và có thể xoá tất cả.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Tối thiểu { $least } MB: trong lúc này vẫn giữ { $mb } MB.
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó

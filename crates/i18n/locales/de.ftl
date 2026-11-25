@@ -46,6 +46,27 @@ ta7006e9a = Hier ist nichts.
 # Stop all AI
 tddf9c9cc = AI ganz stoppen
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } von { $most } MB auf diesem Computer behalten
+
+# Show in folder
+t63890d31 = Im Ordner zeigen
+
+# Clear…
+t725be072 = Leeren…
+
+# Clear activity
+t80bab37b = Aktivität leeren
+
+# Cancel
+t35afca3b = Abbrechen
+
+# Clear AI activity?
+t1d96272a = AI-Aktivität leeren?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Die Befehle, die AI ausgeführt hat, und ihre Ausgaben verschwinden, auch von diesem Computer. Laufende und auf dich wartende bleiben.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · gestartet um { $when } · { $job }
 
@@ -356,9 +377,6 @@ tebca595f = Bereits für { $client } freigegeben: { $hosts }. Erneutes Freigeben
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Er sieht nie einen Schlüssel, ein Passwort oder eine Passphrase: Ein Host, der danach fragen würde, wird abgelehnt, ebenso einer, dessen Schlüssel noch nicht bekannt ist. Die Ausgabe eines Hosts kann Worte enthalten, die einen Agent lenken sollen: Gib Hosts nur einem, dem du sie anvertraust.
 
-# Cancel
-t35afca3b = Abbrechen
-
 # When AI runs a command
 tc94fc353 = Wenn AI einen Befehl ausführt
 
@@ -370,6 +388,12 @@ te371b0dd = Riskant: Ein Befehl mit einem davon, eines pro Zeile, wartet auf dic
 
 # The usual list
 tcc58d242 = Die übliche Liste
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Auf diesem Computer als Klartext gespeichert, in Teilen zu 20 MB: was jeder Befehl ausgegeben hat, die ersten 64 KB davon. Sind es mehr als das, geht der älteste Teil. Die AI-Aktivität zeigt die letzten 1000 und leert alle.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Mindestens { $least } MB: bis dahin bleiben es { $mb } MB.
 
 # unlock its windows
 t7c69953e = seine Fenster zu entsperren

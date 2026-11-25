@@ -46,6 +46,27 @@ ta7006e9a = Тут нічого немає.
 # Stop all AI
 tddf9c9cc = Зупинити весь AI
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } з { $most } МБ зберігається на цьому комп’ютері
+
+# Show in folder
+t63890d31 = Показати в теці
+
+# Clear…
+t725be072 = Очистити…
+
+# Clear activity
+t80bab37b = Очистити активність
+
+# Cancel
+t35afca3b = Скасувати
+
+# Clear AI activity?
+t1d96272a = Очистити активність AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Команди, які запускав AI, і їхній вивід зникнуть, зокрема з цього комп’ютера. Ті, що виконуються або чекають на вас, залишаться.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · розпочато о { $when } · { $job }
 
@@ -364,9 +385,6 @@ tebca595f = Уже надано { $client }: { $hosts }. Повторне над
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
 
-# Cancel
-t35afca3b = Скасувати
-
 # When AI runs a command
 tc94fc353 = Коли AI виконує команду
 
@@ -378,6 +396,12 @@ te371b0dd = Ризиковані: команда з будь-яким із ци�
 
 # The usual list
 tcc58d242 = Звичайний список
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Зберігається на цьому комп’ютері відкритим текстом, частинами по 20 МБ: вивід кожної команди, його перші 64 КБ. Коли більше за це, найстаріша частина видаляється. Активність AI показує останні 1000 і очищає все.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Не менше { $least } МБ: доти лишається { $mb } МБ.
 
 # unlock its windows
 t7c69953e = розблокувати свої вікна

@@ -187,6 +187,8 @@ pub struct AiView {
     filter: Entity<TextInput>,
     /// The risky list, a line each.
     risky: Entity<TextInput>,
+    /// How much AI activity this computer keeps, in MB.
+    activity_mb: Entity<TextInput>,
     mono: SharedString,
 }
 
@@ -230,6 +232,26 @@ impl AiView {
             v.change(cx, |s| s.risky = (!usual).then_some(lines));
         })
         .detach();
+        let mb = workspace
+            .upgrade()
+            .and_then(|w| w.read(cx).ai_snapshot(cx).state.activity_mb)
+            .unwrap_or(shellwing_config::AI_ACTIVITY_MB);
+        let activity_mb = cx.new(|cx| {
+            let mut i = TextInput::new("", cx);
+            i.set_text(&mb.to_string(), 0..0, cx);
+            i
+        });
+        // Kept as it is typed, once it is a number of MB that may be.
+        cx.subscribe(&activity_mb, |v: &mut AiView, input, _: &Changed, cx| {
+            let typed: Option<u32> = input.read(cx).text().trim().parse().ok();
+            match typed.filter(|n| *n >= LEAST_MB) {
+                Some(mb) => v.change(cx, |s| {
+                    s.activity_mb = (mb != shellwing_config::AI_ACTIVITY_MB).then_some(mb)
+                }),
+                None => cx.notify(),
+            }
+        })
+        .detach();
         AiView {
             workspace,
             focus: cx.focus_handle(),
@@ -240,6 +262,7 @@ impl AiView {
             folded: BTreeSet::new(),
             filter,
             risky,
+            activity_mb,
             mono: SharedString::default(),
         }
     }
@@ -1439,8 +1462,111 @@ impl Render for AiView {
             .child(self.clients_part(&snap, cx))
             .child(self.grants_part(&snap, window, cx))
             .child(self.modes_part(&snap, window, cx))
+            .child(self.activity_part(&snap, window, cx))
     }
 }
+
+impl AiView {
+    /// How much AI activity this computer keeps, in all.
+    fn activity_part(&self, snap: &AiSnap, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
+        let mb = snap
+            .state
+            .activity_mb
+            .unwrap_or(shellwing_config::AI_ACTIVITY_MB);
+        let typed = self.activity_mb.read(cx).text().trim().to_string();
+        let wrong = typed.parse::<u32>().map_or(true, |n| n < LEAST_MB);
+        let focused = self.activity_mb.focus_handle(cx).is_focused(window);
+        let step = |id: &'static str, label: &'static str, to: u32, cx: &mut Context<Self>| {
+            outline_button(id, label)
+                .h(px(30.))
+                .w(px(30.))
+                .px(px(0.))
+                .justify_center()
+                .on_click(cx.listener(move |v, _, _, cx| v.set_activity_mb(to, cx)))
+        };
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(10.))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(heading(&tr!("AI activity")))
+                    .child(hint_text(&tr!(
+                        "Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all."
+                    ))),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.))
+                    .child(step(
+                        "ai-activity-less",
+                        "−",
+                        mb.saturating_sub(STEP_MB).max(LEAST_MB),
+                        cx,
+                    ))
+                    .child(
+                        div()
+                            .debug_selector(|| "ai-activity-mb".into())
+                            .w(px(90.))
+                            .h(px(30.))
+                            .px(px(8.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(if wrong {
+                                colors().bad
+                            } else if focused {
+                                colors().accent
+                            } else {
+                                colors().field_edge
+                            }))
+                            .bg(rgb(colors().field))
+                            .child(self.activity_mb.clone()),
+                    )
+                    .child(step(
+                        "ai-activity-more",
+                        "+",
+                        mb.saturating_add(STEP_MB),
+                        cx,
+                    ))
+                    .child(label_text("MB"))
+                    .when(wrong, |d| {
+                        d.child(
+                            div()
+                                .text_size(ui(12.))
+                                .text_color(rgb(colors().bad_text))
+                                .child(tr!(
+                                    "At least {least} MB: {mb} MB is kept until then.",
+                                    least = LEAST_MB.to_string(),
+                                    mb = mb.to_string()
+                                )),
+                        )
+                    }),
+            )
+    }
+
+    /// Keeps `mb` (at least [`LEAST_MB`]) and shows it.
+    fn set_activity_mb(&mut self, mb: u32, cx: &mut Context<Self>) {
+        let mb = mb.max(LEAST_MB);
+        self.activity_mb
+            .update(cx, |i, cx| i.set_text(&mb.to_string(), 0..0, cx));
+        self.change(cx, |s| {
+            s.activity_mb = (mb != shellwing_config::AI_ACTIVITY_MB).then_some(mb)
+        });
+    }
+}
+
+/// The least AI activity keeps, in MB.
+const LEAST_MB: u32 = ai::log::LEAST_MB;
+
+/// What − and + change it by, in MB.
+const STEP_MB: u32 = 32;
 
 #[cfg(test)]
 mod tests {

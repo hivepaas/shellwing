@@ -51,7 +51,14 @@ pub struct AiState {
     /// ending in `/` begins one (`/etc/`). None: [`DEFAULT_RISKY`].
     #[serde(default)]
     pub risky: Option<Vec<String>>,
+    /// How much AI activity this computer keeps, in all, in MB. None:
+    /// [`AI_ACTIVITY_MB`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activity_mb: Option<u32>,
 }
+
+/// How much AI activity is kept when the person has said nothing, in MB.
+pub const AI_ACTIVITY_MB: u32 = 32;
 
 /// What makes a command risky when the person has said nothing.
 pub const DEFAULT_RISKY: &[&str] = &[

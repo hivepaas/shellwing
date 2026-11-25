@@ -46,6 +46,27 @@ ta7006e9a = Aquí no hay nada.
 # Stop all AI
 tddf9c9cc = Detener toda la AI
 
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } de { $most } MB guardados en este equipo
+
+# Show in folder
+t63890d31 = Mostrar en la carpeta
+
+# Clear…
+t725be072 = Vaciar…
+
+# Clear activity
+t80bab37b = Vaciar actividad
+
+# Cancel
+t35afca3b = Cancelar
+
+# Clear AI activity?
+t1d96272a = ¿Vaciar la actividad AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Los comandos que ejecutó la AI y lo que imprimieron desaparecen, también de este equipo. Los que están en marcha o esperándote se quedan.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado a las { $when } · { $job }
 
@@ -356,9 +377,6 @@ tebca595f = Ya concedidos a { $client }: { $hosts }. Concederlos de nuevo reempl
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nunca ve una clave, una contraseña ni una frase de contraseña: se rechaza un servidor que la pediría, igual que uno cuya clave aún no se conoce. La salida de un servidor puede llevar palabras pensadas para dirigir a un agente: da servidores solo a uno en el que confíes para ello.
 
-# Cancel
-t35afca3b = Cancelar
-
 # When AI runs a command
 tc94fc353 = Cuando la AI ejecuta un comando
 
@@ -370,6 +388,12 @@ te371b0dd = De riesgo: un comando con cualquiera de estas palabras, una por lín
 
 # The usual list
 tcc58d242 = La lista habitual
+
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Se guarda en este equipo, como texto sin cifrar, en partes de 20 MB: lo que imprimió cada comando, sus primeros 64 KB. Cuando son más que esto, se va la parte más antigua. La Actividad AI muestra los últimos 1000 y los vacía todos.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Al menos { $least } MB: hasta entonces se mantienen { $mb } MB.
 
 # unlock its windows
 t7c69953e = desbloquear sus ventanas
