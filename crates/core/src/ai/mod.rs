@@ -184,6 +184,10 @@ pub enum HubEvent {
     SnippetsChanged,
     /// The person cleared the activity: only what runs or waits is left.
     Cleared,
+    /// A second shellwing was started on this config: this one comes
+    /// forward, and opens what it was given (`args`, as typed: a host and
+    /// its forwards), while the second ends.
+    Show { args: Vec<String> },
 }
 
 /// A command an AI started: its output so far, and its end once it came.
@@ -1022,6 +1026,11 @@ impl Hub {
                 .map(|j| j.activity()),
         );
         all
+    }
+
+    /// A second shellwing asks this one to come forward, with its `args`.
+    pub fn show(&self, args: Vec<String>) {
+        let _ = self.events.try_send(HubEvent::Show { args });
     }
 
     pub fn client_connected(&self, id: &str, connected: bool) {

@@ -1232,3 +1232,36 @@ scenario!(
         assert!(ui.known_hosts().contains(&key), "kept: {}", ui.known_hosts());
     }
 );
+
+scenario!(
+    /// A second shellwing started on the same config asks this one to come
+    /// forward: with a host, a tab opens to it here; with none, nothing
+    /// opens. The second one never draws a window (main.rs).
+    a_second_start_shows_this_one,
+    |ui| {
+        let key = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).expect("key");
+        ui.agent(&[&key]);
+        let server = ui.server(Policy {
+            key: Some(key.public_key().clone()),
+            ..Default::default()
+        });
+        ui.trust(&server);
+        ui.config_file("hosts.toml", &host("web", server.port));
+        ui.open();
+        let at = Endpoint::for_config(&ui.config_dir());
+        let ask = |ui: &mut Ui, args: Value| {
+            let mut s = UnixStream::connect(&at.0).expect("the open one");
+            s.write_all(format!("{}\n", json!({ "show": args })).as_bytes()).expect("ask");
+            let mut reply = String::new();
+            BufReader::new(s).read_line(&mut reply).expect("reply");
+            ui.settle(Duration::from_millis(50));
+            reply
+        };
+        let before = ui.tabs();
+        assert_eq!(ask(ui, json!([])).trim(), r#"{"ok":true}"#);
+        assert_eq!(ui.tabs(), before, "nothing asked, nothing opened");
+        ask(ui, json!(["web"]));
+        ui.wait_until("a tab to web", |ui| ui.tabs() == before + 1);
+        assert_eq!(ui.view(|v, _| v.session().spec.clone()), "web");
+    }
+);

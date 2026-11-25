@@ -108,7 +108,8 @@ pub async fn listen(hub: Arc<Hub>, at: Endpoint) -> std::io::Result<()> {
     }
 }
 
-/// One client: its token first, then MCP.
+/// One client: its token first, then MCP. Or a second shellwing started
+/// on the same config ([`show`]): this one comes forward instead.
 async fn serve_one<R, W>(hub: Arc<Hub>, r: R, mut w: W)
 where
     R: AsyncRead + Unpin,
@@ -119,8 +120,23 @@ where
     if r.read_line(&mut hello).await.is_err() {
         return;
     }
-    let token = serde_json::from_str::<Value>(&hello)
-        .ok()
+    let hello = serde_json::from_str::<Value>(&hello).ok();
+    if let Some(args) = hello.as_ref().and_then(|v| v.get("show")) {
+        let args = args
+            .as_array()
+            .map(|a| {
+                a.iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
+        hub.show(args);
+        let _ = w.write_all(b"{\"ok\":true}\n").await;
+        return;
+    }
+    let token = hello
+        .as_ref()
         .and_then(|v| v.get("token").and_then(Value::as_str).map(str::to_string));
     let client = token.as_deref().and_then(|t| hub.client(t));
     let Some(client) = client else {
@@ -154,6 +170,48 @@ pub async fn bridge(at: Endpoint, token: Option<String>) -> std::io::Result<()> 
 type Reader = tokio::io::Lines<BufReader<Box<dyn AsyncRead + Unpin + Send>>>;
 type Writer = Box<dyn AsyncWrite + Unpin + Send>;
 
+/// The app listening at `at`, reached: what it says, and where to say it.
+async fn open(at: &Endpoint) -> std::io::Result<(Box<dyn AsyncRead + Unpin + Send>, Writer)> {
+    #[cfg(unix)]
+    {
+        let s = tokio::net::UnixStream::connect(&at.0).await?;
+        let (r, w) = s.into_split();
+        Ok((Box::new(r), Box::new(w)))
+    }
+    #[cfg(windows)]
+    {
+        let s = tokio::net::windows::named_pipe::ClientOptions::new().open(&at.0)?;
+        let (r, w) = tokio::io::split(s);
+        Ok((Box::new(r), Box::new(w)))
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = at;
+        Err(std::io::Error::other("no AI clients on this system"))
+    }
+}
+
+/// A second shellwing started on the config of one open at `at`: that one
+/// is asked to come forward and open `args` (a host and its forwards, as
+/// typed), and whether it did. One open from before this was asked is not
+/// counted, and nor is none.
+pub async fn show(at: &Endpoint, args: &[String]) -> bool {
+    let asked = async {
+        let (r, mut w) = open(at).await.ok()?;
+        let hello = format!("{}\n", json!({ "show": args }));
+        w.write_all(hello.as_bytes()).await.ok()?;
+        let mut reply = String::new();
+        BufReader::new(r).read_line(&mut reply).await.ok()?;
+        let reply: Value = serde_json::from_str(&reply).ok()?;
+        Some(reply["ok"] == true)
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(3), asked)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(false)
+}
+
 /// The app, reached with `token`: its answers, a line each, and where the
 /// client's messages go; else why not.
 async fn reach(at: &Endpoint, token: Option<&str>) -> Result<(Reader, Writer), String> {
@@ -167,27 +225,7 @@ async fn reach(at: &Endpoint, token: Option<&str>) -> Result<(Reader, Writer), S
         "the app is not open: start shellwing, keep it open while the agent works, and call the tool again"
             .to_string()
     };
-    #[cfg(unix)]
-    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
-        let s = tokio::net::UnixStream::connect(&at.0)
-            .await
-            .map_err(not_open)?;
-        let (r, w) = s.into_split();
-        (Box::new(r), Box::new(w))
-    };
-    #[cfg(windows)]
-    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
-        let s = tokio::net::windows::named_pipe::ClientOptions::new()
-            .open(&at.0)
-            .map_err(not_open)?;
-        let (r, w) = tokio::io::split(s);
-        (Box::new(r), Box::new(w))
-    };
-    #[cfg(not(any(unix, windows)))]
-    let (r, w): (Box<dyn AsyncRead + Unpin + Send>, Writer) = {
-        let _ = not_open;
-        return Err("no AI clients on this system".into());
-    };
+    let (r, w) = open(at).await.map_err(not_open)?;
     let mut r = BufReader::new(r);
     let mut w = w;
     let hello = format!("{}\n", json!({ "token": token }));
@@ -467,6 +505,42 @@ mod through {
         assert_eq!(init["result"]["serverInfo"]["name"], "shellwing");
         let (said, error) = other.tool(2, "list_hosts").await;
         assert!(error && said.contains("not known"), "{said}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    /// A second shellwing: told no when none is open, and else the open
+    /// one hears its arguments, as typed.
+    #[tokio::test]
+    async fn a_second_start_reaches_the_open_one() {
+        let dir = std::env::temp_dir().join(format!("sw-show-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let at = Endpoint::for_config(&dir);
+        assert!(!show(&at, &[]).await, "none open");
+
+        let (tx, rx) = async_channel::unbounded();
+        let hub = Hub::new(
+            tokio::runtime::Handle::current(),
+            Arc::new(NoSecrets),
+            &shellwing_config::Ssh::default(),
+            None,
+            tx,
+        );
+        tokio::spawn(listen(hub, at.clone()));
+        for _ in 0..100 {
+            if at.0.exists() {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        let args: Vec<String> = ["web", "-L", "8080:localhost:80"]
+            .map(String::from)
+            .to_vec();
+        assert!(show(&at, &args).await, "the open one said yes");
+        let heard = rx.recv().await.expect("an event");
+        assert!(
+            matches!(&heard, super::super::HubEvent::Show { args: got } if *got == args),
+            "{:?}",
+            matches!(heard, super::super::HubEvent::Show { .. })
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
