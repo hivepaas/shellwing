@@ -47,30 +47,29 @@ with `job_output`, which says how much has been copied, and `job_stop` (or
 *Stop* in AI activity) ends it.
 
 **Folders** are copied whole, file by file over SFTP, so the host needs
-nothing but its SFTP server: folders made, files with their permissions,
-links copied as links and never followed, so a link inside a folder given
-reaches nothing outside it. A path never reached (above) inside the folder
-is left out, and the agent is told which.
+nothing but its SFTP server: folders made and files copied. Links in a
+folder uploaded are left out, never followed, so a link inside a folder
+given reaches nothing outside it. A folder that holds a path never reached
+(above) is not uploaded at all.
 
 **No limit on size.** A copy streams, so it takes as little memory for 40 GB
 as for 4 KB. What stands in for a limit:
 
 - The ask shows the whole size (a folder's files counted first), and the
   person allows it or not.
-- Where the free space at the other end can be known (this computer's disk,
-  a host's when its SFTP server tells it), a copy that would not fit is
-  refused before it starts.
+- A file downloaded that would not fit in the free space here is refused
+  before it starts. (A folder's size, and a host's free space, are not known
+  beforehand.)
 - Written beside the target first (a file, or a whole folder), then renamed
   over it, as config files are placed: a copy stopped or broken leaves
   nothing half-written, and what was there stays.
 
-The agent is told the paths, the size, the number of files and the time it
-took. Not a byte of a file.
+The agent is told the paths, the size and the time it took. Not a byte of a
+file.
 
 ## What is kept
 
-AI activity keeps each copy: its direction, both paths, its size and its
-number of files.
+AI activity keeps each copy: its direction, both paths and its size.
 
 ## Building it
 

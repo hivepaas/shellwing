@@ -91,6 +91,9 @@ tc50e2e47 = { $client }이(가) 환경 { $envs }을(를) 사용해 { $host }에�
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client }이(가) { $host }에서 이 스니펫을 실행하려고 합니다. 매번 지시를 기다립니다. Enter 없이 입력되어 먼저 읽어야 합니다.
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client }이(가) 이 컴퓨터와 { $host } 사이에서 이것을 복사하려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 복사에 확인이 필요합니다.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }이(가) { $host }에 이것을 쓰려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 쓰기에 확인이 필요합니다.
 
@@ -159,6 +162,18 @@ t5f515591 = 호스트 찾기
 
 # A command with these words waits
 t1678b953 = 이 단어가 들어간 명령은 대기합니다
+
+# Local folders
+t285839dd = 로컬 폴더
+
+# none: it copies no file to or from this computer
+tffc89e05 = 없음: 이 컴퓨터와 파일을 주고받지 않습니다
+
+# Add folder…
+t85f0d8d4 = 폴더 추가…
+
+# Let the AI client use this folder
+tf5add2cf = AI 클라이언트가 이 폴더를 사용하도록 허용
 
 # AI clients
 ta302119f = AI 클라이언트

@@ -91,6 +91,9 @@ tc50e2e47 = { $client } ingin menjalankan snippet ini di { $host }, dengan lingk
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } ingin menjalankan snippet ini di { $host }. Ini selalu menunggu Anda: diketik tanpa Enter, agar dibaca dulu.
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } ingin menyalin ini antara komputer ini dan { $host }. Ini menunggu Anda: jika perintah berisiko menunggu, setiap salinan juga menunggu.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } ingin menulis ini di { $host }. Penulisan ini menunggu Anda: jika perintah berisiko menunggu, setiap penulisan juga menunggu.
 
@@ -159,6 +162,18 @@ t5f515591 = Cari host
 
 # A command with these words waits
 t1678b953 = Perintah dengan kata-kata ini menunggu
+
+# Local folders
+t285839dd = Folder lokal
+
+# none: it copies no file to or from this computer
+tffc89e05 = tidak ada: tidak menyalin berkas ke atau dari komputer ini
+
+# Add folder…
+t85f0d8d4 = Tambah folder…
+
+# Let the AI client use this folder
+tf5add2cf = Izinkan klien AI memakai folder ini
 
 # AI clients
 ta302119f = Klien AI

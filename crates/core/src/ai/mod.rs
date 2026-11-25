@@ -14,6 +14,7 @@ pub mod notes;
 pub mod snippets;
 pub mod socket;
 pub mod tab;
+pub mod transfers;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -478,6 +479,8 @@ struct Inner {
     locked: bool,
     /// Where snippets are read from (the vault), if anywhere.
     snippets: Option<Arc<dyn snippets::SnippetStore>>,
+    /// What an agent never reaches on this computer (transfers.rs).
+    never: Vec<std::path::PathBuf>,
 }
 
 /// The MCP server's side in the app: who may reach what, and the work.
@@ -530,6 +533,7 @@ impl Hub {
                 notes: None,
                 locked: false,
                 snippets: None,
+                never: vec![],
             }),
             events,
         })
@@ -1292,6 +1296,7 @@ mod tests {
             token_sha256: token_hash("shw_x"),
             added_at: 0,
             paused: false,
+            folders: vec![],
         }
     }
 

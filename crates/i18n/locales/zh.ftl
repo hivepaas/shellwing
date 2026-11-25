@@ -91,6 +91,9 @@ tc50e2e47 = { $client } 想在 { $host } 上以环境 { $envs } 运行这个代�
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } 想在 { $host } 上运行这个代码片段。每次都会等你确认：它输入时不按 Enter，需先阅读。
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } 想在这台电脑与 { $host } 之间复制这个。它在等你确认：在“危险命令需确认”模式下，每次复制都需确认。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } 想在 { $host } 上写入此内容。它在等你确认：在“危险命令需确认”模式下，每次写入都需确认。
 
@@ -159,6 +162,18 @@ t5f515591 = 查找主机
 
 # A command with these words waits
 t1678b953 = 含有这些词语的命令会等待
+
+# Local folders
+t285839dd = 本地文件夹
+
+# none: it copies no file to or from this computer
+tffc89e05 = 无：不在这台电脑上复制任何文件
+
+# Add folder…
+t85f0d8d4 = 添加文件夹…
+
+# Let the AI client use this folder
+tf5add2cf = 允许 AI 客户端使用此文件夹
 
 # AI clients
 ta302119f = AI 客户端

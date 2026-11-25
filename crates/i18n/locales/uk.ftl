@@ -91,6 +91,9 @@ tc50e2e47 = { $client } хоче виконати цей сніпет на { $ho
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } хоче виконати цей сніпет на { $host }. Він щоразу чекає на вас: його вводять без Enter, щоб спершу прочитати.
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } хоче скопіювати це між цим комп'ютером і { $host }. Копіювання чекає на вас: у режимі «Запитувати про ризиковані» чекає кожна копія.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } хоче записати це на { $host }. Запис чекає на вас: у режимі «Запитувати про ризиковані» чекає кожен запис.
 
@@ -159,6 +162,18 @@ t5f515591 = Знайдіть хост
 
 # A command with these words waits
 t1678b953 = Команда з цими словами чекає
+
+# Local folders
+t285839dd = Локальні папки
+
+# none: it copies no file to or from this computer
+tffc89e05 = немає: він не копіює файли на цей комп'ютер і з нього
+
+# Add folder…
+t85f0d8d4 = Додати папку…
+
+# Let the AI client use this folder
+tf5add2cf = Дозволити AI-клієнту цю папку
 
 # AI clients
 ta302119f = AI-клієнти

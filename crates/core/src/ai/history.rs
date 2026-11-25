@@ -209,6 +209,7 @@ mod tests {
             token_sha256: super::super::token_hash(&format!("shw_{id}")),
             added_at: 0,
             paused: false,
+            folders: vec![],
         }
     }
 

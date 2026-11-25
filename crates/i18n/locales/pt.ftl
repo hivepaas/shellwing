@@ -91,6 +91,9 @@ tc50e2e47 = { $client } quer executar este trecho em { $host }, com os ambientes
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } quer executar este trecho em { $host }. Ele espera por você toda vez: é digitado sem Enter, para ser lido antes.
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } quer copiar isto entre este computador e { $host }. Ele espera por você: onde os arriscados esperam, toda cópia espera.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } quer gravar isto em { $host }. A gravação espera por você: onde os arriscados esperam, toda gravação espera.
 
@@ -159,6 +162,18 @@ t5f515591 = Encontre um servidor
 
 # A command with these words waits
 t1678b953 = Um comando com estas palavras espera
+
+# Local folders
+t285839dd = Pastas locais
+
+# none: it copies no file to or from this computer
+tffc89e05 = nenhuma: não copia arquivos para ou deste computador
+
+# Add folder…
+t85f0d8d4 = Adicionar pasta…
+
+# Let the AI client use this folder
+tf5add2cf = Permitir que o cliente de AI use esta pasta
 
 # AI clients
 ta302119f = Clientes de AI
