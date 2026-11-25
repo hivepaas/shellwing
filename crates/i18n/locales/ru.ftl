@@ -2452,11 +2452,11 @@ t4cc1f343 =
        *[other] Выполнить на остальных ({ $n })
     }
 
-# Still going: {hosts}
-tfacf50d8 = Ещё выполняется: { $hosts }
+# Still going
+t1099eee7 = Ещё выполняется
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Остановлены до завершения: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Остановлены до завершения
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Выведено больше { $mb } MB: остальное не сохраняется.

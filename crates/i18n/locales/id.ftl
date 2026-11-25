@@ -2377,11 +2377,11 @@ t4cc1f343 =
        *[other] Jalankan di { $n } lainnya
     }
 
-# Still going: {hosts}
-tfacf50d8 = Masih berjalan: { $hosts }
+# Still going
+t1099eee7 = Masih berjalan
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Dihentikan sebelum selesai: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Dihentikan sebelum selesai
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Keluarannya lebih dari { $mb } MB: sisanya tidak disimpan.

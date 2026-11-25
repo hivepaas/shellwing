@@ -2350,11 +2350,11 @@ t4cc1f343 =
        *[other] Chạy trên { $n } máy chủ còn lại
     }
 
-# Still going: {hosts}
-tfacf50d8 = Vẫn đang chạy: { $hosts }
+# Still going
+t1099eee7 = Vẫn đang chạy
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Đã dừng trước khi chạy xong: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Đã dừng trước khi chạy xong
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Đầu ra dài hơn { $mb } MB: phần còn lại không được giữ.

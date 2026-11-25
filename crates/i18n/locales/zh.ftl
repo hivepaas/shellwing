@@ -2350,11 +2350,11 @@ t4cc1f343 =
        *[other] 在其余 { $n } 台上运行
     }
 
-# Still going: {hosts}
-tfacf50d8 = 仍在运行：{ $hosts }
+# Still going
+t1099eee7 = 仍在运行
 
-# Stopped before they ended: {hosts}
-tde1adb0a = 结束前已停止：{ $hosts }
+# Stopped before they ended
+t0c0b45b9 = 结束前已停止
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = 输出超过 { $mb } MB：其余部分不会保留。

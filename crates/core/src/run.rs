@@ -13,7 +13,9 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use shellwing_ssh::config::Resolved;
-use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Prompt, Prompter, Secrets};
+use shellwing_ssh::{
+    Auth, ExecConnection, HostKeyPolicy, Options, Prompt, Prompter, Secrets, Stream,
+};
 use tokio::runtime::Handle;
 use tokio::sync::{Semaphore, oneshot};
 use tokio::task::AbortHandle;
@@ -24,6 +26,9 @@ pub const MOST_SCRIPT: usize = 256 * 1024;
 
 /// How much of each stream a host's run keeps.
 pub const KEEP: usize = 1024 * 1024;
+
+/// How often a running host's new output is sent to the app.
+pub const PRINT_BEAT: Duration = Duration::from_millis(250);
 
 /// How long a host may take to answer when its own settings say nothing
 /// (`ConnectTimeout`).
@@ -338,6 +343,13 @@ pub enum Event {
     Started {
         host: String,
     },
+    /// What the host printed since the last time, on each stream; sent
+    /// every [`PRINT_BEAT`] while it prints, the rest coming with `Ended`.
+    Printed {
+        host: String,
+        stdout: String,
+        stderr: String,
+    },
     Ended {
         host: String,
         outcome: Outcome,
@@ -553,25 +565,114 @@ async fn one(
     let (command, input) = invocation(&job.script, &job.interpreter, sudo);
     let _ = events.send(Event::Started { host: host.clone() }).await;
     let began = Instant::now();
-    let outcome =
-        match tokio::time::timeout(job.give_up, connection.run(&command, &input, KEEP)).await {
-            Err(_) => Outcome::GaveUp(job.give_up),
-            Ok(Ok(out)) => Outcome::Ran(Ran {
-                status: out.status,
-                cut: out.stdout.len() >= KEEP || out.stderr.len() >= KEEP,
-                stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
-                stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
-                took: began.elapsed(),
-            }),
-            Ok(Err(e)) => {
-                // The connection is likely gone: the next run connects again.
-                if let Ok(mut all) = connections.lock() {
-                    all.remove(&host);
+    let printing = Arc::new(Mutex::new(Printing::default()));
+    let ran = {
+        let printing = printing.clone();
+        let host = host.clone();
+        let events = events.clone();
+        async move {
+            let to = printing.clone();
+            let ran = connection.stream(&command, &input, move |stream, data| {
+                if let Ok(mut p) = to.lock() {
+                    p.add(stream, data);
                 }
-                Outcome::Failed(e.to_string())
+            });
+            tokio::pin!(ran);
+            let mut beat = tokio::time::interval(PRINT_BEAT);
+            loop {
+                tokio::select! {
+                    ended = &mut ran => break ended,
+                    _ = beat.tick() => {
+                        let new = printing.lock().ok().and_then(|mut p| p.take_new());
+                        if let Some((stdout, stderr)) = new {
+                            let host = host.clone();
+                            let _ = events.send(Event::Printed { host, stdout, stderr }).await;
+                        }
+                    }
+                }
             }
-        };
+        }
+    };
+    let outcome = match tokio::time::timeout(job.give_up, ran).await {
+        Err(_) => Outcome::GaveUp(job.give_up),
+        Ok(Ok(status)) => {
+            let p = printing.lock().map(|p| p.clone()).unwrap_or_default();
+            Outcome::Ran(Ran {
+                status,
+                cut: p.stdout.len() >= KEEP || p.stderr.len() >= KEEP,
+                stdout: String::from_utf8_lossy(&p.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&p.stderr).into_owned(),
+                took: began.elapsed(),
+            })
+        }
+        Ok(Err(e)) => {
+            // The connection is likely gone: the next run connects again.
+            if let Ok(mut all) = connections.lock() {
+                all.remove(&host);
+            }
+            Outcome::Failed(e.to_string())
+        }
+    };
     let _ = events.send(Event::Ended { host, outcome }).await;
+}
+
+/// What a running host printed: the first [`KEEP`] bytes of each stream,
+/// and how much of each was sent to the app already.
+#[derive(Clone, Default)]
+struct Printing {
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    sent: (usize, usize),
+}
+
+impl Printing {
+    fn add(&mut self, stream: Stream, data: &[u8]) {
+        let buf = match stream {
+            Stream::Out => &mut self.stdout,
+            Stream::Err => &mut self.stderr,
+        };
+        let room = KEEP.saturating_sub(buf.len());
+        buf.extend_from_slice(&data[..data.len().min(room)]);
+    }
+
+    /// What was printed since the last time, if anything: up to the end of
+    /// its last whole character, the rest waiting for the bytes that end it.
+    fn take_new(&mut self) -> Option<(String, String)> {
+        let out = whole(&self.stdout[self.sent.0..]);
+        let err = whole(&self.stderr[self.sent.1..]);
+        if out.is_empty() && err.is_empty() {
+            return None;
+        }
+        self.sent.0 += out.len();
+        self.sent.1 += err.len();
+        Some((
+            String::from_utf8_lossy(out).into_owned(),
+            String::from_utf8_lossy(err).into_owned(),
+        ))
+    }
+}
+
+/// `bytes` but a character cut off at their end, whose other bytes are to
+/// come.
+fn whole(bytes: &[u8]) -> &[u8] {
+    // The last character starts at most 3 bytes back.
+    for back in 1..=bytes.len().min(3) {
+        let b = bytes[bytes.len() - back];
+        if b & 0xC0 != 0x80 {
+            let needs = match b {
+                0xC0..=0xDF => 2,
+                0xE0..=0xEF => 3,
+                0xF0..=0xF7 => 4,
+                _ => 1,
+            };
+            return if needs > back {
+                &bytes[..bytes.len() - back]
+            } else {
+                bytes
+            };
+        }
+    }
+    bytes
 }
 
 /// The person's saved passwords and passphrases, keys and certificates, for
@@ -764,6 +865,31 @@ mod tests {
         let (code, out, err) = run(script, &Interpreter::of(script), None, None);
         assert_eq!(code, Some(4), "{err}");
         assert_eq!(out, "it's ''\n");
+    }
+
+    #[test]
+    fn what_is_printed_goes_on_in_whole_characters() {
+        let mut p = Printing::default();
+        assert_eq!(p.take_new(), None, "nothing yet");
+        let e = "é".as_bytes();
+        p.add(Stream::Out, b"h");
+        p.add(Stream::Out, &e[..1]);
+        p.add(Stream::Err, b"oops\n");
+        assert_eq!(p.take_new(), Some(("h".into(), "oops\n".into())));
+        assert_eq!(p.take_new(), None, "the rest of it to come");
+        p.add(Stream::Out, &e[1..]);
+        p.add(Stream::Out, b"llo");
+        assert_eq!(p.take_new(), Some(("éllo".into(), String::new())));
+        assert_eq!(p.stdout, "héllo".as_bytes(), "all of it kept");
+    }
+
+    #[test]
+    fn a_stream_keeps_its_first_part() {
+        let mut p = Printing::default();
+        p.add(Stream::Out, &vec![b'a'; KEEP - 1]);
+        p.add(Stream::Out, b"bcd");
+        assert_eq!(p.stdout.len(), KEEP);
+        assert_eq!(p.stdout.last(), Some(&b'b'));
     }
 
     #[test]

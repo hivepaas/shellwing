@@ -1151,6 +1151,11 @@ The results:
 - **By host**: one row per host, its status, its time and its last line; a row
   opens on all it printed (up to 1 MB of each stream), with *Open a tab* to the
   host and *Copy output*.
+- While a host runs, what it prints shows as it comes, a few times a second:
+  its row's last line and its open row in *By host*. In *By output*, the hosts
+  still going are a card of their own, each opening its row; when one host runs
+  alone (**at most** 1 at once, or **one host first**), the card shows what it
+  prints. A host stopped keeps what it printed until then, in its row.
 - An output is drawn as a terminal draws it: in the look of a tab (a group's
   in the usual theme, a host's row in that host's), colors as colors, the
   errors after the output in red. It is as tall as its lines, up to 16, and

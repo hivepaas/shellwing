@@ -2350,11 +2350,11 @@ t4cc1f343 =
        *[other] 나머지 { $n }개에서 실행
     }
 
-# Still going: {hosts}
-tfacf50d8 = 아직 실행 중: { $hosts }
+# Still going
+t1099eee7 = 아직 실행 중
 
-# Stopped before they ended: {hosts}
-tde1adb0a = 끝나기 전에 중지됨: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = 끝나기 전에 중지됨
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = { $mb }MB 넘게 출력하여 나머지는 보관하지 않습니다.

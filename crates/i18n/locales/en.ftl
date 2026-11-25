@@ -868,8 +868,8 @@ t4cc1f343 =
         [one] Run on the other { $n }
        *[other] Run on the other { $n }
     }
-tfacf50d8 = Still going: { $hosts }
-tde1adb0a = Stopped before they ended: { $hosts }
+t1099eee7 = Still going
+t0c0b45b9 = Stopped before they ended
 t3b5e54ea = It printed more than { $mb } MB: the rest is not kept.
 t85019429 = Open a tab
 tf245d128 = Given up on after { $s } seconds.
