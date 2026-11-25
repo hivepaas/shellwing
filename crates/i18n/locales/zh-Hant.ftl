@@ -3916,6 +3916,15 @@ t692d685e = 大小寫須相符（Alt+C）
 # Regular expression (Alt+R)
 tc1b10302 = 規則運算式（Alt+R）
 
+# Drop to type their paths
+t65840017 = 放開以輸入它們的路徑
+
+# Drop to upload to {dir}
+ta7f589b0 = 放開以上傳到 { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = 放開以上傳到家目錄
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 「檔案」面板透過 SFTP 瀏覽伺服器；此窗格是這台電腦上的 shell。
 

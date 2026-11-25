@@ -868,6 +868,9 @@ impl Shell {
                 chunk
             }
             "title" => format!("\x1b]0;{arg}\x07"),
+            // The shell says where it is, as bash's and zsh's integrations
+            // do (OSC 7), its spaces encoded.
+            "osc7" => format!("\x1b]7;file://test-host{}\x07", arg.replace(' ', "%20")),
             "unicode" => format!("{UNICODE}\r\n"),
             "size" => {
                 let size = self.seen.lock().expect("seen").sizes.last().copied();

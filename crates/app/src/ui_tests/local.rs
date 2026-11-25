@@ -66,3 +66,26 @@ scenario!(
         assert!(!ui.view(|v, _| v.files_shown()));
     }
 );
+
+scenario!(
+    /// Files dropped on a local shell: their paths typed, quoted, for the
+    /// command being written.
+    dropped_files_type_their_paths,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        ui.connect("local:");
+        ui.wait_until("the shell to start", |ui| ui.status() == Status::Connected);
+        ui.settle(std::time::Duration::from_millis(500));
+        let file = ui.dir.join("it's here.txt");
+        // What it holds is made by the shell, so it is not in the command.
+        std::fs::write(&file, "dropped-$((6*7))\n").expect("file");
+        ui.type_text("eval echo $(cat ");
+        ui.drop_files("terminal", std::slice::from_ref(&file));
+        ui.type_text(")");
+        ui.keys("enter");
+        // Read through its quoted path, the quote in its name and all.
+        ui.wait_for("dropped-42");
+    }
+);

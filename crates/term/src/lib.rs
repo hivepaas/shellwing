@@ -287,9 +287,42 @@ pub enum Event {
     /// The program set the terminal's title (OSC 0 or 2), such as the shell's
     /// `user@host: ~/dir`; empty when it cleared it.
     Title(String),
+    /// The shell said where it is (OSC 7, `file://host/path`): the folder,
+    /// its path decoded. Empty when it cleared it.
+    Dir(String),
     /// What a command shellwing typed printed to say where it stands
     /// (`OSC 777 ; shellwing ; <payload>`): see [`signal_sequence`].
     Signal(String),
+}
+
+/// The folder in what a shell says with OSC 7: a `file://host/path` URI,
+/// its `%XX` decoded; a bare path as it is.
+pub fn dir_of(said: &[u8]) -> String {
+    let said = String::from_utf8_lossy(said);
+    let path = match said.strip_prefix("file://") {
+        // The host comes first, then the path from its `/`.
+        Some(rest) => rest.find('/').map_or("", |i| &rest[i..]),
+        None => said.as_ref(),
+    };
+    let bytes = path.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let hex = |b: u8| (b as char).to_digit(16);
+        if bytes[i] == b'%'
+            && let (Some(h), Some(l)) = (
+                bytes.get(i + 1).copied().and_then(hex),
+                bytes.get(i + 2).copied().and_then(hex),
+            )
+        {
+            out.push((h * 16 + l) as u8);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 /// What a command prints to signal shellwing, for a payload such as
@@ -688,6 +721,8 @@ fn run(
     // The new title can be read only once the write that set it is done.
     let titled = std::rc::Rc::new(std::cell::Cell::new(false));
     let mut signals = Signals::default();
+    // The shell's folder as last said, to tell only a change.
+    let mut said_dir: Vec<u8> = vec![];
     {
         let titled = titled.clone();
         term.on_title_changed(move |_| titled.set(true))?;
@@ -763,6 +798,12 @@ fn run(
                         // The program's bytes, not always UTF-8.
                         let title = String::from_utf8_lossy(title).into_owned();
                         (e.events)(Event::Title(title));
+                    }
+                    if let Ok(dir) = e.term.pwd()
+                        && dir != said_dir.as_slice()
+                    {
+                        said_dir = dir.to_vec();
+                        (e.events)(Event::Dir(dir_of(&said_dir)));
                     }
                 }
                 Cmd::Resize {
@@ -1448,5 +1489,15 @@ mod tests {
             "others are not"
         );
         assert_eq!(signal_sequence("x"), "\\033]777;shellwing;x\\007");
+    }
+
+    #[test]
+    fn the_shells_folder_is_its_path_decoded() {
+        assert_eq!(dir_of(b"file://api-1/var/log"), "/var/log");
+        assert_eq!(dir_of(b"file:///srv/my%20app"), "/srv/my app");
+        assert_eq!(dir_of(b"file://h/home/caf%C3%A9"), "/home/café");
+        assert_eq!(dir_of(b"/opt/x"), "/opt/x", "a bare path, as it is");
+        assert_eq!(dir_of(b"file://h/50%zz"), "/50%zz", "not a code: kept");
+        assert_eq!(dir_of(b""), "");
     }
 }

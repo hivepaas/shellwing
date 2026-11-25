@@ -3961,6 +3961,15 @@ t692d685e = Respecter la casse (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Expression régulière (Alt+R)
 
+# Drop to type their paths
+t65840017 = Déposez pour taper leurs chemins
+
+# Drop to upload to {dir}
+ta7f589b0 = Déposez pour téléverser dans { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = Déposez pour téléverser dans le dossier personnel
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Le panneau Fichiers parcourt un serveur via SFTP ; ce volet est un shell sur cet ordinateur.
 

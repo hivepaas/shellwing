@@ -3961,6 +3961,15 @@ t692d685e = Büyük/küçük harf eşleştir (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Düzenli ifade (Alt+R)
 
+# Drop to type their paths
+t65840017 = Yollarını yazmak için bırakın
+
+# Drop to upload to {dir}
+ta7f589b0 = { $dir } klasörüne yüklemek için bırakın
+
+# Drop to upload to the home folder
+t1514f805 = Ev klasörüne yüklemek için bırakın
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Dosyalar paneli bir sunucuya SFTP üzerinden göz atar; bu bölme ise bu bilgisayardaki bir kabuktur.
 

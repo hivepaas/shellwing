@@ -3961,6 +3961,15 @@ t692d685e = Maiuscole/minuscole (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Espressione regolare (Alt+R)
 
+# Drop to type their paths
+t65840017 = Rilascia per scriverne i percorsi
+
+# Drop to upload to {dir}
+ta7f589b0 = Rilascia per caricare in { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = Rilascia per caricare nella cartella home
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Il pannello File esplora un server tramite SFTP; questo riquadro è una shell su questo computer.
 

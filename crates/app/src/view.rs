@@ -323,6 +323,12 @@ pub struct TermView {
     /// What the program says the terminal is (OSC 0/2), such as the shell's
     /// `user@host: ~/dir`.
     shell_title: Option<SharedString>,
+    /// The folder the shell said it is in (OSC 7), if it said.
+    said_dir: Option<String>,
+    /// The shell's folder the Files panel last went to.
+    files_followed: Option<String>,
+    /// Files dragged in from another app, over the terminal.
+    drop_in: crate::drop_in::DropIn,
     /// The area the terminal had at the last paint, which the grid fills.
     area: Rc<Cell<Size<Pixels>>>,
     /// Text the input method is composing (preedit), shown at the cursor.
@@ -645,6 +651,9 @@ impl TermView {
             grid_origin: Rc::new(Cell::new(point(px(0.), px(0.)))),
             corners: Rc::default(),
             shell_title: None,
+            said_dir: None,
+            files_followed: None,
+            drop_in: Default::default(),
             area: Rc::new(Cell::new(Size::default())),
             marked: None,
             pending_paste: None,
@@ -1747,8 +1756,110 @@ impl TermView {
         )
     }
 
-    /// Shows the Files panel (opening SFTP the first time) and gives it the
-    /// keyboard, or hides it and gives the keyboard back to the terminal.
+    /// The folder the shell is in, as far as it tells: what it said with
+    /// OSC 7, else a title such as `user@host: ~/apps` (Debian's and
+    /// Ubuntu's own); `~` stands for the home folder.
+    pub fn shell_dir(&self) -> Option<String> {
+        self.said_dir.clone().or_else(|| {
+            let d = self.title_detail()?;
+            (d == "~" || d.starts_with("~/") || d.starts_with('/')).then_some(d)
+        })
+    }
+
+    /// The Files panel, made (and SFTP opened) the first time.
+    fn files_panel_now(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Entity<FilesPanel> {
+        if let Some(p) = &self.files {
+            return p.clone();
+        }
+        let remote = self.session.remote();
+        let p = cx.new(|cx| FilesPanel::new(remote, cx));
+        cx.subscribe_in(&p, window, |v, _, ev: &FilesEvent, window, cx| match ev {
+            FilesEvent::Close => v.hide_files(window, cx),
+        })
+        .detach();
+        self.files = Some(p.clone());
+        p
+    }
+
+    /// The panel goes to the shell's folder, when the shell moved since it
+    /// last did: a folder chosen in the panel meanwhile stays otherwise.
+    fn files_follow_shell(&mut self, panel: &Entity<FilesPanel>, cx: &mut Context<Self>) {
+        let Some(dir) = self.shell_dir() else {
+            return;
+        };
+        if self.files_followed.as_ref() != Some(&dir) {
+            self.files_followed = Some(dir.clone());
+            panel.update(cx, |p, cx| p.go_to(dir, cx));
+        }
+    }
+
+    /// Files dropped on the terminal: uploaded into the shell's folder over
+    /// SFTP, the Files panel showing them go (and the folder); in a shell
+    /// on this computer, their paths typed, quoted.
+    fn dropped(
+        &mut self,
+        paths: Vec<std::path::PathBuf>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if paths.is_empty() {
+            return;
+        }
+        if self.session.is_local() {
+            let quoted: Vec<String> = paths
+                .iter()
+                .map(|p| quote_path(&p.to_string_lossy()))
+                .collect();
+            self.type_text(&format!("{} ", quoted.join(" ")), false);
+            return;
+        }
+        let panel = self.files_panel_now(window, cx);
+        self.files_follow_shell(&panel, cx);
+        panel.update(cx, |p, cx| p.upload_here(paths, cx));
+        self.files_shown = true;
+        cx.notify();
+    }
+
+    /// What shows while files are dragged over the terminal: an outline,
+    /// and where they will go.
+    fn drop_hint(&self) -> gpui::Div {
+        let said = if self.session.is_local() {
+            tr!("Drop to type their paths")
+        } else {
+            match self.shell_dir() {
+                Some(dir) => tr!("Drop to upload to {dir}", dir = dir),
+                None => tr!("Drop to upload to the home folder"),
+            }
+        };
+        div()
+            .absolute()
+            .inset_0()
+            .flex()
+            .items_end()
+            .justify_center()
+            .pb(px(18.))
+            .border_2()
+            .border_color(rgb(colors().accent))
+            .child(
+                div()
+                    .debug_selector(|| "drop-hint".into())
+                    .px(px(12.))
+                    .py(px(6.))
+                    .rounded(px(8.))
+                    .bg(rgb(colors().accent))
+                    .text_color(rgb(colors().on_accent))
+                    .text_size(crate::look::ui(12.5))
+                    .child(said),
+            )
+    }
+
+    /// Shows the Files panel (opening SFTP the first time), in the shell's
+    /// folder when it moved, and gives it the keyboard; or hides it and gives
+    /// the keyboard back to the terminal.
     pub fn toggle_files(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.session.is_local() {
             return self.show_notice(
@@ -1761,19 +1872,8 @@ impl TermView {
             self.hide_files(window, cx);
             return;
         }
-        let panel = match &self.files {
-            Some(p) => p.clone(),
-            None => {
-                let remote = self.session.remote();
-                let p = cx.new(|cx| FilesPanel::new(remote, cx));
-                cx.subscribe_in(&p, window, |v, _, ev: &FilesEvent, window, cx| match ev {
-                    FilesEvent::Close => v.hide_files(window, cx),
-                })
-                .detach();
-                self.files = Some(p.clone());
-                p
-            }
-        };
+        let panel = self.files_panel_now(window, cx);
+        self.files_follow_shell(&panel, cx);
         self.files_shown = true;
         let focus = panel.read(cx).focus_handle().clone();
         window.focus(&focus, cx);
@@ -2323,6 +2423,10 @@ impl TermView {
                     self.shell_title = title;
                     cx.emit(TitleChanged);
                 }
+                cx.notify();
+            }
+            TermEvent::Dir(d) => {
+                self.said_dir = (!d.is_empty()).then_some(d);
                 cx.notify();
             }
             TermEvent::Signal(s) => self.env_signal(&s, cx),
@@ -3157,6 +3261,7 @@ impl Focusable for TermView {
 
 impl Render for TermView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.drop_in.settle(cx);
         if self.cell.0 == px(0.) {
             self.measure_cell(window);
         }
@@ -3399,6 +3504,11 @@ impl Render for TermView {
         if let Some(at) = self.menu {
             terminal = terminal.child(self.pane_menu(at, cx));
         }
+        // Files dragged over it: where they will go.
+        if self.drop_in.over() {
+            terminal = terminal.child(self.drop_hint());
+        }
+        terminal = crate::drop_in::drop_in(terminal, &self.drop_in, cx, Self::dropped);
         if let Some(b) = self.banner(cx) {
             terminal = terminal.child(b);
         } else if self.frame.scrolled_back {
@@ -3631,6 +3741,16 @@ impl EntityInputHandler for TermView {
         _: &mut Context<Self>,
     ) -> Option<usize> {
         None
+    }
+}
+
+/// A path as a shell on this computer takes it: in single quotes (double on
+/// Windows, where PowerShell and cmd read those).
+fn quote_path(path: &str) -> String {
+    if cfg!(windows) {
+        format!("\"{path}\"")
+    } else {
+        format!("'{}'", path.replace('\'', "'\\''"))
     }
 }
 

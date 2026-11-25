@@ -3916,6 +3916,15 @@ t692d685e = Cocokkan huruf besar/kecil (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Ekspresi reguler (Alt+R)
 
+# Drop to type their paths
+t65840017 = Lepas untuk mengetik path-nya
+
+# Drop to upload to {dir}
+ta7f589b0 = Lepas untuk mengunggah ke { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = Lepas untuk mengunggah ke folder home
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Panel Berkas menjelajahi server melalui SFTP; panel ini adalah shell di komputer ini.
 

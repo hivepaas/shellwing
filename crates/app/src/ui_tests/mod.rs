@@ -733,6 +733,28 @@ impl Ui {
         self.cx.run_until_parked();
     }
 
+    /// Drags `paths` from another app over the middle of the element marked
+    /// `selector` and drops them there.
+    pub fn drop_files(&mut self, selector: &str, paths: &[PathBuf]) {
+        let at = self.reach(selector);
+        let paths = gpui::ExternalPaths(paths.iter().cloned().collect());
+        let events = [
+            gpui::FileDropEvent::Entered {
+                position: at,
+                paths,
+            },
+            gpui::FileDropEvent::Pending { position: at },
+            gpui::FileDropEvent::Submit { position: at },
+        ];
+        // Drawn between them, as the window is while files are dragged over.
+        for e in events {
+            let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+            vcx.simulate_event(e);
+            self.draw();
+        }
+        self.cx.run_until_parked();
+    }
+
     /// Right-clicks the middle of the element marked `selector` (a context
     /// menu).
     pub fn right_click(&mut self, selector: &str) {

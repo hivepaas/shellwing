@@ -3961,6 +3961,15 @@ t692d685e = Groß-/Kleinschreibung beachten (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Regulärer Ausdruck (Alt+R)
 
+# Drop to type their paths
+t65840017 = Ablegen, um ihre Pfade einzugeben
+
+# Drop to upload to {dir}
+ta7f589b0 = Ablegen, um nach { $dir } hochzuladen
+
+# Drop to upload to the home folder
+t1514f805 = Ablegen, um in den Home-Ordner hochzuladen
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Das Dateien-Panel durchsucht einen Server per SFTP; dieser Bereich ist eine Shell auf diesem Computer.
 

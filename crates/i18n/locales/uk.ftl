@@ -4051,6 +4051,15 @@ t692d685e = Враховувати регістр (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Регулярний вираз (Alt+R)
 
+# Drop to type their paths
+t65840017 = Відпустіть, щоб вставити шляхи
+
+# Drop to upload to {dir}
+ta7f589b0 = Відпустіть, щоб вивантажити до { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = Відпустіть, щоб вивантажити до домашньої теки
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Панель «Файли» переглядає сервер через SFTP; ця панель — оболонка на цьому комп'ютері.
 

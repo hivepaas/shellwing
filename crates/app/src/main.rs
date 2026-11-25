@@ -22,6 +22,7 @@ mod app_lock;
 mod chrome;
 mod colors;
 mod copies;
+mod drop_in;
 mod editors;
 mod files;
 mod group_editor;

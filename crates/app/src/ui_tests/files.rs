@@ -424,3 +424,118 @@ scenario!(
         assert!(shown(ui).0.is_some_and(|d| d.ends_with("remote")));
     }
 );
+
+/// A server whose SFTP home holds `projects/`, signed in to, the panel not
+/// open yet. `None` without sftp-server.
+fn signed_in_with_files(ui: &mut Ui) -> Option<(PathBuf, super::Server)> {
+    if !has_sftp() {
+        eprintln!("skipped: OpenSSH's sftp-server is not installed");
+        return None;
+    }
+    let home = ui.dir.join("remote");
+    std::fs::create_dir_all(home.join("projects")).expect("remote dir");
+    std::fs::write(home.join("notes.txt"), "remember the milk\n").expect("file");
+    let server = ui.server(Policy {
+        sftp: Some(home.clone()),
+        ..Policy::password()
+    });
+    ui.trust(&server);
+    ui.connect(&server.spec());
+    ui.login();
+    Some((home, server))
+}
+
+/// Has the shell say `line`, and waits until the pane takes `dir` as its
+/// folder.
+fn shell_in(ui: &mut Ui, line: &str, dir: &str) {
+    ui.line(line);
+    ui.wait_until(&format!("the shell in {dir}"), |ui| {
+        ui.view(|v, _| v.shell_dir()).as_deref() == Some(dir)
+    });
+}
+
+/// The folder the panel shows, once listed.
+fn shown_dir(ui: &mut Ui) -> String {
+    wait_ready(ui);
+    shown(ui).0.expect("a folder")
+}
+
+scenario!(
+    /// The panel opens in the folder the shell is in: as its title says
+    /// (`user@host: ~/dir`), or as it says with OSC 7. A folder chosen in
+    /// the panel stays until the shell moves; one SFTP cannot list opens
+    /// the home folder instead.
+    files_open_where_the_shell_is,
+    |ui| {
+        let Some((home, _server)) = signed_in_with_files(ui) else {
+            return;
+        };
+        let home = home.canonicalize().expect("home");
+        let home_s = home.to_string_lossy().into_owned();
+        shell_in(ui, "title deploy@api-1: ~/projects", "~/projects");
+        ui.shortcut("o");
+        assert_eq!(shown_dir(ui), format!("{home_s}/projects"), "from the title");
+        ui.shortcut("o");
+
+        shell_in(ui, &format!("osc7 {home_s}"), &home_s);
+        ui.shortcut("o");
+        assert_eq!(shown_dir(ui), home_s, "from OSC 7");
+        select(ui, "projects");
+        ui.keys("enter");
+        wait_entries(ui, "projects shown", |_| true);
+        assert_eq!(shown_dir(ui), format!("{home_s}/projects"));
+        ui.shortcut("o");
+        ui.shortcut("o");
+        assert_eq!(shown_dir(ui), format!("{home_s}/projects"), "the panel's own choice stays");
+        ui.shortcut("o");
+
+        shell_in(ui, "osc7 /no/such/folder", "/no/such/folder");
+        ui.shortcut("o");
+        assert_eq!(shown_dir(ui), home_s, "home, when it cannot be listed");
+    }
+);
+
+scenario!(
+    /// Files dropped on the terminal go up into the shell's folder, the
+    /// panel opening on it to show them go.
+    files_dropped_on_the_terminal_are_uploaded,
+    |ui| {
+        let Some((home, _server)) = signed_in_with_files(ui) else {
+            return;
+        };
+        let home = home.canonicalize().expect("home");
+        let in_projects = format!("{}/projects", home.to_string_lossy());
+        shell_in(ui, &format!("osc7 {in_projects}"), &in_projects);
+        let local = ui.dir.join("local");
+        std::fs::create_dir_all(&local).expect("local dir");
+        let report = local.join("report.csv");
+        std::fs::write(&report, "day,visits\nmon,42\n").expect("file");
+        ui.drop_files("terminal", &[report]);
+        assert!(ui.view(|v, _| v.files_shown()), "the panel shows them go");
+        ui.wait_until("the upload to finish", |_| {
+            std::fs::read_to_string(home.join("projects/report.csv"))
+                .is_ok_and(|t| t == "day,visits\nmon,42\n")
+        });
+        assert_eq!(shown_dir(ui), in_projects);
+    }
+);
+
+scenario!(
+    /// Files dropped on the panel go up into the folder shown, the keys
+    /// last used or not (a drag from another app moves no mouse here).
+    files_dropped_on_the_panel_after_keys,
+    |ui| {
+        let Some((home, _server)) = with_files(ui) else {
+            return;
+        };
+        ui.keys("down");
+        let local = ui.dir.join("local");
+        std::fs::create_dir_all(&local).expect("local dir");
+        let report = local.join("dropped.csv");
+        std::fs::write(&report, "a,b\n").expect("file");
+        ui.drop_files("files-panel", &[report]);
+        ui.wait_until("the upload to finish", |_| {
+            std::fs::read_to_string(home.join("dropped.csv")).is_ok_and(|t| t == "a,b\n")
+        });
+    }
+);
