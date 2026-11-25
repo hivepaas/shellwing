@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use shellwing_config::{AiClient, AiGrant, AiHow, AiMode, AiState};
 use shellwing_ssh::config::Resolved;
-use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Secrets};
+use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Prompt, Prompter, Secrets};
 use tokio::runtime::Handle;
 use tokio::sync::Notify;
 use tokio::task::AbortHandle;
@@ -75,6 +75,12 @@ pub struct Host {
     pub group: Option<String>,
     pub target: Result<Resolved, String>,
 }
+
+/// Why a job waits for the person when its host, or a jump on the way,
+/// shows a key not in known_hosts: then the one showing it, as the
+/// connection names it, a line, and the key, as `ED25519 SHA256:…`.
+/// Trusted, the key is kept and the job goes on.
+pub const HOST_KEY: &str = "\u{0}host-key:";
 
 /// One command an AI ran, as the activity keeps it.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -374,6 +380,10 @@ impl Job {
     pub fn stop(&self) {
         if let Some(t) = self.task.lock().ok().and_then(|mut t| t.take()) {
             t.abort();
+        }
+        // Whatever waited for the person's answer hears none.
+        if let Ok(mut a) = self.asking.lock() {
+            a.take();
         }
         self.set_waiting(None);
         self.end(End::Stopped);
@@ -707,6 +717,55 @@ impl Hub {
         });
     }
 
+    /// Where `job`'s connection asks about a host key not in known_hosts:
+    /// `job` waits for the person in AI activity, with the key, and the
+    /// key is trusted if they say so. Anything else asked is refused.
+    fn ask_host_key(self: &Arc<Self>, job: &Arc<Job>) -> Prompter {
+        let (prompter, mut asked) = Prompter::new();
+        let (hub, job) = (Arc::downgrade(self), job.clone());
+        self.rt.spawn(async move {
+            while let Some(q) = asked.recv().await {
+                let answer = match &q.prompt {
+                    Prompt::HostKey {
+                        host,
+                        algorithm,
+                        fingerprint,
+                        again: false,
+                    } => {
+                        let (tx, rx) = tokio::sync::oneshot::channel();
+                        if let Ok(mut a) = job.asking.lock() {
+                            *a = Some(tx);
+                        }
+                        job.set_waiting(Some(format!(
+                            "{HOST_KEY}{host}\n{algorithm} {fingerprint}"
+                        )));
+                        let tell = |job: &Job| {
+                            if let Some(hub) = hub.upgrade() {
+                                let _ = hub.events.try_send(HubEvent::Changed(job.activity()));
+                            }
+                        };
+                        tell(&job);
+                        let said = rx.await.unwrap_or(Approval::Refuse);
+                        job.set_waiting(None);
+                        tell(&job);
+                        Some(
+                            if said == Approval::Refuse {
+                                "no"
+                            } else {
+                                "yes"
+                            }
+                            .to_string(),
+                        )
+                    }
+                    // A password, a code: not asked, as without a prompter.
+                    _ => None,
+                };
+                let _ = q.reply.send(answer);
+            }
+        });
+        prompter
+    }
+
     /// The host's connection, made if it is not.
     async fn connection(slot: &Slot, options: Options) -> Result<Arc<ExecConnection>, String> {
         let mut slot = slot.lock().await;
@@ -773,7 +832,7 @@ impl Hub {
             job.set_snippet(name);
             let _ = self.events.try_send(HubEvent::Changed(job.activity()));
         }
-        let options = self.options(target);
+        let options = self.options(target, &job);
         let (hub, running, command) = (self.clone(), job.clone(), command.to_string());
         let client_id = client.id.clone();
         let task = self.rt.spawn(async move {
@@ -856,7 +915,7 @@ impl Hub {
             AiMode::Risky => None,
         };
         let (job, slot, answer) = self.begin(client, &g, &label, false, asks)?;
-        let options = self.options(target);
+        let options = self.options(target, &job);
         let (hub, running) = (self.clone(), job.clone());
         let client_id = client.id.clone();
         let task = self.rt.spawn(async move {
@@ -1022,8 +1081,10 @@ impl Hub {
     }
 
     /// How a host is reached for an AI: as a tab would, its forwards, agent
-    /// and X11 left out, nothing asked: what would ask is refused.
-    fn options(&self, mut target: Resolved) -> Options {
+    /// and X11 left out. Nothing is asked but a key not in known_hosts, and
+    /// that of the person, through `job` (where the host key setting asks):
+    /// what would ask for a password or a code is refused.
+    fn options(self: &Arc<Self>, mut target: Resolved, job: &Arc<Job>) -> Options {
         target.forwards.clear();
         target.forward_agent = false;
         for hop in target.jumps.iter_mut() {
@@ -1037,13 +1098,11 @@ impl Hub {
                 password: None,
                 agent_socket: None,
             },
-            // A host never seen is not trusted for an AI.
-            policy: match self.policy {
-                HostKeyPolicy::Ask => HostKeyPolicy::Strict,
-                p => p,
-            },
+            // A host never seen is trusted by the person, never the AI.
+            policy: self.policy,
             known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
             prompter: None,
+            host_key_prompter: (self.policy == HostKeyPolicy::Ask).then(|| self.ask_host_key(job)),
             secrets: Some(self.secrets.clone()),
             forwarded: None,
             keepalive: Some(self.keepalive),

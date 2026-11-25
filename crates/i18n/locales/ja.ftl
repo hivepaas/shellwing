@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 # The snippet {name}
 t6e8860fa = スニペット { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } が { $host } に接続しようとしていますが、{ $shows } が known_hosts にないホスト鍵を提示しています。管理者から伝えられたそのホストの鍵である場合のみ信頼してください。信頼すると known_hosts に保存され、待っている処理が続行されます。
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } が { $host } 向けにこのスニペットを提案しています。指示を待っています。「危険なものは確認」では、提案はすべて確認が必要です。追加後は Enter なしで入力されるため、実行前に確認できます。
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } が { $host } でこれを実行しようとしていま
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } が { $host } でこれを実行しようとしています。指示を待っています。危険リストにある { $words } が含まれています。
 
-# Add it
-t6cac0f01 = 追記
+# Trust and go on
+tc457169b = 信頼して続行
 
 # Refuse it
 tbea0b112 = 拒否
+
+# Add it
+t6cac0f01 = 追記
 
 # Run it
 t72430853 = 実行
@@ -388,8 +394,8 @@ t971550f3 = コマンド
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = { $client } に許可済み: { $hosts }。もう一度許可すると、以前の設定が置き換わります。
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストはあなたが信頼するまで待ちます。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
 
 # When AI runs a command
 tc94fc353 = AI がコマンドを実行するとき
@@ -4008,6 +4014,9 @@ t1165de29 = 下に分割
 
 # Close Pane
 t21a947cf = ペインを閉じる
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } が { $host } に接続しようとしていますが、ホスト鍵が known_hosts にありません。AI アクティビティで指示を待っています。
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } が { $host } でコマンドを実行しようとしています。AI アクティビティで指示を待っています。

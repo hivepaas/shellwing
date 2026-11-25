@@ -1315,7 +1315,7 @@ impl AiView {
                 )
             })
             .child(hint_text(&tr!(
-                "It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them."
+                "It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them."
             )))
             .child(
                 div()

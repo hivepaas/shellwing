@@ -501,6 +501,7 @@ impl Fleet {
             policy: self.policy,
             known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
             prompter: Some(prompter),
+            host_key_prompter: None,
             secrets: Some(self.secrets.clone()),
             forwarded: None,
             keepalive: Some(self.keepalive),

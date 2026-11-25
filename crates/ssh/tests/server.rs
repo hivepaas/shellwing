@@ -601,6 +601,7 @@ impl Fixture {
             policy: HostKeyPolicy::Ask,
             known_hosts: Some(self.known_hosts()),
             prompter: Some(prompter),
+            host_key_prompter: None,
             secrets: None,
             forwarded: None,
             keepalive: None,

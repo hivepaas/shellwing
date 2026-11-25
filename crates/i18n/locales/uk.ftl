@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · розпочато о { $when } · { $jo
 # The snippet {name}
 t6e8860fa = Сніпет { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } хоче під'єднатися до { $host }, і { $shows } показує ключ хоста, якого немає в known_hosts. Довіряйте йому, лише якщо це ключ цього хоста, отриманий від його власника: його буде збережено в known_hosts, і те, що на нього чекає, продовжиться.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } пропонує цей сніпет для { $host }. Він чекає на вас: у режимі «Запитувати про ризиковані» чекає кожна пропозиція. Після додавання його вводять без Enter, щоб ви прочитали його перед виконанням.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } хоче виконати це на { $host }. Кома�
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } хоче виконати це на { $host }. Команда чекає на вас: у ній є { $words } зі списку ризикованих.
 
-# Add it
-t6cac0f01 = Додати
+# Trust and go on
+tc457169b = Довіряти й продовжити
 
 # Refuse it
 tbea0b112 = Відхилити
+
+# Add it
+t6cac0f01 = Додати
 
 # Run it
 t72430853 = Виконати
@@ -403,8 +409,8 @@ t971550f3 = Команди
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = Уже надано { $client }: { $hosts }. Повторне надання замінить попередні налаштування.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, а хост, ключ якого ще невідомий, чекає, доки ви йому не довіритеся. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
 
 # When AI runs a command
 tc94fc353 = Коли AI виконує команду
@@ -4203,6 +4209,9 @@ t1165de29 = Розділити донизу
 
 # Close Pane
 t21a947cf = Закрити панель
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } хоче під'єднатися до { $host }, ключа хоста якого немає в known_hosts: запит на вкладці «Активність AI» і чекає на вас.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } хоче виконати команду на { $host }: вона на вкладці «Активність AI» і чекає на вас.

@@ -87,6 +87,7 @@ impl Lab {
             policy: HostKeyPolicy::Strict,
             known_hosts: Some(self.dir.join("known_hosts")),
             prompter: None,
+            host_key_prompter: None,
             secrets: None,
             forwarded: None,
             keepalive: None,

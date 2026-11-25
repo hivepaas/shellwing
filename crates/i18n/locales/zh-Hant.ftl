@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 # The snippet {name}
 t6e8860fa = 程式碼片段 { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } 想連線到 { $host }，而 { $shows } 出示了一個不在 known_hosts 中的主機金鑰。只有確認這是該主機的金鑰（以其管理者提供的為準）時才信任它：它會儲存到 known_hosts，等待它的作業隨即繼續。
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } 為 { $host } 建議這個程式碼片段。它正在等你確認：在「有風險時詢問」模式下，每個建議都要詢問。新增後輸入時不按 Enter，讓你在執行前先閱讀。
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } 想在 { $host } 上執行此指令。它正在等你確
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } 想在 { $host } 上執行此指令。它正在等你確認：其中含有 { $words }，屬於風險清單。
 
-# Add it
-t6cac0f01 = 新增
+# Trust and go on
+tc457169b = 信任並繼續
 
 # Refuse it
 tbea0b112 = 拒絕
+
+# Add it
+t6cac0f01 = 新增
 
 # Run it
 t72430853 = 執行
@@ -391,8 +397,8 @@ t971550f3 = 指令
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = 已授權給 { $client }：{ $hosts }。再次授權會取代原有設定。
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = 它絕不會看到金鑰、密碼或密碼片語：會要求這些的主機會被拒絕，主機金鑰仍未知的主機也一樣。主機的輸出可能含有意圖操控代理程式的文字：只把主機授權給你放心託付的用戶端。
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = 它絕不會看到金鑰、密碼或密碼片語：會要求這些的主機會被拒絕，主機金鑰仍未知的主機則會等你信任它。主機的輸出可能含有意圖操控代理程式的文字：只把主機授權給你放心託付的用戶端。
 
 # When AI runs a command
 tc94fc353 = AI 執行指令時
@@ -4065,6 +4071,9 @@ t1165de29 = 向下分割
 
 # Close Pane
 t21a947cf = 關閉窗格
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } 想連線到 { $host }，但其主機金鑰不在 known_hosts 中：已列在「AI 活動」中，正在等你確認。
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } 想在 { $host } 上執行指令：已列在「AI 活動」中，正在等你確認。

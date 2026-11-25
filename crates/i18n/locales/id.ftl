@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Snippet { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } ingin menjangkau { $host }, dan { $shows } menunjukkan kunci host yang tidak ada di known_hosts. Percayai hanya jika itu kunci host tersebut, seperti yang diberikan pemiliknya kepada Anda: kunci disimpan di known_hosts, dan yang menunggunya berlanjut.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } menyarankan snippet ini untuk { $host }. Ini menunggu Anda: jika perintah berisiko menunggu, setiap saran juga menunggu. Setelah ditambahkan, ini diketik tanpa Enter agar Anda membacanya sebelum dijalankan.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } ingin menjalankan ini di { $host }. Perintah ini menungg
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } ingin menjalankan ini di { $host }. Perintah ini menunggu Anda: perintah ini memuat { $words }, dari daftar kata berisiko.
 
-# Add it
-t6cac0f01 = Tambahkan
+# Trust and go on
+tc457169b = Percayai dan lanjutkan
 
 # Refuse it
 tbea0b112 = Tolak
+
+# Add it
+t6cac0f01 = Tambahkan
 
 # Run it
 t72430853 = Jalankan
@@ -391,8 +397,8 @@ t971550f3 = Perintah
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = Sudah diberikan ke { $client }: { $hosts }. Memberikannya lagi menggantikan yang sebelumnya.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, dan host yang kuncinya belum dikenal menunggu sampai Anda memercayainya. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
 
 # When AI runs a command
 tc94fc353 = Saat AI menjalankan perintah
@@ -4065,6 +4071,9 @@ t1165de29 = Bagi ke Bawah
 
 # Close Pane
 t21a947cf = Tutup Panel
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } ingin menjangkau { $host }, yang kunci host-nya tidak ada di known_hosts: ada di Aktivitas AI, menunggu Anda.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } ingin menjalankan perintah di { $host }: perintahnya ada di Aktivitas AI, menunggu Anda.
