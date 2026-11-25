@@ -12,7 +12,7 @@ use gpui::{
 use serde_json::json;
 use shellwing_config::{AiClient, AiGrant, AiHow, AiMode, AiState};
 use shellwing_core::ai;
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
 use crate::host_editor::{hint_text, label_text, outline_button, primary_button};
@@ -139,9 +139,10 @@ enum Until {
     EightHours,
 }
 
-/// The form that gives a host.
+/// The form that gives hosts.
 struct Giving {
-    host: Option<String>,
+    /// The hosts ticked, by spec, in the order they were.
+    hosts: Vec<String>,
     client: Option<String>,
     until: Until,
     mode: AiMode,
@@ -180,6 +181,8 @@ pub struct AiView {
     /// A client whose config shows again (without its token).
     showing: Option<String>,
     giving: Option<Giving>,
+    /// Clients whose hosts the table folds away, by id.
+    folded: BTreeSet<String>,
     filter: Entity<TextInput>,
     /// The risky list, a line each.
     risky: Entity<TextInput>,
@@ -233,6 +236,7 @@ impl AiView {
             token: None,
             showing: None,
             giving: None,
+            folded: BTreeSet::new(),
             filter,
             risky,
             mono: SharedString::default(),
@@ -255,6 +259,7 @@ impl AiView {
             name: kind_name(kind),
             token_sha256: ai::token_hash(&token),
             added_at: ai::now(),
+            paused: false,
         };
         self.change(cx, |s| s.clients.push(client));
         self.adding = false;
@@ -262,33 +267,72 @@ impl AiView {
         self.token = Some((id, token));
     }
 
+    /// Opens the form that gives hosts, with `hosts` (specs) ticked: the
+    /// client too, when there is only one.
+    pub fn start_giving(
+        &mut self,
+        hosts: Vec<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let state = self
+            .workspace
+            .upgrade()
+            .map(|w| w.read(cx).ai_snapshot(cx).state)
+            .unwrap_or_default();
+        let client = match state.clients.as_slice() {
+            [only] => Some(only.id.clone()),
+            _ => None,
+        };
+        self.giving = Some(Giving {
+            hosts,
+            client,
+            until: Until::TakenBack,
+            mode: state.default_mode,
+            how: AiHow::Background,
+            may: [true, true, false],
+        });
+        window.focus(&self.filter.focus_handle(cx), cx);
+        cx.notify();
+    }
+
+    /// Gives each host ticked, a grant of its own; one the client held
+    /// already is replaced.
     fn give(&mut self, cx: &mut Context<Self>) {
         let Some(g) = &self.giving else {
             return;
         };
-        let (Some(host), Some(client)) = (g.host.clone(), g.client.clone()) else {
+        let (hosts, Some(client)) = (g.hosts.clone(), g.client.clone()) else {
             return;
         };
+        if hosts.is_empty() {
+            return;
+        }
         let (until, session) = match g.until {
             Until::TakenBack => (None, false),
             Until::Session => (None, true),
             Until::Hour => (Some(ai::now() + 3600), false),
             Until::EightHours => (Some(ai::now() + 8 * 3600), false),
         };
-        let grant = AiGrant {
-            client: client.clone(),
-            host: host.clone(),
-            how: g.how,
-            mode: g.mode,
-            until,
-            session,
-            run: g.may[0],
-            read: g.may[1],
-            write: g.may[2],
-        };
+        let grants: Vec<AiGrant> = hosts
+            .iter()
+            .map(|host| AiGrant {
+                client: client.clone(),
+                host: host.clone(),
+                how: g.how,
+                mode: g.mode,
+                until,
+                session,
+                run: g.may[0],
+                read: g.may[1],
+                write: g.may[2],
+                paused: false,
+            })
+            .collect();
         self.change(cx, move |s| {
-            s.grants.retain(|g| !(g.client == client && g.host == host));
-            s.grants.push(grant);
+            s.grants
+                .retain(|g| !(g.client == client && hosts.contains(&g.host)));
+            s.grants.extend(grants);
         });
         self.giving = None;
     }
@@ -349,8 +393,9 @@ impl AiView {
             );
         }
         for c in &snap.state.clients {
-            let on = snap.connected.contains(&c.id);
-            let (id, id2, id3) = (c.id.clone(), c.id.clone(), c.id.clone());
+            let on = snap.connected.contains(&c.id) && !c.paused;
+            let (id, id2, id3, id4) = (c.id.clone(), c.id.clone(), c.id.clone(), c.id.clone());
+            let paused = c.paused;
             let shown = self.showing.as_ref() == Some(&c.id)
                 || self.token.as_ref().is_some_and(|(t, _)| *t == c.id);
             list = list.child(
@@ -371,7 +416,12 @@ impl AiView {
                             .flex_1()
                             .flex()
                             .flex_col()
-                            .child(div().font_weight(FontWeight::MEDIUM).child(c.name.clone()))
+                            .child(
+                                div()
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .when(paused, |d| d.text_color(rgb(colors().muted)))
+                                    .child(c.name.clone()),
+                            )
                             .child(hint_text(&tr!(
                                 "token …{end}",
                                 end = c.token_sha256.chars().take(4).collect::<String>()
@@ -393,11 +443,29 @@ impl AiView {
                             } else {
                                 colors().idle
                             })))
-                            .child(if on {
+                            .child(if paused {
+                                tr!("paused")
+                            } else if on {
                                 tr!("connected now")
                             } else {
                                 tr!("not connected")
                             }),
+                    )
+                    .child(
+                        outline_button(
+                            &format!("ai-pause-client:{}", c.name),
+                            &if paused { tr!("Resume") } else { tr!("Pause") },
+                        )
+                        .h(px(28.))
+                        .text_size(ui(12.))
+                        .on_click(cx.listener(move |v, _, _, cx| {
+                            let id = id4.clone();
+                            v.change(cx, |s| {
+                                for c in s.clients.iter_mut().filter(|c| c.id == id) {
+                                    c.paused = !paused;
+                                }
+                            })
+                        })),
                     )
                     .child(
                         outline_button(&format!("ai-config:{}", c.name), &tr!("Config"))
@@ -437,7 +505,11 @@ impl AiView {
                 list = list.child(self.config_part(c, token, &snap.exe));
             }
         }
-        part.child(list)
+        part.child(list).when(!snap.state.clients.is_empty(), |d| {
+            d.child(hint_text(&tr!(
+                "Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back."
+            )))
+        })
     }
 
     /// A client's config: with its token right after it is added, else
@@ -500,13 +572,6 @@ impl AiView {
                 .find(|h| h.spec == spec)
                 .map_or_else(|| spec.to_string(), |h| h.name.clone())
         };
-        let client_of = |id: &str| {
-            snap.state
-                .clients
-                .iter()
-                .find(|c| c.id == id)
-                .map_or_else(|| id.to_string(), |c| c.name.clone())
-        };
         let mut part = div().flex().flex_col().gap(px(10.)).child(
             div()
                 .flex()
@@ -545,24 +610,8 @@ impl AiView {
                 })
                 .when(!snap.state.clients.is_empty(), |d| {
                     d.child(
-                        primary_button("ai-give", &tr!("Give a host…")).on_click(cx.listener(
-                            |v, _, window, cx| {
-                                let mode = v
-                                    .workspace
-                                    .upgrade()
-                                    .map(|w| w.read(cx).ai_snapshot(cx).state.default_mode)
-                                    .unwrap_or_default();
-                                v.giving = Some(Giving {
-                                    host: None,
-                                    client: None,
-                                    until: Until::TakenBack,
-                                    mode,
-                                    how: AiHow::Background,
-                                    may: [true, true, false],
-                                });
-                                window.focus(&v.filter.focus_handle(cx), cx);
-                                cx.notify();
-                            },
+                        primary_button("ai-give", &tr!("Give hosts…")).on_click(cx.listener(
+                            |v, _, window, cx| v.start_giving(vec![], window, cx),
                         )),
                     )
                 }),
@@ -570,102 +619,258 @@ impl AiView {
         if self.giving.is_some() {
             part = part.child(self.give_part(snap, window, cx));
         }
-        let mut table = div()
-            .flex()
-            .flex_col()
-            .rounded(px(10.))
-            .border_1()
-            .border_color(rgb(colors().line))
-            .bg(rgb(colors().surface))
-            .overflow_hidden();
         if snap.state.grants.is_empty() {
-            table = table.child(
+            return part.child(
                 div()
+                    .rounded(px(10.))
+                    .border_1()
+                    .border_color(rgb(colors().line))
+                    .bg(rgb(colors().surface))
                     .px(px(14.))
                     .py(px(12.))
                     .child(hint_text(&tr!("No host is given to an AI client."))),
             );
         }
-        for (i, g) in snap.state.grants.iter().enumerate() {
-            let host = name_of(&g.host);
-            let mut how = vec![];
-            if g.run {
-                how.push(match g.how {
-                    AiHow::Background => tr!("in the background"),
-                    AiHow::Tab => tr!("through a tab"),
-                });
+        // A card for each client, its hosts under it.
+        for c in &snap.state.clients {
+            let rows: Vec<(usize, &AiGrant)> = snap
+                .state
+                .grants
+                .iter()
+                .enumerate()
+                .filter(|(_, g)| g.client == c.id)
+                .collect();
+            if rows.is_empty() {
+                continue;
             }
-            if g.read {
-                how.push(tr!("reads files"));
+            let open = !self.folded.contains(&c.id);
+            let own = rows.iter().filter(|(_, g)| g.paused).count();
+            let mut summary = tr_n!(
+                rows.len(),
+                "{n} host",
+                "{n} hosts",
+                n = rows.len().to_string()
+            );
+            if own > 0 && !c.paused {
+                summary = format!(
+                    "{summary} · {}",
+                    tr_n!(own, "{n} paused", "{n} paused", n = own.to_string())
+                );
             }
-            if g.write {
-                how.push(tr!("writes files"));
+            let (fold_id, take_id) = (c.id.clone(), c.id.clone());
+            let mut card = div()
+                .debug_selector({
+                    let n = c.name.clone();
+                    move || format!("ai-granted:{n}")
+                })
+                .flex()
+                .flex_col()
+                .rounded(px(10.))
+                .border_1()
+                .border_color(rgb(colors().line))
+                .bg(rgb(colors().surface))
+                .overflow_hidden()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(10.))
+                        .h(px(44.))
+                        .pl(px(6.))
+                        .pr(px(10.))
+                        .bg(rgb(colors().page))
+                        .child(
+                            div()
+                                .id(SharedString::from(format!("ai-fold:{}", c.id)))
+                                .debug_selector({
+                                    let n = c.name.clone();
+                                    move || format!("ai-fold:{n}")
+                                })
+                                .flex_1()
+                                .min_w_0()
+                                .h(px(36.))
+                                .px(px(8.))
+                                .flex()
+                                .items_center()
+                                .gap(px(8.))
+                                .rounded(px(6.))
+                                .cursor_pointer()
+                                .hover(|s| s.bg(rgb(colors().hover)))
+                                .on_click(cx.listener(move |v, _, _, cx| {
+                                    if !v.folded.remove(&fold_id) {
+                                        v.folded.insert(fold_id.clone());
+                                    }
+                                    cx.notify();
+                                }))
+                                .child(
+                                    gpui::svg()
+                                        .path(if open {
+                                            "icons/chevron-down.svg"
+                                        } else {
+                                            "icons/chevron-right.svg"
+                                        })
+                                        .size(px(14.))
+                                        .flex_shrink_0()
+                                        .text_color(rgb(colors().muted)),
+                                )
+                                .child(
+                                    div()
+                                        .font_weight(FontWeight::SEMIBOLD)
+                                        .child(c.name.clone()),
+                                )
+                                .child(hint_text(&summary))
+                                .when(c.paused, |d| d.child(chip(&tr!("Client paused")))),
+                        )
+                        .child(
+                            outline_button(
+                                &format!("ai-take-all:{}", c.name),
+                                &tr!("Take all back"),
+                            )
+                            .h(px(26.))
+                            .text_size(ui(12.))
+                            .text_color(rgb(colors().bad))
+                            .on_click(cx.listener(
+                                move |v, _, _, cx| {
+                                    let id = take_id.clone();
+                                    v.change(cx, |s| s.grants.retain(|g| g.client != id))
+                                },
+                            )),
+                        ),
+                );
+            if open {
+                for (i, g) in rows {
+                    card = card.child(self.grant_row(i, g, &name_of(&g.host), c.paused, cx));
+                }
             }
-            let how = how.join(", ");
-            let until = match (g.until, g.session) {
-                (_, true) => tr!("while shellwing stays open"),
-                (None, _) => tr!("until taken back"),
-                (Some(t), _) if t <= ai::now() => tr!("ended"),
-                (Some(t), _) => tr!(
-                    "for {n} min more",
-                    n = (t.saturating_sub(ai::now()) / 60 + 1).to_string()
-                ),
-            };
-            let (client, spec) = (g.client.clone(), g.host.clone());
-            table = table.child(
+            part = part.child(card);
+        }
+        part
+    }
+
+    /// One host given, in its client's card: dimmed while it, or the
+    /// client (`client_paused`), is paused.
+    fn grant_row(
+        &self,
+        i: usize,
+        g: &AiGrant,
+        host: &str,
+        client_paused: bool,
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
+        let mut how = vec![];
+        if g.run {
+            how.push(match g.how {
+                AiHow::Background => tr!("in the background"),
+                AiHow::Tab => tr!("through a tab"),
+            });
+        }
+        if g.read {
+            how.push(tr!("reads files"));
+        }
+        if g.write {
+            how.push(tr!("writes files"));
+        }
+        let how = how.join(", ");
+        let until = match (g.until, g.session) {
+            (_, true) => tr!("while shellwing stays open"),
+            (None, _) => tr!("until taken back"),
+            (Some(t), _) if t <= ai::now() => tr!("ended"),
+            (Some(t), _) => tr!(
+                "for {n} min more",
+                n = (t.saturating_sub(ai::now()) / 60 + 1).to_string()
+            ),
+        };
+        let dim = g.paused || client_paused;
+        let (client, spec, mode, paused) = (g.client.clone(), g.host.clone(), g.mode, g.paused);
+        let (client2, spec2) = (client.clone(), spec.clone());
+        let (client3, spec3) = (client.clone(), spec.clone());
+        div()
+            .debug_selector({
+                let h = host.to_string();
+                move || format!("ai-grant:{h}")
+            })
+            .flex()
+            .items_center()
+            .gap(px(12.))
+            .h(px(44.))
+            .px(px(14.))
+            .border_t_1()
+            .border_color(rgb(colors().line))
+            .when(dim, |d| d.bg(rgb(colors().page)))
+            .child(
                 div()
-                    .debug_selector({
-                        let h = host.clone();
-                        move || format!("ai-grant:{h}")
-                    })
+                    .w(px(190.))
                     .flex()
                     .items_center()
-                    .gap(px(12.))
-                    .h(px(44.))
-                    .px(px(14.))
-                    .border_b_1()
-                    .border_color(rgb(colors().line))
-                    .child(
-                        div()
-                            .w(px(170.))
-                            .font_weight(FontWeight::MEDIUM)
-                            .child(host.clone()),
-                    )
-                    .child(div().w(px(150.)).child(client_of(&g.client)))
-                    .child(div().w(px(230.)).text_color(rgb(colors().muted)).child(how))
-                    .child(div().flex_1().text_color(rgb(colors().muted)).child(until))
-                    .child({
-                        let (client, spec, mode) = (g.client.clone(), g.host.clone(), g.mode);
-                        outline_button(&format!("ai-mode:{i}"), &mode_text(g.mode).0)
-                            .h(px(26.))
-                            .text_size(ui(12.))
-                            .on_click(cx.listener(move |v, _, _, cx| {
-                                let next = MODES
-                                    [(MODES.iter().position(|m| *m == mode).unwrap_or(0) + 1) % 3];
-                                let (client, spec) = (client.clone(), spec.clone());
-                                v.change(cx, move |s| {
-                                    for g in s.grants.iter_mut() {
-                                        if g.client == client && g.host == spec {
-                                            g.mode = next;
-                                        }
-                                    }
+                    .gap(px(8.))
+                    .font_weight(FontWeight::MEDIUM)
+                    .when(dim, |d| d.text_color(rgb(colors().muted)))
+                    .child(host.to_string())
+                    .when(paused, |d| {
+                        d.child(
+                            div()
+                                .debug_selector({
+                                    let h = host.to_string();
+                                    move || format!("ai-grant-paused:{h}")
                                 })
-                            }))
+                                .child(chip(&tr!("Paused"))),
+                        )
+                    }),
+            )
+            .child(div().w(px(220.)).text_color(rgb(colors().muted)).child(how))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .text_color(rgb(colors().muted))
+                    .child(until),
+            )
+            .child(
+                outline_button(&format!("ai-mode:{i}"), &mode_text(g.mode).0)
+                    .h(px(26.))
+                    .text_size(ui(12.))
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        let next =
+                            MODES[(MODES.iter().position(|m| *m == mode).unwrap_or(0) + 1) % 3];
+                        let (client, spec) = (client.clone(), spec.clone());
+                        v.change(cx, move |s| {
+                            for g in s.grants.iter_mut() {
+                                if g.client == client && g.host == spec {
+                                    g.mode = next;
+                                }
+                            }
+                        })
+                    })),
+            )
+            .child(
+                outline_button(
+                    &format!("ai-pause:{i}"),
+                    &if paused { tr!("Resume") } else { tr!("Pause") },
+                )
+                .h(px(26.))
+                .text_size(ui(12.))
+                .on_click(cx.listener(move |v, _, _, cx| {
+                    let (client, spec) = (client2.clone(), spec2.clone());
+                    v.change(cx, move |s| {
+                        for g in s.grants.iter_mut() {
+                            if g.client == client && g.host == spec {
+                                g.paused = !paused;
+                            }
+                        }
                     })
-                    .child(
-                        outline_button(&format!("ai-take-back:{i}"), &tr!("Take back"))
-                            .h(px(26.))
-                            .text_size(ui(12.))
-                            .on_click(cx.listener(move |v, _, _, cx| {
-                                let (client, spec) = (client.clone(), spec.clone());
-                                v.change(cx, |s| {
-                                    s.grants.retain(|g| !(g.client == client && g.host == spec))
-                                })
-                            })),
-                    ),
-            );
-        }
-        part.child(table)
+                })),
+            )
+            .child(
+                outline_button(&format!("ai-take-back:{i}"), &tr!("Take back"))
+                    .h(px(26.))
+                    .text_size(ui(12.))
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        let (client, spec) = (client3.clone(), spec3.clone());
+                        v.change(cx, |s| {
+                            s.grants.retain(|g| !(g.client == client && g.host == spec))
+                        })
+                    })),
+            )
     }
 
     fn give_part(&self, snap: &AiSnap, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
@@ -673,21 +878,86 @@ impl AiView {
             return div();
         };
         let query = self.filter.read(cx).text().trim().to_lowercase();
+        // What the client chosen holds already: giving again replaces it.
+        let held: Vec<&str> = g
+            .client
+            .as_ref()
+            .map(|c| {
+                snap.state
+                    .grants
+                    .iter()
+                    .filter(|x| x.client == *c)
+                    .map(|x| x.host.as_str())
+                    .collect()
+            })
+            .unwrap_or_default();
         let mut hosts = div()
             .id("ai-hosts")
             .flex()
             .flex_col()
-            .max_h(px(220.))
+            .gap(px(2.))
+            .max_h(px(300.))
             .overflow_y_scroll();
         for p in &snap.picks {
-            for h in &p.hosts {
-                if !query.is_empty()
-                    && !h.name.to_lowercase().contains(&query)
-                    && !h.detail.to_lowercase().contains(&query)
-                {
-                    continue;
-                }
-                let on = g.host.as_ref() == Some(&h.spec);
+            let shown: Vec<_> = p
+                .hosts
+                .iter()
+                .filter(|h| {
+                    query.is_empty()
+                        || h.name.to_lowercase().contains(&query)
+                        || h.detail.to_lowercase().contains(&query)
+                        || p.group.to_lowercase().contains(&query)
+                })
+                .collect();
+            if shown.is_empty() {
+                continue;
+            }
+            let specs: Vec<String> = shown.iter().map(|h| h.spec.clone()).collect();
+            let every = specs.iter().all(|s| g.hosts.contains(s));
+            hosts = hosts.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(8.))
+                    .h(px(30.))
+                    .px(px(8.))
+                    .child(
+                        div()
+                            .text_size(ui(12.))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child(p.group.clone()),
+                    )
+                    .child(hint_text(&shown.len().to_string()))
+                    .child(div().flex_1())
+                    .child(
+                        outline_button(
+                            &format!("ai-pick-group:{}", p.group),
+                            &if every {
+                                tr!("Clear group")
+                            } else {
+                                tr!("Select all")
+                            },
+                        )
+                        .h(px(24.))
+                        .text_size(ui(11.5))
+                        .on_click(cx.listener(move |v, _, _, cx| {
+                            if let Some(g) = &mut v.giving {
+                                if every {
+                                    g.hosts.retain(|s| !specs.contains(s));
+                                } else {
+                                    for s in &specs {
+                                        if !g.hosts.contains(s) {
+                                            g.hosts.push(s.clone());
+                                        }
+                                    }
+                                }
+                            }
+                            cx.notify();
+                        })),
+                    ),
+            );
+            for h in shown {
+                let on = g.hosts.contains(&h.spec);
                 let spec = h.spec.clone();
                 hosts = hosts.child(
                     div()
@@ -702,7 +972,7 @@ impl AiView {
                         .flex()
                         .items_center()
                         .gap(px(10.))
-                        .h(px(32.))
+                        .h(px(34.))
                         .px(px(8.))
                         .rounded(px(6.))
                         .cursor_pointer()
@@ -710,15 +980,76 @@ impl AiView {
                         .hover(|s| s.bg(rgb(colors().hover)))
                         .on_click(cx.listener(move |v, _, _, cx| {
                             if let Some(g) = &mut v.giving {
-                                g.host = Some(spec.clone());
+                                match g.hosts.iter().position(|s| *s == spec) {
+                                    Some(i) => {
+                                        g.hosts.remove(i);
+                                    }
+                                    None => g.hosts.push(spec.clone()),
+                                }
                             }
                             cx.notify();
                         }))
+                        .child(crate::host_editor::checkbox(on))
                         .child(div().font_weight(FontWeight::MEDIUM).child(h.name.clone()))
-                        .child(hint_text(&format!("{} · {}", h.detail, p.group))),
+                        .child(div().flex_1().min_w_0().child(hint_text(&h.detail)))
+                        .when(held.contains(&h.spec.as_str()), |d| {
+                            d.child(chip(&tr!("given already")))
+                        }),
                 );
             }
         }
+        let name_of = |spec: &String| {
+            snap.picks
+                .iter()
+                .flat_map(|p| &p.hosts)
+                .find(|h| h.spec == *spec)
+                .map_or_else(|| spec.clone(), |h| h.name.clone())
+        };
+        let n = g.hosts.len();
+        let chosen = div()
+            .flex()
+            .items_center()
+            .gap(px(10.))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .text_size(ui(12.))
+                    .child(if n == 0 {
+                        tr!("No host chosen yet.")
+                    } else {
+                        format!(
+                            "{}: {}",
+                            tr_n!(n, "{n} host chosen", "{n} hosts chosen", n = n.to_string()),
+                            g.hosts.iter().map(name_of).collect::<Vec<_>>().join(", ")
+                        )
+                    }),
+            )
+            .when(n > 0, |d| {
+                d.child(
+                    outline_button("ai-pick-clear", &tr!("Clear"))
+                        .h(px(24.))
+                        .text_size(ui(11.5))
+                        .on_click(cx.listener(|v, _, _, cx| {
+                            if let Some(g) = &mut v.giving {
+                                g.hosts.clear();
+                            }
+                            cx.notify();
+                        })),
+                )
+            });
+        let replaced: Vec<String> = g
+            .hosts
+            .iter()
+            .filter(|s| held.contains(&s.as_str()))
+            .map(name_of)
+            .collect();
+        let client_name = g
+            .client
+            .as_ref()
+            .and_then(|c| snap.state.clients.iter().find(|x| x.id == *c))
+            .map(|c| c.name.clone())
+            .unwrap_or_default();
         let mut clients = div().flex().flex_wrap().gap(px(6.));
         for c in &snap.state.clients {
             let on = g.client.as_ref() == Some(&c.id);
@@ -765,11 +1096,21 @@ impl AiView {
                     })),
             );
         }
-        let ready = g.host.is_some() && g.client.is_some() && g.may.iter().any(|m| *m);
+        let ready = n > 0 && g.client.is_some() && g.may.iter().any(|m| *m);
+        let give_label = if n == 0 {
+            tr!("Give access")
+        } else {
+            tr_n!(
+                n,
+                "Give access to {n} host",
+                "Give access to {n} hosts",
+                n = n.to_string()
+            )
+        };
         let focused = self.filter.focus_handle(cx).is_focused(window);
         card()
             .debug_selector(|| "ai-give-form".into())
-            .child(label_text(&tr!("Host")))
+            .child(label_text(&tr!("Hosts")))
             .child(
                 div()
                     .w(px(280.))
@@ -788,6 +1129,7 @@ impl AiView {
                     .child(self.filter.clone()),
             )
             .child(hosts)
+            .child(chosen)
             .child(label_text(&tr!("To")))
             .child(clients)
             .child(label_text(&tr!("For")))
@@ -894,6 +1236,22 @@ impl AiView {
                 }
                 modes
             })
+            .when(!replaced.is_empty(), |d| {
+                d.child(
+                    div()
+                        .debug_selector(|| "ai-give-replaces".into())
+                        .px(px(12.))
+                        .py(px(8.))
+                        .rounded(px(8.))
+                        .bg(rgb(colors().chip))
+                        .text_size(ui(12.))
+                        .child(tr!(
+                            "Given to {client} already: {hosts}. Giving them again replaces what they had.",
+                            client = client_name.clone(),
+                            hosts = replaced.join(", ")
+                        )),
+                )
+            })
             .child(hint_text(&tr!(
                 "It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them."
             )))
@@ -910,10 +1268,10 @@ impl AiView {
                             })),
                     )
                     .child(if ready {
-                        primary_button("ai-give-ok", &tr!("Give access"))
+                        primary_button("ai-give-ok", &give_label)
                             .on_click(cx.listener(|v, _, _, cx| v.give(cx)))
                     } else {
-                        outline_button("ai-give-ok", &tr!("Give access"))
+                        outline_button("ai-give-ok", &give_label)
                             .text_color(rgb(colors().muted))
                     }),
             )
@@ -1015,6 +1373,22 @@ fn heading(s: &str) -> gpui::Div {
         .text_size(ui(15.))
         .font_weight(FontWeight::SEMIBOLD)
         .child(s.to_string())
+}
+
+/// A small grey label: what is paused.
+fn chip(text: &str) -> gpui::Div {
+    div()
+        .flex_shrink_0()
+        .h(px(20.))
+        .px(px(8.))
+        .flex()
+        .items_center()
+        .rounded_full()
+        .bg(rgb(colors().chip))
+        .text_color(rgb(colors().text))
+        .text_size(ui(11.))
+        .font_weight(FontWeight::SEMIBOLD)
+        .child(text.to_string())
 }
 
 fn card() -> gpui::Div {

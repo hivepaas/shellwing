@@ -136,17 +136,29 @@ t6815a21c = Henüz istemci yok: İstemci ekle ile bir tane içeri alın.
 # token …{end}
 t4a145d1b = token …{ $end }
 
+# paused
+t0a1997cb = duraklatıldı
+
 # connected now
 t432c5c88 = şu an bağlı
 
 # not connected
 tb83f675d = bağlı değil
 
+# Resume
+t454d1d8a = Sürdür
+
+# Pause
+t44f9bf2d = Duraklat
+
 # Config
 t6a12e0e7 = Yapılandırma
 
 # Remove
 t21a5901d = Kaldır
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Duraklatmak bir istemciyi şimdilik durdurur; token'ını ve ona verilen ana makineleri korur. Kaldırmak token'ını geri alır.
 
 # (the token shown when it was added)
 t9375386f = (eklendiğinde gösterilen token)
@@ -172,11 +184,31 @@ t07e2f764 = AI etkinliği
 # Take every one back
 tb3911aec = Tüm erişimleri kaldır
 
-# Give a host…
-tcb4de791 = Ana makine ver…
+# Give hosts…
+t30b956e9 = Ana makineleri ver…
 
 # No host is given to an AI client.
 t654696aa = Hiçbir AI istemcisine ana makine verilmedi.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } ana makine
+       *[other] { $n } ana makine
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+        [one] { $n } duraklatıldı
+       *[other] { $n } duraklatıldı
+    }
+
+# Client paused
+te9192f58 = İstemci duraklatıldı
+
+# Take all back
+t4a2d0a34 = Tüm erişimleri kaldır
 
 # in the background
 t04874b67 = arka planda
@@ -202,8 +234,33 @@ t1a30bf3b = sona erdi
 # for {n} min more
 t955674cd = { $n } dk daha
 
+# Paused
+tde281feb = Duraklatıldı
+
 # Take back
 t0650c681 = Erişimi kaldır
+
+# Clear group
+tc2447199 = Grubun seçimini kaldır
+
+# Select all
+t6af21072 = Tümünü seç
+
+# given already
+t0912be5e = zaten verildi
+
+# No host chosen yet.
+t99637c8e = Henüz ana makine seçilmedi.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } ana makine seçildi
+       *[other] { $n } ana makine seçildi
+    }
+
+# Clear
+t04a57fc2 = Temizle
 
 # Until I take it back
 taacfb8db = Ben geri alana kadar
@@ -217,8 +274,18 @@ t0c43fb4a = 1 saat
 # 8 hours
 t63affd14 = 8 saat
 
-# Host
-t302af18f = Ana makine
+# Give access
+te96c4c6e = Erişim ver
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+        [one] { $n } ana makineye erişim ver
+       *[other] { $n } ana makineye erişim ver
+    }
+
+# Hosts
+tcf9aefb4 = Ana makineler
 
 # To
 t41f59644 = Kime
@@ -265,14 +332,14 @@ t2d9c8c34 = SFTP üzerinden; "Riskli olanlar için sor" seçiliyken her yazma si
 # Commands
 t971550f3 = Komutlar
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = { $client } için zaten verildi: { $hosts }. Yeniden vermek öncekilerin yerini alır.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine de. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
 
 # Cancel
 t35afca3b = İptal
-
-# Give access
-te96c4c6e = Erişim ver
 
 # When AI runs a command
 tc94fc353 = AI bir komut çalıştırdığında
@@ -1249,13 +1316,6 @@ tb71f4415 = Diğer SSH uygulamaları aranıyor…
 # No other SSH app with hosts was found here.
 tecba4271 = Burada ana makinesi olan başka bir SSH uygulaması bulunamadı.
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } ana makine
-       *[other] { $n } ana makine
-    }
-
 # Import hosts
 t956d1e67 = Ana makineleri içe aktar
 
@@ -1786,9 +1846,6 @@ tf375b5ad =
        *[other] { $n } seçildi
     }
 
-# Clear
-t04a57fc2 = Temizle
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Eklenecek komutları işaretleyin; her biri size ait bir kod parçacığı olur.
 
@@ -2092,9 +2149,6 @@ t29ccb392 = Tabloyu sil
 
 # Untitled note
 t4ce277c4 = Adsız not
-
-# Hosts
-tcf9aefb4 = Ana makineler
 
 # Recent
 t50e888fe = Son kullanılanlar
@@ -3207,12 +3261,8 @@ t36133970 = Eklemek veya çıkarmak için Cmd+click
 # Ctrl+click to add or take away
 t47785603 = Eklemek veya çıkarmak için Ctrl+click
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-        [one] { $n } ana makine seçildi
-       *[other] { $n } ana makine seçildi
-    }
+# Give to AI…
+ta74a1e27 = AI'ya ver…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3981,9 +4031,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Devam ettir
-
-# Pause
-t44f9bf2d = Duraklat
 
 # Take access back
 td619baa7 = Erişimi kaldır

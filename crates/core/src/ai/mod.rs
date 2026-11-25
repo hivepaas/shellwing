@@ -391,17 +391,25 @@ impl Hub {
     }
 
     /// The clients and grants, as saved or changed: work on a host no
-    /// longer given stops, and its connection closes.
+    /// longer given, or paused, stops (what waits for the person too), and
+    /// its connection closes.
     pub fn set_state(&self, state: AiState) {
         let Ok(mut inner) = self.inner.lock() else {
             return;
         };
         inner.state = state;
+        let paused: Vec<&str> = inner
+            .state
+            .clients
+            .iter()
+            .filter(|c| c.paused)
+            .map(|c| c.id.as_str())
+            .collect();
         let given: Vec<(String, String)> = inner
             .state
             .grants
             .iter()
-            .filter(|g| live(g))
+            .filter(|g| live(g) && !g.paused && !paused.contains(&g.client.as_str()))
             .map(|g| (g.client.clone(), g.host.clone()))
             .collect();
         let stopping: Vec<Arc<Job>> = inner
@@ -438,7 +446,14 @@ impl Hub {
             .cloned()
     }
 
-    /// The hosts `client` may use now.
+    /// Whether the person paused the client `id`: it may use no host.
+    pub fn client_paused(&self, id: &str) -> bool {
+        self.inner
+            .lock()
+            .is_ok_and(|i| i.state.clients.iter().any(|c| c.id == id && c.paused))
+    }
+
+    /// The hosts given to `client` now, paused ones too: the grant says so.
     pub fn given(&self, client: &str) -> Vec<Given> {
         let Ok(inner) = self.inner.lock() else {
             return vec![];
@@ -474,6 +489,15 @@ impl Hub {
                 client.name
             ));
         };
+        if self.client_paused(&client.id) {
+            return Err(paused_client(&client.name));
+        }
+        if g.grant.paused {
+            return Err(format!(
+                "{} is paused for {} in shellwing. Nothing ran. Ask the user to resume it in Settings › AI.",
+                g.name, client.name
+            ));
+        }
         let target = {
             let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
             inner
@@ -912,6 +936,13 @@ pub fn risky(command: &str, patterns: &[String]) -> Option<String> {
 }
 
 /// Whether a grant holds now.
+/// What a paused client is told, whatever it asks.
+pub fn paused_client(name: &str) -> String {
+    format!(
+        "{name} is paused in shellwing: no host can be used until the user resumes it in Settings › AI."
+    )
+}
+
 fn live(g: &AiGrant) -> bool {
     g.until.is_none_or(|u| now() < u)
 }
@@ -969,6 +1000,7 @@ mod tests {
             name: "Claude Code".into(),
             token_sha256: token_hash("shw_x"),
             added_at: 0,
+            paused: false,
         }
     }
 

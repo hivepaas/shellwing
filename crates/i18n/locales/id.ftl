@@ -136,17 +136,29 @@ t6815a21c = Belum ada klien: Tambah klien memberi akses ke satu klien.
 # token …{end}
 t4a145d1b = token …{ $end }
 
+# paused
+t0a1997cb = dijeda
+
 # connected now
 t432c5c88 = terhubung sekarang
 
 # not connected
 tb83f675d = tidak terhubung
 
+# Resume
+t454d1d8a = Lanjutkan
+
+# Pause
+t44f9bf2d = Jeda
+
 # Config
 t6a12e0e7 = Konfigurasi
 
 # Remove
 t21a5901d = Hapus
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Jeda menghentikan klien untuk sementara, dan menyimpan tokennya serta host yang diberikan kepadanya. Hapus mencabut tokennya.
 
 # (the token shown when it was added)
 t9375386f = (token yang ditampilkan saat klien ditambahkan)
@@ -172,11 +184,29 @@ t07e2f764 = Aktivitas AI
 # Take every one back
 tb3911aec = Cabut semua
 
-# Give a host…
-tcb4de791 = Berikan host…
+# Give hosts…
+t30b956e9 = Berikan host…
 
 # No host is given to an AI client.
 t654696aa = Tidak ada host yang diberikan ke klien AI.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+       *[other] { $n } host
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n } dijeda
+    }
+
+# Client paused
+te9192f58 = Klien dijeda
+
+# Take all back
+t4a2d0a34 = Cabut semua
 
 # in the background
 t04874b67 = di latar belakang
@@ -202,8 +232,32 @@ t1a30bf3b = berakhir
 # for {n} min more
 t955674cd = { $n } mnt lagi
 
+# Paused
+tde281feb = Dijeda
+
 # Take back
 t0650c681 = Cabut
+
+# Clear group
+tc2447199 = Batalkan pilihan grup
+
+# Select all
+t6af21072 = Pilih semua
+
+# given already
+t0912be5e = sudah diberikan
+
+# No host chosen yet.
+t99637c8e = Belum ada host yang dipilih.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] { $n } host dipilih
+    }
+
+# Clear
+t04a57fc2 = Bersihkan
 
 # Until I take it back
 taacfb8db = Sampai saya cabut
@@ -217,8 +271,17 @@ t0c43fb4a = 1 jam
 # 8 hours
 t63affd14 = 8 jam
 
-# Host
-t302af18f = Host
+# Give access
+te96c4c6e = Berikan akses
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] Berikan akses ke { $n } host
+    }
+
+# Hosts
+tcf9aefb4 = Host
 
 # To
 t41f59644 = Kepada
@@ -265,14 +328,14 @@ t2d9c8c34 = melalui SFTP; jika perintah berisiko menunggu, setiap penulisan menu
 # Commands
 t971550f3 = Perintah
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = Sudah diberikan ke { $client }: { $hosts }. Memberikannya lagi menggantikan yang sebelumnya.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
 
 # Cancel
 t35afca3b = Batal
-
-# Give access
-te96c4c6e = Berikan akses
 
 # When AI runs a command
 tc94fc353 = Saat AI menjalankan perintah
@@ -1246,12 +1309,6 @@ tb71f4415 = Mencari aplikasi SSH lain…
 # No other SSH app with hosts was found here.
 tecba4271 = Tidak ditemukan aplikasi SSH lain yang berisi host di sini.
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-       *[other] { $n } host
-    }
-
 # Import hosts
 t956d1e67 = Impor host
 
@@ -1774,9 +1831,6 @@ tf375b5ad =
        *[other] { $n } dipilih
     }
 
-# Clear
-t04a57fc2 = Bersihkan
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Centang perintah yang ingin ditambahkan; masing-masing menjadi snippet milik Anda.
 
@@ -2076,9 +2130,6 @@ t29ccb392 = Hapus tabel
 
 # Untitled note
 t4ce277c4 = Catatan tanpa judul
-
-# Hosts
-tcf9aefb4 = Host
 
 # Recent
 t50e888fe = Terbaru
@@ -3184,11 +3235,8 @@ t36133970 = Cmd+click untuk menambah atau mengurangi
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click untuk menambah atau mengurangi
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] { $n } host dipilih
-    }
+# Give to AI…
+ta74a1e27 = Berikan ke AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3936,9 +3984,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Biarkan lanjut
-
-# Pause
-t44f9bf2d = Jeda
 
 # Take access back
 td619baa7 = Cabut akses

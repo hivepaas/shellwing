@@ -441,6 +441,7 @@ mod through {
                 name: "x".into(),
                 token_sha256: super::super::token_hash("shw_t"),
                 added_at: 0,
+                paused: false,
             }],
             ..Default::default()
         });

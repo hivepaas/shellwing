@@ -1167,12 +1167,21 @@ config to paste into that client, with a token of its own.
 - The token shows that once. shellwing keeps only its SHA-256, in
   `state/ai.json`, which only you may read.
 - *Remove* takes a client's token back, and the hosts given to it.
+- *Pause* stops a client for now: it keeps its token, so its config needs no
+  change, and the hosts given it, each as it was. Whatever it asks, it is told
+  it is paused, and what it was running stops. *Resume* lets it in again.
 - The config starts `shellwing mcp` by its full path, with the token in
   `SHELLWING_TOKEN`. It never puts the token on a command line.
 
-**Giving hosts.** *Hosts given › Give a host…*: choose a host, the client, for
-how long (until you take it back, while shellwing stays open, 1 hour or 8
-hours), what it may do, and what happens to a command.
+**Giving hosts.** *Hosts given › Give hosts…*: tick the hosts (or a whole
+group, with *Select all*), choose the client, for how long (until you take it
+back, while shellwing stays open, 1 hour or 8 hours), what it may do, and what
+happens to a command. Each host ticked gets a grant of its own, to change,
+pause or take back by itself later. A host the client holds already is marked
+*given already*, and giving it again replaces that grant.
+
+Hosts picked in the host list (Ctrl+click, Cmd+click on macOS) go to the form
+ticked, with *Give to AI…* beside *Run on hosts*.
 
 What it may do, each on its own:
 
@@ -1195,8 +1204,16 @@ yours to change, a line each: its words in a row in the command, case aside
 (`rm -rf`, `systemctl stop`, `drop`); a word ending in `/` begins one
 (`> /etc/`). *The usual list* goes back to shellwing's.
 
-*Take back*, or *Take every one back*, ends a grant at once: its commands
-still running stop.
+The table puts the hosts given under each client, a card each, that its
+title folds.
+
+- *Pause* stops a grant for now and keeps it as it is: its commands still
+  running stop, and those waiting for you are refused. The agent still sees
+  the host in `list_hosts`, marked paused, and a tool call there tells it the
+  host is paused, so it can say so. Its time (*for 1 hour*) runs on meanwhile.
+  *Resume* gives it back.
+- *Take back*, *Take all back* (a client's) or *Take every one back* ends a
+  grant at once: its commands still running stop.
 
 How an agent reaches a host:
 
@@ -1209,7 +1226,8 @@ How an agent reaches a host:
 - Its forwards, agent forwarding and X11 are left out.
 - A collection's host whose settings are held back is refused until you allow
   them on a tab.
-- Its tile in the host list carries a violet **AI** mark.
+- Its tile in the host list carries a violet **AI** mark, grey while each of
+  its grants is paused, or its client.
 - Through a tab (below), it is typed into the host's tab instead.
 
 **Through a tab.** A host given *Through a tab* (the grant's *How*) has its
@@ -1234,7 +1252,7 @@ they print:
 
 **What an agent can do** (MCP tools):
 
-- `list_hosts`: the hosts given to it.
+- `list_hosts`: the hosts given to it, a paused one marked so.
 - `run(host, command, wait_seconds)`: runs a command, and waits up to
   `wait_seconds` (10 by default, 60 at most) for its end. Then it returns the
   output (stdout and stderr as they came, up to 1 MB) and the exit status. A

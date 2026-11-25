@@ -136,17 +136,29 @@ t6815a21c = 還沒有用戶端：「新增用戶端」可讓一個用戶端加�
 # token …{end}
 t4a145d1b = 權杖 …{ $end }
 
+# paused
+t0a1997cb = 已暫停
+
 # connected now
 t432c5c88 = 目前已連線
 
 # not connected
 tb83f675d = 未連線
 
+# Resume
+t454d1d8a = 恢復
+
+# Pause
+t44f9bf2d = 暫停
+
 # Config
 t6a12e0e7 = 設定檔
 
 # Remove
 t21a5901d = 移除
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = 暫停會讓用戶端暫時停用，並保留其權杖與已授權的主機。移除則會撤銷其權杖。
 
 # (the token shown when it was added)
 t9375386f = （新增時顯示的權杖）
@@ -172,11 +184,29 @@ t07e2f764 = AI 活動
 # Take every one back
 tb3911aec = 全部撤銷
 
-# Give a host…
-tcb4de791 = 授權主機…
+# Give hosts…
+t30b956e9 = 授權主機…
 
 # No host is given to an AI client.
 t654696aa = 沒有授權給 AI 用戶端的主機。
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+       *[other] { $n } 台主機
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+       *[other] { $n } 台已暫停
+    }
+
+# Client paused
+te9192f58 = 用戶端已暫停
+
+# Take all back
+t4a2d0a34 = 全部撤銷
 
 # in the background
 t04874b67 = 在背景
@@ -202,8 +232,32 @@ t1a30bf3b = 已結束
 # for {n} min more
 t955674cd = 還剩 { $n } 分鐘
 
+# Paused
+tde281feb = 已暫停
+
 # Take back
 t0650c681 = 撤銷
+
+# Clear group
+tc2447199 = 取消選取此群組
+
+# Select all
+t6af21072 = 全選
+
+# given already
+t0912be5e = 已授權
+
+# No host chosen yet.
+t99637c8e = 尚未選擇主機。
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+       *[other] 已選擇 { $n } 台主機
+    }
+
+# Clear
+t04a57fc2 = 清除
 
 # Until I take it back
 taacfb8db = 直到我撤銷
@@ -217,8 +271,17 @@ t0c43fb4a = 1 小時
 # 8 hours
 t63affd14 = 8 小時
 
-# Host
-t302af18f = 主機
+# Give access
+te96c4c6e = 授予存取權
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+       *[other] 授權 { $n } 台主機
+    }
+
+# Hosts
+tcf9aefb4 = 主機
 
 # To
 t41f59644 = 授權給
@@ -265,14 +328,14 @@ t2d9c8c34 = 透過 SFTP；在「有風險時詢問」模式下，每次寫入都
 # Commands
 t971550f3 = 指令
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = 已授權給 { $client }：{ $hosts }。再次授權會取代原有設定。
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它絕不會看到金鑰、密碼或密碼片語：會要求這些的主機會被拒絕，主機金鑰仍未知的主機也一樣。主機的輸出可能含有意圖操控代理程式的文字：只把主機授權給你放心託付的用戶端。
 
 # Cancel
 t35afca3b = 取消
-
-# Give access
-te96c4c6e = 授予存取權
 
 # When AI runs a command
 tc94fc353 = AI 執行指令時
@@ -1246,12 +1309,6 @@ tb71f4415 = 正在尋找其他 SSH 應用程式…
 # No other SSH app with hosts was found here.
 tecba4271 = 在這台電腦上找不到其他含有主機的 SSH 應用程式。
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-       *[other] { $n } 台主機
-    }
-
 # Import hosts
 t956d1e67 = 匯入主機
 
@@ -1774,9 +1831,6 @@ tf375b5ad =
        *[other] 已選取 { $n } 個
     }
 
-# Clear
-t04a57fc2 = 清除
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = 勾選要新增的指令；每個指令都會成為你自己的程式碼片段。
 
@@ -2076,9 +2130,6 @@ t29ccb392 = 刪除表格
 
 # Untitled note
 t4ce277c4 = 未命名筆記
-
-# Hosts
-tcf9aefb4 = 主機
 
 # Recent
 t50e888fe = 最近使用
@@ -3184,11 +3235,8 @@ t36133970 = Cmd+click 可加入或移除
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click 可加入或移除
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-       *[other] 已選擇 { $n } 台主機
-    }
+# Give to AI…
+ta74a1e27 = 授權給 AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3936,9 +3984,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = 繼續
-
-# Pause
-t44f9bf2d = 暫停
 
 # Take access back
 td619baa7 = 撤銷存取權

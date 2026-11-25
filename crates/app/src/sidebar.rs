@@ -97,8 +97,9 @@ pub struct Row {
     pub active: bool,
     /// What the filter matches, lowercase: name, alias, address, user, tags.
     pub search: String,
-    /// Given to an AI client: its tile says so.
-    pub ai: bool,
+    /// Given to an AI client: its tile says so, greyed (false) while each
+    /// of its grants is paused, or its client.
+    pub ai: Option<bool>,
 }
 
 fn status_color(s: Status) -> u32 {
@@ -131,30 +132,39 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
         _ if matches!(row.edit, EditTarget::Local) => host_icons::find("terminal"),
         icon => icon,
     };
-    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring).when(row.ai, |d| {
-        d.child(
-            div()
-                .debug_selector({
-                    let n = row.name.clone();
-                    move || format!("ai-badge:{n}")
-                })
-                .absolute()
-                .top(px(-4.))
-                .right(px(-6.))
-                .h(px(15.))
-                .px(px(4.))
-                .flex()
-                .items_center()
-                .rounded_full()
-                .border_2()
-                .border_color(rgb(ground))
-                .bg(rgb(AI_MARK))
-                .text_color(rgb(colors().on_accent))
-                .text_size(px(9.))
-                .font_weight(FontWeight::BOLD)
-                .child("AI"),
-        )
-    })
+    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring).when_some(
+        row.ai,
+        |d, on| {
+            d.child(
+                div()
+                    .debug_selector({
+                        let n = row.name.clone();
+                        move || {
+                            if on {
+                                format!("ai-badge:{n}")
+                            } else {
+                                format!("ai-badge-paused:{n}")
+                            }
+                        }
+                    })
+                    .absolute()
+                    .top(px(-4.))
+                    .right(px(-6.))
+                    .h(px(15.))
+                    .px(px(4.))
+                    .flex()
+                    .items_center()
+                    .rounded_full()
+                    .border_2()
+                    .border_color(rgb(ground))
+                    .bg(rgb(if on { AI_MARK } else { colors().idle }))
+                    .text_color(rgb(colors().on_accent))
+                    .text_size(px(9.))
+                    .font_weight(FontWeight::BOLD)
+                    .child("AI"),
+            )
+        },
+    )
 }
 
 /// A host's tile `size` px square, as [`tile_face`] draws it, with its status
@@ -1047,10 +1057,12 @@ impl Sidebar {
             })
     }
 
-    /// Under the list while hosts are picked: run on them, or let them go.
+    /// Under the list while hosts are picked: run on them, give them to AI,
+    /// or let them go.
     fn picked_bar(&self, cx: &mut Context<Self>) -> Div {
         let n = self.picked.len();
         let (ws, picked) = (self.workspace.clone(), self.picked.clone());
+        let (ws2, picked2) = (ws.clone(), picked.clone());
         let how = if cfg!(target_os = "macos") {
             tr!("Cmd+click to add or take away")
         } else {
@@ -1069,14 +1081,38 @@ impl Sidebar {
             .text_color(rgb(colors().text))
             .child(
                 div()
-                    .text_xs()
-                    .child(tr_n!(
-                        n,
-                        "{n} host chosen",
-                        "{n} hosts chosen",
-                        n = n.to_string()
-                    ))
-                    .child(div().text_color(rgb(colors().muted)).child(how)),
+                    .flex()
+                    .items_start()
+                    .gap(px(6.))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .text_xs()
+                            .child(tr_n!(
+                                n,
+                                "{n} host chosen",
+                                "{n} hosts chosen",
+                                n = n.to_string()
+                            ))
+                            .child(div().text_color(rgb(colors().muted)).child(how)),
+                    )
+                    .child(
+                        div()
+                            .id("picked-clear")
+                            .debug_selector(|| "picked-clear".into())
+                            .flex_shrink_0()
+                            .h(px(24.))
+                            .px(px(8.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .text_xs()
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(colors().hover)))
+                            .on_click(cx.listener(|s, _, _, cx| s.clear_picked(cx)))
+                            .child(tr!("Clear")),
+                    ),
             )
             .child(
                 div()
@@ -1105,19 +1141,24 @@ impl Sidebar {
                     )
                     .child(
                         div()
-                            .id("picked-clear")
-                            .debug_selector(|| "picked-clear".into())
+                            .id("picked-give")
+                            .debug_selector(|| "picked-give".into())
+                            .flex_1()
                             .h(px(30.))
-                            .px(px(10.))
                             .flex()
                             .items_center()
+                            .justify_center()
                             .rounded(px(6.))
-                            .border_1()
-                            .border_color(rgb(colors().field_edge))
+                            .bg(rgb(AI_MARK))
+                            .hover(|s| s.opacity(0.9))
+                            .text_color(rgb(colors().on_accent))
+                            .font_weight(FontWeight::MEDIUM)
                             .cursor_pointer()
-                            .hover(|s| s.bg(rgb(colors().hover)))
-                            .on_click(cx.listener(|s, _, _, cx| s.clear_picked(cx)))
-                            .child(tr!("Clear")),
+                            .on_click(move |_, window, cx| {
+                                let picked = picked2.clone();
+                                let _ = ws2.update(cx, |ws, cx| ws.open_give(picked, window, cx));
+                            })
+                            .child(tr!("Give to AI…")),
                     ),
             )
     }

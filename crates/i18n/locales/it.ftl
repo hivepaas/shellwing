@@ -136,17 +136,29 @@ t6815a21c = Ancora nessun client: Aggiungi client ne fa entrare uno.
 # token …{end}
 t4a145d1b = token …{ $end }
 
+# paused
+t0a1997cb = in pausa
+
 # connected now
 t432c5c88 = connesso ora
 
 # not connected
 tb83f675d = non connesso
 
+# Resume
+t454d1d8a = Riprendi
+
+# Pause
+t44f9bf2d = Metti in pausa
+
 # Config
 t6a12e0e7 = Configurazione
 
 # Remove
 t21a5901d = Rimuovi
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Metti in pausa ferma un client per ora, e ne conserva il token e gli host concessi. Rimuovi ne revoca il token.
 
 # (the token shown when it was added)
 t9375386f = (il token mostrato quando il client è stato aggiunto)
@@ -172,11 +184,31 @@ t07e2f764 = Attività AI
 # Take every one back
 tb3911aec = Revocali tutti
 
-# Give a host…
-tcb4de791 = Concedi un host…
+# Give hosts…
+t30b956e9 = Concedi host…
 
 # No host is given to an AI client.
 t654696aa = Nessun host è concesso a un client AI.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } host
+       *[other] { $n } host
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+        [one] { $n } in pausa
+       *[other] { $n } in pausa
+    }
+
+# Client paused
+te9192f58 = Client in pausa
+
+# Take all back
+t4a2d0a34 = Revocali tutti
 
 # in the background
 t04874b67 = in background
@@ -202,8 +234,33 @@ t1a30bf3b = terminato
 # for {n} min more
 t955674cd = ancora per { $n } min
 
+# Paused
+tde281feb = In pausa
+
 # Take back
 t0650c681 = Revoca
+
+# Clear group
+tc2447199 = Deseleziona il gruppo
+
+# Select all
+t6af21072 = Seleziona tutti
+
+# given already
+t0912be5e = già concesso
+
+# No host chosen yet.
+t99637c8e = Nessun host scelto per ora.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] { $n } host scelto
+       *[other] { $n } host scelti
+    }
+
+# Clear
+t04a57fc2 = Azzera
 
 # Until I take it back
 taacfb8db = Finché non lo revoco
@@ -217,8 +274,18 @@ t0c43fb4a = 1 ora
 # 8 hours
 t63affd14 = 8 ore
 
-# Host
-t302af18f = Host
+# Give access
+te96c4c6e = Concedi l'accesso
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+        [one] Concedi l'accesso a { $n } host
+       *[other] Concedi l'accesso a { $n } host
+    }
+
+# Hosts
+tcf9aefb4 = Host
 
 # To
 t41f59644 = A
@@ -265,14 +332,14 @@ t2d9c8c34 = tramite SFTP; dove quelli rischiosi aspettano, ogni scrittura ti asp
 # Commands
 t971550f3 = Comandi
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = Già concessi a { $client }: { $hosts }. Concederli di nuovo sostituisce ciò che avevano.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Non vede mai una chiave, una password o una passphrase: un host che ne chiederebbe una viene rifiutato, come uno la cui chiave non è ancora nota. L'output di un host può contenere parole pensate per guidare un agente: concedi gli host solo a uno a cui li affideresti.
 
 # Cancel
 t35afca3b = Annulla
-
-# Give access
-te96c4c6e = Concedi l'accesso
 
 # When AI runs a command
 tc94fc353 = Quando l'AI esegue un comando
@@ -1249,13 +1316,6 @@ tb71f4415 = Ricerca di altre app SSH…
 # No other SSH app with hosts was found here.
 tecba4271 = Qui non è stata trovata nessun'altra app SSH con host.
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } host
-       *[other] { $n } host
-    }
-
 # Import hosts
 t956d1e67 = Importa host
 
@@ -1786,9 +1846,6 @@ tf375b5ad =
        *[other] { $n } selezionati
     }
 
-# Clear
-t04a57fc2 = Azzera
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Spunta i comandi da aggiungere; ognuno diventa un tuo snippet.
 
@@ -2092,9 +2149,6 @@ t29ccb392 = Elimina tabella
 
 # Untitled note
 t4ce277c4 = Nota senza titolo
-
-# Hosts
-tcf9aefb4 = Host
 
 # Recent
 t50e888fe = Recenti
@@ -3207,12 +3261,8 @@ t36133970 = Cmd+click per aggiungere o togliere
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click per aggiungere o togliere
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-        [one] { $n } host scelto
-       *[other] { $n } host scelti
-    }
+# Give to AI…
+ta74a1e27 = Concedi all'AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -3981,9 +4031,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Lascialo continuare
-
-# Pause
-t44f9bf2d = Metti in pausa
 
 # Take access back
 td619baa7 = Revoca l'accesso

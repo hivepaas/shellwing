@@ -136,17 +136,29 @@ t6815a21c = Клієнтів ще немає: «Додати клієнт» вп
 # token …{end}
 t4a145d1b = токен …{ $end }
 
+# paused
+t0a1997cb = призупинено
+
 # connected now
 t432c5c88 = зараз підключено
 
 # not connected
 tb83f675d = не підключено
 
+# Resume
+t454d1d8a = Відновити
+
+# Pause
+t44f9bf2d = Призупинити
+
 # Config
 t6a12e0e7 = Конфігурація
 
 # Remove
 t21a5901d = Видалити
+
+# Pause stops a client for now, and keeps its token and the hosts given it. Remove takes its token back.
+t00a3399a = Призупинення зупиняє клієнта на час і зберігає його токен та надані йому хости. Видалення відкликає його токен.
 
 # (the token shown when it was added)
 t9375386f = (токен, показаний під час додавання)
@@ -172,11 +184,35 @@ t07e2f764 = Активність AI
 # Take every one back
 tb3911aec = Відкликати всі
 
-# Give a host…
-tcb4de791 = Надати хост…
+# Give hosts…
+t30b956e9 = Надати хости…
 
 # No host is given to an AI client.
 t654696aa = Жоден хост не надано AI-клієнту.
+
+# {n} host | {n} hosts
+t2489674e =
+    { $n ->
+        [one] { $n } хост
+        [few] { $n } хости
+        [many] { $n } хостів
+       *[other] { $n } хоста
+    }
+
+# {n} paused | {n} paused
+t7fb84985 =
+    { $n ->
+        [one] призупинено: { $n }
+        [few] призупинено: { $n }
+        [many] призупинено: { $n }
+       *[other] призупинено: { $n }
+    }
+
+# Client paused
+te9192f58 = Клієнта призупинено
+
+# Take all back
+t4a2d0a34 = Відкликати всі
 
 # in the background
 t04874b67 = у фоні
@@ -202,8 +238,35 @@ t1a30bf3b = завершено
 # for {n} min more
 t955674cd = ще { $n } хв
 
+# Paused
+tde281feb = Призупинено
+
 # Take back
 t0650c681 = Відкликати
+
+# Clear group
+tc2447199 = Зняти вибір із групи
+
+# Select all
+t6af21072 = Вибрати всі
+
+# given already
+t0912be5e = уже надано
+
+# No host chosen yet.
+t99637c8e = Хости ще не вибрано.
+
+# {n} host chosen | {n} hosts chosen
+tf9b0b9a0 =
+    { $n ->
+        [one] Вибрано { $n } хост
+        [few] Вибрано { $n } хости
+        [many] Вибрано { $n } хостів
+       *[other] Вибрано { $n } хоста
+    }
+
+# Clear
+t04a57fc2 = Очистити
 
 # Until I take it back
 taacfb8db = Доки я не відкличу
@@ -217,8 +280,20 @@ t0c43fb4a = 1 година
 # 8 hours
 t63affd14 = 8 годин
 
-# Host
-t302af18f = Хост
+# Give access
+te96c4c6e = Надати доступ
+
+# Give access to {n} host | Give access to {n} hosts
+t58ec7fe6 =
+    { $n ->
+        [one] Надати доступ до { $n } хоста
+        [few] Надати доступ до { $n } хостів
+        [many] Надати доступ до { $n } хостів
+       *[other] Надати доступ до { $n } хоста
+    }
+
+# Hosts
+tcf9aefb4 = Хости
 
 # To
 t41f59644 = Кому
@@ -265,14 +340,14 @@ t2d9c8c34 = через SFTP; у режимі «Запитувати про ри�
 # Commands
 t971550f3 = Команди
 
+# Given to {client} already: {hosts}. Giving them again replaces what they had.
+tebca595f = Уже надано { $client }: { $hosts }. Повторне надання замінить попередні налаштування.
+
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
 
 # Cancel
 t35afca3b = Скасувати
-
-# Give access
-te96c4c6e = Надати доступ
 
 # When AI runs a command
 tc94fc353 = Коли AI виконує команду
@@ -1255,15 +1330,6 @@ tb71f4415 = Пошук інших SSH-застосунків…
 # No other SSH app with hosts was found here.
 tecba4271 = Інших SSH-застосунків із хостами тут не знайдено.
 
-# {n} host | {n} hosts
-t2489674e =
-    { $n ->
-        [one] { $n } хост
-        [few] { $n } хости
-        [many] { $n } хостів
-       *[other] { $n } хоста
-    }
-
 # Import hosts
 t956d1e67 = Імпорт хостів
 
@@ -1810,9 +1876,6 @@ tf375b5ad =
        *[other] Вибрано: { $n }
     }
 
-# Clear
-t04a57fc2 = Очистити
-
 # Tick the commands to add; each becomes a snippet of your own.
 t71ce4a51 = Позначте команди для додавання; кожна стане вашим власним сніпетом.
 
@@ -2124,9 +2187,6 @@ t29ccb392 = Видалити таблицю
 
 # Untitled note
 t4ce277c4 = Нотатка без назви
-
-# Hosts
-tcf9aefb4 = Хости
 
 # Recent
 t50e888fe = Недавні
@@ -3253,14 +3313,8 @@ t36133970 = Cmd+click — додати або прибрати
 # Ctrl+click to add or take away
 t47785603 = Ctrl+click — додати або прибрати
 
-# {n} host chosen | {n} hosts chosen
-tf9b0b9a0 =
-    { $n ->
-        [one] Вибрано { $n } хост
-        [few] Вибрано { $n } хости
-        [many] Вибрано { $n } хостів
-       *[other] Вибрано { $n } хоста
-    }
+# Give to AI…
+ta74a1e27 = Надати AI…
 
 # Run on the {n} host of {group} | Run on the {n} hosts of {group}
 t4ecd858a =
@@ -4071,9 +4125,6 @@ ta805a0f4 =
 
 # Let it go on
 t6f36d148 = Продовжити
-
-# Pause
-t44f9bf2d = Призупинити
 
 # Take access back
 td619baa7 = Відкликати доступ
