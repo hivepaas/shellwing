@@ -267,7 +267,7 @@ pub fn tools() -> Value {
         {
             "name": "read_file",
             "title": "Read a file",
-            "description": format!("A file on a host, or a part of it: text as it is, anything else in base64. It gives up to length bytes from offset ({} at the most, {} if not given), and says where the rest begins.", super::files::size(super::files::MOST_READ as u64), super::files::size(super::files::READ as u64)),
+            "description": format!("A file on a host, or a part of it: text as it is, anything else in base64. It gives up to length bytes from offset ({} at the most, {} if not given), and says where the rest begins. What it reads comes to you: to copy a large file or a folder to this computer, use download, whose bytes do not.", super::files::size(super::files::MOST_READ as u64), super::files::size(super::files::READ as u64)),
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -283,7 +283,7 @@ pub fn tools() -> Value {
         {
             "name": "write_file",
             "title": "Write a file",
-            "description": format!("Writes a file on a host: as a new file (create; one there already is an error), over what is there (overwrite, the default), or after it (append); the folders it goes in are made where they are not, as mkdir -p would. content is text, or base64 with encoding base64; {} at the most. The user may have it wait until they allow it.", super::files::size(super::files::MOST_WRITE as u64)),
+            "description": format!("Writes a file on a host: as a new file (create; one there already is an error), over what is there (overwrite, the default), or after it (append); the folders it goes in are made where they are not, as mkdir -p would. content is text, or base64 with encoding base64; {} at the most at once (append adds more). Its content goes through you: for a large file, or one on this computer already, use upload, whose bytes do not; to make a large file there, a command (run) can. The user may have it wait until they allow it.", super::files::size(super::files::MOST_WRITE as u64)),
             "inputSchema": {
                 "type": "object",
                 "properties": {

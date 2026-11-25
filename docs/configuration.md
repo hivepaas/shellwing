@@ -1400,7 +1400,10 @@ they print:
 - `write_file(host, path, content, encoding, mode)`: writes a file, as a new
   one (`create`), over what is there (`overwrite`, the default) or after it
   (`append`); `content` is text, or base64 with `encoding` `base64`; 8 MB at
-  the most. The folders it goes in are made where they are not, as
+  the most at once, and `append` adds more. Its content goes through the
+  model, so its tool description and a write over 8 MB send the agent to
+  `upload` for a large file or one on this computer (and `read_file`'s to
+  `download`), or to a command that makes the file there. The folders it goes in are made where they are not, as
   `mkdir -p` would, and its answer names them. One that failed says why: the
   file is there already (`create`), or something on its way is not a folder.
 - `upload(host, local_path, remote_path, mode)` and

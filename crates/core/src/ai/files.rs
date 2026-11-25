@@ -382,7 +382,7 @@ pub fn decode(content: &str, encoding: Option<&str>) -> Result<Vec<u8>, String> 
     };
     if bytes.len() > MOST_WRITE {
         return Err(format!(
-            "more than {} to write at once",
+            "more than {} to write at once: write the rest with mode append, copy a file from this computer with upload (its bytes do not go through you), or make it there with a command",
             size(MOST_WRITE as u64)
         ));
     }
@@ -393,6 +393,38 @@ pub fn decode(content: &str, encoding: Option<&str>) -> Result<Vec<u8>, String> 
 mod tests {
     use super::*;
     use std::time::{Duration, UNIX_EPOCH};
+
+    /// More than a write takes says where to go instead: append, upload
+    /// (its bytes do not go through the model), or a command there. The
+    /// tools say so before it is tried, and read_file points to download.
+    #[test]
+    fn too_much_to_write_says_where_to_go() {
+        let why = decode(&"x".repeat(MOST_WRITE + 1), None).expect_err("too much");
+        assert!(why.contains("append") && why.contains("upload"), "{why}");
+        assert_eq!(
+            decode(&"x".repeat(MOST_WRITE), None).map(|b| b.len()),
+            Ok(MOST_WRITE)
+        );
+        let tools = super::super::mcp::tools();
+        let said = |name: &str| {
+            tools
+                .as_array()
+                .and_then(|t| t.iter().find(|t| t["name"] == name))
+                .and_then(|t| t["description"].as_str())
+                .unwrap_or_default()
+                .to_string()
+        };
+        assert!(
+            said("write_file").contains("use upload"),
+            "{}",
+            said("write_file")
+        );
+        assert!(
+            said("read_file").contains("use download"),
+            "{}",
+            said("read_file")
+        );
+    }
 
     #[test]
     fn a_folder_a_line_each() {
