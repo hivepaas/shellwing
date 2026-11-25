@@ -70,12 +70,6 @@ tbea0b112 = Từ chối
 # Stop
 t4b7f7705 = Dừng
 
-# It printed nothing.
-tbb876a9f = Lệnh không in ra gì.
-
-# Nothing printed yet.
-t1051cbec = Chưa in ra gì.
-
 # Copy output
 t64749f61 = Sao chép đầu ra
 
@@ -3679,6 +3673,24 @@ t6246d272 = Cmd+W để đóng
 # Ctrl+W close it
 t82a6adaf = Ctrl+W để đóng
 
+# Find
+t3e1cd17a = Tìm
+
+# Invalid pattern
+t5b9dcaca = Mẫu không hợp lệ
+
+# No results
+tdd4785bc = Không có kết quả
+
+# {current} of {total}{more}
+ta6206114 = { $current } / { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = Tìm thấy { $total }{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Về cuối (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = Một chương trình toàn màn hình đang chạy trong pane này: thoát nó rồi thử lại.
 
@@ -3759,21 +3771,6 @@ ta04e62fb = Đã cài { $key } lên { $host }. Từ giờ đăng nhập { $host 
 
 # Use it for {host}
 t704df588 = Dùng cho { $host }
-
-# Find
-t3e1cd17a = Tìm
-
-# Invalid pattern
-t5b9dcaca = Mẫu không hợp lệ
-
-# No results
-tdd4785bc = Không có kết quả
-
-# {current} of {total}{more}
-ta6206114 = { $current } / { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = Tìm thấy { $total }{ $more }
 
 # Match case (Alt+C)
 t692d685e = Phân biệt hoa thường (Alt+C)
@@ -3909,9 +3906,6 @@ t1165de29 = Chia xuống dưới
 
 # Close Pane
 t21a947cf = Đóng khung
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ Về cuối (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } muốn chạy một lệnh trên { $host }: lệnh đang chờ bạn trong Hoạt động AI.

@@ -79,7 +79,7 @@ const FONT_FALLBACKS: &[&str] = &[
     "DejaVu Sans Mono",
 ];
 /// Lines per wheel notch.
-const WHEEL_LINES: f32 = 3.0;
+pub(crate) const WHEEL_LINES: f32 = 3.0;
 /// How long a refused paste waits for the user to paste again to confirm.
 const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 /// How long the font size stays on screen after zooming.
@@ -91,9 +91,9 @@ const LOG_NOTICE: Duration = Duration::from_secs(6);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
 /// The scrollbar stays this long after scrolling stops (with `scrollbar = "auto"`).
-const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
+pub(crate) const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
 /// The pointer this close to the right edge shows the scrollbar.
-const SCROLLBAR_ZONE: f32 = 14.;
+pub(crate) const SCROLLBAR_ZONE: f32 = 14.;
 const SCROLLBAR_MIN_THUMB: f32 = 24.;
 
 /// A page for the terminal's HTML, in the pane's colors.
@@ -114,9 +114,39 @@ fn html_page(title: &str, body: &[u8], colors: &shellwing_term::Colors) -> Vec<u
     page
 }
 
+/// A selection being dragged with the left button. GPUI tells an element of
+/// the pointer only while it is over it, so the view listens to the whole
+/// window meanwhile: the selection follows the pointer out of the grid, and
+/// above or below it the view scrolls, a few rows a beat.
+pub(crate) struct Drag {
+    /// Where the pointer is, in the window.
+    pub at: Point<Pixels>,
+    pub mods: Mods,
+    /// The view scrolls by itself, the pointer past an edge.
+    pub scrolling: bool,
+}
+
+/// How often a selection dragged past an edge scrolls.
+pub(crate) const DRAG_BEAT: Duration = Duration::from_millis(50);
+
+/// Rows to scroll a beat for a pointer `y` px below the grid's top, the
+/// grid `height` px tall: negative above it, 0 within it, more the further
+/// out it is (up to 5).
+pub(crate) fn drag_scroll(y: f32, height: f32, row: f32) -> i32 {
+    let past = if y < 0. {
+        -y
+    } else if y > height {
+        y - height
+    } else {
+        return 0;
+    };
+    let rows = (past / row.max(1.)).ceil().clamp(1., 5.) as i32;
+    if y < 0. { -rows } else { rows }
+}
+
 /// The scrollbar thumb's top and height in a track `track` px tall, or None
 /// when everything fits (no history, or the alternate screen).
-fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
+pub(crate) fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
     if pos.total <= pos.len || track <= 0. {
         return None;
     }
@@ -128,7 +158,7 @@ fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
 }
 
 /// The first history row to show with the thumb's top at `top`.
-fn row_for_thumb(pos: ScrollPos, track: f32, top: f32) -> usize {
+pub(crate) fn row_for_thumb(pos: ScrollPos, track: f32, top: f32) -> usize {
     let Some((_, h)) = thumb(pos, track) else {
         return 0;
     };
@@ -164,7 +194,7 @@ fn term_button(b: MouseButton) -> Option<TermButton> {
 /// A piece of a row painted with one shaped line: a stretch of narrow cells, or a
 /// single wide glyph given two cells of advance.
 #[derive(Clone)]
-struct Segment {
+pub(crate) struct Segment {
     col: u16,
     wide: bool,
     text: SharedString,
@@ -172,20 +202,20 @@ struct Segment {
 }
 
 /// A row converted to GPUI text runs, kept while the frame keeps sharing the row.
-struct PaintRow {
+pub(crate) struct PaintRow {
     source: Arc<Row>,
-    segments: Vec<Segment>,
+    pub segments: Vec<Segment>,
 }
 
 /// A theme's gradient rendered for one aspect ratio.
-struct GradientImage {
+pub(crate) struct GradientImage {
     key: (String, u32, u32),
     image: Arc<RenderImage>,
 }
 
 /// The image for `gradient` at `size`, rendered again only when the theme or
 /// the aspect ratio changed.
-fn gradient_image(
+pub(crate) fn gradient_image(
     cache: &RefCell<Option<GradientImage>>,
     theme: &Theme,
     gradient: &Gradient,
@@ -346,6 +376,7 @@ pub struct TermView {
     echo: Vec<TermHandle>,
     /// The right-click menu, open where it was asked for.
     menu: Option<Point<Pixels>>,
+    drag: Option<Drag>,
 }
 
 /// Finding text on the screen and in its history.
@@ -357,9 +388,9 @@ struct FindBar {
 /// How text is found, the same in every pane: the last choice stays for the
 /// next find bar.
 #[derive(Clone, Copy, Default)]
-struct FindOptions {
-    match_case: bool,
-    regex: bool,
+pub(crate) struct FindOptions {
+    pub match_case: bool,
+    pub regex: bool,
 }
 
 impl gpui::Global for FindOptions {}
@@ -392,6 +423,169 @@ impl gpui::EventEmitter<AllowAsks> for TermView {}
 impl gpui::EventEmitter<Unplaced> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
 impl gpui::EventEmitter<PaneCommand> for TermView {}
+
+/// Converts the rows of `frame` that changed since `paint_rows` was made into
+/// GPUI text runs, in `theme`'s colors and the font `base`.
+pub(crate) fn convert_rows(
+    frame: &Frame,
+    theme: &Theme,
+    base: &Font,
+    paint_rows: &mut Vec<PaintRow>,
+) {
+    let rows = &frame.rows;
+    let selection_bg = hsla(theme_rgb(theme.selection_background));
+    let selection_fg = theme.selection_foreground.map(|c| hsla(theme_rgb(c)));
+    paint_rows.truncate(rows.len());
+    for (i, row) in rows.iter().enumerate() {
+        if paint_rows
+            .get(i)
+            .is_some_and(|p| Arc::ptr_eq(&p.source, row))
+        {
+            continue;
+        }
+        let mut segments: Vec<Segment> = Vec::new();
+        let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
+        let mut offset = 0;
+        for r in &row.runs {
+            let text = &row.text[offset..offset + r.len];
+            offset += r.len;
+            let run = TextRun {
+                len: r.len,
+                font: Font {
+                    weight: if r.bold {
+                        FontWeight::BOLD
+                    } else {
+                        FontWeight::NORMAL
+                    },
+                    style: if r.italic {
+                        FontStyle::Italic
+                    } else {
+                        FontStyle::Normal
+                    },
+                    ..base.clone()
+                },
+                color: match (selection_fg, r.found) {
+                    (Some(c), _) if r.selected => c,
+                    (_, Found::Match | Found::Current) if !r.selected => {
+                        rgb(colors().find_text).into()
+                    }
+                    _ => hsla(r.fg),
+                },
+                background_color: match r.found {
+                    _ if r.selected => Some(selection_bg),
+                    Found::Current => Some(rgb(colors().find_current).into()),
+                    Found::Match => Some(rgb(colors().find_match).into()),
+                    Found::No => r.bg.map(hsla),
+                },
+                underline: r.underline.then(|| UnderlineStyle {
+                    thickness: px(1.),
+                    color: None,
+                    wavy: false,
+                }),
+                strikethrough: None,
+            };
+            if r.wide {
+                if let Some((col, t, runs)) = narrow.take() {
+                    segments.push(Segment {
+                        col,
+                        wide: false,
+                        text: t.into(),
+                        runs,
+                    });
+                }
+                segments.push(Segment {
+                    col: r.col,
+                    wide: true,
+                    text: text.to_string().into(),
+                    runs: vec![run],
+                });
+            } else {
+                let seg = narrow.get_or_insert_with(|| (r.col, String::new(), Vec::new()));
+                seg.1.push_str(text);
+                seg.2.push(run);
+            }
+        }
+        if let Some((col, t, runs)) = narrow.take() {
+            segments.push(Segment {
+                col,
+                wide: false,
+                text: t.into(),
+                runs,
+            });
+        }
+        let p = PaintRow {
+            source: row.clone(),
+            segments,
+        };
+        if i < paint_rows.len() {
+            paint_rows[i] = p;
+        } else {
+            paint_rows.push(p);
+        }
+    }
+}
+
+/// The terminal font `family`, with fallbacks for glyphs it lacks. Missing
+/// fallback families are skipped by the text system.
+pub(crate) fn term_font(family: SharedString) -> Font {
+    Font {
+        fallbacks: Some(FontFallbacks::from_fonts(
+            FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
+        )),
+        ..font(family)
+    }
+}
+
+/// A cell of `font` at `font_size`: as wide as its M, as tall as the line
+/// height says.
+pub(crate) fn cell_size(
+    window: &mut Window,
+    font: Font,
+    font_size: f32,
+    line_height: f32,
+) -> (Pixels, Pixels) {
+    let run = TextRun {
+        len: 1,
+        font,
+        // Measured, never drawn.
+        color: rgb(0xffffff).into(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let line = window
+        .text_system()
+        .shape_line("M".into(), px(font_size), &[run], None);
+    (line.width, px((font_size * line_height).round()))
+}
+
+/// Paints `rows` (as [`convert_rows`] made them) with their top-left at
+/// `origin`, each cell `cell` in size.
+pub(crate) fn paint_segments(
+    rows: &[Vec<Segment>],
+    origin: Point<Pixels>,
+    (cw, ch): (Pixels, Pixels),
+    font_size: Pixels,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    for (y, segments) in rows.iter().enumerate() {
+        for seg in segments {
+            let at = point(origin.x + cw * seg.col as f32, origin.y + ch * y as f32);
+            // force_width keeps every glyph on the cell grid; a wide glyph
+            // advances two cells.
+            let advance = if seg.wide { cw * 2. } else { cw };
+            let line = window.text_system().shape_line(
+                seg.text.clone(),
+                font_size,
+                &seg.runs,
+                Some(advance),
+            );
+            let _ = line.paint_background(at, ch, TextAlign::Left, None, window, cx);
+            let _ = line.paint(at, ch, TextAlign::Left, None, window, cx);
+        }
+    }
+}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -480,6 +674,7 @@ impl TermView {
             broadcast: None,
             echo: vec![],
             menu: None,
+            drag: None,
         }
     }
 
@@ -2084,12 +2279,7 @@ impl TermView {
     /// The terminal font, with fallbacks for glyphs it lacks. Missing fallback
     /// families are skipped by the text system.
     fn base_font(&self) -> Font {
-        Font {
-            fallbacks: Some(FontFallbacks::from_fonts(
-                FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
-            )),
-            ..font(self.font_family.clone())
-        }
+        term_font(self.font_family.clone())
     }
 
     /// Picks the terminal font: $SHELLWING_FONT, else the configured family if
@@ -2099,7 +2289,7 @@ impl TermView {
         Self::choose_font(window, None).to_string()
     }
 
-    fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
+    pub(crate) fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
         if let Ok(f) = std::env::var("SHELLWING_FONT") {
             return f.into();
         }
@@ -2470,21 +2660,11 @@ impl TermView {
 
     fn measure_cell(&mut self, window: &mut Window) {
         self.font_family = Self::choose_font(window, self.look.font_family.as_deref());
-        let run = TextRun {
-            len: 1,
-            font: self.base_font(),
-            // Measured, never drawn.
-            color: rgb(0xffffff).into(),
-            background_color: None,
-            underline: None,
-            strikethrough: None,
-        };
-        let line = window
-            .text_system()
-            .shape_line("M".into(), px(self.font_size()), &[run], None);
-        self.cell = (
-            line.width,
-            px((self.font_size() * self.look.line_height).round()),
+        self.cell = cell_size(
+            window,
+            self.base_font(),
+            self.font_size(),
+            self.look.line_height,
         );
     }
 
@@ -2514,100 +2694,12 @@ impl TermView {
         if let Some(f) = self.term.take_frame() {
             self.frame = f;
         }
-        let rows = &self.frame.rows;
-        let theme = &self.look.theme;
-        let selection_bg = hsla(theme_rgb(theme.selection_background));
-        let selection_fg = theme.selection_foreground.map(|c| hsla(theme_rgb(c)));
-        self.paint_rows.truncate(rows.len());
-        for (i, row) in rows.iter().enumerate() {
-            if self
-                .paint_rows
-                .get(i)
-                .is_some_and(|p| Arc::ptr_eq(&p.source, row))
-            {
-                continue;
-            }
-            let base = self.base_font();
-            let mut segments: Vec<Segment> = Vec::new();
-            let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
-            let mut offset = 0;
-            for r in &row.runs {
-                let text = &row.text[offset..offset + r.len];
-                offset += r.len;
-                let run = TextRun {
-                    len: r.len,
-                    font: Font {
-                        weight: if r.bold {
-                            FontWeight::BOLD
-                        } else {
-                            FontWeight::NORMAL
-                        },
-                        style: if r.italic {
-                            FontStyle::Italic
-                        } else {
-                            FontStyle::Normal
-                        },
-                        ..base.clone()
-                    },
-                    color: match (selection_fg, r.found) {
-                        (Some(c), _) if r.selected => c,
-                        (_, Found::Match | Found::Current) if !r.selected => {
-                            rgb(colors().find_text).into()
-                        }
-                        _ => hsla(r.fg),
-                    },
-                    background_color: match r.found {
-                        _ if r.selected => Some(selection_bg),
-                        Found::Current => Some(rgb(colors().find_current).into()),
-                        Found::Match => Some(rgb(colors().find_match).into()),
-                        Found::No => r.bg.map(hsla),
-                    },
-                    underline: r.underline.then(|| UnderlineStyle {
-                        thickness: px(1.),
-                        color: None,
-                        wavy: false,
-                    }),
-                    strikethrough: None,
-                };
-                if r.wide {
-                    if let Some((col, t, runs)) = narrow.take() {
-                        segments.push(Segment {
-                            col,
-                            wide: false,
-                            text: t.into(),
-                            runs,
-                        });
-                    }
-                    segments.push(Segment {
-                        col: r.col,
-                        wide: true,
-                        text: text.to_string().into(),
-                        runs: vec![run],
-                    });
-                } else {
-                    let seg = narrow.get_or_insert_with(|| (r.col, String::new(), Vec::new()));
-                    seg.1.push_str(text);
-                    seg.2.push(run);
-                }
-            }
-            if let Some((col, t, runs)) = narrow.take() {
-                segments.push(Segment {
-                    col,
-                    wide: false,
-                    text: t.into(),
-                    runs,
-                });
-            }
-            let p = PaintRow {
-                source: row.clone(),
-                segments,
-            };
-            if i < self.paint_rows.len() {
-                self.paint_rows[i] = p;
-            } else {
-                self.paint_rows.push(p);
-            }
-        }
+        convert_rows(
+            &self.frame,
+            &self.look.theme,
+            &self.base_font(),
+            &mut self.paint_rows,
+        );
     }
 
     /// A window position relative to the grid's top-left corner, in the
@@ -2647,6 +2739,95 @@ impl TermView {
             mods: mods(&e.modifiers),
             link: link_mod(&e.modifiers),
         });
+        // A press that selects (Shift selects where the program takes the mouse).
+        if e.button == MouseButton::Left
+            && !link_mod(&e.modifiers)
+            && (!self.frame.mouse_tracking || e.modifiers.shift)
+        {
+            self.drag = Some(Drag {
+                at: e.position,
+                mods: mods(&e.modifiers),
+                scrolling: false,
+            });
+            cx.notify();
+        }
+    }
+
+    /// The pointer moved, out of the grid, while a selection is dragged.
+    fn drag_outside(&mut self, e: &MouseMoveEvent, cx: &mut Context<Self>) {
+        if e.pressed_button != Some(MouseButton::Left) {
+            self.drag = None;
+            return;
+        }
+        let Some(d) = &mut self.drag else {
+            return;
+        };
+        d.at = e.position;
+        let (x, y) = self.grid_pos(e.position);
+        self.term.mouse(MouseInput {
+            action: MouseAction::Motion,
+            button: Some(TermButton::Left),
+            x,
+            y,
+            mods: mods(&e.modifiers),
+            link: false,
+        });
+        self.drag_scrolls(cx);
+    }
+
+    /// Scrolls, a beat at a time, while the dragging pointer is above or below
+    /// the grid, the selection following.
+    fn drag_scrolls(&mut self, cx: &mut Context<Self>) {
+        if !self.drag_step(false) {
+            return;
+        }
+        if let Some(d) = &mut self.drag {
+            d.scrolling = true;
+        }
+        cx.spawn(async move |this, cx| {
+            loop {
+                cx.background_executor().timer(DRAG_BEAT).await;
+                if !this.update(cx, |v, _| v.drag_step(true)).unwrap_or(false) {
+                    break;
+                }
+            }
+        })
+        .detach();
+    }
+
+    /// One beat of [`Self::drag_scrolls`]: whether it goes on. `beat`: the
+    /// scrolling's own, rather than whether one should start.
+    fn drag_step(&mut self, beat: bool) -> bool {
+        let Some(d) = &self.drag else {
+            return false;
+        };
+        if d.scrolling != beat || self.frame.alternate {
+            return false;
+        }
+        let y = f32::from(d.at.y - self.grid_origin.get().y);
+        let rows = drag_scroll(y, f32::from(self.area.get().height), f32::from(self.cell.1));
+        if rows == 0 {
+            if let Some(d) = &mut self.drag {
+                d.scrolling = false;
+            }
+            return false;
+        }
+        if beat {
+            let (at, m) = (d.at, d.mods);
+            let (x, y) = self.grid_pos(at);
+            // Shift: the history scrolls, whatever the program asked of the wheel.
+            self.term
+                .wheel(rows as f32, x, y, Mods { shift: true, ..m });
+            self.term.mouse(MouseInput {
+                action: MouseAction::Motion,
+                button: Some(TermButton::Left),
+                x,
+                y,
+                mods: m,
+                link: false,
+            });
+        }
+        true
     }
 
     fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
@@ -2657,6 +2838,9 @@ impl TermView {
         if self.scrollbar_grab.take().is_some() {
             self.reveal_scrollbar(cx);
             return;
+        }
+        if e.button == MouseButton::Left {
+            self.drag = None;
         }
         let (x, y) = self.grid_pos(e.position);
         let button = term_button(e.button);
@@ -2682,6 +2866,9 @@ impl TermView {
         if hover != self.scrollbar_hover {
             self.scrollbar_hover = hover;
             cx.notify();
+        }
+        if let Some(d) = &mut self.drag {
+            d.at = e.position;
         }
         self.last_mouse = Some((x, y));
         if link_mod(&e.modifiers) {
@@ -2971,6 +3158,7 @@ impl Render for TermView {
             .filter(|_| !self.writer.is_secret_prompt());
         let base_font = self.base_font();
         let entity = cx.entity();
+        let dragging = self.drag.is_some().then(|| cx.entity());
         let focus = self.focus.clone();
         let probe = self.probe.clone();
         let grid_origin = self.grid_origin.clone();
@@ -3048,32 +3236,17 @@ impl Render for TermView {
                             gpui::ElementInputHandler::new(bounds, entity),
                             cx,
                         );
-                        for (y, segments) in rows.iter().enumerate() {
-                            for seg in segments {
-                                let origin = point(
-                                    bounds.origin.x + cw * seg.col as f32,
-                                    bounds.origin.y + ch * y as f32,
-                                );
-                                // force_width keeps every glyph on the cell grid; a wide
-                                // glyph advances two cells.
-                                let advance = if seg.wide { cw * 2. } else { cw };
-                                let line = window.text_system().shape_line(
-                                    seg.text.clone(),
-                                    font_size,
-                                    &seg.runs,
-                                    Some(advance),
-                                );
-                                let _ = line.paint_background(
-                                    origin,
-                                    ch,
-                                    TextAlign::Left,
-                                    None,
-                                    window,
-                                    cx,
-                                );
-                                let _ = line.paint(origin, ch, TextAlign::Left, None, window, cx);
-                            }
+                        // A selection dragged out of the grid goes on following.
+                        if let Some(view) = dragging {
+                            window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+                                if phase == gpui::DispatchPhase::Bubble
+                                    && !full.contains(&e.position)
+                                {
+                                    view.update(cx, |v, cx| v.drag_outside(e, cx));
+                                }
+                            });
                         }
+                        paint_segments(&rows, bounds.origin, (cw, ch), font_size, window, cx);
                         if let Some(link) = hover {
                             let o = point(
                                 bounds.origin.x + cw * link.start as f32,

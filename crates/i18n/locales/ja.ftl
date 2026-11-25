@@ -70,12 +70,6 @@ tbea0b112 = 拒否
 # Stop
 t4b7f7705 = 停止
 
-# It printed nothing.
-tbb876a9f = 何も出力されませんでした。
-
-# Nothing printed yet.
-t1051cbec = まだ何も出力されていません。
-
 # Copy output
 t64749f61 = 出力をコピー
 
@@ -3679,6 +3673,24 @@ t6246d272 = Cmd+W 閉じる
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 閉じる
 
+# Find
+t3e1cd17a = 検索
+
+# Invalid pattern
+t5b9dcaca = 無効なパターン
+
+# No results
+tdd4785bc = 結果なし
+
+# {current} of {total}{more}
+ta6206114 = { $current } / { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total } 件{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ 最下部に戻る（Shift+End）
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = このペインではフルスクリーンのプログラムが動作中です。終了してからもう一度お試しください。
 
@@ -3759,21 +3771,6 @@ ta04e62fb = { $key } を { $host } にインストールしました。今後 { 
 
 # Use it for {host}
 t704df588 = { $host } で使用
-
-# Find
-t3e1cd17a = 検索
-
-# Invalid pattern
-t5b9dcaca = 無効なパターン
-
-# No results
-tdd4785bc = 結果なし
-
-# {current} of {total}{more}
-ta6206114 = { $current } / { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total } 件{ $more }
 
 # Match case (Alt+C)
 t692d685e = 大文字と小文字を区別（Alt+C）
@@ -3909,9 +3906,6 @@ t1165de29 = 下に分割
 
 # Close Pane
 t21a947cf = ペインを閉じる
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ 最下部に戻る（Shift+End）
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } が { $host } でコマンドを実行しようとしています。AI アクティビティで指示を待っています。

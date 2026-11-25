@@ -70,12 +70,6 @@ tbea0b112 = 거부
 # Stop
 t4b7f7705 = 중지
 
-# It printed nothing.
-tbb876a9f = 출력된 내용이 없습니다.
-
-# Nothing printed yet.
-t1051cbec = 아직 출력된 내용이 없습니다.
-
 # Copy output
 t64749f61 = 출력 복사
 
@@ -3679,6 +3673,24 @@ t6246d272 = Cmd+W 닫기
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 닫기
 
+# Find
+t3e1cd17a = 찾기
+
+# Invalid pattern
+t5b9dcaca = 잘못된 패턴
+
+# No results
+tdd4785bc = 결과 없음
+
+# {current} of {total}{more}
+ta6206114 = { $current }/{ $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total }개 찾음{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ 맨 아래로 (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = 이 창에서 전체 화면 프로그램이 실행 중입니다. 종료한 뒤 다시 시도하세요.
 
@@ -3759,21 +3771,6 @@ ta04e62fb = { $host }에 { $key }을(를) 설치했습니다. 이제부터 이 �
 
 # Use it for {host}
 t704df588 = { $host }에 사용
-
-# Find
-t3e1cd17a = 찾기
-
-# Invalid pattern
-t5b9dcaca = 잘못된 패턴
-
-# No results
-tdd4785bc = 결과 없음
-
-# {current} of {total}{more}
-ta6206114 = { $current }/{ $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total }개 찾음{ $more }
 
 # Match case (Alt+C)
 t692d685e = 대/소문자 구분 (Alt+C)
@@ -3909,9 +3906,6 @@ t1165de29 = 아래로 분할
 
 # Close Pane
 t21a947cf = 창 닫기
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ 맨 아래로 (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }이(가) { $host }에서 명령을 실행하려고 합니다. AI 활동에서 지시를 기다리고 있습니다.

@@ -70,12 +70,6 @@ tbea0b112 = Reddet
 # Stop
 t4b7f7705 = Durdur
 
-# It printed nothing.
-tbb876a9f = Hiç çıktı vermedi.
-
-# Nothing printed yet.
-t1051cbec = Henüz çıktı yok.
-
 # Copy output
 t64749f61 = Çıktıyı kopyala
 
@@ -3776,6 +3770,24 @@ t6246d272 = Cmd+W kapat
 # Ctrl+W close it
 t82a6adaf = Ctrl+W kapat
 
+# Find
+t3e1cd17a = Bul
+
+# Invalid pattern
+t5b9dcaca = Geçersiz desen
+
+# No results
+tdd4785bc = Sonuç yok
+
+# {current} of {total}{more}
+ta6206114 = { $current } / { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total } bulundu{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ En alta dön (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = Bu bölmede tam ekran bir program çalışıyor: ondan çıkın, sonra yeniden deneyin.
 
@@ -3858,21 +3870,6 @@ ta04e62fb = { $key }, { $host } üzerine kuruldu. Bundan sonra { $host } üzerin
 
 # Use it for {host}
 t704df588 = { $host } için kullan
-
-# Find
-t3e1cd17a = Bul
-
-# Invalid pattern
-t5b9dcaca = Geçersiz desen
-
-# No results
-tdd4785bc = Sonuç yok
-
-# {current} of {total}{more}
-ta6206114 = { $current } / { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total } bulundu{ $more }
 
 # Match case (Alt+C)
 t692d685e = Büyük/küçük harf eşleştir (Alt+C)
@@ -4012,9 +4009,6 @@ t1165de29 = Aşağı böl
 
 # Close Pane
 t21a947cf = Bölmeyi kapat
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ En alta dön (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }, { $host } üzerinde bir komut çalıştırmak istiyor: komut AI etkinliği içinde sizi bekliyor.

@@ -70,12 +70,6 @@ tbea0b112 = Tolak
 # Stop
 t4b7f7705 = Hentikan
 
-# It printed nothing.
-tbb876a9f = Tidak ada keluaran.
-
-# Nothing printed yet.
-t1051cbec = Belum ada keluaran.
-
 # Copy output
 t64749f61 = Salin keluaran
 
@@ -3733,6 +3727,24 @@ t6246d272 = Cmd+W tutup
 # Ctrl+W close it
 t82a6adaf = Ctrl+W tutup
 
+# Find
+t3e1cd17a = Cari
+
+# Invalid pattern
+t5b9dcaca = Pola tidak valid
+
+# No results
+tdd4785bc = Tidak ada hasil
+
+# {current} of {total}{more}
+ta6206114 = { $current } dari { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total } ditemukan{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Kembali ke bawah (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = Program layar penuh sedang berjalan di panel ini: keluar darinya, lalu coba lagi.
 
@@ -3813,21 +3825,6 @@ ta04e62fb = { $key } terpasang di { $host }. Masuk ke { $host } dengan kunci ini
 
 # Use it for {host}
 t704df588 = Gunakan untuk { $host }
-
-# Find
-t3e1cd17a = Cari
-
-# Invalid pattern
-t5b9dcaca = Pola tidak valid
-
-# No results
-tdd4785bc = Tidak ada hasil
-
-# {current} of {total}{more}
-ta6206114 = { $current } dari { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total } ditemukan{ $more }
 
 # Match case (Alt+C)
 t692d685e = Cocokkan huruf besar/kecil (Alt+C)
@@ -3966,9 +3963,6 @@ t1165de29 = Bagi ke Bawah
 
 # Close Pane
 t21a947cf = Tutup Panel
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ Kembali ke bawah (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } ingin menjalankan perintah di { $host }: perintahnya ada di Aktivitas AI, menunggu Anda.

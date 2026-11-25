@@ -221,3 +221,57 @@ scenario!(
         ui.wait_for("you said: pasted words");
     }
 );
+
+/// A point above the active terminal, out of it.
+fn above_the_terminal(ui: &mut Ui) -> gpui::Point<gpui::Pixels> {
+    let top = ui.view(|v, _| v.bounds().origin);
+    assert!(top.y > gpui::px(12.), "room above the terminal: {top:?}");
+    gpui::point(top.x + gpui::px(20.), top.y - gpui::px(10.))
+}
+
+scenario!(
+    /// A drag from a word up and out of the terminal in one quick move still
+    /// selects up to the top row: the terminal follows the pointer out of
+    /// itself.
+    a_drag_out_of_the_terminal_keeps_selecting,
+    |ui| {
+        let (_server, row, start) = long_line(ui);
+        let first = ui
+            .view(|v, _| v.latest_frame())
+            .rows
+            .iter()
+            .map(|r| r.text.trim().to_string())
+            .find(|t| !t.is_empty() && !t.contains("w00"))
+            .expect("a row with text above the long line");
+        let from = ui.cell_at(row, word(start, 2), 0.2);
+        let to = above_the_terminal(ui);
+        ui.flick(from, to, std::time::Duration::ZERO);
+        ui.shortcut("c");
+        ui.wait_until("the copy", |ui| ui.clipboard().is_some());
+        let copied = ui.clipboard().unwrap_or_default();
+        assert!(copied.contains(&first), "from the top row: {copied:?}");
+        assert!(copied.trim_end().ends_with("w00 w01"), "{copied:?}");
+    }
+);
+
+scenario!(
+    /// Held above the terminal, a drag scrolls its history, a few rows a beat,
+    /// the selection following up into it.
+    a_drag_held_above_scrolls_the_history,
+    |ui| {
+        let _server = signed_in(ui);
+        for i in 0..40 {
+            ui.line(&format!("n{i:02}"));
+        }
+        ui.wait_for("you said: n39");
+        let (row, col) = ui.find_text("you said: n39");
+        let from = ui.cell_at(row, col, 0.2);
+        let to = above_the_terminal(ui);
+        ui.flick(from, to, std::time::Duration::from_millis(2000));
+        assert!(ui.view(|v, _| v.latest_frame()).scrolled_back, "it scrolled");
+        ui.shortcut("c");
+        ui.wait_until("the copy", |ui| ui.clipboard().is_some());
+        let copied = ui.clipboard().unwrap_or_default();
+        assert!(copied.contains("you said: n00"), "into the history: {copied:?}");
+    }
+);
