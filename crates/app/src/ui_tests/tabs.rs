@@ -330,3 +330,72 @@ scenario!(
         });
     }
 );
+
+/// Opens `n` more tabs (Run on hosts ones, which connect to nothing).
+fn open_tabs(ui: &mut Ui, n: usize) {
+    for _ in 0..n {
+        ui.ws(|ws, window, cx| ws.open_run(vec![], window, cx));
+    }
+    ui.draw();
+    // The tabs' room is measured as they are drawn: drawn again with it.
+    ui.draw();
+}
+
+scenario!(
+    /// Many tabs share the title bar's room: each grows narrower, then is
+    /// its tile alone (the active one keeping its ✕), then they scroll, the
+    /// active one in view. The + stays in view throughout.
+    tabs_share_the_room,
+    |ui| {
+        ui.open();
+        ui.resize(1100., 700.);
+        open_tabs(ui, 2);
+        let roomy = ui.bounds("tab:0").size.width;
+        assert!(ui.find("tab-title:0").is_some(), "named");
+
+        open_tabs(ui, 6);
+        let shared = ui.bounds("tab:0").size.width;
+        assert!(shared < roomy, "narrower: {roomy:?} then {shared:?}");
+        assert!(ui.find("tab-title:0").is_some(), "still named");
+        let plus = ui.bounds("new-tab");
+        assert!(ui.bounds("tab:7").right() <= plus.left(), "all in view, the + after them");
+
+        open_tabs(ui, 14);
+        assert!(ui.find("tab-title:0").is_none(), "its tile alone");
+        assert_eq!(f32::from(ui.bounds("tab:0").size.width), 34.);
+        assert!(ui.find("tab-title:21").is_none());
+        assert!(ui.find("close-tab:21").is_some(), "the active one keeps its ✕");
+        let plus = ui.bounds("new-tab");
+        assert!(ui.bounds("tab:21").right() <= plus.left());
+
+        open_tabs(ui, 30);
+        let strip = ui.bounds("tab-strip");
+        let active = ui.bounds("tab:51");
+        assert!(
+            strip.left() <= active.left() && active.right() <= strip.right() + gpui::px(0.5),
+            "scrolled to the active one: {active:?} in {strip:?}"
+        );
+        assert!(ui.bounds("tab:0").right() < strip.left(), "the first ones scrolled away");
+        let window = ui.ws(|_, window, _| window.viewport_size());
+        assert!(ui.bounds("new-tab").right() <= window.width, "the + in view");
+    }
+);
+
+scenario!(
+    /// Tabs closed with the mouse keep the others' width until the pointer
+    /// leaves them, so the next ✕ comes under it; then they widen.
+    closing_tabs_keeps_their_width,
+    |ui| {
+        ui.open();
+        ui.resize(1100., 700.);
+        open_tabs(ui, 9);
+        let before = ui.bounds("tab:0").size.width;
+        ui.click("close-tab:8");
+        ui.draw();
+        assert_eq!(ui.tabs(), 8);
+        assert_eq!(ui.bounds("tab:0").size.width, before, "kept while the pointer is there");
+        ui.hover("run-view");
+        ui.draw();
+        assert!(ui.bounds("tab:0").size.width > before, "wider once it leaves");
+    }
+);
