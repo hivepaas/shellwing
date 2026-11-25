@@ -2458,14 +2458,14 @@ tfacf50d8 = Ще виконується: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = Зупинено до завершення: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = Перервано через { $s } с.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Виведено понад { $mb } MB: решта не зберігається.
 
 # Open a tab
 t85019429 = Відкрити вкладку
+
+# Given up on after {s} seconds.
+tf245d128 = Перервано через { $s } с.
 
 # sudo did not take the password
 tb2c3fb01 = sudo не прийняв пароль

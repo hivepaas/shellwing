@@ -2408,14 +2408,14 @@ tfacf50d8 = Hâlâ sürüyor: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = Bitmeden durduruldu: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = { $s } saniye sonra vazgeçildi.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Çıktı { $mb } MB sınırını aştı: gerisi saklanmaz.
 
 # Open a tab
 t85019429 = Sekme aç
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } saniye sonra vazgeçildi.
 
 # sudo did not take the password
 tb2c3fb01 = sudo parolayı kabul etmedi

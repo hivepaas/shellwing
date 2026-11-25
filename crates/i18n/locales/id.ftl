@@ -2383,14 +2383,14 @@ tfacf50d8 = Masih berjalan: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = Dihentikan sebelum selesai: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = Ditinggalkan setelah { $s } detik.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Keluarannya lebih dari { $mb } MB: sisanya tidak disimpan.
 
 # Open a tab
 t85019429 = Buka tab
+
+# Given up on after {s} seconds.
+tf245d128 = Ditinggalkan setelah { $s } detik.
 
 # sudo did not take the password
 tb2c3fb01 = sudo tidak menerima kata sandi

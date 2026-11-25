@@ -2356,14 +2356,14 @@ tfacf50d8 = 아직 실행 중: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = 끝나기 전에 중지됨: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = { $s }초 후 중단했습니다.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = { $mb }MB 넘게 출력하여 나머지는 보관하지 않습니다.
 
 # Open a tab
 t85019429 = 탭 열기
+
+# Given up on after {s} seconds.
+tf245d128 = { $s }초 후 중단했습니다.
 
 # sudo did not take the password
 tb2c3fb01 = sudo가 비밀번호를 받아들이지 않았습니다

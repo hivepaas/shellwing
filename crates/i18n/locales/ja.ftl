@@ -2356,14 +2356,14 @@ tfacf50d8 = まだ実行中：{ $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = 終了前に停止：{ $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = { $s } 秒で打ち切りました。
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = { $mb } MB を超えて出力されたため、残りは保存されません。
 
 # Open a tab
 t85019429 = タブを開く
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } 秒で打ち切りました。
 
 # sudo did not take the password
 tb2c3fb01 = sudo がパスワードを受け付けませんでした

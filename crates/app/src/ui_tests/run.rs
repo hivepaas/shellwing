@@ -103,6 +103,10 @@ scenario!(
         }
         assert!(ui.find("run-group-out:0").is_some(), "one group: they said the same");
         assert!(ui.find("run-group-out:1").is_none());
+        // Drawn as a terminal: the output as it is, its last line ending left out.
+        let shown = ui.run(|r, cx| r.shown_outputs(cx));
+        assert_eq!(shown.len(), 1, "a terminal for the one group: {shown:?}");
+        assert_eq!(shown[0].trim_end(), format!("it's {}\n[]", home.display()));
         // On the input, read whole: never on the command line.
         let seen = server.seen.lock().expect("seen");
         assert_eq!(seen.commands.len(), 2);
@@ -297,5 +301,40 @@ scenario!(
             );
             ui.click("actions-fold");
         }
+    }
+);
+
+scenario!(
+    /// A host's output is drawn as a terminal draws it: colors as colors,
+    /// its errors after it, in red, as text; one host's row opens to its own.
+    run_output_is_drawn_as_a_terminal,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        let (server, _home) = shell_server(ui);
+        ui.config_file(
+            "hosts.toml",
+            &format!("[[group]]\nname = \"G\"\n\n{}", host("api-1", server.port, "G")),
+        );
+        ui.open();
+        ui.hover("section:G");
+        ui.click("run-group:G");
+        ui.type_text("printf '\\033[32mgreen\\033[0m\\n'; echo oops >&2; exit 3");
+        ui.keys("ctrl-enter");
+        answer_passwords(ui, 1);
+        ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
+        ui.click("run-confirm-go");
+        ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
+        assert!(ui.find("run-output").is_some(), "drawn as a terminal");
+        let shown = ui.run(|r, cx| r.shown_outputs(cx));
+        assert_eq!(shown.len(), 1, "{shown:?}");
+        assert_eq!(shown[0].trim_end(), "green\noops", "no escapes: {shown:?}");
+
+        ui.click("run-by-host");
+        ui.click("run-row:api-1");
+        let shown = ui.run(|r, cx| r.shown_outputs(cx));
+        assert_eq!(shown.len(), 1, "the row's own, the group's let go: {shown:?}");
+        assert_eq!(shown[0].trim_end(), "green\noops");
     }
 );

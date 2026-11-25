@@ -25,6 +25,7 @@ use crate::host_editor::{
 use crate::host_icons::HostIcon;
 use crate::input::{Changed, TextInput};
 use crate::look::ui;
+use crate::term_viewer::TermViewer;
 
 /// A host the tab can run on.
 #[derive(Clone, Debug, PartialEq)]
@@ -54,6 +55,12 @@ pub enum RunEvent {
 pub type Resolve = Rc<dyn Fn(&str, &App) -> Result<Resolved, String>>;
 /// The snippets to start from: their names and commands.
 pub type Snippets = Rc<dyn Fn(&App) -> Vec<(String, String)>>;
+/// The look of a tab to a host (by its name in the host list), or the
+/// usual one (None): what a host's output is drawn in.
+pub type Looks = Rc<dyn Fn(Option<&str>, &App) -> Option<crate::look::Look>>;
+
+/// The most rows an output shows before it scrolls within itself.
+const OUTPUT_ROWS: usize = 16;
 
 /// At most this many hosts at once, unless the tab says otherwise.
 const AT_ONCE: usize = 8;
@@ -133,6 +140,9 @@ pub struct RunView {
     fleet: Fleet,
     resolve: Resolve,
     snippets: Snippets,
+    looks: Looks,
+    /// The outputs shown, each drawn as a terminal, by what they show.
+    viewers: BTreeMap<String, Entity<TermViewer>>,
     events: async_channel::Sender<Event>,
     _pump: Task<()>,
 }
@@ -161,6 +171,7 @@ impl RunView {
         fleet: Fleet,
         resolve: Resolve,
         snippets: Snippets,
+        looks: Looks,
         cx: &mut Context<Self>,
     ) -> RunView {
         let script = cx.new(|cx| {
@@ -218,11 +229,96 @@ impl RunView {
             fleet,
             resolve,
             snippets,
+            looks,
+            viewers: BTreeMap::new(),
             events,
             _pump: pump,
         };
         v.set_chosen(chosen);
         v
+    }
+
+    /// The outputs on the page now: their key, the host whose look they take
+    /// (None: the usual one, for a group of hosts), the output and the
+    /// errors.
+    fn outputs(&self) -> Vec<(String, Option<String>, String, String)> {
+        if !matches!(self.stage, Stage::Running | Stage::Done) {
+            return vec![];
+        }
+        if self.by_host {
+            let Some(h) = &self.open_row else {
+                return vec![];
+            };
+            let state = self.states.get(h).cloned().unwrap_or(State::Waiting);
+            let (text, errors) = host_output(&state);
+            return vec![(
+                format!("host:{h}"),
+                Some(name_in(&self.picks, h)),
+                text,
+                errors,
+            )];
+        }
+        self.ended()
+            .iter()
+            .map(|(said, _)| {
+                let (_, text, errors) = said_text(said);
+                (output_key(&text, &errors), None, text, errors)
+            })
+            .filter(|(_, _, text, errors)| !text.is_empty() || !errors.is_empty())
+            .collect()
+    }
+
+    /// A terminal for each output on the page, showing it; those no longer
+    /// on it let go.
+    fn refresh_viewers(&mut self, cx: &mut Context<Self>) {
+        let outputs = self.outputs();
+        self.viewers
+            .retain(|k, _| outputs.iter().any(|(key, ..)| key == k));
+        for (key, host, text, errors) in outputs {
+            let Some(look) = (self.looks)(host.as_deref(), cx) else {
+                continue;
+            };
+            if !self.viewers.contains_key(&key)
+                && let Some(v) = TermViewer::spawn(look.clone(), cx)
+            {
+                self.viewers.insert(key.clone(), v);
+            }
+            if let Some(v) = self.viewers.get(&key) {
+                v.update(cx, |v, cx| {
+                    v.set_look(look, cx);
+                    // Its last line ending left out: the box ends with the text.
+                    v.show(&key, None, text.trim_end(), errors.trim_end(), cx);
+                });
+            }
+        }
+    }
+
+    /// An output, drawn as a terminal as tall as its lines (up to
+    /// [`OUTPUT_ROWS`], the rest scrolled to); as text if it has no terminal.
+    fn output_view(&self, key: &str, text: &str, errors: &str, cx: &App) -> gpui::Div {
+        let Some(v) = self.viewers.get(key) else {
+            return output_box(self.mono.clone(), text, errors);
+        };
+        let rows = text.trim_end().lines().count() + errors.trim_end().lines().count();
+        div()
+            .debug_selector(|| "run-output".into())
+            .w_full()
+            .h(v.read(cx).height_for(rows.clamp(1, OUTPUT_ROWS)))
+            .flex()
+            .border_1()
+            .border_color(rgb(colors().line))
+            .overflow_hidden()
+            .child(v.clone())
+    }
+
+    /// What the outputs on the page show, as their terminals have them, for
+    /// the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn shown_outputs(&self, cx: &App) -> Vec<String> {
+        self.viewers
+            .values()
+            .map(|v| v.read(cx).shown_text())
+            .collect()
     }
 
     /// How each host of the last run ended, by name, for the UI tests.
@@ -1972,7 +2068,7 @@ impl RunView {
                             .child(hint_text(&status)),
                     )
                     .when(!text.is_empty() || !errors.is_empty(), |d| {
-                        d.child(output_box(self.mono.clone(), &text, &errors))
+                        d.child(self.output_view(&output_key(&text, &errors), &text, &errors, cx))
                     })
                     .child(chips),
             );
@@ -2076,21 +2172,7 @@ impl RunView {
                     ),
             );
             if open {
-                let (text, errors) = match &state {
-                    State::Ended(Outcome::Ran(r)) => (r.stdout.clone(), r.stderr.clone()),
-                    State::Ended(Outcome::NotConnected(w))
-                    | State::Ended(Outcome::Failed(w))
-                    | State::NotConnected(w)
-                    | State::LeftOut(w) => (String::new(), w.clone()),
-                    State::Ended(Outcome::GaveUp(d)) => (
-                        String::new(),
-                        tr!(
-                            "Given up on after {s} seconds.",
-                            s = d.as_secs().to_string()
-                        ),
-                    ),
-                    _ => (String::new(), String::new()),
-                };
+                let (text, errors) = host_output(&state);
                 let copy = format!("{text}{errors}");
                 let spec = h.clone();
                 table = table.child(
@@ -2106,7 +2188,7 @@ impl RunView {
                         .py(px(10.))
                         .border_b_1()
                         .border_color(rgb(colors().line))
-                        .child(output_box(self.mono.clone(), &text, &errors))
+                        .child(self.output_view(&format!("host:{h}"), &text, &errors, cx))
                         .when(
                             matches!(&state, State::Ended(Outcome::Ran(r)) if r.cut),
                             |d| {
@@ -2142,6 +2224,35 @@ impl RunView {
         }
         table
     }
+}
+
+/// What a host's open row shows: its output and its errors (or why it has
+/// none).
+fn host_output(state: &State) -> (String, String) {
+    match state {
+        State::Ended(Outcome::Ran(r)) => (r.stdout.clone(), r.stderr.clone()),
+        State::Ended(Outcome::NotConnected(w))
+        | State::Ended(Outcome::Failed(w))
+        | State::NotConnected(w)
+        | State::LeftOut(w) => (String::new(), w.clone()),
+        State::Ended(Outcome::GaveUp(d)) => (
+            String::new(),
+            tr!(
+                "Given up on after {s} seconds.",
+                s = d.as_secs().to_string()
+            ),
+        ),
+        _ => (String::new(), String::new()),
+    }
+}
+
+/// A group's output, named by what it is: the same output keeps its viewer
+/// as more hosts end and the groups move.
+fn output_key(text: &str, errors: &str) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::hash::DefaultHasher::new();
+    (text, errors).hash(&mut h);
+    format!("group:{:x}", h.finish())
 }
 
 /// What a group of hosts said: its status line, its output and its errors.
@@ -2261,6 +2372,7 @@ impl Render for RunView {
         if self.mono.is_empty() {
             self.mono = crate::view::TermView::default_font(window).into();
         }
+        self.refresh_viewers(cx);
         let mut page = div()
             .flex()
             .flex_col()

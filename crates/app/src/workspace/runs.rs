@@ -31,7 +31,12 @@ impl Workspace {
             list.sort_by_key(|sn| (sn.category.trim().to_lowercase(), sn.name.to_lowercase()));
             list.into_iter().map(|sn| (sn.name, sn.command)).collect()
         });
-        let run = cx.new(|cx| RunView::new(picks, chosen, fleet, resolve, snippets, cx));
+        let ws = cx.entity().downgrade();
+        let looks: crate::run_view::Looks = Rc::new(move |host, cx| {
+            let ws = ws.upgrade()?;
+            Some(ws.read(cx).look_of(host))
+        });
+        let run = cx.new(|cx| RunView::new(picks, chosen, fleet, resolve, snippets, looks, cx));
         cx.subscribe_in(&run, window, |ws, _, ev: &RunEvent, window, cx| match ev {
             RunEvent::Open(spec) => ws.open(spec, window, cx),
         })

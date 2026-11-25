@@ -2356,14 +2356,14 @@ tfacf50d8 = Vẫn đang chạy: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = Đã dừng trước khi chạy xong: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = Đã ngừng chờ sau { $s } giây.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Đầu ra dài hơn { $mb } MB: phần còn lại không được giữ.
 
 # Open a tab
 t85019429 = Mở tab
+
+# Given up on after {s} seconds.
+tf245d128 = Đã ngừng chờ sau { $s } giây.
 
 # sudo did not take the password
 tb2c3fb01 = sudo không nhận mật khẩu

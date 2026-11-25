@@ -107,7 +107,7 @@ impl ActivityView {
         let v = self.viewer.clone()?;
         v.update(cx, |v, cx| {
             v.set_look(look, cx);
-            v.show(&a.id, &a.command, &a.output, cx);
+            v.show(&a.id, Some(&a.command), &a.output, "", cx);
         });
         Some(v)
     }
