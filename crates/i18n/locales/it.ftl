@@ -410,8 +410,8 @@ te371b0dd = Rischiosi: un comando con una di queste parole, una per riga, ti asp
 # The usual list
 tcc58d242 = L'elenco di sempre
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Conservata su questo computer, in chiaro, in parti da 20 MB: l’output di ogni comando, i suoi primi 64 KB. Oltre questa quantità, la parte più vecchia se ne va. L’Attività AI mostra gli ultimi 1000 e li svuota tutti.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Conservata su questo computer, in chiaro, in parti da { $part } MB: l’output di ogni comando, i suoi primi 64 KB. Oltre questa quantità, la parte più vecchia se ne va. L’Attività AI mostra gli ultimi 1000 e li svuota tutti.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Almeno { $least } MB: fino ad allora restano { $mb } MB.

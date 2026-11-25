@@ -403,8 +403,8 @@ te371b0dd = 危険：これらのいずれかを含むコマンドは指示を�
 # The usual list
 tcc58d242 = 標準のリスト
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = このコンピュータに平文で、20 MB ずつのファイルに分けて保存されます: 各コマンドの出力の先頭 64 KB。この量を超えると最も古いファイルから消えます。AI アクティビティには直近 1000 件が表示され、すべて消去できます。
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = このコンピュータに平文で、{ $part } MB ずつのファイルに分けて保存されます: 各コマンドの出力の先頭 64 KB。この量を超えると最も古いファイルから消えます。AI アクティビティには直近 1000 件が表示され、すべて消去できます。
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = { $least } MB 以上にしてください。それまでは { $mb } MB のままです。

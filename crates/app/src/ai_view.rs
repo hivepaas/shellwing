@@ -1515,7 +1515,8 @@ impl AiView {
                     .gap(px(2.))
                     .child(heading(&tr!("AI activity")))
                     .child(hint_text(&tr!(
-                        "Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all."
+                        "Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.",
+                        part = (ai::log::PART / 1024 / 1024).to_string()
                     ))),
             )
             .child(

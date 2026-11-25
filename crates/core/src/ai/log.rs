@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use super::{ACTIVITY, Activity};
 
 /// How long a part of the log grows before a new one starts.
-pub const PART: u64 = 20 * 1024 * 1024;
+pub const PART: u64 = 10 * 1024 * 1024;
 
 /// The least the person may keep, in MB.
 pub const LEAST_MB: u32 = 32;

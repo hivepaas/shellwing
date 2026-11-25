@@ -403,8 +403,8 @@ te371b0dd = 위험: 이 중 하나라도 들어간 명령은 지시를 기다립
 # The usual list
 tcc58d242 = 기본 목록
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = 이 컴퓨터에 평문으로, 20 MB씩 나눠 보관됩니다: 각 명령 출력의 처음 64 KB. 이 크기를 넘으면 가장 오래된 부분이 지워집니다. AI 활동은 최근 1000개를 보여 주고, 모두 지울 수 있습니다.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = 이 컴퓨터에 평문으로, { $part } MB씩 나눠 보관됩니다: 각 명령 출력의 처음 64 KB. 이 크기를 넘으면 가장 오래된 부분이 지워집니다. AI 활동은 최근 1000개를 보여 주고, 모두 지울 수 있습니다.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = 최소 { $least } MB: 그 전까지는 { $mb } MB로 유지됩니다.

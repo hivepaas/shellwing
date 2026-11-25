@@ -406,8 +406,8 @@ te371b0dd = 風險：含有以下任一項（每行一項）的指令會等你�
 # The usual list
 tcc58d242 = 預設清單
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = 以純文字保存在本機，每 20 MB 一個檔案：每個命令輸出的前 64 KB。超過此值時，最舊的檔案會被刪除。AI 活動顯示最近 1000 個，並可全部清除。
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = 以純文字保存在本機，每 { $part } MB 一個檔案：每個命令輸出的前 64 KB。超過此值時，最舊的檔案會被刪除。AI 活動顯示最近 1000 個，並可全部清除。
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = 至少 { $least } MB：在此之前仍為 { $mb } MB。

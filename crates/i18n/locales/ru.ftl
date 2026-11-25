@@ -418,8 +418,8 @@ te371b0dd = Рискованные: команда с любым из этих �
 # The usual list
 tcc58d242 = Обычный список
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Хранится на этом компьютере открытым текстом, частями по 20 МБ: вывод каждой команды, его первые 64 КБ. Когда больше этого, удаляется самая старая часть. Активность AI показывает последние 1000 и очищает всё.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Хранится на этом компьютере открытым текстом, частями по { $part } МБ: вывод каждой команды, его первые 64 КБ. Когда больше этого, удаляется самая старая часть. Активность AI показывает последние 1000 и очищает всё.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Не меньше { $least } МБ: пока остаётся { $mb } МБ.

@@ -410,8 +410,8 @@ te371b0dd = Arriscados: um comando com qualquer uma destas, uma por linha, esper
 # The usual list
 tcc58d242 = A lista de sempre
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Guardada neste computador, em texto simples, em partes de 20 MB: o que cada comando imprimiu, seus primeiros 64 KB. Quando passam disso, a parte mais antiga sai. A Atividade de AI mostra os últimos 1000 e limpa todos.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Guardada neste computador, em texto simples, em partes de { $part } MB: o que cada comando imprimiu, seus primeiros 64 KB. Quando passam disso, a parte mais antiga sai. A Atividade de AI mostra os últimos 1000 e limpa todos.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Pelo menos { $least } MB: até lá, ficam { $mb } MB.

@@ -1388,7 +1388,7 @@ palette, opens a tab with every command AI clients ran:
 
 The activity is kept on this computer, as plain text (only you may read the
 files), in `state/`: `ai-activity.jsonl`, a line for each command that ended,
-with the first 64 KB of what it printed. At 20 MB it is put by as
+with the first 64 KB of what it printed. At 10 MB it is put by as
 `ai-activity.N.jsonl` (the higher N, the newer) and a new one starts. Once
 they are more than **Settings › AI › AI activity** says (in MB, 32 at least,
 32 unless set; typed, or − and + by 32), the oldest part goes, whole. Nothing

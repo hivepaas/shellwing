@@ -403,8 +403,8 @@ te371b0dd = Rủi ro: lệnh có bất kỳ từ nào sau đây, mỗi từ mộ
 # The usual list
 tcc58d242 = Danh sách mặc định
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Được lưu trên máy này dưới dạng văn bản thường, chia thành các phần 20 MB: output của mỗi lệnh, 64 KB đầu. Khi vượt mức này, phần cũ nhất bị xoá. Hoạt động AI hiện 1000 lệnh gần nhất, và có thể xoá tất cả.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Được lưu trên máy này dưới dạng văn bản thường, chia thành các phần { $part } MB: output của mỗi lệnh, 64 KB đầu. Khi vượt mức này, phần cũ nhất bị xoá. Hoạt động AI hiện 1000 lệnh gần nhất, và có thể xoá tất cả.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Tối thiểu { $least } MB: trong lúc này vẫn giữ { $mb } MB.
