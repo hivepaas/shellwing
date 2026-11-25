@@ -104,6 +104,11 @@ shows while you scroll (wheel, <kbd>Shift</kbd>+<kbd>PageUp</kbd>) and while the
 pointer is at the right edge; drag the thumb to jump, click the track to page.
 Full-screen programs (vim, htop) have no history, so they get none.
 
+A selection being dragged follows the pointer out of the terminal: moved past
+an edge, it reaches that edge's row. Held above the terminal or below it, the
+history scrolls, a few rows at a time (faster the further out), and the
+selection goes with it.
+
 Fonts:
 
 - **No family, or one that is not installed:** the first installed of JetBrains

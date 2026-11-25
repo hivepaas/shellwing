@@ -822,6 +822,33 @@ impl Ui {
         self.cx.run_until_parked();
     }
 
+    /// Presses the left button at `from` and moves to `to` in one step, as a
+    /// quick flick does (out of the terminal, say), holds it there for `hold`
+    /// (GPUI's timers running), and lets go there.
+    pub fn flick(
+        &mut self,
+        from: gpui::Point<gpui::Pixels>,
+        to: gpui::Point<gpui::Pixels>,
+        hold: Duration,
+    ) {
+        let (left, none) = (gpui::MouseButton::Left, gpui::Modifiers::none());
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+            vcx.simulate_mouse_move(from, None, none);
+            vcx.simulate_mouse_down(from, left, none);
+        }
+        // The frame after the press, as the system would draw it.
+        self.draw();
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+            vcx.simulate_mouse_move(to, left, none);
+        }
+        self.advance(hold);
+        let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
+        vcx.simulate_mouse_up(to, left, none);
+        self.cx.run_until_parked();
+    }
+
     /// Clicks a cell of the active terminal with `modifiers` held.
     pub fn click_cell(&mut self, row: usize, col: usize, modifiers: gpui::Modifiers) {
         let at = self.cell_point(row, col);

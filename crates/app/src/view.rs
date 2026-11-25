@@ -114,6 +114,36 @@ fn html_page(title: &str, body: &[u8], colors: &shellwing_term::Colors) -> Vec<u
     page
 }
 
+/// A selection being dragged with the left button. GPUI tells an element of
+/// the pointer only while it is over it, so the view listens to the whole
+/// window meanwhile: the selection follows the pointer out of the grid, and
+/// above or below it the view scrolls, a few rows a beat.
+pub(crate) struct Drag {
+    /// Where the pointer is, in the window.
+    pub at: Point<Pixels>,
+    pub mods: Mods,
+    /// The view scrolls by itself, the pointer past an edge.
+    pub scrolling: bool,
+}
+
+/// How often a selection dragged past an edge scrolls.
+pub(crate) const DRAG_BEAT: Duration = Duration::from_millis(50);
+
+/// Rows to scroll a beat for a pointer `y` px below the grid's top, the
+/// grid `height` px tall: negative above it, 0 within it, more the further
+/// out it is (up to 5).
+pub(crate) fn drag_scroll(y: f32, height: f32, row: f32) -> i32 {
+    let past = if y < 0. {
+        -y
+    } else if y > height {
+        y - height
+    } else {
+        return 0;
+    };
+    let rows = (past / row.max(1.)).ceil().clamp(1., 5.) as i32;
+    if y < 0. { -rows } else { rows }
+}
+
 /// The scrollbar thumb's top and height in a track `track` px tall, or None
 /// when everything fits (no history, or the alternate screen).
 pub(crate) fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
@@ -346,6 +376,7 @@ pub struct TermView {
     echo: Vec<TermHandle>,
     /// The right-click menu, open where it was asked for.
     menu: Option<Point<Pixels>>,
+    drag: Option<Drag>,
 }
 
 /// Finding text on the screen and in its history.
@@ -643,6 +674,7 @@ impl TermView {
             broadcast: None,
             echo: vec![],
             menu: None,
+            drag: None,
         }
     }
 
@@ -2707,6 +2739,95 @@ impl TermView {
             mods: mods(&e.modifiers),
             link: link_mod(&e.modifiers),
         });
+        // A press that selects (Shift selects where the program takes the mouse).
+        if e.button == MouseButton::Left
+            && !link_mod(&e.modifiers)
+            && (!self.frame.mouse_tracking || e.modifiers.shift)
+        {
+            self.drag = Some(Drag {
+                at: e.position,
+                mods: mods(&e.modifiers),
+                scrolling: false,
+            });
+            cx.notify();
+        }
+    }
+
+    /// The pointer moved, out of the grid, while a selection is dragged.
+    fn drag_outside(&mut self, e: &MouseMoveEvent, cx: &mut Context<Self>) {
+        if e.pressed_button != Some(MouseButton::Left) {
+            self.drag = None;
+            return;
+        }
+        let Some(d) = &mut self.drag else {
+            return;
+        };
+        d.at = e.position;
+        let (x, y) = self.grid_pos(e.position);
+        self.term.mouse(MouseInput {
+            action: MouseAction::Motion,
+            button: Some(TermButton::Left),
+            x,
+            y,
+            mods: mods(&e.modifiers),
+            link: false,
+        });
+        self.drag_scrolls(cx);
+    }
+
+    /// Scrolls, a beat at a time, while the dragging pointer is above or below
+    /// the grid, the selection following.
+    fn drag_scrolls(&mut self, cx: &mut Context<Self>) {
+        if !self.drag_step(false) {
+            return;
+        }
+        if let Some(d) = &mut self.drag {
+            d.scrolling = true;
+        }
+        cx.spawn(async move |this, cx| {
+            loop {
+                cx.background_executor().timer(DRAG_BEAT).await;
+                if !this.update(cx, |v, _| v.drag_step(true)).unwrap_or(false) {
+                    break;
+                }
+            }
+        })
+        .detach();
+    }
+
+    /// One beat of [`Self::drag_scrolls`]: whether it goes on. `beat`: the
+    /// scrolling's own, rather than whether one should start.
+    fn drag_step(&mut self, beat: bool) -> bool {
+        let Some(d) = &self.drag else {
+            return false;
+        };
+        if d.scrolling != beat || self.frame.alternate {
+            return false;
+        }
+        let y = f32::from(d.at.y - self.grid_origin.get().y);
+        let rows = drag_scroll(y, f32::from(self.area.get().height), f32::from(self.cell.1));
+        if rows == 0 {
+            if let Some(d) = &mut self.drag {
+                d.scrolling = false;
+            }
+            return false;
+        }
+        if beat {
+            let (at, m) = (d.at, d.mods);
+            let (x, y) = self.grid_pos(at);
+            // Shift: the history scrolls, whatever the program asked of the wheel.
+            self.term
+                .wheel(rows as f32, x, y, Mods { shift: true, ..m });
+            self.term.mouse(MouseInput {
+                action: MouseAction::Motion,
+                button: Some(TermButton::Left),
+                x,
+                y,
+                mods: m,
+                link: false,
+            });
+        }
+        true
     }
 
     fn mouse_up(&mut self, e: &MouseUpEvent, _: &mut Window, cx: &mut Context<Self>) {
@@ -2717,6 +2838,9 @@ impl TermView {
         if self.scrollbar_grab.take().is_some() {
             self.reveal_scrollbar(cx);
             return;
+        }
+        if e.button == MouseButton::Left {
+            self.drag = None;
         }
         let (x, y) = self.grid_pos(e.position);
         let button = term_button(e.button);
@@ -2742,6 +2866,9 @@ impl TermView {
         if hover != self.scrollbar_hover {
             self.scrollbar_hover = hover;
             cx.notify();
+        }
+        if let Some(d) = &mut self.drag {
+            d.at = e.position;
         }
         self.last_mouse = Some((x, y));
         if link_mod(&e.modifiers) {
@@ -3031,6 +3158,7 @@ impl Render for TermView {
             .filter(|_| !self.writer.is_secret_prompt());
         let base_font = self.base_font();
         let entity = cx.entity();
+        let dragging = self.drag.is_some().then(|| cx.entity());
         let focus = self.focus.clone();
         let probe = self.probe.clone();
         let grid_origin = self.grid_origin.clone();
@@ -3108,6 +3236,16 @@ impl Render for TermView {
                             gpui::ElementInputHandler::new(bounds, entity),
                             cx,
                         );
+                        // A selection dragged out of the grid goes on following.
+                        if let Some(view) = dragging {
+                            window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+                                if phase == gpui::DispatchPhase::Bubble
+                                    && !full.contains(&e.position)
+                                {
+                                    view.update(cx, |v, cx| v.drag_outside(e, cx));
+                                }
+                            });
+                        }
                         paint_segments(&rows, bounds.origin, (cw, ch), font_size, window, cx);
                         if let Some(link) = hover {
                             let o = point(
