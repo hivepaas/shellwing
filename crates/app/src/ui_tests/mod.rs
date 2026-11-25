@@ -61,7 +61,7 @@ pub use server::{OTP, PASSWORD, PROMPT, Policy, Server, USER, WELCOME};
 
 /// The lists that scroll, by their `.debug_selector(..)`: a click on what is
 /// in one scrolls it into view first ([`Ui::click`]).
-const SCROLLING: [&str; 3] = ["settings-content", "hosts", "editor-body"];
+const SCROLLING: [&str; 4] = ["settings-content", "hosts", "editor-body", "run-view"];
 
 /// How long a step may take before the scenario fails. Generous: debug
 /// builds of libghostty parse slowly, and CI machines are slow.
@@ -714,8 +714,13 @@ impl Ui {
     /// `selector` and lets it go `dx` pixels to the side, moving there in
     /// steps, as a user drags an edge.
     pub fn drag_by(&mut self, selector: &str, dx: f32) {
+        self.drag_by_xy(selector, dx, 0.);
+    }
+
+    /// As [`Ui::drag_by`], `dx` to the side and `dy` down.
+    pub fn drag_by_xy(&mut self, selector: &str, dx: f32, dy: f32) {
         let a = self.reach(selector);
-        let b = a + gpui::point(gpui::px(dx), gpui::px(0.));
+        let b = a + gpui::point(gpui::px(dx), gpui::px(dy));
         let mut vcx = gpui::VisualTestContext::from_window(self.window().into(), &self.cx);
         let (left, none) = (gpui::MouseButton::Left, gpui::Modifiers::none());
         vcx.simulate_mouse_move(a, None, none);

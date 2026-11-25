@@ -256,9 +256,13 @@ impl TermViewer {
 
     /// How tall the viewer is to show `rows` rows, its padding included.
     pub fn height_for(&self, rows: usize) -> Pixels {
-        let row = (self.look.font_size * self.look.line_height).round();
         // Half a pixel more, so the grid's rows fit however it rounds.
-        px(row * rows as f32 + self.look.padding.1 * 2. + 0.5)
+        px(self.row_height() * rows as f32 + self.look.padding.1 * 2. + 0.5)
+    }
+
+    /// How tall one row is, in pixels.
+    pub fn row_height(&self) -> f32 {
+        (self.look.font_size * self.look.line_height).round()
     }
 
     /// The person's look changed (a theme, a font).

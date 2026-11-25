@@ -1159,7 +1159,11 @@ The results:
 - An output is drawn as a terminal draws it: in the look of a tab (a group's
   in the usual theme, a host's row in that host's), colors as colors, the
   errors after the output in red. It is as tall as its lines, up to 16, and
-  scrolls within itself past that. It selects, copies and opens links as AI
+  scrolls within itself past that. Drag its bottom edge to make it taller or
+  shorter, a row at a time (from 3 rows to about the window's height); a
+  double-click there makes it as tall as its lines, and another back. Each
+  output keeps its height while the tab is open, a running host's going on
+  with its group once it ends. It selects, copies and opens links as AI
   activity's does (above).
 - **Stop** leaves the hosts not started alone and cuts off those running.
   *Again on the N that failed* and *Run again* go back to the confirm step; the
