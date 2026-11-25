@@ -97,7 +97,7 @@ scenario!(
         assert!(ui.find("run-empty").is_some(), "nothing ran yet");
 
         ui.type_text("echo \"it's $HOME\"; read x; echo \"[$x]\"");
-        ui.keys("ctrl-enter");
+        ui.keys("secondary-enter");
         assert!(ui.find("run-confirm").is_some());
         answer_passwords(ui, 2);
         ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
@@ -241,7 +241,7 @@ scenario!(
         ui.click("run-group:Production");
         ui.type_text("echo ok");
         ui.click("run-one-first");
-        ui.keys("ctrl-enter");
+        ui.keys("secondary-enter");
         answer_passwords(ui, 2);
         ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
         ui.click("run-confirm-go");
@@ -334,7 +334,7 @@ scenario!(
             "echo first; while [ ! -e '{}' ]; do sleep 0.05; done; echo second",
             go.display()
         ));
-        ui.keys("ctrl-enter");
+        ui.keys("secondary-enter");
         answer_passwords(ui, 1);
         ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
         ui.click("run-confirm-go");
@@ -381,7 +381,7 @@ scenario!(
         ui.hover("section:G");
         ui.click("run-group:G");
         ui.type_text("seq 40");
-        ui.keys("ctrl-enter");
+        ui.keys("secondary-enter");
         answer_passwords(ui, 1);
         ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
         ui.click("run-confirm-go");
@@ -433,7 +433,7 @@ scenario!(
         ui.hover("section:G");
         ui.click("run-group:G");
         ui.type_text("printf '\\033[32mgreen\\033[0m\\n'; echo oops >&2; exit 3");
-        ui.keys("ctrl-enter");
+        ui.keys("secondary-enter");
         answer_passwords(ui, 1);
         ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
         ui.click("run-confirm-go");
@@ -446,5 +446,55 @@ scenario!(
         ui.click("run-row:api-1");
         // The row's own, the group's let go.
         shown(ui, &["green\noops"]);
+    }
+);
+
+scenario!(
+    /// Stop while the hosts run: the command ends on each host, its children
+    /// too (TERM through SSH, to its process group), not only here; each
+    /// host says stopped, what it printed kept.
+    stop_ends_the_command_on_the_hosts,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        let (_server, home) = shell_server(ui);
+        ui.config_file(
+            "hosts.toml",
+            &format!(
+                "[[group]]\nname = \"Production\"\n\n{}{}",
+                host("api-1", _server.port, "Production"),
+                host("api-2", _server.port, "Production"),
+            ),
+        );
+        ui.open();
+        ui.hover("section:Production");
+        ui.click("run-group:Production");
+        ui.type_text("sleep 31 & echo $! >> pids; echo started; wait");
+        ui.keys("secondary-enter");
+        answer_passwords(ui, 2);
+        ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
+        ui.click("run-confirm-go");
+        ui.wait_until("both running", |ui| {
+            ui.run(|r, _| r.standing().0 == 2)
+                && std::fs::read_to_string(home.join("pids")).is_ok_and(|p| p.lines().count() == 2)
+        });
+        ui.click("run-stop");
+        assert_eq!(ui.run(|r, _| r.standing()), (0, 2, 0), "stopped at once");
+        // On the hosts: the children ended too.
+        let alive = |pid: &str| {
+            std::process::Command::new("kill")
+                .args(["-0", pid])
+                .status()
+                .is_ok_and(|s| s.success())
+        };
+        ui.wait_until("the commands to end on the hosts", |_| {
+            std::fs::read_to_string(home.join("pids"))
+                .expect("pids")
+                .lines()
+                .all(|p| !alive(p.trim()))
+        });
+        ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
+        assert_eq!(ui.run(|r, _| r.standing()), (0, 2, 0), "still said stopped");
     }
 );

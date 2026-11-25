@@ -84,6 +84,22 @@ impl Workspace {
             }
         })
         .detach();
+        // Quitting: what agents run is stopped on its host (TERM), not cut
+        // off with its connection, which would leave it running there.
+        cx.on_app_quit(|ws, cx| {
+            let hub = ws.ai.as_ref().map(|ai| ai.hub.clone());
+            let running = hub.as_ref().is_some_and(|h| h.running());
+            if let Some(hub) = hub {
+                hub.stop_all();
+            }
+            let wait = cx.background_executor().timer(ai::QUIT_STOP_WAIT);
+            async move {
+                if running {
+                    wait.await;
+                }
+            }
+        })
+        .detach();
         self.ai = Some(AiWork {
             hub,
             state,

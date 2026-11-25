@@ -225,6 +225,9 @@ pub enum Outcome {
     NotConnected(String),
     /// It was still running after this long, and was given up on.
     GaveUp(Duration),
+    /// Stopped by the person while it ran: `ended`, the host said it
+    /// ended; else it may still run there (a server that takes no signals).
+    Stopped { ended: bool },
     /// Connected, but the command did not start or its end was not seen:
     /// why.
     Failed(String),
@@ -277,6 +280,9 @@ pub enum Said {
     },
     NotConnected(String),
     GaveUp,
+    Stopped {
+        ended: bool,
+    },
     Failed(String),
 }
 
@@ -290,6 +296,7 @@ impl From<&Outcome> for Said {
             },
             Outcome::NotConnected(why) => Said::NotConnected(why.clone()),
             Outcome::GaveUp(_) => Said::GaveUp,
+            Outcome::Stopped { ended } => Said::Stopped { ended: *ended },
             Outcome::Failed(why) => Said::Failed(why.clone()),
         }
     }
@@ -375,8 +382,14 @@ pub struct Fleet {
     policy: HostKeyPolicy,
     keepalive: Duration,
     connections: Arc<Mutex<BTreeMap<String, Arc<ExecConnection>>>>,
-    work: Mutex<Vec<AbortHandle>>,
+    /// Each host's task, by host.
+    work: Mutex<Vec<(String, AbortHandle)>>,
+    /// The hosts whose command runs now: what asks it to stop there.
+    running: Running,
 }
+
+/// What stops the command running on each host, by host.
+type Running = Arc<Mutex<BTreeMap<String, oneshot::Sender<()>>>>;
 
 impl Fleet {
     pub fn new(rt: Handle, secrets: Arc<dyn Secrets>, settings: &shellwing_config::Ssh) -> Fleet {
@@ -387,7 +400,13 @@ impl Fleet {
             keepalive: Duration::from_secs(settings.keepalive),
             connections: Arc::default(),
             work: Mutex::default(),
+            running: Arc::default(),
         }
+    }
+
+    /// Whether a command runs on any host now.
+    pub fn running(&self) -> bool {
+        self.running.lock().is_ok_and(|r| !r.is_empty())
     }
 
     /// Whether `host` is connected now.
@@ -418,12 +437,24 @@ impl Fleet {
         self.each(hosts, limit, events, Some(Arc::new(job)));
     }
 
-    /// Stops what is going on: hosts not yet started are left alone, and
-    /// those running are cut off. The connections stay.
+    /// Stops what is going on: hosts not yet started are left alone; on
+    /// those running, the command is stopped on the host (TERM, then KILL),
+    /// each ending as [`Outcome::Stopped`]. Cutting them off would leave the
+    /// commands running there. The connections stay.
     pub fn stop(&self) {
+        let mut running = self
+            .running
+            .lock()
+            .map(|mut r| std::mem::take(&mut *r))
+            .unwrap_or_default();
         if let Ok(mut work) = self.work.lock() {
-            for task in work.drain(..) {
-                task.abort();
+            for (host, task) in work.drain(..) {
+                match running.remove(&host) {
+                    Some(stop) => {
+                        let _ = stop.send(());
+                    }
+                    None => task.abort(),
+                }
             }
         }
     }
@@ -439,21 +470,23 @@ impl Fleet {
         let mut tasks = vec![];
         for (host, target) in hosts {
             let (turns, events, job) = (turns.clone(), events.clone(), job.clone());
-            let connections = self.connections.clone();
+            let (connections, running) = (self.connections.clone(), self.running.clone());
             let options = self.options(&host, target, events.clone());
-            tasks.push(
+            let name = host.clone();
+            tasks.push((
+                name,
                 self.rt
                     .spawn(async move {
                         let Ok(_turn) = turns.acquire_owned().await else {
                             return;
                         };
-                        one(host, options, job, connections, events).await;
+                        one(host, options, job, connections, running, events).await;
                     })
                     .abort_handle(),
-            );
+            ));
         }
         if let Ok(mut work) = self.work.lock() {
-            work.retain(|t| !t.is_finished());
+            work.retain(|(_, t)| !t.is_finished());
             work.extend(tasks);
         }
     }
@@ -525,6 +558,7 @@ async fn one(
     options: Options,
     job: Option<Arc<Job>>,
     connections: Arc<Mutex<BTreeMap<String, Arc<ExecConnection>>>>,
+    running: Running,
     events: async_channel::Sender<Event>,
 ) {
     let existing = connections.lock().ok().and_then(|c| c.get(&host).cloned());
@@ -570,6 +604,11 @@ async fn one(
     // Given up on, it is stopped on the host (TERM, then KILL), and
     // waited for that long more: cutting its channel would leave it running.
     let (stop, asked) = oneshot::channel();
+    // The person's Stop ([`Fleet::stop`]) comes through here.
+    let (stopper, mut stopped) = oneshot::channel();
+    if let Ok(mut r) = running.lock() {
+        r.insert(host.clone(), stopper);
+    }
     let ran = {
         let printing = printing.clone();
         let host = host.clone();
@@ -591,14 +630,23 @@ async fn one(
             let mut beat = tokio::time::interval(PRINT_BEAT);
             let over = tokio::time::sleep(give_up);
             tokio::pin!(over);
-            let (mut stop, mut gave_up) = (Some(stop), false);
+            let (mut stop, mut gave_up, mut by_person) = (Some(stop), false, false);
             loop {
                 tokio::select! {
-                    ended = &mut ran => break (ended, gave_up),
-                    () = &mut over, if !gave_up => {
+                    ended = &mut ran => break (ended, gave_up, by_person),
+                    () = &mut over, if !gave_up && !by_person => {
                         gave_up = true;
                         if let Some(stop) = stop.take() {
                             let _ = stop.send(());
+                        }
+                    }
+                    asked = &mut stopped, if !gave_up && !by_person => {
+                        // Dropped, not sent: the run is over for this host.
+                        if asked.is_ok() {
+                            by_person = true;
+                            if let Some(stop) = stop.take() {
+                                let _ = stop.send(());
+                            }
                         }
                     }
                     _ = beat.tick() => {
@@ -612,10 +660,17 @@ async fn one(
             }
         }
     };
-    let outcome = match ran.await {
-        (_, true) => Outcome::GaveUp(job.give_up),
-        (Ok(Exit::Unheard), false) => Outcome::Failed("its end was not heard".into()),
-        (Ok(Exit::Ended(status)), false) => {
+    let ran = ran.await;
+    if let Ok(mut r) = running.lock() {
+        r.remove(&host);
+    }
+    let outcome = match ran {
+        (_, true, _) => Outcome::GaveUp(job.give_up),
+        (ended, _, true) => Outcome::Stopped {
+            ended: matches!(ended, Ok(Exit::Ended(_))),
+        },
+        (Ok(Exit::Unheard), _, _) => Outcome::Failed("its end was not heard".into()),
+        (Ok(Exit::Ended(status)), _, _) => {
             let p = printing.lock().map(|p| p.clone()).unwrap_or_default();
             Outcome::Ran(Ran {
                 status,
@@ -625,7 +680,7 @@ async fn one(
                 took: began.elapsed(),
             })
         }
-        (Err(e), false) => {
+        (Err(e), _, _) => {
             // The connection is likely gone: the next run connects again.
             if let Ok(mut all) = connections.lock() {
                 all.remove(&host);

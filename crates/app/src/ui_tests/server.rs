@@ -242,6 +242,7 @@ impl Server {
                     first_factor_done: false,
                     opened: HashMap::new(),
                     shells: HashMap::new(),
+                    groups: Arc::default(),
                 };
                 let (config, slow) = (config.clone(), policy.slow_start);
                 tokio::spawn(async move {
@@ -434,6 +435,7 @@ async fn shell(
     home: PathBuf,
     bin: PathBuf,
     seen: Arc<Mutex<Seen>>,
+    groups: Arc<Mutex<HashMap<ChannelId, u32>>>,
 ) {
     let mut input = vec![];
     let _ = ch.make_reader().read_to_end(&mut input).await;
@@ -446,8 +448,8 @@ async fn shell(
         bin.display(),
         std::env::var("PATH").unwrap_or_default()
     );
-    let out = tokio::process::Command::new("sh")
-        .arg("-c")
+    let mut cmd = tokio::process::Command::new("sh");
+    cmd.arg("-c")
         .arg(&command)
         .env("HOME", &home)
         .env("PATH", path)
@@ -455,13 +457,17 @@ async fn shell(
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
-        .kill_on_drop(true)
-        .spawn();
-    let Ok(mut child) = out else {
+        .kill_on_drop(true);
+    #[cfg(unix)]
+    cmd.process_group(0);
+    let Ok(mut child) = cmd.spawn() else {
         let _ = ch.exit_status(127).await;
         let _ = ch.close().await;
         return;
     };
+    if let Some(pid) = child.id() {
+        groups.lock().expect("groups").insert(ch.id(), pid);
+    }
     if let Some(mut stdin) = child.stdin.take() {
         let _ = stdin.write_all(&input).await;
     }
@@ -732,6 +738,9 @@ struct Shell {
     /// Session channels not yet a shell or a subsystem.
     opened: HashMap<ChannelId, Channel<Msg>>,
     shells: HashMap<ChannelId, ShellState>,
+    /// Each command's process group, by its channel: a signal goes to it
+    /// all, as OpenSSH sends one.
+    groups: Arc<Mutex<HashMap<ChannelId, u32>>>,
 }
 
 impl Shell {
@@ -1366,7 +1375,8 @@ impl server::Handler for Shell {
             };
             session.channel_success(channel)?;
             let command = String::from_utf8_lossy(data).into_owned();
-            tokio::spawn(shell(ch, command, home, bin, self.seen.clone()));
+            let groups = self.groups.clone();
+            tokio::spawn(shell(ch, command, home, bin, self.seen.clone(), groups));
             return Ok(());
         }
         let Some(ch) = self.opened.remove(&channel).filter(|_| installing) else {
@@ -1374,6 +1384,29 @@ impl server::Handler for Shell {
         };
         session.channel_success(channel)?;
         tokio::spawn(install(ch, self.authorized.clone(), self.seen.clone()));
+        Ok(())
+    }
+
+    /// A signal for a command: to its whole process group, as OpenSSH
+    /// sends one.
+    async fn signal(
+        &mut self,
+        channel: ChannelId,
+        signal: russh::Sig,
+        _session: &mut Session,
+    ) -> Result<(), Self::Error> {
+        let name = match signal {
+            russh::Sig::TERM => "TERM",
+            russh::Sig::KILL => "KILL",
+            russh::Sig::INT => "INT",
+            _ => return Ok(()),
+        };
+        let group = self.groups.lock().expect("groups").get(&channel).copied();
+        if let Some(group) = group {
+            let _ = std::process::Command::new("kill")
+                .args(["-s", name, "--", &format!("-{group}")])
+                .status();
+        }
         Ok(())
     }
 
