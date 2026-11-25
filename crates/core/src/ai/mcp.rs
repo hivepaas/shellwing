@@ -37,8 +37,9 @@ hosts and append_note adds to the end of one: for what you did and found, as the
 want to read it later. You never change what is there. The user may have it wait until they \
 allow it. Where the user gave you snippets, list_snippets gives the commands they keep for a \
 host and run_snippet runs one, its values filled in by you: prefer one to a command of your \
-own when it does what you need. activity gives back what you ran before, in this session or \
-an earlier one, on the hosts you have now: look there before doing again what was done.";
+own when it does what you need. add_snippet suggests a new one for a host, for the user to \
+keep and run later. activity gives back what you ran before, in this session or an earlier \
+one, on the hosts you have now: look there before doing again what was done.";
 
 /// Serves `client` on `reader` and `writer` until it goes: a request at a
 /// time is read, and each answered on its own, so a long `run` does not
@@ -363,6 +364,22 @@ pub fn tools() -> Value {
             },
         },
         {
+            "name": "add_snippet",
+            "title": "Suggest a snippet",
+            "description": format!("Suggests a snippet for a host given to you to use snippets: a command the user keeps and runs there later, from the palette. It is for that host alone, needs no environment, and is typed without Enter, so the user reads it before it runs; a {{{{name}}}} in it is asked for when it runs. {} at the most. The user may have it wait until they allow it.", super::files::size(shellwing_vault::limits::COMMAND as u64)),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
+                    "name": {"type": "string", "description": "What it does, as the palette lists it."},
+                    "command": {"type": "string"},
+                    "category": {"type": "string", "description": "What it is filed under, as Logs or Deploy; none if not given."},
+                    "wait_seconds": wait,
+                },
+                "required": ["host", "name", "command"],
+            },
+        },
+        {
             "name": "add_note",
             "title": "Write a note",
             "description": format!("Writes a new note about hosts given to you to add to notes: Markdown unless format is plain, {} at the most, text only (no images). shellwing puts a line before it saying you wrote it. Gives the new note's id. The user may have it wait until they allow it.", super::files::size(super::notes::PART as u64)),
@@ -497,7 +514,7 @@ async fn call(
                     }
                     if g.grant.snippets {
                         may.push(if g.grant.run {
-                            "the user's snippets for it (list_snippets, run_snippet)"
+                            "the user's snippets for it (list_snippets, run_snippet, add_snippet)"
                         } else {
                             "listing the user's snippets for it (list_snippets)"
                         });
@@ -605,6 +622,23 @@ async fn call(
                 Some(End::Exited(Some(0))) if writes => {
                     Ok(said.new.lines().next().unwrap_or("").to_string())
                 }
+                Some(End::Exited(Some(0))) => Ok(said.new),
+                Some(End::Failed(why)) => Err(Problem::Tool(why.clone())),
+                _ => Ok(report(&job.id, &said)),
+            }
+        }
+        "add_snippet" => {
+            let job = hub
+                .add_snippet(
+                    client,
+                    &text_arg(args, "host")?,
+                    &text_arg(args, "name")?,
+                    &text_arg(args, "command")?,
+                    args.get("category").and_then(Value::as_str).unwrap_or(""),
+                )
+                .map_err(Problem::Tool)?;
+            let said = follow(&job, wait_arg(args), true, progress, tx).await;
+            match &said.end {
                 Some(End::Exited(Some(0))) => Ok(said.new),
                 Some(End::Failed(why)) => Err(Problem::Tool(why.clone())),
                 _ => Ok(report(&job.id, &said)),
@@ -865,6 +899,7 @@ mod tests {
                 "read_note_image",
                 "list_snippets",
                 "run_snippet",
+                "add_snippet",
                 "add_note",
                 "append_note",
             ]

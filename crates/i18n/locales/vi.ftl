@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Đoạn lệnh { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } đề xuất đoạn lệnh này cho { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi đoạn lệnh được đề xuất đều chờ. Khi đã thêm, đoạn lệnh được gõ không kèm Enter, để bạn đọc trước khi chạy.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } muốn thêm nội dung này vào ghi chú về { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần thêm vào ghi chú đều chờ.
 
@@ -3552,6 +3555,9 @@ t79d7b3ad = Mở thư viện
 
 # from the library
 td908f0d1 = từ thư viện
+
+# from {client}
+t541be172 = từ { $client }
 
 # typed, not run
 td4e41905 = chỉ gõ, không chạy

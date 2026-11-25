@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Snippet { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } menyarankan snippet ini untuk { $host }. Ini menunggu Anda: jika perintah berisiko menunggu, setiap saran juga menunggu. Setelah ditambahkan, ini diketik tanpa Enter agar Anda membacanya sebelum dijalankan.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } ingin menambahkan ini ke catatan tentang { $host }. Penambahan ini menunggu Anda: jika perintah berisiko menunggu, setiap penambahan ke catatan juga menunggu.
 
@@ -3582,6 +3585,9 @@ t79d7b3ad = Buka pustaka
 
 # from the library
 td908f0d1 = dari pustaka
+
+# from {client}
+t541be172 = dari { $client }
 
 # typed, not run
 td4e41905 = diketik, tidak dijalankan

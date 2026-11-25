@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 # The snippet {name}
 t6e8860fa = 程式碼片段 { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } 為 { $host } 建議這個程式碼片段。它正在等你確認：在「有風險時詢問」模式下，每個建議都要詢問。新增後輸入時不按 Enter，讓你在執行前先閱讀。
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } 想把這段內容新增到關於 { $host } 的筆記。它正在等你確認：在「有風險時詢問」模式下，每次新增至筆記都要詢問。
 
@@ -3582,6 +3585,9 @@ t79d7b3ad = 開啟程式碼片段庫
 
 # from the library
 td908f0d1 = 來自程式碼片段庫
+
+# from {client}
+t541be172 = 來自 { $client }
 
 # typed, not run
 td4e41905 = 僅輸入，不執行

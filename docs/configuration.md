@@ -1253,7 +1253,12 @@ What it may do, each on its own:
   saying which: the agent never sees their values. On a connection of its
   own they go in on the command's input, the command line holding their
   names only; through a tab they are sent as a pane sends them, the echo off.
-  What the command prints still goes to the agent. Design:
+  What the command prints still goes to the agent. An agent may also
+  suggest a snippet (`add_snippet`): for that host alone, needing no
+  environment, typed without Enter so that you read it in the pane before
+  it runs. Where risky ones wait, every suggestion waits for you, AI
+  activity showing it: *Add it* or *Refuse it*. Settings and the palette
+  say who suggested it: *from Claude Code*. Design:
   [docs/design/ai-snippets.md](design/ai-snippets.md).
 
 What happens to a command:

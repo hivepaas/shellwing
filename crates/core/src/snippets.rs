@@ -11,6 +11,14 @@ pub use shellwing_vault::Snippet;
 /// Filled in from the pane's host.
 pub const BUILT_IN: [&str; 3] = ["host", "user", "address"];
 
+/// A snippet an AI suggested: its origin, before the client's name.
+pub const AI_ORIGIN: &str = "ai:";
+
+/// The AI client that suggested a snippet from `origin`, if one did.
+pub fn suggested_by(origin: &str) -> Option<&str> {
+    origin.strip_prefix(AI_ORIGIN).filter(|c| !c.is_empty())
+}
+
 /// Where the palette offers a snippet.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Scope {

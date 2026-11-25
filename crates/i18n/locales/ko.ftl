@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 # The snippet {name}
 t6e8860fa = 스니펫 { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client }이(가) { $host }용으로 이 스니펫을 제안합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 제안에 확인이 필요합니다. 추가되면 Enter 없이 입력되어 실행 전에 읽을 수 있습니다.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }이(가) { $host }에 관한 노트에 이것을 추가하려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 노트에 추가할 때마다 확인이 필요합니다.
 
@@ -3552,6 +3555,9 @@ t79d7b3ad = 라이브러리 열기
 
 # from the library
 td908f0d1 = 라이브러리에서 가져옴
+
+# from {client}
+t541be172 = { $client }에서 가져옴
 
 # typed, not run
 td4e41905 = 입력만 하고 실행하지 않음

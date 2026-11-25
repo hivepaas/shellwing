@@ -1184,7 +1184,14 @@ impl Workspace {
                     },
                     sn.name.clone(),
                 )
-                .detail(snippets::one_line(&sn.command))
+                .detail(match snippets::suggested_by(&sn.origin) {
+                    Some(client) => format!(
+                        "{} · {}",
+                        tr!("from {client}", client = client),
+                        snippets::one_line(&sn.command)
+                    ),
+                    None => snippets::one_line(&sn.command),
+                })
                 .section(Part::Snippets)
                 .hint(if no_tab {
                     tr!("Open a tab first")
