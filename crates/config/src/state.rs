@@ -144,6 +144,10 @@ pub struct AiClient {
     /// until the person resumes it. Its grants are kept as they are.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub paused: bool,
+    /// The folders on this computer it may copy files from and to
+    /// (docs/design/ai-transfers.md); none unless the person adds one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub folders: Vec<String>,
 }
 
 /// A host given to a client.

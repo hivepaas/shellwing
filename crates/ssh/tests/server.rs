@@ -45,6 +45,9 @@ struct Policy {
     /// wants `otp` through keyboard-interactive (`AuthenticationMethods
     /// password,keyboard-interactive`).
     then_otp: bool,
+    /// Takes the client's signals to a command, sent to its whole process
+    /// group, as OpenSSH does; without, they are ignored, as some servers do.
+    signals: bool,
 }
 
 /// A certificate for `key`, signed by `ca`, valid from a minute ago for an hour.
@@ -113,6 +116,8 @@ struct TestServer {
     first_factor: bool,
     /// The size the PTY was asked at: the greeting says it.
     pty: Option<(u32, u32)>,
+    /// Each command's process group, by its channel.
+    groups: HashMap<ChannelId, u32>,
 }
 
 impl TestServer {
@@ -325,10 +330,14 @@ impl server::Handler for TestServer {
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true)
+            .process_group(0)
             .spawn()
         else {
             return session.channel_failure(channel);
         };
+        if let Some(pid) = child.id() {
+            self.groups.insert(channel, pid);
+        }
         self.sessions.retain(|c| *c != channel);
         session.channel_success(channel)?;
         let handle = session.handle();
@@ -358,6 +367,28 @@ impl server::Handler for TestServer {
             let _ = to.shutdown().await;
             let _ = handle.close(channel).await;
         });
+        Ok(())
+    }
+
+    /// A signal for a command: to its whole process group, as OpenSSH sends
+    /// it, where the policy takes them.
+    async fn signal(
+        &mut self,
+        channel: ChannelId,
+        signal: russh::Sig,
+        _session: &mut ServerSession,
+    ) -> Result<(), Self::Error> {
+        let name = match signal {
+            russh::Sig::TERM => "TERM",
+            russh::Sig::KILL => "KILL",
+            russh::Sig::INT => "INT",
+            _ => return Ok(()),
+        };
+        if let (true, Some(group)) = (self.policy.signals, self.groups.get(&channel)) {
+            let _ = std::process::Command::new("kill")
+                .args(["-s", name, "--", &format!("-{group}")])
+                .status();
+        }
         Ok(())
     }
 
@@ -552,6 +583,7 @@ async fn serve_as(
                     opened: HashMap::new(),
                     first_factor: false,
                     pty: None,
+                    groups: HashMap::new(),
                 };
                 if let Ok(running) = server::run_stream(config, socket, handler).await {
                     let _ = running.await;
@@ -2128,6 +2160,91 @@ async fn a_key_the_app_keeps_signs_in_without_a_file() {
     // A host given another key offers only that one.
     let (opts, _) = with("other", vec![]);
     assert!(connect(opts).await.is_err());
+}
+
+/// A command asked to stop ends on the host, its children too: TERM, then
+/// KILL for one that takes no TERM. On a server that takes no signals, it
+/// is left once the waits are over, and said so.
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread")]
+async fn a_command_asked_to_stop_ends_on_its_host() {
+    use shellwing_ssh::{Exit, STOP_KILL_WAIT, STOP_TERM_WAIT};
+    use std::time::Instant;
+    let fx = Fixture::new("exec-stop");
+    let home = fx.dir.join("home");
+    std::fs::create_dir_all(&home).expect("home");
+    let connect = |signals: bool| {
+        let (home, fx) = (home.clone(), &fx);
+        async move {
+            let (port, _) = serve(
+                Policy {
+                    password: Some("pw"),
+                    home: Some(home),
+                    signals,
+                    ..Default::default()
+                },
+                &[MethodKind::Password],
+            )
+            .await;
+            let (p, _) = scripted(vec![Some("yes"), Some("pw"), Some("pw")]);
+            let mut target = local(port, "me");
+            target.identity_files = vec![fx.dir.join("no-key")];
+            shellwing_ssh::connect_exec(fx.options(target, p))
+                .await
+                .expect("connect")
+        }
+    };
+    // Whether the process whose pid is in `file` (under home) still runs.
+    let alive = |file: &str| {
+        let pid = std::fs::read_to_string(home.join(file)).expect("pid");
+        std::process::Command::new("kill")
+            .args(["-0", pid.trim()])
+            .status()
+            .is_ok_and(|s| s.success())
+    };
+    // Runs `command`, and asks it to stop a moment after it started: how
+    // it ended, and how long the stop took.
+    let stopped = |c: &Arc<shellwing_ssh::ExecConnection>, command: &'static str| {
+        let c = c.clone();
+        async move {
+            let (stop, asked) = tokio::sync::oneshot::channel();
+            let ran = tokio::spawn(async move { c.stream(command, b"", |_, _| {}, asked).await });
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            let at = Instant::now();
+            stop.send(()).expect("asked");
+            (ran.await.expect("ran").expect("streamed"), at.elapsed())
+        }
+    };
+
+    let c = Arc::new(connect(true).await);
+    // A child that takes TERM: ends at once, the child with it.
+    let (exit, took) = stopped(&c, "sleep 30 & echo $! > child; wait").await;
+    assert!(matches!(exit, Exit::Ended(_)), "{exit:?}");
+    assert!(took < Duration::from_secs(2), "{took:?}");
+    std::thread::sleep(Duration::from_millis(100));
+    assert!(!alive("child"), "its child ended too");
+    // One that takes no TERM: KILL, after TERM's wait.
+    let (exit, took) = stopped(&c, "trap '' TERM; sleep 30 & echo $! > deaf; wait").await;
+    assert!(matches!(exit, Exit::Ended(_)), "{exit:?}");
+    assert!(
+        took >= STOP_TERM_WAIT && took < STOP_TERM_WAIT + STOP_KILL_WAIT,
+        "{took:?}"
+    );
+    std::thread::sleep(Duration::from_millis(100));
+    assert!(!alive("deaf"), "KILL ended it");
+
+    // A server that takes no signals: left, once both waits are over.
+    let c = Arc::new(connect(false).await);
+    let (exit, took) = stopped(&c, "sleep 30 & echo $! > left; wait").await;
+    assert_eq!(exit, Exit::Unheard);
+    assert!(took >= STOP_TERM_WAIT + STOP_KILL_WAIT, "{took:?}");
+    let _ = std::process::Command::new("kill")
+        .arg(
+            std::fs::read_to_string(home.join("left"))
+                .expect("pid")
+                .trim(),
+        )
+        .status();
 }
 
 /// A connection for commands alone: each runs on its own channel, its input

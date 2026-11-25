@@ -22,6 +22,9 @@ tf05d1c4a = çalışmadı
 # stopped
 t6ee2f34e = durduruldu
 
+# may still run on its host
+t7962a4e6 = host'ta hâlâ çalışıyor olabilir
+
 # refused by you
 t2fd484b3 = reddettiniz
 
@@ -90,6 +93,9 @@ tc50e2e47 = { $client }, bu kod parçacığını { $host } üzerinde { $envs } o
 
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client }, bu kod parçacığını { $host } üzerinde çalıştırmak istiyor. Her seferinde sizi bekler: önce okunsun diye Enter olmadan yazılır.
+
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client }, bunu bu bilgisayar ile { $host } arasında kopyalamak istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her kopyalama bekler.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }, bunu { $host } üzerine yazmak istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her yazma bekler.
@@ -169,6 +175,18 @@ t5f515591 = Bir ana makine arayın
 
 # A command with these words waits
 t1678b953 = Bu sözcükleri içeren bir komut bekler
+
+# Local folders
+t285839dd = Yerel klasörler
+
+# none: it copies no file to or from this computer
+tffc89e05 = yok: bu bilgisayara ya da buradan dosya kopyalamaz
+
+# Add folder…
+t85f0d8d4 = Klasör ekle…
+
+# Let the AI client use this folder
+tf5add2cf = AI istemcisinin bu klasörü kullanmasına izin ver
 
 # AI clients
 ta302119f = AI istemcileri

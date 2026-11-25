@@ -22,6 +22,9 @@ tf05d1c4a = не выполнено
 # stopped
 t6ee2f34e = остановлено
 
+# may still run on its host
+t7962a4e6 = может ещё работать на хосте
+
 # refused by you
 t2fd484b3 = отклонено вами
 
@@ -90,6 +93,9 @@ tc50e2e47 = { $client } хочет выполнить этот сниппет н
 
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } хочет выполнить этот сниппет на { $host }. Он каждый раз ждёт вас: он вводится без Enter, чтобы его сначала прочитали.
+
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } хочет скопировать это между этим компьютером и { $host }. Копирование ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждая копия.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } хочет записать это на { $host }. Запись ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждая запись.
@@ -171,6 +177,18 @@ t5f515591 = Найдите хост
 
 # A command with these words waits
 t1678b953 = Команда с этими словами ждёт
+
+# Local folders
+t285839dd = Локальные папки
+
+# none: it copies no file to or from this computer
+tffc89e05 = нет: он не копирует файлы на этот компьютер и с него
+
+# Add folder…
+t85f0d8d4 = Добавить папку…
+
+# Let the AI client use this folder
+tf5add2cf = Разрешить AI-клиенту эту папку
 
 # AI clients
 ta302119f = AI-клиенты

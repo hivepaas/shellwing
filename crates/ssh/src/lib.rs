@@ -583,6 +583,23 @@ impl ExecConnection {
     }
 }
 
+/// How a command [`ExecConnection::stream`] ran ended.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Exit {
+    /// The server said it ended: its exit status, None when a signal
+    /// ended it.
+    Ended(Option<u32>),
+    /// Asked to stop, it was sent TERM, then KILL, and the server never
+    /// said it ended (one that takes no signals, as some do not): it was
+    /// left, and may still run there.
+    Unheard,
+}
+
+/// A command asked to stop gets TERM, and this long to end (to tidy up);
+/// then KILL, and this long, before it is left.
+pub const STOP_TERM_WAIT: Duration = Duration::from_secs(3);
+pub const STOP_KILL_WAIT: Duration = Duration::from_secs(2);
+
 /// Which stream a command printed on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Stream {
@@ -592,14 +609,17 @@ pub enum Stream {
 
 impl ExecConnection {
     /// Runs `command` with `stdin` as its input, handing what it prints to
-    /// `printed` as it comes; how it ended, its exit status (None for a
-    /// signal).
+    /// `printed` as it comes, until it ends. Once `stop` is sent, it is
+    /// signalled: TERM, then KILL (OpenSSH signals the command's whole
+    /// process group). Closing its channel alone would not end it: with no
+    /// terminal, nothing tells it, and one that prints nothing runs on.
     pub async fn stream(
         &self,
         command: &str,
         stdin: &[u8],
         mut printed: impl FnMut(Stream, &[u8]),
-    ) -> Result<Option<u32>, Error> {
+        mut stop: tokio::sync::oneshot::Receiver<()>,
+    ) -> Result<Exit, Error> {
         let mut ch = self.target.channel_open_session().await?;
         ch.exec(true, command).await?;
         if !stdin.is_empty() {
@@ -607,18 +627,45 @@ impl ExecConnection {
         }
         ch.eof().await?;
         let mut status = None;
-        while let Some(msg) = ch.wait().await {
-            match msg {
-                ChannelMsg::Data { data } => printed(Stream::Out, &data),
-                ChannelMsg::ExtendedData { data, ext: 1 } => printed(Stream::Err, &data),
-                ChannelMsg::ExitStatus { exit_status } => status = Some(exit_status),
-                ChannelMsg::Failure => {
-                    return Err(Error::Exec("the server would not run a command".into()));
+        // Asked to stop: when the next step is due, and whether it is KILL
+        // sent already.
+        let (mut listening, mut next) = (true, None::<(tokio::time::Instant, bool)>);
+        loop {
+            let due = async {
+                match next {
+                    Some((at, _)) => tokio::time::sleep_until(at).await,
+                    None => std::future::pending().await,
                 }
-                _ => {}
+            };
+            tokio::select! {
+                msg = ch.wait() => match msg {
+                    None => break,
+                    Some(ChannelMsg::Data { data }) => printed(Stream::Out, &data),
+                    Some(ChannelMsg::ExtendedData { data, ext: 1 }) => printed(Stream::Err, &data),
+                    Some(ChannelMsg::ExitStatus { exit_status }) => status = Some(exit_status),
+                    Some(ChannelMsg::Failure) => {
+                        return Err(Error::Exec("the server would not run a command".into()));
+                    }
+                    Some(_) => {}
+                },
+                asked = &mut stop, if listening => {
+                    listening = false;
+                    // Dropped, not sent: no one will ask.
+                    if asked.is_ok() {
+                        let _ = ch.signal(russh::Sig::TERM).await;
+                        next = Some((tokio::time::Instant::now() + STOP_TERM_WAIT, false));
+                    }
+                }
+                () = due => match next {
+                    Some((_, false)) => {
+                        let _ = ch.signal(russh::Sig::KILL).await;
+                        next = Some((tokio::time::Instant::now() + STOP_KILL_WAIT, true));
+                    }
+                    _ => return Ok(Exit::Unheard),
+                },
             }
         }
-        Ok(status)
+        Ok(Exit::Ended(status))
     }
 }
 

@@ -22,6 +22,9 @@ tf05d1c4a = không chạy được
 # stopped
 t6ee2f34e = đã dừng
 
+# may still run on its host
+t7962a4e6 = có thể vẫn chạy trên máy
+
 # refused by you
 t2fd484b3 = bạn đã từ chối
 
@@ -90,6 +93,9 @@ tc50e2e47 = { $client } muốn chạy đoạn lệnh này trên { $host }, với
 
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } muốn chạy đoạn lệnh này trên { $host }. Lần nào cũng chờ bạn: đoạn lệnh này được gõ không kèm Enter, để đọc trước.
+
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } muốn chép nội dung này giữa máy này và { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần chép đều chờ.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } muốn ghi tệp này trên { $host }. Thao tác ghi đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ.
@@ -168,6 +174,18 @@ t5f515591 = Tìm máy chủ
 
 # A command with these words waits
 t1678b953 = Lệnh có những từ này sẽ chờ
+
+# Local folders
+t285839dd = Thư mục trên máy
+
+# none: it copies no file to or from this computer
+tffc89e05 = không có: không chép tệp nào lên hay xuống máy này
+
+# Add folder…
+t85f0d8d4 = Thêm thư mục…
+
+# Let the AI client use this folder
+tf5add2cf = Cho AI client dùng thư mục này
 
 # AI clients
 ta302119f = Client AI

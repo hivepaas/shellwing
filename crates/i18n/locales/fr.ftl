@@ -22,6 +22,9 @@ tf05d1c4a = non exécuté
 # stopped
 t6ee2f34e = arrêté
 
+# may still run on its host
+t7962a4e6 = tourne peut-être encore sur le serveur
+
 # refused by you
 t2fd484b3 = refusé par vous
 
@@ -90,6 +93,9 @@ tc50e2e47 = { $client } veut exécuter cet extrait sur { $host }, avec les envir
 
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } veut exécuter cet extrait sur { $host }. Il vous attend à chaque fois : il est saisi sans Entrée, pour être lu d'abord.
+
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } veut copier ceci entre cet ordinateur et { $host }. Il vous attend : là où les commandes risquées attendent, chaque copie attend.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } veut écrire ceci sur { $host }. L'écriture vous attend : là où les commandes risquées attendent, chaque écriture attend.
@@ -169,6 +175,18 @@ t5f515591 = Cherchez un serveur
 
 # A command with these words waits
 t1678b953 = Une commande avec ces mots attend
+
+# Local folders
+t285839dd = Dossiers locaux
+
+# none: it copies no file to or from this computer
+tffc89e05 = aucun : il ne copie aucun fichier vers ou depuis cet ordinateur
+
+# Add folder…
+t85f0d8d4 = Ajouter un dossier…
+
+# Let the AI client use this folder
+tf5add2cf = Autoriser le client d'AI à utiliser ce dossier
 
 # AI clients
 ta302119f = Clients AI

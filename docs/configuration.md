@@ -1215,6 +1215,9 @@ config to paste into that client, with a token of its own.
 - The token shows that once. shellwing keeps only its SHA-256, in
   `state/ai.json`, which only you may read.
 - *Remove* takes a client's token back, and the hosts given to it.
+- **Local folders**, under each client: the folders on this computer it may
+  copy files from and to (`upload`, `download`). None until you add one with
+  *Add folder…*; ✕ takes one away.
 - *Pause* stops a client for now: it keeps its token, so its config needs no
   change, and the hosts given it, each as it was. Whatever it asks, it is told
   it is paused, and what it was running stops. *Resume* lets it in again.
@@ -1329,10 +1332,16 @@ they print:
   leading space), between two marks the terminal does not show, so shellwing
   tells its output and its exit status apart from the rest. The shell must
   be at its prompt, and be `sh`, `bash`, `zsh` or the like.
+- The command runs in a subshell of its own: a `cd`, an `export` or an `exit`
+  in it is its own, and your shell stays as it was. What it prints reaches
+  the agent as it comes, a line at a time.
 - A strip over the tab says whose it is and how many commands it ran.
   *Pause* holds AI's next commands until *Let it go on*; *Take access back*
-  ends the grant. Ctrl+C stops a command, as any other, and Stop (in AI
-  activity, or `job_stop`) sends it.
+  ends the grant. Ctrl+C stops a command, as any other: its subshell ends
+  (exit 130), the tab is free for the next, and the agent hears that it was
+  stopped. Stop (in AI activity, or `job_stop`) sends it, and once more if
+  the command still runs a moment later; one that takes no Ctrl+C (an editor,
+  some REPLs) runs on, and the agent is told so.
 - What the agent gets is the command's output as plain text: colors and other
   escape sequences out, and a line written over (a progress bar) as it was
   last.
@@ -1360,7 +1369,13 @@ they print:
   asked, waiting for something new when there is nothing yet. So the agent
   follows a long command a few seconds behind it. A client that asks for
   progress is told how far it got, each second.
-- `job_stop(job)`: stops a job.
+- `job_stop(job)`: stops a job, and says once it ended. On the agent's own
+  connection, the command is sent TERM, then KILL 3 seconds later, through
+  SSH: OpenSSH sends them to its whole process group, its children too.
+  Closing its channel alone would not end it: with no terminal, nothing
+  tells it, and one that prints nothing runs on. A server that takes no
+  signals (some do not) never says it ended: after 5 seconds the job is left,
+  marked *may still run on its host*. In a tab, it is Ctrl+C, as above.
 - `activity(host, job, before, limit)`: what the agent ran before, in this
   session or an earlier one, newest first (20 if not told, 100 at the most).
   For each command: its id, host, start, how it ended, the command and the
@@ -1388,6 +1403,26 @@ they print:
   the most. The folders it goes in are made where they are not, as
   `mkdir -p` would, and its answer names them. One that failed says why: the
   file is there already (`create`), or something on its way is not a folder.
+- `upload(host, local_path, remote_path, mode)` and
+  `download(host, remote_path, local_path, mode)`: copy a file or a whole
+  folder between this computer and the host, without its bytes going
+  through the agent: it is told the paths, the size and the time it took, and
+  `job_output` says how far a long one is. No limit on size.
+  - Only within the client's **local folders** (above); a path is resolved
+    (`..` and links followed) before it is checked. Never `~/.ssh`,
+    `~/.gnupg`, `~/.aws`, `~/.kube`, `~/.docker`, `~/.netrc`,
+    `~/.git-credentials`, `~/.password-store`, the system's keyrings, or
+    shellwing's own folder and its vault, whatever the folders; a folder that
+    holds one is not uploaded.
+  - `upload` needs *Write files*, `download` *Read files*. Where risky ones
+    wait, every copy waits for you, both paths and the size shown.
+  - A file is written beside its target first, then put in its place: a copy
+    stopped or broken leaves nothing half-written. `create` (nothing may be
+    there) or `overwrite` (the default) a file; a folder goes only where
+    nothing is, so nothing is written over or taken away. Into a folder
+    there, a file goes by its name. Links in a folder uploaded are left out.
+  - A file downloaded that would not fit in the free space here is refused
+    before it starts.
 
 The file tools work over SFTP on the agent's own connection, a host given
 through a tab too; a path not starting with `/` is from the home folder.

@@ -476,6 +476,7 @@ mod tests {
             token_sha256: String::new(),
             added_at: 0,
             paused: false,
+            folders: vec![],
         }
     }
 

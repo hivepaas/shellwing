@@ -81,6 +81,7 @@ fn standing(a: &Activity) -> (String, u32) {
         (None, Some(End::Exited(None))) => (tr!("ended by a signal"), c.bad),
         (None, Some(End::Failed(_))) => (tr!("did not run"), c.bad),
         (None, Some(End::Stopped)) => (tr!("stopped"), c.muted),
+        (None, Some(End::Left)) => (tr!("may still run on its host"), c.warn),
         (None, Some(End::Refused)) => (tr!("refused by you"), c.muted),
     }
 }
@@ -539,6 +540,12 @@ impl ActivityView {
                         } else if why == shellwing_core::ai::snippets::LOOK {
                             tr!(
                                 "{client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else if why == shellwing_core::ai::transfers::COPIES {
+                            tr!(
+                                "{client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.",
                                 client = a.client.clone(),
                                 host = a.host.clone()
                             )

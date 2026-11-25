@@ -78,7 +78,7 @@ pub fn size(n: u64) -> String {
 }
 
 /// `path` on the host: `~` its home, a relative one from the home.
-async fn resolve(sftp: &Sftp, path: &str) -> Result<String, String> {
+pub(crate) async fn resolve(sftp: &Sftp, path: &str) -> Result<String, String> {
     let path = path.trim();
     let expanded = sftp.expand(path).await.map_err(|e| e.to_string())?;
     if expanded.starts_with('/') {
