@@ -4861,6 +4861,11 @@ impl Workspace {
     fn find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(tab) = self.active_tab().cloned() {
             tab.update(cx, |v, cx| v.open_find(window, cx));
+        } else if let Some(TabPage::Activity(v)) =
+            self.tabs.get(self.active).and_then(|t| t.page.as_ref())
+        {
+            let v = v.clone();
+            v.update(cx, |v, cx| v.open_find(window, cx));
         }
     }
 

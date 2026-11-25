@@ -646,3 +646,51 @@ scenario!(
         assert!(ui.find("ai-badge:web").is_some() && ui.find("ai-badge:cache").is_some());
     }
 );
+
+scenario!(
+    /// AI activity draws a command at a prompt and its output as a tab's
+    /// terminal does: colors as colors, not escapes; a running command's
+    /// output added as it comes, the prompt once; and the find shortcut
+    /// opens a find bar over it.
+    activity_shows_output_as_a_terminal,
+    |ui| {
+        let token = given_web(ui, "Free");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool(
+            "run",
+            json!({"host": "web", "command": "printf '\\033[31mred\\033[0m\\nplain\\n'"}),
+        );
+        assert!(said.starts_with("exit 0"), "{said}");
+        ui.ws(|ws, window, cx| ws.open_activity(window, cx));
+        ui.wait_until("the output to show", |ui| {
+            ui.ws(|ws, _, cx| ws.activity_text(cx)).contains("plain")
+        });
+        let text = ui.ws(|ws, _, cx| ws.activity_text(cx));
+        assert!(text.starts_with("$ printf"), "the command at a prompt: {text}");
+        assert!(text.contains("\nred\nplain"), "{text}");
+        let output = text.split_once('\n').map_or("", |(_, o)| o);
+        assert!(!output.contains("[31m"), "a color is drawn, not shown: {text}");
+
+        let (said, _) = c.tool(
+            "run",
+            // What it prints is not in the command: $((…)) makes it.
+            json!({"host": "web", "command": "echo one-$((1+1)); sleep 2; echo three-$((1+2))", "wait_seconds": 1}),
+        );
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.wait_until("the running one to show", |ui| {
+            ui.ws(|ws, _, cx| ws.activity_text(cx)).contains("one-2")
+        });
+        let text = ui.ws(|ws, _, cx| ws.activity_text(cx));
+        assert!(!text.contains("three-3"), "{text}");
+        assert!(follow(&mut c, &job).contains("exit 0"));
+        ui.wait_until("the rest to come", |ui| {
+            ui.ws(|ws, _, cx| ws.activity_text(cx)).contains("three-3")
+        });
+        let text = ui.ws(|ws, _, cx| ws.activity_text(cx));
+        assert_eq!(text.matches("$ echo one").count(), 1, "the prompt once: {text}");
+        assert!(text.contains("one-2\nthree-3"), "{text}");
+
+        ui.keys(if cfg!(target_os = "macos") { "cmd-f" } else { "ctrl-shift-f" });
+        assert!(ui.find("viewer-find").is_some(), "the find bar opens");
+    }
+);

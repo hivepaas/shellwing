@@ -79,7 +79,7 @@ const FONT_FALLBACKS: &[&str] = &[
     "DejaVu Sans Mono",
 ];
 /// Lines per wheel notch.
-const WHEEL_LINES: f32 = 3.0;
+pub(crate) const WHEEL_LINES: f32 = 3.0;
 /// How long a refused paste waits for the user to paste again to confirm.
 const CONFIRM_PASTE: Duration = Duration::from_secs(5);
 /// How long the font size stays on screen after zooming.
@@ -91,9 +91,9 @@ const LOG_NOTICE: Duration = Duration::from_secs(6);
 /// Font sizes zooming may reach, as `config.toml` allows.
 const FONT_SIZES: (f32, f32) = (6.0, 72.0);
 /// The scrollbar stays this long after scrolling stops (with `scrollbar = "auto"`).
-const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
+pub(crate) const SCROLLBAR_LINGER: Duration = Duration::from_millis(1200);
 /// The pointer this close to the right edge shows the scrollbar.
-const SCROLLBAR_ZONE: f32 = 14.;
+pub(crate) const SCROLLBAR_ZONE: f32 = 14.;
 const SCROLLBAR_MIN_THUMB: f32 = 24.;
 
 /// A page for the terminal's HTML, in the pane's colors.
@@ -116,7 +116,7 @@ fn html_page(title: &str, body: &[u8], colors: &shellwing_term::Colors) -> Vec<u
 
 /// The scrollbar thumb's top and height in a track `track` px tall, or None
 /// when everything fits (no history, or the alternate screen).
-fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
+pub(crate) fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
     if pos.total <= pos.len || track <= 0. {
         return None;
     }
@@ -128,7 +128,7 @@ fn thumb(pos: ScrollPos, track: f32) -> Option<(f32, f32)> {
 }
 
 /// The first history row to show with the thumb's top at `top`.
-fn row_for_thumb(pos: ScrollPos, track: f32, top: f32) -> usize {
+pub(crate) fn row_for_thumb(pos: ScrollPos, track: f32, top: f32) -> usize {
     let Some((_, h)) = thumb(pos, track) else {
         return 0;
     };
@@ -164,7 +164,7 @@ fn term_button(b: MouseButton) -> Option<TermButton> {
 /// A piece of a row painted with one shaped line: a stretch of narrow cells, or a
 /// single wide glyph given two cells of advance.
 #[derive(Clone)]
-struct Segment {
+pub(crate) struct Segment {
     col: u16,
     wide: bool,
     text: SharedString,
@@ -172,20 +172,20 @@ struct Segment {
 }
 
 /// A row converted to GPUI text runs, kept while the frame keeps sharing the row.
-struct PaintRow {
+pub(crate) struct PaintRow {
     source: Arc<Row>,
-    segments: Vec<Segment>,
+    pub segments: Vec<Segment>,
 }
 
 /// A theme's gradient rendered for one aspect ratio.
-struct GradientImage {
+pub(crate) struct GradientImage {
     key: (String, u32, u32),
     image: Arc<RenderImage>,
 }
 
 /// The image for `gradient` at `size`, rendered again only when the theme or
 /// the aspect ratio changed.
-fn gradient_image(
+pub(crate) fn gradient_image(
     cache: &RefCell<Option<GradientImage>>,
     theme: &Theme,
     gradient: &Gradient,
@@ -357,9 +357,9 @@ struct FindBar {
 /// How text is found, the same in every pane: the last choice stays for the
 /// next find bar.
 #[derive(Clone, Copy, Default)]
-struct FindOptions {
-    match_case: bool,
-    regex: bool,
+pub(crate) struct FindOptions {
+    pub match_case: bool,
+    pub regex: bool,
 }
 
 impl gpui::Global for FindOptions {}
@@ -392,6 +392,169 @@ impl gpui::EventEmitter<AllowAsks> for TermView {}
 impl gpui::EventEmitter<Unplaced> for TermView {}
 impl gpui::EventEmitter<FilesResized> for TermView {}
 impl gpui::EventEmitter<PaneCommand> for TermView {}
+
+/// Converts the rows of `frame` that changed since `paint_rows` was made into
+/// GPUI text runs, in `theme`'s colors and the font `base`.
+pub(crate) fn convert_rows(
+    frame: &Frame,
+    theme: &Theme,
+    base: &Font,
+    paint_rows: &mut Vec<PaintRow>,
+) {
+    let rows = &frame.rows;
+    let selection_bg = hsla(theme_rgb(theme.selection_background));
+    let selection_fg = theme.selection_foreground.map(|c| hsla(theme_rgb(c)));
+    paint_rows.truncate(rows.len());
+    for (i, row) in rows.iter().enumerate() {
+        if paint_rows
+            .get(i)
+            .is_some_and(|p| Arc::ptr_eq(&p.source, row))
+        {
+            continue;
+        }
+        let mut segments: Vec<Segment> = Vec::new();
+        let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
+        let mut offset = 0;
+        for r in &row.runs {
+            let text = &row.text[offset..offset + r.len];
+            offset += r.len;
+            let run = TextRun {
+                len: r.len,
+                font: Font {
+                    weight: if r.bold {
+                        FontWeight::BOLD
+                    } else {
+                        FontWeight::NORMAL
+                    },
+                    style: if r.italic {
+                        FontStyle::Italic
+                    } else {
+                        FontStyle::Normal
+                    },
+                    ..base.clone()
+                },
+                color: match (selection_fg, r.found) {
+                    (Some(c), _) if r.selected => c,
+                    (_, Found::Match | Found::Current) if !r.selected => {
+                        rgb(colors().find_text).into()
+                    }
+                    _ => hsla(r.fg),
+                },
+                background_color: match r.found {
+                    _ if r.selected => Some(selection_bg),
+                    Found::Current => Some(rgb(colors().find_current).into()),
+                    Found::Match => Some(rgb(colors().find_match).into()),
+                    Found::No => r.bg.map(hsla),
+                },
+                underline: r.underline.then(|| UnderlineStyle {
+                    thickness: px(1.),
+                    color: None,
+                    wavy: false,
+                }),
+                strikethrough: None,
+            };
+            if r.wide {
+                if let Some((col, t, runs)) = narrow.take() {
+                    segments.push(Segment {
+                        col,
+                        wide: false,
+                        text: t.into(),
+                        runs,
+                    });
+                }
+                segments.push(Segment {
+                    col: r.col,
+                    wide: true,
+                    text: text.to_string().into(),
+                    runs: vec![run],
+                });
+            } else {
+                let seg = narrow.get_or_insert_with(|| (r.col, String::new(), Vec::new()));
+                seg.1.push_str(text);
+                seg.2.push(run);
+            }
+        }
+        if let Some((col, t, runs)) = narrow.take() {
+            segments.push(Segment {
+                col,
+                wide: false,
+                text: t.into(),
+                runs,
+            });
+        }
+        let p = PaintRow {
+            source: row.clone(),
+            segments,
+        };
+        if i < paint_rows.len() {
+            paint_rows[i] = p;
+        } else {
+            paint_rows.push(p);
+        }
+    }
+}
+
+/// The terminal font `family`, with fallbacks for glyphs it lacks. Missing
+/// fallback families are skipped by the text system.
+pub(crate) fn term_font(family: SharedString) -> Font {
+    Font {
+        fallbacks: Some(FontFallbacks::from_fonts(
+            FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
+        )),
+        ..font(family)
+    }
+}
+
+/// A cell of `font` at `font_size`: as wide as its M, as tall as the line
+/// height says.
+pub(crate) fn cell_size(
+    window: &mut Window,
+    font: Font,
+    font_size: f32,
+    line_height: f32,
+) -> (Pixels, Pixels) {
+    let run = TextRun {
+        len: 1,
+        font,
+        // Measured, never drawn.
+        color: rgb(0xffffff).into(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let line = window
+        .text_system()
+        .shape_line("M".into(), px(font_size), &[run], None);
+    (line.width, px((font_size * line_height).round()))
+}
+
+/// Paints `rows` (as [`convert_rows`] made them) with their top-left at
+/// `origin`, each cell `cell` in size.
+pub(crate) fn paint_segments(
+    rows: &[Vec<Segment>],
+    origin: Point<Pixels>,
+    (cw, ch): (Pixels, Pixels),
+    font_size: Pixels,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    for (y, segments) in rows.iter().enumerate() {
+        for seg in segments {
+            let at = point(origin.x + cw * seg.col as f32, origin.y + ch * y as f32);
+            // force_width keeps every glyph on the cell grid; a wide glyph
+            // advances two cells.
+            let advance = if seg.wide { cw * 2. } else { cw };
+            let line = window.text_system().shape_line(
+                seg.text.clone(),
+                font_size,
+                &seg.runs,
+                Some(advance),
+            );
+            let _ = line.paint_background(at, ch, TextAlign::Left, None, window, cx);
+            let _ = line.paint(at, ch, TextAlign::Left, None, window, cx);
+        }
+    }
+}
 
 impl TermView {
     pub fn new(session: Session, look: Look, probe: Arc<Probe>, cx: &mut Context<Self>) -> Self {
@@ -2084,12 +2247,7 @@ impl TermView {
     /// The terminal font, with fallbacks for glyphs it lacks. Missing fallback
     /// families are skipped by the text system.
     fn base_font(&self) -> Font {
-        Font {
-            fallbacks: Some(FontFallbacks::from_fonts(
-                FONT_FALLBACKS.iter().map(|f| f.to_string()).collect(),
-            )),
-            ..font(self.font_family.clone())
-        }
+        term_font(self.font_family.clone())
     }
 
     /// Picks the terminal font: $SHELLWING_FONT, else the configured family if
@@ -2099,7 +2257,7 @@ impl TermView {
         Self::choose_font(window, None).to_string()
     }
 
-    fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
+    pub(crate) fn choose_font(window: &mut Window, configured: Option<&str>) -> SharedString {
         if let Ok(f) = std::env::var("SHELLWING_FONT") {
             return f.into();
         }
@@ -2470,21 +2628,11 @@ impl TermView {
 
     fn measure_cell(&mut self, window: &mut Window) {
         self.font_family = Self::choose_font(window, self.look.font_family.as_deref());
-        let run = TextRun {
-            len: 1,
-            font: self.base_font(),
-            // Measured, never drawn.
-            color: rgb(0xffffff).into(),
-            background_color: None,
-            underline: None,
-            strikethrough: None,
-        };
-        let line = window
-            .text_system()
-            .shape_line("M".into(), px(self.font_size()), &[run], None);
-        self.cell = (
-            line.width,
-            px((self.font_size() * self.look.line_height).round()),
+        self.cell = cell_size(
+            window,
+            self.base_font(),
+            self.font_size(),
+            self.look.line_height,
         );
     }
 
@@ -2514,100 +2662,12 @@ impl TermView {
         if let Some(f) = self.term.take_frame() {
             self.frame = f;
         }
-        let rows = &self.frame.rows;
-        let theme = &self.look.theme;
-        let selection_bg = hsla(theme_rgb(theme.selection_background));
-        let selection_fg = theme.selection_foreground.map(|c| hsla(theme_rgb(c)));
-        self.paint_rows.truncate(rows.len());
-        for (i, row) in rows.iter().enumerate() {
-            if self
-                .paint_rows
-                .get(i)
-                .is_some_and(|p| Arc::ptr_eq(&p.source, row))
-            {
-                continue;
-            }
-            let base = self.base_font();
-            let mut segments: Vec<Segment> = Vec::new();
-            let mut narrow: Option<(u16, String, Vec<TextRun>)> = None;
-            let mut offset = 0;
-            for r in &row.runs {
-                let text = &row.text[offset..offset + r.len];
-                offset += r.len;
-                let run = TextRun {
-                    len: r.len,
-                    font: Font {
-                        weight: if r.bold {
-                            FontWeight::BOLD
-                        } else {
-                            FontWeight::NORMAL
-                        },
-                        style: if r.italic {
-                            FontStyle::Italic
-                        } else {
-                            FontStyle::Normal
-                        },
-                        ..base.clone()
-                    },
-                    color: match (selection_fg, r.found) {
-                        (Some(c), _) if r.selected => c,
-                        (_, Found::Match | Found::Current) if !r.selected => {
-                            rgb(colors().find_text).into()
-                        }
-                        _ => hsla(r.fg),
-                    },
-                    background_color: match r.found {
-                        _ if r.selected => Some(selection_bg),
-                        Found::Current => Some(rgb(colors().find_current).into()),
-                        Found::Match => Some(rgb(colors().find_match).into()),
-                        Found::No => r.bg.map(hsla),
-                    },
-                    underline: r.underline.then(|| UnderlineStyle {
-                        thickness: px(1.),
-                        color: None,
-                        wavy: false,
-                    }),
-                    strikethrough: None,
-                };
-                if r.wide {
-                    if let Some((col, t, runs)) = narrow.take() {
-                        segments.push(Segment {
-                            col,
-                            wide: false,
-                            text: t.into(),
-                            runs,
-                        });
-                    }
-                    segments.push(Segment {
-                        col: r.col,
-                        wide: true,
-                        text: text.to_string().into(),
-                        runs: vec![run],
-                    });
-                } else {
-                    let seg = narrow.get_or_insert_with(|| (r.col, String::new(), Vec::new()));
-                    seg.1.push_str(text);
-                    seg.2.push(run);
-                }
-            }
-            if let Some((col, t, runs)) = narrow.take() {
-                segments.push(Segment {
-                    col,
-                    wide: false,
-                    text: t.into(),
-                    runs,
-                });
-            }
-            let p = PaintRow {
-                source: row.clone(),
-                segments,
-            };
-            if i < self.paint_rows.len() {
-                self.paint_rows[i] = p;
-            } else {
-                self.paint_rows.push(p);
-            }
-        }
+        convert_rows(
+            &self.frame,
+            &self.look.theme,
+            &self.base_font(),
+            &mut self.paint_rows,
+        );
     }
 
     /// A window position relative to the grid's top-left corner, in the
@@ -3048,32 +3108,7 @@ impl Render for TermView {
                             gpui::ElementInputHandler::new(bounds, entity),
                             cx,
                         );
-                        for (y, segments) in rows.iter().enumerate() {
-                            for seg in segments {
-                                let origin = point(
-                                    bounds.origin.x + cw * seg.col as f32,
-                                    bounds.origin.y + ch * y as f32,
-                                );
-                                // force_width keeps every glyph on the cell grid; a wide
-                                // glyph advances two cells.
-                                let advance = if seg.wide { cw * 2. } else { cw };
-                                let line = window.text_system().shape_line(
-                                    seg.text.clone(),
-                                    font_size,
-                                    &seg.runs,
-                                    Some(advance),
-                                );
-                                let _ = line.paint_background(
-                                    origin,
-                                    ch,
-                                    TextAlign::Left,
-                                    None,
-                                    window,
-                                    cx,
-                                );
-                                let _ = line.paint(origin, ch, TextAlign::Left, None, window, cx);
-                            }
-                        }
+                        paint_segments(&rows, bounds.origin, (cw, ch), font_size, window, cx);
                         if let Some(link) = hover {
                             let o = point(
                                 bounds.origin.x + cw * link.start as f32,

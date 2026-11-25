@@ -31,6 +31,8 @@ pub const KEEP: usize = 1024 * 1024;
 pub const LOGGED: usize = 64 * 1024;
 /// Commands the activity keeps, the oldest dropped first.
 pub const ACTIVITY: usize = 1000;
+/// How often the app is told what a running command printed.
+const FOLLOW: Duration = Duration::from_millis(250);
 /// How long a host may take to answer when its settings say nothing.
 pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -246,6 +248,11 @@ impl Job {
 
     pub fn ended(&self) -> bool {
         self.state.lock().is_ok_and(|s| s.activity.end.is_some())
+    }
+
+    /// How much it printed so far.
+    fn printed(&self) -> usize {
+        self.state.lock().map_or(0, |s| s.out.len())
     }
 
     fn print(&self, data: &[u8]) {
@@ -605,6 +612,24 @@ impl Hub {
         true
     }
 
+    /// Tells the app what `job` printed, a few times a second while it runs:
+    /// what came last too, so a command that prints a line and then works a
+    /// while shows that line at once.
+    fn follow_output(&self, job: &Arc<Job>) {
+        let (job, events) = (job.clone(), self.events.clone());
+        self.rt.spawn(async move {
+            let mut sent = 0;
+            while !job.ended() {
+                tokio::time::sleep(FOLLOW).await;
+                let printed = job.printed();
+                if printed != sent && !job.ended() {
+                    sent = printed;
+                    let _ = events.try_send(HubEvent::Changed(job.activity()));
+                }
+            }
+        });
+    }
+
     /// The host's connection, made if it is not.
     async fn connection(slot: &Slot, options: Options) -> Result<Arc<ExecConnection>, String> {
         let mut slot = slot.lock().await;
@@ -672,19 +697,9 @@ impl Hub {
                 Err(why) => End::Failed(why),
                 Ok(c) => {
                     let printing = running.clone();
-                    let last = Mutex::new(Instant::now());
-                    let events = hub.events.clone();
+                    hub.follow_output(&running);
                     let status = c
-                        .stream(&command, b"", |_, data| {
-                            printing.print(data);
-                            // The activity follows the output, a few times a second.
-                            if let Ok(mut l) = last.lock()
-                                && l.elapsed() > Duration::from_millis(250)
-                            {
-                                *l = Instant::now();
-                                let _ = events.try_send(HubEvent::Changed(printing.activity()));
-                            }
-                        })
+                        .stream(&command, b"", |_, data| printing.print(data))
                         .await;
                     match status {
                         Ok(s) => End::Exited(s),

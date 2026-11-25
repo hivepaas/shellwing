@@ -198,6 +198,25 @@ impl Workspace {
         self.activate(self.tabs.len() - 1, window, cx);
     }
 
+    /// The output AI activity shows now, as its terminal has it: for the UI
+    /// tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn activity_text(&self, cx: &gpui::App) -> String {
+        self.tabs
+            .iter()
+            .find_map(|t| match &t.page {
+                Some(TabPage::Activity(v)) => Some(v.read(cx).shown_text(cx)),
+                _ => None,
+            })
+            .unwrap_or_default()
+    }
+
+    /// The look of a tab to the host the host list names `host`: what AI
+    /// activity draws a command's output in.
+    pub fn look_of_host(&self, host: &str) -> crate::look::Look {
+        self.live.look_for(Some(host)).0
+    }
+
     /// What Settings › AI shows.
     pub fn ai_snapshot(&self, _: &gpui::App) -> crate::ai_view::AiSnap {
         let (state, connected) = match &self.ai {

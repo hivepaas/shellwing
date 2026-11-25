@@ -50,6 +50,7 @@ mod snippet_window;
 mod snippets_view;
 mod sync_panel;
 mod tab_overview;
+mod term_viewer;
 mod ui_font;
 mod view;
 mod workspace;

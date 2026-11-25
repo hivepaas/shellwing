@@ -70,12 +70,6 @@ tbea0b112 = Ablehnen
 # Stop
 t4b7f7705 = Stoppen
 
-# It printed nothing.
-tbb876a9f = Es hat nichts ausgegeben.
-
-# Nothing printed yet.
-t1051cbec = Noch keine Ausgabe.
-
 # Copy output
 t64749f61 = Ausgabe kopieren
 
@@ -3776,6 +3770,24 @@ t6246d272 = Cmd+W schließen
 # Ctrl+W close it
 t82a6adaf = Ctrl+W schließen
 
+# Find
+t3e1cd17a = Suchen
+
+# Invalid pattern
+t5b9dcaca = Ungültiges Muster
+
+# No results
+tdd4785bc = Keine Ergebnisse
+
+# {current} of {total}{more}
+ta6206114 = { $current } von { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total } gefunden{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Zurück nach unten (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = In diesem Pane läuft ein Vollbildprogramm: Beende es und versuche es dann erneut.
 
@@ -3858,21 +3870,6 @@ ta04e62fb = { $key } ist auf { $host } installiert. Ab jetzt damit bei { $host }
 
 # Use it for {host}
 t704df588 = Für { $host } verwenden
-
-# Find
-t3e1cd17a = Suchen
-
-# Invalid pattern
-t5b9dcaca = Ungültiges Muster
-
-# No results
-tdd4785bc = Keine Ergebnisse
-
-# {current} of {total}{more}
-ta6206114 = { $current } von { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total } gefunden{ $more }
 
 # Match case (Alt+C)
 t692d685e = Groß-/Kleinschreibung beachten (Alt+C)
@@ -4012,9 +4009,6 @@ t1165de29 = Unten teilen
 
 # Close Pane
 t21a947cf = Bereich schließen
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ Zurück nach unten (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } möchte einen Befehl auf { $host } ausführen: Er wartet in AI-Aktivität auf dich.

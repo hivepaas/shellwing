@@ -70,12 +70,6 @@ tbea0b112 = Отклонить
 # Stop
 t4b7f7705 = Остановить
 
-# It printed nothing.
-tbb876a9f = Ничего не выведено.
-
-# Nothing printed yet.
-t1051cbec = Пока ничего не выведено.
-
 # Copy output
 t64749f61 = Копировать вывод
 
@@ -3862,6 +3856,24 @@ t6246d272 = Cmd+W закрыть
 # Ctrl+W close it
 t82a6adaf = Ctrl+W закрыть
 
+# Find
+t3e1cd17a = Найти
+
+# Invalid pattern
+t5b9dcaca = Неверный шаблон
+
+# No results
+tdd4785bc = Нет результатов
+
+# {current} of {total}{more}
+ta6206114 = { $current } из { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = Найдено: { $total }{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Вернуться вниз (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = В этой панели запущена полноэкранная программа: выйдите из неё и повторите попытку.
 
@@ -3948,21 +3960,6 @@ ta04e62fb = { $key } установлен на { $host }. Входить на { 
 
 # Use it for {host}
 t704df588 = Использовать для { $host }
-
-# Find
-t3e1cd17a = Найти
-
-# Invalid pattern
-t5b9dcaca = Неверный шаблон
-
-# No results
-tdd4785bc = Нет результатов
-
-# {current} of {total}{more}
-ta6206114 = { $current } из { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = Найдено: { $total }{ $more }
 
 # Match case (Alt+C)
 t692d685e = Учитывать регистр (Alt+C)
@@ -4104,9 +4101,6 @@ t1165de29 = Разделить вниз
 
 # Close Pane
 t21a947cf = Закрыть панель
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ Вернуться вниз (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } хочет выполнить команду на { $host }: она на вкладке «Активность AI» и ждёт вас.

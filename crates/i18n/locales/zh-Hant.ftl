@@ -70,12 +70,6 @@ tbea0b112 = 拒絕
 # Stop
 t4b7f7705 = 停止
 
-# It printed nothing.
-tbb876a9f = 沒有任何輸出。
-
-# Nothing printed yet.
-t1051cbec = 尚無輸出。
-
 # Copy output
 t64749f61 = 複製輸出
 
@@ -3733,6 +3727,24 @@ t6246d272 = Cmd+W 關閉
 # Ctrl+W close it
 t82a6adaf = Ctrl+W 關閉
 
+# Find
+t3e1cd17a = 尋找
+
+# Invalid pattern
+t5b9dcaca = 無效的模式
+
+# No results
+tdd4785bc = 沒有結果
+
+# {current} of {total}{more}
+ta6206114 = { $current }/{ $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = 找到 { $total }{ $more } 個
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ 回到底部（Shift+End）
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = 此窗格中正在執行全螢幕程式：請先離開它，然後再試一次。
 
@@ -3813,21 +3825,6 @@ ta04e62fb = { $key } 已安裝到 { $host }。今後要使用它登入 { $host }
 
 # Use it for {host}
 t704df588 = 用於 { $host }
-
-# Find
-t3e1cd17a = 尋找
-
-# Invalid pattern
-t5b9dcaca = 無效的模式
-
-# No results
-tdd4785bc = 沒有結果
-
-# {current} of {total}{more}
-ta6206114 = { $current }/{ $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = 找到 { $total }{ $more } 個
 
 # Match case (Alt+C)
 t692d685e = 大小寫須相符（Alt+C）
@@ -3966,9 +3963,6 @@ t1165de29 = 向下分割
 
 # Close Pane
 t21a947cf = 關閉窗格
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ 回到底部（Shift+End）
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } 想在 { $host } 上執行指令：已列在「AI 活動」中，正在等你確認。

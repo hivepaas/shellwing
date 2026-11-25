@@ -1289,8 +1289,14 @@ palette, opens a tab with every command AI clients ran:
 
 - **The list:** newest first, with *All*, *Waiting for you*, *Running* and
   *Failed*. *Stop all AI* stops every command going.
-- **The command shown:** its output as it comes, its end and how long it took,
-  *Stop* while it runs, and *Copy output*.
+- **The command shown:** its end and how long it took, *Stop* while it runs,
+  and *Copy output*. The command and its output are drawn as a terminal: the
+  command at a `$` prompt, then what it printed, as it comes. That terminal
+  has the look of a tab to the host (its theme, gradient, font, line height,
+  padding and scrollbar), and draws colors a command prints. It only shows:
+  the wheel scrolls, a drag selects, Ctrl+C or Ctrl+Shift+C (Cmd+C on macOS)
+  copies the selection, a link opens with Ctrl+click (Cmd+click), and the
+  find shortcut (Ctrl+Shift+F, Cmd+F) finds in it.
 - **A command that waits for you** says why: the risky words it has, or that
   its grant asks every time. *Run it*, *Run it, and this command again this
   session*, or *Refuse it*.

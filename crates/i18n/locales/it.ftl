@@ -70,12 +70,6 @@ tbea0b112 = Rifiuta
 # Stop
 t4b7f7705 = Interrompi
 
-# It printed nothing.
-tbb876a9f = Non ha stampato niente.
-
-# Nothing printed yet.
-t1051cbec = Non ha ancora stampato niente.
-
 # Copy output
 t64749f61 = Copia output
 
@@ -3776,6 +3770,24 @@ t6246d272 = Cmd+W chiudila
 # Ctrl+W close it
 t82a6adaf = Ctrl+W chiudila
 
+# Find
+t3e1cd17a = Cerca
+
+# Invalid pattern
+t5b9dcaca = Pattern non valido
+
+# No results
+tdd4785bc = Nessun risultato
+
+# {current} of {total}{more}
+ta6206114 = { $current } di { $total }{ $more }
+
+# {total} found{more}
+t59fb4764 = { $total } trovati{ $more }
+
+# ↓ Back to bottom (Shift+End)
+t5a2b7304 = ↓ Torna in fondo (Shift+End)
+
 # A full-screen program is running in this pane: leave it, then try again.
 t20301272 = In questo riquadro è in esecuzione un programma a schermo intero: chiudilo, poi riprova.
 
@@ -3858,21 +3870,6 @@ ta04e62fb = { $key } è installata su { $host }. Accedere a { $host } con essa d
 
 # Use it for {host}
 t704df588 = Usala per { $host }
-
-# Find
-t3e1cd17a = Cerca
-
-# Invalid pattern
-t5b9dcaca = Pattern non valido
-
-# No results
-tdd4785bc = Nessun risultato
-
-# {current} of {total}{more}
-ta6206114 = { $current } di { $total }{ $more }
-
-# {total} found{more}
-t59fb4764 = { $total } trovati{ $more }
 
 # Match case (Alt+C)
 t692d685e = Maiuscole/minuscole (Alt+C)
@@ -4012,9 +4009,6 @@ t1165de29 = Dividi in basso
 
 # Close Pane
 t21a947cf = Chiudi riquadro
-
-# ↓ Back to bottom (Shift+End)
-t5a2b7304 = ↓ Torna in fondo (Shift+End)
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } vuole eseguire un comando su { $host }: è in Attività AI, e ti aspetta.

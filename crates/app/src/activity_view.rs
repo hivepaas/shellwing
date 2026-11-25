@@ -3,7 +3,7 @@
 //! them (docs/configuration.md, AI access).
 
 use gpui::{
-    App, ClipboardItem, Context, FocusHandle, Focusable, FontWeight, InteractiveElement,
+    App, ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, InteractiveElement,
     IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement, Styled,
     WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
 };
@@ -15,6 +15,7 @@ use shellwing_i18n::tr;
 use crate::colors::colors;
 use crate::host_editor::{hint_text, outline_button, primary_button};
 use crate::look::ui;
+use crate::term_viewer::TermViewer;
 use crate::workspace::Workspace;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -32,6 +33,8 @@ pub struct ActivityView {
     /// The command shown, by its job's id; None: the newest.
     shown: Option<String>,
     mono: SharedString,
+    /// The command shown and its output, drawn as a terminal draws them.
+    viewer: Option<Entity<TermViewer>>,
 }
 
 impl Focusable for ActivityView {
@@ -75,7 +78,38 @@ impl ActivityView {
             filter: Filter::All,
             shown: None,
             mono: SharedString::default(),
+            viewer: None,
         }
+    }
+
+    /// Opens the find bar over the output shown.
+    pub fn open_find(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(v) = &self.viewer {
+            v.update(cx, |v, cx| v.open_find(window, cx));
+        }
+    }
+
+    /// The output shown, for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn shown_text(&self, cx: &App) -> String {
+        self.viewer
+            .as_ref()
+            .map(|v| v.read(cx).shown_text())
+            .unwrap_or_default()
+    }
+
+    /// The viewer, showing `a` in the look of a tab to its host.
+    fn view(&mut self, a: &Activity, cx: &mut Context<Self>) -> Option<Entity<TermViewer>> {
+        let look = self.workspace.upgrade()?.read(cx).look_of_host(&a.host);
+        if self.viewer.is_none() {
+            self.viewer = TermViewer::spawn(look.clone(), cx);
+        }
+        let v = self.viewer.clone()?;
+        v.update(cx, |v, cx| {
+            v.set_look(look, cx);
+            v.show(&a.id, &a.command, &a.output, cx);
+        });
+        Some(v)
     }
 
     fn activity(&self, cx: &App) -> Vec<Arc<Activity>> {
@@ -257,7 +291,7 @@ impl ActivityView {
             .child(rows)
     }
 
-    fn detail(&self, a: &Activity, cx: &mut Context<Self>) -> gpui::Div {
+    fn detail(&mut self, a: &Activity, cx: &mut Context<Self>) -> gpui::Div {
         let (state, color) = standing(a);
         let took = match a.ended {
             Some(e) => format!(", {} s", e.saturating_sub(a.started)),
@@ -283,19 +317,6 @@ impl ActivityView {
                 when = when(a.started),
                 job = a.id.clone()
             )))
-            .child(
-                div()
-                    .debug_selector(|| "ai-command".into())
-                    .px(px(10.))
-                    .py(px(7.))
-                    .rounded(px(6.))
-                    .bg(rgb(colors().field))
-                    .border_1()
-                    .border_color(rgb(colors().line))
-                    .font_family(self.mono.clone())
-                    .text_size(ui(13.))
-                    .child(a.command.clone()),
-            )
             .child(
                 div()
                     .debug_selector(|| "ai-standing".into())
@@ -377,6 +398,7 @@ impl ActivityView {
             );
         }
         let copy = a.output.clone();
+        let viewer = self.view(a, cx);
         div()
             .flex_1()
             .min_w_0()
@@ -384,27 +406,15 @@ impl ActivityView {
             .flex_col()
             .child(head)
             .child(
+                // The command at a prompt, and what it printed, as a tab to
+                // the host would show them.
                 div()
                     .id("ai-output")
                     .debug_selector(|| "ai-output".into())
                     .flex_1()
                     .min_h_0()
-                    .overflow_y_scroll()
-                    .px(px(22.))
-                    .py(px(14.))
-                    .font_family(self.mono.clone())
-                    .text_size(ui(12.5))
-                    .child(if a.output.is_empty() {
-                        div()
-                            .font_family(SharedString::default())
-                            .child(hint_text(&if a.end.is_some() {
-                                tr!("It printed nothing.")
-                            } else {
-                                tr!("Nothing printed yet.")
-                            }))
-                    } else {
-                        div().child(a.output.clone())
-                    }),
+                    .flex()
+                    .children(viewer),
             )
             .when(!a.output.is_empty(), |d| {
                 d.child(
