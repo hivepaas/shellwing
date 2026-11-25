@@ -2835,8 +2835,8 @@ impl TermView {
         if e.button == MouseButton::Right && self.menu.is_some() {
             return;
         }
-        if self.scrollbar_grab.take().is_some() {
-            self.reveal_scrollbar(cx);
+        if self.scrollbar_grab.is_some() {
+            self.let_go_of_thumb(cx);
             return;
         }
         if e.button == MouseButton::Left {
@@ -2855,14 +2855,15 @@ impl TermView {
     }
 
     fn mouse_move(&mut self, e: &MouseMoveEvent, _: &mut Window, cx: &mut Context<Self>) {
-        let (x, y) = self.grid_pos(e.position);
-        if let Some(grab) = self.scrollbar_grab {
-            let pos = self.frame.scroll;
-            let track = f32::from(self.area.get().height);
-            self.term.scroll_to(row_for_thumb(pos, track, y - grab));
+        // Held: [`crate::scrollbar::hold`] has it, in the element or out.
+        if self.scrollbar_grab.is_some() {
             return;
         }
-        let hover = x >= f32::from(self.area.get().width) - SCROLLBAR_ZONE;
+        let (x, y) = self.grid_pos(e.position);
+        // In the window's pixels, as the bar is drawn: the grid's are fewer
+        // where a cell is not a whole pixel wide, and never reach the edge.
+        let edge = self.grid_origin.get().x + self.area.get().width;
+        let hover = e.position.x >= edge - px(SCROLLBAR_ZONE);
         if hover != self.scrollbar_hover {
             self.scrollbar_hover = hover;
             cx.notify();
@@ -2902,6 +2903,23 @@ impl TermView {
         }
     }
 
+    /// The held thumb follows the pointer, at `at` in the window.
+    fn drag_thumb(&mut self, at: Point<Pixels>) {
+        let Some(grab) = self.scrollbar_grab else {
+            return;
+        };
+        // The window's pixels, as the thumb was taken in (not the grid's).
+        let y = f32::from(at.y - self.grid_origin.get().y);
+        let track = f32::from(self.area.get().height);
+        self.term
+            .scroll_to(row_for_thumb(self.frame.scroll, track, y - grab));
+    }
+
+    fn let_go_of_thumb(&mut self, cx: &mut Context<Self>) {
+        self.scrollbar_grab = None;
+        self.reveal_scrollbar(cx);
+    }
+
     /// Shows the scrollbar for a moment (it hides again by itself).
     fn reveal_scrollbar(&mut self, cx: &mut Context<Self>) {
         let until = Instant::now() + SCROLLBAR_LINGER;
@@ -2939,6 +2957,7 @@ impl TermView {
         Some(
             div()
                 .id("scrollbar")
+                .debug_selector(|| "scrollbar".into())
                 .absolute()
                 .top_0()
                 .right_0()
@@ -2961,14 +2980,26 @@ impl TermView {
                 )
                 .child(
                     div()
+                        .debug_selector(|| "scrollbar-thumb".into())
                         .absolute()
                         .top(px(top + self.look.padding.1))
-                        .right(px(3.))
+                        .right(px(2.))
                         .h(px(h))
-                        .w(px(if active { 8. } else { 5. }))
+                        .w(px(if active {
+                            crate::scrollbar::WIDE
+                        } else {
+                            crate::scrollbar::THIN
+                        }))
                         .rounded_full()
                         .bg(gpui::rgba(if active { 0xffffff8c } else { 0xffffff59 })),
                 )
+                .when(self.scrollbar_grab.is_some(), |d| {
+                    d.child(crate::scrollbar::hold(
+                        cx.entity().downgrade(),
+                        |v: &mut Self, at, _| v.drag_thumb(at),
+                        Self::let_go_of_thumb,
+                    ))
+                })
                 .into_any_element(),
         )
     }

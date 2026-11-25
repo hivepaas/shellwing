@@ -275,3 +275,54 @@ scenario!(
         assert!(copied.contains("you said: n00"), "into the history: {copied:?}");
     }
 );
+
+scenario!(
+    /// The scrollbar's thumb, taken and flicked up out of the terminal in one
+    /// quick move, still scrolls it to the top: the thumb stays held wherever
+    /// the pointer is. A move with the button up lets go of it (its release
+    /// came where nothing heard it), and the pointer no longer moves it.
+    a_flick_of_the_thumb_out_of_the_terminal_still_scrolls,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.line("lines 400");
+        ui.wait_for("line 400");
+        let offset = |ui: &mut Ui| ui.view(|v, _| v.latest_frame().scroll.offset);
+        let bottom = offset(ui);
+        assert!(bottom > 300, "a long history: {bottom}");
+        // Over the right edge: the bar shows.
+        let b = ui.view(|v, _| v.bounds());
+        let edge = gpui::point(b.right() - gpui::px(4.), b.center().y);
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+            vcx.simulate_mouse_move(edge, None, Modifiers::none());
+        }
+        ui.draw();
+        let from = ui.bounds("scrollbar-thumb").center();
+        let to = above_the_terminal(ui);
+        let left = gpui::MouseButton::Left;
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+            vcx.simulate_mouse_move(from, None, Modifiers::none());
+            vcx.simulate_mouse_down(from, left, Modifiers::none());
+        }
+        ui.draw();
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+            vcx.simulate_mouse_move(to, left, Modifiers::none());
+        }
+        ui.wait_until("scrolled to the top", |ui| offset(ui) == 0);
+        // Let go out of the window: the next move comes with the button up.
+        let low = gpui::point(edge.x, b.bottom() - gpui::px(4.));
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+            vcx.simulate_mouse_move(to, None, Modifiers::none());
+        }
+        ui.draw();
+        {
+            let mut vcx = gpui::VisualTestContext::from_window(ui.window().into(), &ui.cx);
+            vcx.simulate_mouse_move(low, left, Modifiers::none());
+        }
+        ui.draw();
+        assert_eq!(offset(ui), 0, "let go: the thumb stays where it was left");
+    }
+);
