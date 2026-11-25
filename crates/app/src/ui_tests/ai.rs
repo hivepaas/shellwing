@@ -753,7 +753,7 @@ scenario!(
                 break;
             }
         }
-        assert!(rest.starts_with("exit 0") && rest.contains("looked"), "{rest}");
+        assert!(rest.contains("exit 0 after") && rest.contains("looked"), "{rest}");
     }
 );
 
@@ -838,7 +838,7 @@ scenario!(
         let (token, id) = snippet_with_env(ui, "background");
         let (mut c, _) = Client::open(ui, &token);
         let rest = allowed_snippet(ui, &mut c, &id);
-        assert!(rest.starts_with("exit 0") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
+        assert!(rest.contains("exit 0 after") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
         assert!(!rest.contains("s3cret"), "{rest}");
     }
 );
@@ -851,7 +851,7 @@ scenario!(
         let (token, id) = snippet_with_env(ui, "tab");
         let (mut c, _) = Client::open(ui, &token);
         let rest = allowed_snippet(ui, &mut c, &id);
-        assert!(rest.starts_with("exit 0") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
+        assert!(rest.contains("exit 0 after") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
         assert!(!rest.contains("s3cret"), "{rest}");
         assert!(!ui.screen().contains("s3cret"), "not on the tab's screen:\n{}", ui.screen());
     }
@@ -1165,7 +1165,7 @@ scenario!(
                 break;
             }
         }
-        assert!(rest.starts_with("exit 0") && rest.contains("as root"), "{rest}");
+        assert!(rest.contains("exit 0 after") && rest.contains("as root"), "{rest}");
         assert!(!rest.contains("pa ss"), "{rest}");
 
         // Kept a while: the next goes at once.
