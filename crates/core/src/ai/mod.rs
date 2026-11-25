@@ -7,6 +7,7 @@
 //! ([`Job::wait`]), so a long command does not keep it waiting for its end.
 
 pub mod files;
+pub mod history;
 pub mod log;
 pub mod mcp;
 pub mod notes;
@@ -107,6 +108,14 @@ pub struct Activity {
     /// The snippet it ran, by name, when it was one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub snippet: Option<String>,
+    /// The client's id, which reads back its own ([`history`]); None in
+    /// what was logged before it was kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    /// The host's spec, as its grant names it; None for what was on no one
+    /// host (reading notes).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spec: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -236,6 +245,8 @@ impl Job {
                     waiting: None,
                     adding: None,
                     snippet: None,
+                    client_id: Some(client.id.clone()),
+                    spec: (!spec.is_empty()).then(|| spec.to_string()),
                 },
                 out: vec![],
                 cut: false,
@@ -423,6 +434,13 @@ impl Hub {
             Some((log, activity)) => (Some(log), activity),
             None => (None, vec![]),
         };
+        // Ids go on from those logged, so a command now is never taken for
+        // one of an earlier run.
+        let next = activity
+            .iter()
+            .filter_map(|a| a.id.strip_prefix("j-")?.parse::<u64>().ok())
+            .max()
+            .map_or(1, |n| n + 1);
         Arc::new(Hub {
             rt,
             secrets,
@@ -433,7 +451,7 @@ impl Hub {
                 hosts: BTreeMap::new(),
                 jobs: BTreeMap::new(),
                 slots: BTreeMap::new(),
-                next: 1,
+                next,
                 activity,
                 log,
                 allowed: vec![],
@@ -1210,6 +1228,51 @@ mod tests {
         hub.clear_activity();
         assert!(hub.activity().is_empty());
         assert!(std::iter::from_fn(|| rx.try_recv().ok()).any(|e| matches!(e, HubEvent::Cleared)));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Ids go on from the last run's: a command now that took an id logged
+    /// before was taken for that one, and neither logged nor read back.
+    #[tokio::test]
+    async fn ids_go_on_from_those_logged() {
+        struct None_;
+        impl Secrets for None_ {
+            fn password(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn passphrase(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn learned(&self, _: shellwing_ssh::Learned) {}
+        }
+        let dir = std::env::temp_dir().join(format!("shellwing-ai-ids-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let path = dir.join("ai-activity.jsonl");
+        let before = |id: &str| {
+            let mut a = Job::new(id.into(), &client(), "web", "web", "uptime").activity();
+            a.end = Some(End::Exited(Some(0)));
+            serde_json::to_string(&a).expect("json") + "\n"
+        };
+        std::fs::write(&path, before("j-41") + &before("j-7")).expect("log");
+        let open = || {
+            let (tx, _rx) = async_channel::unbounded();
+            Hub::new(
+                Handle::current(),
+                Arc::new(None_),
+                &shellwing_config::Ssh::default(),
+                Some(path.clone()),
+                tx,
+            )
+        };
+        let hub = open();
+        assert_eq!(hub.inner.lock().expect("lock").next, 42);
+        let id = format!("j-{}", hub.inner.lock().expect("lock").next);
+        let job = Job::new(id.clone(), &client(), "web", "web", "df -h");
+        job.end(End::Exited(Some(0)));
+        hub.ended(&job);
+        let ids: Vec<String> = open().activity().into_iter().map(|a| a.id).collect();
+        assert_eq!(ids, ["j-41", "j-7", "j-42"], "logged, and read back");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

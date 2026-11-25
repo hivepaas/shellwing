@@ -194,6 +194,8 @@ mod tests {
             waiting: None,
             adding: None,
             snippet: None,
+            client_id: None,
+            spec: None,
         })
         .expect("json")
     }
