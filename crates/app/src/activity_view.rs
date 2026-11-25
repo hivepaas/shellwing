@@ -423,6 +423,13 @@ impl ActivityView {
                                 client = a.client.clone(),
                                 host = a.host.clone()
                             )
+                        } else if let Some(envs) = why.strip_prefix(shellwing_core::ai::snippets::ENVS) {
+                            tr!(
+                                "{client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.",
+                                client = a.client.clone(),
+                                host = a.host.clone(),
+                                envs = envs.to_string()
+                            )
                         } else if why == shellwing_core::ai::snippets::LOOK {
                             tr!(
                                 "{client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.",
@@ -499,7 +506,10 @@ impl ActivityView {
                         )
                         // A snippet typed without Enter asks every time: no
                         // session to allow it for.
-                        .when(why != shellwing_core::ai::snippets::LOOK, |d| {
+                        .when(
+                            why != shellwing_core::ai::snippets::LOOK
+                                && !why.starts_with(shellwing_core::ai::snippets::ENVS),
+                            |d| {
                             d.child(
                                 outline_button("ai-allow-session", &tr!("Run it, and this command again this session"))
                                     .on_click(cx.listener(move |v, _, _, cx| {

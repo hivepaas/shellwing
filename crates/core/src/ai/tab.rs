@@ -8,9 +8,15 @@
 /// leading space), the command run by `eval`, so a `#` or a `&` in it
 /// leaves the closing mark alone. Its end: `\r`.
 pub fn wrap(id: &str, command: &str) -> String {
+    format!(" {}\r", marked(id, command))
+}
+
+/// `command` between job `id`'s marks, as [`wrap`] types it: what a
+/// snippet that needs environments runs in its subshell.
+pub fn marked(id: &str, command: &str) -> String {
     let quoted = format!("'{}'", command.replace('\'', "'\\''"));
     format!(
-        " printf '\\033]1337;swai-begin-{id}\\007'; eval {quoted}; printf '\\033]1337;swai-end-{id};%s\\007' \"$?\"\r"
+        "printf '\\033]1337;swai-begin-{id}\\007'; eval {quoted}; printf '\\033]1337;swai-end-{id};%s\\007' \"$?\""
     )
 }
 

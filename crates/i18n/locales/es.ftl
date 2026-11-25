@@ -76,6 +76,9 @@ t6e8860fa = El fragmento { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } quiere añadir esto a las notas sobre { $host }. Te espera: donde los de riesgo esperan, toda adición a una nota espera.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } quiere ejecutar este fragmento en { $host }, con los entornos { $envs }. Te espera cada vez: sus valores entran, aunque { $client } nunca los ve, y lo que imprime vuelve.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } quiere ejecutar este fragmento en { $host }. Te espera cada vez: se escribe sin Enter, para leerlo antes.
 

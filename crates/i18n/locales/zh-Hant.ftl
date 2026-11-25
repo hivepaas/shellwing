@@ -76,6 +76,9 @@ t6e8860fa = 程式碼片段 { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } 想把這段內容新增到關於 { $host } 的筆記。它正在等你確認：在「有風險時詢問」模式下，每次新增至筆記都要詢問。
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } 想在 { $host } 上以環境 { $envs } 執行這個程式碼片段。每次都會等你確認：其值會傳入，但 { $client } 永遠看不到；而它輸出的內容會回傳。
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } 想在 { $host } 上執行這個程式碼片段。每次都會等你確認：它輸入時不按 Enter，需先閱讀。
 

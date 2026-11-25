@@ -76,6 +76,9 @@ t6e8860fa = O trecho { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } quer acrescentar isto às notas sobre { $host }. O acréscimo espera por você: onde os arriscados esperam, todo acréscimo a uma nota espera.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } quer executar este trecho em { $host }, com os ambientes { $envs }. Ele espera por você toda vez: os valores entram, embora { $client } nunca os veja, e o que ele imprime volta.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } quer executar este trecho em { $host }. Ele espera por você toda vez: é digitado sem Enter, para ser lido antes.
 

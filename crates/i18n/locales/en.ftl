@@ -26,6 +26,7 @@ t812504dc = The commands AI ran and what they printed go, from this computer too
 tafbed557 = { $client } · { $host } · started { $when } · { $job }
 t6e8860fa = The snippet { $name }
 tf83dfd33 = { $client } wants to add this to the notes about { $host }. It waits for you: where risky ones wait, every addition to a note does.
+tc50e2e47 = { $client } wants to run this snippet on { $host }, with the environments { $envs }. It waits for you every time: their values go in, though { $client } never sees them, and what it prints goes back.
 t67420739 = { $client } wants to run this snippet on { $host }. It waits for you every time: it is typed without Enter, to be read first.
 t2b63bd77 = { $client } wants to write this on { $host }. It waits for you: where risky ones wait, every write does.
 t2a306810 = { $client } wants to run this on { $host }. It waits for you: its grant asks for every command.

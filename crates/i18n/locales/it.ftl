@@ -76,6 +76,9 @@ t6e8860fa = Lo snippet { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } vuole aggiungere questo alle note su { $host }. L'aggiunta ti aspetta: dove quelli rischiosi aspettano, ogni aggiunta a una nota aspetta.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } vuole eseguire questo snippet su { $host }, con gli ambienti { $envs }. Ti aspetta ogni volta: i loro valori entrano, anche se { $client } non li vede mai, e ciò che stampa torna indietro.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } vuole eseguire questo snippet su { $host }. Ti aspetta ogni volta: viene digitato senza Invio, per essere letto prima.
 

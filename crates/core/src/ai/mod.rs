@@ -157,6 +157,9 @@ pub enum HubEvent {
         spec: String,
         command: String,
         client: String,
+        /// The environments (their ids) it runs with, in a subshell, as a
+        /// pane runs a snippet that needs them: the app sends their values.
+        needs: Vec<String>,
     },
     /// A command typed into a tab was stopped: the app interrupts it there.
     TabStop { id: String },
@@ -714,11 +717,12 @@ impl Hub {
         host: &str,
         command: &str,
     ) -> Result<Arc<Job>, String> {
-        self.run_with(client, host, command, None, None)
+        self.run_with(client, host, command, None, None, None)
     }
 
     /// [`Hub::run`]; waiting for the person whatever the mode when
-    /// `always` says why, and kept as the run of `snippet` when it is one.
+    /// `always` says why, kept as the run of `snippet` when it is one, and
+    /// run with `envs` when it needs environments.
     fn run_with(
         self: &Arc<Self>,
         client: &AiClient,
@@ -726,6 +730,7 @@ impl Hub {
         command: &str,
         always: Option<String>,
         snippet: Option<String>,
+        envs: Option<snippets::EnvRun>,
     ) -> Result<Arc<Job>, String> {
         let (g, target) = self.grant_for(client, host)?;
         if !g.grant.run {
@@ -768,17 +773,22 @@ impl Hub {
                     spec: running.host.clone(),
                     command: command.clone(),
                     client: running.activity().client,
+                    needs: envs.map(|e| e.ids).unwrap_or_default(),
                 });
                 return;
             }
+            // With environments: the values on the input, the names alone
+            // on the command line.
+            let (run, input) = match &envs {
+                Some(e) => (e.command.clone(), e.input.clone()),
+                None => (command.clone(), Default::default()),
+            };
             let end = match Hub::connection(&slot, options).await {
                 Err(why) => End::Failed(why),
                 Ok(c) => {
                     let printing = running.clone();
                     hub.follow_output(&running);
-                    let status = c
-                        .stream(&command, b"", |_, data| printing.print(data))
-                        .await;
+                    let status = c.stream(&run, &input, |_, data| printing.print(data)).await;
                     match status {
                         Ok(s) => End::Exited(s),
                         Err(e) => {

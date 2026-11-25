@@ -76,6 +76,9 @@ t6e8860fa = Сниппет { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } хочет добавить это в заметки о { $host }. Добавление ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое добавление в заметку.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } хочет выполнить этот сниппет на { $host } с окружениями { $envs }. Он каждый раз ждёт вас: их значения передаются, хотя { $client } их никогда не видит, а вывод возвращается к нему.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } хочет выполнить этот сниппет на { $host }. Он каждый раз ждёт вас: он вводится без Enter, чтобы его сначала прочитали.
 

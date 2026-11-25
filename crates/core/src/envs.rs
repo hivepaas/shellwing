@@ -171,7 +171,7 @@ pub fn gave_up() -> String {
 }
 
 /// The variables to send, each value as its lines; the names too.
-fn env_values(
+pub(crate) fn env_values(
     values: shellwing_vault::EnvValues,
 ) -> Result<(Vec<String>, Vec<environment::Sent>, usize), String> {
     if values.is_empty() {
@@ -196,7 +196,7 @@ fn env_values(
 }
 
 /// Whether `bytes` more fit in the shell beside `loaded`.
-fn fits(loaded: usize, bytes: usize) -> Result<(), String> {
+pub(crate) fn fits(loaded: usize, bytes: usize) -> Result<(), String> {
     let max = shellwing_vault::limits::LOADED;
     if loaded + bytes <= max {
         return Ok(());
