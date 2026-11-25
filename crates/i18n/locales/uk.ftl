@@ -2638,6 +2638,27 @@ ta04619ce = Відкритий код
 # shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
 tcde8081b = shellwing — вільне програмне забезпечення з відкритим кодом за ліцензією GPL-3.0-or-later. Читайте код, збирайте його самі, повідомляйте про проблеми або надсилайте виправлення.
 
+# A native HTTP(S) debugging proxy that keeps up with big sessions.
+t86e5ad3e = Нативний налагоджувальний HTTP(S)-проксі, що впорається з великими сесіями.
+
+# See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents.
+tb382bdc2 = Переглядайте, призупиняйте й змінюйте кожен запит ваших застосунків: мобільних і настільних, серверів та ШІ-агентів.
+
+# Visit tracewing.app
+t4668641f = Перейти на tracewing.app
+
+# A file archiver that puts every core to work and opens archives safely.
+t5d2a9fa0 = Архіватор, який задіює всі ядра й безпечно відкриває архіви.
+
+# ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux.
+tc05c7ec9 = ZIP, 7z, RAR, tar та інші формати, на macOS, Windows і Linux.
+
+# Visit packwing.app
+t11cbc28f = Перейти на packwing.app
+
+# From the same author
+te0bcddcb = Від того самого автора
+
 # Open source · Apache-2.0
 tf33a768c = Відкритий код · Apache-2.0
 
@@ -2676,9 +2697,6 @@ t69d796ee = Функції
 
 # Visit hivepaas.com
 t0632975a = Перейти на hivepaas.com
-
-# From the same author
-te0bcddcb = Від того самого автора
 
 # You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
 t1f5d9e97 = Можливо, вам сподобається й HivePaaS від того самого автора: альтернатива Heroku, Render і Coolify з відкритим кодом, яку можна розгорнути на власних серверах.

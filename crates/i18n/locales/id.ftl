@@ -2563,6 +2563,27 @@ ta04619ce = Sumber terbuka
 # shellwing is free and open source, under the GPL-3.0-or-later license. Read the code, build it yourself, report a problem or send a fix.
 tcde8081b = shellwing gratis dan bersumber terbuka, di bawah lisensi GPL-3.0-or-later. Baca kodenya, build sendiri, laporkan masalah, atau kirim perbaikan.
 
+# A native HTTP(S) debugging proxy that keeps up with big sessions.
+t86e5ad3e = Proxy debugging HTTP(S) native yang tetap lancar pada sesi besar.
+
+# See, pause and change every request your apps make: mobile and desktop apps, servers and AI agents.
+tb382bdc2 = Lihat, jeda, dan ubah setiap permintaan yang dibuat aplikasi Anda: aplikasi seluler dan desktop, server, dan agen AI.
+
+# Visit tracewing.app
+t4668641f = Kunjungi tracewing.app
+
+# A file archiver that puts every core to work and opens archives safely.
+t5d2a9fa0 = Pengarsip berkas yang memanfaatkan setiap inti prosesor dan membuka arsip dengan aman.
+
+# ZIP, 7z, RAR, tar and more, on macOS, Windows and Linux.
+tc05c7ec9 = ZIP, 7z, RAR, tar, dan lainnya, di macOS, Windows, dan Linux.
+
+# Visit packwing.app
+t11cbc28f = Kunjungi packwing.app
+
+# From the same author
+te0bcddcb = Dari pembuat yang sama
+
 # Open source · Apache-2.0
 tf33a768c = Sumber terbuka · Apache-2.0
 
@@ -2601,9 +2622,6 @@ t69d796ee = Fungsi
 
 # Visit hivepaas.com
 t0632975a = Kunjungi hivepaas.com
-
-# From the same author
-te0bcddcb = Dari pembuat yang sama
 
 # You might also like HivePaaS, from the same author: an open-source, self-hosted alternative to Heroku, Render and Coolify.
 t1f5d9e97 = Anda mungkin juga menyukai HivePaaS, dari pembuat yang sama: alternatif sumber terbuka dan self-hosted untuk Heroku, Render, dan Coolify.

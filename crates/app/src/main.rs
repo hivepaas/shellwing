@@ -102,6 +102,16 @@ const ICONS: &[(&str, &[u8])] = &[
         include_bytes!("../assets/icons/upload.svg"),
     ),
     ("icons/logo.svg", include_bytes!("../assets/icons/logo.svg")),
+    // The other apps from the same author, as About shows them: drawn in
+    // their own colors, as images.
+    (
+        "brands/tracewing.svg",
+        include_bytes!("../assets/brands/tracewing.svg"),
+    ),
+    (
+        "brands/packwing.svg",
+        include_bytes!("../assets/brands/packwing.svg"),
+    ),
     ("icons/tabs.svg", include_bytes!("../assets/icons/tabs.svg")),
     (
         "icons/cloud.svg",
