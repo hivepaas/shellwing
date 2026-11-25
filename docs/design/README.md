@@ -10,6 +10,7 @@ it is implemented yet. Questions still to settle are marked **Open**.
 | [ai-snippets.md](ai-snippets.md) | Snippets an AI agent may list and run, through the hosts given it |
 | [ai-sudo.md](ai-sudo.md) | sudo's password for an AI agent's command, typed by the person, never seen by the agent |
 | [ai-transfers.md](ai-transfers.md) | Files copied between this computer and a host for an AI agent, within folders the person gives |
+| [ai-read-tab.md](ai-read-tab.md) | An AI agent reading a pane's text, allowed per pane for 15 minutes |
 | [collections.md](collections.md) | Hosts and secrets an organization shares, end-to-end encrypted |
 | [collections-format.md](collections-format.md) | Their identities, wrapped keys and records, byte for byte, with test vectors |
 | [config.md](config.md) | Files on disk, their formats, settings precedence |
