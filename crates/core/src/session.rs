@@ -692,6 +692,7 @@ impl Session {
                 keepalive: Some(keepalive),
                 known_hosts: std::env::var_os("SHELLWING_KNOWN_HOSTS").map(Into::into),
                 prompter: Some(prompter),
+                host_key_prompter: None,
                 secrets: secrets.clone(),
                 forwarded: Some(Box::new(move |r| forwarded(&fwd_term, &fwd_held, r))),
                 size: Some(Box::new(move || sized.size())),

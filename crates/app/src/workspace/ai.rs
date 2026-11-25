@@ -164,11 +164,23 @@ impl Workspace {
                         .activity
                         .iter()
                         .any(|x| x.id == a.id && x.waiting.is_some());
-                let note = tr!(
-                    "{client} wants to run a command on {host}: AI activity has it, waiting for you.",
-                    client = a.client.clone(),
-                    host = a.host.clone()
-                );
+                let key = a
+                    .waiting
+                    .as_deref()
+                    .is_some_and(|w| w.starts_with(ai::HOST_KEY));
+                let note = if key {
+                    tr!(
+                        "{client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.",
+                        client = a.client.clone(),
+                        host = a.host.clone()
+                    )
+                } else {
+                    tr!(
+                        "{client} wants to run a command on {host}: AI activity has it, waiting for you.",
+                        client = a.client.clone(),
+                        host = a.host.clone()
+                    )
+                };
                 match ai.activity.iter().position(|x| x.id == a.id) {
                     Some(i) => ai.activity[i] = Arc::new(a),
                     None => ai.activity.push(Arc::new(a)),

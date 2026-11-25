@@ -4,9 +4,9 @@
 
 # shellwing
 
-**A fast, native SSH client for macOS, Windows and Linux.**
+**The SSH client that lets AI get your work done.**
 
-Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs between your devices, in a GPU-rendered terminal built in Rust.
+Give Claude Code, Codex or any MCP agent the servers it needs, never your keys: it runs commands, reads your runbooks and fixes what broke, while risky commands wait for you. All in a fast, native SSH client for macOS, Windows and Linux: tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs, in a GPU-rendered terminal built in Rust.
 
 [![CI](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml/badge.svg)](https://github.com/hivepaas/shellwing/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-1.99+-DEA584?style=flat&logo=rust)](https://www.rust-lang.org)
@@ -15,9 +15,24 @@ Tabs, split panes, SFTP, port forwarding and an encrypted vault that syncs betwe
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20Windows%20%7C%20Linux-555?style=flat)](docs/platforms.md)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-[Features](#-key-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Architecture](#-architecture) • [License](#-license)
+[AI access](#-ai-access) • [Features](#-key-features) • [Getting Started](#-getting-started) • [Configuration](#-configuration) • [Architecture](#-architecture) • [License](#-license)
 
 </div>
+
+---
+
+## 🤖 AI access
+
+AI agents reach the hosts you give them through shellwing, over the [Model Context Protocol](https://modelcontextprotocol.io): Claude Code, Claude Desktop, Codex CLI, Cursor, VS Code, Windsurf, Zed, Gemini CLI, Cline, or any client that speaks MCP. *Settings › AI* adds a client and shows the config to paste into it.
+
+* **Hosts, not credentials:** shellwing signs in for the agent with what you saved (the vault's passwords and keys, your agent's keys, an organization's certificate), so it never sees a key, a password or a passphrase.
+* **You choose what it may do, host by host:** run commands, read files, write files, read your notes, add to them, use your snippets; until you take it back, while shellwing is open, or for an hour or eight. Pause or take back any of it at once.
+* **Risky commands wait for you:** a command with words from your risky list (`rm -rf`, `systemctl stop`, `drop`…) waits until you allow it, or every command does, or a host runs freely. A file written, a note added and a snippet suggested wait as well.
+* **Watch it work:** AI activity keeps every command and what it printed. A host given through a tab has the agent's commands typed into a terminal you see.
+* **Your runbooks as its context:** it reads your notes about a host (never a sensitive one) and runs the snippets you keep for it, filling in only values that cannot change the command. It adds what it found to a note, and suggests snippets for you to keep.
+* **Secrets stay sealed:** a snippet that needs environments runs with their values sent by shellwing, on the command's input or into its tab with the echo off. The agent never sees them, and every such run waits for you.
+
+Everything is in [docs/configuration.md](docs/configuration.md#ai-access), and the designs in [ai-notes.md](docs/design/ai-notes.md) and [ai-snippets.md](docs/design/ai-snippets.md).
 
 ---
 
@@ -83,7 +98,7 @@ The app is a [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui)
 | Crate | Role |
 | --- | --- |
 | `crates/app` | The GPUI window: tabs, panes, host list, palette, panels, settings |
-| `crates/core` | Sessions without a UI: connecting and reconnecting, prompts, saved secrets |
+| `crates/core` | Sessions without a UI: connecting and reconnecting, prompts, saved secrets; AI access over MCP (`ai/`) |
 | `crates/term` | Terminal emulation: libghostty-vt on its own thread, producing frames to paint |
 | `crates/ssh` | SSH over [russh](https://github.com/Eugeny/russh), as OpenSSH does it |
 | `crates/vault` | The encrypted vault, and its sync |

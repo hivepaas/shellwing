@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · iniciado a las { $when } · { $job }
 # The snippet {name}
 t6e8860fa = El fragmento { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } quiere llegar a { $host }, y { $shows } muestra una clave del servidor que no está en known_hosts. Confía en ella solo si es la clave de ese servidor, tal como te la dio su responsable: se guarda en known_hosts y lo que la espera continúa.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } sugiere este fragmento para { $host }. Te espera: donde los de riesgo esperan, toda sugerencia espera. Añadido, se escribe sin Enter, para que lo leas antes de que se ejecute.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } quiere ejecutar esto en { $host }. Te espera: su acceso 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } quiere ejecutar esto en { $host }. Te espera: contiene { $words }, de la lista de palabras de riesgo.
 
-# Add it
-t6cac0f01 = Añadir
+# Trust and go on
+tc457169b = Confiar y continuar
 
 # Refuse it
 tbea0b112 = Rechazar
+
+# Add it
+t6cac0f01 = Añadir
 
 # Run it
 t72430853 = Ejecutar
@@ -395,8 +401,8 @@ t971550f3 = Comandos
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = Ya concedidos a { $client }: { $hosts }. Concederlos de nuevo reemplaza lo que tenían.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Nunca ve una clave, una contraseña ni una frase de contraseña: se rechaza un servidor que la pediría, igual que uno cuya clave aún no se conoce. La salida de un servidor puede llevar palabras pensadas para dirigir a un agente: da servidores solo a uno en el que confíes para ello.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Nunca ve una clave, una contraseña ni una frase de contraseña: se rechaza un servidor que la pediría, y uno cuya clave aún no se conoce espera a que confíes en ella. La salida de un servidor puede llevar palabras pensadas para dirigir a un agente: da servidores solo a uno en el que confíes para ello.
 
 # When AI runs a command
 tc94fc353 = Cuando la AI ejecuta un comando
@@ -4111,6 +4117,9 @@ t1165de29 = Dividir hacia abajo
 
 # Close Pane
 t21a947cf = Cerrar panel
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } quiere llegar a { $host }, cuya clave del servidor no está en known_hosts: te espera en Actividad AI.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } quiere ejecutar un comando en { $host }: te espera en Actividad AI.

@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Đoạn lệnh { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } muốn kết nối tới { $host }, và { $shows } đưa ra một khoá máy chủ không có trong known_hosts. Chỉ tin cậy nếu đó đúng là khoá của máy chủ ấy, như người quản lý đã đưa cho bạn: khoá được lưu vào known_hosts, và việc đang chờ sẽ tiếp tục.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } đề xuất đoạn lệnh này cho { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi đoạn lệnh được đề xuất đều chờ. Khi đã thêm, đoạn lệnh được gõ không kèm Enter, để bạn đọc trước khi chạy.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } muốn chạy lệnh này trên { $host }. Lệnh đang chờ bạn: nó có { $words }, thuộc danh sách rủi ro.
 
-# Add it
-t6cac0f01 = Thêm vào
+# Trust and go on
+tc457169b = Tin cậy và tiếp tục
 
 # Refuse it
 tbea0b112 = Từ chối
+
+# Add it
+t6cac0f01 = Thêm vào
 
 # Run it
 t72430853 = Chạy lệnh
@@ -388,8 +394,8 @@ t971550f3 = Lệnh
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = Đã cấp cho { $client }: { $hosts }. Cấp lại sẽ thay thế quyền cũ của chúng.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, còn máy chủ có khoá chưa biết sẽ chờ bạn tin cậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
 
 # When AI runs a command
 tc94fc353 = Khi AI chạy lệnh
@@ -4008,6 +4014,9 @@ t1165de29 = Chia xuống dưới
 
 # Close Pane
 t21a947cf = Đóng khung
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } muốn kết nối tới { $host }, nhưng khoá máy chủ không có trong known_hosts: yêu cầu đang chờ bạn trong Hoạt động AI.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } muốn chạy một lệnh trên { $host }: lệnh đang chờ bạn trong Hoạt động AI.

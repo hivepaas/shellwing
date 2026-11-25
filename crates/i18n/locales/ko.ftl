@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 # The snippet {name}
 t6e8860fa = 스니펫 { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client }이(가) { $host }에 연결하려 하는데, { $shows }이(가) known_hosts에 없는 호스트 키를 보여 줍니다. 관리자가 알려 준 그 호스트의 키가 맞을 때만 신뢰하세요. 신뢰하면 known_hosts에 저장되고, 이를 기다리던 작업이 계속됩니다.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client }이(가) { $host }용으로 이 스니펫을 제안합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 제안에 확인이 필요합니다. 추가되면 Enter 없이 입력되어 실행 전에 읽을 수 있습니다.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client }이(가) { $host }에서 이것을 실행하려고 합니
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client }이(가) { $host }에서 이것을 실행하려고 합니다. 지시를 기다립니다. 위험 목록에 있는 { $words }이(가) 들어 있습니다.
 
-# Add it
-t6cac0f01 = 추가
+# Trust and go on
+tc457169b = 신뢰하고 계속
 
 # Refuse it
 tbea0b112 = 거부
+
+# Add it
+t6cac0f01 = 추가
 
 # Run it
 t72430853 = 실행
@@ -388,8 +394,8 @@ t971550f3 = 명령
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = { $client }에 이미 허용됨: { $hosts }. 다시 허용하면 기존 설정이 바뀝니다.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트는 사용자가 신뢰할 때까지 기다립니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
 
 # When AI runs a command
 tc94fc353 = AI가 명령을 실행할 때
@@ -4008,6 +4014,9 @@ t1165de29 = 아래로 분할
 
 # Close Pane
 t21a947cf = 창 닫기
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client }이(가) { $host }에 연결하려 하지만 호스트 키가 known_hosts에 없습니다. AI 활동에서 지시를 기다리고 있습니다.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }이(가) { $host }에서 명령을 실행하려고 합니다. AI 활동에서 지시를 기다리고 있습니다.

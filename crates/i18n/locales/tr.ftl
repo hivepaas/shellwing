@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 # The snippet {name}
 t6e8860fa = { $name } kod parçacığı
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client }, { $host } ana makinesine ulaşmak istiyor ve { $shows } known_hosts içinde olmayan bir ana makine anahtarı gösteriyor. Yalnızca sahibinin size verdiği şekliyle o ana makinenin anahtarıysa güvenin: known_hosts içine kaydedilir ve onu bekleyen işlem devam eder.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client }, { $host } için bu kod parçacığını öneriyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her öneri bekler. Eklendiğinde Enter olmadan yazılır, böylece çalışmadan önce okursunuz.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi 
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client }, bunu { $host } üzerinde çalıştırmak istiyor. Sizi bekliyor: riskli listeden { $words } içeriyor.
 
-# Add it
-t6cac0f01 = Ekle
+# Trust and go on
+tc457169b = Güven ve devam et
 
 # Refuse it
 tbea0b112 = Reddet
+
+# Add it
+t6cac0f01 = Ekle
 
 # Run it
 t72430853 = Çalıştır
@@ -395,8 +401,8 @@ t971550f3 = Komutlar
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = { $client } için zaten verildi: { $hosts }. Yeniden vermek öncekilerin yerini alır.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine de. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine ise siz güvenene kadar bekler. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
 
 # When AI runs a command
 tc94fc353 = AI bir komut çalıştırdığında
@@ -4111,6 +4117,9 @@ t1165de29 = Aşağı böl
 
 # Close Pane
 t21a947cf = Bölmeyi kapat
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client }, ana makine anahtarı known_hosts içinde olmayan { $host } ana makinesine ulaşmak istiyor: AI etkinliği içinde sizi bekliyor.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client }, { $host } üzerinde bir komut çalıştırmak istiyor: komut AI etkinliği içinde sizi bekliyor.

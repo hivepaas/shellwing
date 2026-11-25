@@ -1301,8 +1301,14 @@ How an agent reaches a host:
   `ssh host 'command'` would, with no terminal and no input.
 - It signs in with what you saved (the vault's passwords and keys, the agent's
   keys, an organization's certificate) and asks nothing. A host that would ask
-  for a password, a passphrase or a host key never seen is refused, with the
-  reason.
+  for a password or a passphrase is refused, with the reason.
+- A host key not in known_hosts (with `[ssh] host_key = "ask"`, the default)
+  makes the command wait for you in AI activity, which shows who shows the
+  key (the host, or a jump on the way) and its fingerprint. *Trust and go on*
+  keeps it in known_hosts, as a tab would, and the command goes on; *Refuse
+  it* leaves it out, and the agent is told the key was not accepted. The
+  agent never trusts a key itself. With `accept-new` the key is kept without
+  asking, and with `strict` the host is refused.
 - Its forwards, agent forwarding and X11 are left out.
 - A collection's host whose settings are held back is refused until you allow
   them on a tab.

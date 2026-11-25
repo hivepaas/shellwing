@@ -1190,6 +1190,50 @@ scenario!(
 );
 
 scenario!(
+    /// A host whose key is not in known_hosts: the agent's command waits
+    /// for the person, AI activity showing the key. Refused, nothing runs
+    /// and nothing is kept; asked again and trusted, the key is kept and
+    /// the command runs. The agent never trusts it itself.
+    a_new_host_key_waits_for_the_person,
+    |ui| {
+        let token = given_web(ui, "Free");
+        let known = ui.known_hosts();
+        let key = known.split_whitespace().nth(2).expect("the server's key").to_string();
+        std::fs::write(ui.dir.join("known_hosts"), "").expect("forget it");
+        let (mut c, _) = Client::open(ui, &token);
+        let waits = |ui: &mut Ui| {
+            ui.wait_until("the key to wait for the person", |ui| {
+                ui.ws(|ws, _, _| {
+                    ws.ai_activity().last().is_some_and(|a| {
+                        a.waiting.as_deref().is_some_and(|w| w.starts_with(shellwing_core::ai::HOST_KEY) && w.contains("SHA256:"))
+                    })
+                })
+            });
+        };
+
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "echo refused", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        waits(ui);
+        ui.ws(|ws, window, cx| ws.open_activity(window, cx));
+        assert!(ui.find("ai-host-key").is_some(), "the key shown");
+        assert!(ui.find("ai-allow-session").is_none(), "no session to trust it for");
+        ui.click("ai-refuse");
+        let said = follow(&mut c, &job);
+        assert!(said.contains("not accepted") && !said.contains("refused\n"), "{said}");
+        assert!(ui.known_hosts().is_empty(), "nothing kept: {}", ui.known_hosts());
+
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "echo trusted", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        waits(ui);
+        ui.click("ai-trust");
+        let said = follow(&mut c, &job);
+        assert!(said.contains("exit 0") && said.contains("trusted"), "{said}");
+        assert!(ui.known_hosts().contains(&key), "kept: {}", ui.known_hosts());
+    }
+);
+
+scenario!(
     /// A second shellwing started on the same config asks this one to come
     /// forward: with a host, a tab opens to it here; with none, nothing
     /// opens. The second one never draws a window (main.rs).

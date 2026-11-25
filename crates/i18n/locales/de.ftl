@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · gestartet um { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Das Snippet { $name }
 
+# {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+t8595135e = { $client } möchte { $host } erreichen, und { $shows } zeigt einen Host-Schlüssel, der nicht in known_hosts steht. Vertraue ihm nur, wenn es der Schlüssel dieses Hosts ist, wie ihn dir sein Betreiber gegeben hat: Er wird in known_hosts gespeichert, und was auf ihn wartet, geht weiter.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } schlägt dieses Snippet für { $host } vor. Es wartet auf dich: Wo riskante Befehle warten, wartet jeder Vorschlag. Hinzugefügt wird es ohne Enter eingegeben, damit du es vor dem Ausführen liest.
 
@@ -94,11 +97,14 @@ t2a306810 = { $client } möchte dies auf { $host } ausführen. Es wartet auf dic
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } möchte dies auf { $host } ausführen. Es wartet auf dich: Es enthält { $words }, aus der Liste riskanter Wörter.
 
-# Add it
-t6cac0f01 = Hinzufügen
+# Trust and go on
+tc457169b = Vertrauen und weiter
 
 # Refuse it
 tbea0b112 = Ablehnen
+
+# Add it
+t6cac0f01 = Hinzufügen
 
 # Run it
 t72430853 = Ausführen
@@ -395,8 +401,8 @@ t971550f3 = Befehle
 # Given to {client} already: {hosts}. Giving them again replaces what they had.
 tebca595f = Bereits für { $client } freigegeben: { $hosts }. Erneutes Freigeben ersetzt die bisherige Freigabe.
 
-# It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t7620726b = Er sieht nie einen Schlüssel, ein Passwort oder eine Passphrase: Ein Host, der danach fragen würde, wird abgelehnt, ebenso einer, dessen Schlüssel noch nicht bekannt ist. Die Ausgabe eines Hosts kann Worte enthalten, die einen Agent lenken sollen: Gib Hosts nur einem, dem du sie anvertraust.
+# It never sees a key, a password or a passphrase: a host that would ask for one is refused, and one whose key is not known yet waits for you to trust it. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
+t37801a34 = Er sieht nie einen Schlüssel, ein Passwort oder eine Passphrase: Ein Host, der danach fragen würde, wird abgelehnt, und einer, dessen Schlüssel noch nicht bekannt ist, wartet, bis du ihm vertraust. Die Ausgabe eines Hosts kann Worte enthalten, die einen Agent lenken sollen: Gib Hosts nur einem, dem du sie anvertraust.
 
 # When AI runs a command
 tc94fc353 = Wenn AI einen Befehl ausführt
@@ -4111,6 +4117,9 @@ t1165de29 = Unten teilen
 
 # Close Pane
 t21a947cf = Bereich schließen
+
+# {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
+tb7c4470c = { $client } möchte { $host } erreichen, dessen Host-Schlüssel nicht in known_hosts steht: Es wartet in AI-Aktivität auf dich.
 
 # {client} wants to run a command on {host}: AI activity has it, waiting for you.
 tc4369c9f = { $client } möchte einen Befehl auf { $host } ausführen: Er wartet in AI-Aktivität auf dich.
