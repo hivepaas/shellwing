@@ -214,7 +214,13 @@ impl Workspace {
     /// The look of a tab to the host the host list names `host`: what AI
     /// activity draws a command's output in.
     pub fn look_of_host(&self, host: &str) -> crate::look::Look {
-        self.live.look_for(Some(host)).0
+        self.look_of(Some(host))
+    }
+
+    /// The look of a tab to `host` (its name in the host list), or (None) the
+    /// usual one.
+    pub fn look_of(&self, host: Option<&str>) -> crate::look::Look {
+        self.live.look_for(host).0
     }
 
     /// What Settings › AI shows.

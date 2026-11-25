@@ -2408,14 +2408,14 @@ tfacf50d8 = Aún en marcha: { $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = Detenidos antes de terminar: { $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = Abandonado tras { $s } segundos.
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = La salida superó los { $mb } MB: el resto no se guarda.
 
 # Open a tab
 t85019429 = Abrir una pestaña
+
+# Given up on after {s} seconds.
+tf245d128 = Abandonado tras { $s } segundos.
 
 # sudo did not take the password
 tb2c3fb01 = sudo no aceptó la contraseña

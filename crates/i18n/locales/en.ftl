@@ -870,9 +870,9 @@ t4cc1f343 =
     }
 tfacf50d8 = Still going: { $hosts }
 tde1adb0a = Stopped before they ended: { $hosts }
-tf245d128 = Given up on after { $s } seconds.
 t3b5e54ea = It printed more than { $mb } MB: the rest is not kept.
 t85019429 = Open a tab
+tf245d128 = Given up on after { $s } seconds.
 tb2c3fb01 = sudo did not take the password
 t31a388e9 = sudo asked for a password
 t7efff279 = did not connect

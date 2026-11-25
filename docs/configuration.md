@@ -1151,6 +1151,11 @@ The results:
 - **By host**: one row per host, its status, its time and its last line; a row
   opens on all it printed (up to 1 MB of each stream), with *Open a tab* to the
   host and *Copy output*.
+- An output is drawn as a terminal draws it: in the look of a tab (a group's
+  in the usual theme, a host's row in that host's), colors as colors, the
+  errors after the output in red. It is as tall as its lines, up to 16, and
+  scrolls within itself past that. It selects, copies and opens links as AI
+  activity's does (above).
 - **Stop** leaves the hosts not started alone and cuts off those running.
   *Again on the N that failed* and *Run again* go back to the confirm step; the
   hosts stay connected while the tab is open.

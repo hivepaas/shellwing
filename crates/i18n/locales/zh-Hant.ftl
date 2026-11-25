@@ -2383,14 +2383,14 @@ tfacf50d8 = 仍在執行：{ $hosts }
 # Stopped before they ended: {hosts}
 tde1adb0a = 在結束前已停止：{ $hosts }
 
-# Given up on after {s} seconds.
-tf245d128 = { $s } 秒後已放棄。
-
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = 輸出超過 { $mb } MB：其餘部分不會保留。
 
 # Open a tab
 t85019429 = 開啟分頁
+
+# Given up on after {s} seconds.
+tf245d128 = { $s } 秒後已放棄。
 
 # sudo did not take the password
 tb2c3fb01 = sudo 未接受密碼

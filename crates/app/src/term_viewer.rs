@@ -77,6 +77,19 @@ impl Drop for TermViewer {
     }
 }
 
+/// `output`, then `errors` in red on a line of their own.
+fn with_errors(output: &str, errors: &str) -> String {
+    if errors.is_empty() {
+        return output.to_string();
+    }
+    let gap = if output.is_empty() || output.ends_with('\n') {
+        ""
+    } else {
+        "\n"
+    };
+    format!("{output}{gap}\x1b[31m{errors}\x1b[0m")
+}
+
 /// `text` with each line ending as a terminal wants it: a lone `\n` moves
 /// down a line but not back to its start.
 fn lines_for_terminal(text: &str) -> Vec<u8> {
@@ -188,10 +201,19 @@ impl TermViewer {
         }))
     }
 
-    /// Shows `command` at a prompt, and `output` after it, as `key` (a job's
-    /// id). Shown again with the same key, only the output added since is
-    /// fed: a running command's output comes as it is printed.
-    pub fn show(&mut self, key: &str, command: &str, output: &str, cx: &mut Context<Self>) {
+    /// Shows `command` at a prompt (if there is one), then `output`, then
+    /// `errors` in red, as `key` (a job's id, say). Shown again with the same
+    /// key, only what was added since is fed: a running command's output
+    /// comes as it is printed.
+    pub fn show(
+        &mut self,
+        key: &str,
+        command: Option<&str>,
+        output: &str,
+        errors: &str,
+        cx: &mut Context<Self>,
+    ) {
+        let output = with_errors(output, errors);
         let bytes = output.as_bytes();
         if let Some(f) = &mut self.fed
             && f.key == key
@@ -211,15 +233,17 @@ impl TermViewer {
         let mut all = CLEAR.to_vec();
         all.extend_from_slice(HIDE_CURSOR);
         // The prompt, bold; the lines of a script after it, indented.
-        let mut lines = command.lines();
-        all.extend_from_slice(b"\x1b[1m$\x1b[0m ");
-        all.extend_from_slice(lines.next().unwrap_or("").as_bytes());
-        for line in lines {
-            all.extend_from_slice(b"\r\n  ");
-            all.extend_from_slice(line.as_bytes());
+        if let Some(command) = command {
+            let mut lines = command.lines();
+            all.extend_from_slice(b"\x1b[1m$\x1b[0m ");
+            all.extend_from_slice(lines.next().unwrap_or("").as_bytes());
+            for line in lines {
+                all.extend_from_slice(b"\r\n  ");
+                all.extend_from_slice(line.as_bytes());
+            }
+            all.extend_from_slice(b"\r\n");
         }
-        all.extend_from_slice(b"\r\n");
-        all.extend(lines_for_terminal(output));
+        all.extend(lines_for_terminal(&output));
         self.term.feed(all);
         self.term.scroll_to_bottom();
         self.fed = Some(Fed {
@@ -228,6 +252,13 @@ impl TermViewer {
             tail: bytes[bytes.len().saturating_sub(16)..].to_vec(),
         });
         cx.notify();
+    }
+
+    /// How tall the viewer is to show `rows` rows, its padding included.
+    pub fn height_for(&self, rows: usize) -> Pixels {
+        let row = (self.look.font_size * self.look.line_height).round();
+        // Half a pixel more, so the grid's rows fit however it rounds.
+        px(row * rows as f32 + self.look.padding.1 * 2. + 0.5)
     }
 
     /// The person's look changed (a theme, a font).
@@ -437,6 +468,11 @@ impl TermViewer {
     }
 
     fn scroll_wheel(&mut self, e: &ScrollWheelEvent, _: &mut Window, cx: &mut Context<Self>) {
+        // With nothing to scroll here, the page around it scrolls.
+        if self.frame.scroll.total <= self.frame.scroll.len {
+            return;
+        }
+        cx.stop_propagation();
         self.reveal_scrollbar(cx);
         // GPUI reports positive y when scrolling up; the terminal wants negative for up.
         let lines = match e.delta {
@@ -837,7 +873,14 @@ impl Render for TermViewer {
 
 #[cfg(test)]
 mod tests {
-    use super::lines_for_terminal;
+    use super::{lines_for_terminal, with_errors};
+
+    #[test]
+    fn errors_come_after_in_red() {
+        assert_eq!(with_errors("a\n", ""), "a\n");
+        assert_eq!(with_errors("a", "b\n"), "a\n\x1b[31mb\n\x1b[0m");
+        assert_eq!(with_errors("", "b"), "\x1b[31mb\x1b[0m");
+    }
 
     #[test]
     fn each_line_starts_at_its_left() {
