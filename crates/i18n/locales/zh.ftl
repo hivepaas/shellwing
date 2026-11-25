@@ -244,6 +244,9 @@ tf5190423 = 读取笔记
 # adds to notes
 tc82ac79b = 添加到笔记
 
+# uses snippets
+ta3eb0945 = 使用代码片段
+
 # while shellwing stays open
 t938960ff = shellwing 保持打开期间
 
@@ -360,6 +363,12 @@ tb80fd9c4 = 添加到笔记
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = 关于此主机的新笔记，或在笔记末尾追加内容；绝不更改已有内容
+
+# Use snippets
+t7dbb24e6 = 使用代码片段
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = 列出为此主机提供的代码片段，并在可运行命令时运行其中之一
 
 # Commands
 t971550f3 = 命令

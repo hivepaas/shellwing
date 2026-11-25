@@ -249,6 +249,9 @@ tf5190423 = not okur
 # adds to notes
 tc82ac79b = notlara ekler
 
+# uses snippets
+ta3eb0945 = kod parçacıklarını kullanır
+
 # while shellwing stays open
 t938960ff = shellwing açıkken
 
@@ -367,6 +370,12 @@ tb80fd9c4 = Notlara ekleme
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = sunucuyla ilgili yeni bir not ya da bir notun sonuna ekleme; var olanı asla değiştirmez
+
+# Use snippets
+t7dbb24e6 = Kod parçacıklarını kullanma
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = sunucu için sunulan kod parçacıklarını listeleme ve komut çalıştırabildiği yerde birini çalıştırma
 
 # Commands
 t971550f3 = Komutlar

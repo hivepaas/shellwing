@@ -244,6 +244,9 @@ tf5190423 = 노트 읽기
 # adds to notes
 tc82ac79b = 노트에 추가
 
+# uses snippets
+ta3eb0945 = 스니펫 사용
+
 # while shellwing stays open
 t938960ff = shellwing이 열려 있는 동안
 
@@ -360,6 +363,12 @@ tb80fd9c4 = 노트에 추가
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = 호스트에 관한 새 노트, 또는 노트 끝에 내용 추가. 기존 내용은 바꾸지 않습니다
+
+# Use snippets
+t7dbb24e6 = 스니펫 사용
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = 호스트에 제공되는 스니펫 목록을 보고, 명령을 실행할 수 있으면 하나를 실행합니다
 
 # Commands
 t971550f3 = 명령

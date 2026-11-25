@@ -163,6 +163,10 @@ pub struct AiGrant {
     /// read.
     #[serde(default)]
     pub notes_add: bool,
+    /// It may list the snippets offered for this host, and run one where
+    /// it may run commands (docs/design/ai-snippets.md).
+    #[serde(default)]
+    pub snippets: bool,
     /// Stopped for now, kept as it is to resume: the client may not use the
     /// host meanwhile. Its time (`until`) runs on.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -322,6 +326,7 @@ mod ai_tests {
         let g = &s.grants[0];
         assert!(g.run && g.read && !g.write);
         assert!(!g.notes_read && !g.notes_add, "notes only when given");
+        assert!(!g.snippets, "snippets only when given");
         let s: AiState = serde_json::from_str(
             r#"{"grants": [{"client": "c", "host": "web", "run": false, "write": true}]}"#,
         )

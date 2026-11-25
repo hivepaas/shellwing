@@ -247,6 +247,9 @@ tf5190423 = membaca catatan
 # adds to notes
 tc82ac79b = menambah catatan
 
+# uses snippets
+ta3eb0945 = memakai snippet
+
 # while shellwing stays open
 t938960ff = selama shellwing tetap terbuka
 
@@ -363,6 +366,12 @@ tb80fd9c4 = Tambah ke catatan
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = catatan baru tentang host, atau tambahan di akhir sebuah catatan; tidak pernah mengubah isinya
+
+# Use snippets
+t7dbb24e6 = Pakai snippet
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = lihat snippet untuk host, dan jalankan satu jika boleh menjalankan perintah
 
 # Commands
 t971550f3 = Perintah

@@ -244,6 +244,9 @@ tf5190423 = đọc ghi chú
 # adds to notes
 tc82ac79b = thêm vào ghi chú
 
+# uses snippets
+ta3eb0945 = dùng đoạn lệnh
+
 # while shellwing stays open
 t938960ff = khi shellwing còn mở
 
@@ -360,6 +363,12 @@ tb80fd9c4 = Thêm vào ghi chú
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = một ghi chú mới về host, hoặc thêm vào cuối một ghi chú; không bao giờ sửa những gì đã có
+
+# Use snippets
+t7dbb24e6 = Dùng đoạn lệnh
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = liệt kê các đoạn lệnh dành cho host, và chạy một đoạn khi được chạy lệnh
 
 # Commands
 t971550f3 = Lệnh

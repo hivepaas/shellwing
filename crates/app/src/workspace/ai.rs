@@ -320,6 +320,11 @@ impl Workspace {
                     ai::Host {
                         name: h.name.clone(),
                         detail: h.detail.clone(),
+                        group: self
+                            .live
+                            .hosts()
+                            .find(&h.name)
+                            .and_then(|x| x.group.clone()),
                         target: self.resolve_for_run(&h.spec),
                     },
                 )

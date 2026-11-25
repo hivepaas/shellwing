@@ -819,6 +819,7 @@ mod tests {
             write: false,
             notes_read: false,
             notes_add: false,
+            snippets: false,
             paused,
         };
         let mut state = shellwing_config::AiState {
@@ -836,6 +837,7 @@ mod tests {
                         super::super::Host {
                             name: h.into(),
                             detail: format!("me@{h}"),
+                            group: None,
                             target: Err("not here".into()),
                         },
                     )

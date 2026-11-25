@@ -249,6 +249,9 @@ tf5190423 = lê notas
 # adds to notes
 tc82ac79b = acrescenta a notas
 
+# uses snippets
+ta3eb0945 = usa trechos
+
 # while shellwing stays open
 t938960ff = enquanto o shellwing estiver aberto
 
@@ -367,6 +370,12 @@ tb80fd9c4 = Acrescentar a notas
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = uma nota nova sobre o host, ou mais no fim de uma; nunca muda o que já está lá
+
+# Use snippets
+t7dbb24e6 = Usar trechos
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = listar os trechos oferecidos para o host e executar um, onde pode executar comandos
 
 # Commands
 t971550f3 = Comandos

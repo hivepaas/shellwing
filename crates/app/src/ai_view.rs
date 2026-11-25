@@ -148,8 +148,8 @@ struct Giving {
     mode: AiMode,
     how: AiHow,
     /// What it may do: run commands, read files, write files, read notes,
-    /// add to notes.
-    may: [bool; 5],
+    /// add to notes, use snippets.
+    may: [bool; 6],
 }
 
 /// A mode's name, and what it does.
@@ -314,7 +314,7 @@ impl AiView {
             until: Until::TakenBack,
             mode: state.default_mode,
             how: AiHow::Background,
-            may: [true, true, false, false, false],
+            may: [true, true, false, false, false, false],
         });
         window.focus(&self.filter.focus_handle(cx), cx);
         cx.notify();
@@ -352,6 +352,7 @@ impl AiView {
                 write: g.may[2],
                 notes_read: g.may[3],
                 notes_add: g.may[4],
+                snippets: g.may[5],
                 paused: false,
             })
             .collect();
@@ -802,6 +803,9 @@ impl AiView {
         if g.notes_add {
             how.push(tr!("adds to notes"));
         }
+        if g.snippets {
+            how.push(tr!("uses snippets"));
+        }
         let how = how.join(", ");
         let until = match (g.until, g.session) {
             (_, true) => tr!("while shellwing stays open"),
@@ -1231,6 +1235,11 @@ impl AiView {
                         tr!("Add to notes"),
                         tr!("a new note about the host, or more at the end of one; never changes what is there"),
                         "ai-may:notes-add",
+                    ),
+                    (
+                        tr!("Use snippets"),
+                        tr!("list the snippets offered for the host, and run one where it may run commands"),
+                        "ai-may:snippets",
                     ),
                 ]
                 .into_iter()
