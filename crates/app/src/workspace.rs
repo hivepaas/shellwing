@@ -4816,6 +4816,7 @@ impl Workspace {
                     format: shellwing_vault::NoteFormat::Markdown,
                     hosts: vec![host.clone()],
                     sensitive: false,
+                    shown_to_ai: false,
                     changed: String::new(),
                     size: 0,
                 };

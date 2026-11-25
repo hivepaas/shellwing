@@ -732,6 +732,7 @@ tb7fc0ade = Plain text
 tc2c76cb1 = Edit
 tfdda4cf7 = Preview
 tf603feef = Sensitive
+t2c763301 = Show to AI
 t2594894c =
     { $n ->
         [one] Download Image

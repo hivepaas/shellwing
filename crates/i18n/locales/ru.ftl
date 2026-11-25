@@ -2086,6 +2086,9 @@ tfdda4cf7 = Предпросмотр
 # Sensitive
 tf603feef = Конфиденциально
 
+# Show to AI
+t2c763301 = Показывать AI
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

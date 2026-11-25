@@ -385,6 +385,7 @@ impl Shellwing {
             format: NoteFormat::Plain,
             hosts: vec![],
             sensitive: false,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         });

@@ -256,6 +256,7 @@ impl NoteWindow {
             format: NoteFormat::Markdown,
             hosts: vec![],
             sensitive: false,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         });
@@ -475,6 +476,7 @@ impl NoteWindow {
             n.format == NoteFormat::Markdown,
             &n.hosts,
             n.sensitive,
+            n.shown_to_ai,
         )
             .hash(&mut h);
         if self.loaded {
@@ -1472,6 +1474,26 @@ impl NoteWindow {
                         .child(checkbox(self.note.sensitive))
                         .child(tr!("Sensitive")),
                 )
+                // About no host, a note reaches no AI unless shown to it:
+                // then any holding Read notes on a host reads it.
+                .when(self.note.hosts.is_empty() && !self.note.sensitive, |d| {
+                    d.child(
+                        div()
+                            .id("note-ai")
+                            .debug_selector(|| "note-ai".into())
+                            .flex()
+                            .items_center()
+                            .gap(px(6.))
+                            .cursor_pointer()
+                            .text_size(ui(12.5))
+                            .on_click(cx.listener(|v, _, w, cx| {
+                                v.note.shown_to_ai = !v.note.shown_to_ai;
+                                v.changed_meta(w, cx);
+                            }))
+                            .child(checkbox(self.note.shown_to_ai))
+                            .child(tr!("Show to AI")),
+                    )
+                })
                 .child(hosts)
                 .child(picker);
         let right = div()

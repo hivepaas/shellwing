@@ -443,6 +443,7 @@ scenario!(
             format: NoteFormat::Markdown,
             hosts: vec![],
             sensitive: false,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         };

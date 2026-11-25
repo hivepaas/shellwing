@@ -278,7 +278,7 @@ pub fn tools() -> Value {
         {
             "name": "list_notes",
             "title": "List notes",
-            "description": format!("The user's notes about the hosts given to you to read notes, newest change first ({} at the most): each one's id, title, category, format, the hosts it is about, when it last changed and its size. host keeps those about that host; query those with all its words in their title or text.", super::notes::LIST),
+            "description": format!("The user's notes about the hosts given to you to read notes, and those about no host the user showed to AI, newest change first ({} at the most): each one's id, title, category, format, the hosts it is about, when it last changed and its size. host keeps those about that host; query those with all its words in their title or text.", super::notes::LIST),
             "inputSchema": {
                 "type": "object",
                 "properties": {

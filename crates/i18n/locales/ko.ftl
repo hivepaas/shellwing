@@ -2005,6 +2005,9 @@ tfdda4cf7 = 미리 보기
 # Sensitive
 tf603feef = 민감 정보
 
+# Show to AI
+t2c763301 = AI에 표시
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

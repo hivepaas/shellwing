@@ -2005,6 +2005,9 @@ tfdda4cf7 = 预览
 # Sensitive
 tf603feef = 敏感
 
+# Show to AI
+t2c763301 = 显示给 AI
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

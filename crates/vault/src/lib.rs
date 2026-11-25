@@ -425,6 +425,9 @@ pub struct Note {
     pub hosts: Vec<String>,
     /// Its text shows masked until asked for.
     pub sensitive: bool,
+    /// About no host, it still goes to an AI holding *Read notes* on any
+    /// host (docs/design/ai-notes.md); never while sensitive.
+    pub shown_to_ai: bool,
     /// When it was last changed, as the vault's clock stamps it.
     pub changed: String,
     /// Its text's bytes.
@@ -1673,6 +1676,7 @@ impl Vault {
                         .map(str::to_string)
                         .collect(),
                     sensitive: get("sensitive") == "yes",
+                    shown_to_ai: get("ai") == "yes",
                     size: r.f.get("text").map_or(0, |f| f.val.len()),
                     changed,
                     id,
@@ -1748,6 +1752,10 @@ impl Vault {
             (
                 "sensitive".to_string(),
                 if n.sensitive { "yes" } else { "no" }.to_string(),
+            ),
+            (
+                "ai".to_string(),
+                if n.shown_to_ai { "yes" } else { "no" }.to_string(),
             ),
             ("text".to_string(), text.to_string()),
         ]);
@@ -2602,6 +2610,7 @@ mod tests {
             format: NoteFormat::Markdown,
             hosts: vec!["web-1".into(), "db".into()],
             sensitive: true,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         };
@@ -2622,10 +2631,16 @@ mod tests {
         );
         assert!(!got.changed.is_empty());
         // Retitled, its text kept.
+        assert!(!got.shown_to_ai, "kept from AI unless shown");
         n.id = id.clone();
         n.title = "Runbook: app".into();
         n.hosts.clear();
+        n.shown_to_ai = true;
         v.save_note(&n, None).expect("retitled");
+        assert!(
+            v.notes().expect("listed")[0].shown_to_ai,
+            "shown to AI, and kept so"
+        );
         assert_eq!(
             v.note_text(&id)
                 .expect("read")
