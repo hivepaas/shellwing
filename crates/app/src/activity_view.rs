@@ -26,6 +26,16 @@ enum Filter {
     Failed,
 }
 
+/// The list of commands' width, as it comes; what it may be dragged to.
+pub const LIST_WIDTH: f32 = 460.;
+pub const MIN_LIST_WIDTH: f32 = 280.;
+pub const MAX_LIST_WIDTH: f32 = 900.;
+
+/// The list's width as dragged, kept with the window's layout.
+pub struct ListWidth(pub f32);
+
+impl gpui::Global for ListWidth {}
+
 pub struct ActivityView {
     workspace: WeakEntity<Workspace>,
     focus: FocusHandle,
@@ -41,6 +51,11 @@ pub struct ActivityView {
     /// The same for what an addition waiting for the person would add.
     adding_scroll: gpui::ScrollHandle,
     adding_drag: crate::scrollbar::Drag,
+    /// The list's edge, dragged: where the pointer was, and the width then.
+    list_drag: Option<(f32, f32)>,
+    /// Let go where nothing heard the release: the width is kept once the
+    /// view is drawn again, with a window to keep it by.
+    save_after_drag: bool,
 }
 
 impl Focusable for ActivityView {
@@ -66,6 +81,11 @@ fn standing(a: &Activity) -> (String, u32) {
     }
 }
 
+/// The list's width now: as dragged, else as it comes.
+fn list_width(cx: &App) -> f32 {
+    cx.try_global::<ListWidth>().map_or(LIST_WIDTH, |w| w.0)
+}
+
 fn when(secs: u64) -> String {
     chrono::DateTime::from_timestamp(secs as i64, 0)
         .map(|t| {
@@ -89,7 +109,23 @@ impl ActivityView {
             scroll_drag: Default::default(),
             adding_scroll: gpui::ScrollHandle::new(),
             adding_drag: Default::default(),
+            list_drag: None,
+            save_after_drag: false,
         }
+    }
+
+    /// The list's edge let go: its width kept with the window's layout.
+    fn end_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.list_drag.take().is_some() {
+            self.save_width(window, cx);
+        }
+        cx.notify();
+    }
+
+    fn save_width(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let _ = self
+            .workspace
+            .update(cx, |ws, cx| ws.save_widths(window, cx));
     }
 
     /// Opens the find bar over the output shown.
@@ -271,7 +307,7 @@ impl ActivityView {
             );
         }
         div()
-            .w(px(460.))
+            .w(px(list_width(cx)))
             .flex_shrink_0()
             .flex()
             .flex_col()
@@ -677,10 +713,16 @@ impl Render for ActivityView {
             .as_ref()
             .and_then(|id| all.iter().find(|a| a.id == *id))
             .map(|a| self.detail(a, cx));
+        if std::mem::take(&mut self.save_after_drag) {
+            cx.defer_in(window, |v, window, cx| v.save_width(window, cx));
+        }
+        let width = list_width(cx);
+        let dragging = self.list_drag.is_some();
         div()
             .id("ai-activity")
             .debug_selector(|| "ai-activity".into())
             .track_focus(&self.focus)
+            .relative()
             .size_full()
             .flex()
             .bg(rgb(colors().page))
@@ -688,5 +730,75 @@ impl Render for ActivityView {
             .text_size(ui(13.))
             .child(self.list(&all, shown.as_deref(), cx))
             .children(detail)
+            // The list's edge: drag to resize, double-click for the default,
+            // as the host list's.
+            .child(
+                div()
+                    .id("ai-list-edge")
+                    .debug_selector(|| "ai-list-edge".into())
+                    .group("ai-list-edge")
+                    .absolute()
+                    .top_0()
+                    .h_full()
+                    .left(px(width - 3.))
+                    .w(px(6.))
+                    .flex()
+                    .justify_center()
+                    .cursor(gpui::CursorStyle::ResizeLeftRight)
+                    .on_mouse_down(
+                        gpui::MouseButton::Left,
+                        cx.listener(move |v, e: &gpui::MouseDownEvent, window, cx| {
+                            cx.stop_propagation();
+                            if e.click_count >= 2 {
+                                v.list_drag = None;
+                                cx.set_global(ListWidth(LIST_WIDTH));
+                                v.save_width(window, cx);
+                            } else {
+                                v.list_drag = Some((f32::from(e.position.x), width));
+                            }
+                            cx.notify();
+                        }),
+                    )
+                    .child(
+                        div()
+                            .h_full()
+                            .w(px(if dragging { 3. } else { 1. }))
+                            .bg(rgb(if dragging {
+                                colors().accent
+                            } else {
+                                colors().line
+                            }))
+                            .group_hover("ai-list-edge", |s| s.w(px(2.)).bg(rgb(colors().accent))),
+                    ),
+            )
+            // Held, the edge follows the pointer anywhere in the window, as a
+            // scroll bar's thumb does: out of this view too.
+            .when(dragging, |d| {
+                d.child(crate::scrollbar::hold(
+                    cx.entity().downgrade(),
+                    |v: &mut Self, at, cx| {
+                        if let Some((x0, w0)) = v.list_drag {
+                            let w =
+                                (w0 + f32::from(at.x) - x0).clamp(MIN_LIST_WIDTH, MAX_LIST_WIDTH);
+                            cx.set_global(ListWidth(w));
+                            cx.notify();
+                        }
+                    },
+                    |v: &mut Self, cx| {
+                        if v.list_drag.take().is_some() {
+                            v.save_after_drag = true;
+                        }
+                        cx.notify();
+                    },
+                ))
+                .on_mouse_up(
+                    gpui::MouseButton::Left,
+                    cx.listener(|v, _, window, cx| v.end_drag(window, cx)),
+                )
+                .on_mouse_up_out(
+                    gpui::MouseButton::Left,
+                    cx.listener(|v, _, window, cx| v.end_drag(window, cx)),
+                )
+            })
     }
 }

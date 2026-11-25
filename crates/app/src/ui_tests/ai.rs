@@ -999,6 +999,50 @@ scenario!(
 );
 
 scenario!(
+    /// AI activity's list is as wide as its edge is dragged, within limits,
+    /// and stays so with the window's layout; a double-click on the edge
+    /// gives it its width again.
+    the_activity_list_is_as_wide_as_dragged,
+    |ui| {
+        ui.open();
+        ui.resize(1400., 700.);
+        ui.ws(|ws, window, cx| ws.open_activity(window, cx));
+        let width = |ui: &mut Ui| ui.bounds("ai-activity-list").size.width;
+        // The column's own width, its 1 px edge aside.
+        let start = width(ui);
+        assert!(
+            (start - gpui::px(crate::activity_view::LIST_WIDTH)).abs() <= gpui::px(1.),
+            "as it comes: {start:?}"
+        );
+        let drag = |ui: &mut Ui, by: f32| {
+            let edge = ui.bounds("ai-list-edge").center();
+            ui.flick(edge, gpui::point(edge.x + gpui::px(by), edge.y), Duration::ZERO);
+            ui.draw();
+        };
+        drag(ui, 140.);
+        assert_eq!(width(ui), start + gpui::px(140.), "wider as dragged");
+        let kept: shellwing_config::WindowState = serde_json::from_str(
+            &std::fs::read_to_string(ui.config_dir().join("state/window.json")).expect("window.json"),
+        )
+        .expect("a window state");
+        assert_eq!(
+            kept.activity_list_width,
+            Some(crate::activity_view::LIST_WIDTH + 140.),
+            "kept with the window's layout"
+        );
+        drag(ui, -2000.);
+        assert_eq!(
+            width(ui),
+            start - gpui::px(crate::activity_view::LIST_WIDTH - crate::activity_view::MIN_LIST_WIDTH),
+            "no narrower than its least"
+        );
+        ui.double_click("ai-list-edge");
+        ui.draw();
+        assert_eq!(width(ui), start, "as it came, on a double-click");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.
