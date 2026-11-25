@@ -140,9 +140,13 @@ fn heading(a: &Activity, host: &str) -> String {
         |t| t.format("%Y-%m-%d %H:%M UTC").to_string(),
     );
     let end = match (&a.end, a.ended) {
-        (Some(end @ End::Exited(_)), Some(at)) => {
-            format!("{} after {} s", end.said(), at.saturating_sub(a.started))
-        }
+        // How long it ran; what was logged before that was kept, from its
+        // start and end, its wait for the person in.
+        (Some(end @ End::Exited(_)), Some(at)) => format!(
+            "{} after {} s",
+            end.said(),
+            a.ran.unwrap_or(at.saturating_sub(a.started))
+        ),
         (Some(end), _) => end.said(),
         (None, _) if a.waiting.is_some() => "waits for the user".into(),
         (None, _) => "still running: job_output follows it".into(),
@@ -284,9 +288,49 @@ mod tests {
         let name = if spec == "me@web" { "web" } else { spec };
         let job = Job::new(id.clone(), &self::client(client), spec, name, command);
         job.print(output.as_bytes());
-        job.end(End::Exited(Some(0)));
-        hub.ended(&job);
+        hub.finish(&job, End::Exited(Some(0)));
         id
+    }
+
+    /// The time a command waited for the person is no part of how long it
+    /// ran.
+    #[tokio::test]
+    async fn the_wait_for_the_person_is_not_its_time() {
+        let hub = hub();
+        let job = Job::new("j-9".into(), &client("c1"), "me@web", "web", "kill 1");
+        job.set_waiting(Some("kill".into()));
+        tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+        job.set_waiting(None);
+        hub.finish(&job, End::Exited(Some(0)));
+        assert_eq!(job.activity().ran, Some(0));
+        let out = mine(&hub, None, None, 5);
+        assert!(out.contains("exit 0 after 0 s\tkill 1"), "{out}");
+    }
+
+    /// Whoever waits for a command's end finds it in the activity once told:
+    /// an agent asking for it at once sees it ended, not gone.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_end_is_kept_before_it_is_told() {
+        let hub = hub();
+        for n in 0..50 {
+            let id = format!("j-{}", 100 + n);
+            let job = Arc::new(Job::new(id.clone(), &client("c1"), "me@web", "web", "x"));
+            let (waiter, kept) = (job.clone(), hub.clone());
+            let seen = tokio::spawn(async move {
+                waiter.wait(std::time::Duration::from_secs(5), true).await;
+                kept.activity()
+                    .into_iter()
+                    .find(|a| a.id == id)
+                    .and_then(|a| a.end)
+            });
+            tokio::task::yield_now().await;
+            hub.finish(&job, End::Exited(Some(0)));
+            assert_eq!(
+                seen.await.expect("waiter"),
+                Some(End::Exited(Some(0))),
+                "#{n}"
+            );
+        }
     }
 
     fn mine(hub: &Hub, host: Option<&str>, before: Option<&str>, limit: usize) -> String {

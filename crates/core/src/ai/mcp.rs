@@ -246,7 +246,7 @@ pub fn tools() -> Value {
         {
             "name": "list_dir",
             "title": "List a folder",
-            "description": format!("The entries of a folder on a host, folders first, then by name: each one's kind (d a folder, - a file, l a link), name, size and when it changed. First, how many there are; a large folder comes a part at a time ({} entries if not told, {} at the most), with where the rest begins. pattern keeps the names like it (* any run of characters, ? one). A path not starting with / is from the home folder; ~ is the home folder.", super::files::LIST, super::files::MOST_LIST),
+            "description": format!("The entries of a folder on a host, folders first, then by name: each one's kind (d a folder, - a file, l a link), name, size and when it changed (UTC). First, how many there are; a large folder comes a part at a time ({} entries if not told, {} at the most), with where the rest begins. pattern keeps the names like it (* any run of characters, ? one). A path not starting with / is from the home folder; ~ is the home folder.", super::files::LIST, super::files::MOST_LIST),
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -279,7 +279,7 @@ pub fn tools() -> Value {
         {
             "name": "write_file",
             "title": "Write a file",
-            "description": format!("Writes a file on a host: as a new file (create; one there already is an error), over what is there (overwrite, the default), or after it (append). content is text, or base64 with encoding base64; {} at the most. The user may have it wait until they allow it.", super::files::size(super::files::MOST_WRITE as u64)),
+            "description": format!("Writes a file on a host: as a new file (create; one there already is an error), over what is there (overwrite, the default), or after it (append); the folders it goes in are made where they are not, as mkdir -p would. content is text, or base64 with encoding base64; {} at the most. The user may have it wait until they allow it.", super::files::size(super::files::MOST_WRITE as u64)),
             "inputSchema": {
                 "type": "object",
                 "properties": {
