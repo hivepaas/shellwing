@@ -321,18 +321,18 @@ impl server::Handler for TestServer {
         let (Some(home), Some(opened)) = (self.policy.home.clone(), opened) else {
             return session.channel_failure(channel);
         };
-        let Ok(mut child) = tokio::process::Command::new("sh")
-            .arg("-c")
+        let mut cmd = tokio::process::Command::new("sh");
+        cmd.arg("-c")
             .arg(String::from_utf8_lossy(data).into_owned())
             .env("HOME", &home)
             .current_dir(&home)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .kill_on_drop(true)
-            .process_group(0)
-            .spawn()
-        else {
+            .kill_on_drop(true);
+        #[cfg(unix)]
+        cmd.process_group(0);
+        let Ok(mut child) = cmd.spawn() else {
             return session.channel_failure(channel);
         };
         if let Some(pid) = child.id() {

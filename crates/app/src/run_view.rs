@@ -210,6 +210,21 @@ impl RunView {
             cx.subscribe(i, |_, _, _: &Changed, cx| cx.notify())
                 .detach();
         }
+        // Quitting: what runs on the hosts is stopped there (TERM), not cut
+        // off with its connection, which would leave it running.
+        cx.on_app_quit(|v, cx| {
+            let running = v.fleet.running();
+            v.fleet.stop();
+            let wait = cx
+                .background_executor()
+                .timer(shellwing_core::ai::QUIT_STOP_WAIT);
+            async move {
+                if running {
+                    wait.await;
+                }
+            }
+        })
+        .detach();
         let (events, inbox) = async_channel::unbounded();
         let pump = cx.spawn(async move |this, cx| {
             while let Ok(ev) = inbox.recv().await {
@@ -314,7 +329,10 @@ impl RunView {
     fn host_output(&self, host: &str) -> (String, String) {
         let state = self.states.get(host).cloned().unwrap_or(State::Waiting);
         match (&state, self.printed.get(host)) {
-            (State::Running(_) | State::Stopped, Some(p)) => p.clone(),
+            (
+                State::Running(_) | State::Stopped | State::Ended(Outcome::Stopped { .. }),
+                Some(p),
+            ) => p.clone(),
             _ => host_output(&state),
         }
     }
@@ -504,6 +522,18 @@ impl RunView {
                 _ => None,
             })
             .collect()
+    }
+
+    /// How many hosts stand so: running, and stopped (shown so, or left
+    /// running on its host), for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn standing(&self) -> (usize, usize, usize) {
+        let count = |f: &dyn Fn(&State) -> bool| self.states.values().filter(|s| f(s)).count();
+        (
+            count(&|s| matches!(s, State::Running(_))),
+            count(&|s| matches!(s, State::Stopped)),
+            count(&|s| matches!(s, State::Ended(Outcome::Stopped { ended: false }))),
+        )
     }
 
     /// The hosts chosen, by name, for the UI tests.
@@ -846,7 +876,8 @@ impl RunView {
         self.fleet.run(targets, job, limit, self.events.clone());
     }
 
-    /// Stop: the hosts not started are left alone, those running cut off.
+    /// Stop: the hosts not started are left alone; on those running, the
+    /// command is stopped on the host, each said so once it ended there.
     fn stop(&mut self, cx: &mut Context<Self>) {
         self.fleet.stop();
         for s in self.states.values_mut() {
@@ -958,6 +989,18 @@ impl RunView {
                 let p = self.printed.entry(host).or_default();
                 p.0.push_str(&stdout);
                 p.1.push_str(&stderr);
+            }
+            // Stopped (by Stop, shown so already): what it printed stays;
+            // one whose host never said it ended is shown so.
+            Event::Ended {
+                host,
+                outcome: Outcome::Stopped { ended },
+            } => {
+                if !ended {
+                    let outcome = Outcome::Stopped { ended };
+                    self.states.insert(host, State::Ended(outcome));
+                }
+                self.settle(cx);
             }
             Event::Ended { host, outcome } => {
                 self.printed.remove(&host);
@@ -2524,6 +2567,12 @@ fn said_text(said: &Said) -> (String, String, String) {
         }
         Said::NotConnected(why) => (tr!("did not connect"), String::new(), why.clone()),
         Said::GaveUp => (tr!("given up on"), String::new(), String::new()),
+        Said::Stopped { ended: true } => (tr!("stopped"), String::new(), String::new()),
+        Said::Stopped { ended: false } => (
+            tr!("may still run on its host"),
+            String::new(),
+            String::new(),
+        ),
         Said::Failed(why) => (tr!("did not run"), String::new(), why.clone()),
     }
 }
@@ -2575,6 +2624,15 @@ fn state_text(s: &State) -> (String, u32, String, String) {
                 format!("{} s", d.as_secs()),
             ),
             Outcome::Failed(w) => (tr!("did not run"), c.bad, w.clone(), String::new()),
+            Outcome::Stopped { ended: true } => {
+                (tr!("stopped"), c.muted, String::new(), String::new())
+            }
+            Outcome::Stopped { ended: false } => (
+                tr!("may still run on its host"),
+                c.warn,
+                String::new(),
+                String::new(),
+            ),
         },
     }
 }

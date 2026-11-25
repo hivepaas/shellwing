@@ -1194,7 +1194,14 @@ The results:
   output keeps its height while the tab is open, a running host's going on
   with its group once it ends. It selects, copies and opens links as AI
   activity's does (above).
-- **Stop** leaves the hosts not started alone and cuts off those running.
+- **Stop** leaves the hosts not started alone, and stops the command on
+  those running: TERM through SSH, then KILL 3 seconds later, to its whole
+  process group (as OpenSSH sends them), its children too. Cutting off the
+  connection alone would leave it running there. A host whose server takes no
+  signals never says it ended: it is shown *may still run on its host*. A
+  command given up on (**give up after**) is stopped the same way, and
+  quitting shellwing sends TERM to what still runs, as it does to an
+  agent's commands.
   *Again on the N that failed* and *Run again* go back to the confirm step; the
   hosts stay connected while the tab is open.
 

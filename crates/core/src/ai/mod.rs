@@ -170,6 +170,10 @@ impl End {
 
 pub use files::{FileOp, WRITES};
 
+/// What quitting waits, when commands run, for their stops to reach their
+/// hosts: the app has 200 ms in all.
+pub const QUIT_STOP_WAIT: Duration = Duration::from_millis(150);
+
 /// What the app hears from the hub.
 #[derive(Clone, Debug)]
 pub enum HubEvent {
@@ -1130,6 +1134,13 @@ impl Hub {
     }
 
     /// Stops every job going: the person's Stop all.
+    /// Whether a command of an agent's runs now.
+    pub fn running(&self) -> bool {
+        self.inner
+            .lock()
+            .is_ok_and(|i| i.jobs.values().any(|j| !j.ended()))
+    }
+
     pub fn stop_all(&self) {
         let jobs: Vec<Arc<Job>> = self
             .inner
