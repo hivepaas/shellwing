@@ -4319,8 +4319,11 @@ t2bfc1370 = Nessuna cartella in cui scaricare.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } è pronto: viene installato all'uscita, oppure subito con «Riavvia».
 
-# Update
-t6e230e94 = Aggiorna
+# Restart to update
+tbbbbda26 = Riavvia per aggiornare
+
+# Update available
+t676409df = Aggiornamento disponibile
 
 # Downloading… {got} of {total}
 taee668c2 = Download… { $got } di { $total }

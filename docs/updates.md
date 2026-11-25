@@ -1,15 +1,17 @@
 # Updates
 
-shellwing tells its user when a newer version is out (a row over the panes,
-*Settings › About*, a dot on the Settings button, an entry of the palette). It
-looks once a day while `[updates] check` is on (the default), and when asked
-(*Check now*). Nothing is downloaded or installed until the user says so (see
+shellwing tells its user when a newer version is out (a badge on the title bar,
+*Settings › About*, an entry of the palette). It looks once a day while
+`[updates] check` is on (the default), and when asked (*Check now*). Nothing is
+downloaded or installed until the user says so (see
 [Installing](#installing)).
 
-The row never takes the keyboard, so it can show during a session. *Update* opens
-the section of About that gets the release, *Skip this version* offers it no more,
-and ✕ closes the row until the next start. With `[updates] check` off it shows
-only a release already downloaded.
+The badge is packwing's: **Update available** while a release is out, **Restart
+to update** once one is downloaded, with the version in its tooltip. It never
+takes the keyboard and covers nothing, so it can show during a session. A click
+opens the section of About that gets the release, where *Skip this version*
+offers it no more. With `[updates] check` off it shows only a release already
+downloaded, and none while one downloads (About shows that).
 
 ## Channels
 

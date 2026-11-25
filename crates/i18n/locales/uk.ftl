@@ -4417,8 +4417,11 @@ t2bfc1370 = Немає папки для завантаження.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } готовий: його буде встановлено під час виходу або зараз — кнопкою «Перезапустити».
 
-# Update
-t6e230e94 = Оновити
+# Restart to update
+tbbbbda26 = Перезапустіть, щоб оновити
+
+# Update available
+t676409df = Є оновлення
 
 # Downloading… {got} of {total}
 taee668c2 = Завантаження… { $got } з { $total }

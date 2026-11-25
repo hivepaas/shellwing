@@ -4319,8 +4319,11 @@ t2bfc1370 = İndirme için klasör yok.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } hazır: çıktığınızda ya da şimdi Yeniden başlat ile kurulur.
 
-# Update
-t6e230e94 = Güncelle
+# Restart to update
+tbbbbda26 = Güncellemek için yeniden başlat
+
+# Update available
+t676409df = Güncelleme var
 
 # Downloading… {got} of {total}
 taee668c2 = İndiriliyor… { $got } / { $total }

@@ -4213,8 +4213,11 @@ t2bfc1370 = Không có thư mục để tải xuống.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } đã sẵn sàng: bản mới được cài khi bạn thoát app, hoặc ngay bây giờ bằng Khởi động lại.
 
-# Update
-t6e230e94 = Cập nhật
+# Restart to update
+tbbbbda26 = Khởi động lại để cập nhật
+
+# Update available
+t676409df = Có bản cập nhật
 
 # Downloading… {got} of {total}
 taee668c2 = Đang tải xuống… { $got } / { $total }
