@@ -29,6 +29,11 @@ pub const LOOK: &str = "\u{0}look";
 /// every mode, before the names of the environments it loads: its waiting
 /// reason, as AI activity reads it.
 pub const ENVS: &str = "\u{0}envs:";
+/// Why a snippet an agent suggests waits for the person, where risky ones
+/// do: its waiting reason, as AI activity reads it.
+pub const SUGGESTS: &str = "\u{0}snippet";
+/// The longest name an agent gives a snippet, in characters.
+pub const NAME: usize = 200;
 /// The longest value an agent gives, in characters.
 pub const MOST_VALUE: usize = 256;
 
@@ -37,6 +42,8 @@ pub trait SnippetStore: Send + Sync {
     fn snippets(&self) -> Result<Vec<Snippet>, String>;
     /// The environment `id`: its name and its variables; None if gone.
     fn environment(&self, id: &str) -> Result<Option<(String, EnvValues)>, String>;
+    /// Keeps a new snippet: its id.
+    fn save(&self, snippet: &Snippet) -> Result<String, String>;
 }
 
 impl SnippetStore for VaultNotes {
@@ -57,6 +64,15 @@ impl SnippetStore for VaultNotes {
         };
         let values = vault.environment_values(id).map_err(|e| e.to_string())?;
         Ok(values.map(|v| (env.name, v)))
+    }
+
+    fn save(&self, snippet: &Snippet) -> Result<String, String> {
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
+        let id = vault.save_snippet(snippet).map_err(|e| e.to_string())?;
+        if let Some(s) = &self.sync {
+            s.now();
+        }
+        Ok(id)
     }
 }
 
@@ -285,6 +301,76 @@ impl Hub {
         ))
     }
 
+    /// Suggests a snippet for `host`, held with *Use snippets*: for that
+    /// host alone, needing no environment, typed without Enter, kept as the
+    /// client's. A job, which waits for the person unless the grant runs
+    /// freely.
+    pub fn add_snippet(
+        self: &Arc<Self>,
+        client: &AiClient,
+        host: &str,
+        name: &str,
+        command: &str,
+        category: &str,
+    ) -> Result<Arc<Job>, String> {
+        let (name_of_host, _) = self.offered_for(client, host)?;
+        let g = self.given_for(client, host)?;
+        let name = name.trim();
+        let category = category.trim();
+        if name.is_empty() {
+            return Err("name is missing".into());
+        }
+        if name.chars().count() > NAME || category.chars().count() > NAME {
+            return Err(format!(
+                "A name or a category takes {NAME} characters at the most."
+            ));
+        }
+        let command = command.trim_end();
+        if command.trim().is_empty() {
+            return Err("command is missing".into());
+        }
+        if command.len() > shellwing_vault::limits::COMMAND {
+            return Err(format!(
+                "The command is {}: a snippet's takes {} at the most.",
+                super::files::size(command.len() as u64),
+                super::files::size(shellwing_vault::limits::COMMAND as u64)
+            ));
+        }
+        let store = self
+            .inner
+            .lock()
+            .map_err(|_| "busy".to_string())?
+            .snippets
+            .clone()
+            .ok_or(VAULT_LOCKED)?;
+        let snippet = Snippet {
+            id: String::new(),
+            name: name.to_string(),
+            command: command.to_string(),
+            scope: Scope::Host(name_of_host.clone()).field(),
+            // Read in the pane before it runs, every time.
+            enter: false,
+            category: category.to_string(),
+            needs: vec![],
+            origin: format!("{}{}", crate::snippets::AI_ORIGIN, client.name),
+        };
+        let shown = format!("{name}\n\n{command}");
+        let label = format!("add_snippet {name:?}");
+        let hub = self.clone();
+        self.adding_job(client, &[g], &label, SUGGESTS, shown, move || {
+            let locked = hub.inner.lock().map_or(true, |i| i.locked);
+            if locked {
+                return Err("shellwing was locked meanwhile: nothing was added.".into());
+            }
+            let id = store.save(&snippet)?;
+            let _ = hub.events.try_send(super::HubEvent::SnippetsChanged);
+            Ok(format!(
+                "Added the snippet {:?} for {name_of_host}: its id is {id}. It is typed without Enter, so the user reads it in a pane before it runs, and run_snippet waits for them.",
+                snippet.name
+            ))
+        })
+    }
+
     /// Keeps a listing in the activity, done at once.
     fn snippet_activity(&self, client: &AiClient, host: &str, what: &str) {
         let job = {
@@ -345,11 +431,18 @@ mod tests {
     }
 
     /// Snippets, and one environment, `env1` (AWS prod): its key.
-    struct Kept(Vec<Snippet>);
+    struct Kept(std::sync::Mutex<Vec<Snippet>>);
 
     impl SnippetStore for Kept {
         fn snippets(&self) -> Result<Vec<Snippet>, String> {
-            Ok(self.0.clone())
+            Ok(self.0.lock().expect("lock").clone())
+        }
+        fn save(&self, snippet: &Snippet) -> Result<String, String> {
+            let mut all = self.0.lock().expect("lock");
+            let mut s = snippet.clone();
+            s.id = format!("new{}", all.len());
+            all.push(s.clone());
+            Ok(s.id)
         }
         fn environment(&self, id: &str) -> Result<Option<(String, EnvValues)>, String> {
             Ok((id == "env1").then(|| {
@@ -444,13 +537,9 @@ mod tests {
         envs.command = "aws s3 ls {{bucket}}".into();
         let mut gone = snippet("gone", "", "Ops");
         gone.needs = vec!["deleted".into()];
-        hub.set_snippets(Some(Arc::new(Kept(vec![
-            tail,
-            look,
-            envs,
-            gone,
-            snippet("other", "host:db", "Ops"),
-        ]))));
+        hub.set_snippets(Some(Arc::new(Kept(
+            vec![tail, look, envs, gone, snippet("other", "host:db", "Ops")].into(),
+        ))));
         hub
     }
 
@@ -570,6 +659,103 @@ mod tests {
             .err()
             .expect("gone");
         assert!(e.contains("was deleted"), "{e}");
+    }
+
+    fn snippets_of(hub: &Hub) -> Vec<Snippet> {
+        let store = hub
+            .inner
+            .lock()
+            .expect("lock")
+            .snippets
+            .clone()
+            .expect("a store");
+        store.snippets().expect("snippets")
+    }
+
+    /// A snippet an agent suggests is for its host alone, typed without
+    /// Enter, needing nothing, and kept as the client's; it waits for the
+    /// person where risky ones do.
+    #[tokio::test]
+    async fn an_agent_suggests_a_snippet() {
+        let hub = hub(shellwing_config::AiMode::Free);
+        let c = client();
+        let job = hub
+            .add_snippet(
+                &c,
+                "web",
+                " Restart app ",
+                "sudo systemctl restart app\n",
+                "Ops",
+            )
+            .expect("added");
+        let end = job.wait(std::time::Duration::from_secs(5), true).await.end;
+        assert_eq!(end, Some(End::Exited(Some(0))));
+        let kept = snippets_of(&hub)
+            .into_iter()
+            .find(|s| s.name == "Restart app")
+            .expect("kept");
+        assert_eq!(
+            (
+                kept.scope.as_str(),
+                kept.enter,
+                kept.needs.len(),
+                kept.origin.as_str(),
+                kept.command.as_str()
+            ),
+            (
+                "host:web",
+                false,
+                0,
+                "ai:Some agent",
+                "sudo systemctl restart app"
+            )
+        );
+        assert_eq!(
+            crate::snippets::suggested_by(&kept.origin),
+            Some("Some agent")
+        );
+
+        let e = hub
+            .add_snippet(&c, "db", "x", "true", "")
+            .err()
+            .expect("no right");
+        assert!(e.contains("not given to Some agent to use snippets"), "{e}");
+        assert!(
+            hub.add_snippet(&c, "web", " ", "true", "")
+                .err()
+                .expect("no name")
+                .contains("name is missing")
+        );
+        assert!(
+            hub.add_snippet(&c, "web", "x", " \n", "")
+                .err()
+                .expect("no command")
+                .contains("command is missing")
+        );
+        let long = "x".repeat(shellwing_vault::limits::COMMAND + 1);
+        assert!(
+            hub.add_snippet(&c, "web", "x", &long, "")
+                .err()
+                .expect("too long")
+                .contains("at the most")
+        );
+
+        let hub = self::hub(shellwing_config::AiMode::Risky);
+        let job = hub
+            .add_snippet(&c, "web", "Clean", "rm -rf /tmp/app-cache", "")
+            .expect("asked");
+        let a = job.activity();
+        assert_eq!(a.waiting.as_deref(), Some(SUGGESTS));
+        assert_eq!(a.adding.as_deref(), Some("Clean\n\nrm -rf /tmp/app-cache"));
+        hub.answer(&job.id, super::super::Approval::Refuse);
+        assert_eq!(
+            job.wait(std::time::Duration::from_secs(5), true).await.end,
+            Some(End::Refused)
+        );
+        assert!(
+            !snippets_of(&hub).iter().any(|s| s.name == "Clean"),
+            "refused: not kept"
+        );
     }
 
     #[tokio::test]

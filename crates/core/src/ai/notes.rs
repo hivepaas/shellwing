@@ -516,7 +516,7 @@ impl Hub {
         let added = marked(&client.name, &today(), format, text);
         let label = format!("add_note {title:?}");
         let (hub, title, text) = (self.clone(), title.to_string(), added.clone());
-        self.note_job(client, &chosen, &label, added, move || {
+        self.adding_job(client, &chosen, &label, NOTES, added, move || {
             let locked = hub.inner.lock().map_or(true, |i| i.locked);
             if locked {
                 return Err("shellwing was locked meanwhile: nothing was added.".into());
@@ -570,7 +570,7 @@ impl Hub {
         }
         let label = format!("append_note {:?}", r.note.title);
         let (hub, id, text) = (self.clone(), id.to_string(), added.clone());
-        self.note_job(client, &chosen, &label, added, move || {
+        self.adding_job(client, &chosen, &label, NOTES, added, move || {
             let added = text;
             // Looked at again: the window may have opened, or the text
             // changed, while the person was asked.
@@ -606,14 +606,15 @@ impl Hub {
         })
     }
 
-    /// A job adding to the notes about `hosts`: it waits for the person
-    /// unless every grant runs freely, `adding` shown meanwhile; `write`
-    /// runs once it may, and says what was done.
-    fn note_job(
+    /// A job adding to the vault for `hosts` (a note, a snippet): it waits
+    /// for the person, `why`, unless every grant runs freely, `adding`
+    /// shown meanwhile; `write` runs once it may, and says what was done.
+    pub(super) fn adding_job(
         self: &Arc<Self>,
         client: &AiClient,
         hosts: &[Given],
         label: &str,
+        why: &str,
         adding: String,
         write: impl FnOnce() -> Result<String, String> + Send + 'static,
     ) -> Result<Arc<Job>, String> {
@@ -631,7 +632,7 @@ impl Hub {
             if let Ok(mut a) = job.asking.lock() {
                 *a = Some(tx);
             }
-            job.set_waiting(Some(NOTES.to_string()));
+            job.set_waiting(Some(why.to_string()));
             rx
         });
         let _ = self.events.try_send(HubEvent::Changed(job.activity()));

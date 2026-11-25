@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 # The snippet {name}
 t6e8860fa = スニペット { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } が { $host } 向けにこのスニペットを提案しています。指示を待っています。「危険なものは確認」では、提案はすべて確認が必要です。追加後は Enter なしで入力されるため、実行前に確認できます。
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } が { $host } についてのノートにこれを追記しようとしています。指示を待っています。「危険なものは確認」では、ノートへの追記はすべて確認が必要です。
 
@@ -3552,6 +3555,9 @@ t79d7b3ad = ライブラリを開く
 
 # from the library
 td908f0d1 = ライブラリから
+
+# from {client}
+t541be172 = { $client } から
 
 # typed, not run
 td4e41905 = 入力のみ（実行しない）

@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Сниппет { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } предлагает этот сниппет для { $host }. Он ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое предложение. После добавления он вводится без Enter, чтобы вы прочитали его перед выполнением.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } хочет добавить это в заметки о { $host }. Добавление ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое добавление в заметку.
 
@@ -3675,6 +3678,9 @@ t79d7b3ad = Открыть библиотеку
 
 # from the library
 td908f0d1 = из библиотеки
+
+# from {client}
+t541be172 = от { $client }
 
 # typed, not run
 td4e41905 = вводится, но не выполняется
