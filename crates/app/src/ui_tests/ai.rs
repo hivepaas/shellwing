@@ -1180,6 +1180,51 @@ scenario!(
 );
 
 scenario!(
+    /// A pane is let read by an AI client from its menu, the client chosen in
+    /// a dialog: the pane gets AI's violet edge and a mark saying who and how
+    /// long, its tab a violet dot. The menu, or the mark's ✕, ends it.
+    a_pane_is_let_read_by_an_ai_client,
+    |ui| {
+        let _token = given_web_may(ui, "Free", "background", &[]);
+        ui.ws(|ws, window, cx| ws.open(crate::local::SPEC, window, cx));
+        ui.wait_until("the shell to start", |ui| ui.tabs() == 1 && ui.status() == crate::session::Status::Connected);
+        assert!(ui.find("ai-reader").is_none(), "not read unless let");
+
+        ui.right_click("terminal");
+        ui.click("menu-ai-read");
+        ui.answer_prompt("Codex CLI");
+        ui.wait_until("the mark", |ui| ui.find("ai-reader").is_some());
+        assert!(ui.find("tab-ai-read:0").is_some(), "its tab says so");
+        let pane = ui.ws(|ws, _, _| crate::workspace::Workspace::pane_id(&ws.active_view()));
+        let readers = ui.ws(|ws, _, _| ws.ai_pane_readers());
+        assert_eq!(readers.len(), 1);
+        assert_eq!(readers[0].1, pane, "this pane");
+
+        // The menu ends it.
+        ui.right_click("terminal");
+        ui.click("menu-ai-read");
+        ui.wait_until("no mark", |ui| ui.find("ai-reader").is_none());
+        assert!(ui.find("tab-ai-read:0").is_none());
+        assert!(ui.ws(|ws, _, _| ws.ai_pane_readers()).is_empty());
+
+        // Cancel lets none read it.
+        ui.right_click("terminal");
+        ui.click("menu-ai-read");
+        ui.answer_prompt("Cancel");
+        assert!(ui.find("ai-reader").is_none());
+
+        // So does the mark's ✕.
+        ui.right_click("terminal");
+        ui.click("menu-ai-read");
+        ui.answer_prompt("Codex CLI");
+        ui.wait_until("the mark", |ui| ui.find("ai-reader").is_some());
+        ui.click("ai-reader-stop");
+        ui.wait_until("no mark", |ui| ui.find("ai-reader").is_none());
+        assert!(ui.ws(|ws, _, _| ws.ai_pane_readers()).is_empty());
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

@@ -292,6 +292,9 @@ pub enum PaneCommand {
     /// Log the pane to a file, or stop: the workspace has the settings.
     Log,
     Close,
+    /// Let an AI client read the pane a while, or no longer.
+    AiRead,
+    AiReadStop,
 }
 
 /// Waits before each automatic reconnect: 1 s, 2 s, … then gives up.
@@ -361,6 +364,8 @@ pub struct TermView {
     /// Collections' hosts on the way that connected without what they ask,
     /// not allowed yet: offered to allow.
     held_back: Vec<shellwing_core::collections::Unallowed>,
+    /// The AI client that may read the pane now, and until when.
+    ai_reader: Option<(SharedString, Instant)>,
     /// When the next automatic reconnect happens, if one is planned.
     retry_at: Option<Instant>,
     /// Automatic reconnects since the last successful connection.
@@ -671,6 +676,7 @@ impl TermView {
             scrollbar_grab: None,
             save_offer: None,
             held_back: vec![],
+            ai_reader: None,
             retry_at: None,
             retries: 0,
             retry_plan: 0,
@@ -2691,6 +2697,23 @@ impl TermView {
                 )
                 .on_click(act(|_, _, cx| cx.emit(PaneCommand::Log))),
             )
+            .child(
+                item(
+                    "menu-ai-read",
+                    &if self.ai_reader.is_some() {
+                        tr!("Stop AI Reading This Pane")
+                    } else {
+                        tr!("Let AI Read This Pane…")
+                    },
+                    String::new(),
+                    true,
+                )
+                .on_click(if self.ai_reader.is_some() {
+                    act(|_, _, cx| cx.emit(PaneCommand::AiReadStop))
+                } else {
+                    act(|_, _, cx| cx.emit(PaneCommand::AiRead))
+                }),
+            )
             .child(line())
             .child(
                 item(
@@ -3022,6 +3045,23 @@ impl TermView {
     fn let_go_of_thumb(&mut self, cx: &mut Context<Self>) {
         self.scrollbar_grab = None;
         self.reveal_scrollbar(cx);
+    }
+
+    /// Whether an AI client may read the pane now.
+    pub fn ai_read(&self) -> bool {
+        self.ai_reader.is_some()
+    }
+
+    /// Who may read the pane now (an AI client), and until when.
+    pub fn set_ai_reader(
+        &mut self,
+        reader: Option<(SharedString, Instant)>,
+        cx: &mut Context<Self>,
+    ) {
+        if self.ai_reader != reader {
+            self.ai_reader = reader;
+            cx.notify();
+        }
     }
 
     /// Shows the scrollbar for a moment (it hides again by itself).
@@ -3473,6 +3513,56 @@ impl Render for TermView {
         }
         if let Some(h) = self.held_back_bar(cx) {
             terminal = terminal.child(h);
+        }
+        // Read by an AI client: AI's violet edge, and who, how long, and a
+        // way to end it at once.
+        if let Some((client, until)) = &self.ai_reader {
+            let left = until
+                .saturating_duration_since(Instant::now())
+                .as_secs()
+                .div_ceil(60);
+            terminal = terminal
+                .child(
+                    term_corners
+                        .round(div())
+                        .absolute()
+                        .inset_0()
+                        .border_2()
+                        .border_color(rgb(crate::sidebar::AI_MARK)),
+                )
+                .child(
+                    div()
+                        .id("ai-reader")
+                        .debug_selector(|| "ai-reader".into())
+                        .absolute()
+                        .left_3()
+                        .bottom_3()
+                        .flex()
+                        .items_center()
+                        .gap(px(8.))
+                        .px_2()
+                        .py_1()
+                        .rounded_md()
+                        .text_sm()
+                        .bg(rgb(crate::sidebar::AI_MARK))
+                        .text_color(rgb(colors().on_accent))
+                        .child(tr!(
+                            "{client} may read this pane · {n} min left",
+                            client = client.to_string(),
+                            n = left.to_string()
+                        ))
+                        .child(
+                            div()
+                                .id("ai-reader-stop")
+                                .debug_selector(|| "ai-reader-stop".into())
+                                .cursor_pointer()
+                                .font_weight(FontWeight::BOLD)
+                                .child("✕")
+                                .on_click(
+                                    cx.listener(|_, _, _, cx| cx.emit(PaneCommand::AiReadStop)),
+                                ),
+                        ),
+                );
         }
         // Typing in every pane: an amber edge on those that listen, the
         // others dimmed; each with its badge.

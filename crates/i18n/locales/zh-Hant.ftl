@@ -4102,6 +4102,12 @@ td281e470 = 停止記錄
 # Start Logging
 t72c41b76 = 開始記錄
 
+# Stop AI Reading This Pane
+t9880e65f = 停止讓 AI 讀取此窗格
+
+# Let AI Read This Pane…
+ta9b9606a = 讓 AI 讀取此窗格…
+
 # Split Right
 t50db06c1 = 向右分割
 
@@ -4110,6 +4116,9 @@ t1165de29 = 向下分割
 
 # Close Pane
 t21a947cf = 關閉窗格
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } 可讀取此窗格 · 剩餘 { $n } 分鐘
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } 想連線到 { $host }，但其主機金鑰不在 known_hosts 中：已列在「AI 活動」中，正在等你確認。
@@ -4131,6 +4140,15 @@ t6f36d148 = 繼續
 
 # Take access back
 td619baa7 = 撤銷存取權
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = 尚未加入 AI 用戶端：在 設定 › AI 新增。
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = 讓 AI 用戶端讀取此窗格 { $n } 分鐘？
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = 它會讀取窗格的文字：程式的輸出，以及你在提示字元輸入的內容。它不會輸入任何東西。你隨時可以停止。
 
 # Config files · {category}
 t59edc3e9 = 設定檔 · { $category }

@@ -4149,6 +4149,12 @@ td281e470 = Interrompi registrazione
 # Start Logging
 t72c41b76 = Avvia registrazione
 
+# Stop AI Reading This Pane
+t9880e65f = Interrompi la lettura del riquadro da parte dell'AI
+
+# Let AI Read This Pane…
+ta9b9606a = Fai leggere questo riquadro all'AI…
+
 # Split Right
 t50db06c1 = Dividi a destra
 
@@ -4157,6 +4163,9 @@ t1165de29 = Dividi in basso
 
 # Close Pane
 t21a947cf = Chiudi riquadro
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } può leggere questo riquadro · ancora { $n } min
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } vuole raggiungere { $host }, la cui chiave host non è in known_hosts: è in Attività AI, e ti aspetta.
@@ -4179,6 +4188,15 @@ t6f36d148 = Lascialo continuare
 
 # Take access back
 td619baa7 = Revoca l'accesso
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Ancora nessun client di AI: Impostazioni › AI ne aggiunge uno.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Far leggere questo riquadro a un client di AI per { $n } minuti?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Legge il testo del riquadro: ciò che i programmi hanno stampato e ciò che hai digitato al prompt. Non digita nulla. Puoi interromperlo in qualsiasi momento.
 
 # Config files · {category}
 t59edc3e9 = File di configurazione · { $category }

@@ -1946,6 +1946,8 @@ impl Workspace {
                 PaneCommand::Forward => ws.ask_forward(None, window, cx),
                 PaneCommand::Log => ws.toggle_log(cx),
                 PaneCommand::Close => ws.request_close_view(view, window, cx),
+                PaneCommand::AiRead => ws.ask_ai_read(view.clone(), window, cx),
+                PaneCommand::AiReadStop => ws.stop_ai_read(view, cx),
             }
         })
         .detach();
@@ -6345,6 +6347,7 @@ impl Workspace {
             // Its tile alone, the name left out; the active one keeps its ✕.
             let tile_only = tiles_only && !active;
             let named = !tiles_only;
+            let read_by_ai = tab.views().iter().any(|v| v.read(cx).ai_read());
             let edge = (TAB_H - TAB_TILE) / 2. - 1.;
             let group = SharedString::from(format!("tab-{i}"));
             let tip = (
@@ -6469,6 +6472,16 @@ impl Workspace {
                     // Typing in every pane: said on the tab too.
                     .when(tab.broadcast && named, |d| {
                         d.child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
+                    })
+                    // A pane of it an AI client may read: AI's violet.
+                    .when(read_by_ai && named, |d| {
+                        d.child(
+                            div()
+                                .debug_selector(move || format!("tab-ai-read:{i}"))
+                                .size(px(8.))
+                                .rounded_full()
+                                .bg(rgb(crate::sidebar::AI_MARK)),
+                        )
                     })
                     // The host's name keeps its place; what the shell says
                     // after it gives way first.

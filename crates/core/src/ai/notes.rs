@@ -244,6 +244,7 @@ impl Hub {
         }
         if locked {
             self.forget_sudo();
+            self.forget_panes();
         }
     }
 
