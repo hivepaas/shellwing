@@ -664,7 +664,7 @@ impl Hub {
 
     /// Keeps a call on notes in the activity, done at once: `what` it gave,
     /// never the text.
-    fn note_activity(&self, client: &AiClient, hosts: &str, label: &str, what: &str) {
+    pub(super) fn note_activity(&self, client: &AiClient, hosts: &str, label: &str, what: &str) {
         let job = {
             let Ok(mut inner) = self.inner.lock() else {
                 return;

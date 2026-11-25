@@ -7,6 +7,7 @@
 //! ([`Job::wait`]), so a long command does not keep it waiting for its end.
 
 pub mod files;
+pub mod history;
 pub mod log;
 pub mod mcp;
 pub mod notes;
@@ -107,6 +108,14 @@ pub struct Activity {
     /// The snippet it ran, by name, when it was one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub snippet: Option<String>,
+    /// The client's id, which reads back its own ([`history`]); None in
+    /// what was logged before it was kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<String>,
+    /// The host's spec, as its grant names it; None for what was on no one
+    /// host (reading notes).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spec: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -238,6 +247,8 @@ impl Job {
                     waiting: None,
                     adding: None,
                     snippet: None,
+                    client_id: Some(client.id.clone()),
+                    spec: (!spec.is_empty()).then(|| spec.to_string()),
                 },
                 out: vec![],
                 cut: false,
@@ -1128,6 +1139,8 @@ mod tests {
                     waiting: None,
                     adding: None,
                     snippet: None,
+                    client_id: None,
+                    spec: None,
                 };
                 serde_json::to_string(&a).expect("json") + "\n"
             })

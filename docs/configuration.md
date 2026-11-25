@@ -1333,6 +1333,18 @@ they print:
   follows a long command a few seconds behind it. A client that asks for
   progress is told how far it got, each second.
 - `job_stop(job)`: stops a job.
+- `activity(host, job, before, limit)`: what the agent ran before, in this
+  session or an earlier one, newest first (20 if not told, 100 at the most).
+  For each command: its id, host, start, how it ended, the command and the
+  last 3 lines it printed. `host` keeps those on one host. `before`, a
+  command's id, gives the ones older than it. `job` gives one command in
+  full, with all that is kept of what it printed.
+  - An agent sees only its own commands, and only on the hosts given to it
+    now and not paused: a host taken back takes what was run there with it.
+  - Only what AI activity still keeps is there (the last 1000 commands), so
+    *Clear…* clears it for agents too. Commands logged before agents could
+    read them back do not say whose they are, and are not shown.
+  - Reading it back is in AI activity too, as `activity`.
 - `list_dir(host, path, pattern, offset, limit)`: a folder's entries, a line
   each, folders first, with their kind, size and when they changed. It says
   first how many there are (folders and files), and a large folder comes a

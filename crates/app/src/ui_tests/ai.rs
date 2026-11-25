@@ -1154,3 +1154,37 @@ scenario!(
         assert!(ui.find("ai-clear").is_none(), "nothing to clear");
     }
 );
+
+scenario!(
+    /// An agent reads back what it ran: the command, how it ended and its
+    /// last lines, then one in full; reading it back is in AI activity too.
+    /// Taken back, the host takes its commands with it.
+    an_agent_reads_back_what_it_ran,
+    |ui| {
+        let token = given_web(ui, "Free");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool("run", json!({"host": "web", "command": "for i in one two three four; do echo $i; done"}));
+        assert!(said.starts_with("exit 0"), "{said}");
+        let (said, error) = c.tool("activity", json!({}));
+        assert!(!error && said.starts_with("1 command you ran on web"), "{said}");
+        assert!(said.contains("for i in one") && said.contains("exit 0 after"), "{said}");
+        assert!(said.contains("    four") && !said.contains("    one"), "the last lines: {said}");
+        let job = said
+            .lines()
+            .find(|l| l.contains("for i in one"))
+            .and_then(|l| l.split('\t').next())
+            .expect("its id")
+            .to_string();
+        let (full, _) = c.tool("activity", json!({"job": job}));
+        assert!(full.contains("one\ntwo\nthree\nfour"), "in full: {full}");
+        let seen = format!("activity {job}");
+        ui.wait_until("AI activity to show it read back", |ui| {
+            ui.ws(|ws, _, _| ws.ai_activity().last().is_some_and(|a| a.command == seen))
+        });
+
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        ui.click("ai-take-back:0");
+        let (said, _) = c.tool("activity", json!({}));
+        assert!(said.starts_with("No host is given") && !said.contains("for i"), "{said}");
+    }
+);
