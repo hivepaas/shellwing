@@ -13,7 +13,15 @@ use gpui::{
 
 use crate::colors::colors;
 
-const BAR_W: f32 = 6.;
+/// The thumb, at rest and under the pointer or held. A thin bar stays out of
+/// the way of what it is beside; a wider one is what a hand can take hold of,
+/// and the moment the pointer is over it is the moment that matters.
+const THIN: f32 = 6.;
+const WIDE: f32 = 8.;
+/// The strip that takes the press, always the width of the wider thumb and
+/// more: it must not move or change size as the thumb does, or the pointer
+/// would fall out of what it is aiming at.
+const STRIP_W: f32 = WIDE + 8.;
 const THUMB_MIN: f32 = 24.;
 
 /// A drag of the thumb: where it started, and how far it was scrolled then.
@@ -42,24 +50,23 @@ pub fn overlay(handle: ScrollHandle, drag: Drag) -> impl gpui::IntoElement {
             let Some((top, h)) = thumb(view_h, y, most) else {
                 return;
             };
-            let dragging = drag.get().is_some();
-            let bar = Bounds::new(
-                point(bounds.right() - px(BAR_W) - px(2.), bounds.top() + top),
-                size(px(BAR_W), h),
-            );
-            let color = if dragging {
-                colors().soft
-            } else {
-                colors().muted
-            };
-            window.paint_quad(
-                fill(bar, rgba(crate::colors::with_alpha(color, 0x99)))
-                    .corner_radii(px(BAR_W / 2.)),
-            );
-            // A strip wider than the thumb, easy to hit.
+            // A strip wider than the thumb, easy to hit. Worked out before the
+            // thumb is drawn: whether the pointer is in it decides how wide
+            // the thumb is.
             let strip = Bounds::new(
-                point(bounds.right() - px(BAR_W + 8.), bounds.top()),
-                size(px(BAR_W + 8.), view_h),
+                point(bounds.right() - px(STRIP_W), bounds.top()),
+                size(px(STRIP_W), view_h),
+            );
+            let hovered = strip.contains(&window.mouse_position());
+            let wide = drag.get().is_some() || hovered;
+            let w = px(if wide { WIDE } else { THIN });
+            let bar = Bounds::new(
+                point(bounds.right() - w - px(2.), bounds.top() + top),
+                size(w, h),
+            );
+            let color = if wide { colors().soft } else { colors().muted };
+            window.paint_quad(
+                fill(bar, rgba(crate::colors::with_alpha(color, 0x99))).corner_radii(w / 2.),
             );
             let (down, d) = (handle.clone(), drag.clone());
             window.on_mouse_event(move |e: &MouseDownEvent, phase, window, cx| {
@@ -104,6 +111,14 @@ pub fn overlay(handle: ScrollHandle, drag: Drag) -> impl gpui::IntoElement {
             let d = drag.clone();
             window.on_mouse_event(move |_: &MouseUpEvent, phase, window, _| {
                 if phase == DispatchPhase::Capture && d.take().is_some() {
+                    window.refresh();
+                }
+            });
+            // Into the strip and out of it again: drawn afresh, so the width
+            // follows the pointer. Each frame remembers what it drew, and asks
+            // for another only when that stops being true.
+            window.on_mouse_event(move |e: &MouseMoveEvent, phase, window, _| {
+                if phase == DispatchPhase::Capture && strip.contains(&e.position) != hovered {
                     window.refresh();
                 }
             });
