@@ -29,7 +29,8 @@ Both live in `state/ai.json` with the grant. A grant saved before them loads
 with both off. They are rights to the vault, so they are not implied by
 *Read files*: a host's files and the person's notes about it are different
 things to give. *Give hosts…* shows them under *What it may do*, below *Write
-files*. The table of hosts given shows them on each grant, to turn on and off.
+files*. The table of hosts given says them on each grant, beside the others;
+as for those, giving the host again changes them.
 
 ## Which notes an agent sees
 
@@ -53,8 +54,11 @@ that is in force: not paused, not ended, its client not paused.
   day, a collection's note goes out under the same rule, through the
   collection's host.
 
-A host is matched by its name, as the host list has it: a grant's `host` and
-a note's `hosts` are both names from `hosts.toml` or `~/.ssh/config`.
+A note names its hosts as the host list shows them (a `hosts.toml` host's
+name, an `~/.ssh/config` alias), and a grant by what opening the host
+connects to (a `hosts.toml` host's `alias`, if it has one, else its name).
+The host list's rows hold both, so a note's host is matched to a grant
+through them.
 
 ## Tools
 
