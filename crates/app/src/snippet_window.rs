@@ -32,6 +32,26 @@ use crate::snippets::{self, BUILT_IN, Scope, Snippet};
 const DEFAULT_SIZE: (f32, f32) = (1000., 680.);
 const LEAST_SIZE: (f32, f32) = (700., 480.);
 
+/// The side's width (where it is offered, what it needs, its values), as it
+/// comes; what its edge may drag it to. The command keeps [`COMMAND_ROOM`].
+pub const SIDE_WIDTH: f32 = 300.;
+pub const MIN_SIDE_WIDTH: f32 = 260.;
+pub const MAX_SIDE_WIDTH: f32 = 700.;
+const COMMAND_ROOM: f32 = 320.;
+
+/// The side's width as dragged, shared by the snippet windows and kept
+/// with their size (`state/snippet-window.json`).
+pub struct SideWidth(pub f32);
+
+impl gpui::Global for SideWidth {}
+
+/// The side's width now: as dragged, else as it comes; never so wide the
+/// command has less than [`COMMAND_ROOM`] in a window `window_w` wide.
+fn side_width(window_w: f32, cx: &App) -> f32 {
+    let w = cx.try_global::<SideWidth>().map_or(SIDE_WIDTH, |w| w.0);
+    w.min((window_w - COMMAND_ROOM).max(MIN_SIDE_WIDTH))
+}
+
 /// How long after the last key a snippet is saved.
 const SAVE_AFTER: Duration = Duration::from_secs(3);
 /// How often a window looks whether the vault locked or opened.
@@ -192,6 +212,8 @@ pub struct SnippetWindow {
     problem: Option<String>,
     /// The window's size, not maximized, as last drawn: kept as it closes.
     size: Option<(f32, f32)>,
+    /// The side's edge, held: where the pointer was, and the width then.
+    side_drag: Option<(f32, f32)>,
     _subs: Vec<Subscription>,
 }
 
@@ -282,6 +304,7 @@ impl SnippetWindow {
             unsynced: false,
             problem: None,
             size: None,
+            side_drag: None,
             _subs: subs,
         };
         v.load(cx);
@@ -937,9 +960,87 @@ impl SnippetWindow {
         )))
     }
 
+    /// The side's edge: dragged, the side is as wide as the pointer says
+    /// (the command keeps its room); a double-click gives it its width
+    /// again. Held, it follows the pointer anywhere in the window.
+    fn side_edge(&self, width: f32, cx: &mut Context<Self>) -> gpui::Stateful<gpui::Div> {
+        let dragging = self.side_drag.is_some();
+        div()
+            .id("snippet-side-edge")
+            .debug_selector(|| "snippet-side-edge".into())
+            .group("snippet-side-edge")
+            .absolute()
+            .top_0()
+            .h_full()
+            .right(px(width - 3.))
+            .w(px(6.))
+            .flex()
+            .justify_center()
+            .cursor(gpui::CursorStyle::ResizeLeftRight)
+            .on_mouse_down(
+                gpui::MouseButton::Left,
+                cx.listener(move |v, e: &gpui::MouseDownEvent, _, cx| {
+                    cx.stop_propagation();
+                    if e.click_count >= 2 {
+                        v.side_drag = None;
+                        cx.set_global(SideWidth(SIDE_WIDTH));
+                    } else {
+                        v.side_drag = Some((f32::from(e.position.x), width));
+                    }
+                    cx.notify();
+                }),
+            )
+            .child(
+                div()
+                    .h_full()
+                    .w(px(if dragging { 3. } else { 1. }))
+                    .when(dragging, |d| d.bg(rgb(colors().accent)))
+                    .group_hover("snippet-side-edge", |s| {
+                        s.w(px(2.)).bg(rgb(colors().accent))
+                    }),
+            )
+            .when(dragging, |d| {
+                d.child(crate::scrollbar::hold(
+                    cx.entity().downgrade(),
+                    |v: &mut Self, at, cx| {
+                        if let Some((x0, w0)) = v.side_drag {
+                            // The edge is on the side's left: left is wider.
+                            let w =
+                                (w0 - (f32::from(at.x) - x0)).clamp(MIN_SIDE_WIDTH, MAX_SIDE_WIDTH);
+                            cx.set_global(SideWidth(w));
+                            cx.notify();
+                        }
+                    },
+                    |v: &mut Self, cx| {
+                        v.side_drag = None;
+                        cx.notify();
+                    },
+                ))
+                .on_mouse_up(
+                    gpui::MouseButton::Left,
+                    cx.listener(|v, _, _, cx| {
+                        v.side_drag = None;
+                        cx.notify();
+                    }),
+                )
+                .on_mouse_up_out(
+                    gpui::MouseButton::Left,
+                    cx.listener(|v, _, _, cx| {
+                        v.side_drag = None;
+                        cx.notify();
+                    }),
+                )
+            })
+    }
+
     /// Beside the command: where it is offered, what it needs, its values,
     /// and Enter.
-    fn side(&self, mono: gpui::SharedString, cx: &mut Context<Self>) -> gpui::Stateful<gpui::Div> {
+    fn side(
+        &self,
+        width: f32,
+        mono: gpui::SharedString,
+        cx: &mut Context<Self>,
+    ) -> gpui::Stateful<gpui::Div> {
         let envs = self
             .vault
             .ready()
@@ -948,7 +1049,8 @@ impl SnippetWindow {
         let enter = self.snippet.enter;
         div()
             .id("snippet-side")
-            .w(px(300.))
+            .debug_selector(|| "snippet-side".into())
+            .w(px(width))
             .flex_shrink_0()
             .flex()
             .flex_col()
@@ -1087,6 +1189,7 @@ impl Render for SnippetWindow {
         // Its size as it would be restored (a maximized window's too).
         let b = window.window_bounds().get_bounds().size;
         self.size = Some((f32::from(b.width), f32::from(b.height)));
+        let side_w = side_width(f32::from(window.bounds().size.width), cx);
         let focused = |i: &Entity<TextInput>| i.read(cx).focus_handle(cx).is_focused(window);
         let (name_on, cat_on) = (focused(&self.name), focused(&self.category));
         let code: gpui::AnyElement = if self.vault.ready().is_none() {
@@ -1148,11 +1251,13 @@ impl Render for SnippetWindow {
             })
             .child(
                 div()
+                    .relative()
                     .flex_1()
                     .min_h_0()
                     .flex()
                     .child(code)
-                    .child(self.side(mono, cx)),
+                    .child(self.side(side_w, mono, cx))
+                    .child(self.side_edge(side_w, cx)),
             )
             .child(self.footer(cx));
         let bar = chrome::title_bar(shown_name);

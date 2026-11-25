@@ -347,6 +347,44 @@ scenario!(
 );
 
 scenario!(
+    /// The snippet window's side (where it is offered, what it needs) is as
+    /// wide as its edge is dragged: wider to the left, never less than its
+    /// least, its width again at a double-click, and kept as the window
+    /// closes, for the next one.
+    snippet_side_is_as_wide_as_dragged,
+    |ui| {
+        let _server = signed_in(ui);
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Snippets");
+        ui.click("snippet-new");
+        ui.wait_until("the snippet window", |ui| ui.snippet_window().is_some());
+        let w = ui.snippet_window().expect("window").into();
+        let width = |ui: &mut Ui| {
+            f32::from(ui.find_in(w, "snippet-side").expect("the side").size.width).round()
+        };
+        assert_eq!(width(ui), crate::snippet_window::SIDE_WIDTH);
+        ui.drag_in(w, "snippet-side-edge", -150., 1);
+        assert_eq!(width(ui), crate::snippet_window::SIDE_WIDTH + 150., "wider to the left");
+        ui.drag_in(w, "snippet-side-edge", 600., 1);
+        assert_eq!(width(ui), crate::snippet_window::MIN_SIDE_WIDTH, "never less");
+        ui.drag_in(w, "snippet-side-edge", 0., 2);
+        assert_eq!(width(ui), crate::snippet_window::SIDE_WIDTH, "a double-click");
+        ui.drag_in(w, "snippet-side-edge", -100., 1);
+        let window = ui.snippet_window().expect("window");
+        window
+            .update(&mut ui.cx, |_, window, _| window.remove_window())
+            .expect("close");
+        ui.cx.run_until_parked();
+        let kept = std::fs::read_to_string(ui.config_dir().join("state/snippet-window.json"))
+            .expect("kept");
+        let kept: serde_json::Value = serde_json::from_str(&kept).expect("json");
+        assert_eq!(kept["side"].as_f64(), Some(400.), "{kept}");
+    }
+);
+
+scenario!(
     /// The snippet window (Settings › Snippets › New snippet…): a name and a
     /// command typed and saved (Ctrl/Cmd+S) are in the vault; Run in the pane
     /// runs it there.

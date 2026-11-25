@@ -28,8 +28,11 @@ impl Workspace {
             }),
             sized: Rc::new(move |width, height, _| {
                 if let Some(s) = &store
-                    && let Err(e) =
-                        s.save_note_window(&shellwing_config::NoteWindowState { width, height })
+                    && let Err(e) = s.save_note_window(&shellwing_config::NoteWindowState {
+                        width,
+                        height,
+                        side: None,
+                    })
                 {
                     eprintln!("cannot keep the note window's size: {e}");
                 }

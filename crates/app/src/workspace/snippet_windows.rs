@@ -26,10 +26,14 @@ impl Workspace {
                     }
                 });
             }),
-            sized: Rc::new(move |width, height, _| {
+            sized: Rc::new(move |width, height, cx| {
+                let side = cx.try_global::<snippet_window::SideWidth>().map(|w| w.0);
                 if let Some(s) = &store
-                    && let Err(e) =
-                        s.save_snippet_window(&shellwing_config::NoteWindowState { width, height })
+                    && let Err(e) = s.save_snippet_window(&shellwing_config::NoteWindowState {
+                        width,
+                        height,
+                        side,
+                    })
                 {
                     eprintln!("cannot keep the snippet window's size: {e}");
                 }
@@ -95,11 +99,17 @@ impl Workspace {
     ) {
         let hooks = self.snippet_hooks(cx);
         let vault = self.vault.clone();
-        let last = self
-            .live
-            .store()
-            .and_then(|s| s.snippet_window())
-            .map(|s| (s.width, s.height));
+        let kept = self.live.store().and_then(|s| s.snippet_window());
+        let last = kept.map(|s| (s.width, s.height));
+        // The side as last dragged, once per run: windows open since share it.
+        if let Some(w) = kept.and_then(|s| s.side)
+            && cx.try_global::<snippet_window::SideWidth>().is_none()
+        {
+            cx.set_global(snippet_window::SideWidth(w.clamp(
+                snippet_window::MIN_SIDE_WIDTH,
+                snippet_window::MAX_SIDE_WIDTH,
+            )));
+        }
         cx.defer(move |cx| snippet_window::open(snippet, vault, hooks, last, cx));
     }
 
