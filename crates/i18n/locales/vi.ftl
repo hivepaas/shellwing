@@ -3847,6 +3847,15 @@ t692d685e = Phân biệt hoa thường (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = Biểu thức chính quy (Alt+R)
 
+# Drop to type their paths
+t65840017 = Thả để gõ đường dẫn của chúng
+
+# Drop to upload to {dir}
+ta7f589b0 = Thả để tải lên { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = Thả để tải lên thư mục home
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = Bảng Tệp duyệt máy chủ qua SFTP; khung này là shell trên máy tính này.
 

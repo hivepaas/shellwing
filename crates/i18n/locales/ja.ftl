@@ -3847,6 +3847,15 @@ t692d685e = 大文字と小文字を区別（Alt+C）
 # Regular expression (Alt+R)
 tc1b10302 = 正規表現（Alt+R）
 
+# Drop to type their paths
+t65840017 = ドロップしてパスを入力
+
+# Drop to upload to {dir}
+ta7f589b0 = ドロップして { $dir } にアップロード
+
+# Drop to upload to the home folder
+t1514f805 = ドロップしてホームフォルダにアップロード
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = ファイルパネルは SFTP でサーバーを閲覧します。このペインはこのコンピュータ上のシェルです。
 

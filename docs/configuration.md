@@ -554,6 +554,22 @@ tab to the same host finds the first tab's ports taken and says so quietly.
 opens the Files panel beside the focused pane. It browses the server over SFTP,
 on a channel of its own, so the terminal keeps working while files move.
 
+It opens in the folder the shell is in, when the shell tells: with OSC 7, or
+in a title such as `user@host: ~/apps` (Debian's and Ubuntu's bash set one).
+It goes there again only once the shell moved, so a folder you chose in the
+panel stays. A folder SFTP cannot list (another user's, after `sudo -i`)
+opens the home folder instead. A shell that tells neither can be taught to,
+in `~/.bashrc` for instance:
+
+```sh
+PROMPT_COMMAND='printf "\033]7;file://%s%s\007" "$HOSTNAME" "$PWD"'
+```
+
+**Files dropped on the terminal** go up into that folder (else the home
+folder), the panel opening to show them go; one already there is asked
+about first. While they are dragged over it, the terminal says where they
+will go. On a shell on this computer, a drop types their paths, quoted.
+
 - Click to choose, double-click or **Enter** to open a folder or download a
   file, **Esc** to go back to the terminal. The `..` row at the top (a
   double-click), or **Backspace**, goes up to the folder above.

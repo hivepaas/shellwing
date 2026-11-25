@@ -3847,6 +3847,15 @@ t692d685e = 대/소문자 구분 (Alt+C)
 # Regular expression (Alt+R)
 tc1b10302 = 정규식 (Alt+R)
 
+# Drop to type their paths
+t65840017 = 놓으면 경로를 입력합니다
+
+# Drop to upload to {dir}
+ta7f589b0 = 놓으면 { $dir }에 업로드합니다
+
+# Drop to upload to the home folder
+t1514f805 = 놓으면 홈 폴더에 업로드합니다
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = 파일 패널은 SFTP로 서버를 탐색합니다. 이 창은 이 컴퓨터의 셸입니다.
 

@@ -16,10 +16,10 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
 use gpui::{
-    ClickEvent, Context, ElementId, Entity, EventEmitter, ExternalDragPayload, ExternalPaths,
-    FileDragPaths, FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render,
-    ScrollStrategy, SharedString, UniformListScrollHandle, Window, div, prelude::*, px, relative,
-    rgb, svg, uniform_list,
+    ClickEvent, Context, ElementId, Entity, EventEmitter, ExternalDragPayload, FileDragPaths,
+    FocusHandle, Focusable, FontWeight, KeyDownEvent, MouseButton, Render, ScrollStrategy,
+    SharedString, UniformListScrollHandle, Window, div, prelude::*, px, relative, rgb, svg,
+    uniform_list,
 };
 use shellwing_i18n::tr;
 use shellwing_ssh::sftp::{self, Entry, Progress};
@@ -257,6 +257,13 @@ pub struct FilesPanel {
     watching: bool,
     /// The context menu, where it was asked for.
     menu: Option<(gpui::Point<gpui::Pixels>, MenuFor)>,
+    /// Files dropped on the terminal, to upload once the folder it goes to
+    /// is shown.
+    waiting: Vec<PathBuf>,
+    /// The folder to open as SFTP opens is the shell's: home if it cannot be.
+    following: bool,
+    /// Files dragged in from another app, over the panel.
+    drop_in: crate::drop_in::DropIn,
 }
 
 impl EventEmitter<FilesEvent> for FilesPanel {}
@@ -374,6 +381,9 @@ impl FilesPanel {
             edits: vec![],
             watching: false,
             menu: None,
+            waiting: vec![],
+            following: false,
+            drop_in: Default::default(),
         };
         // Copies the server has as they are go with the panel or the app;
         // the others stay, for the next start to move to Downloads.
@@ -506,7 +516,8 @@ impl FilesPanel {
                         }
                         let dir = p.dir.clone();
                         let chosen = p.chosen_name();
-                        p.open_dir(dir, chosen, cx);
+                        let or_home = std::mem::take(&mut p.following);
+                        p.list(dir, chosen, or_home, cx);
                     }
                     Ok(Err(e)) => p.fail(e.to_string(), cx),
                     Err(_) => p.fail(tr!("The connection ended."), cx),
@@ -558,17 +569,62 @@ impl FilesPanel {
     /// Lists `dir` (the home folder when None) and shows it, choosing the entry
     /// named `choose` when there is one.
     fn open_dir(&mut self, dir: Option<String>, choose: Option<String>, cx: &mut Context<Self>) {
+        self.list(dir, choose, false, cx);
+    }
+
+    /// Shows the folder the shell is in (`~` its home), else the home folder
+    /// when it cannot be listed; files dropped on the terminal go there.
+    pub fn go_to(&mut self, dir: String, cx: &mut Context<Self>) {
+        if self.sftp.is_none() {
+            // Opened as SFTP opens: see `connect`.
+            self.dir = Some(dir);
+            self.following = true;
+            return;
+        }
+        self.list(Some(dir), None, true, cx);
+    }
+
+    /// Uploads `paths` into the folder shown, or the one about to be: files
+    /// dropped on the terminal.
+    pub fn upload_here(&mut self, paths: Vec<PathBuf>, cx: &mut Context<Self>) {
+        if self.sftp.is_some() && matches!(self.state, State::Ready) {
+            self.upload(paths, cx);
+        } else {
+            self.waiting.extend(paths);
+        }
+    }
+
+    fn list(
+        &mut self,
+        dir: Option<String>,
+        choose: Option<String>,
+        or_home: bool,
+        cx: &mut Context<Self>,
+    ) {
         self.state = State::Loading;
         cx.notify();
         self.with_sftp(
             cx,
             move |sftp| async move {
                 let (dir, home) = match dir {
+                    Some(d) if d == "~" || d.starts_with("~/") => {
+                        let home = sftp.home().await?;
+                        (format!("{}{}", home.trim_end_matches('/'), &d[1..]), false)
+                    }
                     Some(d) => (d, false),
                     None => (sftp.home().await?, true),
                 };
-                let entries = sftp.list(&dir).await?;
-                Ok((dir, home, entries))
+                match sftp.list(&dir).await {
+                    Ok(entries) => Ok((dir, home, entries)),
+                    // The shell's folder may be one SFTP cannot list (another
+                    // user's, after sudo): home instead.
+                    Err(_) if or_home => {
+                        let home = sftp.home().await?;
+                        let entries = sftp.list(&home).await?;
+                        Ok((home, true, entries))
+                    }
+                    Err(e) => Err(e),
+                }
             },
             move |p, result, cx| match result {
                 Ok((dir, home, entries)) => {
@@ -583,6 +639,10 @@ impl FilesPanel {
                     p.state = State::Ready;
                     if let Some(i) = p.selected {
                         p.scroll.scroll_to_item(i, ScrollStrategy::Nearest);
+                    }
+                    let waiting = std::mem::take(&mut p.waiting);
+                    if !waiting.is_empty() {
+                        p.upload(waiting, cx);
                     }
                     cx.notify();
                 }
@@ -1208,6 +1268,11 @@ impl FilesPanel {
             });
         }
         cx.notify();
+    }
+
+    /// Files dropped on the panel: uploaded into the folder shown.
+    fn dropped(&mut self, paths: Vec<PathBuf>, _: &mut Window, cx: &mut Context<Self>) {
+        self.upload(paths, cx);
     }
 
     fn replace(&mut self, id: u64, cx: &mut Context<Self>) {
@@ -1883,6 +1948,7 @@ impl FilesPanel {
 
 impl Render for FilesPanel {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.drop_in.settle(cx);
         // The title and the folder's tools as icons; the rest is in the
         // context menu (right click) and on the keys.
         let tool = |id: &'static str, icon: &'static str, tip: SharedString| {
@@ -2168,8 +2234,7 @@ impl Render for FilesPanel {
             transfers = transfers.child(self.transfer_row(t, cx));
         }
 
-        div()
-            .id("files")
+        crate::drop_in::drop_in(div().id("files"), &self.drop_in, cx, Self::dropped)
             .debug_selector(|| "files-panel".into())
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
@@ -2182,10 +2247,7 @@ impl Render for FilesPanel {
                     }
                 }),
             )
-            .on_drop(cx.listener(|p, paths: &ExternalPaths, _, cx| {
-                p.upload(paths.paths().to_vec(), cx);
-            }))
-            .drag_over::<ExternalPaths>(|s, _, _, _| s.bg(rgb(colors().drop)))
+            .when(self.drop_in.over(), |s| s.bg(rgb(colors().drop)))
             .size_full()
             .flex()
             .flex_col()

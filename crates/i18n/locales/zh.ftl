@@ -3847,6 +3847,15 @@ t692d685e = 区分大小写（Alt+C）
 # Regular expression (Alt+R)
 tc1b10302 = 正则表达式（Alt+R）
 
+# Drop to type their paths
+t65840017 = 松开以输入它们的路径
+
+# Drop to upload to {dir}
+ta7f589b0 = 松开以上传到 { $dir }
+
+# Drop to upload to the home folder
+t1514f805 = 松开以上传到主文件夹
+
 # The Files panel browses a server over SFTP; this pane is a shell on this computer.
 t0e83f1c9 = “文件”面板通过 SFTP 浏览服务器；此窗格是本机上的 shell。
 
