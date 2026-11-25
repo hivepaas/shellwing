@@ -806,7 +806,6 @@ impl AiView {
         if g.snippets {
             how.push(tr!("uses snippets"));
         }
-        let how = how.join(", ");
         let until = match (g.until, g.session) {
             (_, true) => tr!("while shellwing stays open"),
             (None, _) => tr!("until taken back"),
@@ -816,6 +815,10 @@ impl AiView {
                 n = (t.saturating_sub(ai::now()) / 60 + 1).to_string()
             ),
         };
+        // What it may do and for how long, as one text that wraps: the row
+        // grows with it, however many rights are ticked.
+        how.push(until);
+        let how = how.join(", ");
         let dim = g.paused || client_paused;
         let (client, spec, mode, paused) = (g.client.clone(), g.host.clone(), g.mode, g.paused);
         let (client2, spec2) = (client.clone(), spec.clone());
@@ -828,14 +831,16 @@ impl AiView {
             .flex()
             .items_center()
             .gap(px(12.))
-            .h(px(44.))
+            .min_h(px(44.))
             .px(px(14.))
+            .py(px(6.))
             .border_t_1()
             .border_color(rgb(colors().line))
             .when(dim, |d| d.bg(rgb(colors().page)))
             .child(
                 div()
                     .w(px(190.))
+                    .flex_shrink_0()
                     .flex()
                     .items_center()
                     .gap(px(8.))
@@ -853,17 +858,21 @@ impl AiView {
                         )
                     }),
             )
-            .child(div().w(px(220.)).text_color(rgb(colors().muted)).child(how))
             .child(
                 div()
+                    .debug_selector({
+                        let h = host.to_string();
+                        move || format!("ai-grant-how:{h}")
+                    })
                     .flex_1()
                     .min_w_0()
                     .text_color(rgb(colors().muted))
-                    .child(until),
+                    .child(how),
             )
             .child(
                 outline_button(&format!("ai-mode:{i}"), &mode_text(g.mode).0)
                     .h(px(26.))
+                    .flex_shrink_0()
                     .text_size(ui(12.))
                     .on_click(cx.listener(move |v, _, _, cx| {
                         let next =
@@ -884,6 +893,7 @@ impl AiView {
                     &if paused { tr!("Resume") } else { tr!("Pause") },
                 )
                 .h(px(26.))
+                .flex_shrink_0()
                 .text_size(ui(12.))
                 .on_click(cx.listener(move |v, _, _, cx| {
                     let (client, spec) = (client2.clone(), spec2.clone());
@@ -899,6 +909,7 @@ impl AiView {
             .child(
                 outline_button(&format!("ai-take-back:{i}"), &tr!("Take back"))
                     .h(px(26.))
+                    .flex_shrink_0()
                     .text_size(ui(12.))
                     .on_click(cx.listener(move |v, _, _, cx| {
                         let (client, spec) = (client3.clone(), spec3.clone());

@@ -889,6 +889,26 @@ scenario!(
 );
 
 scenario!(
+    /// A host given every right says them all on its row, wrapped: the row
+    /// grows to hold them, and its text stays inside it.
+    a_host_given_everything_says_it_inside_its_row,
+    |ui| {
+        let _token = three_hosts(ui);
+        ui.click("ai-give");
+        ui.click("ai-pick:web");
+        for f in ["write", "notes-read", "notes-add", "snippets"] {
+            ui.click(&format!("ai-may:{f}"));
+        }
+        ui.click("ai-give-ok");
+        let row = ui.find("ai-grant:web").expect("row");
+        let how = ui.find("ai-grant-how:web").expect("what it may do");
+        assert!(f32::from(how.size.height) > 30., "wrapped: {how:?}");
+        assert!(f32::from(row.size.height) > 45., "grown: {row:?}");
+        assert!(how.top() >= row.top() && how.bottom() <= row.bottom(), "{how:?} in {row:?}");
+    }
+);
+
+scenario!(
     /// A whole group is given at once, a grant for each host; one given
     /// again is said to be replaced, and is. Paused, a host stops what it
     /// ran, is still listed, says it is paused and runs nothing; its tile
