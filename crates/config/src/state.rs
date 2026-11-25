@@ -238,6 +238,10 @@ pub struct SidebarState {
 pub struct NoteWindowState {
     pub width: f32,
     pub height: f32,
+    /// A snippet window's side (where it is offered, what it needs), as
+    /// wide as its edge was dragged; None: as it comes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub side: Option<f32>,
 }
 
 /// Where the window was when last seen, in logical pixels. For a maximised or

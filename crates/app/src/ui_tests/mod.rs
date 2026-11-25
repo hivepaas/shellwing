@@ -526,6 +526,39 @@ impl Ui {
         vcx.debug_bounds(selector)
     }
 
+    /// As [`Ui::drag_by`], in another of the app's windows: the element
+    /// marked `selector` held and moved `dx` to the side; `clicks` 2 is a
+    /// double-click instead, where it is.
+    pub fn drag_in(
+        &mut self,
+        window: gpui::AnyWindowHandle,
+        selector: &str,
+        dx: f32,
+        clicks: usize,
+    ) {
+        let a = self
+            .find_in(window, selector)
+            .unwrap_or_else(|| panic!("nothing marked {selector:?} is drawn there"))
+            .center();
+        let b = a + gpui::point(gpui::px(dx), gpui::px(0.));
+        let mut vcx = gpui::VisualTestContext::from_window(window, &self.cx);
+        let (left, none) = (gpui::MouseButton::Left, gpui::Modifiers::none());
+        vcx.simulate_mouse_move(a, None, none);
+        vcx.simulate_event(gpui::MouseDownEvent {
+            button: left,
+            position: a,
+            modifiers: none,
+            click_count: clicks,
+            first_mouse: false,
+        });
+        for i in 1..=4 {
+            let t = i as f32 / 4.;
+            vcx.simulate_mouse_move(a + (b - a) * t, left, none);
+        }
+        vcx.simulate_mouse_up(b, left, none);
+        self.cx.run_until_parked();
+    }
+
     pub fn click_in(&mut self, window: gpui::AnyWindowHandle, selector: &str) {
         gpui::AppContext::update_window(&mut self.cx, window, |_, w, cx| {
             w.refresh();

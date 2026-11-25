@@ -852,6 +852,10 @@ palette list them under it (*Snippets · Deploy*).
 - **The editor** colors the command as shell (commands, flags, quoted text,
   `$` expansions, operators, comments) and its `{{name}}` values, and numbers
   its lines. Tab indents with two spaces; Enter keeps the line's indent.
+- **The side** beside the command is as wide as its edge is dragged (260 to
+  700 px, leaving the command 320 px); a double-click gives it its 300 px
+  again. The width is kept with the window's size
+  (`state/snippet-window.json`), for the next snippet window.
 - **Saving** is as for notes: a moment after typing stops, once it has a name
   and a command, and when the window closes; Ctrl+S (Cmd+S) saves at once.
   While its window is open, the snippet is left out of syncs.
