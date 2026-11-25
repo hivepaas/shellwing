@@ -1128,16 +1128,37 @@ impl Hub {
 
     /// Ends `job` so: kept in the activity first, then told to whoever
     /// waits for it, so that what they ask next finds it there.
+    ///
+    /// The end and the activity's entry come together, under the activity's
+    /// lock: whoever sees the end (a waiter reads the job alone) and then
+    /// asks the activity waits for the lock, and finds the entry. Set apart,
+    /// the job was for a moment ended yet not kept: in neither the running
+    /// ones [`Hub::activity`] lists nor the kept ones.
     fn finish(&self, job: &Job, end: End) {
-        job.set_end(end);
-        self.ended(job);
+        let told = match self.inner.lock() {
+            Ok(mut inner) => {
+                job.set_end(end);
+                Some(Self::keep(&mut inner, job))
+            }
+            Err(_) => {
+                job.set_end(end);
+                None
+            }
+        };
+        if let Some(a) = told {
+            let _ = self.events.try_send(HubEvent::Changed(a));
+        }
         job.changed.notify_waiters();
     }
 
-    /// A job ended: kept in the activity, and the log.
-    fn ended(&self, job: &Job) {
-        let mut a = job.activity();
-        let _ = self.events.try_send(HubEvent::Changed(a.clone()));
+    /// Keeps `job`, ended, in the activity and its log, once: what to tell
+    /// the app (its output whole, though the log keeps its first part).
+    fn keep(inner: &mut Inner, job: &Job) -> Activity {
+        let told = job.activity();
+        if inner.activity.iter().any(|x| x.id == told.id) {
+            return told;
+        }
+        let mut a = told.clone();
         if a.output.len() > LOGGED {
             let mut at = LOGGED;
             while !a.output.is_char_boundary(at) {
@@ -1145,17 +1166,13 @@ impl Hub {
             }
             a.output.truncate(at);
         }
-        if let Ok(mut inner) = self.inner.lock() {
-            if inner.activity.iter().any(|x| x.id == a.id) {
-                return;
-            }
-            if let (Some(log), Ok(line)) = (&mut inner.log, serde_json::to_string(&a)) {
-                log.add(&line);
-            }
-            inner.activity.push(a);
-            let over = inner.activity.len().saturating_sub(ACTIVITY);
-            inner.activity.drain(..over);
+        if let (Some(log), Ok(line)) = (&mut inner.log, serde_json::to_string(&a)) {
+            log.add(&line);
         }
+        inner.activity.push(a);
+        let over = inner.activity.len().saturating_sub(ACTIVITY);
+        inner.activity.drain(..over);
+        told
     }
 
     /// How much the log keeps on this computer, and the most it may (bytes);
