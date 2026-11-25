@@ -1271,6 +1271,24 @@ scenario!(
 );
 
 scenario!(
+    /// A command waits for the user while Settings is open: the amber button
+    /// on the title bar closes Settings and shows AI activity, where it
+    /// waits, rather than opening it unseen under Settings.
+    the_waiting_button_shows_ai_activity_over_settings,
+    |ui| {
+        let token = given_web(ui, "Ask");
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "true", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        assert!(ui.settings_page().is_some(), "Settings is open");
+        ui.click("ai-waiting-bar");
+        assert!(ui.settings_page().is_none(), "Settings closed");
+        assert!(ui.find("ai-allow").is_some(), "AI activity shows what waits");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

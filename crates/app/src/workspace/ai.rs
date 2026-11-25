@@ -329,6 +329,8 @@ impl Workspace {
 
     /// Opens the AI activity tab, or goes to it: there is one.
     pub fn open_activity(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Settings covers the tabs: what waits would open under it, unseen.
+        self.close_settings(window, cx);
         if let Some(i) = self
             .tabs
             .iter()
