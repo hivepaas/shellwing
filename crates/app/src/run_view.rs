@@ -8,8 +8,9 @@ use std::time::{Duration, Instant};
 
 use gpui::{
     App, AppContext, ClipboardItem, Context, Entity, EventEmitter, FocusHandle, Focusable,
-    FontWeight, InteractiveElement, IntoElement, KeyDownEvent, ParentElement, Render, SharedString,
-    StatefulInteractiveElement, Styled, Task, Window, div, prelude::FluentBuilder, px, rgb,
+    FontWeight, InteractiveElement, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, ParentElement, Render, SharedString, StatefulInteractiveElement,
+    Styled, Task, Window, div, prelude::FluentBuilder, px, rgb,
 };
 use shellwing_core::run::{self, Event, Fleet, Interpreter, Job, Outcome, Said};
 use shellwing_i18n::{tr, tr_n};
@@ -61,6 +62,13 @@ pub type Looks = Rc<dyn Fn(Option<&str>, &App) -> Option<crate::look::Look>>;
 
 /// The most rows an output shows before it scrolls within itself.
 const OUTPUT_ROWS: usize = 16;
+
+/// The fewest rows an output is dragged down to.
+const LEAST_ROWS: usize = 3;
+
+/// What of the window an output's box leaves for the rest (the title bar,
+/// the tabs, the page's edges), at its tallest.
+const AROUND_OUTPUT: f32 = 140.;
 
 /// At most this many hosts at once, unless the tab says otherwise.
 const AT_ONCE: usize = 8;
@@ -145,6 +153,13 @@ pub struct RunView {
     looks: Looks,
     /// The outputs shown, each drawn as a terminal, by what they show.
     viewers: BTreeMap<String, Entity<TermViewer>>,
+    /// The rows an output was dragged to, by its key, while the tab is open.
+    heights: BTreeMap<String, usize>,
+    /// An output's bottom edge being dragged: its key, where the pointer
+    /// went down, the rows it had then.
+    resizing: Option<(String, f32, usize)>,
+    /// How tall the window is: an output is at most about as tall.
+    window_height: f32,
     events: async_channel::Sender<Event>,
     _pump: Task<()>,
 }
@@ -223,6 +238,9 @@ impl RunView {
             order: vec![],
             states: BTreeMap::new(),
             printed: BTreeMap::new(),
+            heights: BTreeMap::new(),
+            resizing: None,
+            window_height: 800.,
             rest: vec![],
             ran: None,
             by_host: false,
@@ -327,21 +345,143 @@ impl RunView {
     }
 
     /// An output, drawn as a terminal as tall as its lines (up to
-    /// [`OUTPUT_ROWS`], the rest scrolled to); as text if it has no terminal.
-    fn output_view(&self, key: &str, text: &str, errors: &str, cx: &App) -> gpui::Div {
+    /// [`OUTPUT_ROWS`], the rest scrolled to), or as tall as it was dragged
+    /// to by its bottom edge; as text if it has no terminal.
+    fn output_view(
+        &self,
+        key: &str,
+        text: &str,
+        errors: &str,
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
         let Some(v) = self.viewers.get(key) else {
             return output_box(self.mono.clone(), text, errors);
         };
-        let rows = text.trim_end().lines().count() + errors.trim_end().lines().count();
+        let viewer = v.read(cx);
+        let (rows, fit) = self.rows_of(key, text, errors, viewer.row_height());
+        let height = viewer.height_for(rows);
+        let dragging = self.resizing.as_ref().is_some_and(|(k, ..)| k == key);
+        let edge = SharedString::from(format!("run-output-edge:{key}"));
+        let k = key.to_string();
         div()
-            .debug_selector(|| "run-output".into())
-            .w_full()
-            .h(v.read(cx).height_for(rows.clamp(1, OUTPUT_ROWS)))
             .flex()
-            .border_1()
-            .border_color(rgb(colors().line))
-            .overflow_hidden()
-            .child(v.clone())
+            .flex_col()
+            .w_full()
+            .child(
+                div()
+                    .debug_selector(|| "run-output".into())
+                    .w_full()
+                    .h(height)
+                    .flex()
+                    .border_1()
+                    .border_color(rgb(colors().line))
+                    .overflow_hidden()
+                    .child(v.clone()),
+            )
+            // Its bottom edge: drag to make it taller or shorter, a row at a
+            // time; double-click for as tall as its lines, then back.
+            .child(
+                div()
+                    .id(edge.clone())
+                    .debug_selector(|| "run-output-edge".into())
+                    .group(edge.clone())
+                    .w_full()
+                    .h(px(7.))
+                    .flex()
+                    .items_center()
+                    .cursor(gpui::CursorStyle::ResizeUpDown)
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |v, e: &MouseDownEvent, _, cx| {
+                            cx.stop_propagation();
+                            if e.click_count >= 2 {
+                                v.resizing = None;
+                                if rows == fit {
+                                    v.heights.remove(&k);
+                                } else {
+                                    v.heights.insert(k.clone(), fit);
+                                }
+                            } else {
+                                v.resizing = Some((k.clone(), f32::from(e.position.y), rows));
+                            }
+                            cx.notify();
+                        }),
+                    )
+                    .child(
+                        div()
+                            .w_full()
+                            .h(px(if dragging { 3. } else { 1. }))
+                            .bg(rgb(if dragging {
+                                colors().accent
+                            } else {
+                                colors().line
+                            }))
+                            .group_hover(edge, |s| s.h(px(2.)).bg(rgb(colors().accent))),
+                    ),
+            )
+    }
+
+    /// The rows the output `key` shows, and those that fit all its lines.
+    fn rows_of(&self, key: &str, text: &str, errors: &str, row: f32) -> (usize, usize) {
+        let lines = text.trim_end().lines().count() + errors.trim_end().lines().count();
+        let most = self.most_rows(row);
+        let rows = self
+            .heights
+            .get(key)
+            .copied()
+            .unwrap_or(lines.clamp(1, OUTPUT_ROWS))
+            .min(most);
+        (rows, lines.clamp(1, most))
+    }
+
+    /// The rows each output on the page shows, and how tall a row is, for
+    /// the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn output_rows(&self, cx: &App) -> (Vec<usize>, f32) {
+        let row = self
+            .viewers
+            .values()
+            .next()
+            .map_or(0., |v| v.read(cx).row_height());
+        let rows = self
+            .outputs()
+            .iter()
+            .map(|(key, _, text, errors)| self.rows_of(key, text, errors, row).0)
+            .collect();
+        (rows, row)
+    }
+
+    /// The most rows an output shows, for the UI tests.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn most_output_rows(&self, cx: &App) -> usize {
+        self.most_rows(self.output_rows(cx).1)
+    }
+
+    /// The most rows an output shows: about as tall as the window.
+    fn most_rows(&self, row: f32) -> usize {
+        if row <= 0. {
+            return OUTPUT_ROWS;
+        }
+        (((self.window_height - AROUND_OUTPUT) / row).floor() as usize).max(LEAST_ROWS)
+    }
+
+    /// The pointer moved while an output's edge is dragged.
+    fn drag_edge(&mut self, y: f32, cx: &mut Context<Self>) {
+        let Some((key, y0, rows0)) = self.resizing.clone() else {
+            return;
+        };
+        let Some(row) = self.viewers.get(&key).map(|v| v.read(cx).row_height()) else {
+            return;
+        };
+        if row <= 0. {
+            return;
+        }
+        let rows = (rows0 as f32 + ((y - y0) / row).round()).max(LEAST_ROWS as f32) as usize;
+        let rows = rows.min(self.most_rows(row));
+        if self.heights.get(&key) != Some(&rows) {
+            self.heights.insert(key, rows);
+            cx.notify();
+        }
     }
 
     /// What the outputs on the page show, as their terminals have them, for
@@ -821,6 +961,13 @@ impl RunView {
             }
             Event::Ended { host, outcome } => {
                 self.printed.remove(&host);
+                // The height its output was dragged to goes on with its group.
+                if let Some(rows) = self.heights.remove(&format!("live:{host}")) {
+                    let (_, text, errors) = said_text(&Said::from(&outcome));
+                    self.heights
+                        .entry(output_key(&text, &errors))
+                        .or_insert(rows);
+                }
                 self.states.insert(host, State::Ended(outcome));
                 self.settle(cx);
             }
@@ -2474,6 +2621,7 @@ impl Render for RunView {
         if self.mono.is_empty() {
             self.mono = crate::view::TermView::default_font(window).into();
         }
+        self.window_height = f32::from(window.viewport_size().height);
         self.refresh_viewers(cx);
         let mut page = div()
             .flex()
@@ -2520,6 +2668,38 @@ impl Render for RunView {
             .key_context("RunView")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key))
+            .when(self.resizing.is_some(), |d| {
+                // An edge dragged follows the pointer wherever it goes, out of
+                // the tab and the window too, until the button is let go.
+                let view = cx.entity().downgrade();
+                d.cursor(gpui::CursorStyle::ResizeUpDown).child(
+                    gpui::canvas(
+                        |_, _, _| {},
+                        move |_, _, window, _| {
+                            let moved = view.clone();
+                            window.on_mouse_event(move |e: &MouseMoveEvent, phase, _, cx| {
+                                if phase == gpui::DispatchPhase::Bubble {
+                                    let y = f32::from(e.position.y);
+                                    let _ = moved.update(cx, |v, cx| v.drag_edge(y, cx));
+                                }
+                            });
+                            let up = view.clone();
+                            window.on_mouse_event(move |e: &MouseUpEvent, phase, _, cx| {
+                                if phase == gpui::DispatchPhase::Bubble
+                                    && e.button == MouseButton::Left
+                                {
+                                    let _ = up.update(cx, |v, cx| {
+                                        v.resizing = None;
+                                        cx.notify();
+                                    });
+                                }
+                            });
+                        },
+                    )
+                    .absolute()
+                    .size_0(),
+                )
+            })
             .size_full()
             .overflow_y_scroll()
             .bg(rgb(colors().page))

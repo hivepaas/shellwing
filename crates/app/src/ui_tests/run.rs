@@ -344,6 +344,11 @@ scenario!(
         assert!(!ui.run(|r, _| r.done()), "it still runs");
         assert!(ui.find("run-going").is_some(), "with those still going");
         assert!(ui.find("run-output").is_some(), "drawn as a terminal");
+        // Made taller while it runs: so it stays once it ends.
+        let (rows, row) = ui.run(|r, cx| r.output_rows(cx));
+        assert_eq!(rows, [1], "as tall as its line");
+        ui.drag_by_xy("run-output-edge", 0., 4.4 * row);
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [5]);
 
         ui.click("run-by-host");
         ui.click("run-row:api-1");
@@ -353,6 +358,61 @@ scenario!(
         std::fs::write(&go, "").expect("go");
         ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
         shown(ui, &["first\nsecond"]);
+        ui.click("run-by-output");
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [5], "as tall as it was made");
+    }
+);
+
+scenario!(
+    /// An output's bottom edge drags it taller or shorter, a row at a time,
+    /// from 3 rows to about the window's height; a double-click makes it as
+    /// tall as its lines, and another back.
+    run_output_is_made_taller_by_its_edge,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        let (server, _home) = shell_server(ui);
+        ui.config_file(
+            "hosts.toml",
+            &format!("[[group]]\nname = \"G\"\n\n{}", host("api-1", server.port, "G")),
+        );
+        ui.open();
+        ui.hover("section:G");
+        ui.click("run-group:G");
+        ui.type_text("seq 40");
+        ui.keys("ctrl-enter");
+        answer_passwords(ui, 1);
+        ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
+        ui.click("run-confirm-go");
+        ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
+        ui.wait_until("its end drawn", |ui| {
+            ui.run(|r, cx| r.shown_outputs(cx).iter().any(|s| s.trim_end().ends_with("\n40")))
+        });
+        let (rows, row) = ui.run(|r, cx| r.output_rows(cx));
+        assert_eq!(rows, [16], "16 rows at first");
+        assert!(row > 0.);
+        let tall = ui.bounds("run-output").size.height;
+
+        ui.drag_by_xy("run-output-edge", 0., 5.4 * row);
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [21], "a row at a time");
+        let taller = ui.bounds("run-output").size.height;
+        assert!(
+            (f32::from(taller - tall) - 5. * row).abs() < 1.,
+            "{tall:?} then {taller:?}"
+        );
+
+        ui.drag_by_xy("run-output-edge", 0., -100. * row);
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [3], "3 at the least");
+
+        let most = ui.run(|r, cx| r.most_output_rows(cx));
+        ui.drag_by_xy("run-output-edge", 0., 100. * row);
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [most], "about the window at most");
+
+        ui.double_click("run-output-edge");
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [40.min(most)], "as tall as its lines");
+        ui.double_click("run-output-edge");
+        assert_eq!(ui.run(|r, cx| r.output_rows(cx)).0, [16], "and back");
     }
 );
 
