@@ -2626,6 +2626,9 @@ impl SettingsView {
 /// How wide a page of Settings is at most, whichever it is.
 pub(crate) const PAGE_WIDTH: f32 = 900.;
 
+/// How wide a setting's name and what it does are, beside its control.
+pub(crate) const SETTING_LABEL_WIDTH: f32 = 400.;
+
 fn page(title: &str) -> gpui::Div {
     div().flex().flex_col().gap(px(16.)).child(
         div()
@@ -2681,7 +2684,8 @@ fn setting(title: &str, what: &str, control: gpui::Div) -> gpui::Div {
         .border_color(rgb(colors().line))
         .child(
             div()
-                .w(px(300.))
+                .debug_selector(|| "setting-label".into())
+                .w(px(SETTING_LABEL_WIDTH))
                 .flex()
                 .flex_col()
                 .gap(px(3.))

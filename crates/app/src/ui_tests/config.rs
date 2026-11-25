@@ -348,6 +348,16 @@ scenario!(
             let width = ui.bounds(root).size.width;
             assert_eq!(f32::from(width), most, "{p}'s page fills it");
         }
+        // A setting's name and what it does, beside its control.
+        for p in ["Terminal", "Ssh"] {
+            ui.click(&format!("settings-page:{p}"));
+            let label = ui.bounds("setting-label").size.width;
+            assert_eq!(
+                f32::from(label),
+                crate::settings_view::SETTING_LABEL_WIDTH,
+                "{p}"
+            );
+        }
         // Narrower than that: each as wide as there is room for.
         ui.resize(900., 800.);
         let mut widths = vec![];
