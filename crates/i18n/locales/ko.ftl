@@ -46,11 +46,11 @@ ta7006e9a = 아무것도 없습니다.
 # Stop all AI
 tddf9c9cc = 모든 AI 중지
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] 명령 { $n }개 보관 · { $most } MB 중 { $size } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = 이 컴퓨터에 { $most } MB 중 { $size } MB 보관
+
+# Show in folder
+t63890d31 = 폴더에서 보기
 
 # Clear…
 t725be072 = 지우기…
@@ -382,8 +382,11 @@ te371b0dd = 위험: 이 중 하나라도 들어간 명령은 지시를 기다립
 # The usual list
 tcc58d242 = 기본 목록
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = 이 컴퓨터에 평문으로 보관됩니다: 최근 명령 1000개와 각 출력의 처음 64 KB, 합계 이 크기까지. 오래된 것부터 지워지며, AI 활동에서 지울 수 있습니다.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = 이 컴퓨터에 평문으로, 20 MB씩 나눠 보관됩니다: 각 명령 출력의 처음 64 KB. 이 크기를 넘으면 가장 오래된 부분이 지워집니다. AI 활동은 최근 1000개를 보여 주고, 모두 지울 수 있습니다.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = 최소 { $least } MB: 그 전까지는 { $mb } MB로 유지됩니다.
 
 # unlock its windows
 t7c69953e = 창 잠금 해제

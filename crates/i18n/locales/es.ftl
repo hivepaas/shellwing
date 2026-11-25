@@ -46,12 +46,11 @@ ta7006e9a = Aquí no hay nada.
 # Stop all AI
 tddf9c9cc = Detener toda la AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-        [one] { $n } comando guardado · { $size } de { $most } MB
-       *[other] { $n } comandos guardados · { $size } de { $most } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } de { $most } MB guardados en este equipo
+
+# Show in folder
+t63890d31 = Mostrar en la carpeta
 
 # Clear…
 t725be072 = Vaciar…
@@ -390,8 +389,11 @@ te371b0dd = De riesgo: un comando con cualquiera de estas palabras, una por lín
 # The usual list
 tcc58d242 = La lista habitual
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Se guarda en este equipo, como texto sin cifrar: los últimos 1000 comandos y los primeros 64 KB de lo que imprimió cada uno, hasta esto en total. Los más antiguos se van primero; la Actividad AI permite vaciarla.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Se guarda en este equipo, como texto sin cifrar, en partes de 20 MB: lo que imprimió cada comando, sus primeros 64 KB. Cuando son más que esto, se va la parte más antigua. La Actividad AI muestra los últimos 1000 y los vacía todos.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Al menos { $least } MB: hasta entonces se mantienen { $mb } MB.
 
 # unlock its windows
 t7c69953e = desbloquear sus ventanas

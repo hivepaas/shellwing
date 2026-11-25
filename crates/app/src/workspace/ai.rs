@@ -130,10 +130,6 @@ impl Workspace {
                     v.read(cx).session().writer.write(vec![0x03]);
                 }
             }
-            HubEvent::Forgot(ids) => {
-                ai.activity.retain(|a| !ids.contains(&a.id));
-                cx.notify();
-            }
             HubEvent::Cleared => {
                 ai.activity.retain(|a| a.end.is_none());
                 self.refresh_sidebar(cx);
@@ -194,9 +190,15 @@ impl Workspace {
         }
     }
 
-    /// What the activity keeps: its ended commands, their size, the most.
-    pub fn ai_kept(&self) -> (usize, u64, u64) {
-        self.ai.as_ref().map_or((0, 0, 0), |a| a.hub.kept())
+    /// How much the activity's log keeps on this computer, and the most it
+    /// may (bytes).
+    pub fn ai_kept(&self) -> Option<(u64, u64)> {
+        self.ai.as_ref().and_then(|a| a.hub.kept())
+    }
+
+    /// Where the activity's log is written now.
+    pub fn ai_log_path(&self) -> Option<std::path::PathBuf> {
+        self.ai.as_ref().and_then(|a| a.hub.log_path())
     }
 
     /// Clears the activity: what ended goes, on this computer too.

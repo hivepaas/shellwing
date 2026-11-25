@@ -46,11 +46,11 @@ ta7006e9a = 這裡什麼都沒有。
 # Stop all AI
 tddf9c9cc = 停止所有 AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] 已保留 { $n } 個命令 · { $size } / { $most } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = 本機已保留 { $size } / { $most } MB
+
+# Show in folder
+t63890d31 = 在資料夾中顯示
 
 # Clear…
 t725be072 = 清除…
@@ -385,8 +385,11 @@ te371b0dd = 風險：含有以下任一項（每行一項）的指令會等你�
 # The usual list
 tcc58d242 = 預設清單
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = 以純文字保存在本機：最近 1000 個命令，以及每個輸出的前 64 KB，總量不超過此值。最舊的先刪除；可在 AI 活動中清除。
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = 以純文字保存在本機，每 20 MB 一個檔案：每個命令輸出的前 64 KB。超過此值時，最舊的檔案會被刪除。AI 活動顯示最近 1000 個，並可全部清除。
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = 至少 { $least } MB：在此之前仍為 { $mb } MB。
 
 # unlock its windows
 t7c69953e = 解鎖其視窗

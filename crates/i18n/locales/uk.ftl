@@ -46,14 +46,11 @@ ta7006e9a = Тут нічого немає.
 # Stop all AI
 tddf9c9cc = Зупинити весь AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-        [one] { $n } команду збережено · { $size } з { $most } МБ
-        [few] { $n } команди збережено · { $size } з { $most } МБ
-        [many] { $n } команд збережено · { $size } з { $most } МБ
-       *[other] { $n } команди збережено · { $size } з { $most } МБ
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } з { $most } МБ зберігається на цьому комп’ютері
+
+# Show in folder
+t63890d31 = Показати в теці
 
 # Clear…
 t725be072 = Очистити…
@@ -400,8 +397,11 @@ te371b0dd = Ризиковані: команда з будь-яким із ци�
 # The usual list
 tcc58d242 = Звичайний список
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Зберігається на цьому комп’ютері відкритим текстом: останні 1000 команд і перші 64 КБ виводу кожної, загалом не більше цього. Найстаріші видаляються першими; очистити можна в активності AI.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Зберігається на цьому комп’ютері відкритим текстом, частинами по 20 МБ: вивід кожної команди, його перші 64 КБ. Коли більше за це, найстаріша частина видаляється. Активність AI показує останні 1000 і очищає все.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Не менше { $least } МБ: доти лишається { $mb } МБ.
 
 # unlock its windows
 t7c69953e = розблокувати свої вікна

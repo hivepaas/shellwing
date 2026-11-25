@@ -46,12 +46,11 @@ ta7006e9a = Rien ici.
 # Stop all AI
 tddf9c9cc = Arrêter toute l'AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-        [one] { $n } commande gardée · { $size } sur { $most } Mo
-       *[other] { $n } commandes gardées · { $size } sur { $most } Mo
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } sur { $most } Mo gardés sur cet ordinateur
+
+# Show in folder
+t63890d31 = Afficher dans le dossier
 
 # Clear…
 t725be072 = Vider…
@@ -390,8 +389,11 @@ te371b0dd = Risqué : une commande contenant l'un de ces mots, un par ligne, vou
 # The usual list
 tcc58d242 = La liste habituelle
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Gardée sur cet ordinateur, en texte clair : les 1000 dernières commandes et les 64 premiers Ko de ce que chacune a affiché, jusqu’à cette taille en tout. Les plus anciennes partent d’abord ; l’Activité AI permet de la vider.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Gardée sur cet ordinateur, en texte clair, par parties de 20 Mo : ce que chaque commande a affiché, ses 64 premiers Ko. Au-delà de cette taille, la partie la plus ancienne part. L’Activité AI montre les 1000 dernières, et les vide toutes.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Au moins { $least } Mo : { $mb } Mo restent en attendant.
 
 # unlock its windows
 t7c69953e = déverrouiller ses fenêtres

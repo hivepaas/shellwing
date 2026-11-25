@@ -46,11 +46,11 @@ ta7006e9a = Không có gì ở đây.
 # Stop all AI
 tddf9c9cc = Dừng tất cả AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] Đang giữ { $n } lệnh · { $size } / { $most } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = Đang giữ { $size } / { $most } MB trên máy này
+
+# Show in folder
+t63890d31 = Mở thư mục
 
 # Clear…
 t725be072 = Xoá…
@@ -382,8 +382,11 @@ te371b0dd = Rủi ro: lệnh có bất kỳ từ nào sau đây, mỗi từ mộ
 # The usual list
 tcc58d242 = Danh sách mặc định
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Được lưu trên máy này dưới dạng văn bản thường: 1000 lệnh gần nhất và 64 KB đầu output của mỗi lệnh, tổng cộng không quá mức này. Lệnh cũ nhất bị bỏ trước; có thể xoá trong Hoạt động AI.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Được lưu trên máy này dưới dạng văn bản thường, chia thành các phần 20 MB: output của mỗi lệnh, 64 KB đầu. Khi vượt mức này, phần cũ nhất bị xoá. Hoạt động AI hiện 1000 lệnh gần nhất, và có thể xoá tất cả.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Tối thiểu { $least } MB: trong lúc này vẫn giữ { $mb } MB.
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó

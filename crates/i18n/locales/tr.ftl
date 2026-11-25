@@ -46,11 +46,11 @@ ta7006e9a = Burada bir şey yok.
 # Stop all AI
 tddf9c9cc = Tüm AI'ı durdur
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] { $n } komut saklandı · { $most } MB içinden { $size } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = Bu bilgisayarda { $most } MB içinden { $size } MB saklanıyor
+
+# Show in folder
+t63890d31 = Klasörde göster
 
 # Clear…
 t725be072 = Temizle…
@@ -389,8 +389,11 @@ te371b0dd = Riskli: bu sözcüklerden birini içeren bir komut sizi bekler; her 
 # The usual list
 tcc58d242 = Olağan liste
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Bu bilgisayarda düz metin olarak saklanır: son 1000 komut ve her birinin çıktısının ilk 64 KB’ı, toplamda en fazla bu kadar. En eskiler önce gider; AI etkinliğinden temizlenebilir.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Bu bilgisayarda düz metin olarak, 20 MB’lık parçalarla saklanır: her komutun çıktısının ilk 64 KB’ı. Bundan fazlası olunca en eski parça silinir. AI etkinliği son 1000 komutu gösterir ve hepsini temizler.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = En az { $least } MB: o zamana kadar { $mb } MB kalır.
 
 # unlock its windows
 t7c69953e = pencerelerinin kilidini açmak

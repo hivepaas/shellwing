@@ -7,6 +7,7 @@
 //! ([`Job::wait`]), so a long command does not keep it waiting for its end.
 
 pub mod files;
+pub mod log;
 pub mod mcp;
 pub mod notes;
 pub mod socket;
@@ -30,11 +31,9 @@ use tokio::task::AbortHandle;
 pub const KEEP: usize = 1024 * 1024;
 /// What the activity log keeps of each command's output.
 pub const LOGGED: usize = 64 * 1024;
-/// Commands the activity keeps, the oldest dropped first.
+/// Commands the activity shows, the oldest let go first: the log on this
+/// computer keeps more, as much as the person chose ([`log`]).
 pub const ACTIVITY: usize = 1000;
-/// The lines the activity's file may hold before it is written again with
-/// those kept alone.
-const FILE_LINES: usize = ACTIVITY + ACTIVITY / 2;
 /// How often the app is told what a running command printed.
 const FOLLOW: Duration = Duration::from_millis(250);
 /// How long a host may take to answer when its settings say nothing.
@@ -157,9 +156,6 @@ pub enum HubEvent {
     TabStop { id: String },
     /// An AI added to the notes: lists showing them show them again.
     NotesChanged,
-    /// These ended commands are no longer kept: the oldest, past what the
-    /// activity keeps.
-    Forgot(Vec<String>),
     /// The person cleared the activity: only what runs or waits is left.
     Cleared,
 }
@@ -365,15 +361,10 @@ struct Inner {
     jobs: BTreeMap<String, Arc<Job>>,
     slots: BTreeMap<String, Slot>,
     next: u64,
-    /// The ended commands kept, oldest first, each with how long its line
-    /// in the log is.
-    activity: Vec<(Activity, u64)>,
-    /// How long they are in all.
-    kept: u64,
-    /// The most they may be, in bytes.
-    most: u64,
-    /// What the log file holds: its lines, its bytes.
-    file: (usize, u64),
+    /// The last ended commands, oldest first.
+    activity: Vec<Activity>,
+    /// Where they are kept on this computer, if anywhere.
+    log: Option<log::Log>,
     /// Commands the person allowed for the session: client, host, command.
     allowed: Vec<(String, String, String)>,
     /// Where notes are read from (the vault), if anywhere.
@@ -382,28 +373,12 @@ struct Inner {
     locked: bool,
 }
 
-impl Inner {
-    /// Lets the oldest ended commands go until at most `count` are kept,
-    /// `bytes` long in all: their ids.
-    fn let_go(&mut self, count: usize, bytes: u64) -> Vec<String> {
-        let mut over = 0;
-        let mut kept = self.kept;
-        while over < self.activity.len() && (self.activity.len() - over > count || kept > bytes) {
-            kept -= self.activity[over].1;
-            over += 1;
-        }
-        self.kept = kept;
-        self.activity.drain(..over).map(|(a, _)| a.id).collect()
-    }
-}
-
 /// The MCP server's side in the app: who may reach what, and the work.
 pub struct Hub {
     rt: Handle,
     secrets: Arc<dyn Secrets>,
     policy: HostKeyPolicy,
     keepalive: Duration,
-    log: Option<PathBuf>,
     inner: Mutex<Inner>,
     events: async_channel::Sender<HubEvent>,
 }
@@ -426,14 +401,15 @@ impl Hub {
         log: Option<PathBuf>,
         events: async_channel::Sender<HubEvent>,
     ) -> Arc<Hub> {
-        let (activity, file) = log.as_deref().map(read_log).unwrap_or_default();
-        let kept = activity.iter().map(|(_, n)| n).sum();
-        let hub = Arc::new(Hub {
+        let (log, activity) = match log.map(log::Log::open) {
+            Some((log, activity)) => (Some(log), activity),
+            None => (None, vec![]),
+        };
+        Arc::new(Hub {
             rt,
             secrets,
             policy: crate::target::policy(ssh.host_key),
             keepalive: Duration::from_secs(ssh.keepalive),
-            log,
             inner: Mutex::new(Inner {
                 state: AiState::default(),
                 hosts: BTreeMap::new(),
@@ -441,20 +417,13 @@ impl Hub {
                 slots: BTreeMap::new(),
                 next: 1,
                 activity,
-                kept,
-                // Until the person's choice comes with the state, by count.
-                most: u64::MAX,
-                file,
+                log,
                 allowed: vec![],
                 notes: None,
                 locked: false,
             }),
             events,
-        });
-        if let Ok(mut inner) = hub.inner.lock() {
-            hub.keep(&mut inner, None);
-        }
-        hub
+        })
     }
 
     /// The clients and grants, as saved or changed: work on a host no
@@ -469,10 +438,9 @@ impl Hub {
             .state
             .activity_mb
             .unwrap_or(shellwing_config::AI_ACTIVITY_MB)
-            .max(1);
-        if inner.most != u64::from(mb) * 1024 * 1024 {
-            inner.most = u64::from(mb) * 1024 * 1024;
-            self.keep(&mut inner, None);
+            .max(log::LEAST_MB);
+        if let Some(log) = &mut inner.log {
+            log.set_most(u64::from(mb) * 1024 * 1024);
         }
         let paused: Vec<&str> = inner
             .state
@@ -921,7 +889,7 @@ impl Hub {
         let Ok(inner) = self.inner.lock() else {
             return vec![];
         };
-        let mut all: Vec<Activity> = inner.activity.iter().map(|(a, _)| a.clone()).collect();
+        let mut all = inner.activity.clone();
         all.extend(
             inner
                 .jobs
@@ -951,71 +919,38 @@ impl Hub {
             a.output.truncate(at);
         }
         if let Ok(mut inner) = self.inner.lock() {
-            if inner.activity.iter().any(|(x, _)| x.id == a.id) {
+            if inner.activity.iter().any(|x| x.id == a.id) {
                 return;
             }
-            let Ok(line) = serde_json::to_string(&a) else {
-                return;
-            };
-            self.keep(&mut inner, Some((a, line)));
-        }
-    }
-
-    /// Keeps `new`, if any, and what is kept within its count and its
-    /// size, the oldest let go first. The log takes `new` as a line more;
-    /// once that would make it longer than what is kept may be, it is
-    /// written again, with three quarters of that at most, so it is not
-    /// written again at every command.
-    fn keep(&self, inner: &mut Inner, new: Option<(Activity, String)>) {
-        let mut forgot = vec![];
-        let line = new.map(|(a, line)| {
-            let n = line.len() as u64 + 1;
-            inner.kept += n;
-            inner.activity.push((a, n));
-            (line, n)
-        });
-        forgot.extend(inner.let_go(ACTIVITY, inner.most));
-        if let Some(path) = &self.log {
-            let n = line.as_ref().map_or(0, |(_, n)| *n);
-            let (lines, bytes) = inner.file;
-            let more = usize::from(line.is_some());
-            if lines + more > FILE_LINES || bytes + n > inner.most {
-                forgot.extend(inner.let_go(ACTIVITY, inner.most / 4 * 3));
-                let all: String = inner
-                    .activity
-                    .iter()
-                    .filter_map(|(a, _)| serde_json::to_string(a).ok())
-                    .map(|l| l + "\n")
-                    .collect();
-                inner.file = (inner.activity.len(), all.len() as u64);
-                write_log(path, &all);
-            } else if let Some((line, n)) = line {
-                append_log(path, &line);
-                inner.file = (lines + 1, bytes + n);
+            if let (Some(log), Ok(line)) = (&mut inner.log, serde_json::to_string(&a)) {
+                log.add(&line);
             }
-        }
-        if !forgot.is_empty() {
-            let _ = self.events.try_send(HubEvent::Forgot(forgot));
+            inner.activity.push(a);
+            let over = inner.activity.len().saturating_sub(ACTIVITY);
+            inner.activity.drain(..over);
         }
     }
 
-    /// What the activity keeps now: its ended commands, how long they are
-    /// in all, and the most they may be (bytes).
-    pub fn kept(&self) -> (usize, u64, u64) {
-        self.inner
-            .lock()
-            .map_or((0, 0, 0), |i| (i.activity.len(), i.kept, i.most))
+    /// How much the log keeps on this computer, and the most it may (bytes);
+    /// None when it keeps nothing there.
+    pub fn kept(&self) -> Option<(u64, u64)> {
+        let inner = self.inner.lock().ok()?;
+        inner.log.as_ref().map(|l| (l.size(), l.most()))
     }
 
-    /// The person's Clear: the ended commands go, from the log too; what
-    /// runs or waits stays.
+    /// Where the log is written now, to show it in its folder.
+    pub fn log_path(&self) -> Option<PathBuf> {
+        let inner = self.inner.lock().ok()?;
+        inner.log.as_ref().map(|l| l.path().to_path_buf())
+    }
+
+    /// The person's Clear: the ended commands go, the log on this computer
+    /// too; what runs or waits stays.
     pub fn clear_activity(&self) {
         if let Ok(mut inner) = self.inner.lock() {
             inner.activity.clear();
-            inner.kept = 0;
-            inner.file = (0, 0);
-            if let Some(path) = &self.log {
-                write_log(path, "");
+            if let Some(log) = &mut inner.log {
+                log.clear();
             }
         }
         let _ = self.events.try_send(HubEvent::Cleared);
@@ -1087,63 +1022,6 @@ pub fn paused_client(name: &str) -> String {
 
 fn live(g: &AiGrant) -> bool {
     g.until.is_none_or(|u| now() < u)
-}
-
-/// The activity's file read back: the last [`ACTIVITY`] commands, each with
-/// how long its line is, and how long the file is (its lines, its bytes).
-fn read_log(path: &std::path::Path) -> (Vec<(Activity, u64)>, (usize, u64)) {
-    let Ok(text) = std::fs::read_to_string(path) else {
-        return (vec![], (0, 0));
-    };
-    let mut all: Vec<(Activity, u64)> = text
-        .lines()
-        .filter_map(|l| Some((serde_json::from_str(l).ok()?, l.len() as u64 + 1)))
-        .collect();
-    let over = all.len().saturating_sub(ACTIVITY);
-    all.drain(..over);
-    (all, (text.lines().count(), text.len() as u64))
-}
-
-/// Writes the activity's file again, with `lines`: beside it first, then in
-/// its place, so it is never half written.
-fn write_log(path: &std::path::Path, lines: &str) {
-    use std::io::Write;
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
-    }
-    let beside = path.with_extension("jsonl.new");
-    let mut open = std::fs::OpenOptions::new();
-    open.create(true).write(true).truncate(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        open.mode(0o600);
-    }
-    let written = open
-        .open(&beside)
-        .and_then(|mut f| f.write_all(lines.as_bytes()));
-    if written.is_ok() {
-        let _ = std::fs::rename(&beside, path);
-    } else {
-        let _ = std::fs::remove_file(&beside);
-    }
-}
-
-fn append_log(path: &std::path::Path, line: &str) {
-    use std::io::Write;
-    let mut open = std::fs::OpenOptions::new();
-    open.create(true).append(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        open.mode(0o600);
-    }
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
-    }
-    if let Ok(mut f) = open.open(path) {
-        let _ = writeln!(f, "{line}");
-    }
 }
 
 #[cfg(test)]
@@ -1241,23 +1119,8 @@ mod tests {
         assert_eq!((s.waiting, s.end), (false, Some(End::Refused)));
     }
 
-    fn logged(id: usize, output: usize) -> Activity {
-        Activity {
-            id: format!("j-{id}"),
-            client: "c".into(),
-            host: "h".into(),
-            command: "true".into(),
-            started: 0,
-            ended: Some(0),
-            end: Some(End::Exited(Some(0))),
-            output: "x".repeat(output),
-            waiting: None,
-            adding: None,
-        }
-    }
-
-    /// A hub keeping its activity in `dir`, and what it tells the app.
-    fn logging_hub(dir: &std::path::Path) -> (Arc<Hub>, async_channel::Receiver<HubEvent>) {
+    #[tokio::test]
+    async fn the_log_keeps_what_the_person_chose_at_least_its_least() {
         struct None_;
         impl Secrets for None_ {
             fn password(&self, _: &str) -> Option<String> {
@@ -1268,6 +1131,8 @@ mod tests {
             }
             fn learned(&self, _: shellwing_ssh::Learned) {}
         }
+        let dir = std::env::temp_dir().join(format!("shellwing-ai-hub-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
         let (tx, rx) = async_channel::unbounded();
         let hub = Hub::new(
             Handle::current(),
@@ -1276,146 +1141,24 @@ mod tests {
             Some(dir.join("ai-activity.jsonl")),
             tx,
         );
-        (hub, rx)
-    }
-
-    /// As a command's end keeps it.
-    fn end_one(hub: &Hub, a: Activity) {
-        let line = serde_json::to_string(&a).expect("json");
-        let mut inner = hub.inner.lock().expect("inner");
-        hub.keep(&mut inner, Some((a, line)));
-    }
-
-    fn scratch(name: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("shellwing-ai-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).expect("dir");
-        dir
-    }
-
-    fn lines_of(path: &std::path::Path) -> Vec<String> {
-        std::fs::read_to_string(path)
-            .unwrap_or_default()
-            .lines()
-            .map(String::from)
-            .collect()
-    }
-
-    #[tokio::test]
-    async fn the_log_keeps_the_last_ones() {
-        let dir = scratch("log");
-        let path = dir.join("ai-activity.jsonl");
-        for i in 0..(ACTIVITY * 2 + 5) {
-            let line = serde_json::to_string(&logged(i, 0)).expect("json");
-            append_log(&path, &line);
-        }
-        let (hub, _) = logging_hub(&dir);
-        let read = hub.activity();
-        assert_eq!(read.len(), ACTIVITY);
-        assert_eq!(read.last().map(|a| a.id.as_str()), Some("j-2004"));
-        assert_eq!(lines_of(&path).len(), ACTIVITY, "written again, shorter");
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[tokio::test]
-    async fn the_log_never_holds_more_than_it_may() {
-        let dir = scratch("size");
-        let path = dir.join("ai-activity.jsonl");
-        let (hub, events) = logging_hub(&dir);
+        let mb = 1024 * 1024;
+        hub.set_state(AiState::default());
+        assert_eq!(hub.kept(), Some((0, 32 * mb)), "32 MB unless chosen");
         hub.set_state(AiState {
             activity_mb: Some(1),
             ..AiState::default()
         });
-        let most = 1024 * 1024;
-        for i in 0..300 {
-            end_one(&hub, logged(i, 10_000));
-            let size = std::fs::metadata(&path).expect("log").len();
-            assert!(size <= most, "{size} bytes after {i}");
-        }
-        let kept = hub.activity();
-        let lines = lines_of(&path);
-        assert_eq!(lines.len(), kept.len(), "the file holds what is kept");
-        assert!(kept.len() < 300 && kept.len() > 60, "{}", kept.len());
-        assert_eq!(
-            kept.last().map(|a| a.id.as_str()),
-            Some("j-299"),
-            "the newest"
-        );
-        let forgot: Vec<String> = std::iter::from_fn(|| events.try_recv().ok())
-            .filter_map(|e| match e {
-                HubEvent::Forgot(ids) => Some(ids),
-                _ => None,
-            })
-            .flatten()
-            .collect();
-        assert_eq!(
-            forgot.len() + kept.len(),
-            300,
-            "the app told of each let go"
-        );
-        assert_eq!(
-            forgot.first().map(String::as_str),
-            Some("j-0"),
-            "the oldest first"
-        );
-
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[tokio::test]
-    async fn the_log_keeps_a_count_too() {
-        let dir = scratch("count");
-        let path = dir.join("ai-activity.jsonl");
-        let (hub, _) = logging_hub(&dir);
-        hub.set_state(AiState::default());
-        for i in 0..(ACTIVITY * 2) {
-            end_one(&hub, logged(i, 0));
-            assert!(lines_of(&path).len() <= FILE_LINES, "after {i}");
-        }
-        assert_eq!(hub.activity().len(), ACTIVITY);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[tokio::test]
-    async fn less_room_lets_the_oldest_go_at_once() {
-        let dir = scratch("less");
-        let path = dir.join("ai-activity.jsonl");
-        let (hub, _) = logging_hub(&dir);
+        assert_eq!(hub.kept(), Some((0, 32 * mb)), "never less than 32");
         hub.set_state(AiState {
-            activity_mb: Some(4),
+            activity_mb: Some(500),
             ..AiState::default()
         });
-        for i in 0..300 {
-            end_one(&hub, logged(i, 10_000));
-        }
-        assert_eq!(hub.activity().len(), 300);
-        hub.set_state(AiState {
-            activity_mb: Some(1),
-            ..AiState::default()
-        });
-        let size = std::fs::metadata(&path).expect("log").len();
-        assert!(size <= 1024 * 1024, "{size}");
-        assert_eq!(lines_of(&path).len(), hub.activity().len());
-        let _ = std::fs::remove_dir_all(&dir);
-    }
+        assert_eq!(hub.kept(), Some((0, 500 * mb)), "as much as chosen");
+        assert_eq!(hub.log_path(), Some(dir.join("ai-activity.jsonl")));
 
-    #[tokio::test]
-    async fn clearing_empties_the_log() {
-        let dir = scratch("clear");
-        let path = dir.join("ai-activity.jsonl");
-        let (hub, events) = logging_hub(&dir);
-        hub.set_state(AiState::default());
-        for i in 0..5 {
-            end_one(&hub, logged(i, 10));
-        }
         hub.clear_activity();
         assert!(hub.activity().is_empty());
-        assert_eq!(std::fs::read_to_string(&path).expect("log"), "");
-        assert!(
-            std::iter::from_fn(|| events.try_recv().ok()).any(|e| matches!(e, HubEvent::Cleared))
-        );
-        end_one(&hub, logged(9, 10));
-        assert_eq!(lines_of(&path).len(), 1, "kept again after");
+        assert!(std::iter::from_fn(|| rx.try_recv().ok()).any(|e| matches!(e, HubEvent::Cleared)));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

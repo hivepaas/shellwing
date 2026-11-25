@@ -46,11 +46,11 @@ ta7006e9a = Tidak ada apa-apa di sini.
 # Stop all AI
 tddf9c9cc = Hentikan semua AI
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] { $n } perintah disimpan · { $size } dari { $most } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = { $size } dari { $most } MB disimpan di komputer ini
+
+# Show in folder
+t63890d31 = Tampilkan di folder
 
 # Clear…
 t725be072 = Kosongkan…
@@ -385,8 +385,11 @@ te371b0dd = Berisiko: perintah dengan salah satu kata ini, satu per baris, menun
 # The usual list
 tcc58d242 = Daftar bawaan
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = Disimpan di komputer ini sebagai teks biasa: 1000 perintah terakhir dan 64 KB pertama dari keluaran masing-masing, paling banyak sebesar ini. Yang tertua dihapus lebih dulu; Aktivitas AI dapat mengosongkannya.
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = Disimpan di komputer ini sebagai teks biasa, dalam bagian 20 MB: keluaran setiap perintah, 64 KB pertamanya. Jika lebih dari ini, bagian tertua dihapus. Aktivitas AI menampilkan 1000 terakhir, dan dapat mengosongkan semuanya.
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = Paling sedikit { $least } MB: sampai itu, tetap { $mb } MB.
 
 # unlock its windows
 t7c69953e = membuka kunci jendelanya

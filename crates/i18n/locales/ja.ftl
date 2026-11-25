@@ -46,11 +46,11 @@ ta7006e9a = 何もありません。
 # Stop all AI
 tddf9c9cc = すべての AI を停止
 
-# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
-t4a042e8c =
-    { $n ->
-       *[other] { $n } 件のコマンドを保存 · { $most } MB 中 { $size } MB
-    }
+# {size} of {most} MB kept on this computer
+te9de4c17 = このコンピュータに { $most } MB 中 { $size } MB を保存
+
+# Show in folder
+t63890d31 = フォルダで表示
 
 # Clear…
 t725be072 = 消去…
@@ -382,8 +382,11 @@ te371b0dd = 危険：これらのいずれかを含むコマンドは指示を�
 # The usual list
 tcc58d242 = 標準のリスト
 
-# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
-tb57c3b79 = このコンピュータに平文で保存されます: 直近 1000 件のコマンドと、それぞれの出力の先頭 64 KB。合計はこの量まで。古いものから消え、AI アクティビティで消去できます。
+# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t35346446 = このコンピュータに平文で、20 MB ずつのファイルに分けて保存されます: 各コマンドの出力の先頭 64 KB。この量を超えると最も古いファイルから消えます。AI アクティビティには直近 1000 件が表示され、すべて消去できます。
+
+# At least {least} MB: {mb} MB is kept until then.
+t4a3240e4 = { $least } MB 以上にしてください。それまでは { $mb } MB のままです。
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除

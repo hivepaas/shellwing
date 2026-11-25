@@ -16,11 +16,8 @@ t5579c3d4 = Failed
 td29d28d8 = No AI client has run a command yet.
 ta7006e9a = Nothing here.
 tddf9c9cc = Stop all AI
-t4a042e8c =
-    { $n ->
-        [one] { $n } command kept · { $size } of { $most } MB
-       *[other] { $n } commands kept · { $size } of { $most } MB
-    }
+te9de4c17 = { $size } of { $most } MB kept on this computer
+t63890d31 = Show in folder
 t725be072 = Clear…
 t80bab37b = Clear activity
 t35afca3b = Cancel
@@ -144,7 +141,8 @@ tc94fc353 = When AI runs a command
 t608375b2 = For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
 te371b0dd = Risky: a command with any of these, a line each, waits for you
 tcc58d242 = The usual list
-tb57c3b79 = Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+t35346446 = Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+t4a3240e4 = At least { $least } MB: { $mb } MB is kept until then.
 t7c69953e = unlock its windows
 t31ace1f1 = Confirm it is you to unlock shellwing.
 t87f62cb7 = Checking…

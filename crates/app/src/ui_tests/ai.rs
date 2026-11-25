@@ -835,9 +835,9 @@ scenario!(
 );
 
 scenario!(
-    /// AI activity says how much it keeps on this computer, of how much.
-    /// Settings › AI chooses how much; Clear, once confirmed, empties it,
-    /// the log too.
+    /// AI activity says how much its log keeps on this computer, of how
+    /// much. Settings › AI sets how much, in MB, 32 at least: typed, or
+    /// with − and +. Clear, once confirmed, empties it, the log too.
     activity_kept_chosen_and_cleared,
     |ui| {
         let token = given_web(ui, "Free");
@@ -847,8 +847,11 @@ scenario!(
             assert!(said.starts_with("exit 0"), "{said}");
         }
         let mb = 1024 * 1024;
-        ui.wait_until("both kept", |ui| ui.ws(|ws, _, _| ws.ai_kept()).0 == 2);
-        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).2, 32 * mb, "32 MB unless chosen");
+        let kept = |ui: &mut Ui| ui.ws(|ws, _, _| ws.ai_kept()).expect("a log");
+        ui.wait_until("both kept", |ui| ui.ws(|ws, _, _| ws.ai_activity()).iter().filter(|a| a.end.is_some()).count() == 2);
+        let (size, most) = kept(ui);
+        assert!(size > 0, "on this computer");
+        assert_eq!(most, 32 * mb, "32 MB unless chosen");
 
         let chosen = |ui: &mut Ui| {
             let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
@@ -856,24 +859,38 @@ scenario!(
             v.get("activity_mb").and_then(|m| m.as_u64())
         };
         ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
-        ui.click("ai-activity-mb:8");
-        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).2, 8 * mb);
-        assert_eq!(chosen(ui), Some(8), "saved");
-        ui.click("ai-activity-mb:32");
+        ui.click("ai-activity-more");
+        assert_eq!(kept(ui).1, 64 * mb);
+        assert_eq!(chosen(ui), Some(64), "saved");
+        ui.click("ai-activity-less");
+        ui.click("ai-activity-less");
+        assert_eq!(kept(ui).1, 32 * mb, "never under 32");
         assert_eq!(chosen(ui), None, "the usual, not written");
+
+        ui.click("ai-activity-mb");
+        ui.keys("ctrl-a");
+        ui.type_text("500");
+        assert_eq!(kept(ui).1, 500 * mb, "as typed, no most");
+        assert_eq!(chosen(ui), Some(500));
+        ui.keys("ctrl-a");
+        ui.type_text("10");
+        assert_eq!(kept(ui).1, 500 * mb, "under 32: not taken");
+        assert_eq!(chosen(ui), Some(500));
+        ui.click("ai-activity-more");
+        assert_eq!(chosen(ui), Some(532), "+ from what is kept");
         ui.click("settings-close");
 
         ui.ws(|ws, window, cx| ws.open_activity(window, cx));
         assert!(ui.find("ai-kept").is_some(), "how much it keeps");
+        assert!(ui.find("ai-log-folder").is_some(), "its folder");
         ui.click("ai-clear");
         ui.answer_prompt("Cancel");
-        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).0, 2, "kept");
+        assert!(kept(ui).0 > 0, "kept");
         ui.click("ai-clear");
         ui.answer_prompt("Clear activity");
-        ui.wait_until("cleared", |ui| ui.ws(|ws, _, _| ws.ai_kept()).0 == 0);
-        assert!(ui.ws(|ws, _, _| ws.ai_activity()).is_empty(), "the tab empties");
-        let log = std::fs::read_to_string(ui.config_dir().join("state/ai-activity.jsonl")).expect("log");
-        assert_eq!(log, "", "on this computer too");
+        ui.wait_until("cleared", |ui| ui.ws(|ws, _, _| ws.ai_activity()).is_empty());
+        assert_eq!(kept(ui).0, 0, "on this computer too");
+        assert!(!ui.config_dir().join("state/ai-activity.jsonl").exists());
         assert!(ui.find("ai-clear").is_none(), "nothing to clear");
     }
 );
