@@ -79,6 +79,9 @@ t6e8860fa = O trecho { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } quer alcançar { $host }, e { $shows } mostra uma chave de servidor que não está em known_hosts. Confie nela só se for a chave desse servidor, como o responsável por ele a passou para você: ela é guardada em known_hosts, e o que espera por ela continua.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } quer ler seu painel em { $host }: o texto que os programas imprimiram e o que você digitou no prompt. Permitido, pode lê-lo por { $n } minutos; não digita nada.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } quer executar isto em { $host } com a senha do sudo. Ele espera por você toda vez: digite a senha, que { $client } nunca vê.
 
@@ -127,6 +130,9 @@ t72430853 = Executar
 
 # Use the saved password
 ta3f63985 = Usar a senha salva
+
+# Allow for 15 minutes
+t6bdfbaf4 = Permitir por 15 minutos
 
 # Run it, and this command again this session
 t2efebee7 = Executar, e este comando de novo nesta sessão

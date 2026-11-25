@@ -1452,8 +1452,22 @@ left, with ✕ to end it at once; its tab has a violet dot. *Stop AI Reading
 This Pane* in the menu ends it too, as do closing the pane, locking
 shellwing, and pausing or removing the client. It is no grant of a host: a
 local terminal's pane may be read the same way, and a host given to a client
-does not make its panes readable. What a client reads of it is the next
-step: design in [docs/design/ai-read-tab.md](design/ai-read-tab.md).
+does not make its panes readable. Design:
+[docs/design/ai-read-tab.md](design/ai-read-tab.md).
+
+- `list_tabs`: the panes open, numbered: host (or *local terminal*), whether
+  you have it in front of you, whether the agent may read it and for how
+  long more, and its title while it may.
+- `read_tab(tab, from, lines, query, selection)`: a pane's text, the one in
+  front of you if `tab` is not given, as numbered plain lines (wrapped rows
+  joined, no colors). As it comes, the screen and the 50 lines above it;
+  `from` and `lines` a part of what scrolled off (1000 lines and 128 KB at
+  the most); `query` the lines with its words and 2 around each; `selection`
+  what you selected. A pane the agent may not read yet asks you first in AI
+  activity: *Allow for 15 minutes* or *Refuse it*, an answer given after the
+  agent stopped waiting still letting its next read go.
+- AI activity keeps each read (the pane, and what part or what search),
+  never the text.
 
 **AI activity.** *Actions › AI activity*, *Settings › AI › AI activity*, or the
 palette, opens a tab with every command AI clients ran:

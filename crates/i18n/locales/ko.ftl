@@ -79,6 +79,9 @@ t6e8860fa = 스니펫 { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client }이(가) { $host }에 연결하려 하는데, { $shows }이(가) known_hosts에 없는 호스트 키를 보여 줍니다. 관리자가 알려 준 그 호스트의 키가 맞을 때만 신뢰하세요. 신뢰하면 known_hosts에 저장되고, 이를 기다리던 작업이 계속됩니다.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client }이(가) { $host }의 창을 읽으려고 합니다(프로그램 출력과 프롬프트에서 입력한 내용). 허용하면 { $n }분 동안 읽을 수 있으며, 아무것도 입력하지 않습니다.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client }이(가) sudo 비밀번호로 { $host }에서 이것을 실행하려고 합니다. 매번 지시를 기다립니다. 비밀번호를 입력하세요. { $client }은(는) 볼 수 없습니다.
 
@@ -126,6 +129,9 @@ t72430853 = 실행
 
 # Use the saved password
 ta3f63985 = 저장된 비밀번호 사용
+
+# Allow for 15 minutes
+t6bdfbaf4 = 15분 동안 허용
 
 # Run it, and this command again this session
 t2efebee7 = 실행하고, 이 세션 동안 같은 명령도 실행

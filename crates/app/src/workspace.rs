@@ -7261,6 +7261,7 @@ impl Focusable for Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.tell_hub_panes(cx);
         // The UI font: every rem-sized text follows its size; the terminal has its own.
         let ui_font = self.live.settings().appearance.ui_font.clone();
         window.set_rem_size(look::rem_for(ui_font.size));

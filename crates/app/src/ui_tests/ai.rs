@@ -1225,6 +1225,52 @@ scenario!(
 );
 
 scenario!(
+    /// An agent reads the pane in front of the user: not before the user
+    /// lets it (an ask in AI activity, answered after the agent gave up
+    /// waiting still lets the next read go), then the screen, a part, or the
+    /// lines with some words (the command typed among them); the activity
+    /// keeps none of the text.
+    an_ai_reads_a_pane_once_let,
+    |ui| {
+        let token = given_web_may(ui, "Free", "background", &[]);
+        ui.ws(|ws, window, cx| ws.open(crate::local::SPEC, window, cx));
+        ui.wait_until("the shell to start", |ui| ui.tabs() == 1 && ui.status() == crate::session::Status::Connected);
+        ui.settle(Duration::from_millis(500));
+        ui.line("i=1; while [ $i -le 300 ]; do echo \"line $i\"; i=$((i+1)); done; echo 'ERROR disk full'");
+        ui.wait_for("ERROR disk full");
+        let (mut c, _) = Client::open(ui, &token);
+
+        let (listed, _) = c.tool_in(ui, "list_tabs", json!({}));
+        assert!(listed.contains("1\tlocal terminal\tfocused\tnot readable yet"), "{listed}");
+
+        let (said, error) = c.tool_in(ui, "read_tab", json!({"wait_seconds": 1}));
+        assert!(error && said.contains("waits for the user to let you read the pane"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        ui.click("ai-allow");
+        ui.wait_until("allowed", |ui| ui.ws(|ws, _, _| ws.ai_pane_readers()).len() == 1);
+
+        let (said, error) = c.tool_in(ui, "read_tab", json!({}));
+        assert!(!error && said.starts_with("local terminal (pane 1):\nLines "), "{said}");
+        assert!(said.contains("│ line 300\n") && said.contains("│ ERROR disk full"), "{said}");
+        let (said, _) = c.tool_in(ui, "read_tab", json!({"from": 1, "lines": 5}));
+        assert!(said.contains("Lines 1 to 5 of") && said.contains("the rest from 6"), "{said}");
+        let (said, _) = c.tool_in(ui, "read_tab", json!({"query": "disk full"}));
+        assert!(said.contains("2 lines with \"disk full\"") && said.contains("│ ERROR disk full"), "{said}");
+        let (said, _) = c.tool_in(ui, "read_tab", json!({"selection": true}));
+        assert!(said.contains("Nothing is selected"), "{said}");
+        let (listed, _) = c.tool_in(ui, "list_tabs", json!({}));
+        assert!(listed.contains("1\tlocal terminal\t") && listed.contains("readable, 15 min more"), "{listed}");
+
+        let log = std::fs::read_to_string(ui.config_dir().join("state/ai-activity.jsonl")).unwrap_or_default();
+        assert!(log.contains("read_tab local terminal"), "kept: {log}");
+        assert!(!log.contains("line 300") && !log.contains("disk full\\n"), "no text in the log: {log}");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

@@ -12,6 +12,7 @@ pub mod log;
 pub mod mcp;
 pub mod notes;
 pub mod panes;
+pub mod read_tab;
 pub mod snippets;
 pub mod socket;
 pub mod sudo;
@@ -492,6 +493,8 @@ struct Inner {
     never: Vec<std::path::PathBuf>,
     /// The panes a client may read, and until when: client's id, pane.
     panes: BTreeMap<(String, String), Instant>,
+    /// The panes open, as the app last told them (read_tab.rs).
+    pane_handles: Vec<read_tab::PaneHandle>,
     /// sudo's passwords kept a while, by client and host (sudo.rs).
     sudo: BTreeMap<(String, String), sudo::Kept>,
 }
@@ -548,6 +551,7 @@ impl Hub {
                 snippets: None,
                 never: vec![],
                 panes: BTreeMap::new(),
+                pane_handles: vec![],
                 sudo: BTreeMap::new(),
             }),
             events,

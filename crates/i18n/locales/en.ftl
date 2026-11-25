@@ -27,6 +27,7 @@ t812504dc = The commands AI ran and what they printed go, from this computer too
 tafbed557 = { $client } · { $host } · started { $when } · { $job }
 t6e8860fa = The snippet { $name }
 t8595135e = { $client } wants to reach { $host }, and { $shows } shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
+taeedb0b4 = { $client } wants to read your pane on { $host }: the text programs printed, and what you typed at the prompt. Allowed, it may read it for { $n } minutes; it types nothing.
 tb61899bb = { $client } wants to run this on { $host } with sudo's password. It waits for you every time: type the password, which { $client } never sees.
 tccc5ba87 = { $client } suggests this snippet for { $host }. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tf83dfd33 = { $client } wants to add this to the notes about { $host }. It waits for you: where risky ones wait, every addition to a note does.
@@ -46,6 +47,7 @@ t4f9d0788 =
     }
 t72430853 = Run it
 ta3f63985 = Use the saved password
+t6bdfbaf4 = Allow for 15 minutes
 t2efebee7 = Run it, and this command again this session
 t4b7f7705 = Stop
 t64749f61 = Copy output

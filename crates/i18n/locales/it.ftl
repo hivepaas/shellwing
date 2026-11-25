@@ -79,6 +79,9 @@ t6e8860fa = Lo snippet { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } vuole raggiungere { $host }, e { $shows } mostra una chiave host che non è in known_hosts. Fidati solo se è la chiave di quell'host, come te l'ha data chi lo gestisce: viene salvata in known_hosts, e ciò che la aspetta prosegue.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } vuole leggere il tuo riquadro su { $host }: il testo stampato dai programmi e ciò che hai digitato al prompt. Consentito, può leggerlo per { $n } minuti; non digita nulla.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } vuole eseguire questo su { $host } con la password di sudo. Ti aspetta ogni volta: digita la password, che { $client } non vede mai.
 
@@ -127,6 +130,9 @@ t72430853 = Eseguilo
 
 # Use the saved password
 ta3f63985 = Usa la password salvata
+
+# Allow for 15 minutes
+t6bdfbaf4 = Consenti per 15 minuti
 
 # Run it, and this command again this session
 t2efebee7 = Eseguilo, e questo comando di nuovo in questa sessione

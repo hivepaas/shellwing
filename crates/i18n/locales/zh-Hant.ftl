@@ -79,6 +79,9 @@ t6e8860fa = 程式碼片段 { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } 想連線到 { $host }，而 { $shows } 出示了一個不在 known_hosts 中的主機金鑰。只有確認這是該主機的金鑰（以其管理者提供的為準）時才信任它：它會儲存到 known_hosts，等待它的作業隨即繼續。
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } 想讀取你在 { $host } 上的窗格：程式輸出的文字，以及你在提示字元輸入的內容。允許後，它可讀取 { $n } 分鐘；它不會輸入任何東西。
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } 想用 sudo 密碼在 { $host } 上執行這個。每次都會等你確認：請輸入密碼，{ $client } 永遠看不到。
 
@@ -126,6 +129,9 @@ t72430853 = 執行
 
 # Use the saved password
 ta3f63985 = 使用已儲存的密碼
+
+# Allow for 15 minutes
+t6bdfbaf4 = 允許 15 分鐘
 
 # Run it, and this command again this session
 t2efebee7 = 執行，並在此工作階段內允許此指令再次執行

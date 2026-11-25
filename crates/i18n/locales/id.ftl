@@ -79,6 +79,9 @@ t6e8860fa = Snippet { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } ingin menjangkau { $host }, dan { $shows } menunjukkan kunci host yang tidak ada di known_hosts. Percayai hanya jika itu kunci host tersebut, seperti yang diberikan pemiliknya kepada Anda: kunci disimpan di known_hosts, dan yang menunggunya berlanjut.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } ingin membaca panel Anda di { $host }: teks yang dicetak program dan yang Anda ketik di prompt. Jika diizinkan, ia dapat membacanya selama { $n } menit; ia tidak mengetik apa pun.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } ingin menjalankan ini di { $host } dengan kata sandi sudo. Ini selalu menunggu Anda: ketik kata sandinya, yang tidak pernah dilihat { $client }.
 
@@ -126,6 +129,9 @@ t72430853 = Jalankan
 
 # Use the saved password
 ta3f63985 = Pakai kata sandi tersimpan
+
+# Allow for 15 minutes
+t6bdfbaf4 = Izinkan 15 menit
 
 # Run it, and this command again this session
 t2efebee7 = Jalankan, dan perintah ini lagi di sesi ini

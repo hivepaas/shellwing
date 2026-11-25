@@ -79,6 +79,9 @@ t6e8860fa = { $name } kod parçacığı
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client }, { $host } ana makinesine ulaşmak istiyor ve { $shows } known_hosts içinde olmayan bir ana makine anahtarı gösteriyor. Yalnızca sahibinin size verdiği şekliyle o ana makinenin anahtarıysa güvenin: known_hosts içine kaydedilir ve onu bekleyen işlem devam eder.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client }, { $host } üzerindeki bölmenizi okumak istiyor: programların yazdığı metni ve istemde yazdıklarınızı. İzin verilirse { $n } dakika okuyabilir; hiçbir şey yazmaz.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client }, bunu { $host } üzerinde sudo parolasıyla çalıştırmak istiyor. Her seferinde sizi bekler: parolayı yazın, { $client } onu asla görmez.
 
@@ -127,6 +130,9 @@ t72430853 = Çalıştır
 
 # Use the saved password
 ta3f63985 = Kayıtlı parolayı kullan
+
+# Allow for 15 minutes
+t6bdfbaf4 = 15 dakika izin ver
 
 # Run it, and this command again this session
 t2efebee7 = Çalıştır ve bu oturumda bu komutu yeniden de çalıştır

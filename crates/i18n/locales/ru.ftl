@@ -79,6 +79,9 @@ t6e8860fa = Сниппет { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } хочет подключиться к { $host }, и { $shows } показывает ключ хоста, которого нет в known_hosts. Доверяйте ему, только если это ключ этого хоста, полученный от его владельца: он сохранится в known_hosts, и то, что его ждёт, продолжится.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } хочет прочитать вашу панель на { $host }: текст, который выводили программы, и то, что вы набирали в приглашении. Если разрешить, он сможет читать её { $n } минут; он ничего не набирает.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } хочет выполнить это на { $host } с паролем sudo. Он каждый раз ждёт вас: введите пароль, { $client } его никогда не увидит.
 
@@ -129,6 +132,9 @@ t72430853 = Выполнить
 
 # Use the saved password
 ta3f63985 = Использовать сохранённый пароль
+
+# Allow for 15 minutes
+t6bdfbaf4 = Разрешить на 15 минут
 
 # Run it, and this command again this session
 t2efebee7 = Выполнить, и эту команду снова в этом сеансе
