@@ -347,6 +347,36 @@ scenario!(
 );
 
 scenario!(
+    /// A long Settings page (the environments, as the keys, snippets and
+    /// notes) has the bar every list has: its thumb, along the page's right
+    /// edge, dragged to the bottom shows the last of it.
+    a_long_settings_page_scrolls_by_its_bar,
+    |ui| {
+        ui.open();
+        ui.wait_until("the vault to open", |ui| ui.vault().is_some());
+        for n in 0..30 {
+            environment(ui, &format!("Env {n:02}"));
+        }
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        ui.click("settings-page:Environments");
+        ui.wait_until("them listed", |ui| ui.find("env-edit-29").is_some());
+        let page = ui.bounds("settings-content");
+        assert!(ui.bounds("env-edit-29").top() > page.bottom(), "the last is below");
+        let x = page.right() - gpui::px(4.);
+        ui.flick(
+            gpui::point(x, page.top() + gpui::px(6.)),
+            gpui::point(x, page.bottom() + gpui::px(40.)),
+            std::time::Duration::ZERO,
+        );
+        ui.draw();
+        let last = ui.bounds("env-edit-29");
+        assert!(last.bottom() <= page.bottom() + gpui::px(1.), "scrolled to the end: {last:?} in {page:?}");
+        assert!(ui.bounds("env-edit-0").bottom() < page.top(), "the first went off the top");
+    }
+);
+
+scenario!(
     /// The snippet window's side (where it is offered, what it needs) is as
     /// wide as its edge is dragged: wider to the left, never less than its
     /// least, its width again at a double-click, and kept as the window
