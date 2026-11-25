@@ -46,6 +46,28 @@ ta7006e9a = Aquí no hay nada.
 # Stop all AI
 tddf9c9cc = Detener toda la AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } comando guardado · { $size } de { $most } MB
+       *[other] { $n } comandos guardados · { $size } de { $most } MB
+    }
+
+# Clear…
+t725be072 = Vaciar…
+
+# Clear activity
+t80bab37b = Vaciar actividad
+
+# Cancel
+t35afca3b = Cancelar
+
+# Clear AI activity?
+t1d96272a = ¿Vaciar la actividad AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Los comandos que ejecutó la AI y lo que imprimieron desaparecen, también de este equipo. Los que están en marcha o esperándote se quedan.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado a las { $when } · { $job }
 
@@ -356,9 +378,6 @@ tebca595f = Ya concedidos a { $client }: { $hosts }. Concederlos de nuevo reempl
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nunca ve una clave, una contraseña ni una frase de contraseña: se rechaza un servidor que la pediría, igual que uno cuya clave aún no se conoce. La salida de un servidor puede llevar palabras pensadas para dirigir a un agente: da servidores solo a uno en el que confíes para ello.
 
-# Cancel
-t35afca3b = Cancelar
-
 # When AI runs a command
 tc94fc353 = Cuando la AI ejecuta un comando
 
@@ -370,6 +389,9 @@ te371b0dd = De riesgo: un comando con cualquiera de estas palabras, una por lín
 
 # The usual list
 tcc58d242 = La lista habitual
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Se guarda en este equipo, como texto sin cifrar: los últimos 1000 comandos y los primeros 64 KB de lo que imprimió cada uno, hasta esto en total. Los más antiguos se van primero; la Actividad AI permite vaciarla.
 
 # unlock its windows
 t7c69953e = desbloquear sus ventanas

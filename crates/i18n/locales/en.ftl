@@ -16,6 +16,16 @@ t5579c3d4 = Failed
 td29d28d8 = No AI client has run a command yet.
 ta7006e9a = Nothing here.
 tddf9c9cc = Stop all AI
+t4a042e8c =
+    { $n ->
+        [one] { $n } command kept · { $size } of { $most } MB
+       *[other] { $n } commands kept · { $size } of { $most } MB
+    }
+t725be072 = Clear…
+t80bab37b = Clear activity
+t35afca3b = Cancel
+t1d96272a = Clear AI activity?
+t812504dc = The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
 tafbed557 = { $client } · { $host } · started { $when } · { $job }
 tf83dfd33 = { $client } wants to add this to the notes about { $host }. It waits for you: where risky ones wait, every addition to a note does.
 t2b63bd77 = { $client } wants to write this on { $host }. It waits for you: where risky ones wait, every write does.
@@ -130,11 +140,11 @@ tb972781e = a new note about the host, or more at the end of one; never changes 
 t971550f3 = Commands
 tebca595f = Given to { $client } already: { $hosts }. Giving them again replaces what they had.
 t7620726b = It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
-t35afca3b = Cancel
 tc94fc353 = When AI runs a command
 t608375b2 = For hosts given from now on; each can be set apart in the table above. Every command is kept in AI activity, whichever this is.
 te371b0dd = Risky: a command with any of these, a line each, waits for you
 tcc58d242 = The usual list
+tb57c3b79 = Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
 t7c69953e = unlock its windows
 t31ace1f1 = Confirm it is you to unlock shellwing.
 t87f62cb7 = Checking…

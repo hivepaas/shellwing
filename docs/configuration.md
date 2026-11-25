@@ -1337,8 +1337,14 @@ palette, opens a tab with every command AI clients ran:
   - A notice says when one comes in, and *Actions* counts those waiting, even
     while folded.
 
-The activity is kept on this computer, in `state/ai-activity.jsonl`: the last
-1000 commands, with the first 64 KB of each one's output.
+The activity is kept on this computer, in `state/ai-activity.jsonl`, as
+plain text (only you may read the file): the last 1000 commands, with the
+first 64 KB of each one's output, and no more than **Settings › AI › AI
+activity** says in all (8, 16, 32 or 64 MB; 32 unless chosen). The oldest go
+first. The file never grows past that: once a command would take it over, it
+is written again with the newest, up to three quarters of it. Under the list,
+AI activity says how much it keeps; *Clear…* empties it, the file too, once
+you say so (what runs or waits for you stays).
 
 **Where clients reach the app.** A socket only you may open:
 `state/mcp.sock` in the config directory (or a short path in the temp folder

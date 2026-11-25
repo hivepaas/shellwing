@@ -46,6 +46,30 @@ ta7006e9a = Здесь ничего нет.
 # Stop all AI
 tddf9c9cc = Остановить весь AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } команда сохранена · { $size } из { $most } МБ
+        [few] { $n } команды сохранены · { $size } из { $most } МБ
+        [many] { $n } команд сохранено · { $size } из { $most } МБ
+       *[other] { $n } команды сохранено · { $size } из { $most } МБ
+    }
+
+# Clear…
+t725be072 = Очистить…
+
+# Clear activity
+t80bab37b = Очистить активность
+
+# Cancel
+t35afca3b = Отмена
+
+# Clear AI activity?
+t1d96272a = Очистить активность AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Команды, которые запускал AI, и их вывод исчезнут, в том числе с этого компьютера. Выполняющиеся и ждущие вашего решения останутся.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 
@@ -364,9 +388,6 @@ tebca595f = Уже предоставлены { $client }: { $hosts }. Повт�
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Он никогда не видит ни ключа, ни пароля, ни парольной фразы: хост, который запросил бы их, отклоняется, как и хост, ключ которого ещё неизвестен. Вывод хоста может содержать слова, рассчитанные на то, чтобы управлять агентом: предоставляйте хосты только клиенту, которому доверяете их.
 
-# Cancel
-t35afca3b = Отмена
-
 # When AI runs a command
 tc94fc353 = Когда AI выполняет команду
 
@@ -378,6 +399,9 @@ te371b0dd = Рискованные: команда с любым из этих �
 
 # The usual list
 tcc58d242 = Обычный список
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Хранится на этом компьютере открытым текстом: последние 1000 команд и первые 64 КБ вывода каждой, всего не больше этого. Старые удаляются первыми; очистить можно в активности AI.
 
 # unlock its windows
 t7c69953e = разблокировать свои окна

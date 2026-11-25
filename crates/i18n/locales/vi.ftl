@@ -46,6 +46,27 @@ ta7006e9a = Không có gì ở đây.
 # Stop all AI
 tddf9c9cc = Dừng tất cả AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] Đang giữ { $n } lệnh · { $size } / { $most } MB
+    }
+
+# Clear…
+t725be072 = Xoá…
+
+# Clear activity
+t80bab37b = Xoá hoạt động
+
+# Cancel
+t35afca3b = Huỷ
+
+# Clear AI activity?
+t1d96272a = Xoá Hoạt động AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Các lệnh AI đã chạy và output của chúng sẽ bị xoá, cả trên máy này. Lệnh đang chạy hoặc đang chờ bạn vẫn được giữ.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · bắt đầu lúc { $when } · { $job }
 
@@ -349,9 +370,6 @@ tebca595f = Đã cấp cho { $client }: { $hosts }. Cấp lại sẽ thay thế 
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Nó không bao giờ thấy khoá, mật khẩu hay cụm mật khẩu: máy chủ đòi một trong số đó sẽ bị từ chối, máy chủ có khoá chưa biết cũng vậy. Đầu ra của máy chủ có thể chứa những lời nhằm điều khiển agent: chỉ cấp máy chủ cho client mà bạn tin tưởng giao chúng.
 
-# Cancel
-t35afca3b = Huỷ
-
 # When AI runs a command
 tc94fc353 = Khi AI chạy lệnh
 
@@ -363,6 +381,9 @@ te371b0dd = Rủi ro: lệnh có bất kỳ từ nào sau đây, mỗi từ mộ
 
 # The usual list
 tcc58d242 = Danh sách mặc định
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Được lưu trên máy này dưới dạng văn bản thường: 1000 lệnh gần nhất và 64 KB đầu output của mỗi lệnh, tổng cộng không quá mức này. Lệnh cũ nhất bị bỏ trước; có thể xoá trong Hoạt động AI.
 
 # unlock its windows
 t7c69953e = mở khoá các cửa sổ của nó

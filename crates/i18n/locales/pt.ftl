@@ -46,6 +46,28 @@ ta7006e9a = Nada aqui.
 # Stop all AI
 tddf9c9cc = Parar toda a AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } comando guardado · { $size } de { $most } MB
+       *[other] { $n } comandos guardados · { $size } de { $most } MB
+    }
+
+# Clear…
+t725be072 = Limpar…
+
+# Clear activity
+t80bab37b = Limpar atividade
+
+# Cancel
+t35afca3b = Cancelar
+
+# Clear AI activity?
+t1d96272a = Limpar a Atividade de AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Os comandos que a AI executou e o que imprimiram somem, deste computador também. Os que estão em execução ou esperando por você ficam.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · iniciado às { $when } · { $job }
 
@@ -356,9 +378,6 @@ tebca595f = Já concedidos a { $client }: { $hosts }. Concedê-los de novo subst
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Ele nunca vê uma chave, uma senha ou uma frase secreta: um servidor que pediria uma é recusado, assim como um cuja chave ainda não é conhecida. A saída de um servidor pode trazer palavras feitas para direcionar um agente: conceda servidores apenas a um cliente a quem você os confiaria.
 
-# Cancel
-t35afca3b = Cancelar
-
 # When AI runs a command
 tc94fc353 = Quando a AI executa um comando
 
@@ -370,6 +389,9 @@ te371b0dd = Arriscados: um comando com qualquer uma destas, uma por linha, esper
 
 # The usual list
 tcc58d242 = A lista de sempre
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Guardada neste computador, em texto simples: os últimos 1000 comandos e os primeiros 64 KB do que cada um imprimiu, até este tanto no total. Os mais antigos saem primeiro; a Atividade de AI permite limpá-la.
 
 # unlock its windows
 t7c69953e = desbloquear suas janelas

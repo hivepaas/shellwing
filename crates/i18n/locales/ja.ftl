@@ -46,6 +46,27 @@ ta7006e9a = 何もありません。
 # Stop all AI
 tddf9c9cc = すべての AI を停止
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] { $n } 件のコマンドを保存 · { $most } MB 中 { $size } MB
+    }
+
+# Clear…
+t725be072 = 消去…
+
+# Clear activity
+t80bab37b = アクティビティを消去
+
+# Cancel
+t35afca3b = キャンセル
+
+# Clear AI activity?
+t1d96272a = AI アクティビティを消去しますか?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = AI が実行したコマンドとその出力は、このコンピュータからも消えます。実行中のものと、あなたを待っているものは残ります。
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } に開始 · { $job }
 
@@ -349,9 +370,6 @@ tebca595f = { $client } に許可済み: { $hosts }。もう一度許可する�
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = クライアントが鍵、パスワード、パスフレーズを目にすることはありません。いずれかを求めるホストは拒否され、鍵がまだ不明なホストも同様です。ホストの出力には、エージェントを操ろうとする言葉が含まれることがあります。ホストを許可するのは、それを任せられると信頼できるエージェントだけにしてください。
 
-# Cancel
-t35afca3b = キャンセル
-
 # When AI runs a command
 tc94fc353 = AI がコマンドを実行するとき
 
@@ -363,6 +381,9 @@ te371b0dd = 危険：これらのいずれかを含むコマンドは指示を�
 
 # The usual list
 tcc58d242 = 標準のリスト
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = このコンピュータに平文で保存されます: 直近 1000 件のコマンドと、それぞれの出力の先頭 64 KB。合計はこの量まで。古いものから消え、AI アクティビティで消去できます。
 
 # unlock its windows
 t7c69953e = ウィンドウのロックを解除

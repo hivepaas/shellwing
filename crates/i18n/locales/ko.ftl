@@ -46,6 +46,27 @@ ta7006e9a = 아무것도 없습니다.
 # Stop all AI
 tddf9c9cc = 모든 AI 중지
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] 명령 { $n }개 보관 · { $most } MB 중 { $size } MB
+    }
+
+# Clear…
+t725be072 = 지우기…
+
+# Clear activity
+t80bab37b = 활동 지우기
+
+# Cancel
+t35afca3b = 취소
+
+# Clear AI activity?
+t1d96272a = AI 활동을 지울까요?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = AI가 실행한 명령과 출력이 이 컴퓨터에서도 사라집니다. 실행 중이거나 승인을 기다리는 명령은 남습니다.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 
@@ -349,9 +370,6 @@ tebca595f = { $client }에 이미 허용됨: { $hosts }. 다시 허용하면 기
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 클라이언트는 키, 비밀번호, 암호 문구를 볼 수 없습니다. 이 중 하나를 요구하는 호스트는 거부되며, 키를 아직 알 수 없는 호스트도 마찬가지입니다. 호스트의 출력에는 에이전트를 조종하려는 문구가 담길 수 있으니, 이를 맡길 만큼 신뢰하는 에이전트에게만 호스트를 허용하세요.
 
-# Cancel
-t35afca3b = 취소
-
 # When AI runs a command
 tc94fc353 = AI가 명령을 실행할 때
 
@@ -363,6 +381,9 @@ te371b0dd = 위험: 이 중 하나라도 들어간 명령은 지시를 기다립
 
 # The usual list
 tcc58d242 = 기본 목록
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = 이 컴퓨터에 평문으로 보관됩니다: 최근 명령 1000개와 각 출력의 처음 64 KB, 합계 이 크기까지. 오래된 것부터 지워지며, AI 활동에서 지울 수 있습니다.
 
 # unlock its windows
 t7c69953e = 창 잠금 해제

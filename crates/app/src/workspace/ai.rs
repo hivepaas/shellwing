@@ -130,6 +130,15 @@ impl Workspace {
                     v.read(cx).session().writer.write(vec![0x03]);
                 }
             }
+            HubEvent::Forgot(ids) => {
+                ai.activity.retain(|a| !ids.contains(&a.id));
+                cx.notify();
+            }
+            HubEvent::Cleared => {
+                ai.activity.retain(|a| a.end.is_none());
+                self.refresh_sidebar(cx);
+                cx.notify();
+            }
             HubEvent::NotesChanged => {
                 if let Some((view, _)) = &self.settings {
                     let view = view.clone();
@@ -182,6 +191,18 @@ impl Workspace {
     pub fn ai_answer(&self, id: &str, approval: ai::Approval) {
         if let Some(a) = &self.ai {
             a.hub.answer(id, approval);
+        }
+    }
+
+    /// What the activity keeps: its ended commands, their size, the most.
+    pub fn ai_kept(&self) -> (usize, u64, u64) {
+        self.ai.as_ref().map_or((0, 0, 0), |a| a.hub.kept())
+    }
+
+    /// Clears the activity: what ended goes, on this computer too.
+    pub fn ai_clear(&self) {
+        if let Some(a) = &self.ai {
+            a.hub.clear_activity();
         }
     }
 

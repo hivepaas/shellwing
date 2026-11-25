@@ -46,6 +46,28 @@ ta7006e9a = Qui non c'è niente.
 # Stop all AI
 tddf9c9cc = Interrompi tutta l'AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } comando conservato · { $size } di { $most } MB
+       *[other] { $n } comandi conservati · { $size } di { $most } MB
+    }
+
+# Clear…
+t725be072 = Svuota…
+
+# Clear activity
+t80bab37b = Svuota attività
+
+# Cancel
+t35afca3b = Annulla
+
+# Clear AI activity?
+t1d96272a = Svuotare l’Attività AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = I comandi eseguiti dall’AI e il loro output spariscono, anche da questo computer. Quelli in corso o in attesa di te restano.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · avviato alle { $when } · { $job }
 
@@ -356,9 +378,6 @@ tebca595f = Già concessi a { $client }: { $hosts }. Concederli di nuovo sostitu
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Non vede mai una chiave, una password o una passphrase: un host che ne chiederebbe una viene rifiutato, come uno la cui chiave non è ancora nota. L'output di un host può contenere parole pensate per guidare un agente: concedi gli host solo a uno a cui li affideresti.
 
-# Cancel
-t35afca3b = Annulla
-
 # When AI runs a command
 tc94fc353 = Quando l'AI esegue un comando
 
@@ -370,6 +389,9 @@ te371b0dd = Rischiosi: un comando con una di queste parole, una per riga, ti asp
 
 # The usual list
 tcc58d242 = L'elenco di sempre
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Conservata su questo computer, in chiaro: gli ultimi 1000 comandi e i primi 64 KB dell’output di ciascuno, fino a questa quantità in tutto. I più vecchi se ne vanno per primi; l’Attività AI la può svuotare.
 
 # unlock its windows
 t7c69953e = sbloccare le sue finestre

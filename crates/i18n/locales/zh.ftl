@@ -46,6 +46,27 @@ ta7006e9a = 这里什么都没有。
 # Stop all AI
 tddf9c9cc = 停止所有 AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] 已保留 { $n } 条命令 · { $size } / { $most } MB
+    }
+
+# Clear…
+t725be072 = 清除…
+
+# Clear activity
+t80bab37b = 清除活动
+
+# Cancel
+t35afca3b = 取消
+
+# Clear AI activity?
+t1d96272a = 清除 AI 活动？
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = AI 运行过的命令及其输出将被删除，包括本机上的记录。正在运行或等待你处理的命令会保留。
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 
@@ -349,9 +370,6 @@ tebca595f = 已授权给 { $client }：{ $hosts }。再次授权将替换原有�
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = 它永远看不到密钥、密码或密码短语：需要其中任何一项的主机会被拒绝，尚不知道其密钥的主机也一样。主机的输出可能含有试图操纵智能体的文字：只把主机授权给你在这方面信任的智能体。
 
-# Cancel
-t35afca3b = 取消
-
 # When AI runs a command
 tc94fc353 = AI 运行命令时
 
@@ -363,6 +381,9 @@ te371b0dd = 危险：含有其中任何一项的命令会等你确认（每行�
 
 # The usual list
 tcc58d242 = 默认列表
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = 以明文保存在本机：最近 1000 条命令，以及每条输出的前 64 KB，总量不超过此值。最旧的先删除；可在 AI 活动中清除。
 
 # unlock its windows
 t7c69953e = 解锁其窗口

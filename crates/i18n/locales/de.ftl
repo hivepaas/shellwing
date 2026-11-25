@@ -46,6 +46,28 @@ ta7006e9a = Hier ist nichts.
 # Stop all AI
 tddf9c9cc = AI ganz stoppen
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } Befehl behalten · { $size } von { $most } MB
+       *[other] { $n } Befehle behalten · { $size } von { $most } MB
+    }
+
+# Clear…
+t725be072 = Leeren…
+
+# Clear activity
+t80bab37b = Aktivität leeren
+
+# Cancel
+t35afca3b = Abbrechen
+
+# Clear AI activity?
+t1d96272a = AI-Aktivität leeren?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Die Befehle, die AI ausgeführt hat, und ihre Ausgaben verschwinden, auch von diesem Computer. Laufende und auf dich wartende bleiben.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · gestartet um { $when } · { $job }
 
@@ -356,9 +378,6 @@ tebca595f = Bereits für { $client } freigegeben: { $hosts }. Erneutes Freigeben
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Er sieht nie einen Schlüssel, ein Passwort oder eine Passphrase: Ein Host, der danach fragen würde, wird abgelehnt, ebenso einer, dessen Schlüssel noch nicht bekannt ist. Die Ausgabe eines Hosts kann Worte enthalten, die einen Agent lenken sollen: Gib Hosts nur einem, dem du sie anvertraust.
 
-# Cancel
-t35afca3b = Abbrechen
-
 # When AI runs a command
 tc94fc353 = Wenn AI einen Befehl ausführt
 
@@ -370,6 +389,9 @@ te371b0dd = Riskant: Ein Befehl mit einem davon, eines pro Zeile, wartet auf dic
 
 # The usual list
 tcc58d242 = Die übliche Liste
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Auf diesem Computer als Klartext gespeichert: die letzten 1000 Befehle und die ersten 64 KB ihrer Ausgabe, insgesamt höchstens so viel. Die ältesten gehen zuerst; in der AI-Aktivität lässt sie sich leeren.
 
 # unlock its windows
 t7c69953e = seine Fenster zu entsperren

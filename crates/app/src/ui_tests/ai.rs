@@ -833,3 +833,47 @@ scenario!(
         assert!(ui.find("viewer-find").is_some(), "the find bar opens");
     }
 );
+
+scenario!(
+    /// AI activity says how much it keeps on this computer, of how much.
+    /// Settings › AI chooses how much; Clear, once confirmed, empties it,
+    /// the log too.
+    activity_kept_chosen_and_cleared,
+    |ui| {
+        let token = given_web(ui, "Free");
+        let (mut c, _) = Client::open(ui, &token);
+        for word in ["one", "two"] {
+            let (said, _) = c.tool("run", json!({"host": "web", "command": format!("echo {word}")}));
+            assert!(said.starts_with("exit 0"), "{said}");
+        }
+        let mb = 1024 * 1024;
+        ui.wait_until("both kept", |ui| ui.ws(|ws, _, _| ws.ai_kept()).0 == 2);
+        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).2, 32 * mb, "32 MB unless chosen");
+
+        let chosen = |ui: &mut Ui| {
+            let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
+            let v: serde_json::Value = serde_json::from_str(&saved).expect("json");
+            v.get("activity_mb").and_then(|m| m.as_u64())
+        };
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        ui.click("ai-activity-mb:8");
+        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).2, 8 * mb);
+        assert_eq!(chosen(ui), Some(8), "saved");
+        ui.click("ai-activity-mb:32");
+        assert_eq!(chosen(ui), None, "the usual, not written");
+        ui.click("settings-close");
+
+        ui.ws(|ws, window, cx| ws.open_activity(window, cx));
+        assert!(ui.find("ai-kept").is_some(), "how much it keeps");
+        ui.click("ai-clear");
+        ui.answer_prompt("Cancel");
+        assert_eq!(ui.ws(|ws, _, _| ws.ai_kept()).0, 2, "kept");
+        ui.click("ai-clear");
+        ui.answer_prompt("Clear activity");
+        ui.wait_until("cleared", |ui| ui.ws(|ws, _, _| ws.ai_kept()).0 == 0);
+        assert!(ui.ws(|ws, _, _| ws.ai_activity()).is_empty(), "the tab empties");
+        let log = std::fs::read_to_string(ui.config_dir().join("state/ai-activity.jsonl")).expect("log");
+        assert_eq!(log, "", "on this computer too");
+        assert!(ui.find("ai-clear").is_none(), "nothing to clear");
+    }
+);

@@ -1439,8 +1439,57 @@ impl Render for AiView {
             .child(self.clients_part(&snap, cx))
             .child(self.grants_part(&snap, window, cx))
             .child(self.modes_part(&snap, window, cx))
+            .child(self.activity_part(&snap, cx))
     }
 }
+
+impl AiView {
+    /// How much AI activity this computer keeps, in all.
+    fn activity_part(&self, snap: &AiSnap, cx: &mut Context<Self>) -> gpui::Div {
+        let mb = snap
+            .state
+            .activity_mb
+            .unwrap_or(shellwing_config::AI_ACTIVITY_MB);
+        let mut sizes = div().flex().flex_wrap().gap(px(6.));
+        for size in ACTIVITY_SIZES {
+            let on = mb == size;
+            sizes = sizes.child(
+                outline_button(&format!("ai-activity-mb:{size}"), &format!("{size} MB"))
+                    .h(px(28.))
+                    .px(px(12.))
+                    .text_size(ui(12.5))
+                    .when(on, |d| {
+                        d.bg(rgb(colors().selected))
+                            .border_color(rgb(colors().accent))
+                    })
+                    .on_click(cx.listener(move |v, _, _, cx| {
+                        v.change(cx, |s| {
+                            s.activity_mb =
+                                (size != shellwing_config::AI_ACTIVITY_MB).then_some(size)
+                        })
+                    })),
+            );
+        }
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(10.))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(heading(&tr!("AI activity")))
+                    .child(hint_text(&tr!(
+                        "Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it."
+                    ))),
+            )
+            .child(sizes)
+    }
+}
+
+/// What AI activity may keep in all, in MB, to choose from.
+const ACTIVITY_SIZES: [u32; 4] = [8, 16, 32, 64];
 
 #[cfg(test)]
 mod tests {

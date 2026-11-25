@@ -46,6 +46,27 @@ ta7006e9a = Burada bir şey yok.
 # Stop all AI
 tddf9c9cc = Tüm AI'ı durdur
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] { $n } komut saklandı · { $most } MB içinden { $size } MB
+    }
+
+# Clear…
+t725be072 = Temizle…
+
+# Clear activity
+t80bab37b = Etkinliği temizle
+
+# Cancel
+t35afca3b = İptal
+
+# Clear AI activity?
+t1d96272a = AI etkinliği temizlensin mi?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = AI’ın çalıştırdığı komutlar ve çıktıları bu bilgisayardan da silinir. Çalışanlar ve sizi bekleyenler kalır.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 
@@ -356,9 +377,6 @@ tebca595f = { $client } için zaten verildi: { $hosts }. Yeniden vermek öncekil
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Hiçbir zaman bir anahtar, parola veya parola ifadesi görmez: bunlardan birini isteyecek bir ana makine reddedilir, anahtarı henüz bilinmeyen bir ana makine de. Bir ana makinenin çıktısı, bir ajanı yönlendirmeye yönelik sözler içerebilir: ana makineleri yalnızca bu konuda güvendiğiniz bir istemciye verin.
 
-# Cancel
-t35afca3b = İptal
-
 # When AI runs a command
 tc94fc353 = AI bir komut çalıştırdığında
 
@@ -370,6 +388,9 @@ te371b0dd = Riskli: bu sözcüklerden birini içeren bir komut sizi bekler; her 
 
 # The usual list
 tcc58d242 = Olağan liste
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Bu bilgisayarda düz metin olarak saklanır: son 1000 komut ve her birinin çıktısının ilk 64 KB’ı, toplamda en fazla bu kadar. En eskiler önce gider; AI etkinliğinden temizlenebilir.
 
 # unlock its windows
 t7c69953e = pencerelerinin kilidini açmak

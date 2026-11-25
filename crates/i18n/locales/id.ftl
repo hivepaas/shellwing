@@ -46,6 +46,27 @@ ta7006e9a = Tidak ada apa-apa di sini.
 # Stop all AI
 tddf9c9cc = Hentikan semua AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+       *[other] { $n } perintah disimpan · { $size } dari { $most } MB
+    }
+
+# Clear…
+t725be072 = Kosongkan…
+
+# Clear activity
+t80bab37b = Kosongkan aktivitas
+
+# Cancel
+t35afca3b = Batal
+
+# Clear AI activity?
+t1d96272a = Kosongkan Aktivitas AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Perintah yang dijalankan AI dan keluarannya dihapus, dari komputer ini juga. Yang sedang berjalan atau menunggu Anda tetap ada.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 
@@ -352,9 +373,6 @@ tebca595f = Sudah diberikan ke { $client }: { $hosts }. Memberikannya lagi mengg
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Klien tidak pernah melihat kunci, kata sandi, atau frasa sandi: host yang akan memintanya ditolak, begitu juga host yang kuncinya belum dikenal. Keluaran host dapat memuat kata-kata yang dimaksudkan untuk mengarahkan agen: berikan host hanya ke klien yang Anda percayai untuk host tersebut.
 
-# Cancel
-t35afca3b = Batal
-
 # When AI runs a command
 tc94fc353 = Saat AI menjalankan perintah
 
@@ -366,6 +384,9 @@ te371b0dd = Berisiko: perintah dengan salah satu kata ini, satu per baris, menun
 
 # The usual list
 tcc58d242 = Daftar bawaan
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Disimpan di komputer ini sebagai teks biasa: 1000 perintah terakhir dan 64 KB pertama dari keluaran masing-masing, paling banyak sebesar ini. Yang tertua dihapus lebih dulu; Aktivitas AI dapat mengosongkannya.
 
 # unlock its windows
 t7c69953e = membuka kunci jendelanya

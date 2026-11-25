@@ -46,6 +46,28 @@ ta7006e9a = Rien ici.
 # Stop all AI
 tddf9c9cc = Arrêter toute l'AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } commande gardée · { $size } sur { $most } Mo
+       *[other] { $n } commandes gardées · { $size } sur { $most } Mo
+    }
+
+# Clear…
+t725be072 = Vider…
+
+# Clear activity
+t80bab37b = Vider l’activité
+
+# Cancel
+t35afca3b = Annuler
+
+# Clear AI activity?
+t1d96272a = Vider l’activité AI ?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Les commandes lancées par l’AI et ce qu’elles ont affiché disparaissent, de cet ordinateur aussi. Celles en cours ou qui vous attendent restent.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · lancé à { $when } · { $job }
 
@@ -356,9 +378,6 @@ tebca595f = Déjà accordés à { $client } : { $hosts }. Les accorder à nouvea
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Il ne voit jamais de clé, de mot de passe ni de phrase secrète : un serveur qui en demanderait est refusé, tout comme un serveur dont la clé n'est pas encore connue. La sortie d'un serveur peut contenir des mots destinés à piloter un agent : n'accordez des serveurs qu'à un client à qui vous les confiez.
 
-# Cancel
-t35afca3b = Annuler
-
 # When AI runs a command
 tc94fc353 = Quand l'AI exécute une commande
 
@@ -370,6 +389,9 @@ te371b0dd = Risqué : une commande contenant l'un de ces mots, un par ligne, vou
 
 # The usual list
 tcc58d242 = La liste habituelle
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Gardée sur cet ordinateur, en texte clair : les 1000 dernières commandes et les 64 premiers Ko de ce que chacune a affiché, jusqu’à cette taille en tout. Les plus anciennes partent d’abord ; l’Activité AI permet de la vider.
 
 # unlock its windows
 t7c69953e = déverrouiller ses fenêtres

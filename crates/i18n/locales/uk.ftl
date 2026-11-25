@@ -46,6 +46,30 @@ ta7006e9a = Тут нічого немає.
 # Stop all AI
 tddf9c9cc = Зупинити весь AI
 
+# {n} command kept · {size} of {most} MB | {n} commands kept · {size} of {most} MB
+t4a042e8c =
+    { $n ->
+        [one] { $n } команду збережено · { $size } з { $most } МБ
+        [few] { $n } команди збережено · { $size } з { $most } МБ
+        [many] { $n } команд збережено · { $size } з { $most } МБ
+       *[other] { $n } команди збережено · { $size } з { $most } МБ
+    }
+
+# Clear…
+t725be072 = Очистити…
+
+# Clear activity
+t80bab37b = Очистити активність
+
+# Cancel
+t35afca3b = Скасувати
+
+# Clear AI activity?
+t1d96272a = Очистити активність AI?
+
+# The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay.
+t812504dc = Команди, які запускав AI, і їхній вивід зникнуть, зокрема з цього комп’ютера. Ті, що виконуються або чекають на вас, залишаться.
+
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · розпочато о { $when } · { $job }
 
@@ -364,9 +388,6 @@ tebca595f = Уже надано { $client }: { $hosts }. Повторне над
 # It never sees a key, a password or a passphrase: a host that would ask for one is refused, as is one whose key is not known yet. A host's output can carry words meant to steer an agent: give hosts to one you trust with them.
 t7620726b = Він ніколи не бачить ні ключа, ні пароля, ні парольної фрази: хост, який запитав би їх, відхиляється, як і хост, ключ якого ще невідомий. Вивід хоста може містити слова, що мають керувати агентом: надавайте хости лише клієнту, якому їх довіряєте.
 
-# Cancel
-t35afca3b = Скасувати
-
 # When AI runs a command
 tc94fc353 = Коли AI виконує команду
 
@@ -378,6 +399,9 @@ te371b0dd = Ризиковані: команда з будь-яким із ци�
 
 # The usual list
 tcc58d242 = Звичайний список
+
+# Kept on this computer, as plain text: the last 1000 commands and the first 64 KB of what each printed, up to this much in all. The oldest go first; AI activity clears it.
+tb57c3b79 = Зберігається на цьому комп’ютері відкритим текстом: останні 1000 команд і перші 64 КБ виводу кожної, загалом не більше цього. Найстаріші видаляються першими; очистити можна в активності AI.
 
 # unlock its windows
 t7c69953e = розблокувати свої вікна

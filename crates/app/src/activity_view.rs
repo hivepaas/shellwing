@@ -4,13 +4,13 @@
 
 use gpui::{
     App, ClipboardItem, Context, Entity, FocusHandle, Focusable, FontWeight, InteractiveElement,
-    IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement, Styled,
-    WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
+    IntoElement, ParentElement, PromptLevel, Render, SharedString, StatefulInteractiveElement,
+    Styled, WeakEntity, Window, div, prelude::FluentBuilder, px, rgb,
 };
 use std::sync::Arc;
 
 use shellwing_core::ai::{Activity, Approval, End};
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
 use crate::host_editor::{hint_text, outline_button, primary_button};
@@ -289,6 +289,69 @@ impl ActivityView {
                     }),
             )
             .child(rows)
+            .child(self.kept_part(cx))
+    }
+
+    /// Under the list: how much is kept on this computer, of how much, and
+    /// Clear.
+    fn kept_part(&self, cx: &mut Context<Self>) -> gpui::Div {
+        let (n, size, most) = self
+            .workspace
+            .upgrade()
+            .map_or((0, 0, 0), |w| w.read(cx).ai_kept());
+        let mb = |b: u64| b as f64 / (1024. * 1024.);
+        let said = tr_n!(
+            n,
+            "{n} command kept · {size} of {most} MB",
+            "{n} commands kept · {size} of {most} MB",
+            n = n.to_string(),
+            size = format!("{:.1}", mb(size)),
+            most = format!("{:.0}", mb(most))
+        );
+        div()
+            .debug_selector(|| "ai-kept".into())
+            .flex()
+            .items_center()
+            .gap(px(8.))
+            .px(px(14.))
+            .py(px(8.))
+            .border_t_1()
+            .border_color(rgb(colors().line))
+            .child(div().flex_1().min_w_0().child(hint_text(&said)))
+            .when(n > 0, |d| {
+                d.child(
+                    outline_button("ai-clear", &tr!("Clear…"))
+                        .h(px(26.))
+                        .px(px(10.))
+                        .text_size(ui(12.))
+                        .on_click(cx.listener(|v, _, window, cx| v.ask_clear(window, cx))),
+                )
+            })
+    }
+
+    /// Clear, once the person says so: it cannot be undone.
+    fn ask_clear(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (yes, no) = (tr!("Clear activity"), tr!("Cancel"));
+        let answer = window.prompt(
+            PromptLevel::Warning,
+            &tr!("Clear AI activity?"),
+            Some(&tr!(
+                "The commands AI ran and what they printed go, from this computer too. Those running or waiting for you stay."
+            )),
+            &[yes.as_str(), no.as_str()],
+            cx,
+        );
+        cx.spawn_in(window, async move |this, cx| {
+            let yes = matches!(answer.await, Ok(0));
+            let _ = this.update_in(cx, |v, window, cx| {
+                window.focus(&v.focus, cx);
+                if yes && let Some(ws) = v.workspace.upgrade() {
+                    ws.read(cx).ai_clear();
+                }
+                cx.notify();
+            });
+        })
+        .detach();
     }
 
     fn detail(&mut self, a: &Activity, cx: &mut Context<Self>) -> gpui::Div {
