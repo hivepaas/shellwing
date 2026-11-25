@@ -307,6 +307,44 @@ scenario!(
 );
 
 scenario!(
+    /// More hosts than the window is tall: the rows keep their height and the
+    /// list scrolls. A flex child shrinks to fit by default, and that is the
+    /// whole bug - the rows squeeze closer together until everything fits, so
+    /// the list never grows past the pane and never scrolls.
+    many_hosts_scroll_rather_than_squeeze,
+    |ui| {
+        let port = closed_port();
+        let mut hosts = String::new();
+        for i in 1..=30 {
+            hosts.push_str(&host(&format!("h{i:02}"), port));
+        }
+        ui.config_file("hosts.toml", &hosts);
+        ui.open();
+        // Short enough that thirty rows cannot all be shown.
+        ui.resize(1000., 400.);
+        ui.wait_until("the hosts", |ui| ui.find("host:h01").is_some());
+
+        let row = gpui::px(crate::sidebar::TILE + 12.);
+        let first = ui.bounds("host:h01");
+        assert_eq!(first.size.height, row, "a row keeps its height");
+        let second = ui.bounds("host:h02");
+        assert_eq!(
+            second.origin.y - first.origin.y,
+            row,
+            "and the next one starts a whole row below, rather than closer"
+        );
+
+        // What makes it scroll: the list holds more than it can show.
+        let list = ui.bounds("hosts");
+        assert!(
+            list.size.height < row * 30.,
+            "the list is {:?}, which would fit all thirty rows",
+            list.size.height
+        );
+    }
+);
+
+scenario!(
     /// Connected, a host is asked which system it runs, and its tile shows
     /// that system's mark, kept for the next start; connected again the same
     /// day, it is not asked again. A host whose icon is chosen in hosts.toml

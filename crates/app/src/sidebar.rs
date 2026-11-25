@@ -3,8 +3,8 @@
 
 use gpui::{
     App, Context, Div, ElementId, Entity, FocusHandle, FontWeight, KeyDownEvent, MouseButton,
-    MouseDownEvent, Pixels, Point, Render, SharedString, WeakEntity, Window, div, prelude::*, px,
-    rgb, rgba, svg,
+    MouseDownEvent, Pixels, Point, Render, ScrollHandle, SharedString, WeakEntity, Window, div,
+    prelude::*, px, rgb, rgba, svg,
 };
 
 use shellwing_i18n::{tr, tr_n};
@@ -301,6 +301,11 @@ pub struct Sidebar {
     /// Hosts picked with Ctrl+click (Cmd+click on macOS), by spec, to run a
     /// command on.
     picked: Vec<String>,
+    /// Where the host list is scrolled to, and a drag of its scroll bar's
+    /// thumb while it lasts. The bar reads the handle once the list is laid
+    /// out, so it comes after the list among its parent's children.
+    scroll: ScrollHandle,
+    scroll_drag: crate::scrollbar::Drag,
     /// What is folded: Actions, and sections by [`Section::key`].
     folds: shellwing_config::SidebarState,
     /// AI activity, among Actions once a client is let in: the commands
@@ -402,6 +407,8 @@ impl Sidebar {
             hovered: None,
             hovered_group: None,
             picked: vec![],
+            scroll: ScrollHandle::new(),
+            scroll_drag: Default::default(),
             folds: Default::default(),
             ai: None,
             filter,
@@ -829,6 +836,7 @@ fn part_heading(n: usize, label: SharedString) -> impl IntoElement {
         })
         .flex()
         .items_center()
+        .flex_shrink_0()
         .gap(px(8.))
         .px_3()
         .pt_3()
@@ -919,6 +927,7 @@ impl Sidebar {
         div()
             .flex()
             .flex_col()
+            .flex_shrink_0()
             .gap(px(2.))
             .pt_2()
             .pb(px(if open { 6. } else { 2. }))
@@ -1190,6 +1199,12 @@ impl Render for Sidebar {
             }
             return self.rail();
         }
+        // Everything put in here keeps its height: flex_shrink_0 on each child.
+        // A flex child shrinks to fit by default, so without it the rows squeeze
+        // closer together as hosts are added, the list never grows past the pane,
+        // and so it never scrolls - the squeezing is what hides the scrollbar.
+        // This list is the one thing in the sidebar that may give; the rest of
+        // the column holds its size, as the collapsed rail's tiles do.
         let mut list = div()
             .id("hosts")
             .debug_selector(|| "hosts".into())
@@ -1198,6 +1213,7 @@ impl Render for Sidebar {
             .flex_1()
             .min_h_0()
             .overflow_y_scroll()
+            .track_scroll(&self.scroll)
             .pb_2();
         let mut id = 0u64;
         let shown = self.shown(cx);
@@ -1230,6 +1246,7 @@ impl Render for Sidebar {
                     .flex()
                     .items_center()
                     .justify_between()
+                    .flex_shrink_0()
                     .h(px(26.))
                     .px_3()
                     .mt_2()
@@ -1440,6 +1457,7 @@ impl Render for Sidebar {
             if section.rows.is_empty() {
                 list = list.child(
                     div()
+                        .flex_shrink_0()
                         // Where its hosts would start.
                         .pl(px(ROW_MARGIN + ROW_PAD))
                         .pr_3()
@@ -1460,6 +1478,7 @@ impl Render for Sidebar {
                     div()
                         .id(ElementId::NamedInteger("host".into(), id))
                         .debug_selector(|| format!("host:{}", row.name))
+                        .flex_shrink_0()
                         .on_hover(cx.listener(move |s, over: &bool, _, cx| {
                             let now = if *over {
                                 Some(this)
@@ -1618,6 +1637,7 @@ impl Render for Sidebar {
         let footer = div()
             .p_2()
             .flex()
+            .flex_shrink_0()
             .gap_2()
             .border_t_1()
             .border_color(rgb(colors().line))
@@ -1723,6 +1743,7 @@ impl Render for Sidebar {
                 div()
                     .flex()
                     .flex_col()
+                    .flex_shrink_0()
                     .gap(px(6.))
                     // In px, as the rows and ACTIONS above are, whatever the
                     // UI's size: its heading and button line up with theirs.
@@ -1783,7 +1804,21 @@ impl Render for Sidebar {
                             .child(self.filter.clone()),
                     ),
             )
-            .child(list)
+            // The bar sits over the list rather than beside it, so the rows
+            // keep their full width and nothing moves when it appears.
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_h_0()
+                    .relative()
+                    .child(list)
+                    .child(crate::scrollbar::overlay(
+                        self.scroll.clone(),
+                        self.scroll_drag.clone(),
+                    )),
+            )
             .when(!self.picked.is_empty(), |d| d.child(self.picked_bar(cx)))
             .child(footer)
             .when_some(menu, |d, m| d.child(m))
