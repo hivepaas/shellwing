@@ -11,6 +11,7 @@ pub mod history;
 pub mod log;
 pub mod mcp;
 pub mod notes;
+pub mod panes;
 pub mod snippets;
 pub mod socket;
 pub mod sudo;
@@ -489,6 +490,8 @@ struct Inner {
     snippets: Option<Arc<dyn snippets::SnippetStore>>,
     /// What an agent never reaches on this computer (transfers.rs).
     never: Vec<std::path::PathBuf>,
+    /// The panes a client may read, and until when: client's id, pane.
+    panes: BTreeMap<(String, String), Instant>,
     /// sudo's passwords kept a while, by client and host (sudo.rs).
     sudo: BTreeMap<(String, String), sudo::Kept>,
 }
@@ -544,6 +547,7 @@ impl Hub {
                 locked: false,
                 snippets: None,
                 never: vec![],
+                panes: BTreeMap::new(),
                 sudo: BTreeMap::new(),
             }),
             events,
@@ -594,6 +598,7 @@ impl Hub {
             self.stop_job(&job);
         }
         self.keep_sudo_for_grants();
+        self.keep_panes_for_clients();
     }
 
     /// The hosts that can be given, by spec.

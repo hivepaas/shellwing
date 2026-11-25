@@ -1441,6 +1441,16 @@ Each one is in AI activity like a command: a write with what it wrote.
 A command that asks for input gets none: `sudo` with a password fails at once,
 so agents are told to use `sudo -n` and `-y` forms.
 
+**Letting an agent read a pane.** *Let AI Read This Pane…* in a pane's
+right-click menu asks which client may read it, for 15 minutes. While it may,
+the pane has AI's violet edge and, at its bottom left, who and how long is
+left, with ✕ to end it at once; its tab has a violet dot. *Stop AI Reading
+This Pane* in the menu ends it too, as do closing the pane, locking
+shellwing, and pausing or removing the client. It is no grant of a host: a
+local terminal's pane may be read the same way, and a host given to a client
+does not make its panes readable. What a client reads of it is the next
+step: design in [docs/design/ai-read-tab.md](design/ai-read-tab.md).
+
 **AI activity.** *Actions › AI activity*, *Settings › AI › AI activity*, or the
 palette, opens a tab with every command AI clients ran:
 

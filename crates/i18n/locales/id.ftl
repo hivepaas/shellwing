@@ -4102,6 +4102,12 @@ td281e470 = Hentikan Pencatatan Log
 # Start Logging
 t72c41b76 = Mulai Pencatatan Log
 
+# Stop AI Reading This Pane
+t9880e65f = Hentikan AI membaca panel ini
+
+# Let AI Read This Pane…
+ta9b9606a = Izinkan AI membaca panel ini…
+
 # Split Right
 t50db06c1 = Bagi ke Kanan
 
@@ -4110,6 +4116,9 @@ t1165de29 = Bagi ke Bawah
 
 # Close Pane
 t21a947cf = Tutup Panel
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } boleh membaca panel ini · sisa { $n } menit
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } ingin menjangkau { $host }, yang kunci host-nya tidak ada di known_hosts: ada di Aktivitas AI, menunggu Anda.
@@ -4131,6 +4140,15 @@ t6f36d148 = Biarkan lanjut
 
 # Take access back
 td619baa7 = Cabut akses
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Belum ada klien AI: Pengaturan › AI menambahkannya.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Izinkan klien AI membaca panel ini selama { $n } menit?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Klien membaca teks panel: yang dicetak program dan yang Anda ketik di prompt. Klien tidak mengetik apa pun. Anda bisa menghentikannya kapan saja.
 
 # Config files · {category}
 t59edc3e9 = Berkas konfigurasi · { $category }

@@ -4149,6 +4149,12 @@ td281e470 = Parar registro
 # Start Logging
 t72c41b76 = Iniciar registro
 
+# Stop AI Reading This Pane
+t9880e65f = Parar a AI de ler este painel
+
+# Let AI Read This Pane…
+ta9b9606a = Deixar a AI ler este painel…
+
 # Split Right
 t50db06c1 = Dividir à direita
 
@@ -4157,6 +4163,9 @@ t1165de29 = Dividir abaixo
 
 # Close Pane
 t21a947cf = Fechar painel
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } pode ler este painel · faltam { $n } min
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } quer alcançar { $host }, cuja chave de servidor não está em known_hosts: ele está em Atividade de AI, esperando por você.
@@ -4179,6 +4188,15 @@ t6f36d148 = Deixar continuar
 
 # Take access back
 td619baa7 = Revogar acesso
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Ainda não há cliente de AI: Ajustes › AI adiciona um.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Deixar um cliente de AI ler este painel por { $n } minutos?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Ele lê o texto do painel: o que os programas imprimiram e o que você digitou no prompt. Não digita nada. Você pode parar a qualquer momento.
 
 # Config files · {category}
 t59edc3e9 = Arquivos de configuração · { $category }

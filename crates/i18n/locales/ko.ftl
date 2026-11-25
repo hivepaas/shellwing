@@ -4045,6 +4045,12 @@ td281e470 = 로그 기록 중지
 # Start Logging
 t72c41b76 = 로그 기록 시작
 
+# Stop AI Reading This Pane
+t9880e65f = AI의 이 창 읽기 중지
+
+# Let AI Read This Pane…
+ta9b9606a = AI가 이 창을 읽도록 허용…
+
 # Split Right
 t50db06c1 = 오른쪽으로 분할
 
@@ -4053,6 +4059,9 @@ t1165de29 = 아래로 분할
 
 # Close Pane
 t21a947cf = 창 닫기
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client }이(가) 이 창을 읽을 수 있음 · { $n }분 남음
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client }이(가) { $host }에 연결하려 하지만 호스트 키가 known_hosts에 없습니다. AI 활동에서 지시를 기다리고 있습니다.
@@ -4074,6 +4083,15 @@ t6f36d148 = 계속
 
 # Take access back
 td619baa7 = 접근 회수
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = 아직 AI 클라이언트가 없습니다: 설정 › AI에서 추가하세요.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = AI 클라이언트가 { $n }분 동안 이 창을 읽도록 허용할까요?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = 창의 텍스트(프로그램 출력과 프롬프트에서 입력한 내용)를 읽습니다. 아무것도 입력하지 않습니다. 언제든지 중지할 수 있습니다.
 
 # Config files · {category}
 t59edc3e9 = 설정 파일 · { $category }

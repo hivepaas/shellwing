@@ -4045,6 +4045,12 @@ td281e470 = ログ記録を停止
 # Start Logging
 t72c41b76 = ログ記録を開始
 
+# Stop AI Reading This Pane
+t9880e65f = AI によるこのペインの読み取りを停止
+
+# Let AI Read This Pane…
+ta9b9606a = AI にこのペインの読み取りを許可…
+
 # Split Right
 t50db06c1 = 右に分割
 
@@ -4053,6 +4059,9 @@ t1165de29 = 下に分割
 
 # Close Pane
 t21a947cf = ペインを閉じる
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } がこのペインを読み取り可 · 残り { $n } 分
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } が { $host } に接続しようとしていますが、ホスト鍵が known_hosts にありません。AI アクティビティで指示を待っています。
@@ -4074,6 +4083,15 @@ t6f36d148 = 再開
 
 # Take access back
 td619baa7 = アクセスを取り消す
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = AI クライアントがまだありません: 設定 › AI で追加できます。
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = AI クライアントにこのペインを { $n } 分間読み取らせますか？
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = ペインのテキスト (プログラムの出力とプロンプトで入力した内容) を読み取ります。何も入力しません。いつでも停止できます。
 
 # Config files · {category}
 t59edc3e9 = 設定ファイル · { $category }

@@ -4243,6 +4243,12 @@ td281e470 = Зупинити запис журналу
 # Start Logging
 t72c41b76 = Почати запис журналу
 
+# Stop AI Reading This Pane
+t9880e65f = Заборонити AI читати цю панель
+
+# Let AI Read This Pane…
+ta9b9606a = Дозволити AI читати цю панель…
+
 # Split Right
 t50db06c1 = Розділити праворуч
 
@@ -4251,6 +4257,9 @@ t1165de29 = Розділити донизу
 
 # Close Pane
 t21a947cf = Закрити панель
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } може читати цю панель · лишилося { $n } хв
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } хоче під'єднатися до { $host }, ключа хоста якого немає в known_hosts: запит на вкладці «Активність AI» і чекає на вас.
@@ -4275,6 +4284,15 @@ t6f36d148 = Продовжити
 
 # Take access back
 td619baa7 = Відкликати доступ
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = AI-клієнтів ще немає: додайте в Налаштування › AI.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Дозволити AI-клієнту читати цю панель { $n } хвилин?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Він читає текст панелі: що виводили програми і що ви набирали в запрошенні. Він нічого не набирає. Зупинити можна будь-коли.
 
 # Config files · {category}
 t59edc3e9 = Файли конфігурації · { $category }

@@ -4045,6 +4045,12 @@ td281e470 = Ngừng ghi nhật ký
 # Start Logging
 t72c41b76 = Bắt đầu ghi nhật ký
 
+# Stop AI Reading This Pane
+t9880e65f = Dừng cho AI đọc khung này
+
+# Let AI Read This Pane…
+ta9b9606a = Cho AI đọc khung này…
+
 # Split Right
 t50db06c1 = Chia sang phải
 
@@ -4053,6 +4059,9 @@ t1165de29 = Chia xuống dưới
 
 # Close Pane
 t21a947cf = Đóng khung
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } được đọc khung này · còn { $n } phút
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } muốn kết nối tới { $host }, nhưng khoá máy chủ không có trong known_hosts: yêu cầu đang chờ bạn trong Hoạt động AI.
@@ -4074,6 +4083,15 @@ t6f36d148 = Cho tiếp tục
 
 # Take access back
 td619baa7 = Thu hồi quyền
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Chưa có AI client nào: thêm trong Cài đặt › AI.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Cho một AI client đọc khung này trong { $n } phút?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Nó đọc text của khung: những gì chương trình in ra và những gì bạn gõ ở dấu nhắc. Nó không gõ gì. Bạn có thể dừng bất cứ lúc nào.
 
 # Config files · {category}
 t59edc3e9 = Tệp cấu hình · { $category }

@@ -29,6 +29,8 @@ pub(super) struct AiWork {
     /// What the hub was last told about hosts: the host list's, and the
     /// grants', so it is told again only when either changes.
     told: Option<(Vec<Pick>, AiState)>,
+    /// A timer runs while a pane may be read: its mark counts down, and goes.
+    ticking: bool,
 }
 
 impl Workspace {
@@ -110,6 +112,7 @@ impl Workspace {
             paused: BTreeSet::new(),
             used: BTreeMap::new(),
             told: None,
+            ticking: false,
         });
     }
 
@@ -786,4 +789,160 @@ pub(super) fn picks_of(sections: &[Section]) -> Vec<Pick> {
         })
         .filter(|p| !p.hosts.is_empty())
         .collect()
+}
+
+impl Workspace {
+    /// Who may read which pane now: client's id, pane.
+    #[cfg(all(test, feature = "ui-tests"))]
+    pub fn ai_pane_readers(&self) -> Vec<(String, String)> {
+        self.ai.as_ref().map_or_else(Vec::new, |a| {
+            a.hub
+                .pane_readers()
+                .into_iter()
+                .map(|(c, p, _)| (c, p))
+                .collect()
+        })
+    }
+
+    /// The id the hub knows a pane by.
+    pub(crate) fn pane_id(view: &Entity<TermView>) -> String {
+        view.entity_id().as_u64().to_string()
+    }
+
+    /// Asks which AI client may read `view` a while (docs/design/ai-read-tab.md).
+    pub(super) fn ask_ai_read(
+        &mut self,
+        view: Entity<TermView>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(ai) = &self.ai else {
+            return;
+        };
+        let clients: Vec<shellwing_config::AiClient> = ai
+            .state
+            .clients
+            .iter()
+            .filter(|c| !c.paused)
+            .cloned()
+            .collect();
+        if clients.is_empty() {
+            return self.say(
+                Notice::warn(tr!("No AI client is let in yet: Settings › AI adds one.")),
+                CONFIG_NOTICE,
+                cx,
+            );
+        }
+        let cancel = tr!("Cancel");
+        let mut buttons: Vec<String> = clients.iter().map(|c| c.name.clone()).collect();
+        buttons.push(cancel);
+        let refs: Vec<&str> = buttons.iter().map(String::as_str).collect();
+        let answer = window.prompt(
+            gpui::PromptLevel::Info,
+            &tr!(
+                "Let an AI client read this pane for {n} minutes?",
+                n = ai::panes::MINUTES.to_string()
+            ),
+            Some(&tr!(
+                "It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time."
+            )),
+            &refs,
+            cx,
+        );
+        cx.spawn(async move |ws, cx| {
+            if let Ok(i) = answer.await
+                && let Some(c) = clients.get(i)
+            {
+                let id = c.id.clone();
+                let _ = ws.update(cx, |ws, cx| ws.allow_ai_read(&view, &id, cx));
+            }
+        })
+        .detach();
+    }
+
+    /// Lets the client `id` read `view` a while.
+    pub(crate) fn allow_ai_read(
+        &mut self,
+        view: &Entity<TermView>,
+        id: &str,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(ai) = &self.ai {
+            ai.hub.allow_pane(id, &Self::pane_id(view));
+        }
+        self.refresh_pane_readers(cx);
+    }
+
+    /// No AI client reads `view` any more.
+    pub(super) fn stop_ai_read(&mut self, view: &Entity<TermView>, cx: &mut Context<Self>) {
+        if let Some(ai) = &self.ai {
+            ai.hub.stop_pane(&Self::pane_id(view));
+        }
+        self.refresh_pane_readers(cx);
+    }
+
+    /// Tells each pane who may read it now, and keeps a timer going while one
+    /// may, so its mark counts down and goes when the time is up.
+    pub(crate) fn refresh_pane_readers(&mut self, cx: &mut Context<Self>) {
+        let Some(ai) = &self.ai else {
+            return;
+        };
+        // A pane closed is read no more.
+        let open: Vec<String> = self.all_views().iter().map(Self::pane_id).collect();
+        for (_, p, _) in ai.hub.pane_readers() {
+            if !open.contains(&p) {
+                ai.hub.stop_pane(&p);
+            }
+        }
+        let readers = ai.hub.pane_readers();
+        let name = |id: &str| {
+            ai.state
+                .clients
+                .iter()
+                .find(|c| c.id == id)
+                .map_or_else(|| id.to_string(), |c| c.name.clone())
+        };
+        let mut shown = vec![];
+        for v in self.all_views() {
+            let pane = Self::pane_id(&v);
+            let reader = readers
+                .iter()
+                .find(|(_, p, _)| *p == pane)
+                .map(|(c, _, until)| (SharedString::from(name(c)), *until));
+            shown.push((v, reader));
+        }
+        let any = !readers.is_empty();
+        for (v, reader) in shown {
+            v.update(cx, |v, cx| v.set_ai_reader(reader, cx));
+        }
+        if any
+            && let Some(ai) = &mut self.ai
+            && !ai.ticking
+        {
+            ai.ticking = true;
+            cx.spawn(async move |ws, cx| {
+                loop {
+                    cx.background_executor()
+                        .timer(std::time::Duration::from_secs(15))
+                        .await;
+                    let more = ws.update(cx, |ws, cx| {
+                        let more = ws
+                            .ai
+                            .as_ref()
+                            .is_some_and(|a| !a.hub.pane_readers().is_empty());
+                        if let Some(ai) = &mut ws.ai {
+                            ai.ticking = more;
+                        }
+                        ws.refresh_pane_readers(cx);
+                        more
+                    });
+                    if !matches!(more, Ok(true)) {
+                        break;
+                    }
+                }
+            })
+            .detach();
+        }
+        cx.notify();
+    }
 }

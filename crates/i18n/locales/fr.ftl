@@ -4149,6 +4149,12 @@ td281e470 = Arrêter la journalisation
 # Start Logging
 t72c41b76 = Démarrer la journalisation
 
+# Stop AI Reading This Pane
+t9880e65f = Arrêter la lecture de ce volet par l'AI
+
+# Let AI Read This Pane…
+ta9b9606a = Laisser l'AI lire ce volet…
+
 # Split Right
 t50db06c1 = Diviser à droite
 
@@ -4157,6 +4163,9 @@ t1165de29 = Diviser vers le bas
 
 # Close Pane
 t21a947cf = Fermer le volet
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } peut lire ce volet · encore { $n } min
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } veut joindre { $host }, dont la clé de serveur est absente de known_hosts : cela vous attend dans Activité AI.
@@ -4179,6 +4188,15 @@ t6f36d148 = Laisser continuer
 
 # Take access back
 td619baa7 = Retirer l'accès
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Aucun client d'AI pour l'instant : Réglages › AI en ajoute un.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Laisser un client d'AI lire ce volet pendant { $n } minutes ?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Il lit le texte du volet : ce que les programmes ont affiché et ce que vous avez tapé à l'invite. Il ne tape rien. Vous pouvez l'arrêter à tout moment.
 
 # Config files · {category}
 t59edc3e9 = Fichiers de configuration · { $category }

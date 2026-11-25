@@ -4149,6 +4149,12 @@ td281e470 = Günlüğü durdur
 # Start Logging
 t72c41b76 = Günlüğü başlat
 
+# Stop AI Reading This Pane
+t9880e65f = AI'ın bu bölmeyi okumasını durdur
+
+# Let AI Read This Pane…
+ta9b9606a = AI'ın bu bölmeyi okumasına izin ver…
+
 # Split Right
 t50db06c1 = Sağa böl
 
@@ -4157,6 +4163,9 @@ t1165de29 = Aşağı böl
 
 # Close Pane
 t21a947cf = Bölmeyi kapat
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } bu bölmeyi okuyabilir · { $n } dk kaldı
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client }, ana makine anahtarı known_hosts içinde olmayan { $host } ana makinesine ulaşmak istiyor: AI etkinliği içinde sizi bekliyor.
@@ -4179,6 +4188,15 @@ t6f36d148 = Devam ettir
 
 # Take access back
 td619baa7 = Erişimi kaldır
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Henüz AI istemcisi yok: Ayarlar › AI ekler.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Bir AI istemcisinin bu bölmeyi { $n } dakika okumasına izin verilsin mi?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Bölmenin metnini okur: programların yazdıklarını ve istemde yazdıklarınızı. Hiçbir şey yazmaz. İstediğiniz an durdurabilirsiniz.
 
 # Config files · {category}
 t59edc3e9 = Yapılandırma dosyaları · { $category }

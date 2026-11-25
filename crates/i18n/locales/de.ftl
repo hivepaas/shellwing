@@ -4149,6 +4149,12 @@ td281e470 = Protokoll beenden
 # Start Logging
 t72c41b76 = Protokoll starten
 
+# Stop AI Reading This Pane
+t9880e65f = AI-Lesen dieses Bereichs beenden
+
+# Let AI Read This Pane…
+ta9b9606a = AI diesen Bereich lesen lassen…
+
 # Split Right
 t50db06c1 = Rechts teilen
 
@@ -4157,6 +4163,9 @@ t1165de29 = Unten teilen
 
 # Close Pane
 t21a947cf = Bereich schließen
+
+# {client} may read this pane · {n} min left
+ta9958111 = { $client } darf diesen Bereich lesen · noch { $n } Min.
 
 # {client} wants to reach {host}, whose host key is not in known_hosts: AI activity has it, waiting for you.
 tb7c4470c = { $client } möchte { $host } erreichen, dessen Host-Schlüssel nicht in known_hosts steht: Es wartet in AI-Aktivität auf dich.
@@ -4179,6 +4188,15 @@ t6f36d148 = Weitermachen lassen
 
 # Take access back
 td619baa7 = Zugriff entziehen
+
+# No AI client is let in yet: Settings › AI adds one.
+tdabeeb56 = Noch kein AI-Client zugelassen: Einstellungen › AI fügt einen hinzu.
+
+# Let an AI client read this pane for {n} minutes?
+t5bc3e821 = Einen AI-Client diesen Bereich { $n } Minuten lang lesen lassen?
+
+# It reads the pane's text: what programs printed, and what you typed at the prompt. It types nothing. You can stop it at any time.
+tbabe0f81 = Er liest den Text des Bereichs: was Programme ausgegeben haben und was du an der Eingabeaufforderung getippt hast. Er tippt nichts. Du kannst es jederzeit beenden.
 
 # Config files · {category}
 t59edc3e9 = Konfigurationsdateien · { $category }
