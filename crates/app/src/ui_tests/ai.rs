@@ -893,6 +893,112 @@ scenario!(
 );
 
 scenario!(
+    /// AI activity longer than its pane scrolls, by the bar every list has:
+    /// its thumb dragged to the bottom shows the oldest command, the newest
+    /// gone off the top.
+    a_long_activity_scrolls_by_its_bar,
+    |ui| {
+        let log: String = (1..=40)
+            .map(|i| {
+                serde_json::to_string(&shellwing_core::ai::Activity {
+                    id: format!("j-{i}"),
+                    client: "Codex CLI".into(),
+                    host: "web".into(),
+                    command: format!("echo {i}"),
+                    started: 1_764_000_000 + i,
+                    ended: Some(1_764_000_000 + i),
+                    end: Some(shellwing_core::ai::End::Exited(Some(0))),
+                    output: String::new(),
+                    waiting: None,
+                    adding: None,
+                    snippet: None,
+                    client_id: None,
+                    spec: None,
+                })
+                .expect("json")
+                    + "\n"
+            })
+            .collect();
+        let state = ui.config_dir().join("state");
+        std::fs::create_dir_all(&state).expect("state");
+        std::fs::write(state.join("ai-activity.jsonl"), log).expect("log");
+        ui.open();
+        ui.resize(1000., 500.);
+        ui.ws(|ws, window, cx| ws.open_activity(window, cx));
+        ui.wait_until("the newest", |ui| ui.find("ai-row:j-40").is_some());
+        let list = ui.bounds("ai-activity-list");
+        let newest = ui.bounds("ai-row:j-40");
+        assert!(newest.top() >= list.top(), "the newest shows first");
+        let oldest = ui.bounds("ai-row:j-1");
+        assert!(oldest.top() > list.bottom(), "the oldest is below what shows");
+
+        // The thumb, at the top of the bar along the list's right edge,
+        // dragged to its bottom.
+        let x = list.right() - gpui::px(4.);
+        ui.flick(
+            gpui::point(x, list.top() + gpui::px(6.)),
+            gpui::point(x, list.bottom() + gpui::px(40.)),
+            Duration::ZERO,
+        );
+        ui.draw();
+        let oldest = ui.bounds("ai-row:j-1");
+        assert!(
+            oldest.bottom() <= list.bottom() + gpui::px(1.),
+            "scrolled to the end: {oldest:?} in {list:?}"
+        );
+        assert!(ui.bounds("ai-row:j-40").bottom() < list.top(), "the newest went off the top");
+    }
+);
+
+scenario!(
+    /// A long addition waiting for the person scrolls in its box, by the bar
+    /// every list has: its thumb dragged down shows the rest.
+    a_long_addition_scrolls_by_its_bar,
+    |ui| {
+        let token = given_web_may(ui, "Risky", "background", &["notes-read", "notes-add"]);
+        let vault = ui.vault().expect("the vault");
+        let id = vault
+            .save_note(
+                &shellwing_vault::Note {
+                    id: String::new(),
+                    title: "Long".into(),
+                    category: String::new(),
+                    format: shellwing_vault::NoteFormat::Markdown,
+                    hosts: vec!["web".into()],
+                    sensitive: false,
+                    shown_to_ai: false,
+                    changed: String::new(),
+                    size: 0,
+                },
+                Some("start"),
+            )
+            .expect("note");
+        let text: String = (1..=80).map(|i| format!("line {i}\n")).collect();
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool_in(ui, "append_note", json!({"id": id, "text": text, "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        let boxed = ui.bounds("ai-adding");
+        let before = ui.bounds("ai-adding-text");
+        assert!(before.size.height > boxed.size.height, "longer than its box");
+        let x = boxed.right() - gpui::px(4.);
+        ui.flick(
+            gpui::point(x, boxed.top() + gpui::px(6.)),
+            gpui::point(x, boxed.bottom() + gpui::px(40.)),
+            Duration::ZERO,
+        );
+        ui.draw();
+        let after = ui.bounds("ai-adding-text");
+        assert!(
+            (after.bottom() - boxed.bottom()).abs() <= gpui::px(12.),
+            "scrolled to its end: {after:?} in {boxed:?}"
+        );
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

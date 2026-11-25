@@ -35,6 +35,12 @@ pub struct ActivityView {
     mono: SharedString,
     /// The command shown and its output, drawn as a terminal draws them.
     viewer: Option<Entity<TermViewer>>,
+    /// The list of commands, and a drag of its scroll bar's thumb.
+    scroll: gpui::ScrollHandle,
+    scroll_drag: crate::scrollbar::Drag,
+    /// The same for what an addition waiting for the person would add.
+    adding_scroll: gpui::ScrollHandle,
+    adding_drag: crate::scrollbar::Drag,
 }
 
 impl Focusable for ActivityView {
@@ -79,6 +85,10 @@ impl ActivityView {
             shown: None,
             mono: SharedString::default(),
             viewer: None,
+            scroll: gpui::ScrollHandle::new(),
+            scroll_drag: Default::default(),
+            adding_scroll: gpui::ScrollHandle::new(),
+            adding_drag: Default::default(),
         }
     }
 
@@ -169,11 +179,12 @@ impl ActivityView {
         let going = all.iter().any(|a| a.end.is_none());
         let mut rows = div()
             .id("ai-activity-list")
+            .debug_selector(|| "ai-activity-list".into())
             .flex()
             .flex_col()
-            .flex_1()
-            .min_h_0()
-            .overflow_y_scroll();
+            .size_full()
+            .overflow_y_scroll()
+            .track_scroll(&self.scroll);
         let shown_list: Vec<&Arc<Activity>> = all.iter().rev().filter(|a| keep(a)).collect();
         if shown_list.is_empty() {
             rows = rows.child(
@@ -288,7 +299,11 @@ impl ActivityView {
                         )
                     }),
             )
-            .child(rows)
+            // The bar over the list, as the host list has it: the rows keep
+            // their full width.
+            .child(div().flex_1().min_h_0().relative().child(rows).child(
+                crate::scrollbar::overlay(self.scroll.clone(), self.scroll_drag.clone()),
+            ))
             .child(self.kept_part(all.iter().any(|a| a.end.is_some()), cx))
     }
 
@@ -495,22 +510,36 @@ impl ActivityView {
                     )
                 })
                 .when_some(a.adding.clone(), |d, text| {
-                    // What goes into the note, as it will read there.
+                    // What goes into the note, as it will read there; a long
+                    // one scrolls, by the bar every list has.
                     d.child(
                         div()
-                            .id("ai-adding")
-                            .debug_selector(|| "ai-adding".into())
-                            .max_h(px(240.))
-                            .overflow_y_scroll()
-                            .px(px(12.))
-                            .py(px(10.))
+                            .relative()
                             .rounded(px(8.))
                             .border_1()
                             .border_color(rgb(colors().line))
                             .bg(rgb(colors().page))
-                            .text_size(ui(12.5))
-                            .font_family(self.mono.clone())
-                            .child(text),
+                            .child(
+                                div()
+                                    .id("ai-adding")
+                                    .debug_selector(|| "ai-adding".into())
+                                    .max_h(px(240.))
+                                    .overflow_y_scroll()
+                                    .track_scroll(&self.adding_scroll)
+                                    .px(px(12.))
+                                    .py(px(10.))
+                                    .text_size(ui(12.5))
+                                    .font_family(self.mono.clone())
+                                    .child(
+                                        div()
+                                            .debug_selector(|| "ai-adding-text".into())
+                                            .child(text),
+                                    ),
+                            )
+                            .child(crate::scrollbar::overlay(
+                                self.adding_scroll.clone(),
+                                self.adding_drag.clone(),
+                            )),
                     )
                 })
                 .when(trusts, |d| {
