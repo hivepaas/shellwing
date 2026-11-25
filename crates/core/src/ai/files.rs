@@ -124,11 +124,82 @@ pub async fn serve(sftp: &Sftp, op: FileOp) -> Result<String, String> {
         }
         FileOp::Write { path, bytes, how } => {
             let path = resolve(sftp, &path).await?;
-            sftp.write_file(&path, &bytes, how)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(written(&path, &bytes, how))
+            // The folders it goes in, made first where they are not, as
+            // `mkdir -p` would.
+            let made = missing_folders(&path, |dir| async move {
+                sftp.stat(&dir)
+                    .await
+                    .map(|e| e.map(|e| e.is_dir()))
+                    .map_err(|e| e.to_string())
+            })
+            .await?;
+            for dir in &made {
+                sftp.mkdir(dir)
+                    .await
+                    .map_err(|e| format!("the folder {dir} was not made: {e}"))?;
+            }
+            if let Err(e) = sftp.write_file(&path, &bytes, how).await {
+                // The server's word for it is as plain as "Failure": what
+                // is there says why, where it can be looked at.
+                let there = sftp.lstat(&path).await;
+                let holder = sftp.stat(&sftp::parent(&path)).await;
+                let said = e.to_string();
+                return Err(match (there, holder) {
+                    (Ok(there), Ok(holder)) => {
+                        not_written(&path, how, there, holder.map(|h| h.is_dir()), &said)
+                    }
+                    _ => format!("{path} was not written: {said}"),
+                });
+            }
+            Ok(written(&path, &bytes, how, &made))
         }
+    }
+}
+
+/// The folders `path` goes in that are not there, outermost first, from
+/// what `is_dir` says of each (None: nothing is there); one that is a file
+/// is an error.
+async fn missing_folders<F, Fut>(path: &str, is_dir: F) -> Result<Vec<String>, String>
+where
+    F: Fn(String) -> Fut,
+    Fut: std::future::Future<Output = Result<Option<bool>, String>>,
+{
+    let mut missing = vec![];
+    let mut dir = sftp::parent(path);
+    loop {
+        match is_dir(dir.clone()).await? {
+            Some(true) => break,
+            Some(false) => return Err(format!("{dir} is not a folder")),
+            None if dir == "/" => break,
+            None => {
+                let up = sftp::parent(&dir);
+                missing.push(std::mem::replace(&mut dir, up));
+            }
+        }
+    }
+    missing.reverse();
+    Ok(missing)
+}
+
+/// Why a write to `path` failed, from what is there: the file (`there`),
+/// and whether its folder is one (`folder`: None when it is not there).
+/// The server's own words (`said`) when neither tells.
+fn not_written(
+    path: &str,
+    how: WriteHow,
+    there: Option<Kind>,
+    folder: Option<bool>,
+    said: &str,
+) -> String {
+    let parent = sftp::parent(path);
+    match (how, there, folder) {
+        (WriteHow::Create, Some(_), _) => format!(
+            "{path} is there already: mode create makes a new file only; overwrite or append write to one that is there"
+        ),
+        (_, Some(Kind::Dir), _) => format!("{path} is a folder, not a file"),
+        (_, None, None) => format!("the folder {parent} is not there"),
+        (_, None, Some(false)) => format!("{parent} is not a folder"),
+        _ => format!("{path} was not written: {said}"),
     }
 }
 
@@ -237,7 +308,7 @@ pub fn listing(path: &str, page: &Page) -> String {
             .modified
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .and_then(|d| chrono::DateTime::from_timestamp(d.as_secs() as i64, 0))
-            .map(|t| t.format("%Y-%m-%d %H:%M").to_string())
+            .map(|t| t.format("%Y-%m-%d %H:%M UTC").to_string())
             .unwrap_or_default();
         let size = if e.is_dir() {
             String::new()
@@ -278,13 +349,20 @@ pub fn read(path: &str, offset: u64, bytes: &[u8], total: u64) -> String {
 
 /// A write's report: its first line for the agent; what was written after
 /// it, as AI activity keeps it.
-pub fn written(path: &str, bytes: &[u8], how: WriteHow) -> String {
+/// What a write says back: what it did, with the folders it made for it
+/// (`made`), then what it wrote.
+pub fn written(path: &str, bytes: &[u8], how: WriteHow, made: &[String]) -> String {
     let verb = match how {
         WriteHow::Create => "Made",
         WriteHow::Overwrite => "Wrote",
         WriteHow::Append => "Added",
     };
     let mut out = format!("{verb} {} at {path}.", size(bytes.len() as u64));
+    match made {
+        [] => {}
+        [one] => out.push_str(&format!(" It made the folder {one} for it.")),
+        many => out.push_str(&format!(" It made the folders {} for it.", many.join(", "))),
+    }
     out.push_str("\n\n");
     match std::str::from_utf8(bytes) {
         Ok(t) if !t.contains('\0') => out.push_str(t),
@@ -341,8 +419,77 @@ mod tests {
         assert_eq!(lines[0], "/etc/nginx: 2 entries (1 folder, 1 file)");
         assert!(lines[1].starts_with("d  sites-enabled/  "), "{out}");
         assert!(
-            lines[2].starts_with("-  nginx.conf  2.0 KB  2023-11-"),
+            lines[2].starts_with("-  nginx.conf  2.0 KB  2023-11-") && lines[2].ends_with(" UTC"),
             "{out}"
+        );
+    }
+
+    /// The folders a write goes in, those not there, outermost first, as
+    /// `mkdir -p` makes them; a file on the way stops it.
+    #[tokio::test]
+    async fn the_folders_a_write_needs() {
+        let host = |dirs: &'static [&'static str], files: &'static [&'static str]| {
+            move |d: String| async move {
+                Ok(if dirs.contains(&d.as_str()) {
+                    Some(true)
+                } else if files.contains(&d.as_str()) {
+                    Some(false)
+                } else {
+                    None
+                })
+            }
+        };
+        let there = host(&["/", "/srv"], &["/srv/notes.txt"]);
+        assert_eq!(
+            missing_folders("/srv/app/conf/x.toml", there).await,
+            Ok(vec!["/srv/app".to_string(), "/srv/app/conf".to_string()])
+        );
+        assert_eq!(missing_folders("/srv/x.toml", there).await, Ok(vec![]));
+        assert_eq!(
+            missing_folders("/srv/notes.txt/x", there).await,
+            Err("/srv/notes.txt is not a folder".to_string())
+        );
+        // Nothing at all, not even /: it makes all but /.
+        let bare = host(&[], &[]);
+        assert_eq!(
+            missing_folders("/a/b", bare).await,
+            Ok(vec!["/a".to_string()])
+        );
+        // What cannot be looked at stops it, with why.
+        let refused = |_: String| async { Err::<Option<bool>, _>("Permission denied".to_string()) };
+        assert_eq!(
+            missing_folders("/x/y", refused).await,
+            Err("Permission denied".to_string())
+        );
+    }
+
+    /// A write that failed says why, where the server says only "Failure"
+    /// or "No such file".
+    #[test]
+    fn a_failed_write_says_why() {
+        let why =
+            |how, there, folder| not_written("/srv/app/x.conf", how, there, folder, "Failure");
+        assert_eq!(
+            why(WriteHow::Create, Some(Kind::File), Some(true)),
+            "/srv/app/x.conf is there already: mode create makes a new file only; overwrite or append write to one that is there"
+        );
+        assert_eq!(
+            why(WriteHow::Overwrite, None, None),
+            "the folder /srv/app is not there"
+        );
+        assert_eq!(
+            why(WriteHow::Append, None, Some(false)),
+            "/srv/app is not a folder"
+        );
+        assert_eq!(
+            why(WriteHow::Overwrite, Some(Kind::Dir), Some(true)),
+            "/srv/app/x.conf is a folder, not a file"
+        );
+        // Nothing there explains it (a permission, a full disk): the
+        // server's words.
+        assert_eq!(
+            why(WriteHow::Overwrite, Some(Kind::File), Some(true)),
+            "/srv/app/x.conf was not written: Failure"
         );
     }
 
@@ -419,8 +566,18 @@ mod tests {
             [0, 159, 146, 150]
         );
         assert!(decode("x", Some("hex")).is_err());
-        let w = written("/etc/x.conf", b"a = 1\n", WriteHow::Overwrite);
+        let w = written("/etc/x.conf", b"a = 1\n", WriteHow::Overwrite, &[]);
         assert_eq!(w.lines().next(), Some("Wrote 6 B at /etc/x.conf."));
+        let w = written(
+            "/srv/a/b/x",
+            b"x",
+            WriteHow::Create,
+            &["/srv/a".into(), "/srv/a/b".into()],
+        );
+        assert_eq!(
+            w.lines().next(),
+            Some("Made 1 B at /srv/a/b/x. It made the folders /srv/a, /srv/a/b for it.")
+        );
         assert_eq!(
             FileOp::Write {
                 path: "/x".into(),

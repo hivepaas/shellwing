@@ -1362,7 +1362,7 @@ they print:
     read them back do not say whose they are, and are not shown.
   - Reading it back is in AI activity too, as `activity`.
 - `list_dir(host, path, pattern, offset, limit)`: a folder's entries, a line
-  each, folders first, with their kind, size and when they changed. It says
+  each, folders first, with their kind, size and when they changed (UTC). It says
   first how many there are (folders and files), and a large folder comes a
   part at a time: 200 entries if not told, 1000 at the most, with where the
   rest begins. `pattern` keeps the names like it (`*.log`, `nginx*`: `*`
@@ -1373,7 +1373,9 @@ they print:
 - `write_file(host, path, content, encoding, mode)`: writes a file, as a new
   one (`create`), over what is there (`overwrite`, the default) or after it
   (`append`); `content` is text, or base64 with `encoding` `base64`; 8 MB at
-  the most.
+  the most. The folders it goes in are made where they are not, as
+  `mkdir -p` would, and its answer names them. One that failed says why: the
+  file is there already (`create`), or something on its way is not a folder.
 
 The file tools work over SFTP on the agent's own connection, a host given
 through a tab too; a path not starting with `/` is from the home folder.

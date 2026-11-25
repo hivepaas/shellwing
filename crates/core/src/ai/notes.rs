@@ -653,8 +653,7 @@ impl Hub {
                 }
                 Err(why) => End::Failed(why),
             };
-            running.end(end);
-            hub.ended(&running);
+            hub.finish(&running, end);
         });
         if let Ok(mut t) = job.task.lock() {
             *t = Some(task.abort_handle());
@@ -674,8 +673,7 @@ impl Hub {
             Job::new(id, client, "", hosts, label)
         };
         job.print(what.as_bytes());
-        job.end(End::Exited(Some(0)));
-        self.ended(&job);
+        self.finish(&job, End::Exited(Some(0)));
     }
 }
 

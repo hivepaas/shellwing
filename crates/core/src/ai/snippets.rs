@@ -382,8 +382,7 @@ impl Hub {
             Job::new(id, client, "", host, "list_snippets")
         };
         job.print(what.as_bytes());
-        job.end(End::Exited(Some(0)));
-        self.ended(&job);
+        self.finish(&job, End::Exited(Some(0)));
     }
 }
 

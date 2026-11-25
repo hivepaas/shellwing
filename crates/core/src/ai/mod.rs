@@ -122,6 +122,10 @@ pub struct Activity {
     /// host (reading notes).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub spec: Option<String>,
+    /// Seconds it ran, once it ended: the time it waited for the person
+    /// aside. None in what was logged before it was kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ran: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,6 +226,12 @@ struct JobState {
     cut: bool,
     /// How much of `out` the AI has read.
     read: usize,
+    /// The time it waited for the person, which is not running; and since
+    /// when it waits now.
+    waited: Duration,
+    waiting_since: Option<Instant>,
+    /// How long it ran, once it ended.
+    took: Option<Duration>,
 }
 
 /// What a job has to say now.
@@ -259,10 +269,14 @@ impl Job {
                     snippet: None,
                     client_id: Some(client.id.clone()),
                     spec: (!spec.is_empty()).then(|| spec.to_string()),
+                    ran: None,
                 },
                 out: vec![],
                 cut: false,
                 read: 0,
+                waited: Duration::ZERO,
+                waiting_since: None,
+                took: None,
             }),
             changed: Notify::new(),
             task: Mutex::new(None),
@@ -291,9 +305,26 @@ impl Job {
 
     fn set_waiting(&self, why: Option<String>) {
         if let Ok(mut st) = self.state.lock() {
+            match (&why, st.waiting_since) {
+                (Some(_), None) => st.waiting_since = Some(Instant::now()),
+                (None, Some(since)) => {
+                    st.waited += since.elapsed();
+                    st.waiting_since = None;
+                }
+                _ => {}
+            }
             st.activity.waiting = why;
         }
         self.changed.notify_waiters();
+    }
+
+    /// How long it ran so far, or in all once it ended: the time it waited
+    /// for the person aside.
+    fn ran(&self, st: &JobState) -> Duration {
+        st.took.unwrap_or_else(|| {
+            let waiting = st.waiting_since.map_or(Duration::ZERO, |s| s.elapsed());
+            self.began.elapsed().saturating_sub(st.waited + waiting)
+        })
     }
 
     pub fn activity(&self) -> Activity {
@@ -321,14 +352,25 @@ impl Job {
         self.changed.notify_waiters();
     }
 
+    /// Its end, told at once: a job on its own, in tests ([`Hub::finish`]
+    /// ends one the activity keeps).
+    #[cfg(test)]
     fn end(&self, end: End) {
+        self.set_end(end);
+        self.changed.notify_waiters();
+    }
+
+    /// Its end, kept, with how long it ran; told to no one yet.
+    fn set_end(&self, end: End) {
         if let Ok(mut st) = self.state.lock()
             && st.activity.end.is_none()
         {
+            let took = self.ran(&st);
+            st.took = Some(took);
+            st.activity.ran = Some(took.as_secs());
             st.activity.end = Some(end);
             st.activity.ended = Some(now());
         }
-        self.changed.notify_waiters();
     }
 
     /// Waits up to `most` for its end (`for_end`), or else for output not
@@ -375,13 +417,15 @@ impl Job {
         Said {
             new,
             end: st.activity.end.clone(),
-            seconds: self.began.elapsed().as_secs(),
+            seconds: self.ran(&st).as_secs(),
             cut: st.cut,
             waiting: st.activity.waiting.is_some(),
         }
     }
 
-    pub fn stop(&self) {
+    /// Stops what runs it, and what waits for the person; its end is
+    /// [`Hub::stop_job`]'s.
+    fn halt(&self) {
         if let Some(t) = self.task.lock().ok().and_then(|mut t| t.take()) {
             t.abort();
         }
@@ -390,7 +434,6 @@ impl Job {
             a.take();
         }
         self.set_waiting(None);
-        self.end(End::Stopped);
     }
 }
 
@@ -686,8 +729,7 @@ impl Hub {
         job.set_waiting(None);
         match said {
             Approval::Refuse => {
-                job.end(End::Refused);
-                hub.ended(job);
+                hub.finish(job, End::Refused);
                 return false;
             }
             Approval::Session => {
@@ -876,8 +918,7 @@ impl Hub {
                     }
                 }
             };
-            running.end(end);
-            hub.ended(&running);
+            hub.finish(&running, end);
         });
         if let Ok(mut t) = job.task.lock() {
             *t = Some(task.abort_handle());
@@ -939,8 +980,7 @@ impl Hub {
                 }
                 Err(why) => End::Failed(why),
             };
-            running.end(end);
-            hub.ended(&running);
+            hub.finish(&running, end);
         });
         if let Ok(mut t) = job.task.lock() {
             *t = Some(task.abort_handle());
@@ -967,13 +1007,13 @@ impl Hub {
     /// Stops `job`: in its tab too, if it was typed there.
     pub fn stop_job(&self, job: &Job) {
         let was_typed = job.tab && !job.waiting();
-        job.stop();
+        job.halt();
         if was_typed {
             let _ = self
                 .events
                 .try_send(HubEvent::TabStop { id: job.id.clone() });
         }
-        self.ended(job);
+        self.finish(job, End::Stopped);
     }
 
     /// What job `id`, typed into a tab, printed there: plain text.
@@ -989,8 +1029,7 @@ impl Hub {
     pub fn tab_end(&self, id: &str, end: End) {
         let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
         if let Some(j) = job.filter(|j| !j.ended()) {
-            j.end(end);
-            self.ended(&j);
+            self.finish(&j, end);
         }
     }
 
@@ -1038,6 +1077,14 @@ impl Hub {
             id: id.to_string(),
             connected,
         });
+    }
+
+    /// Ends `job` so: kept in the activity first, then told to whoever
+    /// waits for it, so that what they ask next finds it there.
+    fn finish(&self, job: &Job, end: End) {
+        job.set_end(end);
+        self.ended(job);
+        job.changed.notify_waiters();
     }
 
     /// A job ended: kept in the activity, and the log.
@@ -1209,6 +1256,7 @@ mod tests {
                     snippet: None,
                     client_id: None,
                     spec: None,
+                    ran: None,
                 };
                 serde_json::to_string(&a).expect("json") + "\n"
             })
@@ -1240,8 +1288,7 @@ mod tests {
         };
         assert_eq!(id, "j-8", "after the highest kept");
         let job = Job::new(id, &client(), "h", "h", "echo new");
-        job.end(End::Exited(Some(0)));
-        hub.ended(&job);
+        hub.finish(&job, End::Exited(Some(0)));
         let ids: Vec<String> = hub.activity().into_iter().map(|a| a.id).collect();
         assert_eq!(ids, ["j-1", "j-7", "j-2", "j-8"], "kept, last");
         let logged = std::fs::read_to_string(&path).expect("log");
@@ -1316,6 +1363,19 @@ mod tests {
         );
         assert_eq!(risky("systemctl status nginx", &p), None);
         assert_eq!(risky("anything", &[]), None);
+    }
+
+    /// How long it ran stops growing once it ended: asked later, it says
+    /// the same.
+    #[tokio::test]
+    async fn its_time_is_kept_at_its_end() {
+        let job = Job::new("j-1".into(), &client(), "web", "web", "x");
+        tokio::time::sleep(Duration::from_millis(30)).await;
+        job.end(End::Exited(Some(0)));
+        let took = job.ran(&job.state.lock().expect("state"));
+        assert!(took >= Duration::from_millis(30), "{took:?}");
+        tokio::time::sleep(Duration::from_millis(60)).await;
+        assert_eq!(job.ran(&job.state.lock().expect("state")), took);
     }
 
     #[tokio::test]
