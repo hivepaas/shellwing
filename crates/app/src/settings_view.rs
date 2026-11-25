@@ -139,6 +139,9 @@ pub struct Snap {
 
 pub struct SettingsView {
     focus: FocusHandle,
+    /// The page's scroll, and its bar's thumb held: GPUI draws no bar.
+    content_scroll: gpui::ScrollHandle,
+    content_drag: crate::scrollbar::Drag,
     /// What the app has to say while Settings covers the tabs (where it
     /// would say it otherwise), and which saying it is, to put it away.
     notice: Option<(Notice, u64)>,
@@ -485,6 +488,8 @@ impl SettingsView {
         let sync_form = SyncForm::new(&snap.settings.sync, cx);
         SettingsView {
             notice: None,
+            content_scroll: gpui::ScrollHandle::new(),
+            content_drag: Default::default(),
             notices: 0,
             sync_form,
             gradients: Default::default(),
@@ -2972,23 +2977,36 @@ impl Render for SettingsView {
                     .min_h_0()
                     .flex()
                     .child(nav)
+                    // The page, and the bar every list has over it: a long
+                    // page (keys, snippets, notes…) shows how far it goes.
                     .child(
                         div()
-                            .id("settings-content")
-                            .debug_selector(|| "settings-content".into())
                             .flex_1()
                             .min_w_0()
-                            .overflow_y_scroll()
-                            .px(px(24.))
-                            .py(px(20.))
-                            // Every page as wide as the others.
+                            .h_full()
+                            .relative()
                             .child(
                                 div()
-                                    .debug_selector(|| "settings-body".into())
-                                    .w_full()
-                                    .max_w(px(PAGE_WIDTH))
-                                    .child(content),
-                            ),
+                                    .id("settings-content")
+                                    .debug_selector(|| "settings-content".into())
+                                    .size_full()
+                                    .overflow_y_scroll()
+                                    .track_scroll(&self.content_scroll)
+                                    .px(px(24.))
+                                    .py(px(20.))
+                                    // Every page as wide as the others.
+                                    .child(
+                                        div()
+                                            .debug_selector(|| "settings-body".into())
+                                            .w_full()
+                                            .max_w(px(PAGE_WIDTH))
+                                            .child(content),
+                                    ),
+                            )
+                            .child(crate::scrollbar::overlay(
+                                self.content_scroll.clone(),
+                                self.content_drag.clone(),
+                            )),
                     )
                     // Appearance: the terminal as chosen, beside what scrolls.
                     .when(self.page == Page::Appearance, |d| {
