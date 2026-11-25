@@ -548,7 +548,7 @@ scenario!(
     /// A whole group is given at once, a grant for each host; one given
     /// again is said to be replaced, and is. Paused, a host stops what it
     /// ran, is still listed, says it is paused and runs nothing; its tile
-    /// greys. Resumed, it runs again.
+    /// loses its mark. Resumed, it runs again.
     many_hosts_given_at_once_and_one_paused,
     |ui| {
         let token = three_hosts(ui);
@@ -590,7 +590,7 @@ scenario!(
         assert!(saved.contains("\"paused\""), "the pause is kept: {saved}");
 
         ui.click("settings-close");
-        assert!(ui.find("ai-badge-paused:db").is_some(), "its tile greys");
+        assert!(ui.find("ai-badge:db").is_none(), "its tile's mark goes");
         assert!(ui.find("ai-badge:web").is_some());
 
         ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
@@ -598,12 +598,15 @@ scenario!(
         assert!(ui.find("ai-grant-paused:db").is_none());
         let (said, error) = c.tool("run", json!({"host": "db", "command": "true"}));
         assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge:db").is_some(), "its mark is back");
     }
 );
 
 scenario!(
     /// Hosts picked in the host list go to the form, ticked. A client paused
-    /// is told so whatever it asks, and its hosts' tiles grey; resumed, it
+    /// is told so whatever it asks, and its hosts' tiles lose their mark;
+    /// resumed, it
     /// reaches them again, its grants as they were.
     picked_hosts_given_and_the_client_paused,
     |ui| {
@@ -631,8 +634,7 @@ scenario!(
         let (said, error) = c.tool("run", json!({"host": "web", "command": "true"}));
         assert!(error && said.contains("Codex CLI is paused"), "{said}");
         ui.click("settings-close");
-        assert!(ui.find("ai-badge-paused:web").is_some());
-        assert!(ui.find("ai-badge-paused:cache").is_some());
+        assert!(ui.find("ai-badge:web").is_none() && ui.find("ai-badge:cache").is_none());
 
         ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
         ui.click("ai-pause-client:Codex CLI");
@@ -640,5 +642,7 @@ scenario!(
         assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
         let (hosts, _) = c.tool("list_hosts", json!({}));
         assert_eq!(hosts.lines().count(), 2, "{hosts}");
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge:web").is_some() && ui.find("ai-badge:cache").is_some());
     }
 );
