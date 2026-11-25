@@ -234,6 +234,19 @@ impl Workspace {
         }
     }
 
+    /// The person's answer to `id`, which waits for sudo's password: typed,
+    /// or the host's saved one (None); kept a while when `remember`.
+    pub fn ai_answer_sudo(
+        &self,
+        id: &str,
+        typed: Option<zeroize::Zeroizing<String>>,
+        remember: bool,
+    ) {
+        if let Some(a) = &self.ai {
+            a.hub.answer_sudo(id, typed, remember);
+        }
+    }
+
     /// How much the activity's log keeps on this computer, and the most it
     /// may (bytes).
     pub fn ai_kept(&self) -> Option<(u64, u64)> {

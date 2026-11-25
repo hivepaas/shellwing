@@ -76,6 +76,9 @@ t6e8860fa = { $name } kod parçacığı
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client }, { $host } ana makinesine ulaşmak istiyor ve { $shows } known_hosts içinde olmayan bir ana makine anahtarı gösteriyor. Yalnızca sahibinin size verdiği şekliyle o ana makinenin anahtarıysa güvenin: known_hosts içine kaydedilir ve onu bekleyen işlem devam eder.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client }, bunu { $host } üzerinde sudo parolasıyla çalıştırmak istiyor. Her seferinde sizi bekler: parolayı yazın, { $client } onu asla görmez.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client }, { $host } için bu kod parçacığını öneriyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her öneri bekler. Eklendiğinde Enter olmadan yazılır, böylece çalışmadan önce okursunuz.
 
@@ -106,8 +109,18 @@ tbea0b112 = Reddet
 # Add it
 t6cac0f01 = Ekle
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] { $n } dakika hatırla
+       *[other] { $n } dakika hatırla
+    }
+
 # Run it
 t72430853 = Çalıştır
+
+# Use the saved password
+ta3f63985 = Kayıtlı parolayı kullan
 
 # Run it, and this command again this session
 t2efebee7 = Çalıştır ve bu oturumda bu komutu yeniden de çalıştır
@@ -421,6 +434,15 @@ tc60b799b = Bu bilgisayarda düz metin olarak, { $part } MB’lık parçalarla s
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = En az { $least } MB: o zamana kadar { $mb } MB kalır.
+
+# sudo's password
+t056c2757 = sudo parolası
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = sudo parolası gereken bir aracı komutu her seferinde parolayı yazmanızı bekler; aracı onu asla görmez. İzin verilirse o aracı için o sunucuda bu süre boyunca hatırlanabilir, en fazla { $most } dakika; 0: asla hatırlanmaz.
+
+# minutes
+tadbcc5ee = dakika
 
 # unlock its windows
 t7c69953e = pencerelerinin kilidini açmak

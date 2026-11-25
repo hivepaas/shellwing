@@ -189,6 +189,8 @@ pub struct AiView {
     risky: Entity<TextInput>,
     /// How much AI activity this computer keeps, in MB.
     activity_mb: Entity<TextInput>,
+    /// How long sudo's password may be kept for an agent, in minutes.
+    sudo_minutes: Entity<TextInput>,
     mono: SharedString,
 }
 
@@ -252,6 +254,26 @@ impl AiView {
             }
         })
         .detach();
+        let minutes = workspace
+            .upgrade()
+            .map(|w| w.read(cx).ai_snapshot(cx).state.sudo_minutes())
+            .unwrap_or(shellwing_config::SUDO_MINUTES);
+        let sudo_minutes = cx.new(|cx| {
+            let mut i = TextInput::new("", cx);
+            i.set_text(&minutes.to_string(), 0..0, cx);
+            i
+        });
+        // Kept as it is typed, once it is a number of minutes that may be.
+        cx.subscribe(&sudo_minutes, |v: &mut AiView, input, _: &Changed, cx| {
+            let typed: Option<u32> = input.read(cx).text().trim().parse().ok();
+            match typed.filter(|n| *n <= shellwing_config::MOST_SUDO_MINUTES) {
+                Some(m) => v.change(cx, |s| {
+                    s.sudo_minutes = (m != shellwing_config::SUDO_MINUTES).then_some(m)
+                }),
+                None => cx.notify(),
+            }
+        })
+        .detach();
         AiView {
             workspace,
             focus: cx.focus_handle(),
@@ -263,6 +285,7 @@ impl AiView {
             filter,
             risky,
             activity_mb,
+            sudo_minutes,
             mono: SharedString::default(),
         }
     }
@@ -1482,6 +1505,7 @@ impl Render for AiView {
             .child(self.clients_part(&snap, cx))
             .child(self.grants_part(&snap, window, cx))
             .child(self.modes_part(&snap, window, cx))
+            .child(self.sudo_part(window, cx))
             .child(self.activity_part(&snap, window, cx))
     }
 }
@@ -1573,6 +1597,58 @@ impl AiView {
     }
 
     /// Keeps `mb` (at least [`LEAST_MB`]) and shows it.
+    /// How long sudo's password, given for an agent's command, may be kept
+    /// for that client on that host.
+    fn sudo_part(&self, window: &Window, cx: &mut Context<Self>) -> gpui::Div {
+        let typed = self.sudo_minutes.read(cx).text().trim().to_string();
+        let wrong = typed
+            .parse::<u32>()
+            .map_or(true, |n| n > shellwing_config::MOST_SUDO_MINUTES);
+        let focused = self.sudo_minutes.focus_handle(cx).is_focused(window);
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(10.))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(2.))
+                    .child(heading(&tr!("sudo's password")))
+                    .child(hint_text(&tr!(
+                        "An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.",
+                        most = shellwing_config::MOST_SUDO_MINUTES.to_string()
+                    ))),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(6.))
+                    .child(
+                        div()
+                            .debug_selector(|| "ai-sudo-minutes".into())
+                            .w(px(90.))
+                            .h(px(30.))
+                            .px(px(8.))
+                            .flex()
+                            .items_center()
+                            .rounded(px(6.))
+                            .border_1()
+                            .border_color(rgb(if wrong {
+                                colors().bad
+                            } else if focused {
+                                colors().accent
+                            } else {
+                                colors().field_edge
+                            }))
+                            .bg(rgb(colors().field))
+                            .child(self.sudo_minutes.clone()),
+                    )
+                    .child(label_text(&tr!("minutes"))),
+            )
+    }
+
     fn set_activity_mb(&mut self, mb: u32, cx: &mut Context<Self>) {
         let mb = mb.max(LEAST_MB);
         self.activity_mb

@@ -76,6 +76,9 @@ t6e8860fa = El fragmento { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } quiere llegar a { $host }, y { $shows } muestra una clave del servidor que no está en known_hosts. Confía en ella solo si es la clave de ese servidor, tal como te la dio su responsable: se guarda en known_hosts y lo que la espera continúa.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } quiere ejecutar esto en { $host } con la contraseña de sudo. Te espera cada vez: escribe la contraseña, que { $client } nunca ve.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } sugiere este fragmento para { $host }. Te espera: donde los de riesgo esperan, toda sugerencia espera. Añadido, se escribe sin Enter, para que lo leas antes de que se ejecute.
 
@@ -106,8 +109,18 @@ tbea0b112 = Rechazar
 # Add it
 t6cac0f01 = Añadir
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] Recordarla { $n } minuto
+       *[other] Recordarla { $n } minutos
+    }
+
 # Run it
 t72430853 = Ejecutar
+
+# Use the saved password
+ta3f63985 = Usar la contraseña guardada
 
 # Run it, and this command again this session
 t2efebee7 = Ejecutar, y este comando de nuevo en esta sesión
@@ -421,6 +434,15 @@ tc60b799b = Se guarda en este equipo, como texto sin cifrar, en partes de { $par
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Al menos { $least } MB: hasta entonces se mantienen { $mb } MB.
+
+# sudo's password
+t056c2757 = Contraseña de sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Un comando de un agente que necesita la contraseña de sudo espera a que la escribas, cada vez; el agente nunca la ve. Permitida, puede recordarse para ese agente en ese host este tiempo, como mucho { $most } minutos; 0: nunca se recuerda.
+
+# minutes
+tadbcc5ee = minutos
 
 # unlock its windows
 t7c69953e = desbloquear sus ventanas

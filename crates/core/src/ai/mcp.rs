@@ -24,8 +24,9 @@ const INSTRUCTIONS: &str = "shellwing gives you the hosts its user chose, and si
 you never see a key or a password. list_hosts says which hosts you have. run starts a command \
 on one, as `ssh host 'command'` would, with no terminal, and waits up to wait_seconds for its \
 end; a longer one goes on as a job, whose new output job_output gives you as it comes. \
-job_stop stops it. A command that asks for input (a sudo password, y/n) gets none: use \
-non-interactive forms (sudo -n, apt-get -y). The user sees every command you run, and may \
+job_stop stops it. A command that asks for input (y/n) gets none: use non-interactive forms \
+(apt-get -y). For sudo, try sudo -n first; where sudo needs a password, run the command with \
+sudo: true and the user gives it, without you ever seeing it. The user sees every command you run, and may \
 have one wait until they allow it: run then says so, and job_output tells you once it ran. \
 list_dir, read_file and write_file work on a host's files over SFTP, where the user gave you \
 reading or writing: read_file gives text as it is and anything else in base64, a large file a \
@@ -198,6 +199,7 @@ pub fn tools() -> Value {
                 "properties": {
                     "host": {"type": "string", "description": "The host's name, as list_hosts gives it."},
                     "command": {"type": "string", "description": "The command, run by the host's login shell."},
+                    "sudo": {"type": "boolean", "description": "Where sudo needs a password: the user is asked for it each time (you never see it), and sudo in the command gets it."},
                     "wait_seconds": wait,
                 },
                 "required": ["host", "command"],
@@ -527,9 +529,21 @@ async fn call(
         "run" => {
             let host = text_arg(args, "host")?;
             let command = text_arg(args, "command")?;
-            let job = hub.run(client, &host, &command).map_err(Problem::Tool)?;
+            let sudo = args.get("sudo").and_then(Value::as_bool).unwrap_or(false);
+            let job = if sudo {
+                hub.run_sudo(client, &host, &command)
+            } else {
+                hub.run(client, &host, &command)
+            }
+            .map_err(Problem::Tool)?;
             let said = follow(&job, wait_arg(args), true, progress, tx).await;
-            Ok(report(&job.id, &said))
+            let mut out = report(&job.id, &said);
+            // Through a tab, sudo asks the user there.
+            if !sudo && !job.tab && super::sudo::wanted_password(&said.new) {
+                out.push_str("\n\n");
+                out.push_str(super::sudo::HINT);
+            }
+            Ok(out)
         }
         "list_snippets" => hub
             .list_snippets(client, &text_arg(args, "host")?)

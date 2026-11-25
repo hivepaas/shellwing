@@ -55,10 +55,20 @@ pub struct AiState {
     /// [`AI_ACTIVITY_MB`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity_mb: Option<u32>,
+    /// How long sudo's password, allowed for an agent's command, may be
+    /// kept for that client on that host, in minutes; 0: never. None:
+    /// [`SUDO_MINUTES`] (docs/design/ai-sudo.md).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sudo_minutes: Option<u32>,
 }
 
 /// How much AI activity is kept when the person has said nothing, in MB.
 pub const AI_ACTIVITY_MB: u32 = 32;
+
+/// How long sudo's password is kept for an agent when the person has said
+/// nothing, and the most it may be, in minutes.
+pub const SUDO_MINUTES: u32 = 15;
+pub const MOST_SUDO_MINUTES: u32 = 480;
 
 /// What makes a command risky when the person has said nothing.
 pub const DEFAULT_RISKY: &[&str] = &[
@@ -107,6 +117,13 @@ impl AiState {
         self.risky
             .clone()
             .unwrap_or_else(|| DEFAULT_RISKY.iter().map(|s| s.to_string()).collect())
+    }
+
+    /// How long sudo's password may be kept now, in minutes; 0: never.
+    pub fn sudo_minutes(&self) -> u32 {
+        self.sudo_minutes
+            .unwrap_or(SUDO_MINUTES)
+            .min(MOST_SUDO_MINUTES)
     }
 }
 

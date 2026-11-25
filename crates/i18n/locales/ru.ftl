@@ -76,6 +76,9 @@ t6e8860fa = Сниппет { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } хочет подключиться к { $host }, и { $shows } показывает ключ хоста, которого нет в known_hosts. Доверяйте ему, только если это ключ этого хоста, полученный от его владельца: он сохранится в known_hosts, и то, что его ждёт, продолжится.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } хочет выполнить это на { $host } с паролем sudo. Он каждый раз ждёт вас: введите пароль, { $client } его никогда не увидит.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } предлагает этот сниппет для { $host }. Он ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое предложение. После добавления он вводится без Enter, чтобы вы прочитали его перед выполнением.
 
@@ -106,8 +109,20 @@ tbea0b112 = Отклонить
 # Add it
 t6cac0f01 = Добавить
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] Запомнить на { $n } минуту
+        [few] Запомнить на { $n } минуты
+        [many] Запомнить на { $n } минут
+       *[other] Запомнить на { $n } минуты
+    }
+
 # Run it
 t72430853 = Выполнить
+
+# Use the saved password
+ta3f63985 = Использовать сохранённый пароль
 
 # Run it, and this command again this session
 t2efebee7 = Выполнить, и эту команду снова в этом сеансе
@@ -429,6 +444,15 @@ tc60b799b = Хранится на этом компьютере открытым
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Не меньше { $least } МБ: пока остаётся { $mb } МБ.
+
+# sudo's password
+t056c2757 = Пароль sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Команда агента, которой нужен пароль sudo, каждый раз ждёт, пока вы его введёте; агент его никогда не видит. Разрешённый пароль можно запомнить для этого агента на этом хосте на это время, не более { $most } минут; 0 — никогда не запоминать.
+
+# minutes
+tadbcc5ee = минут
 
 # unlock its windows
 t7c69953e = разблокировать свои окна

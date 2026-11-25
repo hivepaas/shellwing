@@ -242,6 +242,9 @@ impl Hub {
         if let Ok(mut inner) = self.inner.lock() {
             inner.locked = locked;
         }
+        if locked {
+            self.forget_sudo();
+        }
     }
 
     /// The names of the hosts `client` may read the notes of now, and

@@ -76,6 +76,9 @@ t6e8860fa = Das Snippet { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } möchte { $host } erreichen, und { $shows } zeigt einen Host-Schlüssel, der nicht in known_hosts steht. Vertraue ihm nur, wenn es der Schlüssel dieses Hosts ist, wie ihn dir sein Betreiber gegeben hat: Er wird in known_hosts gespeichert, und was auf ihn wartet, geht weiter.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } möchte dies auf { $host } mit dem sudo-Passwort ausführen. Es wartet jedes Mal auf dich: Gib das Passwort ein, das { $client } nie sieht.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } schlägt dieses Snippet für { $host } vor. Es wartet auf dich: Wo riskante Befehle warten, wartet jeder Vorschlag. Hinzugefügt wird es ohne Enter eingegeben, damit du es vor dem Ausführen liest.
 
@@ -106,8 +109,18 @@ tbea0b112 = Ablehnen
 # Add it
 t6cac0f01 = Hinzufügen
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] { $n } Minute merken
+       *[other] { $n } Minuten merken
+    }
+
 # Run it
 t72430853 = Ausführen
+
+# Use the saved password
+ta3f63985 = Gespeichertes Passwort verwenden
 
 # Run it, and this command again this session
 t2efebee7 = Ausführen, und diesen Befehl in dieser Sitzung auch künftig
@@ -421,6 +434,15 @@ tc60b799b = Auf diesem Computer als Klartext gespeichert, in Teilen zu { $part }
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Mindestens { $least } MB: bis dahin bleiben es { $mb } MB.
+
+# sudo's password
+t056c2757 = sudo-Passwort
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Ein Befehl eines Agenten, der das sudo-Passwort braucht, wartet jedes Mal, bis du es eingibst; der Agent sieht es nie. Erlaubt, kann es für diesen Agenten auf diesem Host so lange gemerkt werden, höchstens { $most } Minuten; 0: nie gemerkt.
+
+# minutes
+tadbcc5ee = Minuten
 
 # unlock its windows
 t7c69953e = seine Fenster zu entsperren

@@ -1345,6 +1345,17 @@ they print:
   output (stdout and stderr as they came, up to 1 MB) and the exit status. A
   command still running goes on as a job: the agent gets its output so far and
   its id.
+  - `sudo: true`, where sudo needs a password, on a host given in the
+    background: the command waits for you, whatever happens to a command,
+    with a field for sudo's password (and *Use the saved password* when the
+    vault keeps one for the host). It goes in on the command's input, read by
+    sudo as its askpass, as on *Run on hosts*: the agent never sees it, and no
+    command line or log holds it. *Remember it for 15 minutes* keeps it for
+    that agent on that host until then, so its next sudo commands there go as
+    any command does; *Settings › AI* says how long (at most 480 minutes; 0:
+    never kept). Locking shellwing, quitting, or pausing or taking back the
+    grant forgets it. A command that ran into sudo's question without it tells
+    the agent to ask so. Through a tab, sudo asks you in the tab instead.
 - `job_output(job, wait_seconds)`: what the job printed since the agent last
   asked, waiting for something new when there is nothing yet. So the agent
   follows a long command a few seconds behind it. A client that asks for

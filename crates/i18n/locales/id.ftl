@@ -76,6 +76,9 @@ t6e8860fa = Snippet { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } ingin menjangkau { $host }, dan { $shows } menunjukkan kunci host yang tidak ada di known_hosts. Percayai hanya jika itu kunci host tersebut, seperti yang diberikan pemiliknya kepada Anda: kunci disimpan di known_hosts, dan yang menunggunya berlanjut.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } ingin menjalankan ini di { $host } dengan kata sandi sudo. Ini selalu menunggu Anda: ketik kata sandinya, yang tidak pernah dilihat { $client }.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } menyarankan snippet ini untuk { $host }. Ini menunggu Anda: jika perintah berisiko menunggu, setiap saran juga menunggu. Setelah ditambahkan, ini diketik tanpa Enter agar Anda membacanya sebelum dijalankan.
 
@@ -106,8 +109,17 @@ tbea0b112 = Tolak
 # Add it
 t6cac0f01 = Tambahkan
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] Ingat selama { $n } menit
+    }
+
 # Run it
 t72430853 = Jalankan
+
+# Use the saved password
+ta3f63985 = Pakai kata sandi tersimpan
 
 # Run it, and this command again this session
 t2efebee7 = Jalankan, dan perintah ini lagi di sesi ini
@@ -417,6 +429,15 @@ tc60b799b = Disimpan di komputer ini sebagai teks biasa, dalam bagian { $part } 
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Paling sedikit { $least } MB: sampai itu, tetap { $mb } MB.
+
+# sudo's password
+t056c2757 = Kata sandi sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Perintah agen yang memerlukan kata sandi sudo selalu menunggu Anda mengetiknya; agen tidak pernah melihatnya. Jika diizinkan, kata sandi dapat diingat untuk agen itu di host itu selama ini, paling lama { $most } menit; 0: tidak pernah diingat.
+
+# minutes
+tadbcc5ee = menit
 
 # unlock its windows
 t7c69953e = membuka kunci jendelanya

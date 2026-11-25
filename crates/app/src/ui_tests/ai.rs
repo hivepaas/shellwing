@@ -1044,6 +1044,69 @@ scenario!(
 );
 
 scenario!(
+    /// sudo's password, on a host given in the background: a command that
+    /// needs it says how to ask; asked, it waits for the person though the
+    /// grant runs freely, who types it (the agent never sees it) and may keep
+    /// it a while, so the next sudo run goes at once.
+    an_ai_runs_sudo_with_the_password_typed,
+    |ui| {
+        let token = given_web_may(ui, "Free", "background", &[]);
+        // A stand-in for sudo, first in PATH: it asks its askpass, as sudo -A
+        // does, and runs the command for the password `pa ss`.
+        let sudo = ui.config_dir().join("remote-home").join("sudo");
+        std::fs::write(
+            &sudo,
+            "#!/bin/sh\n\
+             [ \"$1\" = -A ] || { echo 'sudo: a terminal is required to read the password' >&2; exit 1; }\n\
+             shift; [ \"$1\" = -p ] && { prompt=$2; shift 2; }\n\
+             pw=$(\"$SUDO_ASKPASS\" \"$prompt\")\n\
+             [ \"$pw\" = 'pa ss' ] && exec \"$@\"\n\
+             echo 'sudo: 3 incorrect password attempts' >&2; exit 1\n",
+        )
+        .expect("sudo");
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&sudo, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+        }
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "sudo echo as root", "wait_seconds": 15}));
+        assert!(said.contains("run the command again with sudo: true"), "says how: {said}");
+
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "sudo echo as root", "sudo": true, "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "waits though it runs freely: {said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        assert!(ui.find("ai-allow-session").is_none(), "no session for it");
+        assert!(ui.find("ai-sudo-saved").is_none(), "no saved password to offer");
+        ui.click("ai-sudo-password");
+        ui.type_text("pa ss");
+        ui.click("ai-sudo-remember");
+        ui.click("ai-allow");
+        let mut rest = String::new();
+        for _ in 0..5 {
+            let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+            rest.push_str(&said);
+            if said.starts_with("exit") {
+                break;
+            }
+        }
+        assert!(rest.starts_with("exit 0") && rest.contains("as root"), "{rest}");
+        assert!(!rest.contains("pa ss"), "{rest}");
+
+        // Kept a while: the next goes at once.
+        let (said, _) = c.tool_in(ui, "run", json!({"host": "web", "command": "sudo echo again", "sudo": true, "wait_seconds": 15}));
+        assert!(said.starts_with("exit 0") && said.contains("again"), "kept: {said}");
+        let log = std::fs::read_to_string(ui.config_dir().join("state/ai-activity.jsonl")).unwrap_or_default();
+        assert!(!log.contains("pa ss"), "the password is in no log");
+
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Ai, window, cx));
+        assert!(ui.find("ai-sudo-minutes").is_some(), "how long it is kept, in Settings");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

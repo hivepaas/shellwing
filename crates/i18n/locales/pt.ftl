@@ -76,6 +76,9 @@ t6e8860fa = O trecho { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } quer alcançar { $host }, e { $shows } mostra uma chave de servidor que não está em known_hosts. Confie nela só se for a chave desse servidor, como o responsável por ele a passou para você: ela é guardada em known_hosts, e o que espera por ela continua.
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } quer executar isto em { $host } com a senha do sudo. Ele espera por você toda vez: digite a senha, que { $client } nunca vê.
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } sugere este trecho para { $host }. Ele espera por você: onde os arriscados esperam, toda sugestão espera. Adicionado, é digitado sem Enter, para você ler antes de executar.
 
@@ -106,8 +109,18 @@ tbea0b112 = Recusar
 # Add it
 t6cac0f01 = Acrescentar
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+        [one] Lembrar por { $n } minuto
+       *[other] Lembrar por { $n } minutos
+    }
+
 # Run it
 t72430853 = Executar
+
+# Use the saved password
+ta3f63985 = Usar a senha salva
 
 # Run it, and this command again this session
 t2efebee7 = Executar, e este comando de novo nesta sessão
@@ -421,6 +434,15 @@ tc60b799b = Guardada neste computador, em texto simples, em partes de { $part } 
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Pelo menos { $least } MB: até lá, ficam { $mb } MB.
+
+# sudo's password
+t056c2757 = Senha do sudo
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = Um comando de um agente que precisa da senha do sudo espera você digitá-la, toda vez; o agente nunca a vê. Permitida, ela pode ser lembrada para esse agente nesse host por este tempo, no máximo { $most } minutos; 0: nunca lembrada.
+
+# minutes
+tadbcc5ee = minutos
 
 # unlock its windows
 t7c69953e = desbloquear suas janelas

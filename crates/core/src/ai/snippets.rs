@@ -251,7 +251,16 @@ impl Hub {
         }
         if s.needs.is_empty() {
             let always = (!s.enter).then(|| LOOK.to_string());
-            return self.run_with(client, host, &command, always, Some(s.name.clone()), None);
+            return self.run_with(
+                client,
+                host,
+                &command,
+                super::RunWith {
+                    always,
+                    snippet: Some(s.name.clone()),
+                    ..Default::default()
+                },
+            );
         }
         let (names, envs) = self.env_run(&s.needs, &command)?;
         // Whatever the mode: the person sees which environments go in.
@@ -260,9 +269,12 @@ impl Hub {
             client,
             host,
             &command,
-            always,
-            Some(s.name.clone()),
-            Some(envs),
+            super::RunWith {
+                always,
+                snippet: Some(s.name.clone()),
+                envs: Some(envs),
+                ..Default::default()
+            },
         )
     }
 

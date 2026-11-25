@@ -76,6 +76,9 @@ t6e8860fa = 代码片段 { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } 想连接 { $host }，而 { $shows } 出示了一个不在 known_hosts 中的主机密钥。只有确认这是该主机的密钥（以其管理者提供的为准）时才信任它：它会保存到 known_hosts，等待它的操作随即继续。
 
+# {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
+tb61899bb = { $client } 想用 sudo 密码在 { $host } 上运行这个。每次都会等你确认：请输入密码，{ $client } 永远看不到。
+
 # {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
 tccc5ba87 = { $client } 为 { $host } 建议这个代码片段。它在等你确认：在“危险命令需确认”模式下，每个建议都需确认。添加后输入时不按 Enter，让你在运行前先阅读。
 
@@ -106,8 +109,17 @@ tbea0b112 = 拒绝
 # Add it
 t6cac0f01 = 添加
 
+# Remember it for {n} minute | Remember it for {n} minutes
+t4f9d0788 =
+    { $n ->
+       *[other] 记住 { $n } 分钟
+    }
+
 # Run it
 t72430853 = 运行
+
+# Use the saved password
+ta3f63985 = 使用已保存的密码
 
 # Run it, and this command again this session
 t2efebee7 = 运行，并在本会话中再遇到此命令时也运行
@@ -414,6 +426,15 @@ tc60b799b = 以明文保存在本机，每 { $part } MB 一个文件：每条命
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = 至少 { $least } MB：在此之前仍为 { $mb } MB。
+
+# sudo's password
+t056c2757 = sudo 密码
+
+# An agent's command that needs sudo's password waits for you to type it, every time; it never sees it. Allowed, it may be kept for that agent on that host this long, at most {most} minutes; 0: never kept.
+t1f477160 = 需要 sudo 密码的代理命令每次都会等你输入密码；代理永远看不到。允许后，可为该代理在该主机上记住这段时间，最多 { $most } 分钟；0 表示从不记住。
+
+# minutes
+tadbcc5ee = 分钟
 
 # unlock its windows
 t7c69953e = 解锁其窗口

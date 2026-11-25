@@ -10,7 +10,7 @@ use gpui::{
 use std::sync::Arc;
 
 use shellwing_core::ai::{Activity, Approval, End};
-use shellwing_i18n::tr;
+use shellwing_i18n::{tr, tr_n};
 
 use crate::colors::colors;
 use crate::host_editor::{hint_text, outline_button, primary_button};
@@ -56,6 +56,10 @@ pub struct ActivityView {
     /// Let go where nothing heard the release: the width is kept once the
     /// view is drawn again, with a window to keep it by.
     save_after_drag: bool,
+    /// sudo's password, typed for the command waiting for it; and whether
+    /// to keep it a while for that client on that host.
+    sudo_input: Entity<crate::input::TextInput>,
+    sudo_remember: bool,
 }
 
 impl Focusable for ActivityView {
@@ -111,7 +115,27 @@ impl ActivityView {
             adding_drag: Default::default(),
             list_drag: None,
             save_after_drag: false,
+            sudo_input: gpui::AppContext::new(cx, |cx| {
+                crate::input::TextInput::new("", cx).masked()
+            }),
+            sudo_remember: false,
         }
+    }
+
+    /// The person's answer to `id`, which waits for sudo's password: what
+    /// they typed, or the host's saved one (`saved`). The field empties.
+    fn answer_sudo(&mut self, id: &str, saved: bool, cx: &mut Context<Self>) {
+        let typed = self.sudo_input.read(cx).text().to_string();
+        if !saved && typed.is_empty() {
+            return;
+        }
+        let password = (!saved).then(|| zeroize::Zeroizing::new(typed));
+        if let Some(ws) = self.workspace.upgrade() {
+            ws.read(cx).ai_answer_sudo(id, password, self.sudo_remember);
+        }
+        self.sudo_input.update(cx, |i, cx| i.set_text("", 0..0, cx));
+        self.sudo_remember = false;
+        cx.notify();
     }
 
     /// The list's edge let go: its width kept with the window's layout.
@@ -466,6 +490,9 @@ impl ActivityView {
                 .and_then(|k| k.split_once('\n'))
                 .map(|(shows, key)| (shows.to_string(), key.to_string()));
             let trusts = key.is_some();
+            // What sudo's password waits for, and whether the vault keeps one.
+            let sudo = why.starts_with(shellwing_core::ai::sudo::SUDO);
+            let saved = sudo && why.ends_with(shellwing_core::ai::sudo::SAVED);
             let (once, session, refuse) = (id.clone(), id.clone(), id.clone());
             head = head
                 .child(
@@ -483,6 +510,12 @@ impl ActivityView {
                                 client = a.client.clone(),
                                 host = a.host.clone(),
                                 shows = shows.clone()
+                            )
+                        } else if sudo {
+                            tr!(
+                                "{client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
                             )
                         } else if why == shellwing_core::ai::snippets::SUGGESTS {
                             tr!(
@@ -614,7 +647,79 @@ impl ActivityView {
                             ),
                     )
                 })
-                .when(!adds && !trusts, |d| d.child(
+                .when(sudo, |d| {
+                    let minutes = self
+                        .workspace
+                        .upgrade()
+                        .map_or(0, |w| w.read(cx).ai_snapshot(cx).state.sudo_minutes());
+                    let remember = self.sudo_remember;
+                    let (run, use_saved, refuse) = (once.clone(), once.clone(), refuse.clone());
+                    d.child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(8.))
+                            .child(
+                                div()
+                                    .debug_selector(|| "ai-sudo-password".into())
+                                    .w(px(260.))
+                                    .h(px(30.))
+                                    .px(px(8.))
+                                    .flex()
+                                    .items_center()
+                                    .rounded(px(6.))
+                                    .border_1()
+                                    .border_color(rgb(colors().field_edge))
+                                    .bg(rgb(colors().field))
+                                    .child(self.sudo_input.clone()),
+                            )
+                            .when(minutes > 0, |d| {
+                                d.child(
+                                    div()
+                                        .id("ai-sudo-remember")
+                                        .debug_selector(|| "ai-sudo-remember".into())
+                                        .flex()
+                                        .items_center()
+                                        .gap(px(6.))
+                                        .cursor_pointer()
+                                        .on_click(cx.listener(|v, _, _, cx| {
+                                            v.sudo_remember = !v.sudo_remember;
+                                            cx.notify();
+                                        }))
+                                        .child(crate::host_editor::checkbox(remember))
+                                        .child(tr_n!(
+                                            minutes as usize,
+                                            "Remember it for {n} minute",
+                                            "Remember it for {n} minutes"
+                                        )),
+                                )
+                            })
+                            .child(
+                                div()
+                                    .flex()
+                                    .gap(px(8.))
+                                    .child(primary_button("ai-allow", &tr!("Run it")).on_click(
+                                        cx.listener(move |v, _, _, cx| v.answer_sudo(&run, false, cx)),
+                                    ))
+                                    .when(saved, |d| {
+                                        d.child(
+                                            outline_button("ai-sudo-saved", &tr!("Use the saved password"))
+                                                .on_click(cx.listener(move |v, _, _, cx| {
+                                                    v.answer_sudo(&use_saved, true, cx)
+                                                })),
+                                        )
+                                    })
+                                    .child(
+                                        outline_button("ai-refuse", &tr!("Refuse it"))
+                                            .text_color(rgb(colors().bad))
+                                            .on_click(cx.listener(move |v, _, _, cx| {
+                                                v.answer(&refuse, Approval::Refuse, cx)
+                                            })),
+                                    ),
+                            ),
+                    )
+                })
+                .when(!adds && !trusts && !sudo, |d| d.child(
                     div()
                         .flex()
                         .gap(px(8.))
