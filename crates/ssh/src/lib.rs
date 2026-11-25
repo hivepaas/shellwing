@@ -339,6 +339,9 @@ pub struct Options {
     /// Where questions go (passwords, passphrases, codes, new host keys). Without
     /// one, only non-interactive methods are tried and unknown hosts are refused.
     pub prompter: Option<Prompter>,
+    /// Where a new host key is asked about without a `prompter`: nothing
+    /// else is asked, so signing in is as without one.
+    pub host_key_prompter: Option<Prompter>,
     /// Saved passwords and passphrases, tried before asking.
     pub secrets: Option<std::sync::Arc<dyn Secrets>>,
     /// Told about each of `target.forwards` once it is set up, before the shell
@@ -377,7 +380,10 @@ async fn open_hop(
         port: hop.target.port,
         policy: hop.host_key.unwrap_or(opts.policy),
         known_hosts: opts.known_hosts.clone().or_else(|| hop.known_hosts.clone()),
-        prompter: opts.prompter.clone(),
+        prompter: opts
+            .prompter
+            .clone()
+            .or_else(|| opts.host_key_prompter.clone()),
         problem: problem.clone(),
         routes,
         forward_agent,

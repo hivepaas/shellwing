@@ -409,6 +409,12 @@ impl ActivityView {
             // What it would add to the vault, rather than run: Add it.
             let adds = why == shellwing_core::ai::notes::NOTES
                 || why == shellwing_core::ai::snippets::SUGGESTS;
+            // A key not in known_hosts, on its way to the host: Trust it.
+            let key = why
+                .strip_prefix(shellwing_core::ai::HOST_KEY)
+                .and_then(|k| k.split_once('\n'))
+                .map(|(shows, key)| (shows.to_string(), key.to_string()));
+            let trusts = key.is_some();
             let (once, session, refuse) = (id.clone(), id.clone(), id.clone());
             head = head
                 .child(
@@ -420,7 +426,14 @@ impl ActivityView {
                         .border_1()
                         .border_color(rgb(colors().warn_edge))
                         .text_color(rgb(colors().warn_text))
-                        .child(if why == shellwing_core::ai::snippets::SUGGESTS {
+                        .child(if let Some((shows, _)) = &key {
+                            tr!(
+                                "{client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.",
+                                client = a.client.clone(),
+                                host = a.host.clone(),
+                                shows = shows.clone()
+                            )
+                        } else if why == shellwing_core::ai::snippets::SUGGESTS {
                             tr!(
                                 "{client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.",
                                 client = a.client.clone(),
@@ -466,6 +479,21 @@ impl ActivityView {
                             )
                         }),
                 )
+                .when_some(key.map(|(_, k)| k), |d, k| {
+                    d.child(
+                        div()
+                            .debug_selector(|| "ai-host-key".into())
+                            .px(px(12.))
+                            .py(px(8.))
+                            .rounded(px(8.))
+                            .border_1()
+                            .border_color(rgb(colors().line))
+                            .bg(rgb(colors().page))
+                            .text_size(ui(12.5))
+                            .font_family(self.mono.clone())
+                            .child(k),
+                    )
+                })
                 .when_some(a.adding.clone(), |d, text| {
                     // What goes into the note, as it will read there.
                     d.child(
@@ -483,6 +511,24 @@ impl ActivityView {
                             .text_size(ui(12.5))
                             .font_family(self.mono.clone())
                             .child(text),
+                    )
+                })
+                .when(trusts, |d| {
+                    let (trust, refuse) = (once.clone(), refuse.clone());
+                    d.child(
+                        div()
+                            .flex()
+                            .gap(px(8.))
+                            .child(primary_button("ai-trust", &tr!("Trust and go on")).on_click(
+                                cx.listener(move |v, _, _, cx| v.answer(&trust, Approval::Once, cx)),
+                            ))
+                            .child(
+                                outline_button("ai-refuse", &tr!("Refuse it"))
+                                    .text_color(rgb(colors().bad))
+                                    .on_click(cx.listener(move |v, _, _, cx| {
+                                        v.answer(&refuse, Approval::Refuse, cx)
+                                    })),
+                            ),
                     )
                 })
                 .when(adds, |d| {
@@ -503,7 +549,7 @@ impl ActivityView {
                             ),
                     )
                 })
-                .when(!adds, |d| d.child(
+                .when(!adds && !trusts, |d| d.child(
                     div()
                         .flex()
                         .gap(px(8.))
