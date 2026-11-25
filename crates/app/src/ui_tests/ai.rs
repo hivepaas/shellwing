@@ -598,6 +598,8 @@ scenario!(
         assert!(ui.find("ai-grant-paused:db").is_none());
         let (said, error) = c.tool("run", json!({"host": "db", "command": "true"}));
         assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge:db").is_some(), "its mark is back");
     }
 );
 
@@ -640,5 +642,7 @@ scenario!(
         assert!(!error && said.starts_with("exit 0"), "resumed: {said}");
         let (hosts, _) = c.tool("list_hosts", json!({}));
         assert_eq!(hosts.lines().count(), 2, "{hosts}");
+        ui.click("settings-close");
+        assert!(ui.find("ai-badge:web").is_some() && ui.find("ai-badge:cache").is_some());
     }
 );
