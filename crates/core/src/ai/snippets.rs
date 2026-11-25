@@ -189,9 +189,10 @@ impl Hub {
         }
         if !missing.is_empty() {
             return Err(format!(
-                "{:?} asks for {}: give them in values.",
+                "{:?} asks for {}: give {} in values.",
                 s.name,
-                missing.join(", ")
+                missing.join(", "),
+                if missing.len() == 1 { "it" } else { "them" }
             ));
         }
         let (_, target) = self.grant_for(client, host)?;
@@ -403,7 +404,15 @@ mod tests {
             .run_snippet(&c, "web", "tail", &values(&[("lines", "50")]))
             .err()
             .expect("missing");
-        assert!(e.contains("asks for file"), "{e}");
+        assert!(e.ends_with("asks for file: give it in values."), "{e}");
+        let e = hub
+            .run_snippet(&c, "web", "tail", &values(&[]))
+            .err()
+            .expect("both missing");
+        assert!(
+            e.ends_with("asks for lines, file: give them in values."),
+            "{e}"
+        );
         let e = hub
             .run_snippet(
                 &c,
