@@ -2005,6 +2005,9 @@ tfdda4cf7 = Xem trước
 # Sensitive
 tf603feef = Nhạy cảm
 
+# Show to AI
+t2c763301 = Hiện cho AI
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

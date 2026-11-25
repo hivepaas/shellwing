@@ -2005,6 +2005,9 @@ tfdda4cf7 = プレビュー
 # Sensitive
 tf603feef = 機密
 
+# Show to AI
+t2c763301 = AI に表示
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

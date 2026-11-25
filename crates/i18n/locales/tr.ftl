@@ -2050,6 +2050,9 @@ tfdda4cf7 = Önizleme
 # Sensitive
 tf603feef = Hassas
 
+# Show to AI
+t2c763301 = AI'a göster
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

@@ -38,8 +38,13 @@ A note reaches a client only through a host that the note is about
 ([`Note::hosts`]) and that the client holds with *Read notes*, under a grant
 that is in force: not paused, not ended, its client not paused.
 
-- **A note about no host never goes out.** A note about no host is the
-  person's own: recovery codes, a to-do list. No grant reaches it.
+- **A note about no host goes out only if shown to AI.** A note about no
+  host is most often the person's own: recovery codes, a to-do list. No
+  grant reaches it, unless the person ticks *Show to AI* in its window (a
+  field of the note, `ai`, synced with it; off unless ticked). Then any
+  client holding *Read notes* on some host reads it, and one holding *Add to
+  notes* on some host adds to it. The box shows only while the note is about
+  no host and not sensitive; a sensitive note stays out whatever it says.
 - **A sensitive note never goes out**, not even its title. Its text shows
   masked until the person proves it is them, and an agent cannot do that.
   Marking a note sensitive is how the person keeps a host's note to themself.

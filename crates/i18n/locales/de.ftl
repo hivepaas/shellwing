@@ -2050,6 +2050,9 @@ tfdda4cf7 = Vorschau
 # Sensitive
 tf603feef = Vertraulich
 
+# Show to AI
+t2c763301 = Für AI sichtbar
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

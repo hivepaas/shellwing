@@ -561,6 +561,7 @@ scenario!(
             format: shellwing_vault::NoteFormat::Markdown,
             hosts: hosts.iter().map(|h| h.to_string()).collect(),
             sensitive,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         };
@@ -581,7 +582,7 @@ scenario!(
         let (hosts, _) = c.tool_in(ui, "list_hosts", json!({}));
         assert!(hosts.contains("list_notes"), "said in list_hosts: {hosts}");
         let (listed, error) = c.tool_in(ui, "list_notes", json!({}));
-        assert!(!error && listed.starts_with("1 note about web"), "{listed}");
+        assert!(!error && listed.starts_with("1 note you may read (about web, or about no host and shown to AI)"), "{listed}");
         assert!(listed.contains(&format!("{restart}\tRestarting web\tOps\tmarkdown\tweb\t")), "db left out: {listed}");
         assert!(!listed.contains("Web's root") && !listed.contains("My own"), "{listed}");
 
@@ -616,6 +617,7 @@ scenario!(
             format: shellwing_vault::NoteFormat::Markdown,
             hosts: vec!["web".into()],
             sensitive: false,
+            shown_to_ai: false,
             changed: String::new(),
             size: 0,
         };
@@ -651,6 +653,45 @@ scenario!(
         let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
         assert!(said.contains("refused by the user"), "{said}");
         assert_eq!(vault.notes().expect("notes").len(), before, "no note made");
+    }
+);
+
+scenario!(
+    /// A note about no host reaches no agent, until the person ticks Show
+    /// to AI in its window: then one holding Read notes on a host lists it.
+    a_note_about_no_host_once_shown_to_ai,
+    |ui| {
+        let token = given_web_may(ui, "Risky", "background", &["notes-read"]);
+        let vault = ui.vault().expect("the vault");
+        let note = shellwing_vault::Note {
+            id: String::new(),
+            title: "On-call runbook".into(),
+            category: String::new(),
+            format: shellwing_vault::NoteFormat::Markdown,
+            hosts: vec![],
+            sensitive: false,
+            shown_to_ai: false,
+            changed: String::new(),
+            size: 0,
+        };
+        let id = vault.save_note(&note, Some("Page the on-call first.")).expect("note");
+        let (mut c, _) = Client::open(ui, &token);
+        let (listed, _) = c.tool_in(ui, "list_notes", json!({}));
+        assert!(listed.starts_with("No note"), "kept from AI: {listed}");
+
+        let saved = vault.notes().expect("notes").into_iter().find(|n| n.id == id);
+        ui.ws(|ws, _, cx| ws.open_note(saved, cx));
+        ui.wait_until("the note's window", |ui| ui.note_window().is_some());
+        ui.wait_until("its text", |ui| ui.note(|n, _, _| n.is_loaded()));
+        let window = ui.note_window().expect("a note window").into();
+        ui.click_in(window, "note-ai");
+        ui.wait_until("kept shown to AI", |_| {
+            vault.notes().expect("notes").iter().any(|n| n.id == id && n.shown_to_ai)
+        });
+        let (listed, _) = c.tool_in(ui, "list_notes", json!({}));
+        assert!(listed.contains(&format!("{id}\tOn-call runbook\t-\tmarkdown\tno host\t")), "{listed}");
+        let (read, error) = c.tool_in(ui, "read_note", json!({"id": id}));
+        assert!(!error && read.ends_with("Page the on-call first."), "{read}");
     }
 );
 

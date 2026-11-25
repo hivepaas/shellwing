@@ -2032,6 +2032,9 @@ tfdda4cf7 = Pratinjau
 # Sensitive
 tf603feef = Sensitif
 
+# Show to AI
+t2c763301 = Tampilkan ke AI
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->

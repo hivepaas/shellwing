@@ -1079,7 +1079,9 @@ window says so. Delete it once its text is taken in.
 
 While the vault is locked, a note's window holds no text: it comes back once
 the vault is open. A **sensitive** note's text shows only after asking it is
-you, as for an environment's values. Closing the main window closes the notes'
+you, as for an environment's values. A note about no host, not sensitive,
+has **Show to AI** beside it: ticked, an AI given *Read notes* on any host
+reads it (see AI access). Closing the main window closes the notes'
 windows too.
 
 ## Typing in every pane
@@ -1211,8 +1213,9 @@ What it may do, each on its own:
   every write waits for you, whatever it writes.
 - **Read notes**: list and read your notes about the host, and see the images
   they show (off unless turned on). A sensitive note never goes out, not even
-  its title, nor a note about no host; the other hosts a note is about are
-  left out unless given too. Nothing goes out while the vault or shellwing is
+  its title. A note about no host goes out only once you tick *Show to AI* in
+  its window, to any client holding Read notes on a host. The other hosts a
+  note is about are left out unless given too. Nothing goes out while the vault or shellwing is
   locked. AI activity keeps what was read, by title and size, never its text.
   Design: [docs/design/ai-notes.md](design/ai-notes.md).
 - **Add to notes**: write a new note about the host, or add to the end of one

@@ -2050,6 +2050,9 @@ tfdda4cf7 = Anteprima
 # Sensitive
 tf603feef = Sensibile
 
+# Show to AI
+t2c763301 = Mostra all'AI
+
 # Download Image | Download {n} Images
 t2594894c =
     { $n ->
