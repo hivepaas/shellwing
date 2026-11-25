@@ -168,6 +168,27 @@ pub fn host_tile(
     ground: u32,
     ring: bool,
 ) -> Div {
+    dotted_tile(icon, name, color, Some(status), size, ground, ring)
+}
+
+/// The tile of what is not a host (Run on hosts, AI activity), `size` px
+/// square: a dot at its corner only while `busy` says something, since a
+/// page has no tab to be without.
+pub fn page_tile(icon: &'static HostIcon, busy: Option<Status>, size: f32, ground: u32) -> Div {
+    dotted_tile(Some(icon), "", None, busy.map(Some), size, ground, false)
+}
+
+/// A tile, its corner dot `dot` if there is one: a status, or (None) the
+/// empty ring of a host with no tab.
+fn dotted_tile(
+    icon: Option<&'static HostIcon>,
+    name: &str,
+    color: Option<u32>,
+    dot_of: Option<Option<Status>>,
+    size: f32,
+    ground: u32,
+    ring: bool,
+) -> Div {
     // The dot is a sibling after the face: a border is drawn over an
     // element's own children.
     div()
@@ -175,15 +196,17 @@ pub fn host_tile(
         .flex_shrink_0()
         .size(px(size))
         .child(tile_face_sized(icon, name, color, ring, size))
-        .child(
-            div().absolute().right(px(-3.)).bottom(px(-3.)).child(
-                div()
-                    .p(px(2.))
-                    .rounded_full()
-                    .bg(rgb(ground))
-                    .child(dot(status)),
-            ),
-        )
+        .when_some(dot_of, |d, status| {
+            d.child(
+                div().absolute().right(px(-3.)).bottom(px(-3.)).child(
+                    div()
+                        .p(px(2.))
+                        .rounded_full()
+                        .bg(rgb(ground))
+                        .child(dot(status)),
+                ),
+            )
+        })
 }
 
 /// What a tile shows, filling its box: `icon`, or else the initials of
@@ -288,7 +311,7 @@ pub const AI_MARK: u32 = 0x7c3aed;
 
 /// The Run on hosts tile, at the top of the host list and of the rail.
 fn run_tile(ground: u32) -> Div {
-    host_tile(Some(&host_icons::RUN), "", None, None, TILE, ground, false)
+    page_tile(&host_icons::RUN, None, TILE, ground)
 }
 
 /// A host's tile on the rail: two letters from its name. `api-1` is A1,
@@ -1002,15 +1025,7 @@ impl Sidebar {
                         .on_click(move |_, window, cx| {
                             let _ = ws.update(cx, |ws, cx| ws.open_activity(window, cx));
                         })
-                        .child(host_tile(
-                            Some(&host_icons::AI),
-                            "",
-                            None,
-                            None,
-                            TILE,
-                            colors().panel,
-                            false,
-                        ))
+                        .child(page_tile(&host_icons::AI, None, TILE, colors().panel))
                         .child(
                             div()
                                 .flex_1()
