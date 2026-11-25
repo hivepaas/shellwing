@@ -242,6 +242,17 @@ async fn reach(at: &Endpoint, token: Option<&str>) -> Result<(Reader, Writer), S
     Ok((r.lines(), w))
 }
 
+/// A message that wants an answer: a method and an id.
+fn is_request(msg: &Value) -> bool {
+    msg.get("method").is_some() && msg.get("id").is_some_and(|id| !id.is_null())
+}
+
+/// An answer to a request, as a line: an id and no method.
+fn is_answer(line: &str) -> bool {
+    serde_json::from_str::<Value>(line)
+        .is_ok_and(|v| v.get("method").is_none() && v.get("id").is_some_and(|id| !id.is_null()))
+}
+
 /// Writes `v` as a line, and sends it.
 async fn say<O: AsyncWrite + Unpin>(out: &mut O, v: Value) -> std::io::Result<()> {
     out.write_all(format!("{v}\n").as_bytes()).await?;
@@ -264,6 +275,11 @@ where
     // What the client said to begin with, to say again to an app reached
     // later.
     let mut begun: Option<Value> = None;
+    // Requests sent to the app and not answered yet. Once the client is done
+    // asking, these are what the bridge waits for: Windows' named pipes
+    // cannot tell the app the client is done (no half-close), so the app
+    // closing its end cannot be waited for.
+    let mut waiting: usize = 0;
     loop {
         let Ok((answers, to_app)) = &mut app else {
             // Not reached: what it can say alone, and a new try per tool.
@@ -306,6 +322,7 @@ where
                                     .await?;
                             }
                             to_app.write_all(format!("{line}\n").as_bytes()).await?;
+                            waiting = 1;
                         }
                         Err(why) => {
                             let why = refused_because(why);
@@ -324,20 +341,30 @@ where
         tokio::select! {
             line = client.next_line() => match line? {
                 Some(line) => {
-                    if let Ok(msg) = serde_json::from_str::<Value>(&line)
+                    let msg = serde_json::from_str::<Value>(&line).ok();
+                    if let Some(msg) = &msg
                         && msg.get("method").and_then(Value::as_str) == Some("initialize")
                     {
                         begun = msg.get("params").cloned();
                     }
                     if to_app.write_all(format!("{line}\n").as_bytes()).await.is_err() {
                         app = Err("the app went".into());
+                        waiting = 0;
+                    } else if msg.as_ref().is_some_and(is_request) {
+                        waiting += 1;
                     }
                 }
-                // The client is done asking: the app hears so, and answers
-                // what it was asked.
+                // The client is done asking: the app hears so, and the
+                // bridge ends once what it was asked is answered.
                 None => {
                     let _ = to_app.shutdown().await;
-                    while let Ok(Some(answer)) = answers.next_line().await {
+                    while waiting > 0 {
+                        let Ok(Some(answer)) = answers.next_line().await else {
+                            break;
+                        };
+                        if is_answer(&answer) {
+                            waiting -= 1;
+                        }
                         stdout.write_all(format!("{answer}\n").as_bytes()).await?;
                     }
                     stdout.flush().await?;
@@ -346,11 +373,17 @@ where
             },
             answer = answers.next_line() => match answer {
                 Ok(Some(answer)) => {
+                    if is_answer(&answer) {
+                        waiting = waiting.saturating_sub(1);
+                    }
                     stdout.write_all(format!("{answer}\n").as_bytes()).await?;
                     stdout.flush().await?;
                 }
                 // The app quit: the next tool tries again.
-                _ => app = Err("the app quit".into()),
+                _ => {
+                    app = Err("the app quit".into());
+                    waiting = 0;
+                }
             },
         }
     }
@@ -541,6 +574,58 @@ mod through {
             "{:?}",
             matches!(heard, super::super::HubEvent::Show { .. })
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    /// The client done asking, the bridge ends once each of its requests
+    /// is answered, though the app keeps its end open: Windows' named pipes
+    /// cannot tell an app the client is done, and a bridge that waited for
+    /// the app to close was left running there.
+    #[tokio::test]
+    async fn the_bridge_ends_once_answered_though_the_app_stays() {
+        use tokio::io::AsyncBufReadExt;
+        let dir = std::env::temp_dir().join(format!("sw-ends-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let at = Endpoint(dir.join("app.sock"));
+        let listener = tokio::net::UnixListener::bind(&at.0).expect("bind");
+        // An app that answers each request, a little later, and never
+        // closes: it does not hear the client is done.
+        tokio::spawn(async move {
+            let (s, _) = listener.accept().await.expect("accept");
+            let (r, mut w) = s.into_split();
+            let mut lines = BufReader::new(r).lines();
+            let _ = lines.next_line().await;
+            w.write_all(b"{\"ok\":true}\n").await.expect("hello");
+            while let Ok(Some(line)) = lines.next_line().await {
+                let v: Value = serde_json::from_str(&line).expect("json");
+                if let Some(id) = v.get("id") {
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    let answer = json!({"jsonrpc": "2.0", "id": id, "result": {}});
+                    w.write_all(format!("{answer}\n").as_bytes())
+                        .await
+                        .expect("answer");
+                }
+            }
+            std::future::pending::<()>().await;
+            drop(w);
+        });
+        let asked = concat!(
+            r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#,
+            "\n",
+            r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+            "\n",
+            r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#,
+            "\n",
+        );
+        let mut out = vec![];
+        let ended = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            bridge_on(at, Some("shw_t".into()), asked.as_bytes(), &mut out),
+        )
+        .await;
+        assert!(ended.is_ok(), "still running");
+        let said = String::from_utf8(out).expect("text");
+        assert_eq!(said.lines().count(), 2, "both answered: {said}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
