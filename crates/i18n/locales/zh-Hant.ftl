@@ -2377,11 +2377,11 @@ t4cc1f343 =
        *[other] 在其餘 { $n } 台主機上執行
     }
 
-# Still going: {hosts}
-tfacf50d8 = 仍在執行：{ $hosts }
+# Still going
+t1099eee7 = 仍在執行
 
-# Stopped before they ended: {hosts}
-tde1adb0a = 在結束前已停止：{ $hosts }
+# Stopped before they ended
+t0c0b45b9 = 在結束前已停止
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = 輸出超過 { $mb } MB：其餘部分不會保留。

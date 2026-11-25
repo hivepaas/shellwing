@@ -2452,11 +2452,11 @@ t4cc1f343 =
        *[other] Виконати на решті ({ $n })
     }
 
-# Still going: {hosts}
-tfacf50d8 = Ще виконується: { $hosts }
+# Still going
+t1099eee7 = Ще виконується
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Зупинено до завершення: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Зупинено до завершення
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Виведено понад { $mb } MB: решта не зберігається.

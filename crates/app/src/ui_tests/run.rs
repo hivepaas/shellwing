@@ -54,6 +54,16 @@ fn answer_passwords(ui: &mut Ui, hosts: usize) {
     }
 }
 
+/// Waits until the outputs' terminals show `want`, each with its last
+/// line ending left out: a terminal just made draws what it is fed a
+/// frame later.
+fn shown(ui: &mut Ui, want: &[&str]) {
+    ui.wait_until(&format!("the outputs to show {want:?}"), |ui| {
+        let shown = ui.run(|r, cx| r.shown_outputs(cx));
+        shown.iter().map(|s| s.trim_end()).eq(want.iter().copied())
+    });
+}
+
 fn outcome<'a>(ended: &'a [(String, Outcome)], host: &str) -> &'a shellwing_core::run::Ran {
     match ended.iter().find(|(h, _)| h == host) {
         Some((_, Outcome::Ran(r))) => r,
@@ -104,9 +114,8 @@ scenario!(
         assert!(ui.find("run-group-out:0").is_some(), "one group: they said the same");
         assert!(ui.find("run-group-out:1").is_none());
         // Drawn as a terminal: the output as it is, its last line ending left out.
-        let shown = ui.run(|r, cx| r.shown_outputs(cx));
-        assert_eq!(shown.len(), 1, "a terminal for the one group: {shown:?}");
-        assert_eq!(shown[0].trim_end(), format!("it's {}\n[]", home.display()));
+        // A terminal for the one group.
+        shown(ui, &[&format!("it's {}\n[]", home.display())]);
         // On the input, read whole: never on the command line.
         let seen = server.seen.lock().expect("seen");
         assert_eq!(seen.commands.len(), 2);
@@ -305,6 +314,49 @@ scenario!(
 );
 
 scenario!(
+    /// What a host prints shows while it runs: among the groups when it
+    /// runs alone, in its row in the table; all of it once it ends.
+    run_output_shows_as_it_is_printed,
+    |ui| {
+        if cfg!(windows) {
+            return;
+        }
+        let (server, home) = shell_server(ui);
+        ui.config_file(
+            "hosts.toml",
+            &format!("[[group]]\nname = \"G\"\n\n{}", host("api-1", server.port, "G")),
+        );
+        ui.open();
+        ui.hover("section:G");
+        ui.click("run-group:G");
+        let go = home.join("go");
+        ui.type_text(&format!(
+            "echo first; while [ ! -e '{}' ]; do sleep 0.05; done; echo second",
+            go.display()
+        ));
+        ui.keys("ctrl-enter");
+        answer_passwords(ui, 1);
+        ui.wait_until("signed in", |ui| ui.run(|r, cx| r.ready_to_go(cx)));
+        ui.click("run-confirm-go");
+        ui.wait_until("the first line, while it runs", |ui| {
+            ui.run(|r, cx| r.shown_outputs(cx).iter().any(|s| s.trim_end() == "first"))
+        });
+        assert!(!ui.run(|r, _| r.done()), "it still runs");
+        assert!(ui.find("run-going").is_some(), "with those still going");
+        assert!(ui.find("run-output").is_some(), "drawn as a terminal");
+
+        ui.click("run-by-host");
+        ui.click("run-row:api-1");
+        // The row's own.
+        shown(ui, &["first"]);
+
+        std::fs::write(&go, "").expect("go");
+        ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
+        shown(ui, &["first\nsecond"]);
+    }
+);
+
+scenario!(
     /// A host's output is drawn as a terminal draws it: colors as colors,
     /// its errors after it, in red, as text; one host's row opens to its own.
     run_output_is_drawn_as_a_terminal,
@@ -327,14 +379,12 @@ scenario!(
         ui.click("run-confirm-go");
         ui.wait_until("the run's end", |ui| ui.run(|r, _| r.done()));
         assert!(ui.find("run-output").is_some(), "drawn as a terminal");
-        let shown = ui.run(|r, cx| r.shown_outputs(cx));
-        assert_eq!(shown.len(), 1, "{shown:?}");
-        assert_eq!(shown[0].trim_end(), "green\noops", "no escapes: {shown:?}");
+        // No escapes.
+        shown(ui, &["green\noops"]);
 
         ui.click("run-by-host");
         ui.click("run-row:api-1");
-        let shown = ui.run(|r, cx| r.shown_outputs(cx));
-        assert_eq!(shown.len(), 1, "the row's own, the group's let go: {shown:?}");
-        assert_eq!(shown[0].trim_end(), "green\noops");
+        // The row's own, the group's let go.
+        shown(ui, &["green\noops"]);
     }
 );

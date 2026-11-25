@@ -2402,11 +2402,11 @@ t4cc1f343 =
        *[other] Auf den { $n } übrigen Hosts ausführen
     }
 
-# Still going: {hosts}
-tfacf50d8 = Läuft noch: { $hosts }
+# Still going
+t1099eee7 = Läuft noch
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Vor dem Ende gestoppt: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Vor dem Ende gestoppt
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Mehr als { $mb } MB ausgegeben: Der Rest wird nicht behalten.

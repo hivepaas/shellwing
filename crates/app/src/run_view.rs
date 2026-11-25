@@ -128,6 +128,8 @@ pub struct RunView {
     /// The hosts of what is going on, in order, and how each is.
     order: Vec<String>,
     states: BTreeMap<String, State>,
+    /// What the hosts running (or stopped) printed so far: output, errors.
+    printed: BTreeMap<String, (String, String)>,
     /// One host first: the job the others wait for, and who they are.
     rest: Vec<(Job, Vec<String>)>,
     /// What last ran: its script, its interpreter, when.
@@ -220,6 +222,7 @@ impl RunView {
             asks: vec![],
             order: vec![],
             states: BTreeMap::new(),
+            printed: BTreeMap::new(),
             rest: vec![],
             ran: None,
             by_host: false,
@@ -249,8 +252,7 @@ impl RunView {
             let Some(h) = &self.open_row else {
                 return vec![];
             };
-            let state = self.states.get(h).cloned().unwrap_or(State::Waiting);
-            let (text, errors) = host_output(&state);
+            let (text, errors) = self.host_output(h);
             return vec![(
                 format!("host:{h}"),
                 Some(name_in(&self.picks, h)),
@@ -258,14 +260,45 @@ impl RunView {
                 errors,
             )];
         }
+        let live = self.live_one().map(|h| {
+            let (text, errors) = self.host_output(&h);
+            (
+                format!("live:{h}"),
+                Some(name_in(&self.picks, &h)),
+                text,
+                errors,
+            )
+        });
         self.ended()
             .iter()
             .map(|(said, _)| {
                 let (_, text, errors) = said_text(said);
                 (output_key(&text, &errors), None, text, errors)
             })
+            .chain(live)
             .filter(|(_, _, text, errors)| !text.is_empty() || !errors.is_empty())
             .collect()
+    }
+
+    /// The host whose output shows as it prints among the groups: the one
+    /// host running, when there is one alone (one at a time, or one first).
+    fn live_one(&self) -> Option<String> {
+        let mut running = self
+            .order
+            .iter()
+            .filter(|h| matches!(self.states.get(*h), Some(State::Running(_))));
+        let one = running.next()?;
+        running.next().is_none().then(|| one.clone())
+    }
+
+    /// What a host's open row shows: its output and its errors, as it
+    /// prints them while it runs (or why it has none).
+    fn host_output(&self, host: &str) -> (String, String) {
+        let state = self.states.get(host).cloned().unwrap_or(State::Waiting);
+        match (&state, self.printed.get(host)) {
+            (State::Running(_) | State::Stopped, Some(p)) => p.clone(),
+            _ => host_output(&state),
+        }
     }
 
     /// A terminal for each output on the page, showing it; those no longer
@@ -478,6 +511,7 @@ impl RunView {
         self.asks.clear();
         self.order = self.chosen.clone();
         self.states.clear();
+        self.printed.clear();
         let mut connect = vec![];
         for spec in self.chosen.clone() {
             if self.fleet.connected(&spec) {
@@ -520,6 +554,7 @@ impl RunView {
         self.stage = Stage::Edit;
         self.order.clear();
         self.states.clear();
+        self.printed.clear();
         cx.notify();
     }
 
@@ -772,9 +807,20 @@ impl RunView {
                 }
             }
             Event::Started { host } => {
+                self.printed.remove(&host);
                 self.states.insert(host, State::Running(Instant::now()));
             }
+            Event::Printed {
+                host,
+                stdout,
+                stderr,
+            } => {
+                let p = self.printed.entry(host).or_default();
+                p.0.push_str(&stdout);
+                p.1.push_str(&stderr);
+            }
             Event::Ended { host, outcome } => {
+                self.printed.remove(&host);
                 self.states.insert(host, State::Ended(outcome));
                 self.settle(cx);
             }
@@ -2073,30 +2119,78 @@ impl RunView {
                     .child(chips),
             );
         }
-        // Those still going.
+        // Those still going: each opens as it is in the table, and the one
+        // running alone shows what it prints.
         let going: Vec<String> = self
             .order
             .iter()
             .filter(|h| !matches!(self.states.get(*h), Some(State::Ended(_))))
-            .map(|h| name_in(&self.picks, h))
+            .cloned()
             .collect();
         if !going.is_empty() {
+            let running = self.stage == Stage::Running;
+            let mut chips = div().flex().flex_wrap().gap(px(6.));
+            for h in &going {
+                let took = match self.states.get(h) {
+                    Some(State::Running(since)) => format!("{} s", since.elapsed().as_secs()),
+                    _ => String::new(),
+                };
+                let spec = h.clone();
+                chips = chips.child(
+                    div()
+                        .id(SharedString::from(format!("run-going:{h}")))
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .h(px(26.))
+                        .px(px(9.))
+                        .rounded(px(6.))
+                        .border_1()
+                        .border_color(rgb(colors().line))
+                        .bg(rgb(colors().surface))
+                        .text_size(ui(12.))
+                        .cursor_pointer()
+                        .hover(|s| s.bg(rgb(colors().hover)))
+                        .on_click(cx.listener(move |v, _, _, cx| {
+                            v.by_host = true;
+                            v.open_row = Some(spec.clone());
+                            cx.notify();
+                        }))
+                        .child(name_in(&self.picks, h))
+                        .child(
+                            div()
+                                .text_size(ui(11.))
+                                .text_color(rgb(colors().muted))
+                                .child(took),
+                        ),
+                );
+            }
+            let live = self.live_one().map(|h| {
+                let (text, errors) = self.host_output(&h);
+                (format!("live:{h}"), text, errors)
+            });
             out = out.child(
                 div()
-                    .px(px(12.))
-                    .py(px(10.))
+                    .debug_selector(|| "run-going".into())
+                    .flex()
+                    .flex_col()
+                    .gap(px(10.))
+                    .p(px(12.))
                     .rounded(px(10.))
                     .border_1()
                     .border_color(rgb(colors().line))
-                    .text_color(rgb(colors().muted))
-                    .child(if self.stage == Stage::Running {
-                        tr!("Still going: {hosts}", hosts = going.join(", "))
+                    .child(div().text_color(rgb(colors().muted)).child(if running {
+                        tr!("Still going")
                     } else {
-                        tr!(
-                            "Stopped before they ended: {hosts}",
-                            hosts = going.join(", ")
-                        )
-                    }),
+                        tr!("Stopped before they ended")
+                    }))
+                    .when_some(
+                        live.filter(|(_, text, errors)| !text.is_empty() || !errors.is_empty()),
+                        |d, (key, text, errors)| {
+                            d.child(self.output_view(&key, &text, &errors, cx))
+                        },
+                    )
+                    .child(chips),
             );
         }
         out
@@ -2114,7 +2208,10 @@ impl RunView {
         for h in &self.order {
             let name = name_in(&self.picks, h);
             let state = self.states.get(h).cloned().unwrap_or(State::Waiting);
-            let (status, color, last, took) = state_text(&state);
+            let (status, color, mut last, took) = state_text(&state);
+            if let Some((out, err)) = self.printed.get(h) {
+                last = last_line(if out.trim().is_empty() { err } else { out });
+            }
             let open = self.open_row.as_ref() == Some(h);
             let spec = h.clone();
             table = table.child(
@@ -2172,7 +2269,7 @@ impl RunView {
                     ),
             );
             if open {
-                let (text, errors) = host_output(&state);
+                let (text, errors) = self.host_output(h);
                 let copy = format!("{text}{errors}");
                 let spec = h.clone();
                 table = table.child(
@@ -2288,7 +2385,7 @@ fn said_text(said: &Said) -> (String, String, String) {
 /// time.
 fn state_text(s: &State) -> (String, u32, String, String) {
     let c = colors();
-    let last = |text: &str| text.trim_end().lines().last().unwrap_or("").to_string();
+    let last = last_line;
     match s {
         State::Connecting => (tr!("signing in"), c.muted, String::new(), String::new()),
         State::Asking => (tr!("asks something"), c.warn, String::new(), String::new()),
@@ -2333,6 +2430,11 @@ fn state_text(s: &State) -> (String, u32, String, String) {
             Outcome::Failed(w) => (tr!("did not run"), c.bad, w.clone(), String::new()),
         },
     }
+}
+
+/// The last line of `text`.
+fn last_line(text: &str) -> String {
+    text.trim_end().lines().last().unwrap_or("").to_string()
 }
 
 /// What a host printed: its output, then its errors in red.

@@ -2402,11 +2402,11 @@ t4cc1f343 =
        *[other] Exécuter sur les { $n } restants
     }
 
-# Still going: {hosts}
-tfacf50d8 = Toujours en cours : { $hosts }
+# Still going
+t1099eee7 = Toujours en cours
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Arrêtés avant la fin : { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Arrêtés avant la fin
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = La sortie dépasse { $mb } Mo : le reste n'est pas conservé.

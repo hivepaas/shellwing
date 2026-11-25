@@ -2402,11 +2402,11 @@ t4cc1f343 =
        *[other] Kalan { $n } ana makinede çalıştır
     }
 
-# Still going: {hosts}
-tfacf50d8 = Hâlâ sürüyor: { $hosts }
+# Still going
+t1099eee7 = Hâlâ sürüyor
 
-# Stopped before they ended: {hosts}
-tde1adb0a = Bitmeden durduruldu: { $hosts }
+# Stopped before they ended
+t0c0b45b9 = Bitmeden durduruldu
 
 # It printed more than {mb} MB: the rest is not kept.
 t3b5e54ea = Çıktı { $mb } MB sınırını aştı: gerisi saklanmaz.
