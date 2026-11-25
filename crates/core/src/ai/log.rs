@@ -158,7 +158,9 @@ impl Log {
     }
 }
 
-/// Adds `line` to the file at `path`, made for its owner alone.
+/// Adds `line` to the file at `path`, made for its owner alone: in one
+/// write, so a second shellwing on the same config adding at once does not
+/// put its line in the middle of this one.
 fn append(path: &Path, line: &str) -> bool {
     use std::io::Write;
     let mut open = std::fs::OpenOptions::new();
@@ -172,7 +174,7 @@ fn append(path: &Path, line: &str) -> bool {
         let _ = std::fs::create_dir_all(dir);
     }
     open.open(path)
-        .and_then(|mut f| writeln!(f, "{line}"))
+        .and_then(|mut f| f.write_all(format!("{line}\n").as_bytes()))
         .is_ok()
 }
 
@@ -298,6 +300,39 @@ mod tests {
             "too long to keep: {names:?}"
         );
         assert!(log.size() <= 5000);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn two_writing_at_once_keep_whole_lines() {
+        let dir = scratch("two");
+        let path = dir.join("ai-activity.jsonl");
+        let writers: Vec<_> = (0..2)
+            .map(|w| {
+                let path = path.clone();
+                std::thread::spawn(move || {
+                    let (mut log, _) = Log::open_parts(path, u64::MAX);
+                    for i in 0..500 {
+                        log.add(&command(w * 1000 + i, 50));
+                    }
+                })
+            })
+            .collect();
+        for w in writers {
+            w.join().expect("writer");
+        }
+        let text = std::fs::read_to_string(&path).expect("log");
+        let bad: Vec<&str> = text
+            .lines()
+            .filter(|l| serde_json::from_str::<Activity>(l).is_err())
+            .collect();
+        assert!(
+            bad.is_empty(),
+            "{} lines broken, as {:?}",
+            bad.len(),
+            bad.first()
+        );
+        assert_eq!(text.lines().count(), 1000);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

@@ -65,13 +65,22 @@ impl Hub {
             })
             .collect();
         mine.reverse();
-        let names: Vec<&str> = hosts.iter().map(|(_, n)| n.as_str()).collect();
-        let names = names.join(", ");
+        // The hosts read, as the model is told them and as AI activity
+        // shows them: by name when asked for one, never a long list.
+        let (names, shown) = match host {
+            Some(_) => (hosts[0].1.clone(), hosts[0].1.clone()),
+            None if hosts.len() == 1 => (hosts[0].1.clone(), hosts[0].1.clone()),
+            None => (
+                "the hosts given to you now".to_string(),
+                format!("{} hosts", hosts.len()),
+            ),
+        };
 
         if let Some(id) = job {
-            let (a, name) = mine.iter().find(|(a, _)| a.id == id).ok_or_else(|| {
-                format!("{id} is not a command of yours on a host given to you now ({names})")
-            })?;
+            let (a, name) = mine
+                .iter()
+                .find(|(a, _)| a.id == id)
+                .ok_or_else(|| format!("{id} is not a command of yours on {names}"))?;
             self.note_activity(client, name, &format!("activity {id}"), &commands(1));
             return Ok(format!("{}\n\n{DATA}\n\n{}", heading(a, name), whole(a)));
         }
@@ -85,7 +94,7 @@ impl Hub {
         }
         let more = mine.len() > limit;
         mine.truncate(limit);
-        self.note_activity(client, &names, "activity", &commands(mine.len()));
+        self.note_activity(client, &shown, "activity", &commands(mine.len()));
         if mine.is_empty() {
             let older = if before.is_some() { " older" } else { "" };
             return Ok(format!(
@@ -300,7 +309,10 @@ mod tests {
         };
         hub.inner.lock().expect("lock").activity.insert(0, unknown);
         let said = mine(&hub, None, None, LIST);
-        assert!(said.starts_with("2 commands you ran on web, db"), "{said}");
+        assert!(
+            said.starts_with("2 commands you ran on the hosts given to you now"),
+            "{said}"
+        );
         assert!(
             !said.contains("cat /etc/secret") && !said.contains("theirs"),
             "{said}"
@@ -399,6 +411,7 @@ mod tests {
             ("activity", "1 command")
         );
         assert_eq!(last.spec, None, "on no one host: not read back itself");
+        assert_eq!(last.host, "2 hosts", "not every name");
         let again = mine(&hub, None, None, LIST);
         assert!(again.starts_with("1 command you ran"), "{again}");
     }
