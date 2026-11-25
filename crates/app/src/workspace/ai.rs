@@ -53,6 +53,11 @@ impl Workspace {
             events,
         );
         hub.set_state(state.clone());
+        hub.set_notes(Some(Arc::new(self.vault.clone())));
+        hub.set_locked(
+            cx.try_global::<crate::app_lock::Locked>()
+                .is_some_and(|l| l.0),
+        );
         let activity = hub.activity().into_iter().map(Arc::new).collect();
         if let Some(dir) = store.map(|s| s.dir().to_path_buf()) {
             let at = ai::socket::Endpoint::for_config(&dir);

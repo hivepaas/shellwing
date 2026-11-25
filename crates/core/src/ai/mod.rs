@@ -8,6 +8,7 @@
 
 pub mod files;
 pub mod mcp;
+pub mod notes;
 pub mod socket;
 pub mod tab;
 
@@ -346,6 +347,10 @@ struct Inner {
     activity: Vec<Activity>,
     /// Commands the person allowed for the session: client, host, command.
     allowed: Vec<(String, String, String)>,
+    /// Where notes are read from (the vault), if anywhere.
+    notes: Option<Arc<dyn notes::NoteStore>>,
+    /// shellwing is locked: no note goes out.
+    locked: bool,
 }
 
 /// The MCP server's side in the app: who may reach what, and the work.
@@ -392,6 +397,8 @@ impl Hub {
                 next: 1,
                 activity,
                 allowed: vec![],
+                notes: None,
+                locked: false,
             }),
             events,
         })

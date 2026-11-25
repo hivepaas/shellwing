@@ -1990,6 +1990,9 @@ impl Workspace {
         crate::note_window::before_lock(cx);
         crate::snippet_window::before_lock(cx);
         cx.set_global(crate::app_lock::Locked(true));
+        if let Some(ai) = &self.ai {
+            ai.hub.set_locked(true);
+        }
         let view = cx.new(|cx| crate::app_lock::LockView::new(confirmer, how, ask_now, window, cx));
         let events = cx.subscribe_in(
             &view,
@@ -2014,6 +2017,9 @@ impl Workspace {
     fn unlock_app(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.lock = None;
         cx.set_global(crate::app_lock::Locked(false));
+        if let Some(ai) = &self.ai {
+            ai.hub.set_locked(false);
+        }
         self.last_input = std::time::Instant::now();
         let active = self.active;
         self.activate(active, window, cx);
