@@ -545,6 +545,62 @@ fn grant_of(ui: &mut Ui, host: &str) -> usize {
 }
 
 scenario!(
+    /// Given with Read notes, an agent lists and reads the notes about its
+    /// host from the vault, and sees an image one shows; a sensitive one
+    /// stays out, as one about no host does.
+    an_ai_reads_the_notes_about_its_host,
+    |ui| {
+        let token = given_web_may(ui, "Ask", "background", &["notes-read"]);
+        let vault = ui.vault().expect("the vault");
+        let png = b"\x89PNG\r\n\x1a\nnot really".to_vec();
+        let image = vault.add_attachment(&png).expect("image");
+        let note = |title: &str, hosts: &[&str], sensitive: bool| shellwing_vault::Note {
+            id: String::new(),
+            title: title.into(),
+            category: "Ops".into(),
+            format: shellwing_vault::NoteFormat::Markdown,
+            hosts: hosts.iter().map(|h| h.to_string()).collect(),
+            sensitive,
+            changed: String::new(),
+            size: 0,
+        };
+        let restart = vault
+            .save_note(
+                &note("Restarting web", &["web", "db"], false),
+                Some(&format!("sudo systemctl restart nginx\n\n![](attachment:{image})\n")),
+            )
+            .expect("note");
+        let secret = vault
+            .save_note(&note("Web's root", &["web"], true), Some("hunter2"))
+            .expect("note");
+        vault
+            .save_note(&note("My own", &[], false), Some("not for agents"))
+            .expect("note");
+        let (mut c, _) = Client::open(ui, &token);
+
+        let (hosts, _) = c.tool_in(ui, "list_hosts", json!({}));
+        assert!(hosts.contains("list_notes"), "said in list_hosts: {hosts}");
+        let (listed, error) = c.tool_in(ui, "list_notes", json!({}));
+        assert!(!error && listed.starts_with("1 note about web"), "{listed}");
+        assert!(listed.contains(&format!("{restart}\tRestarting web\tOps\tmarkdown\tweb\t")), "db left out: {listed}");
+        assert!(!listed.contains("Web's root") && !listed.contains("My own"), "{listed}");
+
+        // Reads wait for no one, even where every command asks.
+        let (read, error) = c.tool_in(ui, "read_note", json!({"id": restart}));
+        assert!(!error && read.contains("sudo systemctl restart nginx"), "{read}");
+        let (said, error) = c.tool_in(ui, "read_note", json!({"id": secret}));
+        assert!(error && said.starts_with("No note"), "sensitive: {said}");
+
+        let v = c.call("tools/call", json!({"name": "read_note_image", "arguments": {"id": restart, "image": image}}));
+        assert_eq!(v["result"]["content"][1]["type"], "image", "{v}");
+        assert_eq!(v["result"]["content"][1]["mimeType"], "image/png");
+        use base64::Engine;
+        let data = v["result"]["content"][1]["data"].as_str().expect("data");
+        assert_eq!(base64::engine::general_purpose::STANDARD.decode(data).expect("base64"), png);
+    }
+);
+
+scenario!(
     /// Notes are given apart from files, and only when ticked: a host given
     /// as it comes has neither right, one given with both ticked has both,
     /// and they are kept.

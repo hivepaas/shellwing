@@ -1209,6 +1209,14 @@ What it may do, each on its own:
   off). With *Run commands* off, that is a grant to read alone.
 - **Write files**: over SFTP (off unless turned on). Where risky ones wait,
   every write waits for you, whatever it writes.
+- **Read notes**: list and read your notes about the host, and see the images
+  they show (off unless turned on). A sensitive note never goes out, not even
+  its title, nor a note about no host; the other hosts a note is about are
+  left out unless given too. Nothing goes out while the vault or shellwing is
+  locked. AI activity keeps what was read, by title and size, never its text.
+  Design: [docs/design/ai-notes.md](design/ai-notes.md).
+- **Add to notes**: kept for the tools that add to notes, which come next
+  (off unless turned on).
 
 What happens to a command:
 
