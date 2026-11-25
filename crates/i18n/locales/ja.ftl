@@ -211,6 +211,12 @@ te3f10929 = ファイルの読み取り
 # writes files
 t0a7257de = ファイルの書き込み
 
+# reads notes
+tf5190423 = ノートの読み取り
+
+# adds to notes
+tc82ac79b = ノートへの追記
+
 # while shellwing stays open
 t938960ff = shellwing を開いている間
 
@@ -315,6 +321,18 @@ tc9796e43 = ファイルの書き込み
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = SFTP 経由。「危険なものは確認」では、書き込みはすべて指示を待ちます
+
+# Read notes
+t199095f4 = ノートの読み取り
+
+# the notes about the host, but never a sensitive one
+t422cccaf = ホストについてのノート。機密のノートは含みません
+
+# Add to notes
+tb80fd9c4 = ノートへの追記
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = ホストについての新しいノート、またはノートの末尾への追記。既存の内容は変更しません
 
 # Commands
 t971550f3 = コマンド

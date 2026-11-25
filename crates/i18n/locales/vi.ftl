@@ -211,6 +211,12 @@ te3f10929 = đọc tệp
 # writes files
 t0a7257de = ghi tệp
 
+# reads notes
+tf5190423 = đọc ghi chú
+
+# adds to notes
+tc82ac79b = thêm vào ghi chú
+
 # while shellwing stays open
 t938960ff = khi shellwing còn mở
 
@@ -315,6 +321,18 @@ tc9796e43 = Ghi tệp
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = qua SFTP; khi lệnh rủi ro phải chờ, mọi lần ghi đều chờ bạn
+
+# Read notes
+t199095f4 = Đọc ghi chú
+
+# the notes about the host, but never a sensitive one
+t422cccaf = các ghi chú về host, nhưng không bao giờ là ghi chú nhạy cảm
+
+# Add to notes
+tb80fd9c4 = Thêm vào ghi chú
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = một ghi chú mới về host, hoặc thêm vào cuối một ghi chú; không bao giờ sửa những gì đã có
 
 # Commands
 t971550f3 = Lệnh

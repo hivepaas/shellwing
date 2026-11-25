@@ -211,6 +211,12 @@ te3f10929 = 读取文件
 # writes files
 t0a7257de = 写入文件
 
+# reads notes
+tf5190423 = 读取笔记
+
+# adds to notes
+tc82ac79b = 添加到笔记
+
 # while shellwing stays open
 t938960ff = shellwing 保持打开期间
 
@@ -315,6 +321,18 @@ tc9796e43 = 写入文件
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = 通过 SFTP；在“危险命令需确认”模式下，每次写入都会等你确认
+
+# Read notes
+t199095f4 = 读取笔记
+
+# the notes about the host, but never a sensitive one
+t422cccaf = 关于此主机的笔记，但绝不包括敏感笔记
+
+# Add to notes
+tb80fd9c4 = 添加到笔记
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = 关于此主机的新笔记，或在笔记末尾追加内容；绝不更改已有内容
 
 # Commands
 t971550f3 = 命令
