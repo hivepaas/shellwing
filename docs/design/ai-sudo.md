@@ -56,8 +56,8 @@ Only sudo the command calls itself gets it, as on *Run on hosts*: not a
 
 ## What is kept
 
-AI activity keeps the command as the agent gave it, and that it ran with
-sudo's password. Not the password.
+AI activity keeps the command as the agent gave it, and its reason to wait
+while it does. Never the password.
 
 ## Building it
 
