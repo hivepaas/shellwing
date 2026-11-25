@@ -1226,7 +1226,7 @@ How an agent reaches a host:
 - Its forwards, agent forwarding and X11 are left out.
 - A collection's host whose settings are held back is refused until you allow
   them on a tab.
-- Its tile in the host list carries a violet **AI** mark, grey while each of
+- Its tile in the host list carries a violet **AI** mark, gone while each of
   its grants is paused, or its client.
 - Through a tab (below), it is typed into the host's tab instead.
 

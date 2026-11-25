@@ -97,9 +97,8 @@ pub struct Row {
     pub active: bool,
     /// What the filter matches, lowercase: name, alias, address, user, tags.
     pub search: String,
-    /// Given to an AI client: its tile says so, greyed (false) while each
-    /// of its grants is paused, or its client.
-    pub ai: Option<bool>,
+    /// Given to an AI client, and not paused: its tile says so.
+    pub ai: bool,
 }
 
 fn status_color(s: Status) -> u32 {
@@ -132,39 +131,30 @@ fn tile(row: &Row, ground: u32, ring: bool) -> Div {
         _ if matches!(row.edit, EditTarget::Local) => host_icons::find("terminal"),
         icon => icon,
     };
-    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring).when_some(
-        row.ai,
-        |d, on| {
-            d.child(
-                div()
-                    .debug_selector({
-                        let n = row.name.clone();
-                        move || {
-                            if on {
-                                format!("ai-badge:{n}")
-                            } else {
-                                format!("ai-badge-paused:{n}")
-                            }
-                        }
-                    })
-                    .absolute()
-                    .top(px(-4.))
-                    .right(px(-6.))
-                    .h(px(15.))
-                    .px(px(4.))
-                    .flex()
-                    .items_center()
-                    .rounded_full()
-                    .border_2()
-                    .border_color(rgb(ground))
-                    .bg(rgb(if on { AI_MARK } else { colors().idle }))
-                    .text_color(rgb(colors().on_accent))
-                    .text_size(px(9.))
-                    .font_weight(FontWeight::BOLD)
-                    .child("AI"),
-            )
-        },
-    )
+    host_tile(icon, &row.name, row.color, row.status, TILE, ground, ring).when(row.ai, |d| {
+        d.child(
+            div()
+                .debug_selector({
+                    let n = row.name.clone();
+                    move || format!("ai-badge:{n}")
+                })
+                .absolute()
+                .top(px(-4.))
+                .right(px(-6.))
+                .h(px(15.))
+                .px(px(4.))
+                .flex()
+                .items_center()
+                .rounded_full()
+                .border_2()
+                .border_color(rgb(ground))
+                .bg(rgb(AI_MARK))
+                .text_color(rgb(colors().on_accent))
+                .text_size(px(9.))
+                .font_weight(FontWeight::BOLD)
+                .child("AI"),
+        )
+    })
 }
 
 /// A host's tile `size` px square, as [`tile_face`] draws it, with its status

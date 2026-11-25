@@ -270,11 +270,10 @@ impl Workspace {
         }
     }
 
-    /// The hosts given to an AI client now, by spec: their tiles say so.
-    /// The hosts given to an AI client, by spec: whether any of their grants
-    /// may be used now (false: each one paused, or its client).
-    pub(super) fn ai_given(&self) -> BTreeMap<String, bool> {
-        let mut given = BTreeMap::new();
+    /// The hosts an AI client may use now, by spec: their tiles say so. One
+    /// whose every grant is paused, or its client, is not.
+    pub(super) fn ai_given(&self) -> BTreeSet<String> {
+        let mut given = BTreeSet::new();
         if let Some(a) = &self.ai {
             for g in a
                 .state
@@ -283,7 +282,9 @@ impl Workspace {
                 .filter(|g| g.until.is_none_or(|u| ai::now() < u))
             {
                 let client_paused = a.state.clients.iter().any(|c| c.id == g.client && c.paused);
-                *given.entry(g.host.clone()).or_insert(false) |= !g.paused && !client_paused;
+                if !g.paused && !client_paused {
+                    given.insert(g.host.clone());
+                }
             }
         }
         given
