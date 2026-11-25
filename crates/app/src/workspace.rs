@@ -59,6 +59,16 @@ use shellwing_vault::{AskState, Request};
 /// A tab's height in the title bar, and its host's tile.
 const TAB_H: f32 = 34.;
 const TAB_TILE: f32 = 22.;
+/// A tab at its narrowest: its tile, as far from its sides as from its top.
+const TAB_TILE_ONLY: f32 = TAB_H;
+/// A tab narrower than this shows no name: its tile, and ✕ under the pointer.
+const TAB_NAMED: f32 = 96.;
+/// Between tabs.
+const TAB_GAP: f32 = 4.;
+/// The + after the tabs.
+const NEW_TAB: f32 = 28.;
+/// The room after the tabs kept to move the window by, however many there are.
+const TAB_DRAG_ROOM: f32 = 32.;
 
 /// The window's size and place are saved this long after they stop changing.
 const SAVE_BOUNDS: Duration = Duration::from_millis(400);
@@ -258,6 +268,13 @@ pub struct Workspace {
     overview: Option<(Entity<TabOverview>, Subscription)>,
     /// Where the tab button is, for the overview to hang from.
     overview_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
+    /// How wide the tabs, the + and the room after them are, as last drawn.
+    tab_room: Rc<std::cell::Cell<f32>>,
+    /// While tabs are closed with the mouse, how wide each stays: the next
+    /// tab's ✕ comes under the pointer. Let go once the pointer leaves them.
+    tab_freeze: Option<f32>,
+    /// The tabs, scrolled when even their tiles are too many.
+    tab_scroll: gpui::ScrollHandle,
     /// The sync panel, while open, and where its cloud button is.
     sync_panel: Option<(Entity<SyncPanel>, Subscription)>,
     sync_button: Rc<std::cell::Cell<gpui::Bounds<gpui::Pixels>>>,
@@ -547,6 +564,9 @@ impl Workspace {
             palette: None,
             overview: None,
             overview_button: Rc::default(),
+            tab_room: Rc::new(std::cell::Cell::new(f32::MAX)),
+            tab_freeze: None,
+            tab_scroll: gpui::ScrollHandle::new(),
             sync_panel: None,
             sync_button: Rc::default(),
             last_synced: None,
@@ -2128,6 +2148,7 @@ impl Workspace {
         self.layout_changed(cx);
         if let Some(tab) = self.tabs.get(ix) {
             self.active = ix;
+            self.tab_scroll.scroll_to_item(ix);
             let focus = match (&tab.focused, &tab.page) {
                 (Some(v), _) => v.focus_handle(cx),
                 (None, Some(p)) => p.focus(cx),
@@ -2141,6 +2162,15 @@ impl Workspace {
         self.title_window(window, cx);
         // The host list marks the host of the tab shown.
         self.refresh_sidebar(cx);
+    }
+
+    /// A tab is being closed with the mouse: the others keep their width
+    /// until the pointer leaves them.
+    fn freeze_tabs(&mut self) {
+        let (most, _) = self.tab_width();
+        if most < 280. {
+            self.tab_freeze = Some(most);
+        }
     }
 
     /// Moves a tab to `to`, the others making room; the active one stays
@@ -6232,14 +6262,28 @@ impl Workspace {
 
     /// A tab in the title bar, and the host's tile at its start: the bar
     /// keeps its height, a few pixels above and below the tab.
+    /// How wide a tab may be: the room shared out (or as it was while tabs
+    /// are being closed), and whether that leaves only its tile.
+    fn tab_width(&self) -> (f32, bool) {
+        let n = self.tabs.len().max(1) as f32;
+        let room = self.tab_room.get() - NEW_TAB - TAB_GAP - TAB_DRAG_ROOM;
+        let fair = ((room - TAB_GAP * (n - 1.)) / n).floor();
+        let most = self.tab_freeze.unwrap_or(fair);
+        (most, most < TAB_NAMED)
+    }
+
     fn tab_strip(&self, cx: &mut Context<Self>) -> Div {
+        let (most, tiles_only) = self.tab_width();
         let mut strip = div()
+            .id("tab-strip")
+            .debug_selector(|| "tab-strip".into())
+            .track_scroll(&self.tab_scroll)
             .flex()
             .items_center()
-            .gap(px(4.))
+            .gap(px(TAB_GAP))
             .h_full()
             .min_w_0()
-            .overflow_hidden();
+            .overflow_x_scroll();
         for (i, tab) in self.tabs.iter().enumerate() {
             let active = i == self.active;
             // A Run on hosts tab: its title, its progress, its own tile.
@@ -6265,19 +6309,76 @@ impl Workspace {
                 ),
                 (None, None) => continue,
             };
+            let widest: f32 = if detail.is_some() { 280. } else { 220. };
+            // Its tile alone, the name left out; the active one keeps its ✕.
+            let tile_only = tiles_only && !active;
+            let named = !tiles_only;
+            let edge = (TAB_H - TAB_TILE) / 2. - 1.;
+            let group = SharedString::from(format!("tab-{i}"));
+            let tip = (
+                SharedString::from(title.clone()),
+                SharedString::from(detail.clone().unwrap_or_default()),
+            );
+            let close = |badge: bool, cx: &mut Context<Self>| {
+                div()
+                    .id(ElementId::NamedInteger("close-tab".into(), i as u64))
+                    .debug_selector(move || format!("close-tab:{i}"))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded_sm()
+                    .text_color(rgb(colors().muted))
+                    .hover(|s| {
+                        s.bg(rgb(colors().button_hover))
+                            .text_color(rgb(colors().text))
+                    })
+                    // On a tile alone: a small ✕ at its corner, under the
+                    // pointer only.
+                    .when(badge, |d| {
+                        d.absolute()
+                            .top(px(1.))
+                            .right(px(1.))
+                            .size(px(15.))
+                            .rounded_full()
+                            .text_size(look::ui(9.))
+                            .bg(rgb(colors().chip))
+                            .border_1()
+                            .border_color(rgb(colors().edge))
+                            .opacity(0.)
+                            .group_hover(group.clone(), |s| s.opacity(1.))
+                    })
+                    .when(!badge, |d| d.px_1())
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(move |ws, _, window, cx| {
+                        cx.stop_propagation();
+                        ws.freeze_tabs();
+                        ws.request_close_tab(i, window, cx);
+                    }))
+                    .child("✕")
+            };
             strip = strip.child(
                 div()
                     .id(ElementId::NamedInteger("tab".into(), i as u64))
                     .debug_selector(move || format!("tab:{i}"))
+                    .group(group.clone())
+                    .relative()
                     .flex()
                     .flex_shrink_0()
                     .items_center()
                     .gap(px(8.))
                     .h(px(TAB_H))
                     // The tile as far from the tab's edge as from its top.
-                    .pl(px((TAB_H - TAB_TILE) / 2. - 1.))
-                    .pr(px(4.))
-                    .max_w(px(if detail.is_some() { 280. } else { 220. }))
+                    .pl(px(edge))
+                    .pr(px(if tile_only { edge } else { 4. }))
+                    .when(named, |d| d.max_w(px(widest.min(most))))
+                    .when(tile_only, |d| d.w(px(TAB_TILE_ONLY)))
+                    // Its name in full when it does not show whole.
+                    .when(tiles_only || most < widest, |d| {
+                        d.tooltip(move |_, cx| {
+                            let (title, detail) = tip.clone();
+                            cx.new(|_| crate::sidebar::Tip { title, detail }).into()
+                        })
+                    })
                     .rounded(px(7.))
                     .border_1()
                     .cursor_pointer()
@@ -6310,7 +6411,10 @@ impl Workspace {
                     )
                     .on_mouse_down(
                         MouseButton::Middle,
-                        cx.listener(move |ws, _, window, cx| ws.request_close_tab(i, window, cx)),
+                        cx.listener(move |ws, _, window, cx| {
+                            ws.freeze_tabs();
+                            ws.request_close_tab(i, window, cx)
+                        }),
                     )
                     // The host's tile, as the host list draws it: its icon or
                     // initials in its color, its status at the corner.
@@ -6331,66 +6435,93 @@ impl Workspace {
                         .debug_selector(move || format!("tab-tile:{i}")),
                     )
                     // Typing in every pane: said on the tab too.
-                    .when(tab.broadcast, |d| {
+                    .when(tab.broadcast && named, |d| {
                         d.child(div().size(px(8.)).rounded_full().bg(rgb(colors().amber)))
                     })
                     // The host's name keeps its place; what the shell says
                     // after it gives way first.
-                    .child(
-                        div()
-                            .flex_shrink_0()
-                            .max_w(px(150.))
-                            .overflow_hidden()
-                            .text_ellipsis()
-                            .whitespace_nowrap()
-                            .child(title),
-                    )
-                    .when_some(detail, |d, detail| {
+                    .when(named, |d| {
                         d.child(
                             div()
+                                .debug_selector(move || format!("tab-title:{i}"))
                                 .min_w_0()
+                                .max_w(px(150.))
                                 .overflow_hidden()
                                 .text_ellipsis()
                                 .whitespace_nowrap()
-                                .text_color(rgb(colors().muted))
-                                .child(detail),
+                                .child(title),
                         )
                     })
-                    .child(
-                        div()
-                            .id(ElementId::NamedInteger("close-tab".into(), i as u64))
-                            .px_1()
-                            .rounded_sm()
+                    .when_some(detail.filter(|_| named), |d, detail| {
+                        let mut part = div()
+                            .min_w_0()
+                            .overflow_hidden()
+                            .text_ellipsis()
+                            .whitespace_nowrap()
                             .text_color(rgb(colors().muted))
-                            .hover(|s| {
-                                s.bg(rgb(colors().button_hover))
-                                    .text_color(rgb(colors().text))
-                            })
-                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                            .on_click(cx.listener(move |ws, _, window, cx| {
-                                cx.stop_propagation();
-                                ws.request_close_tab(i, window, cx);
-                            }))
-                            .child("✕"),
-                    ),
+                            .child(detail);
+                        // Shrinks well before the name does.
+                        part.style().flex_shrink = Some(20.);
+                        d.child(part)
+                    })
+                    .child(close(tile_only, cx)),
             );
         }
-        let strip = strip.child(
-            div()
-                .id("new-tab")
-                .flex()
-                .flex_shrink_0()
-                .items_center()
-                .justify_center()
-                .size(px(28.))
-                .rounded(px(6.))
-                .text_color(rgb(colors().soft))
-                .cursor_pointer()
-                .hover(|s| s.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .on_click(cx.listener(|ws, _, window, cx| ws.open_palette(window, cx)))
-                .child("+"),
-        );
+        let new_tab = div()
+            .id("new-tab")
+            .debug_selector(|| "new-tab".into())
+            .flex()
+            .flex_shrink_0()
+            .items_center()
+            .justify_center()
+            .size(px(28.))
+            .rounded(px(6.))
+            .text_color(rgb(colors().soft))
+            .cursor_pointer()
+            .hover(|s| s.bg(rgb(colors().hover)).text_color(rgb(colors().text)))
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .on_click(cx.listener(|ws, _, window, cx| ws.open_palette(window, cx)))
+            .child("+");
+        // The tabs, the + and the room after them, which moves the window:
+        // how wide they are shares the tabs' room out.
+        let room = self.tab_room.clone();
+        let tab_area = div()
+            .id("tab-area")
+            .relative()
+            .flex_1()
+            .min_w_0()
+            .h_full()
+            .flex()
+            .items_center()
+            .gap(px(TAB_GAP))
+            .on_hover(cx.listener(|ws, hovered: &bool, _, cx| {
+                if !*hovered && ws.tab_freeze.take().is_some() {
+                    cx.notify();
+                }
+            }))
+            .child(
+                canvas(
+                    move |b, window, _| {
+                        let w = f32::from(b.size.width);
+                        if (room.get() - w).abs() >= 0.5 {
+                            room.set(w);
+                            window.refresh();
+                        }
+                    },
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .size_full(),
+            )
+            .child(strip)
+            .child(new_tab)
+            .child(
+                div()
+                    .flex_1()
+                    .min_w(px(TAB_DRAG_ROOM))
+                    .h_full()
+                    .window_control_area(WindowControlArea::Drag),
+            );
         let open = self.settings.is_some();
         let listing = self.overview.is_some();
         let bounds = self.overview_button.clone();
@@ -6422,13 +6553,7 @@ impl Workspace {
                             .text_color(rgb(colors().accent)),
                     ),
             )
-            .child(strip)
-            .child(
-                div()
-                    .flex_1()
-                    .h_full()
-                    .window_control_area(WindowControlArea::Drag),
-            )
+            .child(tab_area)
             // A command an AI client wants to run, waiting for the person to
             // allow it. The rest of this row goes somewhere; this one has to be
             // answered, and until it is, nothing that client asked for happens -
