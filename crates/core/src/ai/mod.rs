@@ -425,6 +425,7 @@ impl Hub {
             Some((log, activity)) => (Some(log), activity),
             None => (None, vec![]),
         };
+        let next = next_after(&activity);
         Arc::new(Hub {
             rt,
             secrets,
@@ -435,7 +436,7 @@ impl Hub {
                 hosts: BTreeMap::new(),
                 jobs: BTreeMap::new(),
                 slots: BTreeMap::new(),
-                next: 1,
+                next,
                 activity,
                 log,
                 allowed: vec![],
@@ -1067,6 +1068,18 @@ pub fn risky(command: &str, patterns: &[String]) -> Option<String> {
 
 /// Whether a grant holds now.
 /// What a paused client is told, whatever it asks.
+/// The number of the next job after those in `activity`: the activity
+/// read back from the log goes on from where it was, so a new job's id is
+/// never one it has already, which would put it in that one's place and
+/// leave it out of the log.
+fn next_after(activity: &[Activity]) -> u64 {
+    activity
+        .iter()
+        .filter_map(|a| a.id.strip_prefix("j-")?.parse::<u64>().ok())
+        .max()
+        .map_or(1, |n| n + 1)
+}
+
 pub fn paused_client(name: &str) -> String {
     format!(
         "{name} is paused in shellwing: no host can be used until the user resumes it in Settings › AI."
@@ -1090,6 +1103,70 @@ mod tests {
             added_at: 0,
             paused: false,
         }
+    }
+
+    /// Opened again, the hub goes on numbering its jobs after those its log
+    /// kept: a new job is kept beside them, last, and logged.
+    #[tokio::test]
+    async fn jobs_go_on_from_the_log() {
+        let dir = std::env::temp_dir().join(format!("shellwing-ai-ids-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let path = dir.join("ai-activity.jsonl");
+        let lines: String = ["j-1", "j-7", "j-2"]
+            .iter()
+            .map(|id| {
+                let a = Activity {
+                    id: id.to_string(),
+                    client: "c".into(),
+                    host: "h".into(),
+                    command: "true".into(),
+                    started: 0,
+                    ended: Some(0),
+                    end: Some(End::Exited(Some(0))),
+                    output: String::new(),
+                    waiting: None,
+                    adding: None,
+                    snippet: None,
+                };
+                serde_json::to_string(&a).expect("json") + "\n"
+            })
+            .collect();
+        std::fs::write(&path, lines).expect("log");
+        struct None_;
+        impl Secrets for None_ {
+            fn password(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn passphrase(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn learned(&self, _: shellwing_ssh::Learned) {}
+        }
+        let (tx, _rx) = async_channel::unbounded();
+        let hub = Hub::new(
+            Handle::current(),
+            Arc::new(None_),
+            &shellwing_config::Ssh::default(),
+            Some(path.clone()),
+            tx,
+        );
+        let id = {
+            let mut inner = hub.inner.lock().expect("lock");
+            let id = format!("j-{}", inner.next);
+            inner.next += 1;
+            id
+        };
+        assert_eq!(id, "j-8", "after the highest kept");
+        let job = Job::new(id, &client(), "h", "h", "echo new");
+        job.end(End::Exited(Some(0)));
+        hub.ended(&job);
+        let ids: Vec<String> = hub.activity().into_iter().map(|a| a.id).collect();
+        assert_eq!(ids, ["j-1", "j-7", "j-2", "j-8"], "kept, last");
+        let logged = std::fs::read_to_string(&path).expect("log");
+        assert!(logged.contains("\"echo new\""), "logged: {logged}");
+        assert_eq!(next_after(&[]), 1);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
