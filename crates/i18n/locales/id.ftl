@@ -214,6 +214,12 @@ te3f10929 = membaca berkas
 # writes files
 t0a7257de = menulis berkas
 
+# reads notes
+tf5190423 = membaca catatan
+
+# adds to notes
+tc82ac79b = menambah catatan
+
 # while shellwing stays open
 t938960ff = selama shellwing tetap terbuka
 
@@ -318,6 +324,18 @@ tc9796e43 = Tulis berkas
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = melalui SFTP; jika perintah berisiko menunggu, setiap penulisan menunggu Anda
+
+# Read notes
+t199095f4 = Baca catatan
+
+# the notes about the host, but never a sensitive one
+t422cccaf = catatan tentang host, tetapi tidak pernah yang sensitif
+
+# Add to notes
+tb80fd9c4 = Tambah ke catatan
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = catatan baru tentang host, atau tambahan di akhir sebuah catatan; tidak pernah mengubah isinya
 
 # Commands
 t971550f3 = Perintah

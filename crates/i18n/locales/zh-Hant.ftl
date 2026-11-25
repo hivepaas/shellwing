@@ -214,6 +214,12 @@ te3f10929 = 讀取檔案
 # writes files
 t0a7257de = 寫入檔案
 
+# reads notes
+tf5190423 = 讀取筆記
+
+# adds to notes
+tc82ac79b = 新增至筆記
+
 # while shellwing stays open
 t938960ff = shellwing 開啟期間
 
@@ -318,6 +324,18 @@ tc9796e43 = 寫入檔案
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = 透過 SFTP；在「有風險時詢問」模式下，每次寫入都會等你確認
+
+# Read notes
+t199095f4 = 讀取筆記
+
+# the notes about the host, but never a sensitive one
+t422cccaf = 關於此主機的筆記，但絕不包括敏感筆記
+
+# Add to notes
+tb80fd9c4 = 新增至筆記
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = 關於此主機的新筆記，或在筆記末尾追加內容；絕不更改既有內容
 
 # Commands
 t971550f3 = 指令

@@ -211,6 +211,12 @@ te3f10929 = 파일 읽기
 # writes files
 t0a7257de = 파일 쓰기
 
+# reads notes
+tf5190423 = 노트 읽기
+
+# adds to notes
+tc82ac79b = 노트에 추가
+
 # while shellwing stays open
 t938960ff = shellwing이 열려 있는 동안
 
@@ -315,6 +321,18 @@ tc9796e43 = 파일 쓰기
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = SFTP 사용. '위험한 명령은 확인'에서는 모든 쓰기가 지시를 기다립니다
+
+# Read notes
+t199095f4 = 노트 읽기
+
+# the notes about the host, but never a sensitive one
+t422cccaf = 호스트에 관한 노트. 민감 정보 노트는 제외됩니다
+
+# Add to notes
+tb80fd9c4 = 노트에 추가
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = 호스트에 관한 새 노트, 또는 노트 끝에 내용 추가. 기존 내용은 바꾸지 않습니다
 
 # Commands
 t971550f3 = 명령

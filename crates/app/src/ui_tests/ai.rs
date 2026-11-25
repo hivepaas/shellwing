@@ -545,6 +545,35 @@ fn grant_of(ui: &mut Ui, host: &str) -> usize {
 }
 
 scenario!(
+    /// Notes are given apart from files, and only when ticked: a host given
+    /// as it comes has neither right, one given with both ticked has both,
+    /// and they are kept.
+    notes_are_given_only_when_ticked,
+    |ui| {
+        let _token = three_hosts(ui);
+        ui.click("ai-give");
+        ui.click("ai-pick:db");
+        ui.click("ai-give-ok");
+        ui.click("ai-give");
+        ui.click("ai-pick:web");
+        ui.click("ai-may:notes-read");
+        ui.click("ai-may:notes-add");
+        ui.click("ai-give-ok");
+        let rights = |ui: &mut Ui, host: &str| {
+            let i = grant_of(ui, host);
+            ui.ws(|ws, _, cx| {
+                let g = ws.ai_snapshot(cx).state.grants[i].clone();
+                (g.read, g.notes_read, g.notes_add)
+            })
+        };
+        assert_eq!(rights(ui, "db"), (true, false, false), "not unless ticked");
+        assert_eq!(rights(ui, "web"), (true, true, true));
+        let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
+        assert!(saved.contains("\"notes_read\": true") && saved.contains("\"notes_add\": true"), "kept: {saved}");
+    }
+);
+
+scenario!(
     /// A whole group is given at once, a grant for each host; one given
     /// again is said to be replaced, and is. Paused, a host stops what it
     /// ran, is still listed, says it is paused and runs nothing; its tile

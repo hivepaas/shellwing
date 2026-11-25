@@ -220,6 +220,12 @@ te3f10929 = читает файлы
 # writes files
 t0a7257de = записывает файлы
 
+# reads notes
+tf5190423 = читает заметки
+
+# adds to notes
+tc82ac79b = дополняет заметки
+
 # while shellwing stays open
 t938960ff = пока shellwing открыт
 
@@ -330,6 +336,18 @@ tc9796e43 = Записывать файлы
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = по SFTP; в режиме «Спрашивать о рискованных» каждая запись ждёт вас
+
+# Read notes
+t199095f4 = Читать заметки
+
+# the notes about the host, but never a sensitive one
+t422cccaf = заметки об этом хосте, но никогда — конфиденциальные
+
+# Add to notes
+tb80fd9c4 = Дополнять заметки
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = новая заметка об этом хосте или продолжение в конце заметки; написанное не меняется
 
 # Commands
 t971550f3 = Команды

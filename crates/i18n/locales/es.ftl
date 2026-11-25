@@ -216,6 +216,12 @@ te3f10929 = lee archivos
 # writes files
 t0a7257de = escribe archivos
 
+# reads notes
+tf5190423 = lee notas
+
+# adds to notes
+tc82ac79b = añade a notas
+
 # while shellwing stays open
 t938960ff = mientras shellwing siga abierto
 
@@ -322,6 +328,18 @@ tc9796e43 = Escribir archivos
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = por SFTP; donde los de riesgo esperan, toda escritura te espera
+
+# Read notes
+t199095f4 = Leer notas
+
+# the notes about the host, but never a sensitive one
+t422cccaf = las notas sobre el host, pero nunca una confidencial
+
+# Add to notes
+tb80fd9c4 = Añadir a notas
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = una nota nueva sobre el host, o más al final de una; nunca cambia lo que ya hay
 
 # Commands
 t971550f3 = Comandos

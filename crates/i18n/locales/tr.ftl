@@ -216,6 +216,12 @@ te3f10929 = dosya okur
 # writes files
 t0a7257de = dosya yazar
 
+# reads notes
+tf5190423 = not okur
+
+# adds to notes
+tc82ac79b = notlara ekler
+
 # while shellwing stays open
 t938960ff = shellwing açıkken
 
@@ -322,6 +328,18 @@ tc9796e43 = Dosya yazma
 
 # over SFTP; where risky ones wait, every write waits for you
 t2d9c8c34 = SFTP üzerinden; "Riskli olanlar için sor" seçiliyken her yazma sizi bekler
+
+# Read notes
+t199095f4 = Not okuma
+
+# the notes about the host, but never a sensitive one
+t422cccaf = sunucuyla ilgili notlar, ama hassas olanlar asla
+
+# Add to notes
+tb80fd9c4 = Notlara ekleme
+
+# a new note about the host, or more at the end of one; never changes what is there
+tb972781e = sunucuyla ilgili yeni bir not ya da bir notun sonuna ekleme; var olanı asla değiştirmez
 
 # Commands
 t971550f3 = Komutlar

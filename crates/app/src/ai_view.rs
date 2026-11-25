@@ -147,8 +147,9 @@ struct Giving {
     until: Until,
     mode: AiMode,
     how: AiHow,
-    /// What it may do: run commands, read files, write files.
-    may: [bool; 3],
+    /// What it may do: run commands, read files, write files, read notes,
+    /// add to notes.
+    may: [bool; 5],
 }
 
 /// A mode's name, and what it does.
@@ -290,7 +291,7 @@ impl AiView {
             until: Until::TakenBack,
             mode: state.default_mode,
             how: AiHow::Background,
-            may: [true, true, false],
+            may: [true, true, false, false, false],
         });
         window.focus(&self.filter.focus_handle(cx), cx);
         cx.notify();
@@ -326,6 +327,8 @@ impl AiView {
                 run: g.may[0],
                 read: g.may[1],
                 write: g.may[2],
+                notes_read: g.may[3],
+                notes_add: g.may[4],
                 paused: false,
             })
             .collect();
@@ -770,6 +773,12 @@ impl AiView {
         if g.write {
             how.push(tr!("writes files"));
         }
+        if g.notes_read {
+            how.push(tr!("reads notes"));
+        }
+        if g.notes_add {
+            how.push(tr!("adds to notes"));
+        }
         let how = how.join(", ");
         let until = match (g.until, g.session) {
             (_, true) => tr!("while shellwing stays open"),
@@ -1189,6 +1198,16 @@ impl AiView {
                         tr!("Write files"),
                         tr!("over SFTP; where risky ones wait, every write waits for you"),
                         "ai-may:write",
+                    ),
+                    (
+                        tr!("Read notes"),
+                        tr!("the notes about the host, but never a sensitive one"),
+                        "ai-may:notes-read",
+                    ),
+                    (
+                        tr!("Add to notes"),
+                        tr!("a new note about the host, or more at the end of one; never changes what is there"),
+                        "ai-may:notes-add",
                     ),
                 ]
                 .into_iter()

@@ -637,6 +637,8 @@ mod tests {
             run: true,
             read: true,
             write: false,
+            notes_read: false,
+            notes_add: false,
             paused,
         };
         let mut state = shellwing_config::AiState {
