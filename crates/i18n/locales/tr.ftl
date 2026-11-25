@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · başladı: { $when } · { $job }
 # The snippet {name}
 t6e8860fa = { $name } kod parçacığı
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client }, { $host } için bu kod parçacığını öneriyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken her öneri bekler. Eklendiğinde Enter olmadan yazılır, böylece çalışmadan önce okursunuz.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }, bunu { $host } ile ilgili notlara eklemek istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken notlara her ekleme bekler.
 
@@ -3613,6 +3616,9 @@ t79d7b3ad = Kitaplığı aç
 
 # from the library
 td908f0d1 = kitaplıktan
+
+# from {client}
+t541be172 = { $client } tarafından
 
 # typed, not run
 td4e41905 = yazılır, çalıştırılmaz

@@ -12,7 +12,7 @@ use crate::host_editor::{hint_text, label_text, outline_button, primary_button, 
 use crate::input::TextInput;
 use crate::look::ui;
 use crate::secrets::VaultSlot;
-use crate::snippets::{Scope, Snippet};
+use crate::snippets::{Scope, Snippet, suggested_by as snippets_suggested_by};
 use crate::workspace::Workspace;
 use shellwing_vault::Environment;
 
@@ -518,6 +518,15 @@ impl SnippetsView {
                                         .text_size(ui(11.))
                                         .text_color(rgb(colors().muted))
                                         .child(tr!("from the library")),
+                                )
+                            })
+                            .when_some(snippets_suggested_by(&s.origin), |d, client| {
+                                d.child(
+                                    div()
+                                        .debug_selector(|| "snippet-from-ai".into())
+                                        .text_size(ui(11.))
+                                        .text_color(rgb(colors().muted))
+                                        .child(tr!("from {client}", client = client)),
                                 )
                             })
                             .when(!s.enter, |d| {

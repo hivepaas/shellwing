@@ -139,6 +139,12 @@ impl Workspace {
                 self.refresh_sidebar(cx);
                 cx.notify();
             }
+            HubEvent::SnippetsChanged => {
+                if let Some((view, _)) = &self.settings {
+                    let view = view.clone();
+                    cx.defer(move |cx| view.update(cx, |v, cx| v.snippets_changed(cx)));
+                }
+            }
             HubEvent::NotesChanged => {
                 if let Some((view, _)) = &self.settings {
                     let view = view.clone();

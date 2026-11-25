@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · gestartet um { $when } · { $job }
 # The snippet {name}
 t6e8860fa = Das Snippet { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } schlägt dieses Snippet für { $host } vor. Es wartet auf dich: Wo riskante Befehle warten, wartet jeder Vorschlag. Hinzugefügt wird es ohne Enter eingegeben, damit du es vor dem Ausführen liest.
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } möchte dies zu den Notizen über { $host } hinzufügen. Es wartet auf dich: Wo riskante Befehle warten, wartet jede Ergänzung einer Notiz.
 
@@ -3613,6 +3616,9 @@ t79d7b3ad = Bibliothek öffnen
 
 # from the library
 td908f0d1 = aus der Bibliothek
+
+# from {client}
+t541be172 = von { $client }
 
 # typed, not run
 td4e41905 = eingegeben, nicht ausgeführt

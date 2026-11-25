@@ -858,6 +858,41 @@ scenario!(
 );
 
 scenario!(
+    /// An agent suggests a snippet: it waits for the person (risky ones
+    /// wait, and every suggestion does), who sees it first; allowed, it is
+    /// the host's alone, typed without Enter, and Settings says who
+    /// suggested it.
+    an_ai_suggests_a_snippet,
+    |ui| {
+        let token = given_web_may(ui, "Risky", "background", &["snippets"]);
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool_in(ui, "add_snippet", json!({"host": "web", "name": "Recent errors", "command": "journalctl -p err -n {{lines}}", "category": "Logs", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let vault = ui.vault().expect("the vault");
+        assert!(vault.snippets().expect("snippets").is_empty(), "not before it is allowed");
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        assert!(ui.find("ai-adding").is_some(), "what it suggests is shown");
+        ui.click("ai-allow");
+        let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+        assert!(said.contains("Added the snippet \"Recent errors\" for web"), "{said}");
+        let kept = vault.snippets().expect("snippets");
+        assert_eq!(kept.len(), 1);
+        let s = &kept[0];
+        assert_eq!(
+            (s.scope.as_str(), s.enter, s.origin.as_str(), s.category.as_str()),
+            ("host:web", false, "ai:Codex CLI", "Logs")
+        );
+        let (listed, _) = c.tool_in(ui, "list_snippets", json!({"host": "web"}));
+        assert!(listed.contains("Recent errors\tLogs\tvalues: lines\ttyped without Enter"), "{listed}");
+        ui.ws(|ws, window, cx| ws.open_settings(Page::Snippets, window, cx));
+        assert!(ui.find("snippet-from-ai").is_some(), "Settings says who suggested it");
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.

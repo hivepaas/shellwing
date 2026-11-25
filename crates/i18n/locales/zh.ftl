@@ -73,6 +73,9 @@ tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 # The snippet {name}
 t6e8860fa = 代码片段 { $name }
 
+# {client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.
+tccc5ba87 = { $client } 为 { $host } 建议这个代码片段。它在等你确认：在“危险命令需确认”模式下，每个建议都需确认。添加后输入时不按 Enter，让你在运行前先阅读。
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } 想把这段内容添加到关于 { $host } 的笔记。它在等你确认：在“危险命令需确认”模式下，每次添加到笔记都需确认。
 
@@ -3552,6 +3555,9 @@ t79d7b3ad = 打开代码片段库
 
 # from the library
 td908f0d1 = 来自代码片段库
+
+# from {client}
+t541be172 = 来自 { $client }
 
 # typed, not run
 td4e41905 = 仅输入，不运行

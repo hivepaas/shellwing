@@ -165,6 +165,8 @@ pub enum HubEvent {
     TabStop { id: String },
     /// An AI added to the notes: lists showing them show them again.
     NotesChanged,
+    /// An AI added a snippet: lists showing them show them again.
+    SnippetsChanged,
     /// The person cleared the activity: only what runs or waits is left.
     Cleared,
 }

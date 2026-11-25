@@ -406,6 +406,9 @@ impl ActivityView {
                     }),
             );
         if let Some(why) = &a.waiting {
+            // What it would add to the vault, rather than run: Add it.
+            let adds = why == shellwing_core::ai::notes::NOTES
+                || why == shellwing_core::ai::snippets::SUGGESTS;
             let (once, session, refuse) = (id.clone(), id.clone(), id.clone());
             head = head
                 .child(
@@ -417,7 +420,13 @@ impl ActivityView {
                         .border_1()
                         .border_color(rgb(colors().warn_edge))
                         .text_color(rgb(colors().warn_text))
-                        .child(if why == shellwing_core::ai::notes::NOTES {
+                        .child(if why == shellwing_core::ai::snippets::SUGGESTS {
+                            tr!(
+                                "{client} suggests this snippet for {host}. It waits for you: where risky ones wait, every snippet suggested does. Added, it is typed without Enter, for you to read before it runs.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else if why == shellwing_core::ai::notes::NOTES {
                             tr!(
                                 "{client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.",
                                 client = a.client.clone(),
@@ -476,7 +485,7 @@ impl ActivityView {
                             .child(text),
                     )
                 })
-                .when(why == shellwing_core::ai::notes::NOTES, |d| {
+                .when(adds, |d| {
                     let (add, refuse) = (once.clone(), refuse.clone());
                     d.child(
                         div()
@@ -494,7 +503,7 @@ impl ActivityView {
                             ),
                     )
                 })
-                .when(why != shellwing_core::ai::notes::NOTES, |d| d.child(
+                .when(!adds, |d| d.child(
                     div()
                         .flex()
                         .gap(px(8.))
