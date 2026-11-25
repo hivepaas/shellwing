@@ -112,12 +112,14 @@ impl Workspace {
                 spec,
                 command,
                 client,
+                needs,
             } => {
                 ai.queued.push(TabJob {
                     id,
                     spec,
                     command,
                     client,
+                    needs,
                     opened: false,
                 });
                 self.type_next(cx);
@@ -381,6 +383,9 @@ pub(super) struct TabJob {
     spec: String,
     command: String,
     client: String,
+    /// The environments it runs with, in a subshell: their values sent as
+    /// a pane sends them.
+    needs: Vec<String>,
     /// A tab was opened for it.
     opened: bool,
 }
@@ -456,6 +461,7 @@ impl Workspace {
                     spec: j.spec.clone(),
                     command: j.command.clone(),
                     client: j.client.clone(),
+                    needs: j.needs.clone(),
                     opened: j.opened,
                 },
             ));
@@ -485,9 +491,22 @@ impl Workspace {
         let hub = ai.hub.clone();
         let session = view.read(cx).session();
         let output = session.tap();
-        session
-            .writer
-            .write(ai::tab::wrap(&job.id, &job.command).into_bytes());
+        if job.needs.is_empty() {
+            session
+                .writer
+                .write(ai::tab::wrap(&job.id, &job.command).into_bytes());
+        } else {
+            // In a subshell that reads the values with the echo off, as a
+            // pane runs a snippet that needs them.
+            let marked = ai::tab::marked(&job.id, &job.command);
+            let typed = self.env_values(&job.needs).and_then(|values| {
+                view.update(cx, |v, cx| v.run_with_env(values, &marked, true, cx))
+            });
+            if let Err(why) = typed {
+                hub.tab_end(&job.id, ai::End::Failed(why));
+                return;
+            }
+        }
         let job_id = job.id.clone();
         cx.spawn(async move |ws, cx| {
             let mut catch = ai::tab::Catch::new(&job_id);

@@ -6,28 +6,37 @@
 //! The values an agent gives fill a snippet's `{{name}}`s only if they
 //! cannot change what the command is: one word of a set that means the same
 //! unquoted, in double quotes and in single quotes. A snippet typed without
-//! Enter waits for the person every time. One that needs environments is
-//! not run yet.
+//! Enter waits for the person every time, as one that needs environments
+//! does: their values go in on the command's input (or are sent to its tab
+//! as a pane sends them), and the agent never sees them.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use shellwing_config::AiClient;
-use shellwing_vault::Snippet;
+use shellwing_vault::{EnvValues, Snippet};
+use zeroize::Zeroizing;
 
 use super::notes::{VAULT_LOCKED, VaultNotes};
 use super::{End, Hub, Job, paused_client};
+use crate::environment::{input, piped};
 use crate::snippets::{Scope, asked, fill};
 
 /// Why a snippet typed without Enter waits for the person, under every
 /// mode: its waiting reason, as AI activity reads it.
 pub const LOOK: &str = "\u{0}look";
+/// Why a snippet that needs environments waits for the person, under
+/// every mode, before the names of the environments it loads: its waiting
+/// reason, as AI activity reads it.
+pub const ENVS: &str = "\u{0}envs:";
 /// The longest value an agent gives, in characters.
 pub const MOST_VALUE: usize = 256;
 
 /// Where the snippets are: the vault, as the app has it.
 pub trait SnippetStore: Send + Sync {
     fn snippets(&self) -> Result<Vec<Snippet>, String>;
+    /// The environment `id`: its name and its variables; None if gone.
+    fn environment(&self, id: &str) -> Result<Option<(String, EnvValues)>, String>;
 }
 
 impl SnippetStore for VaultNotes {
@@ -35,6 +44,28 @@ impl SnippetStore for VaultNotes {
         let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
         vault.snippets().map_err(|e| e.to_string())
     }
+
+    fn environment(&self, id: &str) -> Result<Option<(String, EnvValues)>, String> {
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
+        let Some(env) = vault
+            .environments()
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .find(|e| e.id == id)
+        else {
+            return Ok(None);
+        };
+        let values = vault.environment_values(id).map_err(|e| e.to_string())?;
+        Ok(values.map(|v| (env.name, v)))
+    }
+}
+
+/// A snippet's run with environments, on a connection of its own: the
+/// command that reads their values, and what it reads.
+pub(crate) struct EnvRun {
+    pub ids: Vec<String>,
+    pub command: String,
+    pub input: Zeroizing<Vec<u8>>,
 }
 
 /// Why `value`, for `{{name}}`, is not taken from an agent, if it is not.
@@ -127,7 +158,7 @@ impl Hub {
         for s in &found {
             let values = asked(&s.command);
             let how = if !s.needs.is_empty() {
-                "needs environments, which run_snippet does not load yet"
+                "needs environments: each run waits for the user, and you never see their values"
             } else if !s.enter {
                 "typed without Enter: each run waits for the user"
             } else {
@@ -168,12 +199,6 @@ impl Hub {
         let s = found.into_iter().find(|s| s.id == id).ok_or_else(|| {
             format!("No snippet {id} is offered for {name}: list_snippets says which.")
         })?;
-        if !s.needs.is_empty() {
-            return Err(format!(
-                "{:?} needs environments, which run_snippet does not load yet: the user can run it from a pane.",
-                s.name
-            ));
-        }
         let mut filled = BTreeMap::new();
         let mut missing = vec![];
         for v in asked(&s.command) {
@@ -208,8 +233,56 @@ impl Hub {
                 super::files::size(shellwing_vault::limits::COMMAND as u64)
             ));
         }
-        let always = (!s.enter).then(|| LOOK.to_string());
-        self.run_with(client, host, &command, always, Some(s.name.clone()))
+        if s.needs.is_empty() {
+            let always = (!s.enter).then(|| LOOK.to_string());
+            return self.run_with(client, host, &command, always, Some(s.name.clone()), None);
+        }
+        let (names, envs) = self.env_run(&s.needs, &command)?;
+        // Whatever the mode: the person sees which environments go in.
+        let always = Some(format!("{ENVS}{}", names.join(", ")));
+        self.run_with(
+            client,
+            host,
+            &command,
+            always,
+            Some(s.name.clone()),
+            Some(envs),
+        )
+    }
+
+    /// The environments `ids` for `command`: their names, and the run that
+    /// sends their values on its input. A later one's variable wins, as in
+    /// a pane.
+    fn env_run(&self, ids: &[String], command: &str) -> Result<(Vec<String>, EnvRun), String> {
+        let store = self
+            .inner
+            .lock()
+            .map_err(|_| "busy".to_string())?
+            .snippets
+            .clone()
+            .ok_or(VAULT_LOCKED)?;
+        let mut names = vec![];
+        let mut all: shellwing_vault::EnvValues = vec![];
+        for id in ids {
+            let (name, values) = store.environment(id)?.ok_or(
+                "An environment this snippet needs was deleted: the user can edit the snippet.",
+            )?;
+            names.push(name);
+            for (n, v) in values {
+                all.retain(|(x, _)| *x != n);
+                all.push((n, v));
+            }
+        }
+        let (_, sent, bytes) = crate::envs::env_values(all)?;
+        crate::envs::fits(0, bytes)?;
+        Ok((
+            names,
+            EnvRun {
+                ids: ids.to_vec(),
+                command: piped(&sent, command),
+                input: input(&sent),
+            },
+        ))
     }
 
     /// Keeps a listing in the activity, done at once.
@@ -271,11 +344,23 @@ mod tests {
         }
     }
 
+    /// Snippets, and one environment, `env1` (AWS prod): its key.
     struct Kept(Vec<Snippet>);
 
     impl SnippetStore for Kept {
         fn snippets(&self) -> Result<Vec<Snippet>, String> {
             Ok(self.0.clone())
+        }
+        fn environment(&self, id: &str) -> Result<Option<(String, EnvValues)>, String> {
+            Ok((id == "env1").then(|| {
+                (
+                    "AWS prod".to_string(),
+                    vec![(
+                        "AWS_KEY".to_string(),
+                        Zeroizing::new("s3cr3t-value".to_string()),
+                    )],
+                )
+            }))
         }
     }
 
@@ -356,10 +441,14 @@ mod tests {
         look.command = "sudo systemctl restart app".into();
         let mut envs = snippet("envs", "", "Ops");
         envs.needs = vec!["env1".into()];
+        envs.command = "aws s3 ls {{bucket}}".into();
+        let mut gone = snippet("gone", "", "Ops");
+        gone.needs = vec!["deleted".into()];
         hub.set_snippets(Some(Arc::new(Kept(vec![
             tail,
             look,
             envs,
+            gone,
             snippet("other", "host:db", "Ops"),
         ]))));
         hub
@@ -370,14 +459,16 @@ mod tests {
         let hub = hub(shellwing_config::AiMode::Free);
         let c = client();
         let listed = hub.list_snippets(&c, "web").expect("listed");
-        assert!(listed.starts_with("3 snippets offered for web"), "{listed}");
+        assert!(listed.starts_with("4 snippets offered for web"), "{listed}");
         assert!(listed.contains("tail\tname tail\tLogs\tvalues: lines, file\truns as a command\n    tail -n {{lines}}"), "{listed}");
         assert!(
             listed.contains("look\tname look\tOps\tno values\ttyped without Enter"),
             "{listed}"
         );
         assert!(
-            listed.contains("envs\tname envs\tOps\tno values\tneeds environments"),
+            listed.contains(
+                "envs\tname envs\tOps\tvalues: bucket\tneeds environments: each run waits"
+            ),
             "{listed}"
         );
         assert!(!listed.contains("name other"), "db's own: {listed}");
@@ -424,11 +515,6 @@ mod tests {
             .expect("unsafe");
         assert!(e.contains("file has ';'"), "{e}");
         let e = hub
-            .run_snippet(&c, "web", "envs", &values(&[]))
-            .err()
-            .expect("envs");
-        assert!(e.contains("needs environments"), "{e}");
-        let e = hub
             .run_snippet(&c, "web", "other", &values(&[]))
             .err()
             .expect("not offered");
@@ -449,6 +535,41 @@ mod tests {
         // Nothing listens there: it fails to connect, as run would.
         let end = job.wait(std::time::Duration::from_secs(10), true).await.end;
         assert!(matches!(end, Some(End::Failed(_))), "{end:?}");
+    }
+
+    /// A snippet that needs environments waits for the person, whatever the
+    /// mode, who is told which ones it loads; their values are on no command
+    /// line the activity keeps, nor in what the agent is told.
+    #[tokio::test]
+    async fn one_that_needs_environments_always_waits() {
+        let hub = hub(shellwing_config::AiMode::Free);
+        let c = client();
+        let mut values = BTreeMap::new();
+        values.insert("bucket".to_string(), "logs".to_string());
+        let job = hub.run_snippet(&c, "web", "envs", &values).expect("asked");
+        let said = job.wait(std::time::Duration::from_millis(50), true).await;
+        assert!(
+            said.waiting && said.end.is_none(),
+            "waits, even running freely"
+        );
+        let a = job.activity();
+        assert_eq!(a.waiting.as_deref(), Some("\u{0}envs:AWS prod"));
+        assert_eq!(
+            a.command, "aws s3 ls logs",
+            "as filled in, its values nowhere"
+        );
+        assert!(!format!("{a:?}").contains("s3cr3t"), "{a:?}");
+        hub.answer(&job.id, super::super::Approval::Refuse);
+        assert_eq!(
+            job.wait(std::time::Duration::from_secs(5), true).await.end,
+            Some(End::Refused)
+        );
+
+        let e = hub
+            .run_snippet(&c, "web", "gone", &BTreeMap::new())
+            .err()
+            .expect("gone");
+        assert!(e.contains("was deleted"), "{e}");
     }
 
     #[tokio::test]

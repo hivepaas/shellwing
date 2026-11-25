@@ -76,6 +76,9 @@ t6e8860fa = { $name } kod parçacığı
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }, bunu { $host } ile ilgili notlara eklemek istiyor. Sizi bekliyor: "Riskli olanlar için sor" seçiliyken notlara her ekleme bekler.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client }, bu kod parçacığını { $host } üzerinde { $envs } ortamlarıyla çalıştırmak istiyor. Her seferinde sizi bekler: değerleri iletilir ama { $client } bunları asla görmez; çıktısı ise ona döner.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client }, bu kod parçacığını { $host } üzerinde çalıştırmak istiyor. Her seferinde sizi bekler: önce okunsun diye Enter olmadan yazılır.
 

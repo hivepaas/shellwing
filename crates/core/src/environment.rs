@@ -176,6 +176,27 @@ pub fn wrapped(vars: &[Sent], ready: &str, command: &str) -> String {
     )
 }
 
+/// A snippet's `command` on a connection of its own, with no terminal: in
+/// a subshell that reads `vars` from its input first ([`input`]), exports
+/// them, and runs it. The command line holds the names only.
+pub fn piped(vars: &[Sent], command: &str) -> String {
+    format!(
+        "( {}; unset __sw_v __sw_l; export {}\n{command}\n)",
+        steps(vars),
+        names(vars)
+    )
+}
+
+/// What [`piped`] reads: each value's lines, in turn.
+pub fn input(vars: &[Sent]) -> Zeroizing<Vec<u8>> {
+    let mut out = Zeroizing::new(Vec::new());
+    for l in vars.iter().flat_map(|v| &v.lines) {
+        out.extend_from_slice(l.as_bytes());
+        out.push(b'\n');
+    }
+    out
+}
+
 fn names(vars: &[Sent]) -> String {
     vars.iter()
         .map(|v| v.name.as_str())
@@ -187,6 +208,15 @@ fn names(vars: &[Sent]) -> String {
 /// after it keeps the newlines it ends in from `$(…)`. A loop, so the
 /// command is as long whatever the value's (busybox edits 1 KB at most).
 fn reading(vars: &[Sent], ready: &str) -> String {
+    format!(
+        "stty -echo; printf '{}'; {}; stty echo; unset __sw_v __sw_l",
+        signal_sequence(ready),
+        steps(vars)
+    )
+}
+
+/// Each value read and decoded, as [`reading`] does with the echo off.
+fn steps(vars: &[Sent]) -> String {
     let mut steps = vec![];
     for v in vars {
         steps.push(
@@ -198,11 +228,7 @@ fn reading(vars: &[Sent], ready: &str) -> String {
             n = v.name
         ));
     }
-    format!(
-        "stty -echo; printf '{}'; {}; stty echo; unset __sw_v __sw_l",
-        signal_sequence(ready),
-        steps.join("; ")
-    )
+    steps.join("; ")
 }
 
 fn finish(vars: &[Sent], done: &str) -> String {
@@ -217,6 +243,43 @@ pub fn unload(names: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Run by sh with the values on its input, as a host runs it: each
+    /// value comes back as it was, the command line never holding one.
+    #[cfg(unix)]
+    #[test]
+    fn piped_values_come_through_the_input() {
+        use std::io::Write;
+        let values = [
+            ("A_KEY", "s3 cret with 'quotes' and \\backslash"),
+            ("PEM", "-----BEGIN-----\nline two\n\n"),
+            ("UNI", "héllo ✓"),
+        ];
+        let sent: Vec<Sent> = values.iter().map(|(n, v)| encode(n, v)).collect();
+        let command = piped(&sent, "printf '%s|' \"$A_KEY\" \"$PEM\" \"$UNI\"");
+        assert!(
+            !command.contains("s3 cret") && !command.contains("BEGIN"),
+            "{command}"
+        );
+        let mut child = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&command)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .expect("sh");
+        child
+            .stdin
+            .take()
+            .expect("stdin")
+            .write_all(&input(&sent))
+            .expect("input");
+        let out = child.wait_with_output().expect("ran");
+        assert_eq!(
+            String::from_utf8_lossy(&out.stdout),
+            format!("{}|{}|{}|", values[0].1, values[1].1, values[2].1)
+        );
+    }
 
     #[test]
     fn dotenv_text_is_read_as_people_write_it() {

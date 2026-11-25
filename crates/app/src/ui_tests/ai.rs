@@ -757,6 +757,106 @@ scenario!(
     }
 );
 
+/// Gives `web` with Use snippets (`how` it is reached), and keeps a
+/// snippet for it that needs an environment holding `DEPLOY_TOKEN`: the
+/// client's token, and the snippet's id.
+fn snippet_with_env(ui: &mut Ui, how: &str) -> (String, String) {
+    let token = given_web_may(ui, "Free", how, &["snippets"]);
+    let vault = ui.vault().expect("the vault");
+    let env = vault
+        .save_environment(
+            "",
+            "Deploy keys",
+            "",
+            &[("DEPLOY_TOKEN".into(), Some("t0p-s3cret\nline 2".into()))],
+        )
+        .expect("environment");
+    let id = vault
+        .save_snippet(&shellwing_vault::Snippet {
+            id: String::new(),
+            name: "Deploy check".into(),
+            command: "echo \"{{stage}} token: ${#DEPLOY_TOKEN} bytes, $(printf %s \"$DEPLOY_TOKEN\" | wc -l) newline\"".into(),
+            scope: "host:web".into(),
+            enter: true,
+            category: String::new(),
+            needs: vec![env],
+            origin: String::new(),
+        })
+        .expect("snippet");
+    (token, id)
+}
+
+/// Runs snippet `id` on web, allows it in AI activity, and follows it to
+/// its end: what it printed and how it ended.
+fn allowed_snippet(ui: &mut Ui, c: &mut Client, id: &str) -> String {
+    let (said, _) = c.tool_in(
+        ui,
+        "run_snippet",
+        json!({"host": "web", "id": id, "values": {"stage": "prod"}, "wait_seconds": 1}),
+    );
+    assert!(
+        said.contains("waits for the user"),
+        "it waits, though web runs freely: {said}"
+    );
+    let job = said.split_whitespace().next().expect("job").to_string();
+    ui.click("actions-fold");
+    ui.click("action-ai");
+    ui.click(&format!("ai-row:{job}"));
+    assert!(ui.find("ai-allow-session").is_none(), "no session for it");
+    ui.click("ai-allow");
+    let mut rest = String::new();
+    for _ in 0..8 {
+        let (said, _) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+        rest.push_str(&said);
+        if said.starts_with("exit") {
+            break;
+        }
+    }
+    let kept = ui.ws(|ws, _, _| {
+        ws.ai_activity()
+            .iter()
+            .find(|a| a.id == job)
+            .map(|a| a.command.clone())
+    });
+    assert_eq!(
+        kept.as_deref(),
+        Some(
+            "echo \"prod token: ${#DEPLOY_TOKEN} bytes, $(printf %s \"$DEPLOY_TOKEN\" | wc -l) newline\""
+        ),
+        "kept as filled in"
+    );
+    rest
+}
+
+scenario!(
+    /// A snippet that needs an environment, run by an agent on its own
+    /// connection: it waits for the person though the grant runs freely;
+    /// allowed, it has the variable, its value (two lines) sent on the
+    /// input, and the agent is told only what the command printed.
+    an_ai_runs_a_snippet_with_an_environment,
+    |ui| {
+        let (token, id) = snippet_with_env(ui, "background");
+        let (mut c, _) = Client::open(ui, &token);
+        let rest = allowed_snippet(ui, &mut c, &id);
+        assert!(rest.starts_with("exit 0") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
+        assert!(!rest.contains("s3cret"), "{rest}");
+    }
+);
+
+scenario!(
+    /// The same, through a tab: typed into it as a pane runs such a
+    /// snippet, the values sent once the shell is ready, with the echo off.
+    an_ai_runs_a_snippet_with_an_environment_in_a_tab,
+    |ui| {
+        let (token, id) = snippet_with_env(ui, "tab");
+        let (mut c, _) = Client::open(ui, &token);
+        let rest = allowed_snippet(ui, &mut c, &id);
+        assert!(rest.starts_with("exit 0") && rest.contains("prod token: 17 bytes, 1 newline"), "{rest}");
+        assert!(!rest.contains("s3cret"), "{rest}");
+        assert!(!ui.screen().contains("s3cret"), "not on the tab's screen:\n{}", ui.screen());
+    }
+);
+
 scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with

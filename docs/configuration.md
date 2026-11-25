@@ -1249,8 +1249,12 @@ What it may do, each on its own:
   the host; a value the agent gives is one word of letters, digits and
   `_ . / : @ = + , % -`, not starting with `-`, so it cannot change the
   command. A snippet typed without Enter waits for you every time, whatever
-  happens to a command. One that needs environments is not run by an agent
-  yet. Design: [docs/design/ai-snippets.md](design/ai-snippets.md).
+  happens to a command. So does one that needs environments, AI activity
+  saying which: the agent never sees their values. On a connection of its
+  own they go in on the command's input, the command line holding their
+  names only; through a tab they are sent as a pane sends them, the echo off.
+  What the command prints still goes to the agent. Design:
+  [docs/design/ai-snippets.md](design/ai-snippets.md).
 
 What happens to a command:
 

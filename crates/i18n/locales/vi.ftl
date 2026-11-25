@@ -76,6 +76,9 @@ t6e8860fa = Đoạn lệnh { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } muốn thêm nội dung này vào ghi chú về { $host }. Thao tác đang chờ bạn: khi lệnh rủi ro phải chờ, mọi lần thêm vào ghi chú đều chờ.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } muốn chạy đoạn lệnh này trên { $host }, với các biến môi trường { $envs }. Lần nào cũng chờ bạn: giá trị của chúng được đưa vào, dù { $client } không bao giờ thấy, còn những gì lệnh in ra sẽ gửi lại cho nó.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } muốn chạy đoạn lệnh này trên { $host }. Lần nào cũng chờ bạn: đoạn lệnh này được gõ không kèm Enter, để đọc trước.
 

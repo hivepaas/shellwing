@@ -76,6 +76,9 @@ t6e8860fa = 스니펫 { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }이(가) { $host }에 관한 노트에 이것을 추가하려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 노트에 추가할 때마다 확인이 필요합니다.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client }이(가) 환경 { $envs }을(를) 사용해 { $host }에서 이 스니펫을 실행하려고 합니다. 매번 지시를 기다립니다. 값은 전달되지만 { $client }은(는) 볼 수 없고, 출력은 { $client }에게 돌아갑니다.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client }이(가) { $host }에서 이 스니펫을 실행하려고 합니다. 매번 지시를 기다립니다. Enter 없이 입력되어 먼저 읽어야 합니다.
 

@@ -76,6 +76,9 @@ t6e8860fa = Snippet { $name }
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } ingin menambahkan ini ke catatan tentang { $host }. Penambahan ini menunggu Anda: jika perintah berisiko menunggu, setiap penambahan ke catatan juga menunggu.
 
+# {client} wants to run this snippet on {host}, with the environments {envs}. It waits for you every time: their values go in, though {client} never sees them, and what it prints goes back.
+tc50e2e47 = { $client } ingin menjalankan snippet ini di { $host }, dengan lingkungan { $envs }. Ini selalu menunggu Anda: nilainya dikirim, meski { $client } tidak pernah melihatnya, dan yang dicetak kembali kepadanya.
+
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } ingin menjalankan snippet ini di { $host }. Ini selalu menunggu Anda: diketik tanpa Enter, agar dibaca dulu.
 

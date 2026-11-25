@@ -779,7 +779,8 @@ impl Shell {
     ) -> Result<(), russh::Error> {
         self.seen.lock().expect("seen").lines.push(line.to_string());
         // An AI's command typed into the tab: run by a real sh, as a host's
-        // shell would, its marks and all.
+        // shell would, its marks and all, with the shell's variables (a
+        // snippet's environments, in its subshell).
         if line.contains("swai-begin")
             && let Some((home, bin)) = self.policy.shell.clone()
         {
@@ -788,9 +789,15 @@ impl Shell {
                 bin.display(),
                 std::env::var("PATH").unwrap_or_default()
             );
+            let vars = self
+                .shells
+                .get(&channel)
+                .map(|s| s.vars.clone())
+                .unwrap_or_default();
             let out = std::process::Command::new("sh")
                 .arg("-c")
                 .arg(line)
+                .envs(vars)
                 .env("HOME", &home)
                 .env("PATH", path)
                 .current_dir(&home)
