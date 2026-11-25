@@ -2027,8 +2027,8 @@ impl Render for KeysView {
             .on_key_down(cx.listener(Self::on_key))
             .flex()
             .flex_col()
+            .debug_selector(|| "keys-page".into())
             .gap(px(18.))
-            .max_w(px(760.))
             .child(
                 div()
                     .flex()

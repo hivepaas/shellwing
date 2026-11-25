@@ -2623,8 +2623,11 @@ impl SettingsView {
     }
 }
 
+/// How wide a page of Settings is at most, whichever it is.
+pub(crate) const PAGE_WIDTH: f32 = 900.;
+
 fn page(title: &str) -> gpui::Div {
-    div().flex().flex_col().gap(px(16.)).max_w(px(760.)).child(
+    div().flex().flex_col().gap(px(16.)).child(
         div()
             .text_size(ui(18.))
             .font_weight(FontWeight::SEMIBOLD)
@@ -2974,7 +2977,14 @@ impl Render for SettingsView {
                             .overflow_y_scroll()
                             .px(px(24.))
                             .py(px(20.))
-                            .child(content),
+                            // Every page as wide as the others.
+                            .child(
+                                div()
+                                    .debug_selector(|| "settings-body".into())
+                                    .w_full()
+                                    .max_w(px(PAGE_WIDTH))
+                                    .child(content),
+                            ),
                     )
                     // Appearance: the terminal as chosen, beside what scrolls.
                     .when(self.page == Page::Appearance, |d| {

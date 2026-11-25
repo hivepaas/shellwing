@@ -305,3 +305,57 @@ scenario!(
         assert!(html.contains("var(--vt-palette-1)"), "red not in color");
     }
 );
+
+scenario!(
+    /// Every page of Settings is as wide as the others: as wide as there is
+    /// room for, up to the same most, AI's and the lists' as the rest.
+    settings_pages_are_as_wide,
+    |ui| {
+        const PAGES: [&str; 15] = [
+            "General",
+            "Appearance",
+            "Terminal",
+            "Keyboard",
+            "Ssh",
+            "Keys",
+            "KnownHosts",
+            "Snippets",
+            "Environments",
+            "ConfigFiles",
+            "Notes",
+            "Sync",
+            "Vault",
+            "Ai",
+            "About",
+        ];
+        let most = crate::settings_view::PAGE_WIDTH;
+        ui.open();
+        ui.resize(1700., 1000.);
+        ui.palette("Settings");
+        ui.wait_until("Settings", |ui| ui.settings_page().is_some());
+        for p in PAGES {
+            ui.click(&format!("settings-page:{p}"));
+            let body = ui.bounds("settings-body").size.width;
+            assert_eq!(f32::from(body), most, "{p}");
+        }
+        for (p, root) in [
+            ("Ai", "ai-page"),
+            ("Keys", "keys-page"),
+            ("KnownHosts", "known-hosts-page"),
+            ("Snippets", "snippets-page"),
+        ] {
+            ui.click(&format!("settings-page:{p}"));
+            let width = ui.bounds(root).size.width;
+            assert_eq!(f32::from(width), most, "{p}'s page fills it");
+        }
+        // Narrower than that: each as wide as there is room for.
+        ui.resize(900., 800.);
+        let mut widths = vec![];
+        for p in ["General", "Keys", "Ai"] {
+            ui.click(&format!("settings-page:{p}"));
+            widths.push(f32::from(ui.bounds("settings-body").size.width));
+        }
+        assert!(widths[0] < most, "{widths:?}");
+        assert!(widths.iter().all(|w| *w == widths[0]), "{widths:?}");
+    }
+);
