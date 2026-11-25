@@ -70,8 +70,14 @@ t812504dc = AI 執行過的命令及其輸出將被刪除，包括本機上的�
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = 程式碼片段 { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } 想把這段內容新增到關於 { $host } 的筆記。它正在等你確認：在「有風險時詢問」模式下，每次新增至筆記都要詢問。
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } 想在 { $host } 上執行這個程式碼片段。每次都會等你確認：它輸入時不按 Enter，需先閱讀。
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } 想在 { $host } 上寫入此內容。它正在等你確認：在「有風險時詢問」模式下，每次寫入都要詢問。

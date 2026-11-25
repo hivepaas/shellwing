@@ -10,6 +10,7 @@ pub mod files;
 pub mod log;
 pub mod mcp;
 pub mod notes;
+pub mod snippets;
 pub mod socket;
 pub mod tab;
 
@@ -103,6 +104,9 @@ pub struct Activity {
     /// the person, never kept in the log (the vault keeps notes encrypted).
     #[serde(skip)]
     pub adding: Option<String>,
+    /// The snippet it ran, by name, when it was one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub snippet: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -228,6 +232,7 @@ impl Job {
                     output: String::new(),
                     waiting: None,
                     adding: None,
+                    snippet: None,
                 },
                 out: vec![],
                 cut: false,
@@ -244,6 +249,12 @@ impl Job {
         self.state
             .lock()
             .is_ok_and(|s| s.activity.waiting.is_some())
+    }
+
+    fn set_snippet(&self, name: String) {
+        if let Ok(mut st) = self.state.lock() {
+            st.activity.snippet = Some(name);
+        }
     }
 
     fn set_adding(&self, text: String) {
@@ -373,6 +384,8 @@ struct Inner {
     notes: Option<Arc<dyn notes::NoteStore>>,
     /// shellwing is locked: no note goes out.
     locked: bool,
+    /// Where snippets are read from (the vault), if anywhere.
+    snippets: Option<Arc<dyn snippets::SnippetStore>>,
 }
 
 /// The MCP server's side in the app: who may reach what, and the work.
@@ -423,6 +436,7 @@ impl Hub {
                 allowed: vec![],
                 notes: None,
                 locked: false,
+                snippets: None,
             }),
             events,
         })
@@ -524,6 +538,21 @@ impl Hub {
     /// The grant `client` holds for the host it calls `host` (its name, as
     /// [`Hub::given`] says it), and where the host is.
     fn grant_for(&self, client: &AiClient, host: &str) -> Result<(Given, Resolved), String> {
+        let g = self.given_for(client, host)?;
+        let target = {
+            let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
+            inner
+                .hosts
+                .get(&g.spec)
+                .map(|h| h.target.clone())
+                .ok_or_else(|| format!("{host} is no longer in the host list"))?
+        }?;
+        Ok((g, target))
+    }
+
+    /// The grant `client` holds for `host`, in force: [`Hub::grant_for`]
+    /// without reaching the host.
+    fn given_for(&self, client: &AiClient, host: &str) -> Result<Given, String> {
         let given = self.given(&client.id);
         let Some(g) = given
             .iter()
@@ -544,15 +573,7 @@ impl Hub {
                 g.name, client.name
             ));
         }
-        let target = {
-            let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
-            inner
-                .hosts
-                .get(&g.spec)
-                .map(|h| h.target.clone())
-                .ok_or_else(|| format!("{host} is no longer in the host list"))?
-        }?;
-        Ok((g.clone(), target))
+        Ok(g.clone())
     }
 
     /// A new job `label` on `g`'s host, waiting for the person if `asks`;
@@ -693,6 +714,19 @@ impl Hub {
         host: &str,
         command: &str,
     ) -> Result<Arc<Job>, String> {
+        self.run_with(client, host, command, None, None)
+    }
+
+    /// [`Hub::run`]; waiting for the person whatever the mode when
+    /// `always` says why, and kept as the run of `snippet` when it is one.
+    fn run_with(
+        self: &Arc<Self>,
+        client: &AiClient,
+        host: &str,
+        command: &str,
+        always: Option<String>,
+        snippet: Option<String>,
+    ) -> Result<Arc<Job>, String> {
         let (g, target) = self.grant_for(client, host)?;
         if !g.grant.run {
             return Err(format!(
@@ -701,6 +735,7 @@ impl Hub {
             ));
         }
         let asks = match g.grant.mode {
+            _ if always.is_some() => always,
             _ if self.allowed_before(client, &g.spec, command) => None,
             AiMode::Free => None,
             AiMode::Ask => Some(String::new()),
@@ -715,6 +750,10 @@ impl Hub {
         };
         let (job, slot, answer) =
             self.begin(client, &g, command, g.grant.how == AiHow::Tab, asks)?;
+        if let Some(name) = snippet {
+            job.set_snippet(name);
+            let _ = self.events.try_send(HubEvent::Changed(job.activity()));
+        }
         let options = self.options(target);
         let (hub, running, command) = (self.clone(), job.clone(), command.to_string());
         let client_id = client.id.clone();

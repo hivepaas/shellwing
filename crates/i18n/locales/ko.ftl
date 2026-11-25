@@ -70,8 +70,14 @@ t812504dc = AI가 실행한 명령과 출력이 이 컴퓨터에서도 사라집
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · { $when } 시작 · { $job }
 
+# The snippet {name}
+t6e8860fa = 스니펫 { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client }이(가) { $host }에 관한 노트에 이것을 추가하려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 노트에 추가할 때마다 확인이 필요합니다.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client }이(가) { $host }에서 이 스니펫을 실행하려고 합니다. 매번 지시를 기다립니다. Enter 없이 입력되어 먼저 읽어야 합니다.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client }이(가) { $host }에 이것을 쓰려고 합니다. 지시를 기다립니다. '위험한 명령은 확인'에서는 모든 쓰기에 확인이 필요합니다.

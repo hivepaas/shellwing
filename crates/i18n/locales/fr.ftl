@@ -70,8 +70,14 @@ t812504dc = Les commandes lancées par l’AI et ce qu’elles ont affiché disp
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · lancé à { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = L'extrait { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } veut ajouter ceci aux notes sur { $host }. L'ajout vous attend : là où les commandes risquées attendent, chaque ajout à une note attend.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } veut exécuter cet extrait sur { $host }. Il vous attend à chaque fois : il est saisi sans Entrée, pour être lu d'abord.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } veut écrire ceci sur { $host }. L'écriture vous attend : là où les commandes risquées attendent, chaque écriture attend.

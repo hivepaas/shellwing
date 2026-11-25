@@ -70,8 +70,14 @@ t812504dc = I comandi eseguiti dall’AI e il loro output spariscono, anche da q
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · avviato alle { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = Lo snippet { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } vuole aggiungere questo alle note su { $host }. L'aggiunta ti aspetta: dove quelli rischiosi aspettano, ogni aggiunta a una nota aspetta.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } vuole eseguire questo snippet su { $host }. Ti aspetta ogni volta: viene digitato senza Invio, per essere letto prima.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } vuole scrivere questo file su { $host }. La scrittura ti aspetta: dove quelli rischiosi aspettano, ogni scrittura aspetta.

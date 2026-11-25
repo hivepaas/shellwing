@@ -70,8 +70,14 @@ t812504dc = Команды, которые запускал AI, и их выво
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · начато в { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = Сниппет { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } хочет добавить это в заметки о { $host }. Добавление ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждое добавление в заметку.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } хочет выполнить этот сниппет на { $host }. Он каждый раз ждёт вас: он вводится без Enter, чтобы его сначала прочитали.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } хочет записать это на { $host }. Запись ждёт вас: в режиме «Спрашивать о рискованных» ждёт каждая запись.

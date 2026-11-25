@@ -70,8 +70,14 @@ t812504dc = Perintah yang dijalankan AI dan keluarannya dihapus, dari komputer i
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 
+# The snippet {name}
+t6e8860fa = Snippet { $name }
+
 # {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
 tf83dfd33 = { $client } ingin menambahkan ini ke catatan tentang { $host }. Penambahan ini menunggu Anda: jika perintah berisiko menunggu, setiap penambahan ke catatan juga menunggu.
+
+# {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
+t67420739 = { $client } ingin menjalankan snippet ini di { $host }. Ini selalu menunggu Anda: diketik tanpa Enter, agar dibaca dulu.
 
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } ingin menulis ini di { $host }. Penulisan ini menunggu Anda: jika perintah berisiko menunggu, setiap penulisan juga menunggu.
