@@ -22,6 +22,9 @@ tf05d1c4a = çalışmadı
 # stopped
 t6ee2f34e = durduruldu
 
+# may still run on its host
+t7962a4e6 = host'ta hâlâ çalışıyor olabilir
+
 # refused by you
 t2fd484b3 = reddettiniz
 

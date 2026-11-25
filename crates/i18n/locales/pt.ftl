@@ -22,6 +22,9 @@ tf05d1c4a = não executado
 # stopped
 t6ee2f34e = parado
 
+# may still run on its host
+t7962a4e6 = talvez ainda rode no servidor
+
 # refused by you
 t2fd484b3 = recusado por você
 

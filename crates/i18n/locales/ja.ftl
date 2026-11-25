@@ -22,6 +22,9 @@ tf05d1c4a = 未実行
 # stopped
 t6ee2f34e = 停止
 
+# may still run on its host
+t7962a4e6 = ホストでまだ実行中の可能性
+
 # refused by you
 t2fd484b3 = あなたが拒否
 

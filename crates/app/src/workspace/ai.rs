@@ -130,12 +130,39 @@ impl Workspace {
             }
             HubEvent::TabStop { id } => {
                 let view = ai.typing.iter().find(|(_, j)| **j == id).map(|(v, _)| *v);
+                let queued = ai.queued.iter().any(|j| j.id == id);
                 ai.queued.retain(|j| j.id != id);
+                let hub = ai.hub.clone();
                 if let Some(v) =
                     view.and_then(|v| self.all_views().into_iter().find(|x| x.entity_id() == v))
                 {
-                    // Ctrl+C, as the person would press it.
+                    // Ctrl+C, as the person would press it: what the tab ran
+                    // ends, and says so (`ai::tab::marked`), which frees it.
                     v.read(cx).session().writer.write(vec![0x03]);
+                    // One pressed the moment it started can wait until what
+                    // it runs ends: one more, while the tab still runs it.
+                    let pane = v.entity_id();
+                    cx.spawn(async move |ws, cx| {
+                        cx.background_executor()
+                            .timer(ai::tab::TAB_STOP_AGAIN)
+                            .await;
+                        let _ = ws.update(cx, |ws, cx| {
+                            let still = ws
+                                .ai
+                                .as_ref()
+                                .is_some_and(|ai| ai.typing.get(&pane) == Some(&id));
+                            if still
+                                && let Some(v) =
+                                    ws.all_views().into_iter().find(|x| x.entity_id() == pane)
+                            {
+                                v.read(cx).session().writer.write(vec![0x03]);
+                            }
+                        });
+                    })
+                    .detach();
+                } else if queued {
+                    // Not typed yet: it ends here.
+                    hub.tab_end(&id, ai::End::Stopped);
                 }
             }
             HubEvent::Cleared => {

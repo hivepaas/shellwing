@@ -221,7 +221,7 @@ pub fn tools() -> Value {
         {
             "name": "job_stop",
             "title": "Stop a job",
-            "description": "Stops a job that still runs.",
+            "description": "Stops a job that still runs, and says once it ended: on its host, TERM, then KILL a few seconds later; in a tab, Ctrl+C, as the user would press it.",
             "inputSchema": {
                 "type": "object",
                 "properties": {"job": {"type": "string", "description": "The id run gave."}},
@@ -711,7 +711,21 @@ async fn call(
                 return Ok(format!("{id} had ended already."));
             }
             hub.stop_job(&job);
-            Ok(format!("{id} is stopped."))
+            // It ends once the host says so: TERM, then KILL, have their while.
+            let most = shellwing_ssh::STOP_TERM_WAIT + shellwing_ssh::STOP_KILL_WAIT;
+            let said = job.wait(most + Duration::from_secs(1), true).await;
+            Ok(match said.end {
+                Some(End::Left) => format!(
+                    "{id} was stopped here, but its host never said it ended: it may still run there."
+                ),
+                Some(_) => format!("{id} is stopped."),
+                None if job.tab => format!(
+                    "{id} was sent Ctrl+C in its tab, but still runs there (a program that takes no Ctrl+C): job_output follows it, and the user can end it in the tab."
+                ),
+                None => format!(
+                    "{id} was asked to stop, and has not ended yet: job_output says when it does."
+                ),
+            })
         }
         _ => Err(Problem::Unknown),
     }

@@ -22,6 +22,9 @@ tf05d1c4a = не виконано
 # stopped
 t6ee2f34e = зупинено
 
+# may still run on its host
+t7962a4e6 = може ще працювати на хості
+
 # refused by you
 t2fd484b3 = відхилено вами
 

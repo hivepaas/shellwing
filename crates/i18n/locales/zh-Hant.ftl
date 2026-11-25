@@ -22,6 +22,9 @@ tf05d1c4a = 未能執行
 # stopped
 t6ee2f34e = 已停止
 
+# may still run on its host
+t7962a4e6 = 可能仍在主機上執行
+
 # refused by you
 t2fd484b3 = 已被你拒絕
 

@@ -22,6 +22,9 @@ tf05d1c4a = non eseguito
 # stopped
 t6ee2f34e = interrotto
 
+# may still run on its host
+t7962a4e6 = forse è ancora in esecuzione sull'host
+
 # refused by you
 t2fd484b3 = rifiutato da te
 

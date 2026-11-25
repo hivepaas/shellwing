@@ -22,6 +22,9 @@ tf05d1c4a = tidak dijalankan
 # stopped
 t6ee2f34e = dihentikan
 
+# may still run on its host
+t7962a4e6 = mungkin masih berjalan di host
+
 # refused by you
 t2fd484b3 = ditolak oleh Anda
 
