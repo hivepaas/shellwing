@@ -22,6 +22,9 @@ tf05d1c4a = không chạy được
 # stopped
 t6ee2f34e = đã dừng
 
+# may still run on its host
+t7962a4e6 = có thể vẫn chạy trên máy
+
 # refused by you
 t2fd484b3 = bạn đã từ chối
 

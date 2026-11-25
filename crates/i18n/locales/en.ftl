@@ -8,6 +8,7 @@ te0c7c2fc = exit { $code }
 t450a0cd5 = ended by a signal
 tf05d1c4a = did not run
 t6ee2f34e = stopped
+t7962a4e6 = may still run on its host
 t2fd484b3 = refused by you
 t75afe364 = All
 te8233afc = Waiting for you

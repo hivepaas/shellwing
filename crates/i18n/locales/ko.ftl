@@ -22,6 +22,9 @@ tf05d1c4a = 실행 안 됨
 # stopped
 t6ee2f34e = 중지됨
 
+# may still run on its host
+t7962a4e6 = 호스트에서 아직 실행 중일 수 있음
+
 # refused by you
 t2fd484b3 = 직접 거부함
 

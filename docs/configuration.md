@@ -1329,10 +1329,16 @@ they print:
   leading space), between two marks the terminal does not show, so shellwing
   tells its output and its exit status apart from the rest. The shell must
   be at its prompt, and be `sh`, `bash`, `zsh` or the like.
+- The command runs in a subshell of its own: a `cd`, an `export` or an `exit`
+  in it is its own, and your shell stays as it was. What it prints reaches
+  the agent as it comes, a line at a time.
 - A strip over the tab says whose it is and how many commands it ran.
   *Pause* holds AI's next commands until *Let it go on*; *Take access back*
-  ends the grant. Ctrl+C stops a command, as any other, and Stop (in AI
-  activity, or `job_stop`) sends it.
+  ends the grant. Ctrl+C stops a command, as any other: its subshell ends
+  (exit 130), the tab is free for the next, and the agent hears that it was
+  stopped. Stop (in AI activity, or `job_stop`) sends it, and once more if
+  the command still runs a moment later; one that takes no Ctrl+C (an editor,
+  some REPLs) runs on, and the agent is told so.
 - What the agent gets is the command's output as plain text: colors and other
   escape sequences out, and a line written over (a progress bar) as it was
   last.
@@ -1349,7 +1355,13 @@ they print:
   asked, waiting for something new when there is nothing yet. So the agent
   follows a long command a few seconds behind it. A client that asks for
   progress is told how far it got, each second.
-- `job_stop(job)`: stops a job.
+- `job_stop(job)`: stops a job, and says once it ended. On the agent's own
+  connection, the command is sent TERM, then KILL 3 seconds later, through
+  SSH: OpenSSH sends them to its whole process group, its children too.
+  Closing its channel alone would not end it: with no terminal, nothing
+  tells it, and one that prints nothing runs on. A server that takes no
+  signals (some do not) never says it ended: after 5 seconds the job is left,
+  marked *may still run on its host*. In a tab, it is Ctrl+C, as above.
 - `activity(host, job, before, limit)`: what the agent ran before, in this
   session or an earlier one, newest first (20 if not told, 100 at the most).
   For each command: its id, host, start, how it ended, the command and the

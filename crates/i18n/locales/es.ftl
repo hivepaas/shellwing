@@ -22,6 +22,9 @@ tf05d1c4a = no se ejecutó
 # stopped
 t6ee2f34e = detenido
 
+# may still run on its host
+t7962a4e6 = puede que siga en el servidor
+
 # refused by you
 t2fd484b3 = rechazado por ti
 

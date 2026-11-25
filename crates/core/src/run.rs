@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 
 use shellwing_ssh::config::Resolved;
 use shellwing_ssh::{
-    Auth, ExecConnection, HostKeyPolicy, Options, Prompt, Prompter, Secrets, Stream,
+    Auth, ExecConnection, Exit, HostKeyPolicy, Options, Prompt, Prompter, Secrets, Stream,
 };
 use tokio::runtime::Handle;
 use tokio::sync::{Semaphore, oneshot};
@@ -567,22 +567,40 @@ async fn one(
     let _ = events.send(Event::Started { host: host.clone() }).await;
     let began = Instant::now();
     let printing = Arc::new(Mutex::new(Printing::default()));
+    // Given up on, it is stopped on the host (TERM, then KILL), and
+    // waited for that long more: cutting its channel would leave it running.
+    let (stop, asked) = oneshot::channel();
     let ran = {
         let printing = printing.clone();
         let host = host.clone();
         let events = events.clone();
+        let give_up = job.give_up;
         async move {
             let to = printing.clone();
-            let ran = connection.stream(&command, &input, move |stream, data| {
-                if let Ok(mut p) = to.lock() {
-                    p.add(stream, data);
-                }
-            });
+            let ran = connection.stream(
+                &command,
+                &input,
+                move |stream, data| {
+                    if let Ok(mut p) = to.lock() {
+                        p.add(stream, data);
+                    }
+                },
+                asked,
+            );
             tokio::pin!(ran);
             let mut beat = tokio::time::interval(PRINT_BEAT);
+            let over = tokio::time::sleep(give_up);
+            tokio::pin!(over);
+            let (mut stop, mut gave_up) = (Some(stop), false);
             loop {
                 tokio::select! {
-                    ended = &mut ran => break ended,
+                    ended = &mut ran => break (ended, gave_up),
+                    () = &mut over, if !gave_up => {
+                        gave_up = true;
+                        if let Some(stop) = stop.take() {
+                            let _ = stop.send(());
+                        }
+                    }
                     _ = beat.tick() => {
                         let new = printing.lock().ok().and_then(|mut p| p.take_new());
                         if let Some((stdout, stderr)) = new {
@@ -594,9 +612,10 @@ async fn one(
             }
         }
     };
-    let outcome = match tokio::time::timeout(job.give_up, ran).await {
-        Err(_) => Outcome::GaveUp(job.give_up),
-        Ok(Ok(status)) => {
+    let outcome = match ran.await {
+        (_, true) => Outcome::GaveUp(job.give_up),
+        (Ok(Exit::Unheard), false) => Outcome::Failed("its end was not heard".into()),
+        (Ok(Exit::Ended(status)), false) => {
             let p = printing.lock().map(|p| p.clone()).unwrap_or_default();
             Outcome::Ran(Ran {
                 status,
@@ -606,7 +625,7 @@ async fn one(
                 took: began.elapsed(),
             })
         }
-        Ok(Err(e)) => {
+        (Err(e), false) => {
             // The connection is likely gone: the next run connects again.
             if let Ok(mut all) = connections.lock() {
                 all.remove(&host);

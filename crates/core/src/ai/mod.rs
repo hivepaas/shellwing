@@ -24,7 +24,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use shellwing_config::{AiClient, AiGrant, AiHow, AiMode, AiState};
 use shellwing_ssh::config::Resolved;
-use shellwing_ssh::{Auth, ExecConnection, HostKeyPolicy, Options, Prompt, Prompter, Secrets};
+use shellwing_ssh::{
+    Auth, ExecConnection, Exit, HostKeyPolicy, Options, Prompt, Prompter, Secrets,
+};
 use tokio::runtime::Handle;
 use tokio::sync::Notify;
 use tokio::task::AbortHandle;
@@ -135,8 +137,11 @@ pub enum End {
     Exited(Option<u32>),
     /// It did not run, or its end was not seen: why.
     Failed(String),
-    /// Stopped, by the AI or the person.
+    /// Stopped, by the AI or the person: it ended.
     Stopped,
+    /// Stopped here, but the host never said it ended (one that takes no
+    /// signals): it may still run there.
+    Left,
     /// The person would not have it run.
     Refused,
 }
@@ -153,6 +158,9 @@ impl End {
             End::Exited(None) => "ended by a signal".into(),
             End::Failed(why) => format!("did not run: {why}"),
             End::Stopped => "stopped".into(),
+            End::Left => {
+                "stopped here, but the host never said it ended: it may still run there".into()
+            }
             End::Refused => "refused by the user, who would not have it run".into(),
         }
     }
@@ -208,6 +216,10 @@ pub struct Job {
     pub tab: bool,
     /// While it waits for the person: where their answer goes.
     asking: Mutex<Option<tokio::sync::oneshot::Sender<Approval>>>,
+    /// Asked to stop: its end, when it comes, is that.
+    stopping: std::sync::atomic::AtomicBool,
+    /// While it runs on its own connection: what asks it to stop there.
+    stopper: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 /// The person's answer to a command that waits for them.
@@ -282,7 +294,14 @@ impl Job {
             task: Mutex::new(None),
             tab: false,
             asking: Mutex::new(None),
+            stopping: Default::default(),
+            stopper: Mutex::new(None),
         }
+    }
+
+    /// Whether it was asked to stop.
+    fn stopping(&self) -> bool {
+        self.stopping.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn waiting(&self) -> bool {
@@ -907,9 +926,17 @@ impl Hub {
                 Ok(c) => {
                     let printing = running.clone();
                     hub.follow_output(&running);
-                    let status = c.stream(&run, &input, |_, data| printing.print(data)).await;
+                    let (stop, asked) = tokio::sync::oneshot::channel();
+                    if let Ok(mut s) = running.stopper.lock() {
+                        *s = Some(stop);
+                    }
+                    let status = c
+                        .stream(&run, &input, |_, data| printing.print(data), asked)
+                        .await;
                     match status {
-                        Ok(s) => End::Exited(s),
+                        Ok(_) if running.stopping() => End::Stopped,
+                        Ok(Exit::Ended(s)) => End::Exited(s),
+                        Ok(Exit::Unheard) => End::Left,
                         Err(e) => {
                             // The connection is likely gone: the next connects again.
                             *slot.lock().await = None;
@@ -1005,14 +1032,33 @@ impl Hub {
     }
 
     /// Stops `job`: in its tab too, if it was typed there.
+    ///
+    /// One that runs is asked to, and ends once it did: in its tab, Ctrl+C
+    /// as the person would press it, ending what [`tab::marked`] runs; on
+    /// its own connection, TERM then KILL, to its process group. One that
+    /// waits for the person, or is not running yet, ends at once.
     pub fn stop_job(&self, job: &Job) {
-        let was_typed = job.tab && !job.waiting();
-        job.halt();
-        if was_typed {
+        if job.ended() {
+            return;
+        }
+        job.stopping
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        if job.tab && !job.waiting() {
+            // Its end comes from the tab ([`Hub::tab_end`]), the app's
+            // Ctrl+C, or its taking it off the queue.
             let _ = self
                 .events
                 .try_send(HubEvent::TabStop { id: job.id.clone() });
+            return;
         }
+        let stopper = job.stopper.lock().ok().and_then(|mut s| s.take());
+        if let Some(stop) = stopper
+            && stop.send(()).is_ok()
+        {
+            // Its end comes from its task, once the host says it ended.
+            return;
+        }
+        job.halt();
         self.finish(job, End::Stopped);
     }
 
@@ -1025,10 +1071,11 @@ impl Hub {
         }
     }
 
-    /// Job `id`, typed into a tab, ended so.
+    /// Job `id`, typed into a tab, ended so: stopped, if it was asked to.
     pub fn tab_end(&self, id: &str, end: End) {
         let job = self.inner.lock().ok().and_then(|i| i.jobs.get(id).cloned());
         if let Some(j) = job.filter(|j| !j.ended()) {
+            let end = if j.stopping() { End::Stopped } else { end };
             self.finish(&j, end);
         }
     }
@@ -1376,6 +1423,71 @@ mod tests {
         assert!(took >= Duration::from_millis(30), "{took:?}");
         tokio::time::sleep(Duration::from_millis(60)).await;
         assert_eq!(job.ran(&job.state.lock().expect("state")), took);
+    }
+
+    /// A hub with no log, and where what it tells the app goes.
+    fn bare_hub() -> (Arc<Hub>, async_channel::Receiver<HubEvent>) {
+        struct None_;
+        impl Secrets for None_ {
+            fn password(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn passphrase(&self, _: &str) -> Option<String> {
+                None
+            }
+            fn learned(&self, _: shellwing_ssh::Learned) {}
+        }
+        let (tx, rx) = async_channel::unbounded();
+        let hub = Hub::new(
+            Handle::current(),
+            Arc::new(None_),
+            &shellwing_config::Ssh::default(),
+            None,
+            tx,
+        );
+        (hub, rx)
+    }
+
+    /// Stopping one that runs asks it to: it ends once that came of it,
+    /// not before. On its own connection, its task says so; in its tab, the
+    /// tab does (Ctrl+C), its end said as stopped. One not running yet
+    /// ends at once.
+    #[tokio::test]
+    async fn a_stop_is_asked_for_and_the_end_comes_after() {
+        let (hub, events) = bare_hub();
+        // On its own connection: the stop goes to its task.
+        let job = Job::new("j-1".into(), &client(), "web", "web", "sleep 30");
+        let (stop, asked) = tokio::sync::oneshot::channel();
+        *job.stopper.lock().expect("stopper") = Some(stop);
+        hub.stop_job(&job);
+        assert!(!job.ended(), "not until it ended there");
+        assert!(asked.await.is_ok(), "its task was asked");
+        assert!(job.stopping());
+
+        // In its tab: Ctrl+C is the app's to send, and its end the tab's.
+        let mut typed = Job::new("j-2".into(), &client(), "web", "web", "sleep 30");
+        typed.tab = true;
+        let typed = Arc::new(typed);
+        hub.inner
+            .lock()
+            .expect("inner")
+            .jobs
+            .insert("j-2".into(), typed.clone());
+        hub.stop_job(&typed);
+        assert!(!typed.ended());
+        assert!(
+            std::iter::from_fn(|| events.try_recv().ok())
+                .any(|e| matches!(e, HubEvent::TabStop { id } if id == "j-2"))
+        );
+        // Ctrl+C made its subshell end with 130: it was stopped.
+        hub.tab_end("j-2", End::Exited(Some(130)));
+        assert_eq!(typed.activity().end, Some(End::Stopped));
+
+        // Waiting for the person: nothing runs, it ends at once.
+        let waiting = Job::new("j-3".into(), &client(), "web", "web", "rm -rf x");
+        waiting.set_waiting(Some("rm -rf".into()));
+        hub.stop_job(&waiting);
+        assert_eq!(waiting.activity().end, Some(End::Stopped));
     }
 
     #[tokio::test]

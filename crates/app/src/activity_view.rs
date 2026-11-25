@@ -77,6 +77,7 @@ fn standing(a: &Activity) -> (String, u32) {
         (None, Some(End::Exited(None))) => (tr!("ended by a signal"), c.bad),
         (None, Some(End::Failed(_))) => (tr!("did not run"), c.bad),
         (None, Some(End::Stopped)) => (tr!("stopped"), c.muted),
+        (None, Some(End::Left)) => (tr!("may still run on its host"), c.warn),
         (None, Some(End::Refused)) => (tr!("refused by you"), c.muted),
     }
 }
