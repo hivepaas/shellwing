@@ -914,6 +914,7 @@ scenario!(
                     snippet: None,
                     client_id: None,
                     spec: None,
+                    ran: None,
                 })
                 .expect("json")
                     + "\n"
