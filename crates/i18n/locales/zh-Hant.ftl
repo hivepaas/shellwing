@@ -49,6 +49,9 @@ tddf9c9cc = 停止所有 AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 開始於 { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } 想把這段內容新增到關於 { $host } 的筆記。它正在等你確認：在「有風險時詢問」模式下，每次新增至筆記都要詢問。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } 想在 { $host } 上寫入此內容。它正在等你確認：在「有風險時詢問」模式下，每次寫入都要詢問。
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } 想在 { $host } 上執行此指令。它正在等你確
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } 想在 { $host } 上執行此指令。它正在等你確認：其中含有 { $words }，屬於風險清單。
 
+# Add it
+t6cac0f01 = 新增
+
+# Refuse it
+tbea0b112 = 拒絕
+
 # Run it
 t72430853 = 執行
 
 # Run it, and this command again this session
 t2efebee7 = 執行，並在此工作階段內允許此指令再次執行
-
-# Refuse it
-tbea0b112 = 拒絕
 
 # Stop
 t4b7f7705 = 停止
@@ -4965,6 +4971,9 @@ t8354c717 = 在左側選擇一台主機以連線
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 尋找主機，或連線到 user@host
+
+# Added by {client}, {date}
+t54bde893 = 由 { $client } 新增，{ $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = 連線至其中的主機；不能變更它們

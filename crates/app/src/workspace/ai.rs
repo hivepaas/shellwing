@@ -53,7 +53,10 @@ impl Workspace {
             events,
         );
         hub.set_state(state.clone());
-        hub.set_notes(Some(Arc::new(self.vault.clone())));
+        hub.set_notes(Some(Arc::new(ai::notes::VaultNotes {
+            vault: self.vault.clone(),
+            sync: Some(self.sync.clone()),
+        })));
         hub.set_locked(
             cx.try_global::<crate::app_lock::Locked>()
                 .is_some_and(|l| l.0),
@@ -125,6 +128,12 @@ impl Workspace {
                 {
                     // Ctrl+C, as the person would press it.
                     v.read(cx).session().writer.write(vec![0x03]);
+                }
+            }
+            HubEvent::NotesChanged => {
+                if let Some((view, _)) = &self.settings {
+                    let view = view.clone();
+                    cx.defer(move |cx| view.update(cx, |v, cx| v.notes_changed(cx)));
                 }
             }
             HubEvent::Changed(a) => {

@@ -409,6 +409,11 @@ impl SyncWorker {
         }
     }
 
+    /// Whether record `id` is held: a note open in its window.
+    pub fn is_held(&self, id: &str) -> bool {
+        self.held.lock().is_ok_and(|h| h.contains(id))
+    }
+
     /// Lets record `id` sync again; at once when it `changed` meanwhile.
     pub fn release(&self, id: &str, changed: bool) {
         if let Ok(mut h) = self.held.lock() {

@@ -422,7 +422,7 @@ mod through {
         let list = c
             .ask(json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}))
             .await;
-        assert_eq!(list["result"]["tools"].as_array().map(Vec::len), Some(10));
+        assert_eq!(list["result"]["tools"].as_array().map(Vec::len), Some(12));
         let (said, error) = c.tool(3, "list_hosts").await;
         assert!(error && said.contains("not open"), "{said}");
 

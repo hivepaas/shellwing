@@ -49,6 +49,9 @@ tddf9c9cc = Hentikan semua AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · dimulai { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } ingin menambahkan ini ke catatan tentang { $host }. Penambahan ini menunggu Anda: jika perintah berisiko menunggu, setiap penambahan ke catatan juga menunggu.
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } ingin menulis ini di { $host }. Penulisan ini menunggu Anda: jika perintah berisiko menunggu, setiap penulisan juga menunggu.
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } ingin menjalankan ini di { $host }. Perintah ini menungg
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } ingin menjalankan ini di { $host }. Perintah ini menunggu Anda: perintah ini memuat { $words }, dari daftar kata berisiko.
 
+# Add it
+t6cac0f01 = Tambahkan
+
+# Refuse it
+tbea0b112 = Tolak
+
 # Run it
 t72430853 = Jalankan
 
 # Run it, and this command again this session
 t2efebee7 = Jalankan, dan perintah ini lagi di sesi ini
-
-# Refuse it
-tbea0b112 = Tolak
 
 # Stop
 t4b7f7705 = Hentikan
@@ -4965,6 +4971,9 @@ t8354c717 = Pilih host di sebelah kiri untuk terhubung
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = atau tekan { $keys } untuk mencarinya, atau untuk terhubung ke user@host
+
+# Added by {client}, {date}
+t54bde893 = Ditambahkan oleh { $client }, { $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = Terhubung ke host-nya; tidak dapat mengubahnya

@@ -343,7 +343,13 @@ impl ActivityView {
                         .border_1()
                         .border_color(rgb(colors().warn_edge))
                         .text_color(rgb(colors().warn_text))
-                        .child(if why == shellwing_core::ai::WRITES {
+                        .child(if why == shellwing_core::ai::notes::NOTES {
+                            tr!(
+                                "{client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
+                        } else if why == shellwing_core::ai::WRITES {
                             tr!(
                                 "{client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.",
                                 client = a.client.clone(),
@@ -364,7 +370,44 @@ impl ActivityView {
                             )
                         }),
                 )
-                .child(
+                .when_some(a.adding.clone(), |d, text| {
+                    // What goes into the note, as it will read there.
+                    d.child(
+                        div()
+                            .id("ai-adding")
+                            .debug_selector(|| "ai-adding".into())
+                            .max_h(px(240.))
+                            .overflow_y_scroll()
+                            .px(px(12.))
+                            .py(px(10.))
+                            .rounded(px(8.))
+                            .border_1()
+                            .border_color(rgb(colors().line))
+                            .bg(rgb(colors().page))
+                            .text_size(ui(12.5))
+                            .font_family(self.mono.clone())
+                            .child(text),
+                    )
+                })
+                .when(why == shellwing_core::ai::notes::NOTES, |d| {
+                    let (add, refuse) = (once.clone(), refuse.clone());
+                    d.child(
+                        div()
+                            .flex()
+                            .gap(px(8.))
+                            .child(primary_button("ai-allow", &tr!("Add it")).on_click(
+                                cx.listener(move |v, _, _, cx| v.answer(&add, Approval::Once, cx)),
+                            ))
+                            .child(
+                                outline_button("ai-refuse", &tr!("Refuse it"))
+                                    .text_color(rgb(colors().bad))
+                                    .on_click(cx.listener(move |v, _, _, cx| {
+                                        v.answer(&refuse, Approval::Refuse, cx)
+                                    })),
+                            ),
+                    )
+                })
+                .when(why != shellwing_core::ai::notes::NOTES, |d| d.child(
                     div()
                         .flex()
                         .gap(px(8.))
@@ -387,7 +430,7 @@ impl ActivityView {
                                     v.answer(&refuse, Approval::Refuse, cx)
                                 })),
                         ),
-                );
+                ));
         } else if a.end.is_none() {
             head = head.child(
                 div().flex().child(

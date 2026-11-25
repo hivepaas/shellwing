@@ -49,6 +49,9 @@ tddf9c9cc = 停止所有 AI
 # {client} · {host} · started {when} · {job}
 tafbed557 = { $client } · { $host } · 开始于 { $when } · { $job }
 
+# {client} wants to add this to the notes about {host}. It waits for you: where risky ones wait, every addition to a note does.
+tf83dfd33 = { $client } 想把这段内容添加到关于 { $host } 的笔记。它在等你确认：在“危险命令需确认”模式下，每次添加到笔记都需确认。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } 想在 { $host } 上写入此内容。它在等你确认：在“危险命令需确认”模式下，每次写入都需确认。
 
@@ -58,14 +61,17 @@ t2a306810 = { $client } 想在 { $host } 上运行此命令。它在等你确认
 # {client} wants to run this on {host}. It waits for you: it has {words}, from the risky list.
 t85e6d49e = { $client } 想在 { $host } 上运行此命令。它在等你确认：其中含有危险列表里的 { $words }。
 
+# Add it
+t6cac0f01 = 添加
+
+# Refuse it
+tbea0b112 = 拒绝
+
 # Run it
 t72430853 = 运行
 
 # Run it, and this command again this session
 t2efebee7 = 运行，并在本会话中再遇到此命令时也运行
-
-# Refuse it
-tbea0b112 = 拒绝
 
 # Stop
 t4b7f7705 = 停止
@@ -4878,6 +4884,9 @@ t8354c717 = 在左侧选择一台主机以连接
 
 # or press {keys} to find one, or to connect to user@host
 t4f67c373 = 或按 { $keys } 查找主机，或连接到 user@host
+
+# Added by {client}, {date}
+t54bde893 = 由 { $client } 添加，{ $date }
 
 # Connects to its hosts; cannot change them
 t316bd4ec = 连接到其中的主机；不能更改它们

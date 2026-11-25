@@ -6,21 +6,35 @@
 //!
 //! The activity keeps what was read, by title and size: never a note's
 //! text, which the vault keeps encrypted and the activity's log would not.
+//!
+//! Where a grant has *Add to notes*, an AI writes a new note about its
+//! hosts or adds to the end of one it may read, and never changes what is
+//! there. What it writes starts with a line saying who wrote it, put there
+//! by shellwing. Unless the grant runs freely, each addition waits for the
+//! person, who sees the text first.
 
 use std::sync::Arc;
 
 use base64::Engine;
-use shellwing_config::AiClient;
+use shellwing_config::{AiClient, AiMode};
+use shellwing_i18n::tr;
 use shellwing_vault::{Note, NoteFormat, attachment_refs, image_mime};
 
 use super::files::size;
-use super::{End, Hub, Job, paused_client};
+use super::{End, Given, Hub, HubEvent, Job, paused_client};
 use crate::secrets::VaultSlot;
+use crate::sync::SyncWorker;
 
 /// The most notes `list_notes` gives.
 pub const LIST: usize = 200;
-/// How much of a note's text `read_note` gives at a time.
+/// How much of a note's text `read_note` gives at a time, and the most an
+/// AI adds at a call.
 pub const PART: usize = 64 * 1024;
+/// The longest title an AI gives a note, in characters.
+pub const TITLE: usize = 200;
+/// Why an addition to a note waits for the person, where risky ones do: its
+/// waiting reason, as AI activity reads it.
+pub const NOTES: &str = "\u{0}notes";
 
 /// Where the notes are: the vault, as the app has it.
 pub trait NoteStore: Send + Sync {
@@ -29,18 +43,29 @@ pub trait NoteStore: Send + Sync {
     fn text(&self, id: &str) -> Result<Option<String>, String>;
     /// An image's bytes; None while it has not come to this device.
     fn image(&self, id: &str) -> Result<Option<Vec<u8>>, String>;
+    /// Whether note `id` is open in its window: its text is the editor's.
+    fn held(&self, id: &str) -> bool;
+    /// Keeps `note` with `text`, new when its id is empty: its id.
+    fn save(&self, note: &Note, text: &str) -> Result<String, String>;
 }
 
 const VAULT_LOCKED: &str = "The vault is locked, or not open yet: no note can be read until the user opens it in shellwing.";
 
-impl NoteStore for VaultSlot {
+/// The app's notes: its vault, and the syncs that hold a note open in its
+/// window and take what changed out.
+pub struct VaultNotes {
+    pub vault: VaultSlot,
+    pub sync: Option<SyncWorker>,
+}
+
+impl NoteStore for VaultNotes {
     fn notes(&self) -> Result<Vec<Note>, String> {
-        let vault = self.get().ok_or(VAULT_LOCKED)?;
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
         vault.notes().map_err(|e| e.to_string())
     }
 
     fn text(&self, id: &str) -> Result<Option<String>, String> {
-        let vault = self.get().ok_or(VAULT_LOCKED)?;
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
         Ok(vault
             .note_text(id)
             .map_err(|e| e.to_string())?
@@ -48,12 +73,66 @@ impl NoteStore for VaultSlot {
     }
 
     fn image(&self, id: &str) -> Result<Option<Vec<u8>>, String> {
-        let vault = self.get().ok_or(VAULT_LOCKED)?;
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
         Ok(vault
             .attachment(id)
             .map_err(|e| e.to_string())?
             .map(|b| b.to_vec()))
     }
+
+    fn held(&self, id: &str) -> bool {
+        self.sync.as_ref().is_some_and(|s| s.is_held(id))
+    }
+
+    fn save(&self, note: &Note, text: &str) -> Result<String, String> {
+        let vault = self.vault.get().ok_or(VAULT_LOCKED)?;
+        let id = vault
+            .save_note(note, Some(text))
+            .map_err(|e| e.to_string())?;
+        if let Some(s) = &self.sync {
+            s.now();
+        }
+        Ok(id)
+    }
+}
+
+/// `text` as an AI adds it: after the line, put there by shellwing, that
+/// says `client` wrote it, and when (`date`).
+pub fn marked(client: &str, date: &str, format: NoteFormat, text: &str) -> String {
+    let line = tr!("Added by {client}, {date}", client = client, date = date);
+    let text = text.trim_end();
+    match format {
+        NoteFormat::Markdown => format!("> {line}\n\n{text}\n"),
+        NoteFormat::Plain => format!("{line}\n\n{text}\n"),
+    }
+}
+
+/// `old` with `added` at its end, after a blank line.
+pub fn appended(old: &str, added: &str) -> String {
+    let old = old.trim_end();
+    if old.is_empty() {
+        added.to_string()
+    } else {
+        format!("{old}\n\n{added}")
+    }
+}
+
+/// Why `text` cannot be added to a note, if it cannot.
+fn refused_text(text: &str) -> Option<String> {
+    if text.trim().is_empty() {
+        return Some("text is missing".into());
+    }
+    if text.len() > PART {
+        return Some(format!(
+            "The text is {}: {} at the most at a call.",
+            size(text.len() as u64),
+            size(PART as u64)
+        ));
+    }
+    if text.to_ascii_lowercase().contains("attachment:") {
+        return Some("An agent adds text only: a text with an attachment: link is refused, as it would show an image where the user did not put it.".into());
+    }
+    None
 }
 
 /// A note an AI may read, and the hosts it is about that the AI holds.
@@ -345,6 +424,226 @@ impl Hub {
         })
     }
 
+    /// The hosts given to `client` with *Add to notes*, in force, and where
+    /// the notes are.
+    fn add_access(&self, client: &AiClient) -> Result<(Vec<Given>, Arc<dyn NoteStore>), String> {
+        if self.client_paused(&client.id) {
+            return Err(paused_client(&client.name));
+        }
+        let held: Vec<Given> = self
+            .given(&client.id)
+            .into_iter()
+            .filter(|g| g.grant.notes_add && !g.grant.paused)
+            .collect();
+        if held.is_empty() {
+            return Err(format!(
+                "No host is given to {} to add to notes: the user gives that in shellwing, under Settings › AI (Add to notes).",
+                client.name
+            ));
+        }
+        let inner = self.inner.lock().map_err(|_| "busy".to_string())?;
+        if inner.locked {
+            return Err(
+                "shellwing is locked: nothing is added to notes until the user unlocks it.".into(),
+            );
+        }
+        let store = inner.notes.clone().ok_or(VAULT_LOCKED)?;
+        Ok((held, store))
+    }
+
+    /// Writes a new note about `hosts` (each held with *Add to notes*): a
+    /// job, which waits for the person unless every grant runs freely.
+    pub fn add_note(
+        self: &Arc<Self>,
+        client: &AiClient,
+        hosts: &[String],
+        title: &str,
+        text: &str,
+        format: NoteFormat,
+    ) -> Result<Arc<Job>, String> {
+        let (held, store) = self.add_access(client)?;
+        let title = title.trim();
+        if title.is_empty() {
+            return Err("title is missing".into());
+        }
+        if title.chars().count() > TITLE {
+            return Err(format!("A title takes {TITLE} characters at the most."));
+        }
+        if let Some(why) = refused_text(text) {
+            return Err(why);
+        }
+        if hosts.is_empty() {
+            return Err(
+                "hosts is missing: the hosts the note is about, as list_hosts names them".into(),
+            );
+        }
+        let mut chosen: Vec<Given> = vec![];
+        for h in hosts {
+            let g = held
+                .iter()
+                .find(|g| &g.name == h || &g.spec == h)
+                .ok_or_else(|| format!("{h} is not given to {} to add to notes", client.name))?;
+            if !chosen.iter().any(|c| c.spec == g.spec) {
+                chosen.push(g.clone());
+            }
+        }
+        let names: Vec<String> = chosen.iter().map(|g| g.name.clone()).collect();
+        let note = Note {
+            id: String::new(),
+            title: title.to_string(),
+            category: String::new(),
+            format,
+            hosts: names.clone(),
+            sensitive: false,
+            changed: String::new(),
+            size: 0,
+        };
+        let added = marked(&client.name, &today(), format, text);
+        let label = format!("add_note {title:?}");
+        let (hub, title, text) = (self.clone(), title.to_string(), added.clone());
+        self.note_job(client, &chosen, &label, added, move || {
+            let locked = hub.inner.lock().map_or(true, |i| i.locked);
+            if locked {
+                return Err("shellwing was locked meanwhile: nothing was added.".into());
+            }
+            let id = store.save(&note, &text)?;
+            let _ = hub.events.try_send(HubEvent::NotesChanged);
+            Ok(format!(
+                "Added the note {title:?} about {}: its id is {id}.",
+                names.join(", ")
+            ))
+        })
+    }
+
+    /// Adds `text` to the end of note `id`, which `client` may read and is
+    /// about a host it holds with *Add to notes*: a job, as [`Hub::add_note`].
+    pub fn append_note(
+        self: &Arc<Self>,
+        client: &AiClient,
+        id: &str,
+        text: &str,
+    ) -> Result<Arc<Job>, String> {
+        let (held, store) = self.add_access(client)?;
+        let (r, _) = self.readable_note(client, id)?;
+        let chosen: Vec<Given> = held
+            .into_iter()
+            .filter(|g| r.note.hosts.contains(&g.name))
+            .collect();
+        if chosen.is_empty() {
+            return Err(format!(
+                "{:?} is about no host given to {} to add to notes",
+                r.note.title, client.name
+            ));
+        }
+        if let Some(why) = refused_text(text) {
+            return Err(why);
+        }
+        if store.held(id) {
+            return Err(open_in_window(&r.note.title));
+        }
+        let old = store.text(id)?.unwrap_or_default();
+        let added = marked(&client.name, &today(), r.note.format, text);
+        let most = shellwing_vault::limits::NOTE;
+        if appended(&old, &added).len() > most {
+            return Err(format!(
+                "{:?} would be over the {} a note holds: write a new note instead.",
+                r.note.title,
+                size(most as u64)
+            ));
+        }
+        let label = format!("append_note {:?}", r.note.title);
+        let (hub, id, text) = (self.clone(), id.to_string(), added.clone());
+        self.note_job(client, &chosen, &label, added, move || {
+            let added = text;
+            // Looked at again: the window may have opened, or the text
+            // changed, while the person was asked.
+            if store.held(&id) {
+                return Err(open_in_window(&r.note.title));
+            }
+            let locked = hub.inner.lock().map_or(true, |i| i.locked);
+            if locked {
+                return Err("shellwing was locked meanwhile: nothing was added.".into());
+            }
+            // As it is now: a title or hosts changed meanwhile stay as they are.
+            let note = store
+                .notes()?
+                .into_iter()
+                .find(|n| n.id == id && !n.sensitive)
+                .ok_or("The note is gone, or was made sensitive meanwhile: nothing was added.")?;
+            let now = store.text(&id)?.ok_or("The note is gone.")?;
+            let new = appended(&now, &added);
+            if new.len() > most {
+                return Err(format!(
+                    "{:?} would be over the {} a note holds.",
+                    r.note.title,
+                    size(most as u64)
+                ));
+            }
+            store.save(&note, &new)?;
+            let _ = hub.events.try_send(HubEvent::NotesChanged);
+            Ok(format!(
+                "Added {} to {:?}.",
+                size(added.len() as u64),
+                r.note.title
+            ))
+        })
+    }
+
+    /// A job adding to the notes about `hosts`: it waits for the person
+    /// unless every grant runs freely, `adding` shown meanwhile; `write`
+    /// runs once it may, and says what was done.
+    fn note_job(
+        self: &Arc<Self>,
+        client: &AiClient,
+        hosts: &[Given],
+        label: &str,
+        adding: String,
+        write: impl FnOnce() -> Result<String, String> + Send + 'static,
+    ) -> Result<Arc<Job>, String> {
+        let free = hosts.iter().all(|g| g.grant.mode == AiMode::Free);
+        let mut g = hosts[0].clone();
+        g.name = hosts
+            .iter()
+            .map(|g| g.name.clone())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let (job, _, _) = self.begin(client, &g, label, false, None)?;
+        job.set_adding(adding);
+        let answer = (!free).then(|| {
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            if let Ok(mut a) = job.asking.lock() {
+                *a = Some(tx);
+            }
+            job.set_waiting(Some(NOTES.to_string()));
+            rx
+        });
+        let _ = self.events.try_send(HubEvent::Changed(job.activity()));
+        let (hub, running, client_id, label) = (
+            self.clone(),
+            job.clone(),
+            client.id.clone(),
+            label.to_string(),
+        );
+        let task = self.rt.spawn(async move {
+            if !Hub::wait_answer(&hub, &running, answer, client_id, &label).await {
+                return;
+            }
+            let end = match write() {
+                Ok(said) => {
+                    running.print(said.as_bytes());
+                    End::Exited(Some(0))
+                }
+                Err(why) => End::Failed(why),
+            };
+            running.end(end);
+            hub.ended(&running);
+        });
+        if let Ok(mut t) = job.task.lock() {
+            *t = Some(task.abort_handle());
+        }
+        Ok(job)
+    }
+
     /// Keeps a call on notes in the activity, done at once: `what` it gave,
     /// never the text.
     fn note_activity(&self, client: &AiClient, hosts: &str, label: &str, what: &str) {
@@ -360,6 +659,18 @@ impl Hub {
         job.end(End::Exited(Some(0)));
         self.ended(&job);
     }
+}
+
+/// Why a note open in its window is not added to.
+fn open_in_window(title: &str) -> String {
+    format!(
+        "{title:?} is open in its window, where the user edits it: nothing is added while it is. Try again once they close it."
+    )
+}
+
+/// Today, as the line before what an AI adds says it.
+fn today() -> String {
+    chrono::Local::now().format("%Y-%m-%d").to_string()
 }
 
 #[cfg(test)]
@@ -421,18 +732,34 @@ mod tests {
 
     /// Notes in memory, as the vault would give them.
     struct Kept {
+        notes: std::sync::Mutex<Vec<Note>>,
+        texts: std::sync::Mutex<Vec<(String, String)>>,
+        images: Vec<(String, Vec<u8>)>,
+        held: std::sync::Mutex<Vec<String>>,
+    }
+
+    fn kept(
         notes: Vec<Note>,
         texts: Vec<(String, String)>,
         images: Vec<(String, Vec<u8>)>,
+    ) -> Kept {
+        Kept {
+            notes: notes.into(),
+            texts: texts.into(),
+            images,
+            held: vec![].into(),
+        }
     }
 
     impl NoteStore for Kept {
         fn notes(&self) -> Result<Vec<Note>, String> {
-            Ok(self.notes.clone())
+            Ok(self.notes.lock().expect("lock").clone())
         }
         fn text(&self, id: &str) -> Result<Option<String>, String> {
             Ok(self
                 .texts
+                .lock()
+                .expect("test")
                 .iter()
                 .find(|(i, _)| i == id)
                 .map(|(_, t)| t.clone()))
@@ -443,6 +770,23 @@ mod tests {
                 .iter()
                 .find(|(i, _)| i == id)
                 .map(|(_, b)| b.clone()))
+        }
+        fn held(&self, id: &str) -> bool {
+            self.held.lock().expect("lock").iter().any(|h| h == id)
+        }
+        fn save(&self, note: &Note, text: &str) -> Result<String, String> {
+            let mut n = note.clone();
+            if n.id.is_empty() {
+                n.id = format!("new{}", self.notes.lock().expect("lock").len());
+            }
+            let mut notes = self.notes.lock().expect("lock");
+            notes.retain(|x| x.id != n.id);
+            n.changed = "1761039129999-0000-b7e2".into();
+            notes.push(n.clone());
+            let mut texts = self.texts.lock().expect("lock");
+            texts.retain(|(i, _)| *i != n.id);
+            texts.push((n.id.clone(), text.to_string()));
+            Ok(n.id)
         }
     }
 
@@ -518,14 +862,14 @@ mod tests {
                 .collect(),
         );
         let png = b"\x89PNG\r\n\x1a\nrest".to_vec();
-        hub.set_notes(Some(Arc::new(Kept {
-            notes: vec![
+        hub.set_notes(Some(Arc::new(kept(
+            vec![
                 note("both", &["web", "db"], false, "1761039120002-0000-b7e2"),
                 note("dbonly", &["db"], false, "1761039120003-0000-b7e2"),
                 note("none", &[], false, "1761039120004-0000-b7e2"),
                 note("secret", &["web"], true, "1761039120005-0000-b7e2"),
             ],
-            texts: vec![
+            vec![
                 (
                     "both".into(),
                     format!(
@@ -534,9 +878,202 @@ mod tests {
                 ),
                 ("secret".into(), "the root password".into()),
             ],
-            images: vec![(IMAGE.into(), png.clone()), (OTHER.into(), png)],
-        })));
+            vec![(IMAGE.into(), png.clone()), (OTHER.into(), png)],
+        ))));
         hub
+    }
+
+    /// [`hub`], `web` given with *Add to notes* too, its commands `mode`.
+    fn adding_hub(mode: AiMode) -> Arc<Hub> {
+        let hub = hub();
+        let mut state = hub.inner.lock().expect("lock").state.clone();
+        for g in &mut state.grants {
+            if g.host == "me@web" {
+                g.notes_add = true;
+                g.mode = mode;
+            }
+        }
+        hub.set_state(state);
+        hub
+    }
+
+    fn text_of(hub: &Hub, id: &str) -> String {
+        let store = hub
+            .inner
+            .lock()
+            .expect("lock")
+            .notes
+            .clone()
+            .expect("a store");
+        store.text(id).expect("test").unwrap_or_default()
+    }
+
+    async fn end_of(job: &Job) -> Option<End> {
+        job.wait(std::time::Duration::from_secs(5), true).await.end
+    }
+
+    #[tokio::test]
+    async fn an_agent_writes_a_note_and_adds_to_one() {
+        let hub = adding_hub(AiMode::Free);
+        let c = client();
+        let job = hub
+            .add_note(
+                &c,
+                &["me@web".into()],
+                "Fixed nginx",
+                "Restarted it.\n\n",
+                NoteFormat::Markdown,
+            )
+            .expect("added");
+        assert_eq!(end_of(&job).await, Some(End::Exited(Some(0))));
+        let said = job.activity().output;
+        let id = said
+            .split("its id is ")
+            .nth(1)
+            .expect("its id")
+            .trim_end_matches('.')
+            .to_string();
+        let note = hub
+            .inner
+            .lock()
+            .expect("test")
+            .notes
+            .clone()
+            .expect("test")
+            .notes()
+            .expect("test");
+        let note = note.iter().find(|n| n.id == id).expect("kept");
+        assert_eq!(
+            (note.title.as_str(), note.hosts.clone()),
+            ("Fixed nginx", vec!["web".to_string()])
+        );
+        let text = text_of(&hub, &id);
+        let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+        assert_eq!(
+            text,
+            format!("> Added by Some agent, {date}\n\nRestarted it.\n")
+        );
+
+        let job = hub
+            .append_note(&c, "both", "Also: the cert renews on the 1st.")
+            .expect("appended");
+        assert_eq!(end_of(&job).await, Some(End::Exited(Some(0))));
+        let text = text_of(&hub, "both");
+        assert!(
+            text.starts_with("Restart nginx: sudo systemctl restart nginx\n\n![](attachment:"),
+            "kept as it was: {text}"
+        );
+        assert!(
+            text.ends_with(&format!(
+                ")\n\n> Added by Some agent, {date}\n\nAlso: the cert renews on the 1st.\n"
+            )),
+            "{text}"
+        );
+        // The log keeps no text of either.
+        for a in hub.activity() {
+            let line = serde_json::to_string(&a).expect("test");
+            assert!(
+                !line.contains("Restarted it") && !line.contains("cert renews"),
+                "{line}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn what_an_agent_may_not_add() {
+        let c = client();
+        let e = hub()
+            .add_note(&c, &["web".into()], "t", "x", NoteFormat::Markdown)
+            .err()
+            .expect("no right");
+        assert!(
+            e.contains("No host is given to Some agent to add to notes"),
+            "{e}"
+        );
+        let hub = adding_hub(AiMode::Free);
+        let add = |hosts: &[&str], title: &str, text: &str| {
+            let hosts: Vec<String> = hosts.iter().map(|h| h.to_string()).collect();
+            hub.add_note(&c, &hosts, title, text, NoteFormat::Markdown)
+                .err()
+                .expect("refused")
+        };
+        assert!(add(&["db"], "t", "x").contains("db is not given to Some agent to add to notes"));
+        assert!(add(&[], "t", "x").contains("hosts is missing"));
+        assert!(add(&["web"], " ", "x").contains("title is missing"));
+        assert!(add(&["web"], "t", &format!("![](attachment:{IMAGE})")).contains("text only"));
+        assert!(add(&["web"], "t", &"x".repeat(PART + 1)).contains("at the most"));
+        // Only to a note it may read, and not while it is open in its window.
+        let e = hub.append_note(&c, "secret", "x").err().expect("sensitive");
+        assert!(e.starts_with("No note secret"), "{e}");
+        let store = hub
+            .inner
+            .lock()
+            .expect("lock")
+            .notes
+            .clone()
+            .expect("a store");
+        drop(store);
+        hub.set_notes(Some(Arc::new({
+            let k = kept(
+                vec![
+                    note("big", &["web"], false, "1761039120002-0000-b7e2"),
+                    note("open", &["web"], false, "1761039120003-0000-b7e2"),
+                ],
+                vec![
+                    ("big".into(), "y".repeat(shellwing_vault::limits::NOTE - 10)),
+                    ("open".into(), "z".into()),
+                ],
+                vec![],
+            );
+            k.held.lock().expect("lock").push("open".into());
+            k
+        })));
+        let e = hub.append_note(&c, "open", "x").err().expect("open");
+        assert!(e.contains("open in its window"), "{e}");
+        let e = hub
+            .append_note(&c, "big", "more than ten bytes")
+            .err()
+            .expect("too big");
+        assert!(e.contains("over the 256.0 KB a note holds"), "{e}");
+        hub.set_locked(true);
+        let e = hub
+            .add_note(&c, &["web".into()], "t", "x", NoteFormat::Markdown)
+            .err()
+            .expect("locked");
+        assert!(e.contains("shellwing is locked"), "{e}");
+    }
+
+    #[tokio::test]
+    async fn an_addition_waits_for_the_person_who_sees_it_first() {
+        let hub = adding_hub(AiMode::Risky);
+        let c = client();
+        let job = hub
+            .append_note(&c, "both", "Rebooted at 3am.")
+            .expect("asked");
+        let said = job.wait(std::time::Duration::from_millis(50), true).await;
+        assert!(said.waiting && said.end.is_none());
+        let a = job.activity();
+        assert_eq!(a.waiting.as_deref(), Some(NOTES));
+        assert!(
+            a.adding
+                .as_deref()
+                .is_some_and(|t| t.ends_with("Rebooted at 3am.\n")),
+            "{:?}",
+            a.adding
+        );
+        hub.answer(&job.id, super::super::Approval::Refuse);
+        assert_eq!(end_of(&job).await, Some(End::Refused));
+        assert!(
+            !text_of(&hub, "both").contains("Rebooted"),
+            "refused: nothing added"
+        );
+
+        let job = hub
+            .append_note(&c, "both", "Rebooted at 3am.")
+            .expect("asked");
+        hub.answer(&job.id, super::super::Approval::Once);
+        assert_eq!(end_of(&job).await, Some(End::Exited(Some(0))));
+        assert!(text_of(&hub, "both").contains("Rebooted at 3am."));
     }
 
     #[tokio::test]
@@ -647,11 +1184,11 @@ mod tests {
     async fn an_image_not_here_yet_says_so() {
         let hub = hub();
         let c = client();
-        hub.set_notes(Some(Arc::new(Kept {
-            notes: vec![note("n", &["web"], false, "1761039120002-0000-b7e2")],
-            texts: vec![("n".into(), format!("![](attachment:{MISSING})"))],
-            images: vec![],
-        })));
+        hub.set_notes(Some(Arc::new(kept(
+            vec![note("n", &["web"], false, "1761039120002-0000-b7e2")],
+            vec![("n".into(), format!("![](attachment:{MISSING})"))],
+            vec![],
+        ))));
         let e = hub
             .note_image(&c, "n", &format!("attachment:{MISSING}"))
             .err()
