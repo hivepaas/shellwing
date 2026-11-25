@@ -491,6 +491,8 @@ impl ActivityView {
                 .and_then(|k| k.split_once('\n'))
                 .map(|(shows, key)| (shows.to_string(), key.to_string()));
             let trusts = key.is_some();
+            // A pane to read: allowed for a while, not run.
+            let pane = why == shellwing_core::ai::read_tab::PANE;
             // What sudo's password waits for, and whether the vault keeps one.
             let sudo = why.starts_with(shellwing_core::ai::sudo::SUDO);
             let saved = sudo && why.ends_with(shellwing_core::ai::sudo::SAVED);
@@ -511,6 +513,13 @@ impl ActivityView {
                                 client = a.client.clone(),
                                 host = a.host.clone(),
                                 shows = shows.clone()
+                            )
+                        } else if pane {
+                            tr!(
+                                "{client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.",
+                                client = a.client.clone(),
+                                host = a.host.clone(),
+                                n = shellwing_core::ai::panes::MINUTES.to_string()
                             )
                         } else if sudo {
                             tr!(
@@ -726,7 +735,27 @@ impl ActivityView {
                             ),
                     )
                 })
-                .when(!adds && !trusts && !sudo, |d| d.child(
+                .when(pane, |d| {
+                    let (allow, refuse) = (once.clone(), refuse.clone());
+                    d.child(
+                        div()
+                            .flex()
+                            .gap(px(8.))
+                            .child(
+                                primary_button("ai-allow", &tr!("Allow for 15 minutes")).on_click(
+                                    cx.listener(move |v, _, _, cx| v.answer(&allow, Approval::Once, cx)),
+                                ),
+                            )
+                            .child(
+                                outline_button("ai-refuse", &tr!("Refuse it"))
+                                    .text_color(rgb(colors().bad))
+                                    .on_click(cx.listener(move |v, _, _, cx| {
+                                        v.answer(&refuse, Approval::Refuse, cx)
+                                    })),
+                            ),
+                    )
+                })
+                .when(!adds && !trusts && !sudo && !pane, |d| d.child(
                     div()
                         .flex()
                         .gap(px(8.))

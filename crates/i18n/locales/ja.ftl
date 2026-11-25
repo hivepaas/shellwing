@@ -79,6 +79,9 @@ t6e8860fa = スニペット { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } が { $host } に接続しようとしていますが、{ $shows } が known_hosts にないホスト鍵を提示しています。管理者から伝えられたそのホストの鍵である場合のみ信頼してください。信頼すると known_hosts に保存され、待っている処理が続行されます。
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } が { $host } のペインを読み取ろうとしています (プログラムの出力とプロンプトで入力した内容)。許可すると { $n } 分間読み取れます。何も入力しません。
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } が sudo のパスワードを使って { $host } でこれを実行しようとしています。毎回指示を待ちます。パスワードを入力してください。{ $client } からは見えません。
 
@@ -126,6 +129,9 @@ t72430853 = 実行
 
 # Use the saved password
 ta3f63985 = 保存したパスワードを使う
+
+# Allow for 15 minutes
+t6bdfbaf4 = 15 分間許可
 
 # Run it, and this command again this session
 t2efebee7 = 実行し、このセッション中は同じコマンドも実行

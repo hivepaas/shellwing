@@ -79,6 +79,9 @@ t6e8860fa = El fragmento { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } quiere llegar a { $host }, y { $shows } muestra una clave del servidor que no está en known_hosts. Confía en ella solo si es la clave de ese servidor, tal como te la dio su responsable: se guarda en known_hosts y lo que la espera continúa.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } quiere leer tu panel en { $host }: el texto que imprimieron los programas y lo que escribiste en el prompt. Permitido, puede leerlo durante { $n } minutos; no escribe nada.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } quiere ejecutar esto en { $host } con la contraseña de sudo. Te espera cada vez: escribe la contraseña, que { $client } nunca ve.
 
@@ -127,6 +130,9 @@ t72430853 = Ejecutar
 
 # Use the saved password
 ta3f63985 = Usar la contraseña guardada
+
+# Allow for 15 minutes
+t6bdfbaf4 = Permitir 15 minutos
 
 # Run it, and this command again this session
 t2efebee7 = Ejecutar, y este comando de nuevo en esta sesión

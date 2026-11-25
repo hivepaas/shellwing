@@ -439,6 +439,8 @@ enum Cmd {
         html: bool,
         reply: FormatFn,
     },
+    /// The selection's text, plain; nothing when there is none.
+    FormatSelection(FormatFn),
     /// Stop the thread, dropping the terminal and the write callback.
     Close,
     ResetModes,
@@ -547,6 +549,11 @@ impl TermHandle {
     /// or as HTML with its colors.
     pub fn format_all(&self, html: bool, reply: FormatFn) {
         let _ = self.tx.send(Cmd::Format { html, reply });
+    }
+
+    /// Hands `reply` the selection's text, plain; nothing when there is none.
+    pub fn format_selection(&self, reply: FormatFn) {
+        let _ = self.tx.send(Cmd::FormatSelection(reply));
     }
 
     pub fn mouse(&self, input: MouseInput) {
@@ -925,6 +932,10 @@ fn run(
                     reply(e.format_all(html).unwrap_or_default());
                     continue;
                 }
+                Cmd::FormatSelection(reply) => {
+                    reply(e.format_selection().unwrap_or_default());
+                    continue;
+                }
                 Cmd::Close => return Ok(()),
                 Cmd::ResetModes => {
                     // Only leave the alternate screen if a program left it on:
@@ -999,6 +1010,17 @@ impl Drop for Logging {
 }
 
 impl Engine {
+    /// The selection's text, as Copy takes it; nothing when there is none.
+    fn format_selection(&mut self) -> libghostty_vt::error::Result<Vec<u8>> {
+        let Some(mut f) = Formatter::new_selection(&self.term)? else {
+            return Ok(vec![]);
+        };
+        f.set_format(Format::Plain)?
+            .set_unwrap(true)?
+            .set_trim(true)?;
+        Ok(f.format_alloc(None)?.to_vec())
+    }
+
     /// The text of the history and the screen.
     fn format_all(&mut self, html: bool) -> libghostty_vt::error::Result<Vec<u8>> {
         // With no selection, a formatter takes all of it.

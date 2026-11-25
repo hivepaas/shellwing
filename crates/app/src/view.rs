@@ -3047,6 +3047,28 @@ impl TermView {
         self.reveal_scrollbar(cx);
     }
 
+    /// The pane as an AI client reads it (docs/design/ai-read-tab.md): its
+    /// terminal, the screen's height, its host, and what its shell says.
+    pub fn ai_pane(&self, id: String, focused: bool) -> shellwing_core::ai::read_tab::PaneHandle {
+        let s = &self.session;
+        let host = if s.is_local() {
+            "local terminal".to_string()
+        } else {
+            s.entry.clone().unwrap_or_else(|| s.spec.clone())
+        };
+        shellwing_core::ai::read_tab::PaneHandle {
+            id,
+            host,
+            title: self
+                .shell_title
+                .as_ref()
+                .map_or_else(|| s.title.to_string(), |t| t.to_string()),
+            focused,
+            rows: self.grid.1 as usize,
+            term: self.term.clone(),
+        }
+    }
+
     /// Whether an AI client may read the pane now.
     pub fn ai_read(&self) -> bool {
         self.ai_reader.is_some()

@@ -79,6 +79,9 @@ t6e8860fa = L'extrait { $name }
 # {client} wants to reach {host}, and {shows} shows a host key not in known_hosts. Trust it only if it is that host's key, as its owner gave it to you: it is kept in known_hosts, and what waits for it goes on.
 t8595135e = { $client } veut joindre { $host }, et { $shows } présente une clé de serveur absente de known_hosts. Ne lui faites confiance que si c'est bien la clé de ce serveur, telle que son responsable vous l'a donnée : elle est enregistrée dans known_hosts, et ce qui l'attend continue.
 
+# {client} wants to read your pane on {host}: the text programs printed, and what you typed at the prompt. Allowed, it may read it for {n} minutes; it types nothing.
+taeedb0b4 = { $client } veut lire votre volet sur { $host } : le texte affiché par les programmes, et ce que vous avez tapé à l'invite. Autorisé, il peut le lire pendant { $n } minutes ; il ne tape rien.
+
 # {client} wants to run this on {host} with sudo's password. It waits for you every time: type the password, which {client} never sees.
 tb61899bb = { $client } veut exécuter ceci sur { $host } avec le mot de passe sudo. Il vous attend à chaque fois : saisissez le mot de passe, que { $client } ne voit jamais.
 
@@ -127,6 +130,9 @@ t72430853 = Exécuter
 
 # Use the saved password
 ta3f63985 = Utiliser le mot de passe enregistré
+
+# Allow for 15 minutes
+t6bdfbaf4 = Autoriser 15 minutes
 
 # Run it, and this command again this session
 t2efebee7 = Exécuter, et cette commande à nouveau durant cette session

@@ -31,6 +31,8 @@ pub(super) struct AiWork {
     told: Option<(Vec<Pick>, AiState)>,
     /// A timer runs while a pane may be read: its mark counts down, and goes.
     ticking: bool,
+    /// The panes the hub was last told of: id, focused, title.
+    told_panes: Vec<(String, bool, String)>,
 }
 
 impl Workspace {
@@ -113,6 +115,7 @@ impl Workspace {
             used: BTreeMap::new(),
             told: None,
             ticking: false,
+            told_panes: vec![],
         });
     }
 
@@ -802,6 +805,31 @@ impl Workspace {
                 .map(|(c, p, _)| (c, p))
                 .collect()
         })
+    }
+
+    /// Tells the hub the panes open, in their order (tabs, then panes),
+    /// when they changed: what an AI client's `list_tabs` numbers.
+    pub(crate) fn tell_hub_panes(&mut self, cx: &mut Context<Self>) {
+        if self.ai.is_none() {
+            return;
+        }
+        let focused = self.active_tab().cloned();
+        let mut panes = vec![];
+        for v in self.tabs.iter().flat_map(|t| t.views()) {
+            let id = Self::pane_id(&v);
+            let on = focused.as_ref().is_some_and(|f| *f == v);
+            panes.push(v.read(cx).ai_pane(id, on));
+        }
+        let told: Vec<(String, bool, String)> = panes
+            .iter()
+            .map(|p| (p.id.clone(), p.focused, p.title.clone()))
+            .collect();
+        if let Some(ai) = &mut self.ai
+            && ai.told_panes != told
+        {
+            ai.hub.set_panes(panes);
+            ai.told_panes = told;
+        }
     }
 
     /// The id the hub knows a pane by.
