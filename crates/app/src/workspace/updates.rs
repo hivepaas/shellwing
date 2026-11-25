@@ -1,8 +1,8 @@
 //! Telling that a newer shellwing is out, and installing it (see
 //! `shellwing_update`): a look once a day while `[updates] check` is on, or
-//! when asked in Settings › About. What is offered shows as a row over the
-//! panes, a dot on the Settings button, an entry of the palette and a line in
-//! About; it never takes the keyboard.
+//! when asked in Settings › About. What is offered shows as a badge on the
+//! title bar, as packwing's, which leads to About, an entry of the palette and
+//! a line in About; it never takes the keyboard.
 //!
 //! A copy the app can replace downloads the release when told to, checks it
 //! against the signed list, and installs it as it quits: at *Restart now*
@@ -18,7 +18,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::*;
-use gpui::Stateful;
 use shellwing_config::UpdateState;
 use shellwing_update::{Install, Version};
 
@@ -61,8 +60,6 @@ pub(crate) struct Updates {
     pub(crate) stage: Stage,
     /// Quitting to install the update starts the app again.
     pub(crate) relaunch: bool,
-    /// The release whose row over the panes was closed: back at the next start.
-    pub(crate) row_closed: Option<Version>,
 }
 
 /// What Settings › About shows of it.
@@ -127,24 +124,6 @@ fn found_in(list: &[u8]) -> Result<Found, shellwing_update::CheckError> {
         _ => None,
     };
     Ok((offered, package))
-}
-
-/// A button of the row over the panes.
-fn row_button(id: &'static str, label: String) -> Stateful<Div> {
-    div()
-        .id(id)
-        .debug_selector(|| id.to_string())
-        .h(px(24.))
-        .px(px(10.))
-        .flex()
-        .items_center()
-        .rounded(px(6.))
-        .border_1()
-        .border_color(rgb(colors().accent))
-        .text_xs()
-        .cursor_pointer()
-        .hover(|s| s.bg(rgb(colors().hover)))
-        .child(label)
 }
 
 /// "12.3 MB".
@@ -260,13 +239,6 @@ impl Workspace {
     #[cfg(all(test, feature = "ui-tests"))]
     pub fn close_settings_for_test(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.close_settings(window, cx);
-    }
-
-    /// The row closed by the ✕ back, as at the next start: for the UI tests.
-    #[cfg(all(test, feature = "ui-tests"))]
-    pub fn reopen_update_row_for_test(&mut self, cx: &mut Context<Self>) {
-        self.updates.row_closed = None;
-        cx.notify();
     }
 
     /// As a list that names no package would leave it: for the UI tests.
@@ -486,88 +458,25 @@ impl Workspace {
         cx.notify();
     }
 
-    /// Closes the row over the panes until the next start.
-    fn close_update_row(&mut self, v: Version, cx: &mut Context<Self>) {
-        self.updates.row_closed = Some(v);
-        cx.notify();
-    }
-
-    /// The row over the panes: a release that is ready, or, while looking for
-    /// updates is on, one that is out. Nothing while one downloads: About
-    /// shows that, and it was asked for.
-    pub(super) fn update_row(&self, cx: &mut Context<Self>) -> Option<Div> {
-        let (version, ready) = match &self.updates.stage {
-            Stage::Ready(v) => (v.clone(), true),
-            Stage::Downloading(..) => return None,
-            _ if self.live.settings().updates.check => (self.update_offered()?, false),
-            _ => return None,
-        };
-        if self.updates.row_closed.as_ref() == Some(&version) {
-            return None;
+    /// The title bar's badge, as packwing's: what it says and its tooltip,
+    /// while a release is ready to install, or, while looking for updates is
+    /// on, one is out. Nothing while one downloads: About shows that, and it
+    /// was asked for.
+    pub(crate) fn update_badge(&self) -> Option<(String, String)> {
+        match &self.updates.stage {
+            Stage::Ready(v) => Some((
+                tr!("Restart to update"),
+                tr!("shellwing {version} is ready", version = v.to_string()),
+            )),
+            Stage::Downloading(..) => None,
+            _ if self.live.settings().updates.check => self.update_offered().map(|v| {
+                (
+                    tr!("Update available"),
+                    tr!("shellwing {version} is out", version = v.to_string()),
+                )
+            }),
+            _ => None,
         }
-        let said = version.to_string();
-        let row = div()
-            .debug_selector(|| "update-row".to_string())
-            .h(px(34.))
-            .flex_shrink_0()
-            .flex()
-            .items_center()
-            .gap(px(10.))
-            .px(px(14.))
-            .bg(rgb(colors().selected))
-            .border_b_1()
-            .border_color(rgb(colors().accent))
-            .text_sm()
-            .child(div().size(px(8.)).rounded_full().bg(rgb(colors().accent)))
-            .child(div().flex_1().min_w_0().child(if ready {
-                tr!("shellwing {version} is ready", version = said)
-            } else {
-                tr!("shellwing {version} is out", version = said)
-            }));
-        let row = if ready {
-            row.child(
-                row_button("update-row-restart", tr!("Restart now"))
-                    .on_click(cx.listener(|ws, _, window, cx| ws.restart_to_update(window, cx))),
-            )
-        } else {
-            row.child(row_button("update-row-open", tr!("Update")).on_click(
-                cx.listener(|ws, _, window, cx| ws.open_settings(Page::About, window, cx)),
-            ))
-            .child(
-                div()
-                    .id("update-row-skip")
-                    .debug_selector(|| "update-row-skip".to_string())
-                    .text_xs()
-                    .text_color(rgb(colors().soft))
-                    .cursor_pointer()
-                    .hover(|s| s.text_color(rgb(colors().text)).underline())
-                    .on_click(cx.listener(|ws, _, _, cx| ws.skip_update(cx)))
-                    .child(tr!("Skip this version")),
-            )
-        };
-        Some(
-            row.child(
-                div()
-                    .id("update-row-close")
-                    .debug_selector(|| "update-row-close".to_string())
-                    .size(px(20.))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .rounded(px(4.))
-                    .cursor_pointer()
-                    .hover(|s| s.bg(rgb(colors().hover)))
-                    .on_click(
-                        cx.listener(move |ws, _, _, cx| ws.close_update_row(version.clone(), cx)),
-                    )
-                    .child(
-                        svg()
-                            .path("icons/close.svg")
-                            .size(px(12.))
-                            .text_color(rgb(colors().soft)),
-                    ),
-            ),
-        )
     }
 
     /// Said as a download goes: "12.3 MB of 45.6 MB".

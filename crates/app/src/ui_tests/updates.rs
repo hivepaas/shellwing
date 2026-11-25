@@ -131,37 +131,26 @@ scenario!(
 );
 
 scenario!(
-    /// The row over the panes tells of the release, and Update goes to the
-    /// section of About that gets it.
-    the_row_tells_and_goes_to_about,
+    /// The title bar's badge tells of the release, as packwing's does, with
+    /// no row over the panes; a click goes to the section of About that gets
+    /// it, and Skip this version there takes the badge away.
+    the_badge_tells_and_goes_to_about,
     |ui| {
         if !check(ui, Some(SIGNED)) {
             return;
         }
         ui.ws(|ws, window, cx| ws.close_settings_for_test(window, cx));
-        assert!(ui.find("update-row").is_some(), "no row");
-        ui.click("update-row-open");
+        assert!(ui.find("update-badge").is_some(), "no badge");
+        let said = ui.ws(|ws, _, _| ws.update_badge());
+        assert_eq!(
+            said,
+            Some(("Update available".to_string(), format!("shellwing {} is out", offered())))
+        );
+        ui.click("update-badge");
         ui.wait_until("About", |ui| ui.settings_page() == Some(Page::About));
         assert!(ui.find("update-get").is_some());
-    }
-);
-
-scenario!(
-    /// The row's ✕ closes it for this run and offers the release still; its
-    /// Skip offers it no more.
-    the_row_closes_and_skips,
-    |ui| {
-        if !check(ui, Some(SIGNED)) {
-            return;
-        }
-        ui.ws(|ws, window, cx| ws.close_settings_for_test(window, cx));
-        ui.click("update-row-close");
-        ui.wait_until("the row to go", |ui| ui.find("update-row").is_none());
-        assert_eq!(offer(ui), Some(offered()), "closing is not skipping");
-
-        ui.ws(|ws, _, cx| ws.reopen_update_row_for_test(cx));
-        ui.click("update-row-skip");
-        ui.wait_until("the row to go", |ui| ui.find("update-row").is_none());
+        ui.click("update-skip");
+        ui.wait_until("the badge to go", |ui| ui.find("update-badge").is_none());
         assert_eq!(offer(ui), None);
     }
 );

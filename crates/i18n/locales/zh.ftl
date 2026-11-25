@@ -4213,8 +4213,11 @@ t2bfc1370 = 没有可用于下载的文件夹。
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } 已就绪：退出时安装，或点击“重新启动”立即安装。
 
-# Update
-t6e230e94 = 更新
+# Restart to update
+tbbbbda26 = 重启以更新
+
+# Update available
+t676409df = 有可用更新
 
 # Downloading… {got} of {total}
 taee668c2 = 正在下载… { $got } / { $total }

@@ -4213,8 +4213,11 @@ t2bfc1370 = ダウンロード先のフォルダーがありません。
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } の準備ができました: 終了時にインストールされます。今すぐなら「再起動」を押してください。
 
-# Update
-t6e230e94 = アップデート
+# Restart to update
+tbbbbda26 = 再起動して更新
+
+# Update available
+t676409df = アップデートがあります
 
 # Downloading… {got} of {total}
 taee668c2 = ダウンロード中… { $got } / { $total }

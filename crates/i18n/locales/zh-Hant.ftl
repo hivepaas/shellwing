@@ -4270,8 +4270,11 @@ t2bfc1370 = 沒有可下載到的資料夾。
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } 已就緒：結束時會安裝，或按「重新啟動」立即安裝。
 
-# Update
-t6e230e94 = 更新
+# Restart to update
+tbbbbda26 = 重新啟動以更新
+
+# Update available
+t676409df = 有可用更新
 
 # Downloading… {got} of {total}
 taee668c2 = 正在下載… { $got } / { $total }

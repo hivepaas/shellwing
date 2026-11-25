@@ -4270,8 +4270,11 @@ t2bfc1370 = Tidak ada folder tujuan unduhan.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } siap: dipasang saat Anda keluar, atau sekarang dengan Mulai Ulang.
 
-# Update
-t6e230e94 = Perbarui
+# Restart to update
+tbbbbda26 = Mulai ulang untuk memperbarui
+
+# Update available
+t676409df = Pembaruan tersedia
 
 # Downloading… {got} of {total}
 taee668c2 = Mengunduh… { $got } dari { $total }

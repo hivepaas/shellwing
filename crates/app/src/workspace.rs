@@ -6595,6 +6595,44 @@ impl Workspace {
             // Leftmost of the row because the stretch before it takes up the
             // slack: the buttons after it keep their places as this comes and
             // goes, instead of shifting under the pointer.
+            // A newer shellwing is out, or ready: said as packwing says it,
+            // and a click leads to About, where it is got. It takes the press
+            // itself, the bar's drag never.
+            .when_some(self.update_badge(), |d, (said, tip)| {
+                d.child(
+                    div()
+                        .id("update-badge")
+                        .debug_selector(|| "update-badge".into())
+                        .flex()
+                        .flex_shrink_0()
+                        .items_center()
+                        .h(px(24.))
+                        .mr(px(6.))
+                        .px(px(10.))
+                        .rounded_full()
+                        .bg(rgb(colors().accent))
+                        .hover(|s| s.bg(rgb(colors().accent_hover)))
+                        .text_color(rgb(colors().on_accent))
+                        .text_size(look::ui(12.))
+                        .font_weight(gpui::FontWeight::SEMIBOLD)
+                        .whitespace_nowrap()
+                        .cursor_pointer()
+                        .occlude()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .tooltip(move |_, cx| {
+                            let title = tip.clone().into();
+                            cx.new(|_| crate::sidebar::Tip {
+                                title,
+                                detail: SharedString::default(),
+                            })
+                            .into()
+                        })
+                        .on_click(cx.listener(|ws, _, window, cx| {
+                            ws.open_settings(Page::About, window, cx)
+                        }))
+                        .child(said),
+                )
+            })
             .when(self.ai_waiting() > 0, |d| {
                 let waiting = self.ai_waiting();
                 d.child(
@@ -6700,22 +6738,6 @@ impl Workspace {
                             .path("icons/settings.svg")
                             .size(px(16.))
                             .text_color(rgb(if open { colors().text } else { colors().soft })),
-                    )
-                    // A newer shellwing is out (Settings › About says which).
-                    .when(
-                        self.update_offered().is_some()
-                            || matches!(self.updates.stage, updates::Stage::Ready(_)),
-                        |d| {
-                            d.child(
-                                div()
-                                    .absolute()
-                                    .top(px(5.))
-                                    .right(px(5.))
-                                    .size(px(7.))
-                                    .rounded_full()
-                                    .bg(rgb(colors().accent)),
-                            )
-                        },
                     ),
             )
             .child(self.sync_button(cx))
@@ -7259,7 +7281,6 @@ impl Render for Workspace {
             bottom
         };
         let tabs = self.tab_strip(cx);
-        let update_row = self.update_row(cx);
         let main: AnyElement = match self.tabs.get(self.active) {
             Some(Tab {
                 page: Some(page), ..
@@ -7304,7 +7325,6 @@ impl Render for Workspace {
             .h_full()
             .flex()
             .flex_col()
-            .children(update_row)
             .child(main);
         let palette = self.palette.as_ref().map(|(p, ..)| p.clone());
         let side_w = if self.sidebar_collapsed {

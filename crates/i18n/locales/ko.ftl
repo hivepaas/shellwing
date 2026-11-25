@@ -4213,8 +4213,11 @@ t2bfc1370 = 다운로드할 폴더가 없습니다.
 # shellwing {version} is ready: it is installed when you quit, or now with Restart.
 t4cc4357e = shellwing { $version } 준비 완료: 종료할 때 설치되며, 다시 시작을 누르면 지금 설치됩니다.
 
-# Update
-t6e230e94 = 업데이트
+# Restart to update
+tbbbbda26 = 다시 시작하여 업데이트
+
+# Update available
+t676409df = 업데이트 가능
 
 # Downloading… {got} of {total}
 taee668c2 = 다운로드 중… { $got } / { $total }
