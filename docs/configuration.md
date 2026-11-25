@@ -32,7 +32,8 @@ How the files behave:
 - **Unknown keys are ignored**, so a file written by a newer version still loads.
 
 The `state/` folder holds what shellwing remembers by itself, such as the window's
-size, place and maximised state, and the host list's width and fold
+size, place and maximised state, the host list's width and fold, and the widths
+dragged of the Files panel, the drawer and AI activity's list
 (`state/window.json`) and the hosts opened lately
 (`state/recent.json`, shown in the palette), and the tabs and panes that were open
 (`state/session.json`, opened again by `restore_tabs`). It is not meant for

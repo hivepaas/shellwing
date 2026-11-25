@@ -242,6 +242,9 @@ pub struct WindowState {
     /// None: the default.
     #[serde(default)]
     pub drawer_width: Option<f32>,
+    /// AI activity's list of commands' width as dragged; None: the default.
+    #[serde(default)]
+    pub activity_list_width: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

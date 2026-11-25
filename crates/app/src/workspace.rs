@@ -619,6 +619,12 @@ impl Workspace {
                     w.clamp(crate::files::MIN_WIDTH, crate::files::MAX_WIDTH),
                 ));
             }
+            if let Some(w) = s.activity_list_width {
+                cx.set_global(crate::activity_view::ListWidth(w.clamp(
+                    crate::activity_view::MIN_LIST_WIDTH,
+                    crate::activity_view::MAX_LIST_WIDTH,
+                )));
+            }
         }
         if let Some(store) = ws.live.store() {
             let folds = store.sidebar_state();
@@ -769,6 +775,12 @@ impl Workspace {
             )
     }
 
+    /// Remembers the window's layout (the widths dragged) with its place:
+    /// for a view of its own that was resized, as AI activity's list.
+    pub(crate) fn save_widths(&mut self, window: &Window, cx: &gpui::App) {
+        self.save_sidebar(window, cx);
+    }
+
     /// Remembers the host list's width and fold with the window's place.
     fn save_sidebar(&mut self, window: &Window, cx: &gpui::App) {
         let mut state = crate::placement::state(window.window_bounds());
@@ -776,6 +788,9 @@ impl Workspace {
         state.sidebar_collapsed = self.sidebar_collapsed;
         state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
         state.drawer_width = Some(self.drawer_width);
+        state.activity_list_width = cx
+            .try_global::<crate::activity_view::ListWidth>()
+            .map(|w| w.0);
         if let Some(store) = self.live.store()
             && let Err(e) = store.save_window_state(&state)
         {
@@ -5881,6 +5896,9 @@ impl Workspace {
             state.sidebar_collapsed = self.sidebar_collapsed;
             state.files_width = cx.try_global::<crate::files::PanelWidth>().map(|w| w.0);
             state.drawer_width = Some(self.drawer_width);
+            state.activity_list_width = cx
+                .try_global::<crate::activity_view::ListWidth>()
+                .map(|w| w.0);
             if let Err(e) = store.save_window_state(&state) {
                 eprintln!("cannot save the window size: {e}");
             }

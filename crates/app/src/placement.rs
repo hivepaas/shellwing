@@ -65,6 +65,7 @@ pub fn state(bounds: WindowBounds) -> WindowState {
         sidebar_collapsed: false,
         files_width: None,
         drawer_width: None,
+        activity_list_width: None,
     }
 }
 
