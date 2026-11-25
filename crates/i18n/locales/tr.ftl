@@ -410,8 +410,8 @@ te371b0dd = Riskli: bu sözcüklerden birini içeren bir komut sizi bekler; her 
 # The usual list
 tcc58d242 = Olağan liste
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Bu bilgisayarda düz metin olarak, 20 MB’lık parçalarla saklanır: her komutun çıktısının ilk 64 KB’ı. Bundan fazlası olunca en eski parça silinir. AI etkinliği son 1000 komutu gösterir ve hepsini temizler.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Bu bilgisayarda düz metin olarak, { $part } MB’lık parçalarla saklanır: her komutun çıktısının ilk 64 KB’ı. Bundan fazlası olunca en eski parça silinir. AI etkinliği son 1000 komutu gösterir ve hepsini temizler.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = En az { $least } MB: o zamana kadar { $mb } MB kalır.

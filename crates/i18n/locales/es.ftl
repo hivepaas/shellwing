@@ -410,8 +410,8 @@ te371b0dd = De riesgo: un comando con cualquiera de estas palabras, una por lín
 # The usual list
 tcc58d242 = La lista habitual
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Se guarda en este equipo, como texto sin cifrar, en partes de 20 MB: lo que imprimió cada comando, sus primeros 64 KB. Cuando son más que esto, se va la parte más antigua. La Actividad AI muestra los últimos 1000 y los vacía todos.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Se guarda en este equipo, como texto sin cifrar, en partes de { $part } MB: lo que imprimió cada comando, sus primeros 64 KB. Cuando son más que esto, se va la parte más antigua. La Actividad AI muestra los últimos 1000 y los vacía todos.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Al menos { $least } MB: hasta entonces se mantienen { $mb } MB.

@@ -410,8 +410,8 @@ te371b0dd = Riskant: Ein Befehl mit einem davon, eines pro Zeile, wartet auf dic
 # The usual list
 tcc58d242 = Die übliche Liste
 
-# Kept on this computer, as plain text, in parts of 20 MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
-t35346446 = Auf diesem Computer als Klartext gespeichert, in Teilen zu 20 MB: was jeder Befehl ausgegeben hat, die ersten 64 KB davon. Sind es mehr als das, geht der älteste Teil. Die AI-Aktivität zeigt die letzten 1000 und leert alle.
+# Kept on this computer, as plain text, in parts of {part} MB: what each command printed, its first 64 KB. When they are more than this, the oldest part goes. AI activity shows the last 1000, and clears them all.
+tc60b799b = Auf diesem Computer als Klartext gespeichert, in Teilen zu { $part } MB: was jeder Befehl ausgegeben hat, die ersten 64 KB davon. Sind es mehr als das, geht der älteste Teil. Die AI-Aktivität zeigt die letzten 1000 und leert alle.
 
 # At least {least} MB: {mb} MB is kept until then.
 t4a3240e4 = Mindestens { $least } MB: bis dahin bleiben es { $mb } MB.
