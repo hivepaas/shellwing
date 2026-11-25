@@ -38,6 +38,9 @@ pub struct ActivityView {
     /// The list of commands, and a drag of its scroll bar's thumb.
     scroll: gpui::ScrollHandle,
     scroll_drag: crate::scrollbar::Drag,
+    /// The same for what an addition waiting for the person would add.
+    adding_scroll: gpui::ScrollHandle,
+    adding_drag: crate::scrollbar::Drag,
 }
 
 impl Focusable for ActivityView {
@@ -84,6 +87,8 @@ impl ActivityView {
             viewer: None,
             scroll: gpui::ScrollHandle::new(),
             scroll_drag: Default::default(),
+            adding_scroll: gpui::ScrollHandle::new(),
+            adding_drag: Default::default(),
         }
     }
 
@@ -505,22 +510,36 @@ impl ActivityView {
                     )
                 })
                 .when_some(a.adding.clone(), |d, text| {
-                    // What goes into the note, as it will read there.
+                    // What goes into the note, as it will read there; a long
+                    // one scrolls, by the bar every list has.
                     d.child(
                         div()
-                            .id("ai-adding")
-                            .debug_selector(|| "ai-adding".into())
-                            .max_h(px(240.))
-                            .overflow_y_scroll()
-                            .px(px(12.))
-                            .py(px(10.))
+                            .relative()
                             .rounded(px(8.))
                             .border_1()
                             .border_color(rgb(colors().line))
                             .bg(rgb(colors().page))
-                            .text_size(ui(12.5))
-                            .font_family(self.mono.clone())
-                            .child(text),
+                            .child(
+                                div()
+                                    .id("ai-adding")
+                                    .debug_selector(|| "ai-adding".into())
+                                    .max_h(px(240.))
+                                    .overflow_y_scroll()
+                                    .track_scroll(&self.adding_scroll)
+                                    .px(px(12.))
+                                    .py(px(10.))
+                                    .text_size(ui(12.5))
+                                    .font_family(self.mono.clone())
+                                    .child(
+                                        div()
+                                            .debug_selector(|| "ai-adding-text".into())
+                                            .child(text),
+                                    ),
+                            )
+                            .child(crate::scrollbar::overlay(
+                                self.adding_scroll.clone(),
+                                self.adding_drag.clone(),
+                            )),
                     )
                 })
                 .when(trusts, |d| {

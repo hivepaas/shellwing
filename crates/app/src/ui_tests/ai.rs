@@ -951,6 +951,54 @@ scenario!(
 );
 
 scenario!(
+    /// A long addition waiting for the person scrolls in its box, by the bar
+    /// every list has: its thumb dragged down shows the rest.
+    a_long_addition_scrolls_by_its_bar,
+    |ui| {
+        let token = given_web_may(ui, "Risky", "background", &["notes-read", "notes-add"]);
+        let vault = ui.vault().expect("the vault");
+        let id = vault
+            .save_note(
+                &shellwing_vault::Note {
+                    id: String::new(),
+                    title: "Long".into(),
+                    category: String::new(),
+                    format: shellwing_vault::NoteFormat::Markdown,
+                    hosts: vec!["web".into()],
+                    sensitive: false,
+                    shown_to_ai: false,
+                    changed: String::new(),
+                    size: 0,
+                },
+                Some("start"),
+            )
+            .expect("note");
+        let text: String = (1..=80).map(|i| format!("line {i}\n")).collect();
+        let (mut c, _) = Client::open(ui, &token);
+        let (said, _) = c.tool_in(ui, "append_note", json!({"id": id, "text": text, "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        ui.click(&format!("ai-row:{job}"));
+        let boxed = ui.bounds("ai-adding");
+        let before = ui.bounds("ai-adding-text");
+        assert!(before.size.height > boxed.size.height, "longer than its box");
+        let x = boxed.right() - gpui::px(4.);
+        ui.flick(
+            gpui::point(x, boxed.top() + gpui::px(6.)),
+            gpui::point(x, boxed.bottom() + gpui::px(40.)),
+            Duration::ZERO,
+        );
+        ui.draw();
+        let after = ui.bounds("ai-adding-text");
+        assert!(
+            (after.bottom() - boxed.bottom()).abs() <= gpui::px(12.),
+            "scrolled to its end: {after:?} in {boxed:?}"
+        );
+    }
+);
+
+scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with
     /// them ticked has them, and they are kept.
