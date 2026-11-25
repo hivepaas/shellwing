@@ -582,7 +582,7 @@ scenario!(
         let (hosts, _) = c.tool_in(ui, "list_hosts", json!({}));
         assert!(hosts.contains("list_notes"), "said in list_hosts: {hosts}");
         let (listed, error) = c.tool_in(ui, "list_notes", json!({}));
-        assert!(!error && listed.starts_with("1 note about web"), "{listed}");
+        assert!(!error && listed.starts_with("1 note you may read (about web, or about no host and shown to AI)"), "{listed}");
         assert!(listed.contains(&format!("{restart}\tRestarting web\tOps\tmarkdown\tweb\t")), "db left out: {listed}");
         assert!(!listed.contains("Web's root") && !listed.contains("My own"), "{listed}");
 
