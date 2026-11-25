@@ -226,6 +226,9 @@ tf5190423 = 讀取筆記
 # adds to notes
 tc82ac79b = 新增至筆記
 
+# uses snippets
+ta3eb0945 = 使用程式碼片段
+
 # while shellwing stays open
 t938960ff = shellwing 開啟期間
 
@@ -342,6 +345,12 @@ tb80fd9c4 = 新增至筆記
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = 關於此主機的新筆記，或在筆記末尾追加內容；絕不更改既有內容
+
+# Use snippets
+t7dbb24e6 = 使用程式碼片段
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = 列出為此主機提供的程式碼片段，並在可執行命令時執行其中之一
 
 # Commands
 t971550f3 = 指令

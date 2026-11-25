@@ -870,6 +870,7 @@ mod tests {
             write: false,
             notes_read,
             notes_add: false,
+            snippets: false,
             paused: false,
         };
         hub.set_state(shellwing_config::AiState {
@@ -886,6 +887,7 @@ mod tests {
                         super::super::Host {
                             name: name.into(),
                             detail: String::new(),
+                            group: None,
                             target: Err("not here".into()),
                         },
                     )

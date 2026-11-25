@@ -67,6 +67,8 @@ pub struct Host {
     pub name: String,
     /// Its address, as the host list shows it.
     pub detail: String,
+    /// Its group in hosts.toml, which snippets are offered for.
+    pub group: Option<String>,
     pub target: Result<Resolved, String>,
 }
 

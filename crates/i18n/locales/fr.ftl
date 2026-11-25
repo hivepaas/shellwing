@@ -228,6 +228,9 @@ tf5190423 = lit des notes
 # adds to notes
 tc82ac79b = complète des notes
 
+# uses snippets
+ta3eb0945 = utilise des extraits
+
 # while shellwing stays open
 t938960ff = tant que shellwing reste ouvert
 
@@ -346,6 +349,12 @@ tb80fd9c4 = Compléter des notes
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = une nouvelle note sur l'hôte, ou une suite à la fin d'une note ; ne change jamais ce qui s'y trouve
+
+# Use snippets
+t7dbb24e6 = Utiliser des extraits
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = lister les extraits proposés pour l'hôte, et en exécuter un là où il peut exécuter des commandes
 
 # Commands
 t971550f3 = Commandes

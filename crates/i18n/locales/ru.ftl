@@ -232,6 +232,9 @@ tf5190423 = читает заметки
 # adds to notes
 tc82ac79b = дополняет заметки
 
+# uses snippets
+ta3eb0945 = использует сниппеты
+
 # while shellwing stays open
 t938960ff = пока shellwing открыт
 
@@ -354,6 +357,12 @@ tb80fd9c4 = Дополнять заметки
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = новая заметка об этом хосте или продолжение в конце заметки; написанное не меняется
+
+# Use snippets
+t7dbb24e6 = Использовать сниппеты
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = просматривать сниппеты для этого хоста и выполнять их там, где разрешены команды
 
 # Commands
 t971550f3 = Команды

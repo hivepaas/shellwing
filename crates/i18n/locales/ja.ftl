@@ -223,6 +223,9 @@ tf5190423 = ノートの読み取り
 # adds to notes
 tc82ac79b = ノートへの追記
 
+# uses snippets
+ta3eb0945 = スニペットの使用
+
 # while shellwing stays open
 t938960ff = shellwing を開いている間
 
@@ -339,6 +342,12 @@ tb80fd9c4 = ノートへの追記
 
 # a new note about the host, or more at the end of one; never changes what is there
 tb972781e = ホストについての新しいノート、またはノートの末尾への追記。既存の内容は変更しません
+
+# Use snippets
+t7dbb24e6 = スニペットの使用
+
+# list the snippets offered for the host, and run one where it may run commands
+t7b7c08af = ホスト向けのスニペットの一覧と、コマンドを実行できる場合はその実行
 
 # Commands
 t971550f3 = コマンド

@@ -696,9 +696,9 @@ scenario!(
 );
 
 scenario!(
-    /// Notes are given apart from files, and only when ticked: a host given
-    /// as it comes has neither right, one given with both ticked has both,
-    /// and they are kept.
+    /// Notes and snippets are given apart from files, and only when ticked:
+    /// a host given as it comes has none of those rights, one given with
+    /// them ticked has them, and they are kept.
     notes_are_given_only_when_ticked,
     |ui| {
         let _token = three_hosts(ui);
@@ -709,18 +709,20 @@ scenario!(
         ui.click("ai-pick:web");
         ui.click("ai-may:notes-read");
         ui.click("ai-may:notes-add");
+        ui.click("ai-may:snippets");
         ui.click("ai-give-ok");
         let rights = |ui: &mut Ui, host: &str| {
             let i = grant_of(ui, host);
             ui.ws(|ws, _, cx| {
                 let g = ws.ai_snapshot(cx).state.grants[i].clone();
-                (g.read, g.notes_read, g.notes_add)
+                (g.read, g.notes_read, g.notes_add, g.snippets)
             })
         };
-        assert_eq!(rights(ui, "db"), (true, false, false), "not unless ticked");
-        assert_eq!(rights(ui, "web"), (true, true, true));
+        assert_eq!(rights(ui, "db"), (true, false, false, false), "not unless ticked");
+        assert_eq!(rights(ui, "web"), (true, true, true, true));
         let saved = std::fs::read_to_string(ui.config_dir().join("state/ai.json")).expect("ai.json");
         assert!(saved.contains("\"notes_read\": true") && saved.contains("\"notes_add\": true"), "kept: {saved}");
+        assert!(saved.contains("\"snippets\": true"), "kept: {saved}");
     }
 );
 
