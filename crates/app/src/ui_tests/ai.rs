@@ -1043,6 +1043,79 @@ scenario!(
     }
 );
 
+/// Allows job `job`, waiting in AI activity, and follows it to its end.
+fn allowed(ui: &mut Ui, c: &mut Client, job: &str) -> String {
+    ui.click(&format!("ai-row:{job}"));
+    ui.click("ai-allow");
+    let mut rest = String::new();
+    for _ in 0..8 {
+        let (said, error) = c.tool_in(ui, "job_output", json!({"job": job, "wait_seconds": 5}));
+        rest.push_str(&said);
+        if error || said.starts_with("exit") || said.contains("did not run") {
+            break;
+        }
+    }
+    rest
+}
+
+scenario!(
+    /// Files and folders copied between this computer and a host, their
+    /// bytes never through the agent: only within the folders given its
+    /// client, each copy waiting where risky ones wait, nothing written over
+    /// that should not be.
+    an_ai_copies_files_both_ways,
+    |ui| {
+        if !crate::ui_tests::server::has_sftp() {
+            eprintln!("skipped: no sftp-server on this system");
+            return;
+        }
+        let token = given_web_may(ui, "Risky", "background", &["write"]);
+        let work = ui.dir.join("work");
+        std::fs::create_dir_all(work.join("site")).expect("work");
+        std::fs::write(work.join("build.txt"), "hello build\n").expect("build");
+        std::fs::write(work.join("site/index.html"), "<h1>hi</h1>\n").expect("site");
+        let home = ui.config_dir().join("remote-home");
+        let (mut c, _) = Client::open(ui, &token);
+        let local = |p: &str| work.join(p).display().to_string();
+
+        let (said, error) = c.tool_in(ui, "upload", json!({"host": "web", "local_path": local("build.txt"), "remote_path": "build.txt"}));
+        assert!(error && said.contains("none yet"), "no folder given yet: {said}");
+        let folder = work.display().to_string();
+        ui.ws(|ws, _, cx| ws.change_ai(|s| s.clients[0].folders = vec![folder], cx));
+        let (said, error) = c.tool_in(ui, "upload", json!({"host": "web", "local_path": "/etc/hostname", "remote_path": "x"}));
+        assert!(error && said.contains("in none of the folders"), "{said}");
+
+        ui.click("actions-fold");
+        ui.click("action-ai");
+        let (said, _) = c.tool_in(ui, "upload", json!({"host": "web", "local_path": local("build.txt"), "remote_path": "build.txt", "wait_seconds": 1}));
+        assert!(said.contains("waits for the user"), "{said}");
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let rest = allowed(ui, &mut c, &job);
+        assert!(rest.contains("Uploaded 12 B to web:"), "{rest}");
+        assert_eq!(std::fs::read_to_string(home.join("build.txt")).expect("there"), "hello build\n");
+
+        let (said, _) = c.tool_in(ui, "upload", json!({"host": "web", "local_path": local("site"), "remote_path": "site", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let rest = allowed(ui, &mut c, &job);
+        assert!(rest.contains("Uploaded"), "{rest}");
+        assert_eq!(std::fs::read_to_string(home.join("site/index.html")).expect("a folder"), "<h1>hi</h1>\n");
+        let (said, _) = c.tool_in(ui, "upload", json!({"host": "web", "local_path": local("site"), "remote_path": "site", "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let rest = allowed(ui, &mut c, &job);
+        assert!(rest.contains("is already there"), "a folder goes where nothing is: {rest}");
+
+        std::fs::write(home.join("server.log"), "line 1\nline 2\n").expect("log");
+        let (said, _) = c.tool_in(ui, "download", json!({"host": "web", "remote_path": "server.log", "local_path": local("server.log"), "wait_seconds": 1}));
+        let job = said.split_whitespace().next().expect("job").to_string();
+        let rest = allowed(ui, &mut c, &job);
+        assert!(rest.contains("Downloaded 14 B from web"), "{rest}");
+        assert_eq!(std::fs::read_to_string(work.join("server.log")).expect("here"), "line 1\nline 2\n");
+        assert!(!rest.contains("line 1"), "its bytes never go to the agent: {rest}");
+        let log = std::fs::read_to_string(ui.config_dir().join("state/ai-activity.jsonl")).unwrap_or_default();
+        assert!(!log.contains("hello build") && !log.contains("line 2"), "nor to the log");
+    }
+);
+
 scenario!(
     /// Notes and snippets are given apart from files, and only when ticked:
     /// a host given as it comes has none of those rights, one given with

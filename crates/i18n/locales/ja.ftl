@@ -91,6 +91,9 @@ tc50e2e47 = { $client } が環境 { $envs } を使って { $host } でこのス�
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } が { $host } でこのスニペットを実行しようとしています。毎回指示を待ちます。Enter なしで入力されるため、先に確認が必要です。
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } がこのコンピュータと { $host } の間でこれをコピーしようとしています。指示を待っています。「危険なものは確認」では、コピーはすべて確認が必要です。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } が { $host } にこれを書き込もうとしています。指示を待っています。「危険なものは確認」では、書き込みはすべて確認が必要です。
 
@@ -159,6 +162,18 @@ t5f515591 = ホストを検索
 
 # A command with these words waits
 t1678b953 = これらの語を含むコマンドは待機します
+
+# Local folders
+t285839dd = ローカルフォルダ
+
+# none: it copies no file to or from this computer
+tffc89e05 = なし: このコンピュータとの間でファイルをコピーしません
+
+# Add folder…
+t85f0d8d4 = フォルダを追加…
+
+# Let the AI client use this folder
+tf5add2cf = AI クライアントにこのフォルダの使用を許可
 
 # AI clients
 ta302119f = AI クライアント

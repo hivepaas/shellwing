@@ -91,6 +91,9 @@ tc50e2e47 = { $client } 想在 { $host } 上以環境 { $envs } 執行這個程�
 # {client} wants to run this snippet on {host}. It waits for you every time: it is typed without Enter, to be read first.
 t67420739 = { $client } 想在 { $host } 上執行這個程式碼片段。每次都會等你確認：它輸入時不按 Enter，需先閱讀。
 
+# {client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.
+tadb87f1e = { $client } 想在這台電腦與 { $host } 之間複製這個。它正在等你確認：在「有風險時詢問」模式下，每次複製都要詢問。
+
 # {client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.
 t2b63bd77 = { $client } 想在 { $host } 上寫入此內容。它正在等你確認：在「有風險時詢問」模式下，每次寫入都要詢問。
 
@@ -159,6 +162,18 @@ t5f515591 = 尋找主機
 
 # A command with these words waits
 t1678b953 = 含有這些文字的指令會等待
+
+# Local folders
+t285839dd = 本機資料夾
+
+# none: it copies no file to or from this computer
+tffc89e05 = 無：不在這台電腦上複製任何檔案
+
+# Add folder…
+t85f0d8d4 = 新增資料夾…
+
+# Let the AI client use this folder
+tf5add2cf = 允許 AI 用戶端使用此資料夾
 
 # AI clients
 ta302119f = AI 用戶端

@@ -59,6 +59,9 @@ impl Workspace {
         });
         hub.set_notes(Some(vault.clone()));
         hub.set_snippets(Some(vault));
+        if let Some(home) = dirs::home_dir() {
+            hub.set_never_reached(ai::transfers::never_reached(&home, store.map(|s| s.dir())));
+        }
         hub.set_locked(
             cx.try_global::<crate::app_lock::Locked>()
                 .is_some_and(|l| l.0),

@@ -267,6 +267,107 @@ impl AiView {
         }
     }
 
+    /// The folders on this computer a client may copy files from and to: a
+    /// chip each, to take away, and a way to add one.
+    fn folders_part(&self, c: &AiClient, cx: &mut Context<Self>) -> gpui::Div {
+        let mut row = div()
+            .debug_selector({
+                let n = c.name.clone();
+                move || format!("ai-folders:{n}")
+            })
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(6.))
+            .px(px(14.))
+            .py(px(8.))
+            .border_b_1()
+            .border_color(rgb(colors().line))
+            .text_size(ui(12.))
+            .child(
+                div()
+                    .text_color(rgb(colors().muted))
+                    .child(tr!("Local folders")),
+            );
+        if c.folders.is_empty() {
+            row = row.child(hint_text(&tr!(
+                "none: it copies no file to or from this computer"
+            )));
+        }
+        for (i, f) in c.folders.iter().enumerate() {
+            let (id, folder) = (c.id.clone(), f.clone());
+            row = row.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(4.))
+                    .px(px(8.))
+                    .py(px(2.))
+                    .rounded(px(5.))
+                    .border_1()
+                    .border_color(rgb(colors().field_edge))
+                    .bg(rgb(colors().chip))
+                    .child(f.clone())
+                    .child(
+                        div()
+                            .id(SharedString::from(format!(
+                                "ai-folder-remove:{}:{i}",
+                                c.name
+                            )))
+                            .debug_selector({
+                                let n = c.name.clone();
+                                move || format!("ai-folder-remove:{n}:{i}")
+                            })
+                            .cursor_pointer()
+                            .text_color(rgb(colors().muted))
+                            .child("✕")
+                            .on_click(cx.listener(move |v, _, _, cx| {
+                                let (id, folder) = (id.clone(), folder.clone());
+                                v.change(cx, |s| {
+                                    for c in s.clients.iter_mut().filter(|c| c.id == id) {
+                                        c.folders.retain(|x| *x != folder);
+                                    }
+                                })
+                            })),
+                    ),
+            );
+        }
+        let id = c.id.clone();
+        row.child(
+            outline_button(&format!("ai-add-folder:{}", c.name), &tr!("Add folder…"))
+                .h(px(24.))
+                .text_size(ui(12.))
+                .on_click(cx.listener(move |v, _, _, cx| v.add_folder(id.clone(), cx))),
+        )
+    }
+
+    /// Asks for a folder the client `id` may copy files from and to.
+    fn add_folder(&mut self, id: String, cx: &mut Context<Self>) {
+        let picked = cx.prompt_for_paths(gpui::PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some(tr!("Let the AI client use this folder").into()),
+        });
+        cx.spawn(async move |this, cx| {
+            if let Ok(Ok(Some(paths))) = picked.await
+                && let Some(folder) = paths.into_iter().next()
+            {
+                let folder = folder.display().to_string();
+                let _ = this.update(cx, |v, cx| {
+                    v.change(cx, |s| {
+                        for c in s.clients.iter_mut().filter(|c| c.id == id) {
+                            if !c.folders.contains(&folder) {
+                                c.folders.push(folder.clone());
+                            }
+                        }
+                    })
+                });
+            }
+        })
+        .detach();
+    }
+
     fn change(&self, cx: &mut Context<Self>, f: impl FnOnce(&mut AiState)) {
         if let Some(ws) = self.workspace.upgrade() {
             ws.update(cx, |ws, cx| ws.change_ai(f, cx));
@@ -284,6 +385,7 @@ impl AiView {
             token_sha256: ai::token_hash(&token),
             added_at: ai::now(),
             paused: false,
+            folders: vec![],
         };
         self.change(cx, |s| s.clients.push(client));
         self.adding = false;
@@ -524,6 +626,7 @@ impl AiView {
                             })),
                     ),
             );
+            list = list.child(self.folders_part(c, cx));
             if shown {
                 let token = match &self.token {
                     Some((t, token)) if *t == id3 => Some(token.clone()),

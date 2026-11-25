@@ -39,6 +39,10 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 # the same crate with these formats and more, so the app grows by nothing.
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff"] }
 
+# The free space where an AI's download goes (ai/transfers.rs).
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.31", default-features = false, features = ["fs"] }
+
 [dev-dependencies]
 russh.workspace = true
 # The tests against a real server (tests/shellwing_server.rs) play the browser.

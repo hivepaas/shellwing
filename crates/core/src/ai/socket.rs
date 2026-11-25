@@ -493,7 +493,7 @@ mod through {
         let list = c
             .ask(json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}))
             .await;
-        assert_eq!(list["result"]["tools"].as_array().map(Vec::len), Some(16));
+        assert_eq!(list["result"]["tools"].as_array().map(Vec::len), Some(18));
         let (said, error) = c.tool(3, "list_hosts").await;
         assert!(error && said.contains("not open"), "{said}");
 
@@ -513,6 +513,7 @@ mod through {
                 token_sha256: super::super::token_hash("shw_t"),
                 added_at: 0,
                 paused: false,
+                folders: vec![],
             }],
             ..Default::default()
         });

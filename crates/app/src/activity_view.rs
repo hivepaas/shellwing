@@ -510,6 +510,12 @@ impl ActivityView {
                                 client = a.client.clone(),
                                 host = a.host.clone()
                             )
+                        } else if why == shellwing_core::ai::transfers::COPIES {
+                            tr!(
+                                "{client} wants to copy this between this computer and {host}. It waits for you: where risky ones wait, every copy does.",
+                                client = a.client.clone(),
+                                host = a.host.clone()
+                            )
                         } else if why == shellwing_core::ai::WRITES {
                             tr!(
                                 "{client} wants to write this on {host}. It waits for you: where risky ones wait, every write does.",
