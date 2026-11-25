@@ -2623,8 +2623,14 @@ impl SettingsView {
     }
 }
 
+/// How wide a page of Settings is at most, whichever it is.
+pub(crate) const PAGE_WIDTH: f32 = 900.;
+
+/// How wide a setting's name and what it does are, beside its control.
+pub(crate) const SETTING_LABEL_WIDTH: f32 = 400.;
+
 fn page(title: &str) -> gpui::Div {
-    div().flex().flex_col().gap(px(16.)).max_w(px(760.)).child(
+    div().flex().flex_col().gap(px(16.)).child(
         div()
             .text_size(ui(18.))
             .font_weight(FontWeight::SEMIBOLD)
@@ -2678,7 +2684,8 @@ fn setting(title: &str, what: &str, control: gpui::Div) -> gpui::Div {
         .border_color(rgb(colors().line))
         .child(
             div()
-                .w(px(300.))
+                .debug_selector(|| "setting-label".into())
+                .w(px(SETTING_LABEL_WIDTH))
                 .flex()
                 .flex_col()
                 .gap(px(3.))
@@ -2974,7 +2981,14 @@ impl Render for SettingsView {
                             .overflow_y_scroll()
                             .px(px(24.))
                             .py(px(20.))
-                            .child(content),
+                            // Every page as wide as the others.
+                            .child(
+                                div()
+                                    .debug_selector(|| "settings-body".into())
+                                    .w_full()
+                                    .max_w(px(PAGE_WIDTH))
+                                    .child(content),
+                            ),
                     )
                     // Appearance: the terminal as chosen, beside what scrolls.
                     .when(self.page == Page::Appearance, |d| {

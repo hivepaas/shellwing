@@ -256,8 +256,8 @@ impl Render for KnownHostsView {
             .track_focus(&self.focus)
             .flex()
             .flex_col()
+            .debug_selector(|| "known-hosts-page".into())
             .gap(px(16.))
-            .max_w(px(760.))
             .child(
                 div()
                     .flex()

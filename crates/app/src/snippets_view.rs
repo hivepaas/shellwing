@@ -803,8 +803,8 @@ impl Render for SnippetsView {
             .on_key_down(cx.listener(Self::on_key))
             .flex()
             .flex_col()
+            .debug_selector(|| "snippets-page".into())
             .gap(px(18.))
-            .max_w(px(760.))
             .child(
                 div()
                     .flex()
