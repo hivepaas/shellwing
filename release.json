@@ -1,6 +1,6 @@
 {
   "channels": {
-    "stable": "v0.3.0"
+    "stable": "v0.4.0"
   },
   "releases": {
     "v0.2.0": {
@@ -136,6 +136,49 @@
         "rpm_aarch64": {
           "file": "shellwing_0.3.0_aarch64.rpm",
           "sha256": "f559aef303b81c67ec6cf9cc6d5059e8ffc29c71273e8e80628f937bf00fb1b4"
+        }
+      }
+    },
+    "v0.4.0": {
+      "releaseDate": "2026-11-26",
+      "archives": {
+        "linux_x86_64": {
+          "file": "shellwing_0.4.0_linux_x86_64.AppImage",
+          "sha256": "23265d68ade68e2e19b226e9a90dcc4d884e005dbb62c96be6b135a6fd4bd8c8"
+        },
+        "linux_aarch64": {
+          "file": "shellwing_0.4.0_linux_aarch64.AppImage",
+          "sha256": "5e288c5cc5c7bc7aff0ecafa1986a439f8179f726a1d1cd87f930dd88cfa6fab"
+        },
+        "macos_aarch64": {
+          "file": "shellwing_0.4.0_macos_aarch64.app.tar.gz",
+          "sha256": "e18843d7329323a6554ba866786325726fc8ee538910709ae52b1f4de35558f0"
+        },
+        "macos_x86_64": {
+          "file": "shellwing_0.4.0_macos_x86_64.app.tar.gz",
+          "sha256": "00e649b55818299dbd024ec7a29677d22d220768afd3d6a36457da9874f44104"
+        },
+        "windows_x86_64": {
+          "file": "shellwing_0.4.0_windows_x86_64-setup.exe",
+          "sha256": "dae1548c8679d86e27860661a9323d0fc03082e0e230f4ebd3183e8c9fd1cdc3"
+        }
+      },
+      "packages": {
+        "deb_x86_64": {
+          "file": "shellwing_0.4.0_amd64.deb",
+          "sha256": "50ad5886c24ebfa7b0f3db31a5ff436e4c84a0cdfca4f46b8da150409852dc9e"
+        },
+        "deb_aarch64": {
+          "file": "shellwing_0.4.0_arm64.deb",
+          "sha256": "a366bf93c1bb1baae203b619991a24d6e7c370397d6ef5081a694066b687d3ce"
+        },
+        "rpm_x86_64": {
+          "file": "shellwing_0.4.0_x86_64.rpm",
+          "sha256": "6048184b81991fc9dc101159537edee77cf299ccb5ef79f4205c13c295058342"
+        },
+        "rpm_aarch64": {
+          "file": "shellwing_0.4.0_aarch64.rpm",
+          "sha256": "f764c603a4d0465d938e685f3689211ce7178574259c0c3a0e9b1186007157f9"
         }
       }
     }
